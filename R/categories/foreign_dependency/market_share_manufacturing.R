@@ -1,4 +1,5 @@
-# Market Share theme builder functions.
+# Market Share theme builder functions. Needs R/utils/supply_chain_stages.R
+# (supply_chain_fill_manufacturing_pair()); foreign_dependency.R is not needed.
 
 market_share_manufacturing_build_cleantech_midstream <- function(ei,
                                                                  cleantech_midstream,
@@ -72,9 +73,10 @@ market_share_manufacturing_build_cleantech_midstream <- function(ei,
     ) %>%
     dplyr::mutate(
       tech = Technology,
-      # As foreign_dependency_cleantech_stage(), inline so this file can be sourced on its own:
-      # ETP measures end-product capacity for solar (modules), wind (nacelles), electrolysers
-      # and heat pumps, which is Assembly, and cell capacity for batteries, which is Components.
+      # As foreign_dependency_cleantech_stage(): ETP measures end-product capacity for solar
+      # (modules), wind (nacelles), electrolysers and heat pumps, which is Assembly, and cell
+      # capacity for batteries, which is Components. With one figure per technology, the rows
+      # are then copied onto the other manufacturing stage (below).
       supply_chain = dplyr::if_else(Technology == "Batteries", "Components", "Assembly"),
       category = "Foreign Dependency",
       variable = "Market Share",
@@ -101,11 +103,12 @@ market_share_manufacturing_build_cleantech_midstream <- function(ei,
       Year,
       source,
       explanation
-    )
+    ) %>%
+    supply_chain_fill_manufacturing_pair(by = c("Country", "tech", "variable", "data_type", "Year"))
 
   # The composite is one value per country, so it takes one stage: Assembly, the step four of
   # its five inputs measure (solar, wind, electrolyser and heat-pump end-product capacity). The
-  # fifth, battery cell capacity, is already scored in Components by its own row.
+  # fifth, battery cell capacity, is scored in both manufacturing stages by its own rows.
   comp_ct <- ct_idx %>%
     dplyr::group_by(Country) %>%
     dplyr::summarize(
@@ -174,7 +177,7 @@ market_share_manufacturing_build_ev_midstream <- function(ei,
   )
 
   # Same expansion as foreign_dependency_build_ev_midstream() (see the comments there), kept
-  # inline so this file can be sourced on its own. The five IEA regions partition the world;
+  # inline so this file does not need foreign_dependency.R. The five IEA regions partition the world;
   # Rest of World is the remainder, so it holds non-EU Europe. The legacy joins sent the EI
   # "Europe" sub-region to a placeholder ("boop") that matched nothing, which dropped the
   # United Kingdom, Norway, Turkiye, Ukraine, Switzerland, Iceland, Serbia and North
@@ -297,7 +300,7 @@ market_share_manufacturing <- function(ei,
   # One standardized row per EI country for the regional expansions, as in
   # foreign_dependency_ei_countries(): the expansions rank every row they produce, so EI
   # aggregates ("Total Asia Pacific", "USSR") and raw spellings ("US", "Vietnam") are removed
-  # before ranking. Kept inline so this file can be sourced on its own.
+  # before ranking. Kept inline so this file does not need foreign_dependency.R.
   ei_year <- max(suppressWarnings(as.integer(ei$Year)), na.rm = TRUE)
   ei <- ei %>%
     dplyr::filter(

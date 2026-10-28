@@ -188,7 +188,9 @@ foreign_dependency_build_mineral_supply <- function(critical,
 # Stage of each IEA ETP manufacturing-capacity technology (docs/supply_chain_stages.md). For
 # solar (modules), wind (nacelles), electrolysers and heat pumps ETP measures the end-product
 # step, which is final assembly. For batteries it measures cell capacity, and a cell is a
-# component of the pack.
+# component of the pack. ETP has one figure per technology, so the per-technology rows are then
+# copied onto the other manufacturing stage (supply_chain_fill_manufacturing_pair()); the
+# coalition's supplier test keeps this primary stage only (COALITION_CLEANTECH_STAGES).
 foreign_dependency_cleantech_stage <- function(technology) {
   dplyr::if_else(technology == "Batteries", "Components", "Assembly")
 }
@@ -287,12 +289,14 @@ foreign_dependency_build_cleantech_midstream <- function(ei,
       Year,
       source,
       explanation
-    )
+    ) %>%
+    supply_chain_fill_manufacturing_pair(by = c("Country", "tech", "variable", "data_type", "Year"))
 
   # Build the composite clean-tech manufacturing index across technologies. It is one value per
   # country, so it takes one stage: Assembly, the step four of its five inputs measure (solar,
   # wind, electrolyser and heat-pump end-product capacity). The fifth, battery cell capacity, is
-  # already scored in Components by its own per-technology row.
+  # scored in both manufacturing stages by its own per-technology rows. "Clean Tech Midstream" is
+  # not an index technology, so the composite scores no cell.
   comp_ct <- ct_idx %>%
     dplyr::group_by(Country) %>%
     dplyr::summarize(

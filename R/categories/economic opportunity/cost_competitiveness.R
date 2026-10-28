@@ -214,7 +214,9 @@ cost_competitiveness_capital_weights <- function() {
 
 # The technology and stage each IEA ETP relative-cost product scores, relative to that
 # technology. PV modules, wind turbines and electrolysers are their technologies' finished
-# goods (Assembly); the battery figure is filed with cells (Components). Aluminium and steel
+# goods (Assembly); the battery figure is filed with cells (Components). Each product has one
+# figure, so cost_competitiveness_build_iea_table() copies it onto the other manufacturing stage
+# (supply_chain_fill_manufacturing_pair()). Aluminium and steel
 # are commodity metals (Refining) and heat pumps finished equipment (Assembly); none of the
 # three is an index technology, so their rows reach the table but score nothing. Ammonia is
 # ranked as its own product and becomes a Green Hydrogen row in
@@ -1340,7 +1342,7 @@ cost_competitiveness_build_iea_table <- function(cost_indices,
     label = "cost_competitiveness_indices"
   )
 
-  cost_indices %>%
+  out <- cost_indices %>%
     dplyr::left_join(country_map, by = "country2", relationship = "many-to-many") %>%
     dplyr::left_join(subregion_map, by = c("country2" = "SubRegion"), relationship = "many-to-many") %>%
     dplyr::mutate(
@@ -1364,7 +1366,15 @@ cost_competitiveness_build_iea_table <- function(cost_indices,
         "Cost competitiveness relative to China (IEA product: ", Product, "); a regional ",
         "value, so every country mapped to an IEA region carries the same score"
       )
-    )
+    ) %>%
+    supply_chain_fill_manufacturing_pair(by = c("Country", "tech", "variable", "data_type", "Year"))
+  # The guard above is on distinct keys; this one checks the rows the pair copies were made from.
+  assert_unique_keys(
+    dplyr::filter(out, !is.na(.data$Country)),
+    c("Country", "tech", "supply_chain", "variable", "data_type", "Year"),
+    label = "cost_competitiveness_iea_table"
+  )
+  out
 }
 
 cost_competitiveness_validate_data_types <- function(tbl) {

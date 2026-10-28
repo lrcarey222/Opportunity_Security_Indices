@@ -68,11 +68,12 @@ COALITION_ROUTES <- c("core", "agreement", "supplier", "supplier: reserves")
 # Measures of major_supplier_shares() that are stocks (reserves, identified resources) rather
 # than flows. They are tested at supplier_reserves_share instead of supplier_share.
 COALITION_RESERVES_MEASURES <- c("usgs_reserves", "ei_reserves", "uranium_resources")
-# Stage of the IEA manufacturing capacity of each technology (coalition_shares_cleantech()), as
-# the Foreign Dependency theme stages the same data (foreign_dependency_cleantech_stage()): the
-# IEA measures cell capacity for batteries, a component of the pack, and the end product (modules,
-# nacelles, electrolysers) for the others. Spelled out, not taken from R/utils/supply_chain_stages.R,
-# so this file still sources on its own.
+# Stage of the IEA manufacturing capacity of each technology (coalition_shares_cleantech()), the
+# primary stage the Foreign Dependency theme gives the same data (foreign_dependency_cleantech_stage()):
+# the IEA measures cell capacity for batteries, a component of the pack, and the end product
+# (modules, nacelles, electrolysers) for the others. The theme also copies each figure onto the
+# other manufacturing stage for scoring; the supplier test counts it once, here. Spelled out, not
+# taken from R/utils/supply_chain_stages.R, so this file still sources on its own.
 COALITION_CLEANTECH_STAGES <- c(
   Solar = "Assembly", Wind = "Assembly", Batteries = "Components", `Green Hydrogen` = "Assembly"
 )

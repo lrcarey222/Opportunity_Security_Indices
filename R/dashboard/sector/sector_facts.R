@@ -579,6 +579,10 @@ sector_facts_mfg <- function(fd, mss, eu_members) {
                  key = paste(s$iso3, s$tech))
   r <- sector_raw_rows(fd)
   r <- r[r$variable == "Market Share", , drop = FALSE]
+  # Each share is also copied onto the other manufacturing stage for scoring
+  # (supply_chain_fill_manufacturing_pair(), whose copies' explanation carries "; copied from ");
+  # the facts and the exclusion counts take the filed row only.
+  r <- r[!grepl("; copied from ", as.character(r$explanation), fixed = TRUE), , drop = FALSE]
   heat <- !r$tech %in% names(SECTOR_ETP_TECH)
   r <- r[!heat, , drop = FALSE]
   r$entity <- sector_etp_entity(r$iso3c, eu_members)

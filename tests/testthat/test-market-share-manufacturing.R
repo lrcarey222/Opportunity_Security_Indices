@@ -10,6 +10,7 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "market_share_manufacturing.R"))
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "foreign_dependency.R"))
 
@@ -33,8 +34,9 @@ msm_ei <- function() {
   )
 }
 
-msm_share <- function(tbl, country, tech, data_type = "raw") {
-  hit <- tbl[tbl$Country == country & tbl$tech == tech & tbl$data_type == data_type, ]
+# Solar and wind shares sit at Assembly; Components holds the same figure as a copy.
+msm_share <- function(tbl, country, tech, data_type = "raw", stage = "Assembly") {
+  hit <- tbl[tbl$Country == country & tbl$tech == tech & tbl$data_type == data_type & tbl$supply_chain == stage, ]
   if (nrow(hit) != 1) stop("expected one row for ", country, "/", tech, "/", data_type)
   hit$value
 }
@@ -50,8 +52,19 @@ test_that("2035 shares are shares of the IEA world total, 'Other' included", {
   expect_equal(msm_share(out, "Germany", "Wind"), 0.15)
   expect_equal(msm_share(out, "France", "Wind"), 0.15)
   # The listed economies hold what "Other" does not.
-  listed <- out[out$data_type == "raw" & out$tech == "Solar" & out$Country != "France", ]
+  listed <- out[out$data_type == "raw" & out$tech == "Solar" & out$supply_chain == "Assembly" & out$Country != "France", ]
   expect_equal(sum(listed$value), 1 - 0.11)
+})
+
+test_that("each technology's share is copied onto the other manufacturing stage", {
+  for (out in list(market_share_manufacturing_build_cleantech_midstream(msm_ei(), msm_cleantech()),
+                   foreign_dependency_build_cleantech_midstream(msm_ei(), msm_cleantech()))) {
+    for (country in c("China", "India", "Germany")) {
+      expect_equal(msm_share(out, country, "Solar", stage = "Components"), msm_share(out, country, "Solar"))
+      expect_equal(msm_share(out, country, "Wind", "index", stage = "Components"), msm_share(out, country, "Wind", "index"))
+    }
+    expect_true(all(grepl("copied from Assembly", out$explanation[out$tech == "Solar" & out$supply_chain == "Components"], fixed = TRUE)))
+  }
 })
 
 test_that("the index is unchanged: every share of a technology shrinks by one factor", {

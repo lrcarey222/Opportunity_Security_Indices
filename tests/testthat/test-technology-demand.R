@@ -148,16 +148,19 @@ test_that("the overcapacity hydrogen block is read and copied to every trade cou
 
   expect_setequal(unique(out$tech), c("Batteries", "Solar", "Green Hydrogen"))
   # Battery cells stay in the battery block: mean(2, 3, 4), not mean(2, 4). Every battery
-  # component is a part of the pack, so the block keeps a single Components cell.
-  expect_equal(raw$value[raw$tech == "Batteries"], 3)
-  expect_equal(raw$supply_chain[raw$tech == "Batteries"], "Components")
+  # component is a part of the pack, so the block has one Components figure; BNEF has no pack
+  # row, so the figure is copied onto Assembly (the manufacturing pair carries the same sources).
+  expect_equal(raw$value[raw$tech == "Batteries" & raw$supply_chain == "Components"], 3)
+  expect_equal(raw$value[raw$tech == "Batteries" & raw$supply_chain == "Assembly"], 3)
+  expect_setequal(raw$supply_chain[raw$tech == "Batteries"], c("Components", "Assembly"))
+  expect_match(raw$explanation[raw$tech == "Batteries" & raw$supply_chain == "Assembly"], "copied from Components", fixed = TRUE)
   # Solar cells (ratio 2) are the fixture's only solar component at Components.
   expect_equal(raw$value[raw$tech == "Solar" & raw$supply_chain == "Components"], 2)
   # Chile trades no solar or hydrogen goods; the global ratio still reaches it.
   expect_setequal(unique(out$tech[out$Country == "Chile"]), c("Batteries", "Solar", "Green Hydrogen"))
   h2 <- out[out$tech == "Green Hydrogen" & out$data_type == "index" & out$Country == "Chile", ]
-  expect_equal(h2$value, 2^-18)
-  expect_equal(h2$supply_chain, "Components")
+  expect_equal(h2$value, c(2^-18, 2^-18))
+  expect_setequal(h2$supply_chain, c("Components", "Assembly"))
 })
 
 test_that("overcapacity splits by component into refining, components and assembly", {
@@ -185,7 +188,13 @@ test_that("overcapacity splits by component into refining, components and assemb
   expect_equal(value_of("Solar", "Components"), mean(c(4, 2)))
   expect_equal(value_of("Solar", "Assembly"), 3)
   expect_equal(value_of("Wind", "Assembly"), mean(c(4, 2)))
-  expect_equal(sum(raw$tech == "Wind"), 1L)
+  # Nacelles are wind's only BNEF figure, so Components takes a copy; solar has its own figure at
+  # both manufacturing stages, so nothing is copied there.
+  expect_equal(value_of("Wind", "Components"), mean(c(4, 2)))
+  expect_setequal(raw$supply_chain[raw$tech == "Wind"], c("Components", "Assembly"))
+  expect_match(raw$explanation[raw$tech == "Wind" & raw$supply_chain == "Components"], "copied from Assembly", fixed = TRUE)
+  expect_false(any(grepl("copied from", raw$explanation[raw$tech == "Solar"], fixed = TRUE)))
+  expect_equal(value_of("Batteries", "Assembly"), value_of("Batteries", "Components"))
   idx <- out[out$data_type == "index" & out$tech == "Solar" & out$supply_chain == "Refining", ]
   expect_equal(idx$value, 2^-1)
   expect_match(

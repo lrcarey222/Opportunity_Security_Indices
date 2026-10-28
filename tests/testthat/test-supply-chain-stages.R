@@ -108,3 +108,57 @@ test_that("the index variable map uses only known stages and fits", {
     "exact", "splittable", "spans", "replicated", "mislabeled", "inherited", "not_stage_specific"
   )))
 })
+
+test_that("a figure at one manufacturing stage is copied onto the other; a pair keeps its own", {
+  tbl <- data.frame(
+    Country = c("A", "A", "A", "B", "B", "A"),
+    tech = c("Batteries", "Solar", "Solar", "Batteries", "Wind", "Batteries"),
+    supply_chain = c("Components", "Components", "Assembly", "Components", "Assembly", "Extraction"),
+    variable = "Market Share",
+    value = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6),
+    explanation = "share",
+    stringsAsFactors = FALSE
+  )
+  out <- supply_chain_fill_manufacturing_pair(tbl, by = c("Country", "tech", "variable"))
+  val <- function(country, tech, stage) out$value[out$Country == country & out$tech == tech & out$supply_chain == stage]
+
+  # Batteries (Components only) and Wind (Assembly only) gain the other stage, by country.
+  expect_equal(val("A", "Batteries", "Assembly"), 0.1)
+  expect_equal(val("B", "Batteries", "Assembly"), 0.4)
+  expect_equal(val("B", "Wind", "Components"), 0.5)
+  # Solar has its own figure at each stage, and stages outside the pair are left alone.
+  expect_equal(val("A", "Solar", "Components"), 0.2)
+  expect_equal(val("A", "Solar", "Assembly"), 0.3)
+  expect_equal(sum(out$supply_chain == "Extraction"), 1L)
+  expect_equal(nrow(out), nrow(tbl) + 3L)
+  copies <- out[seq_len(nrow(out)) > nrow(tbl), ]
+  expect_true(all(grepl("^share; copied from (Components|Assembly)", copies$explanation)))
+  expect_identical(out[seq_len(nrow(tbl)), "value"], tbl$value)
+
+  # Idempotent: once both stages are present nothing more is copied.
+  expect_equal(nrow(supply_chain_fill_manufacturing_pair(out, by = c("Country", "tech", "variable"))), nrow(out))
+  expect_error(supply_chain_fill_manufacturing_pair(tbl, by = "Year"), "missing column")
+})
+
+test_that("cells and categories made only of manufacturing-pair copies are found across tables", {
+  copied <- function(stage) paste0("share", SUPPLY_CHAIN_PAIR_COPY_MARKER, stage, ": the source has no separate figure")
+  fd <- data.frame(
+    Country = "A", tech = c("Green Hydrogen", "Green Hydrogen", "Batteries", "Batteries"),
+    supply_chain = c("Assembly", "Components", "Components", "Assembly"),
+    category = "Foreign Dependency", variable = "Market Share", value = 0.1,
+    explanation = c("share", copied("Assembly"), "share", copied("Components")),
+    stringsAsFactors = FALSE
+  )
+  trade <- data.frame(Country = "A", tech = "Batteries", supply_chain = "Assembly", category = "Trade",
+                      variable = "market_share", value = 0.5, explanation = "HS 850760", stringsAsFactors = FALSE)
+  no_text <- data.frame(Country = "A", tech = "Wind", supply_chain = "Components", category = "Trade", value = 1)
+
+  cells <- supply_chain_pair_copy_cells(list(fd, trade, no_text))
+  # Batteries Assembly has its own trade beside the copy; a table without explanations counts as own.
+  expect_equal(cells, data.frame(tech = "Green Hydrogen", supply_chain = "Components", stringsAsFactors = FALSE))
+  cats <- supply_chain_pair_copy_cells(list(fd, trade, no_text), by_category = TRUE)
+  expect_equal(nrow(cats), 2L)
+  expect_setequal(paste(cats$tech, cats$supply_chain, cats$category),
+                  c("Green Hydrogen Components Foreign Dependency", "Batteries Assembly Foreign Dependency"))
+  expect_equal(nrow(supply_chain_pair_copy_cells(list(trade))), 0L)
+})

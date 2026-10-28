@@ -68,6 +68,9 @@ overcapacity_premium_component_stage <- function(component) {
 
 # One ratio per technology and stage: the mean over the BNEF components at that stage, so
 # Solar splits into Refining (polysilicon), Components (wafers, cells) and Assembly (modules).
+# A technology BNEF reports at only one manufacturing stage has that ratio copied onto the
+# other (supply_chain_fill_manufacturing_pair()): batteries (no pack row) and the electrolyser
+# stack onto Assembly, wind nacelles onto Components.
 overcapacity_premium_build_overcapacity_indices <- function(overcapacity_clean, year = 2025L) {
   require_columns(
     overcapacity_clean,
@@ -125,7 +128,8 @@ overcapacity_premium_build_overcapacity_indices <- function(overcapacity_clean, 
       Year,
       source,
       explanation
-    )
+    ) %>%
+    supply_chain_fill_manufacturing_pair(by = c("tech", "variable", "data_type", "Year"))
 }
 
 # The countries the trade theme scores. Overcapacity is a global, technology-level ratio, so
@@ -149,9 +153,10 @@ overcapacity_premium <- function(overcapacity_raw, trade_tidy, year = 2025L) {
   country_reference <- overcapacity_premium_build_country_reference(trade_tidy)
 
   assert_unique_keys(country_reference, "Country", label = "overcapacity_country_reference")
+  # One figure per technology, stage and variable, after the manufacturing-pair copies.
   assert_unique_keys(
-    overcapacity_indices %>% dplyr::distinct(tech, supply_chain),
-    c("tech", "supply_chain"),
+    overcapacity_indices,
+    c("tech", "supply_chain", "variable", "data_type"),
     label = "overcapacity_indices"
   )
 

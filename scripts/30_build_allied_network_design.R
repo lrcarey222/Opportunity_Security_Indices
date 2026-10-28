@@ -409,8 +409,9 @@ network_node_policy <- FALSE
 # Refining, Components, Assembly, Recovery: every stage of R/utils/supply_chain_stages.R but
 # Deployment, which is not part of the allied division of labour). Before 2026-10-27 the network
 # solved Upstream and Midstream, 22 stages over the 11 technologies; it now solves up to 55 (on the
-# 2026-10-26 tables every one has EO for every member; Geothermal's five, Green Hydrogen Components
-# and Coal and Gas Recovery have no ES, so they are scored on EO alone). The portfolio caps count
+# 2026-10-26 tables every one has EO for every member; Geothermal's five and Coal and Gas Recovery
+# have no ES, so they are scored on EO alone, and since 2026-10-27 Green Hydrogen Components' only
+# ES is the electrolyser share copied from Assembly). The portfolio caps count
 # top-5 appearances over these stages only, so their bite depends on the count: the caps
 # (portfolio_min_cap 2 to portfolio_max_cap 10 per node, by log GDP) were set on 22 stages, where the
 # 110 top-5 places were half the caps' sum (218 over 37 nodes; 7 to 10 producers per stage, converged

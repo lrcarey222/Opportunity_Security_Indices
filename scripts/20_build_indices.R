@@ -411,14 +411,22 @@ policy_index_provenance <- list(
 # Sectors whose Economic Opportunity rests only on inputs copied onto every stage (costs, demand,
 # technology-wide readiness) are not reported either (strategic_unevidenced_sectors()). A
 # readiness cell rests on items of its own unless the theme says it took the technology-wide value.
-strategic_unmeasured_es <- strategic_unmeasured_sectors(economic_opportunity_index, energy_security_index)
+# Inputs copied from the other manufacturing stage (supply_chain_fill_manufacturing_pair()) do not
+# measure or evidence a stage either (supply_chain_pair_copy_cells()).
+strategic_unmeasured_es <- strategic_unmeasured_sectors(
+  economic_opportunity_index, energy_security_index,
+  copied_cells = supply_chain_pair_copy_cells(energy_security_inputs)
+)
 trl_stage_cells <- technological_readiness_tbl %>%
   dplyr::filter(
     .data$variable == "TRL Index",
     !grepl("technology-wide", .data$explanation, fixed = TRUE)
   ) %>%
   dplyr::distinct(.data$tech, .data$supply_chain)
-strategic_unevidenced <- strategic_unevidenced_sectors(economic_opportunity_category_scores, trl_stage_cells)
+strategic_unevidenced <- strategic_unevidenced_sectors(
+  economic_opportunity_category_scores, trl_stage_cells,
+  copied_categories = supply_chain_pair_copy_cells(economic_opportunity_inputs, by_category = TRUE)
+)
 strategic_unevidenced <- strategic_unevidenced[sub(" - .*$", "", strategic_unevidenced) %in% techs]
 strategic_unmeasured <- sort(unique(c(strategic_unmeasured_es, strategic_unevidenced)))
 strategic_excluded_sectors <- strategic_unmeasured

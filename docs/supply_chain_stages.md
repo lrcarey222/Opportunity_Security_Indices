@@ -63,6 +63,14 @@ enters each sector's Strategic Index additively (0.1 × weight, `build_strategic
   conductors, racking, foundations, transformers, switchgear.
 - **Where a source separates cells from packs, cells are `components`.** HS 850760 does not separate
   them, so the trade map files it as `assembly`.
+- **The manufacturing pair carries the same sources** (2026-10-27). A source with one figure for a
+  technology's manufacturing (an IEA ETP capacity share, the IEA cost relative to China, a BNEF
+  overcapacity ratio, manufacturing capex, the ILO manufacturing wage, a CM-FDI project) is scored in
+  both `components` and `assembly`; a source with its own figure for each (BNEF solar wafers and cells,
+  then modules; Clean Investment Monitor cell and module capacity) keeps both. The figure is filed at
+  the stage it describes and copied onto the other (`supply_chain_fill_manufacturing_pair()`,
+  `R/utils/supply_chain_stages.R`); the copy says so in its `explanation`. Without it the stage that
+  lacked a figure escaped it (see "The manufacturing pair" below).
 - **Enabling equipment is `assembly` with a flag.** Drill rigs, OCTG, liquefaction plant, enrichment
   machinery and PV/semiconductor fab tools carry `enabling_equipment = TRUE` and a `serves_stage`.
   43 basket rows carry it, nearly all in Oil and Gas.
@@ -96,9 +104,10 @@ metal, Ga/Ge/In, fuel oils, NGLs, natural uranium compounds) keep their roll-up.
 
 **Batteries Midstream shrinks to three codes:** 850760 Li-ion accumulators, 850780 other
 accumulators, 850790 parts. HS has no headings for cathode active material, separators or
-electrolyte, so the cell-component step can't be measured from trade. Battery `components` will
-lean on the capacity sources below (Clean Investment Monitor EAM and cells, BNEF component
-overcapacity, IEA cell capacity).
+electrolyte, so the cell-component step can't be measured from trade. Battery `components` lean on
+the capacity sources below (Clean Investment Monitor EAM and cells, BNEF component overcapacity, IEA
+cell capacity); since 2026-10-27 the battery figures with no pack counterpart (BNEF, IEA capacity
+share and cost) are also scored in `assembly`, where HS 850760 puts the cells.
 
 ## Index variables: where the finer grain already exists
 
@@ -185,8 +194,10 @@ made in implementing it:
   Extraction 11, Refining 90, Recovery 9), and the HHI S-curve is taken within each stage.
 - **Mineral Supply, production depth, reserves, energy imports:** mining, reserves and fuel
   production are Extraction; refining is Refining; electricity generation is Deployment.
-- **Foreign Dependency, manufacturing shares:** battery cell capacity is Components; solar, wind,
-  electrolyser and heat-pump capacity are Assembly. Electrolyser capacity is now named Green
+- **Foreign Dependency, manufacturing shares:** battery cell capacity is filed under Components;
+  solar, wind, electrolyser and heat-pump capacity under Assembly; since 2026-10-27 each per-technology
+  share is copied onto the other manufacturing stage (the manufacturing pair). The coalition's
+  supplier test still counts each share once, at its filed stage. Electrolyser capacity is now named Green
   Hydrogen in both pillars (the Security side called it "Electrolyzers", which matched no index
   technology, so Green Hydrogen Assembly had no Security reading). EV production, market share and
   net export ratio are Assembly; EV sales are Deployment rows outside the score.
@@ -197,13 +208,16 @@ made in implementing it:
   electrode materials Components; modules, nacelles and vehicles Assembly; critical-minerals
   chemicals Refining). Manufacturing capex has no product column and is copied onto Components and
   Assembly; critical-minerals capex is Refining.
-- **Overcapacity:** split by BNEF component, averaged within (tech, stage).
+- **Overcapacity:** split by BNEF component, averaged within (tech, stage). A technology BNEF reports
+  at one manufacturing stage only has the ratio copied onto the other (2026-10-27): batteries (no pack
+  row) and the electrolyser stack onto Assembly, wind nacelles onto Components. Solar keeps its own
+  Components (wafers, cells) and Assembly (modules) figures.
 - **Technological readiness:** every rule of `config/iea_clean_tech_guide_tech_map.yml` carries a
   six-stage value. 37 of 66 cells take the technology-wide value.
 - **Cost competitiveness:** the labour leg reads the ILO activity of each stage (above); the author
   share table and the country-level capital leg are copied onto the six stages; IEA relative costs
-  are Assembly (battery cells Components, aluminium and steel Refining, ammonia Green Hydrogen
-  Deployment).
+  are filed under Assembly (battery cells Components, aluminium and steel Refining, ammonia Green
+  Hydrogen Deployment) and, since 2026-10-27, copied onto the other manufacturing stage.
 - **Policy:** CAT is copied onto all six stages; IEA PAMS keyword rules assign each policy to one or
   more of the six stages, with cross-cutting policies spread over all six; dual-use scores expand
   from primary / secondary / tertiary. NIPO stays three-stage (it is built but not in the composite).
@@ -214,7 +228,8 @@ made in implementing it:
   copied onto every stage (`strategic_unevidenced_sectors()`: Cost Competitiveness, Technology
   Demand and technology-wide readiness). At six stages they drop Geothermal Extraction, Refining,
   Components, Assembly and Recovery; Green Hydrogen Components and Recovery; and Coal, Gas, Solar,
-  Wind and EV Recovery.
+  Wind and EV Recovery. Since 2026-10-27 neither rule counts inputs copied from the other
+  manufacturing stage (The manufacturing pair), which keeps Green Hydrogen Components out.
 
 Partner indices, coalition and AIB (2026-10-27):
 
@@ -266,12 +281,11 @@ which checks that nothing outside the stage logic moved.
   more, because refining dependence and finished-goods dependence are different exposures.
 - **Allied picks (57 coalition members).** 32 keep their technology. Picks concentrate in Batteries:
   45 members (32 before), 42 of them Batteries - Assembly. Nuclear falls from 17 picks to 3. Stages:
-  Assembly 42, Components 9, Extraction 6 (before: Midstream 43, Upstream 14). Batteries - Assembly
-  is measured mainly by trade in finished lithium-ion batteries (HS 8507.60), which many countries
-  both export and import, so it scores high on opportunity (mean within-country EO 0.77) and on
-  need (0.68) at once; the old Batteries - Midstream basket was dominated by battery chemicals (EO
-  0.39). Its margin is thin: across members it beats Batteries - Extraction by 0.013 SI points on
-  average, less than the 0.021 the Assembly stage weight adds over an Upstream stage.
+  Assembly 42, Components 9, Extraction 6 (before: Midstream 43, Upstream 14). The explanation first
+  given here, that Batteries - Assembly is measured mainly by trade in finished lithium-ion batteries,
+  was wrong: its Trade category scored no higher than the old Batteries - Midstream's (median 0.426
+  against 0.438). It lacked the battery inputs filed under Components; see "The manufacturing pair"
+  (2026-10-27), which removes the concentration.
 
 ## Results: partner indices, coalition and AIB (2026-10-27)
 
@@ -285,7 +299,8 @@ feat/aib-strategic-compacts c2a543d, the six-stage one on this branch.
   measure by stage: Extraction 32, Refining 25, Components 13, Assembly 10, Recovery 8.
 - **Strategic Index allied picks (60 members):** Batteries 46, Solar 11, Nuclear 3; Assembly 43,
   Components 11, Extraction 6 (three-stage: Batteries 31, Nuclear 17, Electric Grid 4, Solar 3,
-  Wind 2). The Batteries - Assembly concentration of the 2026-10-26 results holds with the new members.
+  Wind 2). The Batteries - Assembly concentration of the 2026-10-26 results holds with the new members
+  (superseded by "The manufacturing pair" below).
 - **Partner indices.** Cells double (Opportunity 30 to 57 partner-level cells, Friendshore and
   Development 33 to 66). Deployment cells reproduce Downstream (median Spearman 0.99 to 1.00).
   Median rank agreement with the old cell: Friendshore Assembly 1.00, Components 0.95, Extraction
@@ -306,6 +321,80 @@ feat/aib-strategic-compacts c2a543d, the six-stage one on this branch.
   (`score_cells`) changes only two nodes' trade-relationship tie-breaks (li-ion cells and packs, AC
   generators).
 
+## The manufacturing pair (2026-10-27)
+
+**What was wrong.** Until this fix, a source with one figure for a technology's manufacturing was
+filed at one of the two manufacturing stages only, and the other stage escaped it. The battery
+sources that describe cells (BNEF overcapacity, the IEA ETP share of manufacturing capacity, the IEA
+production cost relative to China) sat in Components, while HS 850760 (cells and packs) put the
+battery trade in Assembly; for solar and wind the ETP share and the IEA cost sat in Assembly
+(modules, turbines). So:
+
+- Batteries - Assembly kept the favourable inputs (the US-only BCG addressable market, imputed 1.0
+  for every other economy, labour costs, copied capex) and none of the unfavourable ones. Its
+  Technology Demand was 1.0 where the old Batteries - Midstream averaged it with overcapacity
+  (0.56), and its Energy Security was trade and investment only. Economic Opportunity rose from
+  0.39 (old midstream, Australia) to 0.59, the cross-country median to 0.557.
+- The sibling that carried the inputs (Batteries - Components; Solar and Wind - Assembly) has most
+  of its Energy Security weight imputed, because the ETP extract covers five entities only (China,
+  Viet Nam, India, the EU and the US: 31 economies). It fails the 0.5 rankability bar for most
+  economies, which left the bare sibling as the technology's only manufacturing cell in the
+  Strategic Index (Batteries - Assembly in sample for 120 countries, against 54 for the old
+  midstream).
+- Batteries - Assembly was the top Strategic Index sector for 41 of 175 economies and 21 of the 60
+  coalition members, and the allied pick of 43 members; Solar - Components topped 36 economies.
+
+**The rule.** Components and Assembly carry the same sources (Tagging rules):
+`supply_chain_fill_manufacturing_pair()` copies a figure a source has at only one of the two stages
+onto the other, with "; copied from <stage>" in its explanation. Applied to BNEF overcapacity
+(batteries and the electrolyser stack onto Assembly, wind nacelles onto Components; solar has its own
+figure at each stage), the IEA ETP capacity share (both pillars; the cross-technology composite stays
+at Assembly and scores no cell) and the IEA relative cost. Capex, the ILO wage and CM-FDI were
+already copied. Electric Vehicles is the exception: EV production, market share and net export ratio
+(IEA Global EV Outlook) and ZEV plant capacity count vehicles, the Assembly step, so EV - Components
+(batteries, motors and parts) does not take them. The coalition's supplier test still counts each
+capacity share once, at its filed stage. Inputs that exist only as copies do not measure or evidence
+a stage for the Strategic Index rules (`supply_chain_pair_copy_cells()`): Green Hydrogen - Components,
+whose only Security and stage-specific Opportunity input is the electrolyser share copied from
+Assembly, stays out of the index as before.
+
+**Results** (scripts/10 to 33 rerun on the same inputs; before = the six-stage build of 2026-10-27):
+
+- Batteries - Assembly tops no economy (41 before); an Assembly sector tops one (Yemen, Nuclear).
+  The most common top sectors are Batteries - Extraction 42, Nuclear - Extraction 30, Solar -
+  Deployment 30, Solar - Extraction 22, Batteries - Deployment 16. Coalition members' top sectors by
+  stage: Extraction 40, Deployment 18, Recovery 2 (before Extraction 26, Assembly 21, Deployment 9,
+  Components 4).
+- Allied picks (60 members): Batteries 28, Nuclear 15, Solar 13, Wind 3, Electric Vehicles 1
+  (before Batteries 46, Solar 11, Nuclear 3); by stage Extraction 29, Components 12, Refining 10,
+  Assembly 6, Recovery 3 (before Assembly 43, Components 11, Extraction 6). 48 picks change.
+- Coverage: the copies bring the imputed ETP share into the bare siblings too, so they now fail the
+  rankability bar where their siblings did. In the Strategic Index Batteries - Assembly keeps 37
+  economies (120 before), Solar - Components 35 (156) and Wind - Components 31 (129): the ETP
+  economies plus those with observed investment (Australia, Canada, Japan, Korea, Mexico, Thailand,
+  Turkiye keep Batteries - Assembly; Brazil, Chile and Indonesia lose it).
+  Rankable cells: Energy Security 8,727 to 8,287, Economic Opportunity 8,969 to 8,655; Strategic
+  Index in sample 6,107 to 5,805.
+- Australia: Batteries - Deployment 0.600, Batteries - Extraction 0.577, Batteries - Assembly 0.574
+  (before Batteries - Assembly 0.667, Solar - Components 0.619); the allied pick moves from
+  Batteries - Assembly to Batteries - Extraction. Its Solar and Wind - Components cells are no longer
+  rankable (Energy Security imputed share 0.635).
+- Unchanged: the coalition, the AIB (node classes, all 56 minimum coalitions, strategic roles) and,
+  within rounding, the Partnership Strength Index (Spearman 0.9999).
+
+**Decisions this leaves** (not made here):
+
+- Whether a five-entity source should decide rankability. With the ETP share filled by the global
+  average (Security) or zero (Opportunity) for the other economies, battery, solar and wind
+  manufacturing is ranked for 31 to 39 economies. An available-case rule for the ETP share (an
+  uncovered economy drops the Foreign Dependency category instead of carrying a filled-in value)
+  would keep both siblings rankable on trade and investment; it would also change both siblings'
+  scores, and for Australia it would likely put battery manufacturing back near the top.
+- The extraction tilt. The need term is absolute (1 - Energy Security), and economies with no mining
+  score low Security in Extraction (zero-filled reserves), so non-producers' Extraction sectors now
+  lead: Japan's allied pick is Nuclear - Extraction and Korea's Batteries - Extraction. The
+  endowment screen stops only economies with no recorded resource base at all.
+
 ## Status
 
 Not yet on six stages, or not yet rerun (2026-10-27):
@@ -317,8 +406,9 @@ Not yet on six stages, or not yet rerun (2026-10-27):
   (for example scaled to the stage count), then lambda (the grid study in
   `osi-worktrees/scratch_final/network`, rebuilt on six-stage trade cells), need recalibrating
   before a rerun. The network also has no counterpart of the Strategic Index rules that drop
-  unmeasured or unevidenced sectors, so EO-only stages (Geothermal, Green Hydrogen Components,
-  Coal and Gas Recovery) would be solved.
+  unmeasured or unevidenced sectors, so EO-only stages (Geothermal, Coal and Gas Recovery, and Green
+  Hydrogen Components, whose only Security input is the electrolyser share copied from Assembly)
+  would be solved.
 - **Dashboard exports and TypeScript**:
   - `scripts/85` checks the CM-FDI tie cells (now Components and Assembly) against three-stage
     dashboard cells and exports `STRATEGIC_SUPPLY_CHAIN_WEIGHTS`; `R/dashboard/dash_bundle.R`
@@ -338,7 +428,8 @@ Not yet on six stages, or not yet rerun (2026-10-27):
 - **Paper figures** (`scripts/paper/*`): `fig_coalition.R` (Upstream / Midstream route columns),
   `fig_aib.R` (the stage-top table, `n_china_midstream`), `fig_bilateral.R`, `fig_method.R` and
   `fig_hs6_crosswalk.R` (trade cells from the master: three-stage unless they copy `stage` in),
-  `fig_eo_transforms.R` (asserts 33 cells), `fig_strategic.R`, `fig_robustness.R` and
+  `fig_eo_transforms.R` (asserts 33 cells; its overcapacity panel must drop the manufacturing-pair
+  copies, or it lists batteries, wind and hydrogen twice), `fig_strategic.R`, `fig_robustness.R` and
   `fig_si_fixed_inputs.R` (three-stage SI weights and exclusions).
 - **Docs**: `docs/data_dictionary.md` (the CM-FDI tables' `stages` column and per-stage ties) and the
   README's PSI section.

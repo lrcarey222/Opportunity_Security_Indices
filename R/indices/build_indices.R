@@ -251,9 +251,14 @@ strategic_pillar_rankability <- function(tbl, value_col, prefix) {
 # Extraction and deployment sectors without an Energy Security value (Geothermal Upstream and
 # Electric Grid Downstream in the three-stage build) were never left out: they stay in the
 # table unscored, "missing energy security".
+# `copied_cells` (tech, supply_chain; supply_chain_pair_copy_cells() of the Energy Security
+# themes) are cells whose only Security inputs are copies from the other manufacturing stage
+# (Green Hydrogen - Components, which has the electrolyser capacity share of Assembly and nothing
+# else); they count as unmeasured.
 strategic_unmeasured_sectors <- function(economic_opportunity_index,
                                          energy_security_index,
-                                         stages = STRATEGIC_UNMEASURED_STAGES) {
+                                         stages = STRATEGIC_UNMEASURED_STAGES,
+                                         copied_cells = NULL) {
   require_columns(economic_opportunity_index, c("tech", "supply_chain"), label = "economic_opportunity_index")
   require_columns(
     energy_security_index,
@@ -264,6 +269,14 @@ strategic_unmeasured_sectors <- function(economic_opportunity_index,
     dplyr::ungroup() %>%
     dplyr::filter(!is.na(.data$Energy_Security_Index)) %>%
     dplyr::distinct(tech = as.character(.data$tech), supply_chain = as.character(.data$supply_chain))
+  if (!is.null(copied_cells) && nrow(copied_cells) > 0) {
+    require_columns(copied_cells, c("tech", "supply_chain"), label = "copied_cells")
+    measured <- dplyr::anti_join(
+      measured,
+      dplyr::distinct(copied_cells, tech = as.character(.data$tech), supply_chain = as.character(.data$supply_chain)),
+      by = c("tech", "supply_chain")
+    )
+  }
   economic_opportunity_index %>%
     dplyr::ungroup() %>%
     dplyr::distinct(tech = as.character(.data$tech), supply_chain = as.character(.data$supply_chain)) %>%
@@ -282,10 +295,14 @@ strategic_unmeasured_sectors <- function(economic_opportunity_index,
 # Strategic Index would pick it for reasons that say nothing about the stage (Wind - Recovery,
 # Geothermal - Extraction once geothermal drilling became Deployment). It is the other half of the
 # reason the three-stage build left out Geothermal - Midstream; strategic_unmeasured_sectors() is
-# the Energy Security half. Applies to every stage.
+# the Energy Security half. Applies to every stage. `copied_categories` (tech, supply_chain,
+# category; supply_chain_pair_copy_cells(by_category = TRUE) of the Economic Opportunity themes)
+# are categories whose every input in the cell is a copy from the other manufacturing stage; like
+# the replicated categories, they are not evidence about the stage.
 strategic_unevidenced_sectors <- function(economic_opportunity_category_scores,
                                           trl_stage_cells,
-                                          replicated_categories = STRATEGIC_REPLICATED_EO_CATEGORIES) {
+                                          replicated_categories = STRATEGIC_REPLICATED_EO_CATEGORIES,
+                                          copied_categories = NULL) {
   require_columns(
     economic_opportunity_category_scores,
     c("tech", "supply_chain", "category", "category_score"),
@@ -293,6 +310,10 @@ strategic_unevidenced_sectors <- function(economic_opportunity_category_scores,
   )
   require_columns(trl_stage_cells, c("tech", "supply_chain"), label = "trl_stage_cells")
   trl_key <- paste(trl_stage_cells$tech, trl_stage_cells$supply_chain, sep = "\r")
+  copy_key <- if (is.null(copied_categories) || !nrow(copied_categories)) character() else {
+    require_columns(copied_categories, c("tech", "supply_chain", "category"), label = "copied_categories")
+    paste(copied_categories$tech, copied_categories$supply_chain, copied_categories$category, sep = "\r")
+  }
 
   economic_opportunity_category_scores %>%
     dplyr::ungroup() %>%
@@ -304,7 +325,8 @@ strategic_unevidenced_sectors <- function(economic_opportunity_category_scores,
     ) %>%
     dplyr::mutate(
       own_trl = paste(.data$tech, .data$supply_chain, sep = "\r") %in% trl_key,
-      stage_specific = !.data$category %in% replicated_categories &
+      copied = paste(.data$tech, .data$supply_chain, .data$category, sep = "\r") %in% copy_key,
+      stage_specific = !.data$category %in% replicated_categories & !.data$copied &
         !(.data$category == "Technological Readiness" & !.data$own_trl)
     ) %>%
     dplyr::group_by(.data$tech, .data$supply_chain) %>%

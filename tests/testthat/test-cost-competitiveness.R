@@ -708,21 +708,31 @@ test_that("each IEA product scores its own stage of its technology", {
   )
   stages <- tbl %>% dplyr::distinct(tech, supply_chain) %>% dplyr::arrange(tech, supply_chain)
 
+  # Each product's own stage, and a copy on the other manufacturing stage for those at Components
+  # or Assembly (one figure per product; the manufacturing pair carries the same sources).
   expect_equal(
     stages,
     tibble::tribble(
       ~tech, ~supply_chain,
       "Aluminium", "Refining",
+      "Batteries", "Assembly",
       "Batteries", "Components",
       "Green Hydrogen", "Assembly",
+      "Green Hydrogen", "Components",
       "Green Hydrogen", "Deployment",
       "Heat pumps", "Assembly",
+      "Heat pumps", "Components",
       "Solar", "Assembly",
+      "Solar", "Components",
       "Steel", "Refining",
-      "Wind", "Assembly"
+      "Wind", "Assembly",
+      "Wind", "Components"
     )
   )
   expect_true(all(tbl$supply_chain %in% SUPPLY_CHAIN_STAGES))
+  bat <- tbl %>% dplyr::filter(tech == "Batteries")
+  expect_equal(bat$value[bat$supply_chain == "Assembly"], bat$value[bat$supply_chain == "Components"])
+  expect_true(all(grepl("copied from Components", bat$explanation[bat$supply_chain == "Assembly"], fixed = TRUE)))
 
   # Ammonia is ranked as its own product, then filed under Green Hydrogen Deployment.
   ammonia <- tbl %>% dplyr::filter(tech == "Green Hydrogen", supply_chain == "Deployment")
@@ -757,7 +767,7 @@ test_that("the IEA Southeast Asia region reaches ASEAN members only", {
     country_map = maps$country_map,
     subregion_map = maps$subregion_map
   ) %>%
-    dplyr::filter(tech == "Solar")
+    dplyr::filter(tech == "Solar", supply_chain == "Assembly")
 
   # Viet Nam and Thailand take the regional value; Japan is not in the region, and China and
   # India keep only their own value instead of averaging it with the Southeast Asian one.

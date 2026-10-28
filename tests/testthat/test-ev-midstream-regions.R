@@ -11,6 +11,7 @@ repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRU
 source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "foreign_dependency.R"))
 source(file.path(repo_root, "R", "categories", "foreign_dependency", "market_share_manufacturing.R"))
 
@@ -149,7 +150,7 @@ test_that("EV sales are Deployment rows and stay out of the Assembly composite",
   }
 })
 
-test_that("manufacturing-capacity shares are Components for battery cells and Assembly otherwise", {
+test_that("manufacturing-capacity shares sit at their stage and are copied onto the other manufacturing stage", {
   # The IEA ETP extract as read.csv() names it (data/raw/iea_cleantech_Midstream.csv).
   cleantech <- data.frame(
     X = c("China", "EU", "US", "Other"),
@@ -164,16 +165,25 @@ test_that("manufacturing-capacity shares are Components for battery cells and As
   eo <- market_share_manufacturing_build_cleantech_midstream(ei, cleantech)
   for (out in list(es, eo)) {
     stage <- dplyr::distinct(out, tech, supply_chain)
-    expect_equal(stage$supply_chain[stage$tech == "Batteries"], "Components")
-    expect_equal(stage$supply_chain[stage$tech == "Solar"], "Assembly")
-    # The cross-technology composite takes the stage four of its five inputs measure.
+    # ETP has one figure per technology: battery cells are filed under Components, the others'
+    # end products under Assembly, and each is copied onto the other manufacturing stage.
+    for (t in c("Batteries", "Solar", "Green Hydrogen")) {
+      expect_setequal(stage$supply_chain[stage$tech == t], c("Components", "Assembly"))
+      a <- out[out$tech == t & out$supply_chain == "Assembly", ]
+      cpt <- out[out$tech == t & out$supply_chain == "Components", ]
+      key <- function(d) paste(d$Country, d$data_type)
+      expect_equal(cpt$value[match(key(a), key(cpt))], a$value)
+    }
+    copied <- out$explanation[out$tech == "Batteries" & out$supply_chain == "Assembly"]
+    expect_true(all(grepl("copied from Components", copied, fixed = TRUE)))
+    copied <- out$explanation[out$tech == "Solar" & out$supply_chain == "Components"]
+    expect_true(all(grepl("copied from Assembly", copied, fixed = TRUE)))
+    # The cross-technology composite is not an index technology and keeps its single stage.
     expect_equal(stage$supply_chain[stage$tech == "Clean Tech Midstream"], "Assembly")
-    expect_equal(nrow(stage), dplyr::n_distinct(stage$tech))
   }
-  # Electrolysers are Green Hydrogen Assembly in both pillars, so the Security side reaches the
-  # Green Hydrogen Assembly cell the Strategic Index scores.
+  # Electrolysers are Green Hydrogen in both pillars, so the Security side reaches the Green
+  # Hydrogen manufacturing cells the Strategic Index scores.
   for (out in list(es, eo)) {
-    expect_equal(unique(out$supply_chain[out$tech == "Green Hydrogen"]), "Assembly")
     expect_false("Electrolyzers" %in% out$tech)
   }
 })

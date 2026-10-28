@@ -28,6 +28,69 @@ SUPPLY_CHAIN_SUPPLY_STAGES <- setdiff(SUPPLY_CHAIN_STAGES, "Deployment")
 # its value is copied onto both.
 SUPPLY_CHAIN_MANUFACTURING_STAGES <- c("Components", "Assembly")
 
+# Components and Assembly carry the same sources (docs/supply_chain_stages.md, "The manufacturing
+# pair"). A source with a figure for only one of a technology's two manufacturing stages (an IEA
+# ETP capacity share, the IEA cost relative to China, a BNEF overcapacity ratio) is copied onto
+# the other, as manufacturing capex and the ILO manufacturing wage are; a source with its own
+# figure for each stage (BNEF solar wafers and cells, then modules) keeps both. Without the copy
+# the bare stage escaped the source: Batteries - Assembly lacked the battery overcapacity, cost and
+# capacity share filed under Components and topped 41 countries' Strategic Index (2026-10-27).
+# `by` names the columns that identify one figure apart from its stage; the copies' explanation
+# says where they came from (SUPPLY_CHAIN_PAIR_COPY_MARKER). Pure.
+SUPPLY_CHAIN_PAIR_COPY_MARKER <- "; copied from "
+
+supply_chain_fill_manufacturing_pair <- function(tbl, by, stage_col = "supply_chain") {
+  missing <- setdiff(c(by, stage_col), names(tbl))
+  if (length(missing) > 0) {
+    stop("supply_chain_fill_manufacturing_pair(): missing column(s) ", paste(missing, collapse = ", "))
+  }
+  pair <- SUPPLY_CHAIN_MANUFACTURING_STAGES
+  stage <- as.character(tbl[[stage_col]])
+  in_pair <- stage %in% pair
+  if (!any(in_pair)) return(tbl)
+  key <- do.call(paste, c(lapply(tbl[in_pair, by, drop = FALSE], as.character), sep = "\r"))
+  n_stages <- tapply(stage[in_pair], key, function(s) length(unique(s)))
+  lone <- key %in% names(n_stages)[n_stages == 1]
+  if (!any(lone)) return(tbl)
+  # glue explanations (str_glue) would not bind to the copies' plain text
+  if ("explanation" %in% names(tbl)) tbl$explanation <- as.character(tbl$explanation)
+  add <- tbl[in_pair, , drop = FALSE][lone, , drop = FALSE]
+  from <- as.character(add[[stage_col]])
+  add[[stage_col]] <- ifelse(from == pair[1], pair[2], pair[1])
+  if ("explanation" %in% names(add)) {
+    add$explanation <- paste0(
+      add$explanation, SUPPLY_CHAIN_PAIR_COPY_MARKER, from,
+      ": the source has no separate figure for this manufacturing stage (do not sum across stages)"
+    )
+  }
+  dplyr::bind_rows(tbl, add)
+}
+
+# The cells (tech, supply_chain), or with `by_category` the (tech, supply_chain, category)
+# entries, whose every row across `tables` (a list of theme tables) is a manufacturing-pair copy.
+# A copy says nothing about its stage, so the Strategic Index rules do not count such a cell as
+# measured (strategic_unmeasured_sectors()) or such a category as stage evidence
+# (strategic_unevidenced_sectors()). A table without the columns, or without explanations,
+# contributes rows that count as the stage's own. Pure.
+supply_chain_pair_copy_cells <- function(tables, by_category = FALSE) {
+  keys <- c("tech", "supply_chain", if (by_category) "category")
+  rows <- lapply(tables, function(t) {
+    if (is.null(t) || !all(keys %in% names(t))) return(NULL)
+    copy <- if ("explanation" %in% names(t)) grepl(SUPPLY_CHAIN_PAIR_COPY_MARKER, as.character(t$explanation), fixed = TRUE) else FALSE
+    out <- as.data.frame(lapply(t[keys], as.character), stringsAsFactors = FALSE)
+    out$copy <- rep_len(copy, nrow(out))
+    unique(out)
+  })
+  rows <- dplyr::bind_rows(rows)
+  if (!nrow(rows)) return(stats::setNames(data.frame(matrix(character(), 0, length(keys))), keys))
+  rows %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(keys))) %>%
+    dplyr::summarise(copy_only = all(.data$copy), .groups = "drop") %>%
+    dplyr::filter(.data$copy_only) %>%
+    dplyr::select(dplyr::all_of(keys)) %>%
+    as.data.frame(stringsAsFactors = FALSE)
+}
+
 # Strategic Index supply-chain term: each stage takes an equal share of its roll-up's weight
 # (Upstream 0.50, Midstream 0.75, Downstream 0.25; user decision 2026-10-26).
 SUPPLY_CHAIN_STAGE_SI_WEIGHTS <- c(

@@ -782,3 +782,32 @@ test_that("sectors whose Economic Opportunity has only stage-copied inputs are u
     c("Electric Grid - Recovery", "Solar - Refining", "Wind - Recovery")
   )
 })
+
+test_that("inputs copied from the other manufacturing stage neither measure nor evidence a stage", {
+  # Green Hydrogen Components: its only Foreign Dependency rows (EO and ES) are the electrolyser
+  # capacity share copied from Assembly; Batteries Assembly has its own trade beside its copies.
+  cs <- tibble::tribble(
+    ~tech, ~supply_chain, ~category, ~category_score,
+    "Green Hydrogen", "Components", "Cost Competitiveness", 0.4,
+    "Green Hydrogen", "Components", "Foreign Dependency", 0.3,
+    "Batteries", "Assembly", "Foreign Dependency", 0.2,
+    "Batteries", "Assembly", "Trade", 0.5
+  )
+  copied <- tibble::tribble(
+    ~tech, ~supply_chain, ~category,
+    "Green Hydrogen", "Components", "Foreign Dependency",
+    "Batteries", "Assembly", "Foreign Dependency"
+  )
+  no_trl <- tibble::tibble(tech = character(), supply_chain = character())
+  expect_equal(strategic_unevidenced_sectors(cs, no_trl), character(0))
+  expect_equal(strategic_unevidenced_sectors(cs, no_trl, copied_categories = copied), "Green Hydrogen - Components")
+
+  eo <- tibble::tibble(tech = c("Green Hydrogen", "Batteries"), supply_chain = c("Components", "Assembly"))
+  es <- tibble::tibble(tech = c("Green Hydrogen", "Batteries"), supply_chain = c("Components", "Assembly"),
+                       Energy_Security_Index = c(0.6, 0.4))
+  expect_equal(strategic_unmeasured_sectors(eo, es), character(0))
+  expect_equal(
+    strategic_unmeasured_sectors(eo, es, copied_cells = tibble::tibble(tech = "Green Hydrogen", supply_chain = "Components")),
+    "Green Hydrogen - Components"
+  )
+})
