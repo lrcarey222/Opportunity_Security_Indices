@@ -350,7 +350,7 @@ function TechPicker() {
       <h2 id="techs-h" className="eyebrow rule-neis-sm mb-2">
         Pick a technology
       </h2>
-      <p className="mb-3 max-w-3xl text-sm text-paper-mute">Each opens its supply chain: pick a stage (Upstream, Midstream, Downstream) or one of its components for the sector profile.</p>
+      <p className="mb-3 max-w-3xl text-sm text-paper-mute">Each opens its supply chain in the paper&apos;s three stages (Upstream, Midstream, Downstream): pick a stage or one of its components for the sector profile.</p>
       <ul className="flex flex-wrap gap-2">
         {TECH_SLUGS.map((t) => (
           <li key={t}>
@@ -372,7 +372,7 @@ export default function SectorHomeView() {
       <PageHead
         eyebrow="SECTORS · DESCRIPTIVE DATA"
         title="Energy supply chains, measured"
-        lede="Eleven energy technologies, each from raw materials (upstream) through manufacturing (midstream) to use (downstream): 33 sectors. Each tile shows who holds the most of that sector's main measure. Pick a tile for the full picture: trade, production, reserves, investment, prices and policy, in each source's own units and year. No indices and no weights: these are the measured numbers the country rankings start from."
+        lede="Eleven energy technologies, each from raw materials (upstream) through manufacturing (midstream) to use (downstream): the paper's 33 sectors. The posture chart just below is the six-stage recommendation of the strategic position framework. Each tile further down shows who holds the most of that sector's main measure; pick one for the full picture: trade, production, reserves, investment, prices and policy, in each source's own units and year. The tiles carry no indices and no weights: they are the measured numbers the country rankings start from."
       />
       <div className="mb-10">
         <SectorPostureHero />

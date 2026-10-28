@@ -19,9 +19,9 @@ export const INSTANTANEOUS_N1_LABEL = 'Instantaneous N-1 retained coverage (cove
 
 /**
  * The four lines, in legend order. Colours: blue, olive and rose from the validated categorical triple
- * (coverage, the true N-1 test, specialization) and the teal of the validated stage triple for the
- * mechanical N-1 reading (blue / olive / teal pass as adjacent pairs); every line has its own dash, so
- * colour is never the only cue. `short` labels the line ends.
+ * (coverage, the true N-1 test, specialization) and a teal (#2fa5a6, a fixed colour of this chart, not a
+ * stage colour) for the mechanical N-1 reading (blue / olive / teal pass as adjacent pairs); every line
+ * has its own dash, so colour is never the only cue. `short` labels the line ends.
  */
 export const FRONTIER_SERIES: readonly { key: FrontierKey; label: string; short: string; color: string; dash: string | null }[] = [
   { key: 'coverage', label: 'Coverage', short: 'Coverage', color: '#1889b0', dash: null },

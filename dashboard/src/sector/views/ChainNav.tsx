@@ -5,6 +5,10 @@
 // scoped to it (the existing `sub` URL key). Folded (the three stages in one row, the components behind
 // "Show components"): on phones, and on the Sector profile at every width (`collapsible`), so the
 // profile's four lenses stay on the first screen.
+//
+// The stages here are the Sector bundle's three (the paper's). The AIB nodes are six-stage since
+// 2026-10-28; chain.ts places each under a three-stage column through its three-stage cells
+// (node.yfCellsLegacy, else the roll-up of its six-stage cells), and the footnote says so.
 
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
@@ -169,6 +173,7 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
             <>
               {' '}Marks: the class the <Link className="link" to="/aib">Allied Industrial Base</Link> model gives the matching supply-chain node (shown under Energy Security)
               {dictionary ? ': a node of the electro-industrial dictionary whose codes sit in the component; one node can sit under several components and stages.' : '.'}
+              {' '}The model’s nodes use six supply-chain stages, which roll up into these three; each node sits under the stage its codes are filed under here.
             </>
           )}
         </p>

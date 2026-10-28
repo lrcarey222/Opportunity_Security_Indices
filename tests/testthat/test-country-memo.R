@@ -112,7 +112,9 @@ test_that("each lint rule fires on a broken copy", {
   expect_true(any(grepl("does not resolve", errors_of(run(sub1("{{policy.pams_total}}", "{{policy.pams_totally}}")), "token"))))
   expect_true(any(grepl("plain number", errors_of(run(sub1(sprintf("{{cells.%s.es.pct}} and", k1), sprintf("{{cells.%s.es.pos}} and", k1))), "token"))))
   expect_true(length(errors_of(run(sub1("All values are", "Unlike China, all values are")), "economy_name")) > 0)
-  expect_true(length(errors_of(run(sub1(sprintf("sits in the {{cells.%s.quadrant}} corner", k1), sprintf("sits in the Secure corner beside {{cells.%s.es}}", k1))), "corner_word")) > 0)
+  expect_true(length(errors_of(run(sub1(sprintf("sits in the {{cells.%s.quadrant}} corner", k1), sprintf("sits in the Exposed corner beside {{cells.%s.es}}", k1))), "corner_word")) > 0)
+  # Secure and Watch were corner words until 2026-10-28; they are now six-stage posture words, not corners
+  expect_length(errors_of(run(sub1(sprintf("sits in the {{cells.%s.quadrant}} corner", k1), sprintf("sits in the Secure posture beside {{cells.%s.es}}", k1))), "corner_word"), 0)
   if (length(non_top)) {
     bad <- sub1(sprintf("{{cells.%s.drivers.es.%s.category}}", k1, d_es), sprintf("{{cells.%s.drivers.es.%s.category}}", k1, non_top[[1]]$key))
     expect_true(any(grepl("not a top driver", errors_of(run(bad), "causal"))))

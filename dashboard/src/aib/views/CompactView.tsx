@@ -48,9 +48,7 @@ import { CompactProvider, WorkstreamParent, type CompactCtx, type CompactViewSta
 import { TypeTag } from '../charts/TypeTag.tsx';
 import { compactVsFragmented } from '../derive/coverage.ts';
 import { compactTypeInfo } from '../derive/types.ts';
-
-const STAGE_ORDER = ['Upstream', 'Midstream', 'Downstream'];
-const stageRank = (s: string) => (STAGE_ORDER.includes(s) ? STAGE_ORDER.indexOf(s) : STAGE_ORDER.length);
+import { stagesInChainOrder } from '../../lib/stages.ts';
 
 const SECTIONS = [
   ['why', 'Why this compact?'],
@@ -121,7 +119,8 @@ function Compact({ c }: { c: AibCompact }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c.id]);
   const m = doc.meta;
-  const stages = [...c.stages].sort((x, y) => stageRank(x) - stageRank(y)).map((x) => x.toLowerCase());
+  // the compact's stages in chain order, in prose ("across the refining and components stages")
+  const stages = stagesInChainOrder(c.stages).map((x) => x.toLowerCase());
   // The type and archetype of the compact the page shows: Managed Interdependence's own (its classes, compact
   // gain and coalition size), none without a coalition there or while its file loads.
   const typed = mi ? view : c;

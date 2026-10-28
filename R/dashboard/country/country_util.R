@@ -93,7 +93,9 @@ country_pos <- function(pct, x, med) {
 }
 
 # The corner from two positions and the split on each axis: high = at or above the split (ties go high).
-# Grow = high EO, high ES; Upgrade = high EO, low ES; Secure = low EO, low ES; Watch = low EO, high ES.
+# Grow = high EO, high ES; Upgrade = high EO, low ES; Exposed (key "secure") = low EO, low ES; Stable (key
+# "watch") = low EO, high ES. The keys stay; the display words (config words.quadrant) were Secure and Watch
+# until 2026-10-28, renamed so they do not clash with the six-stage posture words.
 country_quadrant <- function(es, eo, es_med, eo_med) {
   high_eo <- eo >= eo_med
   high_es <- es >= es_med

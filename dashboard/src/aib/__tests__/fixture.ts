@@ -4,10 +4,19 @@
 // leave-one-out flag, the six tiers with a marginal critical external dependency, associatesReach99,
 // robustTieBreakSolved). Since 2026-10-19 its nodes come from the electro-industrial dictionary (taxonomy
 // "dictionary", core scope, strategic scope all): EIS sectors with "/" ("Electrolysers/H2 equipment"),
-// node labels with commas ("Magnets, magnet parts & assemblies"), Downstream nodes, six indices (one, E,
-// without a node), OSI cells through the crosswalk (the magnets node in two cells and three OSI
-// sub-components; the Solar sector's Downstream node in OSI Solar Midstream; the electrolysers node in no
-// cell), and a compact spanning two indices (AIB-C01: A Rare earths and B Magnets). Since 2026-10-19 too,
+// node labels with commas ("Magnets, magnet parts & assemblies"), six indices (one, E, without a node), OSI
+// cells through the crosswalk (the magnets node in two cells and three OSI sub-components; the electrolysers
+// node in no cell), and a compact spanning two indices (AIB-C01: A Rare earths and B Magnets). Since
+// 2026-10-28 (bundle version 3) it is six-stage, as scripts/84 writes a bundle from the run of 2026-10-27:
+// node stages Extraction (natural graphite), Refining (rare-earth oxides, synthetic graphite), Components
+// (magnets, wind towers) and Assembly (PV modules, transformers, electrolysers), none Recovery or
+// Deployment; compact and network edge stages in chain order (AIB-C01 Refining + Components, AIB-C02
+// Extraction + Refining, AIB-C03 Components); per-side partner counts keyed extraction ... recovery (the
+// distinct partners over the document's edges at each stage, deployment 0); yfCells / yfSubcomponents
+// six-stage ("solar-assembly") and yfCellsLegacy / yfSubcomponentsLegacy the previous three-stage cells
+// ("solar-midstream"), which differ from the roll-up for the anode node (batteries-refining rolls up to
+// batteries-upstream, its own legacy cell is batteries-midstream). The conversion was a one-off script and
+// there is no generator: the files are edited by hand (minified, file names kept). Since 2026-10-19 too,
 // the diversification scenario (meta.diversify; the diversify_benchmark shock and variant): the magnets
 // node diversified with two capped suppliers, the anode node diversified with no gap left (residual 0),
 // the towers node diversified with one (its class under the scenario flagged PHYSICAL CAPABILITY NOT
@@ -46,8 +55,10 @@
 // into one written before the strategic layer (2026-10-20; every older strip strips it too), stripScenarios() to turn the document
 // into one written before the scenario toggle (stripDiversify() and stripMethodology() strip it too), toMasterTaxonomy() to
 // turn the document into one of the OSI basket (meta without the taxonomy fields, OSI technology names
-// from the crosswalk, strategic scope electro_industrial with the electrolysers node, as Green Hydrogen,
-// outside it), stripDiversify() to turn it into one written before the diversification scenario, and
+// from the crosswalk, six-stage as a master export now is, strategic scope electro_industrial with the
+// electrolysers node, as Green Hydrogen, outside it), stripLegacyCells() to drop the nodes' three-stage
+// cells (a six-stage bundle without them: the joins with the three-stage bundles then fall back to the
+// roll-up; no other strip drops them), stripDiversify() to turn it into one written before the diversification scenario, and
 // stripMethodology() to turn a document into one written before the 2026-10-16 methodology fields (and the
 // 2026-10-17 network and investment flows, and the 2026-10-19 taxonomy and diversification scenario: an
 // older bundle is a master one). AIB_DATA_DIR overrides the directory (e.g. public/data/aib for a local
@@ -60,21 +71,29 @@ import {
   type AibScenarioFileId,
 } from '../contract.ts';
 import { AibLoadError, type AibSource } from '../data/store.ts';
-import { osiCellOf } from '../derive/taxonomy.ts';
-import { stageSlug } from '../../lib/format.ts';
+import { cellSlug, isSupplyStage, parseCellSlug, rollUpStage, stagesInChainOrder, type SupplyStage } from '../../lib/stages.ts';
 
 const TIER_ROLES = ['Critical supply partner', 'Critical external dependency', 'Critical external dependency (marginal)', 'External dependency'];
 
 /** The master strategic scope of the fixture (config/aib.yml electro_industrial). */
 export const MASTER_SCOPE_TECHS = ['Batteries', 'Electric Vehicles', 'Solar', 'Wind', 'Electric Grid', 'Semiconductors', 'Nuclear'];
 
+/** An OSI technology name from its slug ("electric-grid" -> Electric Grid), as the master names them. */
+const techName = (slug: string): string =>
+  slug
+    .split('-')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+
 /**
  * The document as a bundle of the OSI basket (master taxonomy; in place; a no-op on a master bundle): no
- * taxonomy, dictionary scope, indices, node index or compact indices; each node's technologies and stage
- * from its first OSI cells (a node in no cell becomes Green Hydrogen, outside the strategic scope), its
- * cells its own technology x stage; compact technologies, stages and names in the exporter's master form
- * ("Electric Vehicles/Wind: ..."); the network's technologies from its nodes; strategic scope
- * electro_industrial.
+ * taxonomy, dictionary scope, indices, node index or compact indices; each node's technologies and
+ * six-stage stage from its first six-stage OSI cells (a node in no cell keeps its stage and becomes Green
+ * Hydrogen, outside the strategic scope), its cells its own technology x stage and its three-stage cells
+ * those of its technologies; compact technologies, stages (chain order, as aib_dash_stage_order() writes
+ * them) and names in the exporter's master form ("Electric Vehicles/Wind: ..."); the network's technologies
+ * from its nodes; strategic scope electro_industrial.
  */
 export function toMasterTaxonomy(doc: AibDoc): AibDoc {
   const m = doc.meta as unknown as Record<string, unknown>;
@@ -86,13 +105,19 @@ export function toMasterTaxonomy(doc: AibDoc): AibDoc {
   }
   for (const n of doc.nodes) {
     delete n.indexCode;
-    const cells = n.yfCells.map(osiCellOf).filter((c): c is NonNullable<typeof c> => c !== null);
-    const stage = cells[0]?.stage ?? 'Midstream';
-    const techs = cells.length ? [...new Set(cells.filter((c) => c.stage === stage).map((c) => c.tech))] : ['Green Hydrogen'];
+    const cells = n.yfCells.map(parseCellSlug).filter((c): c is NonNullable<typeof c> => c !== null && isSupplyStage(c.stage));
+    const stage: SupplyStage = cells.length ? (cells[0].stage as SupplyStage) : n.stage;
+    const own = cells.filter((c) => c.stage === stage);
+    const techs = own.length ? [...new Set(own.map((c) => techName(c.techSlug)))] : ['Green Hydrogen'];
+    const slugs = new Set(own.map((c) => c.techSlug));
     n.techs = techs;
     n.stage = stage;
-    n.yfCells = techs.map((t) => stageSlug(t, stage));
+    n.yfCells = techs.map((t) => cellSlug(t, stage));
     n.yfSubcomponents = n.yfSubcomponents.filter((s) => n.yfCells.some((c) => s.startsWith(`${c}::`)));
+    // a master export gives every node its technologies' three-stage cells (R aib_dash_legacy_cells(), master
+    // branch): a node in no cell (Green Hydrogen) gets its technology at the roll-up of its stage
+    if (n.yfCellsLegacy) n.yfCellsLegacy = own.length ? n.yfCellsLegacy.filter((c) => slugs.has(parseCellSlug(c)?.techSlug ?? '')) : techs.map((t) => cellSlug(t, rollUpStage(stage)!));
+    if (n.yfSubcomponentsLegacy) n.yfSubcomponentsLegacy = n.yfSubcomponentsLegacy.filter((s) => n.yfCellsLegacy?.some((c) => s.startsWith(`${c}::`)));
     if (n.inStrategicScope !== undefined) n.inStrategicScope = techs.some((t) => MASTER_SCOPE_TECHS.includes(t));
   }
   const byId = new Map(doc.nodes.map((n) => [n.id, n]));
@@ -100,7 +125,7 @@ export function toMasterTaxonomy(doc: AibDoc): AibDoc {
     delete c.indices;
     const ns = c.nodes.map((id) => byId.get(id)).filter((n): n is NonNullable<typeof n> => !!n);
     c.technologies = [...new Set(ns.flatMap((n) => n.techs))].sort((a, b) => a.localeCompare(b, 'en'));
-    c.stages = [...new Set(ns.map((n) => n.stage))].sort();
+    c.stages = stagesInChainOrder(ns.map((n) => n.stage)) as SupplyStage[];
     c.name = `${c.technologies.join('/')}: ${ns.map((n) => n.label).join(', ')}`;
   }
   if (doc.network) {
@@ -116,6 +141,19 @@ export function toMasterTaxonomy(doc: AibDoc): AibDoc {
 
 /** The node.diversify fields of the scenario toggle (2026-10-19). */
 const DIVERSIFY_EXTRAS = ['lostUsd', 'dividend', 'hhi', 'largest', 'largestShare', 'top3Share', 'newLinks', 'expandedLinks'] as const;
+
+/**
+ * The document without the nodes' three-stage cells (in place; node.yfCellsLegacy and yfSubcomponentsLegacy,
+ * 2026-10-28): a six-stage bundle exported before them, whose joins with the three-stage bundles fall back to
+ * the roll-up. No other strip calls it. A no-op on a document without them.
+ */
+export function stripLegacyCells(doc: AibDoc): AibDoc {
+  for (const n of doc.nodes) {
+    delete n.yfCellsLegacy;
+    delete n.yfSubcomponentsLegacy;
+  }
+  return doc;
+}
 
 /** The document as a bundle written before the strategic layer (in place): no doc.strategic. A no-op on a document without it. */
 export function stripStrategic(doc: AibDoc): AibDoc {

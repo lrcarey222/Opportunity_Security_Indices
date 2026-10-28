@@ -50,7 +50,7 @@ export function SectorPositionSection() {
     { id: 'sector', header: 'Sector', value: (c) => c.label, cell: (c) => <Link className="link text-paper" to={sectorProfileLink(c, iso)}>{c.label}</Link>, minWidth: 180 },
     { id: 'eo', header: 'Opportunity (beats)', value: (c) => c.eo?.pct.v ?? null, cell: (c) => <Pct v={c.eo?.pct.v} d={c.eo?.pct.d} color={pctScale.color(c.eo?.pct.v)} />, num: true },
     { id: 'es', header: 'Security (beats)', value: (c) => c.es?.pct.v ?? null, cell: (c) => <Pct v={c.es?.pct.v} d={c.es?.pct.d} color={pctScale.color(c.es?.pct.v)} />, num: true },
-    { id: 'corner', header: 'Corner', value: (c) => (c.quadrant ? quadrantWord(sheet, c.quadrant) : 'not placed') },
+    { id: 'corner', header: 'Corner', value: (c) => (c.quadrant ? quadrantWord(c.quadrant) : 'not placed') },
     { id: 'policy', header: 'Policy activity', value: (c) => (c.policy?.third ? POLICY_THIRD_LABEL[c.policy.third] : null) },
     {
       id: 'climate',
@@ -84,7 +84,7 @@ export function SectorPositionSection() {
     text: csvWithSource(
       rows.map((c) => ({
         sector: c.tech, stage: c.stage, economic_opportunity_beats_pct: c.eo?.pct.v ?? null, energy_security_beats_pct: c.es?.pct.v ?? null,
-        corner: c.quadrant ? quadrantWord(sheet, c.quadrant) : null, policy_activity_third: c.policy?.third ?? null, low_emission_term: c.si.parts?.tech.v ?? null,
+        corner: c.quadrant ? quadrantWord(c.quadrant) : null, policy_activity_third: c.policy?.third ?? null, low_emission_term: c.si.parts?.tech.v ?? null,
         strategic_priority_rank: siRankOf(c, si.map), perspective: perspectiveNote(si),
       })),
       'Opportunity Security Indices',
@@ -103,8 +103,8 @@ export function SectorPositionSection() {
       }
       intro={
         <>
-          Every sector of {name} in one table. Opportunity and Security give the share of other economies {name} beats in that sector (orange below the typical economy, blue above). Strategic
-          priority is the rank on the Strategic Index and is the only column the perspective dials change. Click a sector name for its Sector profile; click a row to select it on the chart above.
+          Every sector of {name} (the paper&apos;s three stages) in one table. Opportunity and Security give the share of other economies {name} beats in that sector (orange below the typical economy, blue above). Strategic
+          priority is the rank on the Strategic Index and is the only column the perspective dials change. Click a sector name for its Sector profile; click a row to select it on the Security and opportunity chart above.
         </>
       }
     >

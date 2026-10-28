@@ -1,8 +1,9 @@
 // S0 and S1 of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16): the page head (eyebrow,
 // the country's name, the generated lede as the short strategic summary), the country picker with the tier
 // / EU / policy-basis tags, the memo action, and four "at a glance" tiles (where its sectors sit, the top
-// strategic priority under the reader's Perspective, the strongest partner, the climate rating). The dials
-// sit on the page (Perspective), so the bridge to Strategic Insights is gone.
+// Strategic Index sector under the reader's Perspective, the strongest partner, the climate rating). The dials
+// sit on the page (Perspective), so the bridge to Strategic Insights is gone. The tiles read the paper's
+// three-stage fact sheet; the six-stage posture chart above them is separate (2026-10-28 wording).
 
 import { Link, useNavigate } from 'react-router';
 import { CountrySelect } from '../../../components/CountrySelect.tsx';
@@ -85,13 +86,13 @@ export function Glance() {
   const s = sheet.summary;
   const m = sheet.meta;
   const top = s.top_si;
-  // the top strategic priority follows the Perspective (the fact sheet's at the NEIS baseline)
+  // the top Strategic Index sector follows the Perspective (the fact sheet's at the NEIS baseline)
   const order = si.map ? siOrder(sheet, si.map) : null;
   const topCell = order ? (order[0] ?? null) : top ? cellOf(sheet, top.cell) : null;
   const nextCell = order ? (order[1] ?? null) : top?.next ? cellOf(sheet, top.next) : null;
   const cat = sheet.policy.cat;
   const q = s.quadrants;
-  const qLine = quadrantLine({ grow: q.grow.v ?? 0, upgrade: q.upgrade.v ?? 0, secure: q.secure.v ?? 0, watch: q.watch.v ?? 0 }, sheet.words?.quadrant);
+  const qLine = quadrantLine({ grow: q.grow.v ?? 0, upgrade: q.upgrade.v ?? 0, secure: q.secure.v ?? 0, watch: q.watch.v ?? 0 });
   return (
     <section id="glance" aria-label="At a glance" className="scroll-mt-16">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -100,12 +101,12 @@ export function Glance() {
           value={<span className="text-base">{qLine}</span>}
           sub={
             <span>
-              {dOf(s.n_placed)} of {dOf(s.n_scored)} sectors can be compared with other economies <InfoTip id="rankable" term="comparable (rankable)" />
+              {dOf(s.n_placed)} of {dOf(s.n_scored)} sectors (the paper&apos;s three stages) can be compared with other economies <InfoTip id="rankable" term="comparable (rankable)" />
             </span>
           }
         />
         <StatTile
-          label="TOP STRATEGIC PRIORITY"
+          label="TOP STRATEGIC INDEX SECTOR"
           value={m.has_si && topCell ? topCell.label : 'No Strategic Index'}
           sub={
             !m.has_si || !topCell

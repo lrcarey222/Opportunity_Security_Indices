@@ -1,9 +1,12 @@
 // "Opportunities & risks" of the Country profile (IA refactor 2026-10-16, brief s.12A; plan.md 5.3 item 2):
 // three short lists built from existing outputs, no new score (derive/framing.ts):
 //   Make bets                    Grow or Upgrade corner, by Strategic Index rank (preference-adjusted)
-//   Avoid dangerous dependencies Upgrade or Secure corner, lowest Energy Security first, with the largest
-//                                supplier and any compact where the economy is a demand anchor (facts)
-//   Preserve capabilities        Grow corner, and the economy's supplier / technology roles in the compacts
+//   Avoid dangerous dependencies Upgrade or Exposed corner (key secure), lowest Energy Security first, with
+//                                the largest supplier and any compact where the economy is a demand anchor (facts)
+//   Capabilities to keep         Grow corner, and the economy's supplier / technology roles in the compacts
+//                                ("Preserve capabilities" until 2026-10-28, renamed so it is not read as the
+//                                posture chart's Compete · Preserve mode)
+// The corners are the paper's three-stage reading; their words come from QUADRANTS (contract.ts).
 // Behind disclosures: "Why these sectors" (the existing drivers section) and "How priorities are built"
 // (the existing Strategic Index table at the NEIS baseline; the embedded Strategic Index view under the
 // reader's Perspective).
@@ -57,14 +60,14 @@ export function OpportunitiesSection() {
   const deps = useMemo(() => dependencies(sheet, doc), [sheet, doc]);
   const roleRow = useMemo(() => (doc && names ? countryRoleRow(doc, names, iso) : null), [doc, names, iso]);
   const caps = useMemo(() => capabilities(sheet, roleRow), [sheet, roleRow]);
-  const corner = (c: CellFacts) => (c.quadrant ? quadrantWord(sheet, c.quadrant) : 'not placed');
+  const corner = (c: CellFacts) => (c.quadrant ? quadrantWord(c.quadrant) : 'not placed');
   return (
     <Section
       id="opportunities"
       title="Opportunities & risks"
       intro={
         <>
-          Three readings of the same evidence: where {name} could build on an opportunity, where it depends most on others, and which capabilities it already has. The corners split{' '}
+          Three readings of the paper&apos;s three-stage scores: where {name} could build on an opportunity, where it depends most on others, and which capabilities it already has. The corners split{' '}
           {poss(name)} sectors at its own median <Term id="eo" /> and <Term id="es" />; the order of the first list follows the <Term id="si" /> under your perspective.
         </>
       }
@@ -88,7 +91,7 @@ export function OpportunitiesSection() {
               })}
             </ol>
           ) : (
-            <p className="text-paper-mute">No placed sector of {name} sits in the Grow or Upgrade corner.</p>
+            <p className="text-paper-mute">No placed sector of {name} sits in the {quadrantWord('grow')} or {quadrantWord('upgrade')} corner.</p>
           )}
         </FrameCard>
         <FrameCard id="dependencies" title="Avoid dangerous dependencies" question={`Where are ${poss(name)} largest security vulnerabilities?`} basis="facts">
@@ -118,10 +121,10 @@ export function OpportunitiesSection() {
               ))}
             </ol>
           ) : (
-            <p className="text-paper-mute">No placed sector of {name} sits in the Upgrade or Secure corner.</p>
+            <p className="text-paper-mute">No placed sector of {name} sits in the {quadrantWord('upgrade')} or {quadrantWord('secure')} corner.</p>
           )}
         </FrameCard>
-        <FrameCard id="capabilities" title="Preserve capabilities" question={`Where does ${name} hold specialised capabilities worth keeping?`} basis="facts">
+        <FrameCard id="capabilities" title="Capabilities to keep" question={`Where does ${name} hold specialised capabilities worth keeping?`} basis="facts">
           {caps.cells.length ? (
             <ul className="space-y-2">
               {caps.cells.map((c) => (
@@ -134,7 +137,7 @@ export function OpportunitiesSection() {
               ))}
             </ul>
           ) : (
-            <p className="text-paper-mute">No placed sector of {name} sits in the Grow corner.</p>
+            <p className="text-paper-mute">No placed sector of {name} sits in the {quadrantWord('grow')} corner.</p>
           )}
           {caps.roles.length > 0 && (
             <p className="mt-3 border-t hairline pt-2 text-xs">

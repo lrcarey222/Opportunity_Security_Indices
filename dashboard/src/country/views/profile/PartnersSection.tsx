@@ -233,9 +233,10 @@ export function PartnershipsSection() {
       title="Partnerships"
       intro={
         <>
-          Who {name} could trade, invest, build and align with, read three ways: as it is today (observed data), as the Opportunity Security Indices recommend (the partner scores of the{' '}
+          Who {name} could trade, invest, build and align with, read three ways: as it is today (observed data), as the paper&apos;s three-stage partner scores recommend (the partner scores of the{' '}
           <Term id="psi" />, such as <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the NEIS defaults) and as the Allied Industrial Base model arranges it under the
-          chosen scenario. The summary of each kind says where the three agree and where they differ. First, the relationship thesis of {name} and the partner you choose.
+          chosen scenario. The summary of each kind says where the three agree and where they differ; at the six stages, the posture chart above names up to three trusted
+          partners (or a partner gap) for each technology and stage it puts in Compete · Partner instead. First, the relationship thesis of {name} and the partner you choose.
         </>
       }
     >

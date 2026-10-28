@@ -8,7 +8,8 @@ const SPEC_IDS = [
   'median', 'colour_scale', 'sector', 'stage', 'coalition', 'alignment', 'allied_pick', 'endowment_screen', 'best_five',
   'hhi', 'effective_n', 'rca', 'feasibility', 'matrix', 'mirror', 'basket', 'sub_component', 'net_balance', 'self_sufficiency', 'cmfdi', 'chinese_parent',
   'investment_ties', 'trl', 'unattributed', 'paper_baseline', 'scenario', 'dials', 'hawkishness', 'bullishness', 'populism', 'greenness', 'grow',
-  'upgrade', 'secure', 'watch', 'quadrant', 'priority_no_policy', 'ties_today', 'memo',
+  // the corners with the keys secure and watch, shown as Exposed and Stable since 2026-10-28
+  'upgrade', 'exposed', 'stable', 'quadrant', 'priority_no_policy', 'ties_today', 'memo',
   // Development & finance raw data (Sector Insights, 2026-10-15)
   'oda', 'dip_position', 'conduit_centre', 'wdi',
 ];
@@ -56,7 +57,7 @@ describe('glossary content (C3.2)', () => {
     const terms = all.map((e) => e.term);
     expect(terms).toEqual([...terms].sort((a, b) => a.localeCompare(b, 'en')));
     const country = glossaryFor('country');
-    for (const id of ['es', 'eo', 'si', 'psi', 'grow', 'upgrade', 'secure', 'watch', 'memo', 'priority_no_policy', 'ties_today', 'paper_baseline']) {
+    for (const id of ['es', 'eo', 'si', 'psi', 'grow', 'upgrade', 'exposed', 'stable', 'memo', 'priority_no_policy', 'ties_today', 'paper_baseline']) {
       expect(country.some((e) => e.id === id), id).toBe(true);
     }
     expect(glossaryFor('sector').some((e) => e.id === 'memo')).toBe(false);
@@ -73,10 +74,19 @@ describe('glossary content (C3.2)', () => {
   });
 
   it('the corner definitions use "high / low energy security", never "secure / insecure" for a sector', () => {
-    for (const id of ['grow', 'upgrade', 'secure', 'watch']) {
+    for (const id of ['grow', 'upgrade', 'exposed', 'stable']) {
       const s = glossaryById.get(id)?.short ?? '';
       expect(s).toMatch(/(high|low) opportunity, (high|low) energy security/i);
       expect(s).not.toMatch(/\binsecure\b/i);
+      // the paper's three-stage corners, told apart from the six-stage posture (2026-10-28)
+      expect(s, id).toContain("paper's three-stage chart");
+      expect(s, id).toMatch(/not (a|the) six-stage/);
     }
+  });
+
+  it('the renamed corners (2026-10-28) keep no old id and carry their new names', () => {
+    for (const id of ['secure', 'watch']) expect(glossaryById.has(id), id).toBe(false);
+    expect(glossaryById.get('exposed')?.term).toBe('Exposed');
+    expect(glossaryById.get('stable')?.term).toBe('Stable');
   });
 });

@@ -1,5 +1,7 @@
 // S2 of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16: "Strategic position", the
-// profile's central visual): the quadrant scatter with its table twin, legend and the sectors not placed;
+// profile's central visual; since 2026-10-28 "Security and opportunity", the paper's three-stage reading
+// below the six-stage posture chart, with id "position" and the alias "space" kept for old links):
+// the quadrant scatter with its table twin, legend and the sectors not placed;
 // the filled dots are the top five Strategic Index sectors under the reader's Perspective (the only
 // preference-adjusted mark; positions are facts); "Compare with other economies" opens the embedded
 // Security vs Opportunity view (the model); "The four corners" puts the categorisation in words.
@@ -45,7 +47,7 @@ export function SpaceSection() {
     { id: 'eo', header: 'Economic Opportunity', value: (c) => c.eo?.v ?? null, cell: (c) => c.eo?.d ?? 'no score', num: true },
     { id: 'eo_pct', header: 'Beats (%)', value: (c) => c.eo?.pct.v ?? null, cell: (c) => c.eo?.pct.d ?? '–', num: true },
     { id: 'eo_med', header: 'Median', value: (c) => c.eo?.med.v ?? null, cell: (c) => c.eo?.med.d ?? '–', num: true },
-    { id: 'corner', header: 'Corner', value: (c) => (c.quadrant ? quadrantWord(sheet, c.quadrant) : null) },
+    { id: 'corner', header: 'Corner', value: (c) => (c.quadrant ? quadrantWord(c.quadrant) : null) },
     { id: 'si_rank', header: 'Strategic Index rank', value: (c) => (c.si.in_sample ? c.si.rank.v : null), cell: (c) => (c.si.in_sample ? c.si.rank.d : 'not in the index'), num: true },
     { id: 'placed', header: 'Placed', value: (c) => (c.placed ? 'yes' : notPlacedReason(c)) },
   ];
@@ -55,7 +57,7 @@ export function SpaceSection() {
       sheet.cells.map((c) => ({
         sector: c.tech, stage: c.stage, energy_security: c.es?.v ?? null, energy_security_beats_pct: c.es?.pct.v ?? null, energy_security_median: c.es?.med.v ?? null,
         economies_compared: c.es?.n.v ?? null, economic_opportunity: c.eo?.v ?? null, economic_opportunity_beats_pct: c.eo?.pct.v ?? null,
-        economic_opportunity_median: c.eo?.med.v ?? null, corner: c.quadrant ? quadrantWord(sheet, c.quadrant) : null,
+        economic_opportunity_median: c.eo?.med.v ?? null, corner: c.quadrant ? quadrantWord(c.quadrant) : null,
         strategic_index_rank: c.si.in_sample ? c.si.rank.v : null, placed: yes(c.placed), not_placed_reason: c.placed ? null : notPlacedReason(c),
       })),
       'Opportunity Security Indices, paper baseline',
@@ -68,7 +70,7 @@ export function SpaceSection() {
     <Section
       id="position"
       aliases={['space']}
-      title="Strategic position"
+      title="Security and opportunity"
       basis={
         <>
           <BasisTag kind="facts" note="positions" />
@@ -77,7 +79,7 @@ export function SpaceSection() {
       }
       intro={
         <>
-          Each sector is one technology at one stage of its supply chain. <Term id="es" /> asks how well {name} can rely on what it needs there; <Term id="eo" /> asks how well placed it is to create value there. Both compare {name} with every other economy scored in the same sector, so the chart shows the share of those economies it beats. The four corners then sort {poss(name)} own sectors: the dashed lines are its median sector, so the corners show where {name} is relatively strong or weak.
+          Each sector is one technology at one of the paper&apos;s three supply-chain stages (upstream, midstream, downstream; the posture chart above splits the chain into six). <Term id="es" /> asks how well {name} can rely on what it needs there; <Term id="eo" /> asks how well placed it is to create value there. Both compare {name} with every other economy scored in the same sector, so the chart shows the share of those economies it beats. The four corners then sort {poss(name)} own sectors: the dashed lines are its median sector, so the corners show where {name} is relatively strong or weak.
         </>
       }
     >
@@ -130,7 +132,7 @@ function QuadrantList({ byQ }: { byQ: ReturnType<typeof cellsByQuadrant> }) {
         The four corners
       </h3>
       <p className="mt-1 text-sm text-paper-mute">
-        Each corner is a different situation. High and low are against {poss(proseName(sheet.meta.country))} own median sector (a sector at the median counts as high), so the corners show its relatively strong and weak sectors. The descriptions in brackets are the postures the RMI (2025) framework associates with each corner; they describe, they do not prescribe.
+        Each corner is a different situation. High and low are against {poss(proseName(sheet.meta.country))} own median sector (a sector at the median counts as high), so the corners show its relatively strong and weak sectors. The descriptions in brackets are the strategies the RMI (2025) framework associates with each corner (not the Secure / Compete / Deploy postures of the chart above); they describe, they do not prescribe.
       </p>
       <div className="relative mt-3 overflow-x-auto">
         <table className="data-table">
@@ -149,7 +151,7 @@ function QuadrantList({ byQ }: { byQ: ReturnType<typeof cellsByQuadrant> }) {
             {QUADRANTS.map((q) => (
               <tr key={q.id}>
                 <td className="whitespace-nowrap text-paper">
-                  {quadrantWord(sheet, q.id)} <InfoTip id={q.id} term={q.label} />
+                  {quadrantWord(q.id)} <InfoTip id={q.glossary} term={q.label} />
                 </td>
                 <td className="text-paper-dim">
                   {q.meaning} ({q.posture})
@@ -163,7 +165,7 @@ function QuadrantList({ byQ }: { byQ: ReturnType<typeof cellsByQuadrant> }) {
                         type="button"
                         className="tag"
                         aria-pressed={cell === c.key}
-                        aria-label={`${c.tech}, ${c.stage}: ${quadrantWord(sheet, q.id)}${c.si.in_sample ? `, Strategic Index rank ${c.si.rank.d}` : ''}`}
+                        aria-label={`${c.tech}, ${c.stage}: ${quadrantWord(q.id)}${c.si.in_sample ? `, Strategic Index rank ${c.si.rank.d}` : ''}`}
                         onClick={() => setCell(c.key)}
                       >
                         {c.label}

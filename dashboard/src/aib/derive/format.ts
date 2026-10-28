@@ -50,11 +50,6 @@ export function listWords(items: readonly string[], conj: 'and' | 'or' = 'and'):
 /** "1 node" / "3 nodes". */
 export const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
 
-/** "Batteries, Electric Vehicles · Midstream". */
-export function techStage(techs: readonly string[], stage: string): string {
-  return `${techs.join(', ') || DASH} · ${stage}`;
-}
-
 /** At most this many node labels in a short compact title (more: "{first} and N more", "{first} (and N more)" when the first holds a comma). */
 export const TITLE_NODES = 3;
 

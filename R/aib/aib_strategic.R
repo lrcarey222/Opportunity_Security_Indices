@@ -54,8 +54,11 @@ aib_strategic_gate_labels <- function() {
     ws_bridge_vertical = "workstreams it bridges", sc_span = "strategic compacts it joins")
 }
 aib_strategic_functions <- function() c("resource", "processing", "components", "systems")
+# The node functions in the narratives' words. A resource node is a raw material, mined or recycled
+# (Extraction or Recovery, aib_resource_stages()); "raw-material" since 2026-10-28, "upstream resource" before,
+# which named the paper's three-stage Upstream beside the six-stage charts (the dashboard reads both).
 aib_strategic_function_labels <- function() {
-  c(resource = "upstream resource", processing = "processing", components = "component, material and equipment",
+  c(resource = "raw-material", processing = "processing", components = "component, material and equipment",
     systems = "assembled system and end-product")
 }
 aib_strategic_mfg <- function() c("components", "systems")
@@ -1400,7 +1403,7 @@ aib_country_role_narratives <- function(roles, cty, cn, nodes, compact_roles, pa
   dep_profile <- function(iso) {
     d <- dep_pct[dep_pct$iso3 == iso, , drop = FALSE]
     if (!nrow(d)) return("")
-    k <- c(if (d$p_rp >= P$p_secondary) "upstream materials", if (d$p_mf >= P$p_secondary) "manufactured components and equipment")
+    k <- c(if (d$p_rp >= P$p_secondary) "raw and processed materials", if (d$p_mf >= P$p_secondary) "manufactured components and equipment")
     if (!length(k)) "" else paste0("a significant net buyer of ", paste(k, collapse = " and "), " (top quartile of allied net imports)")
   }
   e <- pair_usd

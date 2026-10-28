@@ -36,10 +36,12 @@ export function tierTag(tier: Tier): string {
   return tier === 'core' ? 'CORE MEMBER' : tier === 'partner' ? 'PARTNER' : 'NOT IN THE COALITION';
 }
 
-/** The corner's display word (the sheet's words, else the contract's). */
-export function quadrantWord(sheet: FactSheet | null, q: Quadrant | null | undefined): string {
+/** The corner's display word: the contract's QUADRANTS label (Grow, Upgrade, Exposed, Stable). Since
+ *  2026-10-28 the app owns these names and ignores the sheet's words.quadrant, which keeps the older
+ *  Secure and Watch until the next Country export. */
+export function quadrantWord(q: Quadrant | null | undefined): string {
   if (!q) return '';
-  return sheet?.words?.quadrant?.[q] ?? QUADRANTS.find((x) => x.id === q)?.label ?? q;
+  return QUADRANTS.find((x) => x.id === q)?.label ?? q;
 }
 
 /** "Batteries · Down" (short scatter label). */
@@ -59,13 +61,13 @@ export function ledeOf(sheet: FactSheet): string {
     return `${first} It has no Energy Security or Economic Opportunity scores${m.status_reason ? `: ${m.status_reason}` : ''}.${psi}`;
   }
   if (m.status === 'non_rankable') {
-    return `${first} ${cap(poss(proseName(name)))} scores are shown but not ranked against other economies: ${m.status_reason ?? 'most of its data are filled in'}.`;
+    return `${first} ${cap(poss(proseName(name)))} three-stage index scores are shown but not ranked against other economies: ${m.status_reason ?? 'most of its data are filled in'}.`;
   }
   const parts: string[] = [first];
   const upgrade = s.quadrants.upgrade;
   const nUp = upgrade.v ?? 0;
   const howMany = nUp === 0 ? 'none' : dOf(upgrade);
-  let mid = `On the NEIS baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the Upgrade corner, split at its own median sector)`;
+  let mid = `On the paper's three-stage NEIS baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the ${quadrantWord('upgrade')} corner, split at its own median sector)`;
   if (m.has_si && s.top_si) {
     const top = cellOf(sheet, s.top_si.cell);
     const nxt = cellOf(sheet, s.top_si.next);
@@ -182,7 +184,7 @@ export function whyIntro(sheet: FactSheet): string {
     case 'upgrade':
       return `${cells.length === 1 ? 'One' : cap(numberWord(cells.length))} of ${poss(name)} sectors ${cells.length === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security (against ${poss(name)} own median sector) and ${cells.length === 1 ? 'ranks' : 'rank'} high on the Strategic Index: ${list}. For each, the bars show which kinds of data set each score apart from the middle economy in the same sector, with the figures behind them.`;
     case 'top_si_fallback':
-      return `None of ${poss(name)} placed sectors is in the Upgrade corner, so this section explains its top Strategic Index sectors: ${list}. The bars show which kinds of data set each score apart from the middle economy in the same sector, with the figures behind them.`;
+      return `None of ${poss(name)} placed sectors is in the ${quadrantWord('upgrade')} corner, so this section explains its top Strategic Index sectors: ${list}. The bars show which kinds of data set each score apart from the middle economy in the same sector, with the figures behind them.`;
     case 'top_eo':
       return `${cap(name)} has no Strategic Index, so this section explains the placed sectors where its Economic Opportunity is highest: ${list}.`;
     default:

@@ -104,11 +104,16 @@ describe('the summary in plain words', () => {
   });
   it('the focus slot as stages of the chain, the stronger first; an unknown slot as written', () => {
     expect(focusStages('assembled system and end-product and component, material and equipment')).toEqual(['assembled systems and end products', 'components, materials and equipment']);
-    expect(focusStages('upstream resource and processing')).toEqual(['upstream resources', 'processing']);
+    // the keys are the R labels as written ('raw-material'; 'upstream resource' in a bundle before 2026-10-28);
+    // the words shown avoid the paper's stage names
+    expect(focusStages('raw-material and processing')).toEqual(['raw materials', 'processing']);
+    expect(focusStages('raw-material')).toEqual(['raw materials']);
+    expect(focusStages('upstream resource and processing')).toEqual(['raw materials', 'processing']);
+    expect(focusStages('upstream resource')).toEqual(['raw materials']);
     expect(focusStages('processing')).toEqual(['processing']);
     expect(focusStages('something else')).toEqual(['something else']);
     expect(focusStages(null)).toEqual([]);
-    expect(focusWords(['upstream resources'])).toBe('Strongest stage of the chain: upstream resources.');
+    expect(focusWords(['raw materials'])).toBe('Strongest stage of the chain: raw materials.');
     expect(focusWords(['assembled systems and end products', 'components, materials and equipment'])).toBe(
       'Strongest stages of the chain: assembled systems and end products; then components, materials and equipment.',
     );
@@ -128,9 +133,12 @@ describe('the summary in plain words', () => {
     expect(pairHref('JPN', 'USA', 'decoupling')).toBe('/aib/partnerships?country=JPN&partner=USA&scn=decoupling');
   });
   it('an aggregated node reads as its members; the Country roles link chooses the economy and keeps its row', () => {
-    expect(proseNodeLabel('Uranium/fuel Upstream: aggregated low-coverage sub-sectors (Spent fuel & nuclear scrap, Uranium ores)')).toBe(
-      'Spent fuel & nuclear scrap and uranium ores (aggregated)',
-    );
+    // the six-stage label (2026-10-28) and the three-stage one of an older bundle read the same
+    for (const stage of ['Extraction', 'Upstream']) {
+      expect(proseNodeLabel(`Uranium/fuel ${stage}: aggregated low-coverage sub-sectors (Spent fuel & nuclear scrap, Uranium ores)`)).toBe(
+        'Spent fuel & nuclear scrap and uranium ores (aggregated)',
+      );
+    }
     expect(proseNodeLabel('PGMs (iridium, ruthenium)')).toBe('PGMs (iridium, ruthenium)');
     expect(rolesHref('jpn')).toBe('/aib/roles?economy=JPN#role-JPN');
     expect(rolesHref('JPN', 'decoupling')).toBe('/aib/roles?economy=JPN&scn=decoupling#role-JPN');
@@ -163,7 +171,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('strategicSummaryOf (the synthetic 
       ['Rare-earth oxides & compounds', REE, 'SC-MAGNETS', '41% of allied demand', [{ iso3: 'CCC', share: 0.11 }, { iso3: 'DDD', share: 0.06 }]],
       ['Synthetic graphite (anode-grade, spherical)', ANODE, 'SC-BATTERIES', '38% of allied demand', [{ iso3: 'CCC', share: 0.14 }, { iso3: 'BBB', share: 0.08 }]],
     ]);
-    expect(sum.dependency).toMatch(/^a significant net buyer of upstream materials/);
+    expect(sum.dependency).toMatch(/^a significant net buyer of raw and processed materials/);
     // ZZZ (non-allied, 70%) is never a suggested supplier; below 2% neither
     expect(alliedSuppliersOf(s, REE, 'CCC', 5).map((x) => x.iso3)).toEqual(['DDD', 'AAA']);
     expect(alliedSuppliersOf(s, 'no-such-node', 'AAA')).toEqual([]);

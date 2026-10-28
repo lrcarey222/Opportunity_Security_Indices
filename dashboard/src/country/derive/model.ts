@@ -37,10 +37,11 @@ export function countryOptions(m: CountryManifest): { iso3c: string; country: st
   );
 }
 
-/** "Grow 4 · Upgrade 6 · Secure 9 · Watch 3" */
-export function quadrantLine(q: Record<Quadrant, number> | null | undefined, words?: Record<string, string>): string | null {
+/** "Grow 4 · Upgrade 6 · Exposed 9 · Stable 3": the QUADRANTS labels (the app's display names since
+ *  2026-10-28, not the sheet's words.quadrant). */
+export function quadrantLine(q: Record<Quadrant, number> | null | undefined): string | null {
   if (!q) return null;
-  return QUADRANTS.map((x) => `${words?.[x.id] ?? x.label} ${q[x.id] ?? 0}`).join(' · ');
+  return QUADRANTS.map((x) => `${x.label} ${q[x.id] ?? 0}`).join(' · ');
 }
 
 // ---- the scatter ---------------------------------------------------------------------------------

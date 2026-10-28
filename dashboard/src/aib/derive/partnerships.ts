@@ -3,14 +3,19 @@
 // sub-sector; the eligible investment hosts and specialized suppliers of the nodes; the overview's class
 // counts and top nodes; the baseline top partners of the `ties` chunk. No new score: every number is one
 // the export or the ties chunk already carries (sums of the model's own flows at most). Pure.
+// Stages (2026-10-28): the filter's stage and the nodes are six-stage (Extraction ... Recovery, in chain
+// order); the partner data the filter is read against (the ties and pcell chunks, the engine's cells, the
+// aid of the Sector data) are still kept by the paper's three-stage cells, so those lookups read the
+// matching nodes' three-stage cells (taxonomy.ts legacyOsiCellsOfNode()).
 
 import { isNum, stageSlug } from '../../lib/format.ts';
+import { byStageRank, isLegacyStage, LEGACY_STAGES, rollUpStage, type LegacyStage } from '../../lib/stages.ts';
 import {
   coalitionMembersOf, type AibBaselineScenarioDoc, type AibDoc, type AibInvestmentEdge, type AibInvestmentFlows, type AibManagedScenarioDoc, type AibNetwork, type AibNode, type AibRelationship, type AibRole,
   type AibTradeEdge,
 } from '../contract.ts';
 import { compactDetail, nodeScenario, nodeSuppliersToday } from './scenarios.ts';
-import { osiCellsOfNode, type OsiCell } from './taxonomy.ts';
+import { legacyOsiCellsOfNode, type OsiCell } from './taxonomy.ts';
 
 export interface PartnershipFilter {
   /** an economy (ISO3) that must take part */
@@ -23,8 +28,6 @@ export interface PartnershipFilter {
 
 export const NO_FILTER: PartnershipFilter = { country: null, tech: null, stage: null, node: null };
 
-const STAGE_ORDER = ['Upstream', 'Midstream', 'Downstream'];
-
 /** The node passes the technology / stage / sub-sector part of the filter. */
 export function nodeInScope(n: AibNode, f: PartnershipFilter): boolean {
   if (f.node && n.id !== f.node) return false;
@@ -33,10 +36,13 @@ export function nodeInScope(n: AibNode, f: PartnershipFilter): boolean {
   return true;
 }
 
-/** The filter's choices from the document: technologies, stages, nodes (scoped by tech / stage), economies. */
+/**
+ * The filter's choices from the document: technologies, stages (the nodes' own, in chain order: no
+ * Deployment, which no AIB node has), nodes (scoped by tech / stage), economies.
+ */
 export function filterChoices(doc: Pick<AibDoc, 'nodes' | 'compacts' | 'countries'>, f: PartnershipFilter) {
   const techs = [...new Set(doc.nodes.flatMap((n) => n.techs))].sort((a, b) => a.localeCompare(b, 'en'));
-  const stages = [...new Set(doc.nodes.map((n) => n.stage))].sort((a, b) => STAGE_ORDER.indexOf(a) - STAGE_ORDER.indexOf(b));
+  const stages = [...new Set(doc.nodes.map((n) => n.stage))].sort(byStageRank);
   const nodes = doc.nodes
     .filter((n) => nodeInScope(n, { ...f, node: null }))
     .sort((a, b) => a.label.localeCompare(b.label, 'en'));
@@ -234,26 +240,30 @@ export function topPairs<R extends TopPairRow>(rows: readonly R[], side: 'fs' | 
 /**
  * The AIB filter (sector or technology, stage, node) read as OSI cells, the unit the partner indices are
  * kept by (Export Opportunity, Friendshore, Development Potential, the factory projects): through the
- * matching nodes' crosswalk ids (node.yfCells, largest share of the node's trade first). In a dictionary
- * bundle never by name (an EIS sector can share a name with an OSI technology, "Solar", and still sit in
- * another stage). In a master bundle the node's technologies are OSI technologies and a node can sit in
- * two (rare-earth compounds: Electric Vehicles and Wind), so the filter's technology and stage also limit
- * the cells: Wind + Upstream reads Wind Upstream, never the Electric Vehicles cell of the same node. Only
- * the cells this build keeps partner indices for count (`scored`: the OSI basket has Semiconductors, the
- * partner indices do not); the others are listed apart.
+ * matching nodes' crosswalk, their three-stage cells (legacyOsiCellsOfNode(): node.yfCellsLegacy, else the
+ * roll-up of node.yfCells; largest share of the node's trade first), since the partner data are still kept
+ * by the paper's three stages while the filter's stage and the nodes are six-stage. In a dictionary bundle
+ * never by name (an EIS sector can share a name with an OSI technology, "Solar", and still sit in another
+ * stage). In a master bundle the node's technologies are OSI technologies and a node can sit in two
+ * (rare-earth compounds: Electric Vehicles and Wind), so the filter's technology also limits the cells:
+ * Wind + Refining reads Wind's cell, never the Electric Vehicles cell of the same node (the filter's stage
+ * limits the nodes; a three-stage cell is not compared with a six-stage stage). One three-stage cell is
+ * listed once, however many six-stage cells read it (nuclear-extraction and nuclear-recovery both read
+ * nuclear-upstream). Only the cells this build keeps partner indices for count (`scored`: the OSI basket
+ * has Semiconductors, the partner indices do not); the others are listed apart.
  */
 export interface OsiCellPick {
   /** the nodes the filter matches (the economy part of the filter aside) */
   nodes: AibNode[];
   /**
-   * the dominant OSI cell: the first scored cell of the matching node with the largest lost supply (then
-   * demand); null when the filter names only a stage (it spans many cells) or no matching node has a
-   * scored cell
+   * the dominant OSI cell (three-stage): the first scored cell of the matching node with the largest lost
+   * supply (then demand); null when the filter names only a stage (it spans many cells) or no matching
+   * node has a scored cell
    */
   cell: OsiCell | null;
   /** the node the dominant cell comes from */
   from: AibNode | null;
-  /** every scored OSI cell the matching nodes' codes sit in, the dominant first */
+  /** every scored OSI cell (three-stage) the matching nodes' codes sit in, the dominant first */
   cells: OsiCell[];
   /** the OSI cells the matching nodes' codes sit in that this build keeps no partner indices for */
   unscored: OsiCell[];
@@ -264,13 +274,13 @@ export interface OsiCellPick {
 }
 
 export interface CellPickOptions {
-  /** node.techs are OSI technologies (a master bundle): the filter's technology and stage limit the cells */
+  /** node.techs are OSI technologies (a master bundle): the filter's technology limits the cells */
   osiTech: boolean;
-  /** the OSI cells (slugs) this build keeps partner indices for; null or absent: not known, every cell counts */
+  /** the three-stage OSI cells (slugs) this build keeps partner indices for; null or absent: not known, every cell counts */
   scored?: ReadonlySet<string> | null;
 }
 
-/** The OSI cells (slugs) of the engine's cell list: the cells the partner indices are kept for. */
+/** The OSI cells (three-stage slugs) of the engine's cell list: the cells the partner indices are kept for. */
 export const scoredCellsOf = (cells: readonly { tech: string; supply_chain: string }[]): Set<string> => new Set(cells.map((c) => stageSlug(c.tech, c.supply_chain)));
 
 const usd = (x: number | null | undefined) => (isNum(x) ? x : -1);
@@ -279,10 +289,10 @@ const usd = (x: number | null | undefined) => (isNum(x) ? x : -1);
 export function osiCellPick(nodes: readonly AibNode[], f: PartnershipFilter, opts: CellPickOptions): OsiCellPick | null {
   if (!f.tech && !f.stage && !f.node) return null;
   const match = nodes.filter((n) => nodeInScope(n, { ...f, country: null }));
-  // master: the filter's own technology and stage (a node's other technology is another cell)
-  const inFilter = (c: OsiCell) => !opts.osiTech || ((!f.tech || c.tech === f.tech) && (!f.stage || c.stage === f.stage));
+  // master: the filter's own technology (a node's other technology is another cell)
+  const inFilter = (c: OsiCell) => !opts.osiTech || !f.tech || c.tech === f.tech;
   const isScored = (c: OsiCell) => !opts.scored || opts.scored.has(c.slug);
-  const cellsOf = new Map(match.map((n) => [n, osiCellsOfNode(n).filter(inFilter)]));
+  const cellsOf = new Map(match.map((n) => [n, legacyOsiCellsOfNode(n).filter(inFilter)]));
   const scoredOf = (n: AibNode) => (cellsOf.get(n) ?? []).filter(isScored);
   const mapped = match.filter((n) => scoredOf(n).length > 0);
   const from = [...mapped].sort((a, b) => usd(b.lostUsd) - usd(a.lostUsd) || usd(b.demandUsd) - usd(a.demandUsd) || a.label.localeCompare(b.label, 'en'))[0] ?? null;
@@ -312,7 +322,7 @@ export interface DpRow {
   iso3: string;
   /** the highest Development Potential among the sectors in scope */
   value: number;
-  /** the OSI sector (technology, stage) it is reached in */
+  /** the OSI sector (technology, the paper's stage) it is reached in */
   tech: string;
   stage: string;
   /** BUILD nodes in scope where the economy is an eligible host */
@@ -321,10 +331,10 @@ export interface DpRow {
 
 /**
  * Development Potential by economy (the ties chunk's baseline values; `cells` = the engine's cell list,
- * cell_id = position + 1): each economy's highest value in the OSI cells in scope, highest first, with the
- * BUILD nodes in scope where it is an eligible host. The cells in scope are those the matching nodes'
- * codes sit in (osiCellPick over the engine's cells; in a master bundle within the filter's technology and
- * stage); every cell without a filter; none when no matching node has a scored cell.
+ * three-stage, cell_id = position + 1): each economy's highest value in the OSI cells in scope, highest
+ * first, with the BUILD nodes in scope where it is an eligible host. The cells in scope are the three-stage
+ * cells the matching nodes' codes sit in (osiCellPick over the engine's cells; in a master bundle within
+ * the filter's technology); every cell without a filter; none when no matching node has a scored cell.
  */
 export function dpRows(
   dp: readonly { partner_iso: string; cell_id: number; value: number | null }[],
@@ -349,6 +359,27 @@ export function dpRows(
   }
   for (const r of acc.values()) r.hostIn = gaps.filter((n) => n.hosts.includes(r.iso3)).map((n) => n.id);
   return [...acc.values()].sort((a, b) => b.value - a.value || a.iso3.localeCompare(b.iso3));
+}
+
+/**
+ * The paper's stage (Upstream, Midstream, Downstream) a three-stage reading of the filter takes, such as
+ * the aid of the Sector data (its cells are three-stage): null when the filter names neither a stage nor a
+ * sub-sector (every stage). The matching nodes vote with the stage of their first three-stage cell (the
+ * largest share of their trade; legacyOsiCellsOfNode()); when none has a cell, with the roll-up of their
+ * own stage; the most common stage wins, ties in chain order; no matching node: the roll-up of the
+ * filter's stage. A Refining node of refined battery materials, which the paper files under Midstream,
+ * reads Midstream (industry), rare-earth oxides read Upstream (mining), as the roll-up has it.
+ */
+export function legacyStageOf(nodes: readonly AibNode[], f: PartnershipFilter): LegacyStage | null {
+  if (!f.stage && !f.node) return null;
+  const match = nodes.filter((n) => nodeInScope(n, { ...f, country: null }));
+  const own = match.map((n) => legacyOsiCellsOfNode(n)[0]?.stage).filter(isLegacyStage);
+  const votes = own.length ? own : match.map((n) => rollUpStage(n.stage)).filter(isLegacyStage);
+  if (!votes.length) return f.stage ? rollUpStage(f.stage) : null;
+  const count = (s: LegacyStage) => votes.filter((v) => v === s).length;
+  let best: LegacyStage = LEGACY_STAGES[0];
+  for (const s of LEGACY_STAGES) if (count(s) > count(best)) best = s;
+  return best;
 }
 
 // ---- The partnership lenses (2026-10-19) ----------------------------------------------------------------

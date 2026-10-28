@@ -1355,7 +1355,8 @@ roles" when it leads the second by >= 3 points / otherwise "Combines ... roles")
 (gate metrics where it ranks first among allied economies), `contributes` (its three anchor or
 specialist positions of largest US$ value, share x the node's world trade), `focus` (the node functions
 where it is most present), `needs` (its three largest net imports in US$ among those >= 5% of allied
-demand), `dependency` (top-quartile net buyer of upstream materials / manufactured goods), `compacts` (its
+demand), `dependency` (top-quartile net buyer of raw and processed materials / manufactured goods; "upstream
+materials" before 2026-10-28), `compacts` (its
 three most relevant compacts with compact role and lead step), `partners` (the allied economies with which
 new and expanded trade restores the most US$ under Managed Interdependence and Decoupling; investment
 edges are left out since their hosts tie) and `capacity` (up to three nodes where it is a credited host,

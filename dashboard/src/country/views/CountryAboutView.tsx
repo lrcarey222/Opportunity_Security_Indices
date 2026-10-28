@@ -90,13 +90,18 @@ export default function CountryAboutView() {
       />
       <H id="what">What the Country profiles show</H>
       <p className={p}>
-        Each Country profile reads the NEIS baseline values for one country and puts them next to the raw data behind them. Index values (<Term id="es" />, <Term id="eo" />, the{' '}
+        Each Country profile opens with the country&apos;s six-stage strategic posture (Secure, Compete or Deploy for each technology and stage; the{' '}
+        <Link className="link" to="/methods">
+          methods
+        </Link>{' '}
+        say how it is set). Its sections then read the paper&apos;s three-stage NEIS baseline values for the country and put them next to the raw data behind them. Index values
+        (<Term id="es" />, <Term id="eo" />, the{' '}
         <Term id="si" /> and the <Term id="psi" />) are always labelled as scores from 0 to 1 that compare the country with other economies; raw values always carry their unit, year and source,
         as the Sector profiles print them. The two are never mixed on one axis.
       </p>
       <p className={p}>
-        Everything starts on the <Term id="paper_baseline" />: the weights the paper uses. The Perspective control at the top of each profile re-weights strategic priorities, sector
-        rankings and partner scores; observed and modelled facts (trade, concentration, production, the Allied Industrial Base results) never move.
+        Everything starts on the <Term id="paper_baseline" />: the weights the paper uses. The Perspective control at the top of each profile re-weights the paper&apos;s three-stage strategic
+        priorities, sector rankings and partner scores; the posture chart and observed and modelled facts (trade, concentration, production, the Allied Industrial Base results) never move.
       </p>
 
       <H id="corners">Reading the four corners</H>
@@ -105,14 +110,15 @@ export default function CountryAboutView() {
         sector at its <Term id="percentile">share of economies beaten</Term>: Economic Opportunity across, Energy Security up. So the axes compare the country with other economies.
       </p>
       <p className={p}>
-        The corners then sort the country&apos;s own sectors. The dashed lines sit at the country&apos;s <Term id="quadrant">median sector</Term> on each axis: the middle of its own sectors&apos;
-        positions. A sector is in the <Term id="grow">Grow</Term> corner when both positions are at or above that median (a sector exactly at the median counts as high),{' '}
-        <Term id="upgrade">Upgrade</Term> when opportunity is high but energy security low, <Term id="secure">Secure</Term> when both are low, and <Term id="watch">Watch</Term> when
+        The corners then sort the country&apos;s own sectors. They are the paper&apos;s three-stage reading, not the six-stage postures of the chart at the top of the profile.
+        The dashed lines sit at the country&apos;s <Term id="quadrant">median sector</Term> on each axis: the middle of its own sectors&apos; positions. A sector is in the <Term id="grow">Grow</Term> corner when both positions are at or above that median (a sector exactly at the median counts as high),{' '}
+        <Term id="upgrade">Upgrade</Term> when opportunity is high but energy security low, <Term id="exposed">Exposed</Term> when both are low, and <Term id="stable">Stable</Term> when
         opportunity is low but energy security high. So the corners show where a country is relatively strong or weak, and every country has sectors in more than one corner; the tooltips
         and the table still say whether each score is above or below the sector&apos;s <Term id="median" /> economy. The Security vs opportunity comparison, which shows every
         economy in one sector, splits at the sector&apos;s median economy instead. The RMI (2025) framework associates the corners with export promotion, leapfrogging, friendshoring and
-        alternative value creation; the Country profile uses those as descriptions, not instructions. The paper has no Energy Security score for geothermal upstream, geothermal midstream and
-        electric-grid downstream, so at most 30 of the 33 sectors can be placed.
+        alternative value creation; the Country profile uses those as descriptions, not instructions. Before 28 October 2026 the Exposed and Stable corners were called
+        Secure and Watch, and the memos written before then use those names. The paper has no Energy Security score for geothermal upstream, geothermal midstream and electric-grid
+        downstream, so at most 30 of the 33 sectors can be placed.
       </p>
 
       <H id="priorities">How priorities are compared with policy</H>

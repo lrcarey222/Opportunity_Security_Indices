@@ -1,5 +1,8 @@
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
+source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "hs6_crosswalk.R"))
+source(file.path(repo_root, "R", "aib", "aib_nodes.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_export.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_check.R"))
 source(file.path(repo_root, "R", "dashboard", "country", "country_util.R"))
@@ -112,6 +115,114 @@ test_that("stages are exported in chain order, as arrays", {
   expect_equal(aib_dash_stage_keys(), c("extraction", "refining", "components", "assembly", "deployment", "recovery"))
 })
 
+test_that("the bundle version is 3, the version the dashboard's contract reads (an app reading 2 asks for a reload)", {
+  expect_identical(AIB_DASH_VERSION, 3L)
+  ts <- readLines(file.path(repo_root, "dashboard", "src", "aib", "contract.ts"), warn = FALSE)
+  v <- sub("^export const AIB_VERSION = ([0-9]+);.*$", "\\1", grep("^export const AIB_VERSION = [0-9]+;", ts, value = TRUE))
+  expect_equal(as.integer(v), AIB_DASH_VERSION)
+})
+
+test_that("the R mirror checks the six stages as contract.ts does: node.stage, compact and edge stage lists, the three-stage cells", {
+  six <- paste(SUPPLY_CHAIN_STAGES, collapse = ", ")
+  doc <- list(
+    nodes = list(list(id = "a", stage = "Refining", yfCellsLegacy = aib_dash_arr("batteries-midstream"), yfSubcomponentsLegacy = aib_dash_arr("batteries-midstream::Anode Materials")),
+                 list(id = "b", stage = "Deployment", yfCellsLegacy = aib_dash_arr(character()), yfSubcomponentsLegacy = aib_dash_arr(character())),
+                 list(id = "c")),
+    compacts = list(list(id = "AIB-C01", stages = aib_dash_stage_order(c("Refining", "Extraction"))), list(id = "AIB-C02", stages = aib_dash_arr(character())))
+  )
+  expect_equal(aib_check_stages(doc), character())
+  expect_equal(aib_check_bundle_additions(doc), character())
+  bad <- doc
+  bad$nodes[[1]]$stage <- "Upstream"
+  bad$nodes[[2]]$stage <- NA_character_
+  bad$nodes[[1]]$yfCellsLegacy <- aib_dash_arr(c("batteries-midstream", "batteries-refining"))
+  bad$nodes[[1]]$yfSubcomponentsLegacy <- aib_dash_arr(c("batteries-midstream", "batteries-midstream::"))
+  bad$nodes[[2]]$yfCellsLegacy <- "batteries-midstream"                         # not I(): collapses to a string
+  bad$compacts[[1]]$stages <- aib_dash_arr(c("Components", "Refining", "Refining"))
+  bad$compacts[[2]]$stages <- aib_dash_arr("Midstream")
+  p <- aib_check_stages(bad)
+  expect_equal(p, c(
+    sprintf("nodes[0].stage: 'Upstream' is not one of %s", six),
+    "nodes[0].yfCellsLegacy[1]: 'batteries-refining' is not a three-stage cell (<tech>-<upstream|midstream|downstream>)",
+    "nodes[0].yfSubcomponentsLegacy[0]: 'batteries-midstream' is not a three-stage sub-component (<tech>-<upstream|midstream|downstream>::<name>)",
+    "nodes[0].yfSubcomponentsLegacy[1]: 'batteries-midstream::' is not a three-stage sub-component (<tech>-<upstream|midstream|downstream>::<name>)",
+    "nodes[1].stage: expected a string",
+    "nodes[1].yfCellsLegacy: expected an array of strings",
+    "compacts[0].stages: duplicate 'Refining'",
+    "compacts[0].stages: not in chain order (Components, Refining, Refining)",
+    sprintf("compacts[1].stages: 'Midstream' is not one of %s", six)
+  ))
+  expect_true(all(p %in% aib_check_bundle_additions(bad)))
+  # the network edge stages through the same list check
+  res <- aib_net_res()
+  net <- list(nodes = list(list(id = "solar-cells")), network = aib_dash_network(res))
+  net$network$edges[[1]]$stages <- aib_dash_arr(c("Assembly", "Components"))
+  expect_equal(aib_check_network(net), "network.edges[0].stages: not in chain order (Assembly, Components)")
+  net$network$edges[[1]]$stages <- aib_dash_arr(c("Components", "Components"))
+  expect_equal(aib_check_network(net), "network.edges[0].stages: duplicate 'Components'")
+})
+
+test_that("the nodes' three-stage cells: the legacy crosswalk with the dictionary, each node's own cells with the master", {
+  osi <- tibble::tribble(
+    ~tech,       ~supply_chain, ~stage,       ~sub_sector,          ~hs6,     ~excluded,
+    "Batteries", "Midstream",   "Refining",   "Anode Materials",    "380190", FALSE,
+    "Batteries", "Upstream",    "Extraction", "Natural Graphite",   "250410", FALSE,
+    "Solar",     "Midstream",   "Assembly",   "Solar Modules",      "854143", FALSE,
+    "Wind",      "Midstream",   "Components", "Generator Parts",    "850300", TRUE
+  )
+  codes <- tibble::tibble(node_id = c("anode", "graphite", "graphite", "modules", "gen", "h2"), hs6 = c("380190", "250410", "380190", "854143", "850300", "842839"))
+  lc <- aib_dash_legacy_cells(codes, osi)
+  expect_setequal(lc$node_id, c("anode", "graphite", "modules"))        # no basket code (h2) or an excluded one (gen): absent
+  expect_equal(lc$yf_cells[lc$node_id == "anode"], "batteries-midstream")   # not batteries-upstream, the roll-up of Refining
+  expect_equal(lc$osi_subcomponents[lc$node_id == "anode"], "batteries-midstream::Anode Materials")
+  expect_setequal(strsplit(lc$yf_cells[lc$node_id == "graphite"], "; ")[[1]], c("batteries-upstream", "batteries-midstream"))
+  # weighed by trade, the larger code's cell comes first; counted, the tie goes to the earlier stage
+  lt <- aib_dash_legacy_cells(codes, osi, tibble::tibble(hs6 = c("250410", "380190"), value = c(10, 90)))
+  expect_equal(lt$yf_cells[lt$node_id == "graphite"], "batteries-midstream; batteries-upstream")
+  expect_equal(lc$yf_cells[lc$node_id == "graphite"], "batteries-upstream; batteries-midstream")
+  # the crosswalk asserts the stage column it reads
+  bad <- osi
+  bad$supply_chain[1] <- "Refining"
+  expect_error(aib_dash_legacy_cells(codes, bad), "not Upstream / Midstream / Downstream")
+  expect_error(aib_osi_crosswalk(codes, dplyr::select(osi, -supply_chain), stage_col = "supply_chain"), "supply_chain")
+  # the master taxonomy: the node's own technologies at its source stage
+  cells <- tibble::tibble(node_id = c("magnets", "magnets"), tech = c("Electric Vehicles", "Wind"), source_stage = "Midstream")
+  detail <- dplyr::mutate(cells, sub_sector = "Permanent Magnets & Magnet Parts")
+  lm <- aib_dash_legacy_cells(NULL, NULL, taxonomy = "master", node_cells = cells, node_cells_detail = detail)
+  expect_equal(lm$yf_cells, "electric-vehicles-midstream; wind-midstream")
+  expect_equal(lm$osi_subcomponents, "electric-vehicles-midstream::Permanent Magnets & Magnet Parts; wind-midstream::Permanent Magnets & Magnet Parts")
+  # in JSON a one-item list stays an array (the exporter splits with aib_dash_split(), I())
+  expect_match(as.character(country_json(list(yfCellsLegacy = aib_dash_split(lc$yf_cells[lc$node_id == "anode"], "; ")))), '"yfCellsLegacy":["batteries-midstream"]', fixed = TRUE)
+  # every node the inputs hold is known, with or without a basket code: the exporter writes [] for h2 and gen,
+  # and nothing for a node of another run (the dashboard then uses the roll-up)
+  expect_setequal(attr(lc, "known_nodes"), c("anode", "graphite", "modules", "gen", "h2"))
+  expect_equal(attr(lm, "known_nodes"), "magnets")
+  a <- aib_dash_node_legacy(lc, "anode")
+  expect_equal(as.character(a$cells), "batteries-midstream")
+  expect_s3_class(a$cells, "AsIs")
+  expect_equal(as.character(a$subcomponents), "batteries-midstream::Anode Materials")
+  h2 <- aib_dash_node_legacy(lc, "h2")                                    # known, no basket code: []
+  expect_length(h2$cells, 0)
+  expect_s3_class(h2$cells, "AsIs")
+  expect_match(as.character(country_json(list(yfCellsLegacy = h2$cells))), '"yfCellsLegacy":[]', fixed = TRUE)
+  expect_null(aib_dash_node_legacy(lc, "lithium-chemicals"))             # not a node of these inputs: left out
+  expect_null(aib_dash_node_legacy(NULL, "anode"))                       # no legacy cells at all: left out
+  unattributed <- lc
+  attr(unattributed, "known_nodes") <- NULL                              # a table without the attribute: every node known
+  expect_length(aib_dash_node_legacy(unattributed, "lithium-chemicals")$cells, 0)
+})
+
+test_that("an aggregated node's label names its six-stage stage; its id, other labels and unknown stages are kept", {
+  old <- "Uranium/fuel Upstream: aggregated low-coverage sub-sectors (Spent fuel & nuclear scrap, Uranium ores)"
+  expect_equal(aib_dash_node_label(old, "Extraction"), "Uranium/fuel Extraction: aggregated low-coverage sub-sectors (Spent fuel & nuclear scrap, Uranium ores)")
+  expect_equal(aib_dash_node_label("Wind Midstream: aggregated low-coverage sub-sectors (A, B)", "Components"), "Wind Components: aggregated low-coverage sub-sectors (A, B)")
+  # a label built with the six-stage stage already, an ordinary label with a stage word, an unknown stage, NA
+  expect_equal(aib_dash_node_label("Wind Recovery: aggregated low-coverage sub-sectors (A, B)", "Recovery"), "Wind Recovery: aggregated low-coverage sub-sectors (A, B)")
+  expect_equal(aib_dash_node_label("Upstream oil & gas equipment", "Assembly"), "Upstream oil & gas equipment")
+  expect_equal(aib_dash_node_label(old, "Upstream"), old)
+  expect_true(is.na(aib_dash_node_label(NA_character_, "Extraction")))
+})
+
 test_that("the R mirror accepts the exported sections and names each broken field", {
   res <- aib_net_res()
   doc <- list(nodes = list(list(id = "solar-cells")), network = aib_dash_network(res), investmentFlows = aib_dash_investment_flows(res))
@@ -126,7 +237,7 @@ test_that("the R mirror accepts the exported sections and names each broken fiel
   bad$network$edges[[1]]$stages <- I("Midstream")                            # a three-stage label
   bad$network$countries[[1]]$supplier$refining <- NULL
   p <- aib_check_bundle_additions(bad)
-  expect_true(any(grepl("^network.edges\\[0\\].stages: 'Midstream' is not a stage", p)))
+  expect_true(any(startsWith(p, "network.edges[0].stages: 'Midstream' is not one of Extraction, Refining, Components, Assembly, Deployment, Recovery")))
   expect_true(any(grepl("^network.countries\\[0\\].supplier.refining: expected a number", p)))
   expect_true(any(grepl("^network.edges\\[0\\].nodes: expected an array", p)))
   expect_true(any(grepl("^network.countries\\[1\\].iso3: duplicate 'DEU'", p)))
@@ -309,36 +420,10 @@ aib_as_r <- function(x) {
   out
 }
 
-# The fixture is still three-stage (the dashboard's contract.ts moves to the six stages in a later phase; this
-# shim goes when its fixture is regenerated): its network stages are mapped onto the six the R export writes,
-# with the dictionary's meanings (Upstream raw materials -> Extraction, Midstream -> Components, Downstream
-# final products -> Assembly), and the other stage counts are 0.
-aib_fx_six_stage <- function(doc) {
-  map <- c(upstream = "extraction", midstream = "components", downstream = "assembly")
-  side <- function(s) {
-    if (!is.list(s)) return(s)
-    for (o in names(map)) if (!is.null(s[[o]])) {
-      s[[map[[o]]]] <- s[[o]]
-      s[[o]] <- NULL
-    }
-    for (k in tolower(SUPPLY_CHAIN_STAGES)) if (is.null(s[[k]])) s[[k]] <- 0L
-    s
-  }
-  if (!is.list(doc$network)) return(doc)
-  doc$network$countries <- lapply(doc$network$countries, function(r) {
-    for (k in c("supplier", "buyer", "host", "investor")) r[[k]] <- side(r[[k]])
-    r
-  })
-  doc$network$edges <- lapply(doc$network$edges, function(e) {
-    x <- tolower(as.character(e$stages))
-    e$stages <- I(SUPPLY_CHAIN_STAGES[match(ifelse(x %in% names(map), map[x], x), tolower(SUPPLY_CHAIN_STAGES))])
-    e
-  })
-  doc
-}
-
+# The fixture is six-stage since 2026-10-28 (version 3, as scripts/84 writes a bundle): node and compact
+# stages, network stages and per-side counts, and the nodes' three-stage cells (yfCellsLegacy).
 aib_fixture <- function() {
-  read <- function(f) aib_fx_six_stage(aib_as_r(jsonlite::fromJSON(file.path(aib_fixture_dir, f), simplifyVector = FALSE)))
+  read <- function(f) aib_as_r(jsonlite::fromJSON(file.path(aib_fixture_dir, f), simplifyVector = FALSE))
   manifest <- jsonlite::fromJSON(file.path(aib_fixture_dir, "manifest.json"), simplifyVector = FALSE)
   list(manifest = manifest, main = read(manifest$files$compacts), managed = read(manifest$files$scenarios$managed),
        baseline = read(manifest$files$scenarios$baseline))
@@ -358,6 +443,17 @@ test_that("the R mirror accepts the dashboard's synthetic fixture: the scenario 
   # the scenario list, then the supply scenarios beside it
   expect_equal(vapply(fx$main$meta$scenarios, `[[`, "", "id"), c("baseline", "managed", "decoupling"))
   expect_equal(as.character(fx$main$meta$supplyScenarios), c("conservative", "reallocation"))
+  # six-stage throughout (version 3): the stages, the six counts per side, the nodes' three-stage cells
+  expect_equal(fx$main$version, AIB_DASH_VERSION)
+  expect_equal(fx$manifest$version, AIB_DASH_VERSION)
+  expect_equal(aib_check_stages(fx$main), character())
+  expect_true(all(vapply(fx$main$nodes, `[[`, "", "stage") %in% SUPPLY_CHAIN_STAGES))
+  anode <- fx$main$nodes[[which(vapply(fx$main$nodes, `[[`, "", "id") == "bat-mid-anode")]]
+  expect_equal(as.character(anode$yfCells), "batteries-refining")
+  expect_equal(as.character(anode$yfCellsLegacy), "batteries-midstream")
+  side <- fx$main$network$countries[[1]]$supplier
+  expect_true(all(aib_dash_stage_keys() %in% names(side)))
+  expect_false(any(c("upstream", "midstream", "downstream") %in% names(side)))
 })
 
 test_that("the scenario fields are optional: an older bundle passes, and meta.scenarios may list the supply scenarios", {

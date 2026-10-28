@@ -115,6 +115,20 @@ test_that("the OSI crosswalk weights six-stage cells by trade and leaves non-bas
   bad <- osi
   bad$stage[1] <- "Midstream"
   expect_error(aib_osi_crosswalk(node_codes, bad, trade), "not supply-chain stages")
+  # The legacy crosswalk (stage_col = "supply_chain", 2026-10-28): the master's three-stage column, the same
+  # weights, the cells of the three-stage bundles. Rare-earth compounds are Upstream there, as Refining rolls
+  # up; magnets Midstream; the motors code in two Midstream cells.
+  lx <- aib_osi_crosswalk(node_codes, osi, trade, min_share = 0.2, stage_col = "supply_chain")
+  expect_equal(lx$yf_cells[lx$node_id == "ree"], "electric-vehicles-upstream; wind-upstream")      # EV 90 + 10, Wind 90: EV first
+  expect_equal(lx$yf_cells[lx$node_id == "mag"], "electric-vehicles-midstream")
+  expect_setequal(strsplit(lx$yf_cells[lx$node_id == "mot"], "; ")[[1]], c("electric-vehicles-midstream", "motors-midstream"))
+  expect_equal(lx$score_stage[lx$node_id == "ree"], "Upstream")
+  expect_true(is.na(lx$yf_cells[lx$node_id == "hp"]))
+  expect_equal(lx$node_id, xw$node_id)
+  bad_legacy <- osi
+  bad_legacy$supply_chain[1] <- "Refining"
+  expect_error(aib_osi_crosswalk(node_codes, bad_legacy, trade, stage_col = "supply_chain"), "not Upstream / Midstream / Downstream")
+  expect_error(aib_osi_crosswalk(node_codes, osi, trade, stage_col = "sub_sector"))
 })
 
 test_that("node score lookups read each technology at its own stage", {

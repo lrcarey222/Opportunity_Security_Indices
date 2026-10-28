@@ -91,12 +91,28 @@ export const NO_ES_CELLS: readonly string[] = ['geothermal-upstream', 'geotherma
 export type Quadrant = 'grow' | 'upgrade' | 'secure' | 'watch';
 /** Order and words of the four corners (A4.2 S2); the user's names and RMI (2025) postures. Since
  *  2026-10-15 Economic Opportunity runs across and Energy Security up, and high / low are against the
- *  country's own median sector (A9.2). */
-export const QUADRANTS: readonly { id: Quadrant; label: string; corner: 'top right' | 'top left' | 'bottom left' | 'bottom right'; meaning: string; posture: string }[] = [
-  { id: 'grow', label: 'Grow', corner: 'top right', meaning: 'High opportunity, high energy security: build on strength', posture: 'export promotion' },
-  { id: 'upgrade', label: 'Upgrade', corner: 'bottom right', meaning: 'High opportunity, low energy security: build capability', posture: 'leapfrog' },
-  { id: 'secure', label: 'Secure', corner: 'bottom left', meaning: 'Low opportunity, low energy security: secure supply through partners', posture: 'friendshore' },
-  { id: 'watch', label: 'Watch', corner: 'top left', meaning: 'Low opportunity, high energy security: look for value elsewhere', posture: 'alternative value creation' },
+ *  country's own median sector (A9.2).
+ *
+ *  Display names (2026-10-28): the corners are the paper's three-stage reading, shown on the same pages as
+ *  the six-stage posture (Secure / Compete / Deploy, with Catch up / Preserve / Partner and Watch), so the
+ *  two corners whose names clashed with those words are shown as Exposed (key `secure`: low opportunity, low
+ *  energy security) and Stable (key `watch`: low opportunity, high energy security). The keys are unchanged:
+ *  they are a contract with R, the published fact sheets and the memo tokens. The app owns the display
+ *  names: every display path reads `label` here and ignores the fact sheet's words.quadrant, which keeps
+ *  the older names until the next Country export. `glossary` is the corner's glossary id (content/glossary.ts),
+ *  which follows the display name. */
+export const QUADRANTS: readonly {
+  id: Quadrant;
+  label: string;
+  glossary: 'grow' | 'upgrade' | 'exposed' | 'stable';
+  corner: 'top right' | 'top left' | 'bottom left' | 'bottom right';
+  meaning: string;
+  posture: string;
+}[] = [
+  { id: 'grow', label: 'Grow', glossary: 'grow', corner: 'top right', meaning: 'High opportunity, high energy security: build on strength', posture: 'export promotion' },
+  { id: 'upgrade', label: 'Upgrade', glossary: 'upgrade', corner: 'bottom right', meaning: 'High opportunity, low energy security: build capability', posture: 'leapfrog' },
+  { id: 'secure', label: 'Exposed', glossary: 'exposed', corner: 'bottom left', meaning: 'Low opportunity, low energy security: source from trusted partners', posture: 'friendshore' },
+  { id: 'watch', label: 'Stable', glossary: 'stable', corner: 'top left', meaning: 'Low opportunity, high energy security: look for value elsewhere', posture: 'alternative value creation' },
 ];
 export const QUADRANT_IDS: readonly Quadrant[] = QUADRANTS.map((q) => q.id);
 
@@ -273,6 +289,8 @@ export interface SheetMeta {
 
 /** enum -> display words (config/country_insights.yml); tokens and the UI print enums through it. */
 export interface Words {
+  /** the memo tokens' corner words. The UI prints QUADRANTS labels instead (2026-10-28), since sheets
+   *  exported before then still say Secure and Watch. */
   quadrant: Record<Quadrant, string>;
   third: Record<Third, string>;
   policy_third: Record<Third, string>;

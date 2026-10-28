@@ -19,6 +19,7 @@ import { nodeScenario, runMetaOf, scenarioCsvFields, scenarioLabel } from '../..
 import { csvWithRun } from '../common.tsx';
 import { NodePolicyNeeds, PolicyNeeds, ScenarioBadge } from './OverviewSections.tsx';
 import { useCompact } from './shared.tsx';
+import { stageRank } from '../../../lib/stages.ts';
 
 export function PolicySection() {
   const { c, nodes, meta, name, scenario, hasScenarios, view } = useCompact();
@@ -41,7 +42,7 @@ export function PolicySection() {
   const needs = mi && view ? view.policyNeeds : c.policyNeeds;
   const cols: Col<AibNode>[] = [
     { id: 'node', header: 'Sub-sector', value: (n) => n.label },
-    { id: 'stage', header: 'Stage', value: (n) => n.stage },
+    { id: 'stage', header: 'Stage', value: (n) => n.stage, sortValue: (n) => stageRank(n.stage) },
     { id: 'cls', header: mi ? 'Class under Managed Interdependence' : 'Treatment class', value: clsLabel },
     { id: 'needs', header: mi ? 'Policy needs under Decoupling' : 'Policy needs', value: (n) => policyNeedsText(n.policyNeeds) },
     { id: 'treatment', header: mi ? 'Recommended treatment under Decoupling' : 'Recommended treatment', value: (n) => n.treatment, minWidth: 260 },

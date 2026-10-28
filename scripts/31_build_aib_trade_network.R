@@ -33,7 +33,7 @@
 #     partner, development and policy tables must be keyed by the six supply-chain stages (it stops
 #     on an Upstream / Midstream / Downstream table)
 # Writes <out>/aib_inputs.rds: nodes (six-stage supply_chain, checked; source_stage the taxonomy's own),
-# flows, metrics, data quality, dyad indices, policy inputs, income groups and the Development Potential
+# the world imports per code (code_trade, since 2026-10-28), flows, metrics, data quality, dyad indices, policy inputs, income groups and the Development Potential
 # Index (the investment host types), and the UNGA blocs (the host alignment screen).
 
 source(local({
@@ -411,6 +411,9 @@ inputs <- list(
   taxonomy = taxonomy_tbl, benchmarks = benchmarks, product_hhi = product_hhi,
   nodes = nd$nodes, node_cells = nd$node_cells, node_cells_detail = cells_detail, node_codes = nd$node_codes,
   node_code_stages = nd$code_stages,
+  # world imports per code in the trade year (hs6, value; 2026-10-28): scripts/84 weights each node's
+  # three-stage cells by it (aib_dash_legacy_cells()), as the six-stage crosswalk above is weighted
+  code_trade = as.data.frame(code_trade),
   flows = flows, exporter_metrics = mt$exporter, importer_metrics = mt$importer, node_summary = mt$summary,
   quality = quality, merge_map = merge_map, production = production, total_exports = totals,
   op_index = op_index, fs_index = fs_index, pams = pams, cat_scores = cat_scores,

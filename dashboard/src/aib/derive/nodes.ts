@@ -4,6 +4,7 @@
 // supplier share across its nodes). Pure.
 
 import { isNum } from '../../lib/format.ts';
+import { stageRank } from '../../lib/stages.ts';
 import { AIB_CLASSES, inStrategicScope, type AibClass, type AibCompact, type AibNode } from '../contract.ts';
 import { classInfo, classOrder, policyNeedsText, type ClassInfo } from './classes.ts';
 import { nameOf } from './format.ts';
@@ -23,10 +24,7 @@ export function technologiesOf(nodes: readonly AibNode[]): string[] {
   return [...new Set(nodes.flatMap((n) => n.techs))].sort((a, b) => a.localeCompare(b, 'en'));
 }
 
-const STAGE_ORDER = ['Upstream', 'Midstream', 'Downstream'];
-const stageRank = (s: string) => (STAGE_ORDER.includes(s) ? STAGE_ORDER.indexOf(s) : STAGE_ORDER.length);
-
-/** Nodes in reading order: lost supply, largest first; then stage and label. */
+/** Nodes in reading order: lost supply, largest first; then stage (chain order) and label. */
 export function byLostSupply(a: AibNode, b: AibNode): number {
   const la = isNum(a.lostUsd) ? a.lostUsd : -1;
   const lb = isNum(b.lostUsd) ? b.lostUsd : -1;

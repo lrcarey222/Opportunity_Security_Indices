@@ -13,9 +13,12 @@ export interface NavSection {
 }
 
 // IA refactor 2026-10-16 (brief s.11-12): the profile's sections; old ids (space, priorities, why,
-// partners) stay as anchors inside them.
+// partners) stay as anchors inside them. Since 2026-10-28 the six-stage posture chart above the sections
+// is the first entry (#posture), and #position, the paper's three-stage scatter, is called "Security and
+// opportunity" so "Strategic position" no longer names the legacy chart.
 export const PROFILE_SECTIONS: readonly NavSection[] = [
-  { id: 'position', label: 'Strategic position' },
+  { id: 'posture', label: 'Strategic posture' },
+  { id: 'position', label: 'Security and opportunity' },
   { id: 'opportunities', label: 'Opportunities & risks' },
   { id: 'sectors', label: 'Sector position' },
   { id: 'policy', label: 'Policy & climate' },

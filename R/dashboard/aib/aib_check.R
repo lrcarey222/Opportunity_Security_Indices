@@ -7,7 +7,9 @@
 # aib_check_scenarios(); the scenario files: aib_check_scenario_doc(), checkScenarioDoc(); the manifest's
 # files.scenarios: aib_check_scenario_files()) and the strategic layer (2026-10-20: the optional `strategic`
 # section, aib_check_strategic(); its rules, listed above it, are the contract the TypeScript reader
-# mirrors). scripts/84_export_aib_data.R stops on any problem
+# mirrors) and the six stages (2026-10-28: node.stage, compact.stages and the network edge stages, each list
+# unique and in chain order, and the nodes' three-stage cells: aib_check_stages(), checkStageList() and
+# checkLegacyCells()). scripts/84_export_aib_data.R stops on any problem
 # before it writes. Pure: takes the list aib_dash_bundle() returns (before JSON), returns a character
 # vector of problems (empty when valid). The rules are the TypeScript ones: same paths, same bounds.
 
@@ -44,6 +46,60 @@ aib_check_problems <- function() {
 aib_check_is_arr <- function(x) (is.list(x) && (!length(x) || is.null(names(x)) || !any(nzchar(names(x))))) || (is.atomic(x) && !length(x))
 # A list that jsonlite writes as an object (named), or an empty list (written [] and read as {} by TypeScript where allowed).
 aib_check_is_obj <- function(x) is.list(x) && length(x) > 0 && !is.null(names(x)) && all(nzchar(names(x)))
+
+# A list of stages (compact.stages, a network edge's stages; checkStageList() in contract.ts): an array (I())
+# of the six stages, each once, in chain order. The messages are the TypeScript ones; a duplicate is reported
+# at each repeat, the order once, over the known stages only.
+aib_check_stage_list <- function(p, x, at) {
+  p$str_arr(x, at)
+  if (!is.character(x) || anyNA(x) || (length(x) == 1 && !inherits(x, "AsIs"))) return(invisible())
+  x <- as.vector(unclass(x))
+  for (s in x[!x %in% SUPPLY_CHAIN_STAGES]) p$add(sprintf("%s: '%s' is not one of %s", at, s, paste(SUPPLY_CHAIN_STAGES, collapse = ", ")))
+  for (s in x[duplicated(x)]) p$add(sprintf("%s: duplicate '%s'", at, s))
+  r <- stats::na.omit(match(x, SUPPLY_CHAIN_STAGES))
+  if (length(r) > 1 && any(diff(r) < 0)) p$add(sprintf("%s: not in chain order (%s)", at, paste(x, collapse = ", ")))
+}
+
+# The three-stage cells of node.yfCellsLegacy ("<tech slug>-<upstream|midstream|downstream>") and the
+# sub-components of node.yfSubcomponentsLegacy ("<that cell>::<name>"); isLegacyCellSlug() and
+# isLegacySubcomponentId() of dashboard/src/lib/stages.ts.
+aib_check_legacy_cell_pattern <- function() "^[a-z0-9]+(-[a-z0-9]+)*-(upstream|midstream|downstream)$"
+aib_check_legacy_subcomponent_pattern <- function() "^[a-z0-9]+(-[a-z0-9]+)*-(upstream|midstream|downstream)::.+$"
+
+# The six stages and the three-stage cells (2026-10-28; checkNode(), checkCompact() and checkLegacyCells() in
+# contract.ts): node.stage one of the six when present (the R mirror checks the documents of the tests, whose
+# nodes may carry an id only; the exporter always writes it); compact.stages a stage list when present;
+# node.yfCellsLegacy / yfSubcomponentsLegacy absent, or arrays of three-stage cells / sub-components. The
+# network edge stages are checked in aib_check_network().
+aib_check_stages <- function(doc, p = aib_check_problems()) {
+  for (i in seq_along(doc$nodes)) {
+    n <- doc$nodes[[i]]
+    if (!is.list(n)) next
+    at <- sprintf("nodes[%d]", i - 1)
+    if ("stage" %in% names(n)) {
+      if (!aib_check_is_str(n$stage)) p$add(sprintf("%s.stage: expected a string", at))
+      else if (!n$stage %in% SUPPLY_CHAIN_STAGES) p$add(sprintf("%s.stage: '%s' is not one of %s", at, n$stage, paste(SUPPLY_CHAIN_STAGES, collapse = ", ")))
+    }
+    for (k in c("yfCellsLegacy", "yfSubcomponentsLegacy")) {
+      x <- n[[k]]
+      if (is.null(x)) next
+      p$str_arr(x, sprintf("%s.%s", at, k))
+      if (!is.character(x) || anyNA(x)) next
+      cell <- identical(k, "yfCellsLegacy")
+      bad <- which(!grepl(if (cell) aib_check_legacy_cell_pattern() else aib_check_legacy_subcomponent_pattern(), x))
+      for (j in bad) {
+        p$add(sprintf(if (cell) "%s.%s[%d]: '%s' is not a three-stage cell (<tech>-<upstream|midstream|downstream>)" else
+          "%s.%s[%d]: '%s' is not a three-stage sub-component (<tech>-<upstream|midstream|downstream>::<name>)", at, k, j - 1, x[j]))
+      }
+    }
+  }
+  for (i in seq_along(doc$compacts)) {
+    c <- doc$compacts[[i]]
+    if (!is.list(c) || !"stages" %in% names(c)) next
+    aib_check_stage_list(p, c$stages, sprintf("compacts[%d].stages", i - 1))
+  }
+  p$list
+}
 
 aib_check_side <- function(p, s, at, trade) {
   if (!is.list(s)) return(p$add(sprintf("%s: not an object", at)))
@@ -96,9 +152,10 @@ aib_check_network <- function(doc, p = aib_check_problems(), node_ids = vapply(d
     for (k in c("from", "to")) p$str(e[[k]], paste0(at, ".", k))
     if (aib_check_is_str(e$from) && identical(e$from, e$to)) p$add(sprintf("%s: supplier and buyer are the same economy", at))
     for (k in c("nTrade", "nInvestment", "nShocks", "nHighSeverity")) p$num(e[[k]], paste0(at, ".", k), min = 0, int = TRUE)
-    for (k in c("nodes", "techs", "stages")) p$str_arr(e[[k]], paste0(at, ".", k))
+    for (k in c("nodes", "techs")) p$str_arr(e[[k]], paste0(at, ".", k))
     if (is.character(e$nodes) && !is.null(node_ids)) for (x in setdiff(e$nodes, node_ids)) p$add(sprintf("%s.nodes: '%s' is not a node of the document", at, x))
-    if (is.character(e$stages)) for (x in setdiff(e$stages, SUPPLY_CHAIN_STAGES)) p$add(sprintf("%s.stages: '%s' is not a stage", at, x))
+    # the six stages, each once, in chain order (checkStageList() in contract.ts)
+    aib_check_stage_list(p, e$stages, paste0(at, ".stages"))
     for (k in c("tradeUsd", "trade", "investment", "cumTrade", "cumDividend", "cumInvestment")) p$num(e[[k]], paste0(at, ".", k), min = 0)
     for (k in c("opportunity", "friendshore")) p$num(e[[k]], paste0(at, ".", k), nullable = TRUE, min = 0, max = 1)
   }
@@ -603,9 +660,9 @@ aib_check_screened_hosts <- function(doc, p = aib_check_problems()) {
 }
 
 # Both additive sections, the taxonomy fields, the diversification scenario, the scenario toggle's fields,
-# the alignment screen and the strategic layer.
+# the alignment screen, the strategic layer and the six stages.
 aib_check_bundle_additions <- function(doc) c(aib_check_network(doc), aib_check_investment_flows(doc), aib_check_taxonomy(doc), aib_check_diversify(doc), aib_check_scenarios(doc),
-                                                aib_check_screened_hosts(doc), aib_check_strategic(doc))
+                                                aib_check_screened_hosts(doc), aib_check_strategic(doc), aib_check_stages(doc))
 
 # ---- The strategic layer (2026-10-20) ------------------------------------------------------------------
 # `strategic` (aib_dash_strategic(); docs/aib_methodology.md 16.9): optional, so a bundle without it passes.

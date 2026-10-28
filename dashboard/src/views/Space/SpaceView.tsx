@@ -1,9 +1,10 @@
 // View 3: the opportunity-security space (spec_react.md 8.6; paper section 7). Every economy's Economic
 // Opportunity (x) and Energy Security (y; the user's orientation of 2026-10-15) in one technology and
 // stage, coloured by coalition tier,
-// with the medians, the four named corners (Upgrade, Grow, Secure, Watch: the names Country Insights
-// uses) and, in Change mode, arrows from the paper's position to the scenario's; the selected
-// economy's own sectors faceted by stage; and the corner counts.
+// with the medians, the four named corners (Upgrade, Grow, Exposed, Stable: the names Country Insights
+// uses; Exposed and Stable were Secure and Watch until 2026-10-28) and, in Change mode, arrows from the
+// paper's position to the scenario's; the selected economy's own sectors faceted by stage; and the corner
+// counts.
 
 import { useCallback, useMemo, useState } from 'react';
 import * as Plot from '@observablehq/plot';
@@ -21,7 +22,7 @@ import { useAdvancedChanged, useApp, useCore, useScenario } from '../../state/En
 import type { ShowMode } from '../../state/url.ts';
 import { COMPARE_COLOR, INK, PAPER_MUTE, SIGNAL, STAGE_COLOR, TIER_COLOR, tierKey } from '../../theme/palette.ts';
 import { numOr, rowsOf, showWord, TechStageFilters, useCountryOptions, useTechStage, useViewTitle } from '../common.tsx';
-import { fitDomain, median, regionOf, REGIONS } from './derive.ts';
+import { cornerAnnotation, fitDomain, median, regionOf, REGIONS } from './derive.ts';
 
 interface SpacePoint {
   iso3c: string;
@@ -131,10 +132,11 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
           Plot.text([{ x: xd[1], y: med.es, t: `median Energy Security ${fmtNum(med.es, 2)}` }], { x: 'x', y: 'y', text: 't', textAnchor: 'end', dy: -6, fill: PAPER_MUTE, fontSize: 11 }),
           ...(
             [
-              { x: xd[0], y: yd[1], t: width < 560 ? 'WATCH' : 'WATCH: low opportunity, high security', a: 'start', dy: 10 },
-              { x: xd[1], y: yd[1], t: width < 560 ? 'GROW' : 'GROW: high opportunity, high security', a: 'end', dy: 10 },
-              { x: xd[0], y: yd[0], t: width < 560 ? 'SECURE' : 'SECURE: low opportunity, low security', a: 'start', dy: -6 },
-              { x: xd[1], y: yd[0], t: width < 560 ? 'UPGRADE' : 'UPGRADE: high opportunity, low security', a: 'end', dy: -6 },
+              // the corner names come from derive.ts CORNERS, as the table's and the Country profile's do
+              { x: xd[0], y: yd[1], t: cornerAnnotation(3, width < 560), a: 'start', dy: 10 },
+              { x: xd[1], y: yd[1], t: cornerAnnotation(1, width < 560), a: 'end', dy: 10 },
+              { x: xd[0], y: yd[0], t: cornerAnnotation(2, width < 560), a: 'start', dy: -6 },
+              { x: xd[1], y: yd[0], t: cornerAnnotation(0, width < 560), a: 'end', dy: -6 },
             ] as const
           ).map((q) => Plot.text([q], { x: 'x', y: 'y', text: 't', textAnchor: q.a, dy: q.dy, dx: q.a === 'start' ? 4 : -4, fill: '#d1d5db', fontSize: 11, fontWeight: 500 })),
           Plot.arrow(arrows, { x1: 'eo_base', y1: 'es_base', x2: 'eo', y2: 'es', stroke: COMPARE_COLOR.baseline, strokeWidth: 1, headLength: 6 }),
@@ -221,8 +223,8 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
             Every economy in one sector, placed by <Term id="eo" /> (across) and <Term id="es" /> (up). The dashed lines are the middle economy in this sector. The lower right,
             high opportunity with low security, is where building capacity would both meet a need and create value; the Country profile calls it{' '}
             <Term id="upgrade">Upgrade</Term>. The other corners are <Term id="grow">Grow</Term> (high opportunity, high security),{' '}
-            <Term id="secure">Secure</Term> (low opportunity, low security) and <Term id="watch">Watch</Term> (low opportunity, high security). Pick a technology
-            and a stage.
+            <Term id="exposed">Exposed</Term> (low opportunity, low security) and <Term id="stable">Stable</Term> (low opportunity, high security). These are the paper&apos;s
+            three-stage sectors, not the six-stage postures. Pick a technology and a stage.
           </>
         }
       />

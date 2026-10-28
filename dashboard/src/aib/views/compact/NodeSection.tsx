@@ -44,6 +44,7 @@ import { csvWithRun, Section } from '../common.tsx';
 import { DiversifyBlock, NodeScenarioRows } from '../DiversifyBlock.tsx';
 import { NodeRobustness } from '../NodeRobustness.tsx';
 import { Economy, useCompact } from './shared.tsx';
+import { stageRank } from '../../../lib/stages.ts';
 
 /** A class with the warning named after it in a plain-text cell ("COORDINATE (PHYSICAL CAPABILITY NOT VALIDATED)"). */
 const clsText = (cls: string | null, warning: boolean | null) => (cls ? `${classInfo(cls).label}${warning ? ` (${AIB_PHYSICAL_WARNING})` : ''}` : null);
@@ -300,7 +301,7 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
   const cols: Col<(typeof rows)[number]>[] = [
     { id: 'node', header: 'Sub-sector', value: (r) => r.node },
     ...(tx.dictionary ? [{ id: 'sector', header: tx.One, value: (r: (typeof rows)[number]) => r.technologies }] : []),
-    { id: 'stage', header: 'Stage', value: (r) => r.stage },
+    { id: 'stage', header: 'Stage', value: (r) => r.stage, sortValue: (r) => stageRank(r.stage) },
     { id: 'cls', header: hasScenarios ? 'Class under Decoupling' : 'Class', value: (r) => classInfo(r.cls).label },
     { id: 'needs', header: 'Policy needs', value: (r) => r.policyNeeds },
     { id: 'warning', header: 'Warning', value: (r) => r.warning ?? 'none', minWidth: 200 },

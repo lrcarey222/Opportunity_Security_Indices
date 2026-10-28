@@ -205,13 +205,27 @@ aib_dictionary_master <- function(dict, scope = c("core", "extended"), primary_o
 # cells and their OSI sub-sectors as Yards & Fences / Sector Profile ids, "<tech>-<stage>" and
 # "<tech>-<stage>::<sub-sector>", e.g. "batteries-components", largest first) and osi_coverage (share of
 # the node's trade in basket codes). Ties go to the earlier stage in chain order.
-aib_osi_crosswalk <- function(node_codes, osi_master, code_trade = NULL, min_share = 0.2) {
-  require_columns(osi_master, c("tech", "stage", "sub_sector", "hs6"), label = "HS6 master")
+# `stage_col` picks the master's stage column: "stage" (the default: the six stages, asserted) or
+# "supply_chain", the master's three-stage Upstream / Midstream / Downstream (asserted). The second builds
+# the legacy crosswalk (scripts/84 since 2026-10-28: node.yfCellsLegacy / yfSubcomponentsLegacy, e.g.
+# "batteries-midstream"), the cells of the three-stage Country, Sector and Strategic bundles; every output
+# column then holds three-stage labels, ties going to the earlier of Upstream, Midstream, Downstream.
+aib_osi_crosswalk <- function(node_codes, osi_master, code_trade = NULL, min_share = 0.2, stage_col = c("stage", "supply_chain")) {
+  stage_col <- match.arg(stage_col)
+  require_columns(osi_master, c("tech", stage_col, "sub_sector", "hs6"), label = "HS6 master")
+  levels <- if (identical(stage_col, "stage")) SUPPLY_CHAIN_STAGES else SUPPLY_CHAIN_LEGACY_STAGES
   om <- tibble::as_tibble(osi_master)
   if ("excluded" %in% names(om)) om <- om[!(toupper(as.character(om$excluded)) %in% c("TRUE", "T", "1", "YES")), , drop = FALSE]
-  om_sub <- om %>% dplyr::transmute(hs6 = hs6_clean_code(hs6), tech = stringr::str_squish(tech), supply_chain = stringr::str_squish(stage),
+  om_sub <- om %>% dplyr::transmute(hs6 = hs6_clean_code(hs6), tech = stringr::str_squish(tech), supply_chain = stringr::str_squish(.data[[stage_col]]),
                                      sub_sector = stringr::str_squish(sub_sector)) %>% dplyr::distinct()
-  assert_supply_chain_stages(om_sub$supply_chain, "HS6 master stage")
+  if (identical(stage_col, "stage")) {
+    assert_supply_chain_stages(om_sub$supply_chain, "HS6 master stage")
+  } else {
+    bad <- unique(om_sub$supply_chain[!om_sub$supply_chain %in% SUPPLY_CHAIN_LEGACY_STAGES])
+    if (length(bad)) {
+      stop("HS6 master supply_chain holds values that are not Upstream / Midstream / Downstream: ", paste(utils::head(bad, 10), collapse = ", "), ".")
+    }
+  }
   om <- om_sub %>% dplyr::distinct(hs6, tech, supply_chain)
   ct <- if (is.null(code_trade) || !nrow(code_trade)) tibble::tibble(hs6 = character(), value = numeric()) else
     code_trade %>% dplyr::transmute(hs6 = hs6_clean_code(hs6), value = as.numeric(value)) %>% dplyr::group_by(hs6) %>%
@@ -227,9 +241,9 @@ aib_osi_crosswalk <- function(node_codes, osi_master, code_trade = NULL, min_sha
     dplyr::mutate(share = v / mv) %>% dplyr::arrange(node_id, dplyr::desc(v))
   by_stage <- m %>% dplyr::distinct(node_id, hs6, supply_chain, value) %>% dplyr::group_by(node_id, supply_chain) %>%
     dplyr::summarise(v = sum(value), .groups = "drop") %>%
-    dplyr::arrange(node_id, dplyr::desc(v), match(supply_chain, SUPPLY_CHAIN_STAGES))
+    dplyr::arrange(node_id, dplyr::desc(v), match(supply_chain, levels))
   by_cell <- m %>% dplyr::group_by(node_id, tech, supply_chain) %>% dplyr::summarise(v = sum(value), .groups = "drop") %>%
-    dplyr::arrange(node_id, dplyr::desc(v), match(supply_chain, SUPPLY_CHAIN_STAGES))
+    dplyr::arrange(node_id, dplyr::desc(v), match(supply_chain, levels))
   kept <- by_tech %>% dplyr::group_by(node_id) %>% dplyr::filter(share >= min_share | dplyr::row_number() == 1) %>%
     dplyr::mutate(rank = dplyr::row_number()) %>% dplyr::ungroup()
   techs <- kept %>% dplyr::group_by(node_id) %>% dplyr::summarise(score_techs = paste(tech, collapse = "; "), .groups = "drop")

@@ -36,8 +36,9 @@ import { compactUnchangedReasonOf } from '../../derive/scenarioPages.ts';
 import { compactScenario, compactSuppliersToday, nodeScenario, runMetaOf, scenarioCsvFields, scenarioLabel, type AibScenarioId } from '../../derive/scenarios.ts';
 import { ROLE_ORDER, roleMatrix, type RoleRow } from '../../derive/roles.ts';
 import { additionsNeeded, coalitionMethod, coalitionTiers, replacementWords, tierEconomies, tierName, tierShares, type TierEconomy } from '../../derive/tiers.ts';
-import { AIB_PHYSICAL_WARNING, AIB_STAGES, coalitionMembersOf, type AibCompact, type AibMeta, type AibNode } from '../../contract.ts';
+import { AIB_PHYSICAL_WARNING, coalitionMembersOf, type AibCompact, type AibMeta, type AibNode } from '../../contract.ts';
 import { groupedSectorWords, indexLabel, indexOfNode, indicesOfCompact } from '../../derive/taxonomy.ts';
+import { stageRank, stagesInChainOrder } from '../../../lib/stages.ts';
 import { csvWithRun, Section } from '../common.tsx';
 import { Economy, ScenarioGate, useCompact } from './shared.tsx';
 
@@ -68,11 +69,6 @@ function cappedSuppliers(nodes: readonly AibNode[]): string[] {
   }
   return out;
 }
-
-const stageRank = (s: string) => {
-  const i = (AIB_STAGES as readonly string[]).indexOf(s);
-  return i < 0 ? AIB_STAGES.length : i;
-};
 
 /** The compact's nodes whose class carries the physical-capability warning (the exported list, else the nodes' own). */
 function warnedNodes(physicalWarnings: readonly string[] | undefined, nodes: readonly AibNode[]): string[] {
@@ -112,7 +108,7 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
     { id: 'node', header: 'Sub-sector', value: (n) => n.label },
     ...(tx.dictionary ? [{ id: 'index', header: 'Index', value: nodeIndex }] : []),
     { id: 'techs', header: tx.Many, value: (n) => n.techs.join(', ') },
-    { id: 'stage', header: 'Stage', value: (n) => n.stage },
+    { id: 'stage', header: 'Stage', value: (n) => n.stage, sortValue: (n) => stageRank(n.stage) },
     { id: 'cls', header: hasScenarios ? 'Class under Decoupling' : 'Class', value: (n) => classInfo(n.cls).label },
     ...(hasScenarios
       ? [
@@ -216,7 +212,7 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
           <dt className="text-paper-mute">{tx.Many}</dt>
           <dd className="text-paper-dim">{(tx.dictionary ? groupedSectorWords(tx, c.technologies) : c.technologies.join(', ')) || '–'}</dd>
           <dt className="text-paper-mute">Stages</dt>
-          <dd className="text-paper-dim">{[...c.stages].sort((a, b) => stageRank(a) - stageRank(b)).join(', ') || '–'}</dd>
+          <dd className="text-paper-dim">{stagesInChainOrder(c.stages).join(', ') || '–'}</dd>
           <dt className="text-paper-mute">Included nodes</dt>
           <dd>
             <ul className="flex flex-wrap gap-2">

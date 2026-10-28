@@ -26,7 +26,7 @@ import {
 
 /** What each Strategic AIB Role means (task spec s.9), keyed by its code; the export names the roles. */
 export const ROLE_MEANING: Readonly<Record<string, string>> = {
-  RPA: 'holds important upstream resources or processing capability',
+  RPA: 'holds important raw materials or processing capability',
   STM: 'has specialized capabilities that are difficult or inefficient to replicate widely',
   SMI: 'manufactures or integrates large parts of a value chain at scale',
   DMA: 'has a large demand and procurement base that can support allied-scale specialization',
@@ -44,9 +44,16 @@ export function summaryHeading(name: string): string {
   return `${cap(poss(proseName(name)))} role in the Allied Industrial Base`;
 }
 
-/** The narratives' stage words (R aib_strategic_function_labels()) in plain plural words. */
+/**
+ * The narratives' stage words (R aib_strategic_function_labels()) in plain plural words. The keys are the R
+ * labels exactly as the export writes them (the focus slot is matched on them); the values are the words
+ * shown, which avoid the paper's stage names beside the six-stage charts: a resource node is a raw
+ * material, mined or recycled (Extraction or Recovery, R aib_resource_stages()). R labels a resource node
+ * 'raw-material' since 2026-10-28 and 'upstream resource' before; both are read.
+ */
 export const FOCUS_STAGES: Readonly<Record<string, string>> = {
-  'upstream resource': 'upstream resources',
+  'raw-material': 'raw materials',
+  'upstream resource': 'raw materials',
   processing: 'processing',
   'component, material and equipment': 'components, materials and equipment',
   'assembled system and end-product': 'assembled systems and end products',
@@ -54,16 +61,17 @@ export const FOCUS_STAGES: Readonly<Record<string, string>> = {
 
 /** The same plain words keyed by node function (the focus slot's items). */
 export const FUNCTION_STAGES: Readonly<Record<string, string>> = {
-  resource: 'upstream resources',
+  resource: 'raw materials',
   processing: 'processing',
   components: 'components, materials and equipment',
   systems: 'assembled systems and end products',
 };
 
 /**
- * A node label for prose: an aggregated node's generated label ("Uranium/fuel Upstream: aggregated
- * low-coverage sub-sectors (Spent fuel & nuclear scrap, Uranium ores)") as its members ("Spent fuel &
- * nuclear scrap and uranium ores (aggregated)"), as the R narratives write it; any other label unchanged.
+ * A node label for prose: an aggregated node's generated label ("Uranium/fuel Extraction: aggregated
+ * low-coverage sub-sectors (Spent fuel & nuclear scrap, Uranium ores)"; "Uranium/fuel Upstream: ..." in a
+ * bundle written before 2026-10-28) as its members ("Spent fuel & nuclear scrap and uranium ores
+ * (aggregated)"), as the R narratives write it; any other label unchanged.
  */
 export function proseNodeLabel(label: string): string {
   const m = /^.*: aggregated low-coverage sub-sectors \((.*)\)$/.exec(label);
@@ -86,7 +94,7 @@ export function focusStages(focus: string | null | undefined): string[] {
   return [focus];
 }
 
-/** "Strongest stage of the chain: upstream resources." / "Strongest stages of the chain: X; then Y." */
+/** "Strongest stage of the chain: raw materials." / "Strongest stages of the chain: X; then Y." */
 export function focusWords(stages: readonly string[]): string | null {
   if (!stages.length) return null;
   if (stages.length === 1) return `Strongest stage of the chain: ${stages[0]}.`;
@@ -285,7 +293,7 @@ export interface StrategicSummary {
   /** focus as its stages of the chain in plain words, the stronger first (focusStages()) */
   focusList: string[];
   needs: NeedEntry[];
-  /** "a significant net buyer of upstream materials (top quartile of allied net imports)" */
+  /** "a significant net buyer of raw and processed materials (top quartile of allied net imports)" */
   dependency: string | null;
   /** every compact role of the economy, the most relevant first */
   compacts: AibCompactRole[];

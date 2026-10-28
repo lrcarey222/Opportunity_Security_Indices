@@ -1,6 +1,6 @@
 {
   "schema": "osi-aib",
-  "version": 1,
+  "version": 3,
   "created": "2026-10-19T00:00:00Z",
   "demandScope": "coalition",
   "candidateUniverse": "global",

@@ -25,7 +25,7 @@ const names = countryNamesOf(doc);
 
 describe('the roles under the toggle', () => {
   it('a side read on the headline only: minor only where the headline contributes', () => {
-    const side = { partners: 0, selected: 0, headline: 0, cumulative: 0.02, upstream: 0, midstream: 0, downstream: 0 };
+    const side = { partners: 0, selected: 0, headline: 0, cumulative: 0.02, extraction: 0, refining: 0, components: 0, assembly: 0, deployment: 0, recovery: 0 };
     expect(sideLevel(side)).toBe('minor');
     expect(sideLevel(side, 0.01, true)).toBe('none');
     expect(sideLevel({ ...side, headline: 0.004 }, 0.01, true)).toBe('minor');
@@ -82,11 +82,17 @@ describe('the roles under the toggle', () => {
     expect(cell.side!.partners).toBe(4);
     const l = everyShockLabel(doc);
     const w = cellWords('buyer', cell, l.phrase, 'under Decoupling');
-    expect(w).toMatch(new RegExp(`^${fmtPts(0.3)} under Decoupling with 3 suppliers; across ${l.phrase}: ${fmtPts(0.9)}, 4 suppliers \\(upstream \\d+, midstream \\d+, downstream \\d+\\), 9 selected relationships`));
+    // the partners by stage: the non-zero six-stage counts in chain order (AAA buys at Refining and Components)
+    expect(w).toMatch(new RegExp(`^${fmtPts(0.3)} under Decoupling with 3 suppliers; across ${l.phrase}: ${fmtPts(0.9)}, 4 suppliers \\(refining 2, components 2\\), 9 selected relationships`));
+    expect(w).not.toMatch(/upstream|midstream|downstream|extraction|assembly|deployment|recovery/);
     // Managed Interdependence (its shock alone) and the export's own reading keep the side's counts
     expect(countryRolesOf(doc, names, 'CCC', scenarioRoleSource(doc, 'managed', mi)).cells.supplier.headlinePartners).toBeUndefined();
     expect(countryRolesOf(doc, names, 'AAA').cells.buyer.headlinePartners).toBeUndefined();
-    expect(cellWords('buyer', countryRolesOf(doc, names, 'AAA').cells.buyer)).toContain('; 4 suppliers (upstream');
+    expect(cellWords('buyer', countryRolesOf(doc, names, 'AAA').cells.buyer)).toContain('; 4 suppliers (refining 2, components 2); ');
+    // a side with no stage count left (every count 0) names no stages
+    const bare = countryRolesOf(doc, names, 'AAA').cells.buyer;
+    const zero = { ...bare, side: { ...bare.side!, extraction: 0, refining: 0, components: 0, assembly: 0, deployment: 0, recovery: 0 } };
+    expect(cellWords('buyer', zero)).toContain('; 4 suppliers; ');
   });
 
   it('"every shock" is labelled as Decoupling\'s supply shocks, with their labels', () => {

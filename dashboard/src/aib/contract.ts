@@ -1,4 +1,4 @@
-// Sectoral Compacts data contract (schema osi-aib v1). The interface between
+// Sectoral Compacts data contract (schema osi-aib; version AIB_VERSION, 3 since 2026-10-28). The interface between
 // scripts/84_export_aib_data.R (R/dashboard/aib/aib_export.R, which writes these files) and the views
 // in src/aib/. Pure: no IO, no React.
 //
@@ -75,7 +75,9 @@
 //                     dictionary, node.techs holds the node's EIS sector(s) (names may contain "/"), not an
 //                     OSI technology; node.yfCells / yfSubcomponents are the OSI cells and sub-components its
 //                     codes sit in (a trade-weighted crosswalk to the OSI basket; many-to-many; [] where a node
-//                     has no basket code).
+//                     has no basket code). Since 2026-10-28 (version 3) these are six-stage cells
+//                     ("<tech slug>-<stage slug>", "batteries-refining"; "<cell>::<sub-component>"); the
+//                     three-stage ones are yfCellsLegacy / yfSubcomponentsLegacy (see Stages below).
 //   compact           indices: the EIS indices of its sectors ([] for master). compact.name joins the sectors
 //                     with " / " and lists node labels that may contain ", ": display it, never parse it.
 //
@@ -135,12 +137,35 @@
 // pct], thesis [ISO3, ISO3, compact ids, logic labels]. checkStrategic() mirrors aib_check_strategic()
 // (R/dashboard/aib/aib_check.R): same paths, same bounds. Read it with strategicOf(); the views read it
 // through derive/strategic.ts.
+//
+// Stages (2026-10-28; version 3, the migration of the R export of 2026-10-27): every stage in the bundle is
+// one of the six supply-chain stages, AIB_STAGES (src/lib/stages.ts SUPPLY_STAGES, R SUPPLY_CHAIN_STAGES):
+// Extraction, Refining, Components, Assembly, Deployment, Recovery. node.stage is one of them (the node's
+// six-stage label from its codes' item type or the OSI master's stage, filed under the stage with the most
+// world trade); compact.stages and network edge stages list the stages of their nodes, each once, in chain
+// order (checkStageList()); the network's per-side partner counts are keyed by AIB_STAGE_KEYS (the six in
+// lower case) instead of upstream / midstream / downstream. The AIB has no Deployment node, so every
+// deployment count is 0 and no node or list carries Deployment, but the stage is valid. node.yfCells and
+// yfSubcomponents are six-stage cells; the optional node.yfCellsLegacy and yfSubcomponentsLegacy are the same
+// node's three-stage cells ("<tech slug>-<upstream|midstream|downstream>" and "<legacy cell>::<sub-component>",
+// from the OSI master's three-stage supply_chain column), the cells of the three-stage Country, Sector and
+// Strategic bundles of 2026-10-22: join those through them (src/lib/stages.ts legacyCellsOf() /
+// legacySubcomponentsOf(); the roll-up of yfCells they fall back to is approximate, as the paper filed refined
+// materials under Midstream and Refining rolls up to Upstream). A three-stage bundle (version 1 or 2) no
+// longer validates: its stages are not AIB_STAGES and its sides lack the six keys. The scenario files carry
+// stages only in their network (AIB_SCENARIO_VERSION stays 1).
+
+import { isLegacyCellSlug, isLegacySubcomponentId, stageRank, SUPPLY_STAGE_SLUGS, SUPPLY_STAGES, type SupplyStage } from '../lib/stages.ts';
 
 // ---- Schema ----------------------------------------------------------------------------------------
 
 export const AIB_SCHEMA = 'osi-aib';
-/** 2 since 2026-10-20: meta.scenarios became the scenario list (objects); an app reading 1 asks for a reload. Version 1 bundles still read. */
-export const AIB_VERSION = 2;
+/**
+ * 3 since 2026-10-28: the six supply-chain stages (node.stage, compact.stages, the network's stages and per-side
+ * counts; see Stages in the header), so an app reading 2 asks for a reload. 2 (2026-10-20): meta.scenarios became
+ * the scenario list (objects). Version 1 and 2 bundles are three-stage and no longer validate.
+ */
+export const AIB_VERSION = 3;
 /** Relative to the app's base URL. Written only by scripts/84. */
 export const AIB_DATA_DIR = 'data/aib/';
 export const AIB_MANIFEST_FILE = 'manifest.json';
@@ -597,7 +622,8 @@ export interface AibCompact {
   name: string;
   /** the OSI technologies (master) or the EIS sectors (dictionary) of its nodes */
   technologies: string[];
-  stages: string[];
+  /** the stages of its nodes (AIB_STAGES), each once, in chain order */
+  stages: AibStage[];
   /** the EIS indices of its sectors ([] for master; additive, 2026-10-19) */
   indices?: string[];
   archetype: AibArchetype;
@@ -670,7 +696,8 @@ export interface AibNode {
   label: string;
   /** the OSI technologies (master) or the node's EIS sector (dictionary) */
   techs: string[];
-  stage: string;
+  /** one of AIB_STAGES (since 2026-10-28; never Deployment in practice) */
+  stage: AibStage;
   /** the EIS index of the node's sector ("A".."F"; null for master; additive, 2026-10-19) */
   indexCode?: string | null;
   cls: string;
@@ -733,8 +760,18 @@ export interface AibNode {
   partners: string | null;
   treatment: string | null;
   compact: string | null;
+  /** the OSI technology x six-stage cells its codes sit in ("batteries-refining"), the largest share of its trade first; [] without a basket code */
   yfCells: string[];
+  /** their OSI sub-components ("batteries-refining::Anode Materials") */
   yfSubcomponents: string[];
+  /**
+   * the node's three-stage cells ("batteries-midstream", from the OSI master's supply_chain column): the cells of the
+   * three-stage Country, Sector and Strategic bundles of 2026-10-22, for the joins with them (additive, 2026-10-28;
+   * absent in an earlier export: read both with legacyCellsOf() / legacySubcomponentsOf() of src/lib/stages.ts)
+   */
+  yfCellsLegacy?: string[];
+  /** the same node's three-stage sub-components ("<legacy cell>::<sub-component>"; additive, 2026-10-28) */
+  yfSubcomponentsLegacy?: string[];
   /** the tightest supplier-share limit that costs at most 2 points of coverage (additive) */
   tightestCostless?: number | null;
   /** the loosest limit at which coverage stays >= 80% after the N-1 test (re-optimized where the bundle has it); null when none does (additive) */
@@ -778,22 +815,36 @@ export interface AibVariant {
 export const AIB_NETWORK_ROLES = ['supplier', 'buyer', 'investment_host', 'investor'] as const;
 export type AibNetworkRole = (typeof AIB_NETWORK_ROLES)[number];
 
-export const AIB_STAGES = ['Upstream', 'Midstream', 'Downstream'] as const;
+/**
+ * The stages of nodes, compacts and network edges since 2026-10-28: the six supply-chain stages in chain order
+ * (src/lib/stages.ts SUPPLY_STAGES, R SUPPLY_CHAIN_STAGES). Deployment is valid though no AIB node carries it.
+ */
+export const AIB_STAGES = SUPPLY_STAGES;
+export type AibStage = SupplyStage;
+/** The keys of the per-stage partner counts of a network side: the six stages in lower case (R aib_dash_stage_keys()). */
+export const AIB_STAGE_KEYS = SUPPLY_STAGE_SLUGS;
+export type AibStageKey = (typeof AIB_STAGE_KEYS)[number];
 
 /**
  * One side of an economy in the network (scripts/32, emergent_aib_country_summary.csv): its distinct
  * partners, the (node, shock) relationships the solution selects, and its contributions, in shares of a
  * node's demand summed over the nodes and partners of the role (so above 1 is possible): `headline` under
- * the headline shock, `cumulative` summed over every configured shock. Partner counts by stage.
+ * the headline shock, `cumulative` summed over every configured shock. Then one partner count per stage
+ * (AIB_STAGE_KEYS, since 2026-10-28; upstream / midstream / downstream before): the distinct partners in
+ * relationships at that stage. A partner can sit in several stages, so the counts need not sum to
+ * `partners`; deployment is always 0, as the AIB has no Deployment node.
  */
 export interface AibNetworkSide {
   partners: number;
   selected: number;
   headline: number;
   cumulative: number;
-  upstream: number;
-  midstream: number;
-  downstream: number;
+  extraction: number;
+  refining: number;
+  components: number;
+  assembly: number;
+  deployment: number;
+  recovery: number;
   /** trade sides only: the part of `cumulative` carried by new relationships */
   dividend?: number;
   /** trade sides only: the optimized trade of the headline shock (USD a year) */
@@ -834,7 +885,8 @@ export interface AibNetworkEdge {
   nShocks: number;
   nodes: string[];
   techs: string[];
-  stages: string[];
+  /** the stages of its nodes (AIB_STAGES), each once, in chain order */
+  stages: AibStage[];
   /** relationships in nodes where the shock removes at least the high-severity share */
   nHighSeverity: number;
   /** optimized trade of the headline shock (USD a year) */
@@ -1683,15 +1735,52 @@ function checkCls(p: Problems, x: unknown, path: string, classes: readonly strin
   else if (!classes.includes(x)) p.add(`${path}: '${x}' is not one of meta.classes`);
 }
 
+/**
+ * node.yfCellsLegacy / yfSubcomponentsLegacy (2026-10-28): absent is fine; else arrays of three-stage cells
+ * ("<tech slug>-<upstream|midstream|downstream>") and of "<three-stage cell>::<sub-component>" ids.
+ */
+function checkLegacyCells(p: Problems, n: Obj, at: string): void {
+  const cells = n.yfCellsLegacy;
+  if (cells !== undefined && p.strArr(cells, `${at}.yfCellsLegacy`)) {
+    cells.forEach((c, i) => {
+      if (!isLegacyCellSlug(c)) p.add(`${at}.yfCellsLegacy[${i}]: '${c}' is not a three-stage cell (<tech>-<upstream|midstream|downstream>)`);
+    });
+  }
+  const subs = n.yfSubcomponentsLegacy;
+  if (subs !== undefined && p.strArr(subs, `${at}.yfSubcomponentsLegacy`)) {
+    subs.forEach((s, i) => {
+      if (!isLegacySubcomponentId(s)) p.add(`${at}.yfSubcomponentsLegacy[${i}]: '${s}' is not a three-stage sub-component (<tech>-<upstream|midstream|downstream>::<name>)`);
+    });
+  }
+}
+
+/**
+ * A list of stages (compact.stages, a network edge's stages): an array of AIB_STAGES, each once, in chain order.
+ * The R mirror is aib_check_stage_list() (R/dashboard/aib/aib_check.R).
+ */
+function checkStageList(p: Problems, x: unknown, at: string): void {
+  if (!p.strArr(x, at)) return;
+  x.forEach((s) => p.oneOf(s, AIB_STAGES, at));
+  const seen = new Set<string>();
+  for (const s of x) {
+    if (seen.has(s)) p.add(`${at}: duplicate '${s}'`);
+    seen.add(s);
+  }
+  const ranks = x.map(stageRank).filter((r) => r < AIB_STAGES.length);
+  if (ranks.some((r, i) => i > 0 && r < ranks[i - 1])) p.add(`${at}: not in chain order (${x.join(', ')})`);
+}
+
 function checkNode(p: Problems, n: unknown, at: string, classes: readonly string[], codes: ReadonlySet<string> = new Set()): void {
   if (!isObj(n)) return p.add(`${at}: not an object`);
   for (const k of ['id', 'label', 'stage']) p.str(n[k], `${at}.${k}`);
+  if (isStr(n.stage)) p.oneOf(n.stage, AIB_STAGES, `${at}.stage`);
   checkIndexCode(p, n.indexCode, `${at}.indexCode`, codes);
   if (!isStr(n.cls)) p.add(`${at}.cls: expected a string`);
   else if (!classes.includes(n.cls)) p.add(`${at}.cls: '${n.cls}' is not one of meta.classes`);
   for (const k of ['reason', 'quality', 'baseLargest', 'largest', 'partners', 'treatment', 'compact']) p.str(n[k], `${at}.${k}`, true);
   for (const k of ['techs', 'flags', 'hosts', 'yfCells', 'yfSubcomponents']) p.strArr(n[k], `${at}.${k}`);
   for (const k of ['specialtyHosts', 'developmentHosts']) p.optStrArr(n[k], `${at}.${k}`);
+  checkLegacyCells(p, n, at);
   for (const k of ['exposure', 'static', 'existing', 'optimized', 'residual', 'baseLargestShare', 'largestShare', 'hhi']) p.num(n[k], `${at}.${k}`, SHARE);
   // the dividend and the best marginal gain are differences of shares
   for (const k of ['dividend', 'bestGain']) p.num(n[k], `${at}.${k}`, { nullable: true, min: -1, max: 1 });
@@ -1848,7 +1937,8 @@ function checkCompact(p: Problems, c: unknown, at: string, nodeIds: ReadonlySet<
   }
   p.oneOf(c.archetype, AIB_ARCHETYPES, `${at}.archetype`);
   p.oneOf(c.type, AIB_COMPACT_TYPES, `${at}.type`);
-  for (const k of ['technologies', 'stages', 'anchors', 'suppliers', 'hosts', 'technologyPartners', 'bridges', 'associates', 'policyNeeds']) p.strArr(c[k], `${at}.${k}`);
+  for (const k of ['technologies', 'anchors', 'suppliers', 'hosts', 'technologyPartners', 'bridges', 'associates', 'policyNeeds']) p.strArr(c[k], `${at}.${k}`);
+  checkStageList(p, c.stages, `${at}.stages`);
   for (const k of ['specialtyHosts', 'developmentHosts']) p.optStrArr(c[k], `${at}.${k}`);
   if (p.strArr(c.nodes, `${at}.nodes`)) {
     if (!c.nodes.length) p.add(`${at}.nodes: a compact without nodes`);
@@ -1924,7 +2014,8 @@ function checkVariant(p: Problems, v: unknown, at: string): void {
 
 function checkSide(p: Problems, s: unknown, at: string, trade: boolean): void {
   if (!isObj(s)) return p.add(`${at}: not an object`);
-  for (const k of ['partners', 'selected', 'upstream', 'midstream', 'downstream']) p.num(s[k], `${at}.${k}`, { min: 0, int: true });
+  // the partner counts by stage: one per AIB_STAGE_KEYS (a missing one, e.g. in a three-stage bundle, is reported)
+  for (const k of ['partners', 'selected', ...AIB_STAGE_KEYS]) p.num(s[k], `${at}.${k}`, { min: 0, int: true });
   for (const k of ['headline', 'cumulative']) p.num(s[k], `${at}.${k}`, { min: 0 });
   if (trade) for (const k of ['dividend', 'volumeUsd']) p.num(s[k], `${at}.${k}`, { min: 0 });
 }
@@ -1963,7 +2054,7 @@ function checkNetwork(p: Problems, n: unknown, nodeIds: ReadonlySet<string> | nu
       for (const k of ['nTrade', 'nInvestment', 'nShocks', 'nHighSeverity']) p.num(e[k], `${at}.${k}`, { min: 0, int: true });
       if (p.strArr(e.nodes, `${at}.nodes`) && nodeIds) for (const id of e.nodes) if (!nodeIds.has(id)) p.add(`${at}.nodes: '${id}' is not a node of the document`);
       p.strArr(e.techs, `${at}.techs`);
-      if (p.strArr(e.stages, `${at}.stages`)) e.stages.forEach((s) => p.oneOf(s, AIB_STAGES, `${at}.stages`));
+      checkStageList(p, e.stages, `${at}.stages`);
       for (const k of ['tradeUsd', 'trade', 'investment', 'cumTrade', 'cumDividend', 'cumInvestment']) p.num(e[k], `${at}.${k}`, { min: 0 });
       for (const k of ['opportunity', 'friendshore']) p.num(e[k], `${at}.${k}`, SHARE);
     });

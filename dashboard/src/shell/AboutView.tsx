@@ -17,7 +17,7 @@ export const ABOUT_MAIN: readonly AboutLink[] = [
   {
     to: '/methods',
     title: 'Methods',
-    body: 'How Energy Security, Economic Opportunity, the Strategic Index and the partnership measures are built and what the four perspective dials change, with the formulas.',
+    body: "How the six-stage posture behind the headline charts and the paper's three-stage indices (Energy Security, Economic Opportunity, the Strategic Index, the partnership measures) are built, and what the four perspective dials change, with the formulas.",
   },
   {
     to: '/data',
@@ -84,7 +84,8 @@ export default function AboutView() {
           existing and coordinated partners can replace, the gaps that remain) are the same for every reader.{' '}
           <strong className="text-paper">Preference-adjusted priorities</strong> (which sectors a country should put first, how attractive a partner is) depend on how
           much weight you give security, opportunity, home production and climate. The perspective dials on a country profile change only the second kind; every
-          page starts from the NEIS baseline.
+          index starts from the NEIS baseline. The six-stage posture on the Country, Sector and Allied Industrial Base pages (Secure, Compete, Deploy) is a
+          recommendation from the strategic position framework; it does not move with the dials.
         </p>
       </section>
     </div>

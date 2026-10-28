@@ -115,13 +115,14 @@ export function CoverageGlyph({ glyph }: { glyph: SectorManifest['coverage_glyph
   );
 }
 
-/** A static glyph of the four corners of the Country profile's scatter (decorative): Watch and Grow on
- *  top (higher energy security), Secure and Upgrade below; lower economic opportunity on the left. */
+/** A static glyph of the four corners of the Country profile's three-stage scatter (decorative): Stable and
+ *  Grow on top (higher energy security), Exposed and Upgrade below; lower economic opportunity on the left.
+ *  The names follow country/contract.ts QUADRANTS (Exposed and Stable were Secure and Watch until 2026-10-28). */
 function QuadrantGlyph() {
   const cells: [string, string][] = [
-    ['W', 'Watch'],
+    ['S', 'Stable'],
     ['G', 'Grow'],
-    ['S', 'Secure'],
+    ['E', 'Exposed'],
     ['U', 'Upgrade'],
   ];
   return (
@@ -183,7 +184,7 @@ const COUNTRY_CARD: CardSpec = {
   title: 'Explore a Country',
   question: "What is this country's strategic position?",
   lede: 'Understand where a country has strategic opportunities, vulnerabilities, policy strengths, partnership potential, and a role in the Allied Industrial Base.',
-  glyphNote: 'Strategic position, risks, partners and role, from a perspective you can adjust',
+  glyphNote: "Strategic posture by technology and stage, the paper's opportunity-security corners, partners and role; priorities follow a perspective you can adjust",
   links: [
     { to: '/countries/JPN', label: 'Japan' },
     { to: '/countries/DEU', label: 'Germany' },

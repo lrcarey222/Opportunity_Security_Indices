@@ -4,7 +4,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import {
   flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable,
-  type ColumnDef, type SortingState,
+  type ColumnDef, type Row, type SortingState,
 } from '@tanstack/react-table';
 import { DASH } from '../lib/format.ts';
 
@@ -18,6 +18,8 @@ export interface Col<R> {
   cell?: (r: R) => ReactNode;
   num?: boolean;
   sortable?: boolean;
+  /** the key the column sorts by, when it is not the value (a stage sorts in chain order: stageRank) */
+  sortValue?: (r: R) => number;
   minWidth?: number;
   title?: string;
 }
@@ -56,7 +58,9 @@ export function TableView<R>({
         },
         enableSorting: c.sortable !== false,
         sortUndefined: 'last' as const,
-        sortingFn: c.num ? ('basic' as const) : ('alphanumeric' as const),
+        sortingFn: c.sortValue
+          ? (a: Row<R>, b: Row<R>) => c.sortValue!(a.original) - c.sortValue!(b.original)
+          : c.num ? ('basic' as const) : ('alphanumeric' as const),
         cell: (info) => (c.cell ? c.cell(info.row.original) : text(info.getValue() as CellValue)),
         meta: c,
       })),

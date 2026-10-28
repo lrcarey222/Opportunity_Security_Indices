@@ -2,7 +2,8 @@
 // candidate partners -> shock -> existing response -> optimized partnerships -> coordination dividend and
 // frontier -> residual gaps -> marginal investment -> emergent network -> compacts -> node treatments),
 // the classes; where the nodes come from (the electro-industrial dictionary: index > sector > stage, its
-// scope, primary rows, the partner indices through the OSI crosswalk; or the OSI basket of an older
+// scope, primary rows, the six-stage label of each node from its codes' item type (2026-10-28), the
+// partner indices through the OSI crosswalk and its three-stage cells; or the OSI basket of an older
 // bundle); then what the settings mean, with this export's values: demand scope vs candidate-partner
 // universe, hold vs release shock semantics, production-constrained vs trade-only supply, the multi-label
 // policy needs and the physical-capability warning rule, the exact vs greedy coalition and its tiers,
@@ -94,7 +95,7 @@ const METHOD: { step: string; text: string }[] = [
   { step: 'Emergent network', text: 'The trade and investment relationships of every node together form the allied industrial base network the model finds, not one fixed in advance. Each economy’s roles in it (supplier, buyer, investment host, investor) are kept apart and measured by the share of node demand its relationships serve; the Country roles page names a role only at 1 point of node demand or more under the headline shock.' },
   {
     step: 'Compacts',
-    text: 'Within the strategic scope, nodes are grouped into a compact only when they are linked in a curated map of physical and process adjacency (one feeds the other within a few links, or both feed the same downstream node; sitting at the same stage is not enough), served by overlapping or complementary partners and in need of similar instruments. The minimum coalition for each coverage target is found exactly, by a binary program (the fewest economies, the demand anchors always in); a greedy heuristic is kept beside it. A group is a candidate compact only when that coalition lifts the anchors’ coverage clearly above what their existing relationships give them (fragmented action); otherwise it is shown as “compact unnecessary”. The trade compact keeps every economy’s existing-relationship response and lets the coalition’s members also open or expand relationships, so it never falls below existing relationships; it is shown beside the global optimum, in which every candidate partner coordinates.',
+    text: 'Within the strategic scope, nodes are grouped into a compact only when they are linked in a curated map of physical and process adjacency (one feeds the other within a few links, or both feed the same later node; sitting at the same stage is not enough), served by overlapping or complementary partners and in need of similar instruments. The minimum coalition for each coverage target is found exactly, by a binary program (the fewest economies, the demand anchors always in); a greedy heuristic is kept beside it. A group is a candidate compact only when that coalition lifts the anchors’ coverage clearly above what their existing relationships give them (fragmented action); otherwise it is shown as “compact unnecessary”. The trade compact keeps every economy’s existing-relationship response and lets the coalition’s members also open or expand relationships, so it never falls below existing relationships; it is shown beside the global optimum, in which every candidate partner coordinates.',
   },
   {
     step: 'Node treatments',
@@ -236,9 +237,13 @@ export default function AibAboutView() {
       {nt.dictionary ? (
         <>
           <p className={P} data-testid="about-taxonomy">
-            The nodes come from the electro-industrial HS6 dictionary (RMI&apos;s Electro-Industrial Stack). It is read top down: index &gt; sector &gt; stage (Upstream, Midstream,
-            Downstream) &gt; HS6 code, and a sector is split into nodes where its chain steps differ (rare-earth oxides apart from rare-earth metals, wafers apart from gallium). Only each
-            code&apos;s primary row is used, so every code sits in exactly one node and nothing is counted twice.{' '}
+            The nodes come from the electro-industrial HS6 dictionary (RMI&apos;s Electro-Industrial Stack). It is read top down: index &gt; sector &gt; the dictionary&apos;s own stage
+            (Upstream, Midstream, Downstream, which only groups codes into nodes) &gt; HS6 code, and a sector is split into nodes where its chain steps differ (rare-earth oxides apart
+            from rare-earth metals, wafers apart from gallium). Each node is then labelled with one of the six supply-chain stages the OSI uses (Extraction, Refining, Components,
+            Assembly, Deployment, Recovery), the one holding most of its trade, each code&apos;s stage set by its item type: a raw material is Extraction (Recovery when it is recycled
+            feed such as scrap or spent batteries), a processed material Refining, a component Components, and a final product or process equipment Assembly. No node is at
+            Deployment: the dictionary lists traded goods, not their installation and use. Only each code&apos;s primary row is used, so every code sits in exactly one node and
+            nothing is counted twice.{' '}
             {tx.scope ? (
               <>
                 This export uses the <strong className="font-medium text-paper">{tx.scope}</strong> scope: {DICTIONARY_SCOPE_WORDS[tx.scope] ? `${DICTIONARY_SCOPE_WORDS[tx.scope].words}, ${DICTIONARY_SCOPE_WORDS[tx.scope].role}` : tx.scope}
@@ -257,8 +262,11 @@ export default function AibAboutView() {
           <p className={P}>
             The partner indices the model uses to choose among equally good solutions (Partnership Opportunity, Friendshore, policy compatibility) are kept by OSI technology × stage, the
             cells of the paper&apos;s basket. A dictionary node reads them through the OSI cells its codes sit in (a trade-weighted crosswalk; one node can sit in several cells, and
-            several nodes in one cell). A node with no code in the basket (heat pumps, electrolysers or hydrogen, for example) gets neutral partner scores. The Sector and Country
-            pages show a node in every OSI cell its codes sit in; the Partnerships page reads the partner rankings for the OSI cell of the selected nodes and says which.
+            several nodes in one cell). A node with no code in the basket (heat pumps, electrolysers or hydrogen, for example) gets neutral partner scores. The crosswalk is
+            six-stage, like the nodes; the Sector, Country and Strategic pages still keep the paper&apos;s three stages (Upstream, Midstream, Downstream), so they read it through
+            each node&apos;s three-stage cells, the cells its codes sit in at the stage the paper files them under (refined battery materials, polysilicon and electrical steel under
+            Midstream, for example). The Sector and Country pages show a node in each of those cells; the Partnerships page reads the partner rankings for the three-stage cell of
+            the selected nodes and says which.
           </p>
           {tx.indices.length > 0 && (
             <dl className="grid max-w-3xl gap-x-6 gap-y-2 text-[0.9375rem] leading-relaxed sm:grid-cols-[14rem_minmax(0,1fr)]" data-testid="about-indices">
@@ -273,8 +281,9 @@ export default function AibAboutView() {
         </>
       ) : (
         <p className={P} data-testid="about-taxonomy">
-          The nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one stage (Upstream, Midstream, Downstream) of a technology&apos;s supply chain. The partner
-          indices are read for each node&apos;s own technology and stage.
+          The nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one stage (Extraction, Refining, Components, Assembly, Deployment, Recovery) of a
+          technology&apos;s supply chain, the stage holding most of the node&apos;s trade. The partner indices are read for each node&apos;s own technology at the paper&apos;s three
+          stages (Upstream, Midstream, Downstream), which the partner data still keep.
         </p>
       )}
 
@@ -347,7 +356,7 @@ export default function AibAboutView() {
       <p className={P} data-testid="about-warning">
         <strong className="font-medium text-paper">PHYSICAL CAPABILITY NOT VALIDATED</strong> marks a LOW INTERVENTION or COORDINATE class that physical data do not back: the node&apos;s physical
         data are incomplete, or physical and trade concentration diverge and either the physical rule was not applied or the class rests on low trade exposure (a dependence that can arrive
-        embodied in downstream goods). The warning does not change the class; it is computed for every variant and growth bound too, and shown beside every class shown.
+        embodied in assembled goods). The warning does not change the class; it is computed for every variant and growth bound too, and shown beside every class shown.
         {nodes.some((n) => n.warning !== undefined) ? ` In this export it marks ${plural(nWarned, 'node')}.` : ''}
       </p>
 

@@ -137,7 +137,7 @@ export function PriorityTable() {
       all.map((c) => ({
         rank: c.si.rank.v, sector: c.tech, stage: c.stage, opportunity_part: c.si.parts?.eo.v ?? null, security_need_part: c.si.parts?.need.v ?? null,
         policy_activity_part: c.si.parts?.pol.v ?? null, stage_part: c.si.parts?.stage.v ?? null, technology_part: c.si.parts?.tech.v ?? null,
-        strategic_index: c.si.v, lead_over_next: c.si.margin_next.v, corner: c.quadrant ? quadrantWord(sheet, c.quadrant) : null, allied_pick: c.si.pick,
+        strategic_index: c.si.v, lead_over_next: c.si.margin_next.v, corner: c.quadrant ? quadrantWord(c.quadrant) : null, allied_pick: c.si.pick,
         policy_records_specific: c.policy?.records_specific.v ?? null, policy_third: c.policy?.third ?? null,
       })),
       'Opportunity Security Indices, paper baseline (Strategic Index terms)',
@@ -148,7 +148,7 @@ export function PriorityTable() {
     <ChartCard
       headingLevel={3}
       title="Which sectors the Strategic Index puts first"
-      sub={`The Strategic Index ranks ${poss(name)} own sectors. It adds up five things: economic opportunity (30%), security need, meaning how exposed the country is (30%), how much policy it already has in the sector compared with its other sectors (20%), the supply-chain stage (10%; manufacturing counts most, then raw materials, then use) and the technology's low-emission value (10%). The last two are the same for every country. The bars show what each adds. Ranks compare sectors within ${name} only; they say nothing about other countries.`}
+      sub={`The Strategic Index ranks ${poss(name)} own sectors. It adds up five things: economic opportunity (30%), security need, meaning how exposed the country is (30%), how much policy it already has in the sector compared with its other sectors (20%), the supply-chain stage (10%; of the paper's three stages, midstream manufacturing counts most, then upstream raw materials, then downstream use) and the technology's low-emission value (10%). The last two are the same for every country. The bars show what each adds. Ranks compare sectors within ${name} only; they say nothing about other countries.`}
       summary={`${poss(name)} ${all.length} sectors in the Strategic Index, ranked; the top one is ${all[0]?.label ?? 'none'}.`}
       table={() => <TableView rows={all} cols={twinCols} caption={`${cap(name)}: Strategic Index parts by sector`} rowKey={(c) => c.key} pageSize={33} />}
       csv={csv}
@@ -187,7 +187,7 @@ export function PriorityTable() {
                   {/* tag words on one quiet line (text, not colour): corner, allied pick, near-tie, no resource base */}
                   <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-wider text-paper-mute">
                     {[
-                      c.quadrant ? quadrantWord(sheet, c.quadrant).toUpperCase() : null,
+                      c.quadrant ? quadrantWord(c.quadrant).toUpperCase() : null,
                       c.si.pick ? 'ALLIED PICK' : null,
                       near.has(c.key) ? 'NEAR-TIE' : null,
                       noBase(c) ? 'NO RESOURCE BASE' : null,
@@ -276,7 +276,7 @@ export function AgreementMatrix() {
     <ChartCard
       headingLevel={3}
       title="Do priorities and policy agree?"
-      sub={`To compare like with like, sectors are ranked here on the Strategic Index without its policy term (so policy is not counted twice), and separately on policy activity, ranked within ${name}. Policy activity combines International Energy Agency Policies and Measures records with, where it rates ${name}, the Climate Action Tracker rating read against the technology: a strong climate rating counts for low-emission technologies and against high-emission ones such as coal, oil and gas. Each ranking is cut into thirds. Sectors on the diagonal are where the data-based priority and current policy line up.`}
+      sub={`On the paper's three-stage Strategic Index (separate from the policy alignment marked on the posture chart above): to compare like with like, sectors are ranked here on the Strategic Index without its policy term (so policy is not counted twice), and separately on policy activity, ranked within ${name}. Policy activity combines International Energy Agency Policies and Measures records with, where it rates ${name}, the Climate Action Tracker rating read against the technology: a strong climate rating counts for low-emission technologies and against high-emission ones such as coal, oil and gas. Each ranking is cut into thirds. Sectors on the diagonal are where the data-based priority and current policy line up.`}
       summary={`${cap(name)}: sectors placed by data-based priority third and policy-activity third.`}
       table={() => <TableView rows={insample} cols={twin} caption={`${cap(name)}: priority and policy thirds by sector`} rowKey={(c) => c.key} pageSize={33} />}
       csv={csv}
@@ -392,7 +392,7 @@ export function PolicyCoverage() {
     <ChartCard
       headingLevel={3}
       title="Policy records by technology and stage"
-      sub={`How many of ${poss(name)} International Energy Agency Policies and Measures records concern each technology at each stage. A record that names no technology counts in every technology and is shown separately. Colour: orange fewer records, white the middle sector of ${poss(name)} 33, blue more.`}
+      sub={`How many of ${poss(name)} International Energy Agency Policies and Measures records concern each technology at each stage. A record that names no technology counts in every technology and is shown separately. Colour: orange fewer records, white the middle sector of ${poss(name)} 33 (the paper's 11 technologies at three stages), blue more.`}
       summary={`${cap(name)}: International Energy Agency Policies and Measures records by technology and stage.`}
       table={() => (
         <TableView<TwinRow>

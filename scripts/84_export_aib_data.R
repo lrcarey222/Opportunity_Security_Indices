@@ -1,15 +1,21 @@
 # Allied Industrial Base (AIB): the Sectoral Compacts dashboard bundle (dashboard/src/aib).
 #
 # Usage:
-#   Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR] [--top-edges N] [--strategic FILE]
+#   Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR] [--top-edges N] [--strategic FILE] [--inputs FILE]
 #
 #   --in-dir     where scripts/32 wrote aib_results.rds (default: <outputs_dir>/aib)
 #   --out-dir    bundle directory (default: dashboard/public/data/aib)
 #   --top-edges  trade and investment relationships kept per compact (default 40)
 #   --strategic  the strategic layer of scripts/33 (default: <in-dir>/aib_strategic.rds; absent: the
 #                document has no `strategic` section)
+#   --inputs     scripts/31's aib_inputs.rds, for the nodes' three-stage cells (default:
+#                <in-dir>/aib_inputs.rds; absent: the nodes carry none)
 #
-# Writes compacts.<md5_8>.json (schema osi-aib v1 with optional additions: meta, country names, compacts, nodes,
+# Reads also data/reference/energy_hs6_master.csv (its three-stage supply_chain column: the nodes' three-stage
+# cells, node.yfCellsLegacy / yfSubcomponentsLegacy, since 2026-10-28).
+#
+# Writes compacts.<md5_8>.json (schema osi-aib, version 3 since 2026-10-28; first written as version 1 with
+# optional additions: meta, country names, compacts, nodes,
 # and since 2026-10-17 the emergent network `network` (emergent_aib_country_summary + emergent_aib_edges)
 # and the investor -> host flows `investmentFlows` (allied_investment_pairs + the ranked hosts of
 # allied_investment_partnerships), headline variant) and, last, manifest.json naming it; older
@@ -24,8 +30,11 @@
 # Strategic Sectoral Compacts, workstreams, Strategic AIB Roles, compact-specific roles and bilateral theses;
 # aib_dash_strategic()) when aib_strategic.rds exists. Since 2026-10-27 every stage in the bundle is one of the six
 # supply-chain stages (R/utils/supply_chain_stages.R), and the network's per-side stage counts are keyed
-# extraction ... recovery (the dashboard's TypeScript contract still reads three stages until its own
-# migration). Plain JSON, every array field wrapped in I() (R/dashboard/aib/aib_export.R); the additive
+# extraction ... recovery; since 2026-10-28 the bundle is version 3 (the dashboard's TypeScript contract reads
+# the six stages, so an app reading version 2 asks for a reload), each node also carries its three-stage cells
+# (yfCellsLegacy, yfSubcomponentsLegacy: the cells of the three-stage Country, Sector and Strategic bundles,
+# computed here from aib_inputs.rds and the OSI master) and an aggregated node's label names its six-stage
+# stage. Plain JSON, every array field wrapped in I() (R/dashboard/aib/aib_export.R); the additive
 # sections are checked first (R/dashboard/aib/aib_check.R, the mirror of the TypeScript contract) and the
 # script stops on a problem.
 
@@ -65,6 +74,10 @@ arg_value <- function(flag, default = NULL) {
 abs_path <- function(p) normalizePath(if (grepl("^([A-Za-z]:)?[/\\]", p)) p else file.path(repo_root, p), winslash = "/", mustWork = FALSE)
 
 source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
+source(file.path(repo_root, "R", "utils", "schema.R"))
+source(file.path(repo_root, "R", "utils", "hs6_crosswalk.R"))
+source(file.path(repo_root, "scripts", "utils", "raw_inputs.R"))
+source(file.path(repo_root, "R", "aib", "aib_nodes.R"))
 source(file.path(repo_root, "R", "aib", "aib_compacts.R"))
 source(file.path(repo_root, "R", "aib", "aib_strategic.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_export.R"))
@@ -92,7 +105,36 @@ if (is.null(st)) {
 }
 strategic <- if (is.null(st)) NULL else aib_dash_strategic(st, aib_strategic_gate_labels())
 
-bundle <- aib_dash_bundle(res, top_edges = top_edges, strategic = strategic)
+# The nodes' three-stage cells (node.yfCellsLegacy / yfSubcomponentsLegacy, 2026-10-28) for the joins with the
+# three-stage Country, Sector and Strategic bundles, which the roll-up of the six-stage cells does not give back:
+# the node codes of scripts/31's aib_inputs.rds crosswalked to the OSI master's three-stage supply_chain column
+# (aib_dash_legacy_cells()), the master read as scripts/31 reads it. The codes are weighed by inputs$code_trade
+# (hs6, value) where the inputs keep it; otherwise they are counted, which orders a node's cells but does not
+# change them. Without aib_inputs.rds the nodes carry none (the contract allows it; the views fall back to the
+# approximate roll-up).
+inputs_path <- abs_path(arg_value("--inputs", file.path(in_dir, "aib_inputs.rds")))
+legacy_cells <- NULL
+if (!file.exists(inputs_path)) {
+  warning("No ", inputs_path, ": the nodes carry no three-stage cells (node.yfCellsLegacy); run scripts/31_build_aib_trade_network.R.", call. = FALSE)
+} else {
+  inputs <- readRDS(inputs_path)
+  osi_master <- utils::read.csv(file.path(raw_inputs_reference_dir(repo_root), "energy_hs6_master.csv"),
+                                colClasses = c(hs6 = "character"), stringsAsFactors = FALSE)
+  code_trade <- if (is.data.frame(inputs$code_trade) && all(c("hs6", "value") %in% names(inputs$code_trade))) as.data.frame(inputs$code_trade) else NULL
+  taxonomy <- if (is.null(res$meta$taxonomy)) "master" else res$meta$taxonomy
+  legacy_cells <- aib_dash_legacy_cells(inputs$node_codes, osi_master, code_trade, taxonomy = taxonomy,
+                                        node_cells = inputs$node_cells, node_cells_detail = inputs$node_cells_detail)
+  ids <- res$classification$node_id
+  unknown <- setdiff(ids, attr(legacy_cells, "known_nodes"))
+  if (length(unknown)) {
+    warning(length(unknown), " of ", length(ids), " nodes of ", res_path, " are not nodes of ", inputs_path, " (another run?): ",
+            paste(utils::head(unknown, 5), collapse = ", "), ". They carry no three-stage cells (the dashboard uses the approximate roll-up).", call. = FALSE)
+  }
+  message(sprintf("Three-stage cells: %d of %d nodes (%s), from %s and energy_hs6_master.csv supply_chain", sum(ids %in% legacy_cells$node_id), length(ids),
+                  if (is.null(code_trade)) "codes counted: aib_inputs.rds keeps no code trade" else "codes weighed by world trade", basename(inputs_path)))
+}
+
+bundle <- aib_dash_bundle(res, top_edges = top_edges, strategic = strategic, legacy_cells = legacy_cells)
 problems <- aib_check_bundle_additions(bundle)
 if (length(problems)) stop("The AIB bundle does not match the contract:\n  ", paste(utils::head(problems, 20), collapse = "\n  "))
 # The scenario files (Managed Interdependence, Baseline), each checked against the contract, the main
@@ -119,7 +161,7 @@ scenario_files <- lapply(names(scenario_docs), function(id) write_hashed(country
 names(scenario_files) <- names(scenario_docs)
 old <- setdiff(list.files(out_dir, pattern = "^compacts\\.[0-9a-f]{8}\\.json$"), fname)
 old <- c(old, setdiff(list.files(out_dir, pattern = "^scenario-(managed|baseline)\\.[0-9a-f]{8}\\.json$"), unlist(scenario_files)))
-if (length(old)) file.remove(file.path(out_dir, old))
+if (length(old)) invisible(file.remove(file.path(out_dir, old)))
 files <- list(compacts = fname)
 if (length(scenario_files)) files$scenarios <- scenario_files
 manifest <- list(schema = AIB_DASH_SCHEMA, version = AIB_DASH_VERSION, created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),

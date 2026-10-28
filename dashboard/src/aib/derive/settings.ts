@@ -99,7 +99,7 @@ export function nodeTaxonomy(m: AibMeta): SettingWords & { dictionary: boolean }
       mode: 'master',
       dictionary: false,
       label: 'OSI basket',
-      words: 'nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one stage of a technology’s supply chain',
+      words: 'nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one of the six stages of a technology’s supply chain',
     };
   }
   const sc = tx.scope ? DICTIONARY_SCOPE_WORDS[tx.scope] : null;
@@ -110,8 +110,9 @@ export function nodeTaxonomy(m: AibMeta): SettingWords & { dictionary: boolean }
     dictionary: true,
     label: `Electro-industrial dictionary${tx.scope ? ` (${sc?.label.toLowerCase() ?? tx.scope} scope)` : ''}`,
     words:
-      `nodes come from the electro-industrial HS6 dictionary (RMI Electro-Industrial Stack): ${n ? `${n} indices` : 'indices'} > ${nSectors ? `${nSectors} sectors` : 'sectors'} > stage (Upstream, Midstream, Downstream) > HS6 code, ` +
-      `each sector split into nodes where its chain steps differ` +
+      `nodes come from the electro-industrial HS6 dictionary (RMI Electro-Industrial Stack): ${n ? `${n} indices` : 'indices'} > ${nSectors ? `${nSectors} sectors` : 'sectors'} > the dictionary’s own stage > HS6 code, ` +
+      `each sector split into nodes where its chain steps differ; each node sits at the supply-chain stage holding most of its trade, a code’s stage set by its item type ` +
+      `(raw material: Extraction, or Recovery for recycled feed; processed material: Refining; component: Components; final product or process equipment: Assembly), so no node is at Deployment` +
       `${tx.scope ? `; ${tx.scope} scope: ${sc ? `${sc.words}, ${sc.role}` : tx.scope}` : ''}; primary rows only, so each code sits in one node`,
   };
 }

@@ -481,9 +481,13 @@ export function ClimateSection() {
 /** A node's coordination dividend: the exported one, else optimized minus existing coverage. */
 const dividendOf = (n: AibNode): number | null => n.dividend ?? (n.optimized !== null && n.existing !== null ? n.optimized - n.existing : null);
 
-/** Every Allied Industrial Base node of the cell (Security & concentration): model results, never preference-adjusted. */
+/**
+ * Every Allied Industrial Base node of the cell (Security & concentration): model results, never
+ * preference-adjusted. The nodes reach this three-stage cell through their three-stage cells
+ * (../../derive/chain.ts); the stage the table shows is the node's own, one of the six (2026-10-28).
+ */
 export function AibNodesBlock() {
-  const { model, cell, tech } = useProfile();
+  const { model, cell, tech, stage } = useProfile();
   const { trade } = useTrade(tech, cell.has_trade);
   const doc = useAibDoc();
   const rows = useMemo(() => cellNodes(doc, model, cell, null, null), [doc, model, cell]);
@@ -502,7 +506,7 @@ export function AibNodesBlock() {
       title="Allied Industrial Base nodes"
       sub={
         tx.dictionary
-          ? `What the Allied Industrial Base model finds for the nodes of the electro-industrial dictionary whose traded codes sit in this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows. The nodes are not this sector's sub-sectors: each belongs to a dictionary sector and stage, and reaches this sector through the codes it shares with it (a node can sit in several sectors, and its results are for the whole node).`
+          ? `What the Allied Industrial Base model finds for the nodes of the electro-industrial dictionary whose traded codes sit in this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows. The nodes are not this sector's sub-sectors: each belongs to a dictionary sector and supply-chain stage, and reaches this sector through the codes it shares with it (a node can sit in several sectors, and its results are for the whole node).`
           : `What the Allied Industrial Base model finds for the supply-chain nodes of this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows.`
       }
       aside={<span className="eyebrow">Observed / modelled facts</span>}
@@ -513,7 +517,7 @@ export function AibNodesBlock() {
         rowKey={(n) => n.id}
         cols={[
           { id: 'n', header: 'Node', value: (n) => n.label, cell: (n) => (apart(n).length ? <span>{n.label} <span className="text-xs text-paper-mute">(in {apart(n).join(', ')})</span></span> : n.label), minWidth: 150 },
-          ...(tx.dictionary ? [{ id: 's', header: 'Dictionary sector and stage', value: (n: AibNode) => nodeWhere(tx, n), minWidth: 180 }] : []),
+          ...(tx.dictionary ? [{ id: 's', header: 'Dictionary sector and supply-chain stage', value: (n: AibNode) => nodeWhere(tx, n), minWidth: 180 }] : []),
           { id: 'c', header: 'Class', value: (n) => n.cls, cell: (n) => <ClassChip cls={n.cls} /> },
           { id: 'e', header: 'Shock exposure', value: (n) => n.exposure, cell: (n) => fmtShare(n.exposure), num: true },
           { id: 'd', header: 'Coordination dividend', value: (n) => dividendOf(n), cell: (n) => fmtPp(dividendOf(n)), num: true },
@@ -522,6 +526,11 @@ export function AibNodesBlock() {
           { id: 'k', header: 'Compact', value: (n) => n.compact ?? '', cell: (n) => { const k = n.compact ? doc.compacts.find((x) => x.id === n.compact) : null; return k ? <Link className="link" to={compactHref(k.id)}>{compactTitle(k, doc.nodes)}</Link> : <span className="text-paper-mute">none</span>; } },
         ]}
       />
+      {tx.dictionary && (
+        <p className="text-xs text-paper-mute" data-testid="aib-nodes-stages">
+          Supply-chain stage: the Allied Industrial Base nodes use six stages (Extraction, Refining, Components, Assembly, Deployment, Recovery) that roll up into the paper’s three, and this sector ({TECH_LABELS[tech]} {STAGE_LABELS[stage]}) is one of the three. A node sits here because its codes are filed under this sector, so its own stage can read differently (a Refining node in a Midstream sector).
+        </p>
+      )}
       <p className="text-xs text-paper-mute">
         Shock exposure: the share of demand the shock cuts off. Coordination dividend: the extra share restored when allies coordinate trade rather than keep today’s relationships. Residual gap: what even coordinated trade cannot restore, which needs new capacity. These do not change with any preference setting.{' '}
         <Link className="link" to="/aib">

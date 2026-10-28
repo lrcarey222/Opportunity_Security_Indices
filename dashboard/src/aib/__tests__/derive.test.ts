@@ -21,10 +21,12 @@ import { classCounts, compactNodes, concentration, mixedTreatments, nodeCsvRow, 
 import { canonicalRole, ROLE_ORDER, roleMatrix, rolesUsed } from '../derive/roles.ts';
 import { countryRoleRow, countryRoleRows, countryRolesUsed } from '../derive/countryRoles.ts';
 import {
-  buildGaps, dividendOf, dpRows, filterChoices, hostRows, investmentNodes, NO_FILTER, osiCellPick, pairInvestmentFlows, pairTradeFlows, scoredCellsOf, specializedSuppliers, topNodes, topPairs,
+  buildGaps, dividendOf, dpRows, filterChoices, hostRows, investmentNodes, legacyStageOf, NO_FILTER, osiCellPick, pairInvestmentFlows, pairTradeFlows, scoredCellsOf, specializedSuppliers, topNodes,
+  topPairs,
 } from '../derive/partnerships.ts';
 import {
-  groupedSectorWords, indexLabel, indexOfNode, indexOfSector, indicesOfCompact, nodeWhere, osiCellHref, osiCellOf, profiledCellsOfNode, sectorGroups, taxonomyOf, techOptions,
+  groupedSectorWords, indexLabel, indexOfNode, indexOfSector, indicesOfCompact, legacyOsiCellsOfNode, nodeWhere, osiCellHref, osiCellOf, osiCellsOfNode, profiledCellsOfNode, sectorGroups, taxonomyOf,
+  techOptions,
 } from '../derive/taxonomy.ts';
 import { mapPoints } from '../charts/StrategicMap.tsx';
 import {
@@ -42,9 +44,9 @@ import { aibTabHref, lastLocations, moduleResumeHref, rememberLocation, resetLas
 import { AIB_NAV, aibNavKeyOf as shellAibNavKeyOf, MODULES, placeOf } from '../../shell/modules.ts';
 import { pageTitle } from '../../shell/title.ts';
 import { countryEdges, countryRoleMatrix, countryRolesOf, edgeWords, everyShock, fmtPts, namedRoles, roleHolders, sideLevel } from '../derive/network.ts';
-import { cellWords } from '../views/networkParts.tsx';
+import { cellWords, stageCountWords } from '../views/networkParts.tsx';
 import { hostRanksOf, hostsOfNode, investmentPairs, investorHostFlows, partnerTotals, rankWords, screenedHostNote } from '../derive/investment.ts';
-import { readDoc, stripDiversify, stripMethodology, SYNTHETIC_DIR, toMasterTaxonomy } from './fixture.ts';
+import { readDoc, stripDiversify, stripLegacyCells, stripMethodology, SYNTHETIC_DIR, toMasterTaxonomy } from './fixture.ts';
 import {
   aboveWords, basisWords, benchmarkWords, cappedWords, demandSplit, DIVERSIFY_STATUS_WORDS, diversifyClassText, diversifyCsvRow, diversifyIndices, diversifyLabel, diversifyRow, diversifyRows,
   rowStatusLabel,
@@ -53,11 +55,13 @@ import {
 } from '../derive/diversify.ts';
 import { hhiTicks } from '../charts/DiversifyChart.tsx';
 
-// the synthetic fixture is a dictionary bundle (strategic scope all); `master` is its OSI-basket form
-// (strategic scope electro_industrial, the electrolysers node outside it); `older` predates both
+// the synthetic fixture is a dictionary bundle (strategic scope all; six-stage, with the nodes' three-stage
+// cells); `master` is its OSI-basket form (strategic scope electro_industrial, the electrolysers node
+// outside it); `older` predates both; `rolled` drops the three-stage cells (the joins read the roll-up)
 const doc: AibDoc = readDoc(SYNTHETIC_DIR);
 const master: AibDoc = toMasterTaxonomy(structuredClone(doc));
 const older: AibDoc = stripMethodology(structuredClone(doc));
+const rolled: AibDoc = stripLegacyCells(structuredClone(doc));
 const tx = taxonomyOf(doc.meta);
 const names = doc.countries;
 const c01 = doc.compacts[0];
@@ -234,7 +238,7 @@ describe('nodes', () => {
     const r = nodeRow(nodeOf('ev-wind-mid-magnets')!, names, tx);
     expect(r).toMatchObject({
       optimizedLargest: 'Borduria', baselineLargest: 'Zembla', hosts: 'Dorvalia; Elbonia', technologies: 'Magnets', compact: 'AIB-C01',
-      dictionary: true, indexCode: 'B', indexName: 'Electrotechnologies', osiCells: 'electric-vehicles-midstream; wind-midstream',
+      dictionary: true, indexCode: 'B', indexName: 'Electrotechnologies', osiCells: 'electric-vehicles-components; wind-components',
     });
     const csv = nodeCsvRow(r);
     expect(Object.keys(csv).slice(0, 7)).toEqual(['node_id', 'sub_sector', 'sectors', 'index_code', 'index_name', 'osi_cells', 'stage']);
@@ -669,7 +673,10 @@ describe('run settings in words', () => {
     // where the nodes come from
     const nt = nodeTaxonomy(doc.meta);
     expect(nt).toMatchObject({ mode: 'dictionary', dictionary: true, label: 'Electro-industrial dictionary (core scope)' });
-    expect(nt.words).toMatch(/^nodes come from the electro-industrial HS6 dictionary \(RMI Electro-Industrial Stack\): 6 indices > 8 sectors > stage/);
+    expect(nt.words).toMatch(/^nodes come from the electro-industrial HS6 dictionary \(RMI Electro-Industrial Stack\): 6 indices > 8 sectors > the dictionary’s own stage > HS6 code, /);
+    // each node at one of the six stages, from its codes' item type; none at Deployment
+    expect(nt.words).toContain('raw material: Extraction, or Recovery for recycled feed; processed material: Refining; component: Components; final product or process equipment: Assembly), so no node is at Deployment');
+    expect(nt.words).not.toMatch(/Upstream|Midstream|Downstream/);
     expect(nt.words).toMatch(/core scope: the dictionary's core codes: those dedicated or predominant in their sector \(specificity 1-2\), plus a few shared codes it keeps as core with a written justification, the headline; primary rows only, so each code sits in one node$/);
     // a scope the words do not know is still named once
     expect(nodeTaxonomy({ ...doc.meta, dictionaryScope: 'wide' }).label).toBe('Electro-industrial dictionary (wide scope)');
@@ -788,6 +795,10 @@ describe('partnerships and the overview (IA refactor)', () => {
     expect(ch.techs).toEqual([...new Set(doc.nodes.flatMap((n) => n.techs))].sort((a, b) => a.localeCompare(b, 'en')));
     const tech = ch.techs[0];
     expect(filterChoices(doc, { ...NO_FILTER, tech }).nodes.every((n) => n.techs.includes(tech))).toBe(true);
+    // the stage choices: the nodes' own six stages in chain order (no Deployment: no node has it), whatever the node order
+    expect(ch.stages).toEqual(['Extraction', 'Refining', 'Components', 'Assembly']);
+    const shuffled = { ...doc, nodes: [...doc.nodes].reverse().map((n, i) => (i === 0 ? { ...n, stage: 'Recovery' as const } : n)) };
+    expect(filterChoices(shuffled, NO_FILTER).stages).toEqual(['Extraction', 'Refining', 'Components', 'Assembly', 'Recovery']);
     const hosts = hostRows(doc.nodes, NO_FILTER);
     for (const h of hosts) for (const id of h.first) expect(nodeOf(id)?.hosts[0]).toBe(h.iso3);
     const sup = specializedSuppliers(doc.nodes, NO_FILTER);
@@ -839,22 +850,23 @@ describe('partnerships and the overview (IA refactor)', () => {
       ['AAA', 0.7, 'Wind', 'Upstream'],
       ['BBB', 0.5, 'Solar', 'Midstream'],
     ]);
-    // the dictionary's Solar sector (a Downstream node) reaches OSI Solar Midstream through its codes, never Solar Downstream by name
-    for (const f of [{ ...NO_FILTER, tech: 'Solar' }, { ...NO_FILTER, tech: 'Solar', stage: 'Downstream' }, { ...NO_FILTER, node: 'solar-down-modules' }]) {
+    // the dictionary's Solar sector (an Assembly node, its three-stage cell Solar Midstream) reaches OSI Solar
+    // Midstream through its codes, never Solar Downstream by name
+    for (const f of [{ ...NO_FILTER, tech: 'Solar' }, { ...NO_FILTER, tech: 'Solar', stage: 'Assembly' }, { ...NO_FILTER, node: 'solar-down-modules' }]) {
       expect(dpRows(dp, cells, doc.nodes, f, { osiTech: false }).map((r) => [r.iso3, r.value, r.stage])).toEqual([
         ['BBB', 0.5, 'Midstream'],
         ['AAA', 0.2, 'Midstream'],
       ]);
     }
-    // a Midstream rare-earth node whose codes sit in the OSI Upstream cells
+    // a Refining rare-earth node whose three-stage cells are the OSI Upstream ones
     expect(dpRows(dp, cells, doc.nodes, { ...NO_FILTER, node: 'ev-wind-mid-ree-compounds' }, { osiTech: false }).map((r) => [r.iso3, r.tech, r.stage])).toEqual([['AAA', 'Wind', 'Upstream']]);
     // no basket code: no cell, no rows (the view says so); a sector name the nodes do not use: none either
     expect(dpRows(dp, cells, doc.nodes, { ...NO_FILTER, tech: 'Electrolysers/H2 equipment' }, { osiTech: false })).toEqual([]);
     expect(dpRows(dp, cells, [], { ...NO_FILTER, tech: 'Solar' }, { osiTech: false })).toEqual([]);
     // the economy filter still applies
     expect(dpRows(dp, cells, doc.nodes, { ...NO_FILTER, tech: 'Solar', country: 'AAA' }, { osiTech: false }).map((r) => r.iso3)).toEqual(['AAA']);
-    // a master bundle (OSI technologies): the filter's technology and stage limit the cells, so the
-    // rare-earth node in Electric Vehicles and Wind never lends Wind + Upstream its Electric Vehicles cell
+    // a master bundle (OSI technologies): the filter's technology limits the cells (its stage the nodes), so
+    // the rare-earth node in Electric Vehicles and Wind never lends Wind + Refining its Electric Vehicles cell
     const mcells = [
       { tech: 'Electric Vehicles', supply_chain: 'Upstream' },
       { tech: 'Wind', supply_chain: 'Upstream' },
@@ -869,12 +881,12 @@ describe('partnerships and the overview (IA refactor)', () => {
       { partner_iso: 'CCC', cell_id: 3, value: 0.7 },
     ];
     const M = { osiTech: true };
-    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Upstream' }, M).map((r) => [r.iso3, r.value, r.tech, r.stage])).toEqual([['AAA', 0.3, 'Wind', 'Upstream']]);
+    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Refining' }, M).map((r) => [r.iso3, r.value, r.tech, r.stage])).toEqual([['AAA', 0.3, 'Wind', 'Upstream']]);
     expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, tech: 'Wind' }, M).map((r) => [r.iso3, r.tech, r.stage])).toEqual([
       ['BBB', 'Wind', 'Midstream'],
       ['AAA', 'Wind', 'Upstream'],
     ]);
-    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, stage: 'Midstream' }, M).map((r) => [r.iso3, r.tech])).toEqual([
+    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, stage: 'Components' }, M).map((r) => [r.iso3, r.tech])).toEqual([
       ['CCC', 'Electric Vehicles'],
       ['BBB', 'Wind'],
     ]);
@@ -884,48 +896,99 @@ describe('partnerships and the overview (IA refactor)', () => {
       ['BBB', 'Electric Vehicles'],
     ]);
     // the same filter read without the master rule would take the other technology's cell
-    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Upstream' }, { osiTech: false }).map((r) => r.tech)).toContain('Electric Vehicles');
+    expect(dpRows(mdp, mcells, master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Refining' }, { osiTech: false }).map((r) => r.tech)).toContain('Electric Vehicles');
+    // the three-stage cell is the node's own, not the roll-up: the Refining anode node is Batteries Midstream in
+    // the paper (yfCellsLegacy), while Refining rolls up to Upstream (read only without the three-stage cells)
+    const bcells = [
+      { tech: 'Batteries', supply_chain: 'Upstream' },
+      { tech: 'Batteries', supply_chain: 'Midstream' },
+    ];
+    const bdp = [
+      { partner_iso: 'AAA', cell_id: 1, value: 0.9 },
+      { partner_iso: 'BBB', cell_id: 2, value: 0.4 },
+    ];
+    const anode = { ...NO_FILTER, node: 'bat-mid-anode' };
+    expect(dpRows(bdp, bcells, doc.nodes, anode, { osiTech: false }).map((r) => [r.iso3, r.stage])).toEqual([['BBB', 'Midstream']]);
+    expect(dpRows(bdp, bcells, rolled.nodes, anode, { osiTech: false }).map((r) => [r.iso3, r.stage])).toEqual([['AAA', 'Upstream']]);
   });
 
   it('the filter as OSI cells (osiCellPick): the dominant cell of the matching nodes, every cell they sit in, none for a node without basket codes', () => {
     expect(osiCellPick(doc.nodes, NO_FILTER, { osiTech: false })).toBeNull();
     // a sector named like an OSI technology at another stage: its crosswalk cell, not the name
     const solar = osiCellPick(doc.nodes, { ...NO_FILTER, tech: 'Solar' }, { osiTech: false })!;
-    expect(solar.cell).toEqual({ slug: 'solar-midstream', tech: 'Solar', stage: 'Midstream' });
+    expect(solar.cell).toEqual({ slug: 'solar-midstream', tech: 'Solar', stage: 'Midstream', legacy: true });
     expect(solar.nodes.map((n) => n.id)).toEqual(['solar-down-modules']);
     // a node in two cells: the first (the largest share of its trade) is the dominant one
     const magnets = osiCellPick(doc.nodes, { ...NO_FILTER, tech: 'Magnets' }, { osiTech: false })!;
     expect(magnets.cell?.slug).toBe('electric-vehicles-midstream');
     expect(magnets.cells.map((c) => c.slug)).toEqual(['electric-vehicles-midstream', 'wind-midstream']);
     expect(magnets.from?.id).toBe('ev-wind-mid-magnets');
-    // several matching nodes: the one with the largest lost supply decides; the others' cells follow
+    // several matching nodes: the one with the largest lost supply decides; the others' cells follow; the
+    // cells are the nodes' own three-stage ones (the Refining anode node is Batteries Midstream in the paper)
     const graphite = osiCellPick(doc.nodes, { ...NO_FILTER, tech: 'Graphite' }, { osiTech: false })!;
     expect([graphite.from?.id, graphite.cell?.slug]).toEqual(['bat-mid-anode', 'batteries-midstream']);
     expect(graphite.cells.map((c) => c.slug)).toEqual(['batteries-midstream', 'batteries-upstream']);
+    // without them, the roll-up: Refining and Extraction both read Batteries Upstream, listed once
+    const graphiteUp = osiCellPick(rolled.nodes, { ...NO_FILTER, tech: 'Graphite' }, { osiTech: false })!;
+    expect([graphiteUp.from?.id, graphiteUp.cell?.slug, graphiteUp.cells.map((c) => c.slug)]).toEqual(['bat-mid-anode', 'batteries-upstream', ['batteries-upstream']]);
     // no basket code: no cell, the node listed as unmapped
     const h2 = osiCellPick(doc.nodes, { ...NO_FILTER, tech: 'Electrolysers/H2 equipment' }, { osiTech: false })!;
     expect([h2.cell, h2.cells, h2.unmapped.map((n) => n.id)]).toEqual([null, [], ['h2-down-electrolysers']]);
-    // a stage alone spans several cells: no dominant cell, every cell listed
-    const down = osiCellPick(doc.nodes, { ...NO_FILTER, stage: 'Downstream' }, { osiTech: false })!;
-    expect(down.cell).toBeNull();
-    expect(down.cells.map((c) => c.slug)).toEqual(['solar-midstream', 'wind-midstream']);
-    expect(down.unmapped.map((n) => n.id)).toEqual(['h2-down-electrolysers']);
+    // a stage alone (six-stage) spans several cells: no dominant cell, every three-stage cell listed
+    const asm = osiCellPick(doc.nodes, { ...NO_FILTER, stage: 'Assembly' }, { osiTech: false })!;
+    expect(asm.cell).toBeNull();
+    expect(asm.cells.map((c) => c.slug)).toEqual(['solar-midstream', 'electric-grid-midstream']);
+    expect(asm.unmapped.map((n) => n.id)).toEqual(['h2-down-electrolysers']);
+    // an old three-stage stage name matches no node
+    expect(osiCellPick(doc.nodes, { ...NO_FILTER, stage: 'Downstream' }, { osiTech: false })!.nodes).toEqual([]);
     expect([h2.unscored, h2.unscoredNodes]).toEqual([[], []]);
-    // the master form: the filter names OSI technologies, so its technology and stage limit the cells; the
-    // magnets node (Electric Vehicles and Wind, the largest lost supply) never lends Wind its Electric Vehicles cell
+    // the master form: the filter names OSI technologies, so its technology limits the cells (its stage the
+    // nodes); the magnets node (Electric Vehicles and Wind, the largest lost supply) never lends Wind its
+    // Electric Vehicles cell
     const M = { osiTech: true };
-    const windMid = osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Midstream' }, M)!;
+    const windMid = osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Components' }, M)!;
     expect([windMid.from?.id, windMid.cell?.slug, windMid.cells.map((c) => c.slug)]).toEqual(['ev-wind-mid-magnets', 'wind-midstream', ['wind-midstream']]);
-    const windUp = osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Upstream' }, M)!;
+    const windUp = osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Refining' }, M)!;
     expect([windUp.from?.id, windUp.cell?.slug, windUp.cells.map((c) => c.slug)]).toEqual(['ev-wind-mid-ree-compounds', 'wind-upstream', ['wind-upstream']]);
     // a technology alone: its own cells only, the dominant from the largest lost supply
     const wind = osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind' }, M)!;
     expect([wind.cell?.slug, wind.cells.map((c) => c.slug)]).toEqual(['wind-midstream', ['wind-midstream', 'wind-upstream']]);
-    // a stage alone: every technology's cell at that stage; a node alone: both of its cells
-    expect(osiCellPick(master.nodes, { ...NO_FILTER, stage: 'Upstream' }, M)!.cells.map((c) => c.slug)).toEqual(['electric-vehicles-upstream', 'wind-upstream', 'batteries-upstream']);
+    // a stage alone: the three-stage cells of every node at that stage (Refining: the rare-earth node's Upstream
+    // cells, the anode node's own Batteries Midstream); a node alone: both of its cells
+    expect(osiCellPick(master.nodes, { ...NO_FILTER, stage: 'Refining' }, M)!.cells.map((c) => c.slug)).toEqual(['electric-vehicles-upstream', 'wind-upstream', 'batteries-midstream']);
     expect(osiCellPick(master.nodes, { ...NO_FILTER, node: 'ev-wind-mid-magnets' }, M)!.cells.map((c) => c.slug)).toEqual(['electric-vehicles-midstream', 'wind-midstream']);
     // without the master rule the same filter would read the magnets node's first cell
-    expect(osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Midstream' }, { osiTech: false })!.cell?.slug).toBe('electric-vehicles-midstream');
+    expect(osiCellPick(master.nodes, { ...NO_FILTER, tech: 'Wind', stage: 'Components' }, { osiTech: false })!.cell?.slug).toBe('electric-vehicles-midstream');
+  });
+
+  it('one three-stage cell is read once, however many six-stage cells roll up to it; the aid reads the stage of the nodes\' own three-stage cells', () => {
+    const base = rolled.nodes[0];
+    const nuclear: AibNode = { ...base, id: 'uranium', label: 'Uranium ores & spent fuel', techs: ['Uranium/fuel'], stage: 'Extraction', yfCells: ['nuclear-extraction', 'nuclear-recovery'], lostUsd: 1e9 };
+    expect(osiCellsOfNode(nuclear).map((c) => [c.stage, c.legacy])).toEqual([['Extraction', false], ['Recovery', false]]);
+    expect(legacyOsiCellsOfNode(nuclear).map((c) => c.slug)).toEqual(['nuclear-upstream']);
+    const pick = osiCellPick([nuclear], { ...NO_FILTER, node: 'uranium' }, { osiTech: false })!;
+    expect([pick.cell?.slug, pick.cells.map((c) => c.slug)]).toEqual(['nuclear-upstream', ['nuclear-upstream']]);
+    // the node's own three-stage cells win, and may be more than the roll-up gives (uranium conversion)
+    const conversion: AibNode = { ...nuclear, id: 'conversion', stage: 'Refining', yfCells: ['nuclear-refining'], yfCellsLegacy: ['nuclear-upstream', 'nuclear-midstream'] };
+    expect(osiCellPick([conversion], { ...NO_FILTER, node: 'conversion' }, { osiTech: false })!.cells.map((c) => c.slug)).toEqual(['nuclear-upstream', 'nuclear-midstream']);
+    // an empty yfCellsLegacy is an answer: no three-stage cell, never the roll-up
+    const none: AibNode = { ...nuclear, id: 'none', yfCellsLegacy: [] };
+    expect(osiCellPick([none], { ...NO_FILTER, node: 'none' }, { osiTech: false })!.unmapped.map((n) => n.id)).toEqual(['none']);
+    // the aid (three-stage Sector data): no stage or sub-sector, every stage; a node: its first three-stage cell's stage
+    expect(legacyStageOf(doc.nodes, NO_FILTER)).toBeNull();
+    expect(legacyStageOf(doc.nodes, { ...NO_FILTER, tech: 'Graphite' })).toBeNull();
+    expect(legacyStageOf(doc.nodes, { ...NO_FILTER, node: 'bat-mid-anode' })).toBe('Midstream');
+    expect(legacyStageOf(rolled.nodes, { ...NO_FILTER, node: 'bat-mid-anode' })).toBe('Upstream');
+    expect(legacyStageOf(doc.nodes, { ...NO_FILTER, node: 'ev-wind-mid-ree-compounds' })).toBe('Upstream');
+    // a stage: the matching nodes' most common stage, ties in chain order (Refining: one Upstream, one Midstream node)
+    expect(legacyStageOf(doc.nodes, { ...NO_FILTER, stage: 'Refining' })).toBe('Upstream');
+    expect(legacyStageOf(doc.nodes.filter((n) => n.id !== 'ev-wind-mid-ree-compounds'), { ...NO_FILTER, stage: 'Refining' })).toBe('Midstream');
+    expect(legacyStageOf(doc.nodes, { ...NO_FILTER, stage: 'Assembly' })).toBe('Midstream');
+    // a node with no basket code: the roll-up of its own stage; no matching node: the roll-up of the filter's
+    expect(legacyStageOf(doc.nodes, { ...NO_FILTER, node: 'h2-down-electrolysers' })).toBe('Midstream');
+    expect(legacyStageOf([], { ...NO_FILTER, stage: 'Deployment' })).toBe('Downstream');
+    expect(legacyStageOf([], { ...NO_FILTER, stage: 'Upstream' })).toBe('Upstream');
+    expect(legacyStageOf([], { ...NO_FILTER, stage: 'Sidestream' })).toBeNull();
   });
 
   it('only the cells the build keeps partner indices for count: a node in an unscored cell (Semiconductors) falls to its next cell, else to a notice', () => {
@@ -935,11 +998,12 @@ describe('partnerships and the overview (IA refactor)', () => {
       { tech: 'Batteries', supply_chain: 'Midstream' },
     ]);
     expect([...scored]).toEqual(['solar-midstream', 'batteries-midstream']);
-    const node = (id: string, label: string, techs: string[], yfCells: string[], lostUsd: number): AibNode => ({ ...doc.nodes[0], id, label, techs, stage: 'Midstream', yfCells, lostUsd });
-    // the crosswalk orders ties alphabetically: the first cell of wafers is Semiconductors Midstream
-    const wafers = node('wafers', 'Wafers', ['Semiconductor materials'], ['semiconductors-midstream', 'solar-midstream'], 3e9);
-    const chips = node('chips', 'Chips', ['Semiconductor materials'], ['semiconductors-midstream'], 9e9);
-    const packs = node('cells', 'Li-ion cells & packs', ['Cells/packs'], ['batteries-midstream'], 1e9);
+    // six-stage nodes without three-stage cells: read through the roll-up of their cells
+    const node = (id: string, label: string, techs: string[], yfCells: string[], lostUsd: number): AibNode => ({ ...rolled.nodes[0], id, label, techs, stage: 'Components', yfCells, lostUsd });
+    // the crosswalk orders ties alphabetically: the first cell of wafers is Semiconductors Components (Midstream)
+    const wafers = node('wafers', 'Wafers', ['Semiconductor materials'], ['semiconductors-components', 'solar-components'], 3e9);
+    const chips = node('chips', 'Chips', ['Semiconductor materials'], ['semiconductors-components', 'semiconductors-assembly'], 9e9);
+    const packs = node('cells', 'Li-ion cells & packs', ['Cells/packs'], ['batteries-assembly'], 1e9);
     const nodes = [wafers, chips, packs];
     const D = { osiTech: false, scored };
     const semi = osiCellPick(nodes, { ...NO_FILTER, tech: 'Semiconductor materials' }, D)!;
@@ -1031,21 +1095,40 @@ describe('taxonomy (2026-10-19): sectors grouped by index, the words, the OSI cr
     expect(groupedSectorWords(tx, c01.technologies)).toBe('A Materials & Inputs: Rare earths; B Electrotechnologies: Magnets');
   });
 
-  it('where a node sits: index > sector > stage (dictionary), technologies and stage (master); the OSI cell of a crosswalk id', () => {
-    expect(nodeWhere(tx, nodeOf('solar-down-modules')!)).toBe('D Generation › Solar · Downstream');
-    expect(nodeWhere(taxonomyOf(master.meta), master.nodes.find((n) => n.id === 'ev-wind-mid-magnets')!)).toBe('Electric Vehicles, Wind · Midstream');
-    expect(osiCellOf('electric-vehicles-midstream')).toEqual({ slug: 'electric-vehicles-midstream', tech: 'Electric Vehicles', stage: 'Midstream' });
-    expect(osiCellOf('green-hydrogen-downstream')).toMatchObject({ tech: 'Green Hydrogen', stage: 'Downstream' });
+  it('where a node sits: index > sector > stage (dictionary), technologies and stage (master), six-stage; the OSI cell of a crosswalk id, six- or three-stage', () => {
+    expect(nodeWhere(tx, nodeOf('solar-down-modules')!)).toBe('D Generation › Solar · Assembly');
+    expect(nodeWhere(taxonomyOf(master.meta), master.nodes.find((n) => n.id === 'ev-wind-mid-magnets')!)).toBe('Electric Vehicles, Wind · Components');
+    // the six-stage crosswalk (node.yfCells)
+    expect(osiCellOf('electric-vehicles-components')).toEqual({ slug: 'electric-vehicles-components', tech: 'Electric Vehicles', stage: 'Components', legacy: false });
+    expect(osiCellOf('batteries-refining')).toMatchObject({ tech: 'Batteries', stage: 'Refining', legacy: false });
+    expect(osiCellOf('nuclear-recovery')).toMatchObject({ tech: 'Nuclear', stage: 'Recovery' });
+    expect(osiCellOf('green-hydrogen-deployment')).toMatchObject({ tech: 'Green Hydrogen', stage: 'Deployment' });
+    // the three-stage cells (node.yfCellsLegacy, the partner data)
+    expect(osiCellOf('electric-vehicles-midstream')).toEqual({ slug: 'electric-vehicles-midstream', tech: 'Electric Vehicles', stage: 'Midstream', legacy: true });
+    expect(osiCellOf('green-hydrogen-downstream')).toMatchObject({ tech: 'Green Hydrogen', stage: 'Downstream', legacy: true });
+    // not a cell: no stage suffix, an unknown one, a sub-component id
     expect(osiCellOf('magnets')).toBeNull();
+    expect(osiCellOf('batteries-sidestream')).toBeNull();
+    expect(osiCellOf('batteries-refining::Anode Materials')).toBeNull();
+    // a node's own cells are six-stage; its three-stage cells its own (yfCellsLegacy), else the roll-up
+    const anode = nodeOf('bat-mid-anode')!;
+    expect(osiCellsOfNode(anode).map((c) => c.slug)).toEqual(['batteries-refining']);
+    expect(legacyOsiCellsOfNode(anode).map((c) => c.slug)).toEqual(['batteries-midstream']);
+    expect(legacyOsiCellsOfNode(rolled.nodes.find((n) => n.id === 'bat-mid-anode')!).map((c) => c.slug)).toEqual(['batteries-upstream']);
   });
 });
 
 describe('emergent network roles and investment flows (2026-10-17)', () => {
   it('a network role is named at 1 point of node demand, minor below it, none without a selected relationship', () => {
-    expect(sideLevel({ partners: 1, selected: 2, headline: 0.01, cumulative: 0.02, upstream: 0, midstream: 1, downstream: 0 })).toBe('named');
-    expect(sideLevel({ partners: 1, selected: 2, headline: 0.004, cumulative: 0.01, upstream: 0, midstream: 1, downstream: 0 })).toBe('minor');
-    expect(sideLevel({ partners: 0, selected: 0, headline: 0, cumulative: 0.02, upstream: 0, midstream: 0, downstream: 0 })).toBe('minor');
-    expect(sideLevel({ partners: 0, selected: 0, headline: 0, cumulative: 0, upstream: 0, midstream: 0, downstream: 0 })).toBe('none');
+    const none = { extraction: 0, refining: 0, components: 0, assembly: 0, deployment: 0, recovery: 0 };
+    expect(sideLevel({ partners: 1, selected: 2, headline: 0.01, cumulative: 0.02, ...none, refining: 1 })).toBe('named');
+    expect(sideLevel({ partners: 1, selected: 2, headline: 0.004, cumulative: 0.01, ...none, refining: 1 })).toBe('minor');
+    expect(sideLevel({ partners: 0, selected: 0, headline: 0, cumulative: 0.02, ...none })).toBe('minor');
+    expect(sideLevel({ partners: 0, selected: 0, headline: 0, cumulative: 0, ...none })).toBe('none');
+    // a side's partners by stage in words: the non-zero counts in chain order (deployment is always 0)
+    const side = { partners: 4, selected: 5, headline: 0.1, cumulative: 0.2, ...none, recovery: 1, components: 2, extraction: 3 };
+    expect(stageCountWords(side)).toBe('(extraction 3, components 2, recovery 1)');
+    expect(stageCountWords({ ...side, ...none })).toBe('');
     expect(sideLevel(null)).toBe('none');
     expect([fmtPts(0.2461), fmtPts(0.05), fmtPts(0.0004), fmtPts(0), fmtPts(null)]).toEqual(['25 pts', '5.0 pts', '<0.1 pts', '0 pts', '–']);
   });
@@ -1284,10 +1367,25 @@ describe('the diversification scenario (2026-10-19)', () => {
     expect(hhiAxisMax([])).toBe(0.1);
     expect(hhiTicks(0.5)).toEqual([0, 0.1, 0.2, 0.3, 0.4, 0.5]);
     expect(hhiTicks(1)).toEqual([0, 0.2, 0.4, 0.6, 0.8, 1]);
+    // the Sector profiles are three-stage: a three-stage cell opens its own, a six-stage cell its roll-up's
     expect(osiCellHref(osiCellOf('electric-vehicles-midstream')!)).toBe('/sector/electric-vehicles/midstream');
+    expect(osiCellHref(osiCellOf('electric-vehicles-components')!)).toBe('/sector/electric-vehicles/midstream');
+    expect(osiCellHref(osiCellOf('batteries-refining')!)).toBe('/sector/batteries/upstream');
     expect(osiCellHref(osiCellOf('heat-pumps-downstream')!)).toBeNull();
-    expect(profiledCellsOfNode(nodeOf('ev-wind-mid-magnets')!).map((c) => c.href)).toEqual(['/sector/electric-vehicles/midstream', '/sector/wind/midstream']);
+    expect(osiCellHref(osiCellOf('heat-pumps-assembly')!)).toBeNull();
+    // a node links through its own three-stage cells, each labelled with the profile it opens
+    expect(profiledCellsOfNode(nodeOf('ev-wind-mid-magnets')!).map((c) => [c.href, c.label])).toEqual([
+      ['/sector/electric-vehicles/midstream', 'Electric Vehicles – Midstream'],
+      ['/sector/wind/midstream', 'Wind – Midstream'],
+    ]);
     expect(profiledCellsOfNode(nodeOf('h2-down-electrolysers')!)).toEqual([]);
+    // the Refining anode node opens Batteries Midstream (the paper files its codes there), the roll-up Upstream only without its own cells
+    expect(profiledCellsOfNode(nodeOf('bat-mid-anode')!).map((c) => c.href)).toEqual(['/sector/batteries/midstream']);
+    expect(profiledCellsOfNode(rolled.nodes.find((n) => n.id === 'bat-mid-anode')!).map((c) => c.href)).toEqual(['/sector/batteries/upstream']);
+    // two six-stage cells rolling up to one profile open it once
+    const uranium = { yfCells: ['nuclear-extraction', 'nuclear-recovery', 'nuclear-refining'] };
+    expect(profiledCellsOfNode(uranium).map((c) => [c.href, c.label])).toEqual([['/sector/nuclear/upstream', 'Nuclear – Upstream']]);
+    expect(profiledCellsOfNode({ ...uranium, yfCellsLegacy: ['nuclear-upstream', 'nuclear-midstream'] }).map((c) => c.href)).toEqual(['/sector/nuclear/upstream', '/sector/nuclear/midstream']);
     const csv = diversifyCsvRow(rowOf('ev-wind-mid-magnets'), names, tx);
     expect(csv).toMatchObject({
       node_id: 'ev-wind-mid-magnets', index_code: 'B', index_name: 'Electrotechnologies', sectors: 'Magnets', status: 'diversified to the benchmark', supplier_cap: 0.22,

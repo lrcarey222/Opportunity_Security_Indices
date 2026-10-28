@@ -6,16 +6,22 @@
 // not run); the store maps every failure to NO_DATA / NEWER / CONTRACT / NETWORK and can
 // retry. The strategic layer (2026-10-20): the synthetic section validates, a bundle without it too, the R
 // export's shapes are tolerated, a newer section asks for a reload, and broken fields are reported with the
-// paths of the R mirror (aib_check_strategic()).
+// paths of the R mirror (aib_check_strategic()). The six stages (2026-10-28, version 3): node.stage, compact
+// and edge stages are the six supply-chain stages (lists unique and in chain order), every network side
+// carries the six stage counts, the nodes' three-stage cells (yfCellsLegacy / yfSubcomponentsLegacy) are
+// optional and checked against the three-stage pattern, and a three-stage (version 2) bundle is rejected.
 
 import { describe, expect, it } from 'vitest';
 import {
-  AIB_DIVERSIFY_SHOCK, AIB_DIVERSIFY_STATUSES, AIB_DOC_FILE_RE, AIB_RESERVED, AIB_STRATEGIC_ROLE_CODES, AIB_STRATEGIC_SCENARIO_IDS, AIB_STRATEGIC_VERSION, checkAibManifest, checkCompactsDoc,
-  coalitionMembersOf, countryNamesOf, diversifyMetaOf, diversifyShockIdOf, indicesOf, inStrategicScope, isDictionary, needsNewerApp, nodeCoverageOf, strategicOf, variantsOf, variantWarningsOf,
-  type AibDoc,
+  AIB_DIVERSIFY_SHOCK, AIB_DIVERSIFY_STATUSES, AIB_DOC_FILE_RE, AIB_RESERVED, AIB_STAGE_KEYS, AIB_STAGES, AIB_STRATEGIC_ROLE_CODES, AIB_STRATEGIC_SCENARIO_IDS, AIB_STRATEGIC_VERSION, AIB_VERSION,
+  checkAibManifest, checkCompactsDoc, checkScenarioDoc, coalitionMembersOf, countryNamesOf, diversifyMetaOf, diversifyShockIdOf, indicesOf, inStrategicScope, isDictionary, needsNewerApp,
+  nodeCoverageOf, strategicOf, variantsOf, variantWarningsOf, type AibDoc,
 } from '../contract.ts';
 import { AibLoadError, AibStore, httpAibSource, type AibSource } from '../data/store.ts';
-import { fixtureSource, readDoc, readManifest, stripDiversify, stripMethodology, stripScenarios, stripStrategic, SYNTHETIC_DIR, toMasterTaxonomy } from './fixture.ts';
+import { legacyCellsOf, rollUpCellSlug, stageRank, SUPPLY_STAGES } from '../../lib/stages.ts';
+import {
+  fixtureSource, readDoc, readManifest, readScenarioDoc, stripDiversify, stripLegacyCells, stripMethodology, stripScenarios, stripStrategic, SYNTHETIC_DIR, toMasterTaxonomy,
+} from './fixture.ts';
 
 const doc = (): AibDoc => structuredClone(readDoc(SYNTHETIC_DIR));
 type Loose = Record<string, unknown>;
@@ -42,8 +48,9 @@ describe('checkAibManifest', () => {
   });
 
   it('a newer version needs a newer app', () => {
-    const m = { ...readManifest(SYNTHETIC_DIR), version: 3 };
-    expect(checkAibManifest(m)).toEqual(['manifest: version 3 needs a newer app']);
+    const m = { ...readManifest(SYNTHETIC_DIR), version: AIB_VERSION + 1 };
+    expect(checkAibManifest(m)).toEqual([`manifest: version ${AIB_VERSION + 1} needs a newer app`]);
+    expect(needsNewerApp(checkAibManifest(m))).toBe(true);
   });
 });
 
@@ -355,7 +362,7 @@ describe('checkCompactsDoc', () => {
     const p = checkCompactsDoc(d);
     expect(p).toContain('network.edges[0].nodes: expected an array (a one-item array collapsed to a string?)');
     expect(p).toContain('network.edges[1]: supplier and buyer are the same economy');
-    expect(p).toContain("network.edges[2].stages: 'Sidestream' is not one of Upstream, Midstream, Downstream");
+    expect(p).toContain("network.edges[2].stages: 'Sidestream' is not one of Extraction, Refining, Components, Assembly, Deployment, Recovery");
     expect(p).toContain(`network.countries[1].iso3: duplicate '${countries[0].iso3}'`);
     expect(p).toContain('network.countries[2].supplier.headline: -0.1 below 0');
     expect(p).toContain("network.countries[3].roles: 'broker' is not one of supplier, buyer, investment_host, investor");
@@ -374,10 +381,11 @@ describe('checkCompactsDoc', () => {
     expect(indicesOf(full.meta).map((ix) => ix.code)).toEqual(['A', 'B', 'C', 'D', 'E', 'F']);
     expect(full.nodes.every((n) => typeof n.indexCode === 'string')).toBe(true);
     expect(full.compacts.find((c) => c.id === 'AIB-C01')!.indices).toEqual(['A', 'B']);
-    // sector names with "/", labels with commas, a Downstream node and a node with no OSI cell
+    // sector names with "/", labels with commas, an Assembly node (the dictionary's final products) and a node with no OSI cell
     expect(full.nodes.some((n) => n.techs.some((t) => t.includes('/')))).toBe(true);
     expect(full.nodes.some((n) => n.label.includes(','))).toBe(true);
-    expect(full.nodes.some((n) => n.stage === 'Downstream')).toBe(true);
+    expect(full.nodes.find((n) => n.id === 'solar-down-modules')!.stage).toBe('Assembly');
+    expect(full.nodes.every((n) => (AIB_STAGES as readonly string[]).includes(n.stage))).toBe(true);
     expect(full.nodes.some((n) => !n.yfCells.length)).toBe(true);
     // the master form (an older bundle): no taxonomy fields, OSI technology names; still valid
     const master = toMasterTaxonomy(doc());
@@ -385,6 +393,9 @@ describe('checkCompactsDoc', () => {
     expect(indicesOf(master.meta)).toEqual([]);
     expect(master.nodes.every((n) => n.indexCode === undefined) && master.compacts.every((c) => c.indices === undefined)).toBe(true);
     expect(master.nodes.find((n) => n.id === 'ev-wind-mid-magnets')!.techs).toEqual(['Electric Vehicles', 'Wind']);
+    // a master export is six-stage too: each node at its first cell's stage, compact stages in chain order
+    expect(master.nodes.find((n) => n.id === 'bat-mid-anode')).toMatchObject({ stage: 'Refining', yfCells: ['batteries-refining'], yfCellsLegacy: ['batteries-midstream'] });
+    expect(master.compacts.find((c) => c.id === 'AIB-C02')!.stages).toEqual(['Extraction', 'Refining']);
     expect(checkCompactsDoc(master)).toEqual([]);
     // null where R had NA (a master export writes them), an unknown taxonomy word read as master
     const na = doc();
@@ -420,7 +431,7 @@ describe('checkCompactsDoc', () => {
   });
 
   it('a newer document version needs a newer app; a non-object is one problem', () => {
-    expect(checkCompactsDoc({ ...doc(), version: 3 })).toContain('document: version 3 needs a newer app');
+    expect(checkCompactsDoc({ ...doc(), version: AIB_VERSION + 1 })).toContain(`document: version ${AIB_VERSION + 1} needs a newer app`);
     expect(checkCompactsDoc('x')).toEqual(['document: not an object']);
   });
 
@@ -428,6 +439,151 @@ describe('checkCompactsDoc', () => {
     const d = doc();
     for (let i = 0; i < 300; i++) d.nodes.push({ ...structuredClone(d.nodes[0]), id: `n${i}`, exposure: 'x' as unknown as number });
     expect(checkCompactsDoc(d).length).toBe(200);
+  });
+});
+
+describe('the six stages (2026-10-28, version 3)', () => {
+  const SIX = 'Extraction, Refining, Components, Assembly, Deployment, Recovery';
+
+  it('the stages are the shared six in chain order; the version is 3, so an app reading 2 asks for a reload', () => {
+    expect([...AIB_STAGES]).toEqual([...SUPPLY_STAGES]);
+    expect(AIB_STAGES.join(', ')).toBe(SIX);
+    expect([...AIB_STAGE_KEYS]).toEqual(['extraction', 'refining', 'components', 'assembly', 'deployment', 'recovery']);
+    expect(AIB_VERSION).toBe(3);
+    // the exporter writes the version into the manifest and the document; an app reading 2 sees "version 3 needs a newer app"
+    expect(readManifest(SYNTHETIC_DIR).version).toBe(AIB_VERSION);
+    expect(doc().version).toBe(AIB_VERSION);
+  });
+
+  it('the synthetic bundle is six-stage throughout: nodes, compacts, edges in chain order, six counts per side, both scenario files', () => {
+    const d = doc();
+    const stageOf = new Map(d.nodes.map((n) => [n.id, n.stage]));
+    expect([...new Set(d.nodes.map((n) => n.stage))].sort()).toEqual(['Assembly', 'Components', 'Extraction', 'Refining']);
+    const inOrder = (xs: readonly string[]) => xs.every((s, i) => i === 0 || stageRank(xs[i - 1]) < stageRank(s));
+    for (const c of d.compacts) {
+      expect(inOrder(c.stages), c.id).toBe(true);
+      expect([...c.stages].sort(), c.id).toEqual([...new Set(c.nodes.map((id) => stageOf.get(id)!))].sort());
+    }
+    expect(d.compacts.find((c) => c.id === 'AIB-C01')!.stages).toEqual(['Refining', 'Components']);
+    const managed = readScenarioDoc('managed', SYNTHETIC_DIR)!;
+    const baseline = readScenarioDoc('baseline', SYNTHETIC_DIR)!;
+    for (const x of [d, managed, baseline]) {
+      for (const e of x.network!.edges) expect(inOrder(e.stages) && e.stages.every((s) => (AIB_STAGES as readonly string[]).includes(s))).toBe(true);
+      for (const r of x.network!.countries) {
+        for (const side of [r.supplier, r.buyer, r.host, r.investor]) {
+          expect(AIB_STAGE_KEYS.every((k) => Number.isInteger(side[k]))).toBe(true);
+          expect(side.deployment).toBe(0);
+          expect('upstream' in side || 'midstream' in side || 'downstream' in side).toBe(false);
+        }
+      }
+    }
+    expect(checkScenarioDoc(managed, d, 'managed')).toEqual([]);
+    expect(checkScenarioDoc(baseline, d, 'baseline')).toEqual([]);
+  });
+
+  it('node.stage is one of the six; Deployment is valid though no AIB node carries it', () => {
+    const d = doc();
+    loose(d.nodes[0]).stage = 'Upstream';
+    loose(d.nodes[1]).stage = 'refining';
+    loose(d.nodes[2]).stage = 7;
+    loose(d.nodes[3]).stage = 'Deployment';
+    expect(checkCompactsDoc(d)).toEqual([
+      `nodes[0].stage: 'Upstream' is not one of ${SIX}`,
+      `nodes[1].stage: 'refining' is not one of ${SIX}`,
+      'nodes[2].stage: expected a string',
+    ]);
+  });
+
+  it('compact and edge stages: known, each once, in chain order', () => {
+    const d = doc();
+    loose(d.compacts[0]).stages = ['Components', 'Refining'];
+    loose(d.compacts[1]).stages = ['Extraction', 'Refining', 'Refining'];
+    loose(d.compacts[2]).stages = ['Midstream'];
+    const e = d.network!.edges;
+    loose(e[0]).stages = ['Assembly', 'Extraction'];
+    loose(e[1]).stages = 'Refining';
+    loose(e[3]).stages = ['Refining', 'Sidestream', 'Extraction'];
+    const p = checkCompactsDoc(d);
+    expect(p).toEqual([
+      'compacts[0].stages: not in chain order (Components, Refining)',
+      "compacts[1].stages: duplicate 'Refining'",
+      `compacts[2].stages: 'Midstream' is not one of ${SIX}`,
+      'network.edges[0].stages: not in chain order (Assembly, Extraction)',
+      'network.edges[1].stages: expected an array (a one-item array collapsed to a string?)',
+      `network.edges[3].stages: 'Sidestream' is not one of ${SIX}`,
+      'network.edges[3].stages: not in chain order (Refining, Sidestream, Extraction)',
+    ]);
+    // an empty list and a single stage pass
+    const ok = doc();
+    ok.compacts[0].stages = [];
+    ok.compacts[1].stages = ['Recovery'];
+    expect(checkCompactsDoc(ok)).toEqual([]);
+  });
+
+  it('every network side carries the six stage counts: a missing one, or a three-stage side, is reported', () => {
+    const d = doc();
+    const c = d.network!.countries;
+    delete loose(c[0].supplier).recovery;
+    loose(c[1].buyer).components = 1.5;
+    // a side as a three-stage bundle wrote it
+    const { extraction, refining, components, assembly, deployment, recovery, ...rest } = c[2].host;
+    void [extraction, refining, components, assembly, deployment, recovery];
+    loose(c[2]).host = { ...rest, upstream: 1, midstream: 0, downstream: 0 };
+    const p = checkCompactsDoc(d);
+    expect(p).toContain('network.countries[0].supplier.recovery: expected a number');
+    expect(p).toContain('network.countries[1].buyer.components: 1.5 is not an integer');
+    for (const k of AIB_STAGE_KEYS) expect(p).toContain(`network.countries[2].host.${k}: expected a number`);
+    expect(p).toHaveLength(8);
+  });
+
+  it("the nodes' three-stage cells are optional and checked against the three-stage pattern when present", () => {
+    const full = doc();
+    expect(full.nodes.every((n) => Array.isArray(n.yfCellsLegacy) && Array.isArray(n.yfSubcomponentsLegacy))).toBe(true);
+    // the anode node: its own legacy cell is not the roll-up of its six-stage cell
+    const anode = full.nodes.find((n) => n.id === 'bat-mid-anode')!;
+    expect(anode).toMatchObject({ stage: 'Refining', yfCells: ['batteries-refining'], yfCellsLegacy: ['batteries-midstream'], yfSubcomponentsLegacy: ['batteries-midstream::Anode Materials'] });
+    expect(rollUpCellSlug(anode.yfCells[0])).toBe('batteries-upstream');
+    expect(legacyCellsOf(anode)).toEqual(['batteries-midstream']);
+    expect(legacyCellsOf(stripLegacyCells(doc()).nodes.find((n) => n.id === 'bat-mid-anode')!)).toEqual(['batteries-upstream']);
+    // absent (an export before them) and empty pass
+    expect(checkCompactsDoc(stripLegacyCells(doc()))).toEqual([]);
+    const ok = doc();
+    ok.nodes[0].yfCellsLegacy = [];
+    ok.nodes[0].yfSubcomponentsLegacy = [];
+    expect(checkCompactsDoc(ok)).toEqual([]);
+    const d = doc();
+    d.nodes[0].yfCellsLegacy = ['electric-vehicles-upstream', 'electric-vehicles-refining', 'Wind Midstream'];
+    d.nodes[1].yfSubcomponentsLegacy = ['wind-midstream::Generator Parts', 'wind-midstream', 'wind-components::Generator Parts', 'wind-midstream::'];
+    loose(d.nodes[2]).yfCellsLegacy = 'batteries-midstream';
+    loose(d.nodes[3]).yfSubcomponentsLegacy = [3];
+    expect(checkCompactsDoc(d)).toEqual([
+      "nodes[0].yfCellsLegacy[1]: 'electric-vehicles-refining' is not a three-stage cell (<tech>-<upstream|midstream|downstream>)",
+      "nodes[0].yfCellsLegacy[2]: 'Wind Midstream' is not a three-stage cell (<tech>-<upstream|midstream|downstream>)",
+      "nodes[1].yfSubcomponentsLegacy[1]: 'wind-midstream' is not a three-stage sub-component (<tech>-<upstream|midstream|downstream>::<name>)",
+      "nodes[1].yfSubcomponentsLegacy[2]: 'wind-components::Generator Parts' is not a three-stage sub-component (<tech>-<upstream|midstream|downstream>::<name>)",
+      "nodes[1].yfSubcomponentsLegacy[3]: 'wind-midstream::' is not a three-stage sub-component (<tech>-<upstream|midstream|downstream>::<name>)",
+      'nodes[2].yfCellsLegacy: expected an array (a one-item array collapsed to a string?)',
+      'nodes[3].yfSubcomponentsLegacy[0]: expected a string',
+    ]);
+  });
+
+  it('a three-stage bundle (version 2, before 2026-10-28) is rejected, not read as six-stage', () => {
+    const v2 = doc();
+    v2.version = 2;
+    for (const n of v2.nodes) loose(n).stage = n.stage === 'Extraction' || n.stage === 'Refining' ? 'Upstream' : 'Midstream';
+    for (const c of v2.compacts) loose(c).stages = ['Midstream'];
+    for (const r of v2.network!.countries) {
+      for (const k of ['supplier', 'buyer', 'host', 'investor'] as const) {
+        const s = loose(r[k]);
+        for (const x of AIB_STAGE_KEYS) delete s[x];
+        Object.assign(s, { upstream: 0, midstream: 1, downstream: 0 });
+      }
+    }
+    const p = checkCompactsDoc(v2);
+    expect(p.some((x) => /needs a newer app/.test(x))).toBe(false);
+    expect(p).toContain(`nodes[0].stage: 'Upstream' is not one of ${SIX}`);
+    expect(p).toContain(`compacts[0].stages: 'Midstream' is not one of ${SIX}`);
+    expect(p).toContain('network.countries[0].supplier.extraction: expected a number');
   });
 });
 
@@ -459,7 +615,7 @@ describe('AibStore', () => {
     await expect(s.manifest()).rejects.toMatchObject({ code: 'NO_DATA' });
     expect(n).toBe(2);
 
-    const newer = new AibStore({ manifest: async () => ({ ...readManifest(SYNTHETIC_DIR), version: 3 }), json: async () => ({}) });
+    const newer = new AibStore({ manifest: async () => ({ ...readManifest(SYNTHETIC_DIR), version: AIB_VERSION + 1 }), json: async () => ({}) });
     await expect(newer.manifest()).rejects.toMatchObject({ code: 'NEWER' });
 
     const broken = new AibStore(fixtureSource(SYNTHETIC_DIR, (d) => delete loose(d).nodes));

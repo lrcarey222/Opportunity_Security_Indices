@@ -117,8 +117,12 @@ aib_data_quality <- function(nodes, node_codes, node_summary, cfg_dq, history_ye
 #      there are at least two of them;
 #   3. a node still alone stays as it is: reported, flagged, not optimized.
 # "Stage" here is the source stage (the taxonomy's Upstream / Midstream / Downstream), so the merged
-# ids ("<tech>-<source stage>--aggregated") and labels are those of the three-stage build, which
-# config/aib_strategic_compacts.yml and config/aib_node_functions.yml are keyed by.
+# ids ("<tech>-<source stage>--aggregated") are those of the three-stage build, which
+# config/aib_strategic_compacts.yml and config/aib_node_functions.yml are keyed by. The label names the
+# merged node's six-stage stage instead (since 2026-10-28; "Uranium/fuel Extraction: aggregated ..."): the
+# members' six-stage label (`supply_chain` of `nodes`) holding the most of their world trade, a tie going
+# to the earlier stage in chain order, which is the label scripts/31 then gives the merged node from its
+# codes unless a member's codes are themselves mixed. Without `supply_chain` the source stage is named.
 # Returns node_id, merged_id, merged_label; a sibling that absorbs others maps to itself.
 aib_quality_merge_map <- function(quality, nodes, node_cells = NULL, edges = NULL) {
   empty <- tibble::tibble(node_id = character(), merged_id = character(), merged_label = character())
@@ -149,13 +153,21 @@ aib_quality_merge_map <- function(quality, nodes, node_cells = NULL, edges = NUL
       dplyr::mutate(merged_label = paste(c(label_of(merged_id[1]), sort(label_of(setdiff(node_id, merged_id[1])))), collapse = " + ")) %>%
       dplyr::ungroup()
   }
-  rest <- nodes[nodes$node_id %in% left, c("node_id", "primary_tech", "source_stage", "sub_sector"), drop = FALSE]
+  rest <- nodes[nodes$node_id %in% left, intersect(c("node_id", "primary_tech", "source_stage", "supply_chain", "sub_sector"), names(nodes)), drop = FALSE]
+  if (!"supply_chain" %in% names(rest)) rest$supply_chain <- rest$source_stage
+  rest$trade <- if (nrow(rest)) rep_len(trade_of(rest$node_id), nrow(rest)) else numeric()
+  # The six-stage label of a group of members: the stage with the most of their world trade (ties: chain order).
+  label_stage <- function(stage, trade) {
+    v <- tapply(trade, stage, sum)
+    s <- names(v)[order(-as.numeric(v), match(names(v), SUPPLY_CHAIN_STAGES, nomatch = length(SUPPLY_CHAIN_STAGES) + 1L))]
+    s[1]
+  }
   grouped <- rest %>%
     dplyr::group_by(primary_tech, source_stage) %>%
     dplyr::filter(dplyr::n() >= 2) %>%
     dplyr::mutate(
       merged_id = paste0(aib_slug(primary_tech), "-", aib_slug(source_stage), "--aggregated"),
-      merged_label = paste0(primary_tech, " ", source_stage, ": aggregated low-coverage sub-sectors (", paste(sort(sub_sector), collapse = ", "), ")")
+      merged_label = paste0(primary_tech, " ", label_stage(supply_chain, trade), ": aggregated low-coverage sub-sectors (", paste(sort(sub_sector), collapse = ", "), ")")
     ) %>%
     dplyr::ungroup() %>%
     dplyr::select(node_id, merged_id, merged_label)

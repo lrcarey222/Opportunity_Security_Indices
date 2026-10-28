@@ -1,9 +1,11 @@
 // The Country profile /countries/:iso3 (spec_country.md A4.2; IA refactor 2026-10-16, brief s.9-12 and
 // s.25, plan.md 5.3): one economy's strategic position. Loads its fact sheet (and, only when a picked
 // sector needs it, the companion drivers file) and the Allied Industrial Base document, reads the URL
-// state (cell, partner, all, ptab) and renders: the head with the Perspective control (the four dials),
-// Strategic position, Opportunities & risks, Sector position, Policy & climate, Partnerships, Role in
-// the Allied Industrial Base, the memo and the data notes. States (A5): unknown ISO3 -> the landing with
+// state (cell, partner, all, ptab) and renders: the head, the six-stage strategic posture chart (#posture,
+// 2026-10-27), the Perspective control (the four dials), then the paper's three-stage sections: Security
+// and opportunity (#position; "Strategic position" until 2026-10-28), Opportunities & risks, Sector
+// position, Policy & climate, Partnerships, Role in the Allied Industrial Base, the memo and the data
+// notes. States (A5): unknown ISO3 -> the landing with
 // a notice; no index data -> the shell with a notice; not rankable -> every section with its "not
 // available" words.
 //
@@ -210,7 +212,7 @@ function Profile({ iso3 }: { iso3: string }) {
         </div>
       )}
       <ProfileHead manifest={manifest} />
-      <div className="mb-8">
+      <div id="posture" className="mb-8 scroll-mt-16">
         <CountryPostureHero iso3={sheet.iso3} name={sheet.meta.country} />
       </div>
       <PerspectiveControl />
@@ -219,8 +221,8 @@ function Profile({ iso3 }: { iso3: string }) {
         <div className="min-w-0 space-y-14">
           {sheet.meta.status === 'non_rankable' && (
             <Notice kind="info" title="Scores shown but not ranked">
-              {sheet.meta.country}&apos;s scores are shown but not compared with other economies: {sheet.meta.status_reason ?? 'most of its data are filled in'}. The charts that
-              compare sectors are empty; the tables list every value with its reason.
+              {sheet.meta.country}&apos;s three-stage index scores are shown but not compared with other economies: {sheet.meta.status_reason ?? 'most of its data are filled in'}.
+              The paper&apos;s charts that compare sectors are empty (the posture chart above is computed separately); the tables list every value with its reason.
             </Notice>
           )}
           <Glance />

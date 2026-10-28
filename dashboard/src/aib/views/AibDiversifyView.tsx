@@ -10,7 +10,7 @@
 // `sector`, shared with the chart; `all=1` includes the nodes the scenario did not diversify, shown with
 // their status and without the run columns; the class under the scenario with its physical-capability
 // flag), CSV (shock: the scenario's id). Each node links
-// to its compact (#nodes) and to the Sector Profile of the OSI cells its codes sit in. Modelled facts:
+// to its compact (#nodes) and to the Sector Profiles of its three-stage OSI cells. Modelled facts:
 // nothing follows the Perspective. An older bundle without the scenario says so.
 //
 // The Managed Interdependence explainer (2026-10-19, page work A): the scenario toggle's Managed
@@ -26,7 +26,7 @@ import { ChartCard } from '../../charts/ChartCard.tsx';
 import { Legend } from '../../charts/legends.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { EmptyState, FilterRow, PageHead, Select, StatTile, Switch } from '../../components/ui.tsx';
-import { cellLabel, DASH } from '../../lib/format.ts';
+import { DASH } from '../../lib/format.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import { diversifyShockIdOf, type AibNode } from '../contract.ts';
@@ -69,12 +69,12 @@ function NodePlace({ n }: { n: AibNode }) {
       )}
       {cells.length > 0 && (
         <>
-          {' · Sector profile: '}
+          {' · Sector profile (the paper’s three stages): '}
           {cells.map((cell, i) => (
-            <span key={cell.slug}>
+            <span key={cell.href}>
               {i > 0 && ', '}
               <Link className="link" to={cell.href}>
-                {cellLabel(cell.tech, cell.stage)}
+                {cell.label}
               </Link>
             </span>
           ))}

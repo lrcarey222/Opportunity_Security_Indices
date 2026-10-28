@@ -80,7 +80,7 @@ function PriorityReadout() {
         <p className="mt-1 text-sm text-paper-mute">{name} has no Strategic Index (no International Energy Agency policy records), so the dials do not reorder its sectors.</p>
       )}
       <p className="mt-2 text-xs text-paper-mute">
-        Energy Security, Economic Opportunity, the four corners, trade and the Allied Industrial Base shock and compacts results stay as they are. The Strategic priority column in Sector position and
+        Energy Security, Economic Opportunity, the four corners, the strategic posture chart, trade and the Allied Industrial Base shock and compacts results stay as they are. The Strategic priority column in Sector position and
         &ldquo;Make bets&rdquo; below follow the dials.
       </p>
     </div>
@@ -105,8 +105,9 @@ export function PerspectiveControl() {
         </button>
         {sc ? <LiveSummary open={open} /> : custom ? <span className="text-sm text-paper-mute">Loading the model to apply the dials in the link…</span> : null}
         <p className="basis-full text-xs leading-snug text-paper-mute">
-          Four dials (Hawkishness, Bullishness, Populism, Climate) re-weight strategic priorities, sector rankings and how attractive partners look. They never change observed or
-          modelled facts: trade flows, concentration, production, shock coverage, capacity gaps and the Allied Industrial Base shock and compacts results.
+          Four dials (Hawkishness, Bullishness, Populism, Climate) re-weight the paper&apos;s three-stage strategic priorities, sector rankings and how attractive partners look. They
+          never change the strategic posture chart above or observed or modelled facts: trade flows, concentration, production, shock coverage, capacity gaps and the Allied
+          Industrial Base shock and compacts results.
         </p>
       </div>
       {open && (

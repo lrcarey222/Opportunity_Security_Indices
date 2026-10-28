@@ -2,19 +2,26 @@
 // user's orientation: x = Economic Opportunity, y = Energy Security, split at the medians of the
 // economies shown). The four corners carry the names Country Insights uses (the user's decision, 2026-10-11:
 // Upgrade, Grow, Secure, Watch; RMI 2025's leapfrog, export promotion, friendshore and alternative
-// value creation) beside their plain description.
+// value creation) beside their plain description. Since 2026-10-28 two of them are shown as Exposed (was
+// Secure) and Stable (was Watch), so they do not clash with the six-stage posture words, as in
+// country/contract.ts QUADRANTS.
 
 export const REGIONS = [
   'Upgrade: high opportunity, low energy security',
   'Grow: high opportunity, high energy security',
-  'Secure: low opportunity, low energy security',
-  'Watch: low opportunity, high energy security',
+  'Exposed: low opportunity, low energy security',
+  'Stable: low opportunity, high energy security',
 ] as const;
 
 /** The corner names alone, in REGIONS order. */
-export const CORNERS = ['Upgrade', 'Grow', 'Secure', 'Watch'] as const;
+export const CORNERS = ['Upgrade', 'Grow', 'Exposed', 'Stable'] as const;
 /** The glossary id of each corner, in REGIONS order. */
-export const CORNER_TERM = ['upgrade', 'grow', 'secure', 'watch'] as const;
+export const CORNER_TERM = ['upgrade', 'grow', 'exposed', 'stable'] as const;
+
+const CORNER_SHORT = ['high opportunity, low security', 'high opportunity, high security', 'low opportunity, low security', 'low opportunity, high security'] as const;
+/** The scatter's label for corner i (REGIONS order): its name in capitals and, unless narrow, its plain description. */
+export const cornerAnnotation = (i: 0 | 1 | 2 | 3, narrow: boolean): string =>
+  narrow ? CORNERS[i].toUpperCase() : `${CORNERS[i].toUpperCase()}: ${CORNER_SHORT[i]}`;
 
 /** shiny mod_space.R region_of(). */
 export function regionOf(es: number | null, eo: number | null, esMed: number, eoMed: number): string | null {

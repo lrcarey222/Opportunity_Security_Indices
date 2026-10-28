@@ -72,7 +72,7 @@ export function AibStrategicCards({ place, name, scenario, partnerName }: { plac
           </h3>
           <p className="mb-3 mt-2 text-sm text-paper-dim">
             {sum.compacts.length
-              ? `${cap(name)} has a role in ${plural(sum.compacts.length, 'strategic compact')} of ${s.compacts.length}${core ? `, as a core country in ${core}` : ''}. The most relevant first; a compact's page shows its whole division of labour.`
+              ? `${cap(name)} has a role in ${plural(sum.compacts.length, 'strategic compact')} of ${s.compacts.length}${core ? `, as a core country in ${core}` : ''}. The most relevant first; a compact's page shows every member's role.`
               : `${cap(name)} has no role in a strategic compact.`}
           </p>
           {sum.compacts.length > 0 && <CompactRoleList roles={sum.compacts} s={s} scenario={scenario} detail />}

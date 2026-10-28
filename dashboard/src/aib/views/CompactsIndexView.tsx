@@ -66,6 +66,7 @@ import type { AibToggle } from '../scenarioUrl.ts';
 import { BasisTag } from './basis.tsx';
 import { csvWithRun, ReadingNotes, Section } from './common.tsx';
 import { NodeRobustness } from './NodeRobustness.tsx';
+import { stageRank } from '../../lib/stages.ts';
 
 /** The coalition line of a card: members, associates and critical external dependencies of a compact as solved under a scenario. */
 function coalitionLine(c: AibCompact, names: Readonly<Record<string, string>>): string {
@@ -532,7 +533,7 @@ export default function CompactsIndexView() {
     { id: 'node', header: 'Sub-sector', value: (n) => n.label },
     ...(tx.dictionary ? [{ id: 'index', header: 'Index', value: (n: AibNode) => { const ix = indexOfNode(tx, n); return ix ? indexLabel(ix) : null; } }] : []),
     { id: 'techs', header: tx.Many, value: (n) => n.techs.join(', ') },
-    { id: 'stage', header: 'Stage', value: (n) => n.stage },
+    { id: 'stage', header: 'Stage', value: (n) => n.stage, sortValue: (n) => stageRank(n.stage) },
     mi ? { id: 'cls', header: 'Class under Managed Interdependence', value: miCls, minWidth: 160 } : { id: 'cls', header: 'Class', value: (n) => classInfo(n.cls).label },
     ...(mi ? [{ id: 'headlineCls', header: 'Class under Decoupling', value: (n: AibNode) => classInfo(n.cls).label }] : []),
     { id: 'needs', header: 'Policy needs', value: (n) => policyNeedsText(n.policyNeeds) },

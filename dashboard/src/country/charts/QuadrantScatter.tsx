@@ -22,8 +22,8 @@ import { quadrantWord, proseName, poss, cap } from '../derive/text.ts';
 const MARK = '#d1d5db';
 export const STAGE_SYMBOL: Record<string, string> = { Upstream: 'circle', Midstream: 'square', Downstream: 'triangle' };
 
-// x = Economic Opportunity, y = Energy Security: Grow top right, Watch top left, Secure bottom left,
-// Upgrade bottom right
+// x = Economic Opportunity, y = Energy Security: Grow top right, Stable (key watch) top left, Exposed
+// (key secure) bottom left, Upgrade bottom right. The headings print the QUADRANTS labels.
 const CORNERS = [
   { id: 'grow', x: 100, y: 100, anchor: 'end', top: true },
   { id: 'watch', x: 0, y: 100, anchor: 'start', top: true },
@@ -116,7 +116,7 @@ export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }
     const vs = (high: boolean) => (high ? 'at or above' : 'below');
     return (
       <Tip
-        value={quadrantWord(sheet, p.quadrant)}
+        value={quadrantWord(p.quadrant)}
         title={c.label}
         lines={[
           `${cap(name)}: Economic Opportunity ${vs(p.x >= (medEo ?? 0))} its median sector (${cm?.eo.d ?? '–'}), Energy Security ${vs(p.y >= (medEs ?? 0))} it (${cm?.es.d ?? '–'})`,
@@ -131,7 +131,7 @@ export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }
     const q = QUADRANTS.find((x) => x.id === id)!;
     return (
       <div className={right ? 'text-right' : ''}>
-        <span className="block text-[11px] font-semibold uppercase tracking-wider text-paper">{quadrantWord(sheet, id)}</span>
+        <span className="block text-[11px] font-semibold uppercase tracking-wider text-paper">{quadrantWord(id)}</span>
         <span className="block text-[11px] leading-snug text-paper-mute">
           {q.meaning} <span className="whitespace-nowrap">({q.posture})</span>
         </span>

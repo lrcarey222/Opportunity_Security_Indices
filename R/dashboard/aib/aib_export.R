@@ -28,16 +28,24 @@
 # (host, gain, cost), the best host the alignment screen keeps out and what the screen costs.
 # 2026-10-20 (optional): `strategic`, the strategic layer of scripts/33 (Strategic Sectoral Compacts, their
 # workstreams, Strategic AIB Roles, compact-specific country roles and bilateral theses; aib_dash_strategic()).
+# 2026-10-28 (version 3, the dashboard's stage migration; optional): node.yfCellsLegacy and
+# yfSubcomponentsLegacy, each node's three-stage cells (aib_dash_legacy_cells()), for the joins with the
+# three-stage Country, Sector and Strategic bundles; and the aggregated nodes' labels name their six-stage
+# stage (aib_dash_node_label()).
 
 AIB_DASH_SCHEMA <- "osi-aib"
-# Version 2 (2026-10-20): meta.scenarios became the scenario list (objects) and the supply scenarios moved to
-# meta.supplyScenarios; an app reading version 1 would reject the objects, so it asks for a reload instead.
-AIB_DASH_VERSION <- 2L
+# Version 3 (2026-10-28): the six supply-chain stages (below), which the dashboard's contract reads since then;
+# an app reading version 2 would reject the six-stage document, so it asks for a reload instead. Version 2
+# (2026-10-20): meta.scenarios became the scenario list (objects) and the supply scenarios moved to
+# meta.supplyScenarios.
+AIB_DASH_VERSION <- 3L
 
 # Stages (2026-10-27): node.stage, compact.stages and network edge stages are the six supply-chain
 # stages (SUPPLY_CHAIN_STAGES, R/utils/supply_chain_stages.R, which the caller sources) in chain order,
 # and the network's per-side partner counts are keyed by them in lower case (extraction, refining,
 # components, assembly, deployment, recovery) instead of upstream / midstream / downstream.
+# aib_check_stages() (R/dashboard/aib/aib_check.R) checks node.stage and compact.stages; aib_check_network()
+# checks the edge stages and, through aib_check_side(), the per-side stage counts.
 aib_dash_stage_keys <- function() tolower(SUPPLY_CHAIN_STAGES)
 aib_dash_stage_order <- function(x) {
   x <- as.character(x)
@@ -54,6 +62,63 @@ aib_dash_round <- function(x, d = 4) ifelse(is.na(x), NA_real_, round(as.numeric
 aib_dash_chr <- function(x) if (is.null(x) || length(x) == 0 || is.na(x) || !nzchar(x)) NA_character_ else as.character(x)
 aib_dash_col <- function(r, col) if (col %in% names(r)) r[[col]][1] else NA
 
+# A node's label as the bundle shows it. A data-quality aggregate built before 2026-10-28 is labelled with its
+# source stage ("Uranium/fuel Upstream: aggregated low-coverage sub-sectors (...)", aib_quality_merge_map());
+# the label names the node's six-stage stage instead ("Uranium/fuel Extraction: aggregated ..."). Its id
+# keeps the source stage ("uranium-fuel-upstream--aggregated"): the strategic configs are keyed by it. Every
+# other label, and a stage that is not one of the six, leaves the label as it is.
+aib_dash_node_label <- function(label, stage) {
+  if (is.na(label) || !is_supply_chain_stage(stage)) return(label)
+  sub("^(.*) (Upstream|Midstream|Downstream): aggregated ", paste0("\\1 ", stage, ": aggregated "), label)
+}
+
+# Each node's three-stage cells (node.yfCellsLegacy / yfSubcomponentsLegacy, 2026-10-28): a table node_id,
+# yf_cells ("batteries-midstream; ...") and osi_subcomponents ("batteries-midstream::Anode Materials; ..."),
+# the cells of the three-stage Country, Sector and Strategic bundles of 2026-10-22, which the six-stage cells
+# do not give back by roll-up (the paper filed refined materials under Midstream; Refining rolls up to
+# Upstream). taxonomy "dictionary": the crosswalk of each node's codes (node_codes: node_id, hs6) to the OSI
+# master's three-stage supply_chain column (aib_osi_crosswalk(stage_col = "supply_chain"), the same crosswalk
+# scripts/31 builds at six stages), weighted by code_trade (hs6, value) when given, else by counting codes:
+# the set of cells is the same either way, only their order (largest first) depends on the weights. Any other
+# taxonomy (the master): every node is its own cells, each technology at the node's source stage
+# (node_cells: node_id, tech, source_stage; node_cells_detail adds sub_sector), as scripts/32 builds the
+# six-stage ones. A node with no basket code is absent (the exporter writes []). The result's attribute
+# "known_nodes" lists every node the inputs hold, so the exporter tells a known node with no basket code
+# (it writes []) from a node the inputs do not know, as in inputs of another run (it writes nothing, and the
+# dashboard falls back to the roll-up). Pure.
+aib_dash_legacy_cells <- function(node_codes, osi_master, code_trade = NULL, taxonomy = "dictionary", node_cells = NULL, node_cells_detail = NULL) {
+  known <- unique(as.character(c(node_codes$node_id, if (!is.null(node_cells)) node_cells$node_id)))
+  if (identical(taxonomy, "dictionary")) {
+    xw <- aib_osi_crosswalk(node_codes, osi_master, code_trade, stage_col = "supply_chain")
+    out <- xw[!is.na(xw$yf_cells), c("node_id", "yf_cells", "osi_subcomponents"), drop = FALSE]
+    attr(out, "known_nodes") <- known
+    return(out)
+  }
+  require_columns(node_cells, c("node_id", "tech", "source_stage"), label = "node_cells")
+  cell_id <- function(t) paste0(aib_slug(t$tech), "-", aib_slug(t$source_stage))
+  nc <- tibble::as_tibble(node_cells)
+  cells <- tibble::tibble(node_id = nc$node_id, cell = cell_id(nc)) %>% dplyr::distinct() %>%
+    dplyr::group_by(node_id) %>% dplyr::summarise(yf_cells = paste(cell, collapse = "; "), .groups = "drop")
+  det <- if (is.null(node_cells_detail)) nc else tibble::as_tibble(node_cells_detail)
+  subs <- tibble::tibble(node_id = det$node_id, id = paste0(cell_id(det), "::", det$sub_sector)) %>% dplyr::distinct() %>%
+    dplyr::group_by(node_id) %>% dplyr::summarise(osi_subcomponents = paste(id, collapse = "; "), .groups = "drop")
+  out <- dplyr::left_join(cells, subs, by = "node_id")
+  attr(out, "known_nodes") <- known
+  out
+}
+
+# One node's three-stage cells as the bundle writes them (list(cells, subcomponents), I() arrays): NULL (the
+# fields are left out) without legacy_cells or for a node outside its "known_nodes"; empty arrays for a known
+# node with no basket code. Pure.
+aib_dash_node_legacy <- function(legacy_cells, node_id) {
+  if (is.null(legacy_cells)) return(NULL)
+  known <- attr(legacy_cells, "known_nodes")
+  if (!is.null(known) && !node_id %in% known) return(NULL)
+  lg <- legacy_cells[legacy_cells$node_id == node_id, , drop = FALSE]
+  if (!nrow(lg)) return(list(cells = aib_dash_arr(character()), subcomponents = aib_dash_arr(character())))
+  list(cells = aib_dash_split(lg$yf_cells[1], "; "), subcomponents = aib_dash_split(lg$osi_subcomponents[1], "; "))
+}
+
 # Node records (every classified node, with its frontier) keyed for the view.
 # The EIS index of each technology (sector) when the run used the electro-industrial dictionary
 # (res$taxonomy: tech, index_code, index_name); empty for the OSI basket.
@@ -63,7 +128,10 @@ aib_dash_index_of <- function(res) {
   tx
 }
 
-aib_dash_nodes <- function(res) {
+# legacy_cells: aib_dash_legacy_cells() (node_id, yf_cells, osi_subcomponents), or NULL: the nodes then carry no
+# yfCellsLegacy / yfSubcomponentsLegacy (an export before 2026-10-28, which the contract still accepts). A node
+# outside its "known_nodes" attribute (when set) carries none either, so the dashboard uses the roll-up.
+aib_dash_nodes <- function(res, legacy_cells = NULL) {
   idx <- aib_dash_index_of(res)
   cl <- res$classification
   nt <- res$compact_nodes
@@ -105,9 +173,10 @@ aib_dash_nodes <- function(res) {
     qq <- q[q$node_id == r$node_id & is.na(q$aggregated_into), , drop = FALSE]
     f <- fr[fr$node_id == r$node_id, , drop = FALSE]
     f <- f[order(f$max_supplier_share), , drop = FALSE]
+    lg <- aib_dash_node_legacy(legacy_cells, r$node_id)
     list(
       id = r$node_id,
-      label = r$sub_sector,
+      label = aib_dash_node_label(r$sub_sector, r$supply_chain),
       techs = aib_dash_split(r$techs, "; "),
       stage = r$supply_chain,
       indexCode = if (is.null(idx)) NA_character_ else aib_dash_chr(idx$index_code[match(strsplit(r$techs, "; ")[[1]][1], idx$tech)]),
@@ -200,6 +269,11 @@ aib_dash_nodes <- function(res) {
       # and Country views through the crosswalk of scripts/31; yf_cells lists them all).
       yfCells = aib_dash_arr(unique(stats::na.omit(c(t$yf_cell, if ("yf_cells" %in% names(t) && nrow(t)) unlist(strsplit(stats::na.omit(t$yf_cells), "; ")))))),
       yfSubcomponents = if (nrow(t)) aib_dash_split(t$yf_subcomponent_id[1], "; ") else aib_dash_arr(character()),
+      # The same node's three-stage cells and sub-components ("batteries-midstream", 2026-10-28), for the joins
+      # with the three-stage bundles; [] for a node with no basket code; absent (NULL, dropped) without legacy_cells
+      # or for a node the inputs do not know.
+      yfCellsLegacy = lg$cells,
+      yfSubcomponentsLegacy = lg$subcomponents,
       tightestCostless = if (nrow(f)) aib_dash_round(f$tightest_costless_max_share[1]) else NA_real_,
       minRequiredDiversification = if (nrow(f)) aib_dash_round(f$min_required_diversification[1]) else NA_real_,
       frontier = lapply(seq_len(nrow(f)), function(k) list(
@@ -507,10 +581,11 @@ aib_dash_investment_flows <- function(res, max_rank = 5L, shock = res$meta$headl
 
 # The whole document: meta, country names for every code used, compacts and nodes; additive: the
 # emergent network (`network`), the investor -> host flows (`investmentFlows`) and, given the strategic layer
-# (`strategic`: aib_dash_strategic() of scripts/33's aib_strategic.rds; 2026-10-20), the `strategic` section.
-aib_dash_bundle <- function(res, top_edges = 40, strategic = NULL) {
+# (`strategic`: aib_dash_strategic() of scripts/33's aib_strategic.rds; 2026-10-20), the `strategic` section;
+# given legacy_cells (aib_dash_legacy_cells(); 2026-10-28), node.yfCellsLegacy and yfSubcomponentsLegacy.
+aib_dash_bundle <- function(res, top_edges = 40, strategic = NULL, legacy_cells = NULL) {
   cfg <- res$meta$config
-  nodes <- aib_dash_nodes(res)
+  nodes <- aib_dash_nodes(res, legacy_cells)
   drop_null <- function(x) x[!vapply(x, is.null, logical(1))]
   nodes <- lapply(nodes, drop_null)
   comps <- lapply(seq_len(nrow(res$compacts)), function(i) aib_dash_compact(res$compacts[i, ], res, top_edges))

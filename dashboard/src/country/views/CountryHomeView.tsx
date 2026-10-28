@@ -1,7 +1,7 @@
 // The Country Insights landing /countries (spec_country.md A4.1): the country picker, the core members
 // (with their corner counts and the MEMO tag), the coalition partners, the other economies (closed
 // <details>), a world map coloured by coalition tier (lazy atlas; omitted below 768 px) and "How to
-// read Country Insights".
+// read Country Insights" (the corner names and glossary ids from QUADRANTS, 2026-10-28).
 
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -11,11 +11,19 @@ import { Loading, PageHead } from '../../components/ui.tsx';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useCountryCtx } from '../CountryLayout.tsx';
-import type { CountryEntry } from '../contract.ts';
+import { QUADRANTS, type CountryEntry, type Quadrant } from '../contract.ts';
 import { countryOptions, quadrantLine, rosterGroups } from '../derive/model.ts';
 import { countryHref } from '../url.ts';
 
 const TierMap = lazy(() => import('../charts/TierMap.tsx'));
+
+/** The reading guide's line for each corner (the names and glossary ids come from QUADRANTS). */
+const READING: Record<Quadrant, string> = {
+  grow: 'high economic opportunity and high energy security.',
+  upgrade: 'high economic opportunity but low energy security; building capability there would meet a need and create value.',
+  secure: 'low economic opportunity and low energy security; the sectors where supply leans most on partners.',
+  watch: 'low economic opportunity but high energy security; value may lie elsewhere.',
+};
 
 function CountryCard({ c, memo }: { c: CountryEntry; memo: boolean }) {
   const q = quadrantLine(c.quadrants);
@@ -49,7 +57,7 @@ export default function CountryHomeView() {
       <PageHead
         eyebrow="COUNTRIES"
         title="Countries"
-        lede={`Pick a country to see its strategic position in one place: where its energy supply chains are secure or exposed, where it has economic openings, which sectors to prioritise and how that compares with its current policies, its trade, investment and development partners, and its role in the Allied Industrial Base. Values are the NEIS baseline (as of ${manifest.as_of_label}); on each profile a Perspective control lets you weigh security, opportunity, policy and climate differently. For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : nRevised ? 'is being revised' : 'is being prepared'}.`}
+        lede={`Pick a country to see its strategic position in one place: where its energy supply chains are secure or exposed, where it has economic openings, which sectors to prioritise and how that compares with its current policies, its trade, investment and development partners, and its role in the Allied Industrial Base. Each profile opens with its six-stage strategic posture; the index values below it are the paper's three-stage NEIS baseline (as of ${manifest.as_of_label}), and on each profile a Perspective control lets you weigh security, opportunity, policy and climate differently. For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : nRevised ? 'is being revised' : 'is being prepared'}.`}
       />
       <p className="-mt-4 mb-6 text-sm">
         <Link className="link" to="/overview">
@@ -131,21 +139,18 @@ export default function CountryHomeView() {
         <h2 id="read-h" className="text-base font-medium text-paper">
           How to read a country profile
         </h2>
+        <p className="mt-2 text-sm text-paper-dim">
+          The chart at the top of a profile is the strategic posture of each technology at six supply-chain stages (Secure, Compete, Deploy). Below it, the paper&apos;s
+          three-stage sectors sit in four corners, split at the country&apos;s own median sector; the corners describe, they are not postures.
+        </p>
         <ul className="mt-3 space-y-2 text-sm text-paper-dim">
+          {QUADRANTS.map((q) => (
+            <li key={q.id}>
+              <strong className="text-paper">{q.label}</strong> <InfoTip id={q.glossary} term={q.label} />: {READING[q.id]}
+            </li>
+          ))}
           <li>
-            <strong className="text-paper">Grow</strong> <InfoTip id="grow" term="Grow" />: high economic opportunity and high energy security, compared with the middle economy in the sector.
-          </li>
-          <li>
-            <strong className="text-paper">Upgrade</strong> <InfoTip id="upgrade" term="Upgrade" />: high economic opportunity but low energy security; building capability there would meet a need and create value.
-          </li>
-          <li>
-            <strong className="text-paper">Secure</strong> <InfoTip id="secure" term="Secure" />: low economic opportunity and low energy security; the sectors where supply leans most on partners.
-          </li>
-          <li>
-            <strong className="text-paper">Watch</strong> <InfoTip id="watch" term="Watch" />: low economic opportunity but high energy security; value may lie elsewhere.
-          </li>
-          <li>
-            Paper baseline <InfoTip id="paper_baseline" term="paper baseline" />: every number is the paper&apos;s own, as of {manifest.as_of_label}. To try other weightings, open a country and change its Perspective.
+            Paper baseline <InfoTip id="paper_baseline" term="paper baseline" />: every three-stage index value is the paper&apos;s own, as of {manifest.as_of_label}. To try other weightings, open a country and change its Perspective.
           </li>
           <li>
             Memos <InfoTip id="memo" term="memo" />: short AI-written briefs for the core members, built from each country&apos;s fact sheet and checked against it.

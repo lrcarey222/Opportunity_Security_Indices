@@ -24,7 +24,8 @@ import {
 import { diversifyRow, diversifyTotals, relationshipsOf } from '../derive/diversify.ts';
 import { everyShock } from '../derive/network.ts';
 import { compactTitle } from '../derive/format.ts';
-import { indexOfNode, indexOfSector, osiCellOf, taxonomyOf } from '../derive/taxonomy.ts';
+import { indexOfNode, indexOfSector, legacyOsiCellsOfNode, osiCellHref, osiCellOf, profiledCellsOfNode, taxonomyOf } from '../derive/taxonomy.ts';
+import { legacyCellsOf } from '../../lib/stages.ts';
 import { REAL_DIR } from './fixture.ts';
 
 const have = existsSync(resolve(REAL_DIR, 'manifest.json'));
@@ -180,9 +181,19 @@ describe.skipIf(!have)('the real Sectoral Compacts bundle (public/data/aib)', ()
     const tx = taxonomyOf(doc.meta);
     const byId = new Map(doc.nodes.map((n) => [n.id, n]));
     for (const n of doc.nodes) {
-      // every crosswalk id is an OSI cell; every sub-component id sits in one of the node's cells
-      for (const c of n.yfCells) expect(osiCellOf(c), `${n.id} cell ${c}`).not.toBeNull();
+      // every crosswalk id is a six-stage OSI cell; every sub-component id sits in one of the node's cells
+      for (const c of n.yfCells) expect(osiCellOf(c)?.legacy, `${n.id} cell ${c}`).toBe(false);
       for (const s of n.yfSubcomponents) expect(n.yfCells.some((c) => s.startsWith(`${c}::`)), `${n.id} sub-component ${s}`).toBe(true);
+      // its exported three-stage cells (the joins with the three-stage bundles) are three-stage cells, every
+      // three-stage sub-component sits in one of them, the joins read them all (none dropped), and its Sector
+      // links are the distinct profiles of those cells, in their order
+      expect(Array.isArray(n.yfCellsLegacy), `${n.id} yfCellsLegacy`).toBe(true);
+      for (const c of n.yfCellsLegacy ?? []) expect(osiCellOf(c)?.legacy, `${n.id} three-stage cell ${c}`).toBe(true);
+      for (const s of n.yfSubcomponentsLegacy ?? []) expect((n.yfCellsLegacy ?? []).some((c) => s.startsWith(`${c}::`)), `${n.id} three-stage sub-component ${s}`).toBe(true);
+      expect(legacyOsiCellsOfNode(n).map((c) => c.slug), `${n.id} three-stage cells read`).toEqual(legacyCellsOf(n));
+      expect(profiledCellsOfNode(n).map((c) => c.href), `${n.id} Sector links`).toEqual([
+        ...new Set(legacyCellsOf(n).map((s) => osiCellHref({ slug: s })).filter((h): h is string => h !== null)),
+      ]);
       if (tx.dictionary && tx.indices.length) {
         // the node's index lists its sector
         const ix = indexOfNode(tx, n);

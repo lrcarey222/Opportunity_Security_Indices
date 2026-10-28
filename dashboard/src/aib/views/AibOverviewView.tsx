@@ -249,7 +249,7 @@ export default function AibOverviewView() {
               Headline: <span className="text-paper-dim">{shockLabel}</span>; supply assumption: {m.headlineScenario}
             </>
           )}
-          ; trade in {m.tradeYear}; {plural(total, 'supply-chain node')}.{' '}
+          ; trade in {m.tradeYear}; {plural(total, 'supply-chain node')} (groups of traded goods, finer than the technology × stage cells of the chart below).{' '}
           <Link className="link" to={href('/compacts/about')}>
             How the analysis works &rarr;
           </Link>
@@ -297,7 +297,8 @@ export default function AibOverviewView() {
                 {hasScenarios && <ScenarioTag id={scenario} meta={m} />}
               </span>
               <p className="mt-2">
-                Every supply-chain node (a group of traded goods at one stage) gets one treatment from its own results{mi ? ' under the scenario' : ''}.{' '}
+                Every supply-chain node of the model (a group of traded goods at one stage, finer than the technology × stage cells of the chart above) gets one treatment from
+                its own results{mi ? ' under the scenario' : ''}.{' '}
                 {nHigh !== null && typeof high === 'number' ? `${plural(nHigh, 'node')} lose at least ${fmtShare(high, 0)} of their supply to the shock (high severity). ` : ''}
                 {takeaway}
               </p>
@@ -388,8 +389,8 @@ export default function AibOverviewView() {
               question="Which trade, investment and development relationships matter?"
               answer={
                 trade
-                  ? `${plural(trade.length, 'coordinated trade relationship')} across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; Friendshore, Partnership Opportunity and development partners.`
-                  : `Coordinated trade relationships across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; Friendshore, Partnership Opportunity and development partners.`
+                  ? `${plural(trade.length, 'coordinated trade relationship')} across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; the paper’s three-stage partner scores (Friendshore, Partnership Opportunity, Development Potential).`
+                  : `Coordinated trade relationships across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; the paper’s three-stage partner scores (Friendshore, Partnership Opportunity, Development Potential).`
               }
               to={href('/aib/partnerships')}
               cta="Partnerships"

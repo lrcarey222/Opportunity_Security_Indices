@@ -39,7 +39,7 @@ export function MemoCard() {
         ) : (
           <>
             <p className="max-w-3xl text-sm text-paper-dim">
-              A short <Term id="memo">policy memo</Term> summarises this page for {name}: its energy security risks and why, its economic opportunities and why, its
+              A short <Term id="memo">policy memo</Term> summarises the paper&apos;s three-stage reading of {name}: its energy security risks and why, its economic opportunities and why, its
               sectoral priorities beside its current policies, and its partnership priorities.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -73,7 +73,7 @@ export function DataNotes() {
     const cells = sheet.cells.map((c) => ({
       sector: c.tech, stage: c.stage, energy_security: c.es?.v ?? null, energy_security_beats_pct: c.es?.pct.v ?? null, energy_security_median: c.es?.med.v ?? null,
       economic_opportunity: c.eo?.v ?? null, economic_opportunity_beats_pct: c.eo?.pct.v ?? null, economic_opportunity_median: c.eo?.med.v ?? null,
-      corner: c.quadrant ? quadrantWord(sheet, c.quadrant) : null, strategic_index: c.si.v, strategic_index_rank: c.si.rank.v, priority_third: c.priority?.third ?? null,
+      corner: c.quadrant ? quadrantWord(c.quadrant) : null, strategic_index: c.si.v, strategic_index_rank: c.si.rank.v, priority_third: c.priority?.third ?? null,
       policy_third: c.policy?.third ?? null, policy_records_specific: c.policy?.records_specific.v ?? null, imports_usd: c.trade?.imports.v ?? null, exports_usd: c.trade?.exports.v ?? null,
     }));
     const drivers = sheet.cells.flatMap((c) =>

@@ -28,7 +28,7 @@ export type MatrixRole = (typeof MATRIX_ROLES)[number];
 export const ROLE_READING: Record<MatrixRole, { short: string; meaning: string; named: string }> = {
   supplier: {
     short: 'Resource / Supplier',
-    meaning: 'exports to the economies that lose supply in the coordinated solution (upstream partners: resources)',
+    meaning: 'exports to the economies that lose supply in the coordinated solution (resource partners: raw materials, mined or recycled)',
     named: 'named when its trade serves at least 1 point of node demand under the headline shock, or a compact names it a resource supplier',
   },
   specialized: {

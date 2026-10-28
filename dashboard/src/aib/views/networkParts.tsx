@@ -7,11 +7,13 @@
 // failed and missing states of a lazily loaded scenario file.
 // The strategic layer (2026-10-20): OperationalRoleList, one economy's operational roles as a list, is the
 // Country profile's role card and the operational evidence under a strategic summary on /aib/roles.
+// Stages (2026-10-28): a side's partner counts are six-stage (AIB_STAGE_KEYS); the words list the non-zero
+// ones in chain order (deployment is always 0: the AIB has no Deployment node).
 
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { EmptyState, Loading, Notice } from '../../components/ui.tsx';
-import type { AibBaselineScenarioDoc, AibInvestmentPair, AibManagedScenarioDoc } from '../contract.ts';
+import { AIB_STAGE_KEYS, type AibBaselineScenarioDoc, type AibInvestmentPair, type AibManagedScenarioDoc, type AibNetworkSide } from '../contract.ts';
 import { useAibScenarioDoc, type ScenarioLoad } from '../data/hooks.ts';
 import type { AibLoadError } from '../data/store.ts';
 import { fmtScore, fmtUsd, plural } from '../derive/format.ts';
@@ -39,6 +41,15 @@ const PARTNER_WORD: Partial<Record<MatrixRole, [string, string]>> = {
 };
 
 /**
+ * A side's partners by stage, the non-zero counts in chain order: "(refining 2, components 1)"; '' when
+ * every count is 0. A partner can sit in several stages, so the counts need not sum to the partners.
+ */
+export function stageCountWords(side: AibNetworkSide): string {
+  const parts = AIB_STAGE_KEYS.filter((k) => side[k] > 0).map((k) => `${k} ${side[k]}`);
+  return parts.length ? `(${parts.join(', ')})` : '';
+}
+
+/**
  * One cell's words, for a hover title and the table twin. `every`: what the cumulative figure sums
  * (everyShock(doc).phrase, everyShockLabel(doc).phrase; "every shock" by default; null leaves it out, for a
  * network without one); `under`: the scenario ("under the headline shock" by default, "under Decoupling").
@@ -51,15 +62,16 @@ export function cellWords(k: MatrixRole, c: RoleCell, every: string | null = 'ev
     const pw = PARTNER_WORD[k];
     const pwords = pw ?? ['partner', 'partners'];
     const who = (n: number) => `${n} ${n === 1 ? pwords[0] : pwords[1]}`;
-    const stages = `(upstream ${c.side.upstream}, midstream ${c.side.midstream}, downstream ${c.side.downstream})`;
+    const by = stageCountWords(c.side);
+    const stages = by ? ` ${by}` : '';
     const hp = c.headlinePartners;
     if (hp !== undefined && every !== null) {
       // read on the headline (Decoupling): its own partners; the side's counts sum every shock, and say so
       parts.push(`${fmtPts(c.side.headline)} ${under}${pw ? ` with ${who(hp)}` : ''}`);
-      parts.push(`across ${every}: ${fmtPts(c.side.cumulative)}${pw ? `, ${who(c.side.partners)} ${stages}` : ''}, ${plural(c.side.selected, 'selected relationship')}`);
+      parts.push(`across ${every}: ${fmtPts(c.side.cumulative)}${pw ? `, ${who(c.side.partners)}${stages}` : ''}, ${plural(c.side.selected, 'selected relationship')}`);
     } else {
       parts.push(`${fmtPts(c.side.headline)} ${under}${every === null ? '' : `, ${fmtPts(c.side.cumulative)} across ${every}`}`);
-      if (pw) parts.push(`${who(c.side.partners)} ${stages}`);
+      if (pw) parts.push(`${who(c.side.partners)}${stages}`);
       parts.push(`${plural(c.side.selected, 'selected relationship')}`);
     }
   }

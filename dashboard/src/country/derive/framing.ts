@@ -1,8 +1,8 @@
 // The Country profile's framing (IA refactor 2026-10-16, brief s.11-12): "Make bets", "Avoid dangerous
-// dependencies", "Preserve capabilities", the sector-position rows and the economy's place in the
-// Allied Industrial Base. No new score: every list is a filter and an ordering of existing outputs (the
-// four corners of the fact sheet, the Strategic Index rank, the fact sheet's trade suppliers, the AIB
-// compacts' roles, trade relationships and host nodes). Pure.
+// dependencies", "Capabilities to keep" ("Preserve capabilities" until 2026-10-28), the sector-position
+// rows and the economy's place in the Allied Industrial Base. No new score: every list is a filter and
+// an ordering of existing outputs (the four corners of the fact sheet, the Strategic Index rank, the
+// fact sheet's trade suppliers, the AIB compacts' roles, trade relationships and host nodes). Pure.
 //
 // Facts vs preferences (plan.md 4): the corners, Energy Security, Economic Opportunity, suppliers and the
 // whole AIB document are observed / modelled facts. Only the Strategic Index rank is preference-adjusted;
@@ -17,6 +17,17 @@
 //
 // The strategic layer (2026-10-20): aibStrategicOf() gives the role section the economy's strategic
 // summary (Strategic AIB Roles, compact roles, partners); it does not follow the scenario.
+//
+// Stages (2026-10-28): the fact sheet's cells are the paper's three stages ("batteries-midstream"),
+// the AIB document is six-stage (node.yfCells "batteries-refining"). compactsOfCell() joins a
+// three-stage cell through each node's three-stage cells (node.yfCellsLegacy, the stage the paper filed
+// the node's codes under; legacyCellsOf() of ../../lib/stages.ts), or, in a document without them,
+// through the roll-up of its six-stage cells, which is approximate (Refining rolls up to Upstream while
+// the paper filed refined battery materials, polysilicon and electrical steel under Midstream).
+//
+// The corners (2026-10-28): the keys stay grow / upgrade / secure / watch (the fact sheet's data
+// contract); the app shows them as Grow, Upgrade, Exposed (key secure) and Stable (key watch), so they
+// do not clash with the six-stage posture words (../contract.ts QUADRANTS).
 
 import { strategicOf, type AibCoalition, type AibCompact, type AibDoc, type AibManagedScenarioDoc, type AibNode, type AibStrategic, type AibTradeEdge } from '../../aib/contract.ts';
 import { strategicSummaryOf, type StrategicSummary } from '../../aib/views/strategicRoles/derive.ts';
@@ -25,6 +36,7 @@ import { compactTitle } from '../../aib/derive/format.ts';
 import type { LensNode } from '../../aib/derive/partnerships.ts';
 import { ROLE_ORDER, type RoleName } from '../../aib/derive/roles.ts';
 import { nodeScenario } from '../../aib/derive/scenarios.ts';
+import { isLegacyCellSlug, legacyCellsOf } from '../../lib/stages.ts';
 import { cap } from './text.ts';
 import { cellKey, cellOf, COUNTRY_STAGES, COUNTRY_TECHS, isCellKey, type CellFacts, type FactSheet, type PartnerRow, type TradeParty } from '../contract.ts';
 
@@ -122,19 +134,24 @@ export interface Dependency {
 }
 
 /**
- * The compacts that cover a cell: a node of the compact has codes in the cell (nodes[].yfCells, the OSI
- * crosswalk: a dictionary node can sit in several cells and a cell hold several nodes, so a compact can
- * cover several cells; the node's own sector or technology never decides it).
+ * The compacts that cover a cell, each once, in the document's order: a node of the compact has codes in
+ * the cell (the OSI crosswalk: a dictionary node can sit in several cells and a cell hold several nodes,
+ * so a compact can cover several cells; the node's own sector, technology or stage never decides it). A
+ * three-stage key ("batteries-midstream", the fact sheet's cells) is matched against the node's
+ * three-stage cells (legacyCellsOf(): node.yfCellsLegacy, else the approximate roll-up of yfCells), any
+ * other key against its six-stage cells (node.yfCells).
  */
 export function compactsOfCell(doc: Pick<AibDoc, 'compacts' | 'nodes'>, key: string): AibCompact[] {
-  const nodeIds = new Set(doc.nodes.filter((nd) => nd.yfCells.includes(key)).map((nd) => nd.id));
+  const legacy = isLegacyCellSlug(key);
+  const nodeIds = new Set(doc.nodes.filter((nd) => (legacy ? legacyCellsOf(nd) : nd.yfCells).includes(key)).map((nd) => nd.id));
   return doc.compacts.filter((c) => c.nodes.some((id) => nodeIds.has(id)));
 }
 
 /**
- * Avoid dangerous dependencies: placed sectors in the Upgrade or Secure corner (Energy Security below
- * the economy's own median sector), lowest Energy Security first (the fact sheet's es_order), each with
- * its largest supplier and the compacts covering it in which the economy is a demand anchor.
+ * Avoid dangerous dependencies: placed sectors in the Upgrade or Exposed corner (keys upgrade, secure:
+ * Energy Security below the economy's own median sector), lowest Energy Security first (the fact sheet's
+ * es_order), each with its largest supplier and the compacts covering it in which the economy is a
+ * demand anchor (compactsOfCell(), through the nodes' three-stage cells).
  */
 export function dependencies(sheet: FactSheet, doc: Pick<AibDoc, 'compacts' | 'nodes'> | null, n = 5): Dependency[] {
   const low = new Set(sheet.cells.filter((c) => c.placed && (c.quadrant === 'upgrade' || c.quadrant === 'secure')).map((c) => c.key));
@@ -158,7 +175,7 @@ export function dependencies(sheet: FactSheet, doc: Pick<AibDoc, 'compacts' | 'n
 export const CAPABILITY_ROLES: readonly RoleName[] = ['Specialized supplier', 'Resource supplier', 'Technology partner'];
 
 /**
- * Preserve capabilities: placed sectors in the Grow corner (both scores at or above the economy's own
+ * Capabilities to keep: placed sectors in the Grow corner (both scores at or above the economy's own
  * median sector), highest Economic Opportunity first, and the economy's supplier and technology roles
  * in the compacts.
  */
@@ -383,8 +400,10 @@ export function buildNodesOf(doc: AibDoc, compactIds: readonly string[]): AibNod
 
 /**
  * How the economy behaves on policy and climate, in plain sentences from existing facts: its Climate
- * Action Tracker rating, how its policy activity lines up with the data's priority (the agreement
- * classes of the fact sheet) and its industrial-policy measures in force (Global Trade Alert). No score.
+ * Action Tracker rating, how its policy activity lines up with the Strategic Index's priority (the
+ * agreement classes of the fact sheet; the sentence names the index so it is not read as the posture
+ * chart's under- or over-prioritized counts) and its industrial-policy measures in force (Global Trade
+ * Alert). No score.
  */
 export function policyBehaviour(sheet: FactSheet, name: string): string[] {
   const out: string[] = [];
@@ -399,7 +418,7 @@ export function policyBehaviour(sheet: FactSheet, name: string): string[] {
     const n = (k: keyof typeof ag.by_class) => ag.by_class[k]?.length ?? 0;
     const aligned = n('aligned_high') + n('aligned_low');
     out.push(
-      `Across ${ag.n} ranked sectors, its policy activity matches the data's priority in ${aligned}, runs ahead of it in ${n('policy_ahead')} (much policy, low priority) and trails it in ${n('gap')} (high priority, little policy).`,
+      `Across ${ag.n} ranked sectors, its policy activity matches the Strategic Index's priority in ${aligned}, runs ahead of it in ${n('policy_ahead')} (much policy, low priority) and trails it in ${n('gap')} (high priority, little policy).`,
     );
   }
   const nipo = sheet.policy.nipo;

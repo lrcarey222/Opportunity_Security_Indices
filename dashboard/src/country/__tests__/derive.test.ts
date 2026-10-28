@@ -4,9 +4,10 @@
 // priorities matrix and the partner table rows, the quadrant counts line.
 
 import { describe, expect, it } from 'vitest';
-import type { CellFacts, Driver, FactSheet } from '../contract.ts';
+import { glossaryById } from '../../content/glossary.ts';
+import { QUADRANT_IDS, QUADRANTS, type CellFacts, type Driver, type FactSheet } from '../contract.ts';
 import { matrixCells, partnerTableRows, priorityRows, quadrantLine, slopeModel } from '../derive/model.ts';
-import { editionSuffix, euRegionSentence, ledeOf, poss, proseName, rawNoteLine, whyIntro, whySentence } from '../derive/text.ts';
+import { editionSuffix, euRegionSentence, ledeOf, poss, proseName, quadrantWord, rawNoteLine, whyIntro, whySentence } from '../derive/text.ts';
 import { haveFixture, readSheet } from './fixture.ts';
 
 const fv = (v: number | null, d = String(v)) => ({ v, d });
@@ -71,14 +72,14 @@ describe.skipIf(!haveFixture())('derive helpers on the synthetic sheets', () => 
   it('the lede names the tier, the Upgrade count, the top Strategic Index sector and the top partner', () => {
     const l = ledeOf(usa);
     expect(l.startsWith('The United States is a core member of the allied coalition.')).toBe(true);
-    expect(l).toMatch(/none of its \d+ placed sectors combines high economic opportunity with low energy security/);
+    expect(l).toMatch(/On the paper's three-stage NEIS baseline, none of its \d+ placed sectors combines high economic opportunity with low energy security/);
     const top = usa.cells.find((c) => c.key === usa.summary.top_si!.cell)!;
     if (usa.summary.top_si!.near_tie) expect(l).toContain('are almost tied');
     else expect(l).toContain(`its top Strategic Index sector is ${top.label_prose}.`);
     expect(l).toContain(`rates highest for it is ${proseName(usa.summary.psi_1!.name)}.`);
     expect(ledeOf(deu)).toMatch(/^Germany is a core member/);
     expect(ledeOf(nga)).toContain('It has no Strategic Index because it has no International Energy Agency policy records.');
-    expect(ledeOf(pri)).toMatch(/scores are shown but not ranked/);
+    expect(ledeOf(pri)).toMatch(/three-stage index scores are shown but not ranked/);
   });
 
   it('a near-tie at the top is said as such', () => {
@@ -138,7 +139,13 @@ describe.skipIf(!haveFixture())('derive helpers on the synthetic sheets', () => 
     expect(pt.filter((r) => r.extra).every((r) => r.in_tie_top)).toBe(true);
   });
 
-  it('the quadrant counts line uses the sheet words', () => {
-    expect(quadrantLine({ grow: 4, upgrade: 6, secure: 9, watch: 3 }, usa.words.quadrant)).toBe('Grow 4 · Upgrade 6 · Secure 9 · Watch 3');
+  it("the quadrant counts line and corner words use the app's names, not the sheet's words (2026-10-28)", () => {
+    // the synthetic sheets were exported with the older words (Secure, Watch); the app prints its own
+    expect(usa.words.quadrant.secure).toBeTruthy();
+    expect(quadrantLine({ grow: 4, upgrade: 6, secure: 9, watch: 3 })).toBe('Grow 4 · Upgrade 6 · Exposed 9 · Stable 3');
+    expect(QUADRANT_IDS.map((q) => quadrantWord(q))).toEqual(['Grow', 'Upgrade', 'Exposed', 'Stable']);
+    expect(quadrantWord(null)).toBe('');
+    // the glossary id of each corner follows its name and exists
+    for (const q of QUADRANTS) expect(glossaryById.get(q.glossary)?.term, q.id).toBe(q.label);
   });
 });

@@ -131,7 +131,9 @@ test_that("data quality flags thin trade, solar revisions and multi-use codes", 
 
 test_that("insufficient nodes are aggregated upward through a material link first", {
   # The grouping is the source stage: the six-stage labels differ (ore Extraction, compounds Refining;
-  # x1 Extraction, x2 Recovery) and change neither the siblings, the merged id nor the label.
+  # x1 Extraction, x2 Recovery) and change neither the siblings nor the merged id. The aggregate's label
+  # names the six-stage stage with the most of its members' trade (a tie: the earlier stage in chain
+  # order), not the source stage (2026-10-28).
   nodes <- tibble::tibble(node_id = c("ore", "comp", "metal", "x1", "x2"),
                           sub_sector = c("RE Ore", "RE Compounds", "RE Metals", "Odd 1", "Odd 2"),
                           supply_chain = c("Extraction", "Refining", "Refining", "Extraction", "Recovery"), source_stage = "Upstream",
@@ -147,7 +149,15 @@ test_that("insufficient nodes are aggregated upward through a material link firs
   expect_equal(mm$merged_id[mm$node_id == "ore"], "comp")
   expect_equal(mm$merged_label[mm$node_id == "comp"], "RE Compounds + RE Ore")
   expect_equal(unique(mm$merged_id[mm$node_id %in% c("x1", "x2")]), "wind-upstream--aggregated")
-  expect_equal(unique(mm$merged_label[mm$node_id %in% c("x1", "x2")]), "Wind Upstream: aggregated low-coverage sub-sectors (Odd 1, Odd 2)")
+  expect_equal(unique(mm$merged_label[mm$node_id %in% c("x1", "x2")]), "Wind Extraction: aggregated low-coverage sub-sectors (Odd 1, Odd 2)")
+  # the Recovery member with more trade names the label; without six-stage labels the source stage does
+  q2 <- quality
+  q2$world_trade[q2$node_id == "x2"] <- 5
+  mm2 <- aib_quality_merge_map(q2, nodes, node_cells, edges)
+  expect_equal(unique(mm2$merged_label[mm2$node_id %in% c("x1", "x2")]), "Wind Recovery: aggregated low-coverage sub-sectors (Odd 1, Odd 2)")
+  mm3 <- aib_quality_merge_map(quality, dplyr::select(nodes, -supply_chain), node_cells, edges)
+  expect_equal(unique(mm3$merged_label[mm3$node_id %in% c("x1", "x2")]), "Wind Upstream: aggregated low-coverage sub-sectors (Odd 1, Odd 2)")
+  expect_equal(unique(mm3$merged_id[mm3$node_id %in% c("x1", "x2")]), "wind-upstream--aggregated")
   expect_error(aib_supply_chain_edges(dplyr::select(node_cells, -source_stage)), "source_stage")
 })
 

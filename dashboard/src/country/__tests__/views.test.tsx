@@ -117,11 +117,13 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(await h1('United States')).toBeTruthy();
     // the title effect can trail the h1 when the suite runs under load
     await waitFor(() => expect(document.title).toMatch(/United States \| Countries \| /));
-    await screen.findByRole('heading', { level: 2, name: 'Strategic position' }, { timeout: 30_000 });
+    // the paper's three-stage scatter is 'Security and opportunity' since 2026-10-28 ('Strategic position' names the posture)
+    await screen.findByRole('heading', { level: 2, name: 'Security and opportunity' }, { timeout: 30_000 });
+    expect(screen.queryByRole('heading', { level: 2, name: 'Strategic position' })).toBeNull();
     for (const h of ['Opportunities & risks', 'Sector position', 'Policy & climate', 'Partnerships', 'Role in the Allied Industrial Base', 'Policy memo', 'Data notes']) {
       expect(screen.getAllByRole('heading', { level: 2, name: h }).length).toBeGreaterThan(0);
     }
-    for (const h of ['Make bets', 'Avoid dangerous dependencies', 'Preserve capabilities']) expect(screen.getByRole('heading', { level: 3, name: h })).toBeTruthy();
+    for (const h of ['Make bets', 'Avoid dangerous dependencies', 'Capabilities to keep']) expect(screen.getByRole('heading', { level: 3, name: h })).toBeTruthy();
     const memo = screen.getAllByRole('link', { name: 'GENERATE MEMO' });
     expect(memo.length).toBe(2); // the header action and the memo section
     for (const a of memo) expect(a.getAttribute('href')).toBe('/countries/USA/memo');
@@ -132,7 +134,10 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(screen.getAllByText('Observed / modelled facts', { exact: false }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Preference-adjusted priorities', { exact: false }).length).toBeGreaterThan(0);
     const nav = screen.getByRole('navigation', { name: 'Sections of this page' });
-    expect(within(nav).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['#position', '#opportunities', '#sectors', '#policy', '#partnerships', '#aib-role', '#memo', '#notes']);
+    expect(within(nav).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['#posture', '#position', '#opportunities', '#sectors', '#policy', '#partnerships', '#aib-role', '#memo', '#notes']);
+    expect(within(nav).getAllByRole('link').slice(0, 2).map((a) => a.textContent)).toEqual(['Strategic posture', 'Security and opportunity']);
+    // the posture chart's wrapper is the #posture anchor
+    expect(document.getElementById('posture')).toBeTruthy();
     // old anchors still exist
     for (const id of ['space', 'priorities', 'partners', 'aib-role']) expect(document.getElementById(id)).toBeTruthy();
     // Sector position rows link to the Sector profile
@@ -314,6 +319,9 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(screen.getByText(/cell=fusion-upstream \(not a sector\)/)).toBeTruthy();
     // a sector chip of the four-corners card selects the sector
     const corners = screen.getByRole('region', { name: 'The four corners' });
+    // the app's corner names (2026-10-28), not the older words the synthetic sheets were exported with
+    const names = [...within(corners).getByRole('table').querySelectorAll('tbody tr')].map((tr) => (tr.querySelector('td')?.textContent ?? '').trim().split(/\s/)[0]);
+    expect(names).toEqual(['Grow', 'Upgrade', 'Exposed', 'Stable']);
     const chip = within(corners).getAllByRole('button')[0];
     fireEvent.click(chip);
     await waitFor(() => expect(r.state.location.search).toMatch(/^\?cell=[a-z-]+/));
