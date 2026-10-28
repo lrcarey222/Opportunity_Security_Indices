@@ -26,6 +26,9 @@ source(file.path(repo_root, "scripts", "00_setup.R"))
 source(file.path(repo_root, "scripts", "05_ingest_sources.R"))
 source(file.path(repo_root, "scripts", "07_process_data.R"))
 source(file.path(repo_root, "scripts", "10_build_themes.R"))
+# NIPO mapped directly to the six-stage HS6 master: support and protection stock and flow by country x
+# technology x stage (docs/strategic_position.md section 4); read by scripts/26.
+source(file.path(repo_root, "scripts", "11_build_nipo_stage_policy.R"))
 # Climate TRACE sector emissions mapped to technology x stage (reads tech_ghg_tbl.rds from scripts/10;
 # scripts/87 reads its tables for the Sector bundle).
 source(file.path(repo_root, "scripts", "16_build_climate_trace.R"))
@@ -41,6 +44,11 @@ source(file.path(repo_root, "scripts", "13_build_coalition.R"))
 source(file.path(repo_root, "scripts", "20_build_indices.R"))
 source(file.path(repo_root, "scripts", "15_build_partner_themes.R"))
 source(file.path(repo_root, "scripts", "25_build_partner_indices.R"))
+# Strategic position (Competitive Position, Strategic Need, Revealed Policy Priority), the Yards &
+# Fences posture (Secure / Compete / Deploy) with its policy design, and their diagnostics; then the
+# review charts and decision cards (docs/strategic_position.md). Reads scripts/20, 11 and 15 outputs.
+source(file.path(repo_root, "scripts", "26_build_strategic_position.R"))
+source(file.path(repo_root, "scripts", "27_review_strategic_position.R"))
 
 # The original allied network design (scripts/30_build_allied_network_design.R and
 # R/indices/allied_network_design.R) is retired (2026-10-17) and no longer runs here: the Allied

@@ -1,0 +1,13 @@
+"variant","scenario","tech_prior","n_members","n_picked","n_changed","n_stage_only_changes","n_changed_near_baseline","n_near_baseline","margin_median","n_near"
+"none","none",TRUE,60,60,11,2,9,29,0.015205952466666,23
+"none_no_tech","none",FALSE,60,60,24,2,18,29,0.0122659279222592,23
+"equal_share","equal_share",TRUE,60,60,0,0,0,29,0.0108238825551019,29
+"equal_share_no_tech","equal_share",FALSE,60,60,15,0,11,29,0.0119812004348563,23
+"parent","parent",TRUE,60,60,6,3,6,29,0.0116638866250832,28
+"parent_no_tech","parent",FALSE,60,60,19,3,15,29,0.0122659279222592,24
+"manufacturing_focused","manufacturing_focused",TRUE,60,60,33,12,16,29,0.00745580779044097,35
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,60,60,42,9,20,29,0.00973538100328541,31
+"resource_security_focused","resource_security_focused",TRUE,60,60,20,4,13,29,0.0179495446043077,19
+"resource_security_focused_no_tech","resource_security_focused",FALSE,60,60,28,4,18,29,0.0163497480050237,19
+"deployment_focused","deployment_focused",TRUE,60,60,11,2,9,29,0.015205952466666,23
+"deployment_focused_no_tech","deployment_focused",FALSE,60,60,24,2,18,29,0.0122659279222592,23

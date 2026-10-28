@@ -1,0 +1,433 @@
+"variant","scenario","tech_prior","tech","supply_chain","n_top","n_countries","share_top","n_top_baseline","share_top_baseline","change_share"
+"none","none",TRUE,"Batteries","Extraction",46,175,0.262857142857143,42,0.24,0.0228571428571429
+"none","none",TRUE,"Nuclear","Extraction",38,175,0.217142857142857,30,0.171428571428571,0.0457142857142857
+"none","none",TRUE,"Solar","Extraction",23,175,0.131428571428571,22,0.125714285714286,0.0057142857142857
+"none","none",TRUE,"Solar","Deployment",20,175,0.114285714285714,30,0.171428571428571,-0.0571428571428571
+"none","none",TRUE,"Batteries","Deployment",13,175,0.0742857142857143,16,0.0914285714285714,-0.0171428571428571
+"none","none",TRUE,"Green Hydrogen","Deployment",13,175,0.0742857142857143,15,0.0857142857142857,-0.0114285714285714
+"none","none",TRUE,"Batteries","Refining",5,175,0.0285714285714286,3,0.0171428571428571,0.0114285714285714
+"none","none",TRUE,"Electric Grid","Refining",5,175,0.0285714285714286,3,0.0171428571428571,0.0114285714285714
+"none","none",TRUE,"Batteries","Recovery",3,175,0.0171428571428571,3,0.0171428571428571,0
+"none","none",TRUE,"Green Hydrogen","Extraction",2,175,0.0114285714285714,2,0.0114285714285714,0
+"none","none",TRUE,"Electric Grid","Components",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"none","none",TRUE,"Electric Grid","Extraction",1,175,0.00571428571428571,1,0.00571428571428571,0
+"none","none",TRUE,"Gas","Refining",1,175,0.00571428571428571,1,0.00571428571428571,0
+"none","none",TRUE,"Geothermal","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"none","none",TRUE,"Nuclear","Assembly",1,175,0.00571428571428571,1,0.00571428571428571,0
+"none","none",TRUE,"Oil","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"none","none",TRUE,"Wind","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"none","none",TRUE,"Batteries","Assembly",0,175,0,0,0,0
+"none","none",TRUE,"Batteries","Components",0,175,0,0,0,0
+"none","none",TRUE,"Coal","Deployment",0,175,0,0,0,0
+"none","none",TRUE,"Coal","Extraction",0,175,0,0,0,0
+"none","none",TRUE,"Electric Vehicles","Components",0,175,0,0,0,0
+"none","none",TRUE,"Electric Vehicles","Deployment",0,175,0,0,0,0
+"none","none",TRUE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"none","none",TRUE,"Gas","Assembly",0,175,0,0,0,0
+"none","none",TRUE,"Gas","Deployment",0,175,0,0,0,0
+"none","none",TRUE,"Gas","Extraction",0,175,0,0,0,0
+"none","none",TRUE,"Green Hydrogen","Refining",0,175,0,0,0,0
+"none","none",TRUE,"Nuclear","Components",0,175,0,0,0,0
+"none","none",TRUE,"Nuclear","Deployment",0,175,0,0,0,0
+"none","none",TRUE,"Oil","Assembly",0,175,0,0,0,0
+"none","none",TRUE,"Oil","Components",0,175,0,0,0,0
+"none","none",TRUE,"Oil","Extraction",0,175,0,0,0,0
+"none","none",TRUE,"Solar","Components",0,175,0,0,0,0
+"none","none",TRUE,"Solar","Refining",0,175,0,0,0,0
+"none","none",TRUE,"Wind","Refining",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Batteries","Extraction",43,175,0.245714285714286,42,0.24,0.00571428571428573
+"none_no_tech","none",FALSE,"Nuclear","Extraction",24,175,0.137142857142857,30,0.171428571428571,-0.0342857142857143
+"none_no_tech","none",FALSE,"Green Hydrogen","Deployment",23,175,0.131428571428571,15,0.0857142857142857,0.0457142857142857
+"none_no_tech","none",FALSE,"Solar","Deployment",18,175,0.102857142857143,30,0.171428571428571,-0.0685714285714286
+"none_no_tech","none",FALSE,"Solar","Extraction",18,175,0.102857142857143,22,0.125714285714286,-0.0228571428571429
+"none_no_tech","none",FALSE,"Batteries","Deployment",13,175,0.0742857142857143,16,0.0914285714285714,-0.0171428571428571
+"none_no_tech","none",FALSE,"Electric Vehicles","Deployment",5,175,0.0285714285714286,0,0,0.0285714285714286
+"none_no_tech","none",FALSE,"Gas","Refining",5,175,0.0285714285714286,1,0.00571428571428571,0.0228571428571429
+"none_no_tech","none",FALSE,"Oil","Deployment",5,175,0.0285714285714286,1,0.00571428571428571,0.0228571428571429
+"none_no_tech","none",FALSE,"Green Hydrogen","Extraction",4,175,0.0228571428571429,2,0.0114285714285714,0.0114285714285714
+"none_no_tech","none",FALSE,"Batteries","Recovery",3,175,0.0171428571428571,3,0.0171428571428571,0
+"none_no_tech","none",FALSE,"Gas","Deployment",3,175,0.0171428571428571,0,0,0.0171428571428571
+"none_no_tech","none",FALSE,"Oil","Extraction",3,175,0.0171428571428571,0,0,0.0171428571428571
+"none_no_tech","none",FALSE,"Batteries","Refining",2,175,0.0114285714285714,3,0.0171428571428571,-0.00571428571428572
+"none_no_tech","none",FALSE,"Electric Grid","Refining",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"none_no_tech","none",FALSE,"Electric Vehicles","Components",1,175,0.00571428571428571,0,0,0.00571428571428571
+"none_no_tech","none",FALSE,"Geothermal","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"none_no_tech","none",FALSE,"Nuclear","Assembly",1,175,0.00571428571428571,1,0.00571428571428571,0
+"none_no_tech","none",FALSE,"Oil","Components",1,175,0.00571428571428571,0,0,0.00571428571428571
+"none_no_tech","none",FALSE,"Wind","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"none_no_tech","none",FALSE,"Batteries","Assembly",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Batteries","Components",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Coal","Deployment",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Coal","Extraction",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Electric Grid","Components",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"none_no_tech","none",FALSE,"Electric Grid","Extraction",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"none_no_tech","none",FALSE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Gas","Assembly",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Gas","Extraction",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Green Hydrogen","Refining",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Nuclear","Components",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Nuclear","Deployment",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Oil","Assembly",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Solar","Components",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Solar","Refining",0,175,0,0,0,0
+"none_no_tech","none",FALSE,"Wind","Refining",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Batteries","Extraction",42,175,0.24,42,0.24,0
+"equal_share","equal_share",TRUE,"Nuclear","Extraction",30,175,0.171428571428571,30,0.171428571428571,0
+"equal_share","equal_share",TRUE,"Solar","Deployment",30,175,0.171428571428571,30,0.171428571428571,0
+"equal_share","equal_share",TRUE,"Solar","Extraction",22,175,0.125714285714286,22,0.125714285714286,0
+"equal_share","equal_share",TRUE,"Batteries","Deployment",16,175,0.0914285714285714,16,0.0914285714285714,0
+"equal_share","equal_share",TRUE,"Green Hydrogen","Deployment",15,175,0.0857142857142857,15,0.0857142857142857,0
+"equal_share","equal_share",TRUE,"Batteries","Recovery",3,175,0.0171428571428571,3,0.0171428571428571,0
+"equal_share","equal_share",TRUE,"Batteries","Refining",3,175,0.0171428571428571,3,0.0171428571428571,0
+"equal_share","equal_share",TRUE,"Electric Grid","Components",3,175,0.0171428571428571,3,0.0171428571428571,0
+"equal_share","equal_share",TRUE,"Electric Grid","Refining",3,175,0.0171428571428571,3,0.0171428571428571,0
+"equal_share","equal_share",TRUE,"Green Hydrogen","Extraction",2,175,0.0114285714285714,2,0.0114285714285714,0
+"equal_share","equal_share",TRUE,"Electric Grid","Extraction",1,175,0.00571428571428571,1,0.00571428571428571,0
+"equal_share","equal_share",TRUE,"Gas","Refining",1,175,0.00571428571428571,1,0.00571428571428571,0
+"equal_share","equal_share",TRUE,"Geothermal","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"equal_share","equal_share",TRUE,"Nuclear","Assembly",1,175,0.00571428571428571,1,0.00571428571428571,0
+"equal_share","equal_share",TRUE,"Oil","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"equal_share","equal_share",TRUE,"Wind","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"equal_share","equal_share",TRUE,"Batteries","Assembly",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Batteries","Components",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Coal","Deployment",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Coal","Extraction",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Electric Vehicles","Components",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Electric Vehicles","Deployment",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Gas","Assembly",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Gas","Deployment",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Gas","Extraction",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Green Hydrogen","Refining",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Nuclear","Components",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Nuclear","Deployment",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Oil","Assembly",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Oil","Components",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Oil","Extraction",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Solar","Components",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Solar","Refining",0,175,0,0,0,0
+"equal_share","equal_share",TRUE,"Wind","Refining",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Batteries","Extraction",37,175,0.211428571428571,42,0.24,-0.0285714285714286
+"equal_share_no_tech","equal_share",FALSE,"Green Hydrogen","Deployment",29,175,0.165714285714286,15,0.0857142857142857,0.08
+"equal_share_no_tech","equal_share",FALSE,"Solar","Deployment",26,175,0.148571428571429,30,0.171428571428571,-0.0228571428571429
+"equal_share_no_tech","equal_share",FALSE,"Nuclear","Extraction",16,175,0.0914285714285714,30,0.171428571428571,-0.08
+"equal_share_no_tech","equal_share",FALSE,"Solar","Extraction",16,175,0.0914285714285714,22,0.125714285714286,-0.0342857142857143
+"equal_share_no_tech","equal_share",FALSE,"Batteries","Deployment",15,175,0.0857142857142857,16,0.0914285714285714,-0.00571428571428571
+"equal_share_no_tech","equal_share",FALSE,"Electric Vehicles","Deployment",6,175,0.0342857142857143,0,0,0.0342857142857143
+"equal_share_no_tech","equal_share",FALSE,"Oil","Deployment",6,175,0.0342857142857143,1,0.00571428571428571,0.0285714285714286
+"equal_share_no_tech","equal_share",FALSE,"Electric Vehicles","Components",3,175,0.0171428571428571,0,0,0.0171428571428571
+"equal_share_no_tech","equal_share",FALSE,"Gas","Deployment",3,175,0.0171428571428571,0,0,0.0171428571428571
+"equal_share_no_tech","equal_share",FALSE,"Gas","Refining",3,175,0.0171428571428571,1,0.00571428571428571,0.0114285714285714
+"equal_share_no_tech","equal_share",FALSE,"Green Hydrogen","Extraction",3,175,0.0171428571428571,2,0.0114285714285714,0.00571428571428572
+"equal_share_no_tech","equal_share",FALSE,"Oil","Extraction",3,175,0.0171428571428571,0,0,0.0171428571428571
+"equal_share_no_tech","equal_share",FALSE,"Batteries","Recovery",2,175,0.0114285714285714,3,0.0171428571428571,-0.00571428571428572
+"equal_share_no_tech","equal_share",FALSE,"Electric Grid","Components",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"equal_share_no_tech","equal_share",FALSE,"Electric Grid","Refining",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"equal_share_no_tech","equal_share",FALSE,"Geothermal","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"equal_share_no_tech","equal_share",FALSE,"Nuclear","Assembly",1,175,0.00571428571428571,1,0.00571428571428571,0
+"equal_share_no_tech","equal_share",FALSE,"Oil","Assembly",1,175,0.00571428571428571,0,0,0.00571428571428571
+"equal_share_no_tech","equal_share",FALSE,"Oil","Components",1,175,0.00571428571428571,0,0,0.00571428571428571
+"equal_share_no_tech","equal_share",FALSE,"Wind","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"equal_share_no_tech","equal_share",FALSE,"Batteries","Assembly",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Batteries","Components",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Batteries","Refining",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"equal_share_no_tech","equal_share",FALSE,"Coal","Deployment",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Coal","Extraction",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Electric Grid","Extraction",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"equal_share_no_tech","equal_share",FALSE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Gas","Assembly",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Gas","Extraction",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Green Hydrogen","Refining",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Nuclear","Components",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Nuclear","Deployment",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Solar","Components",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Solar","Refining",0,175,0,0,0,0
+"equal_share_no_tech","equal_share",FALSE,"Wind","Refining",0,175,0,0,0,0
+"parent","parent",TRUE,"Batteries","Extraction",48,175,0.274285714285714,42,0.24,0.0342857142857143
+"parent","parent",TRUE,"Nuclear","Extraction",45,175,0.257142857142857,30,0.171428571428571,0.0857142857142857
+"parent","parent",TRUE,"Solar","Extraction",27,175,0.154285714285714,22,0.125714285714286,0.0285714285714286
+"parent","parent",TRUE,"Solar","Deployment",11,175,0.0628571428571429,30,0.171428571428571,-0.108571428571429
+"parent","parent",TRUE,"Batteries","Refining",8,175,0.0457142857142857,3,0.0171428571428571,0.0285714285714286
+"parent","parent",TRUE,"Green Hydrogen","Deployment",8,175,0.0457142857142857,15,0.0857142857142857,-0.04
+"parent","parent",TRUE,"Batteries","Deployment",5,175,0.0285714285714286,16,0.0914285714285714,-0.0628571428571429
+"parent","parent",TRUE,"Batteries","Recovery",5,175,0.0285714285714286,3,0.0171428571428571,0.0114285714285714
+"parent","parent",TRUE,"Electric Grid","Components",3,175,0.0171428571428571,3,0.0171428571428571,0
+"parent","parent",TRUE,"Electric Grid","Refining",3,175,0.0171428571428571,3,0.0171428571428571,0
+"parent","parent",TRUE,"Green Hydrogen","Extraction",2,175,0.0114285714285714,2,0.0114285714285714,0
+"parent","parent",TRUE,"Wind","Refining",2,175,0.0114285714285714,0,0,0.0114285714285714
+"parent","parent",TRUE,"Batteries","Assembly",1,175,0.00571428571428571,0,0,0.00571428571428571
+"parent","parent",TRUE,"Electric Grid","Extraction",1,175,0.00571428571428571,1,0.00571428571428571,0
+"parent","parent",TRUE,"Electric Vehicles","Components",1,175,0.00571428571428571,0,0,0.00571428571428571
+"parent","parent",TRUE,"Gas","Refining",1,175,0.00571428571428571,1,0.00571428571428571,0
+"parent","parent",TRUE,"Geothermal","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"parent","parent",TRUE,"Nuclear","Assembly",1,175,0.00571428571428571,1,0.00571428571428571,0
+"parent","parent",TRUE,"Solar","Components",1,175,0.00571428571428571,0,0,0.00571428571428571
+"parent","parent",TRUE,"Solar","Refining",1,175,0.00571428571428571,0,0,0.00571428571428571
+"parent","parent",TRUE,"Batteries","Components",0,175,0,0,0,0
+"parent","parent",TRUE,"Coal","Deployment",0,175,0,0,0,0
+"parent","parent",TRUE,"Coal","Extraction",0,175,0,0,0,0
+"parent","parent",TRUE,"Electric Vehicles","Deployment",0,175,0,0,0,0
+"parent","parent",TRUE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"parent","parent",TRUE,"Gas","Assembly",0,175,0,0,0,0
+"parent","parent",TRUE,"Gas","Deployment",0,175,0,0,0,0
+"parent","parent",TRUE,"Gas","Extraction",0,175,0,0,0,0
+"parent","parent",TRUE,"Green Hydrogen","Refining",0,175,0,0,0,0
+"parent","parent",TRUE,"Nuclear","Components",0,175,0,0,0,0
+"parent","parent",TRUE,"Nuclear","Deployment",0,175,0,0,0,0
+"parent","parent",TRUE,"Oil","Assembly",0,175,0,0,0,0
+"parent","parent",TRUE,"Oil","Components",0,175,0,0,0,0
+"parent","parent",TRUE,"Oil","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"parent","parent",TRUE,"Oil","Extraction",0,175,0,0,0,0
+"parent","parent",TRUE,"Wind","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"parent_no_tech","parent",FALSE,"Batteries","Extraction",45,175,0.257142857142857,42,0.24,0.0171428571428571
+"parent_no_tech","parent",FALSE,"Nuclear","Extraction",35,175,0.2,30,0.171428571428571,0.0285714285714286
+"parent_no_tech","parent",FALSE,"Solar","Extraction",22,175,0.125714285714286,22,0.125714285714286,0
+"parent_no_tech","parent",FALSE,"Green Hydrogen","Deployment",14,175,0.08,15,0.0857142857142857,-0.00571428571428571
+"parent_no_tech","parent",FALSE,"Green Hydrogen","Extraction",7,175,0.04,2,0.0114285714285714,0.0285714285714286
+"parent_no_tech","parent",FALSE,"Batteries","Refining",6,175,0.0342857142857143,3,0.0171428571428571,0.0171428571428571
+"parent_no_tech","parent",FALSE,"Oil","Components",6,175,0.0342857142857143,0,0,0.0342857142857143
+"parent_no_tech","parent",FALSE,"Solar","Deployment",6,175,0.0342857142857143,30,0.171428571428571,-0.137142857142857
+"parent_no_tech","parent",FALSE,"Batteries","Deployment",4,175,0.0228571428571429,16,0.0914285714285714,-0.0685714285714286
+"parent_no_tech","parent",FALSE,"Batteries","Recovery",4,175,0.0228571428571429,3,0.0171428571428571,0.00571428571428571
+"parent_no_tech","parent",FALSE,"Electric Vehicles","Deployment",4,175,0.0228571428571429,0,0,0.0228571428571429
+"parent_no_tech","parent",FALSE,"Electric Vehicles","Components",3,175,0.0171428571428571,0,0,0.0171428571428571
+"parent_no_tech","parent",FALSE,"Gas","Refining",3,175,0.0171428571428571,1,0.00571428571428571,0.0114285714285714
+"parent_no_tech","parent",FALSE,"Oil","Assembly",3,175,0.0171428571428571,0,0,0.0171428571428571
+"parent_no_tech","parent",FALSE,"Oil","Deployment",3,175,0.0171428571428571,1,0.00571428571428571,0.0114285714285714
+"parent_no_tech","parent",FALSE,"Oil","Extraction",3,175,0.0171428571428571,0,0,0.0171428571428571
+"parent_no_tech","parent",FALSE,"Batteries","Assembly",1,175,0.00571428571428571,0,0,0.00571428571428571
+"parent_no_tech","parent",FALSE,"Electric Grid","Components",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"parent_no_tech","parent",FALSE,"Electric Grid","Refining",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"parent_no_tech","parent",FALSE,"Geothermal","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"parent_no_tech","parent",FALSE,"Green Hydrogen","Refining",1,175,0.00571428571428571,0,0,0.00571428571428571
+"parent_no_tech","parent",FALSE,"Nuclear","Assembly",1,175,0.00571428571428571,1,0.00571428571428571,0
+"parent_no_tech","parent",FALSE,"Solar","Components",1,175,0.00571428571428571,0,0,0.00571428571428571
+"parent_no_tech","parent",FALSE,"Batteries","Components",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Coal","Deployment",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Coal","Extraction",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Electric Grid","Extraction",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"parent_no_tech","parent",FALSE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Gas","Assembly",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Gas","Deployment",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Gas","Extraction",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Nuclear","Components",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Nuclear","Deployment",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Solar","Refining",0,175,0,0,0,0
+"parent_no_tech","parent",FALSE,"Wind","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"parent_no_tech","parent",FALSE,"Wind","Refining",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Batteries","Extraction",29,175,0.165714285714286,42,0.24,-0.0742857142857143
+"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear","Assembly",19,175,0.108571428571429,1,0.00571428571428571,0.102857142857143
+"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear","Extraction",19,175,0.108571428571429,30,0.171428571428571,-0.0628571428571429
+"manufacturing_focused","manufacturing_focused",TRUE,"Electric Grid","Components",17,175,0.0971428571428571,3,0.0171428571428571,0.08
+"manufacturing_focused","manufacturing_focused",TRUE,"Solar","Extraction",16,175,0.0914285714285714,22,0.125714285714286,-0.0342857142857143
+"manufacturing_focused","manufacturing_focused",TRUE,"Solar","Components",11,175,0.0628571428571429,0,0,0.0628571428571429
+"manufacturing_focused","manufacturing_focused",TRUE,"Batteries","Assembly",10,175,0.0571428571428571,0,0,0.0571428571428571
+"manufacturing_focused","manufacturing_focused",TRUE,"Batteries","Refining",9,175,0.0514285714285714,3,0.0171428571428571,0.0342857142857143
+"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear","Components",9,175,0.0514285714285714,0,0,0.0514285714285714
+"manufacturing_focused","manufacturing_focused",TRUE,"Green Hydrogen","Deployment",8,175,0.0457142857142857,15,0.0857142857142857,-0.04
+"manufacturing_focused","manufacturing_focused",TRUE,"Solar","Deployment",8,175,0.0457142857142857,30,0.171428571428571,-0.125714285714286
+"manufacturing_focused","manufacturing_focused",TRUE,"Batteries","Components",5,175,0.0285714285714286,0,0,0.0285714285714286
+"manufacturing_focused","manufacturing_focused",TRUE,"Electric Vehicles","Components",4,175,0.0228571428571429,0,0,0.0228571428571429
+"manufacturing_focused","manufacturing_focused",TRUE,"Batteries","Recovery",3,175,0.0171428571428571,3,0.0171428571428571,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Batteries","Deployment",2,175,0.0114285714285714,16,0.0914285714285714,-0.08
+"manufacturing_focused","manufacturing_focused",TRUE,"Oil","Components",2,175,0.0114285714285714,0,0,0.0114285714285714
+"manufacturing_focused","manufacturing_focused",TRUE,"Gas","Refining",1,175,0.00571428571428571,1,0.00571428571428571,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Solar","Refining",1,175,0.00571428571428571,0,0,0.00571428571428571
+"manufacturing_focused","manufacturing_focused",TRUE,"Wind","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Wind","Refining",1,175,0.00571428571428571,0,0,0.00571428571428571
+"manufacturing_focused","manufacturing_focused",TRUE,"Coal","Deployment",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Coal","Extraction",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Electric Grid","Extraction",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"manufacturing_focused","manufacturing_focused",TRUE,"Electric Grid","Refining",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"manufacturing_focused","manufacturing_focused",TRUE,"Electric Vehicles","Deployment",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Gas","Assembly",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Gas","Deployment",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Gas","Extraction",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Geothermal","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"manufacturing_focused","manufacturing_focused",TRUE,"Green Hydrogen","Extraction",0,175,0,2,0.0114285714285714,-0.0114285714285714
+"manufacturing_focused","manufacturing_focused",TRUE,"Green Hydrogen","Refining",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear","Deployment",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Oil","Assembly",0,175,0,0,0,0
+"manufacturing_focused","manufacturing_focused",TRUE,"Oil","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"manufacturing_focused","manufacturing_focused",TRUE,"Oil","Extraction",0,175,0,0,0,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Oil","Components",29,175,0.165714285714286,0,0,0.165714285714286
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries","Extraction",25,175,0.142857142857143,42,0.24,-0.0971428571428571
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Vehicles","Components",15,175,0.0857142857142857,0,0,0.0857142857142857
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar","Extraction",14,175,0.08,22,0.125714285714286,-0.0457142857142857
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Green Hydrogen","Deployment",11,175,0.0628571428571429,15,0.0857142857142857,-0.0228571428571429
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear","Assembly",10,175,0.0571428571428571,1,0.00571428571428571,0.0514285714285714
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear","Extraction",10,175,0.0571428571428571,30,0.171428571428571,-0.114285714285714
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar","Components",10,175,0.0571428571428571,0,0,0.0571428571428571
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries","Assembly",9,175,0.0514285714285714,0,0,0.0514285714285714
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Oil","Assembly",9,175,0.0514285714285714,0,0,0.0514285714285714
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Grid","Components",7,175,0.04,3,0.0171428571428571,0.0228571428571429
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries","Refining",5,175,0.0285714285714286,3,0.0171428571428571,0.0114285714285714
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar","Deployment",4,175,0.0228571428571429,30,0.171428571428571,-0.148571428571429
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries","Components",3,175,0.0171428571428571,0,0,0.0171428571428571
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Green Hydrogen","Extraction",3,175,0.0171428571428571,2,0.0114285714285714,0.00571428571428572
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear","Components",2,175,0.0114285714285714,0,0,0.0114285714285714
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Oil","Extraction",2,175,0.0114285714285714,0,0,0.0114285714285714
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries","Recovery",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Vehicles","Deployment",1,175,0.00571428571428571,0,0,0.00571428571428571
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Gas","Assembly",1,175,0.00571428571428571,0,0,0.00571428571428571
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Gas","Deployment",1,175,0.00571428571428571,0,0,0.00571428571428571
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Gas","Refining",1,175,0.00571428571428571,1,0.00571428571428571,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Oil","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Wind","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries","Deployment",0,175,0,16,0.0914285714285714,-0.0914285714285714
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Coal","Deployment",0,175,0,0,0,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Coal","Extraction",0,175,0,0,0,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Grid","Extraction",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Grid","Refining",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Gas","Extraction",0,175,0,0,0,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Geothermal","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Green Hydrogen","Refining",0,175,0,0,0,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear","Deployment",0,175,0,0,0,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar","Refining",0,175,0,0,0,0
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Wind","Refining",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Nuclear","Extraction",62,175,0.354285714285714,30,0.171428571428571,0.182857142857143
+"resource_security_focused","resource_security_focused",TRUE,"Batteries","Extraction",50,175,0.285714285714286,42,0.24,0.0457142857142857
+"resource_security_focused","resource_security_focused",TRUE,"Solar","Extraction",28,175,0.16,22,0.125714285714286,0.0342857142857143
+"resource_security_focused","resource_security_focused",TRUE,"Batteries","Refining",13,175,0.0742857142857143,3,0.0171428571428571,0.0571428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Electric Grid","Refining",6,175,0.0342857142857143,3,0.0171428571428571,0.0171428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Green Hydrogen","Extraction",4,175,0.0228571428571429,2,0.0114285714285714,0.0114285714285714
+"resource_security_focused","resource_security_focused",TRUE,"Solar","Refining",3,175,0.0171428571428571,0,0,0.0171428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Wind","Refining",3,175,0.0171428571428571,0,0,0.0171428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Electric Grid","Extraction",2,175,0.0114285714285714,1,0.00571428571428571,0.00571428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Solar","Deployment",2,175,0.0114285714285714,30,0.171428571428571,-0.16
+"resource_security_focused","resource_security_focused",TRUE,"Gas","Refining",1,175,0.00571428571428571,1,0.00571428571428571,0
+"resource_security_focused","resource_security_focused",TRUE,"Green Hydrogen","Refining",1,175,0.00571428571428571,0,0,0.00571428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Batteries","Assembly",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Batteries","Components",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Batteries","Deployment",0,175,0,16,0.0914285714285714,-0.0914285714285714
+"resource_security_focused","resource_security_focused",TRUE,"Batteries","Recovery",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Coal","Deployment",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Coal","Extraction",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Electric Grid","Components",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Electric Vehicles","Components",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Electric Vehicles","Deployment",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Gas","Assembly",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Gas","Deployment",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Gas","Extraction",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Geothermal","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Green Hydrogen","Deployment",0,175,0,15,0.0857142857142857,-0.0857142857142857
+"resource_security_focused","resource_security_focused",TRUE,"Nuclear","Assembly",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Nuclear","Components",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Nuclear","Deployment",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Oil","Assembly",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Oil","Components",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Oil","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"resource_security_focused","resource_security_focused",TRUE,"Oil","Extraction",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Solar","Components",0,175,0,0,0,0
+"resource_security_focused","resource_security_focused",TRUE,"Wind","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear","Extraction",54,175,0.308571428571429,30,0.171428571428571,0.137142857142857
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries","Extraction",47,175,0.268571428571429,42,0.24,0.0285714285714286
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar","Extraction",23,175,0.131428571428571,22,0.125714285714286,0.0057142857142857
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries","Refining",13,175,0.0742857142857143,3,0.0171428571428571,0.0571428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Green Hydrogen","Extraction",10,175,0.0571428571428571,2,0.0114285714285714,0.0457142857142857
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Gas","Refining",5,175,0.0285714285714286,1,0.00571428571428571,0.0228571428571429
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Oil","Extraction",5,175,0.0285714285714286,0,0,0.0285714285714286
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Green Hydrogen","Refining",3,175,0.0171428571428571,0,0,0.0171428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar","Refining",3,175,0.0171428571428571,0,0,0.0171428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Coal","Extraction",2,175,0.0114285714285714,0,0,0.0114285714285714
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Vehicles","Refining",2,175,0.0114285714285714,0,0,0.0114285714285714
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Green Hydrogen","Deployment",2,175,0.0114285714285714,15,0.0857142857142857,-0.0742857142857143
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Wind","Refining",2,175,0.0114285714285714,0,0,0.0114285714285714
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Grid","Extraction",1,175,0.00571428571428571,1,0.00571428571428571,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Grid","Refining",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Gas","Extraction",1,175,0.00571428571428571,0,0,0.00571428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar","Deployment",1,175,0.00571428571428571,30,0.171428571428571,-0.165714285714286
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries","Assembly",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries","Components",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries","Deployment",0,175,0,16,0.0914285714285714,-0.0914285714285714
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries","Recovery",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Coal","Deployment",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Grid","Components",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Vehicles","Components",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Vehicles","Deployment",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Gas","Assembly",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Gas","Deployment",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Geothermal","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear","Assembly",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear","Components",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear","Deployment",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Oil","Assembly",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Oil","Components",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Oil","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar","Components",0,175,0,0,0,0
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Wind","Deployment",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"deployment_focused","deployment_focused",TRUE,"Solar","Deployment",66,175,0.377142857142857,30,0.171428571428571,0.205714285714286
+"deployment_focused","deployment_focused",TRUE,"Batteries","Deployment",38,175,0.217142857142857,16,0.0914285714285714,0.125714285714286
+"deployment_focused","deployment_focused",TRUE,"Green Hydrogen","Deployment",34,175,0.194285714285714,15,0.0857142857142857,0.108571428571429
+"deployment_focused","deployment_focused",TRUE,"Batteries","Extraction",5,175,0.0285714285714286,42,0.24,-0.211428571428571
+"deployment_focused","deployment_focused",TRUE,"Electric Grid","Refining",5,175,0.0285714285714286,3,0.0171428571428571,0.0114285714285714
+"deployment_focused","deployment_focused",TRUE,"Nuclear","Extraction",5,175,0.0285714285714286,30,0.171428571428571,-0.142857142857143
+"deployment_focused","deployment_focused",TRUE,"Geothermal","Deployment",4,175,0.0228571428571429,1,0.00571428571428571,0.0171428571428571
+"deployment_focused","deployment_focused",TRUE,"Solar","Extraction",4,175,0.0228571428571429,22,0.125714285714286,-0.102857142857143
+"deployment_focused","deployment_focused",TRUE,"Wind","Deployment",4,175,0.0228571428571429,1,0.00571428571428571,0.0171428571428571
+"deployment_focused","deployment_focused",TRUE,"Electric Vehicles","Deployment",3,175,0.0171428571428571,0,0,0.0171428571428571
+"deployment_focused","deployment_focused",TRUE,"Batteries","Refining",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"deployment_focused","deployment_focused",TRUE,"Electric Grid","Components",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"deployment_focused","deployment_focused",TRUE,"Gas","Deployment",1,175,0.00571428571428571,0,0,0.00571428571428571
+"deployment_focused","deployment_focused",TRUE,"Gas","Refining",1,175,0.00571428571428571,1,0.00571428571428571,0
+"deployment_focused","deployment_focused",TRUE,"Nuclear","Assembly",1,175,0.00571428571428571,1,0.00571428571428571,0
+"deployment_focused","deployment_focused",TRUE,"Nuclear","Deployment",1,175,0.00571428571428571,0,0,0.00571428571428571
+"deployment_focused","deployment_focused",TRUE,"Oil","Deployment",1,175,0.00571428571428571,1,0.00571428571428571,0
+"deployment_focused","deployment_focused",TRUE,"Batteries","Assembly",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Batteries","Components",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Batteries","Recovery",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"deployment_focused","deployment_focused",TRUE,"Coal","Deployment",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Coal","Extraction",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Electric Grid","Extraction",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"deployment_focused","deployment_focused",TRUE,"Electric Vehicles","Components",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Gas","Assembly",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Gas","Extraction",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Green Hydrogen","Extraction",0,175,0,2,0.0114285714285714,-0.0114285714285714
+"deployment_focused","deployment_focused",TRUE,"Green Hydrogen","Refining",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Nuclear","Components",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Oil","Assembly",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Oil","Components",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Oil","Extraction",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Solar","Components",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Solar","Refining",0,175,0,0,0,0
+"deployment_focused","deployment_focused",TRUE,"Wind","Refining",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Solar","Deployment",56,175,0.32,30,0.171428571428571,0.148571428571429
+"deployment_focused_no_tech","deployment_focused",FALSE,"Green Hydrogen","Deployment",44,175,0.251428571428571,15,0.0857142857142857,0.165714285714286
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries","Deployment",30,175,0.171428571428571,16,0.0914285714285714,0.08
+"deployment_focused_no_tech","deployment_focused",FALSE,"Electric Vehicles","Deployment",8,175,0.0457142857142857,0,0,0.0457142857142857
+"deployment_focused_no_tech","deployment_focused",FALSE,"Oil","Deployment",7,175,0.04,1,0.00571428571428571,0.0342857142857143
+"deployment_focused_no_tech","deployment_focused",FALSE,"Gas","Deployment",5,175,0.0285714285714286,0,0,0.0285714285714286
+"deployment_focused_no_tech","deployment_focused",FALSE,"Gas","Refining",5,175,0.0285714285714286,1,0.00571428571428571,0.0228571428571429
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries","Extraction",4,175,0.0228571428571429,42,0.24,-0.217142857142857
+"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear","Extraction",4,175,0.0228571428571429,30,0.171428571428571,-0.148571428571429
+"deployment_focused_no_tech","deployment_focused",FALSE,"Solar","Extraction",3,175,0.0171428571428571,22,0.125714285714286,-0.108571428571429
+"deployment_focused_no_tech","deployment_focused",FALSE,"Geothermal","Deployment",2,175,0.0114285714285714,1,0.00571428571428571,0.00571428571428571
+"deployment_focused_no_tech","deployment_focused",FALSE,"Wind","Deployment",2,175,0.0114285714285714,1,0.00571428571428571,0.00571428571428571
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries","Refining",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"deployment_focused_no_tech","deployment_focused",FALSE,"Coal","Deployment",1,175,0.00571428571428571,0,0,0.00571428571428571
+"deployment_focused_no_tech","deployment_focused",FALSE,"Electric Grid","Refining",1,175,0.00571428571428571,3,0.0171428571428571,-0.0114285714285714
+"deployment_focused_no_tech","deployment_focused",FALSE,"Electric Vehicles","Components",1,175,0.00571428571428571,0,0,0.00571428571428571
+"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear","Deployment",1,175,0.00571428571428571,0,0,0.00571428571428571
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries","Assembly",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries","Components",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries","Recovery",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"deployment_focused_no_tech","deployment_focused",FALSE,"Coal","Extraction",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Electric Grid","Components",0,175,0,3,0.0171428571428571,-0.0171428571428571
+"deployment_focused_no_tech","deployment_focused",FALSE,"Electric Grid","Extraction",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"deployment_focused_no_tech","deployment_focused",FALSE,"Electric Vehicles","Refining",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Gas","Assembly",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Gas","Extraction",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Green Hydrogen","Extraction",0,175,0,2,0.0114285714285714,-0.0114285714285714
+"deployment_focused_no_tech","deployment_focused",FALSE,"Green Hydrogen","Refining",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear","Assembly",0,175,0,1,0.00571428571428571,-0.00571428571428571
+"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear","Components",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Oil","Assembly",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Oil","Components",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Oil","Extraction",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Solar","Components",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Solar","Refining",0,175,0,0,0,0
+"deployment_focused_no_tech","deployment_focused",FALSE,"Wind","Refining",0,175,0,0,0,0

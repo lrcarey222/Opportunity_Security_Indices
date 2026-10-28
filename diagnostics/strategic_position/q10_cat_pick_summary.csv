@@ -1,0 +1,3 @@
+"variant","scenario","tech_prior","n_members","n_picked","n_changed","n_stage_only_changes","n_changed_near_baseline","n_near_baseline","margin_median","n_near"
+"with_cat","with_cat",TRUE,60,60,0,0,0,29,0.0108238825551019,29
+"without_cat","without_cat",TRUE,60,60,10,0,8,29,0.0102518235589223,30

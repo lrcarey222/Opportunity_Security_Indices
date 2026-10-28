@@ -1,0 +1,14 @@
+"perturbation","n_nodes","share_changed","to_secure","to_compete","to_deploy"
+"coercion_0.4",14124,0,0,0,0
+"coercion_0.6",14124,0,0,0,0
+"coercive_imports_0.15",14124,0.000283205890682526,4,0,0
+"coercive_imports_0.35",14124,0.000212404418011895,0,1,2
+"position_strong_0.05",14124,0.0011328235627301,0,16,0
+"position_strong_0.15",14124,0.000283205890682526,0,0,4
+"position_moderate_0.05",14124,0.0024780515434721,0,0,35
+"allied_alternative_0.4",14124,0.000212404418011895,0,0,3
+"allied_alternative_0.6",14124,0,0,0,0
+"acute_includes_moderate",14124,0.00148683092608326,21,0,0
+"acute_severe_only",14124,0.00106202209005947,0,2,13
+"catch_up_market_0.5",14124,0.000283205890682526,0,4,0
+"coercive_powers_only (world shares; import shares unchanged)",14124,0,0,0,0

@@ -7,7 +7,8 @@ Outputs:
 - **Energy Security (ES)**: exposure and resilience across energy supply chains (higher = more secure).
 - **Economic Opportunity (EO)**: market and competitiveness opportunity across the same chains.
 - **Policy index**: IEA Policies and Measures and Climate Action Tracker support.
-- **Strategic Index (SI)**: where a country should build.
+- **Strategic Position and Strategic Posture** (section 6a; full method in [strategic_position.md](strategic_position.md)): Competitive Position, Strategic Need and Revealed Policy Priority as independent dimensions per country x technology x six-stage node, the Yards & Fences decision engine (Secure / Compete / Deploy), its policy design (fence, gate, build), and observed vs recommended policy.
+- **Strategic Index (SI)** (deprecated, kept for compatibility): where a country should build, as one score.
 - **Geopolitical alignment** and the **two-tier allied coalition** with the EU-27 as one coalition node.
 - **Partnership Strength Index (PSI)**: partner j's value to the allied coalition, from bilateral components.
 - **Allied Industrial Base** (section 10a): how the coalition absorbs a supply shock with existing trade, where new investment would close the rest, the emergent network of trade and investment relationships, country roles and the Sectoral Compacts. It replaces the original **allied network design** (section 10), retired on 2026-10-17.
@@ -115,7 +116,30 @@ P_its = sum_v w_v x^v_its / sum_{v observed in the cell} w_v,   w: IEA PAMS 3, C
 
 GTA NIPO is not a component. The NIPO tables on disk are the October 2026 refresh (as of 5 October 2026); they feed only the strongest-measures context of Country Insights and the paper's "NIPO added back" robustness variant, which gives NIPO its former weight 4 next to IEA PAMS 3 and CAT 2.
 
+## 6a. Strategic Position and Strategic Posture
+
+The method is stated in [strategic_position.md](strategic_position.md) and its results in
+[strategic_position_readout.md](strategic_position_readout.md). In short:
+
+- **Step 1, Strategic Position.** Competitive Position (demonstrated position, across countries in the
+  cell), Strategic Need (vulnerability, across countries in the cell) and Revealed Policy Priority
+  (where observable intervention concentrates, across the country's own cells), each with its evidence
+  specificity from `data/reference/index_variable_stage_evidence.csv`. No dimension feeds another; no
+  stage or technology prior. The Policy index above is not used: CAT becomes country context, IEA PAMS
+  is attributed to the cells a record names, and NIPO is rebuilt directly on the six-stage HS6 master
+  as support and protection stock and flow (`scripts/11`).
+- **Step 2, Strategic Posture.** The Yards & Fences decision engine (`R/strategic_position/posture_engine.R`)
+  runs five tri-state tests (critical consequence, exploitable vulnerability, capability case,
+  credible strategy, proportionality) and recommends Secure, Compete or Deploy for each node and each
+  sensitive layer. Observed policy never enters a test.
+- **Steps 3-4, Policy Design and Evaluation.** Fence, gate and build by posture variant and delivery
+  mode; `policy_alignment` compares the recommendation with observed policy.
+
 ## 6. Strategic Index
+
+Deprecated: kept unchanged for the dashboard export and the paper, and replaced analytically by
+section 6a. `diagnostics/strategic_position/q4_*` (stage and technology priors) and `q10_*` (CAT)
+measure what its priors did.
 
 ```
 SI_its = 0.2 pol_its + 0.3 EO_its + 0.3 (1 - ES_its) + 0.1 lambda_s + 0.1 g_t

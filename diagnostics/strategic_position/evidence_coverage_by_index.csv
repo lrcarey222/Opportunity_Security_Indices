@@ -1,0 +1,4 @@
+"index","n_cells","mean_evidence_specificity","mean_exact_evidence_share","mean_split_evidence_share","mean_shared_evidence_share","mean_proxy_evidence_share","mean_tech_wide_evidence_share","mean_no_data_share","mean_observed_share","mean_global_share","n_high","n_medium","n_low","n_none"
+"competitive_position",10146,0.748529798278468,0.85398406374502,0.0771475501502761,0.068868386104704,0,0,0,0.808257769892897,0,5506,3948,78,614
+"policy_priority",6425,0.347044089061177,0.0439312944112005,0.303112794649976,0.303003627756118,0,0.349952283182705,0,1,,1646,1272,471,3036
+"strategic_need",10058,0.718971631205674,0.802830450788359,0,0.0094644386892772,0.187705110522364,0,0,0.899513377963368,0,6487,1267,1,2303

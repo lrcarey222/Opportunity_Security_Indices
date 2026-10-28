@@ -1,0 +1,12 @@
+"strategic_posture","policy_alignment","n_cells"
+"compete","aligned",78
+"compete","mixed",57
+"compete","under_prioritized",80
+"deploy","aligned",5208
+"deploy","insufficient_data",7645
+"deploy","mixed",238
+"deploy","over_prioritized",800
+"secure","aligned",8
+"secure","mixed",2
+"secure","under_prioritized",8
+,,330

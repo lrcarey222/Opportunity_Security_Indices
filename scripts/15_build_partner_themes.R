@@ -48,6 +48,11 @@ source(file.path(repo_root, "R", "themes", "partnership_strength", "safer_friend
 source(file.path(repo_root, "R", "themes", "partnership_strength", "cm_fdi.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "stronger_development.R"))
 source(file.path(repo_root, "R", "categories", "policy", "cat_policy_index.R"))
+# Import exposure by importer x (tech, stage) from the same flow table: a Strategic Need input
+# (docs/strategic_position.md section 3) and, with the coercive-supplier pairs of supply_structure.R,
+# a strategic posture input (section 7); written here and read by nothing in this script.
+source(file.path(repo_root, "R", "strategic_position", "import_exposure.R"))
+source(file.path(repo_root, "R", "strategic_position", "supply_structure.R"))
 
 config <- getOption("opportunity_security.config")
 weights <- getOption("opportunity_security.weights")
@@ -436,6 +441,27 @@ message(
   "); the others take ", if (identical(trade_growth$unscored, "neutral")) "the neutral growth score 0.5." else "their level alone."
 )
 rm(trade_cells_trading, trade_cells_growth)
+
+# Strategic Need input: each importer's last-year imports per (tech, stage), its supplier HHI and
+# its shares from China (with Hong Kong and Macao) and from opposite-bloc economies
+# (sp_import_exposure()). GDP of the last trade year, else the latest earlier WDI value. The
+# strategic posture adds the shares from coercive and trusted suppliers, on the coercive powers of
+# config/strategic_position.yml (strategic_posture$coercive_powers; sp_coercive_pairs()).
+sp_posture_cfg <- yaml::read_yaml(
+  Sys.getenv("OPSI_STRATEGIC_POSITION", file.path(repo_root, "config", "strategic_position.yml"))
+)$strategic_posture
+if (is.null(sp_posture_cfg$coercive_powers)) {
+  stop("config/strategic_position.yml has no strategic_posture$coercive_powers.")
+}
+import_exposure_tbl <- sp_import_exposure(
+  trade_cells,
+  alignment = geo_alignment_tbl,
+  gdp = sp_gdp_usd(country_gdp, year = max(partner_trade_years)),
+  trade_year = max(partner_trade_years),
+  coercive_pairs = sp_coercive_pairs(geo_alignment_tbl, coercive_powers = unlist(sp_posture_cfg$coercive_powers))
+)
+write_processed_tbl(import_exposure_tbl, "import_exposure_tbl", processed_dir)
+rm(import_exposure_tbl, sp_posture_cfg)
 
 friendshore_outputs <- safer_friendshore(
   comtrade_dyads = NULL,

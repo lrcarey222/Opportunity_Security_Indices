@@ -1,0 +1,387 @@
+# Strategic position framework: Competitive Position, Strategic Need, Revealed Policy Priority and their
+# alignment, by country x technology x six-stage cell (docs/strategic_position.md). Read by
+# scripts/26_build_strategic_position.R; every rule the R code applies is named here.
+#
+# No stage prior: nothing in this file prefers one supply-chain stage to another. Stage preferences
+# exist only as named scenarios under `stage_scenarios`, used by the legacy Strategic Index
+# sensitivity diagnostics and never by the default outputs.
+
+headline_techs: [Batteries, Coal, Electric Grid, Electric Vehicles, Gas, Geothermal, Green Hydrogen,
+                 Nuclear, Oil, Solar, Wind]
+
+# ---- Evidence specificity (data/reference/index_variable_stage_evidence.csv) -------------------------
+evidence:
+  # Statuses that count as stage-specific evidence in evidence_specificity.
+  specific_statuses: [exact, split]
+  # stage_evidence_quality bands on evidence_specificity (share of score weight on observed,
+  # stage-specific inputs): high >= high, medium >= medium, low > 0, none = 0.
+  quality_bands: {high: 0.67, medium: 0.33}
+
+# ---- Competitive Position -----------------------------------------------------------------------------
+# Demonstrated position only. Each variable is read from the pillar variable contributions
+# (index_outputs.rds *_variable_contributions, component_value: already a within-cell index, higher =
+# stronger). `fill` says what an imputed (filled-in) pillar value becomes here:
+#   na              not observed: dropped (the source does not cover the country)
+#   structural_zero the source lists every holder, so absence is a real zero
+# A family is the mean of its observed variables; the score is the mean of the observed families
+# (equal weights); the position is the mid-rank percentile of the score across countries in the cell.
+competitive_position:
+  min_observed_variables: 1
+  # Cells scored for fewer countries than this get no percentile (thin_cell = TRUE).
+  min_countries_per_cell: 5
+  families:
+    export_position:
+      label: Export position (world share and revealed comparative advantage of the stage's HS6 basket)
+      # Not Recovery: its baskets are scrap and spent material, and a large export share means the
+      # country ships it abroad for processing, not that it recycles.
+      stages: [Extraction, Refining, Components, Assembly]
+      variables:
+        - {pillar: EO, category: Trade, variable: market_share, fill: na}
+        # RCA measures specialisation, not world position; at Recovery (no market_share) it ranked
+        # micro-economies first, so it stays at the four main traded stages.
+        - {pillar: EO, category: Trade, variable: rca, fill: na, stages: [Extraction, Refining, Components, Assembly]}
+    production_position:
+      label: Production share (mined or refined supply, fuel production)
+      stages: [Extraction, Refining]
+      variables:
+        - {pillar: EO, category: Production, variable: size, fill: structural_zero}
+    manufacturing_capacity:
+      # GCIM (Rhodium) operating plants. The IEA GEVO EV production and net exports are left out: they
+      # are five regional values that exist only at EV Assembly and give every EU member the same score.
+      label: Manufacturing capacity (operating plants by product)
+      stages: [Refining, Components, Assembly]
+      variables:
+        - {pillar: EO, category: Investment, variable: Operating Capacity Index, fill: structural_zero}
+    investment_position:
+      label: Recent manufacturing or deployment investment (capex)
+      stages: [Refining, Components, Assembly, Deployment]
+      variables:
+        - {pillar: EO, category: Investment, variable: Annual Investment Index, fill: structural_zero}
+    cost_position:
+      # BNEF LCOE only. The IEA ETP production-cost index is six regional values (38 countries), scaled
+      # so the EU takes 0 and countries outside the regions skip the family: it is kept as context.
+      label: Delivered-cost position at Deployment (BNEF LCOE)
+      stages: [Deployment]
+      variables:
+        - {pillar: EO, category: Cost Competitiveness, variable: LCOE Index, fill: na}
+    resource_endowment:
+      label: Resource endowment (reserves at Extraction; solar, wind and geothermal resource at Deployment)
+      stages: [Extraction, Deployment]
+      variables:
+        - {pillar: ES, category: Reserves, variable_pattern: " Reserves$", fill: structural_zero}
+        - {pillar: ES, category: Reserves, variable_pattern: "Potential Index$", fill: na}
+    deployment_scale:
+      # Generation size only. BNEF installed capacity per capita is a regional broadcast (it alone put
+      # five small economies at 1.00 in Oil Deployment) and growth_abs rewards a small decline in
+      # declining technologies; both are context.
+      label: Deployment scale (generation or use)
+      stages: [Deployment]
+      variables:
+        - {pillar: EO, category: Production, variable: size, fill: na}
+  # Kept out of Competitive Position and reported as cell context (country-invariant, projected or
+  # not a measure of the country's own position).
+  context_variables:
+    - {pillar: EO, category: Technology Demand, variable: "*", reason: "future or global demand, not national capability"}
+    - {pillar: EO, category: Technological Readiness, variable: TRL Index, reason: "technology maturity, identical for every country"}
+    - {pillar: EO, category: Energy Prices, variable: Overall Price Volatility Index, reason: "world market constant"}
+    - {pillar: EO, category: Trade, variable: HHI, reason: "world export concentration, identical for every country"}
+    - {pillar: EO, category: Trade, variable: feas, reason: "adjacent capability (HS4 proximity), not demonstrated position"}
+    - {pillar: EO, category: Trade, variable: export_size, reason: "same numerator as market_share (kept once)"}
+    - {pillar: EO, category: Cost Competitiveness, variable: Input Cost Index, reason: "country factor cost, nearly identical across technologies"}
+    - {pillar: EO, category: Investment, variable: Pipeline Capacity Index, reason: "announced, not demonstrated"}
+    - {pillar: EO, category: Investment, variable: Investment Momentum Index, reason: "trajectory; mostly zero-filled"}
+    - {pillar: EO, category: Foreign Dependency, variable: Overall Market Share, reason: "IEA ETP 2035 pipeline share, five entities"}
+    - {pillar: EO, category: Consumption, variable: elec_growth_index, reason: "projected deployment growth"}
+    - {pillar: EO, category: Consumption, variable: installed_cap_index, reason: "BNEF regional broadcast"}
+    - {pillar: EO, category: Production, variable: growth_abs, reason: "absolute change; rewards a small decline in declining technologies"}
+    - {pillar: EO, category: Cost Competitiveness, variable: IEA Cost index, reason: "six regional values; EU scaled to 0"}
+    - {pillar: EO, category: Foreign Dependency, variable: production, reason: "IEA GEVO regional EV production (five regions)"}
+    - {pillar: EO, category: Foreign Dependency, variable: net_export, reason: "IEA GEVO regional EV net exports (five regions)"}
+    - {pillar: EO, category: Energy Access, variable: "*", reason: "energy use per capita, demand context"}
+
+# ---- Strategic Need -------------------------------------------------------------------------------------
+# Vulnerability only, oriented so that higher = more need. Each measure is turned into a mid-rank
+# percentile across countries within the cell; a family is the mean of its measures' percentiles; the
+# need score is the mean of the observed families and strategic_need_percentile its percentile.
+strategic_need:
+  families:
+    import_dependence:
+      label: Net import dependence (net imports of the stage basket / GDP; fossil-fuel self-sufficiency)
+      measures:
+        - {source: es_contributions, category: Trade, variable: deficit_gdp, orient: invert, fill: na}
+        - {source: es_contributions, category: Energy Imports, variable: Production surplus/deficit, orient: invert, fill: na}
+    supplier_concentration:
+      label: Concentration of the country's own import suppliers (HHI)
+      measures:
+        - {source: import_exposure, variable: import_hhi, orient: as_is}
+    risky_supplier_exposure:
+      label: Import share from China (with Hong Kong and Macao) and from opposite-bloc economies
+      measures:
+        - {source: import_exposure, variable: china_share, orient: as_is}
+        - {source: import_exposure, variable: opposite_bloc_share, orient: as_is}
+  # A country that imports nothing in the cell has no import exposure (need 0 on the import measures),
+  # not missing need; it still needs import data to be observed (an observed zero).
+  # Deployment has no traded basket: its need is the technology's Assembly equipment need (proxy) and,
+  # for fossil fuels, fuel import dependence (shared from Extraction).
+  deployment_proxy_stage: Assembly
+  # Coal, Gas and Oil Deployment also take fuel import dependence from Extraction (shared).
+  fuel_import_techs: [Coal, Gas, Oil]
+  # Below this annual import value (USD, last trade year) the supplier-concentration and
+  # risky-supplier measures are immaterial: they are set to need 0 (`zero`) rather than computed.
+  min_import_usd: 1000000
+  immaterial_families: [supplier_concentration, risky_supplier_exposure]
+  immaterial_need: zero
+  min_countries_per_cell: 5
+  # A cell with trade data but fewer importers above min_import_usd than this is thin.
+  min_material_importers_per_cell: 5
+  # Entrepots and ship registries: their recorded imports are re-exports or flag-of-convenience
+  # mirror flows, not their own exposure. They are not ranked (need NA, reason 'entrepot') and do not
+  # enter other countries' percentiles.
+  exclude_iso3: [HKG, MAC, MHL, LBR, PAN]
+  # Nonaligned importers have geo_alignment 0.5 with every partner, so their opposite-bloc share is 0
+  # by construction: it is treated as not applicable (NA) and their risky-supplier family rests on
+  # the China share.
+  nonaligned_opposite_bloc: na
+
+# ---- Revealed Policy Priority ---------------------------------------------------------------------------
+policy_priority:
+  # Stock: in force on the as-of date. Flow: adopted or announced in the trailing window (years).
+  flow_window_years: 3
+  flow_windows_sensitivity: [1, 3, 5]
+  # As-of date for stock and flow; null = the latest announcement date in the GTA extract.
+  as_of: null
+  # A country's within-country percentiles need attributable records in at least this many cells.
+  min_cells_with_records: 3
+  # Within-country priority is computed on attention relative to the world baseline for the cell
+  # (country share of its attributable records in the cell / mean country share), which removes the
+  # common keyword and coverage bias across stages; the raw within-country percentile is also reported.
+  normalisation: attention_rca
+  # Baseline b_c = mean over ranked countries of their attention share in cell c (each country counts
+  # once, so the US and EU do not set it); 'pooled' = sum of records / all records.
+  baseline: country_mean
+  # rca = (a + l) / (b + l), l = rca_smoothing / n_observable_cells. Without it (0) 23 of the review
+  # countries' 40 top-5 cells rested on less than one record; 0.5 is the smallest round value that
+  # removes them. A cell with no records stays lowest.
+  rca_smoothing: 0.5
+  pams:
+    stock_status: [In force]
+    # null = the year of the extract's latest dateModified (2025); record years run to 2030 because
+    # they hold effective or target years.
+    as_of_year: null
+    # A country's own policy: these jurisdictions, plus International records filed under one country
+    # only. Multi-country International records (EU directives filed under every member) are excluded.
+    own_jurisdictions: [National, Subnational, Local, Regional]
+    international_single_country: true
+    # Flow counts adopted records whatever their current status (an adopted-then-ended measure is flow).
+    flow_status: null
+    # tech-specific + stage-specific records are attributed (1/k over the k cells a record names);
+    # stage-cross-cutting, tech-cross-cutting and fully cross-cutting records are reported, not ranked.
+    attribute: [exact, split]
+  nipo:
+    posture_table: config/nipo_instrument_posture.csv
+    # A measure is attributable when it is narrow: at most max_codes HS6 codes in total, or at least
+    # min_basket_share of its codes in the basket. Broad measures are technology-wide context.
+    narrow_max_codes: 20
+    narrow_min_basket_share: 0.5
+    # The max-codes clause also needs this share of the codes in the basket (208 stock measures had
+    # 20 codes or fewer with under 10% in the basket: incidental codes).
+    narrow_count_min_basket_share: 0.1
+    exclude_sanctions: true
+    # GTA initial assessments counted as intervention; Green (liberalising) is reported, not counted.
+    # The October 2026 extract labels them Distortive / Liberalising.
+    count_assessments: [Red, Amber]
+    assessment_equivalents: {Distortive: [Red, Amber], Liberalising: [Green]}
+    # GTA gives one-off measures (grants, loans, export credits, state aid) no removal date, so a
+    # literal stock rule keeps every one since 2009 in force. These families count in stock for this
+    # many years after implementation; measures of other families stay until removed.
+    one_off_stock_years: 5
+    one_off_families: [grant, public_finance, export_support, state_aid]
+    # An entry recorded for at least this many EU members (and only members) is an EU act.
+    eu_wide_min_members: 20
+    # Where one State Act repeats the same USD figure on several interventions, split it equally.
+    split_repeated_values: true
+    # EU-level (supranational) acts are an EU priority, not a member state's: reported per member in
+    # eu_supranational_* fields, never added to a member's own stock or flow.
+    eu_supranational: report_only
+    # 'count' = evidence-weighted count (attribution share); 'instrument_weighted' multiplies by the
+    # posture table's strength_class (sensitivity only).
+    weighting: count
+
+# ---- Competitive-policy alignment (a diagnostic of the posture, not a framework of its own) ------------
+alignment:
+  # Percentile thresholds: high >= threshold. Cells within boundary_band of a threshold are flagged.
+  # Position is compared within the country by default: ranked across ~218 economies, 94% of the
+  # review countries' cells sit above 0.5, so the cross-country percentile cannot separate a large
+  # economy's strengths. The cross-country percentile stays in the table and drives the posture tests.
+  competitive_position_basis: within_country
+  competitive_position_threshold: 0.5
+  policy_priority_threshold: 0.5
+  strategic_need_threshold: 0.5
+  boundary_band: 0.1
+
+# ---- Strategic posture: Secure / Compete / Deploy (docs/strategic_position.md, Step 2) ----------------
+# The decision engine of the NEIS Yards & Fences framework (dashboard/src/fence/engine), applied to
+# every country x technology x six-stage node. Each test is tri-state (yes / no / unknown); unknowns
+# are bracketed, never filled; the recommendation is the strict reading (an unproven case for
+# intervention is not met). Observed policy never enters a test.
+strategic_posture:
+  # Potentially coercive suppliers for country i: partners in the opposite UN-voting bloc
+  # (geo_alignment == 0) plus these powers unless i shares their bloc. An explicit assumption.
+  coercive_powers: [CHN, HKG, MAC, RUS]
+  # false keeps only the powers rule (a sensitivity: the UN-voting China-leaning bloc includes IDN, VNM,
+  # KAZ, ARE and EGY, which the bloc rule makes coercive suppliers of every US-leaning economy).
+  coercive_opposite_bloc: true
+  # A nonaligned country has no same-bloc partners, so under the bloc rule it trusts no one and no
+  # surge or alternative supply ever exists for it. non_coercive: its trusted partners are all
+  # partners that are not coercive to it.
+  nonaligned_trust: non_coercive
+  # World-supply measure per stage, in order of preference (supply_structure.R); '<tech>/<stage>' keys
+  # override a stage's list. Fossil fuels are judged on traded supply: China's half of world coal
+  # output is consumed at home and cannot be withheld. Recovery has no measure: its baskets are scrap
+  # and spent material, whose exporters ship it abroad for processing (an inverted signal of
+  # recycling capability), and Nuclear Recovery is one spent-fuel code.
+  supply_measure_priority:
+    Extraction: [iea_mineral_mining, ei_mineral_mining, uranium_mine_production, ei_production, atlas_export_share]
+    Refining: [iea_mineral_refining, atlas_export_share]
+    Components: [atlas_export_share, iea_manufacturing_capacity]
+    Assembly: [atlas_export_share, iea_manufacturing_capacity]
+    Deployment: []
+    Recovery: []
+    Coal/Extraction: [atlas_export_share]
+    Oil/Extraction: [atlas_export_share]
+    Gas/Extraction: [atlas_export_share]
+  # Test 1: consequence levels that can make a vulnerability acute.
+  acute_consequence: [high, severe]
+  # A node matters to a country only if the country depends on it at scale: imports of at least
+  # exposure_min_import_usd AND exposure_material_imports_to_gdp of GDP, or at least
+  # exposure_min_home_share of world supply produced at home, or a place in the upper half
+  # (exposure_deployment_pct) of the technology's deployers.
+  exposure_min_import_usd: 1000000
+  exposure_material_imports_to_gdp: 0.0005
+  exposure_min_home_share: 0.005
+  exposure_deployment_pct: 0.5
+  # Test 2, digital path: harm horizons that count, and the risky-vendor share of the hardware that
+  # carries the control layer (the country's own imports from coercive suppliers).
+  digital_horizon: [days, weeks, months]
+  digital_vendor_share: {threshold: 0.25, marginal: 0.15}
+  # Test 2, physical path, coercion leg: the largest coercive supplier's share of world supply
+  # (Matisek 2026 screening line: more than half of a critical node), AND the country's own imports
+  # materially from coercive suppliers.
+  coercion: {threshold: 0.5, marginal: 0.4}
+  coercive_import_share: {threshold: 0.25, marginal: 0.15}
+  # Minerals: a mineral counts toward a stage's chokepoint when the technology takes at least this
+  # share of the mineral's clean-energy demand (IEA Critical Minerals sheet 3.1).
+  mineral_min_demand_share: 0.1
+  # Timing leg (months per answer band, as rules.ts): leverage exists when restore time exceeds the
+  # time to intolerable harm plus stockpile cover.
+  months:
+    time_horizon: {days: 0.25, weeks: 1, months: 6, years: 24}
+    qualification_time: {lt3m: 2, m3to12: 8, y1to3: 24, gt3y: 48}
+    reconstitution_time: {lt6m: 4, m6to12: 9, y1to3: 24, gt3y: 48}
+    stockpile: {none: 0, lt3m: 2, m3to12: 8, gt12m: 15}
+  timing_marginal_months: 6
+  # Surge: trusted supply (the country's own share plus same-bloc partners') that could cover a loss.
+  surge_trusted_share: {covers: 0.5, partial: 0.2}
+  # A country holding at least this share of world supply of a node is a major supplier itself: its
+  # imports (and the vendors of its installed control layers) do not describe its exposure, so the
+  # import legs of Test 2 are not met.
+  self_supply_share: 0.10
+  # Test 3, present position: the country's share of world supply on the node's primary measure
+  # (rules.ts: 10% established, 3-10% a foothold that needs complementary capabilities). A foothold
+  # also needs specialisation: the cell is in the stronger half of the country's own cells (a large
+  # diversified exporter holds 3-10% of many baskets without being specialised in them).
+  position: {strong: 0.10, moderate: 0.03, foothold_within_country_pct: 0.5}
+  # Complementary capabilities: position in the same technology's adjacent stages (a world share and
+  # the stage's within-country Competitive Position percentile: a relative strength of the country),
+  # or HS4 export proximity (feas, within-cell percentile across countries).
+  complementary: {adjacent_share_yes: 0.05, adjacent_cp_pct_yes: 0.6, adjacent_share_partly: 0.005, adjacent_cp_pct_partly: 0.5, feas_pct_partly: 0.75}
+  # Catch-up needs a market to catch up into: a large domestic market (the country's Deployment
+  # position in the technology) in a technology whose world market is growing; a catch-up bet into a
+  # flat or shrinking market is not a credible path. The outlook is the direction of world demand
+  # 2024-2035 in the IEA World Energy Outlook Stated Policies Scenario, as loaded in
+  # climate_src_weo_values_tbl (scripts/18): coal power 10,797 -> 8,479 TWh (declining), gas power
+  # 6,785 -> 7,880 TWh (growing, flat after 2035), nuclear 2,835 -> 3,902, solar 2,073 -> 10,113, wind
+  # 2,533 -> 6,917 (growing). Oil is not in that extract: flat is the WEO's plateau in oil demand
+  # around 2030 (to verify against the WEO Annex). Batteries, EVs, grid, hydrogen and geothermal
+  # grow in every WEO scenario.
+  catch_up_market_pct: 0.75
+  market_outlook:
+    Batteries: growing
+    Electric Grid: growing
+    Electric Vehicles: growing
+    Geothermal: growing
+    Green Hydrogen: growing
+    Nuclear: growing
+    Solar: growing
+    Wind: growing
+    Gas: growing
+    Oil: flat
+    Coal: declining
+  catch_up_outlooks: [growing]
+  # Test 5 climate cost (the brief's "diffusion/climate consequences"): protecting or subsidising a
+  # high-emission technology has a climate cost, so a moderate capability case for it fails
+  # proportionality and a strong one is compete_costly. Technologies whose GHG index (tech_ghg_tbl,
+  # 0 = most emitting, 1 = least) is below this line.
+  climate_cost_max_ghg_index: 0.5
+  # Compete applies where something is produced; Deployment is where it is used. Recovery stays in,
+  # but has no position measure (see supply_measure_priority), so it competes only on an adjacent or
+  # catch-up case.
+  compete_stages: [Extraction, Refining, Components, Assembly, Recovery]
+  # Test 5: domestic price premium bands (percent; rules.ts), and the trusted-supply share at which
+  # an allied/import alternative is available.
+  premium: {moderate: 10, high: 30}
+  allied_alternative_share: 0.5
+  # Delivery mode for Secure and Compete nodes.
+  delivery: {domestic_share: 0.10, foothold_share: 0.03, allied_share: 0.3, diversified_share: 0.5}
+  # Deploy variant: concentration watch when the largest coercive supplier holds this much of world
+  # supply or the country's own imports have this HHI.
+  concentration_watch: {coercive_share: 0.4, import_hhi: 0.18}
+  # Confidence (rules.ts): high needs a determinate posture, no marginal decisive answer and this
+  # share of relevant inputs known; below low_completeness, or with two marginal decisive answers, low.
+  confidence: {high_completeness: 0.75, low_completeness: 0.4}
+
+# ---- Policy design (Step 3): fence, gate and build by posture variant and delivery mode -----------------
+policy_design:
+  design_table: config/posture_policy_design.csv
+  delivery_table: config/posture_delivery_modes.csv
+  node_table: data/reference/posture_node_attributes.csv
+
+# ---- Decision cards: the seven example cases ------------------------------------------------------------
+# The allied case needs high need and allied delivery; allied delivery already requires a home share
+# below the foothold line, so no position-percentile cap is applied (position_max 1).
+decision_cards: {need_min: 0.5, position_max: 1}
+
+# ---- Policy alignment: recommended posture vs observed policy (Step 4) ----------------------------------
+policy_alignment:
+  # Within-country policy-priority percentile at or above which Secure/Compete are matched, and at or
+  # above which Deploy counts as over-prioritized (top third, with at least one attributed record).
+  matched_min: 0.5
+  over_min: 0.67
+  # NIPO and PAMS on opposite sides of 0.5 and this far apart: mixed.
+  source_gap_mixed: 0.5
+  # Compete: protection in the top third with support in the bottom third is a fence without a build.
+  fence_without_build: {protection_min: 0.67, support_max: 0.33}
+
+# ---- Legacy Strategic Index sensitivity (diagnostics only) ---------------------------------------------
+legacy_si_sensitivity:
+  baseline: equal_share
+  tech_prior_variants: [true, false]
+  near_margin: 0.01
+  top_n: 5
+  focus_techs: [Batteries, Nuclear]
+  match_stored_tol: 0.001
+
+# ---- Stage-preference scenarios (legacy Strategic Index sensitivity only) ---------------------------
+# Values are the stage weight lambda_s of the legacy SI term 0.1 * lambda_s. `none` is the neutral
+# default of the new framework; `equal_share` is the legacy six-stage prior. deployment_focused gives
+# the same allied picks as none (Deployment is never pick-eligible); it differs only in the rankings.
+stage_scenarios:
+  none: {Extraction: 0, Refining: 0, Components: 0, Assembly: 0, Deployment: 0, Recovery: 0}
+  equal_share: {Extraction: 0.1667, Refining: 0.1667, Components: 0.375, Assembly: 0.375, Deployment: 0.25, Recovery: 0.1667}
+  parent: {Extraction: 0.5, Refining: 0.5, Components: 0.75, Assembly: 0.75, Deployment: 0.25, Recovery: 0.5}
+  manufacturing_focused: {Extraction: 0, Refining: 0.25, Components: 1, Assembly: 1, Deployment: 0, Recovery: 0}
+  resource_security_focused: {Extraction: 1, Refining: 1, Components: 0, Assembly: 0, Deployment: 0, Recovery: 0.5}
+  deployment_focused: {Extraction: 0, Refining: 0, Components: 0, Assembly: 0, Deployment: 1, Recovery: 0}
+
+# Countries for the review outputs (scripts/27).
+review_countries: [United States, China, Japan, South Korea, India, Germany, United Kingdom, Australia]

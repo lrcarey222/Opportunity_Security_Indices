@@ -5,14 +5,15 @@ This repository holds the **Opportunity Security Indices** pipeline. It produces
 - **Energy Security (ES)**: exposure and resilience across energy supply chains (higher = more secure).
 - **Economic Opportunity (EO)**: market opportunity and competitiveness in energy-related value chains.
 - **Policy index**: industrial and climate policy support (IEA Policies and Measures + Climate Action Tracker).
-- **Strategic Index (SI)**: where a country should build, from EO, its energy-security *need*, policy support, the supply-chain stage and the technology's climate weight.
+- **Strategic Position and Strategic Posture** ([below](#strategic-position-and-strategic-posture)): three independent dimensions per country x technology x stage (Competitive Position, Strategic Need, Revealed Policy Priority, each with its evidence quality), the Yards & Fences decision engine that turns them into a recommended **Secure / Compete / Deploy** posture with a fence, gate and build, and a comparison with what governments actually do. It answers: where should a country secure critical vulnerabilities, where should it compete industrially, where should it deliberately prioritize affordable deployment, and does its current policy mix match those choices?
+- **Strategic Index (SI)** (deprecated; kept for the dashboard export and the paper): one score from EO, energy-security *need*, policy support, a supply-chain-stage prior and the technology's climate weight.
 - **Geopolitical alignment**: bloc membership on the US-China axis of UN General Assembly voting.
 - **Allied coalition**: a two-tier coalition (core and partners) derived from alignment, economic-security agreements and major-supplier (or reserve-holder) status, with the EU-27 as one coalition node.
 - **Partnership Strength Index (PSI)**: a partner-level score from bilateral Friendshore (friendshoring opportunities: where a reporter's security need in a sector meets a partner's economic opportunity there, on existing trade and investment ties), Opportunity (export markets) and Development components, from the coalition's point of view.
 - **Allied Industrial Base**: how the coalition absorbs a supply shock with the trade it has, where new investment would close the rest, the emergent network of trade and investment relationships, country roles and the Sectoral Compacts. It replaces the original allied network design (a MILP with a diversification term), retired on 2026-10-17.
 
 > **Unit of analysis:** **Country × Technology × Supply-chain stage**
-> Stages are `Upstream`, `Midstream`, `Downstream`. The 11 headline technologies are Electric Vehicles, Nuclear, Coal, Batteries, Green Hydrogen, Wind, Oil, Solar, Gas, Geothermal and Electric Grid.
+> The six stages are canonical: `Extraction`, `Refining`, `Components`, `Assembly`, `Deployment`, `Recovery` ([docs/supply_chain_stages.md](docs/supply_chain_stages.md)). `Upstream` / `Midstream` / `Downstream` is a derived roll-up for compatibility and charts. Sources are often coarser than six stages: every input carries an evidence status (exact, split, shared, proxy, tech-wide, no data) and each cell reports how much of its score rests on stage-specific evidence. The 11 headline technologies are Electric Vehicles, Nuclear, Coal, Batteries, Green Hydrogen, Wind, Oil, Solar, Gas, Geothermal and Electric Grid.
 
 The code is the specification. `docs/methodology.md` states the method in one place; this README adds the category-by-category notes, how to run the pipeline, and what changed on this branch ([Changelog](#changelog-fixallied-base-paper-sep-oct-2026)).
 
@@ -34,6 +35,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
   - [Energy Security (ES)](#energy-security-es)
   - [Economic Opportunity (EO)](#economic-opportunity-eo)
   - [Policy index](#policy-index)
+  - [Strategic Position and Strategic Posture](#strategic-position-and-strategic-posture)
   - [Strategic Index (SI)](#strategic-index-si)
   - [Geopolitical alignment](#geopolitical-alignment)
   - [Allied coalition: two tiers and the EU node](#allied-coalition-two-tiers-and-the-eu-node)
@@ -417,7 +419,61 @@ w: IEA PAMS 3, CAT 2
 
 ---
 
+### Strategic Position and Strategic Posture
+
+Method: [docs/strategic_position.md](docs/strategic_position.md). Results and validation:
+[docs/strategic_position_readout.md](docs/strategic_position_readout.md). Example decision cards:
+`diagnostics/strategic_position/decision_cards.md`.
+
+One system in four steps, per country x technology x six-stage node:
+
+1. **Strategic Position** (what the evidence says): **Competitive Position** (demonstrated export,
+   production, capacity, investment, cost and resource position, across countries in the cell),
+   **Strategic Need** (net import dependence, concentration of the country's own suppliers, exposure to
+   China and opposite-bloc suppliers, across countries in the cell) and **Revealed Policy Priority**
+   (where observable NIPO and IEA PAMS intervention concentrates, across the country's own cells;
+   NIPO support and protection separate, stock and 1/3/5-year flow), each with its evidence
+   specificity. No dimension feeds another, and there is no stage or technology prior.
+2. **Strategic Posture** (what kind of problem it is): the Yards & Fences decision engine
+   (`dashboard/src/fence/engine`, ported to R) runs five tri-state tests: critical consequence,
+   exploitable vulnerability (a control layer an outsider could command, or a coercive physical
+   chokepoint; concentration alone is never enough), capability case, credible strategy (preserve,
+   adjacent capability, catch up, leap ahead) and proportionality. **Secure** (small yard): an acute
+   consequence meets an exploitable vulnerability. **Compete** (medium yard): a capability case with a
+   credible strategy at a proportionate cost. **Deploy** (large yard): neither, an affirmative choice
+   of openness and affordable deployment. Sensitive layers (firmware, fuels, critical materials) get
+   their own posture without dragging their cell. Unknowns are bracketed, never filled; the
+   recommendation is the strict reading, with the postures the unknowns still allow and the pivotal
+   inputs. **Observed policy never enters a test.**
+3. **Policy Design**: fence, gate and build for the posture variant and delivery mode (domestic,
+   allied, diversified global, mixed).
+4. **Evaluation**: `policy_alignment` (aligned, under-prioritized, over-prioritized, mixed) compares the
+   recommendation with observed policy; benchmarks, review dates and exit conditions say when to
+   reclassify.
+
+Important readings: policy activity is not evidence of competitive advantage; a low observed policy
+priority is low observed NIPO / PAMS intervention, not proof of no priority (GTA misses standards,
+regulation and agreed international measures); CAT is country context (`cat_context`), not technology
+x stage policy evidence.
+
+**Implementation:** `scripts/11_build_nipo_stage_policy.R` (NIPO by six-stage cell),
+`scripts/26_build_strategic_position.R` (all four steps and diagnostics),
+`scripts/27_review_strategic_position.R` (review charts and decision cards); pure functions in
+`R/strategic_position/`; rules in `config/strategic_position.yml`; reference tables
+`data/reference/index_variable_stage_evidence.csv`, `data/reference/posture_node_attributes.csv`,
+`config/nipo_instrument_posture.csv`, `config/posture_policy_design.csv`,
+`config/posture_delivery_modes.csv`. Outputs: `strategic_position_tbl`, `strategic_posture_layers_tbl`,
+`diagnostics/strategic_position/`.
+
+---
+
 ### Strategic Index (SI)
+
+> **Deprecated.** Kept unchanged as `strategic_index` (and `strategic_index_legacy` in
+> `strategic_position_tbl`) for the dashboard export and the paper. It mixes demonstrated capability,
+> vulnerability, policy attention and two normative priors in one score; the strategic position
+> framework above replaces it. `diagnostics/strategic_position/q4_*` and `q10_*` measure how much the
+> stage prior, the technology prior and CAT moved it.
 
 ```
 SI_its = 0.2 pol_its + 0.3 EO_its + 0.3 (1 - ES_its) + 0.1 lambda_s + 0.1 g_t

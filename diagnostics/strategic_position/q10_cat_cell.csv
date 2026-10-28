@@ -1,0 +1,105 @@
+"variant","scenario","tech_prior","tech","supply_chain","n_countries","spearman_cross","top_country","top_country_baseline","top_country_changed"
+"with_cat","with_cat",TRUE,"Batteries","Extraction",85,1,"Chad","Chad",FALSE
+"with_cat","with_cat",TRUE,"Batteries","Refining",121,1,"Benin","Benin",FALSE
+"with_cat","with_cat",TRUE,"Batteries","Components",39,1,"India","India",FALSE
+"with_cat","with_cat",TRUE,"Batteries","Assembly",37,1,"India","India",FALSE
+"with_cat","with_cat",TRUE,"Batteries","Deployment",138,1,"Cameroon","Cameroon",FALSE
+"with_cat","with_cat",TRUE,"Batteries","Recovery",128,1,"Gambia","Gambia",FALSE
+"with_cat","with_cat",TRUE,"Coal","Extraction",96,1,"Viet Nam","Viet Nam",FALSE
+"with_cat","with_cat",TRUE,"Coal","Refining",134,1,"Viet Nam","Viet Nam",FALSE
+"with_cat","with_cat",TRUE,"Coal","Components",155,1,"Indonesia","Indonesia",FALSE
+"with_cat","with_cat",TRUE,"Coal","Assembly",153,1,"Indonesia","Indonesia",FALSE
+"with_cat","with_cat",TRUE,"Coal","Deployment",99,1,"Mexico","Mexico",FALSE
+"with_cat","with_cat",TRUE,"Electric Grid","Extraction",91,1,"Colombia","Colombia",FALSE
+"with_cat","with_cat",TRUE,"Electric Grid","Refining",160,1,"Nepal","Nepal",FALSE
+"with_cat","with_cat",TRUE,"Electric Grid","Components",162,1,"Nepal","Nepal",FALSE
+"with_cat","with_cat",TRUE,"Electric Grid","Assembly",162,1,"Nepal","Nepal",FALSE
+"with_cat","with_cat",TRUE,"Electric Grid","Recovery",141,1,"Nepal","Nepal",FALSE
+"with_cat","with_cat",TRUE,"Electric Vehicles","Extraction",85,1,"Chad","Chad",FALSE
+"with_cat","with_cat",TRUE,"Electric Vehicles","Refining",115,1,"Nicaragua","Nicaragua",FALSE
+"with_cat","with_cat",TRUE,"Electric Vehicles","Components",158,1,"Maldives","Maldives",FALSE
+"with_cat","with_cat",TRUE,"Electric Vehicles","Assembly",97,1,"Taiwan","Taiwan",FALSE
+"with_cat","with_cat",TRUE,"Electric Vehicles","Deployment",104,1,"Senegal","Senegal",FALSE
+"with_cat","with_cat",TRUE,"Gas","Extraction",98,1,"Congo","Congo",FALSE
+"with_cat","with_cat",TRUE,"Gas","Refining",172,1,"Mauritania","Mauritania",FALSE
+"with_cat","with_cat",TRUE,"Gas","Components",156,1,"Congo","Congo",FALSE
+"with_cat","with_cat",TRUE,"Gas","Assembly",156,1,"Congo","Congo",FALSE
+"with_cat","with_cat",TRUE,"Gas","Deployment",99,1,"Ecuador","Ecuador",FALSE
+"with_cat","with_cat",TRUE,"Geothermal","Deployment",103,1,"Antigua and Barbuda","Antigua and Barbuda",FALSE
+"with_cat","with_cat",TRUE,"Green Hydrogen","Extraction",82,1,"Chad","Chad",FALSE
+"with_cat","with_cat",TRUE,"Green Hydrogen","Refining",146,1,"Namibia","Namibia",FALSE
+"with_cat","with_cat",TRUE,"Green Hydrogen","Assembly",30,1,"India","India",FALSE
+"with_cat","with_cat",TRUE,"Green Hydrogen","Deployment",158,1,"Botswana","Botswana",FALSE
+"with_cat","with_cat",TRUE,"Nuclear","Extraction",167,1,"Burkina Faso","Burkina Faso",FALSE
+"with_cat","with_cat",TRUE,"Nuclear","Refining",69,1,"Sweden","Sweden",FALSE
+"with_cat","with_cat",TRUE,"Nuclear","Components",154,1,"Bangladesh","Bangladesh",FALSE
+"with_cat","with_cat",TRUE,"Nuclear","Assembly",150,1,"Yemen","Yemen",FALSE
+"with_cat","with_cat",TRUE,"Nuclear","Deployment",67,1,"Germany","Germany",FALSE
+"with_cat","with_cat",TRUE,"Nuclear","Recovery",42,1,"Sweden","Sweden",FALSE
+"with_cat","with_cat",TRUE,"Oil","Extraction",95,1,"Thailand","Thailand",FALSE
+"with_cat","with_cat",TRUE,"Oil","Refining",156,1,"Guinea-Bissau","Guinea-Bissau",FALSE
+"with_cat","with_cat",TRUE,"Oil","Components",156,1,"Congo","Congo",FALSE
+"with_cat","with_cat",TRUE,"Oil","Assembly",156,1,"Congo","Congo",FALSE
+"with_cat","with_cat",TRUE,"Oil","Deployment",99,1,"Indonesia","Indonesia",FALSE
+"with_cat","with_cat",TRUE,"Solar","Extraction",84,1,"Madagascar","Madagascar",FALSE
+"with_cat","with_cat",TRUE,"Solar","Refining",141,1,"Antigua and Barbuda","Antigua and Barbuda",FALSE
+"with_cat","with_cat",TRUE,"Solar","Components",35,1,"Belgium","Belgium",FALSE
+"with_cat","with_cat",TRUE,"Solar","Assembly",35,1,"Belgium","Belgium",FALSE
+"with_cat","with_cat",TRUE,"Solar","Deployment",148,1,"Fiji","Fiji",FALSE
+"with_cat","with_cat",TRUE,"Wind","Extraction",84,1,"Colombia","Colombia",FALSE
+"with_cat","with_cat",TRUE,"Wind","Refining",152,1,"Namibia","Namibia",FALSE
+"with_cat","with_cat",TRUE,"Wind","Components",31,1,"India","India",FALSE
+"with_cat","with_cat",TRUE,"Wind","Assembly",31,1,"India","India",FALSE
+"with_cat","with_cat",TRUE,"Wind","Deployment",93,1,"Brazil","Brazil",FALSE
+"without_cat","without_cat",TRUE,"Batteries","Extraction",85,0.956595661520422,"Chad","Chad",FALSE
+"without_cat","without_cat",TRUE,"Batteries","Refining",121,0.923601138057174,"Benin","Benin",FALSE
+"without_cat","without_cat",TRUE,"Batteries","Components",39,0.72995951417004,"Viet Nam","India",TRUE
+"without_cat","without_cat",TRUE,"Batteries","Assembly",37,0.818634423897582,"India","India",FALSE
+"without_cat","without_cat",TRUE,"Batteries","Deployment",138,0.903814935991543,"Cameroon","Cameroon",FALSE
+"without_cat","without_cat",TRUE,"Batteries","Recovery",128,0.953665766343161,"Gambia","Gambia",FALSE
+"without_cat","without_cat",TRUE,"Coal","Extraction",96,0.768827997829626,"Philippines","Viet Nam",TRUE
+"without_cat","without_cat",TRUE,"Coal","Refining",134,0.79202234441826,"Bhutan","Viet Nam",TRUE
+"without_cat","without_cat",TRUE,"Coal","Components",155,0.865734265734266,"Bangladesh","Indonesia",TRUE
+"without_cat","without_cat",TRUE,"Coal","Assembly",153,0.889164756811816,"Cambodia","Indonesia",TRUE
+"without_cat","without_cat",TRUE,"Coal","Deployment",99,0.235139146567718,"Portugal","Mexico",TRUE
+"without_cat","without_cat",TRUE,"Electric Grid","Extraction",91,0.824796942188247,"Chad","Colombia",TRUE
+"without_cat","without_cat",TRUE,"Electric Grid","Refining",160,0.794506621352396,"Nepal","Nepal",FALSE
+"without_cat","without_cat",TRUE,"Electric Grid","Components",162,0.802667660229677,"Nepal","Nepal",FALSE
+"without_cat","without_cat",TRUE,"Electric Grid","Assembly",162,0.824407496320006,"Nepal","Nepal",FALSE
+"without_cat","without_cat",TRUE,"Electric Grid","Recovery",141,0.904897469925939,"Nepal","Nepal",FALSE
+"without_cat","without_cat",TRUE,"Electric Vehicles","Extraction",85,0.90422122337307,"Chad","Chad",FALSE
+"without_cat","without_cat",TRUE,"Electric Vehicles","Refining",115,0.689599936873668,"Gambia","Nicaragua",TRUE
+"without_cat","without_cat",TRUE,"Electric Vehicles","Components",158,0.921485824336474,"Maldives","Maldives",FALSE
+"without_cat","without_cat",TRUE,"Electric Vehicles","Assembly",97,0.784951609509783,"Taiwan","Taiwan",FALSE
+"without_cat","without_cat",TRUE,"Electric Vehicles","Deployment",104,0.851050890856716,"Senegal","Senegal",FALSE
+"without_cat","without_cat",TRUE,"Gas","Extraction",98,0.825041919298178,"Congo","Congo",FALSE
+"without_cat","without_cat",TRUE,"Gas","Refining",172,0.746518467158621,"Mauritania","Mauritania",FALSE
+"without_cat","without_cat",TRUE,"Gas","Components",156,0.834477090610232,"Congo","Congo",FALSE
+"without_cat","without_cat",TRUE,"Gas","Assembly",156,0.822733953944145,"Congo","Congo",FALSE
+"without_cat","without_cat",TRUE,"Gas","Deployment",99,0.254576489214328,"Slovak Republic","Ecuador",TRUE
+"without_cat","without_cat",TRUE,"Geothermal","Deployment",103,0.963954663269341,"Antigua and Barbuda","Antigua and Barbuda",FALSE
+"without_cat","without_cat",TRUE,"Green Hydrogen","Extraction",82,0.899108629640513,"Colombia","Chad",TRUE
+"without_cat","without_cat",TRUE,"Green Hydrogen","Refining",146,0.831663983496091,"Namibia","Namibia",FALSE
+"without_cat","without_cat",TRUE,"Green Hydrogen","Assembly",30,0.721023359288098,"India","India",FALSE
+"without_cat","without_cat",TRUE,"Green Hydrogen","Deployment",158,0.93126120013752,"Botswana","Botswana",FALSE
+"without_cat","without_cat",TRUE,"Nuclear","Extraction",167,0.813112912451753,"Burkina Faso","Burkina Faso",FALSE
+"without_cat","without_cat",TRUE,"Nuclear","Refining",69,0.49941541834125,"Guyana","Sweden",TRUE
+"without_cat","without_cat",TRUE,"Nuclear","Components",154,0.750754495346526,"Bangladesh","Bangladesh",FALSE
+"without_cat","without_cat",TRUE,"Nuclear","Assembly",150,0.779012400551136,"Yemen","Yemen",FALSE
+"without_cat","without_cat",TRUE,"Nuclear","Deployment",67,0.811557187325405,"Ecuador","Germany",TRUE
+"without_cat","without_cat",TRUE,"Nuclear","Recovery",42,0.567133943764687,"Botswana","Sweden",TRUE
+"without_cat","without_cat",TRUE,"Oil","Extraction",95,0.598922172452408,"Myanmar","Thailand",TRUE
+"without_cat","without_cat",TRUE,"Oil","Refining",156,0.831066365317444,"Guinea-Bissau","Guinea-Bissau",FALSE
+"without_cat","without_cat",TRUE,"Oil","Components",156,0.819721515386196,"Congo","Congo",FALSE
+"without_cat","without_cat",TRUE,"Oil","Assembly",156,0.75090325741651,"Congo","Congo",FALSE
+"without_cat","without_cat",TRUE,"Oil","Deployment",99,0.248546691403834,"Viet Nam","Indonesia",TRUE
+"without_cat","without_cat",TRUE,"Solar","Extraction",84,0.913941480206541,"Madagascar","Madagascar",FALSE
+"without_cat","without_cat",TRUE,"Solar","Refining",141,0.908690440515433,"Nepal","Antigua and Barbuda",TRUE
+"without_cat","without_cat",TRUE,"Solar","Components",35,0.506162464985994,"Thailand","Belgium",TRUE
+"without_cat","without_cat",TRUE,"Solar","Assembly",35,0.840336134453782,"Slovak Republic","Belgium",TRUE
+"without_cat","without_cat",TRUE,"Solar","Deployment",148,0.878617146114749,"Fiji","Fiji",FALSE
+"without_cat","without_cat",TRUE,"Wind","Extraction",84,0.805791232155513,"Trinidad and Tobago","Colombia",TRUE
+"without_cat","without_cat",TRUE,"Wind","Refining",152,0.668361593504603,"Namibia","Namibia",FALSE
+"without_cat","without_cat",TRUE,"Wind","Components",31,0.625403225806452,"India","India",FALSE
+"without_cat","without_cat",TRUE,"Wind","Assembly",31,0.664516129032258,"India","India",FALSE
+"without_cat","without_cat",TRUE,"Wind","Deployment",93,0.665632180478052,"Bangladesh","Brazil",TRUE
