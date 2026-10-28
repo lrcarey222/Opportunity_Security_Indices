@@ -24,6 +24,8 @@ import { fixtureSource as countrySource } from '../../country/__tests__/fixture.
 import type { CountryEntry, CountryManifest } from '../../country/contract.ts';
 import { AibStore, setAibStoreForTests } from '../../aib/data/store.ts';
 import { FIXTURE_DIR as AIB_DIR, fixtureSource as aibSource, readDoc as readAibDoc } from '../../aib/__tests__/fixture.ts';
+import { setPostureStore } from '../../posture/store.ts';
+import { fixtureStore as postureFixture } from '../../posture/__tests__/fixture.ts';
 
 /** The Country fixture with the AIB fixture's economies added to the roster (without index data): the
  *  synthetic AIB codes (AAA ...) are not in the Country fixture, and a role link must land on a profile. */
@@ -102,6 +104,7 @@ beforeEach(() => {
   setSectorStoreForTests(new SectorStore(sectorSource(buildSectorFixture())));
   setCountryStoreForTests(new CountryStore(countrySource()));
   setAibStoreForTests(new AibStore(aibSource(AIB_DIR)));
+  setPostureStore(postureFixture());
 });
 
 afterEach(() => {
@@ -109,6 +112,7 @@ afterEach(() => {
   setSectorStoreForTests(null);
   setCountryStoreForTests(null);
   setAibStoreForTests(null);
+  setPostureStore(null);
   resetLastLocations();
   resetPrefetch();
   resetSectorManifestCache();

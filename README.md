@@ -82,6 +82,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Dashboard: Strategic Insights | `scripts/85_export_dashboard_data.R`, `scripts/86_export_dashboard_fixtures.R` | `dashboard/validation_report.csv`; the app's bundle goes to the repo's `dashboard/public/data/` and the engine's parity fixtures to `dashboard/src/engine/__fixtures__/` |
 | Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them, plus the optional `sector-climate` chunk: `flags.climate`, with the optional IEA pathway tables `climate.nze_*` from scripts/17; `--no-nze` leaves them out; and the optional `sector-climate-src` chunk: `flags.climate_src`, the climate sources of scripts/18; `--no-climate-sources` leaves it out) |
 | Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v2, the Decoupling scenario; plus the lazily loaded `scenario-managed.<hash>.json` and `scenario-baseline.<hash>.json`, schema `osi-aib-scenario` v1, named in `manifest.files.scenarios`; since 2026-10-20 the main document's optional `strategic` section, from `scripts/33`) |
+| Dashboard: strategic posture | `scripts/91_export_posture_data.R` | the six-stage posture bundle (manifest, `posture-core.<hash>.json`, a `posture-detail-<ISO3>.<hash>.json` per economy; schema `osi-posture` v1) for the headline charts of the Country, Sector and AIB pages |
 | Dashboard: Country Insights | `scripts/88_export_country_data.R` | the app's Country data go to the repo's `dashboard/public/data/country/` (manifest, a fact sheet per economy, drivers files; `--render-memos` publishes the verified policy memos of the 31 core members as JSON, PDF, Word and Markdown) |
 
 Every index keeps its decomposition (category and variable contributions reconcile to the index value), and every country-cell carries how much of its weight rests on imputed inputs.
@@ -456,13 +457,19 @@ priority is low observed NIPO / PAMS intervention, not proof of no priority (GTA
 regulation and agreed international measures); CAT is country context (`cat_context`), not technology
 x stage policy evidence.
 
-**Implementation:** `scripts/11_build_nipo_stage_policy.R` (NIPO by six-stage cell),
-`scripts/26_build_strategic_position.R` (all four steps and diagnostics),
-`scripts/27_review_strategic_position.R` (review charts and decision cards); pure functions in
-`R/strategic_position/`; rules in `config/strategic_position.yml`; reference tables
+**Implementation:** `scripts/94_pull_comtrade_trade_refresh.R` (the 2022-24 annual trade benchmark
+and the monthly momentum window; resumable, keyed calls budgeted per UTC day, the key never logged),
+`scripts/11_build_nipo_stage_policy.R` (NIPO by six-stage cell),
+`scripts/26_build_strategic_position.R` (all four steps and diagnostics; `SP_BASELINE_TBL` points it at
+an earlier `strategic_position_tbl.rds` for the old-vs-new comparisons),
+`scripts/27_review_strategic_position.R` (review charts and decision cards),
+`scripts/91_export_posture_data.R` (the Explorer's six-stage posture bundle,
+`dashboard/public/data/posture/`); pure functions in `R/strategic_position/` and
+`R/dashboard/posture/`; rules in `config/strategic_position.yml`; reference tables
 `data/reference/index_variable_stage_evidence.csv`, `data/reference/posture_node_attributes.csv`,
-`config/nipo_instrument_posture.csv`, `config/posture_policy_design.csv`,
-`config/posture_delivery_modes.csv`. Outputs: `strategic_position_tbl`, `strategic_posture_layers_tbl`,
+`config/security_route_rules.csv`, `config/nipo_instrument_posture.csv`,
+`config/posture_policy_design.csv`, `config/posture_delivery_modes.csv`. Outputs:
+`strategic_position_tbl`, `strategic_posture_layers_tbl`, `strategic_aib_division_tbl`,
 `diagnostics/strategic_position/`.
 
 ---

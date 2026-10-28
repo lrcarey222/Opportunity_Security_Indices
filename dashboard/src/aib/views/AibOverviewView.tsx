@@ -16,6 +16,7 @@ import { Link } from 'react-router';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { PageHead, StatTile } from '../../components/ui.tsx';
+import { AibDivisionHero } from '../../posture/AibDivisionHero.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import { AIB_CLASSES, type AibCompact } from '../contract.ts';
@@ -254,6 +255,10 @@ export default function AibOverviewView() {
           </Link>
         </p>
       </PageHead>
+
+      <div className="mb-14">
+        <AibDivisionHero />
+      </div>
 
       <div className="space-y-14">
         {hasScenarios && three.length > 0 && (

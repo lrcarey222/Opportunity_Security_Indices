@@ -41,6 +41,7 @@ import { AibRoleSection } from './profile/AibRoleSection.tsx';
 import { DataNotes, MemoCard } from './profile/MemoNotes.tsx';
 import { EngineSi, PerspectiveControl, PerspectiveTag } from './profile/Perspective.tsx';
 import { ProfileProvider, type ProfileCtx } from './profile/common.tsx';
+import { CountryPostureHero } from '../../posture/CountryPostureHero.tsx';
 
 /** The query keys the profile owns (the model's parser ignores them and its URL writes keep them). */
 const HOST_KEYS: readonly string[] = [...COUNTRY_KEY_ORDER];
@@ -209,6 +210,9 @@ function Profile({ iso3 }: { iso3: string }) {
         </div>
       )}
       <ProfileHead manifest={manifest} />
+      <div className="mb-8">
+        <CountryPostureHero iso3={sheet.iso3} name={sheet.meta.country} />
+      </div>
       <PerspectiveControl />
       <div className="xl:grid xl:grid-cols-[200px_minmax(0,1fr)] xl:gap-8">
         <SectionNav footer={<PerspectiveTag />} />

@@ -29,6 +29,7 @@ import { useFacts } from './data.ts';
 import { yearText } from './caption.ts';
 import { CellGrid, GroupLegend, type CellGridTech } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
+import { SectorPostureHero } from '../../posture/SectorPostureHero.tsx';
 
 const FAM_LABEL: Record<FamKey, string> = {
   primary: 'Primary',
@@ -373,6 +374,9 @@ export default function SectorHomeView() {
         title="Energy supply chains, measured"
         lede="Eleven energy technologies, each from raw materials (upstream) through manufacturing (midstream) to use (downstream): 33 sectors. Each tile shows who holds the most of that sector's main measure. Pick a tile for the full picture: trade, production, reserves, investment, prices and policy, in each source's own units and year. No indices and no weights: these are the measured numbers the country rankings start from."
       />
+      <div className="mb-10">
+        <SectorPostureHero />
+      </div>
       <TechPicker />
       <section aria-labelledby="questions-h" className="mb-10">
         <h2 id="questions-h" className="eyebrow rule-neis-sm mb-4">

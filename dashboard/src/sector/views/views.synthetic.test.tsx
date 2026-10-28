@@ -10,6 +10,8 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { routes } from '../../routes.tsx';
 import { haveSynthetic, syntheticSource } from '../__fixtures__/__tests__/synthetic.ts';
 import { SectorStore, setSectorStoreForTests } from '../data/store.ts';
+import { setPostureStore } from '../../posture/store.ts';
+import { fixtureStore as postureFixture } from '../../posture/__tests__/fixture.ts';
 
 const restore: (() => void)[] = [];
 let source: ReturnType<typeof syntheticSource>;
@@ -44,6 +46,7 @@ let errors: string[] = [];
 beforeEach(() => {
   source = syntheticSource();
   setSectorStoreForTests(new SectorStore(source));
+  setPostureStore(postureFixture());
   errors = [];
   vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
     errors.push(a.map(String).join(' '));
@@ -53,6 +56,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   setSectorStoreForTests(null);
+  setPostureStore(null);
   vi.restoreAllMocks();
 });
 
