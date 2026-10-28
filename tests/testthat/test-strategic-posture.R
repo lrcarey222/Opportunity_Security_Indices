@@ -238,7 +238,7 @@ test_that("regional markets use the country's own import share in the coercion l
   expect_equal(do.call(classify, gas)$strategic_posture, "deploy")
 })
 
-test_that("the decision trace is valid JSON with all five tests", {
+test_that("the decision trace is valid JSON with all five tests and the two route tests", {
   out <- sp_strategic_posture(rbind(
     do.call(posture_node, c(chokepoint, list(iso3 = "AAA"))),
     posture_node(iso3 = "BBB", home_share = 0.2, process_knowledge = "yes"),
@@ -246,7 +246,8 @@ test_that("the decision trace is valid JSON with all five tests", {
   ), posture_cfg())
   for (tr in out$decision_trace) {
     j <- jsonlite::fromJSON(tr)
-    expect_setequal(j$tests$id, c("t1_consequence", "t2_vulnerability", "t3_capability", "t4_strategy", "t5_proportionality"))
+    expect_setequal(j$tests$id, c("t1_consequence", "t2_vulnerability", "t2_dual_use", "t2_resilience", "t3_capability",
+                                  "t4_strategy", "t5_proportionality"))
     expect_true(all(nzchar(j$tests$detail)))
     expect_true(j$posture %in% SP_POSTURES)
   }

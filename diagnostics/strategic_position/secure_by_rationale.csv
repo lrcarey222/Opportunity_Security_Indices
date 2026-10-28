@@ -1,0 +1,12 @@
+"tech","supply_chain","security_rationale","posture_variant","n_cells"
+"Coal","Extraction","systemic_resilience","secure_resilience",24
+"Electric Grid","Assembly","systemic_resilience","secure_resilience",23
+"Electric Vehicles","Refining","coercive_chokepoint","secure_input",15
+"Electric Vehicles","Refining","operational_control","secure_dual_use",2
+"Gas","Extraction","coercive_chokepoint","secure_input",3
+"Gas","Extraction","systemic_resilience","secure_resilience",9
+"Gas","Refining","systemic_resilience","secure_resilience",39
+"Nuclear","Components","systemic_resilience","secure_resilience",3
+"Nuclear","Refining","operational_control","secure_dual_use",3
+"Oil","Extraction","systemic_resilience","secure_resilience",35
+"Oil","Refining","systemic_resilience","secure_resilience",18

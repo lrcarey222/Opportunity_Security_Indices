@@ -3,9 +3,13 @@
 # rules.ts, classify.ts) to R and applies it to every country x technology x six-stage node and to the
 # sensitive layers inside a cell:
 #
-#   secure  = small yard   (acute consequence AND an exploitable vulnerability)
+#   secure  = small yard   (acute consequence AND one of three routes: operational control through a
+#                           command path or a dual-use node, a coercive physical chokepoint, or systemic
+#                           resilience of an essential, import-dependent, slow-to-rebuild node)
 #   compete = medium yard  (a capability case with a credible strategy that passes proportionality)
 #   deploy  = large yard   (otherwise: open, affordable deployment is the strategic conclusion)
+# The engine's Compete reading (Tests 3-5) is kept as a diagnostic: the recommended posture outside
+# Secure comes from the need x opportunity quadrant (decision_quadrant.R).
 #
 # Every test is tri-state (yes / no / unknown). Unknown inputs are bracketed, never filled: the
 # recommendation is the strict reading (an unproven case for intervention is not met), the corners of
@@ -53,10 +57,19 @@ SP_POSTURE_CAPABILITY_INPUTS <- c(
 SP_POSTURE_NUMERIC <- c("coercive_top_share", "coercive_import_share", "trusted_world_share", "home_share", "market_pct", "premium_pct")
 SP_POSTURE_LOGICAL <- c("exposed", "adjacent_established")
 
+# Security routes (config/security_route_rules.csv, sp_security_rules()). Optional columns of the
+# input frame: sr_rationale (the routes a node may take, ";"-separated; "" = none), dual_use,
+# systemic_essentiality and sn_import_dependence. A node without a rule (sr_rationale NA) keeps the two
+# original routes (the digital path and the physical chokepoint) and has no resilience route.
+SP_SECURITY_RATIONALES <- c("operational_control", "coercive_chokepoint", "systemic_resilience")
+SP_POSTURE_ROUTE_INPUTS <- c("systemic_essentiality", "dual_use", "sn_import_dependence")
+
 SP_POSTURES <- c("secure", "compete", "deploy")
 SP_POSTURE_VARIANTS <- c(
   "secure_control", "secure_integrated", "secure_whole", "secure_unclear", "secure_input", "secure_both",
+  "secure_dual_use", "secure_resilience",
   "compete_preserve", "compete_adjacent_capability", "compete_catch_up", "compete_leap_ahead", "compete_costly",
+  "compete_partner",
   "deploy", "deploy_floor", "deploy_diversify"
 )
 SP_COMPETE_STRATEGIES <- c("preserve", "adjacent_capability", "catch_up", "leap_ahead")
@@ -111,6 +124,9 @@ sp_posture_extreme <- function(id, end = c("low", "high")) {
     trusted_world_share = if (end == "high") 0 else 1,
     premium_pct = if (end == "high") 0 else 75,
     exposed = , adjacent_established = end == "high",
+    systemic_essentiality = if (end == "high") "high" else "low",
+    dual_use = if (end == "high") "yes" else "no",
+    sn_import_dependence = if (end == "high") 1 else 0,
     stop("sp_posture_extreme(): unknown input ", id)
   )
 }
@@ -142,6 +158,19 @@ sp_posture_check_inputs <- function(x) {
   }
   for (id in SP_POSTURE_NUMERIC) x[[id]] <- suppressWarnings(as.numeric(x[[id]]))
   for (id in SP_POSTURE_LOGICAL) x[[id]] <- as.logical(x[[id]])
+  # optional route inputs (security_route_rules); a blank rationale means no route, NA means no rule
+  route_vocab <- list(systemic_essentiality = c("low", "moderate", "high", "n_a"), dual_use = c("no", "yes"))
+  for (id in names(route_vocab)) {
+    v <- if (id %in% names(x)) as.character(x[[id]]) else rep(NA_character_, nrow(x))
+    v[is.na(v) | v == "" | tolower(v) == "unknown"] <- NA_character_
+    bad <- setdiff(unique(v[!is.na(v)]), route_vocab[[id]])
+    if (length(bad) > 0) stop("sp_posture_check_inputs(): ", id, " has unknown value(s) ", paste(bad, collapse = ", "))
+    x[[id]] <- v
+  }
+  x$sr_rationale <- if ("sr_rationale" %in% names(x)) as.character(x$sr_rationale) else NA_character_
+  bad <- setdiff(unlist(strsplit(x$sr_rationale[!is.na(x$sr_rationale)], ";", fixed = TRUE)), SP_SECURITY_RATIONALES)
+  if (length(bad) > 0) stop("sp_posture_check_inputs(): sr_rationale has unknown route(s) ", paste(unique(bad), collapse = ", "))
+  x$sn_import_dependence <- if ("sn_import_dependence" %in% names(x)) suppressWarnings(as.numeric(x$sn_import_dependence)) else NA_real_
   assert_supply_chain_stages(x$supply_chain, label = "sp_posture_check_inputs() supply_chain")
   key <- paste(x$iso3, x$tech, x$supply_chain, x$layer_id, sep = "\r")
   if (anyDuplicated(key)) stop("sp_posture_check_inputs(): duplicate (iso3, tech, supply_chain, layer_id) rows.")
@@ -301,6 +330,74 @@ sp_test_physical <- function(x, cfg) {
 }
 
 sp_pct <- function(x) ifelse(is.na(x), "an unknown share", paste0(round(100 * x), "%"))
+
+# ---- Test 2, by security route -----------------------------------------------------------------------
+# Whether a node may take a route (its rule's rationale lists it). Without a rule the node keeps the two
+# original routes and no resilience route.
+sp_route_eligible <- function(x, route) {
+  r <- if ("sr_rationale" %in% names(x)) x$sr_rationale else rep(NA_character_, nrow(x))
+  legacy <- route %in% c("operational_control", "coercive_chokepoint")
+  ifelse(is.na(r), legacy, grepl(route, r, fixed = TRUE))
+}
+
+# Route A, national-security control of a dual-use node (rule dual_use = yes): the bar is the
+# coercive suppliers' share of the country's own material imports, not their hold on world supply.
+sp_test_dual_use <- function(x, cfg) {
+  dual <- if ("dual_use" %in% names(x)) x$dual_use else rep(NA_character_, nrow(x))
+  applies <- sp_route_eligible(x, "operational_control") & dual %in% "yes" & !x$layer_type %in% "control"
+  sh <- cfg$security_routes$dual_use_coercive_import_share %||% list(threshold = 0.25, marginal = 0.15)
+  own <- sp_share_test(x$coercive_import_share, sh$threshold, sh$marginal)
+  self <- sp_self_supplied(x, cfg)
+  material <- sp_material_imports(x, cfg, gdp_line = FALSE)
+  own$state[self] <- "no"
+  own$state[material %in% FALSE & !self] <- "no"
+  state <- ifelse(applies, own$state, "no")
+  detail <- dplyr::case_when(
+    !applies ~ "Not a dual-use node.",
+    self ~ paste0("A dual-use node, but the country itself holds ", sp_pct(x$home_share), " of world supply."),
+    material %in% FALSE ~ "A dual-use node, but the country's imports are below the exposure floor.",
+    state == "yes" ~ paste0("A dual-use node with national-security end uses: ", sp_pct(x$coercive_import_share),
+                            " of the country's imports come from potentially coercive suppliers."),
+    state == "no" ~ paste0("A dual-use node; only ", sp_pct(x$coercive_import_share), " of the country's imports come from potentially coercive suppliers."),
+    TRUE ~ "A dual-use node; the coercive share of the country's imports is not measured."
+  )
+  list(state = state, marginal = applies & own$marginal, detail = detail, applies = applies)
+}
+
+# Route C, systemic resilience: an essential function, substantial foreign dependency, a long lead
+# time to rebuild supply and too little trusted supply to replace it. There need be no coercive
+# supplier; the serious consequence is Test 1's acute consequence.
+sp_test_resilience <- function(x, cfg) {
+  rc <- cfg$security_routes$resilience %||% list()
+  applies <- sp_route_eligible(x, "systemic_resilience") & !x$layer_type %in% "control" & x$supply_chain != "Deployment"
+  ess <- if ("systemic_essentiality" %in% names(x)) x$systemic_essentiality else rep(NA_character_, nrow(x))
+  essential <- sp_tri(ifelse(is.na(ess), NA, ess %in% unlist(rc$essentiality %||% "high")))
+  dep_min <- rc$import_dependence_min %||% 0.5
+  dep <- if ("sn_import_dependence" %in% names(x)) x$sn_import_dependence else rep(NA_real_, nrow(x))
+  self <- sp_self_supplied(x, cfg)
+  material <- sp_material_imports(x, cfg, gdp_line = TRUE)
+  dependency <- ifelse(self, "no", sp_and3(sp_tri(material), sp_tri(ifelse(is.na(dep), NA, dep >= dep_min))))
+  long_lead <- sp_tri(ifelse(is.na(x$reconstitution_time), NA, x$reconstitution_time %in% unlist(rc$long_lead_times %||% c("y1to3", "gt3y"))))
+  alt_max <- rc$trusted_alternative_max %||% 0.5
+  home <- dplyr::coalesce(if ("delivery_home_share" %in% names(x)) x$delivery_home_share else x$home_share, x$home_share, 0)
+  partners <- pmax(x$trusted_world_share - home, 0)
+  insufficient <- sp_tri(ifelse(is.na(x$trusted_world_share), NA, partners < alt_max))
+  state <- ifelse(applies, sp_and3(essential, dependency, long_lead, insufficient), "no")
+  detail <- dplyr::case_when(
+    !applies ~ "Not a systemically essential node.",
+    essential == "no" ~ "The node does not carry an essential function.",
+    self ~ paste0("The country holds ", sp_pct(x$home_share), " of world supply: it is not dependent on others for it."),
+    dependency == "no" ~ "The country's net import dependence is modest or its imports are immaterial.",
+    long_lead == "no" ~ "Supply could be rebuilt within a year.",
+    insufficient == "no" ~ paste0("Trusted partners hold ", sp_pct(partners), " of world supply: enough to replace a loss."),
+    state == "yes" ~ paste0("An essential function on which the country depends heavily on imports, with supply that takes years to rebuild, ",
+                            "and trusted partners hold only ", sp_pct(partners), " of world supply."),
+    TRUE ~ "Whether trusted supply could replace a loss of this essential node is not established."
+  )
+  marginal <- applies & ((!is.na(partners) & !is.na(x$trusted_world_share) & abs(partners - alt_max) < 0.05) |
+                           (!is.na(dep) & abs(dep - dep_min) < 0.05))
+  list(state = state, marginal = marginal, detail = detail, applies = applies)
+}
 
 # The country's imports of the node are material: at least exposure_min_import_usd and, with
 # gdp_line, exposure_material_imports_to_gdp of GDP. NA where imports are not measured.
@@ -476,7 +573,13 @@ sp_posture_gates <- function(x, cfg) {
   t1 <- sp_test_consequence(x, cfg)
   dig <- sp_test_digital(x, cfg)
   phy <- sp_test_physical(x, cfg)
-  t2 <- sp_or3(dig$state, phy$state)
+  # each route counts only where the node's rule allows it
+  dig$state <- ifelse(sp_route_eligible(x, "operational_control"), dig$state, "no")
+  phy$state <- ifelse(sp_route_eligible(x, "coercive_chokepoint"), phy$state, "no")
+  dual <- sp_test_dual_use(x, cfg)
+  res <- sp_test_resilience(x, cfg)
+  route_a <- sp_or3(dig$state, dual$state)
+  t2 <- sp_or3(route_a, phy$state, res$state)
   secure <- sp_and3(t1$state, t2)
   cap <- sp_test_capability(x, cfg)
   strat <- sp_test_strategy(x, cap, cfg)
@@ -493,7 +596,28 @@ sp_posture_gates <- function(x, cfg) {
     cap$state == "moderate" & prop$state == "fail" ~ "no",
     TRUE ~ "unknown"
   )
-  list(t1 = t1, digital = dig, physical = phy, t2 = t2, secure = secure, cap = cap, strategy = strat, prop = prop, compete = compete)
+  list(t1 = t1, digital = dig, physical = phy, dual = dual, resilience = res, route_a = route_a, t2 = t2, secure = secure,
+       cap = cap, strategy = strat, prop = prop, compete = compete)
+}
+
+# The Secure routes a node meets (";"-separated, in SP_SECURITY_RATIONALES order) and the primary
+# rationale: operational control through a command path, else the physical chokepoint, else
+# national-security control of a dual-use node, else systemic resilience.
+sp_security_routes <- function(g) {
+  met <- cbind(
+    operational_control = g$route_a == "yes",
+    coercive_chokepoint = g$physical$state == "yes",
+    systemic_resilience = g$resilience$state == "yes"
+  )
+  routes <- apply(met, 1, function(r) if (any(r)) paste(colnames(met)[r], collapse = ";") else NA_character_)
+  primary <- dplyr::case_when(
+    g$digital$state == "yes" ~ "operational_control",
+    g$physical$state == "yes" ~ "coercive_chokepoint",
+    g$dual$state == "yes" ~ "operational_control",
+    g$resilience$state == "yes" ~ "systemic_resilience",
+    TRUE ~ NA_character_
+  )
+  list(routes = routes, primary = primary)
 }
 
 sp_posture_from_gates <- function(x, g, cfg) {
@@ -506,6 +630,9 @@ sp_posture_from_gates <- function(x, g, cfg) {
     g$digital$state == "yes" & x$separability %in% "partial" ~ "secure_integrated",
     g$digital$state == "yes" & x$separability %in% "inseparable" ~ "secure_whole",
     g$digital$state == "yes" ~ "secure_unclear",
+    g$physical$state == "yes" ~ "secure_input",
+    g$dual$state == "yes" ~ "secure_dual_use",
+    g$resilience$state == "yes" ~ "secure_resilience",
     TRUE ~ "secure_input"
   )
   costly <- g$cap$strength_lo == "strong" & g$prop$state == "fail"
@@ -540,8 +667,9 @@ sp_posture_resolve <- function(x, ids, end) {
 # open or security end x capability inputs at their weak or strong end), as classify.ts.
 sp_posture_possible <- function(x, cfg) {
   corners <- list(c("low", "low"), c("low", "high"), c("high", "low"), c("high", "high"))
+  sec_ids <- c(SP_POSTURE_SECURITY_INPUTS, intersect(SP_POSTURE_ROUTE_INPUTS, names(x)))
   out <- vapply(corners, function(cn) {
-    y <- sp_posture_resolve(x, SP_POSTURE_SECURITY_INPUTS, cn[1])
+    y <- sp_posture_resolve(x, sec_ids, cn[1])
     y <- sp_posture_resolve(y, SP_POSTURE_CAPABILITY_INPUTS, cn[2])
     sp_posture_from_gates(y, sp_posture_gates(y, cfg), cfg)$posture
   }, character(nrow(x)))
@@ -552,7 +680,7 @@ sp_posture_possible <- function(x, cfg) {
 # Unknown inputs that would narrow the answer (classify.ts missingEvidence `pivotal`): resolving the
 # input alone, to either end of its range, changes the set of possible postures.
 sp_posture_pivotal <- function(x, possible, cfg) {
-  ids <- c(SP_POSTURE_SECURITY_INPUTS, SP_POSTURE_CAPABILITY_INPUTS)
+  ids <- c(SP_POSTURE_SECURITY_INPUTS, intersect(SP_POSTURE_ROUTE_INPUTS, names(x)), SP_POSTURE_CAPABILITY_INPUTS)
   hits <- matrix(FALSE, nrow(x), length(ids), dimnames = list(NULL, ids))
   open <- grepl("\\|", possible)
   for (id in ids) {
@@ -604,6 +732,9 @@ sp_delivery_mode <- function(x, posture, variant, strategy, cfg) {
     posture == "secure" & !is.na(nonadv) & nonadv >= d$diversified_share ~ "diversified_global",
     posture == "secure" ~ "mixed",
     posture == "compete" & strategy %in% c("preserve", "leap_ahead") ~ "domestic",
+    # Partner: the capability is built with trusted partners, not at home
+    posture == "compete" & strategy %in% "partner" & allied >= d$allied_share ~ "allied",
+    posture == "compete" & strategy %in% "partner" ~ "diversified_global",
     posture == "compete" & allied >= d$allied_share ~ "mixed",
     posture == "compete" ~ "domestic",
     variant == "deploy_diversify" & allied >= d$allied_share ~ "allied",
@@ -630,7 +761,9 @@ sp_strategic_posture <- function(x, cfg = list()) {
   completeness <- sp_posture_completeness(x, possible)
 
   # Decisive predicates and their marginal answers (classify.ts decisivePredicates/confidenceOf).
-  marg_secure <- g$t1$marginal + g$digital$marginal * (g$digital$state == "yes") + g$physical$marginal * (g$physical$state == "yes")
+  marg_secure <- g$t1$marginal + g$digital$marginal * (g$digital$state == "yes") + g$physical$marginal * (g$physical$state == "yes") +
+    (g$dual$marginal & g$dual$state == "yes" & g$digital$state != "yes" & g$physical$state != "yes") +
+    (g$resilience$marginal & g$resilience$state == "yes" & g$route_a != "yes" & g$physical$state != "yes")
   marg_deploy_sec <- ifelse(g$t1$state == "no", 0, ifelse(g$digital$applies, g$digital$marginal, 0) + ifelse(g$physical$applies, g$physical$marginal, 0))
   marg_cap <- g$cap$position_marginal
   marginal_n <- dplyr::case_when(
@@ -663,9 +796,12 @@ sp_strategic_posture <- function(x, cfg = list()) {
     g$digital$state == "yes" & g$physical$state == "yes" ~ "both",
     g$digital$state == "yes" ~ "digital",
     g$physical$state == "yes" ~ "physical",
+    g$dual$state == "yes" ~ "dual_use",
+    g$resilience$state == "yes" ~ "resilience",
     g$t2 == "unknown" ~ "unknown",
     TRUE ~ "none"
   )
+  routes <- sp_security_routes(g)
 
   out <- data.frame(
     strategic_posture = pv$posture,
@@ -685,6 +821,10 @@ sp_strategic_posture <- function(x, cfg = list()) {
     t2_digital = g$digital$state,
     t2_physical = g$physical$state,
     t2_coercion = ifelse(g$physical$applies, g$physical$parts$coercion, "n_a"),
+    t2_dual_use = ifelse(g$dual$applies, g$dual$state, "n_a"),
+    t2_resilience = ifelse(g$resilience$applies, g$resilience$state, "n_a"),
+    security_rationale = ifelse(pv$posture == "secure", routes$primary, NA_character_),
+    security_routes_met = ifelse(g$t1$state == "yes", routes$routes, NA_character_),
     t3_capability = g$cap$state,
     t3_position = ifelse(g$cap$applies, g$cap$position, "n_a"),
     t3_learning = ifelse(g$cap$applies, g$cap$learning, "n_a"),
@@ -741,6 +881,11 @@ sp_decision_trace <- function(x, g, pv, possible, pivotal) {
     sp_json_test("t2_vulnerability", g$t2, g$digital$marginal | g$physical$marginal, t2_detail,
                  paste(inp(c("remote_control", "time_horizon", "substitutability", "qualification_time", "reconstitution_time", "stockpile"), "assessment"),
                        inp(c("coercive_top_share", "coercive_import_share", "trusted_world_share"), "data"), sep = ",")),
+    sp_json_test("t2_dual_use", g$dual$state, g$dual$marginal, g$dual$detail,
+                 paste(inp("dual_use", "assessment"), inp("coercive_import_share", "data"), sep = ",")),
+    sp_json_test("t2_resilience", g$resilience$state, g$resilience$marginal, g$resilience$detail,
+                 paste(inp(c("systemic_essentiality", "reconstitution_time"), "assessment"),
+                       inp(c("sn_import_dependence", "trusted_world_share"), "data"), sep = ",")),
     sp_json_test("t3_capability", g$cap$state, g$cap$position_marginal, g$cap$detail,
                  paste(inp(c("home_share", "complementary"), "data"), inp(c("process_knowledge", "workforce_suppliers", "adjacent_innovation"), "assessment"), sep = ",")),
     sp_json_test("t4_strategy", ifelse(is.na(g$strategy$primary), g$strategy$state, g$strategy$primary), FALSE, g$strategy$detail,
@@ -779,11 +924,20 @@ sp_policy_alignment <- function(tbl, cfg = list(), has_record = NULL) {
   # Over-prioritization needs a settled Deploy: where the unknowns still allow Secure or Compete, the
   # strategic case is unproven, not weak, and heavy policy there is not evidence of a mistake.
   settled_deploy <- if ("posture_possible" %in% names(tbl)) tbl$posture_possible %in% "deploy" else rep(TRUE, nrow(tbl))
+  mode <- if ("compete_mode" %in% names(tbl)) as.character(tbl$compete_mode) else rep(NA_character_, nrow(tbl))
+  # Partner: the posture asks for trusted partners; heavy protection of the home market is autarky.
+  # Domestic policy records do not show partnership instruments, so Partner is not judged under.
+  autarky_min <- cfg$partner_autarky$protection_min %||% 0.67
+  autarkic <- mode %in% "partner" & !is.na(pro) & pro >= autarky_min
+  # Preserve and Catch Up need support for the capability: judged on the support stock where measured.
+  support <- ifelse(mode %in% c("preserve", "catch_up") & !is.na(sup), sup, pp)
   dplyr::case_when(
     is.na(posture) ~ NA_character_,
     is.na(pp) ~ "insufficient_data",
+    autarkic ~ "mixed",
+    mode %in% "partner" ~ "aligned",
     posture %in% c("secure", "compete") & (disagree | fence_no_build) ~ "mixed",
-    posture %in% c("secure", "compete") & pp >= matched ~ "aligned",
+    posture %in% c("secure", "compete") & support >= matched ~ "aligned",
     posture %in% c("secure", "compete") ~ "under_prioritized",
     # Deploy: support for deployment itself is what the posture asks for.
     tbl$supply_chain == "Deployment" ~ "aligned",
@@ -791,6 +945,27 @@ sp_policy_alignment <- function(tbl, cfg = list(), has_record = NULL) {
     disagree ~ "mixed",
     pp >= over & has_record ~ "over_prioritized",
     TRUE ~ "aligned"
+  )
+}
+
+# Why a cell's policy alignment is what it is, where a rule beyond the priority levels decides it:
+# partner_autarkic (Partner with protection in the top third), fence_without_build (Compete with
+# heavy protection and little support), sources_disagree (NIPO and PAMS on opposite sides).
+sp_policy_alignment_flag <- function(tbl, cfg = list()) {
+  col <- function(n) if (n %in% names(tbl)) tbl[[n]] else rep(NA_real_, nrow(tbl))
+  pro <- col("policy_protection_priority")
+  sup <- col("policy_support_priority")
+  nipo <- col("nipo_priority")
+  pams <- col("pams_priority")
+  gap <- cfg$source_gap_mixed %||% 0.5
+  fwb <- cfg$fence_without_build %||% list(protection_min = 0.67, support_max = 0.33)
+  mode <- if ("compete_mode" %in% names(tbl)) as.character(tbl$compete_mode) else rep(NA_character_, nrow(tbl))
+  dplyr::case_when(
+    is.na(tbl$strategic_posture) ~ NA_character_,
+    mode %in% "partner" & !is.na(pro) & pro >= (cfg$partner_autarky$protection_min %||% 0.67) ~ "partner_autarkic",
+    tbl$strategic_posture %in% "compete" & !is.na(pro) & !is.na(sup) & pro >= fwb$protection_min & sup <= fwb$support_max ~ "fence_without_build",
+    !is.na(nipo) & !is.na(pams) & abs(nipo - pams) >= gap & ((nipo >= 0.5) != (pams >= 0.5)) ~ "sources_disagree",
+    TRUE ~ NA_character_
   )
 }
 

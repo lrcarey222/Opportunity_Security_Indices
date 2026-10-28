@@ -1,10 +1,82 @@
-# Strategic Position and Posture: readout (2026-10-27 run)
+# Strategic Position and Posture: readout (2026-10-27 run; 2026-10-28 extension first)
 
 Method: [strategic_position.md](strategic_position.md). Every figure below comes from the CSVs in
 `diagnostics/strategic_position/` written by `scripts/26_build_strategic_position.R`, on the 10:13
 `index_outputs.rds` build (which includes the uncommitted manufacturing-pair fix), the October 2026 GTA
 extract (scripts/11) and the regenerated import-exposure table. Example cards are in
 `diagnostics/strategic_position/decision_cards.md`.
+
+## 2026-10-28 run: trade refresh, three Secure routes, the quadrant and partners
+
+Same inputs as below plus the Comtrade refresh (`scripts/94`). Old figures are the 2026-10-27 run
+(commit fa3ecda), compared through `SP_BASELINE_TBL`.
+
+**Trade.** The structural benchmark averages 2022-2024 for 143 annual reporters (69,310 rows; Atlas
+2023 share kept for non-reporters). Against the single-year measures it reorders countries little
+(median within-cell rank correlation of Competitive Position 0.975), but 1,189 cells move more than 10
+points, mostly where the Atlas lacked basket codes (UK Wind Extraction 0.37 -> 0.82). Monthly: the
+universe is 73 economies, 61 publish monthly trade. **Common cutoff: December 2025** (51 of 61
+monthly reporters, 84%, have all 24 matched months; 70% of the whole universe); momentum compares Jan-Dec
+2025 with Jan-Dec 2024. China has only 12 of the 24 months (it reports January and February together),
+so it has no momentum. Cells: 1,137 ok, 14 caution (Morocco's monthly totals are 10% off its annual
+total), 633 small base, 350 incomplete coverage, 420 no monthly data. 1,151 cells take the 15% weight;
+the largest movers are Oil Refining (Bulgaria -45%, Egypt -50%: Competitive Position -18 points).
+Weight sensitivity (`trade_momentum_weight_sensitivity.csv`): structural vs 15% rank correlation
+0.9986, 324 cells move >5 and 75 >10 points; 10% / 20% move 148 / 428 cells >5 points. **No posture
+changes at any weight** (re-run): momentum only changes consistency flags (61 between 0% and 15%).
+
+**Secure: 18 -> 174 cells** (no cell left Secure). By route: coercive chokepoint 18 (EV Refining x 15,
+Gas Extraction x 3), operational control 5 (dual-use: Nuclear Refining for Brazil, Romania, Korea; EV
+Refining for Russia and Viet Nam), systemic resilience 151 (Gas 48, Oil 53, Coal 24, Electric Grid
+Assembly 23, Nuclear Components 3). Review countries: US 1 (EV Refining), China 3 (Gas Extraction and
+Refining, Oil Extraction), Japan 4 (+ Oil and Coal Extraction, LPG), Korea 5 (+ Nuclear Refining
+dual-use), Germany 3, UK 2, France 2, India / Australia / Canada 1. Self-supplied countries (US oil and
+gas, Australia, Canada) are not resilience cases. Policy alignment of Secure: 92 under-prioritized, 41
+aligned, 12 mixed, 29 no data: import-dependent fuel security is rarely where NIPO and PAMS record
+effort.
+
+**Quadrant** (producing stages, thresholds 0.67): catch_up 117, preserve 266, partner 1,456, watch
+2,746, insufficient data 7,011 (no measured need or opportunity, mostly small economies). Compete
+215 -> 1,839 cells. Thresholds at 0.60 / 0.70 move 357 / 166 postures (`quadrant_threshold_sensitivity.csv`).
+Per review country (secure / catch up / preserve / partner / watch):
+
+| Country | S | Catch up | Preserve | Partner | Watch |
+|---|---|---|---|---|---|
+| United States | 1 | 6 | 15 | 4 | 12 |
+| China | 3 | 7 | 21 | 0 | 5 |
+| Japan | 4 | 2 | 1 | 9 | 25 |
+| South Korea | 5 | 2 | 2 | 9 | 22 |
+| India | 1 | 8 | 10 | 9 | 7 |
+| Germany | 3 | 2 | 14 | 7 | 15 |
+| France | 2 | 4 | 13 | 5 | 16 |
+| United Kingdom | 2 | 0 | 1 | 6 | 23 |
+| Australia | 1 | 0 | 3 | 13 | 23 |
+| Canada | 1 | 6 | 6 | 3 | 25 |
+
+Examples (`quadrant_examples.csv`): Japan catches up in Battery Refining (need 0.75, opportunity 0.81)
+and partners in Battery Extraction (Australia first); Korea preserves EV Assembly (opportunity 0.84,
+need 0.13; policy under-prioritized) and catches up in EV Components; India catches up in Solar
+Components and Battery Assembly and partners for oil (Saudi Arabia first) and EV minerals (Australia);
+the US preserves gas, oil refining, solar and wind manufacturing and catches up in battery components
+and assembly.
+
+**Consistency flags: 425** - partner_despite_capability 354 (Viet Nam 16, Thailand 12, Mexico 11,
+Japan 8, India 8), catch_up_already_leading 49, preserve_without_capability 22. The partner flags are
+the main weakness of the opportunity axis: EO, placed among the node's contenders, rates established
+exporters lower than their demonstrated position (Japan Battery Components: 13% of world supply,
+Competitive Position 0.96, opportunity 0.25 -> Partner, flagged).
+
+**Partners.** 1,456 Partner cells, 3,941 recommendations; none is the country itself, coercive,
+untrusted or below 2% of supply. 15 partner gaps (all Oil Recovery). First partners: Germany 231, the
+US 200, Australia 95, Japan 81, Korea 69; China 203 and Russia 49, all for China-leaning reporters
+(the bloc rule), 34 of them for coalition partner-tier members (Indonesia, Viet Nam, Oman). Policy:
+74 Partner cells are autarkic (protection in the top third: `partner_autarkic`).
+
+**AIB division** (39 producing nodes with supply): gap none 12, single point of failure 9, weak
+evidence 18 (the AIB covers 25 cells); no node lacks a trusted holder and every node has at least
+three allied holders at 2%, because the coalition is 62 economies. The Explorer header: 31 core
+members, 82% of the 34 priority nodes with credible trusted coverage, 22 unresolved gaps (weak evidence
+counts as a gap).
 
 ## Coverage
 

@@ -1,152 +1,155 @@
 "tech","supply_chain","layer_id","layer_posture","cell_posture","n_countries"
-"Batteries","Assembly","bess-cells","compete","compete",6
-"Batteries","Assembly","bess-cells","deploy","deploy",208
+"Batteries","Assembly","bess-cells","compete","compete",25
+"Batteries","Assembly","bess-cells","deploy","deploy",189
 "Batteries","Assembly","bess-cells",,,5
-"Batteries","Assembly","bess-comms","compete","compete",1
-"Batteries","Assembly","bess-comms","deploy","deploy",151
-"Batteries","Assembly","bess-comms","secure","compete",5
-"Batteries","Assembly","bess-comms","secure","deploy",57
+"Batteries","Assembly","bess-comms","compete","compete",7
+"Batteries","Assembly","bess-comms","deploy","deploy",145
+"Batteries","Assembly","bess-comms","secure","compete",18
+"Batteries","Assembly","bess-comms","secure","deploy",44
 "Batteries","Assembly","bess-comms",,,5
-"Batteries","Assembly","bess-control","compete","compete",1
-"Batteries","Assembly","bess-control","deploy","deploy",151
-"Batteries","Assembly","bess-control","secure","compete",5
-"Batteries","Assembly","bess-control","secure","deploy",57
+"Batteries","Assembly","bess-control","compete","compete",7
+"Batteries","Assembly","bess-control","deploy","deploy",145
+"Batteries","Assembly","bess-control","secure","compete",18
+"Batteries","Assembly","bess-control","secure","deploy",44
 "Batteries","Assembly","bess-control",,,5
-"Batteries","Assembly","bess-enclosure","compete","compete",5
-"Batteries","Assembly","bess-enclosure","deploy","compete",1
-"Batteries","Assembly","bess-enclosure","deploy","deploy",208
+"Batteries","Assembly","bess-enclosure","compete","compete",25
+"Batteries","Assembly","bess-enclosure","deploy","deploy",189
 "Batteries","Assembly","bess-enclosure",,,5
-"Batteries","Refining","bess-anode","compete","compete",4
-"Batteries","Refining","bess-anode","deploy","deploy",210
+"Batteries","Refining","bess-anode","compete","compete",60
+"Batteries","Refining","bess-anode","deploy","deploy",154
 "Batteries","Refining","bess-anode",,,5
-"Batteries","Refining","bess-cathode","compete","compete",4
-"Batteries","Refining","bess-cathode","compete","deploy",2
-"Batteries","Refining","bess-cathode","deploy","deploy",208
+"Batteries","Refining","bess-cathode","compete","compete",60
+"Batteries","Refining","bess-cathode","deploy","deploy",154
 "Batteries","Refining","bess-cathode",,,5
-"Batteries","Refining","li-chemicals","compete","compete",4
-"Batteries","Refining","li-chemicals","compete","deploy",1
-"Batteries","Refining","li-chemicals","deploy","deploy",209
+"Batteries","Refining","li-chemicals","compete","compete",60
+"Batteries","Refining","li-chemicals","deploy","deploy",154
 "Batteries","Refining","li-chemicals",,,5
-"Electric Grid","Assembly","bess-pcs","compete","compete",4
-"Electric Grid","Assembly","bess-pcs","deploy","deploy",210
+"Electric Grid","Assembly","bess-pcs","compete","compete",49
+"Electric Grid","Assembly","bess-pcs","compete","secure",14
+"Electric Grid","Assembly","bess-pcs","deploy","deploy",142
+"Electric Grid","Assembly","bess-pcs","deploy","secure",9
 "Electric Grid","Assembly","bess-pcs",,,5
-"Electric Grid","Assembly","grid-ami","compete","compete",3
-"Electric Grid","Assembly","grid-ami","deploy","deploy",120
-"Electric Grid","Assembly","grid-ami","secure","compete",1
-"Electric Grid","Assembly","grid-ami","secure","deploy",90
+"Electric Grid","Assembly","grid-ami","compete","compete",15
+"Electric Grid","Assembly","grid-ami","compete","secure",10
+"Electric Grid","Assembly","grid-ami","deploy","deploy",93
+"Electric Grid","Assembly","grid-ami","deploy","secure",5
+"Electric Grid","Assembly","grid-ami","secure","compete",34
+"Electric Grid","Assembly","grid-ami","secure","deploy",49
+"Electric Grid","Assembly","grid-ami","secure","secure",8
 "Electric Grid","Assembly","grid-ami",,,5
-"Electric Grid","Assembly","grid-cables","compete","compete",3
-"Electric Grid","Assembly","grid-cables","deploy","compete",1
-"Electric Grid","Assembly","grid-cables","deploy","deploy",210
+"Electric Grid","Assembly","grid-cables","compete","compete",49
+"Electric Grid","Assembly","grid-cables","compete","secure",14
+"Electric Grid","Assembly","grid-cables","deploy","deploy",142
+"Electric Grid","Assembly","grid-cables","deploy","secure",9
 "Electric Grid","Assembly","grid-cables",,,5
-"Electric Grid","Assembly","grid-inverter-firmware","compete","compete",3
-"Electric Grid","Assembly","grid-inverter-firmware","deploy","deploy",120
-"Electric Grid","Assembly","grid-inverter-firmware","secure","compete",1
-"Electric Grid","Assembly","grid-inverter-firmware","secure","deploy",90
+"Electric Grid","Assembly","grid-inverter-firmware","compete","compete",15
+"Electric Grid","Assembly","grid-inverter-firmware","compete","secure",10
+"Electric Grid","Assembly","grid-inverter-firmware","deploy","deploy",93
+"Electric Grid","Assembly","grid-inverter-firmware","deploy","secure",5
+"Electric Grid","Assembly","grid-inverter-firmware","secure","compete",34
+"Electric Grid","Assembly","grid-inverter-firmware","secure","deploy",49
+"Electric Grid","Assembly","grid-inverter-firmware","secure","secure",8
 "Electric Grid","Assembly","grid-inverter-firmware",,,5
-"Electric Grid","Assembly","grid-scada","compete","compete",3
-"Electric Grid","Assembly","grid-scada","deploy","deploy",120
-"Electric Grid","Assembly","grid-scada","secure","compete",1
-"Electric Grid","Assembly","grid-scada","secure","deploy",90
+"Electric Grid","Assembly","grid-scada","compete","compete",15
+"Electric Grid","Assembly","grid-scada","compete","secure",10
+"Electric Grid","Assembly","grid-scada","deploy","deploy",93
+"Electric Grid","Assembly","grid-scada","deploy","secure",5
+"Electric Grid","Assembly","grid-scada","secure","compete",34
+"Electric Grid","Assembly","grid-scada","secure","deploy",49
+"Electric Grid","Assembly","grid-scada","secure","secure",8
 "Electric Grid","Assembly","grid-scada",,,5
-"Electric Grid","Assembly","grid-transformers","compete","compete",4
-"Electric Grid","Assembly","grid-transformers","deploy","deploy",210
+"Electric Grid","Assembly","grid-transformers","compete","compete",49
+"Electric Grid","Assembly","grid-transformers","deploy","deploy",142
+"Electric Grid","Assembly","grid-transformers","secure","secure",23
 "Electric Grid","Assembly","grid-transformers",,,5
-"Electric Grid","Assembly","hvdc-control","compete","compete",3
-"Electric Grid","Assembly","hvdc-control","deploy","compete",1
-"Electric Grid","Assembly","hvdc-control","deploy","deploy",210
+"Electric Grid","Assembly","hvdc-control","compete","compete",49
+"Electric Grid","Assembly","hvdc-control","compete","secure",14
+"Electric Grid","Assembly","hvdc-control","deploy","deploy",142
+"Electric Grid","Assembly","hvdc-control","deploy","secure",9
 "Electric Grid","Assembly","hvdc-control",,,5
-"Electric Grid","Refining","goes","compete","compete",7
-"Electric Grid","Refining","goes","compete","deploy",2
-"Electric Grid","Refining","goes","deploy","deploy",205
+"Electric Grid","Refining","goes","compete","compete",32
+"Electric Grid","Refining","goes","deploy","deploy",145
+"Electric Grid","Refining","goes","secure","compete",29
+"Electric Grid","Refining","goes","secure","deploy",8
 "Electric Grid","Refining","goes",,,5
-"Electric Vehicles","Assembly","ev-connected-vehicle","compete","compete",1
-"Electric Vehicles","Assembly","ev-connected-vehicle","deploy","compete",3
-"Electric Vehicles","Assembly","ev-connected-vehicle","deploy","deploy",119
-"Electric Vehicles","Assembly","ev-connected-vehicle","secure","compete",3
-"Electric Vehicles","Assembly","ev-connected-vehicle","secure","deploy",88
+"Electric Vehicles","Assembly","ev-connected-vehicle","compete","compete",20
+"Electric Vehicles","Assembly","ev-connected-vehicle","deploy","deploy",103
+"Electric Vehicles","Assembly","ev-connected-vehicle","secure","compete",31
+"Electric Vehicles","Assembly","ev-connected-vehicle","secure","deploy",60
 "Electric Vehicles","Assembly","ev-connected-vehicle",,,5
-"Electric Vehicles","Components","ev-motors","compete","compete",7
-"Electric Vehicles","Components","ev-motors","deploy","deploy",207
+"Electric Vehicles","Components","ev-motors","compete","compete",59
+"Electric Vehicles","Components","ev-motors","deploy","deploy",155
 "Electric Vehicles","Components","ev-motors",,,5
-"Electric Vehicles","Components","ree-magnets","compete","compete",1
-"Electric Vehicles","Components","ree-magnets","deploy","compete",2
-"Electric Vehicles","Components","ree-magnets","deploy","deploy",125
-"Electric Vehicles","Components","ree-magnets","secure","compete",4
-"Electric Vehicles","Components","ree-magnets","secure","deploy",82
+"Electric Vehicles","Components","ree-magnets","compete","compete",20
+"Electric Vehicles","Components","ree-magnets","deploy","deploy",91
+"Electric Vehicles","Components","ree-magnets","secure","compete",39
+"Electric Vehicles","Components","ree-magnets","secure","deploy",64
 "Electric Vehicles","Components","ree-magnets",,,5
 "Electric Vehicles","Deployment","ev-charging-mgmt","deploy","deploy",214
 "Electric Vehicles","Deployment","ev-charging-mgmt",,,5
-"Gas","Assembly","gas-ot-control","deploy","compete",7
-"Gas","Assembly","gas-ot-control","deploy","deploy",147
-"Gas","Assembly","gas-ot-control","secure","deploy",60
+"Gas","Assembly","gas-ot-control","compete","compete",32
+"Gas","Assembly","gas-ot-control","deploy","deploy",122
+"Gas","Assembly","gas-ot-control","secure","compete",31
+"Gas","Assembly","gas-ot-control","secure","deploy",29
 "Gas","Assembly","gas-ot-control",,,5
-"Green Hydrogen","Extraction","h2-pgm","compete","compete",2
-"Green Hydrogen","Extraction","h2-pgm","deploy","deploy",212
+"Green Hydrogen","Extraction","h2-pgm","deploy","deploy",214
 "Green Hydrogen","Extraction","h2-pgm",,,5
-"Nuclear","Assembly","nuc-reactor-controls","compete","compete",4
-"Nuclear","Assembly","nuc-reactor-controls","deploy","compete",2
-"Nuclear","Assembly","nuc-reactor-controls","deploy","deploy",191
-"Nuclear","Assembly","nuc-reactor-controls","secure","compete",3
-"Nuclear","Assembly","nuc-reactor-controls","secure","deploy",14
+"Nuclear","Assembly","nuc-reactor-controls","compete","compete",55
+"Nuclear","Assembly","nuc-reactor-controls","deploy","deploy",142
+"Nuclear","Assembly","nuc-reactor-controls","secure","compete",10
+"Nuclear","Assembly","nuc-reactor-controls","secure","deploy",7
 "Nuclear","Assembly","nuc-reactor-controls",,,5
-"Nuclear","Components","nuc-fuel-fab","compete","compete",13
-"Nuclear","Components","nuc-fuel-fab","deploy","deploy",192
-"Nuclear","Components","nuc-fuel-fab","secure","deploy",9
+"Nuclear","Components","nuc-fuel-fab","compete","compete",60
+"Nuclear","Components","nuc-fuel-fab","deploy","deploy",143
+"Nuclear","Components","nuc-fuel-fab","secure","compete",7
+"Nuclear","Components","nuc-fuel-fab","secure","deploy",1
+"Nuclear","Components","nuc-fuel-fab","secure","secure",3
 "Nuclear","Components","nuc-fuel-fab",,,5
-"Nuclear","Refining","nuc-haleu","compete","compete",11
-"Nuclear","Refining","nuc-haleu","deploy","deploy",200
-"Nuclear","Refining","nuc-haleu","secure","compete",1
-"Nuclear","Refining","nuc-haleu","secure","deploy",2
+"Nuclear","Refining","nuc-haleu","compete","compete",62
+"Nuclear","Refining","nuc-haleu","deploy","deploy",149
+"Nuclear","Refining","nuc-haleu","secure","secure",3
 "Nuclear","Refining","nuc-haleu",,,5
-"Nuclear","Refining","nuc-leu","compete","compete",12
-"Nuclear","Refining","nuc-leu","deploy","deploy",202
+"Nuclear","Refining","nuc-leu","compete","compete",62
+"Nuclear","Refining","nuc-leu","deploy","deploy",149
+"Nuclear","Refining","nuc-leu","secure","secure",3
 "Nuclear","Refining","nuc-leu",,,5
-"Oil","Assembly","oil-ot-control","deploy","compete",6
-"Oil","Assembly","oil-ot-control","deploy","deploy",129
-"Oil","Assembly","oil-ot-control","secure","compete",1
-"Oil","Assembly","oil-ot-control","secure","deploy",78
+"Oil","Assembly","oil-ot-control","compete","compete",23
+"Oil","Assembly","oil-ot-control","deploy","deploy",112
+"Oil","Assembly","oil-ot-control","secure","compete",35
+"Oil","Assembly","oil-ot-control","secure","deploy",44
 "Oil","Assembly","oil-ot-control",,,5
-"Solar","Assembly","pv-inverter-firmware-dist","compete","compete",3
-"Solar","Assembly","pv-inverter-firmware-dist","deploy","compete",1
-"Solar","Assembly","pv-inverter-firmware-dist","deploy","deploy",101
-"Solar","Assembly","pv-inverter-firmware-dist","secure","compete",1
-"Solar","Assembly","pv-inverter-firmware-dist","secure","deploy",108
+"Solar","Assembly","pv-inverter-firmware-dist","compete","compete",8
+"Solar","Assembly","pv-inverter-firmware-dist","deploy","deploy",97
+"Solar","Assembly","pv-inverter-firmware-dist","secure","compete",17
+"Solar","Assembly","pv-inverter-firmware-dist","secure","deploy",92
 "Solar","Assembly","pv-inverter-firmware-dist",,,5
-"Solar","Assembly","pv-modules","compete","compete",3
-"Solar","Assembly","pv-modules","compete","deploy",1
-"Solar","Assembly","pv-modules","deploy","compete",2
-"Solar","Assembly","pv-modules","deploy","deploy",208
+"Solar","Assembly","pv-modules","compete","compete",25
+"Solar","Assembly","pv-modules","deploy","deploy",189
 "Solar","Assembly","pv-modules",,,5
-"Solar","Assembly","pv-racking","compete","compete",3
-"Solar","Assembly","pv-racking","deploy","compete",2
-"Solar","Assembly","pv-racking","deploy","deploy",209
+"Solar","Assembly","pv-racking","compete","compete",25
+"Solar","Assembly","pv-racking","deploy","deploy",189
 "Solar","Assembly","pv-racking",,,5
-"Solar","Components","pv-cells-wafers","compete","compete",5
-"Solar","Components","pv-cells-wafers","deploy","deploy",209
+"Solar","Components","pv-cells-wafers","compete","compete",22
+"Solar","Components","pv-cells-wafers","deploy","deploy",192
 "Solar","Components","pv-cells-wafers",,,5
-"Solar","Components","pv-nextgen","compete","compete",5
-"Solar","Components","pv-nextgen","compete","deploy",4
-"Solar","Components","pv-nextgen","deploy","deploy",205
+"Solar","Components","pv-nextgen","compete","compete",22
+"Solar","Components","pv-nextgen","deploy","deploy",192
 "Solar","Components","pv-nextgen",,,5
-"Solar","Refining","polysilicon","compete","compete",6
-"Solar","Refining","polysilicon","compete","deploy",4
-"Solar","Refining","polysilicon","deploy","compete",1
-"Solar","Refining","polysilicon","deploy","deploy",203
+"Solar","Refining","polysilicon","compete","compete",56
+"Solar","Refining","polysilicon","deploy","deploy",158
 "Solar","Refining","polysilicon",,,5
-"Wind","Assembly","wind-turbine-control","compete","compete",4
-"Wind","Assembly","wind-turbine-control","deploy","deploy",125
-"Wind","Assembly","wind-turbine-control","secure","compete",1
-"Wind","Assembly","wind-turbine-control","secure","deploy",84
+"Wind","Assembly","wind-turbine-control","compete","compete",12
+"Wind","Assembly","wind-turbine-control","deploy","deploy",117
+"Wind","Assembly","wind-turbine-control","secure","compete",7
+"Wind","Assembly","wind-turbine-control","secure","deploy",78
 "Wind","Assembly","wind-turbine-control",,,5
-"Wind","Components","ree-magnets","compete","compete",2
-"Wind","Components","ree-magnets","deploy","compete",1
-"Wind","Components","ree-magnets","deploy","deploy",165
-"Wind","Components","ree-magnets","secure","compete",3
-"Wind","Components","ree-magnets","secure","deploy",43
+"Wind","Components","ree-magnets","compete","compete",11
+"Wind","Components","ree-magnets","deploy","deploy",137
+"Wind","Components","ree-magnets","secure","compete",10
+"Wind","Components","ree-magnets","secure","deploy",56
 "Wind","Components","ree-magnets",,,5
-"Wind","Refining","ree-separation","compete","compete",4
-"Wind","Refining","ree-separation","deploy","deploy",197
-"Wind","Refining","ree-separation","secure","compete",2
-"Wind","Refining","ree-separation","secure","deploy",11
+"Wind","Refining","ree-separation","compete","compete",53
+"Wind","Refining","ree-separation","deploy","deploy",144
+"Wind","Refining","ree-separation","secure","compete",9
+"Wind","Refining","ree-separation","secure","deploy",8
 "Wind","Refining","ree-separation",,,5

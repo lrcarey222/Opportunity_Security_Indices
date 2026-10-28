@@ -1,0 +1,42 @@
+"tech","supply_chain","small_base_floor","n_small_base","n_valid"
+"Batteries","Assembly",9411374.0275,13,38
+"Batteries","Components",1876238.179,16,35
+"Batteries","Extraction",1e+06,15,36
+"Batteries","Recovery",2968258.0215,16,35
+"Batteries","Refining",43650871.7465,13,38
+"Coal","Assembly",1821741.822,14,37
+"Coal","Components",3582710.677,14,37
+"Coal","Extraction",1e+06,20,31
+"Coal","Refining",1e+06,26,25
+"Electric Grid","Assembly",800866103.373,13,38
+"Electric Grid","Components",57393393.416,13,38
+"Electric Grid","Extraction",1e+06,17,34
+"Electric Grid","Refining",248223603.60975,14,37
+"Electric Vehicles","Assembly",697817325.234,13,38
+"Electric Vehicles","Components",168329984.059,13,38
+"Electric Vehicles","Extraction",1e+06,15,36
+"Electric Vehicles","Refining",1e+06,32,19
+"Gas","Assembly",115969296.3025,13,38
+"Gas","Components",38265073.494,13,38
+"Gas","Extraction",10479000,20,31
+"Gas","Refining",13473299.1345,16,35
+"Nuclear","Assembly",1030656.545,14,37
+"Nuclear","Components",2279619.617,14,37
+"Nuclear","Extraction",1e+06,50,0
+"Nuclear","Recovery",1e+06,51,0
+"Nuclear","Refining",1e+06,43,8
+"Oil","Assembly",126503049.1755,13,38
+"Oil","Components",5809461.457,13,38
+"Oil","Extraction",8821130.795,19,32
+"Oil","Recovery",1e+06,27,24
+"Oil","Refining",990869036.475,13,38
+"Semiconductors","Assembly",22900935.6575,13,38
+"Semiconductors","Components",8292450.77,14,37
+"Semiconductors","Refining",1e+06,26,25
+"Solar","Assembly",853811062.859,13,38
+"Solar","Components",75685457.83,13,38
+"Solar","Refining",5472437.463,14,37
+"Wind","Assembly",725201168.087,13,38
+"Wind","Components",85965245.624,13,38
+"Wind","Extraction",1e+06,51,0
+"Wind","Refining",4860632.375,14,37

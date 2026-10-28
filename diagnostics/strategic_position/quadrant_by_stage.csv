@@ -1,0 +1,7 @@
+"supply_chain","n_cells","secure","catch_up","preserve","partner","deploy_watch","deploy_other","borderline","consistency_flags","partner_gaps"
+"Assembly",2354,23,11,75,326,683,1236,230,69,0
+"Components",2354,3,16,63,379,666,1227,230,108,0
+"Deployment",2354,0,0,0,0,539,1815,283,0,0
+"Extraction",2354,71,37,54,268,478,1446,215,116,0
+"Recovery",2354,0,32,19,48,179,2076,121,0,15
+"Refining",2354,77,21,55,435,740,1026,216,141,0

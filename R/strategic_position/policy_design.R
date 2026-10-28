@@ -8,7 +8,7 @@
 # medium yard = compete, large yard = deploy. It lives in two config tables that scripts read and pass
 # in:
 #
-#   config/posture_policy_design.csv   one row per posture_variant (all 14 must exist)
+#   config/posture_policy_design.csv   one row per posture_variant (all 17 must exist)
 #   config/posture_delivery_modes.csv  one row per delivery_mode x strategic_posture (all 12 pairs):
 #                                      a build_note and a gate_note that adjust the variant's build and
 #                                      gate to where capacity is built (allied delivery builds trusted
@@ -30,7 +30,9 @@
 
 PPD_VARIANTS <- c(
   "secure_control", "secure_integrated", "secure_whole", "secure_unclear", "secure_input", "secure_both",
+  "secure_dual_use", "secure_resilience",
   "compete_preserve", "compete_adjacent_capability", "compete_catch_up", "compete_leap_ahead", "compete_costly",
+  "compete_partner",
   "deploy", "deploy_floor", "deploy_diversify"
 )
 PPD_POSTURES <- c("secure", "compete", "deploy")
@@ -38,10 +40,13 @@ PPD_FENCE_LEVELS <- c("none", "low", "moderate", "high")
 PPD_GATE_LEVELS <- c("closed", "selective", "open", "wide_open")
 # What the fence surrounds. Secure scopes follow SmallScope in dashboard/src/fence/engine/types.ts;
 # Compete fences cover the node's product (or, for a leap, the successor technology); Deploy fences are
-# the cross-cutting safeguards that apply to any good, or a specified capability floor.
+# the cross-cutting safeguards that apply to any good, or a specified capability floor. The security
+# routes add critical_end_use (a dual-use node's national-security uses), essential_supply (systemic
+# resilience: no import fence) and partner_supply (Compete through trusted partners).
 PPD_FENCE_SCOPES <- c(
   "control_layer", "control_plus_integrated", "whole_product", "control_unclear", "input",
-  "control_layer_and_input", "product", "successor_technology", "capability_floor", "cross_cutting"
+  "control_layer_and_input", "critical_end_use", "essential_supply", "product", "successor_technology",
+  "partner_supply", "capability_floor", "cross_cutting"
 )
 PPD_PURPOSES <- c("secure", "buffer", "build", "protect", "open", "discipline")
 PPD_NEEDS <- c("required", "helpful", "neutral", "avoid")

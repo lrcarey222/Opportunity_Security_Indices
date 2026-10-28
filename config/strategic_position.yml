@@ -98,6 +98,34 @@ competitive_position:
     - {pillar: EO, category: Foreign Dependency, variable: production, reason: "IEA GEVO regional EV production (five regions)"}
     - {pillar: EO, category: Foreign Dependency, variable: net_export, reason: "IEA GEVO regional EV net exports (five regions)"}
     - {pillar: EO, category: Energy Access, variable: "*", reason: "energy use per capita, demand context"}
+  # Trade evidence of the export family (docs/strategic_position.md 2.2). market_share and rca are
+  # replaced by the structural benchmark: Comtrade annual exports to the World averaged over
+  # benchmark_years (scripts/94 annual mode), the Atlas share kept only for economies that do not
+  # report. Current momentum (scripts/94 monthly mode) then takes momentum_weight of the export family
+  # where it exists; structural alone otherwise.
+  trade_benchmark:
+    annual_file: comtrade_benchmark_annual.csv
+    years: [2022, 2023, 2024]
+    min_years: 2
+  trade_momentum:
+    monthly_file: comtrade_momentum_monthly.csv
+    momentum_weight: 0.15
+    weight_sensitivity: [0.10, 0.15, 0.20]
+    # Cutoff: the latest month at which this share of the universe's monthly reporters has all
+    # 24 months. The universe: coalition members (core, partner) and economies with GDP of at least
+    # universe_min_gdp_usd (as scripts/94 pulls it).
+    window_months: 12
+    min_complete_share: 0.8
+    universe_min_gdp_usd: 2.0e+11
+    # Guards.
+    small_base_quantile: 0.25
+    small_base_min_usd: 1.0e+6
+    winsorize: [0.05, 0.95]
+    hs_break_share: 0.25
+    reporter_check_year: 2024
+    reporter_mismatch: {caution: 0.10, exclude: 0.25}
+    min_reporters_per_cell: 5
+    share_coverage_min: 0.8
 
 # ---- Strategic Need -------------------------------------------------------------------------------------
 # Vulnerability only, oriented so that higher = more need. Each measure is turned into a mid-rank
@@ -339,6 +367,52 @@ strategic_posture:
   # Confidence (rules.ts): high needs a determinate posture, no marginal decisive answer and this
   # share of relevant inputs known; below low_completeness, or with two marginal decisive answers, low.
   confidence: {high_completeness: 0.75, low_completeness: 0.4}
+  # Secure routes (docs/strategic_position.md 7.2). The rule table names the routes each node may take;
+  # data decide whether a country meets one. No quota: any number of nodes may be Secure.
+  security_routes:
+    rules_table: config/security_route_rules.csv
+    # Route A, dual-use node: coercive suppliers' share of the country's own material imports.
+    dual_use_coercive_import_share: {threshold: 0.25, marginal: 0.15}
+    # Route C: essential function, substantial foreign dependency (not self-supplied, material imports
+    # against GDP, net import dependence in the top half of the cell), a rebuild time of a year or more,
+    # and trusted partners (less the country's own share) below this share of world supply.
+    resilience:
+      essentiality: [high]
+      import_dependence_min: 0.5
+      long_lead_times: [y1to3, gt3y]
+      trusted_alternative_max: 0.5
+  # Decision quadrant inside the medium yard (docs/strategic_position.md 7.3): applied after the
+  # Secure override at the producing stages. Both axes are percentiles across countries (need) or
+  # contenders (opportunity) within the cell, never within a country.
+  decision_quadrant:
+    need_threshold: 0.67
+    opportunity_threshold: 0.67
+    thresholds_sensitivity: [0.60, 0.67, 0.70]
+    borderline_band: 0.05
+    apply_stages: [Extraction, Refining, Components, Assembly, Recovery]
+    # Industrial Opportunity: the EO index placed among the node's contenders (home_share at least
+    # contender_min_share); fewer than min_contenders, the peers (coalition members and economies with
+    # GDP of at least peer_min_gdp_usd). Declining markets are capped below the thresholds.
+    opportunity:
+      contender_min_share: 0.005
+      min_contenders: 5
+      peer_min_gdp_usd: 2.0e+11
+      cap_outlooks: [declining]
+      cap_percentile: 0.5
+    # Competitive Position as a consistency check (flags, never an override).
+    consistency:
+      leading_cp_pct: 0.9
+      preserve_min_cp_pct: 0.25
+      preserve_min_share: 0.005
+      partner_strong_cp_pct: 0.75
+  # Partner nodes -> trusted partners and the allied division of labour (docs/strategic_position.md 7.4).
+  partner_recs:
+    presence_min: 0.02
+    diversification_step: 0.1
+    n_recommendations: 3
+    relationship_missing: 0.5
+    single_point_share: 0.5
+    redundancy_min: 3
 
 # ---- Policy design (Step 3): fence, gate and build by posture variant and delivery mode -----------------
 policy_design:
@@ -361,6 +435,8 @@ policy_alignment:
   source_gap_mixed: 0.5
   # Compete: protection in the top third with support in the bottom third is a fence without a build.
   fence_without_build: {protection_min: 0.67, support_max: 0.33}
+  # Partner: protection in the top third is autarky where the posture asks for trusted partners.
+  partner_autarky: {protection_min: 0.67}
 
 # ---- Legacy Strategic Index sensitivity (diagnostics only) ---------------------------------------------
 legacy_si_sensitivity:

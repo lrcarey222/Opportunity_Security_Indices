@@ -107,7 +107,7 @@ and stage? Families (config `competitive_position.families`), each the mean of i
 
 | Family | Stages | Variables |
 |---|---|---|
-| export_position | E, R, C, A | Atlas world export share; RCA |
+| export_position | E, R, C, A | world export share; RCA (2022-24 benchmark, with current momentum) |
 | production_position | E, R | mined / refined / fuel production share (structural zero for unlisted) |
 | manufacturing_capacity | R, C, A | GCIM operating plants |
 | investment_position | R, C, A, Dep | GCIM annual capex |
@@ -126,6 +126,53 @@ scaled to 0), the IEA GEVO regional EV production and net exports, BNEF installe
 (a regional broadcast), absolute generation growth (rewards a small decline), and energy use per
 capita. Recovery has no family: its baskets are scrap and spent material, and a large export share
 means the country ships it abroad for processing, not that it recycles.
+
+#### Trade evidence: structural benchmark and current momentum
+
+`scripts/94_pull_comtrade_trade_refresh.R` pulls Comtrade exports to the World of every basket code
+and total merchandise exports, annual 2022-2024 for every Comtrade reporter and monthly over 38 months
+for the analysis universe (coalition core and partner members plus economies with GDP of at least
+USD 200bn). Pure code: `R/strategic_position/trade_benchmark.R`, `trade_momentum.R`; config
+`competitive_position.trade_benchmark` / `trade_momentum`.
+
+- **Structural benchmark.** For each reporter-year with a reported total: basket exports, the world
+  export share (over that year's reporters; re-export hubs excluded) and the Balassa RCA; each averaged
+  over the years observed (at least two). The S-curve ranks across countries within the cell replace
+  EO's single-year `market_share` (Atlas 2023) and `rca` (Comtrade 2024). An economy that does not
+  report to Comtrade keeps its Atlas share (`trade_benchmark_source = atlas_fallback`) and no RCA.
+- **Common cutoff.** The latest month M at which at least 80% of the universe's monthly reporters have
+  all 24 months M-23..M (`trade_momentum_cutoff.csv`). Twelve universe members publish no monthly trade
+  at all (they are listed, never counted as complete), so the 80% is of the monthly reporters; the
+  share of the whole universe is reported beside it. A reporter without the 24 matched months gets NA,
+  never 0; there is no partial-year comparison and no mirror (partner-reported) fill.
+- **Measures**, trailing 12 months against the preceding 12: (A) log export growth
+  (`trade_momentum_raw`); (B) specialization momentum, the change in the basket's share of total
+  merchandise exports = A - log total-export growth (`trade_momentum_specialization`); (C) world-share
+  momentum where the complete reporters hold at least 80% of the cell's benchmark exports
+  (`trade_momentum_share_change`). Within a cell C differs from A by a constant and ranks countries
+  exactly as A does, so it is diagnostic only.
+- **Guards.** A small-base floor on the previous twelve months (the cell's lower quartile of positive
+  values, never below USD 1m); an HS-revision check (a reporter that changed HS edition between the
+  windows with more than 25% of the cell's value in HS4 headings present in one window only:
+  `hs_break`); a reporter check (calendar-2024 monthly totals against the annual total: more than 10%
+  apart is `caution`, more than 25% `reporter_mismatch`, excluded); winsorisation of A and B at the 5th
+  and 95th percentiles across all cells; at least five valid reporters per cell.
+- **Score.** `trade_momentum_score` = mean of the mid-rank percentiles of A and B across the valid
+  reporters within the cell. A world price swing that moves every exporter alike moves no rank
+  (`trade_momentum_prices.csv` reports the common component and the value-volume gap for mineral and
+  fuel cells).
+- **Trade pillar.** The export family = 85% structural + 15% momentum where momentum exists,
+  structural alone otherwise (`cp_export_position_structural` keeps the structural value;
+  `trade_momentum_weight` says which). Sensitivity at 10 / 15 / 20%:
+  `trade_momentum_weight_sensitivity.csv` (rank correlations, movers above 5 and 10 percentile points).
+  The posture does not read Competitive Position (Secure reads supply shares, the quadrant reads need
+  and opportunity), so momentum moves postures only through the quadrant's consistency flags.
+
+Fields: `trade_benchmark_period`, `trade_benchmark_source`, `trade_benchmark_share`,
+`trade_benchmark_rca`, `trade_benchmark_exports`, `trade_momentum_period`,
+`trade_momentum_previous_period`, `trade_months_observed`, `trade_momentum_quality` (ok, caution,
+no_monthly_data, incomplete_coverage, small_base, hs_break, reporter_mismatch, thin_cell,
+outside_universe), `trade_momentum_coverage`, `trade_momentum_raw`, `trade_momentum_score`.
 
 ### Strategic Need
 
@@ -293,6 +340,90 @@ bridged by stockpiles); Compete is domestic for preserve and leap, mixed for adj
 strategies with allied supply; Deploy is diversified_global, or allied for a diversifying Deploy with
 allied supply. A curated coercive share (HALEU: Russia 90%) applies only to countries for which the
 named supplier is coercive.
+
+### Three Secure routes
+
+Test 2 is met through one of three routes, each allowed node by node in an explicit rule table,
+`config/security_route_rules.csv` (technology, six_stage, subnode, critical_function,
+digitally_active, dual_use, systemic_essentiality, substitutability, reconstitution_time_class,
+rationale, evidence_source, evidence_confidence, notes; checked by `sr_read_check()` against the node
+attributes, whose substitutability and reconstitution time it must repeat). The routes are curated,
+never inferred from trade; data only decide whether a country meets a route its node allows. There
+is no quota.
+
+- **operational_control** (route A): the digital path above, for control layers; or a **dual-use**
+  node (enrichment, isotope separation, rare-earth separation and NdFeB magnets) where coercive
+  suppliers carry at least 25% of the country's own material imports.
+- **coercive_chokepoint** (route B): the physical path above. Concentration alone is not enough.
+- **systemic_resilience** (route C): a node whose rule marks an essential function (grid transformers,
+  switchgear, cables and electrical steel; reactor fuel; crude oil, refined products, gas, LPG and coal
+  supply) where the country depends on imports (not self-supplied, material imports against GDP, net
+  import dependence in the top half of the cell), supply takes a year or more to rebuild, and trusted
+  partners (less the country's own share) hold under half of world supply. No coercive supplier is
+  needed; the serious consequence is Test 1.
+
+`security_rationale` names the primary route (operational control through a command path, else the
+chokepoint, else the dual-use reading, else resilience); `security_routes_met` lists all. Variants:
+the digital path keeps secure_control / integrated / whole / unclear, the chokepoint secure_input
+(secure_both with the digital path), the dual-use reading secure_dual_use and resilience
+secure_resilience. The fence differs by rationale: high around the control layer or the dual-use
+end uses, targeted on a chokepoint input, none for resilience (restricting imports would deepen the
+shortfall it guards against; the build is reserves, long-lead procurement, spares and trusted
+capacity agreements). Secure does not mean reshoring: delivery follows where trusted supply is.
+
+### The decision quadrant inside the medium yard
+
+After the Secure override, at the producing stages, the posture comes from two axes (no new score):
+
+| | Industrial Opportunity high | Industrial Opportunity low |
+|---|---|---|
+| **Strategic Need high** | Compete, `catch_up` | Compete, `partner` |
+| **Strategic Need low** | Compete, `preserve` | Deploy (`decision_quadrant = watch`) |
+
+- Strategic Need: `strategic_need_percentile` (across countries within the cell).
+- Industrial Opportunity: the EO index placed among the node's **contenders**, the economies holding
+  at least 0.5% of world supply in the node (`opportunity_percentile`; with fewer than five contenders,
+  among the peers: coalition members and economies with GDP of at least USD 200bn). The EO index is
+  compressed (median 0.48, 90th percentile 0.58), so no absolute threshold separates opportunity, and
+  its category mix differs by technology, so a percentile pooled across technologies is not
+  comparable. Coal (a declining world market) is capped below the thresholds. Never within a country.
+- Thresholds 0.67 on both axes (`strategic_posture.decision_quadrant`), tested at 0.60 / 0.67 / 0.70
+  (`quadrant_threshold_sensitivity.csv`, `posture_threshold_sensitivity.csv`). A node within 0.05 of a
+  threshold is `quadrant_borderline`, loses confidence, and its `posture_possible` and
+  `pivotal_inputs` include the neighbouring quadrant.
+- Deployment keeps the engine's posture (Deploy unless a control layer is Secure); its quadrant is
+  reported for information. A node without either axis is `insufficient_data` and Deploy.
+- Competitive Position is a consistency check, never an override (`quadrant_consistency_flag`):
+  catch_up where the country is already in the top 10% (`catch_up_already_leading`), preserve below
+  the bottom quarter or with under 0.5% of world supply (`preserve_without_capability`), partner in the
+  top quarter (`partner_despite_capability`).
+- The engine's own Compete reading (Tests 3-5) is kept as `engine_posture` / `engine_variant` and the
+  `t3`-`t5` columns, as a diagnostic.
+- Delivery: preserve domestic; catch_up domestic or mixed; partner allied where partners hold 30% of
+  world supply, else diversified_global.
+
+### Partner nodes and the allied division of labour
+
+`R/strategic_position/partner_recs.R`. For each Partner node: up to three trusted partners
+(`recommended_partner_1..3`, each with `_capability`, `_cp`, `_relationship`, `_diversification`),
+`partner_n_credible`, `partner_gap` (no trusted supplier with at least 2% of supply),
+`partner_capability_source`, `partner_evidence_quality` and `partner_reason`.
+
+- Trusted: the same rule as the engine's trusted supply (bloc trust; nonaligned importers trust every
+  non-coercive partner); never the country itself, never a coercive supplier.
+- Capability: the Allied Industrial Base position share (`aib_strategic.rds` evidence) averaged over
+  the AIB nodes mapped to the cell, weighted by world trade x OSI coverage, where the AIB covers the
+  cell (25 of the 66 cells: none for coal, gas, geothermal, green hydrogen or Deployment); elsewhere
+  the world supply share (evidence `low`).
+- Ranking: capability (against the best candidate) x relationship (Friendshore Index, reporter rating
+  the partner as a supplier) x diversification (the fall in the reporter's import HHI if 10% of its
+  imports moved from its coercive suppliers, or its largest supplier, to the candidate; 2024 dyads).
+- The division matrix (`strategic_aib_division_tbl`, the Explorer's AIB headline): per node the
+  primary allied holder, two backups, `redundancy` (allied holders with at least 2%) and `aib_gap`:
+  no_trusted_supplier, single_point_of_failure (one holder with half of allied supply, or an
+  irreplaceable member in the AIB leave-one-out), insufficient_redundancy (fewer than three holders),
+  weak_evidence (no AIB node, or under half of its weight high-confidence), else none; with the Partner
+  and Secure demand on the node.
 
 Output columns: `strategic_posture`, `posture_variant`, `posture_confidence`, `evidence_completeness`,
 `posture_possible`, `pivotal_inputs`, `posture_primary_rationale` (security, capability, openness),

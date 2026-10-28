@@ -1,0 +1,39 @@
+"Country","trade_momentum_quality","n_cells"
+"(all)","caution",14
+"(all)","incomplete_coverage",350
+"(all)","no_basket",657
+"(all)","no_monthly_data",420
+"(all)","ok",1137
+"(all)","outside_universe",6424
+"(all)","small_base",633
+"(all)","thin_cell",1
+"Australia","no_basket",9
+"Australia","ok",25
+"Australia","small_base",10
+"Canada","no_basket",9
+"Canada","ok",33
+"Canada","small_base",1
+"Canada","thin_cell",1
+"China","incomplete_coverage",35
+"China","no_basket",9
+"France","no_basket",9
+"France","ok",33
+"France","small_base",2
+"Germany","no_basket",9
+"Germany","ok",32
+"Germany","small_base",3
+"India","no_basket",9
+"India","ok",30
+"India","small_base",5
+"Japan","no_basket",9
+"Japan","ok",28
+"Japan","small_base",7
+"South Korea","no_basket",9
+"South Korea","ok",29
+"South Korea","small_base",6
+"United Kingdom","no_basket",9
+"United Kingdom","ok",32
+"United Kingdom","small_base",3
+"United States","no_basket",9
+"United States","ok",33
+"United States","small_base",2
