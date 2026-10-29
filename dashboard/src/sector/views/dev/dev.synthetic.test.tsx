@@ -98,7 +98,7 @@ describe.skipIf(!haveSynthetic())('Development & finance on the R synthetic bund
   });
 
   it('Country in sector: aid for the stage and investment partners', async () => {
-    renderAt('/sector/solar/downstream/IDN');
+    renderAt('/sector/solar/deployment/IDN');
     const sec = (await screen.findByRole('heading', { level: 2, name: 'Aid and investment partners' }, { timeout: 30_000 })).closest('section') as HTMLElement;
     expect(await within(sec).findByRole('heading', { level: 3, name: /^Aid for energy to Indonesia, 2022-2024/ }, { timeout: 30_000 })).toBeTruthy();
     expect(within(sec).getByRole('heading', { level: 3, name: 'Who invests in Indonesia' })).toBeTruthy();

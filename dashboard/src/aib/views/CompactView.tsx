@@ -28,13 +28,13 @@ import { Redirect } from '../../shell/Redirect.tsx';
 import { Disclosure, PageHead } from '../../components/ui.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
-import { coalitionMembersOf, type AibCompact } from '../contract.ts';
+import { coalitionMembersOf, type AibCompact, type AibNode } from '../contract.ts';
 import { useAibScenarioDoc } from '../data/hooks.ts';
 import { fmtShare, fmtUsd, listWords, plural } from '../derive/format.ts';
 import { compactNodes } from '../derive/nodes.ts';
 import { compactUnchangedReasonOf, managedCompact, managedOf } from '../derive/scenarioPages.ts';
 import { compactDetail, compactScenario, scenarioInfo, type CompactScenario } from '../derive/scenarios.ts';
-import { indexLabel, indicesOfCompact, type Taxonomy } from '../derive/taxonomy.ts';
+import { cellStagesOfNodes, osiTechsOfNode } from '../derive/taxonomy.ts';
 import { workstreamHomeOf, workstreamOf } from '../derive/strategic.ts';
 import { rememberCompact, strategicCompactHref, WORKSTREAMS_LABEL, workstreamsHref } from '../nav.ts';
 import { QuestionSection, ReadingNotes } from './common.tsx';
@@ -48,7 +48,6 @@ import { CompactProvider, WorkstreamParent, type CompactCtx, type CompactViewSta
 import { TypeTag } from '../charts/TypeTag.tsx';
 import { compactVsFragmented } from '../derive/coverage.ts';
 import { compactTypeInfo } from '../derive/types.ts';
-import { stagesInChainOrder } from '../../lib/stages.ts';
 
 const SECTIONS = [
   ['why', 'Why this compact?'],
@@ -96,6 +95,7 @@ function Compact({ c }: { c: AibCompact }) {
   const ctx: CompactCtx = useMemo(
     () => ({
       c,
+      displayName: titleOf(c),
       nodes: compactNodes(c, nodeOf),
       meta: doc.meta,
       names,
@@ -110,7 +110,7 @@ function Compact({ c }: { c: AibCompact }) {
       managedDoc,
       href,
     }),
-    [c, doc, names, name, nodeOf, shockLabel, tx, scenario, hasScenarios, view, viewState, managedDoc, href],
+    [c, titleOf, doc, names, name, nodeOf, shockLabel, tx, scenario, hasScenarios, view, viewState, managedDoc, href],
   );
   // follow a deep link's #anchor once the page has rendered
   useEffect(() => {
@@ -119,8 +119,9 @@ function Compact({ c }: { c: AibCompact }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c.id]);
   const m = doc.meta;
-  // the compact's stages in chain order, in prose ("across the refining and components stages")
-  const stages = stagesInChainOrder(c.stages).map((x) => x.toLowerCase());
+  // the compact's stages in chain order, in prose ("across the refining and components stages"): those of its
+  // nodes' cells, never node.stage (none when no node has a basket cell)
+  const stages = cellStagesOfNodes(compactNodes(c, nodeOf)).map((x) => x.toLowerCase());
   // The type and archetype of the compact the page shows: Managed Interdependence's own (its classes, compact
   // gain and coalition size), none without a coalition there or while its file loads.
   const typed = mi ? view : c;
@@ -132,7 +133,7 @@ function Compact({ c }: { c: AibCompact }) {
   const kind = typed && type
     ? `${type.short}, ${typed.archetype.replace(/ Compact$/, '').toLowerCase()} archetype`
     : viewState.status === 'none' ? 'No coalition under Managed Interdependence' : ws ? 'Workstream' : 'Sectoral compact';
-  const head = `${title !== full ? `${full}. ` : ''}${kind}: ${coversWords(c, tx)} across the ${listWords(stages)} ${stages.length === 1 ? 'stage' : 'stages'}, ${plural(c.nodes.length, 'node')}${members !== null ? ` and ${plural(members, 'member')}` : ''}.`;
+  const head = `${title !== full ? `${full}. ` : ''}${kind}: ${coversWords(compactNodes(c, nodeOf))}${stages.length ? ` across the ${listWords(stages)} ${stages.length === 1 ? 'stage' : 'stages'}` : ''}, ${plural(c.nodes.length, 'node')}${members !== null ? ` and ${plural(members, 'member')}` : ''}.`;
   const lede = mi
     ? `${head} ${managedWords(compactScenario(c, 'managed', nodeOf), scenarioInfo(m, 'managed').label, viewState.reason ?? compactUnchangedReasonOf(compactNodes(c, nodeOf)))}`
     : `${head} Under the headline shock (${shockLabel}; supply assumption: ${m.headlineScenario}) the compact's demand of ${fmtUsd(c.metrics.demandUsd)} loses ${fmtUsd(c.metrics.lostUsd)} (${fmtShare(c.metrics.exposure, 0)}).`;
@@ -219,15 +220,15 @@ function Compact({ c }: { c: AibCompact }) {
 }
 
 /**
- * What the compact covers: its technologies (master: "Batteries and Electric Vehicles"), or its sectors
- * with their EIS indices (dictionary: "the Rare earths and Magnets sectors (indices A Materials & Inputs
- * and B Electrotechnologies)").
+ * What the compact covers, by OSI technology (2026-10-29, design A1): the technologies of its nodes' six-stage
+ * cells, as equals ("Batteries and Electric Vehicles"), with the nodes none of whose codes is in the OSI
+ * basket counted apart; "goods outside the OSI technology basket" when no node has a basket cell.
  */
-function coversWords(c: AibCompact, tx: Taxonomy): string {
-  if (!tx.dictionary) return listWords(c.technologies);
-  const ix = indicesOfCompact(tx, c);
-  const sectors = `the ${listWords(c.technologies)} ${c.technologies.length === 1 ? tx.one : tx.many}`;
-  return ix.length ? `${sectors} (${ix.length === 1 ? 'index' : 'indices'} ${listWords(ix.map(indexLabel))})` : sectors;
+function coversWords(nodes: readonly AibNode[]): string {
+  const techs = [...new Set(nodes.flatMap((n) => osiTechsOfNode(n)))].sort((a, b) => a.localeCompare(b, 'en'));
+  const outside = nodes.filter((n) => osiTechsOfNode(n).length === 0).length;
+  if (!techs.length) return 'goods outside the OSI technology basket';
+  return `${listWords(techs)}${outside ? ` (and ${plural(outside, 'node')} outside the OSI basket)` : ''}`;
 }
 
 /** One plain sentence on what coordination changes (the coverage steps of the compact; `managed`: under Managed Interdependence). */

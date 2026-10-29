@@ -34,7 +34,7 @@ export interface HhiExplainerProps {
   noun?: string;
   /** what the shares are of: "world exports" (default) */
   of?: string;
-  /** "Batteries — Midstream, 2024": what the sector values describe */
+  /** "Batteries — Refining, 2024": what the sector values describe */
   context?: string;
   className?: string;
 }

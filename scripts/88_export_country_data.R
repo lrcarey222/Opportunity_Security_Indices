@@ -24,6 +24,14 @@
 #   <facts-dir>/<ISO3>.json                 (optional) pretty copies of the core members' sheets for
 #                                           the memo writers
 #
+# Six stages (2026-10-28): the sheets are keyed on the 66 sectors, 11 technologies x the six supply-chain
+# stages (country_cells_tbl()). data/processed is six-stage since 2026-10-27, and the published Strategic
+# and Sector bundles must be the six-stage exports of the same data/processed (run scripts/85 and scripts/87
+# first): the cross-checks below compare every index value, the allied picks, the trade matrix and the
+# Sector facts with them, and any FAIL writes nothing. The monthly basket takes the HS6 master's six-stage
+# `stage`; a CM-FDI project counts in each stage of its `stages` list (Components and Assembly), totals once
+# per project; the NIPO run is still three-stage, so the sheets list no measures by sector.
+#
 # Every fact sheet is read back and must pass country_check_sheet() and equal data/processed on every
 # shared value (ES, EO, SI, PSI) after the JSON round trip. --check-only builds and validates without
 # writing. --synthetic writes the deterministic fixture (country_synthetic_ctx(), no data read) to
@@ -233,6 +241,12 @@ if (!is.null(load_ctx)) {
   es <- pillar_tbl(io$energy_security_index, "Energy_Security_Index")
   eo <- pillar_tbl(io$economic_opportunity_index, "Economic_Opportunity_Index")
   if (anyNA(es$iso3) || anyNA(eo$iso3)) stop("Economies without an ISO3 code in index_outputs: ", paste(unique(c(io$energy_security_index$Country[is.na(es$iso3)], io$economic_opportunity_index$Country[is.na(eo$iso3)])), collapse = ", "))
+  # the inputs are at the six stages (a three-stage data/processed would match no sector)
+  stage_vals <- unique(c(as.character(io$energy_security_index$supply_chain), as.character(io$economic_opportunity_index$supply_chain),
+                         as.character(io$strategic_index$supply_chain)))
+  add_check("inputs: Energy Security, Economic Opportunity and Strategic Index rows are at the six supply-chain stages",
+            if (all(stage_vals %in% COUNTRY_STAGES)) "PASS" else "FAIL", length(stage_vals), NA,
+            paste("stages:", paste(sort(stage_vals), collapse = ", ")))
   si_raw <- as.data.frame(io$strategic_index)
   si_all <- data.frame(iso3 = iso_of(si_raw$Country), key = country_cell_key(si_raw$tech, si_raw$supply_chain), tech = si_raw$tech, stage = si_raw$supply_chain,
                        eo_level = si_raw$Economic_Opportunity_Index, need = si_raw$energy_security_need, pol = si_raw$pol, sc_weight = si_raw$sc_weight,
@@ -241,7 +255,11 @@ if (!is.null(load_ctx)) {
   w_m <- smf$baseline_inputs$si_weights
   si_w <- c(pol = w_m$policy, eo = w_m$economic_opportunity, need = w_m$energy_security_need, sc = w_m$supply_chain, tech = w_m$technology)
   ok_w <- isTRUE(all.equal(unname(si_w), c(0.2, 0.3, 0.3, 0.1, 0.1)))
-  add_check("SI weights: Strategic manifest = paper (0.2 policy, 0.3 opportunity, 0.3 need, 0.1 stage, 0.1 technology)", if (ok_w) "PASS" else "FAIL", 5)
+  add_check("SI weights: Strategic manifest = the pipeline's (0.2 policy, 0.3 opportunity, 0.3 need, 0.1 stage, 0.1 technology)", if (ok_w) "PASS" else "FAIL", 5)
+  # the stage term: each stage's equal share of its old roll-up's weight (SUPPLY_CHAIN_STAGE_SI_WEIGHTS)
+  d_sc <- suppressWarnings(max(abs(si_all$sc_weight - unname(SUPPLY_CHAIN_STAGE_SI_WEIGHTS[si_all$stage])), na.rm = TRUE))
+  add_check("SI: stage weights = the six-stage weights (Components and Assembly 0.375, Deployment 0.25, Extraction, Refining and Recovery 0.5 / 3)",
+            if (is.finite(d_sc) && d_sc <= 1e-9) "PASS" else "WARN", nrow(si_all), d_sc)
   ins <- is.finite(si_all$si)
   rec <- si_w[["eo"]] * si_all$eo_level + si_w[["need"]] * si_all$need + si_w[["pol"]] * si_all$pol + si_w[["sc"]] * si_all$sc_weight + si_w[["tech"]] * si_all$tech_weight
   d_si <- max(abs(rec[ins] - si_all$si[ins]))
@@ -308,6 +326,12 @@ if (!is.null(load_ctx)) {
   si_rank_core <- stats::setNames(bsi$rank_in_country, k2)
 
   stats_c <- country_cell_stats(es, eo)
+  # the sectors without an Energy Security score for any economy (2026-10-28): derived here, shipped in every
+  # sheet and the manifest; the constant (and the dashboard's NO_ES_CELLS) must be updated with the data
+  no_es_cells <- country_no_es_cells(es, cells_tbl$key)
+  add_check("sectors without Energy Security (no_es_cells) = COUNTRY_NO_ES_CELLS (and the dashboard's NO_ES_CELLS)",
+            if (setequal(no_es_cells, COUNTRY_NO_ES_CELLS)) "PASS" else "FAIL", length(no_es_cells), NA,
+            sprintf("%d of %d sectors can be placed; data: %s", nrow(cells_tbl) - length(no_es_cells), nrow(cells_tbl), paste(no_es_cells, collapse = " ")))
 
   # ---- IEA PAMS counts (policy_outputs.rds; large) -----------------------------------------------------
   step("policy_outputs.rds (IEA PAMS records)")
@@ -360,23 +384,42 @@ if (!is.null(load_ctx)) {
                                                            value = f[[vcol]][keep], status = f[[scol]][keep], stringsAsFactors = FALSE)
     rm(tr)
   }
-  flows <- do.call(rbind, flows)
+  flows <- if (length(flows)) do.call(rbind, flows) else data.frame(key = character(), exporter = character(), importer = character(), value = numeric(),
+                                                                    status = character(), stringsAsFactors = FALSE)
+  # no basket at the six-stage keys: the Sector bundle is not the six-stage export of scripts/87
   add_check("trade: reconciled flows of the trade year read from the Sector trade chunks", if (nrow(flows) > 0) "PASS" else "FAIL", nrow(flows), NA,
-            sprintf("%d cells with a basket; statuses %s", length(basket_keys), paste(names(table(flows$status)), collapse = "/")))
+            sprintf("%d six-stage cells with a basket; statuses %s", length(basket_keys), paste(names(table(flows$status)), collapse = "/")))
 
   # ---- CM-FDI ------------------------------------------------------------------------------------------
+  # one row per project; `stages` lists the stages it counts in (config/partnership.yml cm_fdi.stages: Components
+  # and Assembly carry the same projects, 2026-10-27); supply_chain is their shared roll-up (Midstream), not used
   cmf <- as.data.frame(rds("cm_fdi_projects_tbl.rds"))
-  fdi <- data.frame(pid = cmf$project_id, key = country_cell_key(cmf$tech, cmf$supply_chain), home = cmf$home_iso3, dest = cmf$destination_iso3,
-                    index_use = cmf$index_use, stringsAsFactors = FALSE)
+  if (!"stages" %in% names(cmf)) stop("cm_fdi_projects_tbl.rds has no `stages` column: rerun scripts/15 on the six-stage pipeline.")
+  fdi <- country_fdi_expand(cmf$project_id, cmf$tech, cmf$stages, cmf$home_iso3, cmf$destination_iso3, cmf$index_use)
+  cmfdi_stages <- country_fdi_stages(fdi, cells_tbl)
+  add_check("CM-FDI: every project counts in its six-stage manufacturing cells (counted once per project in the totals)",
+            if (all(fdi$key %in% cells_tbl$key) && !anyDuplicated(paste(fdi$pid, fdi$key))) "PASS" else "FAIL", length(unique(fdi$pid)), NA,
+            sprintf("%d projects, %d project x stage rows; stages %s", length(unique(fdi$pid)), nrow(fdi), paste(cmfdi_stages, collapse = ", ")))
   cmfdi_edition <- { e <- NA_character_; for (s in dict$sources) if (identical(s$id, "cmfdi")) e <- s$edition; e }
   if (!is.null(sfdi)) {
+    # the Sector chunk keys each project on the cell of the first of its stages and lists the stages that carry
+    # the same projects (fdi.stages, Components and Assembly; sector_fdi.R): each of its rows counts in every
+    # listed stage's cell, as here (country_fdi_sector_counts()), and the two stage lists must be the same
+    s_stages <- as.character(unlist(sfdi$stages))
+    add_check("CM-FDI: the Sector fdi chunk's stages (fdi.stages) = the stages the projects count in here (meta.cmfdi_stages)",
+              if (length(s_stages) == length(cmfdi_stages) && setequal(s_stages, cmfdi_stages)) "PASS" else "FAIL", length(s_stages), NA,
+              sprintf("Sector: %s; Country: %s", paste(s_stages, collapse = ", "), paste(cmfdi_stages, collapse = ", ")))
     fl <- sfdi$flows[sfdi$flows$basis == "index_use", , drop = FALSE]
-    a <- tapply(fl$n, paste(geo_code(fl$home), geo_code(fl$dest), items$slug[fl$item + 1L]), sum)
+    a <- tryCatch(country_fdi_sector_counts(items$slug[fl$item + 1L], geo_code(fl$home), geo_code(fl$dest), fl$n, s_stages),
+                  error = function(e) structure(integer(), err = conditionMessage(e)))
     p2 <- fdi[fdi$index_use %in% TRUE, , drop = FALSE]
     b <- table(paste(p2$home, p2$dest, p2$key))
     common <- intersect(names(a), names(b))
-    same <- length(common) == length(a) && length(common) == length(b) && all(a[common] == b[common])
-    add_check("CM-FDI: project counts by home x destination x cell = Sector fdi chunk (index_use)", if (same) "PASS" else "FAIL", length(b))
+    same <- is.null(attr(a, "err")) && length(common) == length(a) && length(common) == length(b) && all(a[common] == b[common])
+    add_check("CM-FDI: project counts by home x destination x cell = Sector fdi chunk (index_use; its rows count in every stage of fdi.stages)",
+              if (same) "PASS" else "FAIL", length(b), NA,
+              attr(a, "err") %||% sprintf("%d Sector rows on the %s cells; %d home x destination x cell counts, %d project x stage rows",
+                                          nrow(fl), s_stages[1] %||% "?", length(a), sum(b)))
   }
 
   # ---- partners ---------------------------------------------------------------------------------------
@@ -470,7 +513,10 @@ if (!is.null(load_ctx)) {
     nipo_meta <- list(vintage = cfg$nipo$vintage, vintage_label = cfg$nipo$vintage_label, index_as_of = format(nipo_asof),
                       jurisdictions = length(unique(nipo$iso3[!is.na(nipo$iso3)])), rule = cfg$nipo$active_rule %||% "in_force",
                       strength_words = cfg$nipo$strength_words, confidence_words = cfg$nipo$confidence_words,
-                      eu_prefixes = cfg$nipo$eu_prefixes, eu_min_jurisdictions = cfg$nipo$eu_min_jurisdictions %||% 5L)
+                      eu_prefixes = cfg$nipo$eu_prefixes, eu_min_jurisdictions = cfg$nipo$eu_min_jurisdictions %||% 5L,
+                      staged = country_nipo_staged(nipo), staged_words = cfg$nipo$not_staged_words)
+    add_check("NIPO: measures tagged with the six supply-chain stages (else no per-sector lists in the sheets)", if (nipo_meta$staged) "PASS" else "WARN",
+              nrow(nipo), NA, sprintf("stages in the run: %s", paste(sort(unique(unlist(country_nipo_split(nipo$stages)))), collapse = ", ")))
     pos_s <- nipo$strength[is.finite(nipo$strength) & nipo$strength > 0]
     if (length(pos_s)) {
       q <- stats::quantile(pos_s, c(0.25, 0.75), names = FALSE)
@@ -535,6 +581,7 @@ if (!is.null(load_ctx)) {
     strategic_bundle_id = smf$bundle_id, sector_bundle_id = xmf$bundle_id, trade_year = trade_year, un_window = un_window,
     cmfdi_edition = cmfdi_edition, rank_threshold = smf$baseline_params$advanced$tau %||% 0.5,
     pick_share_d = country_fmt(pick_share, "pct") , coalition_view = coalition_view, nipo = nipo_meta,
+    no_es_cells = no_es_cells, cmfdi_stages = cmfdi_stages,
     validated = validate_bundles, synthetic = FALSE
   )
   meta$pick_share_d <- country_fmt(100 * pick_share, "pct")
@@ -545,7 +592,7 @@ if (!is.null(load_ctx)) {
   picks_seen <- list()
   ctx <- list(
     cfg = cfg, dict = dict, meta = meta, roster = roster,
-    es_by = split(es, es$iso3), eo_by = split(eo, eo$iso3), stats = stats_c,
+    es_by = split(es, es$iso3), eo_by = split(eo, eo$iso3), stats = stats_c, no_es_cells = no_es_cells,
     si_by = split(si_all, si_all$iso3), si_w = si_w, pol_index_by = pol_index_by, policy_basis = policy_basis,
     pams_counts = pams_counts, eu_records = eu_records, cat_tbl = cat_tbl,
     cat_by = list(es = split(ces$cat, ces$cat$iso3), eo = split(ceo$cat, ceo$cat$iso3)),
@@ -644,6 +691,15 @@ for (iso in names(sheets)) {
   walk(sheets[[iso]])
 }
 add_check("sheets: every Fv with a value has a display string", if (d_missing == 0) "PASS" else "FAIL", length(sheets), NA, if (d_missing) paste(d_missing, "without d") else NA)
+# A sector with a pillar constant across the economies compared ranks none of them (country_constant_pillars(),
+# the Strategic Index's degenerate rule): it is never placed, so never in a corner or an order list.
+const_cells <- country_constant_cells(ctx$stats)
+placed_const <- character()
+for (iso in names(sheets)) for (cl in sheets[[iso]]$cells) if (isTRUE(cl$placed) && cl$key %in% const_cells$key) placed_const <- c(placed_const, paste(iso, cl$key))
+add_check("sheets: no sector with a pillar constant across the economies compared is placed", if (!length(placed_const)) "PASS" else "FAIL",
+          length(sheets), NA,
+          paste0(if (nrow(const_cells)) paste("constant:", paste(const_cells$key, toupper(const_cells$pillar), collapse = ", ")) else "none constant",
+                 if (length(placed_const)) paste0("; placed: ", paste(utils::head(placed_const, 5), collapse = ", ")) else ""))
 
 if (!synthetic) {
   # every shared value equals data/processed after the round trip (A7.3 #1-3); JSON integers read back
@@ -681,7 +737,7 @@ if (!synthetic) {
             if (bad_psi) paste(bad_psi, "differ") else NA)
   # allied pick = first eligible sector
   bad_pick <- sum(vapply(names(picks_seen), function(iso) !identical(picks_seen[[iso]]$first, picks_seen[[iso]]$cell), TRUE))
-  add_check("allied picks: each pick is the economy's top eligible Upstream or Midstream sector", if (bad_pick == 0) "PASS" else "WARN", length(picks_seen), NA,
+  add_check("allied picks: each pick is the economy's top eligible sector (any stage but Deployment, the endowment screen on Extraction)", if (bad_pick == 0) "PASS" else "WARN", length(picks_seen), NA,
             sprintf("%s of the picks within %s of the runner-up", meta$pick_share_d, cfg$near_tie))
   # trade totals vs Sector facts (A7.3 #4)
   n_t <- 0L; d_t <- 0; bad_t <- 0L; over <- 0L
@@ -722,7 +778,9 @@ if (!synthetic) {
 gz_size <- function(txt) length(memCompress(charToRaw(enc2utf8(txt)), "gzip"))
 sizes <- vapply(texts, gz_size, 1)
 budget <- COUNTRY_BUDGET_GZ[["sheet"]]
-add_check(sprintf("sheets: gzip size <= %d bytes (WARN above 25,600)", budget), if (all(sizes <= budget)) (if (all(sizes <= 25600)) "PASS" else "WARN") else "FAIL",
+target <- COUNTRY_BUDGET_GZ[["sheet_target"]]
+add_check(sprintf("sheets: gzip size <= %s bytes (WARN above %s)", format(budget, big.mark = ","), format(target, big.mark = ",")),
+          if (all(sizes <= budget)) (if (all(sizes <= target)) "PASS" else "WARN") else "FAIL",
           length(sizes), NA, if (length(sizes)) sprintf("max %s (%s), median %s", format(max(sizes), big.mark = ","), names(sizes)[which.max(sizes)], format(stats::median(sizes), big.mark = ",")) else NA)
 
 # Monthly trade by sub-component (2026-10-19): one companion file per core member with monthly data,
@@ -738,7 +796,8 @@ if (synthetic) {
     mon <- list(
       raw = utils::read.csv(m_paths[1], colClasses = c(period = "character", reporter_iso = "character", flow_code = "character", cmd_code = "character")),
       windows = utils::read.csv(m_paths[2], stringsAsFactors = FALSE),
-      basket = sector_trade_basket(utils::read.csv(m_paths[3], colClasses = "character"))
+      # the six-stage cells of the HS6 master's `stage` column (country_monthly_basket(); 2026-10-28)
+      basket = country_monthly_basket(utils::read.csv(m_paths[3], colClasses = "character"))
     )
   } else {
     add_check("trade monthly: inputs present (scripts/99 data/raw/comtrade_monthly_core.csv and windows file)", "WARN", NA, NA,

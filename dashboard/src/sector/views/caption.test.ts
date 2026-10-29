@@ -5,6 +5,10 @@
 import { describe, expect, it } from 'vitest';
 import type { SectorModel, VarInfo } from '../data/model.ts';
 import { dataYearBadge, factYearText, makeCaptionResolver, periodText, titleYear } from './caption.ts';
+import { buildSectorFixture } from '../__fixtures__/build.ts';
+import { validateChunk } from '../contract.ts';
+import { modelOf } from '../data/model.ts';
+import { factsIndexOf } from '../data/facts.ts';
 
 const v = (data_year: string, years: number[] = []) => ({ data_year, years }) as unknown as VarInfo;
 
@@ -26,7 +30,7 @@ describe('caption sub line: the economy count', () => {
   // build's destination count (avail n_geo) is left out; any other country-level measure keeps it
   const mk = (id: string) =>
     ({ id, label: id, native_level: 'country', item_axis: 'cell', source: { id: 's', short: 'Src', edition: null }, data_year: '2024', years: [2024], year_field: 0, projection_from: null }) as unknown as VarInfo;
-  const item = { idx: 0, slug: 'batteries-midstream' };
+  const item = { idx: 0, slug: 'batteries-assembly' };
   const vars = [mk('investment.fdi_parent_share'), mk('trade.exports')];
   const model = {
     varById: new Map(vars.map((x) => [x.id, x])),
@@ -66,5 +70,24 @@ describe('periodText / factYearText / titleYear', () => {
   it('puts the window in titles instead of the nominal year', () => {
     expect(titleYear(wdi, 2024)).toBe('2022–2024 average');
     expect(titleYear(annual, 2021)).toBe('2021');
+  });
+});
+
+// The copied manufacturing figures (design C2, 2026-10-28): the same_figure_pair caveat is a data caveat, shown
+// only on a card whose item has such facts (Batteries — Components and — Assembly), never on another cell's card.
+describe('caption caveats: a data caveat only where its facts are', () => {
+  const fx = buildSectorFixture();
+  const model = modelOf(validateChunk('sector-meta', fx.chunks['sector-meta']));
+  const facts = factsIndexOf(validateChunk('sector-facts', fx.chunks['sector-facts']));
+  const resolve = makeCaptionResolver(model, () => facts);
+  const same = model.caveats.get('same_figure_pair')!;
+  it('on Components and Assembly of Batteries, not on Solar — Deployment; a card over every item keeps it', () => {
+    expect(same).toMatch(/^Same figure on Components and Assembly/);
+    expect(resolve([{ var: 'investment.annual', item: 'batteries-components', year: 2025 }]).caveats).toContain(same);
+    expect(resolve([{ var: 'investment.annual', item: 'batteries-assembly', year: 2025 }]).caveats).toContain(same);
+    const solar = resolve([{ var: 'investment.annual', item: 'solar-deployment', year: 2025 }]).caveats ?? [];
+    expect(solar).not.toContain(same);
+    expect(solar).toContain(model.caveats.get('est_q4'));
+    expect(resolve([{ var: 'investment.annual' }]).caveats).toContain(same);
   });
 });

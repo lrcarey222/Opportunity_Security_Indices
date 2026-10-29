@@ -9,7 +9,7 @@
 
 import { NA_BOOL, NA_INT } from '../../engine/numeric.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
-import { FDI_GROUPS, FDI_SOURCE_FIELDS, FDI_SOURCE_LABELS, FDI_VAR_IDS, type FdiBasis, type FdiSourceField, type SectorFdiChunk } from '../contract.ts';
+import { FDI_GROUPS, FDI_SOURCE_FIELDS, FDI_SOURCE_LABELS, FDI_VAR_IDS, fdiCellSlug, parseCellSlug, stageSlugOf, cellSlug, type FdiBasis, type FdiSourceField, type SectorFdiChunk } from '../contract.ts';
 import type { GeoInfo, ItemInfo, SectorModel, SourceInfo } from '../data/model.ts';
 
 export type FdiGroup = (typeof FDI_GROUPS)[number];
@@ -56,7 +56,7 @@ export interface FdiProject {
   /** 0-based row of fdi.projects */
   row: number;
   pid: string;
-  /** dims.items row of the Midstream cell */
+  /** dims.items row of the cell the project is keyed on: the technology's cell at fdi.stages[0] (Components) */
   item: number;
   /** CM-FDI's technology label ("Battery", "EV", "Solar", "Wind") */
   technology: string;
@@ -104,6 +104,11 @@ export interface FdiSourceCell {
 export interface FdiData {
   chunk: SectorFdiChunk;
   projects: FdiProject[];
+  /**
+   * fdi.stages (schema 2, design E5): the stages a project counts in, Components and Assembly; every row is
+   * keyed on the cell of the first, the others carry the same projects ([] in a bundle without the list)
+   */
+  stages: string[];
   /** the source cells of a project row, in CM-FDI's column order */
   sourcesOf: (row: number) => FdiSourceCell[];
 }
@@ -188,9 +193,35 @@ export function fdiData(chunk: SectorFdiChunk): FdiData {
   }
   const order = (f: FdiSourceField) => FDI_SOURCE_FIELDS.indexOf(f);
   for (const list of byProject.values()) list.sort((a, z) => order(a.field) - order(z.field));
-  const out: FdiData = { chunk, projects, sourcesOf: (row) => byProject.get(row) ?? [] };
+  const stages = (chunk['fdi.stages'] ?? []).filter((x): x is string => typeof x === 'string');
+  const out: FdiData = { chunk, projects, stages, sourcesOf: (row) => byProject.get(row) ?? [] };
   cache.set(chunk, out);
   return out;
+}
+
+/**
+ * The dims.items row the projects of a cell are keyed on (design E5): the technology's cell at
+ * fdi.stages[0] when the cell's stage is one of fdi.stages (Batteries — Assembly reads Batteries —
+ * Components), else the cell itself.
+ */
+export function fdiItemOf(model: SectorModel, data: Pick<FdiData, 'stages'>, cell: ItemInfo): number {
+  const slug = fdiCellSlug(cell.slug, data.stages);
+  return (slug ? model.item('cell', slug)?.idx : undefined) ?? cell.idx;
+}
+
+/**
+ * The one sentence that says the stages carry the same projects (design E5), for a cell of one of them:
+ * "Batteries — Components and Batteries — Assembly show the same projects: CM-FDI files a project under
+ * the technology's manufacturing, not under one stage. Never add the two." Null otherwise.
+ */
+export function fdiStagesNote(model: SectorModel, data: Pick<FdiData, 'stages'>, cell: ItemInfo): string | null {
+  const c = parseCellSlug(cell.slug);
+  if (!c || data.stages.length < 2 || !fdiCellSlug(cell.slug, data.stages)) return null;
+  const cells = data.stages.map((s) => stageSlugOf(s)).filter((s): s is NonNullable<typeof s> => !!s).map((s) => model.item('cell', cellSlug(c.tech, s))).filter((x): x is ItemInfo => !!x);
+  if (cells.length < 2) return null;
+  const names = cells.map((x) => model.cellLabel(x));
+  const list = `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return `${list} show the same projects: CM-FDI files a project under the technology’s manufacturing, not under one stage. Never add them.`;
 }
 
 // ---- filters -----------------------------------------------------------------------------------
@@ -199,7 +230,7 @@ export function fdiData(chunk: SectorFdiChunk): FdiData {
 export const inBasis = (p: FdiProject, basis: FdiBasis): boolean => basis === 'all' || p.indexUse;
 
 export interface FdiFilter {
-  /** dims.items rows (the Midstream cells) */
+  /** dims.items rows (the cells the projects are keyed on: fdiItemOf()) */
   items?: readonly number[] | null;
   basis?: FdiBasis;
   statuses?: readonly string[] | null;

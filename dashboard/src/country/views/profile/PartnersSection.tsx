@@ -233,10 +233,13 @@ export function PartnershipsSection() {
       title="Partnerships"
       intro={
         <>
-          Who {name} could trade, invest, build and align with, read three ways: as it is today (observed data), as the paper&apos;s three-stage partner scores recommend (the partner scores of the{' '}
+          Who {name} could trade, invest, build and align with, read three ways: as it is today (observed data), as the partner scores recommend (the partner scores of the{' '}
           <Term id="psi" />, such as <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the NEIS defaults) and as the Allied Industrial Base model arranges it under the
-          chosen scenario. The summary of each kind says where the three agree and where they differ; at the six stages, the posture chart above names up to three trusted
-          partners (or a partner gap) for each technology and stage it puts in Compete · Partner instead. First, the relationship thesis of {name} and the partner you choose.
+          chosen scenario. The summary of each kind says where the three agree and where they differ. For each technology and stage it puts in Compete · Partner, the{' '}
+          <a className="link" href="#posture">
+            Strategic posture
+          </a>{' '}
+          section names up to three trusted partners (or a partner gap) instead. First, the relationship thesis of {name} and the partner you choose.
         </>
       }
     >
@@ -949,7 +952,7 @@ function PartnerTable() {
         top3_supplier_in: r.ties.top3_import_cells.v, import_baskets: r.ties.n_import_cells.v, trade_rank: r.ties.tie_rank.v, factory_projects_in: r.ties.fdi_in.v,
         factory_projects_out: r.ties.fdi_out.v, agreements: agreementsText(sheet, r.ties.agreements), un_votes: alignmentText(r), match: r.match,
       })),
-      'Opportunity Security Indices, paper baseline; UN Comtrade (reconciled); CM-FDI; agreements; UN General Assembly votes',
+      'Opportunity Security Indices, NEIS baseline; UN Comtrade (reconciled); CM-FDI; agreements; UN General Assembly votes',
       sheet.meta.as_of,
     ),
   });

@@ -5,6 +5,12 @@
 # its sectors rank alike on both), FRA, JPN, KOR (core), BRA (coalition partner), CHN, VNM (outside), NGA
 # (outside, no Strategic Index: no policy records), PRI (a territory: not sovereign, nothing placed,
 # alignment inherited from the United States). Pure: cfg and dict are passed in.
+#
+# Six stages (2026-10-28): the 66 sectors of country_cells_tbl(), the eight without an Energy Security
+# score (COUNTRY_NO_ES_CELLS), the six-stage Strategic Index stage weights, the endowment screen on
+# Extraction, allied picks at any stage but Deployment, trade baskets at the five supply stages, CM-FDI
+# projects that count in both Components and Assembly, and an industrial-policy run still tagged with the
+# old three stages (as the real one: no per-sector lists).
 
 COUNTRY_SYNTH_ROSTER <- data.frame(
   iso3 = c("USA", "DEU", "FRA", "JPN", "KOR", "BRA", "CHN", "VNM", "NGA", "PRI"),
@@ -51,6 +57,10 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
       w <- c(0.4, 0.35, 0.25)
       base <- if (pl == "es") bias_es[[iso]] else bias_eo[[iso]]
       u <- stats::runif(3, -0.3, 0.3)
+      # the United States' oil extraction (2026-10-28): a low Energy Security driven by its Energy Imports, so
+      # one of its four lowest sectors (whose drivers the sheet carries) has a top driver with a raw figure
+      # (Production minus consumption), as the memo tests need; with 66 sectors none did by chance
+      if (pl == "es" && iso == "USA" && k == "oil-extraction") u <- c(-0.9, -0.3, -0.3)
       if (pl == "es") u_es <- u else if (iso == "USA" && !is.null(u_es)) u <- u_es
       sc <- clip(0.5 + base + u)
       # the Trade category of ES carries a world-market variable (constant across economies)
@@ -89,8 +99,10 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
   cat_tbl <- list(es = bind(cat_rows$es), eo = bind(cat_rows$eo))
   var_tbl <- list(es = bind(var_rows$es), eo = bind(var_rows$eo))
 
-  # ---- Strategic Index (level terms; NGA has no policy, PRI is not rankable)
-  sc_w <- c(Upstream = 0.5, Midstream = 0.75, Downstream = 0.25)
+  # ---- Strategic Index (level terms; NGA has no policy, PRI is not rankable; two sectors left out by a
+  # pipeline rule, as the pipeline's strategic_excluded_sectors)
+  sc_w <- SUPPLY_CHAIN_STAGE_SI_WEIGHTS
+  si_rule_out <- c("green-hydrogen-components", "green-hydrogen-recovery")
   tech_w <- stats::setNames(round(seq(0.05, 0.99, length.out = 11), 4), unique(cells$tech))
   si_rows <- list()
   pol_index <- list()
@@ -106,11 +118,13 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
                     stringsAsFactors = FALSE)
     w <- c(pol = 0.2, eo = 0.3, need = 0.3, sc = 0.1, tech = 0.1)
     d$si <- w[["eo"]] * d$eo_level + w[["need"]] * d$need + w[["pol"]] * d$pol + w[["sc"]] * d$sc_weight + w[["tech"]] * d$tech_weight
-    ok <- is.finite(d$si) & iso != "PRI" & d$key != "geothermal-midstream"
-    d$si_exclusion <- ifelse(ok, NA_character_, ifelse(!has_pol, "country not policy-eligible", ifelse(iso == "PRI", "not rankable", "missing energy security")))
+    ok <- is.finite(d$si) & iso != "PRI" & !d$key %in% si_rule_out
+    d$si_exclusion <- ifelse(ok, NA_character_, ifelse(!has_pol, "country not policy-eligible", ifelse(iso == "PRI", "not rankable",
+                             ifelse(d$key %in% si_rule_out, "not reported: pipeline rule", "missing energy security"))))
     d$si[!ok] <- NA_real_
-    d$resource_base <- ifelse(d$stage == "Upstream", d$tech %in% c("Oil", "Gas", "Coal", "Nuclear") & iso %in% c("USA", "BRA", "CHN"), NA)
-    d$pick_exclusion <- ifelse(d$stage == "Upstream" & !(d$resource_base %in% TRUE), "no resource base", NA_character_)
+    # the endowment screen: Extraction sectors only (a recorded resource base, else never the allied pick)
+    d$resource_base <- ifelse(d$stage == "Extraction", d$tech %in% c("Oil", "Gas", "Coal", "Nuclear") & iso %in% c("USA", "BRA", "CHN"), NA)
+    d$pick_exclusion <- ifelse(d$stage == "Extraction" & !(d$resource_base %in% TRUE), "no resource base", NA_character_)
     si_rows[[iso]] <- d
     if (has_pol) pol_index[[iso]] <- as.list(stats::setNames(pidx, cells$key))
   }
@@ -141,8 +155,8 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
     policies_action = "Insufficient", domestic_target = "Insufficient", fair_share = "Insufficient", climate_finance = "Not assessed",
     ndc = "Poor", updated = c("Nov-24", "Jun-25", "Feb-25", "Mar-25", "Jul-23", "Dec-24", "Sep-24"), stringsAsFactors = FALSE)
 
-  # ---- trade flows (baskets: Upstream and Midstream of the first eight technologies)
-  basket_keys <- cells$key[cells$stage != "Downstream" & !cells$tech %in% c("Geothermal", "Green Hydrogen", "Electric Grid")]
+  # ---- trade flows (baskets: the five supply stages, every stage but Deployment, of eight technologies)
+  basket_keys <- cells$key[cells$stage %in% COUNTRY_PICK_STAGES & !cells$tech %in% c("Geothermal", "Green Hydrogen", "Electric Grid")]
   fl <- list()
   for (k in basket_keys) for (ex in isos) for (im in isos) {
     if (ex == im || stats::runif(1) < 0.45) next
@@ -151,15 +165,17 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
   }
   flows <- bind(fl)
 
-  # ---- CM-FDI projects (four clean-tech manufacturing cells)
-  fdi_keys <- c("batteries-midstream", "electric-vehicles-midstream", "solar-midstream", "wind-midstream")
+  # ---- CM-FDI projects (four clean-tech technologies; each project counts in both manufacturing stages,
+  # Components and Assembly, as config/partnership.yml cm_fdi.stages)
+  fdi_techs <- c("Batteries", "Electric Vehicles", "Solar", "Wind")
   pr <- list()
   for (j in 1:40) {
     h <- sample(c("CHN", "KOR", "JPN", "DEU", "USA", "HKG"), 1)
     d <- sample(setdiff(isos, h), 1)
-    pr[[j]] <- data.frame(pid = paste0("P", j), key = sample(fdi_keys, 1), home = h, dest = d, index_use = j %% 7 != 0, stringsAsFactors = FALSE)
+    pr[[j]] <- data.frame(pid = paste0("P", j), tech = sample(fdi_techs, 1), home = h, dest = d, index_use = j %% 7 != 0, stringsAsFactors = FALSE)
   }
-  fdi <- bind(pr)
+  pr <- bind(pr)
+  fdi <- country_fdi_expand(pr$pid, pr$tech, "Components|Assembly", pr$home, pr$dest, pr$index_use)
 
   # ---- Partnership Strength from each reporter's viewpoint, with cell-level FS / PO for the best five
   dy <- list()
@@ -216,13 +232,14 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
   # ---- allied picks (the network design's member shares are retired, 2026-10-17)
   allied <- do.call(rbind, lapply(ro$iso3[ro$tier %in% c("core", "partner")], function(iso) {
     d <- si_rows[[iso]]
-    el <- d[is.finite(d$si) & d$stage != "Downstream" & !d$tech %in% c("Geothermal", "Green Hydrogen") & is.na(d$pick_exclusion), ]
+    el <- d[is.finite(d$si) & d$stage %in% COUNTRY_PICK_STAGES & !d$tech %in% COUNTRY_PICK_EXCLUDED_TECHS & is.na(d$pick_exclusion), ]
     el <- el[order(-el$si), ][1, ]
     data.frame(iso3 = iso, tech = el$tech, supply_chain = el$stage, strategic_index = el$si, stringsAsFactors = FALSE)
   }))
 
-  # ---- NIPO measures (USA, DEU, JPN covered)
-  # (the last USA row is announced, not yet in force: counted in n_not_in_force, never listed)
+  # ---- NIPO measures (USA, DEU, JPN covered). The stages are the run's old three (October 2026: the NIPO
+  # pipeline is not yet at the six stages), so the sheets carry the counts and no per-sector lists.
+  # (the last USA row is announced, not yet in force: counted in n_not_in_force)
   nipo <- data.frame(
     iso3 = c("USA", "USA", "USA", "USA", "DEU", "DEU", "JPN", "USA", "USA"),
     title = c("Clean electricity production tax credit", "Advanced manufacturing production credit", "Battery materials grant programme",
@@ -244,10 +261,10 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
   # ---- raw rows (the ES Energy Imports and Trade variables of fuels)
   rr <- list()
   for (iso in isos) for (t in c("Oil", "Gas", "Coal")) {
-    rr[[length(rr) + 1]] <- data.frame(table = "import_dependence_tbl", iso3 = iso, tech = t, stage = "Upstream", category = "Energy Imports",
+    rr[[length(rr) + 1]] <- data.frame(table = "import_dependence_tbl", iso3 = iso, tech = t, stage = "Extraction", category = "Energy Imports",
                                        variable = "Production surplus/deficit", value = round(stats::rnorm(1, 0, 3), 3), Year = 2025,
                                        source = "EI", explanation = "Production minus consumption", stringsAsFactors = FALSE)
-    rr[[length(rr) + 1]] <- data.frame(table = "trade_concentration_tbl", iso3 = iso, tech = t, stage = "Upstream", category = "Trade",
+    rr[[length(rr) + 1]] <- data.frame(table = "trade_concentration_tbl", iso3 = iso, tech = t, stage = "Extraction", category = "Trade",
                                        variable = "market_share", value = round(stats::runif(1, 0, 0.2), 4), Year = 2024,
                                        source = "Atlas", explanation = "Share of world exports [2023]", stringsAsFactors = FALSE)
   }
@@ -259,13 +276,16 @@ country_synthetic_ctx <- function(cfg, dict, seed = 42L) {
                pick_share_d = "37%", coalition_view = "coalition core (5 members)",
                nipo = list(vintage = "2026-06", vintage_label = "Global Trade Alert, New Industrial Policy Observatory, June 2026 extract (synthetic)",
                            jurisdictions = 4L, strength_words = cfg$nipo$strength_words, confidence_words = cfg$nipo$confidence_words,
-                           eu_prefixes = cfg$nipo$eu_prefixes, eu_min_jurisdictions = 2L),
+                           eu_prefixes = cfg$nipo$eu_prefixes, eu_min_jurisdictions = 2L, staged = country_nipo_staged(nipo),
+                           staged_words = cfg$nipo$not_staged_words),
                label = country_fill(cfg$label, list(as_of_label = "12 October 2026")), validated = FALSE, synthetic = TRUE)
   party_fn <- country_party_fn(ro[, c("iso3", "name", "tier", "income_group")], c(HKG = "Hong Kong"))
   stats_c <- country_cell_stats(es, eo)
+  meta$no_es_cells <- country_no_es_cells(es)
+  meta$cmfdi_stages <- country_fdi_stages(fdi)
   list(
     cfg = cfg, dict = dict, meta = meta, roster = roster,
-    es_by = split(es, es$iso3), eo_by = split(eo, eo$iso3), stats = stats_c,
+    es_by = split(es, es$iso3), eo_by = split(eo, eo$iso3), stats = stats_c, no_es_cells = meta$no_es_cells,
     si_by = si_rows, si_w = si_w, pol_index_by = pol_index,
     policy_basis = as.list(stats::setNames(ifelse(isos %in% cat_tbl_ratings$geo | ro$eu_member, "IEA PAMS + CAT", "IEA PAMS only"), isos)),
     pams_counts = country_pams_counts_all(policy_clean), eu_records = length(unique(policy_clean$policy_id[policy_clean$iso3 == "EUR"])),
@@ -291,6 +311,8 @@ country_ctx_finish <- function(ctx) {
                      eo = country_driver_stats(ctx$.cat_tbl$eo, ctx$.var_tbl$eo, ctx$stats))
   eu_iso <- ctx$roster$iso3[ctx$roster$eu_member %in% TRUE]
   if (!is.null(ctx$raw_rows)) ctx$eu_vals <- country_eu_region_values(ctx$raw_rows, ctx$cfg$raw_tables, eu_iso)
+  # whether the run tags its measures with the six stages (2026-10-28; otherwise no per-sector lists)
+  if (!is.null(ctx$nipo) && !is.null(ctx$meta$nipo) && is.null(ctx$meta$nipo$staged)) ctx$meta$nipo$staged <- country_nipo_staged(ctx$nipo)
   if (!is.null(ctx$nipo) && is.null(ctx$nipo$scope)) {
     nm <- ctx$meta$nipo %||% list()
     ctx$nipo <- country_nipo_scope(ctx$nipo, unlist(nm$eu_prefixes %||% ctx$cfg$nipo$eu_prefixes),
@@ -299,17 +321,20 @@ country_ctx_finish <- function(ctx) {
   ctx
 }
 
-# Synthetic inputs of the monthly trade files (2026-10-19): a small basket over three cells and 12 months of
+# Synthetic inputs of the monthly trade files (2026-10-19): a small basket over six-stage cells and 12 months of
 # reported imports and exports for the United States and Germany (France has no monthly data), so the
-# fixture carries trade-USA and trade-DEU. Germany declares no exports in its last month.
+# fixture carries trade-USA and trade-DEU. Germany declares no exports in its last month. The basket rows
+# carry the master's six-stage `stage` (2026-10-28, as data/raw/energy_hs6_master.csv): battery cells are
+# Batteries Assembly and Electric Vehicles Components; cathode and anode materials and polysilicon Refining.
 country_synthetic_monthly <- function(seed = 7L) {
   set.seed(seed)
-  basket <- sector_trade_basket(data.frame(
+  basket <- country_monthly_basket(data.frame(
     tech = c("Batteries", "Batteries", "Batteries", "Batteries", "Solar", "Solar", "Electric Vehicles"),
     supply_chain = "Midstream",
-    sub_sector = c("Battery Cells", "Battery Cells", "Cathode Materials & Battery Precursors", "Anode Materials",
+    sub_sector = c("Battery Cells", "Battery Packs, Parts & BMS", "Cathode Materials & Battery Precursors", "Anode Materials",
                    "Solar Modules", "Polysilicon & Wafers", "Vehicle Batteries & Packs"),
-    hs6 = c("850760", "850790", "284190", "380110", "854143", "280461", "850760")
+    hs6 = c("850760", "850790", "284190", "380110", "854143", "280461", "850760"),
+    stage = c("Assembly", "Components", "Refining", "Refining", "Assembly", "Refining", "Components")
   ))
   months <- country_month_seq(202508L)
   codes <- unique(basket$hs6)

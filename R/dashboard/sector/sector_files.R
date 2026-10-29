@@ -1,7 +1,9 @@
 # The R files scripts/87_export_sector_data.R and the tests source, relative to the repository root,
-# in order (pure). The OSB codec is the Strategic export's, unchanged (no new node types).
+# in order (pure). The OSB codec is the Strategic export's, unchanged (no new node types). The
+# six supply-chain stages (SUPPLY_CHAIN_STAGES) come first: every sector constant is built on them.
 sector_files <- function() {
   c(
+    "R/utils/supply_chain_stages.R",
     "R/dashboard/dash_osb.R",
     "R/dashboard/sector/sector_dictionary.R",
     "R/dashboard/sector/sector_summary.R",

@@ -1,8 +1,10 @@
 // S5 of the Country profile, partners by sector (spec_country.md A4.2 "Partners", 2026-10-15): the top
 // friendshoring opportunities (Friendshore) and export markets (Partnership Opportunity) of one sector (or all sectors)
-// at the paper baseline with the ties each pair has today, then the country's bilateral direct
+// at the NEIS baseline with the ties each pair has today, then the country's bilateral direct
 // investment (IMF positions; factory projects in the four CM-FDI sectors). The data come from the
-// Strategic bundle's auxiliary chunks (views/Partners/ties.ts), not the fact sheet.
+// Strategic bundle's auxiliary chunks (views/Partners/ties.ts; one pcell-<tech>-<stage> chunk per six-stage
+// sector), not the fact sheet. The factory projects sit on the stages the sheet names (meta.cmfdi_stages:
+// Components and Assembly carry the same projects, design E5), and the card says so once.
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
@@ -12,7 +14,9 @@ import { Select } from '../../../components/ui.tsx';
 import { cellOptions } from '../../../lib/format.ts';
 import { PILLAR_COLOR } from '../../../theme/palette.ts';
 import { InvestmentCards } from '../../../views/Partners/InvestmentCard.tsx';
-import { alignmentOf, CMFDI_ATTRIBUTION, hasCmfdi, loadSectorTop, loadTies, projectFlows, sharedAgreements, tiesName, type Ties, type TopRow } from '../../../views/Partners/ties.ts';
+import {
+  alignmentOf, CMFDI_ATTRIBUTION, cmfdiSameProjectsNote, hasCmfdi, loadSectorTop, loadTies, projectFlows, sharedAgreements, tiesName, type Ties, type TopRow,
+} from '../../../views/Partners/ties.ts';
 import { cellOf } from '../../contract.ts';
 import { devDataLink, partnersLink } from '../../derive/links.ts';
 import { supplierModel } from '../../derive/model.ts';
@@ -66,10 +70,13 @@ export function PartnersBySector({ part }: { part?: 'po' | 'fs' | 'investment' }
   }, [cKey, iso]);
   const supplier = useMemo(() => supplierModel(sheet), [sheet]);
   const rows: TopRow[] | null = c ? (top && top.key === c.key ? top.rows : null) : ties ? ties.top_all.filter((r) => r.reporter_iso === iso) : null;
+  // the stages whose sectors carry the CM-FDI factory projects: the sheet's own list (Components, Assembly)
+  const cmStages = sheet.meta.cmfdi_stages ?? [];
+  const cmfdiHere = !!c && hasCmfdi(c.tech, c.stage, cmStages);
   const items = useMemo((): TopItem[] => {
     if (!rows || !ties) return [];
     const j = c ? supplier.cells.findIndex((x) => x.key === c.key) : -1;
-    const flows = c && hasCmfdi(c.tech, c.stage) ? projectFlows(ties, iso, c.tech, c.stage) : null;
+    const flows = c && cmfdiHere ? projectFlows(ties, iso, c.tech, c.stage) : null;
     return rows.map((r) => {
       const i = supplier.partners.findIndex((p) => p.iso3 === r.partner_iso);
       const f = flows?.find((x) => x.partner_iso === r.partner_iso);
@@ -82,7 +89,7 @@ export function PartnersBySector({ part }: { part?: 'po' | 'fs' | 'investment' }
         share: i >= 0 && j >= 0 ? (supplier.share[i]?.[j] ?? null) : null,
       };
     });
-  }, [rows, ties, c, supplier, iso, name]);
+  }, [rows, ties, c, cmfdiHere, supplier, iso, name]);
   const label = c ? c.label : "all sectors (average of each partner's five strongest)";
   const options = [{ value: '', label: 'All sectors' }, ...cellOptions(sheet.cells, (x) => x.stage, (x) => x.key)];
   const side = (sd: 'fs' | 'po') => items.filter((r) => r.side === sd).sort((a, b) => a.k - b.k);
@@ -142,7 +149,7 @@ export function PartnersBySector({ part }: { part?: 'po' | 'fs' | 'investment' }
       <ChartCard
         headingLevel={3}
         title={`${cardTitle}: ${c ? c.label : 'all sectors'}`}
-        sub={`The partners the index rates highest for ${name} in ${label}, at the paper baseline: as friendshoring opportunities (Friendshore, 0 to 1: partners where ${poss(name)} security need meets the partner's economic opportunity, on existing trade and investment ties) and as markets for its exports (Partnership Opportunity, 0 to 1), with the ties each pair has today where they exist. Within one sector ${poss(name)} own need is the same for every partner, so the Friendshore ranking there turns on the partner's opportunity, the ties, UN-vote alignment and ownership; the import shares show who supplies it today. The sector starts on the one selected above; choose another here. Click a partner to select it.`}
+        sub={`The partners the index rates highest for ${name} in ${label}, at the NEIS baseline: as friendshoring opportunities (Friendshore, 0 to 1: partners where ${poss(name)} security need meets the partner's economic opportunity, on existing trade and investment ties) and as markets for its exports (Partnership Opportunity, 0 to 1), with the ties each pair has today where they exist. Within one sector ${poss(name)} own need is the same for every partner, so the Friendshore ranking there turns on the partner's opportunity, the ties, UN-vote alignment and ownership; the import shares show who supplies it today. The sector starts on the one selected above; choose another here. Click a partner to select it.`}
         summary={`${cap(name)}, ${label}: top ${side('fs').length} friendshoring opportunities and top ${side('po').length} export markets.`}
         tools={<Select label="Sector" value={c ? c.key : ''} options={options} onChange={(v) => setPick(v || null)} className="min-w-[14rem]" />}
         table={() => (
@@ -170,11 +177,18 @@ export function PartnersBySector({ part }: { part?: 'po' | 'fs' | 'investment' }
               sector: c ? c.label : 'all sectors (best five)', as: asWord(r), rank: r.rank ?? r.k, partner: r.name, iso3: r.partner_iso, score: r.value, partnership_strength_rank: r.psi_rank,
               import_share: r.side === 'fs' ? r.share : null, factory_projects: r.projects, shared_agreements: agreementsText(sheet, r.agreements), un_vote_alignment: r.un,
             })),
-            'Opportunity Security Indices, paper baseline; UN Comtrade (reconciled); CM-FDI (CC BY 4.0); agreements; UN General Assembly votes',
+            'Opportunity Security Indices, NEIS baseline; UN Comtrade (reconciled); CM-FDI (CC BY 4.0); agreements; UN General Assembly votes',
             sheet.meta.as_of,
           ),
         })}
-        notes={c && hasCmfdi(c.tech, c.stage) ? <span data-testid="cmfdi-attribution">{ties?.meta.cmfdi_attribution ?? CMFDI_ATTRIBUTION}</span> : undefined}
+        notes={
+          cmfdiHere ? (
+            <>
+              {cmfdiSameProjectsNote(cmStages) && <span data-testid="cmfdi-same-projects">{cmfdiSameProjectsNote(cmStages)} </span>}
+              <span data-testid="cmfdi-attribution">{ties?.meta.cmfdi_attribution ?? CMFDI_ATTRIBUTION}</span>
+            </>
+          ) : undefined
+        }
       >
         {err ? (
           <p className="text-sm text-paper-mute">{err}</p>

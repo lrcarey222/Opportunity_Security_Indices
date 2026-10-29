@@ -39,14 +39,14 @@ export function MemoCard() {
         ) : (
           <>
             <p className="max-w-3xl text-sm text-paper-dim">
-              A short <Term id="memo">policy memo</Term> summarises the paper&apos;s three-stage reading of {name}: its energy security risks and why, its economic opportunities and why, its
+              A short <Term id="memo">policy memo</Term> summarises the index reading of {name}: its energy security risks and why, its economic opportunities and why, its
               sectoral priorities beside its current policies, and its partnership priorities.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
               <Link to={`/countries/${entry.iso3}/memo`} className="btn btn-primary">
                 GENERATE MEMO
               </Link>
-              <span className="text-sm text-paper-mute">AI-generated from the data and checked against it; paper baseline as of {manifest.as_of_label}.</span>
+              <span className="text-sm text-paper-mute">AI-generated from the data and checked against it; NEIS baseline as of {manifest.as_of_label}.</span>
             </div>
             {entry.memo?.rule_note && entry.memo.rule_note_d && (
               <p className="mt-3 max-w-3xl text-xs text-paper-mute" data-testid="memo-rule-note">
@@ -106,7 +106,9 @@ export function DataNotes() {
       'drivers.csv     categories and variables behind the scores (the sectors the fact sheet carries)',
       'partners.csv    partners listed for the country: Partnership Strength, components, trade, factory projects, UN votes',
       'suppliers.csv   import shares by supplier and sector',
-      'measures.csv    strongest active industrial-policy measures by sector (Global Trade Alert, New Industrial Policy Observatory; context only)',
+      nipo?.staged === false
+        ? 'measures.csv    empty: Global Trade Alert\'s measures are not yet matched to the six supply-chain stages, so they are not listed by sector'
+        : 'measures.csv    strongest active industrial-policy measures by sector (Global Trade Alert, New Industrial Policy Observatory; context only)',
       '',
       'Notes:',
       ...sheet.caveats.map((c) => `- ${c.text}`),
@@ -153,7 +155,7 @@ export function DataNotes() {
           ))}
         </ul>
         <p className="mt-5 text-xs text-paper-mute">
-          Paper baseline as of {m.as_of_label}. Built {m.created} from Strategic export {(m.strategic_bundle_id ?? '–').slice(0, 8)} and Sector export {(m.sector_bundle_id ?? '–').slice(0, 8)}.
+          NEIS baseline as of {m.as_of_label}. Built {m.created} from Strategic export {(m.strategic_bundle_id ?? '–').slice(0, 8)} and Sector export {(m.sector_bundle_id ?? '–').slice(0, 8)}.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           {entry.file && (

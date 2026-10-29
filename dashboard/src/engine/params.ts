@@ -77,7 +77,7 @@ export function clampDials(x: Partial<Record<string, unknown>>): { dials: Dials;
   return { dials: out, adjusted };
 }
 
-/** dash_default_advanced(): the paper's settings. */
+/** dash_default_advanced(): the baseline settings. */
 export function defaultAdvanced(bundle: Pick<Bundle, 'baselineInputs'>): Advanced {
   const bi = bundle.baselineInputs;
   return {
@@ -237,7 +237,7 @@ export function paramsToRJson(x: unknown): unknown {
   return x;
 }
 
-/** dash_is_baseline(): params equal to the paper's (manifest.baseline_params). */
+/** dash_is_baseline(): params equal to the NEIS baseline's (manifest.baseline_params). */
 export function isBaseline(params: Params, bundle: Pick<Bundle, 'manifest'>): boolean {
   return deepEqual(paramsToRJson(params), bundle.manifest.baseline_params);
 }
@@ -320,7 +320,9 @@ export function dialReadout(params: Params, bundle: Pick<Bundle, 'baselineInputs
     if (!(v in w)) return NaN;
     return w[v] / sumList(Object.values(w));
   };
-  const stageRatio = (p: Params, s: string) => p.si.stage_weights[s] / p.si.stage_weights.Midstream;
+  // a stage weight over the manufacturing one (Components, equal to Assembly); Extraction stands for
+  // Extraction, Refining and Recovery, which share one weight at every populism setting
+  const stageRatio = (p: Params, s: string) => p.si.stage_weights[s] / p.si.stage_weights.Components;
   // Labels spell out every index (no bare acronyms): the dial panel prints them as they are.
   const rows: ReadoutRow[] = [
     ['hawkishness', 'si_need', 'Strategic Index weight on security need', (p) => p.si.weights.energy_security_need, true],
@@ -331,8 +333,8 @@ export function dialReadout(params: Params, bundle: Pick<Bundle, 'baselineInputs
     ['bullishness', 'psi_po_share', 'Partnership Opportunity share of Partnership Strength', (p) => share(p.partner.psi_weights, 'opportunity'), true],
     ['populism', 'si_policy', 'Strategic Index weight on policy activity', (p) => p.si.weights.policy, true],
     ['populism', 'policy_iea_share', 'IEA policy-record share of policy activity', (p) => polShare(p, bi.policy_iea_var), false],
-    ['populism', 'stage_up_ratio', 'Upstream / Midstream stage weight', (p) => stageRatio(p, 'Upstream'), true],
-    ['populism', 'stage_down_ratio', 'Downstream / Midstream stage weight', (p) => stageRatio(p, 'Downstream'), false],
+    ['populism', 'stage_up_ratio', 'Extraction, Refining, Recovery / Components, Assembly stage weight', (p) => stageRatio(p, 'Extraction'), true],
+    ['populism', 'stage_down_ratio', 'Deployment / Components, Assembly stage weight', (p) => stageRatio(p, 'Deployment'), false],
     ['greenness', 'si_tech', 'Strategic Index weight on low-emission technology', (p) => p.si.weights.technology, true],
     ['greenness', 'policy_cat_share', 'Climate Action Tracker share of policy activity', (p) => polShare(p, bi.policy_cat_var), false],
     ['greenness', 'fs_penalty', 'Friendshore climate penalty (per side)', (p) => p.partner.fs_penalty, true],
@@ -355,8 +357,8 @@ export function dialReadout(params: Params, bundle: Pick<Bundle, 'baselineInputs
     let t: string;
     if (prm === 'fossil') t = cur > 0 ? 'Coal, Oil and Gas excluded' : 'Fossil technologies included';
     else if (Number.isFinite(ratio) && Math.abs(ratio - 1) > 1e-9) t = `${lab} ${fmtG(cur, 3)} (x${fmtF(ratio, 2)} vs ${fmtG(b, 3)})`;
-    else if (!Number.isFinite(ratio) && Number.isFinite(cur) && cur !== b) t = `${lab} ${fmtG(cur, 3)} (paper: ${fmtG(b, 3)})`;
-    else t = `${lab} ${fmtG(cur, 3)} (paper)`;
+    else if (!Number.isFinite(ratio) && Number.isFinite(cur) && cur !== b) t = `${lab} ${fmtG(cur, 3)} (baseline: ${fmtG(b, 3)})`;
+    else t = `${lab} ${fmtG(cur, 3)} (baseline)`;
     dial.push(d);
     parameter.push(prm);
     label.push(lab);
@@ -373,7 +375,7 @@ export function dialReadout(params: Params, bundle: Pick<Bundle, 'baselineInputs
 export function presets(): Record<string, Dials> {
   const base = defaultDials();
   return {
-    'Paper baseline': base,
+    'NEIS baseline': base,
     Hawk: { ...base, hawkishness: 90 },
     Bull: { ...base, bullishness: 90 },
     Populist: { ...base, populism: 90 },

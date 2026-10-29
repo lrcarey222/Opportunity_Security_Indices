@@ -1,15 +1,16 @@
 // SupplierMatrix (spec_country.md A4.2 S5, "Who supplies {Country} in each sector"): rows = up to 12
 // economies (the top-5 suppliers of each high-priority sector and the top-10 average suppliers), columns =
-// the country's sectors with imports in the trade year, grouped by stage with text headers. Dot area is
+// the country's sectors with imports in the trade year, grouped by the six supply-chain stages in chain order
+// with text headers (a one-column group shows the stage's short form, the full name for screen readers and
+// on hover; stages without a traded column are left out: Deployment has no trade basket). Dot area is
 // proportional to the import share (r = 2 + 10 sqrt(share)), neutral fill; the selected partner's row has
 // white dots and an orange outline; cells among the selected partner's Friendshore best five carry a star
 // and the words "best five". An HTML table (it reads as one), scrolling inside the card below 1024 px.
 
+import { STAGE_LABEL, STAGE_SHORT, SUPPLY_STAGES } from '../../lib/stages.ts';
 import type { FactSheet } from '../contract.ts';
 import { GROUP_WORD, supplierModel } from '../derive/model.ts';
 import { proseName, poss } from '../derive/text.ts';
-
-const STAGES = ['Upstream', 'Midstream', 'Downstream'] as const;
 
 function fmtShare(x: number): string {
   if (x > 0 && x < 0.0005) return '<0.1%';
@@ -28,8 +29,8 @@ export function SupplierMatrix({ sheet, selected, onSelect }: { sheet: FactSheet
   const m = supplierModel(sheet);
   const name = proseName(sheet.meta.country);
   if (!m.cells.length || !m.partners.length) return <p className="text-sm text-paper-mute">No imports recorded in {sheet.meta.trade_year} for {poss(name)} sectors with a trade basket.</p>;
-  const order = STAGES.flatMap((st) => m.cells.map((c, j) => ({ c, j })).filter((x) => x.c.stage === st));
-  const groups = STAGES.map((st) => ({ st, n: order.filter((x) => x.c.stage === st).length })).filter((g) => g.n > 0);
+  const order = SUPPLY_STAGES.flatMap((st) => m.cells.map((c, j) => ({ c, j })).filter((x) => x.c.stage === st));
+  const groups = SUPPLY_STAGES.map((st) => ({ st, n: order.filter((x) => x.c.stage === st).length })).filter((g) => g.n > 0);
   const sel = sheet.partners.rows.find((r) => r.iso3 === selected) ?? null;
   const best = new Set(sel?.fs_best5 ?? []);
   const year = sheet.meta.trade_year;
@@ -41,8 +42,17 @@ export function SupplierMatrix({ sheet, selected, onSelect }: { sheet: FactSheet
           <tr>
             <th scope="col" className="sticky left-0 z-10 bg-ink-800" />
             {groups.map((g) => (
-              <th key={g.st} scope="colgroup" colSpan={g.n} className="border-b hairline px-1 pb-1 text-left">
-                <span className="eyebrow">{g.st}</span>
+              <th key={g.st} scope="colgroup" colSpan={g.n} className="border-b hairline px-1 pb-1 text-left" title={STAGE_LABEL[g.st]}>
+                {g.n > 1 ? (
+                  <span className="eyebrow">{STAGE_LABEL[g.st]}</span>
+                ) : (
+                  <>
+                    <span className="eyebrow" aria-hidden="true">
+                      {STAGE_SHORT[g.st]}
+                    </span>
+                    <span className="sr-only">{STAGE_LABEL[g.st]}</span>
+                  </>
+                )}
               </th>
             ))}
           </tr>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fillGlossaryText, GLOSSARY, GLOSSARY_DEFAULTS, GLOSSARY_TEMPLATES, glossaryById, glossaryFor, glossaryWith, wordCount } from './glossary.ts';
 import { ACRONYM_NAMES, bareAcronymsInText } from '../components/testing/acronyms.ts';
+import { POSTURE_TERMS } from '../posture/basis.tsx';
 
 /** The ids of spec_country.md C3.2, in its order (the interface every module codes against). */
 const SPEC_IDS = [
@@ -12,6 +13,9 @@ const SPEC_IDS = [
   'upgrade', 'exposed', 'stable', 'quadrant', 'priority_no_policy', 'ties_today', 'memo',
   // Development & finance raw data (Sector Insights, 2026-10-15)
   'oda', 'dip_position', 'conduit_centre', 'wdi',
+  // the strategic position framework (posture/basis.tsx POSTURE_TERMS, 2026-10-28)
+  'posture', 'strategic_need', 'industrial_opportunity', 'competitive_position', 'security_rationale', 'policy_alignment', 'partner_gap',
+  'trade_momentum', 'aib_gap', 'partner_demand',
 ];
 
 describe('glossary content (C3.2)', () => {
@@ -78,10 +82,45 @@ describe('glossary content (C3.2)', () => {
       const s = glossaryById.get(id)?.short ?? '';
       expect(s).toMatch(/(high|low) opportunity, (high|low) energy security/i);
       expect(s).not.toMatch(/\binsecure\b/i);
-      // the paper's three-stage corners, told apart from the six-stage posture (2026-10-28)
-      expect(s, id).toContain("paper's three-stage chart");
-      expect(s, id).toMatch(/not (a|the) six-stage/);
+      // the corners of the Security and opportunity chart, told apart from the strategic posture; six
+      // stages only, so no three-stage qualifier (2026-10-28)
+      expect(s, id).toContain('A corner of the Security and opportunity chart');
+      expect(s, id).toMatch(/not (a strategic|the Secure) posture/);
+      expect(s, id).not.toMatch(/paper|three-stage|six-stage/i);
     }
+    expect(glossaryById.get('quadrant')?.more).toContain('not the need × opportunity quadrant of the strategic posture charts');
+  });
+
+  it('six stages only: no Upstream, Midstream or Downstream and no three-stage qualifier anywhere (design S1)', () => {
+    for (const e of GLOSSARY) {
+      const text = [e.term, e.short, e.more ?? ''].join(' ');
+      expect(text, e.id).not.toMatch(/\b(upstream|midstream|downstream)\b/i);
+      expect(text, e.id).not.toMatch(/three[- ]stage|paper's (numbers|three)/i);
+    }
+    const stage = glossaryById.get('stage');
+    for (const s of ['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery']) expect(stage?.short, s).toContain(s);
+    // 11 technologies x 6 stages = 66 sectors; the Sector pages add Semiconductors' three (69)
+    expect(GLOSSARY_DEFAULTS).toMatchObject({ n_tech: '11', n_sectors: '66', n_sector_cells: '69' });
+    expect(glossaryById.get('sector')?.short).toContain('Batteries — Refining');
+    expect(glossaryById.get('sector')?.short).toContain('11 technologies at six stages: 66 sectors');
+    expect(glossaryById.get('sector')?.short).toContain('(69 in all)');
+    // the allied pick reads every stage but deployment; the endowment screen applies to extraction
+    expect(glossaryById.get('allied_pick')?.short).toContain('at any stage but deployment');
+    expect(glossaryById.get('allied_pick')?.short).toContain('extraction sectors without recorded resources');
+    expect(glossaryById.get('endowment_screen')?.short).toMatch(/^An extraction sector counts/);
+    expect(glossaryById.get('populism')?.short).toContain('components and assembly stages');
+    // the NEIS baseline is the pipeline's six-stage defaults, not "the paper's numbers" (E3)
+    expect(glossaryById.get('paper_baseline')?.term).toBe('NEIS baseline');
+    expect(glossaryById.get('paper_baseline')?.short).toContain("the pipeline's own six-stage weights");
+  });
+
+  it('the posture terms: every POSTURE_TERMS id has an entry, apart from the UN-vote alignment and the security need', () => {
+    for (const id of Object.values(POSTURE_TERMS)) expect(glossaryById.has(id), id).toBe(true);
+    expect(glossaryById.get('strategic_need')?.term).toBe('Strategic Need');
+    expect(glossaryById.get('industrial_opportunity')?.term).toBe('Industrial Opportunity');
+    expect(glossaryById.get('policy_alignment')?.more).toContain('Not the same as UN-vote alignment');
+    expect(glossaryById.get('strategic_need')?.more).toContain("Not the same as the Strategic Index's security need");
+    for (const m of ['sector', 'strategic', 'country'] as const) expect(glossaryFor(m).some((e) => e.id === 'posture'), m).toBe(true);
   });
 
   it('the renamed corners (2026-10-28) keep no old id and carry their new names', () => {

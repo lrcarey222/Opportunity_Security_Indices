@@ -11,8 +11,13 @@
 #     (parent names, cities and source cells ship verbatim).
 #   * Company Country (HQ) and Destination Country -> ISO3 with the pipeline's country_name_to_iso3()
 #     ("Czechia" and "Czech Republic" -> CZE, "UAE" -> ARE, "Hong Kong" -> HKG, "Taiwan" -> TWN).
-#   * Technology -> the cell of settings `technologies` x `stage` (Battery -> batteries-midstream, EV
-#     -> electric-vehicles-midstream, Solar, Wind); the CSV's own label is kept in `technology`.
+#   * Technology -> the cell of settings `technologies` x the first of `stages` (config/partnership.yml
+#     cm_fdi stages: Components and Assembly, the two manufacturing stages; Battery ->
+#     batteries-components, EV -> electric-vehicles-components, Solar, Wind); the CSV's own label is kept
+#     in `technology`. The file has no product field, so a project cannot be placed in one stage: the
+#     pipeline counts each project, whole, in every configured stage. The chunk ships each project once
+#     (pid unique; counts and sums never doubled) under the first stage's cell and lists the stages in
+#     fdi.stages: the other stages' cells carry the same projects (user decision E5, 2026-10-28).
 #   * Capital Investment (US$m): a number as published; blank = not disclosed -> value NA with status
 #     nq, never 0 (a published 0 stops the export: undisclosed or true zero must be decided first).
 #   * Year Completed: a four-digit year, else NA ("N/A" or blank). For projects not yet complete it is
@@ -71,7 +76,7 @@ SECTOR_FDI_VARS <- c("investment.fdi_projects", "investment.fdi_value", "investm
 sector_fdi_default_settings <- function() {
   list(
     technologies = c(Battery = "Batteries", Solar = "Solar", Wind = "Wind", EV = "Electric Vehicles"),
-    stage = "Midstream",
+    stages = SUPPLY_CHAIN_MANUFACTURING_STAGES,
     keep_status = c("Announced", "Under Construction", "Completed", "Operational"),
     drop_operational = c("Ceased operations", "Paused"),
     manufacturing_activities = "Manufacturing",
@@ -81,10 +86,12 @@ sector_fdi_default_settings <- function() {
 }
 
 # The cm_fdi block of config/partnership.yml (a parsed list, or NULL) merged over the defaults; the
-# keys the indices alone use (jv_parent_share, exposure_weighting, min_projects, ...) are ignored.
+# keys the indices alone use (jv_parent_share, exposure_weighting, min_projects, ...) are ignored. The
+# old single `stage` key (replaced on 2026-10-27 by `stages`) stops, as the pipeline's reader does.
 sector_fdi_settings <- function(cfg = NULL) {
   s <- sector_fdi_default_settings()
   if (!is.null(cfg)) {
+    if ("stage" %in% names(cfg)) stop("sector_fdi_settings(): cm_fdi stage was replaced by stages, a list of supply-chain stages (config/partnership.yml cm_fdi: stages: [Components, Assembly])")
     for (k in names(s)) if (k %in% names(cfg) && !is.null(cfg[[k]])) s[[k]] <- cfg[[k]]
     if ("announced_from" %in% names(cfg) && is.null(cfg$announced_from)) s$announced_from <- NA_integer_
   }
@@ -93,7 +100,10 @@ sector_fdi_settings <- function(cfg = NULL) {
     stop("sector_fdi_settings(): technologies must map CM-FDI Technology values to tech labels (", paste(SECTOR_TECH_LABELS, collapse = ", "), ")")
   }
   s$technologies <- tech
-  if (!s$stage %in% SECTOR_STAGE_LABELS) stop("sector_fdi_settings(): unknown stage ", s$stage)
+  s$stages <- as.character(unlist(s$stages))
+  if (!length(s$stages) || anyNA(s$stages) || anyDuplicated(s$stages) || !all(s$stages %in% SUPPLY_CHAIN_STAGES)) {
+    stop("sector_fdi_settings(): stages must list distinct supply-chain stages (", paste(SUPPLY_CHAIN_STAGES, collapse = ", "), ")")
+  }
   for (k in c("keep_status", "drop_operational", "manufacturing_activities", "china_hq_iso3")) s[[k]] <- as.character(unlist(s[[k]]))
   s$announced_from <- suppressWarnings(as.integer(s$announced_from))
   if (length(s$announced_from) != 1) stop("sector_fdi_settings(): announced_from must be one year or null")
@@ -196,7 +206,7 @@ sector_fdi_clean <- function(raw, country_iso3, settings = sector_fdi_settings()
   tech_slug <- names(SECTOR_TECH_LABELS)[match(unname(settings$technologies[tech]), SECTOR_TECH_LABELS)]
   projects <- tibble::tibble(
     pid = pid,
-    item_key = paste0("cell:", tech_slug, "-", tolower(settings$stage)),
+    item_key = paste0("cell:", tech_slug, "-", tolower(settings$stages[1])),
     technology = tech,
     parent = parent,
     home = home,
@@ -306,24 +316,34 @@ sector_fdi_tables <- function(projects, geo) {
   )
 }
 
-# The full fdi part of the bundle: list(projects (+ home_group), sources, flows, groups, years).
+# The full fdi part of the bundle: list(projects (+ home_group), sources, flows, groups, years,
+# stages: the configured stages, the first being the cell every row is keyed on).
 sector_fdi_part <- function(clean, geo, settings = sector_fdi_settings()) {
   p <- clean$projects
   p$home_group <- sector_fdi_home_group(p$home, geo, settings$china_hq_iso3)
-  c(list(projects = p, sources = clean$sources), sector_fdi_tables(p, geo))
+  c(list(projects = p, sources = clean$sources), sector_fdi_tables(p, geo), list(stages = settings$stages))
+}
+
+# The cell of a project's item at another configured stage ("cell:batteries-components" ->
+# "cell:batteries-assembly").
+sector_fdi_stage_item <- function(item_key, from, to) {
+  sub(paste0("-", tolower(from), "$"), paste0("-", tolower(to)), item_key)
 }
 
 # Data keys of the chunk (sector_data_keys(); avail, rosters, section cards, coverage): every project
 # under investment.fdi_projects and investment.fdi_parent_share, the disclosed ones under
-# investment.fdi_value; year = year announced, geo = the destination.
+# investment.fdi_value; year = year announced, geo = the destination; on the cell of every configured
+# stage (fdi$stages), which all carry the same projects, so each stage's sector shows the measures.
 sector_fdi_data_keys <- function(fdi, kind_of) {
   p <- fdi$projects
   if (is.null(p) || !nrow(p)) return(NULL)
-  one <- function(var, s) tibble::tibble(var = var, item_key = p$item_key[s], chunk = "fdi", year = p$year_announced[s],
-                                         geo = p$dest[s], geo_kind = kind_of(p$dest[s]))
+  stages <- if (is.null(fdi$stages)) character() else fdi$stages
+  items <- if (length(stages)) lapply(stages, function(s) sector_fdi_stage_item(p$item_key, stages[1], s)) else list(p$item_key)
+  one <- function(var, s, ik) tibble::tibble(var = var, item_key = ik[s], chunk = "fdi", year = p$year_announced[s],
+                                             geo = p$dest[s], geo_kind = kind_of(p$dest[s]))
   all <- rep(TRUE, nrow(p))
-  dplyr::bind_rows(one("investment.fdi_projects", all), one("investment.fdi_value", !is.na(p$value)),
-                   one("investment.fdi_parent_share", all))
+  dplyr::bind_rows(lapply(items, function(ik) dplyr::bind_rows(one("investment.fdi_projects", all, ik), one("investment.fdi_value", !is.na(p$value), ik),
+                                                               one("investment.fdi_parent_share", all, ik))))
 }
 
 # Dictionary placeholders filled from the projects (sources, caveats, data years).
@@ -363,6 +383,8 @@ sector_fdi_fill_none <- function() {
 sector_fdi_problems <- function(fdi, geo, settings = sector_fdi_settings()) {
   p <- character()
   pr <- fdi$projects
+  if (!identical(as.character(fdi$stages), settings$stages)) p <- c(p, "stages differ from the settings")
+  if (!all(endsWith(pr$item_key, paste0("-", tolower(settings$stages[1]))))) p <- c(p, "projects not keyed on the first configured stage's cell")
   if (anyDuplicated(pr$pid)) p <- c(p, "duplicate project ids")
   if (any(is.na(pr$value) != (pr$value_status == "nq"))) p <- c(p, "value NA <=> value_status nq is violated")
   if (any(!is.na(pr$value) & pr$value <= 0)) p <- c(p, "a disclosed value is not positive")
@@ -419,7 +441,7 @@ sector_fdi_parity <- function(decoded, meta, raw, country_iso3, settings = secto
   cap <- suppressWarnings(as.double(tx("Capital Investment (US$m)")))
   yc <- tx("Year Completed")
   tech_label <- unname(settings$technologies[tx("Technology")])
-  cells <- paste0("cell:", names(SECTOR_TECH_LABELS)[match(tech_label, SECTOR_TECH_LABELS)], "-", tolower(settings$stage))
+  cells <- paste0("cell:", names(SECTOR_TECH_LABELS)[match(tech_label, SECTOR_TECH_LABELS)], "-", tolower(settings$stages[1]))
   cmp <- list(
     `Parent company` = identical(d$parent, tx("Parent company")),
     `Company Country (HQ)` = identical(geo$code[d$home + 1L], country_iso3(tx("Company Country (HQ)"))),
@@ -460,6 +482,9 @@ sector_fdi_parity <- function(decoded, meta, raw, country_iso3, settings = secto
   ok_flags <- identical(pt$manufacturing, d$manufacturing) && identical(pt$active, d$active) && identical(pt$index_use, d$index_use) &&
     identical(pt$home_group, d$home_group)
   add("CM-FDI parity: project flags and parent HQ groups follow the settings (config/partnership.yml cm_fdi)", ok_flags, nrow(d))
+  add("CM-FDI parity: fdi.stages = the configured stages (config/partnership.yml cm_fdi stages); rows keyed on the first stage's cell",
+      identical(as.character(decoded$fdi$stages), settings$stages), length(settings$stages),
+      paste(as.character(decoded$fdi$stages), collapse = ", "))
   again <- sector_fdi_tables(pt, geo)
   dec_txt <- function(t, cols) {
     o <- tibble::as_tibble(t)

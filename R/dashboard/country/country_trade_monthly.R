@@ -3,7 +3,7 @@
 # (scripts/99_pull_comtrade_monthly_core.R -> data/raw/comtrade_monthly_core.csv): each reporter's
 # latest 12 calendar months of imports from and exports to the World, as the reporter declared them
 # (no mirror flows, not reconciled with the annual matrix), mapped to the in-basket HS6 master
-# (tech, supply_chain, sub_sector). A code shared by two cells counts fully in each cell, as the
+# (tech, six-stage `stage`, sub_sector; country_monthly_basket()). A code shared by two cells counts fully in each cell, as the
 # annual cells do; inside a cell each code has one sub-component, so sub-components sum to the cell.
 #
 # Months: a month the reporter declared (any row in that flow) with no row for a code is a zero
@@ -13,6 +13,18 @@
 
 COUNTRY_TRADE_MONTHLY_SCHEMA <- "osi-country-trade-monthly"
 COUNTRY_TRADE_MONTHLY_N <- 12L
+
+# The in-basket rows of the HS6 master at the six stages (2026-10-28): the master's `stage` column (the
+# six-stage tag of each code, data/raw/energy_hs6_master.csv) becomes the basket's stage, as scripts/15 and
+# scripts/30 do for the pipeline, so each code sits in its six-stage cell and its sub-component stays
+# selectable there (a sub-component that spans stages appears under each, with that stage's codes). Rows
+# without a supply-chain stage (the reference rows outside the basket) are left out. Pure.
+country_monthly_basket <- function(master) {
+  if (!"stage" %in% names(master)) stop("country_monthly_basket(): the HS6 master has no `stage` column (rerun scripts/04 on this branch).")
+  m <- master[as.character(master$stage) %in% COUNTRY_STAGES, , drop = FALSE]
+  m$supply_chain <- as.character(m$stage)
+  sector_trade_basket(m)
+}
 
 country_month_label <- function(period) {
   p <- as.integer(period)

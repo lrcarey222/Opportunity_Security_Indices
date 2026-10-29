@@ -11,7 +11,7 @@ import { haveSynthetic, readSyntheticChunk } from '../__fixtures__/__tests__/syn
 import { FDI_GROUPS, refSizes, validateChunk, type SectorFdiChunk, type SectorMetaChunk } from '../contract.ts';
 import { modelOf, type GeoInfo, type SectorModel, type SourceInfo } from '../data/model.ts';
 import {
-  coalitionShare, countryProjects, disclosedWords, fdiByGeo, fdiData, fdiFlows, fdiGroupSplit, fdiSankey, fdiTotals, fdiYearBars, fdiYears, filterProjects, fmtUsdM, geoMembers, geoRank, hasFdi, hostOf, isFdiVar,
+  coalitionShare, countryProjects, disclosedWords, fdiByGeo, fdiData, fdiFlows, fdiGroupSplit, fdiItemOf, fdiSankey, fdiStagesNote, fdiTotals, fdiYearBars, fdiYears, filterProjects, fmtUsdM, geoMembers, geoRank, hasFdi, hostOf, isFdiVar,
   jvWords, NOT_DISCLOSED, OTHER_DESTS, OTHER_HOMES, partialYearNote, projectsCsv, rankWords, safeHttpUrl, sourceNote, splitShares, yearsCsv, type FdiGroup, type FdiProject,
 } from './fdi.ts';
 import { layoutBanner, layoutOf, themeVars } from './explore.ts';
@@ -123,7 +123,7 @@ describe('CM-FDI helpers', () => {
     expect(bars[0].groups.china.value).toBe(100);
     // the CSV tells "no project" (0) from "not disclosed" (empty)
     const model = { varById: new Map(), sources: new Map(), items: [], geos: [] } as unknown as SectorModel;
-    const rows = yearsCsv(model, bars, 'batteries-midstream', 'all').split(/\r?\n/);
+    const rows = yearsCsv(model, bars, 'batteries-assembly', 'all').split(/\r?\n/);
     expect(rows[0]).toContain('capital_investment_usd_m,value_status');
     expect(rows.find((r) => r.startsWith('2020,core,'))).toMatch(/,1,0,,not disclosed,/);
     expect(rows.find((r) => r.startsWith('2019,core,'))).toMatch(/,0,0,0,no project,/);
@@ -245,7 +245,35 @@ describe.skipIf(!haveSynthetic())('CM-FDI on the R bundle', () => {
     expect(csv).not.toMatch(/javascript:/i);
   });
 
-  it('the measures: an investment layout in Explore, data in the four Midstream cells only', () => {
+  // six stages (schema 2, design E5): the projects count in Components and Assembly; the chunk keys each
+  // project on the Components cell (fdi.stages[0]), and the Assembly cell reads the same projects
+  it.skipIf(!raw)('fdi.stages: every project on the Components cell; the Assembly cell reads the same projects, said once', () => {
+    const chunk = validateChunk('sector-fdi', raw!, refSizes(meta!)) as SectorFdiChunk;
+    const model = modelOf(meta!);
+    const d = fdiData(chunk);
+    expect(d.stages).toEqual(['Components', 'Assembly']);
+    expect(new Set(d.projects.map((x) => model.items[x.item].stageSlug))).toEqual(new Set(['components']));
+    for (const tech of ['batteries', 'electric-vehicles', 'solar', 'wind']) {
+      const comp = model.item('cell', `${tech}-components`)!;
+      const asm = model.item('cell', `${tech}-assembly`)!;
+      expect(fdiItemOf(model, d, comp), tech).toBe(comp.idx);
+      expect(fdiItemOf(model, d, asm), tech).toBe(comp.idx);
+      const label = model.cellLabel(comp).split(' — ')[0];
+      expect(fdiStagesNote(model, d, asm)).toBe(`${label} — Components and ${label} — Assembly show the same projects: CM-FDI files a project under the technology’s manufacturing, not under one stage. Never add them.`);
+      expect(fdiStagesNote(model, d, comp)).toBe(fdiStagesNote(model, d, asm));
+    }
+    // a cell of another stage reads itself and has no note
+    const ext = model.item('cell', 'batteries-extraction')!;
+    expect(fdiItemOf(model, d, ext)).toBe(ext.idx);
+    expect(fdiStagesNote(model, d, ext)).toBeNull();
+    // counted once: the Assembly cell's projects are the Components cell's, not a second set
+    const bc = model.item('cell', 'batteries-components')!;
+    const ba = model.item('cell', 'batteries-assembly')!;
+    expect(filterProjects(d.projects, { items: [fdiItemOf(model, d, ba)] })).toEqual(filterProjects(d.projects, { items: [bc.idx] }));
+    expect(filterProjects(d.projects, { items: [ba.idx] })).toEqual([]);
+  });
+
+  it('the measures: an investment layout in Explore, data in the Components and Assembly cells of the four technologies only', () => {
     const model = modelOf(meta!);
     const ids = ['investment.fdi_projects', 'investment.fdi_value', 'investment.fdi_parent_share'];
     for (const id of ids) {
@@ -258,7 +286,7 @@ describe.skipIf(!haveSynthetic())('CM-FDI on the R bundle', () => {
     if (ids.some((id) => model.varById.has(id))) {
       expect(themeVars(model, 'investment').map((v) => v.id)).toEqual(expect.arrayContaining(ids.filter((id) => model.varById.has(id))));
       const covered = model.cells.filter((c) => hasFdi(model, c)).map((c) => c.slug).sort();
-      expect(covered).toEqual(['batteries-midstream', 'electric-vehicles-midstream', 'solar-midstream', 'wind-midstream']);
+      expect(covered).toEqual(['batteries-assembly', 'batteries-components', 'electric-vehicles-assembly', 'electric-vehicles-components', 'solar-assembly', 'solar-components', 'wind-assembly', 'wind-components']);
     }
     expect(isFdiVar('investment.annual')).toBe(false);
     expect(hasFdi(model, null)).toBe(false);

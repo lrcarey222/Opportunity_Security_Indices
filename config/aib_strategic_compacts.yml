@@ -182,7 +182,7 @@ compacts:
   - strategic_compact_id: SC-SOLAR
     strategic_compact_name: "Solar Manufacturing"
     family: "Power generation equipment"
-    purpose: "Keep the polysilicon-to-module chain and its critical inputs (silver paste, cover glass) institutionally connected so that allied module supply does not rest on one country's midstream."
+    purpose: "Keep the polysilicon-to-module chain and its critical inputs (silver paste, cover glass) institutionally connected so that allied module supply does not rest on one country's polysilicon, wafer and cell makers."
     value_chain:
       - value_chain_order: 1
         step: "Polysilicon"

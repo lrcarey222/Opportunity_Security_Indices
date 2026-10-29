@@ -85,8 +85,8 @@ test_that("holders: the measure's own level only, never residuals or nq / na_gro
   facts <- dplyr::bind_rows(
     fact("production.generation", "fuel:solar", c("CHN", "DEU", "FRA", "USA", "IDN", "RES:ei"), 2025, c(800, 60, 25, 300, NaN, 115), c(rep("obs", 4), "nq", "obs")),
     fact("production.generation", "fuel:solar", "EUU", 2025, 100),
-    fact("production.ev_region", "cell:electric-vehicles-midstream", c("R:iea_ev:china", "R:iea_ev:european-union", "USA"), 2024, c(12, 3, 1)),
-    fact("prices.wages", "activity:midstream", c("CHN", "USA"), 2025, c(1200, 6000))
+    fact("production.ev_region", "cell:electric-vehicles-assembly", c("R:iea_ev:china", "R:iea_ev:european-union", "USA"), 2024, c(12, 3, 1)),
+    fact("prices.wages", "activity:manufacturing", c("CHN", "USA"), 2025, c(1200, 6000))
   )
   world <- tibble::tibble(var = "production.generation", item_key = "fuel:solar", year = 2025L, value = 1300, basis = "source_world")
   s <- sector_summary(facts, world, summary_geo(), summary_vars())
@@ -115,36 +115,36 @@ test_that("holders: the measure's own level only, never residuals or nq / na_gro
 test_that("bloc mode without an own EU row sums the members; growth is a CAGR with a 1% floor", {
   yrs <- 2018:2025
   facts <- dplyr::bind_rows(
-    fact("investment.annual", "cell:batteries-midstream", "CHN", yrs, c(5, 6, 7, 8, 30, 33, 34, 33)),
-    fact("investment.annual", "cell:batteries-midstream", "DEU", yrs, c(1, 1, 2, 3, 4, 4, 3, 2)),
-    fact("investment.annual", "cell:batteries-midstream", "FRA", yrs, c(0, 0, 0, 1, 1, 2, 2, 3)),
-    fact("investment.annual", "cell:batteries-midstream", "USA", yrs, c(2, 2, 3, 6, 20, 25, 30, 28.5)),
-    fact("investment.annual", "cell:wind-midstream", "USA", yrs, c(0.001, 0, 0, 0, 0.5, 0.6, 0.7, 0.8)),
-    fact("investment.annual", "cell:solar-midstream", "USA", yrs, c(0, 0, 0, 0, 0, 1, 2, 3))
+    fact("investment.annual", "cell:batteries-assembly", "CHN", yrs, c(5, 6, 7, 8, 30, 33, 34, 33)),
+    fact("investment.annual", "cell:batteries-assembly", "DEU", yrs, c(1, 1, 2, 3, 4, 4, 3, 2)),
+    fact("investment.annual", "cell:batteries-assembly", "FRA", yrs, c(0, 0, 0, 1, 1, 2, 2, 3)),
+    fact("investment.annual", "cell:batteries-assembly", "USA", yrs, c(2, 2, 3, 6, 20, 25, 30, 28.5)),
+    fact("investment.annual", "cell:wind-assembly", "USA", yrs, c(0.001, 0, 0, 0, 0.5, 0.6, 0.7, 0.8)),
+    fact("investment.annual", "cell:solar-assembly", "USA", yrs, c(0, 0, 0, 0, 0, 1, 2, 3))
   )
   world <- tibble::tibble(var = character(), item_key = character(), year = integer(), value = double(), basis = character())
   s <- sector_summary(facts, world, summary_geo(), summary_vars())
-  b25 <- s[s$item_key == "cell:batteries-midstream" & s$year == 2025 & s$eu_mode == "bloc", ]
+  b25 <- s[s$item_key == "cell:batteries-assembly" & s$year == 2025 & s$eu_mode == "bloc", ]
   expect_identical(b25$n, 3L)
   expect_identical(b25$W, 33 + 2 + 3 + 28.5)
   expect_equal(b25$core, (2 + 3 + 28.5) / b25$W, tolerance = 1e-15)
-  m25 <- s[s$item_key == "cell:batteries-midstream" & s$year == 2025 & s$eu_mode == "members", ]
-  m18 <- s[s$item_key == "cell:batteries-midstream" & s$year == 2018 & s$eu_mode == "members", ]
+  m25 <- s[s$item_key == "cell:batteries-assembly" & s$year == 2025 & s$eu_mode == "members", ]
+  m18 <- s[s$item_key == "cell:batteries-assembly" & s$year == 2018 & s$eu_mode == "members", ]
   expect_identical(m25$growth_kind, "cagr_2018_2025")
   expect_identical(m25$growth, (m25$W / m18$W)^(1 / 7) - 1)
   expect_true(is.na(m18$growth))
   expect_true(is.na(m18$growth_kind))
   # A 2018 base below 1% of 2025 or a zero base reads "new" (NA).
-  w25 <- s[s$item_key == "cell:wind-midstream" & s$year == 2025 & s$eu_mode == "members", ]
+  w25 <- s[s$item_key == "cell:wind-assembly" & s$year == 2025 & s$eu_mode == "members", ]
   expect_true(is.na(w25$growth))
   expect_identical(w25$growth_kind, "cagr_2018_2025")
-  expect_true(is.na(s$growth[s$item_key == "cell:solar-midstream" & s$year == 2025 & s$eu_mode == "members"]))
+  expect_true(is.na(s$growth[s$item_key == "cell:solar-assembly" & s$year == 2025 & s$eu_mode == "members"]))
 })
 
 test_that("every summarised slice gets a world row; a missing source world total is reported", {
   facts <- dplyr::bind_rows(
     fact("production.generation", "fuel:wind", c("CHN", "USA"), 2025, c(1000, 450)),
-    fact("investment.annual", "cell:wind-midstream", c("CHN", "USA", "RES:ei"), 2025, c(10, 5, 99))
+    fact("investment.annual", "cell:wind-assembly", c("CHN", "USA", "RES:ei"), 2025, c(10, 5, 99))
   )
   cw <- sector_complete_world(facts, tibble::tibble(var = character(), item_key = character(), year = integer(), value = double(), basis = character()),
                               summary_vars(), summary_geo())
@@ -156,17 +156,17 @@ test_that("every summarised slice gets a world row; a missing source world total
 })
 
 test_that("the coverage glyph counts the lens families only", {
-  items <- tibble::tibble(axis = "cell", slug = c("electric-grid-downstream", "batteries-midstream"), stage = c("Downstream", "Midstream"),
-                          headline = TRUE, item_key = c("cell:electric-grid-downstream", "cell:batteries-midstream"))
+  items <- tibble::tibble(axis = "cell", slug = c("electric-grid-deployment", "batteries-assembly"), stage = c("Deployment", "Assembly"), tech = c("Electric Grid", "Batteries"),
+                          headline = TRUE, item_key = c("cell:electric-grid-deployment", "cell:batteries-assembly"))
   coverage <- tibble::tibble(
-    item_key = c(rep("cell:electric-grid-downstream", 3), rep("cell:batteries-midstream", 2)),
+    item_key = c(rep("cell:electric-grid-deployment", 3), rep("cell:batteries-assembly", 2)),
     family = c("policy", "context", "technology", "exports", "policy"),
     status = c("country", "country", "global", "country", "country")
   )
   g <- sector_coverage_glyph(items, coverage)
   expect_identical(vapply(g, `[[`, logical(1), "country_data"), c(FALSE, TRUE))
   expect_identical(g[[1]]$tech, "electric-grid")
-  expect_identical(g[[1]]$stage, "downstream")
+  expect_identical(g[[1]]$stage, "deployment")
 })
 
 test_that("headlines follow the contract's rules and keys", {
@@ -194,10 +194,53 @@ test_that("headlines follow the contract's rules and keys", {
     expect_match(h$href, "^/sector")
   }
   dep <- b$headlines[[match("dependence", ids)]]
-  s <- b$summary[b$summary$var == "trade.exports" & b$summary$item_key == "cell:batteries-midstream" & b$summary$year == 2024 &
+  s <- b$summary[b$summary$var == "trade.exports" & b$summary$item_key == "cell:batteries-assembly" & b$summary$year == 2024 &
                    b$summary$eu_mode == "members", ]
   expect_identical(dep$values$share, s$china)
   expect_identical(dep$values$total_usd, s$W)
-  expect_identical(dep$labels$cell_label, "Batteries — Midstream")
+  expect_identical(dep$labels$cell_label, "Batteries — Assembly")
+  # The headline manufacturing trade cell (Components or Assembly) with the largest 2024 W; its href is
+  # the six-stage profile.
+  expect_identical(dep$labels$cell, "batteries-assembly")
+  expect_identical(dep$href, "/sector/batteries/assembly#trade")
+  # investment@1 counts a figure shown on both Components and Assembly once.
+  inv <- b$headlines[[match("investment", ids)]]
+  f25 <- b$facts[b$facts$var == "investment.annual" & b$facts$year == 2025 & b$geo$kind[match(b$facts$geo, b$geo$code)] == "country", ]
+  expect_equal(inv$values$total_bn, sum(f25$value[!endsWith(f25$item_key, "-assembly")]), tolerance = 1e-12)
+  expect_lt(inv$values$total_bn, sum(f25$value))
+  # concentration@1 counts the Batteries capex once too: its Assembly copy (a top-1 >= 50% hit) is no second
+  # measure; without the notes it would be.
+  conc <- b$headlines[[match("concentration", ids)]]
+  conc0 <- Filter(function(z) z$id == "concentration", sector_headlines(b$summary, b$facts, b$geo, b$items, b$dict$vars))[[1]]
+  expect_identical(c(conc$values$n, conc$values$n_total), c(conc0$values$n, conc0$values$n_total) - 1L)
   expect_identical(sector_lower_first(c("Natural gas, EU (TTF)", "PGMs", "LNG, Asia", NA)), c("natural gas, EU (TTF)", "PGMs", "LNG, Asia", NA))
+})
+
+test_that("section cards follow link_stage over the six stages (one or more stages, or any)", {
+  cells <- tibble::tibble(slug = c("batteries-extraction", "batteries-refining", "batteries-recovery", "batteries-assembly"),
+                          stage = c("Extraction", "Refining", "Recovery", "Assembly"))
+  vars <- tibble::tibble(id = c("production.mining", "production.refining", "trade.critmin_exports", "prices.wages", "consumption.mineral_demand"),
+                         item_axis = c("mineral", "mineral", "mineral_stage", "activity", "mineral"),
+                         link_stage = c("Extraction", "Refining", "Extraction|Refining|Recovery", "any", "Extraction|Refining"))
+  keys <- tibble::tibble(var = vars$id, item_key = c("mineral:lithium", "mineral:lithium", "mineral_stage:lithium-recovery", "activity:manufacturing", "mineral:lithium"))
+  links <- tibble::tibble(item_key = c("mineral:lithium", "mineral:lithium", "mineral_stage:lithium-recovery", "activity:manufacturing"),
+                          cell = c("batteries-extraction", "batteries-refining", "batteries-recovery", "batteries-assembly"))
+  cv <- sector_cell_vars(cells, vars, keys, links)
+  of <- function(cl) cv$var[cv$cell == cl]
+  expect_identical(of("batteries-extraction"), c("production.mining", "consumption.mineral_demand"))
+  expect_identical(of("batteries-refining"), c("production.refining", "consumption.mineral_demand"))
+  expect_identical(of("batteries-recovery"), "trade.critmin_exports")
+  expect_identical(of("batteries-assembly"), "prices.wages")
+})
+
+test_that("coverage: reserves are not applicable at the processing, manufacturing and recovery stages", {
+  stages <- SUPPLY_CHAIN_STAGES
+  items <- tibble::tibble(axis = "cell", slug = paste0("geothermal-", tolower(stages)), stage = stages, item_key = paste0("cell:geothermal-", tolower(stages)))
+  vars <- tibble::tibble(id = "resources.geo_potential", family = "reserves", item_axis = "cell", source = "egs")
+  data <- tibble::tibble(var = character(), item_key = character(), geo_kind = character(), geo = character())
+  cov <- sector_coverage(items, vars, tibble::tibble(cell = character(), var = character()), data,
+                         tibble::tibble(item_key = character(), cell = character()), tibble::tibble(id = "egs", short = "EGS"))
+  r <- cov[cov$family == "reserves", ]
+  expect_identical(stats::setNames(r$reason, sub("^cell:geothermal-", "", r$item_key))[tolower(stages)],
+                   stats::setNames(c("no_source", "not_applicable", "not_applicable", "not_applicable", "no_source", "not_applicable"), tolower(stages)))
 })

@@ -2,9 +2,13 @@
 // the recommended trusted partners and why (or the partner gap); Secure: the rationale and the fence;
 // Deploy: why restraint is the recommendation; every posture: the quadrant axes, policy alignment, the
 // policy design and the trade evidence with its periods. A side panel on wide screens, a bottom sheet on
-// phones; Escape or the close button dismisses it.
+// phones; Escape or the close button dismisses it. It renders beside the card (a sibling of the
+// ChartCard), so the matrix and its table twin both open it; `sectorHref` adds a link to the node's
+// Sector page (the page that mounts the card builds the route; posture/ knows no Sector routes).
 
 import { useEffect, useRef } from 'react';
+import { Link } from 'react-router';
+import { isProducingStage } from '../lib/stages.ts';
 import type { DetailCell, PostureDetail } from './contract.ts';
 import { pct } from './derive.ts';
 import { ALIGNMENT_LABEL, MODE_LABEL, MOMENTUM_ARROW, MOMENTUM_UNAVAILABLE, POSTURE_COLOR, POSTURE_FROM_WORD, POSTURE_LABEL, QUADRANT_LABEL, RATIONALE_LABEL, RATIONALE_WORDS } from './grammar.ts';
@@ -25,7 +29,7 @@ const usd = (v: number | undefined) => (v === undefined ? '—' : v >= 1e9 ? `$$
 function restraint(c: DetailCell): string {
   if (c.quadrant === 'watch') return 'Neither Strategic Need nor Industrial Opportunity is high here: open, affordable deployment serves the country best, and the node is watched for change.';
   if (c.quadrant === 'insufficient_data') return 'Need or opportunity is not measured for this node: no case for intervention is established, so the default is open deployment.';
-  if (c.stage === 'Deployment') return 'Deployment is where the technology is used: its supply risks are assessed at the producing stages and in the control layers, and the posture here is open, affordable deployment.';
+  if (!isProducingStage(c.stage)) return 'Deployment is where the technology is used: its supply risks are assessed at the producing stages and in the control layers, and the posture here is open, affordable deployment.';
   return 'No Secure route is met and the quadrant does not call for Compete.';
 }
 
@@ -38,7 +42,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export function CellDrawer({ detail, cell, names, core, onClose }: { detail: PostureDetail | null; cell: DetailCell | null; names: Record<string, string>; core: PostureCore; onClose: () => void }) {
+export function CellDrawer({
+  detail, cell, names, core, onClose, sectorHref,
+}: {
+  detail: PostureDetail | null;
+  cell: DetailCell | null;
+  names: Record<string, string>;
+  core: PostureCore;
+  onClose: () => void;
+  /** the node's Sector page, or null / undefined for no link */
+  sectorHref?: string | null;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -76,6 +90,13 @@ export function CellDrawer({ detail, cell, names, core, onClose }: { detail: Pos
             {cell.posture === 'deploy' && cell.quadrant ? ` · ${QUADRANT_LABEL[cell.quadrant]}` : ''}
             {cell.confidence ? <span className="text-paper-mute"> · {cell.confidence} confidence</span> : null}
           </p>
+          {sectorHref && (
+            <p className="mt-1 text-sm">
+              <Link className="link" to={sectorHref} data-testid="cell-drawer-sector-link">
+                {cell.tech} — {cell.stage} in Sectors &rarr;
+              </Link>
+            </p>
+          )}
         </div>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close the detail">
           ✕

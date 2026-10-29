@@ -34,12 +34,12 @@ import { ScenarioGate, useCompact } from './shared.tsx';
 
 /** The compact under the three scenarios: its allied demand kept, restored by trade and left for new capacity, the toggled scenario highlighted; a table twin and a CSV. */
 function ScenarioCoverageCard() {
-  const { c, meta, scenario, nodes, viewState } = useCompact();
+  const { c, displayName, meta, scenario, nodes, viewState } = useCompact();
   const { nodeOf } = useAibCtx();
   const rows = useMemo(() => compactScenarios(c, nodeOf), [c, nodeOf]);
   const managed = rows.find((r) => r.id === 'managed');
   const notes = managed && !managed.ran ? { managed: `unchanged: ${viewState.reason ?? compactUnchangedReasonOf(nodes)}` } : undefined;
-  const label = `${c.name}: its allied demand under each scenario`;
+  const label = `${displayName}: its allied demand under each scenario`;
   const cols: Col<CompactScenario>[] = [
     { id: 'scenario', header: 'Scenario', value: (r) => scenarioCsvFields(meta, r.id).aib_scenario },
     { id: 'nodes', header: 'Nodes the scenario changes', value: (r) => (r.id === 'baseline' ? 0 : r.nodesRun), num: true },
@@ -130,7 +130,7 @@ function CoverageIntro({ c }: { c: AibCompact }) {
 }
 
 function CoverageStepsCard({ c }: { c: AibCompact }) {
-  const { meta, scenario, hasScenarios } = useCompact();
+  const { displayName, meta, scenario, hasScenarios } = useCompact();
   const steps = coverageSteps(c.metrics, scenario === 'managed');
   const optimum = globalOptimum(c.metrics);
   const rows = [
@@ -152,7 +152,7 @@ function CoverageStepsCard({ c }: { c: AibCompact }) {
       runMetaOf(meta, scenario),
     ),
   });
-  const summary = `${c.name}: ${steps.map((s: CoverageStep) => `${s.label} ${fmtShare(s.value)}`).join(', ')} of demand served${optimum !== null ? `; ${GLOBAL_OPTIMUM_LABEL.toLowerCase()}: ${fmtShare(optimum)}` : ''}.`;
+  const summary = `${displayName}: ${steps.map((s: CoverageStep) => `${s.label} ${fmtShare(s.value)}`).join(', ')} of demand served${optimum !== null ? `; ${GLOBAL_OPTIMUM_LABEL.toLowerCase()}: ${fmtShare(optimum)}` : ''}.`;
   return (
       <ChartCard
         headingLevel={3}
@@ -170,7 +170,7 @@ function CoverageStepsCard({ c }: { c: AibCompact }) {
             ]}
           />
         }
-        table={() => <TableView rows={rows} cols={cols} caption={`${c.name}: coverage at each step`} />}
+        table={() => <TableView rows={rows} cols={cols} caption={`${displayName}: coverage at each step`} />}
         csv={csv}
       >
         <CoverageBars steps={steps} ariaLabel={summary} reference={optimum} referenceLabel={GLOBAL_OPTIMUM_LABEL} />
@@ -230,7 +230,7 @@ export function CoalitionSection() {
 }
 
 function CoalitionSectionOf({ c }: { c: AibCompact }) {
-  const { meta, names, name, nodeLabel, scenario, hasScenarios } = useCompact();
+  const { displayName, meta, names, name, nodeLabel, scenario, hasScenarios } = useCompact();
   const points = coalitionCurve(c, names);
   const marks = targetMarks(points, meta.targets);
   const cols: Col<CurvePoint & { reaches: string }>[] = [
@@ -272,7 +272,7 @@ function CoalitionSectionOf({ c }: { c: AibCompact }) {
   const lists = [c.coalition.t90, c.coalition.t95, c.coalition.t99];
   [...meta.targets].sort((a, b) => a - b).forEach((t, i) => coalitions.push({ t, list: lists[i] ?? [] }));
   const exact = /^exact/i.test(c.coalition.method ?? '');
-  const summary = `${c.name}: minimum coverage of the anchors' demand from ${fmtShare(points[0]?.min ?? null)} with the demand anchors to ${fmtShare(points[points.length - 1]?.min ?? null)} with ${plural(points[points.length - 1]?.n ?? 0, 'member')}.`;
+  const summary = `${displayName}: minimum coverage of the anchors' demand from ${fmtShare(points[0]?.min ?? null)} with the demand anchors to ${fmtShare(points[points.length - 1]?.min ?? null)} with ${plural(points[points.length - 1]?.n ?? 0, 'member')}.`;
   return (
     <Section
       id="coalition"
@@ -304,7 +304,7 @@ function CoalitionSectionOf({ c }: { c: AibCompact }) {
             ]}
           />
         }
-        table={() => <TableView rows={rows} cols={cols} caption={`${c.name}: the coalition path`} pageSize={50} />}
+        table={() => <TableView rows={rows} cols={cols} caption={`${displayName}: the coalition path`} pageSize={50} />}
         csv={csv}
         notes={
           nodeIds.length ? (

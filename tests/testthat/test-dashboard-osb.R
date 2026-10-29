@@ -31,7 +31,7 @@ test_that("every node type round-trips identical(), NA patterns included", {
     scalar = 0.94, scalar_na = NA_real_, scalar_lgl = TRUE, scalar_int = 5L,
     named = c(x = 0.1, y = NA, z = 3),
     named_chr = c(EUU = "European Union"),
-    js = dash_osb_json(list(`Solar||Upstream` = "CHN", `Wind||Midstream` = character(), k = list(1, "a", c(TRUE, NA)))),
+    js = dash_osb_json(list(`Solar||Extraction` = "CHN", `Wind||Components` = character(), k = list(1, "a", c(TRUE, NA)))),
     empty = list(),
     dropped = NULL,
     tbl = tibble::tibble(Country = c("A", "B", "A"), v = c(1, NA, 3), f = factor(c("p", "q", "p")),
@@ -47,7 +47,7 @@ test_that("every node type round-trips identical(), NA patterns included", {
   expect_identical(dec$objects$df$x, 2:3)
   expect_null(dimnames(dec$objects$mat))
   expect_identical(dec$objects$vec$nan, c(NaN, 1, NA))
-  expect_identical(dec$objects$js$`Solar||Upstream`, "CHN")
+  expect_identical(dec$objects$js$`Solar||Extraction`, "CHN")
 })
 
 test_that("the header names node types, and arrays are column-major and 8-byte aligned", {
@@ -133,7 +133,12 @@ test_that("the synthetic bundle's chunks round-trip and carry the contract paths
   expect_null(js$share_rank_digits)
   expect_equal(js$budget$initial_gz, 101)
   sw <- js$dial_grid$stage_weights
-  expect_identical(unlist(sw$Upstream)[[91]], dash_stage_weights(b$manifest$baseline_inputs$stage_weights, dash_dial_multiplier(90))[["Upstream"]])
+  # one array of 101 per stage, the six stages in chain order
+  expect_identical(names(sw), SUPPLY_CHAIN_STAGES)
+  expect_identical(unlist(sw$Extraction)[[91]], dash_stage_weights(b$manifest$baseline_inputs$stage_weights, dash_dial_multiplier(90))[["Extraction"]])
+  # the populism contrast keeps the manufacturing weight
+  expect_identical(unique(unlist(sw$Components)), unname(SUPPLY_CHAIN_STAGE_SI_WEIGHTS[["Components"]]))
+  expect_identical(js$baseline_inputs$allied_stages, as.list(SUPPLY_CHAIN_SUPPLY_STAGES))
 })
 
 test_that("the dial readout has no network-design rows (retired 2026-10-17)", {

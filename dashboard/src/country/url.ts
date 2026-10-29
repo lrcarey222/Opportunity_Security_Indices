@@ -2,7 +2,10 @@
 // omitted, keys are written in one fixed order (cell partner all ptab), invalid values are dropped and listed
 // (the "Ignored in the link" notice), keys this module does not know are ignored silently.
 //
-//   cell     a sector key of the sheet ("oil-upstream"); default: the first high-priority sector
+//   cell     a sector key of the sheet ("oil-extraction": a technology at one of the six supply-chain stages);
+//            default: the first high-priority sector. An old three-stage key (design U1): <tech>-downstream
+//            reads as <tech>-deployment with a notice; <tech>-upstream and <tech>-midstream split into several
+//            stages, so they are dropped with a notice naming the stages that replaced them
 //   partner  an ISO3 among the sheet's partner rows; default: the top Partnership Strength partner
 //   all      1 = every in-sample sector in the priorities table (else the top 15)
 //   ptab     the Partnerships tab: trade (default), investment, development (IA refactor 2026-10-16) or
@@ -15,7 +18,8 @@
 //
 // Selecting a sector or a partner replaces the history entry; changing country pushes one.
 
-import { isCellKey } from './contract.ts';
+import { legacyStageNote, legacyStageOfSlug, legacyStageTarget } from '../lib/stages.ts';
+import { COUNTRY_TECHS, isCellKey } from './contract.ts';
 
 export type PartnerTab = 'trade' | 'investment' | 'development' | 'geopolitical';
 export const PARTNER_TABS: readonly PartnerTab[] = ['trade', 'investment', 'development', 'geopolitical'];
@@ -48,6 +52,21 @@ export interface CountryParsed {
 }
 
 const ISO3 = /^[A-Z0-9]{3}$/;
+const LEGACY_CELL = /^([a-z0-9]+(?:-[a-z0-9]+)*)-(upstream|midstream|downstream)$/;
+
+/**
+ * An old three-stage cell key of a Country technology ("oil-downstream"; design U1): the six-stage key it
+ * maps to exactly (Downstream is Deployment) or null (Upstream and Midstream split), and the notice's
+ * words ("Oil — Downstream is now Oil — Deployment"); null when the value is not such a key.
+ */
+export function legacyCellOf(v: string): { to: string | null; note: string } | null {
+  const m = LEGACY_CELL.exec(v);
+  const tech = m ? COUNTRY_TECHS.find((t) => t.slug === m[1]) : undefined;
+  const legacy = m ? legacyStageOfSlug(m[2]) : null;
+  if (!m || !tech || !legacy) return null;
+  const to = legacyStageTarget(m[2]);
+  return { to: to ? `${tech.slug}-${to}` : null, note: legacyStageNote(legacy, tech.label).replace(/\.$/, '') };
+}
 
 /** Read a query string. */
 export function parseCountrySearch(search: string, ctx: CountryUrlCtx = {}): CountryParsed {
@@ -67,7 +86,16 @@ export function parseCountrySearch(search: string, ctx: CountryUrlCtx = {}): Cou
     switch (k as CountryKey) {
       case 'cell': {
         const c = v.toLowerCase();
-        if (!isCellKey(c)) bad(k, raw, 'not a sector');
+        const old = isCellKey(c) ? null : legacyCellOf(c);
+        if (old) {
+          // an old three-stage link (design U1)
+          if (!old.to) bad(k, raw, `${old.note}; the sector was dropped`);
+          else if (ctx.cells && !ctx.cells.has(old.to)) bad(k, raw, `${old.note}, which is not a sector of this country`);
+          else {
+            state.cell = old.to;
+            bad(k, raw, `${old.note}; showing it`);
+          }
+        } else if (!isCellKey(c)) bad(k, raw, 'not a sector');
         else if (ctx.cells && !ctx.cells.has(c)) bad(k, raw, 'not a sector of this country');
         else state.cell = c;
         break;

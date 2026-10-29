@@ -27,12 +27,13 @@ import { hasScenarios } from '../derive/scenarios.ts';
 import { HHI_SHORT, HHI_WORDS } from '../derive/settings.ts';
 import { CHART_ROWS } from '../views/AibDiversifyView.tsx';
 import { cellLabel } from '../../lib/format.ts';
-import { stagesInChainOrder, SUPPLY_STAGES } from '../../lib/stages.ts';
+import { SUPPLY_STAGES } from '../../lib/stages.ts';
 import { AibLoadError, AibStore, setAibStoreForTests, type AibSource } from '../data/store.ts';
-import { compactTitle, fmtUsd } from '../derive/format.ts';
+import { compactTitle, fmtUsd, listWords } from '../derive/format.ts';
 import { osiCellPick } from '../derive/partnerships.ts';
-import { indexLabel, indexOfNode, indicesOfCompact, legacyOsiCellsOfNode, profiledCellsOfNode, taxonomyOf } from '../derive/taxonomy.ts';
-import { THREE_STAGE_NOTE } from '../views/AibPartnershipsView.tsx';
+import {
+  cellStagesOfNodes, NOT_IN_BASKET, nodeInCell, nodeInTech, nodeStagesOf, nodeWhere, osiTechsOfNode, profiledCellsOfNode, taxonomyOf, techKeysOfNode, technologiesOfNodes,
+} from '../derive/taxonomy.ts';
 import { resetLastCompact } from '../nav.ts';
 import { peekEngineClient, setEngineClient } from '../../state/EngineProvider.tsx';
 import { EngineClient } from '../../worker/client.ts';
@@ -179,49 +180,73 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(source.calls).toEqual(['manifest.json', readManifest().files.compacts]);
   });
 
-  it('landing: the sector (technology) filter writes tech and narrows the nodes (of the strategic scope)', async () => {
+  it('landing: the OSI technology and stage filters write tech and stage and narrow the nodes (of the strategic scope)', async () => {
     const r = renderAt('/compacts/workstreams?scn=decoupling');
     expect(await h1('Workstreams')).toBeTruthy();
     const inScope = doc.nodes.filter((x) => x.inStrategicScope !== false);
     const nOut = doc.nodes.length - inScope.length;
-    // a sector name with "/" where the bundle has one
-    const tech = inScope.flatMap((x) => x.techs).find((t) => t.includes('/')) ?? inScope[0].techs[0];
-    fireEvent.change(screen.getByRole('combobox', { name: tx.One }), { target: { value: tech } });
+    const scopeWords = nOut ? ` in the strategic scope (${nOut} outside it not shown)` : '';
+    // a technology a node shares with another (a node in several technologies is counted under each)
+    const tech = technologiesOfNodes(inScope).find((t) => t !== NOT_IN_BASKET && inScope.some((x) => nodeInTech(x, t) && osiTechsOfNode(x).length > 1)) ?? technologiesOfNodes(inScope)[0];
+    fireEvent.change(screen.getByRole('combobox', { name: 'Technology' }), { target: { value: tech } });
     await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('tech')).toBe(tech));
-    const n = inScope.filter((x) => x.techs.includes(tech)).length;
-    expect(screen.getByText(`${n} ${n === 1 ? 'node' : 'nodes'} of ${inScope.length}${nOut ? ` in the strategic scope (${nOut} outside it not shown)` : ''}`)).toBeTruthy();
+    const inTech = inScope.filter((x) => nodeInTech(x, tech));
+    expect(screen.getByText(`${inTech.length} ${inTech.length === 1 ? 'node' : 'nodes'} of ${inScope.length}${scopeWords}`)).toBeTruthy();
+    // the stage choices are the stages of that technology's cells, in chain order (never node.stage)
+    const stageSel = screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement;
+    expect(Array.from(stageSel.options).map((o) => o.value)).toEqual(['', ...cellStagesOfNodes(inScope, tech)]);
+    const stage = nodeStagesOf(inTech[0], tech)[0];
+    fireEvent.change(stageSel, { target: { value: stage } });
+    await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('stage')).toBe(stage));
+    const both = inScope.filter((x) => nodeInCell(x, tech, stage)).length;
+    expect(screen.getByText(`${both} ${both === 1 ? 'node' : 'nodes'} of ${inScope.length}${scopeWords}`)).toBeTruthy();
+    // a dictionary sector or a three-stage stage in an old link matches no option and is dropped
+    cleanup();
+    renderAt('/compacts/workstreams?scn=decoupling&tech=Magnets&stage=Midstream');
+    expect(await h1('Workstreams')).toBeTruthy();
+    expect((screen.getByRole('combobox', { name: 'Technology' }) as HTMLSelectElement).value).toBe('');
+    expect((screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement).value).toBe('');
+    expect(screen.getByText(`${inScope.length} nodes of ${inScope.length}${scopeWords}`)).toBeTruthy();
   });
 
-  it('landing (dictionary): sectors grouped by index in the filter, each card names its sectors by index, nodes say index > sector > stage, the table has Index and Sectors', async () => {
-    if (!tx.dictionary) return;
+  it('landing: nodes by OSI technology x stage (2026-10-29): the Technology options, each card names its technologies and stages, nodes say technologies · stage, the table has Node, Technologies, Stage and OSI cells', async () => {
     renderAt('/compacts#nodes');
     expect(await h1('Workstreams')).toBeTruthy();
-    const select = screen.getByRole('combobox', { name: 'Sector' }) as HTMLSelectElement;
-    // "All sectors" outside the groups, then one group per index with sectors, in index order
-    expect(select.options[0].textContent).toBe('All sectors');
-    expect((select.options[0].parentElement as HTMLElement).tagName).toBe('SELECT');
-    const groups = Array.from(select.querySelectorAll('optgroup')).map((g) => g.getAttribute('label'));
-    const used = tx.indices.filter((ix) => doc.nodes.some((n) => n.inStrategicScope !== false && n.techs.some((t) => ix.sectors.includes(t))));
-    expect(groups).toEqual(used.map(indexLabel));
-    expect(screen.queryByRole('combobox', { name: 'Technology' })).toBeNull();
-    // the run line names the source of the nodes
-    expect(screen.getByTestId('run-settings').textContent).toMatch(/Nodes: electro-industrial dictionary( \((core|extended) scope\))?, index > sector > stage\./);
-    // a compact spanning two indices: its sectors by index on its card
-    const two = doc.compacts.find((c) => indicesOfCompact(tx, c).length > 1);
-    if (two) {
-      const card = screen.getAllByRole('article').find((a) => within(a).queryByRole('link', { name: titleOf(two) }))!;
-      const line = within(card).getByTestId('compact-taxonomy').textContent ?? '';
-      for (const ix of indicesOfCompact(tx, two)) expect(line).toContain(indexLabel(ix));
-      expect(line).toMatch(/^Sectors: /);
+    const select = screen.getByRole('combobox', { name: 'Technology' }) as HTMLSelectElement;
+    // "All technologies", then the OSI technologies of the nodes' cells (no index groups), the basket-less last
+    const pool = doc.nodes.filter((n) => n.inStrategicScope !== false);
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['', ...technologiesOfNodes(pool)]);
+    expect(select.options[0].textContent).toBe('All technologies');
+    expect(select.querySelectorAll('optgroup')).toHaveLength(0);
+    expect(screen.queryByRole('combobox', { name: 'Sector' })).toBeNull();
+    // no dictionary sector is an option (unless it is also an OSI technology's name)
+    const osi = new Set(technologiesOfNodes(pool));
+    for (const n of pool) for (const t of n.techs.filter((x) => !osi.has(x))) expect(Array.from(select.options).some((o) => o.value === t), t).toBe(false);
+    // the run line names the source of the nodes and how they are shown
+    if (tx.dictionary) expect(screen.getByTestId('run-settings').textContent).toMatch(/Nodes: electro-industrial dictionary( \((core|extended) scope\))?, shown by OSI technology × stage\./);
+    // every card names its OSI technologies and the stages of its nodes' cells (none when no node has one)
+    for (const c of doc.compacts) {
+      const card = screen.getAllByRole('article').find((a) => within(a).queryByRole('link', { name: titleOf(c) }))!;
+      const own = c.nodes.map((id) => doc.nodes.find((n) => n.id === id)!).filter(Boolean);
+      const stages = cellStagesOfNodes(own);
+      expect(within(card).getByTestId('compact-taxonomy').textContent).toBe(
+        `Technologies: ${technologiesOfNodes(own).join(', ')}${stages.length ? ` · ${stages.length === 1 ? 'Stage' : 'Stages'}: ${stages.join(', ')}` : ''}`,
+      );
     }
-    // a node chip: index > sector · stage
+    // a node chip: where its cells are (technologies · stage)
     const nodes = screen.getByRole('region', { name: 'How every sub-sector is classified' });
-    const n0 = doc.nodes.find((n) => n.inStrategicScope !== false && doc.nodes.filter((x) => x.label === n.label).length === 1)!;
+    const n0 = pool.find((n) => osiTechsOfNode(n).length > 1 && doc.nodes.filter((x) => x.label === n.label).length === 1) ?? pool[0];
     const chip = within(nodes).getByText(n0.label).closest('li') as HTMLElement;
-    expect(chip.textContent).toMatch(new RegExp(`[A-Z] [^›]+ › ${n0.techs[0].replace(/[/()]/g, '.')} · ${n0.stage}`));
+    expect(chip.textContent).toContain(nodeWhere(n0));
+    const bare = pool.find((n) => !n.yfCells.length && doc.nodes.filter((x) => x.label === n.label).length === 1);
+    if (bare) expect((within(nodes).getByText(bare.label).closest('li') as HTMLElement).textContent).toContain(NOT_IN_BASKET);
+    if (bare) expect((within(nodes).getByText(bare.label).closest('li') as HTMLElement).textContent).not.toContain(`${NOT_IN_BASKET} · `);
     fireEvent.click(within(nodes).getByRole('button', { name: 'Table' }));
     const heads = within(nodes).getAllByRole('columnheader').map((h) => h.textContent);
-    expect(heads.slice(0, 4)).toEqual(['Sub-sector', 'Index', 'Sectors', 'Stage']);
+    expect(heads.slice(0, 4)).toEqual(['Node', 'Technologies', 'Stage', 'OSI cells']);
+    expect(heads).not.toContain('Index');
+    // no Upstream / Midstream / Downstream, no index anywhere on the page
+    expect(main().textContent).not.toMatch(/Upstream|Midstream|Downstream|three-stage|index > sector/);
     noAcronyms();
   });
 
@@ -359,6 +384,13 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
       noAcronyms();
       expect(openTwins()).toBe(12);
       noAcronyms();
+      // the summaries, captions and aria-labels name the compact by its display title, never by the exported
+      // name (built from the dictionary sectors: provenance only, design A1)
+      if (c.name !== titleOf(c)) {
+        const said = [document.body.textContent ?? '', ...[...document.querySelectorAll('[aria-label], [title]')].flatMap((e) => [e.getAttribute('aria-label') ?? '', e.getAttribute('title') ?? ''])];
+        expect(said.filter((s) => s.includes(c.name))).toEqual([]);
+        expect(screen.getAllByRole('table', { name: `${titleOf(c)}: node by node` }).length).toBe(1);
+      }
       cleanup();
     }
   });
@@ -632,7 +664,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const select = screen.getByRole('combobox', { name: 'Technology' }) as HTMLSelectElement;
     expect(select.options[0].textContent).toBe('All technologies');
     expect(select.querySelectorAll('optgroup')).toHaveLength(0);
-    expect(screen.queryAllByTestId('compact-taxonomy')).toEqual([]);
+    expect(screen.getAllByTestId('compact-taxonomy').map((x) => (x.textContent ?? '').slice(0, 14))).toEqual(old.compacts.map(() => 'Technologies: '));
     expect(screen.getByTestId('run-settings').textContent).not.toMatch(/dictionary/);
     noAcronyms();
     cleanup();
@@ -729,7 +761,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     noAcronyms();
   });
 
-  it('about: where the nodes come from (the dictionary: index > sector > stage, the six stages from the item type, its scope, primary rows, partner indices through the OSI crosswalk and its three-stage cells, no fossil fuels); the master words for a master bundle', async () => {
+  it('about: where the nodes come from (the dictionary: groups of HS6 codes, the six stages from the item type, its scope, primary rows; shown by OSI technology x stage through the six-stage crosswalk; the dictionary sectors as provenance, no index list); the master words for a master bundle', async () => {
     renderAt('/compacts/about');
     expect(await h1('About Sectoral Compacts')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Where the nodes come from' })).toBeTruthy();
@@ -737,7 +769,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const page = main().textContent ?? '';
     if (tx.dictionary) {
       expect(about).toMatch(/electro-industrial HS6 dictionary/);
-      expect(about).toMatch(/index > sector > the dictionary's own stage/);
+      expect(about).not.toMatch(/index > sector/);
       // each node at one of the six stages, from its codes' item type; none at Deployment
       expect(about).toMatch(/six supply-chain stages the OSI uses \(Extraction, Refining, Components, Assembly, Deployment, Recovery\)/);
       expect(about).toMatch(/a processed material Refining/);
@@ -745,20 +777,24 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
       expect(about).toMatch(/primary row/);
       if (tx.scope === 'core') expect(about).toMatch(/the core scope: .*; the extended scope \(.*\) is a sensitivity/);
       expect(about).toMatch(/it has no fossil-fuel nodes/);
-      expect(page).toMatch(/kept by OSI technology × stage/);
-      expect(page).toMatch(/gets neutral partner scores/);
-      // the crosswalk is six-stage; the three-stage pages read it through each node's three-stage cells
-      expect(page).toMatch(/The crosswalk is six-stage, like the nodes; the Sector, Country and Strategic pages still keep the paper's three stages/);
-      // every index with its sectors
-      const ix = screen.getByTestId('about-indices');
-      for (const i of tx.indices) expect(within(ix).getByText(indexLabel(i))).toBeTruthy();
+      // how the pages show the nodes: OSI technology x stage, as equals, the basket-less apart
+      const osi = screen.getByTestId('about-osi-cells').textContent ?? '';
+      expect(osi).toMatch(/^The pages show each node by OSI technology and stage/);
+      expect(osi).toMatch(/all of them as equals/);
+      expect(osi).toContain(`is shown as ${NOT_IN_BASKET} and gets neutral partner scores`);
+      expect(osi).toMatch(/read a node through those six-stage cells/);
+      // the dictionary's sectors and indices: one provenance paragraph, no index list
+      expect(screen.getByTestId('about-dictionary-sectors').textContent).toMatch(/the CSVs keep each node's dictionary sector as a dictionary_sector column/);
+      expect(screen.queryByTestId('about-indices')).toBeNull();
       // the strategic scope: never an unconditional fossil-fuel statement
       const st = screen.getByTestId('about-strategic').textContent ?? '';
       expect(st).not.toMatch(/fossil-fuel supply chains among them/);
-      if (doc.meta.strategicScope === 'all') expect(st).toMatch(/^All sectors: compacts can be formed from the nodes of every sector of the electro-industrial dictionary/);
+      if (doc.meta.strategicScope === 'all') expect(st).toMatch(/^All nodes: compacts can be formed from every node of the electro-industrial dictionary/);
       const scopeWord = tx.scope ? ` (${tx.scope} scope)` : '';
       expect(screen.getByTestId('about-nodes-source').textContent).toBe(`Electro-industrial dictionary${scopeWord}; ${doc.nodes.length} ${doc.nodes.length === 1 ? 'node' : 'nodes'}`);
     }
+    // no three-stage words anywhere on the page
+    expect(page).not.toMatch(/Upstream|Midstream|Downstream|three-stage|three stages/);
     noAcronyms();
     cleanup();
     // the master form: the OSI basket, no dictionary words, no index list
@@ -767,68 +803,78 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(await h1('About Sectoral Compacts')).toBeTruthy();
     expect(screen.getByTestId('about-taxonomy').textContent).toMatch(/sub-sectors of the OSI technology basket/);
     expect(screen.getByTestId('about-taxonomy').textContent).toMatch(/at one stage \(Extraction, Refining, Components, Assembly, Deployment, Recovery\)/);
+    expect(screen.getByTestId('about-taxonomy').textContent).toMatch(/read for each node's own technology and stage\.$/);
     expect(screen.queryByTestId('about-indices')).toBeNull();
+    expect(screen.queryByTestId('about-dictionary-sectors')).toBeNull();
     expect(screen.getByTestId('about-nodes-source').textContent).toBe(`OSI basket; ${docM.nodes.length} ${docM.nodes.length === 1 ? 'node' : 'nodes'}`);
     // fossil fuels are named only where nodes outside the scope are fossil-fuel ones (none in the fixture's master form)
     const fossil = docM.nodes.some((n) => n.inStrategicScope === false && n.techs.some((t) => /^(coal|oil|gas|natural gas)$/i.test(t)));
     expect(/fossil-fuel supply chains among them/.test(screen.getByTestId('about-strategic').textContent ?? '')).toBe(fossil);
+    expect(main().textContent).not.toMatch(/Upstream|Midstream|Downstream/);
     noAcronyms();
   });
 
-  it('a compact (dictionary): its indices and sectors, the lede in sectors, each node by index > sector > stage', async () => {
-    if (!tx.dictionary) return;
-    const c = doc.compacts.find((x) => indicesOfCompact(tx, x).length > 1) ?? first;
+  it('a compact: its OSI technologies in the design and the lede, each node by technologies · stage with its OSI cells linking to their Sector profiles, no index', async () => {
+    const c = doc.compacts.find((x) => x.nodes.some((id) => (doc.nodes.find((n) => n.id === id)?.yfCells.length ?? 0) > 1)) ?? first;
+    const own = c.nodes.map((id) => doc.nodes.find((n) => n.id === id)!).filter(Boolean);
     renderAt(`/compacts/${c.id}`);
     expect(await h1(titleOf(c))).toBeTruthy();
-    const ix = indicesOfCompact(tx, c);
-    expect(screen.getByTestId('compact-indices').textContent).toBe(ix.map(indexLabel).join(', '));
+    expect(screen.queryByTestId('compact-indices')).toBeNull();
     const design = screen.getByRole('region', { name: "Included nodes and the compact's design" });
-    expect(within(design).getAllByRole('term').map((t) => t.textContent)).toContain('Sectors');
-    expect(within(design).queryByText('Technologies')).toBeNull();
-    // the lede says sectors and indices, never "technologies"
+    const terms = within(design).getAllByRole('term').map((t) => t.textContent);
+    expect(terms).toContain('Technologies');
+    for (const t of ['Sectors', 'Index', 'Indices']) expect(terms).not.toContain(t);
+    expect(within(design).getByTestId('compact-technologies').textContent).toBe(technologiesOfNodes(own).join(', '));
+    // the lede names the OSI technologies of the nodes' cells, never the dictionary's sectors
+    const techs = [...new Set(own.flatMap((n) => osiTechsOfNode(n)))].sort((a, b) => a.localeCompare(b, 'en'));
     const lede = (screen.getByRole('heading', { level: 1 }).closest('header') ?? main()).textContent ?? '';
-    expect(lede).toMatch(new RegExp(`the .* ${c.technologies.length === 1 ? 'sector' : 'sectors'} \\(${ix.length === 1 ? 'index' : 'indices'} `));
+    if (techs.length) expect(lede).toContain(`: ${listWords(techs)}`);
+    expect(lede).not.toMatch(/ sectors? \(ind/);
     const card = screen.getByRole('region', { name: "Each node's coverage and treatment" });
-    for (const id of c.nodes) {
-      const n = doc.nodes.find((x) => x.id === id)!;
+    for (const n of own) {
       const item = within(card).getByRole('heading', { level: 4, name: n.label }).closest('li') as HTMLElement;
-      expect(item.textContent).toContain(`› ${n.techs.join(', ')} · ${n.stage}`);
+      expect(item.textContent).toContain(nodeWhere(n));
+      // its OSI cells, each linking to its six-stage Sector profile
+      const cellsLine = within(item).getByTestId('node-osi-cells');
+      for (const p of profiledCellsOfNode(n)) expect(within(cellsLine).getByRole('link', { name: p.label }).getAttribute('href')).toBe(p.href);
+      if (!n.yfCells.length) expect(cellsLine.textContent).toMatch(/none: none of its codes is in the OSI technology basket/);
     }
     fireEvent.click(within(design).getByRole('button', { name: 'Table' }));
-    expect(within(design).getAllByRole('columnheader').map((h) => h.textContent).slice(0, 3)).toEqual(['Sub-sector', 'Index', 'Sectors']);
+    expect(within(design).getAllByRole('columnheader').map((h) => h.textContent).slice(0, 4)).toEqual(['Node', 'Technologies', 'Stage', 'OSI cells']);
+    expect(main().textContent).not.toMatch(/Upstream|Midstream|Downstream/);
     noAcronyms();
   });
 
-  it('partnerships (dictionary): the sector filter maps to OSI cells through the crosswalk, never by name; a sector with no basket code gets a notice', async () => {
-    if (!tx.dictionary) return;
+  it('partnerships: the Technology filter maps to six-stage OSI cells through the crosswalk; a node with no basket code gets a notice; old links are dropped', async () => {
     setEngineClient(neverReadyClient());
-    // a sector whose nodes have (three-stage) basket cells; prefer one whose name is also an OSI technology (the name trap)
-    const mapped = doc.nodes.filter((n) => legacyOsiCellsOfNode(n).length);
-    const trap = mapped.find((n) => n.techs.some((t) => ['Solar', 'Wind', 'Batteries', 'Nuclear'].includes(t))) ?? mapped[0];
-    const tech = trap.techs[0];
-    const pick = osiCellPick(doc.nodes, { country: null, tech, stage: null, node: null }, { osiTech: false })!;
+    // a technology of a node with basket cells; prefer a node in several technologies
+    const mapped = doc.nodes.filter((n) => n.yfCells.length);
+    const trap = mapped.find((n) => osiTechsOfNode(n).length > 1) ?? mapped[0];
+    const tech = osiTechsOfNode(trap)[0];
+    const pick = osiCellPick(doc.nodes, { country: null, tech, stage: null, node: null })!;
     const r = renderAt(`/aib/partnerships?tech=${encodeURIComponent(tech)}`);
     expect(await h1('Partnerships')).toBeTruthy();
-    // the filter is "Sector", grouped by index
-    const select = screen.getByRole('combobox', { name: 'Sector' }) as HTMLSelectElement;
+    // the filter is "Technology", one plain list of OSI technologies; the node filter is "Node"
+    const select = screen.getByRole('combobox', { name: 'Technology' }) as HTMLSelectElement;
     expect(select.value).toBe(tech);
-    expect(select.querySelectorAll('optgroup').length).toBeGreaterThan(0);
-    // the Stage filter: the nodes' own six stages, in chain order (no Deployment: no node is there)
+    expect(select.querySelectorAll('optgroup')).toHaveLength(0);
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['', ...technologiesOfNodes(doc.nodes)]);
+    expect(screen.getByRole('combobox', { name: 'Node' })).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: 'Sector' })).toBeNull();
+    // the Stage filter: the stages of the chosen technology's cells, in chain order (no Deployment: no node has a cell there)
     const stageOptions = [...(screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement).options].map((o) => o.value);
-    expect(stageOptions).toEqual(['', ...stagesInChainOrder(doc.nodes.map((n) => n.stage))]);
+    expect(stageOptions).toEqual(['', ...cellStagesOfNodes(doc.nodes, tech)]);
     expect(stageOptions.slice(1).every((s) => (SUPPLY_STAGES as readonly string[]).includes(s))).toBe(true);
-    if (!doc.nodes.some((n) => n.stage === 'Deployment')) expect(stageOptions).not.toContain('Deployment');
-    // the Partnership Opportunity card names the OSI cell it reads
+    if (!doc.nodes.some((n) => nodeStagesOf(n).includes('Deployment'))) expect(stageOptions).not.toContain('Deployment');
+    // the Partnership Opportunity card names the six-stage OSI cell it reads, of the filter's technology
     const po = await screen.findByRole('region', { name: 'Partnership Opportunity' });
     const note = within(po).getByTestId('osi-cell-note').textContent ?? '';
     expect(note).toContain(`Partner indices for the OSI cell ${pick.cell!.tech} – ${pick.cell!.stage}`);
-    // the cell is three-stage (the partner data's); the Solar sector's Assembly node sits in OSI Solar Midstream:
-    // never "Solar – Assembly" (its own stage) or "Solar – Downstream" (the old name) by name
-    expect(['Upstream', 'Midstream', 'Downstream']).toContain(pick.cell!.stage);
-    expect(note).not.toContain(`${tech} – ${trap.stage}`);
-    // the node's own six-stage stage is shown beside the cell, with the note that the rankings keep three stages
-    if (pick.nodes.length === 1) expect(note).toContain(`${pick.nodes[0].label} (${pick.nodes[0].stage})`);
-    expect(within(po).getByTestId('three-stage-note').textContent).toBe(THREE_STAGE_NOTE);
+    expect(pick.cell!.tech).toBe(tech);
+    expect((SUPPLY_STAGES as readonly string[]).includes(pick.cell!.stage)).toBe(true);
+    if (pick.nodes.length === 1) expect(note).toContain(`the codes of ${pick.nodes[0].label} sit in`);
+    expect(within(po).queryByTestId('three-stage-note')).toBeNull();
+    expect(main().textContent).not.toMatch(/Upstream|Midstream|Downstream|three-stage|three stages/);
     // Investment for one economy: the factory projects and positions read the same OSI cell
     fireEvent.click(screen.getByRole('radio', { name: 'Investment' }));
     await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('mode')).toBe('investment'));
@@ -840,35 +886,41 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
       expect(await h1('Partnerships')).toBeTruthy();
       const inv = (await screen.findByTestId('osi-cell-investment-note')).textContent ?? '';
       expect(inv).not.toMatch(/^Partner indices/);
-      // CM-FDI keeps the paper's Midstream cells: the pick's cell is three-stage, never the node's six-stage stage
-      const cmfdi = ['Solar', 'Wind', 'Batteries', 'Electric Vehicles'].includes(pick.cell!.tech) && pick.cell!.stage === 'Midstream';
-      if (cmfdi) expect(inv).toMatch(new RegExp(`^Factory projects are kept by OSI cell \\(the paper’s three stages\\): shown for ${pick.cell!.tech} – ${pick.cell!.stage}`));
-      else expect(inv).toMatch(new RegExp(`^The direct-investment positions below are economy-wide\\. Factory projects .* ${pick.cell!.tech} – ${pick.cell!.stage}, .*has none`));
+      // CM-FDI: the Components and Assembly cells of four technologies, the same projects on both (said once)
+      const cmfdi = ['Solar', 'Wind', 'Batteries', 'Electric Vehicles'].includes(pick.cell!.tech) && ['Components', 'Assembly'].includes(pick.cell!.stage);
+      if (cmfdi) {
+        expect(inv).toMatch(new RegExp(`^Factory projects are kept by OSI cell: shown for ${pick.cell!.tech} – ${pick.cell!.stage}`));
+        expect(inv).toContain('Components and Assembly carry the same factory projects');
+      } else {
+        expect(inv).toMatch(new RegExp(`^The direct-investment positions below are economy-wide\\. Factory projects are kept by OSI cell and recorded only for the Components and Assembly cells of .* ${pick.cell!.tech} – ${pick.cell!.stage}, .*has none`));
+      }
+      expect(inv).not.toMatch(/Midstream|three stages/);
       expect(main().textContent).toMatch(/the factory projects instead \(shown below when the selection's OSI cell is one of those\)/);
       expect(main().textContent).not.toMatch(/choose one of those sectors/);
     }
     cleanup();
-    // a sector whose nodes have no basket code: a clear notice, no silent fallback to a cell
-    const none = doc.nodes.find((n) => !legacyOsiCellsOfNode(n).length && doc.nodes.filter((x) => x.techs[0] === n.techs[0]).every((x) => !legacyOsiCellsOfNode(x).length));
-    if (none) {
-      renderAt(`/aib/partnerships?tech=${encodeURIComponent(none.techs[0])}&mode=development`);
+    // the nodes with no basket code: their own option, a clear notice, no silent fallback to a cell
+    if (doc.nodes.some((n) => !n.yfCells.length)) {
+      renderAt(`/aib/partnerships?tech=${encodeURIComponent(NOT_IN_BASKET)}&mode=development`);
       expect(await h1('Partnerships')).toBeTruthy();
-      const gaps = await screen.findByRole('region', { name: 'Capacity gaps' });
-      expect(gaps).toBeTruthy();
+      expect((screen.getByRole('combobox', { name: 'Technology' }) as HTMLSelectElement).value).toBe(NOT_IN_BASKET);
+      expect(await screen.findByRole('region', { name: 'Capacity gaps' })).toBeTruthy();
       cleanup();
-      renderAt(`/aib/partnerships?tech=${encodeURIComponent(none.techs[0])}`);
+      renderAt(`/aib/partnerships?tech=${encodeURIComponent(NOT_IN_BASKET)}`);
       expect(await h1('Partnerships')).toBeTruthy();
       const card = await screen.findByRole('region', { name: 'Partnership Opportunity' });
       const notice = within(card).getByTestId('osi-cell-notice').textContent ?? '';
-      expect(notice).toMatch(/Partner indices are kept by OSI technology × stage/);
+      expect(notice).toMatch(/Partner indices are kept by OSI technology × stage, and /);
       expect(notice).toMatch(/partner scores are neutral/);
       expect(within(card).queryByTestId('osi-cell-note')).toBeNull();
     }
     cleanup();
-    // an old three-stage link (?stage=Midstream) names no stage the nodes have: dropped, as any unknown value
-    renderAt('/aib/partnerships?stage=Midstream');
+    // old links: a three-stage stage (?stage=Midstream) and a dictionary sector (?tech=<sector>) name no option: dropped
+    const sector = doc.nodes.flatMap((n) => n.techs).find((t) => !technologiesOfNodes(doc.nodes).includes(t)) ?? 'Nonesuch';
+    renderAt(`/aib/partnerships?stage=Midstream&tech=${encodeURIComponent(sector)}`);
     expect(await h1('Partnerships')).toBeTruthy();
     expect((screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement).value).toBe('');
+    expect((screen.getByRole('combobox', { name: 'Technology' }) as HTMLSelectElement).value).toBe('');
     noAcronyms();
     setEngineClient(null);
   });
@@ -879,7 +931,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     renderAt('/compacts/workstreams?scn=decoupling');
     expect(await h1('Workstreams')).toBeTruthy();
     expect(screen.getByRole('combobox', { name: 'Technology' })).toBeTruthy();
-    expect(screen.queryAllByTestId('compact-taxonomy')).toEqual([]);
+    expect(screen.getAllByTestId('compact-taxonomy')).toHaveLength(docM.compacts.length);
     noAcronyms();
     cleanup();
     const c = docM.compacts[0];
@@ -890,29 +942,29 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(openTwins()).toBe(12);
     noAcronyms();
     cleanup();
-    // a technology and (six-stage) stage: the three-stage OSI cell of that technology the matching nodes' codes sit in
-    const M = { osiTech: true };
-    const n = docM.nodes.find((x) => legacyOsiCellsOfNode(x).length && x.inStrategicScope !== false)!;
-    const mPick = osiCellPick(docM.nodes, { country: null, tech: n.techs[0], stage: n.stage, node: null }, M)!;
-    expect([mPick.cell!.tech, mPick.cell!.legacy]).toEqual([n.techs[0], true]);
-    renderAt(`/aib/partnerships?tech=${encodeURIComponent(n.techs[0])}&stage=${n.stage}`);
+    // a technology and stage: the six-stage OSI cell of that technology the matching nodes' codes sit in
+    const n = docM.nodes.find((x) => x.yfCells.length && x.inStrategicScope !== false)!;
+    const t0 = osiTechsOfNode(n)[0];
+    const mPick = osiCellPick(docM.nodes, { country: null, tech: t0, stage: n.stage, node: null })!;
+    expect([mPick.cell!.tech, mPick.cell!.stage]).toEqual([t0, n.stage]);
+    renderAt(`/aib/partnerships?tech=${encodeURIComponent(t0)}&stage=${n.stage}`);
     expect(await h1('Partnerships')).toBeTruthy();
     expect((screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement).value).toBe(n.stage);
     const po = await screen.findByRole('region', { name: 'Partnership Opportunity' });
-    expect(within(po).getByTestId('osi-cell-note').textContent).toContain(`OSI cell ${n.techs[0]} – ${mPick.cell!.stage}`);
+    expect(within(po).getByTestId('osi-cell-note').textContent).toContain(`OSI cell ${t0} – ${mPick.cell!.stage}`);
     cleanup();
     // every technology of a multi-technology node (rare earths: Electric Vehicles and Wind) reads its own cell
-    const multi = docM.nodes.find((x) => x.techs.length > 1 && x.yfCells.length > 1);
+    const multi = docM.nodes.find((x) => osiTechsOfNode(x).length > 1);
     if (multi) {
-      for (const t of multi.techs) {
-        const cell = osiCellPick(docM.nodes, { country: null, tech: t, stage: multi.stage, node: null }, M)!.cell!;
+      for (const t of osiTechsOfNode(multi)) {
+        const cell = osiCellPick(docM.nodes, { country: null, tech: t, stage: multi.stage, node: null })!.cell!;
         expect(cell.tech).toBe(t);
         renderAt(`/aib/partnerships?tech=${encodeURIComponent(t)}&stage=${multi.stage}`);
         expect(await h1('Partnerships')).toBeTruthy();
         const card = await screen.findByRole('region', { name: 'Partnership Opportunity' });
         const note = within(card).getByTestId('osi-cell-note').textContent ?? '';
         expect(note).toContain(`Partner indices for the OSI cell ${t} – ${cell.stage}`);
-        for (const o of multi.techs.filter((x) => x !== t)) expect(note).not.toContain(`${o} – ${cell.stage}`);
+        for (const o of osiTechsOfNode(multi).filter((x) => x !== t)) expect(note).not.toContain(`${o} – ${cell.stage}`);
         cleanup();
       }
     }
@@ -1120,7 +1172,6 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
 
 describe.skipIf(!haveFixture())('the diversification scenario (2026-10-19)', () => {
   const doc = readDoc();
-  const tx = taxonomyOf(doc.meta);
   const names = countryNamesOf(doc);
   const has = hasDiversify(doc);
   const shockId = diversifyShockIdOf(doc.meta);
@@ -1208,28 +1259,28 @@ describe.skipIf(!haveFixture())('the diversification scenario (2026-10-19)', () 
     if (search) fireEvent.change(search, { target: { value: '' } });
     // the chart still shows only the nodes diversified
     expect(chartIds()).toEqual(ran.slice(0, CHART_ROWS).map((x) => x.node.id));
-    // the index and the sector filters
-    const ix = indexOfNode(tx, ran[0].node);
-    if (ix && tx.dictionary) {
-      fireEvent.change(screen.getByRole('combobox', { name: 'Index' }), { target: { value: ix.code } });
-      await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('index')).toBe(ix.code));
-      const inIndex = ran.filter((x) => indexOfNode(tx, x.node)?.code === ix.code);
-      expect(chartIds()).toEqual(inIndex.slice(0, CHART_ROWS).map((x) => x.node.id));
-      // the sector choices are those of the index
-      const options = within(screen.getByRole('combobox', { name: tx.One })).getAllByRole('option').map((o) => o.getAttribute('value')).filter(Boolean);
-      expect(options.every((s) => ix.sectors.includes(s!))).toBe(true);
-    }
-    const sector = ran[0].node.techs[0];
-    fireEvent.change(screen.getByRole('combobox', { name: tx.One }), { target: { value: sector } });
-    await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('sector')).toBe(sector));
-    expect(chartIds()).toEqual(ran.filter((x) => x.node.techs.includes(sector)).slice(0, CHART_ROWS).map((x) => x.node.id));
-    expect(bodyRows().length).toBe(Math.min(25, rows.filter((x) => x.node.techs.includes(sector)).length));
-    // a new index clears the sector
-    if (ix && tx.dictionary) {
-      fireEvent.change(screen.getByRole('combobox', { name: 'Index' }), { target: { value: '' } });
-      await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('sector')).toBeNull());
-    }
+    // the Technology and Stage filters (no Index filter): a node in several technologies passes each
+    expect(screen.queryByRole('combobox', { name: 'Index' })).toBeNull();
+    const tech = techKeysOfNode(ran[0].node)[0];
+    fireEvent.change(screen.getByRole('combobox', { name: 'Technology' }), { target: { value: tech } });
+    await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('tech')).toBe(tech));
+    expect(chartIds()).toEqual(ran.filter((x) => nodeInTech(x.node, tech)).slice(0, CHART_ROWS).map((x) => x.node.id));
+    expect(bodyRows().length).toBe(Math.min(25, rows.filter((x) => nodeInTech(x.node, tech)).length));
+    // the stage choices are the stages of that technology's cells (never node.stage)
+    const stageSel = screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement;
+    expect(Array.from(stageSel.options).map((o) => o.value)).toEqual(['', ...cellStagesOfNodes(rows.map((x) => x.node), tech)]);
+    const stage = nodeStagesOf(ran[0].node, tech)[0];
+    fireEvent.change(stageSel, { target: { value: stage } });
+    await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('stage')).toBe(stage));
+    expect(chartIds()).toEqual(ran.filter((x) => nodeInCell(x.node, tech, stage)).slice(0, CHART_ROWS).map((x) => x.node.id));
+    // the place column: technologies · stage
+    expect(within(tableCard()).getAllByRole('columnheader').map((h) => h.textContent)).toContain('Technologies · stage');
     noAcronyms();
+    // an old ?index= / ?sector= link is dropped
+    cleanup();
+    renderAt(`/aib/diversification?index=A&sector=${encodeURIComponent(ran[0].node.techs[0])}`);
+    expect(await h1('Managed Interdependence')).toBeTruthy();
+    expect(chartIds()).toEqual(ran.slice(0, CHART_ROWS).map((x) => x.node.id));
   });
 
   it('the class under the scenario carries its physical-capability flag in the table; a node just above its benchmark names the tolerance', async () => {
@@ -1309,11 +1360,15 @@ describe.skipIf(!haveFixture())('the diversification scenario (2026-10-19)', () 
     if (inCompact) expect(within(li(inCompact.node.id)).getByRole('link', { name: inCompact.node.compact! }).getAttribute('href')).toBe(`/compacts/${encodeURIComponent(inCompact.node.compact!)}#nodes`);
     const withCell = shown.find((x) => profiledCellsOfNode(x.node).length);
     if (withCell) {
-      // the three-stage Sector profile it opens, labelled as that profile ("Batteries – Midstream")
-      const c = profiledCellsOfNode(withCell.node)[0];
-      expect(c.label).toBe(cellLabel(c.tech, c.stage));
-      expect(within(li(withCell.node.id)).getByRole('link', { name: c.label }).getAttribute('href')).toBe(c.href);
-      expect(li(withCell.node.id).textContent).toContain("Sector profile (the paper’s three stages): ");
+      // the six-stage Sector profiles it opens, each labelled as that profile ("Batteries – Refining")
+      const cs = profiledCellsOfNode(withCell.node);
+      for (const c of cs) {
+        expect(c.label).toBe(cellLabel(c.tech, c.stage));
+        expect(within(li(withCell.node.id)).getByRole('link', { name: c.label }).getAttribute('href')).toBe(c.href);
+        expect(c.href).toBe(`/sector/${c.slug.slice(0, -(c.stage.length + 1))}/${c.stage.toLowerCase()}`);
+      }
+      expect(li(withCell.node.id).textContent).toContain(cs.length === 1 ? ' · Sector profile: ' : ' · Sector profiles: ');
+      expect(li(withCell.node.id).textContent).not.toMatch(/three stages|Upstream|Midstream|Downstream/);
     }
     const noCell = shown.find((x) => !profiledCellsOfNode(x.node).length);
     if (noCell) expect(li(noCell.node.id).textContent).not.toContain('Sector profile');
@@ -1331,7 +1386,7 @@ describe.skipIf(!haveFixture())('the diversification scenario (2026-10-19)', () 
     expect(screen.getByRole('heading', { level: 2, name: 'Managed Interdependence' })).toBeTruthy();
     const about = screen.getByTestId('about-diversify');
     expect(about.textContent).toContain(HHI_WORDS);
-    expect(about.textContent).toContain('falling back to the other nodes of its sector');
+    expect(about.textContent).toContain('falling back to the other nodes of its electro-industrial dictionary sector');
     expect(about.textContent).toContain("no supplier may then ship more than the cap times the allied market's demand");
     expect(about.textContent).toContain('its own purchases stay protected');
     expect(about.textContent).toContain('with the cap holding for every supplier in both');

@@ -61,7 +61,7 @@ setWidth(1440);
 
 /** Render inside a data router (Link needs one). */
 function inRouter(ui: ReactNode) {
-  const router = createMemoryRouter([{ path: '*', element: <>{ui}</> }], { initialEntries: ['/sector/batteries/midstream'] });
+  const router = createMemoryRouter([{ path: '*', element: <>{ui}</> }], { initialEntries: ['/sector/batteries/assembly'] });
   return render(<RouterProvider router={router} />);
 }
 
@@ -72,10 +72,10 @@ const rowA: ShareSplitRow = {
   parts: { china: 0.437, core: 0.379, partner: 0.14, rest: 0.03 },
   cols: { top1: 'China 43.7%', hhi: '0.207' },
   highlight: { offset: 0.5, label: 'USA 4.8% (#4)' },
-  section: 'midstream',
+  section: 'assembly',
 };
-const rowB: ShareSplitRow = { id: 'inv', label: 'Investment 2025', parts: { china: 0.412, core: 0.527, partner: 0.061 }, cols: { top1: 'China 41.2%', hhi: '0.303' }, section: 'midstream', href: '/sector/batteries/midstream#investment' };
-const rowP: ShareSplitRow = { id: 'p2040', label: '2040', parts: { china: 0.6, core: 0.1 }, cols: { top1: 'China 60.0%', hhi: '≥ 0.37' }, projection: true, section: 'midstream' };
+const rowB: ShareSplitRow = { id: 'inv', label: 'Investment 2025', parts: { china: 0.412, core: 0.527, partner: 0.061 }, cols: { top1: 'China 41.2%', hhi: '0.303' }, section: 'assembly', href: '/sector/batteries/assembly#investment' };
+const rowP: ShareSplitRow = { id: 'p2040', label: '2040', parts: { china: 0.6, core: 0.1 }, cols: { top1: 'China 60.0%', hhi: '≥ 0.37' }, projection: true, section: 'assembly' };
 
 describe('palette tokens', () => {
   it('text on every sequential step reads at 4.5:1 or better; ordinal ramps are four steps', () => {
@@ -101,7 +101,7 @@ describe('ShareSplitChart and BlocBar', () => {
           { key: 'top1', label: 'Top-1' },
           { key: 'hhi', label: 'HHI', num: true },
         ]}
-        sections={[{ key: 'midstream', label: 'Midstream', stage: 'midstream' }]}
+        sections={[{ key: 'assembly', label: 'Assembly', stage: 'assembly' }]}
         ariaLabel="Who holds the market"
         highlightHeader="United States"
         onRowClick={onRow}
@@ -110,7 +110,11 @@ describe('ShareSplitChart and BlocBar', () => {
     const table = screen.getByRole('table', { name: 'Who holds the market' });
     expect(within(table).getByRole('columnheader', { name: 'HHI' })).toBeTruthy();
     expect(within(table).getByRole('columnheader', { name: 'United States' })).toBeTruthy();
-    expect(within(table).getByText('Midstream')).toBeTruthy();
+    expect(within(table).getByText('Assembly')).toBeTruthy();
+    // a stage is never a colour (design S4): the section stripe is the neutral rule, with no inline colour
+    const stripe = within(table).getByText('Assembly').parentElement?.querySelector('span[aria-hidden="true"]') as HTMLElement;
+    expect(stripe.className).toContain('bg-ink-500');
+    expect(stripe.style.background).toBe('');
     const bars = screen.getAllByTestId('split-bar');
     const parts = [...bars[0].querySelectorAll<HTMLElement>('[data-part]')];
     expect(parts.map((p) => p.dataset.part)).toEqual(['china', 'core', 'partner', 'rest', 'unattributed']);
@@ -128,7 +132,7 @@ describe('ShareSplitChart and BlocBar', () => {
     expect(proj.style.border).toMatch(/2px solid/);
     // rows read in words; a row with a link links; others call onRowClick once
     expect(screen.getByRole('row', { name: /Exports 2024: China 43\.7%, Coalition core 37\.9%/ })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Investment 2025' }).getAttribute('href')).toBe('/sector/batteries/midstream#investment');
+    expect(screen.getByRole('link', { name: 'Investment 2025' }).getAttribute('href')).toBe('/sector/batteries/assembly#investment');
     fireEvent.click(screen.getByRole('button', { name: 'Exports 2024' }));
     expect(onRow).toHaveBeenCalledTimes(1);
   });
@@ -337,8 +341,8 @@ describe('grids, tables, lists, legends', () => {
         rowHeader="Technology"
         rows={[{ key: 'batteries', label: 'Batteries', children: [{ key: 'lithium', label: 'Lithium' }] }]}
         cols={[
-          { key: 'mid', label: 'Exports Mid', stage: 'midstream' },
-          { key: 'res', label: 'Reserves', stage: 'upstream' },
+          { key: 'asm', label: 'Exports: Assembly', stage: 'assembly' },
+          { key: 'res', label: 'Reserves', stage: 'extraction' },
         ]}
         cell={(r, c) => (c === 'res' ? { value: null, display: '' , title: `${r}: no reserves data` } : { value: 0.437, display: 'CHN 44%', sub: '0.207', selected: r === 'batteries' })}
         onCell={onCell}
@@ -348,8 +352,13 @@ describe('grids, tables, lists, legends', () => {
     expect(within(table).getByText('CHN 44%')).toBeTruthy();
     const empty = within(table).getByRole('button', { name: 'batteries: no reserves data' });
     expect((empty.closest('td') as HTMLElement).dataset.hatch).toBe('');
-    fireEvent.click(within(table).getAllByRole('button', { name: /Batteries, Exports Mid/ })[0]);
-    expect(onCell).toHaveBeenCalledWith('batteries', 'mid');
+    fireEvent.click(within(table).getAllByRole('button', { name: /Batteries, Exports: Assembly/ })[0]);
+    expect(onCell).toHaveBeenCalledWith('batteries', 'asm');
+    // the column stripes are neutral (no stage colour, design S4)
+    for (const s of table.querySelectorAll<HTMLElement>('thead span[aria-hidden="true"]')) {
+      expect(s.className).toContain('bg-ink-500');
+      expect(s.style.background).toBe('');
+    }
     expect(within(table).queryByText('Lithium')).toBeNull();
     fireEvent.click(within(table).getByRole('button', { name: 'Show Batteries sub-rows' }));
     expect(within(table).getByText('Lithium')).toBeTruthy();
@@ -362,23 +371,34 @@ describe('grids, tables, lists, legends', () => {
       { slug: 'semiconductors', label: 'Semiconductors', headline: false },
     ];
     const stages = [
-      { slug: 'upstream' as const, label: 'Upstream' },
-      { slug: 'midstream' as const, label: 'Midstream' },
-      { slug: 'downstream' as const, label: 'Downstream' },
+      { slug: 'extraction' as const, label: 'Extraction' },
+      { slug: 'refining' as const, label: 'Refining' },
+      { slug: 'components' as const, label: 'Components' },
+      { slug: 'assembly' as const, label: 'Assembly' },
+      { slug: 'deployment' as const, label: 'Deployment' },
+      { slug: 'recovery' as const, label: 'Recovery' },
     ];
-    const tile = (t: { slug: string; label: string }, s: string) => (t.slug === 'semiconductors' && s !== 'midstream' ? null : <button type="button">{`${t.label} ${s}`}</button>);
+    // Semiconductors: only the stages its basket has (Refining, Components, Assembly)
+    const tile = (t: { slug: string; label: string }, s: string) => (t.slug === 'semiconductors' && !['refining', 'components', 'assembly'].includes(s) ? null : <button type="button">{`${t.label} ${s}`}</button>);
     render(<CellGrid techs={techs} stages={stages} renderTile={tile} ariaLabel="All cells" />);
-    const first = screen.getByRole('button', { name: 'Batteries upstream' });
+    const grid = screen.getByRole('group', { name: 'All cells' });
+    expect(grid.dataset.cols).toBe('6');
+    const first = screen.getByRole('button', { name: 'Batteries extraction' });
     first.focus();
     fireEvent.keyDown(first, { key: 'ArrowRight' });
-    expect(document.activeElement?.textContent).toBe('Batteries midstream');
+    expect(document.activeElement?.textContent).toBe('Batteries refining');
     fireEvent.keyDown(document.activeElement as Element, { key: 'ArrowDown' });
-    expect(document.activeElement?.textContent).toBe('Coal midstream');
+    expect(document.activeElement?.textContent).toBe('Coal refining');
     fireEvent.keyDown(document.activeElement as Element, { key: 'ArrowDown' });
-    expect(document.activeElement?.textContent).toBe('Semiconductors midstream');
+    expect(document.activeElement?.textContent).toBe('Semiconductors refining');
     fireEvent.keyDown(document.activeElement as Element, { key: 'ArrowLeft' });
-    expect(document.activeElement?.textContent).toBe('Semiconductors midstream');
+    expect(document.activeElement?.textContent).toBe('Semiconductors refining');
+    fireEvent.keyDown(document.activeElement as Element, { key: 'End' });
+    expect(document.activeElement?.textContent).toBe('Semiconductors assembly');
     expect(screen.getByText('Non-headline')).toBeTruthy();
+    // the column heads: the six labels over a neutral stripe each (design S4)
+    for (const s of stages) expect(within(grid).getByText(s.label)).toBeTruthy();
+    for (const s of grid.querySelectorAll<HTMLElement>('span[aria-hidden="true"].block')) expect(s.style.background).toBe('');
     cleanup();
     setWidth(390);
     const { container } = render(<CellGrid techs={techs} stages={stages} renderTile={tile} ariaLabel="All cells" />);
@@ -427,7 +447,7 @@ describe('SectorChartCard', () => {
         <PageNotesProvider>
           <SectorBar highlight={{ value: null, options: [], onChange: () => undefined }} eu={{ checked: false, onChange: () => undefined }} status="Sector data: export 10 Oct 2026" notes={['Scenario dials apply to Strategic Insights only.']} />
           <SvgDefs />
-          <SectorChartCard vars={[{ var: 'trade.exports', item: 'batteries-midstream', year: 2024 }]} title="Top exporters" table={() => <table aria-label="twin" />} summary="China leads with 43.7 percent">
+          <SectorChartCard vars={[{ var: 'trade.exports', item: 'batteries-assembly', year: 2024 }]} title="Top exporters" table={() => <table aria-label="twin" />} summary="China leads with 43.7 percent">
             <div>chart</div>
           </SectorChartCard>
         </PageNotesProvider>
@@ -465,15 +485,18 @@ describe('chrome', () => {
     const onChange = vi.fn();
     inRouter(
       <SectorBar
-        summary="Batteries · Midstream"
+        summary="Batteries · Refining"
         picker={{
           tech: 'batteries',
-          stage: 'midstream',
+          stage: 'refining',
           techOptions: [{ value: 'batteries', label: 'Batteries' }],
           stages: [
-            { slug: 'upstream', label: 'Upstream', coverage: 'some' },
-            { slug: 'midstream', label: 'Midstream', coverage: 'rich' },
-            { slug: 'downstream', label: 'Downstream', coverage: 'thin' },
+            { slug: 'extraction', label: 'Extraction', short: 'Ext', coverage: 'some' },
+            { slug: 'refining', label: 'Refining', short: 'Ref', coverage: 'rich' },
+            { slug: 'components', label: 'Components', short: 'Com', coverage: 'thin' },
+            { slug: 'assembly', label: 'Assembly', short: 'Asm', coverage: 'rich' },
+            { slug: 'deployment', label: 'Deployment', short: 'Dep', coverage: 'some' },
+            { slug: 'recovery', label: 'Recovery', short: 'Rec', coverage: null, disabled: true, title: 'Batteries has no Recovery cell' },
           ],
           onTech: () => undefined,
           onStage: () => undefined,
@@ -484,13 +507,17 @@ describe('chrome', () => {
         notes={['A note.']}
       />,
     );
-    const open = screen.getByRole('button', { name: /Batteries · Midstream/ });
+    const open = screen.getByRole('button', { name: /Batteries · Refining/ });
     fireEvent.click(screen.getByRole('button', { name: 'Clear the highlight (United States)' }));
     expect(onChange).toHaveBeenCalledWith(null);
     open.focus();
     fireEvent.click(open);
-    const dialog = screen.getByRole('dialog', { name: 'Batteries · Midstream: filters' });
-    expect(within(dialog).getByRole('radio', { name: /Midstream, rich coverage/ })).toBeTruthy();
+    const dialog = screen.getByRole('dialog', { name: 'Batteries · Refining: filters' });
+    expect(within(dialog).getByRole('radio', { name: /Refining, rich coverage/ })).toBeTruthy();
+    // six stages; the shorts for narrow widths, the full name for the screen reader and the title
+    expect(within(dialog).getAllByRole('radio').map((r) => (r as HTMLInputElement).value)).toEqual(['extraction', 'refining', 'components', 'assembly', 'deployment', 'recovery']);
+    expect(within(dialog).getByText('Ref')).toBeTruthy();
+    expect((within(dialog).getByRole('radio', { name: 'Recovery' }) as HTMLInputElement).disabled).toBe(true);
     expect(within(dialog).getByText('A note.')).toBeTruthy();
     expect((within(dialog).getByRole('switch') as HTMLInputElement).disabled).toBe(true);
     expect(within(dialog).getByText('Nothing additive on this page')).toBeTruthy();
@@ -542,7 +569,7 @@ describe('three-colour scale in the kit (spec_country.md C1.4, C1.5)', () => {
         caption="Tri table"
         rowHeader="Row"
         rows={Object.keys(values).map((k) => ({ key: k, label: k.toUpperCase() }))}
-        cols={[{ key: 'v', label: 'Value', stage: 'midstream' }]}
+        cols={[{ key: 'v', label: 'Value', stage: 'assembly' }]}
         cell={(r) => ({ value: values[r], display: `v${values[r]}`, selected: r === 'a' })}
       />,
     );
@@ -568,7 +595,7 @@ describe('three-colour scale in the kit (spec_country.md C1.4, C1.5)', () => {
         caption="Signed table"
         rowHeader="Row"
         rows={Object.keys(vals).map((k) => ({ key: k, label: k }))}
-        cols={[{ key: 'v', label: 'Change', stage: 'upstream' }]}
+        cols={[{ key: 'v', label: 'Change', stage: 'extraction' }]}
         cell={(r) => ({ value: vals[r], display: `c${vals[r]}` })}
         scale={s}
       />,
@@ -582,7 +609,7 @@ describe('three-colour scale in the kit (spec_country.md C1.4, C1.5)', () => {
       <HeatTable
         caption="Rank table"
         rows={[{ key: 'x', label: 'x' }, { key: 'y', label: 'y' }, { key: 'z', label: 'z' }]}
-        cols={[{ key: 'r', label: 'Rank', stage: 'upstream' }]}
+        cols={[{ key: 'r', label: 'Rank', stage: 'extraction' }]}
         cell={(r) => ({ value: { x: 1, y: 2, z: 3 }[r] as number, display: `r${r}` })}
         reverse
       />,

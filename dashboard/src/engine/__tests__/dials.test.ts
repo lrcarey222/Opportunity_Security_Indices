@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseBaselineInputs } from '../bundle.ts';
-import { makeParams } from '../params.ts';
+import { dialReadout, makeParams } from '../params.ts';
 import type { Bundle, Dials, Params } from '../types.ts';
 
 type Ctx = Pick<Bundle, 'baselineInputs' | 'manifest'>;
@@ -56,8 +56,10 @@ function owned(ctx: Ctx, dial: keyof Dials, d: number): Record<string, 1 | -1 | 
     case 'populism': {
       const o: Record<string, 1 | -1 | 0> = {
         'dials.populism': 1, 'm.P': 1, ...si('si.weights.policy'), [iea]: 1,
-        // the contrast exponent keeps Midstream (the largest stage weight) and pushes the others down as P rises
-        'si.stage_weights.Upstream': -1, 'si.stage_weights.Downstream': -1,
+        // the contrast exponent keeps Components and Assembly (the largest stage weight) and pushes the
+        // other four stages down as P rises
+        'si.stage_weights.Extraction': -1, 'si.stage_weights.Refining': -1,
+        'si.stage_weights.Deployment': -1, 'si.stage_weights.Recovery': -1,
       };
       return o;
     }
@@ -99,8 +101,11 @@ describe.each(sets)('dials on the %s manifest', (_name, ctx) => {
         expect(p.si.fossil_excluded).toBe(true);
         expect(p.partner.exclude_techs).toEqual(c.baselineInputs.fossil_techs);
       }
-      // Midstream (the largest stage weight) is held fixed by the populism contrast exponent
-      expect(p.si.stage_weights.Midstream).toBe(base.si.stage_weights.Midstream);
+      // the six stages, and Components and Assembly (the largest stage weight) held fixed by the
+      // populism contrast exponent
+      expect(Object.keys(p.si.stage_weights)).toEqual(['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery']);
+      expect(p.si.stage_weights.Components).toBe(base.si.stage_weights.Components);
+      expect(p.si.stage_weights.Assembly).toBe(base.si.stage_weights.Assembly);
       // the Strategic Index weights keep their sum (renormalisation)
       const s0 = Object.values(base.si.weights).reduce((a, x) => a + x, 0);
       const s1 = Object.values(p.si.weights).reduce((a, x) => a + x, 0);
@@ -118,5 +123,28 @@ describe.each(sets)('dials on the %s manifest', (_name, ctx) => {
     const c = ctx!;
     const p = makeParams({ dials: { hawkishness: 50, bullishness: 50, populism: 50, greenness: 50 } }, c);
     expect(changed(makeParams(null, c), p).size).toBe(0);
+  });
+
+  it.skipIf(!ctx)('the populism readout gives the six-stage weights over the manufacturing weight', () => {
+    const c = ctx!;
+    const bl = { baselineInputs: c.baselineInputs, baselineParams: makeParams(null, c) };
+    const row = (P: number, id: string) => {
+      const t = dialReadout(makeParams({ dials: { populism: P } as Partial<Dials> as Dials }, c), bl);
+      const k = (t.cols.parameter as string[]).indexOf(id);
+      return { label: (t.cols.label as string[])[k], current: (t.cols.current as Float64Array)[k], text: (t.cols.text as string[])[k] };
+    };
+    const sw = c.baselineInputs.stage_weights;
+    // the pipeline's six-stage weights (SUPPLY_CHAIN_STAGE_SI_WEIGHTS: an equal share of the
+    // roll-up weights 0.50 / 0.75 / 0.25)
+    expect(sw).toEqual({ Extraction: 0.5 / 3, Refining: 0.5 / 3, Components: 0.375, Assembly: 0.375, Deployment: 0.25, Recovery: 0.5 / 3 });
+    expect(row(50, 'stage_up_ratio').label).toBe('Extraction, Refining, Recovery / Components, Assembly stage weight');
+    expect(row(50, 'stage_down_ratio').label).toBe('Deployment / Components, Assembly stage weight');
+    // lambda_s = lambda_max (lambda0_s / lambda_max)^mP with lambda_max the Components / Assembly weight
+    for (const P of [0, 50, 100]) {
+      const mP = Math.pow(4, (P - 50) / 50);
+      expect(row(P, 'stage_up_ratio').current).toBeCloseTo(Math.pow(sw.Extraction / sw.Components, mP), 12);
+      expect(row(P, 'stage_down_ratio').current).toBeCloseTo(Math.pow(sw.Deployment / sw.Components, mP), 12);
+    }
+    expect(row(50, 'stage_up_ratio').text).toMatch(/\(baseline\)$/);
   });
 });

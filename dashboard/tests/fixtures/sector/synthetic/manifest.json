@@ -1,7 +1,7 @@
 {
   "schema": "osi-sector",
-  "schema_version": 1,
-  "bundle_id": "cc91ca2f9c9eee0c737998d610c674bb",
+  "schema_version": 2,
+  "bundle_id": "1e92cab926faecbfc79cac803f4f1935",
   "created": "2026-10-10T00:00:00Z",
   "git_commit": null,
   "generator": "scripts/87_export_sector_data.R",
@@ -16,47 +16,49 @@
     "policy_text": true,
     "series": true,
     "fdi": true,
-    "dev": true
+    "dev": true,
+    "climate": false,
+    "climate_src": false
   },
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.a440a0ed.osb",
-      "bytes": 139240,
-      "bytes_gz": 37792,
-      "md5": "a440a0ed057a5f353cf1f724babf42c1",
+      "file": "sector-meta.7887f020.osb",
+      "bytes": 175008,
+      "bytes_gz": 46022,
+      "md5": "7887f020c50010b21188a5e5b73de76b",
       "tech": null
     },
     {
       "name": "sector-facts",
-      "file": "sector-facts.d36c8bee.osb",
-      "bytes": 34080,
-      "bytes_gz": 5573,
-      "md5": "d36c8beed548468d97938c3f21c666f5",
+      "file": "sector-facts.29f97230.osb",
+      "bytes": 42152,
+      "bytes_gz": 6194,
+      "md5": "29f97230d7f65bcacf5173ef449e0872",
       "tech": null
     },
     {
       "name": "sector-trade-batteries",
-      "file": "sector-trade-batteries.e5659ea4.osb",
-      "bytes": 18760,
-      "bytes_gz": 5238,
-      "md5": "e5659ea4f9df06e6cf898f0a4f44aa27",
+      "file": "sector-trade-batteries.82d2c4b2.osb",
+      "bytes": 17744,
+      "bytes_gz": 5179,
+      "md5": "82d2c4b2a4f96cd13a377faa7d4c0efa",
       "tech": "batteries"
     },
     {
       "name": "sector-trade-oil",
-      "file": "sector-trade-oil.6288d9bb.osb",
+      "file": "sector-trade-oil.ce6a4fc5.osb",
       "bytes": 6928,
-      "bytes_gz": 2402,
-      "md5": "6288d9bba99390fb22b5ef70a5ca0ec6",
+      "bytes_gz": 2403,
+      "md5": "ce6a4fc5e024a546287c1b0576556dbf",
       "tech": "oil"
     },
     {
       "name": "sector-policy",
-      "file": "sector-policy.3830b77c.osb",
+      "file": "sector-policy.ce46fdb6.osb",
       "bytes": 3312,
-      "bytes_gz": 976,
-      "md5": "3830b77c35c955dc50f4715f0a697a27",
+      "bytes_gz": 982,
+      "md5": "ce46fdb6b12e5b4c1d9cc1d41a50de3f",
       "tech": null
     },
     {
@@ -69,26 +71,26 @@
     },
     {
       "name": "sector-series",
-      "file": "sector-series.1d26ee18.osb",
-      "bytes": 19024,
-      "bytes_gz": 3541,
-      "md5": "1d26ee185b933a7dcbac59086a96dab8",
+      "file": "sector-series.635902b5.osb",
+      "bytes": 19168,
+      "bytes_gz": 3598,
+      "md5": "635902b53f4a7615846a581e5950bcaa",
       "tech": null
     },
     {
       "name": "sector-fdi",
-      "file": "sector-fdi.09dfd665.osb",
-      "bytes": 14912,
-      "bytes_gz": 2828,
-      "md5": "09dfd6650e20ed1bad84443377238485",
+      "file": "sector-fdi.c126e6b9.osb",
+      "bytes": 14984,
+      "bytes_gz": 2857,
+      "md5": "c126e6b97d8c759de517d9ad305884b7",
       "tech": null
     },
     {
       "name": "sector-dev",
-      "file": "sector-dev.df4852d3.osb",
+      "file": "sector-dev.8ad10121.osb",
       "bytes": 3736,
-      "bytes_gz": 912,
-      "md5": "df4852d356d788b2a423af48bbc00e7c",
+      "bytes_gz": 911,
+      "md5": "8ad101212ad072350add9f32b7f536b3",
       "tech": null
     }
   ],
@@ -115,8 +117,8 @@
       "id": "concentration",
       "template": "concentration@1",
       "values": {
-        "n": 5,
-        "n_total": 8
+        "n": 8,
+        "n_total": 11
       },
       "labels": {},
       "source": "Sector Insights summary (each sector's own source)",
@@ -131,20 +133,20 @@
         "total_usd": 64836245360
       },
       "labels": {
-        "cell": "batteries-midstream",
-        "cell_label": "Batteries — Midstream"
+        "cell": "batteries-assembly",
+        "cell_label": "Batteries — Assembly"
       },
       "source": "UN Comtrade, reconciled matrix",
       "year": "2024",
-      "href": "/sector/batteries/midstream#trade"
+      "href": "/sector/batteries/assembly#trade"
     },
     {
       "id": "investment",
       "template": "investment@1",
       "values": {
-        "total_bn": 395.40685201760937,
-        "china": 0.65225524272602986,
-        "coalition": 0.34774475727397003
+        "total_bn": 439.86031336760936,
+        "china": 0.62913324737029852,
+        "coalition": 0.37086675262970148
       },
       "labels": {},
       "source": "Clean Investment Monitor (Rhodium Group and MIT CEEPR)",
@@ -213,167 +215,332 @@
   "coverage_glyph": [
     {
       "tech": "batteries",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "batteries",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "batteries",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": true
+    },
+    {
+      "tech": "batteries",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "batteries",
+      "stage": "deployment",
+      "country_data": false
+    },
+    {
+      "tech": "batteries",
+      "stage": "recovery",
+      "country_data": true
+    },
+    {
+      "tech": "coal",
+      "stage": "extraction",
       "country_data": false
     },
     {
       "tech": "coal",
-      "stage": "upstream",
+      "stage": "refining",
       "country_data": false
     },
     {
       "tech": "coal",
-      "stage": "midstream",
+      "stage": "components",
       "country_data": false
     },
     {
       "tech": "coal",
-      "stage": "downstream",
+      "stage": "assembly",
+      "country_data": false
+    },
+    {
+      "tech": "coal",
+      "stage": "deployment",
+      "country_data": false
+    },
+    {
+      "tech": "coal",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "electric-grid",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": false
     },
     {
       "tech": "electric-grid",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": false
     },
     {
       "tech": "electric-grid",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": false
+    },
+    {
+      "tech": "electric-grid",
+      "stage": "assembly",
+      "country_data": false
+    },
+    {
+      "tech": "electric-grid",
+      "stage": "deployment",
+      "country_data": false
+    },
+    {
+      "tech": "electric-grid",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "electric-vehicles",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "electric-vehicles",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "electric-vehicles",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": true
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "recovery",
       "country_data": true
     },
     {
       "tech": "gas",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "gas",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": false
     },
     {
       "tech": "gas",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": false
+    },
+    {
+      "tech": "gas",
+      "stage": "assembly",
+      "country_data": false
+    },
+    {
+      "tech": "gas",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "gas",
+      "stage": "recovery",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "extraction",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "refining",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "components",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "assembly",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "deployment",
       "country_data": true
     },
     {
       "tech": "geothermal",
-      "stage": "upstream",
-      "country_data": false
-    },
-    {
-      "tech": "geothermal",
-      "stage": "midstream",
-      "country_data": false
-    },
-    {
-      "tech": "geothermal",
-      "stage": "downstream",
-      "country_data": true
-    },
-    {
-      "tech": "green-hydrogen",
-      "stage": "upstream",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "green-hydrogen",
-      "stage": "midstream",
+      "stage": "extraction",
       "country_data": false
     },
     {
       "tech": "green-hydrogen",
-      "stage": "downstream",
+      "stage": "refining",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "components",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "assembly",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "deployment",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "nuclear",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "nuclear",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": false
     },
     {
       "tech": "nuclear",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": false
+    },
+    {
+      "tech": "nuclear",
+      "stage": "assembly",
+      "country_data": false
+    },
+    {
+      "tech": "nuclear",
+      "stage": "deployment",
+      "country_data": false
+    },
+    {
+      "tech": "nuclear",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "oil",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "oil",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": false
     },
     {
       "tech": "oil",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": false
+    },
+    {
+      "tech": "oil",
+      "stage": "assembly",
+      "country_data": false
+    },
+    {
+      "tech": "oil",
+      "stage": "deployment",
       "country_data": true
     },
     {
-      "tech": "solar",
-      "stage": "upstream",
+      "tech": "oil",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "solar",
-      "stage": "midstream",
+      "stage": "extraction",
+      "country_data": false
+    },
+    {
+      "tech": "solar",
+      "stage": "refining",
+      "country_data": false
+    },
+    {
+      "tech": "solar",
+      "stage": "components",
       "country_data": true
     },
     {
       "tech": "solar",
-      "stage": "downstream",
+      "stage": "assembly",
       "country_data": true
     },
     {
-      "tech": "wind",
-      "stage": "upstream",
+      "tech": "solar",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "solar",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "wind",
-      "stage": "midstream",
+      "stage": "extraction",
+      "country_data": false
+    },
+    {
+      "tech": "wind",
+      "stage": "refining",
+      "country_data": false
+    },
+    {
+      "tech": "wind",
+      "stage": "components",
       "country_data": true
     },
     {
       "tech": "wind",
-      "stage": "downstream",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "wind",
+      "stage": "deployment",
+      "country_data": false
+    },
+    {
+      "tech": "wind",
+      "stage": "recovery",
       "country_data": false
     }
   ],
@@ -384,6 +551,12 @@
       "status": "PASS",
       "n": 75,
       "detail": null
+    },
+    {
+      "check": "six stages: the dictionary's cells are the 11 x 6 headline grid plus the Semiconductors stages; no text names an old stage",
+      "status": "PASS",
+      "n": 69,
+      "detail": "69 cells (66 headline)"
     },
     {
       "check": "chunks: decode identical() to the encoded objects (NA patterns included)",
@@ -434,31 +607,37 @@
       "detail": null
     },
     {
+      "check": "CM-FDI parity: fdi.stages = the configured stages (config/partnership.yml cm_fdi stages); rows keyed on the first stage's cell",
+      "status": "PASS",
+      "n": 2,
+      "detail": "Components, Assembly"
+    },
+    {
       "check": "CM-FDI parity: flows, group splits and years recomputed from the decoded projects identical()",
       "status": "PASS",
       "n": 3,
       "detail": null
     },
     {
-      "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)",
+      "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 26.5 MB gz)",
       "status": "PASS",
       "n": 9,
-      "detail": "sector 58 kB gz"
+      "detail": "sector 67 kB gz"
     }
   ],
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
       "mtime": "synthetic",
-      "bytes": 147213,
-      "md5": "fa9bdfd94b4f00ee732e842214bb0ce2"
+      "bytes": 174870,
+      "md5": "76a03916b3209ee58b7ae700093aa7d6"
     }
   ],
   "budget": {
-    "sector_gz": 59882,
+    "sector_gz": 68766,
     "combined_gz": null,
     "limit_sector_gz": 9437184,
-    "limit_combined_gz": 26214400
+    "limit_combined_gz": 27787264
   },
   "encoding": {
     "lossy": false

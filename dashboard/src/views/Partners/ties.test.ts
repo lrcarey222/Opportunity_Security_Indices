@@ -1,9 +1,10 @@
 // The ties chunk's derive functions (views/Partners/ties.ts): bilateral positions with the partner's
-// mirror report as a flagged fallback and conduit centres marked; factory-project flows both ways;
+// mirror report as a flagged fallback and conduit centres marked; factory-project flows both ways, at the
+// CM-FDI stages the chunk names (Components and Assembly, the same projects, counted once);
 // Development Potential by sector; agreements; UN-vote alignment; money formatting; parsing.
 
 import { describe, expect, it } from 'vitest';
-import { alignmentOf, bySize, dpOfCell, fmtUsdM, hasCmfdi, positionsOf, projectFlows, sharedAgreements, tiesName } from './ties.ts';
+import { alignmentOf, bySize, CMFDI_STAGES_CONFIG, cmfdiOnce, cmfdiSameProjectsNote, cmfdiStages, dpOfCell, fmtUsdM, hasCmfdi, parseTies, positionsOf, projectFlows, sharedAgreements, tiesName } from './ties.ts';
 import { syntheticTies } from './tiesFixture.ts';
 
 describe('ties', () => {
@@ -11,6 +12,7 @@ describe('ties', () => {
 
   it('parses the chunk', () => {
     expect(t.meta.dip_years).toEqual([2020, 2021, 2022, 2023, 2024]);
+    expect(t.meta.cmfdi_stages).toEqual(['Components', 'Assembly']);
     expect(t.dip).toHaveLength(8);
     expect(t.top_all[0]).toMatchObject({ partner_iso: 'JPN', psi_rank: 2 });
     expect(tiesName(t, 'DEU')).toBe('Germany');
@@ -31,13 +33,51 @@ describe('ties', () => {
   });
 
   it('factory projects in one sector, both directions', () => {
-    expect(hasCmfdi('Solar', 'Midstream')).toBe(true);
-    expect(hasCmfdi('Solar', 'Upstream')).toBe(false);
-    const f = projectFlows(t, 'USA', 'Solar', 'Midstream');
+    // the CM-FDI technologies at the chunk's CM-FDI stages (meta.cmfdi_stages), not a legacy stage
+    expect(hasCmfdi('Solar', 'Components', t)).toBe(true);
+    expect(hasCmfdi('Solar', 'Assembly', t)).toBe(true);
+    expect(hasCmfdi('Solar', 'Extraction', t)).toBe(false);
+    expect(hasCmfdi('Solar', 'Refining', t)).toBe(false);
+    expect(hasCmfdi('Solar', 'Deployment', t)).toBe(false);
+    expect(hasCmfdi('Solar', 'Midstream', t)).toBe(false);
+    expect(hasCmfdi('Coal', 'Components', t)).toBe(false);
+    // without the chunk: config/partnership.yml cm_fdi.stages; or a stage list given directly
+    expect(hasCmfdi('Wind', 'Assembly')).toBe(true);
+    expect(hasCmfdi('Wind', 'Midstream')).toBe(false);
+    expect(hasCmfdi('Wind', 'Components', ['Assembly'])).toBe(false);
+    const f = projectFlows(t, 'USA', 'Solar', 'Components');
     expect(f.map((r) => r.partner_iso)).toEqual(['JPN', 'DEU']);
     expect(f[0]).toMatchObject({ out_projects: 1, out_value: null, in_projects: 3, in_value: 500, in_disclosed: 2 });
     expect(f[1]).toMatchObject({ out_projects: 2, out_value: 80, in_projects: 0 });
-    expect(projectFlows(t, 'USA', 'Wind', 'Midstream')[0]).toMatchObject({ partner_iso: 'JPN', in_projects: 5 });
+    // both stages carry the same projects
+    expect(projectFlows(t, 'USA', 'Solar', 'Assembly')).toEqual(f);
+    expect(projectFlows(t, 'USA', 'Wind', 'Components')[0]).toMatchObject({ partner_iso: 'JPN', in_projects: 5 });
+    expect(projectFlows(t, 'USA', 'Solar', 'Refining')).toEqual([]);
+  });
+
+  it('the CM-FDI stages come from the data, and a technology total counts each project once', () => {
+    expect(cmfdiStages(t)).toEqual(['Components', 'Assembly']);
+    // an older chunk without meta.cmfdi_stages: the stages of its rows (chain order); no chunk: the configuration
+    const noMeta = { ...t, meta: { ...t.meta, cmfdi_stages: [] } };
+    expect(cmfdiStages(noMeta)).toEqual(['Components', 'Assembly']);
+    expect(cmfdiStages(null)).toEqual([...CMFDI_STAGES_CONFIG]);
+    expect(CMFDI_STAGES_CONFIG).toEqual(['Components', 'Assembly']);
+    expect(cmfdiStages({ ...t, meta: { ...t.meta, cmfdi_stages: ['Assembly', 'Components'] } })).toEqual(['Components', 'Assembly']);
+    // a one-item stage list unboxed to a string still parses
+    expect(parseTies({ meta: { cmfdi_stages: 'Assembly' } }).meta.cmfdi_stages).toEqual(['Assembly']);
+    expect(parseTies({}).meta.cmfdi_stages).toEqual([]);
+    // each project once: 4 flows written at 2 stages
+    expect(t.cmfdi).toHaveLength(8);
+    expect(cmfdiOnce(t)).toHaveLength(4);
+    const solar = projectFlows(t, 'USA', 'Solar', null);
+    expect(solar).toEqual(projectFlows(t, 'USA', 'Solar', 'Components'));
+    expect(solar.reduce((s, r) => s + r.out_projects + r.in_projects, 0)).toBe(6);
+    // said once on the page
+    expect(cmfdiSameProjectsNote(['Assembly', 'Components'])).toBe(
+      'Components and Assembly carry the same factory projects: the data do not say which part of manufacturing a project serves, so each project is counted once, not once per stage.',
+    );
+    expect(cmfdiSameProjectsNote(['Assembly'])).toBeNull();
+    expect(cmfdiSameProjectsNote([])).toBeNull();
   });
 
   it('Development Potential by sector, shared agreements, UN-vote alignment', () => {

@@ -148,6 +148,6 @@ sector_usgs_production <- function(mcs, parse_value, country_iso3, is_residual, 
 # the latest (which comes from data/processed). Zeros are true zeros.
 sector_uranium_series <- function(ref, exclude_year) {
   u <- ref[ref$variable == "mine_production" & ref$year != exclude_year, , drop = FALSE]
-  tibble::tibble(var = "production.uranium", item_key = "cell:nuclear-upstream", geo = u$iso3c, year = as.integer(u$year),
+  tibble::tibble(var = "production.uranium", item_key = paste0("cell:", SECTOR_URANIUM_CELL), geo = u$iso3c, year = as.integer(u$year),
                  value = as.double(u$value), status = ifelse(u$value > 0, "obs", "zero"), obs_year = NA_integer_)
 }

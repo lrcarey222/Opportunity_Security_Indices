@@ -112,8 +112,8 @@ describe('client summary = meta.summary (fixture)', () => {
     expect(summaryParity(model, facts, tradeOf)).toEqual([]);
   });
 
-  it('batteries midstream: matrix W, China share and bloc mode remove intra-EU trade', () => {
-    const bm = fixtureItem('cell', 'batteries-midstream');
+  it('batteries assembly: matrix W, China share and bloc mode remove intra-EU trade', () => {
+    const bm = fixtureItem('cell', 'batteries-assembly');
     const v = model.varById.get('trade.exports')!;
     const m = summaryFromFacts(model, facts, v, bm, 2024, 'members', tradeOf(bm));
     const b = summaryFromFacts(model, facts, v, bm, 2024, 'bloc', tradeOf(bm));

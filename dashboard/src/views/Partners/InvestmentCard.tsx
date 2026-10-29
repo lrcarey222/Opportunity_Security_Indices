@@ -1,7 +1,8 @@
 // Bilateral direct investment of one economy, partner by partner (the Partners view and the Country
 // partners section): IMF direct investment positions, inward to the left and outward to the right, with
 // the conduit financial centres listed apart (greyed, never ranked: Friendshore treats them as
-// unobserved); and, in Solar, Wind, Batteries and Electric Vehicles Midstream, the CM-FDI factory
+// unobserved); and, in Solar, Wind, Batteries and Electric Vehicles at the CM-FDI stages (the ties
+// chunk's cmfdi_stages: Components and Assembly, which carry the same projects), the CM-FDI factory
 // projects both ways. HTML bars, so the chart reads as a list to assistive technology; the side of the
 // axis and the words carry the direction, never the colour alone.
 
@@ -13,7 +14,11 @@ import { EmptyState, Loading, Notice, Segmented } from '../../components/ui.tsx'
 import { rowsToCsv } from '../../lib/csv.ts';
 import { cellLabel } from '../../lib/format.ts';
 import { COMPARE_COLOR, HATCH_STYLE, PAPER_MUTE } from '../../theme/palette.ts';
-import { bySize, CMFDI_ATTRIBUTION, fmtUsdM, hasCmfdi, positionsOf, projectFlows, type PositionRow, type ProjectFlowRow, type Ties } from './ties.ts';
+import { stageLabel } from '../../lib/stages.ts';
+import { bySize, CMFDI_ATTRIBUTION, CMFDI_SECTORS, cmfdiSameProjectsNote, cmfdiStages, fmtUsdM, hasCmfdi, positionsOf, projectFlows, type PositionRow, type ProjectFlowRow, type Ties } from './ties.ts';
+
+/** 'A', 'A and B', 'A, B and C'. */
+const andWords = (xs: readonly string[]): string => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 // two neutral marks, not the three-colour scale: direction is not a low or high value (the side and the words carry it)
 export const OUT_COLOR = COMPARE_COLOR.scenario;
@@ -120,7 +125,7 @@ export function InvestmentCards(p: InvestmentCardProps) {
   return (
     <>
       <PositionsCard {...p} />
-      {p.sector && hasCmfdi(p.sector.tech, p.sector.stage) && <ProjectsCard {...p} sector={p.sector} />}
+      {p.sector && hasCmfdi(p.sector.tech, p.sector.stage, p.ties) && <ProjectsCard {...p} sector={p.sector} />}
     </>
   );
 }
@@ -154,6 +159,7 @@ function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected,
     { id: 'conduit', header: 'Conduit financial centre', value: (r) => (r.conduit ? 'yes' : '') },
   ];
   const kindWord = kind === 'all' ? 'all financial instruments, net' : 'debt instruments, gross';
+  const cmStages = andWords(cmfdiStages(ties).map(stageLabel));
   return (
     <ChartCard
       headingLevel={headingLevel}
@@ -185,8 +191,8 @@ function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected,
         <>
           How this feeds the index: Friendshore&apos;s investment tie ranks {name}&apos;s outward debt-instrument position in each partner, averaged over {yrs}, together
           with that position relative to the partner&apos;s economy and to both economies ({m ? `GDP of ${m.dip_gdp_year}` : 'GDP'}); a larger position makes the
-          partner a stronger friendshoring opportunity. Conduit centres are left out on both sides, so they neither gain nor lose. In Solar, Wind, Batteries and Electric
-          Vehicles Midstream the tie is the factory projects instead ({projectsHint}). Positions are the stock at the end of the year, as reported to
+          partner a stronger friendshoring opportunity. Conduit centres are left out on both sides, so they neither gain nor lose. In {andWords(CMFDI_SECTORS)} at
+          the {cmStages} stages the tie is the factory projects instead ({projectsHint}). Positions are the stock at the end of the year, as reported to
           the IMF by {name}{yearsOut.length ? ` (${yearsOut.sort().join(', ')})` : ''}; where {name} reports nothing for a pair, the partner&apos;s report is used and
           marked. Source: {m?.dip_source ?? 'IMF, Direct Investment Positions'}.
         </>
@@ -231,6 +237,8 @@ function ProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected,
     { id: 'in_v', header: 'Their disclosed capital', value: (r) => r.in_value, cell: (r) => (r.in_projects ? money(r.in_value, r.in_disclosed) : '–'), num: true, minWidth: 170 },
   ];
   const attribution = ties?.meta.cmfdi_attribution ?? CMFDI_ATTRIBUTION;
+  // said once: the stages that carry the same projects (Components and Assembly)
+  const same = cmfdiSameProjectsNote(cmfdiStages(ties));
   return (
     <ChartCard
       headingLevel={headingLevel}
@@ -256,7 +264,12 @@ function ProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected,
           })),
         ),
       })}
-      notes={<span data-testid="cmfdi-attribution">{attribution}</span>}
+      notes={
+        <>
+          {same && <span data-testid="cmfdi-same-projects">{same} </span>}
+          <span data-testid="cmfdi-attribution">{attribution}</span>
+        </>
+      }
     >
       {!ties ? (
         <Loading label="Loading factory projects" />

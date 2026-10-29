@@ -17,6 +17,7 @@ import { classInfo } from '../derive/classes.ts';
 import { fmtPp, fmtShare, fmtUsd } from '../derive/format.ts';
 import { dividendOf } from '../derive/partnerships.ts';
 import type { NodeScenario } from '../derive/scenarios.ts';
+import { nodeWhere } from '../derive/taxonomy.ts';
 
 export interface MapPoint {
   node: AibNode;
@@ -58,7 +59,7 @@ export function StrategicMap({
   ariaLabel: string;
   onSelect?: (p: MapPoint) => void;
   height?: number;
-  /** where a node sits in words (default "techs · stage"; a dictionary bundle adds the index) */
+  /** where a node sits in words (default nodeWhere(): its OSI cells, "Electric Vehicles · Components") */
   where?: (n: MapPoint['node']) => string;
   /** what the horizontal axis measures ("Shock exposure"; "Share shifted" under Managed Interdependence) */
   xWords?: string;
@@ -105,7 +106,7 @@ export function StrategicMap({
       tooltip={(p) => (
         <Tip
           value={p.node.label}
-          title={`${where ? where(p.node) : `${p.node.techs.join(', ')} · ${p.node.stage}`}: ${classInfo(clsOf(p)).label}`}
+          title={`${where ? where(p.node) : nodeWhere(p.node)}: ${classInfo(clsOf(p)).label}`}
           lines={[
             `${xWords} ${fmtShare(p.x, 0)} (${fmtUsd(p.r)} ${lostWord})`,
             `Coordination dividend ${fmtPp(p.y)}`,

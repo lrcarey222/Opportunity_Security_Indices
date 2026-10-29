@@ -2,9 +2,11 @@
 // production and reserves, IEA top-3 mining and refining, China's refining share, coalition shares);
 // mining vs refining (IEA base case, one share-split row per year with projections outlined, plus the
 // slope of the largest holders' shares); reserves and production (USGS leagues and the share-vs-share
-// scatter); trade (Comtrade critical-mineral exports: reported and mirror, HKG tagged); prices (IMF
-// board and monthly series); who uses it (IEA demand by technology, observed vs STEPS). uranium
-// redirects to Nuclear — Upstream; an unknown mineral goes to the index with a notice.
+// scatter); trade (Comtrade critical-mineral exports by stage, design C3: ores and concentrates at
+// Extraction, refined products at Refining, scrap at Recovery, one card each, never added: different
+// goods; reported and mirror, HKG tagged); prices (IMF board and monthly series); who uses it (IEA
+// demand by technology, observed vs STEPS). uranium redirects to Nuclear — Extraction; an unknown
+// mineral goes to the index with a notice.
 
 import { useCallback, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
@@ -16,13 +18,13 @@ import { PageHead, Segmented, StatTile } from '../../../components/ui.tsx';
 import { rowsToCsv } from '../../../lib/csv.ts';
 import { useTitle } from '../../../shell/title.ts';
 import { GROUP_COLOR, NEUTRAL_SERIES, PAPER_DIM, SIGNAL } from '../../../theme/palette.ts';
-import { MINERAL_REDIRECTS } from '../../contract.ts';
+import { MINERAL_REDIRECTS, STAGE_LABELS } from '../../contract.ts';
 import type { FactsIndex } from '../../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
 import { useModel } from '../../data/SectorDataProvider.tsx';
 import { sectorCsv } from '../../derive/csv.ts';
 import {
-  commodityOf, CRITMIN_DEP_VAR, CRITMIN_EXPORTS_VAR, demandByTech, isProjection, MINE_VAR, MINING_VAR, observedSummary, REFINING_VAR, RESERVES_VAR,
+  commodityOf, CRITMIN_DEP_VAR, CRITMIN_EXPORTS_VAR, CRITMIN_STAGE_WORDS, demandByTech, isProjection, MINE_VAR, mineralStageItems, MINING_VAR, observedSummary, REFINING_VAR, RESERVES_VAR,
   shareLines, shareScatter, summaryYears, techsOfMineral,
 } from '../../derive/minerals.ts';
 import { slice } from '../../derive/summary.ts';
@@ -271,29 +273,56 @@ function ReservesProduction(c: Ctx) {
 
 // ---- trade -------------------------------------------------------------------------------------
 
-function Trade({ model, item, facts, highlight, eu }: Ctx) {
+/**
+ * The critical-minerals trade of a mineral, one card per stage it is traded at (schema 2, design C3): the
+ * measures sit on the mineral's mineral_stage items ("lithium-refining"); stages are different goods, so
+ * they are never added. A bundle that still keys the trade on the mineral itself shows one card.
+ */
+function Trade(c: Ctx) {
+  const { model, item, facts } = c;
+  const v = vOf(model, CRITMIN_EXPORTS_VAR);
+  const staged = v ? mineralStageItems(model, item).filter((s) => hasData(model, v, s)) : [];
+  const items = staged.length ? staged : v && hasData(model, v, item) ? [item] : [];
+  if (!facts || !v || !items.length) return <p className="text-sm text-paper-mute">No mineral trade codes for {lc(item.label)} in the Comtrade critical-minerals basket.</p>;
+  return (
+    <div className="space-y-6">
+      {staged.length > 0 && (
+        <p className="max-w-3xl text-sm text-paper-dim">
+          Traded at {staged.length === 1 ? 'one stage' : `${staged.length} stages`}: {listText(staged.map((s) => `${STAGE_LABELS[s.stageSlug!]} (${CRITMIN_STAGE_WORDS[s.stageSlug!] ?? 'other goods'})`))}. Each stage is a different product, so the cards are never added.
+        </p>
+      )}
+      {items.map((it) => (
+        <TradeCard key={it.slug} {...c} tradeItem={it} />
+      ))}
+    </div>
+  );
+}
+
+function TradeCard({ model, item, facts, highlight, eu, tradeItem }: Ctx & { tradeItem: ItemInfo }) {
   const v = vOf(model, CRITMIN_EXPORTS_VAR);
   const dep = vOf(model, CRITMIN_DEP_VAR);
-  if (!facts || !hasData(model, v, item)) return <p className="text-sm text-paper-mute">No mineral trade codes for {lc(item.label)} in the Comtrade critical-minerals basket.</p>;
-  const y = facts.latestYear(v.idx, item.idx);
+  if (!facts || !v) return null;
+  const y = facts.latestYear(v.idx, tradeItem.idx);
   if (y === null) return null;
-  const sl = slice(model, facts, v, item.idx, y, eu);
-  const m = measureConc(model, facts, v, item, y, eu);
-  const hDep = highlight && dep ? facts.value(dep.idx, item.idx, facts.latestYear(dep.idx, item.idx) ?? y, highlight.idx) : null;
+  const stage = tradeItem.axis === 'mineral_stage' && tradeItem.stageSlug ? tradeItem.stageSlug : null;
+  const what = stage ? `${lc(item.label)} ${CRITMIN_STAGE_WORDS[stage] ?? 'goods'} (${STAGE_LABELS[stage]})` : lc(item.label);
+  const sl = slice(model, facts, v, tradeItem.idx, y, eu);
+  const m = measureConc(model, facts, v, tradeItem, y, eu);
+  const hDep = highlight && dep ? facts.value(dep.idx, tradeItem.idx, facts.latestYear(dep.idx, tradeItem.idx) ?? y, highlight.idx) : null;
   const mirror = sl.rows.filter((r) => r.status === 'mirror').length;
   return (
     <LeagueCard
       model={model}
       v={v}
-      item={item}
+      item={tradeItem}
       year={y}
       rows={sl.rows}
       world={sl.world}
-      title={`Exporters of ${lc(item.label)}, ${y}`}
+      title={`Exporters of ${what}, ${y}`}
       highlight={highlight}
       map
       top={15}
-      extraVars={dep && highlight ? [{ var: dep.id, item: item.slug, year: y }] : undefined}
+      extraVars={dep && highlight ? [{ var: dep.id, item: tradeItem.slug, year: y }] : undefined}
       notes={
         <div className="space-y-1">
           {m && (
@@ -304,12 +333,12 @@ function Trade({ model, item, facts, highlight, eu }: Ctx) {
           )}
           {highlight && dep && (
             <p>
-              {highlight.name}: {lc(item.label)} exports are {hDep && Number.isFinite(hDep.value) ? fmtFact(model, dep, item, hDep.value) : 'not recorded as a share'} of its total exports ({dep.source.short}, {y}).
+              {highlight.name}: {what} exports are {hDep && Number.isFinite(hDep.value) ? fmtFact(model, dep, tradeItem, hDep.value) : 'not recorded as a share'} of its total exports ({dep.source.short}, {y}).
             </p>
           )}
         </div>
       }
-      csvName={`${item.slug}-exports-${y}`}
+      csvName={`${tradeItem.slug}-exports-${y}`}
     />
   );
 }
@@ -406,7 +435,7 @@ export default function MineralView() {
   useTitle(item ? item.label : 'Minerals', 'Sector Insights');
   const { facts, h } = useFacts();
   const highlight = useHighlight(model);
-  if (MINERAL_REDIRECTS[slug]) return <Redirect to={link(MINERAL_REDIRECTS[slug])} notice={`${slug[0].toUpperCase()}${slug.slice(1)} is measured on the Nuclear — Upstream page.`} />;
+  if (MINERAL_REDIRECTS[slug]) return <Redirect to={link(MINERAL_REDIRECTS[slug])} notice={`${slug[0].toUpperCase()}${slug.slice(1)} is measured on the Nuclear — Extraction page.`} />;
   if (!item) return <Redirect to={link('/sector/minerals')} notice={`No mineral called '${raw}'; showing all minerals.`} />;
   const techs = techsOfMineral(model, item);
   const ctx: Ctx = { model, item, facts, highlight, eu: state.eu };

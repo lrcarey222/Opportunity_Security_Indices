@@ -57,8 +57,8 @@
 // turn the document into one of the OSI basket (meta without the taxonomy fields, OSI technology names
 // from the crosswalk, six-stage as a master export now is, strategic scope electro_industrial with the
 // electrolysers node, as Green Hydrogen, outside it), stripLegacyCells() to drop the nodes' three-stage
-// cells (a six-stage bundle without them: the joins with the three-stage bundles then fall back to the
-// roll-up; no other strip drops them), stripDiversify() to turn it into one written before the diversification scenario, and
+// cells (a six-stage bundle without them; since 2026-10-29 the joins read only the six-stage cells, so
+// dropping them changes nothing; no other strip drops them), stripDiversify() to turn it into one written before the diversification scenario, and
 // stripMethodology() to turn a document into one written before the 2026-10-16 methodology fields (and the
 // 2026-10-17 network and investment flows, and the 2026-10-19 taxonomy and diversification scenario: an
 // older bundle is a master one). AIB_DATA_DIR overrides the directory (e.g. public/data/aib for a local
@@ -144,8 +144,9 @@ const DIVERSIFY_EXTRAS = ['lostUsd', 'dividend', 'hhi', 'largest', 'largestShare
 
 /**
  * The document without the nodes' three-stage cells (in place; node.yfCellsLegacy and yfSubcomponentsLegacy,
- * 2026-10-28): a six-stage bundle exported before them, whose joins with the three-stage bundles fall back to
- * the roll-up. No other strip calls it. A no-op on a document without them.
+ * 2026-10-28): a six-stage bundle exported before them. Since 2026-10-29 the views read only the six-stage cells
+ * (yfCells), so the tests use it to show the legacy fields change nothing. No other strip calls it. A no-op on a
+ * document without them.
  */
 export function stripLegacyCells(doc: AibDoc): AibDoc {
   for (const n of doc.nodes) {

@@ -15,7 +15,7 @@ theme_row <- function(Country, value, iso3c = NA_character_, variable = "x", sou
     Country = Country,
     iso3c = iso3c,
     tech = tech,
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     category = "Trade",
     variable = variable,
     data_type = "index",

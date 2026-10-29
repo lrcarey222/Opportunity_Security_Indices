@@ -21,8 +21,8 @@ const view = (load: Lazy) => async () => ({ Component: (await load()).default })
 
 /** A strategic compact id (contract.ts AIB_STRATEGIC_ID_RE, case-insensitive here; repeated so the entry does not import the contract). */
 const STRATEGIC_ID = /^SC-[A-Z0-9-]+$/i;
-/** The former landing's query keys and sections (CompactsIndexView, now /compacts/workstreams). */
-const WORKSTREAM_KEYS = ['tech', 'scope'];
+/** The former landing's query keys and sections (CompactsIndexView, now /compacts/workstreams; `stage` since 2026-10-29). */
+const WORKSTREAM_KEYS = ['tech', 'stage', 'scope'];
 const WORKSTREAM_HASH = /^#(nodes|map|card-.+)$/;
 
 /** /compacts/:id/<anything else> -> the compact (the query string is kept). */

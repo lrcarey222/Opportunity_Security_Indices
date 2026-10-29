@@ -1,7 +1,11 @@
 // Sector URL state (spec_sector.md 2.7). Pure. The conventions match the Strategic parser
 // (state/url.ts): defaults are omitted, keys are written in one fixed order, invalid values are dropped
 // and listed (the "Ignored in the link" notice), keys the Sector parser does not know (Strategic keys
-// included) are ignored silently. Navigation inside the module keeps `c` and `eu` only.
+// included) are ignored silently. Navigation inside the module keeps `c` and `eu` only. `stage` is one
+// of the six stages (design U1, 2026-10-28): an old three-stage name is mapped where it became one stage
+// (Downstream -> Deployment) and dropped otherwise, both listed in the notice.
+
+import { isLegacyStage, legacyStageNote, legacyStageTargetName, SUPPLY_STAGES } from '../lib/stages.ts';
 
 export type Lens = 'china' | 'top1' | 'top3' | 'hhi' | 'coalition';
 export type FamKey = 'primary' | 'exports' | 'investment' | 'production' | 'capacity' | 'reserves' | 'consumption';
@@ -24,7 +28,7 @@ export interface SectorUrlState {
   tdir: TradeDir;
   /** include cross-cutting policies */
   xc: boolean;
-  /** Strategic vocabulary ("Batteries", "Midstream") */
+  /** Strategic vocabulary ("Batteries", "Refining") */
   tech: string | null;
   stage: string | null;
   /** item slug */
@@ -150,8 +154,15 @@ export function parseSectorSearch(search: string, ctx: SectorUrlCtx = {}): Secto
         else bad(k, raw, 'not a technology');
         break;
       case 'stage':
-        if (ctx.stages ? ctx.stages.has(v) : ['Upstream', 'Midstream', 'Downstream'].includes(v)) state.stage = v;
-        else bad(k, raw, 'not a stage');
+        if (ctx.stages ? ctx.stages.has(v) : (SUPPLY_STAGES as readonly string[]).includes(v)) state.stage = v;
+        else if (isLegacyStage(v)) {
+          // an old three-stage link: mapped where it became one stage, else dropped; listed either way
+          const to = legacyStageTargetName(v);
+          const mapped = !!to && (!ctx.stages || ctx.stages.has(to));
+          if (mapped) state.stage = to;
+          const note = legacyStageNote(v).replace(/\.$/, '');
+          bad(k, raw, mapped ? `${note}; showing it` : note);
+        } else bad(k, raw, 'not a stage');
         break;
       case 'item':
         if (!SLUG_RE.test(v)) bad(k, raw, 'not an item slug');

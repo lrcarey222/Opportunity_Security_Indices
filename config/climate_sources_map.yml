@@ -261,7 +261,7 @@ wei:
     - {id: oeu_buildings, label: "Buildings", name: "Other end use in buildings", parent: other_end_use}
     - {id: oeu_transport, label: "Transport", name: "Other end use in transport (mostly electric vehicles)", parent: other_end_use}
     - {id: oeu_industry, label: "Industry", name: "Other end use in industry", parent: other_end_use}
-    - {id: memo_og_upstream, label: "Memo: Oil & gas upstream", name: "Oil and gas upstream (memo)"}
+    - {id: memo_og_upstream, label: "Memo: Oil & gas upstream", name: "Oil and gas exploration and production (memo)"}
     - {id: memo_transitional, label: "Memo: Transitional fossil fuels", name: "Transitional fossil fuels (memo)"}
     - {id: memo_electricity, label: "Memo Electricity", name: "Electricity-related investment (memo)", only: ["World"]}
     - {id: memo_electricity_share, label: "Electricity %", name: "Electricity's share of the total (memo)", unit: "share", only: ["World"]}
@@ -273,117 +273,225 @@ wei:
 # fuel the sector supplies, handles or burns, all uses; never the sector's own emissions). Match quality as
 # in config/iea_pathways_map.yml: direct, partial, proxy (none without a row). Every cell is listed.
 cells:
-  batteries-upstream:
+  batteries-extraction:
     wei: [{id: battery, role: demand, match: proxy}, {id: oeu_transport, role: demand, match: proxy}]
     note: "Battery minerals follow battery demand: investment in grid battery storage and in end-use transport (mostly electric vehicles) stand in for it."
-  batteries-midstream:
+  batteries-refining:
+    wei: [{id: battery, role: demand, match: proxy}, {id: oeu_transport, role: demand, match: proxy}]
+    note: "Refined battery materials follow battery demand: investment in grid battery storage and in end-use transport (mostly electric vehicles) stand in for it."
+  batteries-components:
     wei: [{id: battery, role: demand, match: partial}, {id: oeu_transport, role: demand, match: proxy}]
     note: "Battery factories supply stationary storage and electric vehicles: investment in battery storage is the stock their storage output adds to; end-use transport investment (mostly electric vehicles) stands in for the rest."
-  batteries-downstream:
+  batteries-assembly:
+    wei: [{id: battery, role: demand, match: partial}, {id: oeu_transport, role: demand, match: proxy}]
+    note: "Battery factories supply stationary storage and electric vehicles: investment in battery storage is the stock their storage output adds to; end-use transport investment (mostly electric vehicles) stands in for the rest."
+  batteries-deployment:
     wei: [{id: battery, role: own, match: direct}]
     note: "Investment in battery storage on the power system."
-  coal-upstream:
+  batteries-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recycling row."
+  coal-extraction:
     wei: [{id: coal_supply, role: own, match: direct}]
     gcp: [coal]
     note: "Investment in coal supply, as the IEA reports it."
-  coal-midstream:
+  coal-refining:
     wei: [{id: coal_supply, role: own, match: partial}]
     gcp: [coal]
-    note: "Coal supply investment covers mining as well as the handling and transport this sector makes equipment for."
-  coal-downstream:
+    note: "Coal supply investment covers mining as well as the processing this sector covers."
+  coal-components:
+    wei: [{id: coal_supply, role: own, match: partial}]
+    gcp: [coal]
+    note: "Coal supply investment covers mining as well as the handling this sector makes equipment for."
+  coal-assembly:
+    wei: [{id: gen_coal, role: demand, match: partial}]
+    gcp: [coal]
+    note: "Investment in unabated coal-fired power: the plants these boilers and ash-handling systems go into."
+  coal-deployment:
     wei: [{id: gen_coal, role: own, match: direct}]
     gcp: [coal]
     note: "Investment in unabated coal-fired power."
-  electric-grid-upstream:
+  coal-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recovery row."
+  electric-grid-extraction:
     wei: [{id: grids, role: demand, match: proxy}]
     note: "Grid copper and aluminium follow network build-out: investment in electricity networks stands in for it."
-  electric-grid-midstream:
+  electric-grid-refining:
+    wei: [{id: grids, role: demand, match: proxy}]
+    note: "Refined copper, aluminium and electrical steel follow network build-out: investment in electricity networks stands in for it."
+  electric-grid-components:
     wei: [{id: grids, role: demand, match: partial}]
-    note: "Investment in electricity networks: the build-out grid equipment makers supply."
-  electric-grid-downstream:
+    note: "Investment in electricity networks: the build-out grid-equipment makers supply."
+  electric-grid-assembly:
+    wei: [{id: grids, role: demand, match: partial}]
+    note: "Investment in electricity networks: the build-out grid-equipment makers supply."
+  electric-grid-deployment:
     wei: [{id: grids, role: own, match: direct}]
     note: "Investment in electricity networks (transmission and distribution)."
-  electric-vehicles-upstream:
+  electric-grid-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recovery row."
+  electric-vehicles-extraction:
     wei: [{id: oeu_transport, role: demand, match: proxy}]
     note: "EV minerals follow EV sales: the IEA's end-use transport investment (mostly electric vehicles) stands in for them."
-  electric-vehicles-midstream:
+  electric-vehicles-refining:
+    wei: [{id: oeu_transport, role: demand, match: proxy}]
+    note: "Refined EV materials follow EV sales: the IEA's end-use transport investment (mostly electric vehicles) stands in for them."
+  electric-vehicles-components:
+    wei: [{id: oeu_transport, role: demand, match: proxy}]
+    note: "The IEA's end-use transport investment (mostly electric vehicles, as the IEA counts them) stands in for the demand EV-component factories serve."
+  electric-vehicles-assembly:
     wei: [{id: oeu_transport, role: demand, match: proxy}]
     note: "The IEA's end-use transport investment (mostly electric vehicles, as the IEA counts them) stands in for the demand EV factories serve."
-  electric-vehicles-downstream:
+  electric-vehicles-deployment:
     wei: [{id: oeu_transport, role: own, match: proxy}]
     note: "The IEA's end-use transport investment is mostly electric vehicles but also other transport electrification; it is not EV sales."
-  gas-upstream:
+  electric-vehicles-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recycling row."
+  gas-extraction:
     wei: [{id: gas_supply, role: own, match: partial}]
     gcp: [gas, flaring]
     note: "Gas supply investment covers production and also pipelines and LNG; flaring CO2 (from oil and gas fields) is shown as context."
-  gas-midstream:
+  gas-refining:
+    wei: [{id: gas_supply, role: own, match: partial}]
+    gcp: [gas]
+    note: "Gas supply investment includes gas processing, and production and transport too."
+  gas-components:
+    wei: [{id: gas_supply, role: own, match: partial}]
+    gcp: [gas]
+    note: "Gas supply investment includes the LNG and LPG plants this sector makes equipment for, and production too."
+  gas-assembly:
     wei: [{id: gas_supply, role: own, match: partial}]
     gcp: [gas]
     note: "Gas supply investment includes the pipelines, compressors and LNG plants this sector covers, and production too."
-  gas-downstream:
+  gas-deployment:
     wei: [{id: gen_oil_gas, role: own, match: partial}]
     gcp: [gas]
     note: "Investment in unabated oil- and gas-fired power: gas-fired power is most of it, and gas used outside power is not included."
-  geothermal-upstream:
+  gas-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recovery row."
+  geothermal-extraction:
     wei: [{id: renewables_other, role: demand, match: proxy}]
     note: "The IEA reports geothermal inside other renewable power (with hydro and bioenergy)."
-  geothermal-midstream:
+  geothermal-refining:
+    wei: []
+    note: "Geothermal has no refined material; the IEA's investment data have no row for it."
+  geothermal-components:
     wei: [{id: renewables_other, role: demand, match: proxy}]
     note: "The IEA reports geothermal inside other renewable power (with hydro and bioenergy)."
-  geothermal-downstream:
+  geothermal-assembly:
+    wei: [{id: renewables_other, role: demand, match: proxy}]
+    note: "The IEA reports geothermal inside other renewable power (with hydro and bioenergy)."
+  geothermal-deployment:
     wei: [{id: renewables_other, role: own, match: proxy}]
     note: "The IEA reports geothermal inside other renewable power (with hydro and bioenergy), so the figure is far larger than geothermal alone."
-  green-hydrogen-upstream:
+  geothermal-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recovery row."
+  green-hydrogen-extraction:
     wei: [{id: clean_fuels, role: demand, match: proxy}]
     note: "Investment in low-emissions fuels (hydrogen, biofuels and others) stands in for electrolyser build-out."
-  green-hydrogen-midstream:
+  green-hydrogen-refining:
+    wei: [{id: clean_fuels, role: demand, match: proxy}]
+    note: "Investment in low-emissions fuels (hydrogen, biofuels and others) stands in for electrolyser build-out."
+  green-hydrogen-components:
     wei: [{id: clean_fuels, role: demand, match: proxy}]
     note: "Investment in low-emissions fuels (hydrogen, biofuels and others) stands in for the demand electrolyser factories serve."
-  green-hydrogen-downstream:
+  green-hydrogen-assembly:
+    wei: [{id: clean_fuels, role: demand, match: proxy}]
+    note: "Investment in low-emissions fuels (hydrogen, biofuels and others) stands in for the demand electrolyser factories serve."
+  green-hydrogen-deployment:
     wei: [{id: clean_fuels, role: own, match: partial}]
     note: "Low-emissions fuels include low-emissions hydrogen and also biofuels and other fuels."
-  nuclear-upstream:
+  green-hydrogen-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recovery row."
+  nuclear-extraction:
     wei: [{id: nuclear, role: demand, match: proxy}]
     note: "Uranium demand follows reactor build-out: investment in nuclear power stands in for it."
-  nuclear-midstream:
+  nuclear-refining:
+    wei: [{id: nuclear, role: demand, match: proxy}]
+    note: "Fuel-cycle demand follows reactor build-out: investment in nuclear power stands in for it."
+  nuclear-components:
     wei: [{id: nuclear, role: demand, match: partial}]
-    note: "Investment in nuclear power: the build-out reactor and fuel-cycle suppliers serve."
-  nuclear-downstream:
+    note: "Investment in nuclear power: the build-out reactor-component suppliers serve."
+  nuclear-assembly:
+    wei: [{id: nuclear, role: demand, match: partial}]
+    note: "Investment in nuclear power: the build-out reactor and plant suppliers serve."
+  nuclear-deployment:
     wei: [{id: nuclear, role: own, match: direct}]
     note: "Investment in nuclear power."
-  oil-upstream:
+  nuclear-recovery:
+    wei: [{id: nuclear, role: demand, match: proxy}]
+    note: "Spent fuel follows the reactor fleet: investment in nuclear power is shown for scale."
+  oil-extraction:
     wei: [{id: oil_supply, role: own, match: partial}]
     gcp: [oil, flaring]
     note: "Oil supply investment covers production and also refining and transport; flaring CO2 (from oil and gas fields) is shown as context."
-  oil-midstream:
+  oil-refining:
     wei: [{id: oil_supply, role: own, match: partial}]
     gcp: [oil]
-    note: "Oil supply investment includes the refining, pipes and tanks this sector covers, and production too."
-  oil-downstream:
+    note: "Oil supply investment includes refining, and production and transport too."
+  oil-components:
+    wei: [{id: oil_supply, role: own, match: partial}]
+    gcp: [oil]
+    note: "Oil supply investment includes the drilling and pumping this sector makes equipment for, and much else."
+  oil-assembly:
+    wei: [{id: oil_supply, role: own, match: partial}]
+    gcp: [oil]
+    note: "Oil supply investment includes the fields, pipes and tanks this sector equips, and production too."
+  oil-deployment:
     wei: [{id: gen_oil_gas, role: own, match: proxy}]
     gcp: [oil]
     note: "Oil use is mostly in transport, which the IEA counts as end-use spending, not energy investment; unabated oil- and gas-fired power (mostly gas) is shown for scale."
-  solar-upstream:
+  oil-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recovery row."
+  solar-extraction:
     wei: [{id: solar, role: demand, match: proxy}]
-    note: "Solar materials follow solar build-out: investment in solar power stands in for it."
-  solar-midstream:
+    note: "Solar minerals follow solar build-out: investment in solar power stands in for it."
+  solar-refining:
+    wei: [{id: solar, role: demand, match: proxy}]
+    note: "Silicon metal, polysilicon and the other refined solar materials follow solar build-out: investment in solar power stands in for it."
+  solar-components:
     wei: [{id: solar, role: demand, match: partial}]
-    note: "Investment in solar power: the build-out module and inverter factories supply."
-  solar-downstream:
+    note: "Investment in solar power: the build-out wafer, cell and inverter factories supply."
+  solar-assembly:
+    wei: [{id: solar, role: demand, match: partial}]
+    note: "Investment in solar power: the build-out module factories supply."
+  solar-deployment:
     wei: [{id: solar, role: own, match: direct}]
     note: "Investment in solar power."
-  wind-upstream:
+  solar-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recycling row."
+  wind-extraction:
     wei: [{id: wind, role: demand, match: proxy}]
-    note: "Wind materials follow wind build-out: investment in wind power stands in for it."
-  wind-midstream:
+    note: "Wind minerals follow wind build-out: investment in wind power stands in for it."
+  wind-refining:
+    wei: [{id: wind, role: demand, match: proxy}]
+    note: "Refined wind materials follow wind build-out: investment in wind power stands in for it."
+  wind-components:
+    wei: [{id: wind, role: demand, match: partial}]
+    note: "Investment in wind power: the build-out blade, tower and nacelle factories supply."
+  wind-assembly:
     wei: [{id: wind, role: demand, match: partial}]
     note: "Investment in wind power: the build-out turbine factories supply."
-  wind-downstream:
+  wind-deployment:
     wei: [{id: wind, role: own, match: direct}]
     note: "Investment in wind power."
-  semiconductors-upstream:
+  wind-recovery:
+    wei: []
+    note: "The IEA's energy investment data have no recycling row."
+  semiconductors-refining:
     wei: []
     note: "The IEA's energy investment data do not cover chips."
-  semiconductors-midstream:
+  semiconductors-components:
+    wei: []
+    note: "The IEA's energy investment data do not cover chips."
+  semiconductors-assembly:
     wei: []
     note: "The IEA's energy investment data do not cover chips."

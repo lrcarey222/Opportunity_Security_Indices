@@ -11,7 +11,7 @@ const model = new SectorModel(fx.chunks['sector-meta'] as unknown as SectorMetaC
 const facts = factsIndexOf(fx.chunks['sector-facts'] as unknown as SectorFactsChunk);
 const trade = fx.chunks['sector-trade-batteries'] as unknown as SectorTradeChunk;
 const solar = fx.chunks['sector-trade-solar'] as unknown as SectorTradeChunk;
-const bm = fixtureItem('cell', 'batteries-midstream');
+const bm = fixtureItem('cell', 'batteries-assembly');
 
 describe('trade by sub-component (C5.4)', () => {
   it('lists the sub-components of a cell, largest first, with their codes and shares', () => {
@@ -21,7 +21,7 @@ describe('trade by sub-component (C5.4)', () => {
     expect(subs[0].codes).toEqual(['850760']);
     expect(subs[0].share).toBeCloseTo(0.7, 12);
     expect(subs[0].year).toBe(2024);
-    expect(subComponents(solar, model, fixtureItem('cell', 'solar-upstream')).map((s) => s.name)).toEqual(['Silicon metal']);
+    expect(subComponents(solar, model, fixtureItem('cell', 'solar-refining')).map((s) => s.name)).toEqual(['Silicon metal']);
   });
 
   it('sub-components add up to the cell for every economy, year and side', () => {

@@ -48,8 +48,8 @@ export function varsOfItem(model: SectorModel, item: ItemInfo, chunk?: string): 
 }
 
 /**
- * Item axes whose items stand for a cell's own measure (EI fuels: Oil Upstream production is fuel:oil;
- * CRS aid sectors: energy aid is every Downstream cell's, through dims.item_links).
+ * Item axes whose items stand for a cell's own measure (EI fuels: Oil Extraction production is fuel:oil;
+ * CRS aid sectors: energy aid is every Deployment cell's, through dims.item_links).
  */
 const CELL_LINKED_AXES: ReadonlySet<string> = new Set(['fuel', 'aid_sector']);
 
@@ -62,8 +62,8 @@ function cardVars(model: SectorModel, cell: ItemInfo): Set<string> | null {
 /**
  * The item a var is measured on for a cell (spec 3.1, 3.3): the cell itself when the var has data for
  * it; else the cell's linked fuel (heaviest link first) when the dictionary ties the var to the cell
- * (dict.cells.section_cards lists it, or its primary_for names the cell). Oil Upstream production is
- * `production.fuels` on fuel:oil; Oil Downstream does not show it. Non-cell items resolve to
+ * (dict.cells.section_cards lists it, or its primary_for names the cell). Oil Extraction production is
+ * `production.fuels` on fuel:oil; Oil Deployment does not show it. Non-cell items resolve to
  * themselves. Null when the var has no data for the cell.
  */
 export function measureItem(model: SectorModel, cell: ItemInfo, v: VarInfo, chunk?: string): ItemInfo | null {
@@ -218,18 +218,17 @@ export function latestYearOf(model: SectorModel, facts: FactsIndex | null, v: Va
   return ys.length ? Math.max(...ys) : null;
 }
 
-/** Thin-cell notice text (3.3). */
+/**
+ * Thin-cell notice text (3.3). At six stages many cells are thin (Geothermal outside Deployment holds
+ * little but readiness); the cells with mineral links (Extraction and Refining of the clean
+ * technologies) point at the minerals the profile lists.
+ */
 export function thinNotice(model: SectorModel, item: ItemInfo): string {
   const label = model.cellLabel(item);
-  if (item.techSlug === 'geothermal' && item.stageSlug !== 'downstream') return `Little country-level data exists for ${label}. The resource and cost data sit in Geothermal — Downstream.`;
-  if (item.techSlug === 'electric-grid' && item.stageSlug === 'downstream') return `Little country-level data exists for ${label}. The equipment trade sits in Electric Grid — Midstream.`;
-  if (item.stageSlug === 'upstream') {
-    // the Upstream baskets of 2026-10-11 (EV, Solar, Wind, Nuclear, Semiconductors) give these cells trade
-    const minerals = model.itemsOfCell(item.idx, 'mineral').length > 0;
-    const tech = (item.tech ?? '').toLowerCase();
-    if (item.has_trade) return `Beyond trade in its basket of goods (see Trade), little country-level data exists for ${label}.${minerals ? ` The materials behind ${tech} are also measured mineral by mineral: see the minerals below.` : ''}`;
-    return `Little country-level data exists for ${label}.${minerals ? ` The materials behind ${tech} are measured mineral by mineral: see the minerals below.` : ''}`;
-  }
-  if (item.has_trade) return `Beyond trade in its basket of goods (see Trade), little country-level data exists for ${label}.`;
-  return `Little country-level data exists for ${label}.`;
+  if (item.techSlug === 'geothermal' && item.stageSlug !== 'deployment') return `Little country-level data exists for ${label}. The resource and cost data sit in Geothermal — Deployment.`;
+  if (item.techSlug === 'electric-grid' && item.stageSlug === 'deployment') return `Little country-level data exists for ${label}. The equipment trade sits in Electric Grid — Components and Electric Grid — Assembly.`;
+  const minerals = model.itemsOfCell(item.idx, 'mineral').length > 0;
+  const tech = (item.tech ?? '').toLowerCase();
+  if (item.has_trade) return `Beyond trade in its basket of goods (see Trade), little country-level data exists for ${label}.${minerals ? ` The materials behind ${tech} are also measured mineral by mineral: see the minerals below.` : ''}`;
+  return `Little country-level data exists for ${label}.${minerals ? ` The materials behind ${tech} are measured mineral by mineral: see the minerals below.` : ''}`;
 }

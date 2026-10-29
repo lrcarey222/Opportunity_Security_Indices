@@ -14,13 +14,14 @@
 import { useEffect, useId, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { CountrySelect, type CountryOption } from '../components/CountrySelect.tsx';
-import { Segmented, Select } from '../components/ui.tsx';
+import { Select } from '../components/ui.tsx';
 import { HOME_QUESTIONS, questionFact, type Question } from '../content/questions.ts';
 import {
-  HEADLINE_TECH_SLUGS, MINERAL_SLUGS, STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS,
-  type MineralSlug, type SectorManifest, type StageSlug, type TechSlug,
+  HEADLINE_TECH_SLUGS, MINERAL_SLUGS, TECH_LABELS, TECH_SLUGS,
+  type MineralSlug, type SectorManifest, type TechSlug,
 } from '../sector/contract.ts';
-import { moduleInfo } from './modules.ts';
+import { STAGE_LABEL, SUPPLY_STAGE_SLUGS, supplyStageOfSlug, type SupplyStage, type SupplyStageSlug } from '../lib/stages.ts';
+import { moduleInfo, SECTOR_DEFAULT_CELL } from './modules.ts';
 import { onIdle, prefetchAib, prefetchCountry, saveData } from './prefetch.ts';
 import { loadSectorManifest, peekSectorManifest, prefetchSectorChunk } from './sectorManifest.ts';
 import { useTitle } from './title.ts';
@@ -42,8 +43,13 @@ export const MINERAL_LABELS: Readonly<Record<MineralSlug, string>> = {
   molybdenum: 'Molybdenum',
 };
 
-/** Technologies with one stage only: Semiconductors is a Midstream trade basket. */
-const ONLY_STAGE: Partial<Record<TechSlug, StageSlug>> = { semiconductors: 'midstream' };
+/** The stages of a technology that have a Sector page (the dictionary's cells): every headline technology
+ *  has all six; Semiconductors, outside the headline set, has its three trade baskets. */
+const STAGE_PAGES: Partial<Record<TechSlug, readonly SupplyStageSlug[]>> = { semiconductors: ['refining', 'components', 'assembly'] };
+const stagePagesOf = (t: TechSlug): readonly SupplyStageSlug[] => STAGE_PAGES[t] ?? SUPPLY_STAGE_SLUGS;
+
+/** The label of a stage slug ("refining" -> "Refining"). */
+const stageLabelOfSlug = (s: SupplyStageSlug): string => STAGE_LABEL[supplyStageOfSlug(s) as SupplyStage];
 
 /** The economies of the Country manifest for the picker (lazy: the Country store and its options
  *  helper are not part of Home's chunk). Rejects when the manifest cannot be read. */
@@ -101,13 +107,14 @@ function useIdleSectorManifest(): SectorManifest | null {
 
 // ---- module cards ------------------------------------------------------------------------------
 
-/** 11 x 3 squares: filled where the cell has a country-level measure (manifest.coverage_glyph). */
+/** 11 x 6 squares, a technology per row and the six stages in chain order across: filled where the cell
+ *  has a country-level measure (manifest.coverage_glyph), drawn empty where it has none. */
 export function CoverageGlyph({ glyph }: { glyph: SectorManifest['coverage_glyph'] }) {
   const has = new Set(glyph.filter((g) => g.country_data).map((g) => `${g.tech}|${g.stage}`));
   return (
-    <div className="inline-grid grid-cols-3 gap-[3px]" aria-hidden="true" data-testid="coverage-glyph">
+    <div className="inline-grid grid-cols-6 gap-[3px]" aria-hidden="true" data-testid="coverage-glyph">
       {HEADLINE_TECH_SLUGS.map((t) =>
-        STAGE_SLUGS.map((s) => (
+        SUPPLY_STAGE_SLUGS.map((s) => (
           <span key={`${t}-${s}`} className={`block h-2 w-2 border border-ink-500 ${has.has(`${t}|${s}`) ? 'bg-ink-500' : ''}`} />
         )),
       )}
@@ -115,8 +122,8 @@ export function CoverageGlyph({ glyph }: { glyph: SectorManifest['coverage_glyph
   );
 }
 
-/** A static glyph of the four corners of the Country profile's three-stage scatter (decorative): Stable and
- *  Grow on top (higher energy security), Exposed and Upgrade below; lower economic opportunity on the left.
+/** A static glyph of the four corners of the Country profile's Security and opportunity chart (decorative):
+ *  Stable and Grow on top (higher energy security), Exposed and Upgrade below; lower economic opportunity on the left.
  *  The names follow country/contract.ts QUADRANTS (Exposed and Stable were Secure and Watch until 2026-10-28). */
 function QuadrantGlyph() {
   const cells: [string, string][] = [
@@ -172,7 +179,7 @@ const SECTOR_CARD: CardSpec = {
   lede: 'Understand economic opportunity, energy security, policy intervention, and climate implications across the supply chain.',
   glyphNote: '',
   links: [
-    { to: '/sector/solar/midstream', label: 'Solar — Midstream' },
+    { to: '/sector/solar/assembly', label: 'Solar — Assembly' },
     { to: '/sector/minerals/lithium', label: 'Who mines and refines lithium?' },
     { to: '/sector/concentration', label: 'Which supply chains are most concentrated?' },
   ],
@@ -184,11 +191,11 @@ const COUNTRY_CARD: CardSpec = {
   title: 'Explore a Country',
   question: "What is this country's strategic position?",
   lede: 'Understand where a country has strategic opportunities, vulnerabilities, policy strengths, partnership potential, and a role in the Allied Industrial Base.',
-  glyphNote: "Strategic posture by technology and stage, the paper's opportunity-security corners, partners and role; priorities follow a perspective you can adjust",
+  glyphNote: 'Strategic posture by technology and stage, security and opportunity corners, partners and role; priorities follow a perspective you can adjust',
   links: [
     { to: '/countries/JPN', label: 'Japan' },
     { to: '/countries/DEU', label: 'Germany' },
-    { to: '/countries/USA/memo', label: 'United States: policy memo' },
+    { to: '/countries/USA', label: 'United States' },
   ],
   button: 'Explore countries',
 };
@@ -299,12 +306,16 @@ export function QuestionCard({ q, manifest }: { q: Question; manifest: SectorMan
 
 // ---- jump to a sector --------------------------------------------------------------------------
 
+/** The jump to a sector profile: a technology, then one of the six stages (a select: six options do not fit
+ *  a segmented control at phone width). Stages without a page for the technology are listed, disabled;
+ *  picking such a technology moves the stage to its first page. Default: Batteries — Refining (E6). */
 function JumpPicker() {
   const navigate = useNavigate();
-  const [tech, setTech] = useState<TechSlug>('batteries');
-  const [stage, setStage] = useState<StageSlug>('midstream');
+  const [tech, setTech] = useState<TechSlug>(SECTOR_DEFAULT_CELL.tech);
+  const [stage, setStage] = useState<SupplyStageSlug>(SECTOR_DEFAULT_CELL.stage);
   const [mineral, setMineral] = useState<MineralSlug>('lithium');
-  const only = ONLY_STAGE[tech];
+  const pages = stagePagesOf(tech);
+  const at = pages.includes(stage) ? stage : pages[0];
   const techOptions = TECH_SLUGS.map((t) => ({ value: t, label: TECH_LABELS[t], group: (HEADLINE_TECH_SLUGS as readonly string[]).includes(t) ? 'Headline technologies' : 'Non-headline' }));
   return (
     <div className="flex flex-wrap items-end gap-x-5 gap-y-4">
@@ -313,7 +324,7 @@ function JumpPicker() {
         aria-label="Jump to a sector"
         onSubmit={(e) => {
           e.preventDefault();
-          navigate(`/sector/${tech}/${only ?? stage}`);
+          navigate(`/sector/${tech}/${at}`);
         }}
       >
         <Select
@@ -323,17 +334,21 @@ function JumpPicker() {
           onChange={(v) => {
             const t = v as TechSlug;
             setTech(t);
-            const o = ONLY_STAGE[t];
-            if (o) setStage(o);
+            const p = stagePagesOf(t);
+            if (!p.includes(stage)) setStage(p[0]);
           }}
         />
-        <Segmented<StageSlug>
+        <Select
           label="Stage"
-          value={only ?? stage}
-          options={STAGE_SLUGS.map((s) => ({ value: s, label: STAGE_LABELS[s], disabled: !!only && s !== only, title: only && s !== only ? `${TECH_LABELS[tech]}: ${STAGE_LABELS[only]} only` : undefined }))}
-          onChange={setStage}
+          value={at}
+          className="min-w-[9rem]"
+          options={SUPPLY_STAGE_SLUGS.map((s) => {
+            const has = pages.includes(s);
+            return { value: s, label: has ? stageLabelOfSlug(s) : `${stageLabelOfSlug(s)} (no ${TECH_LABELS[tech]} page)`, disabled: !has };
+          })}
+          onChange={(v) => setStage(v as SupplyStageSlug)}
         />
-        <button type="submit" className="btn btn-ghost btn-sm" aria-label={`Go to ${TECH_LABELS[tech]} ${STAGE_LABELS[only ?? stage]}`}>
+        <button type="submit" className="btn btn-ghost btn-sm" aria-label={`Go to ${TECH_LABELS[tech]} ${stageLabelOfSlug(at)}`}>
           Go
         </button>
       </form>

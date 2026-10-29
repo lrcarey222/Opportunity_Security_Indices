@@ -12,18 +12,22 @@ describe('policy masks (4.3 S10)', () => {
   it('decodes tech and stage masks', () => {
     const eu = recs.find((r) => r.geo === fixtureGeo('EUU') && r.tags.length === 2)!;
     expect(eu.tags).toEqual(['Batteries', 'Critical minerals']);
-    expect(eu.stages).toEqual(['upstream', 'midstream']);
+    expect(eu.stages).toEqual(['extraction', 'assembly']);
   });
 
   it('scopes by technology tag and stage; the cross-cutting toggle adds economy-wide records', () => {
     const bit = tagBit(tags, 'Batteries');
     expect(bit).toBe(0);
-    const mid = scopePolicies(recs, { bit, stage: 'midstream', cross: false });
-    expect(mid.every((r) => r.tags.includes('Batteries') && r.stages.includes('midstream'))).toBe(true);
+    const mid = scopePolicies(recs, { bit, stage: 'assembly', cross: false });
+    expect(mid.every((r) => r.tags.includes('Batteries') && r.stages.includes('assembly'))).toBe(true);
     expect(mid).toHaveLength(8);
+    // the six stage bits decode on their own: the materials-processing grant is Refining and Assembly
+    const ref = scopePolicies(recs, { bit, stage: 'refining', cross: false });
+    expect(ref.map((r) => r.stages)).toEqual([['refining', 'assembly']]);
+    expect(scopePolicies(recs, { bit, stage: 'recovery', cross: false })).toEqual([]);
     const any = scopePolicies(recs, { bit, stage: null, cross: false });
     expect(any.length).toBeGreaterThan(mid.length);
-    const withCross = scopePolicies(recs, { bit, stage: 'midstream', cross: true });
+    const withCross = scopePolicies(recs, { bit, stage: 'assembly', cross: true });
     expect(withCross.length).toBe(mid.length + 2);
     expect(scopePolicies(recs, { bit, stage: null, cross: false, geo: fixtureGeo('USA') })).toHaveLength(3);
   });

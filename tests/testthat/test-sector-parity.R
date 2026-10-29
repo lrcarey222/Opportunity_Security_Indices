@@ -11,7 +11,7 @@ for (f in sector_files()) source(file.path(repo_root, f))
 fake_processed <- function() {
   tibble::tibble(
     iso3c = c("USA", "DEU", "CHN", "USA", "DEU", "CHN", "USA"),
-    tech = "Solar", supply_chain = "Downstream",
+    tech = "Solar", supply_chain = "Deployment",
     variable = c(rep("Solar PV power potential per sq km", 3), rep("Solar PV power potential per sq km", 3), "Overall Potential Index"),
     data_type = c("raw", "raw", "raw", "index", "index", "index", "index"),
     value = c(4.71, 2.91, NA, 0.8, 0.2, NA, 0.6)

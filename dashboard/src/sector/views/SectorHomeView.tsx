@@ -1,6 +1,9 @@
-// Sector home /sector (spec_sector.md 4.1): questions, the Atlas of all 34 supply-chain cells (lens and
-// measure family from the URL), the minerals strip and the ten theme cards. Renders from sector-meta
-// (meta.summary); facts load only when a country is highlighted (its share and rank in every tile).
+// Sector home /sector (spec_sector.md 4.1): questions, the Atlas of every supply-chain cell (the 11
+// technologies x the six stages, plus Semiconductors; lens and measure family from the URL), the
+// "Strategic posture" section (design L3, 2026-10-28: the posture scatter of the strategic position
+// framework, its node in ?pnode, with its own basis line; the one recommendation on these pages), the
+// minerals strip and the ten theme cards. Renders from sector-meta (meta.summary); facts load only when a
+// country is highlighted (its share and rank in every tile).
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';
@@ -29,7 +32,8 @@ import { useFacts } from './data.ts';
 import { yearText } from './caption.ts';
 import { CellGrid, GroupLegend, type CellGridTech } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
-import { SectorPostureHero } from '../../posture/SectorPostureHero.tsx';
+import { Section } from './common.tsx';
+import { PostureBasisTag, SectorPostureCard, SectorPostureIntro } from '../../posture/index.ts';
 
 const FAM_LABEL: Record<FamKey, string> = {
   primary: 'Primary',
@@ -296,7 +300,7 @@ function ThemeGlyph({ model, theme }: { model: SectorModel; theme: string }) {
   const vars = model.varsOfTheme(theme);
   const has = (cell: ItemInfo) => vars.some((v) => model.availOf(v, cell.idx).length > 0 || model.itemsOfCell(cell.idx).some((l) => model.availOf(v, l.item.idx).length > 0));
   return (
-    <div className="mt-3 grid w-fit grid-cols-3 gap-0.5" aria-hidden="true">
+    <div className="mt-3 grid w-fit gap-0.5" style={{ gridTemplateColumns: `repeat(${STAGE_SLUGS.length}, minmax(0, 1fr))` }} aria-hidden="true">
       {model.cells
         .filter((c) => c.headline)
         .map((c) => (
@@ -321,6 +325,7 @@ function ThemeCards() {
           const years = vars.flatMap((v) => model.availOf(v).flatMap((a) => [a.year_min, a.year_max])).filter((y): y is number => y !== null);
           const span = years.length ? (Math.min(...years) === Math.max(...years) ? String(Math.min(...years)) : `${Math.min(...years)}-${Math.max(...years)}`) : '';
           const cellsWith = model.cells.filter((c) => c.headline && vars.some((v) => model.availOf(v, c.idx).length > 0)).length;
+          const nHeadline = model.cells.filter((c) => c.headline).length;
           return (
             <li key={t.slug}>
               <Link to={link(`/sector/explore/${t.slug}`)} className="card block h-full p-4">
@@ -332,7 +337,7 @@ function ThemeCards() {
                   {span ? ` · ${span}` : ''}
                 </p>
                 <ThemeGlyph model={model} theme={t.slug} />
-                <span className="sr-only">Cell coverage: {cellsWith} of 33 cells.</span>
+                <span className="sr-only">Cell coverage: {cellsWith} of {nHeadline} cells.</span>
               </Link>
             </li>
           );
@@ -350,7 +355,7 @@ function TechPicker() {
       <h2 id="techs-h" className="eyebrow rule-neis-sm mb-2">
         Pick a technology
       </h2>
-      <p className="mb-3 max-w-3xl text-sm text-paper-mute">Each opens its supply chain in the paper&apos;s three stages (Upstream, Midstream, Downstream): pick a stage or one of its components for the sector profile.</p>
+      <p className="mb-3 max-w-3xl text-sm text-paper-mute">Each opens its supply chain at six stages ({STAGE_SLUGS.map((s) => STAGE_LABELS[s]).join(', ')}): pick a stage or one of its components for the sector profile.</p>
       <ul className="flex flex-wrap gap-2">
         {TECH_SLUGS.map((t) => (
           <li key={t}>
@@ -370,13 +375,18 @@ export default function SectorHomeView() {
   return (
     <div>
       <PageHead
-        eyebrow="SECTORS · DESCRIPTIVE DATA"
+        eyebrow="SECTORS · MEASURED DATA"
         title="Energy supply chains, measured"
-        lede="Eleven energy technologies, each from raw materials (upstream) through manufacturing (midstream) to use (downstream): the paper's 33 sectors. The posture chart just below is the six-stage recommendation of the strategic position framework. Each tile further down shows who holds the most of that sector's main measure; pick one for the full picture: trade, production, reserves, investment, prices and policy, in each source's own units and year. The tiles carry no indices and no weights: they are the measured numbers the country rankings start from."
+        lede={
+          <>
+            Eleven energy technologies, each at six supply-chain stages, from extraction and refining through components and assembly to deployment and recovery: 66 sectors. Each tile of the sector grid shows who holds the most of that sector’s main measure; pick one for the full picture: trade, production, reserves, investment, prices and policy, in each source’s own units and year. The tiles carry no indices and no weights: they are the measured numbers the country rankings start from. One section is a recommendation instead:{' '}
+            <a className="link" href="#posture">
+              Strategic posture
+            </a>
+            , which says, at fixed thresholds, which economies should secure, compete in or deploy each sector.
+          </>
+        }
       />
-      <div className="mb-10">
-        <SectorPostureHero />
-      </div>
       <TechPicker />
       <section aria-labelledby="questions-h" className="mb-10">
         <h2 id="questions-h" className="eyebrow rule-neis-sm mb-4">
@@ -396,6 +406,19 @@ export default function SectorHomeView() {
         </h2>
         <Atlas />
       </section>
+      <div className="mt-10">
+        <Section
+          id="posture"
+          title="Strategic posture"
+          sub={
+            <>
+              <PostureBasisTag /> <SectorPostureIntro />
+            </>
+          }
+        >
+          <SectorPostureCard />
+        </Section>
+      </div>
       <MineralsStrip />
       <ThemeCards />
     </div>

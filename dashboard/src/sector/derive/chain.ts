@@ -1,15 +1,14 @@
-// The supply-chain navigator (IA refactor 2026-10-16, brief s.7): a technology's stages with their
+// The supply-chain navigator (IA refactor 2026-10-16, brief s.7): a technology's six stages with their
 // trade sub-components (sector trade chunk, ./subs.ts) and the Allied Industrial Base nodes of the
-// same cell (AIB bundle nodes[].yfCells = "<tech>-<stage>", yfSubcomponents = "<tech>-<stage>::<name>";
-// a three-stage cell through the nodes' three-stage cells, see Stages below).
+// same cell (AIB bundle nodes[].yfCells = "<tech>-<stage>", yfSubcomponents = "<tech>-<stage>::<name>").
 // Pure; nothing here computes a new measure, it only lines the two taxonomies up.
 //
 // The AIB nodes reach a cell through the OSI crosswalk, never through their own sector or technology: an
 // electro-industrial dictionary node ("Rare-earth permanent magnets", sector Magnets) sits in every OSI
-// cell its codes sit in (its crosswalk cells: Electric Vehicles and Wind Midstream at three stages,
-// Electric Vehicles and Wind Components at six), and in every OSI sub-component of those cells its codes
-// belong to (its crosswalk sub-components). The mapping is many-to-many: one node can sit under several
-// sub-components of a cell and one sub-component hold several nodes.
+// cell its codes sit in (its crosswalk cells: Electric Vehicles and Wind Components), and in every OSI
+// sub-component of those cells its codes belong to (its crosswalk sub-components). The mapping is
+// many-to-many: one node can sit under several sub-components of a cell and one sub-component hold
+// several nodes.
 //
 //   * a node that names its own sub-components for the cell (its crosswalk sub-components) sits under each of them
 //     whose name matches, ignoring case;
@@ -18,20 +17,12 @@
 //     part ("Polysilicon & Wafers" holds the nodes "Polysilicon" and "Wafers"), at most one;
 //   * nodes with no match are listed under their stage.
 //
-// Stages (2026-10-28): the AIB bundle is six-stage (node.stage Refining, node.yfCells
-// "batteries-refining"), while the Sector bundle keeps the paper's three stages (cells
-// "batteries-midstream"). A three-stage cell is therefore joined through each node's three-stage cells
-// and sub-components (node.yfCellsLegacy / yfSubcomponentsLegacy: the stage the paper filed the node's
-// codes under, written by the AIB export since 2026-10-28), read with legacyCellsOf() /
-// legacySubcomponentsOf() of ../../lib/stages.ts. In a bundle without them the join falls back to the
-// roll-up of the node's six-stage cells, which is approximate: Refining rolls up to Upstream, while the
-// paper filed refined battery materials, polysilicon and electrical steel under Midstream, so those
-// nodes would land on the Upstream cell. A six-stage cell slug (for a Sector bundle at six stages) is
-// joined through yfCells / yfSubcomponents directly. The node's own stage, as the views show it, stays
-// six-stage.
+// Stages (2026-10-28, design A2): the Sector cells and the AIB nodes are both six-stage, so a cell is
+// joined through the nodes' six-stage cells and sub-components (node.yfCells / yfSubcomponents) directly.
+// The nodes' three-stage cells (node.yfCellsLegacy, kept optional in the AIB contract for older bundles)
+// are not read. A node's own stage (node.stage) can differ from the stage of a cell its codes sit in.
 
 import type { AibNode } from '../../aib/contract.ts';
-import { isLegacyCellSlug, legacyCellsOf, legacySubcomponentsOf } from '../../lib/stages.ts';
 
 /** The parts of a sub-component name: "Racking, Mounting & Trackers" -> racking, mounting, trackers. */
 export function subParts(name: string): string[] {
@@ -41,32 +32,15 @@ export function subParts(name: string): string[] {
     .filter(Boolean);
 }
 
-/**
- * A node's cells in the form of a cell slug: its three-stage cells for a three-stage slug
- * ("solar-midstream"; yfCellsLegacy, else the approximate roll-up of yfCells), its six-stage cells
- * (yfCells) otherwise.
- */
-export function nodeCellsFor(n: Pick<AibNode, 'yfCells' | 'yfCellsLegacy'>, cellSlug: string): readonly string[] {
-  return isLegacyCellSlug(cellSlug) ? legacyCellsOf(n) : n.yfCells;
-}
-
-/** The same for a node's sub-component ids ("<cell>::<name>"): yfSubcomponentsLegacy or its roll-up for a three-stage slug, else yfSubcomponents. */
-export function nodeSubcomponentsFor(n: Pick<AibNode, 'yfSubcomponents' | 'yfSubcomponentsLegacy'>, cellSlug: string): readonly string[] {
-  return isLegacyCellSlug(cellSlug) ? legacySubcomponentsOf(n) : n.yfSubcomponents;
-}
-
-/**
- * The AIB nodes of one sector cell ("solar-midstream"): those with codes in it (the crosswalk; for a
- * three-stage cell, the nodes' three-stage cells), each once, in the nodes' order.
- */
+/** The AIB nodes of one sector cell ("solar-assembly"): those with codes in it (node.yfCells), each once, in the nodes' order. */
 export function nodesOfCell(nodes: readonly AibNode[], cellSlug: string): AibNode[] {
-  return nodes.filter((n) => nodeCellsFor(n, cellSlug).includes(cellSlug));
+  return nodes.filter((n) => n.yfCells.includes(cellSlug));
 }
 
 /** The OSI sub-components a node names for one cell (its sub-component ids there, lower case, each once; [] when none). */
 export function ownSubcomponents(n: AibNode, cellSlug: string): string[] {
   const pre = `${cellSlug}::`;
-  const names = nodeSubcomponentsFor(n, cellSlug)
+  const names = n.yfSubcomponents
     .filter((s) => s.startsWith(pre))
     .map((s) => s.slice(pre.length).trim().toLowerCase());
   return [...new Set(names)];

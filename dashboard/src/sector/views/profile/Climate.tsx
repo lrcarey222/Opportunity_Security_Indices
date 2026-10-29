@@ -40,7 +40,7 @@ export function lifecycleWords(d: ClimateData, techLabel: string): string | null
   if (!l) return null;
   const g = fmtLifecycle(l);
   if (g) return `${techLabel} over a plant’s life: ${g} (IPCC median).`;
-  if (l.proxyOf.length) return `The IPCC has no lifecycle row for ${techLabel}; the paper scores it with the values of ${listText(l.proxyOf)}.`;
+  if (l.proxyOf.length) return `The IPCC has no lifecycle row for ${techLabel}; the pipeline scores it with the values of ${listText(l.proxyOf)}.`;
   return null;
 }
 
@@ -247,9 +247,9 @@ function Body({ d, model, cell, tech, chunk }: { d: ClimateData; model: SectorMo
               <span className="tabular font-medium text-paper">{fmtLifecycle(life)}</span> over a plant’s life, the IPCC median{life?.rows ? ` (${life.rows.replace(/;/g, ',')} g)` : ''}.
             </>
           ) : life?.proxyOf.length ? (
-            <>The IPCC lifecycle table has no row for {techLabel}; the paper scores its climate profile with the values of {listText(life.proxyOf)}.</>
+            <>The IPCC lifecycle table has no row for {techLabel}; the pipeline scores its climate profile with the values of {listText(life.proxyOf)}.</>
           ) : (
-            <>The IPCC lifecycle table has no row for {techLabel}, and the paper uses none for it.</>
+            <>The IPCC lifecycle table has no row for {techLabel}, and the pipeline uses none for it.</>
           )}
           {match === 'none' ? ' Shown because Climate TRACE has no subsector for this sector.' : ''}
         </p>

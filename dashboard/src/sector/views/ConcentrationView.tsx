@@ -13,6 +13,7 @@ import { TableView } from '../../components/TableView.tsx';
 import { Notice, PageHead, Segmented, Select } from '../../components/ui.tsx';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { useTitle } from '../../shell/title.ts';
+import { STAGE_LABELS, STAGE_SLUGS, type StageSlug } from '../contract.ts';
 import { useModel } from '../data/SectorDataProvider.tsx';
 import type { SectorModel, SummaryInfo } from '../data/model.ts';
 import {
@@ -175,10 +176,9 @@ function BoardCard({ board, lens }: { board: Board; lens: Lens }) {
   );
 }
 
-const SECTIONS = [
-  { key: 'upstream', label: 'Upstream', stage: 'upstream' as const },
-  { key: 'midstream', label: 'Midstream', stage: 'midstream' as const },
-  { key: 'downstream', label: 'Downstream', stage: 'downstream' as const },
+/** The panels of the share split: the six stages in chain order, then the minerals. */
+const SECTIONS: { key: string; label: string; stage: StageSlug | null }[] = [
+  ...STAGE_SLUGS.map((s) => ({ key: s, label: STAGE_LABELS[s], stage: s })),
   { key: 'minerals', label: 'Minerals: mining and refining (IEA)', stage: null },
 ];
 

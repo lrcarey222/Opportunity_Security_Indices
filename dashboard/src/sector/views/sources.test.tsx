@@ -73,12 +73,12 @@ describe('sector-climate-src: contract and derive', () => {
     const x = d();
     expect(nze21For(x, 'cap_solar')).toMatchObject({ value: 4956, base: 737, baseYear: 2020 });
     expect(nze21For(x, 'cap_wind')).toBeNull();
-    expect(weiHeadline(x, fixtureItem('cell', 'solar-downstream'))!.text).toBe(
+    expect(weiHeadline(x, fixtureItem('cell', 'solar-deployment'))!.text).toBe(
       'Solar power drew $407 bn of investment worldwide in 2025 (+142% since 2015); Asia Pacific 61% of it. The IEA estimates $366 bn for 2026.',
     );
-    expect(weiHeadline(x, fixtureItem('cell', 'coal-upstream'))).toBeNull();
+    expect(weiHeadline(x, fixtureItem('cell', 'coal-extraction'))).toBeNull();
     expect(weiContext(x)).toBe('World energy investment in 2025: $2,110 bn in clean energy of $3,260 bn in all, against $985 bn in fossil fuel supply (2.1 to 1).');
-    const f = fuelRows(x, fixtureItem('cell', 'coal-upstream'));
+    const f = fuelRows(x, fixtureItem('cell', 'coal-extraction'));
     expect(f.map((r) => r.fuel)).toEqual(['coal']);
     expect(f[0].share).toBeCloseTo(15.8 / 38.6, 12);
     expect(f[0].since2015).toBeCloseTo(15.8 / 14.6 - 1, 12);
@@ -170,8 +170,8 @@ describe('Country profile: fossil CO2, transition indicators and the regional pa
 });
 
 describe('Sector profile: investment and fuel context in the Climate section', () => {
-  it('Solar — Downstream: the investment headline, match quality and the World clean-versus-fossil context', async () => {
-    renderAt('/sector/solar/downstream');
+  it('Solar — Deployment: the investment headline, match quality and the World clean-versus-fossil context', async () => {
+    renderAt('/sector/solar/deployment');
     await screen.findByTestId('lens-climate', {}, { timeout: 30_000 });
     await openGroups();
     const block = await screen.findByTestId('wei-block', {}, { timeout: 10_000 });
@@ -182,8 +182,8 @@ describe('Sector profile: investment and fuel context in the Climate section', (
     expect(screen.queryByTestId('gcp-fuel')).toBeNull();
   });
 
-  it('Coal — Upstream: World coal CO2 as context, never the sector’s own emissions', async () => {
-    renderAt('/sector/coal/upstream');
+  it('Coal — Extraction: World coal CO2 as context, never the sector’s own emissions', async () => {
+    renderAt('/sector/coal/extraction');
     await screen.findByTestId('lens-climate', {}, { timeout: 30_000 });
     await openGroups();
     const fuel = await screen.findByTestId('gcp-fuel', {}, { timeout: 10_000 });
@@ -192,8 +192,8 @@ describe('Sector profile: investment and fuel context in the Climate section', (
     expect(screen.getByTestId('wei-match').textContent).toBe('No match');
   });
 
-  it('a Midstream sector says why manufacturing emissions per value added are not shown', async () => {
-    renderAt('/sector/solar/midstream');
+  it('a manufacturing sector (Refining, Components, Assembly) says why manufacturing emissions per value added are not shown', async () => {
+    renderAt('/sector/solar/assembly');
     await screen.findByTestId('lens-climate', {}, { timeout: 30_000 });
     await openGroups();
     await screen.findByTestId('climate-sources', {}, { timeout: 10_000 });

@@ -129,8 +129,10 @@ country_fact_sheet <- function(iso3, ctx) {
   if (!nrow(es_c) && !nrow(eo_c) && (is.null(psi_c) || !nrow(psi_c))) return(NULL)
 
   # cells: scores, percentiles, quadrants (ctx$quadrant_rule: COUNTRY_QUADRANT_RULES; scripts/88 builds a
-  # "sector_median" copy only to compare memos written under the earlier rule)
-  cells <- country_cells_base(iso3, es_c, eo_c, ctx$stats, cells_tbl, rule = ctx$quadrant_rule %||% "country_median")
+  # "sector_median" copy only to compare memos written under the earlier rule); ctx$no_es_cells: the sectors
+  # without an Energy Security score, derived from the data by scripts/88 (COUNTRY_NO_ES_CELLS by default)
+  no_es <- ctx$no_es_cells %||% COUNTRY_NO_ES_CELLS
+  cells <- country_cells_base(iso3, es_c, eo_c, ctx$stats, cells_tbl, rule = ctx$quadrant_rule %||% "country_median", no_es = no_es)
   oo <- country_orders(cells)
   cells <- oo$cells
 
@@ -249,6 +251,9 @@ country_fact_sheet <- function(iso3, ctx) {
     strategic_bundle_id = ctx$meta$strategic_bundle_id %||% NULL, sector_bundle_id = ctx$meta$sector_bundle_id %||% NULL,
     rank_threshold = list(v = ctx$meta$rank_threshold %||% 0.5, d = "half"),
     trade_year = as.character(ctx$meta$trade_year), un_window = ctx$meta$un_window, cmfdi_edition = ctx$meta$cmfdi_edition,
+    # additive 2026-10-28: the stages the CM-FDI projects count in (Components and Assembly carry the same
+    # projects, config/partnership.yml cm_fdi.stages), in chain order
+    cmfdi_stages = country_arr(ctx$meta$cmfdi_stages %||% country_fdi_stages(ctx$fdi, cells_tbl)),
     memo_eligible = identical(ro$tier[1], "core")
   )
 
@@ -258,6 +263,8 @@ country_fact_sheet <- function(iso3, ctx) {
     src_map = lapply(cfg$src_map, function(e) list(prefix = e$prefix, src = e$src)),
     summary = summary,
     cells = cells,
+    # additive 2026-10-28: the sectors without an Energy Security score for any economy (never placed)
+    no_es_cells = country_arr(no_es),
     priority_sectors = country_arr(ps$keys), priority_rule = ps$rule,
     policy = c(list(cat = cat_r), pams$facts, list(agreement = pp$agreement, nipo = nipo)),
     partners = partners,
@@ -321,6 +328,10 @@ country_manifest <- function(entries, meta, sources, validation, counts) {
     schema = "osi-country", schema_version = COUNTRY_SCHEMA_VERSION, created = meta$created, git_commit = meta$git_commit %||% NULL,
     as_of = meta$as_of, as_of_label = meta$as_of_label, strategic_bundle_id = meta$strategic_bundle_id %||% NULL,
     sector_bundle_id = meta$sector_bundle_id %||% NULL, label = meta$label, counts = counts,
+    # additive 2026-10-28: the sectors without an Energy Security score (as every sheet's no_es_cells) and the
+    # stages the CM-FDI projects count in
+    no_es_cells = country_arr(meta$no_es_cells %||% COUNTRY_NO_ES_CELLS),
+    cmfdi_stages = country_arr(meta$cmfdi_stages %||% character()),
     validated = isTRUE(meta$validated), synthetic = isTRUE(meta$synthetic),
     nipo = if (is.null(meta$nipo)) NULL else list(vintage = meta$nipo$vintage %||% NULL, vintage_label = meta$nipo$vintage_label %||% NULL),
     countries = entries, sources = sources, validation = validation

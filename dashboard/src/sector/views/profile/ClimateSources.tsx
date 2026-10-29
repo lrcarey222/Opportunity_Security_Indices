@@ -3,7 +3,7 @@
 // (IEA World Energy Investment 2026, with the match quality stated and 2026 as an IEA estimate), the World
 // clean-versus-fossil investment line as context, and, for the coal, oil and gas sectors, World fossil CO2
 // from the fuel they supply, handle or burn (Global Carbon Project; context, never the sector's own
-// emissions). Midstream sectors say why manufacturing emissions per value added are not shown (the IEA
+// emissions). Manufacturing sectors (Refining, Components, Assembly) say why manufacturing emissions per value added are not shown (the IEA
 // database is licence-restricted). Data: the lazy sector-climate-src chunk.
 
 import { useMemo, useState } from 'react';
@@ -12,7 +12,7 @@ import { TableView } from '../../../components/TableView.tsx';
 import { rowsToCsv } from '../../../lib/csv.ts';
 import { LabelledLines } from '../../charts/LabelledLines.tsx';
 import type { LineSeries } from '../../charts/types.ts';
-import type { ClimateMatch } from '../../contract.ts';
+import { ACTIVITY_OF_STAGE, type ClimateMatch } from '../../contract.ts';
 import type { ItemInfo, SectorModel } from '../../data/model.ts';
 import {
   fmtBn, fmtMt, fmtPct, FUEL_WORDS, fuelRows, srcCell, srcLinks, weiContext, weiHeadline, weiPoints, weiRow, weiSummary, type ClimateSrc, type SrcLink,
@@ -47,7 +47,7 @@ export function ClimateSources({ model, cell }: { model: SectorModel; cell: Item
           <div className="space-y-6" data-testid="climate-sources">
             <Investment d={src} model={model} cell={cell} />
             <FuelContext d={src} cell={cell} />
-            {cell.stageSlug === 'midstream' && <p className="max-w-3xl text-xs text-paper-mute" data-testid="value-added-note">{model.caveats.get('src_value_added')}</p>}
+            {cell.stageSlug && ACTIVITY_OF_STAGE[cell.stageSlug] === 'manufacturing' && <p className="max-w-3xl text-xs text-paper-mute" data-testid="value-added-note">{model.caveats.get('src_value_added')}</p>}
           </div>
         ) : null
       }
@@ -154,7 +154,8 @@ function InvestmentChart({ d, model, link, cellLabel, cite }: { d: ClimateSrc; m
       notes={
         <div className="space-y-1">
           <p>{model.caveats.get('src_wei')}</p>
-          <p>IEA row: {s.row.label}. Source: {cite}.</p>
+          {/* the row's name, not the IEA's own label (the oil and gas memo row is labelled "upstream" there; the CSV keeps the label) */}
+          <p>IEA row: {s.row.name}. Source: {cite}.</p>
         </div>
       }
     >

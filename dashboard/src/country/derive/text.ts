@@ -2,12 +2,31 @@
 // every number prints its display string `d` (computed once in R), every enum prints through the sheet's
 // `words`. Pure: no React. The memo is written separately (part B); these are the page's own templates.
 
-import { cellOf, dOf, QUADRANTS, type CellFacts, type Driver, type FactSheet, type PartnerRow, type Quadrant, type Tier } from '../contract.ts';
+import { stageShort } from '../../lib/stages.ts';
+import {
+  cellOf, cellOrder, COUNTRY_STAGES, COUNTRY_TECHS, dOf, parseCellKey, QUADRANTS, type CellFacts, type Driver, type FactSheet, type PartnerRow, type Quadrant, type Tier,
+} from '../contract.ts';
 
 /** "a, b and c" */
 export function joinAnd(xs: readonly string[]): string {
   if (xs.length <= 1) return xs.join('');
   return `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
+}
+
+/**
+ * Sectors in words, grouped by technology in the cell order, the stages lower-case in chain order:
+ * ["geothermal-refining", "coal-recovery", "geothermal-extraction"] -> "Coal (recovery) and Geothermal
+ * (extraction and refining)". Keys that are not sectors are skipped.
+ */
+export function sectorsByTechText(keys: readonly string[]): string {
+  const by = new Map<string, string[]>();
+  for (const k of [...new Set(keys)].filter((x) => cellOrder(x) >= 0).sort((a, b) => cellOrder(a) - cellOrder(b))) {
+    const p = parseCellKey(k)!;
+    const tech = COUNTRY_TECHS.find((t) => t.slug === p.tech)!.label;
+    const stage = COUNTRY_STAGES.find((s) => s.slug === p.stage)!.label.toLowerCase();
+    by.set(tech, [...(by.get(tech) ?? []), stage]);
+  }
+  return joinAnd([...by].map(([tech, stages]) => `${tech} (${joinAnd(stages)})`));
 }
 
 /** Capitalise the first letter. */
@@ -44,10 +63,9 @@ export function quadrantWord(q: Quadrant | null | undefined): string {
   return QUADRANTS.find((x) => x.id === q)?.label ?? q;
 }
 
-/** "Batteries · Down" (short scatter label). */
+/** "Batteries · Ref" (short scatter label: the stage's short form, lib/stages.ts STAGE_SHORT). */
 export function shortCellLabel(c: CellFacts): string {
-  const st = c.stage === 'Upstream' ? 'Up' : c.stage === 'Midstream' ? 'Mid' : 'Down';
-  return `${c.tech} · ${st}`;
+  return `${c.tech} · ${stageShort(c.stage)}`;
 }
 
 /** The page lede (S0): scored, non-rankable and no-data variants. */
@@ -61,13 +79,13 @@ export function ledeOf(sheet: FactSheet): string {
     return `${first} It has no Energy Security or Economic Opportunity scores${m.status_reason ? `: ${m.status_reason}` : ''}.${psi}`;
   }
   if (m.status === 'non_rankable') {
-    return `${first} ${cap(poss(proseName(name)))} three-stage index scores are shown but not ranked against other economies: ${m.status_reason ?? 'most of its data are filled in'}.`;
+    return `${first} ${cap(poss(proseName(name)))} index scores are shown but not ranked against other economies: ${m.status_reason ?? 'most of its data are filled in'}.`;
   }
   const parts: string[] = [first];
   const upgrade = s.quadrants.upgrade;
   const nUp = upgrade.v ?? 0;
   const howMany = nUp === 0 ? 'none' : dOf(upgrade);
-  let mid = `On the paper's three-stage NEIS baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the ${quadrantWord('upgrade')} corner, split at its own median sector)`;
+  let mid = `On the NEIS baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the ${quadrantWord('upgrade')} corner, split at its own median sector)`;
   if (m.has_si && s.top_si) {
     const top = cellOf(sheet, s.top_si.cell);
     const nxt = cellOf(sheet, s.top_si.next);
@@ -201,14 +219,14 @@ export function numberWord(n: number): string {
 /** Why a cell is not placed on the scatter. */
 export function notPlacedReason(c: CellFacts): string {
   if (c.quadrant_reason) return c.quadrant_reason;
-  if (!c.es) return 'no Energy Security score in the paper for this sector';
+  if (!c.es) return 'no Energy Security score for any economy in this sector';
   if (!c.eo) return 'no Economic Opportunity score';
   if (!c.es.rankable) return `Energy Security not comparable${c.es.reason ? `: ${c.es.reason}` : ''}`;
   if (!c.eo.rankable) return `Economic Opportunity not comparable${c.eo.reason ? `: ${c.eo.reason}` : ''}`;
   return 'not placed';
 }
 
-/** The "Main reason" cell of a partner row: "Reliable supplier, strongest in oil upstream and gas upstream". */
+/** The "Main reason" cell of a partner row: "Reliable supplier, strongest in oil extraction and gas extraction". */
 export function partnerReason(sheet: FactSheet, r: PartnerRow): string {
   if (!r.reason) return '–';
   const word = cap(sheet.words?.reason?.[r.reason] ?? r.reason_d ?? r.reason);
@@ -237,7 +255,7 @@ export function matchText(sheet: FactSheet, r: PartnerRow): string {
   return r.match ? cap(sheet.words?.match?.[r.match] ?? r.match) : '–';
 }
 
-/** "Not placed (n): Geothermal — Upstream (no Energy Security score ...), ..." */
+/** "Not placed (n): Geothermal — Extraction (no Energy Security score ...), ..." */
 export function notPlacedLine(sheet: FactSheet): string | null {
   const xs = sheet.cells.filter((c) => !c.placed);
   if (!xs.length) return null;

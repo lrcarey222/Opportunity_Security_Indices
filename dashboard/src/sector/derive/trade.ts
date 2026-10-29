@@ -299,3 +299,23 @@ export function exporterHhi(flows: readonly Flow[]): number {
   for (const x of t.values()) if (x.exports > 0) h += (x.exports / W) ** 2;
   return h;
 }
+
+// ---- excluded codes (schema 2, design C6) -------------------------------------------------------
+
+/** One code the reference master keeps out of a technology's baskets, with the reason. */
+export interface ExcludedCode {
+  sub: string | null;
+  hs6: string;
+  reason: string;
+}
+
+/** What the excluded list is: per technology, because the reference master gives those rows no stage. */
+export const EXCLUDED_WORDS = 'Listed for the technology as a whole: the reference list of codes gives these no supply-chain stage, so none is assigned.';
+
+/** The excluded codes of a technology (trade.excluded rows whose tech is its label), by sub-component then code. */
+export function excludedCodes(trade: SectorTradeChunk, techLabel: string): ExcludedCode[] {
+  const t = trade['trade.excluded'];
+  const out: ExcludedCode[] = [];
+  for (let i = 0; i < t.nrow; i++) if (t.cols.tech[i] === techLabel) out.push({ sub: t.cols.sub_sector[i], hs6: t.cols.hs6[i] ?? '', reason: t.cols.reason[i] ?? '' });
+  return out.sort((a, z) => (a.sub ?? '').localeCompare(z.sub ?? '') || a.hs6.localeCompare(z.hs6));
+}

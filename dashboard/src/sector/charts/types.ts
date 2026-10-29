@@ -61,7 +61,7 @@ export interface ShareSplitColumn {
 export interface ShareSplitSection {
   key: string;
   label: string;
-  /** draws the 3 px stage stripe beside the header */
+  /** draws a neutral 3 px stripe beside the header (a stage is never a colour, design S4) */
   stage?: StageSlug | null;
 }
 
@@ -343,7 +343,7 @@ export interface CellGridProps {
   stages: { slug: StageSlug; label: string }[];
   /** the tile of a cell, or null for a cell that does not exist (an empty slot) */
   renderTile: (tech: CellGridTech, stage: StageSlug, ctx: { selected: boolean }) => ReactNode;
-  /** "batteries-midstream" */
+  /** "batteries-refining" */
   selected?: string | null;
   ariaLabel: string;
   /** below 768 px: one <details> per technology (the first open) instead of the grid (default true) */

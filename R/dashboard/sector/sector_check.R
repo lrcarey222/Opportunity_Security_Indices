@@ -8,7 +8,7 @@ SECTOR_V <- list(
   kind = c("country", "eu", "world", "region", "entity", "residual"),
   tier = c("core", "partner", "none"),
   group = c("china", "core", "partner", "rest", "na"),
-  axis = c("cell", "mineral", "fuel", "commodity", "activity", "policy_tag", "indicator", "aid_sector", "none"),
+  axis = c("cell", "mineral", "mineral_stage", "fuel", "commodity", "activity", "policy_tag", "indicator", "aid_sector", "none"),
   level = c("country", "eu", "region", "entity", "world", "cell_global", "dyad"),
   agg = c("sum", "ratio", "none"),
   basis = c("source_world", "sum_all", "one", "sum_listed", "none"),
@@ -24,7 +24,7 @@ SECTOR_V <- list(
   flow = c("importer", "mirror", "none"),
   tech_src = c("iea", "text"),
   tech_label = c("Batteries", "Coal", "Electric Grid", "Electric Vehicles", "Gas", "Geothermal", "Green Hydrogen", "Nuclear", "Oil", "Solar", "Wind", "Semiconductors"),
-  stage_label = c("Upstream", "Midstream", "Downstream"),
+  stage_label = SUPPLY_CHAIN_STAGES,
   cap_status = c("operational", "construction", "announced", "paused"),
   fdi_status = c("Announced", "Under Construction", "Completed", "Operational", "Paused", "Cancelled", "Closed"),
   fdi_operational = c("Operational", "Announced only", "Under construction", "Ceased operations", "Paused"),
@@ -113,7 +113,9 @@ sector_chunk_specs <- function() {
                                          unique = c("item", "geo", "year")),
       `trade.codes` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s!", hs6 = "s!", description = "s", shared_n = "i!", caveat = "s"),
                                       unique = c("item", "hs6")),
-      `trade.excluded` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s", hs6 = "s!", reason = "s!")),
+      # Technology level (schema 2): the chunk's technology, no cell (excluded rows have no stage).
+      `trade.excluded` = sector_tbl_spec(c(tech = "s!", sub_sector = "s", hs6 = "s!", reason = "s!"), unique = c("tech", "sub_sector", "hs6"),
+                                         values = list(tech = SECTOR_V$tech_label)),
       `trade.cty_sub` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s!", geo = "i!@geo", year = "i!", exports = "f", imports = "f"),
                                         sorted = "item", unique = c("item", "sub_sector", "geo", "year"), optional = TRUE),
       `trade.sub_intra` = sector_tbl_spec(c(item = "i!@items", sub_sector = "s!", year = "i!", intra = "f!"),
@@ -165,7 +167,10 @@ sector_chunk_specs <- function() {
                                      values = list(basis = SECTOR_V$fdi_basis, group = SECTOR_V$fdi_group)),
       `fdi.years` = sector_tbl_spec(c(item = "i!@items", year = "i!", basis = "s!", group = "s!", n = "i!", n_value = "i!", value = "f"),
                                     sorted = c("item", "year"), unique = c("item", "year", "basis", "group"),
-                                    values = list(basis = SECTOR_V$fdi_basis, group = SECTOR_V$fdi_group))
+                                    values = list(basis = SECTOR_V$fdi_basis, group = SECTOR_V$fdi_group)),
+      # The stages a project counts in (config/partnership.yml cm_fdi stages; schema 2). Every fdi row's
+      # item is the cell of the first; the other stages carry the same projects.
+      `fdi.stages` = list(kind = "strv")
     ),
     dev = list(
       `dev.oda` = sector_tbl_spec(c(item = "i!@items", year = "i!", donor = "i!@geo", recipient = "i!@geo", value = "f!"),
@@ -320,6 +325,9 @@ sector_check_chunk <- function(name, objects, sizes = list(), var_ids = NULL) {
       cd <- objects$trade$codes
       if (!all(paste(cs$item, cs$sub_sector) %in% paste(cd$item, cd$sub_sector))) e <- c(e, "trade.cty_sub.sub_sector is not a trade.codes sub-sector of the item")
     }
+    ex <- objects$trade$excluded
+    chunk_tech <- unname(SECTOR_TECH_LABELS[sub("^sector-trade-", "", name)])
+    if (nrow(ex) && !identical(unique(ex$tech), chunk_tech)) e <- c(e, "trade.excluded.tech is not the chunk's technology")
   }
   if (name == "sector-meta") {
     g <- objects$dims$geo
@@ -334,9 +342,21 @@ sector_check_chunk <- function(name, objects, sizes = list(), var_ids = NULL) {
     cells <- it[it$axis == "cell", , drop = FALSE]
     tech_slug <- names(SECTOR_TECH_LABELS)[match(cells$tech, SECTOR_TECH_LABELS)]
     want <- paste0(tech_slug, "-", tolower(cells$stage))
-    if (any(is.na(tech_slug)) || any(cells$slug != want) || any(cells$headline != (tech_slug != "semiconductors"))) {
+    if (any(is.na(tech_slug)) || any(is.na(cells$stage)) || any(cells$slug != want) || any(cells$headline != (tech_slug != "semiconductors"))) {
       e <- c(e, "dims.items cell rows need slug = <tech>-<stage> of known labels, headline FALSE only for Semiconductors")
     }
+    # The 66 headline cells (11 technologies x 6 stages) are all present (schema 2: a stable grid).
+    if (length(setdiff(sector_headline_cell_slugs(), cells$slug[cells$headline]))) e <- c(e, "dims.items lacks headline cells of the 11 x 6 grid")
+    # mineral_stage items: slug <mineral>-<stage>, stage set, the mineral an item of axis mineral.
+    ms <- it[it$axis == "mineral_stage", , drop = FALSE]
+    if (nrow(ms)) {
+      sfx <- paste0("-", tolower(ms$stage))
+      base <- ifelse(endsWith(ms$slug, sfx), substr(ms$slug, 1, nchar(ms$slug) - nchar(sfx)), NA_character_)
+      if (anyNA(ms$stage) || anyNA(base) || !all(base %in% it$slug[it$axis == "mineral"]) || any(!is.na(ms$tech))) {
+        e <- c(e, "dims.items mineral_stage rows need slug = <mineral>-<stage> of a mineral item, a stage and no tech")
+      }
+    }
+    if (any(!is.na(it$stage[!it$axis %in% c("cell", "mineral_stage")]))) e <- c(e, "dims.items: only cell and mineral_stage rows carry a stage")
     dv <- objects$dict$vars
     if (!is.null(var_ids) && length(setdiff(dv$id, var_ids))) e <- c(e, paste("dict.vars ids outside the catalogue:", paste(setdiff(dv$id, var_ids), collapse = ", ")))
     if (any(sub("\\..*$", "", dv$id) != dv$theme)) e <- c(e, "dict.vars.theme differs from the id prefix")
@@ -360,6 +380,8 @@ sector_check_chunk <- function(name, objects, sizes = list(), var_ids = NULL) {
 # derived flags, aggregate counts and shares.
 sector_check_fdi <- function(f) {
   e <- character()
+  st <- f$stages
+  if (!length(st) || anyDuplicated(st) || !all(st %in% SUPPLY_CHAIN_STAGES)) e <- c(e, "fdi.stages must list distinct supply-chain stages")
   p <- f$projects
   if (any(is.na(p$value) != (p$value_status == "nq"))) e <- c(e, "fdi.projects: value NaN <=> value_status nq is violated")
   if (any(!is.na(p$value) & p$value <= 0)) e <- c(e, "fdi.projects.value has zero or negative values (undisclosed values are NaN)")

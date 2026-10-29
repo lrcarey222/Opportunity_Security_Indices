@@ -2,7 +2,22 @@
 # (pure; no IO). scripts/85_export_dashboard_data.R reads the pipeline outputs and calls these;
 # dash_fixture_bundle() calls them on synthetic tables, so the tests exercise the same code.
 
-DASH_STAGES <- c("Upstream", "Midstream", "Downstream")
+# The supply-chain stages of the bundle's cells, in chain order: the pipeline's six
+# (SUPPLY_CHAIN_STAGES, R/utils/supply_chain_stages.R, sourced first by dash_engine_files()). The
+# dashboard moved from Upstream / Midstream / Downstream to them on 2026-10-28.
+DASH_STAGES <- SUPPLY_CHAIN_STAGES
+
+# Stop unless every value of a dyad table's supply_chain is one of `stages`: a table labelled with
+# other stages (the three old ones, say) would otherwise drop out of the arrays without a word.
+dash_check_stages <- function(supply_chain, stages, label) {
+  u <- as.character(unique(supply_chain))
+  bad <- u[!u %in% stages]
+  if (length(bad)) {
+    stop(label, " has supply_chain values outside the bundle's stages: ", paste(utils::head(bad, 10), collapse = ", "),
+         ". Expected one of ", paste(stages, collapse = ", "), ".", call. = FALSE)
+  }
+  invisible(TRUE)
+}
 
 # C-locale sort, as dplyr's group_by() / arrange() order character keys.
 dash_sort <- function(x) sort(unique(x), method = "radix")
@@ -119,7 +134,27 @@ dash_bundle_policy <- function(policy_component_tbl, variables, techs) {
   )
 }
 
-# Index cells of the partner arrays: (tech, stage) in the headline order x stages.
+# The number of rows of `tbl` that repeat an earlier row's values in the columns `cols` (NA equal to
+# NA), as sum(duplicated(tbl[cols])) counts them, without duplicated.data.frame()'s row-wise list,
+# which needs several GB for the 21-million-row six-stage Friendshore table: each column is coded
+# as its position among the column's distinct values and the codes are combined into one exact
+# double key (the product of the column cardinalities must stay below 2^53).
+dash_count_duplicate_keys <- function(tbl, cols) {
+  key <- numeric(nrow(tbl))
+  span <- 1
+  for (col in cols) {
+    v <- tbl[[col]]
+    code <- match(v, unique(v))
+    n <- max(c(0L, code))
+    span <- span * (n + 1)
+    if (span >= 2^53) stop("dash_count_duplicate_keys(): too many distinct keys for an exact numeric key.")
+    key <- key * (n + 1) + code
+  }
+  sum(duplicated(key))
+}
+
+# Index cells of the partner arrays: (tech, stage) in the headline order x stages (11 x 6 = 66 cells
+# in the real bundle): cell_id = (tech index - 1) * length(stages) + stage index.
 dash_partner_cells_tbl <- function(techs, stages = DASH_STAGES) {
   tibble::tibble(
     cell_id = seq_len(length(techs) * length(stages)),
@@ -152,9 +187,11 @@ dash_fill_dyad <- function(r, p, ci, value, U_n, C_n, shape = c("rpc", "rc", "pc
 
 # Friendshore or Opportunity long variable table -> arrays. `spec` maps component variables to
 # shapes, e.g. c(imp_trade_index = "rpc", econ_opp_raw = "rc", ...); `index_variable` names the
-# index rows, whose presence defines the dyad mask and whose values are kept for validation.
+# index rows, whose presence defines the dyad mask and whose values are kept for validation. Rows of
+# other economies or technologies are left out; a row of another stage stops (dash_check_stages()).
 dash_bundle_dyads <- function(long_tbl, U, techs, spec, index_variable, stages = DASH_STAGES) {
   require_columns(long_tbl, c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable", "value"), label = "dyad table")
+  dash_check_stages(long_tbl$supply_chain, stages, "dash_bundle_dyads(): the dyad table")
   U_n <- length(U)
   C_n <- length(techs) * length(stages)
   r <- match(long_tbl$reporter_iso, U)
@@ -186,18 +223,20 @@ dash_bundle_dyads <- function(long_tbl, U, techs, spec, index_variable, stages =
 }
 
 # Friendshore's CM-FDI investment ties in its long table (commit 78be8b5, safer_friendshore.R): in
-# the cells CM-FDI covers (Solar, Wind, Batteries and Electric Vehicles Midstream) every
-# outbound_index row holds the CM-FDI tie of the reporter's parents to the partner, and its `source`
-# names the Cleantech Manufacturing FDI Dataset ("(CM-FDI)"); every other cell keeps the IMF
-# position. Relabels the outbound rows of those cells "outbound_index_cmfdi", so that the IMF rows
-# stay one [U, U] matrix (shape "rp", constant over cells) and the ties fill an array [U, U, C].
+# the cells CM-FDI covers (the Components and Assembly cells of Solar, Wind, Batteries and Electric
+# Vehicles, config/partnership.yml cm_fdi.stages: both manufacturing stages carry the same projects)
+# every outbound_index row holds the CM-FDI tie of the reporter's parents to the partner, and its
+# `source` names the Cleantech Manufacturing FDI Dataset ("(CM-FDI)"); every other cell keeps the
+# IMF position. Relabels the outbound rows of those cells "outbound_index_cmfdi", so that the IMF
+# rows stay one [U, U] matrix (shape "rp", constant over cells) and the ties fill an array [U, U, C].
 # cmfdi_row: TRUE for the rows whose source is CM-FDI (default: read from the `source` column; FALSE
-# everywhere without one). Returns list(long = the relabelled table without `source`, cells = the
-# CM-FDI cell ids in cell order, outbound_source = "imf_dip" / "cm_fdi" by cell, n_rows = the
-# CM-FDI outbound rows, n_mixed = outbound rows in a CM-FDI cell whose source is not CM-FDI, which
-# a pipeline build never has).
+# everywhere without one). A row of another stage than `stages` stops (dash_check_stages()). Returns
+# list(long = the relabelled table without `source`, cells = the CM-FDI cell ids in cell order,
+# outbound_source = "imf_dip" / "cm_fdi" by cell, n_rows = the CM-FDI outbound rows, n_mixed =
+# outbound rows in a CM-FDI cell whose source is not CM-FDI, which a pipeline build never has).
 dash_bundle_fs_cmfdi <- function(long_tbl, techs, stages = DASH_STAGES, cmfdi_row = NULL) {
   require_columns(long_tbl, c("tech", "supply_chain", "variable"), label = "Friendshore dyad table")
+  dash_check_stages(long_tbl$supply_chain, stages, "dash_bundle_fs_cmfdi(): the Friendshore dyad table")
   ob <- which(long_tbl$variable == "outbound_index")
   if (is.null(cmfdi_row)) {
     cm_ob <- if ("source" %in% names(long_tbl)) grepl("(CM-FDI)", long_tbl$source[ob], fixed = TRUE) else rep(FALSE, length(ob))

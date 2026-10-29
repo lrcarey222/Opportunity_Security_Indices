@@ -13,6 +13,7 @@ import {
 import { countryRoleRows, type CountryRoleRow } from './countryRoles.ts';
 import { nameOf, plural } from './format.ts';
 import { headlineNetwork, nodeScenario, scenarioInfo } from './scenarios.ts';
+import { shockLabelOf } from './settings.ts';
 
 /**
  * The floor for naming a network role: the economy's contribution under the headline shock is at least
@@ -393,7 +394,7 @@ export function everyShockLabel(doc: Pick<AibDoc, 'meta' | 'network'>): EverySho
   const supply = (doc.network?.variant.shocks ?? []).filter((s) => s !== dv);
   const tail = e.diversify ? ' and the diversification scenario' : '';
   const shockWords = (n: number) => (n === 1 ? 'supply shock' : 'supply shocks');
-  const labels = supply.map((s) => doc.meta.shocks.find((x) => x.id === s)?.label ?? s);
+  const labels = supply.map((s) => shockLabelOf(doc.meta, s));
   return {
     phrase: `${label}'s ${numberWord(e.supplyShocks)} ${shockWords(e.supplyShocks)}${tail}`,
     header: `${label}'s ${e.supplyShocks} ${shockWords(e.supplyShocks)}${tail}`,

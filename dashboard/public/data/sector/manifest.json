@@ -1,13 +1,13 @@
 {
   "schema": "osi-sector",
-  "schema_version": 1,
-  "bundle_id": "33756a10c4a5da028cb05a2e9826b8f6",
-  "created": "2026-10-22T15:46:34Z",
-  "git_commit": "fcbc001",
+  "schema_version": 2,
+  "bundle_id": "d0a8ad013768415ff79f8f581f1ad6e4",
+  "created": "2026-10-29T19:24:38Z",
+  "git_commit": "88a19c8",
   "generator": "scripts/87_export_sector_data.R",
   "phase": 1,
-  "strategic_bundle_id": "bc2ea5983697d5ff0aaa68a8320645de",
-  "processed_mtime_max": "2026-10-17T20:26:20Z",
+  "strategic_bundle_id": "e52e6317351da9ce81e6be113a0c6e31",
+  "processed_mtime_max": "2026-10-29T00:55:43Z",
   "pipeline_marker": "pipeline 04-25 finished 2026-10-12 09:09:32 (final: EIA fill, baskets, CM-FDI)",
   "flags": {
     "include_restricted": false,
@@ -23,106 +23,106 @@
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.605fa983.osb",
-      "bytes": 301944,
-      "bytes_gz": 89316,
-      "md5": "605fa9837b9f6e1b3338b1491b24c8db",
+      "file": "sector-meta.3aee67d2.osb",
+      "bytes": 365568,
+      "bytes_gz": 112602,
+      "md5": "3aee67d21936440b9384b413faeaf27c",
       "tech": null
     },
     {
       "name": "sector-facts",
-      "file": "sector-facts.28d4afa8.osb",
-      "bytes": 2287912,
-      "bytes_gz": 388611,
-      "md5": "28d4afa88508fad75456c00ba0b106d2",
+      "file": "sector-facts.ad19259c.osb",
+      "bytes": 3873648,
+      "bytes_gz": 591275,
+      "md5": "ad19259ce4d959359e01eca2c8fd60cb",
       "tech": null
     },
     {
       "name": "sector-trade-batteries",
-      "file": "sector-trade-batteries.01296547.osb",
-      "bytes": 664616,
-      "bytes_gz": 207804,
-      "md5": "01296547a7becd038c05fff28e6a1d98",
+      "file": "sector-trade-batteries.5e5e9d8c.osb",
+      "bytes": 1054200,
+      "bytes_gz": 312794,
+      "md5": "5e5e9d8ceba661ddee1b554cf1420eb0",
       "tech": "batteries"
     },
     {
       "name": "sector-trade-coal",
-      "file": "sector-trade-coal.2e483a39.osb",
-      "bytes": 349048,
-      "bytes_gz": 108602,
-      "md5": "2e483a39a9a8e33072d92b28da638ded",
+      "file": "sector-trade-coal.0730d193.osb",
+      "bytes": 523504,
+      "bytes_gz": 156011,
+      "md5": "0730d193c22e98ed143807124aa38210",
       "tech": "coal"
     },
     {
       "name": "sector-trade-electric-grid",
-      "file": "sector-trade-electric-grid.bbc52683.osb",
-      "bytes": 1024552,
-      "bytes_gz": 324719,
-      "md5": "bbc52683d957ee29c8c079e1daab55ba",
+      "file": "sector-trade-electric-grid.06056fc0.osb",
+      "bytes": 1493856,
+      "bytes_gz": 462171,
+      "md5": "06056fc07e66f5266f2ad01eb6c0c025",
       "tech": "electric-grid"
     },
     {
       "name": "sector-trade-electric-vehicles",
-      "file": "sector-trade-electric-vehicles.4f34c2e4.osb",
-      "bytes": 995464,
-      "bytes_gz": 308140,
-      "md5": "4f34c2e493103b518fd19f516f0abd9f",
+      "file": "sector-trade-electric-vehicles.7f866c82.osb",
+      "bytes": 1504304,
+      "bytes_gz": 454611,
+      "md5": "7f866c8227ad5e627468063fd6a63516",
       "tech": "electric-vehicles"
     },
     {
       "name": "sector-trade-gas",
-      "file": "sector-trade-gas.3c37263c.osb",
-      "bytes": 638144,
-      "bytes_gz": 202323,
-      "md5": "3c37263cf619eaeeec5310a2ff64e283",
+      "file": "sector-trade-gas.99faad3b.osb",
+      "bytes": 942560,
+      "bytes_gz": 290350,
+      "md5": "99faad3b74246c5cd139b2b3ac5a58e5",
       "tech": "gas"
     },
     {
       "name": "sector-trade-nuclear",
-      "file": "sector-trade-nuclear.dfea8198.osb",
-      "bytes": 241320,
-      "bytes_gz": 75292,
-      "md5": "dfea8198a52d19aa8881b7648c105b41",
+      "file": "sector-trade-nuclear.1365dd6a.osb",
+      "bytes": 375776,
+      "bytes_gz": 113122,
+      "md5": "1365dd6a2c07067b1f2f7a2e39b6cbdc",
       "tech": "nuclear"
     },
     {
       "name": "sector-trade-oil",
-      "file": "sector-trade-oil.8280f451.osb",
-      "bytes": 998264,
-      "bytes_gz": 319899,
-      "md5": "8280f4519eec0d7e86648a64ace6f897",
+      "file": "sector-trade-oil.966f6338.osb",
+      "bytes": 1381168,
+      "bytes_gz": 424213,
+      "md5": "966f6338762dd629e1f3a66716ad8f27",
       "tech": "oil"
     },
     {
       "name": "sector-trade-semiconductors",
-      "file": "sector-trade-semiconductors.505fb803.osb",
-      "bytes": 535136,
-      "bytes_gz": 166157,
-      "md5": "505fb8030d595daa4173d073ced7343c",
+      "file": "sector-trade-semiconductors.970e3fe4.osb",
+      "bytes": 816600,
+      "bytes_gz": 243588,
+      "md5": "970e3fe4fc434da254c251cc685c328e",
       "tech": "semiconductors"
     },
     {
       "name": "sector-trade-solar",
-      "file": "sector-trade-solar.9a1251b7.osb",
-      "bytes": 839600,
-      "bytes_gz": 265670,
-      "md5": "9a1251b770626061086b2ac704bf1ac5",
+      "file": "sector-trade-solar.b3dd06ec.osb",
+      "bytes": 1401608,
+      "bytes_gz": 430106,
+      "md5": "b3dd06ec95236a66629e731c5ab4c81f",
       "tech": "solar"
     },
     {
       "name": "sector-trade-wind",
-      "file": "sector-trade-wind.f04e5991.osb",
-      "bytes": 806768,
-      "bytes_gz": 255005,
-      "md5": "f04e59919b6070a20b96cd955f5b7932",
+      "file": "sector-trade-wind.d98d13c3.osb",
+      "bytes": 1372448,
+      "bytes_gz": 416921,
+      "md5": "d98d13c39173be2decdd9f6c8024a953",
       "tech": "wind"
     },
     {
       "name": "sector-policy",
-      "file": "sector-policy.1bdc9b12.osb",
+      "file": "sector-policy.8c769794.osb",
       "bytes": 567752,
-      "bytes_gz": 76984,
-      "md5": "1bdc9b12b20e0174c905e09bc8d62f74",
+      "bytes_gz": 77414,
+      "md5": "8c769794c960574aa06d5908909f6b16",
       "tech": null
     },
     {
@@ -135,42 +135,42 @@
     },
     {
       "name": "sector-series",
-      "file": "sector-series.91226e59.osb",
+      "file": "sector-series.e9d7562c.osb",
       "bytes": 1892024,
-      "bytes_gz": 365506,
-      "md5": "91226e5960bd7a0e16fb6e1f22313a28",
+      "bytes_gz": 365555,
+      "md5": "e9d7562cefbb9c54693009049c576353",
       "tech": null
     },
     {
       "name": "sector-fdi",
-      "file": "sector-fdi.7e979cdd.osb",
-      "bytes": 864128,
-      "bytes_gz": 213287,
-      "md5": "7e979cddcd7315db5761ad1bbd7c3777",
+      "file": "sector-fdi.0c884ec7.osb",
+      "bytes": 864192,
+      "bytes_gz": 213309,
+      "md5": "0c884ec7602a567008bff116f2a2b317",
       "tech": null
     },
     {
       "name": "sector-dev",
-      "file": "sector-dev.6a759220.osb",
+      "file": "sector-dev.84544485.osb",
       "bytes": 1578168,
-      "bytes_gz": 403412,
-      "md5": "6a75922079d6d1802a725bbb0e91632d",
+      "bytes_gz": 403413,
+      "md5": "845444857d2c2c64c1770fb916de82b7",
       "tech": null
     },
     {
       "name": "sector-climate",
-      "file": "sector-climate.44d67e1d.osb",
-      "bytes": 574944,
-      "bytes_gz": 133626,
-      "md5": "44d67e1d01d2680e9e2f5bf87f635acc",
+      "file": "sector-climate.4d8cf0b7.osb",
+      "bytes": 582464,
+      "bytes_gz": 134681,
+      "md5": "4d8cf0b7651e2954c73c96e19a713e40",
       "tech": null
     },
     {
       "name": "sector-climate-src",
-      "file": "sector-climate-src.38d6f89d.osb",
-      "bytes": 525312,
-      "bytes_gz": 168333,
-      "md5": "38d6f89d9e193b32f8a1093a6fefb77b",
+      "file": "sector-climate-src.951b8a6b.osb",
+      "bytes": 529400,
+      "bytes_gz": 168889,
+      "md5": "951b8a6bb7847a0cea144d495c935a14",
       "tech": null
     }
   ],
@@ -197,8 +197,8 @@
       "id": "concentration",
       "template": "concentration@1",
       "values": {
-        "n": 5,
-        "n_total": 36
+        "n": 8,
+        "n_total": 57
       },
       "labels": {},
       "source": "Sector Insights summary (each sector's own source)",
@@ -209,16 +209,16 @@
       "id": "dependence",
       "template": "dependence@1",
       "values": {
-        "share": 0.25328903048419299,
-        "total_usd": 1003177010116.0232
+        "share": 0.20303266427743163,
+        "total_usd": 707634348112.0498
       },
       "labels": {
-        "cell": "electric-vehicles-midstream",
-        "cell_label": "Electric Vehicles — Midstream"
+        "cell": "electric-vehicles-assembly",
+        "cell_label": "Electric Vehicles — Assembly"
       },
       "source": "UN Comtrade, reconciled matrix",
       "year": "2024",
-      "href": "/sector/electric-vehicles/midstream#trade"
+      "href": "/sector/electric-vehicles/assembly#trade"
     },
     {
       "id": "investment",
@@ -226,7 +226,7 @@
       "values": {
         "total_bn": 1875.2998445698122,
         "china": 0.44176159082218724,
-        "coalition": 0.52284430745915411
+        "coalition": 0.52285049313662524
       },
       "labels": {},
       "source": "Clean Investment Monitor (Rhodium Group and MIT CEEPR)",
@@ -295,171 +295,336 @@
   "coverage_glyph": [
     {
       "tech": "batteries",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "batteries",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "batteries",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": true
+    },
+    {
+      "tech": "batteries",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "batteries",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "batteries",
+      "stage": "recovery",
       "country_data": true
     },
     {
       "tech": "coal",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "coal",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "coal",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": true
+    },
+    {
+      "tech": "coal",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "coal",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "coal",
+      "stage": "recovery",
+      "country_data": false
+    },
+    {
+      "tech": "electric-grid",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "electric-grid",
-      "stage": "upstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "electric-grid",
-      "stage": "midstream",
+      "stage": "components",
       "country_data": true
     },
     {
       "tech": "electric-grid",
-      "stage": "downstream",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "electric-grid",
+      "stage": "deployment",
       "country_data": false
     },
     {
-      "tech": "electric-vehicles",
-      "stage": "upstream",
+      "tech": "electric-grid",
+      "stage": "recovery",
       "country_data": true
     },
     {
       "tech": "electric-vehicles",
-      "stage": "midstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "electric-vehicles",
-      "stage": "downstream",
+      "stage": "refining",
+      "country_data": true
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "components",
+      "country_data": true
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "electric-vehicles",
+      "stage": "recovery",
       "country_data": true
     },
     {
       "tech": "gas",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "gas",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "gas",
-      "stage": "downstream",
+      "stage": "components",
       "country_data": true
     },
     {
-      "tech": "geothermal",
-      "stage": "upstream",
+      "tech": "gas",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "gas",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "gas",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "geothermal",
-      "stage": "midstream",
+      "stage": "extraction",
       "country_data": false
     },
     {
       "tech": "geothermal",
-      "stage": "downstream",
+      "stage": "refining",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "components",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "assembly",
+      "country_data": false
+    },
+    {
+      "tech": "geothermal",
+      "stage": "deployment",
       "country_data": true
     },
     {
-      "tech": "green-hydrogen",
-      "stage": "upstream",
-      "country_data": true
-    },
-    {
-      "tech": "green-hydrogen",
-      "stage": "midstream",
+      "tech": "geothermal",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "green-hydrogen",
-      "stage": "downstream",
+      "stage": "extraction",
+      "country_data": true
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "refining",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "components",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "assembly",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "deployment",
+      "country_data": false
+    },
+    {
+      "tech": "green-hydrogen",
+      "stage": "recovery",
       "country_data": false
     },
     {
       "tech": "nuclear",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "nuclear",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "nuclear",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": true
+    },
+    {
+      "tech": "nuclear",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "nuclear",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "nuclear",
+      "stage": "recovery",
       "country_data": true
     },
     {
       "tech": "oil",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "oil",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "oil",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": true
+    },
+    {
+      "tech": "oil",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "oil",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "oil",
+      "stage": "recovery",
       "country_data": true
     },
     {
       "tech": "solar",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "solar",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "solar",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": true
+    },
+    {
+      "tech": "solar",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "solar",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "solar",
+      "stage": "recovery",
       "country_data": true
     },
     {
       "tech": "wind",
-      "stage": "upstream",
+      "stage": "extraction",
       "country_data": true
     },
     {
       "tech": "wind",
-      "stage": "midstream",
+      "stage": "refining",
       "country_data": true
     },
     {
       "tech": "wind",
-      "stage": "downstream",
+      "stage": "components",
+      "country_data": true
+    },
+    {
+      "tech": "wind",
+      "stage": "assembly",
+      "country_data": true
+    },
+    {
+      "tech": "wind",
+      "stage": "deployment",
+      "country_data": true
+    },
+    {
+      "tech": "wind",
+      "stage": "recovery",
       "country_data": true
     }
   ],
-  "notes": ["Coalition: 57 economies (31 core, 26 partners); the EU-27 is one node in the Strategic network.", "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.", "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.", "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.", "Fossil production EI does not report separately comes from the EIA International Energy Statistics where the pipeline took it (converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 and the net balance and self-sufficiency say so (marked 'not reported separately').", "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.", "Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, 2021-2025, tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector (config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology.", "IEA pathways: World Energy Outlook 2025 free dataset (World), Historical, Stated Policies, Current Policies and Net Zero Emissions by 2050, CC BY-NC-SA 4.0; mineral demand by scenario from the IEA Critical Minerals Dataset (Current Policies, Stated Policies, High Demand; no Net Zero scenario), CC BY 4.0; IEA scenario projections, mapped to technology x stage with a match quality (config/iea_pathways_map.yml).", "Climate sources: Global Carbon Project, Global Carbon Budget 2025 v1.0 (Friedlingstein et al. 2025; consumption-based: Peters et al. 2012), national fossil CO2 from 1990 and World CO2 by fuel; Energy Institute Statistical Review, 2025 Country Transition Tracker, with the median of the economies it lists; IEA World Energy Outlook 2025 free dataset, Regions (CC BY-NC-SA 4.0; regions have no Net Zero scenario); IEA Net Zero by 2050 (2021) Annex A, 2030 milestones (CC BY-NC-SA 3.0 IGO; an older edition); IEA World Energy Investment 2026 (CC BY 4.0; 2026 values are IEA estimates); config/climate_sources_map.yml. The IEA Energy and Emissions per Value Added database is licence-restricted and not shown.", "Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; project counts and sums of disclosed capital computed by the OSI authors, no record altered; undisclosed capital investment is shown as not disclosed, never zero.", "Trade baskets cover Electric Vehicles, Solar, Wind, Nuclear and Semiconductors Upstream since the 2026-10 basket review; trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total.", "Scenario dials apply to Strategic Insights only."],
+  "notes": ["Coalition: 60 economies (31 core, 29 partners); the EU-27 is one node in the Strategic network.", "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.", "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.", "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.", "Fossil production EI does not report separately comes from the EIA International Energy Statistics where the pipeline took it (converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 and the net balance and self-sufficiency say so (marked 'not reported separately').", "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.", "Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, 2021-2025, tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector (config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology.", "IEA pathways: World Energy Outlook 2025 free dataset (World), Historical, Stated Policies, Current Policies and Net Zero Emissions by 2050, CC BY-NC-SA 4.0; mineral demand by scenario from the IEA Critical Minerals Dataset (Current Policies, Stated Policies, High Demand; no Net Zero scenario), CC BY 4.0; IEA scenario projections, mapped to technology x stage with a match quality (config/iea_pathways_map.yml).", "Climate sources: Global Carbon Project, Global Carbon Budget 2025 v1.0 (Friedlingstein et al. 2025; consumption-based: Peters et al. 2012), national fossil CO2 from 1990 and World CO2 by fuel; Energy Institute Statistical Review, 2025 Country Transition Tracker, with the median of the economies it lists; IEA World Energy Outlook 2025 free dataset, Regions (CC BY-NC-SA 4.0; regions have no Net Zero scenario); IEA Net Zero by 2050 (2021) Annex A, 2030 milestones (CC BY-NC-SA 3.0 IGO; an older edition); IEA World Energy Investment 2026 (CC BY 4.0; 2026 values are IEA estimates); config/climate_sources_map.yml. The IEA Energy and Emissions per Value Added database is licence-restricted and not shown.", "Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; project counts and sums of disclosed capital computed by the OSI authors, no record altered; undisclosed capital investment is shown as not disclosed, never zero.", "Sectors are technology x six supply-chain stages (Extraction, Refining, Components, Assembly, Deployment, Recovery): 66 headline sectors and the Semiconductors stages; each HS6 code sits at the stage of the six-stage basket. Trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total; codes excluded in the 2026-10 basket review are listed per technology.", "Figures a source gives once for a technology's manufacturing (manufacturing investment, IEA capacity shares) appear on both Components and Assembly and are never added across them.", "Scenario dials apply to Strategic Insights only."],
   "validation": [
     {
       "check": "dictionary: valid, every measure of the build has an entry",
@@ -468,10 +633,16 @@
       "detail": null
     },
     {
+      "check": "six stages: the dictionary's cells are the 11 x 6 headline grid plus the Semiconductors stages; no text names an old stage",
+      "status": "PASS",
+      "n": 69,
+      "detail": "69 cells (66 headline)"
+    },
+    {
       "check": "export feasibility: Atlas HS4 data year 2023 (explanation) = the dictionary's; every basket cell covered",
       "status": "PASS",
-      "n": 3975,
-      "detail": "20 cells, 210 economies"
+      "n": 7888,
+      "detail": "41 cells, 210 economies"
     },
     {
       "check": "guard: critical-mineral exports from at least 100 reporting economies",
@@ -480,10 +651,10 @@
       "detail": null
     },
     {
-      "check": "parity X: critical-mineral export shares = exports / world (processed market_share)",
+      "check": "parity X: critical-mineral export shares = exports / world per mineral and stage (processed market_share)",
       "status": "PASS",
-      "n": 2299,
-      "detail": "max relative difference 0"
+      "n": 5434,
+      "detail": "max relative difference 0; 26 mineral x stage baskets (Extraction 9, Recovery 6, Refining 11)"
     },
     {
       "check": "parity X: USGS reserves in reserves_tbl = usgs_mcs_reserves(MCS2026_World_Data.csv)",
@@ -548,32 +719,38 @@
     {
       "check": "trade: every importer-sourced 2024 cell of the matrix is a declared importer",
       "status": "PASS",
-      "n": 2639,
+      "n": 5152,
       "detail": null
     },
     {
       "check": "trade: the zero-rebuild rule (importer declared, else exporter declared: mirror) reproduces every matrix row",
       "status": "PASS",
-      "n": 1546408,
+      "n": 3043792,
       "detail": null
     },
     {
       "check": "parity: matrix country totals identical() to sums of partnership_strength_build_trade_cells()",
       "status": "PASS",
-      "n": 4160,
+      "n": 8528,
       "detail": null
     },
     {
       "check": "trade by sub-component: sub-components add up to the cell's exports and imports for every economy and year, and to the world total (1e-9 relative)",
       "status": "PASS",
-      "n": 16720,
-      "detail": "max relative difference 2.97e-16; 0 sub-component totals without a cell fact"
+      "n": 34276,
+      "detail": "max relative difference 3.82e-16; 0 sub-component totals without a cell fact"
+    },
+    {
+      "check": "six stages: basket notes and exclusion reasons name no old stage (sector_six_stage_text())",
+      "status": "PASS",
+      "n": 507,
+      "detail": null
     },
     {
       "check": "trade by sub-component: sub-components are the basket's sub-sectors (trade.codes)",
       "status": "PASS",
-      "n": 99,
-      "detail": "99 of 99 basket sub-sectors traded in 2020 or 2024; cells with one sub-component: 2"
+      "n": 125,
+      "detail": "125 of 125 basket sub-sectors traded in 2020 or 2024; cells with one sub-component: 12"
     },
     {
       "check": "guard: CM-FDI columns, vocabularies, years, flags and country names as reviewed (stops otherwise)",
@@ -609,31 +786,31 @@
       "check": "parity X: the builder on this export's raw inputs reproduces the stored development_index (data/processed partner_development_tbl) identical()",
       "status": "PASS",
       "n": 132,
-      "detail": "4356 stored rows compared; 0 stored values without a builder value"
+      "detail": "8712 stored rows compared; 0 stored values without a builder value"
     },
     {
       "check": "parity X: the builder on this export's raw inputs reproduces the stored doingbusiness_index (data/processed partner_development_tbl) identical()",
       "status": "PASS",
       "n": 128,
-      "detail": "4224 stored rows compared; 0 stored values without a builder value"
+      "detail": "8448 stored rows compared; 0 stored values without a builder value"
     },
     {
       "check": "parity X: the builder on this export's raw inputs reproduces the stored energy_use_index (data/processed partner_development_tbl) identical()",
       "status": "PASS",
       "n": 95,
-      "detail": "3135 stored rows compared; 0 stored values without a builder value"
+      "detail": "6270 stored rows compared; 0 stored values without a builder value"
     },
     {
       "check": "parity X: the builder on this export's raw inputs reproduces the stored aid_index_supplychain (data/processed partner_development_tbl) identical()",
       "status": "PASS",
-      "n": 4323,
-      "detail": "4323 stored rows compared; 0 stored values without a builder value"
+      "n": 8646,
+      "detail": "8646 stored rows compared; 0 stored values without a builder value"
     },
     {
       "check": "parity X: the builder on this export's raw inputs reproduces the stored aidgdp_index_supplychain (data/processed partner_development_tbl) identical()",
       "status": "PASS",
-      "n": 4224,
-      "detail": "4224 stored rows compared; 0 stored values without a builder value"
+      "n": 8448,
+      "detail": "8448 stored rows compared; 0 stored values without a builder value"
     },
     {
       "check": "parity X: IMF DIP positions (conduit positions dropped as the index drops them), ranked as Friendshore's outbound builder ranks them, reproduce its outbound_index identical()",
@@ -678,10 +855,16 @@
       "detail": "flows 748, groups 1200, years 321 rows; projects used by the indices 905; Chinese-HQ parents (CHN, HKG, MAC) 439"
     },
     {
+      "check": "six stages: dims.items holds the dictionary's cells (66 headline cells, the Semiconductors stages) and the mineral x stage items",
+      "status": "PASS",
+      "n": 69,
+      "detail": "69 cells (41 with trade); 26 mineral x stage items"
+    },
+    {
       "check": "climate: Climate TRACE sources mapped, emissions of dims.geo economies shipped (WLD = Climate TRACE's world total)",
       "status": "PASS",
       "n": 16730,
-      "detail": "15 sources, 17 cells with a match (direct 1, none 18, partial 7, proxy 9), 2021-2025; largest share of a world total from economies outside dims.geo: 0.45%"
+      "detail": "15 sources, 25 cells with a match (direct 1, none 44, partial 8, proxy 16), 2021-2025; largest share of a world total from economies outside dims.geo: 0.45%"
     },
     {
       "check": "climate: the latest year repeats the year before (an estimate carried forward) for copper-mining, bauxite-mining, iron-mining, other-mining-quarrying, other-metals",
@@ -693,7 +876,7 @@
       "check": "climate: IEA pathways mapped to technology x stage (World only; IEA scenario projections and historical estimates)",
       "status": "PASS",
       "n": 372,
-      "detail": "World Energy Outlook 2025: 31 series, scenarios historical/stated/current/nze, years 2010, 2023, 2024, 2035, 2040, 2050; 33 cells with a match (direct 8, none 2, partial 11, proxy 14); 2412 mineral demand rows (current/stated/high_demand, base year 2025)"
+      "detail": "World Energy Outlook 2025: 31 series, scenarios historical/stated/current/nze, years 2010, 2023, 2024, 2035, 2040, 2050; 55 cells with a match (direct 8, none 14, partial 18, proxy 29); 2412 mineral demand rows (current/stated/high_demand, base year 2025)"
     },
     {
       "check": "climate: IEA pathways vintage check against World Energy Outlook 2024 (stated and nze, shared years; not shipped)",
@@ -705,7 +888,7 @@
       "check": "climate: climate sources shipped (GCP national fossil CO2 and World CO2 by fuel; EI Country Transition Tracker with the median economy; IEA WEO regions, NZE 2021, WEI 2026)",
       "status": "PASS",
       "n": 24852,
-      "detail": "Global Carbon Budget 2025 v1.0: 15803 values (216 economies, 1990-2024); 2025 Country Transition Tracker: 2909 values (79 economies); World Energy Outlook 2025 regions: 1232 values, 234 economies mapped; Net Zero by 2050 (2021): 28 series; World Energy Investment 2026: 4908 values; cells direct 7, none 2, partial 12, proxy 14"
+      "detail": "Global Carbon Budget 2025 v1.0: 15803 values (216 economies, 1990-2024); 2025 Country Transition Tracker: 2909 values (79 economies); World Energy Outlook 2025 regions: 1232 values, 234 economies mapped; Net Zero by 2050 (2021): 28 series; World Energy Investment 2026: 4908 values; cells direct 7, none 14, partial 23, proxy 25"
     },
     {
       "check": "climate: GCP and EI economies outside dims.geo (not shipped)",
@@ -722,25 +905,25 @@
     {
       "check": "native levels: region, entity, EU and world values never on a country geo",
       "status": "PASS",
-      "n": 62502,
+      "n": 105495,
       "detail": null
     },
     {
       "check": "shares in [0, 1]; listed sums within the world total (1e-9)",
       "status": "PASS",
-      "n": 6251,
+      "n": 12871,
       "detail": "largest excess of the listed sum over W: 2.22e-16"
     },
     {
       "check": "trade bases: matrix and exporter-reported China shares within 3 points",
       "status": "WARN",
-      "n": 20,
-      "detail": "oil-midstream, semiconductors-upstream, solar-upstream, wind-upstream"
+      "n": 41,
+      "detail": "batteries-assembly, batteries-components, batteries-refining, coal-assembly, coal-components, electric-vehicles-refining, gas-assembly, gas-components, nuclear-recovery, oil-assembly, oil-components, semiconductors-assembly, semiconductors-components, semiconductors-refining"
     },
     {
       "check": "excluded from export_feasibility_tbl export_rca: rca_below_min_exports (shipped as nq)",
       "status": "PASS",
-      "n": 1709,
+      "n": 3777,
       "detail": null
     },
     {
@@ -768,9 +951,9 @@
       "detail": null
     },
     {
-      "check": "excluded from production_depth_momentum_tbl production_latest: mineral Upstream roll-up (not a quantity of one mineral)",
+      "check": "excluded from production_depth_momentum_tbl production_latest: mineral Extraction / Refining roll-up (not a quantity of one mineral)",
       "status": "PASS",
-      "n": 174,
+      "n": 348,
       "detail": null
     },
     {
@@ -824,13 +1007,13 @@
     {
       "check": "excluded from foreign_dependency_tbl Market Share: Heat Pumps (no cell)",
       "status": "PASS",
-      "n": 30,
+      "n": 60,
       "detail": null
     },
     {
       "check": "excluded from foreign_dependency_tbl Market Share: EU member copies of the EU value",
       "status": "PASS",
-      "n": 100,
+      "n": 200,
       "detail": null
     },
     {
@@ -842,13 +1025,13 @@
     {
       "check": "excluded from investment_momentum_tbl momentum and raw stage sums: a transform / mixed units",
       "status": "PASS",
-      "n": 1410,
+      "n": 1935,
       "detail": null
     },
     {
       "check": "excluded from future_demand_tbl BNEF / BCG: licensed (never shipped)",
       "status": "PASS",
-      "n": 782,
+      "n": 1565,
       "detail": null
     },
     {
@@ -866,7 +1049,7 @@
     {
       "check": "excluded from future_demand_tbl WEO: copies of the world value",
       "status": "PASS",
-      "n": 4522,
+      "n": 9058,
       "detail": null
     },
     {
@@ -884,19 +1067,19 @@
     {
       "check": "excluded from cost_competitiveness_tbl ppi: PPI levels are not comparable across economies",
       "status": "PASS",
-      "n": 5654,
+      "n": 11308,
       "detail": null
     },
     {
       "check": "excluded from cost_competitiveness_tbl earnings_usd, nominal_rate, ppi_yoy: copies across technologies and stages",
       "status": "PASS",
-      "n": 11337,
+      "n": 23393,
       "detail": null
     },
     {
       "check": "excluded from technological_readiness_tbl *: copies across economies",
       "status": "PASS",
-      "n": 13794,
+      "n": 27588,
       "detail": null
     },
     {
@@ -908,7 +1091,7 @@
     {
       "check": "no index, weight or contribution rows: only data_type raw rows of data/processed are read",
       "status": "PASS",
-      "n": 35414,
+      "n": 50131,
       "detail": null
     },
     {
@@ -926,7 +1109,7 @@
     {
       "check": "parity: ledger rows present in the decoded chunk",
       "status": "PASS",
-      "n": 35414,
+      "n": 50131,
       "detail": null
     },
     {
@@ -998,7 +1181,7 @@
     {
       "check": "parity P: investment.annual identical() to data/processed",
       "status": "PASS",
-      "n": 3382,
+      "n": 3862,
       "detail": null
     },
     {
@@ -1010,13 +1193,13 @@
     {
       "check": "parity P: manufacturing.share_2035 identical() to data/processed",
       "status": "PASS",
-      "n": 20,
+      "n": 40,
       "detail": null
     },
     {
       "check": "parity P: manufacturing.share_now identical() to data/processed",
       "status": "PASS",
-      "n": 20,
+      "n": 40,
       "detail": null
     },
     {
@@ -1178,43 +1361,43 @@
     {
       "check": "parity P: technology.trl identical() to data/processed",
       "status": "PASS",
-      "n": 33,
+      "n": 66,
       "detail": null
     },
     {
       "check": "parity P: technology.trl_change identical() to data/processed",
       "status": "PASS",
-      "n": 33,
+      "n": 66,
       "detail": null
     },
     {
       "check": "parity P: trade.atlas_share identical() to data/processed",
       "status": "PASS",
-      "n": 3708,
+      "n": 7153,
       "detail": null
     },
     {
       "check": "parity P: trade.critmin_dependence identical() to data/processed",
       "status": "PASS",
-      "n": 2299,
+      "n": 5434,
       "detail": null
     },
     {
       "check": "parity P: trade.critmin_exports identical() to data/processed",
       "status": "PASS",
-      "n": 2299,
+      "n": 5434,
       "detail": null
     },
     {
       "check": "parity P: trade.feasibility identical() to data/processed",
       "status": "PASS",
-      "n": 3975,
+      "n": 7888,
       "detail": null
     },
     {
       "check": "parity P: trade.rca identical() to data/processed",
       "status": "PASS",
-      "n": 927,
+      "n": 1430,
       "detail": null
     },
     {
@@ -1238,25 +1421,25 @@
     {
       "check": "parity P: rows shipped verbatim per processed (table, variable)",
       "status": "PASS",
-      "n": 22898,
-      "detail": "cost_competitiveness_tbl earnings_usd: 514; cost_competitiveness_tbl nominal_rate: 144; cost_competitiveness_tbl ppi_yoy: 50; critical_minerals_production_tbl Manganese Production: 108; critical_minerals_production_tbl PGMs Production: 108; critical_minerals_production_tbl Zinc Production: 108; critical_minerals_trade_flows_tbl exp_share: 2299; critical_minerals_trade_flows_tbl exports: 2299; energy_access_tbl Energy consumption per capita: 474; energy_access_tbl Energy consumption per capita growth: 413; energy_prices_tbl latest_price: 23; energy_prices_tbl price_volatility_10yr: 23; energy_prices_tbl price_volatility_1yr: 23; energy_prices_tbl price_volatility_20yr: 23; energy_prices_tbl price_volatility_5yr: 23; energy_prices_tbl yoy_price_change_pct: 23; export_feasibility_tbl export_rca: 927; export_feasibility_tbl feasibility: 3975; foreign_dependency_tbl Market Share: 20; future_demand_tbl 2035: 7; future_demand_tbl sales_2025: 60; future_demand_tbl sales_2035: 5; future_demand_tbl sales_growth_2225: 53; future_demand_tbl share_2025: 60; future_demand_tbl share_2035: 5; future_demand_tbl stock_2025: 46; future_demand_tbl stock_2035: 5; future_demand_tbl stock_growth_2225: 43; geo_ideal_points_tbl s_axis: 237; geothermal_potential_tbl Geothermal LCOE (5 GW): 102; geothermal_potential_tbl Geothermal LCOE (500 MW): 137; geothermal_potential_tbl Geothermal total potential (MW): 165; import_dependence_tbl Production surplus/deficit: 395; import_dependence_tbl Self-sufficiency: 373; investment_momentum_tbl Annual Investment (USD bn, 2024$): 3382; major_supplier_shares_tbl iea_manufacturing_capacity: 20; market_share_manufacturing_tbl Domestic.Production: 5; market_share_manufacturing_tbl Domestic.sales: 5; market_share_manufacturing_tbl net_export_ratio: 5; production_depth_momentum_tbl production_latest: 1108; reserves_tbl Coal Reserves: 34; reserves_tbl Cobalt Reserves: 12; reserves_tbl Copper Reserves: 17; reserves_tbl Gas Reserves: 51; reserves_tbl Graphite Reserves: 15; reserves_tbl Lithium Reserves: 10; reserves_tbl Manganese Reserves: 8; reserves_tbl Nickel Reserves: 9; reserves_tbl Nuclear Reserves: 59; reserves_tbl Oil Reserves: 49; reserves_tbl PGMs Reserves: 5; reserves_tbl Rare Earths Reserves: 11; reserves_tbl Zinc Reserves: 9; solar_pv_potential_tbl Solar PV power potential: 214; solar_pv_potential_tbl Solar PV power potential per sq km: 214; technological_readiness_tbl TRL 2025: 33; technological_readiness_tbl TRL Δ 2020–2025: 33; trade_concentration_tbl market_share: 3708; wind_potential_tbl Wind power potential: 204; wind_potential_tbl Wind power potential per sq km: 204; wind_potential_tbl Wind power potential share over threshold: 204"
+      "n": 37615,
+      "detail": "cost_competitiveness_tbl earnings_usd: 514; cost_competitiveness_tbl nominal_rate: 144; cost_competitiveness_tbl ppi_yoy: 50; critical_minerals_production_tbl Manganese Production: 108; critical_minerals_production_tbl PGMs Production: 108; critical_minerals_production_tbl Zinc Production: 108; critical_minerals_trade_flows_tbl exp_share: 5434; critical_minerals_trade_flows_tbl exports: 5434; energy_access_tbl Energy consumption per capita: 474; energy_access_tbl Energy consumption per capita growth: 413; energy_prices_tbl latest_price: 23; energy_prices_tbl price_volatility_10yr: 23; energy_prices_tbl price_volatility_1yr: 23; energy_prices_tbl price_volatility_20yr: 23; energy_prices_tbl price_volatility_5yr: 23; energy_prices_tbl yoy_price_change_pct: 23; export_feasibility_tbl export_rca: 1430; export_feasibility_tbl feasibility: 7888; foreign_dependency_tbl Market Share: 40; future_demand_tbl 2035: 7; future_demand_tbl sales_2025: 60; future_demand_tbl sales_2035: 5; future_demand_tbl sales_growth_2225: 53; future_demand_tbl share_2025: 60; future_demand_tbl share_2035: 5; future_demand_tbl stock_2025: 46; future_demand_tbl stock_2035: 5; future_demand_tbl stock_growth_2225: 43; geo_ideal_points_tbl s_axis: 237; geothermal_potential_tbl Geothermal LCOE (5 GW): 102; geothermal_potential_tbl Geothermal LCOE (500 MW): 137; geothermal_potential_tbl Geothermal total potential (MW): 165; import_dependence_tbl Production surplus/deficit: 395; import_dependence_tbl Self-sufficiency: 373; investment_momentum_tbl Annual Investment (USD bn, 2024$): 3862; major_supplier_shares_tbl iea_manufacturing_capacity: 40; market_share_manufacturing_tbl Domestic.Production: 5; market_share_manufacturing_tbl Domestic.sales: 5; market_share_manufacturing_tbl net_export_ratio: 5; production_depth_momentum_tbl production_latest: 1108; reserves_tbl Coal Reserves: 34; reserves_tbl Cobalt Reserves: 12; reserves_tbl Copper Reserves: 17; reserves_tbl Gas Reserves: 51; reserves_tbl Graphite Reserves: 15; reserves_tbl Lithium Reserves: 10; reserves_tbl Manganese Reserves: 8; reserves_tbl Nickel Reserves: 9; reserves_tbl Nuclear Reserves: 59; reserves_tbl Oil Reserves: 49; reserves_tbl PGMs Reserves: 5; reserves_tbl Rare Earths Reserves: 11; reserves_tbl Zinc Reserves: 9; solar_pv_potential_tbl Solar PV power potential: 214; solar_pv_potential_tbl Solar PV power potential per sq km: 214; technological_readiness_tbl TRL 2025: 66; technological_readiness_tbl TRL Δ 2020–2025: 66; trade_concentration_tbl market_share: 7153; wind_potential_tbl Wind power potential: 204; wind_potential_tbl Wind power potential per sq km: 204; wind_potential_tbl Wind power potential share over threshold: 204"
     },
     {
       "check": "summary parity: recomputed from the decoded facts = meta.summary (1e-12)",
       "status": "PASS",
-      "n": 624,
+      "n": 942,
       "detail": "max relative difference 0"
     },
     {
       "check": "trade by sub-component (decoded): sums equal the decoded facts and world totals (1e-9 relative)",
       "status": "PASS",
-      "n": 34961,
-      "detail": "max relative difference 2.97e-16"
+      "n": 43974,
+      "detail": "max relative difference 3.82e-16"
     },
     {
       "check": "trade by sub-component (decoded): trade.sub_summary = sector_summary() of the decoded trade.cty_sub (1e-12)",
       "status": "PASS",
-      "n": 34961,
+      "n": 43974,
       "detail": "max relative difference 0"
     },
     {
@@ -1316,13 +1499,13 @@
     {
       "check": "climate (decoded): cell map identical() to climate_trace_map_tbl",
       "status": "PASS",
-      "n": 33,
+      "n": 37,
       "detail": null
     },
     {
       "check": "climate (decoded): cell match quality and notes identical() to climate_trace_cells_tbl",
       "status": "PASS",
-      "n": 35,
+      "n": 69,
       "detail": null
     },
     {
@@ -1352,13 +1535,13 @@
     {
       "check": "climate (decoded): IEA pathway cell map identical() to iea_pathways_map_tbl",
       "status": "PASS",
-      "n": 58,
+      "n": 85,
       "detail": null
     },
     {
       "check": "climate (decoded): IEA pathway cell match quality, notes and mineral technologies identical() to iea_pathways_cells_tbl",
       "status": "PASS",
-      "n": 35,
+      "n": 69,
       "detail": null
     },
     {
@@ -1466,13 +1649,13 @@
     {
       "check": "climate (decoded): climate sources cell map identical() to climate_src_map_tbl",
       "status": "PASS",
-      "n": 46,
+      "n": 76,
       "detail": null
     },
     {
       "check": "climate (decoded): climate sources cell match and notes identical() to climate_src_cells_tbl",
       "status": "PASS",
-      "n": 35,
+      "n": 69,
       "detail": null
     },
     {
@@ -1506,505 +1689,511 @@
       "detail": null
     },
     {
+      "check": "CM-FDI parity: fdi.stages = the configured stages (config/partnership.yml cm_fdi stages); rows keyed on the first stage's cell",
+      "status": "PASS",
+      "n": 2,
+      "detail": "Components, Assembly"
+    },
+    {
       "check": "CM-FDI parity: flows, group splits and years recomputed from the decoded projects identical()",
       "status": "PASS",
       "n": 3,
       "detail": null
     },
     {
-      "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)",
+      "check": "budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 26.5 MB gz)",
       "status": "PASS",
       "n": 19,
-      "detail": "sector 4536 kB gz; combined 12.75 MB gz"
+      "detail": "sector 5804 kB gz; combined 22.84 MB gz"
     }
   ],
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
-      "mtime": "2026-10-22T15:29:32Z",
-      "bytes": 165849,
-      "md5": "60cad72283b6fcf49272205c87ab0687"
+      "mtime": "2026-10-29T14:21:24Z",
+      "bytes": 174870,
+      "md5": "76a03916b3209ee58b7ae700093aa7d6"
     },
     {
-      "path": "coalition_tbl.rds",
-      "mtime": "2026-10-12T16:03:45Z",
-      "bytes": 12738,
-      "md5": "3851b9c7b3cd24f99e5a3a9649e8e041"
+      "path": "data/processed/coalition_tbl.rds",
+      "mtime": "2026-10-27T15:57:10Z",
+      "bytes": 13363,
+      "md5": "e078ee23a73e6307eb8de905db096258"
     },
     {
-      "path": "geo_ideal_points_tbl.rds",
-      "mtime": "2026-10-12T16:03:39Z",
+      "path": "data/processed/geo_ideal_points_tbl.rds",
+      "mtime": "2026-10-26T23:51:52Z",
       "bytes": 12527,
       "md5": "30d622e1710e202630eed3d8d4934fe3"
     },
     {
-      "path": "trade_concentration_tbl.rds",
-      "mtime": "2026-10-12T16:01:44Z",
-      "bytes": 301385,
-      "md5": "3e0e52d73ab9b313aeeb6a59849fca59"
+      "path": "data/processed/trade_concentration_tbl.rds",
+      "mtime": "2026-10-27T17:08:44Z",
+      "bytes": 569020,
+      "md5": "fdeb745a81fd89f0affbb48274c3beaa"
     },
     {
-      "path": "export_feasibility_tbl.rds",
-      "mtime": "2026-10-12T16:01:45Z",
-      "bytes": 299372,
-      "md5": "64b332628fa6b9fdf50b2c747858aec3"
+      "path": "data/processed/export_feasibility_tbl.rds",
+      "mtime": "2026-10-27T17:08:46Z",
+      "bytes": 560889,
+      "md5": "fe7c200d4511bc2527f6a4013156f1cb"
     },
     {
-      "path": "critical_minerals_trade_flows_tbl.rds",
-      "mtime": "2026-10-12T16:01:25Z",
-      "bytes": 49222,
-      "md5": "cf044d74d71a17825f068729a6fe97b0"
+      "path": "data/processed/critical_minerals_trade_flows_tbl.rds",
+      "mtime": "2026-10-27T17:08:12Z",
+      "bytes": 82934,
+      "md5": "9e1eb7f5a51781138ca3587f318029d7"
     },
     {
-      "path": "MCS2026_World_Data.csv",
-      "mtime": "2026-10-10T02:28:38Z",
+      "path": "data/raw/MCS2026_World_Data.csv",
+      "mtime": "2026-10-26T23:48:43Z",
       "bytes": 3189010,
       "md5": "36185ff3742087e1dd90c52fe634fe12"
     },
     {
-      "path": "reserves_tbl.rds",
-      "mtime": "2026-10-12T16:01:15Z",
-      "bytes": 20308,
-      "md5": "d215d86a7fe1ffd03c8c8c81f31d678c"
+      "path": "data/processed/reserves_tbl.rds",
+      "mtime": "2026-10-27T17:07:52Z",
+      "bytes": 20432,
+      "md5": "b51e08272e937b9aac43d659d5d0ffca"
     },
     {
-      "path": "solar_pv_potential_tbl.rds",
-      "mtime": "2026-10-12T16:01:06Z",
-      "bytes": 14364,
-      "md5": "a2579243928668e7dc78a306bef32ac9"
+      "path": "data/processed/solar_pv_potential_tbl.rds",
+      "mtime": "2026-10-27T17:07:38Z",
+      "bytes": 14361,
+      "md5": "535f9740db57a81271644e1a46a67955"
     },
     {
-      "path": "wind_potential_tbl.rds",
-      "mtime": "2026-10-12T16:01:07Z",
+      "path": "data/processed/wind_potential_tbl.rds",
+      "mtime": "2026-10-27T17:07:39Z",
       "bytes": 17758,
-      "md5": "ee8b642f78fb2a6c64f6751c17acc0b9"
+      "md5": "89c36658b7bbd476f10f6303bc034236"
     },
     {
-      "path": "geothermal_potential_tbl.rds",
-      "mtime": "2026-10-12T16:01:07Z",
-      "bytes": 14545,
-      "md5": "5af546678e93599b059db292e22fed1f"
+      "path": "data/processed/geothermal_potential_tbl.rds",
+      "mtime": "2026-10-27T17:07:39Z",
+      "bytes": 14544,
+      "md5": "530cd3d3e5af05017ca2d1a9fb719ebc"
     },
     {
-      "path": "ei_stat_review_world_energy.csv",
-      "mtime": "2026-09-30T14:19:50Z",
+      "path": "data/raw/ei_stat_review_world_energy.csv",
+      "mtime": "2026-10-26T23:48:23Z",
       "bytes": 21056005,
       "md5": "2cba7de671e97a75bbf5029db1321bc2"
     },
     {
-      "path": "eia_intl_fossil_production.csv",
-      "mtime": "2026-10-11T22:19:28Z",
+      "path": "data/raw/eia_intl_fossil_production.csv",
+      "mtime": "2026-10-26T23:48:43Z",
       "bytes": 5958472,
       "md5": "f2c8020f2ff82a3e6ff00f651da23511"
     },
     {
-      "path": "production_depth_momentum_tbl.rds",
-      "mtime": "2026-10-12T16:01:50Z",
-      "bytes": 27938,
-      "md5": "9080229ff46bdb87af0ec0a50d43914c"
+      "path": "data/processed/production_depth_momentum_tbl.rds",
+      "mtime": "2026-10-27T17:08:56Z",
+      "bytes": 31307,
+      "md5": "1d65fdef1216f4fb8bb31a83c5ca3cc4"
     },
     {
-      "path": "import_dependence_tbl.rds",
-      "mtime": "2026-10-12T16:01:12Z",
-      "bytes": 23114,
-      "md5": "c61d8efd4f879023944c3a9d434aa020"
+      "path": "data/processed/import_dependence_tbl.rds",
+      "mtime": "2026-10-27T17:07:48Z",
+      "bytes": 23132,
+      "md5": "dc9a3f2afdd18a5b1de4510b8ea135f0"
     },
     {
-      "path": "major_supplier_shares_tbl.rds",
-      "mtime": "2026-10-12T16:03:45Z",
-      "bytes": 83705,
-      "md5": "33c1d6ffece13e1c7807482dc3e16666"
+      "path": "data/processed/major_supplier_shares_tbl.rds",
+      "mtime": "2026-10-27T15:57:10Z",
+      "bytes": 139748,
+      "md5": "1774dc7a60b856cc863c2868b476d240"
     },
     {
-      "path": "critical_minerals_production_tbl.rds",
-      "mtime": "2026-10-12T16:01:23Z",
-      "bytes": 14892,
-      "md5": "37e1332b46bab1aba099b5b3e7e08981"
+      "path": "data/processed/critical_minerals_production_tbl.rds",
+      "mtime": "2026-10-27T17:08:07Z",
+      "bytes": 14946,
+      "md5": "f5065d1f0f01c97d95df447522f77b56"
     },
     {
-      "path": "energy_access_tbl.rds",
-      "mtime": "2026-10-12T16:01:06Z",
+      "path": "data/processed/energy_access_tbl.rds",
+      "mtime": "2026-10-27T17:07:38Z",
       "bytes": 19155,
-      "md5": "63ad41abbb9d4fe7dc925dec6b3e3ef5"
+      "md5": "21977faf6d7ad030626fd8e69eab2772"
     },
     {
-      "path": "energy_consumption_tbl.rds",
-      "mtime": "2026-10-12T16:01:25Z",
+      "path": "data/processed/energy_consumption_tbl.rds",
+      "mtime": "2026-10-27T17:08:14Z",
       "bytes": 50111,
-      "md5": "2bff2de91098912a867bdc78906099b9"
+      "md5": "09562b5daef14f9be692595f3a15e913"
     },
     {
-      "path": "foreign_dependency_tbl.rds",
-      "mtime": "2026-10-12T16:01:18Z",
-      "bytes": 28305,
-      "md5": "55b7b19d3e8b4be3d0a3d595319f98cc"
+      "path": "data/processed/foreign_dependency_tbl.rds",
+      "mtime": "2026-10-27T17:07:58Z",
+      "bytes": 31320,
+      "md5": "0fb35d2c1eedb44bbe7d4d7103ecc542"
     },
     {
-      "path": "market_share_manufacturing_tbl.rds",
-      "mtime": "2026-10-12T16:01:19Z",
-      "bytes": 6108,
-      "md5": "afcbe7e2659431c7512e3b165351b7c8"
+      "path": "data/processed/market_share_manufacturing_tbl.rds",
+      "mtime": "2026-10-27T17:07:59Z",
+      "bytes": 7201,
+      "md5": "295379300c54fc518bd054ce0952f5e3"
     },
     {
-      "path": "investment_momentum_tbl.rds",
-      "mtime": "2026-10-12T16:01:51Z",
-      "bytes": 83543,
-      "md5": "5982f2ae3d2be49b2bee7796c2335404"
+      "path": "data/processed/investment_momentum_tbl.rds",
+      "mtime": "2026-10-27T17:08:57Z",
+      "bytes": 108947,
+      "md5": "4d90ac087de1568d3da3515dbda2385a"
     },
     {
-      "path": "future_demand_tbl.rds",
-      "mtime": "2026-10-12T16:01:47Z",
-      "bytes": 25958,
-      "md5": "a10b5c1b3aa8c70312461293ad7fd81d"
+      "path": "data/processed/future_demand_tbl.rds",
+      "mtime": "2026-10-27T17:08:51Z",
+      "bytes": 52697,
+      "md5": "a7318e7c3d1e17d8a7969870c7e79a2b"
     },
     {
-      "path": "energy_prices_tbl.rds",
-      "mtime": "2026-10-12T16:01:33Z",
-      "bytes": 116198,
-      "md5": "5668b2bda7c5ec65993d642f57c854b0"
+      "path": "data/processed/energy_prices_tbl.rds",
+      "mtime": "2026-10-27T17:08:28Z",
+      "bytes": 131661,
+      "md5": "8811b038143e8466192e08c00d3709be"
     },
     {
-      "path": "cost_competitiveness_tbl.rds",
-      "mtime": "2026-10-12T16:02:03Z",
-      "bytes": 197966,
-      "md5": "11aae844fd5a7aa6b19146f408c0b997"
+      "path": "data/processed/cost_competitiveness_tbl.rds",
+      "mtime": "2026-10-27T17:09:18Z",
+      "bytes": 359254,
+      "md5": "207d4a83c0cfa292dbd9e9a3cc1a727b"
     },
     {
-      "path": "technological_readiness_tbl.rds",
-      "mtime": "2026-10-12T16:01:47Z",
-      "bytes": 193591,
-      "md5": "7344294579c0be5127a47ac299913b77"
+      "path": "data/processed/technological_readiness_tbl.rds",
+      "mtime": "2026-10-27T17:08:49Z",
+      "bytes": 301413,
+      "md5": "0539b3d5ae13c9f335f5c797030f9313"
     },
     {
-      "path": "IEA Critical Minerals Dataset 2026.xlsx",
-      "mtime": "2026-09-30T14:20:11Z",
+      "path": "data/raw/IEA Critical Minerals Dataset 2026.xlsx",
+      "mtime": "2026-10-26T23:48:23Z",
       "bytes": 1140368,
       "md5": "0743548a67c87823e2071ce05b15273e"
     },
     {
-      "path": "data/reference/uranium_production.csv",
-      "mtime": "2026-10-21T20:38:47Z",
+      "path": "data/raw/uranium_production.csv",
+      "mtime": "2026-10-26T23:51:33Z",
       "bytes": 82399,
       "md5": "420ad36304ec3724a5e673c51d3309d9"
     },
     {
-      "path": "CAT_country ratings data.csv",
-      "mtime": "2026-09-30T14:19:50Z",
+      "path": "data/raw/CAT_country ratings data.csv",
+      "mtime": "2026-10-26T23:48:24Z",
       "bytes": 4717,
       "md5": "9b68b8eadb9eab8430cb0447a39bf81d"
     },
     {
-      "path": "energy_hs6_master.csv",
-      "mtime": "2026-10-12T16:00:55Z",
-      "bytes": 60937,
-      "md5": "b0db4ddd3c0a25bf9e63db59153410de"
+      "path": "data/raw/energy_hs6_master.csv",
+      "mtime": "2026-10-27T09:07:08Z",
+      "bytes": 69978,
+      "md5": "1ce2137387f3de8ae656cbc3ef46e24a"
     },
     {
       "path": "data/reference/energy_hs6_master.csv",
-      "mtime": "2026-10-21T20:38:47Z",
-      "bytes": 80509,
-      "md5": "792ccb793a57f9999712f9677fac1f14"
+      "mtime": "2026-10-27T04:27:10Z",
+      "bytes": 87652,
+      "md5": "fac9037dae1838cb8085793419c95d4e"
     },
     {
-      "path": "comtrade_energy_dyads_all.csv",
-      "mtime": "2026-10-12T03:22:29Z",
+      "path": "data/raw/comtrade_energy_dyads_all.csv",
+      "mtime": "2026-10-26T23:48:43Z",
       "bytes": 720511674,
       "md5": "6d633533a931b77b687f1aa6baf28832"
     },
     {
-      "path": "IEA_PAMS_Export.csv",
-      "mtime": "2026-09-30T14:19:45Z",
+      "path": "data/raw/IEA_PAMS_Export.csv",
+      "mtime": "2026-10-26T23:48:23Z",
       "bytes": 16252495,
       "md5": "874c0c76af844091c3e133929b6f6c2d"
     },
     {
-      "path": "cm_fdi_projects.csv",
-      "mtime": "2026-10-11T21:58:01Z",
+      "path": "data/raw/cm_fdi_projects.csv",
+      "mtime": "2026-10-26T23:48:36Z",
       "bytes": 861911,
       "md5": "df921c9f97a4c5c2c56ad943873f3215"
     },
     {
-      "path": "wdi_country_info.csv",
-      "mtime": "2026-09-30T14:19:50Z",
+      "path": "data/raw/wdi_country_info.csv",
+      "mtime": "2026-10-26T23:48:23Z",
       "bytes": 30739,
       "md5": "ac6fd6a11572f3e146ef553cd4046f12"
     },
     {
-      "path": "wdi_gdp.csv",
-      "mtime": "2026-09-30T14:19:48Z",
+      "path": "data/raw/wdi_gdp.csv",
+      "mtime": "2026-10-26T23:48:25Z",
       "bytes": 243968,
       "md5": "51d400c1843f763fac4ba19fe794f2a4"
     },
     {
-      "path": "wb_wdi.csv",
-      "mtime": "2026-09-30T14:19:45Z",
+      "path": "data/raw/wb_wdi.csv",
+      "mtime": "2026-10-26T23:48:20Z",
       "bytes": 1466979,
       "md5": "c593722a6a02c202674d3c07b250d260"
     },
     {
-      "path": "wb_doingbusiness.csv",
-      "mtime": "2026-09-30T14:19:45Z",
+      "path": "data/raw/wb_doingbusiness.csv",
+      "mtime": "2026-10-26T23:48:20Z",
       "bytes": 100872,
       "md5": "c16aed2b7e3af23ad7ef5e5478a3846f"
     },
     {
-      "path": "oecd_crs_api.csv",
-      "mtime": "2026-09-30T14:19:48Z",
+      "path": "data/raw/oecd_crs_api.csv",
+      "mtime": "2026-10-26T23:48:21Z",
       "bytes": 27748549,
       "md5": "7bb6c0a41873e3568492c5601a626d1c"
     },
     {
-      "path": "partner_development_tbl.rds",
-      "mtime": "2026-10-22T15:34:32Z",
-      "bytes": 168646,
-      "md5": "34b8d56e2d7e77f3b899104e9ed836e9"
+      "path": "data/processed/partner_development_tbl.rds",
+      "mtime": "2026-10-27T16:09:47Z",
+      "bytes": 293211,
+      "md5": "0c2b7f6ef43b237ce458baa76c23d64e"
     },
     {
-      "path": "oecd_crs_purpose.csv",
-      "mtime": "2026-10-16T17:00:35Z",
+      "path": "data/raw/oecd_crs_purpose.csv",
+      "mtime": "2026-10-26T23:48:36Z",
       "bytes": 3986506,
       "md5": "d54da67b0a0a3277feb297c51eca32e0"
     },
     {
       "path": "data/reference/oecd_crs_purpose_crosswalk.csv",
-      "mtime": "2026-10-22T15:29:32Z",
-      "bytes": 14141,
-      "md5": "62168385562a281366ece4f0e837c525"
+      "mtime": "2026-10-27T08:43:05Z",
+      "bytes": 22471,
+      "md5": "bd3e87b8f3be7184d393a2ee6392d3c0"
     },
     {
-      "path": "oci_energy_finance.csv",
-      "mtime": "2026-10-16T18:20:41Z",
+      "path": "data/raw/oci_energy_finance.csv",
+      "mtime": "2026-10-26T23:48:43Z",
       "bytes": 4553338,
       "md5": "a5f1edaa2743ca880bee874abce7c6b5"
     },
     {
       "path": "data/reference/oci_energy_finance_institutions.csv",
-      "mtime": "2026-10-22T15:29:32Z",
+      "mtime": "2026-10-27T08:23:48Z",
       "bytes": 3956,
       "md5": "553bc2b2f052a698aabf478820e920d0"
     },
     {
       "path": "data/reference/oci_energy_finance_crosswalk.csv",
-      "mtime": "2026-10-22T15:29:32Z",
-      "bytes": 8214,
-      "md5": "6e4aea350681c4991c19d4d035e27ac9"
+      "mtime": "2026-10-27T08:43:05Z",
+      "bytes": 12537,
+      "md5": "ad968213772b67fcf3b43046c7e02334"
     },
     {
-      "path": "imf_dip.csv",
-      "mtime": "2026-09-30T14:19:47Z",
+      "path": "data/raw/imf_dip.csv",
+      "mtime": "2026-10-26T23:48:41Z",
       "bytes": 1875803184,
       "md5": "db5a478f170eedcb3342ca13b6b7e9fa"
     },
     {
-      "path": "ev_Midstream_capacity.csv",
-      "mtime": "2026-09-30T14:19:48Z",
+      "path": "data/raw/ev_Midstream_capacity.csv",
+      "mtime": "2026-10-26T23:48:24Z",
       "bytes": 1779,
       "md5": "e8b9dd2cb05fb28e1133e0806acfb459"
     },
     {
-      "path": "GCIM_Investment_Capacity_aggregated.xlsx",
-      "mtime": "2026-09-30T14:19:50Z",
+      "path": "data/raw/GCIM_Investment_Capacity_aggregated.xlsx",
+      "mtime": "2026-10-26T23:48:23Z",
       "bytes": 606096,
       "md5": "07b0464db600fa09c750782be860e123"
     },
     {
-      "path": "imf_commodity_prices.csv",
-      "mtime": "2026-09-30T14:19:50Z",
+      "path": "data/raw/imf_commodity_prices.csv",
+      "mtime": "2026-10-26T23:48:23Z",
       "bytes": 5052025,
       "md5": "42f00ad80194ea4b33a595caf8b38a32"
     },
     {
-      "path": "climate_trace_sources_tbl.rds",
-      "mtime": "2026-10-17T18:15:56Z",
+      "path": "data/processed/climate_trace_sources_tbl.rds",
+      "mtime": "2026-10-29T00:54:48Z",
       "bytes": 617,
       "md5": "2dc8ae09d6b9b62a75a40579eaca1584"
     },
     {
-      "path": "climate_trace_map_tbl.rds",
-      "mtime": "2026-10-17T18:15:56Z",
-      "bytes": 599,
-      "md5": "b4bbc59271d081c272717b1386e017a9"
+      "path": "data/processed/climate_trace_map_tbl.rds",
+      "mtime": "2026-10-29T00:54:48Z",
+      "bytes": 648,
+      "md5": "150006957844fbcd6d40a3c8c40ca603"
     },
     {
-      "path": "climate_trace_cells_tbl.rds",
-      "mtime": "2026-10-17T18:15:56Z",
-      "bytes": 1943,
-      "md5": "09bff805ea4520a3985b9c880725c8d4"
+      "path": "data/processed/climate_trace_cells_tbl.rds",
+      "mtime": "2026-10-29T00:54:48Z",
+      "bytes": 2531,
+      "md5": "2561b04b9ca543884fbf355218c73eb6"
     },
     {
-      "path": "climate_trace_lifecycle_tbl.rds",
-      "mtime": "2026-10-17T18:15:56Z",
+      "path": "data/processed/climate_trace_lifecycle_tbl.rds",
+      "mtime": "2026-10-29T00:54:48Z",
       "bytes": 648,
       "md5": "01b7b731a7dbe86eeab8bca5dbb446d5"
     },
     {
-      "path": "climate_trace_emissions_tbl.rds",
-      "mtime": "2026-10-17T18:15:56Z",
+      "path": "data/processed/climate_trace_emissions_tbl.rds",
+      "mtime": "2026-10-29T00:54:48Z",
       "bytes": 49722,
       "md5": "def3b5d69063daa2df30758c308f8da2"
     },
     {
-      "path": "climate_trace_intensity_tbl.rds",
-      "mtime": "2026-10-17T18:15:56Z",
+      "path": "data/processed/climate_trace_intensity_tbl.rds",
+      "mtime": "2026-10-29T00:54:48Z",
       "bytes": 70180,
       "md5": "dd54f355e6986567516312e3850e4357"
     },
     {
-      "path": "climate_trace_country_tbl.rds",
-      "mtime": "2026-10-17T18:15:56Z",
+      "path": "data/processed/climate_trace_country_tbl.rds",
+      "mtime": "2026-10-29T00:54:48Z",
       "bytes": 187854,
       "md5": "4edce8d76e7a7ebd62029848be2305a8"
     },
     {
-      "path": "iea_pathways_series_tbl.rds",
-      "mtime": "2026-10-17T19:03:56Z",
+      "path": "data/processed/iea_pathways_series_tbl.rds",
+      "mtime": "2026-10-29T00:55:07Z",
       "bytes": 1033,
       "md5": "f9e2f9f220d452d51ebe6ee567d0b582"
     },
     {
-      "path": "iea_pathways_values_tbl.rds",
-      "mtime": "2026-10-17T19:03:56Z",
+      "path": "data/processed/iea_pathways_values_tbl.rds",
+      "mtime": "2026-10-29T00:55:07Z",
       "bytes": 2400,
       "md5": "1a71d692bf0640e4f2805e7661112bff"
     },
     {
-      "path": "iea_pathways_map_tbl.rds",
-      "mtime": "2026-10-17T19:03:56Z",
-      "bytes": 771,
-      "md5": "a77905d1b8c54ababc7151bb1ce2dbba"
+      "path": "data/processed/iea_pathways_map_tbl.rds",
+      "mtime": "2026-10-29T00:55:07Z",
+      "bytes": 934,
+      "md5": "85d028e4bdbaade46ba908cf931de5bd"
     },
     {
-      "path": "iea_pathways_cells_tbl.rds",
-      "mtime": "2026-10-17T19:03:56Z",
-      "bytes": 1933,
-      "md5": "347f163942e8fdcbf23c597cf28a4d7e"
+      "path": "data/processed/iea_pathways_cells_tbl.rds",
+      "mtime": "2026-10-29T00:55:07Z",
+      "bytes": 2623,
+      "md5": "689c1324aacb4247c6c4217e1e5ed6b0"
     },
     {
-      "path": "iea_pathways_minerals_tbl.rds",
-      "mtime": "2026-10-17T19:03:56Z",
+      "path": "data/processed/iea_pathways_minerals_tbl.rds",
+      "mtime": "2026-10-29T00:55:07Z",
       "bytes": 7807,
       "md5": "3fccfa4e8972c473c8866affc6b59240"
     },
     {
-      "path": "iea_pathways_meta_tbl.rds",
-      "mtime": "2026-10-17T19:03:56Z",
+      "path": "data/processed/iea_pathways_meta_tbl.rds",
+      "mtime": "2026-10-29T00:55:07Z",
       "bytes": 285,
       "md5": "f9acd19fbb60a6856728befdc88d6c6f"
     },
     {
-      "path": "iea_pathways_vintage_tbl.rds",
-      "mtime": "2026-10-17T19:03:56Z",
+      "path": "data/processed/iea_pathways_vintage_tbl.rds",
+      "mtime": "2026-10-29T00:55:07Z",
       "bytes": 3281,
       "md5": "007c127e7129b8e5ef87f2a621650534"
     },
     {
-      "path": "climate_src_gcp_national_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_gcp_national_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 122366,
       "md5": "61bf0cd083bdcc0dfd4ac004bdfa38b0"
     },
     {
-      "path": "climate_src_gcp_fuel_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_gcp_fuel_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 3958,
       "md5": "2752330866e4975edaa3766cb05a8244"
     },
     {
-      "path": "climate_src_ei_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_ei_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 23972,
       "md5": "d5a4fd4dd73d755bb4a6b00166ce4608"
     },
     {
-      "path": "climate_src_ei_ind_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_ei_ind_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 666,
       "md5": "aeb8ab13683179ef963cfaed6c8382ee"
     },
     {
-      "path": "climate_src_ei_median_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_ei_median_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 715,
       "md5": "847a099be0b1a94c6c258ce264f5769b"
     },
     {
-      "path": "climate_src_weo_series_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_weo_series_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 464,
       "md5": "5dcb5220088e958350e83a8e6aa40fe1"
     },
     {
-      "path": "climate_src_weo_values_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_weo_values_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 6089,
       "md5": "c37aca5bc6b80f36084f899c276a937a"
     },
     {
-      "path": "climate_src_weo_regions_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_weo_regions_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 309,
       "md5": "3760a7ea1c18498f6c29a2c59794c1e5"
     },
     {
-      "path": "climate_src_weo_geo_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_weo_geo_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 1348,
       "md5": "3908a7b71ddcab18a4a10b8896e818b1"
     },
     {
-      "path": "climate_src_nze21_series_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_nze21_series_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 1082,
       "md5": "886ed91862082e318332c4448602a09c"
     },
     {
-      "path": "climate_src_nze21_values_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_nze21_values_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 878,
       "md5": "378b13c955a862b1ff66d55370548c12"
     },
     {
-      "path": "climate_src_wei_rows_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
-      "bytes": 1160,
-      "md5": "869958d8ddcd74f56c9cc13d2c80710b"
+      "path": "data/processed/climate_src_wei_rows_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
+      "bytes": 1169,
+      "md5": "6e0309e725062136e22c83703217e829"
     },
     {
-      "path": "climate_src_wei_values_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_wei_values_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 14174,
       "md5": "b1a9bb13da8bdf0abf10d0322dc6c3da"
     },
     {
-      "path": "climate_src_wei_regions_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_wei_regions_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 307,
       "md5": "1a846ea5721655cf192b5a3a174a9512"
     },
     {
-      "path": "climate_src_map_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
-      "bytes": 663,
-      "md5": "a8bb872a023dbc0f3d3cfc7b62458866"
+      "path": "data/processed/climate_src_map_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
+      "bytes": 823,
+      "md5": "5278e85894480067a8e4148dfd64d954"
     },
     {
-      "path": "climate_src_cells_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
-      "bytes": 1421,
-      "md5": "b74f351920e416b08853c0137d03e434"
+      "path": "data/processed/climate_src_cells_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
+      "bytes": 1948,
+      "md5": "9c55446b8d36ce08095a2b3ce1f6dd61"
     },
     {
-      "path": "climate_src_meta_tbl.rds",
-      "mtime": "2026-10-17T20:26:20Z",
+      "path": "data/processed/climate_src_meta_tbl.rds",
+      "mtime": "2026-10-29T00:55:43Z",
       "bytes": 440,
       "md5": "0aa42c8e4de959c58f37e151532626ca"
     }
   ],
   "budget": {
-    "sector_gz": 4644713,
-    "combined_gz": 13370632,
+    "sector_gz": 5943052,
+    "combined_gz": 23954388,
     "limit_sector_gz": 9437184,
-    "limit_combined_gz": 26214400
+    "limit_combined_gz": 27787264
   },
   "encoding": {
     "lossy": false

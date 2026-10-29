@@ -84,7 +84,7 @@ export function useApp(): AppData {
 interface ScenarioCtx {
   scenario: Scenario;
   view: ViewState;
-  /** scenario part of the query string ('' at the paper baseline) */
+  /** scenario part of the query string ('' at the NEIS baseline) */
   key: string;
   isBaseline: boolean;
   /** the Show mode in effect (always 'scenario' at the baseline) */

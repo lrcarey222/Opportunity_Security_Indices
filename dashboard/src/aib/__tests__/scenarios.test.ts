@@ -300,7 +300,7 @@ describe('the scenario in the URL (scn)', () => {
 
   it('the Country profile keeps scn as a host key (parsed, written last) and has the Geopolitical tab', () => {
     expect(COUNTRY_KEY_ORDER).toContain('scn');
-    expect(parseCountrySearch('?cell=oil-upstream&scn=decoupling').state.scn).toBe('decoupling');
+    expect(parseCountrySearch('?cell=oil-extraction&scn=decoupling').state.scn).toBe('decoupling');
     // the default, as an older link writes it: read as nothing, without a notice
     const old = parseCountrySearch('?scn=managed');
     expect(old.state.scn).toBeUndefined();
@@ -308,8 +308,8 @@ describe('the scenario in the URL (scn)', () => {
     const p = parseCountrySearch('?scn=baseline');
     expect(p.state.scn).toBeUndefined();
     expect(p.problems).toEqual(["scn=baseline ('decoupling' or nothing)"]);
-    expect(serializeCountrySearch({ cell: 'oil-upstream', ptab: 'investment', scn: 'decoupling' })).toBe('?cell=oil-upstream&ptab=investment&scn=decoupling');
-    expect(serializeCountrySearch({ cell: 'oil-upstream' })).toBe('?cell=oil-upstream');
+    expect(serializeCountrySearch({ cell: 'oil-extraction', ptab: 'investment', scn: 'decoupling' })).toBe('?cell=oil-extraction&ptab=investment&scn=decoupling');
+    expect(serializeCountrySearch({ cell: 'oil-extraction' })).toBe('?cell=oil-extraction');
     expect(parseCountrySearch('?ptab=geopolitical').state.ptab).toBe('geopolitical');
   });
 });

@@ -1,9 +1,9 @@
 // Fixed entity colours and scales (spec_react.md 8.7), from shiny/R/theme.R and validated on the dark
-// surface #1f2937 with the dataviz validator (scratch_dash/pal): stage and tier pairs pass CVD and the
-// normal-vision floor as adjacent pairs; Upstream and Downstream are never two colour series in one
-// panel (charts facet by stage instead). Orange is chrome (and the selected / hovered outline), except
-// as the low end of the user's three-colour data scale (TRI, 2026-10-11), which overrides that rule
-// for data visuals.
+// surface #1f2937 with the dataviz validator (scratch_dash/pal): tier pairs pass CVD and the
+// normal-vision floor as adjacent pairs. A supply-chain stage is never a colour series (design S4,
+// 2026-10-28): charts facet by stage or put it in a labelled column, and a stage marker is one neutral
+// (STAGE_NEUTRAL). Orange is chrome (and the selected / hovered outline), except as the low end of the
+// user's three-colour data scale (TRI, 2026-10-11), which overrides that rule for data visuals.
 
 export const INK = {
   900: '#111827',
@@ -23,14 +23,13 @@ export const GRID = 'rgb(255 255 255 / 0.08)';
 export const HAIRLINE = 'rgb(255 255 255 / 0.22)';
 export const ZERO_RULE = 'rgb(255 255 255 / 0.22)';
 
-export const STAGES = ['Upstream', 'Midstream', 'Downstream'] as const;
-export type StageName = (typeof STAGES)[number];
-
-export const STAGE_COLOR: Record<string, string> = {
-  Upstream: '#1889b0',
-  Midstream: '#8b9d17',
-  Downstream: '#2fa5a6',
-};
+/**
+ * The one colour of a stage marker (a rule or stripe beside the stage's label), for every stage alike.
+ * Six stages cannot carry six hues: no six-hue palette passed the all-pairs colour-vision check on the
+ * dark surface (2026-10-28), and the three-stage hues they replace were roll-ups that no longer exist.
+ * The stage is told by its label, its facet or its column.
+ */
+export const STAGE_NEUTRAL = '#9ca3af';
 
 export const PILLAR_COLOR = { ES: '#1889b0', EO: '#8b9d17', Policy: '#2fa5a6' } as const;
 

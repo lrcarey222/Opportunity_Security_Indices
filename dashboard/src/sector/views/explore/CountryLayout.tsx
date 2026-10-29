@@ -216,7 +216,8 @@ function Distribution({ c, rows, conc }: { c: ExploreCtx; rows: FactRow[]; conc:
   );
 }
 
-const SECTION_WORDS: Record<string, string> = { upstream: 'Upstream', midstream: 'Midstream', downstream: 'Downstream', minerals: 'Minerals', fuels: 'Fuels', commoditys: 'Commodities', activitys: 'Activities' };
+/** Panel headings of the across-sectors split: the six stages, then the other item axes. */
+const SECTION_WORDS: Record<string, string> = { ...STAGE_LABELS, minerals: 'Minerals', mineral_stages: 'Minerals by stage', fuels: 'Fuels', commoditys: 'Commodities', activitys: 'Activities' };
 
 export function AcrossSectors({ c }: { c: ExploreCtx }) {
   const { model, v, item, year, eu } = c;

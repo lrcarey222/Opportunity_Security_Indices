@@ -16,14 +16,19 @@ SECTOR_LENS_FAMILIES <- c("exports", "production", "capacity", "reserves", "inve
 SECTOR_SECTIONS <- c("snapshot", "who", "leaders", "trade", "investment", "production", "resources",
                      "demand", "prices", "policy", "technology", "context", "countries")
 SECTOR_NATIVE_LEVELS <- c("country", "eu", "region", "entity", "world", "cell_global", "dyad")
-SECTOR_ITEM_AXES <- c("cell", "mineral", "fuel", "commodity", "activity", "policy_tag", "indicator", "aid_sector", "none")
+# mineral_stage (schema 2): a mineral at one stage of its chain ("lithium-refining"), the item of the
+# critical-mineral trade measures (ores at Extraction, refined metal and chemicals at Refining, scrap at
+# Recovery).
+SECTOR_ITEM_AXES <- c("cell", "mineral", "mineral_stage", "fuel", "commodity", "activity", "policy_tag", "indicator", "aid_sector", "none")
 SECTOR_AGG_RULES <- c("sum", "ratio", "none")
 SECTOR_WORLD_BASES <- c("source_world", "sum_all", "one", "sum_listed", "none")
 SECTOR_LICENCES <- c("open", "attribution")
 SECTOR_PROVENANCES <- c("P", "D", "X")
 SECTOR_PHASES <- c("1", "2", "hold")
 SECTOR_NORMS <- c("value", "share", "gdp")
-SECTOR_LINK_STAGES <- c("Upstream", "Midstream", "Downstream", "any")
+# A var's link_stage: one or more of the six stages, or `any` alone (SUPPLY_CHAIN_STAGES,
+# R/utils/supply_chain_stages.R, sourced first by sector_files()).
+SECTOR_LINK_STAGES <- c(SUPPLY_CHAIN_STAGES, "any")
 SECTOR_STATUS_CODES <- c("obs", "zero", "nsr", "nq", "mirror", "est", "na_growth")
 SECTOR_NAN_STATUS <- c("nq", "na_growth")
 SECTOR_TECH_SLUGS <- c("batteries", "coal", "electric-grid", "electric-vehicles", "gas", "geothermal",
@@ -32,8 +37,51 @@ SECTOR_TECH_LABELS <- c(batteries = "Batteries", coal = "Coal", `electric-grid` 
                         `electric-vehicles` = "Electric Vehicles", gas = "Gas", geothermal = "Geothermal",
                         `green-hydrogen` = "Green Hydrogen", nuclear = "Nuclear", oil = "Oil", solar = "Solar",
                         wind = "Wind", semiconductors = "Semiconductors")
-SECTOR_STAGE_SLUGS <- c("upstream", "midstream", "downstream")
-SECTOR_STAGE_LABELS <- c(upstream = "Upstream", midstream = "Midstream", downstream = "Downstream")
+# The six supply-chain stages in chain order (schema version 2; until 2026-10-28 the Sector bundle had
+# three). Labels are the stage ids; slugs their lower case ("batteries-refining").
+SECTOR_STAGE_LABELS <- stats::setNames(SUPPLY_CHAIN_STAGES, tolower(SUPPLY_CHAIN_STAGES))
+SECTOR_STAGE_SLUGS <- names(SECTOR_STAGE_LABELS)
+SECTOR_HEADLINE_TECH_SLUGS <- setdiff(SECTOR_TECH_SLUGS, "semiconductors")
+
+# The 66 headline cells (11 technologies x 6 stages), technology-major in chain order. Semiconductors
+# cells are non-headline and exist where the dictionary lists them (the stages its basket has).
+sector_headline_cell_slugs <- function() {
+  paste0(rep(SECTOR_HEADLINE_TECH_SLUGS, each = length(SECTOR_STAGE_SLUGS)), "-", SECTOR_STAGE_SLUGS)
+}
+
+# The (tech slug, stage slug) of cell slugs ("electric-grid-recovery" -> electric-grid, recovery); NA
+# parts for a slug that is not <known tech>-<stage>. Stage suffixes never clash (refining / recovery).
+sector_cell_parts <- function(slug) {
+  slug <- as.character(slug)
+  stage <- rep(NA_character_, length(slug))
+  for (s in SECTOR_STAGE_SLUGS) stage[is.na(stage) & endsWith(slug, paste0("-", s))] <- s
+  tech <- ifelse(is.na(stage), NA_character_, substr(slug, 1, nchar(slug) - nchar(stage) - 1L))
+  tech[!tech %in% SECTOR_TECH_SLUGS] <- NA_character_
+  stage[is.na(tech)] <- NA_character_
+  tibble::tibble(tech = tech, stage = stage)
+}
+
+# The three ILO activities behind the wage context (prices.wages, item axis `activity`) and the stages
+# each serves: the pipeline's rule (R/categories/economic opportunity/cost_competitiveness.R) files
+# Extraction and Recovery under mining and utilities, Refining, Components and Assembly under
+# manufacturing, and Deployment under construction.
+SECTOR_ACTIVITIES <- tibble::tribble(
+  ~slug, ~label, ~text,
+  "mining-utilities", "Mining and utilities", "mining and utilities",
+  "manufacturing", "Manufacturing", "manufacturing",
+  "construction", "Construction", "construction"
+)
+SECTOR_ACTIVITY_OF_STAGE <- c(Extraction = "mining-utilities", Refining = "manufacturing", Components = "manufacturing",
+                              Assembly = "manufacturing", Deployment = "construction", Recovery = "mining-utilities")
+
+# The old three stage names may not reach a viewer (2026-10-28: the six stages replace them
+# everywhere). TRUE for text that names one; the OECD's own CRS sub-sector "Oil and gas (upstream)"
+# is a proper name and does not count.
+sector_has_legacy_stage <- function(x) {
+  x <- as.character(x)
+  x <- gsub("oil and gas \\(upstream\\)", "", x, ignore.case = TRUE)
+  !is.na(x) & grepl("\\b(upstream|midstream|downstream)\\b", x, ignore.case = TRUE)
+}
 
 # Fields every var entry must carry (others default to NULL / NA).
 sector_dictionary_required_fields <- function() {
@@ -122,7 +170,12 @@ sector_dictionary_validate <- function(d, var_ids = NULL) {
     chk("prov", SECTOR_PROVENANCES)
     chk("phase", SECTOR_PHASES)
     if (!is.null(v$section)) chk("section", SECTOR_SECTIONS)
-    if (!is.null(v$link_stage)) chk("link_stage", SECTOR_LINK_STAGES)
+    if (!is.null(v$link_stage)) {
+      ls <- as.character(unlist(v$link_stage))
+      if (!length(ls) || !all(ls %in% SECTOR_LINK_STAGES) || anyDuplicated(ls) || ("any" %in% ls && length(ls) > 1)) {
+        add(where, "link_stage must be one or more of ", paste(SUPPLY_CHAIN_STAGES, collapse = ", "), ", or any alone")
+      }
+    }
     if (!is.null(v$scale)) chk("scale", c("linear", "log"))
     norms <- unlist(v$norms)
     if (length(setdiff(norms, SECTOR_NORMS))) add(where, "unknown norms ", paste(setdiff(norms, SECTOR_NORMS), collapse = ", "))
@@ -153,6 +206,22 @@ sector_dictionary_validate <- function(d, var_ids = NULL) {
     bad <- setdiff(unlist(cl$caveats), caveat_ids)
     if (length(bad)) add("cells ", cl$slug, ": caveats not in caveats: ", paste(bad, collapse = ", "))
   }
+  # The cells: every headline technology at every one of the six stages (66), plus the Semiconductors
+  # stages its basket has; each slug <tech>-<stage>.
+  cell_slugs <- ids_of(d$cells, "slug")
+  if (anyNA(cell_slugs) || anyDuplicated(cell_slugs)) add("cells: an entry without slug, or a duplicate slug")
+  cp <- sector_cell_parts(cell_slugs)
+  if (any(is.na(cp$tech))) add("cells: slugs that are not <tech>-<stage> of the six stages: ", paste(cell_slugs[is.na(cp$tech)], collapse = ", "))
+  miss_cells <- setdiff(sector_headline_cell_slugs(), cell_slugs)
+  if (length(miss_cells)) add("cells: headline cells without an entry: ", paste(miss_cells, collapse = ", "))
+  for (cl in d$cells) if (is.null(cl$cell_blurb) || !nzchar(cl$cell_blurb)) add("cells ", sector_null_to_na(cl$slug), ": no cell_blurb")
+  prim_cells <- unlist(lapply(d$vars, function(v) unlist(v$primary_for)))
+  if (length(setdiff(prim_cells, cell_slugs))) add("primary_for: cells not in cells: ", paste(setdiff(prim_cells, cell_slugs), collapse = ", "))
+  # No text of the dictionary may name the old three stages (2026-10-28).
+  leaves <- unlist(d, use.names = FALSE)
+  leaves <- leaves[is.character(leaves)]
+  old <- unique(leaves[sector_has_legacy_stage(leaves)])
+  if (length(old)) add("texts naming Upstream, Midstream or Downstream (use the six stages): ", paste(utils::head(substr(old, 1, 80), 5), collapse = " | "))
   hr_ids <- character()
   for (h in d$hhi_refs %||% list()) {
     for (f in c("id", "value", "points", "side", "label", "authority", "document", "year")) {
@@ -186,8 +255,8 @@ sector_pipe <- function(x) {
 # The dictionary as tables. `fill`: named values for {placeholders}. Returns list(vars, units,
 # sources, caveats, themes, families, techs, cells, cell_caveats (slug, caveat: the cells' `caveats`
 # lists, dictionary order), hhi_refs (or NULL), item_units, price_unit_ids). `vars` carries the
-# contract columns of dict.vars plus internal ones (link_stage, parity_*), which the chunk builder
-# drops.
+# contract columns of dict.vars plus internal ones (link_stage: the stages pipe-joined,
+# "Extraction|Refining", or "any"; parity_*), which the chunk builder drops.
 sector_dictionary_tables <- function(d, fill = list()) {
   chr <- function(x) sector_null_to_na(x)
   num <- function(x) if (is.null(x)) NA_real_ else as.double(x)
@@ -207,7 +276,7 @@ sector_dictionary_tables <- function(d, fill = list()) {
       phase = as.character(v$phase),
       projection_from = int(v$projection_from),
       series_window = NA_character_,
-      link_stage = chr(v$link_stage),
+      link_stage = sector_pipe(v$link_stage),
       parity_table = chr(pr$table), parity_variable = chr(pr$variable), parity_formula = chr(pr$formula),
       parity_cross_check = chr(pr$cross_check), parity_none = chr(pr$none)
     )

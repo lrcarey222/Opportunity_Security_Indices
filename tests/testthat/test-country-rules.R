@@ -4,7 +4,8 @@
 # constant-in-cell measures never top, combined missing-rule words, labels), IEA policy record counts
 # with expanded cross-cutting rows, the Climate Action Tracker EU-bloc scope, partner reasons and
 # Development Potential words, trade means (never a sum across baskets), the agreements rule, the
-# industrial-policy measures (dates, the active rule, top five per sector) and the display formatter.
+# industrial-policy measures (dates, the active rule, top five per sector, no per-sector lists while the
+# run is three-stage) and the display formatter. Keys and stages are the six-stage ones (2026-10-28).
 # Pure helpers only; base R + jsonlite + yaml.
 
 repo_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
@@ -20,12 +21,41 @@ test_that("percentiles count the others below and half of the ties; medians are 
   expect_true(is.na(country_percentile(numeric(), 1)))            # |O| = 0
   expect_true(is.na(country_percentile(c(1, 2), NA)))
   # even n: the median is the mean of the two middle values, as views/Space/derive.ts median()
-  es <- data.frame(iso3 = c("A", "B", "C", "D"), key = "oil-upstream", value = c(0.1, 0.2, 0.3, 0.4), rankable = TRUE)
-  eo <- data.frame(iso3 = c("A", "B", "C", "D"), key = "oil-upstream", value = c(0.4, 0.3, 0.2, 0.1), rankable = c(TRUE, TRUE, TRUE, FALSE))
-  st <- country_cell_stats(es, eo, keys = "oil-upstream")[["oil-upstream"]]
+  es <- data.frame(iso3 = c("A", "B", "C", "D"), key = "oil-extraction", value = c(0.1, 0.2, 0.3, 0.4), rankable = TRUE)
+  eo <- data.frame(iso3 = c("A", "B", "C", "D"), key = "oil-extraction", value = c(0.4, 0.3, 0.2, 0.1), rankable = c(TRUE, TRUE, TRUE, FALSE))
+  st <- country_cell_stats(es, eo, keys = "oil-extraction")[["oil-extraction"]]
   expect_setequal(st$iso3, c("A", "B", "C"))                      # D is not rankable on EO: outside S_c
   expect_equal(st$es_med, 0.2)
   expect_equal(st$eo_med, 0.3)
+})
+
+test_that("a pillar constant across the economies compared ranks none of them: the sector is not placed", {
+  keys <- c("oil-extraction", "oil-recovery")
+  ct <- country_cells_tbl()
+  ct <- ct[ct$key %in% keys, ]
+  es <- data.frame(iso3 = rep(c("A", "B", "C"), 2), key = rep(keys, each = 3), value = c(0.1, 0.2, 0.3, 0.438, 0.438, 0.438),
+                   rankable = TRUE, imputed_share = 0, reason = NA_character_)
+  eo <- data.frame(iso3 = rep(c("A", "B", "C"), 2), key = rep(keys, each = 3), value = c(0.4, 0.3, 0.2, 0.6, 0.5, 0.4),
+                   rankable = TRUE, imputed_share = 0, reason = NA_character_)
+  stats <- country_cell_stats(es, eo, keys = keys)
+  expect_identical(country_constant_pillars(stats[["oil-recovery"]]), c(es = TRUE, eo = FALSE))
+  expect_identical(country_constant_cells(stats), data.frame(key = "oil-recovery", pillar = "es", stringsAsFactors = FALSE))
+  # one economy is no variation (the "no other economy" rule covers it), so it is not constant
+  expect_identical(country_constant_pillars(list(es = 0.4, eo = 0.4)), c(es = FALSE, eo = FALSE))
+  cells <- country_cells_base("A", es[es$iso3 == "A", ], eo[eo$iso3 == "A", ], stats, cells = ct, no_es = character())
+  by <- stats::setNames(cells, vapply(cells, function(x) x$key, ""))
+  expect_true(by[["oil-extraction"]]$placed)
+  r <- by[["oil-recovery"]]
+  expect_false(r$placed)
+  expect_null(r$quadrant)
+  expect_identical(r$quadrant_reason, "the same Energy Security score for every economy in this sector")
+  # the score is shown, but no percentile, position or side on it; the other pillar keeps its own
+  expect_equal(r$es$v, 0.438)
+  expect_null(r$es$pct$v)
+  expect_true("pos" %in% names(r$es) && is.null(r$es$pos))
+  expect_true("side" %in% names(r$es) && is.null(r$es$side))
+  expect_equal(r$eo$pct$v, 100)
+  expect_identical(country_orders(cells)$es_order, "oil-extraction")
 })
 
 test_that("the plotted position sits on the side of the median its value is on", {
@@ -70,7 +100,7 @@ test_that("Strategic Index parts are the level terms and sum to the index; the S
   w <- c(pol = 0.2, eo = 0.3, need = 0.3, sc = 0.1, tech = 0.1)
   k <- cells$key[1:4]
   eo_level <- c(0.6, 0.2, 0.5, 0.4); need <- c(0.3, 0.7, 0.4, 0.5); pol <- c(1, 0, 0.5, 0.5)
-  sc <- c(0.5, 0.75, 0.25, 0.5); tw <- c(0.9, 0.9, 0.9, 0.2)
+  sc <- unname(SUPPLY_CHAIN_STAGE_SI_WEIGHTS[cells$stage[1:4]]); tw <- c(0.9, 0.9, 0.9, 0.2)   # Extraction, Refining, Components, Assembly
   si <- w[["eo"]] * eo_level + w[["need"]] * need + w[["pol"]] * pol + w[["sc"]] * sc + w[["tech"]] * tw
   si_c <- data.frame(key = k, eo_level = eo_level, need = need, pol = pol, sc_weight = sc, tech_weight = tw, si = si,
                      eo = c(0.99, 0.01, 0.5, 0.5), es_need = c(0.01, 0.99, 0.5, 0.5),   # S-curved chart inputs: must not matter
@@ -164,14 +194,14 @@ test_that("every index-only driver variable of the final run has a plain label",
 })
 
 test_that("a raw_tables entry that matches two raw rows is reported, never resolved", {
-  raw_rows <- data.frame(table = "t", iso3 = "JPN", tech = "Oil", stage = "Upstream", category = "Energy Imports",
+  raw_rows <- data.frame(table = "t", iso3 = "JPN", tech = "Oil", stage = "Extraction", category = "Energy Imports",
                          variable = "Production surplus/deficit", value = c(-1, -2), Year = 2024, source = "ei", explanation = "x",
                          stringsAsFactors = FALSE)
   idx <- country_raw_index(raw_rows)
   map <- list(list(pillar = "es", category = "Energy Imports", variable = "Production surplus/deficit", table = "t",
                    raw_variable = "Production surplus/deficit", raw_tech = "cell", label = "Production minus consumption"))
   dups <- character()
-  fn <- country_raw_fn("JPN", list(key = "oil-upstream", tech = "Oil", stage = "Upstream"), "es", raw_rows, idx, map, list(), cfg,
+  fn <- country_raw_fn("JPN", list(key = "oil-extraction", tech = "Oil", stage = "Extraction"), "es", raw_rows, idx, map, list(), cfg,
                        dup_fn = function(e, n) dups <<- c(dups, paste(e$variable, n)))
   r <- fn("Energy Imports", "Production surplus/deficit")
   expect_null(r$raw)
@@ -184,7 +214,7 @@ test_that("IEA records: specific, technology and all counts with expanded cross-
     policy_id = c("p1", "p2", "p2", "p3", "p3", "p3", "p4", "p5"),
     iso3 = "JPN",
     tech = c("Solar", "Solar", "Solar", "Solar", "Wind", "Oil", "Critical Minerals", "Solar"),
-    supply_chain = c("Upstream", "Upstream", "Midstream", "Upstream", "Upstream", "Upstream", "Upstream", "Upstream"),
+    supply_chain = c("Extraction", "Extraction", "Components", "Extraction", "Extraction", "Extraction", "Extraction", "Extraction"),
     tech_crosscut = c(FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE),
     sc_crosscut = c(FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE),
     status_norm = c("In force", "Ended", "Ended", "Unknown", "Unknown", "Unknown", "In force", "In force"),
@@ -192,11 +222,17 @@ test_that("IEA records: specific, technology and all counts with expanded cross-
   all <- country_pams_counts_all(pc)
   x <- country_pams_counts(all, "JPN")
   cell <- function(k) x$cells[x$cells$key == k, ]
-  expect_equal(cell("solar-upstream")$records_specific, 2L)     # p1, p5 (p2 names no stage, p3 no technology)
-  expect_equal(cell("solar-upstream")$records_tech, 3L)         # p1, p2, p5 at any stage
-  expect_equal(cell("solar-upstream")$records_all, 4L)          # p1, p2, p3, p5
-  expect_equal(cell("solar-upstream")$latest_year, 2030)        # future years print as they are
-  expect_equal(cell("wind-upstream")$records_specific, 0L)
+  expect_equal(cell("solar-extraction")$records_specific, 2L)     # p1, p5 (p2 names no stage, p3 no technology)
+  expect_equal(cell("solar-extraction")$records_tech, 3L)         # p1, p2, p5 at any stage
+  expect_equal(cell("solar-extraction")$records_all, 4L)          # p1, p2, p3, p5
+  expect_equal(cell("solar-extraction")$latest_year, 2030)        # future years print as they are
+  expect_equal(cell("wind-extraction")$records_specific, 0L)
+  expect_equal(nrow(x$cells), 66L)
+  # the coverage table: the 11 technologies x the six stages; Solar Extraction holds p1 and p5
+  expect_equal(as.character(x$facts$coverage$cols), SUPPLY_CHAIN_STAGES)
+  expect_equal(x$facts$coverage$specific[[match("Solar", COUNTRY_TECHS)]][[1]]$v, 2)
+  expect_length(x$facts$coverage$critical_minerals, 6)
+  expect_equal(x$facts$coverage$critical_minerals[[1]]$v, 1)    # p4 (Critical Minerals, Extraction)
   expect_equal(x$facts$pams_total$v, 5)
   expect_equal(x$facts$pams_no_tech$v, 1)
   expect_equal(x$facts$pams_critical_minerals$v, 1)
@@ -237,7 +273,7 @@ test_that("partner reasons take the component with the highest percentile; Devel
 })
 
 test_that("trade: partner shares are averaged over the economy's baskets (zero where absent), never summed", {
-  shares <- data.frame(key = c("oil-upstream", "oil-upstream", "gas-upstream", "oil-upstream"), side = c("imp", "imp", "imp", "exp"),
+  shares <- data.frame(key = c("oil-extraction", "oil-extraction", "gas-extraction", "oil-extraction"), side = c("imp", "imp", "imp", "exp"),
                        partner = c("SAU", "USA", "USA", "CHN"), value = c(80, 20, 50, 10), share = c(0.8, 0.2, 1, 1), status = "importer",
                        stringsAsFactors = FALSE)
   pt <- country_partner_trade(shares)
@@ -270,36 +306,68 @@ test_that("industrial-policy measures: dates in any format, the active rules, th
     impl_date = as.Date(c("2024-01-01", "2023-01-01", NA, "2027-01-01", "2022-01-01", "2021-01-01", "2020-01-01", "2024-01-01")),
     removal_date = as.Date(c(NA, "2025-01-01", NA, NA, "2030-01-01", NA, NA, NA)),
     strength = c(1.5, 2.0, 1.8, 1.7, 0.9, 0.8, 0, 1.2), strength_base = 1, confidence = 1,
-    techs = c("Solar", "Solar", "Solar|Wind", "Solar", "Solar", "Cross-cutting", "Solar", "Solar"), stages = "Upstream",
+    techs = c("Solar", "Solar", "Solar|Wind", "Solar", "Solar", "Cross-cutting", "Solar", "Solar"), stages = "Extraction",
     url = NA, source = NA, stringsAsFactors = FALSE)
+  # a run tagged with the six stages (staged): measures are listed by sector
+  expect_true(country_nipo_staged(nipo))
   # the user's rule: not removed by 2026-10-12 (B removed in 2025); announced (C) and scheduled (D) count, marked
   x <- country_nipo_top(nipo, "JPN", "2026-10-12", n = 5, rule = "not_removed")
-  titles <- vapply(x$policies, function(p) p$title, "")[x$cells[["solar-upstream"]] + 1]
+  expect_true(x$staged)
+  expect_null(x$staged_d)
+  titles <- vapply(x$policies, function(p) p$title, "")[x$cells[["solar-extraction"]] + 1]
   expect_equal(titles, c("C", "D", "A", "E"))                       # by strength; G has 0 strength; A once (deduplicated)
-  inf <- vapply(x$policies, function(p) isTRUE(p$in_force), TRUE)[x$cells[["solar-upstream"]] + 1]
+  inf <- vapply(x$policies, function(p) isTRUE(p$in_force), TRUE)[x$cells[["solar-extraction"]] + 1]
   expect_equal(inf, c(FALSE, FALSE, TRUE, TRUE))
   expect_equal(x$n_not_in_force$v, 2)
   expect_equal(x$n_crosscut$v, 1)
-  expect_equal(x$n_by_cell[["wind-upstream"]]$v, 1)
+  expect_equal(x$n_by_cell[["wind-extraction"]]$v, 1)
+  expect_equal(x$n_by_cell[["solar-refining"]]$v, 0)                # the measures name Extraction only
   expect_equal(x$active_rule, "not_removed")
   # the NIPO pipeline's rule: implemented by the date as well
   y <- country_nipo_top(nipo, "JPN", "2026-10-12", n = 5, rule = "in_force")
-  expect_equal(vapply(y$policies, function(p) p$title, "")[y$cells[["solar-upstream"]] + 1], c("A", "E"))
+  expect_equal(vapply(y$policies, function(p) p$title, "")[y$cells[["solar-extraction"]] + 1], c("A", "E"))
   expect_equal(y$n_not_in_force$v, 2)
   expect_false(country_nipo_top(nipo, "DEU", "2026-10-12")$covered)
   # economy-wide measures (mapped to broad_min or more technologies) come after the sector-specific ones;
   # counts unchanged; the removal date in words
   z <- country_nipo_top(nipo, "JPN", "2026-10-12", n = 5, rule = "not_removed", broad_min = 2L)
-  zt <- vapply(z$policies, function(p) p$title, "")[z$cells[["solar-upstream"]] + 1]
+  zt <- vapply(z$policies, function(p) p$title, "")[z$cells[["solar-extraction"]] + 1]
   expect_equal(zt, c("D", "A", "E", "C"))
   expect_true(z$policies[[match("C", vapply(z$policies, function(p) p$title, ""))]]$economy_wide)
   expect_false(z$policies[[match("A", vapply(z$policies, function(p) p$title, ""))]]$economy_wide)
-  expect_equal(z$n_by_cell[["solar-upstream"]]$v, x$n_by_cell[["solar-upstream"]]$v)
+  expect_equal(z$n_by_cell[["solar-extraction"]]$v, x$n_by_cell[["solar-extraction"]]$v)
   expect_equal(z$n_active$v, x$n_active$v)
   expect_equal(z$economy_wide_min_techs, 2L)
   e <- z$policies[[match("E", vapply(z$policies, function(p) p$title, ""))]]
   expect_equal(e$removal, "2030-01-01")
   expect_equal(e$removal_label, country_date_label(as.Date("2030-01-01")))
+})
+
+test_that("a run still tagged with the old three stages lists no measures by sector and keeps the counts (2026-10-28)", {
+  nipo <- data.frame(
+    iso3 = "JPN", title = c("A", "B", "C", "F"), impl_date = as.Date(c("2024-01-01", "2023-01-01", NA, "2021-01-01")),
+    removal_date = as.Date(NA), strength = c(1.5, 2.0, 1.8, 0.8), strength_base = 1, confidence = 1,
+    techs = c("Solar", "Batteries|Solar", "Wind", "Cross-cutting"), stages = c("Upstream", "Midstream|Upstream", "Downstream", "Cross-cutting"),
+    url = NA, source = NA, stringsAsFactors = FALSE)
+  expect_false(country_nipo_staged(nipo))
+  expect_true(country_nipo_staged(transform(nipo, stages = c("Extraction", "Components|Refining", "Deployment", "Cross-cutting"))))
+  expect_false(country_nipo_staged(nipo[0, ]))
+  words <- cfg$nipo$not_staged_words
+  x <- country_nipo_top(nipo, "JPN", "2026-10-12", n = 5, rule = "not_removed", meta = list(staged_words = words))
+  expect_false(x$staged)
+  expect_equal(x$staged_d, words)
+  expect_length(x$cells, 0)
+  expect_length(x$n_by_cell, 0)
+  expect_length(x$policies, 0)
+  expect_equal(x$n_listed$v, 0)
+  expect_equal(x$n_active$v, 4)                                     # the economy's counts stay
+  expect_equal(x$n_crosscut$v, 1)
+  expect_equal(x$n_not_in_force$v, 1)
+  # the whole run's flag (meta$staged) wins over the economy's own rows
+  expect_true(country_nipo_top(transform(nipo, stages = "Extraction"), "JPN", "2026-10-12", rule = "not_removed", meta = list(staged = TRUE))$staged)
+  expect_false(country_nipo_top(transform(nipo, stages = "Extraction"), "JPN", "2026-10-12", rule = "not_removed", meta = list(staged = FALSE))$staged)
+  expect_match(words, "six supply-chain stages", fixed = TRUE)
+  expect_false(grepl("stream", words, ignore.case = TRUE))
 })
 
 test_that("display strings follow the shared cases (A8.3)", {
@@ -313,7 +381,7 @@ test_that("display strings follow the shared cases (A8.3)", {
 test_that("an EU member's regional figure carries the eu_region_share note and words; others do not", {
   # the IEA ETP 2035 share is copied to every EU member (0.15); a non-member and a member with its own value
   raw_rows <- data.frame(table = "market_share_manufacturing_tbl", iso3 = c("FIN", "BEL", "DEU", "FRA", "SWE", "USA"), tech = "Wind",
-                         stage = "Midstream", category = "Foreign Dependency", variable = "Overall Market Share",
+                         stage = "Components", category = "Foreign Dependency", variable = "Overall Market Share",
                          value = c(0.15, 0.15, 0.15, 0.15, 0.2, 0.15), Year = 2035, source = "IEA", explanation = "x", stringsAsFactors = FALSE)
   map <- list(list(pillar = "eo", category = "Foreign Dependency", variable = "Overall Market Share", table = "market_share_manufacturing_tbl",
                    raw_variable = "Overall Market Share", raw_tech = "cell", label = "Share of world manufacturing capacity, 2035 (announced)",
@@ -323,7 +391,7 @@ test_that("an EU member's regional figure carries the eu_region_share note and w
   expect_length(vals, 1)
   expect_equal(unname(vals), 0.15)
   idx <- country_raw_index(raw_rows)
-  cell <- list(key = "wind-midstream", tech = "Wind", stage = "Midstream")
+  cell <- list(key = "wind-components", tech = "Wind", stage = "Components")
   raw_of <- function(iso, member) country_raw_fn(iso, cell, "eo", raw_rows, idx, map, list(), cfg, eu_member = member, eu_vals = vals)(
     "Foreign Dependency", "Overall Market Share")$raw
   fin <- raw_of("FIN", TRUE)
@@ -341,20 +409,20 @@ test_that("an EU member's regional figure carries the eu_region_share note and w
   expect_true("eu_region_share" %in% COUNTRY_CAVEAT_IDS)
 })
 
-test_that("an index made only of the EU's regional figures carries the EU note on an EU member (EV midstream)", {
-  cat_c <- data.frame(key = "electric-vehicles-midstream", category = "Foreign Dependency", category_weight = 0.5, category_score = 0.7,
+test_that("an index made only of the EU's regional figures carries the EU note on an EU member (EV components)", {
+  cat_c <- data.frame(key = "electric-vehicles-components", category = "Foreign Dependency", category_weight = 0.5, category_score = 0.7,
                       imputed = FALSE, missing_rule_applied = NA_character_, stringsAsFactors = FALSE)
   var_c <- data.frame(category = "Foreign Dependency", variable = c("market_share", "production", "Overall Production"),
                       component_value = c(0.72, 0.72, 0.69), component_weight_within_overall = 0.2, imputed = FALSE,
                       missing_rule_applied = NA_character_, stringsAsFactors = FALSE)
   dstats <- list(cat = new.env(), var = new.env())
-  assign(paste("electric-vehicles-midstream", "Foreign Dependency", sep = "\r"), list(median = 0.5, constant = FALSE), envir = dstats$cat)
+  assign(paste("electric-vehicles-components", "Foreign Dependency", sep = "\r"), list(median = 0.5, constant = FALSE), envir = dstats$cat)
   raw_fn <- function(note) function(category, variable) {
     if (variable == "Overall Production") return(list(raw = NULL))
     list(raw = country_fv_raw(0.137, "share", year = "2024", source = "iea_ev", source_label = "IEA EV regions", note = note,
                               note_d = if (is.na(note)) NA else "the EU's share, carried by each EU member"), label = variable)
   }
-  drv <- function(note) country_cell_drivers("ESP", "Spain", "electric-vehicles-midstream", "eo", cat_c, var_c, dstats, TRUE, raw_fn(note), cfg)[[1]]
+  drv <- function(note) country_cell_drivers("ESP", "Spain", "electric-vehicles-components", "eo", cat_c, var_c, dstats, TRUE, raw_fn(note), cfg)[[1]]
   vars_of <- function(d) stats::setNames(d$vars, vapply(d$vars, function(v) v$variable, ""))
   op <- vars_of(drv("eu_region_share"))[["Overall Production"]]
   expect_equal(op$raw$note, "eu_region_share")
@@ -370,12 +438,27 @@ test_that("the allied pick names the technologies excluded by rule and says the 
   expect_match(w, "geothermal and green hydrogen", fixed = TRUE)
   expect_match(w, "resource base", fixed = TRUE)
   expect_null(country_pick_rule_words(NULL))
-  si_rows <- data.frame(key = c("green-hydrogen-midstream", "batteries-midstream", "wind-upstream"), tech = c("Green Hydrogen", "Batteries", "Wind"),
-                        stage = c("Midstream", "Midstream", "Upstream"), si = c(0.9, 0.8, 0.7), pick_exclusion = NA_character_, stringsAsFactors = FALSE)
-  allied <- data.frame(tech = "Batteries", supply_chain = "Midstream", strategic_index = 0.8, stringsAsFactors = FALSE)
+  expect_match(w, "any supply-chain stage but deployment", fixed = TRUE)
+  expect_match(w, "extraction sectors with no recorded resource base", fixed = TRUE)
+  expect_false(grepl("stream", w, ignore.case = TRUE))
+  # green hydrogen (by rule), a deployment sector (not a supply stage) and a screened extraction sector rank
+  # higher, but none is eligible
+  si_rows <- data.frame(key = c("green-hydrogen-components", "solar-deployment", "oil-extraction", "batteries-assembly", "wind-extraction"),
+                        tech = c("Green Hydrogen", "Solar", "Oil", "Batteries", "Wind"),
+                        stage = c("Components", "Deployment", "Extraction", "Assembly", "Extraction"), si = c(0.95, 0.9, 0.85, 0.8, 0.7),
+                        pick_exclusion = c(NA, NA, "no resource base", NA, NA), stringsAsFactors = FALSE)
+  allied <- data.frame(tech = "Batteries", supply_chain = "Assembly", strategic_index = 0.8, stringsAsFactors = FALSE)
   pick <- country_allied_pick("core", allied, si_rows, 0.01, rule_words = w)
-  expect_equal(pick$cell, "batteries-midstream")      # green hydrogen ranks higher but is excluded by rule
-  expect_equal(pick$runner_up, "wind-upstream")
+  expect_equal(pick$cell, "batteries-assembly")
+  expect_equal(pick$first, "batteries-assembly")
+  expect_equal(pick$runner_up, "wind-extraction")
+  expect_equal(pick$margin$v, 0.1)
+  # the pick stages: every stage but Deployment, the pipeline's STRATEGIC_ALLIED_STAGES (R/indices/build_indices.R)
+  expect_identical(COUNTRY_PICK_STAGES, SUPPLY_CHAIN_SUPPLY_STAGES)
+  bi <- parse(file.path(repo_root, "R", "indices", "build_indices.R"))
+  al <- Filter(function(e) is.call(e) && identical(e[[1]], as.name("<-")) && identical(e[[2]], as.name("STRATEGIC_ALLIED_STAGES")), as.list(bi))
+  expect_length(al, 1)
+  expect_identical(COUNTRY_PICK_STAGES, eval(al[[1]][[3]], baseenv()))
   expect_setequal(unlist(pick$excluded), COUNTRY_PICK_EXCLUDED_TECHS)
   expect_equal(pick$rule_d, w)
   expect_true(any(vapply(cfg$path_meanings, function(e) identical(e$path, "pick.rule_d"), TRUE)))
@@ -387,13 +470,18 @@ test_that("the allied pick names the technologies excluded by rule and says the 
   expect_null(cfg$caveats$eu_node)
 })
 
-test_that("memos written before the revision cut-off are under revision (2026-10-17)", {
+test_that("memos written before the revision cut-off are under revision (2026-10-17; the six-stage switch, 2026-10-28)", {
   rev <- list(before = "2026-10-17T00:00:00Z")
   expect_true(country_memo_under_revision(list(generated_at = "2026-10-14T15:56:16Z"), rev))
   expect_false(country_memo_under_revision(list(generated_at = "2026-10-18T09:00:00Z"), rev))
   expect_true(country_memo_under_revision(list(), rev))
   expect_false(country_memo_under_revision(list(generated_at = "2026-10-14T15:56:16Z"), NULL))
-  expect_identical(cfg$memo_revision$before, "2026-10-17T00:00:00Z")
+  # the cut-off is the switch to the six stages: the 31 memos of 2026-10-14 stay hidden, and so would a memo
+  # rendered on the three-stage sheets after 2026-10-17
+  expect_identical(cfg$memo_revision$before, "2026-10-28T00:00:00Z")
+  expect_true(country_memo_under_revision(list(generated_at = "2026-10-14T15:56:16Z"), cfg$memo_revision))
+  expect_true(country_memo_under_revision(list(generated_at = "2026-10-20T09:00:00Z"), cfg$memo_revision))
+  expect_false(country_memo_under_revision(list(generated_at = "2026-10-29T09:00:00Z"), cfg$memo_revision))
 })
 
 test_that("industrial-policy measures are marked EU-wide, shared or national and counted", {
@@ -406,7 +494,7 @@ test_that("industrial-policy measures are marked EU-wide, shared or national and
     removal_date = as.Date(c(rep(NA, 9), "2020-01-01")),
     strength = c(rep(1.8, 5), 1.5, 1.2, 1.2, 1.9, 2.5), strength_base = 1, confidence = 1,
     techs = c(rep("Batteries|Solar", 5), "Wind", "Green Hydrogen", "Green Hydrogen", "Batteries", "Wind"),
-    stages = c(rep("Midstream", 5), "Downstream", "Midstream", "Midstream", "Midstream", "Downstream"),
+    stages = c(rep("Components|Assembly", 5), "Deployment", "Components", "Components", "Assembly", "Deployment"),
     url = NA, source = NA, stringsAsFactors = FALSE)
   sc <- country_nipo_scope(nipo, unlist(cfg$nipo$eu_prefixes), 5L)
   expect_equal(sc$scope[c(1, 6, 7, 9)], c("eu", "national", "multi", "national"))   # an EC approval of a national scheme is national

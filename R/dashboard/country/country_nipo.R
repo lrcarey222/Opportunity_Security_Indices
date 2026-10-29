@@ -6,7 +6,14 @@
 # nipo: one row per GTA intervention of the economy: iso3, title, impl_date, removal_date (Date),
 # strength (policy_strength_pkg: the measure's strength counting its package), strength_base
 # (policy_strength), confidence (mapping_confidence_mean), techs ("Batteries|Solar"), stages
-# ("Midstream|Upstream"), url, source.
+# ("Midstream|Upstream" in the run of October 2026: the NIPO pipeline is not yet at the six supply-chain
+# stages), url, source.
+#
+# Six stages (2026-10-28): the sheets are keyed on the six-stage sectors, but the NIPO run still tags
+# measures with the old three stages. Its measures are not rolled onto the six stages (an Upstream measure
+# would land on Extraction, Refining and Recovery alike): until the run is staged (country_nipo_staged()),
+# the sheet carries the economy's counts but no per-sector lists (cells, n_by_cell and policies empty,
+# staged FALSE, staged_d the config's words), and the lists come back by themselves once it is.
 #
 # Strength (R/categories/policy/nipo_policy_index.R build_policy_base()): instrument bite (w_tool: the
 # instrument family or GTA type, e.g. a financial grant 0.90, an import ban 1.00, import monitoring
@@ -76,6 +83,16 @@ country_nipo_scope <- function(nipo, eu_prefixes = character(), eu_min = 5L) {
   nipo
 }
 
+# TRUE when the run tags its measures with the sectors' stages (stage names other than "Cross-cutting",
+# the NIPO pipeline's code for measures without product codes, are all in `stages`, and there is at least
+# one); FALSE for a run still at the old three stages. Computed over the whole run.
+country_nipo_staged <- function(nipo, stages = COUNTRY_STAGES) {
+  if (is.null(nipo) || !nrow(nipo)) return(FALSE)
+  s <- unique(unlist(country_nipo_split(nipo$stages)))
+  s <- setdiff(s, "Cross-cutting")
+  length(s) > 0 && all(s %in% stages)
+}
+
 # The top-n measures in force per cell. Measures with the same title and implementation date are one
 # measure (GTA lists one entry per affected product group or partner); the strongest entry is kept.
 # Cell membership: the cell's technology is in the measure's technology list and its stage in the
@@ -84,8 +101,13 @@ country_nipo_scope <- function(nipo, eu_prefixes = character(), eu_min = 5L) {
 # Economy-wide measures (2026-10-14): a measure mapped to `broad_min` or more technologies (sanctions,
 # most-favoured-nation revocations, export controls) is listed in a cell only after the cell's
 # sector-specific measures, strength order kept within each group, and flagged economy_wide. The counts
-# (n_active, n_by_cell, ...) do not depend on this order.
-country_nipo_top <- function(nipo, iso3, as_of, n = 5, cells = country_cells_tbl(), meta = list(), rule = "in_force", broad_min = 9L) {
+# (n_active, n_by_cell, ...) do not depend on this order. staged: whether the run is at the sectors'
+# stages (meta$staged, else country_nipo_staged() of `nipo`); when it is not, no measure is tied to a
+# sector (cells, n_by_cell and policies empty) and the counts of the whole economy stay.
+country_nipo_top <- function(nipo, iso3, as_of, n = 5, cells = country_cells_tbl(), meta = list(), rule = "in_force", broad_min = 9L,
+                             staged = NULL) {
+  if (is.null(staged)) staged <- meta$staged %||% country_nipo_staged(nipo, unique(cells$stage))
+  staged <- isTRUE(staged)
   if (is.null(nipo$scope)) nipo <- country_nipo_scope(nipo, unlist(meta$eu_prefixes), meta$eu_min_jurisdictions %||% 5L)
   x <- nipo[nipo$iso3 == iso3, , drop = FALSE]
   covered <- nrow(x) > 0
@@ -108,6 +130,7 @@ country_nipo_top <- function(nipo, iso3, as_of, n = 5, cells = country_cells_tbl
   by_cell <- list()
   n_cell <- list()
   for (i in seq_len(nrow(cells))) {
+    if (!staged) break
     hit <- which(vapply(techs, function(t) cells$tech[i] %in% t, TRUE) & vapply(stages, function(s) cells$stage[i] %in% s, TRUE))
     n_cell[[cells$key[i]]] <- country_fv(length(hit), "count")
     if (!length(hit)) next
@@ -144,6 +167,8 @@ country_nipo_top <- function(nipo, iso3, as_of, n = 5, cells = country_cells_tbl
     covered = covered,
     vintage = meta$vintage %||% NULL, vintage_label = meta$vintage_label %||% NULL, as_of = format(as.Date(as_of)),
     measure = "policy_strength_pkg", active_rule = rule,
+    # additive 2026-10-28: FALSE while the run tags measures with the old three stages (no per-sector lists)
+    staged = staged, staged_d = if (staged) NULL else meta$staged_words %||% NULL,
     economy_wide_min_techs = as.integer(broad_min),
     jurisdictions = country_fv(meta$jurisdictions %||% NA, "count"),
     strength_words = meta$strength_words %||% NULL, confidence_words = meta$confidence_words %||% NULL,
@@ -157,7 +182,7 @@ country_nipo_top <- function(nipo, iso3, as_of, n = 5, cells = country_cells_tbl
     n_listed_shared = country_fv(sum(sc != "national"), "count"),
     n_not_in_force = country_fv(n_pending, "count"),
     n_crosscut = country_fv(n_cross, "count"),
-    n_by_cell = n_cell,
+    n_by_cell = if (length(n_cell)) n_cell else country_obj(),
     cells = if (length(cells_out)) cells_out else country_obj(),
     policies = policies
   )

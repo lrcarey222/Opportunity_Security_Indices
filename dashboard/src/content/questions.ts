@@ -57,7 +57,9 @@ export const QUESTIONS: readonly Question[] = [
   {
     id: 'dependence',
     question: 'Who buys from China?',
-    href: '/sector/batteries/midstream#trade',
+    // the fallback before the manifest arrives; the headline's own href names the cell its rule found
+    // (dependence@1: the largest Components or Assembly trade cell, Electric Vehicles — Assembly in the 2026-10-28 build)
+    href: '/sector/electric-vehicles/assembly#trade',
     headline_id: 'dependence',
     home: true,
     fact: 'China supplies {share|pct} of the {total_usd|usd} of {cell_label} exports',

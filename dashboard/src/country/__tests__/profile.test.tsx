@@ -68,19 +68,21 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile framing (pure)', 
   });
 
   it('compactsOfCell joins through the OSI crosswalk (yfCells), many-to-many, never through the node sector or stage', () => {
-    // the AIB fixture is an electro-industrial dictionary bundle: AIB-C01 (sectors Magnets, Rare earths; Midstream)
+    // the AIB fixture is an electro-industrial dictionary bundle: AIB-C01 (dictionary sectors Magnets, Rare earths)
     expect(doc.meta.taxonomy).toBe('dictionary');
-    // its magnets node sits in two OSI cells, its rare-earth node in the Upstream ones: one compact, four cells
-    for (const key of ['electric-vehicles-midstream', 'wind-midstream', 'electric-vehicles-upstream', 'wind-upstream']) expect(compactsOfCell(doc, key).map((c) => c.id)).toContain('AIB-C01');
+    // six stages (design A2): its magnets node sits in two Components cells, its rare-earth node in the Refining ones: one compact, four cells
+    for (const key of ['electric-vehicles-components', 'wind-components', 'electric-vehicles-refining', 'wind-refining']) expect(compactsOfCell(doc, key).map((c) => c.id)).toContain('AIB-C01');
     // one cell, two compacts (the magnets of AIB-C01 and the wind towers of AIB-C03)
-    expect(compactsOfCell(doc, 'wind-midstream').map((c) => c.id)).toEqual(['AIB-C01', 'AIB-C03']);
-    // the wind towers (sector Onshore wind, Downstream) reach OSI Wind Midstream only; a name or stage join would find these
-    expect(compactsOfCell(doc, 'wind-downstream')).toEqual([]);
-    expect(compactsOfCell(doc, 'magnets-midstream')).toEqual([]);
+    expect(compactsOfCell(doc, 'wind-components').map((c) => c.id)).toEqual(['AIB-C01', 'AIB-C03']);
+    // the wind towers reach OSI Wind Components only; a name, stage or three-stage join would find these
+    expect(compactsOfCell(doc, 'wind-deployment')).toEqual([]);
+    expect(compactsOfCell(doc, 'wind-midstream')).toEqual([]);
+    expect(compactsOfCell(doc, 'magnets-components')).toEqual([]);
     // the dependencies list the compacts by their display title (labels with commas kept whole)
     const deps = dependencies(sheet, doc, 99);
     for (const d of deps) for (const cp of d.compacts) expect(cp.name).toBe(compactTitle(doc.compacts.find((c) => c.id === cp.id)!, doc.nodes));
-    expect(compactTitle(doc.compacts[0], doc.nodes)).toBe('Magnets / Rare earths: Magnets, magnet parts & assemblies; Rare-earth oxides & compounds');
+    // the title is the AIB module's (imported): OSI technologies of the nodes' six-stage cells, then the node labels (design A1)
+    expect(compactTitle(doc.compacts[0], doc.nodes)).toBe('Electric Vehicles / Wind: Magnets, magnet parts & assemblies; Rare-earth oxides & compounds');
   });
 
   it('aibCountry: roles, compacts and trade relationships of the economy', () => {
@@ -93,17 +95,21 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile framing (pure)', 
   });
 
   it('engine rows map to cell keys; sector position puts ranked sectors first', () => {
-    expect(engineCellKey('Electric Grid', 'Midstream')).toBe('electric-grid-midstream');
-    expect(engineCellKey('Fusion', 'Upstream')).toBeNull();
+    expect(engineCellKey('Electric Grid', 'Components')).toBe('electric-grid-components');
+    expect(engineCellKey('Batteries', 'Refining')).toBe('batteries-refining');
+    expect(engineCellKey('Fusion', 'Extraction')).toBeNull();
+    // a three-stage engine row is not a sector of the six-stage sheets
+    expect(engineCellKey('Electric Grid', 'Midstream')).toBeNull();
     const m = siMapOf(
       [
-        { iso3c: 'USA', tech: 'Solar', supply_chain: 'Midstream', in_sample: true, in_sample_base: true, rank_in_country: 2, rank_delta: 1, strategic_index: 0.5 },
-        { iso3c: 'DEU', tech: 'Solar', supply_chain: 'Midstream', in_sample: true, rank_in_country: 1 },
+        { iso3c: 'USA', tech: 'Solar', supply_chain: 'Assembly', in_sample: true, in_sample_base: true, rank_in_country: 2, rank_delta: 1, strategic_index: 0.5 },
+        { iso3c: 'DEU', tech: 'Solar', supply_chain: 'Assembly', in_sample: true, rank_in_country: 1 },
+        { iso3c: 'USA', tech: 'Solar', supply_chain: 'Midstream', in_sample: true, rank_in_country: 3 },
       ],
       'USA',
     );
-    expect([...m.keys()]).toEqual(['solar-midstream']);
-    expect(m.get('solar-midstream')).toMatchObject({ rank: 2, delta: 1, inSample: true, isNew: false });
+    expect([...m.keys()]).toEqual(['solar-assembly']);
+    expect(m.get('solar-assembly')).toMatchObject({ rank: 2, delta: 1, inSample: true, isNew: false });
     const rows = sectorPositionRows(sheet.cells, siOrder(sheet, null));
     expect(rows.length).toBe(sheet.cells.length);
     expect(rows[0].key).toBe(siOrder(sheet, null)[0]?.key ?? rows[0].key);
@@ -210,20 +216,26 @@ function renderAt(path: string) {
 }
 const h2 = (name: string | RegExp) => screen.findByRole('heading', { level: 2, name }, { timeout: 30_000 });
 
-/** Sector -> the text of one column of the Sector position table (rows on the first page). */
+/** Sector -> the text of one column of the Sector position table, every page (66 sectors at six stages,
+ *  12 a page: the dials reorder the rows, so the first page alone holds few of the same sectors). */
 function column(header: string): Map<string, string> {
-  const table = within(document.getElementById('sectors')!).getByRole('table');
-  const heads = within(table).getAllByRole('columnheader').map((h) => h.textContent ?? '');
-  const j = heads.findIndex((h) => h.startsWith(header));
-  return new Map(
-    within(table)
-      .getAllByRole('row')
-      .slice(1)
-      .map((r) => {
-        const cells = within(r).getAllByRole('cell');
-        return [cells[0]?.textContent ?? '', cells[j]?.textContent ?? ''] as const;
-      }),
-  );
+  const sec = document.getElementById('sectors')!;
+  const pager = (name: string) => within(sec).queryAllByRole('button', { name }).find((b) => b.closest('#sectors table') === null && !!b.closest('#sectors')) as HTMLButtonElement | undefined;
+  const out = new Map<string, string>();
+  for (let prev = pager('Previous'); prev && !prev.disabled; prev = pager('Previous')) fireEvent.click(prev);
+  for (let guard = 0; guard < 20; guard++) {
+    const table = within(sec).getAllByRole('table')[0];
+    const heads = within(table).getAllByRole('columnheader').map((h) => h.textContent ?? '');
+    const j = heads.findIndex((h) => h.startsWith(header));
+    for (const r of within(table).getAllByRole('row').slice(1)) {
+      const cells = within(r).getAllByRole('cell');
+      out.set(cells[0]?.textContent ?? '', cells[j]?.textContent ?? '');
+    }
+    const next = pager('Next');
+    if (!next || next.disabled) break;
+    fireEvent.click(next);
+  }
+  return out;
 }
 
 /** The same sectors carry the same values (rows can move: the table is sorted by priority). */
@@ -329,9 +341,9 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by
   it('a core member with a monthly file: the card follows the selected sector and switches flow', async () => {
     setEngineClient(neverReady());
     try {
-      renderAt('/countries/USA?cell=solar-midstream#sectors');
+      renderAt('/countries/USA?cell=solar-assembly#sectors');
       const card = await screen.findByTestId('trade-monthly', {}, { timeout: 30_000 });
-      expect(within(card).getByRole('heading', { level: 3, name: /Solar — Midstream: monthly imports by sub-component/ })).toBeTruthy();
+      expect(within(card).getByRole('heading', { level: 3, name: /Solar — Assembly: monthly imports by sub-component/ })).toBeTruthy();
       fireEvent.click(within(card).getByRole('radio', { name: 'Exports' }));
       expect(await within(card).findByRole('heading', { level: 3, name: /monthly exports by sub-component/ })).toBeTruthy();
     } finally {
@@ -342,10 +354,10 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by
   it('a sector without a traded-goods basket falls back to the one with the most monthly trade and says why', async () => {
     setEngineClient(neverReady());
     try {
-      renderAt('/countries/USA?cell=oil-upstream#sectors');
+      renderAt('/countries/USA?cell=oil-extraction#sectors');
       const card = await screen.findByTestId('trade-monthly', {}, { timeout: 30_000 });
-      expect(within(card).getByRole('heading', { level: 3, name: /Batteries — Midstream/ })).toBeTruthy();
-      expect(within(card).getByText(/has no traded-goods basket \(HS6 codes\); showing Batteries — Midstream/)).toBeTruthy();
+      expect(within(card).getByRole('heading', { level: 3, name: /Batteries — Assembly/ })).toBeTruthy();
+      expect(within(card).getByText(/has no traded-goods basket \(HS6 codes\); showing Batteries — Assembly/)).toBeTruthy();
     } finally {
       setEngineClient(null);
     }

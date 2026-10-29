@@ -18,16 +18,14 @@
 // The strategic layer (2026-10-20): aibStrategicOf() gives the role section the economy's strategic
 // summary (Strategic AIB Roles, compact roles, partners); it does not follow the scenario.
 //
-// Stages (2026-10-28): the fact sheet's cells are the paper's three stages ("batteries-midstream"),
-// the AIB document is six-stage (node.yfCells "batteries-refining"). compactsOfCell() joins a
-// three-stage cell through each node's three-stage cells (node.yfCellsLegacy, the stage the paper filed
-// the node's codes under; legacyCellsOf() of ../../lib/stages.ts), or, in a document without them,
-// through the roll-up of its six-stage cells, which is approximate (Refining rolls up to Upstream while
-// the paper filed refined battery materials, polysilicon and electrical steel under Midstream).
+// Stages (2026-10-28, design A2): the fact sheet's cells and the AIB document's node cells are both the
+// six supply-chain stages ("batteries-refining"), so compactsOfCell() joins a cell through each node's
+// six-stage cells (node.yfCells) directly. The nodes' three-stage cells (yfCellsLegacy) are no longer read:
+// a legacy key ("batteries-midstream") is not a sector of the sheet and finds no compact.
 //
 // The corners (2026-10-28): the keys stay grow / upgrade / secure / watch (the fact sheet's data
 // contract); the app shows them as Grow, Upgrade, Exposed (key secure) and Stable (key watch), so they
-// do not clash with the six-stage posture words (../contract.ts QUADRANTS).
+// do not clash with the posture words (../contract.ts QUADRANTS).
 
 import { strategicOf, type AibCoalition, type AibCompact, type AibDoc, type AibManagedScenarioDoc, type AibNode, type AibStrategic, type AibTradeEdge } from '../../aib/contract.ts';
 import { strategicSummaryOf, type StrategicSummary } from '../../aib/views/strategicRoles/derive.ts';
@@ -36,7 +34,6 @@ import { compactTitle } from '../../aib/derive/format.ts';
 import type { LensNode } from '../../aib/derive/partnerships.ts';
 import { ROLE_ORDER, type RoleName } from '../../aib/derive/roles.ts';
 import { nodeScenario } from '../../aib/derive/scenarios.ts';
-import { isLegacyCellSlug, legacyCellsOf } from '../../lib/stages.ts';
 import { cap } from './text.ts';
 import { cellKey, cellOf, COUNTRY_STAGES, COUNTRY_TECHS, isCellKey, type CellFacts, type FactSheet, type PartnerRow, type TradeParty } from '../contract.ts';
 
@@ -57,7 +54,7 @@ export type SiMap = ReadonlyMap<string, SiOverride>;
 const TECH_SLUG = new Map<string, string>(COUNTRY_TECHS.map((t) => [t.label.toLowerCase(), t.slug]));
 const STAGE_SLUG = new Map<string, string>(COUNTRY_STAGES.map((s) => [s.label.toLowerCase(), s.slug]));
 
-/** The cell key of an engine row (tech "Electric Grid", supply_chain "Midstream"), or null. */
+/** The cell key of an engine row (tech "Electric Grid", supply_chain "Components" -> "electric-grid-components"), or null (a legacy stage too). */
 export function engineCellKey(tech: unknown, stage: unknown): string | null {
   if (typeof tech !== 'string' || typeof stage !== 'string') return null;
   const t = TECH_SLUG.get(tech.trim().toLowerCase());
@@ -136,14 +133,12 @@ export interface Dependency {
 /**
  * The compacts that cover a cell, each once, in the document's order: a node of the compact has codes in
  * the cell (the OSI crosswalk: a dictionary node can sit in several cells and a cell hold several nodes,
- * so a compact can cover several cells; the node's own sector, technology or stage never decides it). A
- * three-stage key ("batteries-midstream", the fact sheet's cells) is matched against the node's
- * three-stage cells (legacyCellsOf(): node.yfCellsLegacy, else the approximate roll-up of yfCells), any
- * other key against its six-stage cells (node.yfCells).
+ * so a compact can cover several cells; the node's own sector, technology or stage never decides it). The
+ * key is a six-stage cell ("batteries-refining", the fact sheet's cells), matched against the node's
+ * six-stage cells (node.yfCells; design A2).
  */
 export function compactsOfCell(doc: Pick<AibDoc, 'compacts' | 'nodes'>, key: string): AibCompact[] {
-  const legacy = isLegacyCellSlug(key);
-  const nodeIds = new Set(doc.nodes.filter((nd) => (legacy ? legacyCellsOf(nd) : nd.yfCells).includes(key)).map((nd) => nd.id));
+  const nodeIds = new Set(doc.nodes.filter((nd) => nd.yfCells.includes(key)).map((nd) => nd.id));
   return doc.compacts.filter((c) => c.nodes.some((id) => nodeIds.has(id)));
 }
 
@@ -151,7 +146,7 @@ export function compactsOfCell(doc: Pick<AibDoc, 'compacts' | 'nodes'>, key: str
  * Avoid dangerous dependencies: placed sectors in the Upgrade or Exposed corner (keys upgrade, secure:
  * Energy Security below the economy's own median sector), lowest Energy Security first (the fact sheet's
  * es_order), each with its largest supplier and the compacts covering it in which the economy is a
- * demand anchor (compactsOfCell(), through the nodes' three-stage cells).
+ * demand anchor (compactsOfCell(), through the nodes' six-stage cells).
  */
 export function dependencies(sheet: FactSheet, doc: Pick<AibDoc, 'compacts' | 'nodes'> | null, n = 5): Dependency[] {
   const low = new Set(sheet.cells.filter((c) => c.placed && (c.quadrant === 'upgrade' || c.quadrant === 'secure')).map((c) => c.key));
@@ -401,8 +396,8 @@ export function buildNodesOf(doc: AibDoc, compactIds: readonly string[]): AibNod
 /**
  * How the economy behaves on policy and climate, in plain sentences from existing facts: its Climate
  * Action Tracker rating, how its policy activity lines up with the Strategic Index's priority (the
- * agreement classes of the fact sheet; the sentence names the index so it is not read as the posture
- * chart's under- or over-prioritized counts) and its industrial-policy measures in force (Global Trade
+ * agreement classes of the fact sheet; the sentence names the index so it is not read as the Strategic
+ * posture section's policy alignment) and its industrial-policy measures in force (Global Trade
  * Alert). No score.
  */
 export function policyBehaviour(sheet: FactSheet, name: string): string[] {

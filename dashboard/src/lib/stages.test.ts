@@ -3,15 +3,18 @@
 // rank puts unknown names last; cell slugs parse in both forms, build as R aib_slug() writes them and roll
 // up to their legacy cell, sub-component ids too; a node's own legacy cells win over the roll-up, which
 // differs from them where the paper filed codes elsewhere (refined materials: Refining rolls up to
-// Upstream, the paper's Midstream).
+// Upstream, the paper's Midstream). Since 2026-10-28 also: the producing stages equal R's (every stage but
+// Deployment), the display labels and shorts, the stage slugs, and the legacy-URL helpers (Downstream ->
+// Deployment exactly; Upstream and Midstream -> the chain page, with the words naming their stages).
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  byStageRank, cellSlug, isLegacyCellSlug, isLegacyStage, isLegacySubcomponentId, isSupplyStage, LEGACY_STAGE_SLUGS, LEGACY_STAGES, legacyCellsOf, legacySubcomponentsOf,
-  parseCellSlug, parseSubcomponentId, rollUpCellSlug, rollUpStage, rollUpSubcomponentId, STAGE_ROLLUP, stageRank, stagesInChainOrder, SUPPLY_STAGE_SLUGS, SUPPLY_STAGES, subcomponentId,
-  techSlug,
+  byStageRank, cellSlug, DEPLOYMENT_STAGE, isLegacyCellSlug, isLegacyStage, isLegacyStageSlug, isLegacySubcomponentId, isProducingStage, isSupplyStage, isSupplyStageSlug,
+  LEGACY_STAGE_REPLACED_BY, LEGACY_STAGE_SLUGS, LEGACY_STAGES, legacyCellsOf, legacySectorTarget, legacyStageNote, legacyStageOfSlug, legacyStageTarget, legacyStageTargetName,
+  legacyStageWords, legacySubcomponentsOf, parseCellSlug, parseSubcomponentId, rollUpCellSlug, rollUpStage, rollUpSubcomponentId, STAGE_LABEL, STAGE_ROLLUP, STAGE_SHORT, stageLabel,
+  stageRank, stageShort, stageSlug, stagesInChainOrder, SUPPLY_PRODUCING_STAGES, SUPPLY_STAGE_SLUGS, SUPPLY_STAGES, subcomponentId, supplyStageOfSlug, techSlug,
 } from './stages.ts';
 
 const R_FILE = resolve(process.cwd(), '../R/utils/supply_chain_stages.R');
@@ -123,5 +126,90 @@ describe('cell slugs', () => {
     // two six-stage cells of one technology roll up to one legacy cell, listed once, in first-appearance order
     expect(legacyCellsOf({ yfCells: ['solar-assembly', 'electric-grid-assembly', 'solar-components', 'junk'] })).toEqual(['solar-midstream', 'electric-grid-midstream']);
     expect(legacyCellsOf({ yfCells: [], yfCellsLegacy: null })).toEqual([]);
+  });
+});
+
+describe('the producing stages mirror R', () => {
+  it('SUPPLY_PRODUCING_STAGES is every stage but Deployment, as R SUPPLY_CHAIN_SUPPLY_STAGES and STRATEGIC_ALLIED_STAGES are', () => {
+    // R: SUPPLY_CHAIN_SUPPLY_STAGES <- setdiff(SUPPLY_CHAIN_STAGES, "Deployment")
+    expect(rSource).toMatch(/SUPPLY_CHAIN_SUPPLY_STAGES <- setdiff\(SUPPLY_CHAIN_STAGES, "Deployment"\)/);
+    expect([...SUPPLY_PRODUCING_STAGES]).toEqual(rStrings('SUPPLY_CHAIN_STAGES').filter((s) => s !== 'Deployment'));
+    // the allied picks and the posture views read the same five (R/indices/build_indices.R)
+    const indices = readFileSync(resolve(process.cwd(), '../R/indices/build_indices.R'), 'utf8');
+    const allied = /STRATEGIC_ALLIED_STAGES <- c\(([^)]*)\)/.exec(indices);
+    expect(allied).not.toBeNull();
+    expect([...SUPPLY_PRODUCING_STAGES]).toEqual([...(allied as RegExpExecArray)[1].matchAll(/"([^"]*)"/g)].map((m) => m[1]));
+    expect(DEPLOYMENT_STAGE).toBe('Deployment');
+    expect(SUPPLY_STAGES.filter(isProducingStage)).toEqual([...SUPPLY_PRODUCING_STAGES]);
+    expect(isProducingStage('Deployment')).toBe(false);
+    expect(isProducingStage('Upstream')).toBe(false);
+  });
+});
+
+describe('stage labels', () => {
+  it('the ids are the labels; the shorts are three letters, one per stage', () => {
+    expect(SUPPLY_STAGES.map((s) => STAGE_LABEL[s])).toEqual([...SUPPLY_STAGES]);
+    expect(SUPPLY_STAGES.map((s) => STAGE_SHORT[s])).toEqual(['Ext', 'Ref', 'Com', 'Asm', 'Dep', 'Rec']);
+    expect(new Set(Object.values(STAGE_SHORT)).size).toBe(6);
+    expect(stageLabel('Assembly')).toBe('Assembly');
+    expect(stageShort('Recovery')).toBe('Rec');
+    // a name outside the six is shown as it is
+    expect(stageShort('Midstream')).toBe('Midstream');
+    expect(stageLabel('Sidestream')).toBe('Sidestream');
+  });
+
+  it('slugs and their names, six-stage and legacy kept apart', () => {
+    expect(SUPPLY_STAGES.map(stageSlug)).toEqual([...SUPPLY_STAGE_SLUGS]);
+    expect(stageSlug('Midstream')).toBe('midstream');
+    expect(SUPPLY_STAGE_SLUGS.map(supplyStageOfSlug)).toEqual([...SUPPLY_STAGES]);
+    expect(supplyStageOfSlug('midstream')).toBeNull();
+    expect(supplyStageOfSlug('Refining')).toBeNull();
+    expect(LEGACY_STAGE_SLUGS.map(legacyStageOfSlug)).toEqual([...LEGACY_STAGES]);
+    expect(legacyStageOfSlug('refining')).toBeNull();
+    expect(isSupplyStageSlug('assembly')).toBe(true);
+    expect(isSupplyStageSlug('downstream')).toBe(false);
+    expect(isLegacyStageSlug('downstream')).toBe(true);
+    expect(isLegacyStageSlug('Downstream')).toBe(false);
+  });
+});
+
+describe('legacy URLs', () => {
+  it('each legacy stage is replaced by its roll-up stages, in chain order', () => {
+    expect(LEGACY_STAGE_REPLACED_BY).toEqual({ Upstream: ['Extraction', 'Refining', 'Recovery'], Midstream: ['Components', 'Assembly'], Downstream: ['Deployment'] });
+    // every six-stage stage replaces exactly one legacy stage
+    expect(Object.values(LEGACY_STAGE_REPLACED_BY).flat().sort(byStageRank)).toEqual([...SUPPLY_STAGES]);
+  });
+
+  it('only Downstream has one exact target; Upstream and Midstream mean the chain page', () => {
+    expect(legacyStageTarget('downstream')).toBe('deployment');
+    expect(legacyStageTarget('upstream')).toBeNull();
+    expect(legacyStageTarget('midstream')).toBeNull();
+    expect(legacyStageTarget('refining')).toBeNull();
+    expect(legacyStageTarget('Downstream')).toBeNull(); // slugs only
+    expect(legacyStageTargetName('Downstream')).toBe('Deployment');
+    expect(legacyStageTargetName('Midstream')).toBeNull();
+    expect(legacyStageTargetName('Deployment')).toBeNull();
+  });
+
+  it('names the stages that replaced a legacy stage, "mostly" for Midstream', () => {
+    expect(legacyStageWords('Upstream')).toBe('Extraction, Refining and Recovery');
+    expect(legacyStageWords('Midstream')).toBe('mostly Components and Assembly');
+    expect(legacyStageWords('Downstream')).toBe('Deployment');
+    expect(legacyStageNote('Midstream', 'Batteries')).toBe('Batteries — Midstream is no longer a stage: it is now mostly Components and Assembly (some refined materials are under Refining).');
+    expect(legacyStageNote('Upstream')).toBe('Upstream is no longer a stage: it is now Extraction, Refining and Recovery.');
+    expect(legacyStageNote('Downstream', 'Solar')).toBe('Solar — Downstream is now Solar — Deployment.');
+    expect(legacyStageNote('Downstream')).toBe('Downstream is now Deployment.');
+  });
+
+  it('maps an old Sector path: Downstream to Deployment exactly, the others to the chain page', () => {
+    expect(legacySectorTarget('/sector/solar/downstream')).toEqual({ pathname: '/sector/solar/deployment', legacy: 'Downstream', exact: 'Deployment', techSlug: 'solar', economy: null });
+    expect(legacySectorTarget('/sector/electric-vehicles/downstream/IND/')).toEqual({
+      pathname: '/sector/electric-vehicles/deployment/IND', legacy: 'Downstream', exact: 'Deployment', techSlug: 'electric-vehicles', economy: 'IND',
+    });
+    expect(legacySectorTarget('/sector/batteries/midstream/USA')).toEqual({ pathname: '/sector/batteries', legacy: 'Midstream', exact: null, techSlug: 'batteries', economy: 'USA' });
+    expect(legacySectorTarget('/sector/wind/upstream')?.pathname).toBe('/sector/wind');
+    for (const p of ['/sector/batteries/refining', '/sector/batteries', '/sector', '/countries/USA', '/sector/batteries/midstream/USA/extra', '/sector/Batteries/midstream', '/x/sector/solar/upstream']) {
+      expect(legacySectorTarget(p), p).toBeNull();
+    }
   });
 });

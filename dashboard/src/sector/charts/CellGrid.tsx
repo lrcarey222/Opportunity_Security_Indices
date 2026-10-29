@@ -1,16 +1,15 @@
-// CellGrid (spec_sector.md 4.1 Atlas, 4.6 CellPicker / cell_global layout, 4.9, 5.3): the 11 x 3
+// CellGrid (spec_sector.md 4.1 Atlas, 4.6 CellPicker / cell_global layout, 4.9, 5.3): the 11 x 6
 // technology x stage grid, plus the non-headline row (Semiconductors) after a divider. HTML, not SVG:
-// stage columns carry a 3 px stage stripe and their name; rows carry the technology; each slot holds
+// stage columns carry a neutral 3 px stripe and their name (a stage is never a colour, design S4);
+// rows carry the technology; each slot holds
 // the view's tile (a link or a button). Arrow keys move focus between tiles (Home / End to the row's
 // ends). Below 768 px it becomes an accordion: one <details> per technology (the first open), each
 // with its stage tiles stacked, so colour is never needed to read a tile.
 
 import { Fragment, type KeyboardEvent } from 'react';
-import { STAGE_COLOR } from '../../theme/palette.ts';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
 import type { CellGridProps } from './types.ts';
 
-const STAGE_NAME: Record<string, string> = { upstream: 'Upstream', midstream: 'Midstream', downstream: 'Downstream' };
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Move focus to the tile at (r, c) from a keyboard event inside the grid (skips empty slots). */
@@ -70,7 +69,7 @@ export function CellGrid({ techs, stages, renderTile, selected, ariaLabel, accor
                 const tile = renderTile(t, s.slug, { selected: selected === `${t.slug}-${s.slug}` });
                 if (tile === null || tile === undefined) return null;
                 return (
-                  <div key={s.slug} className="border-l-[3px] pl-2" style={{ borderColor: STAGE_COLOR[STAGE_NAME[s.slug]] }}>
+                  <div key={s.slug} className="border-l-[3px] border-ink-500 pl-2">
                     <div className="eyebrow mb-1">{s.label}</div>
                     {tile}
                   </div>
@@ -88,7 +87,7 @@ export function CellGrid({ techs, stages, renderTile, selected, ariaLabel, accor
       <div aria-hidden="true" />
       {stages.map((s) => (
         <div key={s.slug} className="pb-1">
-          <span className="mb-1 block h-[3px]" style={{ background: STAGE_COLOR[STAGE_NAME[s.slug]] }} aria-hidden="true" />
+          <span className="mb-1 block h-[3px] bg-ink-500" aria-hidden="true" />
           <span className="eyebrow">{s.label}</span>
         </div>
       ))}

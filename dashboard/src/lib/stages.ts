@@ -16,7 +16,14 @@
 // roll-up does not give back (refined battery materials, polysilicon and electrical steel were
 // Midstream, while Refining rolls up to Upstream), so a node's own three-stage cells, where the export
 // writes them (the AIB node's yfCellsLegacy / yfSubcomponentsLegacy), win over the roll-up
-// (legacyCellsOf(), legacySubcomponentsOf()). The posture module keeps its own POSTURE_STAGES.
+// (legacyCellsOf(), legacySubcomponentsOf()).
+//
+// Display (design S2, 2026-10-28): the stage ids are the labels (STAGE_LABEL), with the shorts Ext, Ref,
+// Com, Asm, Dep, Rec for tight axes (STAGE_SHORT; moved here from the posture module, which imports it).
+// SUPPLY_PRODUCING_STAGES is every stage but Deployment (R SUPPLY_CHAIN_SUPPLY_STAGES), for the views
+// that leave Deployment out. The legacy-URL helpers at the end map an old three-stage link onto the six
+// stages: Downstream is exactly Deployment; Upstream and Midstream split, so their links land on the
+// technology's chain page with a notice naming the stages that replaced them.
 
 /** The six supply-chain stages, in chain order (R SUPPLY_CHAIN_STAGES). */
 export const SUPPLY_STAGES = ['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery'] as const;
@@ -44,6 +51,45 @@ export const STAGE_ROLLUP: Readonly<Record<SupplyStage, LegacyStage>> = {
 
 export const isSupplyStage = (x: unknown): x is SupplyStage => (SUPPLY_STAGES as readonly unknown[]).includes(x);
 export const isLegacyStage = (x: unknown): x is LegacyStage => (LEGACY_STAGES as readonly unknown[]).includes(x);
+
+// ---- Display ---------------------------------------------------------------------------------------------
+
+/** The label of each stage on screen: the stage id itself (design S2; not the config's long labels). */
+export const STAGE_LABEL: Readonly<Record<SupplyStage, string>> = {
+  Extraction: 'Extraction',
+  Refining: 'Refining',
+  Components: 'Components',
+  Assembly: 'Assembly',
+  Deployment: 'Deployment',
+  Recovery: 'Recovery',
+};
+
+/** The short label of each stage, for tight axes (phone column headers). */
+export const STAGE_SHORT: Readonly<Record<SupplyStage, string>> = {
+  Extraction: 'Ext',
+  Refining: 'Ref',
+  Components: 'Com',
+  Assembly: 'Asm',
+  Deployment: 'Dep',
+  Recovery: 'Rec',
+};
+
+/** The label of a stage name (a name that is not one of the six is returned as it is). */
+export const stageLabel = (name: string): string => (isSupplyStage(name) ? STAGE_LABEL[name] : name);
+
+/** The short label of a stage name (a name that is not one of the six is returned as it is). */
+export const stageShort = (name: string): string => (isSupplyStage(name) ? STAGE_SHORT[name] : name);
+
+// ---- Deployment and the producing stages ---------------------------------------------------------------
+
+/** Where the technology is used. Every other stage makes or supplies something. */
+export const DEPLOYMENT_STAGE = 'Deployment' satisfies SupplyStage;
+
+/** The stages that make or supply something: every stage but Deployment, in chain order (R SUPPLY_CHAIN_SUPPLY_STAGES). */
+export const SUPPLY_PRODUCING_STAGES = ['Extraction', 'Refining', 'Components', 'Assembly', 'Recovery'] as const satisfies readonly SupplyStage[];
+export type ProducingStage = (typeof SUPPLY_PRODUCING_STAGES)[number];
+
+export const isProducingStage = (x: unknown): x is ProducingStage => (SUPPLY_PRODUCING_STAGES as readonly unknown[]).includes(x);
 
 /** A stage's place in the chain (0 = Extraction ... 5 = Recovery); any other name ranks last (6). */
 export function stageRank(name: string): number {
@@ -96,6 +142,18 @@ const STAGE_OF_SLUG: Readonly<Record<string, SupplyStage | LegacyStage>> = Objec
   ...LEGACY_STAGES.map((s) => [s.toLowerCase(), s]),
 ]);
 const CELL_RE = new RegExp(`^([a-z0-9]+(?:-[a-z0-9]+)*)-(${[...SUPPLY_STAGE_SLUGS, ...LEGACY_STAGE_SLUGS].join('|')})$`);
+
+/** The slug of a stage name ("Refining" -> "refining"; a legacy name gives the legacy slug). */
+export const stageSlug = (stage: SupplyStage | LegacyStage): SupplyStageSlug | LegacyStageSlug => stage.toLowerCase() as SupplyStageSlug | LegacyStageSlug;
+
+export const isSupplyStageSlug = (x: unknown): x is SupplyStageSlug => (SUPPLY_STAGE_SLUGS as readonly unknown[]).includes(x);
+export const isLegacyStageSlug = (x: unknown): x is LegacyStageSlug => (LEGACY_STAGE_SLUGS as readonly unknown[]).includes(x);
+
+/** The six-stage name of a stage slug ("refining" -> "Refining"); null for a legacy slug or anything else. */
+export const supplyStageOfSlug = (slug: string): SupplyStage | null => (isSupplyStageSlug(slug) ? (STAGE_OF_SLUG[slug] as SupplyStage) : null);
+
+/** The legacy name of a legacy stage slug ("midstream" -> "Midstream"); null for anything else. */
+export const legacyStageOfSlug = (slug: string): LegacyStage | null => (isLegacyStageSlug(slug) ? (STAGE_OF_SLUG[slug] as LegacyStage) : null);
 
 /**
  * The parts of a cell slug, six-stage ("batteries-refining") or legacy ("batteries-midstream"); null when
@@ -158,4 +216,80 @@ export function legacyCellsOf(n: { yfCells: readonly string[]; yfCellsLegacy?: r
 export function legacySubcomponentsOf(n: { yfSubcomponents: readonly string[]; yfSubcomponentsLegacy?: readonly string[] | null }): string[] {
   if (Array.isArray(n.yfSubcomponentsLegacy)) return [...n.yfSubcomponentsLegacy];
   return unique(n.yfSubcomponents.map(rollUpSubcomponentId));
+}
+
+// ---- Legacy URLs (design U1) -----------------------------------------------------------------------------
+// An old link names one of the three stages. Downstream became Deployment exactly. Upstream and Midstream
+// split into several stages, so no one six-stage page answers them: their links land on the technology's
+// chain page with a notice naming the stages that replaced them. The roll-up (STAGE_ROLLUP) gives those
+// stages; the paper also filed some refined materials under Midstream (they are Refining now), so the
+// words for Midstream say "mostly".
+
+/** The six-stage stages that replaced each legacy stage, in chain order (the inverse of STAGE_ROLLUP). */
+export const LEGACY_STAGE_REPLACED_BY: Readonly<Record<LegacyStage, readonly SupplyStage[]>> = Object.fromEntries(
+  LEGACY_STAGES.map((l) => [l, SUPPLY_STAGES.filter((s) => STAGE_ROLLUP[s] === l)]),
+) as unknown as Record<LegacyStage, readonly SupplyStage[]>;
+
+/** The one six-stage stage a legacy stage became, by name ("Downstream" -> "Deployment"); null when it split or is not a legacy name. */
+export function legacyStageTargetName(stage: string): SupplyStage | null {
+  if (!isLegacyStage(stage)) return null;
+  const to = LEGACY_STAGE_REPLACED_BY[stage];
+  return to.length === 1 ? to[0] : null;
+}
+
+/**
+ * The one six-stage stage slug a legacy stage slug became ("downstream" -> "deployment"); null for
+ * "upstream" and "midstream", which split (their links go to the technology's chain page), and for
+ * anything that is not a legacy slug (check isLegacyStageSlug first).
+ */
+export function legacyStageTarget(slug: string): SupplyStageSlug | null {
+  const l = legacyStageOfSlug(slug);
+  const to = l ? legacyStageTargetName(l) : null;
+  return to ? (stageSlug(to) as SupplyStageSlug) : null;
+}
+
+const listAnd = (xs: readonly string[]): string => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+
+/** The stages that replaced a legacy stage, in words: "Extraction, Refining and Recovery", "mostly Components and Assembly", "Deployment". */
+export function legacyStageWords(stage: LegacyStage): string {
+  const words = listAnd(LEGACY_STAGE_REPLACED_BY[stage].map(stageLabel));
+  return stage === 'Midstream' ? `mostly ${words}` : words;
+}
+
+/**
+ * One sentence for the notice of a legacy link, optionally naming the technology:
+ * "Batteries — Midstream is no longer a stage: it is now mostly Components and Assembly (some refined
+ * materials are under Refining)." / "Solar — Downstream is now Solar — Deployment."
+ */
+export function legacyStageNote(stage: LegacyStage, tech?: string): string {
+  const subject = tech ? `${tech} — ${stage}` : stage;
+  const exact = legacyStageTargetName(stage);
+  if (exact) return `${subject} is now ${tech ? `${tech} — ` : ''}${stageLabel(exact)}.`;
+  const extra = stage === 'Midstream' ? ' (some refined materials are under Refining)' : '';
+  return `${subject} is no longer a stage: it is now ${legacyStageWords(stage)}${extra}.`;
+}
+
+/** Where an old /sector/<tech>/<legacy stage>[/<economy>] link goes. */
+export interface LegacySectorTarget {
+  /** /sector/<tech>/deployment[/<economy>] for Downstream; the chain page /sector/<tech> for Upstream and Midstream */
+  pathname: string;
+  legacy: LegacyStage;
+  /** the stage the link maps onto exactly (Deployment), or null when the stage split */
+  exact: SupplyStage | null;
+  techSlug: string;
+  /** the economy segment of the old link, as written (kept on the Deployment page; the chain page has no economy route) */
+  economy: string | null;
+}
+
+const LEGACY_SECTOR_RE = new RegExp(`^/sector/([a-z0-9]+(?:-[a-z0-9]+)*)/(${LEGACY_STAGE_SLUGS.join('|')})(?:/([^/]+))?/?$`);
+
+/** The six-stage target of a legacy Sector path (no query or hash; the caller keeps those); null when the path is not one. */
+export function legacySectorTarget(pathname: string): LegacySectorTarget | null {
+  const m = LEGACY_SECTOR_RE.exec(pathname);
+  if (!m) return null;
+  const legacy = legacyStageOfSlug(m[2]) as LegacyStage;
+  const exact = legacyStageTargetName(legacy);
+  const economy = m[3] ?? null;
+  const pathnameTo = exact ? `/sector/${m[1]}/${stageSlug(exact)}${economy ? `/${economy}` : ''}` : `/sector/${m[1]}`;
+  return { pathname: pathnameTo, legacy, exact, techSlug: m[1], economy };
 }

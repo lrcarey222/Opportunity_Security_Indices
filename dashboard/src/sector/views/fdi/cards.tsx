@@ -37,7 +37,7 @@ export const FDI_VARS = { n: 'investment.fdi_projects', value: 'investment.fdi_v
 export interface FdiScope {
   model: SectorModel;
   data: FdiData;
-  /** the Midstream cell of the technology */
+  /** the Components or Assembly cell of the technology (the projects are read on fdiItemOf()) */
   item: ItemInfo;
   /** the projects of the cell and basis (and, on a country page, the economy), in table order */
   projects: FdiProject[];

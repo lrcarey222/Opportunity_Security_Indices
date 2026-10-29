@@ -3,24 +3,46 @@
 // country beats in each sector), dashed crosshairs at the country's own median sector on each axis
 // (summary.country_median; the user's rule of 2026-10-15), so the corners sort the country's relatively
 // strong and weak sectors; the four named corners in the chart's margins (above and below the plot area,
-// so no dot ever hides them; sectors crowd the corners), shape = stage, filled = among the country's top five
-// Strategic Index sectors. No colour encoding (position carries the corner). The selected sector gets the
-// orange ring and a bold white label. Labels: always for high-priority and top-five sectors, the rest
-// where they fit without covering another label.
+// so no dot ever hides them; sectors crowd the corners), shape = stage (one of six, design S4: never a
+// colour), filled = among the country's top five Strategic Index sectors. No colour encoding (position
+// carries the corner). The selected sector gets the orange ring and a bold white label. Labels (six stages,
+// 2026-10-29: up to 58 dots): the selected sector always; then the high-priority and top-five sectors, then
+// the rest, each only where it fits without covering an earlier label (below 640 px the rest go unlabelled);
+// with more than 33 dots the dots are a little smaller. Every sector is in the table twin.
 
 import { useCallback } from 'react';
 import * as Plot from '@observablehq/plot';
+import { symbol as d3Symbol, symbolCircle, symbolCross, symbolDiamond, symbolSquare, symbolStar, symbolTriangle, type SymbolType } from 'd3';
 import { PlotFigure, Tip } from '../../charts/PlotFigure.tsx';
 import { useWidth } from './useWidth.ts';
 import { declutter, textWidth } from '../../charts/theme.ts';
 import { PAPER_MUTE, SIGNAL } from '../../theme/palette.ts';
+import { SUPPLY_STAGES, STAGE_LABEL, type SupplyStage } from '../../lib/stages.ts';
 import type { FactSheet } from '../contract.ts';
 import { QUADRANTS } from '../contract.ts';
 import type { ScatterPoint } from '../derive/model.ts';
 import { quadrantWord, proseName, poss, cap } from '../derive/text.ts';
 
 const MARK = '#d1d5db';
-export const STAGE_SYMBOL: Record<string, string> = { Upstream: 'circle', Midstream: 'square', Downstream: 'triangle' };
+/** The dot shape of each of the six stages (Plot's fillable symbols, so a top-five sector can be filled). */
+export const STAGE_SYMBOL: Readonly<Record<SupplyStage, 'circle' | 'diamond' | 'square' | 'cross' | 'triangle' | 'star'>> = {
+  Extraction: 'circle',
+  Refining: 'diamond',
+  Components: 'square',
+  Assembly: 'cross',
+  Deployment: 'triangle',
+  Recovery: 'star',
+};
+const D3_SYMBOL: Readonly<Record<(typeof STAGE_SYMBOL)[SupplyStage], SymbolType>> = {
+  circle: symbolCircle,
+  diamond: symbolDiamond,
+  square: symbolSquare,
+  cross: symbolCross,
+  triangle: symbolTriangle,
+  star: symbolStar,
+};
+/** The dot radius: 6 px, 5 px when more than 33 sectors are placed (the six-stage sheets place up to 58). */
+export const scatterRadius = (n: number): number => (n > 33 ? 5 : 6);
 
 // x = Economic Opportunity, y = Energy Security: Grow top right, Stable (key watch) top left, Exposed
 // (key secure) bottom left, Upgrade bottom right. The headings print the QUADRANTS labels.
@@ -57,26 +79,16 @@ export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }
       const ih = H - M.top - M.bottom;
       const px = (x: number) => M.left + (x / 100) * iw;
       const py = (y: number) => M.top + (1 - y / 100) * ih;
-      const boxes: { x: number; y: number; w: number; h: number }[] = [];
-      const nC = boxes.length;
-      // point labels: priority and top five first (always), then the rest where they fit
-      const order: number[] = [];
-      const must = points.map((p, i) => ({ p, i })).filter(({ p }) => p.priority || p.top5 || p.key === selected);
-      const rest = points.map((p, i) => ({ p, i })).filter(({ p }) => !(p.priority || p.top5 || p.key === selected));
-      for (const { p } of [...must, ...rest]) {
-        const t = p.short;
-        boxes.push({ x: px(p.x), y: py(p.y) - 13, w: textWidth(t, 10) + 4, h: 12 });
-      }
-      for (let i = 0; i < nC; i++) order.push(i);
-      const ordered = [...must, ...(narrow ? [] : rest)];
-      ordered.forEach((_, j) => order.push(nC + j));
-      const keep = declutter(boxes, order);
-      const labelled = new Set<string>();
-      [...must, ...rest].forEach(({ p }, j) => {
-        if (must.some((m) => m.p.key === p.key) || keep.has(nC + j)) labelled.add(p.key);
-      });
-      const lab = points.filter((p) => labelled.has(p.key) && p.key !== selected);
+      const r = scatterRadius(points.length);
+      // point labels: the selected sector first (always), then priority and top five, then the rest, each
+      // where it fits (with up to 58 dots, labels that always print would pile up on neighbouring stages)
       const sel = points.filter((p) => p.key === selected);
+      const must = points.filter((p) => p.key !== selected && (p.priority || p.top5));
+      const rest = points.filter((p) => p.key !== selected && !(p.priority || p.top5));
+      const cands = [...sel, ...must, ...(narrow ? [] : rest)];
+      const boxes = cands.map((p) => ({ x: px(p.x), y: py(p.y) - (p.key === selected ? 16 : 13), w: textWidth(p.short, p.key === selected ? 11 : 10) + 4, h: 12 }));
+      const keep = declutter(boxes, cands.map((_, j) => j));
+      const lab = cands.filter((p, j) => p.key !== selected && keep.has(j));
       const fill = (d: ScatterPoint) => (d.top5 ? MARK : 'none');
       const ticks = [0, 25, 50, 75, 100];
       return {
@@ -88,15 +100,15 @@ export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }
         marginLeft: M.left,
         x: { domain: [0, 100], ticks, label: `Economic Opportunity: share of economies ${name} beats (%) →`, labelAnchor: 'right', grid: true },
         y: { domain: [0, 100], ticks, label: `↑ Energy Security: share of economies ${name} beats (%)`, labelAnchor: 'top', grid: true },
-        symbol: { domain: ['Upstream', 'Midstream', 'Downstream'], range: ['circle', 'square', 'triangle'] },
+        symbol: { domain: [...SUPPLY_STAGES], range: SUPPLY_STAGES.map((s) => STAGE_SYMBOL[s]) },
         marks: [
           Plot.frame({ stroke: 'rgb(255 255 255 / 0.12)' }),
           // the country's median sector on each axis: the corners split here
           ...(medEo !== null ? [Plot.ruleX([medEo], { stroke: PAPER_MUTE, strokeWidth: 1, strokeDasharray: '4,3' })] : []),
           ...(medEs !== null ? [Plot.ruleY([medEs], { stroke: PAPER_MUTE, strokeWidth: 1, strokeDasharray: '4,3' })] : []),
-          Plot.dot(points, { x: 'x', y: 'y', symbol: 'stage', r: 6, fill, stroke: MARK, strokeWidth: 1.5 }),
+          Plot.dot(points, { x: 'x', y: 'y', symbol: 'stage', r, fill, stroke: MARK, strokeWidth: 1.5 }),
           Plot.text(lab, { x: 'x', y: 'y', text: 'short', dy: -13, fill: '#d1d5db', fontSize: 10 }),
-          Plot.dot(sel, { x: 'x', y: 'y', symbol: 'stage', r: 9, fill: 'none', stroke: SIGNAL, strokeWidth: 2.5 }),
+          Plot.dot(sel, { x: 'x', y: 'y', symbol: 'stage', r: r + 3, fill: 'none', stroke: SIGNAL, strokeWidth: 2.5 }),
           Plot.text(sel, { x: 'x', y: 'y', text: 'short', dy: -16, fill: '#ffffff', fontSize: 11, fontWeight: 600 }),
           Plot.dot(points, Plot.pointer({ x: 'x', y: 'y', r: 10, fill: 'none', stroke: SIGNAL, strokeWidth: 2, maxRadius: 16 })),
         ],
@@ -153,24 +165,22 @@ export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }
   );
 }
 
-function Sym({ shape, filled, stroke = MARK }: { shape: 'circle' | 'square' | 'triangle'; filled?: boolean; stroke?: string }) {
+function Sym({ shape, filled, stroke = MARK }: { shape: (typeof STAGE_SYMBOL)[SupplyStage]; filled?: boolean; stroke?: string }) {
   const f = filled ? MARK : 'none';
+  // the same shapes Plot draws (d3 symbols), at a legend size (r = 5)
+  const d = d3Symbol(D3_SYMBOL[shape], Math.PI * 25)() ?? '';
   return (
     <svg width="14" height="14" viewBox="-7 -7 14 14" aria-hidden="true" className="inline-block">
-      {shape === 'circle' && <circle r="5" fill={f} stroke={stroke} strokeWidth="1.5" />}
-      {shape === 'square' && <rect x="-4.5" y="-4.5" width="9" height="9" fill={f} stroke={stroke} strokeWidth="1.5" />}
-      {shape === 'triangle' && <path d="M0,-5.5L5,4L-5,4Z" fill={f} stroke={stroke} strokeWidth="1.5" />}
+      <path d={d} fill={f} stroke={stroke} strokeWidth="1.5" />
     </svg>
   );
 }
 
-/** The scatter's legend: stage shapes, filled vs hollow, the selection ring and the country's median-sector
- *  lines, in words. */
+/** The scatter's legend: the six stage shapes, filled vs hollow, the selection ring and the country's
+ *  median-sector lines, in words. */
 export function ScatterLegend({ name }: { name: string }) {
   const items: [React.ReactNode, string][] = [
-    [<Sym key="u" shape="circle" />, 'Upstream'],
-    [<Sym key="m" shape="square" />, 'Midstream'],
-    [<Sym key="d" shape="triangle" />, 'Downstream'],
+    ...SUPPLY_STAGES.map((s): [React.ReactNode, string] => [<Sym key={s} shape={STAGE_SYMBOL[s]} />, STAGE_LABEL[s]]),
     [<Sym key="f" shape="circle" filled />, `Filled: among ${poss(name)} top five Strategic Index sectors`],
     [<Sym key="s" shape="circle" stroke={SIGNAL} />, 'Selected'],
     [

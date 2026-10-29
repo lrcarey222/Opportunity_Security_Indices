@@ -86,11 +86,11 @@ test_that("top partners: sovereign, not the reporter, highest first, rank with t
 
 test_that("per-sector chunks: one per cell, named by the shared slug rule", {
   U <- c("A", "B", "C")
-  cells <- tibble::tibble(cell_id = 1:2, tech = c("Electric Vehicles", "Solar"), supply_chain = c("Midstream", "Upstream"))
+  cells <- tibble::tibble(cell_id = 1:2, tech = c("Electric Vehicles", "Solar"), supply_chain = c("Components", "Extraction"))
   fs <- array(runif(18), c(3, 3, 2))
   po <- array(runif(18), c(3, 3, 2))
   ch <- dash_cell_chunks(list(fs_index = fs, po_index = po), tibble::tibble(reporter_iso = character(), partner_iso = character(), rank = integer()), U, rep(TRUE, 3), cells, k = 1)
-  expect_equal(names(ch), c("pcell-electric-vehicles-midstream", "pcell-solar-upstream"))
+  expect_equal(names(ch), c("pcell-electric-vehicles-components", "pcell-solar-extraction"))
   t1 <- ch[[1]]$top
   expect_setequal(unique(t1$side), c("fs", "po"))
   expect_equal(nrow(t1), 6) # 3 reporters x 2 sides x top 1
@@ -100,12 +100,12 @@ test_that("per-sector chunks: one per cell, named by the shared slug rule", {
 })
 
 test_that("CM-FDI flows, Development Potential by sector and the ties chunk", {
-  ties_tbl <- tibble::tibble(investor_iso = c("JPN", "USA"), destination_iso = c("USA", "IND"), tech = "Solar", supply_chain = "Midstream",
+  ties_tbl <- tibble::tibble(investor_iso = c("JPN", "USA"), destination_iso = c("USA", "IND"), tech = "Solar", supply_chain = "Components",
                              n_projects = c(3, 1), n_disclosed = c(2, 0), value_usd_m = c(500, NA))
   fl <- dash_cmfdi_flows(ties_tbl)
   expect_equal(fl$investor_iso, c("JPN", "USA"))
-  cells <- tibble::tibble(cell_id = 1:2, tech = c("Solar", "Wind"), supply_chain = "Midstream")
-  dev <- tibble::tibble(partner_iso = c("IND", "IND", "IND", "BRA"), tech = c("Solar", "Solar", "Wind", "Coal"), supply_chain = "Midstream",
+  cells <- tibble::tibble(cell_id = 1:2, tech = c("Solar", "Wind"), supply_chain = "Components")
+  dev <- tibble::tibble(partner_iso = c("IND", "IND", "IND", "BRA"), tech = c("Solar", "Solar", "Wind", "Coal"), supply_chain = "Components",
                         variable = c("Development Potential Index", "Development Potential Index", "aid_index_supplychain", "Development Potential Index"), value = c(0.4, 0.4, 0.9, 0.2))
   dp <- dash_dp_cells(dev, cells)
   expect_equal(nrow(dp), 1)
@@ -127,6 +127,6 @@ test_that("CM-FDI flows, Development Potential by sector and the ties chunk", {
 })
 
 test_that("the slug rule matches the TypeScript stageSlug()", {
-  expect_equal(dash_cell_slug("Electric Vehicles", "Midstream"), "electric-vehicles-midstream")
-  expect_equal(dash_cell_slug("Oil & Gas", "Upstream"), "oil-gas-upstream")
+  expect_equal(dash_cell_slug("Electric Vehicles", "Components"), "electric-vehicles-components")
+  expect_equal(dash_cell_slug("Oil & Gas", "Extraction"), "oil-gas-extraction")
 })

@@ -57,7 +57,7 @@ export default function CountryHomeView() {
       <PageHead
         eyebrow="COUNTRIES"
         title="Countries"
-        lede={`Pick a country to see its strategic position in one place: where its energy supply chains are secure or exposed, where it has economic openings, which sectors to prioritise and how that compares with its current policies, its trade, investment and development partners, and its role in the Allied Industrial Base. Each profile opens with its six-stage strategic posture; the index values below it are the paper's three-stage NEIS baseline (as of ${manifest.as_of_label}), and on each profile a Perspective control lets you weigh security, opportunity, policy and climate differently. For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : nRevised ? 'is being revised' : 'is being prepared'}.`}
+        lede={`Pick a country to see its strategic position in one place: where its energy supply chains are secure or exposed, where it has economic openings, which sectors to prioritise and how that compares with its current policies, its trade, investment and development partners, and its role in the Allied Industrial Base. Every technology is read at six supply-chain stages, from extraction to recovery. The first section of each profile is its strategic posture; the index values in the sections after it are the NEIS baseline (as of ${manifest.as_of_label}), and on each profile a Perspective control lets you weigh security, opportunity, policy and climate differently. For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : nRevised ? 'is being revised' : 'is being prepared'}.`}
       />
       <p className="-mt-4 mb-6 text-sm">
         <Link className="link" to="/overview">
@@ -82,7 +82,7 @@ export default function CountryHomeView() {
           Core coalition members ({g.core.length})
         </h2>
         <p className="mb-4 max-w-3xl text-sm text-paper-mute">
-          The economies the paper&apos;s <span className="whitespace-nowrap">allied coalition <InfoTip id="coalition" term="allied coalition" /></span> is built around. The line under each name counts its placed sectors in each corner.
+          The economies the <span className="whitespace-nowrap">allied coalition <InfoTip id="coalition" term="allied coalition" /></span> is built around. The line under each name counts its placed sectors in each corner.
         </p>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {g.core.map((c) => (
@@ -140,8 +140,8 @@ export default function CountryHomeView() {
           How to read a country profile
         </h2>
         <p className="mt-2 text-sm text-paper-dim">
-          The chart at the top of a profile is the strategic posture of each technology at six supply-chain stages (Secure, Compete, Deploy). Below it, the paper&apos;s
-          three-stage sectors sit in four corners, split at the country&apos;s own median sector; the corners describe, they are not postures.
+          The first section of a profile, Strategic posture, recommends a posture for each technology at each of the six supply-chain stages (Secure, Compete, Deploy). The next,
+          Security and opportunity, places the same sectors in four corners, split at the country&apos;s own median sector; the corners describe, they are not postures.
         </p>
         <ul className="mt-3 space-y-2 text-sm text-paper-dim">
           {QUADRANTS.map((q) => (
@@ -150,7 +150,7 @@ export default function CountryHomeView() {
             </li>
           ))}
           <li>
-            Paper baseline <InfoTip id="paper_baseline" term="paper baseline" />: every three-stage index value is the paper&apos;s own, as of {manifest.as_of_label}. To try other weightings, open a country and change its Perspective.
+            NEIS baseline <InfoTip id="paper_baseline" term="NEIS baseline" />: every index value is the pipeline&apos;s six-stage baseline, as of {manifest.as_of_label}. To try other weightings, open a country and change its Perspective.
           </li>
           <li>
             Memos <InfoTip id="memo" term="memo" />: short AI-written briefs for the core members, built from each country&apos;s fact sheet and checked against it.

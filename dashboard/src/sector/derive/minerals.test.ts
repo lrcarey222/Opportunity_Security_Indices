@@ -29,7 +29,7 @@ describe('minerals on the TS fixture', () => {
     expect(r.mining?.year).toBe(2025);
     expect(r.mine?.year).toBe(2025);
     expect(r.demand).toBe(165);
-    // links: batteries-upstream 0.62, electric-vehicles-upstream 0.30; demand shares override (EV 120/165, batteries 40/165)
+    // links: batteries-extraction 0.62, electric-vehicles-extraction 0.30; demand shares override (EV 120/165, batteries 40/165)
     expect(r.techs.map((t) => t.slug)).toEqual(['electric-vehicles', 'batteries']);
     expect(r.techs[0].share).toBeCloseTo(120 / 165, 12);
   });
@@ -81,7 +81,7 @@ describe('minerals on the TS fixture', () => {
 
   it('commodity of a mineral: same slug, else none; a technology without a demand total keeps no share', () => {
     expect(commodityOf(model, li)).toBeNull();
-    // graphite: link batteries-upstream 0.9; EV appears only in demand rows and there is no total row
+    // graphite: link batteries-extraction 0.9; EV appears only in demand rows and there is no total row
     const t = techsOfMineral(model, model.items[fixtureItem('mineral', 'graphite')]);
     expect(t.map((x) => x.slug)).toEqual(['batteries', 'electric-vehicles']);
     expect(t[1].share).toBeNull();

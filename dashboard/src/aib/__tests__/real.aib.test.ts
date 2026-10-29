@@ -18,14 +18,14 @@ import { resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import {
-  AIB_DOC_FILE_RE, AIB_PHYSICAL_WARNING, AIB_TIERS, checkAibManifest, checkCompactsDoc, coalitionMembersOf, countryNamesOf, diversifyShockIdOf, inStrategicScope, supplyScenariosOf, variantsOf,
+  AIB_DOC_FILE_RE, AIB_PHYSICAL_WARNING, AIB_TIERS, checkAibManifest, checkCompactsDoc, coalitionMembersOf, countryNamesOf, diversifyShockIdOf, indicesOf, inStrategicScope, supplyScenariosOf, variantsOf,
   variantWarningsOf, type AibDoc, type AibManagedScenarioDoc, type AibManifest,
 } from '../contract.ts';
 import { diversifyRow, diversifyTotals, relationshipsOf } from '../derive/diversify.ts';
 import { everyShock } from '../derive/network.ts';
-import { compactTitle } from '../derive/format.ts';
-import { indexOfNode, indexOfSector, legacyOsiCellsOfNode, osiCellHref, osiCellOf, profiledCellsOfNode, taxonomyOf } from '../derive/taxonomy.ts';
-import { legacyCellsOf } from '../../lib/stages.ts';
+import { compactTechs, compactTitle, techTitle } from '../derive/format.ts';
+import { NOT_IN_BASKET, nodeInTech, osiCellHref, osiCellOf, osiFields, profiledCellsOfNode, taxonomyOf, techKeysOfNode, technologiesOfNodes } from '../derive/taxonomy.ts';
+import { parseCellSlug } from '../../lib/stages.ts';
 import { REAL_DIR } from './fixture.ts';
 
 const have = existsSync(resolve(REAL_DIR, 'manifest.json'));
@@ -177,42 +177,49 @@ describe.skipIf(!have)('the real Sectoral Compacts bundle (public/data/aib)', ()
     }
   });
 
-  it('the taxonomy (2026-10-19) hangs together: indices, sectors, crosswalk ids; titles keep every node label whole', () => {
+  it('the taxonomy hangs together: six-stage crosswalk ids, OSI technologies with Sector profiles, the basket-less bucket, the dictionary provenance; titles keep every node label whole', () => {
     const tx = taxonomyOf(doc.meta);
     const byId = new Map(doc.nodes.map((n) => [n.id, n]));
     for (const n of doc.nodes) {
-      // every crosswalk id is a six-stage OSI cell; every sub-component id sits in one of the node's cells
-      for (const c of n.yfCells) expect(osiCellOf(c)?.legacy, `${n.id} cell ${c}`).toBe(false);
-      for (const s of n.yfSubcomponents) expect(n.yfCells.some((c) => s.startsWith(`${c}::`)), `${n.id} sub-component ${s}`).toBe(true);
-      // its exported three-stage cells (the joins with the three-stage bundles) are three-stage cells, every
-      // three-stage sub-component sits in one of them, the joins read them all (none dropped), and its Sector
-      // links are the distinct profiles of those cells, in their order
-      expect(Array.isArray(n.yfCellsLegacy), `${n.id} yfCellsLegacy`).toBe(true);
-      for (const c of n.yfCellsLegacy ?? []) expect(osiCellOf(c)?.legacy, `${n.id} three-stage cell ${c}`).toBe(true);
-      for (const s of n.yfSubcomponentsLegacy ?? []) expect((n.yfCellsLegacy ?? []).some((c) => s.startsWith(`${c}::`)), `${n.id} three-stage sub-component ${s}`).toBe(true);
-      expect(legacyOsiCellsOfNode(n).map((c) => c.slug), `${n.id} three-stage cells read`).toEqual(legacyCellsOf(n));
-      expect(profiledCellsOfNode(n).map((c) => c.href), `${n.id} Sector links`).toEqual([
-        ...new Set(legacyCellsOf(n).map((s) => osiCellHref({ slug: s })).filter((h): h is string => h !== null)),
-      ]);
-      if (tx.dictionary && tx.indices.length) {
-        // the node's index lists its sector
-        const ix = indexOfNode(tx, n);
-        expect(ix, `${n.id} index`).not.toBeNull();
-        if (n.indexCode) expect(ix!.code, n.id).toBe(n.indexCode);
+      // every crosswalk id is a six-stage OSI cell of a technology the Sector pages profile; every sub-component sits in one of the node's cells
+      for (const c of n.yfCells) {
+        expect(osiCellOf(c), `${n.id} cell ${c}`).not.toBeNull();
+        expect(osiCellHref({ slug: c }), `${n.id} cell ${c} Sector profile`).toMatch(/^\/sector\/[a-z-]+\/(extraction|refining|components|assembly|deployment|recovery)$/);
+      }
+      for (const sc of n.yfSubcomponents) expect(n.yfCells.some((c) => sc.startsWith(`${c}::`)), `${n.id} sub-component ${sc}`).toBe(true);
+      // its Sector links are the distinct profiles of its six-stage cells, in their order
+      expect(profiledCellsOfNode(n).map((c) => c.href), `${n.id} Sector links`).toEqual([...new Set(n.yfCells.map((c) => osiCellHref({ slug: c })!))]);
+      // its technologies are those of its cells; a node with none is in the 'Not in the OSI basket' bucket, never in a technology
+      expect(techKeysOfNode(n), n.id).toEqual(n.yfCells.length ? [...new Set(n.yfCells.map((c) => osiCellOf(c)!.tech))].sort((a, b) => a.localeCompare(b, 'en')) : [NOT_IN_BASKET]);
+      // the three-stage cells an export may still write (no longer read) stay three-stage
+      for (const c of n.yfCellsLegacy ?? []) expect(parseCellSlug(c)?.legacy, `${n.id} three-stage cell ${c}`).toBe(true);
+      if (tx.dictionary && indicesOf(doc.meta).length) {
+        // the provenance: the node's index lists its dictionary sector (shown only as dictionary_sector)
+        const ix = indicesOf(doc.meta).find((x) => x.code === n.indexCode) ?? indicesOf(doc.meta).find((x) => n.techs.every((t) => x.sectors.includes(t)));
+        expect(ix, `${n.id} index`).toBeTruthy();
         for (const t of n.techs) expect(ix!.sectors, `${n.id} sector ${t}`).toContain(t);
+        expect(osiFields(tx, n).dictionarySector, n.id).toBe(n.techs.join('; '));
       }
     }
+    // the bucket: every node without a cell, and only those
+    const bare = doc.nodes.filter((n) => !n.yfCells.length);
+    expect(doc.nodes.filter((n) => nodeInTech(n, NOT_IN_BASKET)).map((n) => n.id)).toEqual(bare.map((n) => n.id));
+    expect(technologiesOfNodes(doc.nodes).includes(NOT_IN_BASKET)).toBe(bare.length > 0);
+    console.log(`AIB nodes: ${doc.nodes.length}; not in the OSI basket: ${bare.length}; OSI technologies: ${technologiesOfNodes(doc.nodes).filter((t) => t !== NOT_IN_BASKET).join(', ')}`);
     for (const c of doc.compacts) {
-      if (tx.dictionary && tx.indices.length) {
-        const want = [...new Set(c.technologies.map((t) => indexOfSector(tx, t)?.code))].filter(Boolean).sort();
+      if (tx.dictionary && indicesOf(doc.meta).length) {
+        const want = [...new Set(c.technologies.map((t) => indicesOf(doc.meta).find((x) => x.sectors.includes(t))?.code))].filter(Boolean).sort();
         expect([...(c.indices ?? [])].sort(), `${c.id} indices`).toEqual(want);
       } else expect(c.indices ?? [], c.id).toEqual([]);
-      // the display title lists the labels whole (commas and all), never a piece of the exported name
+      // the display title: the OSI technologies of its nodes (capped), then the labels whole (commas and all), never a piece of the exported name
+      const own = c.nodes.map((id) => byId.get(id)!);
       const title = compactTitle(c, doc.nodes, { full: true });
+      const techs = compactTechs(own);
+      expect(title.startsWith(techs.length ? `${techTitle(techs)}: ` : own[0].label), `${c.id} title ${title}`).toBe(true);
       for (const id of c.nodes) expect(title, `${c.id} title`).toContain(byId.get(id)!.label);
     }
     if (tx.dictionary) {
-      const sectors = new Set(tx.indices.flatMap((ix) => ix.sectors));
+      const sectors = new Set(indicesOf(doc.meta).flatMap((ix) => ix.sectors));
       for (const t of doc.meta.scopeTechs ?? []) expect(sectors.has(t), `scope sector ${t}`).toBe(true);
     }
   });

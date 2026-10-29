@@ -492,12 +492,12 @@ test_that("production rows name EIA in their source only where EIA supplied a va
 test_that("the Sector Insights exporter ships a fuel production NA as nsr, not an NA status", {
   # Estonia coal is NA in production_depth_momentum_tbl (no EI row, EIA value not comparable);
   # sector_obs_tables() stops on an NA status, so scripts/87 would fail on it. The Sector
-  # Insights builders have not moved to six stages, so their input keeps the three-stage label.
+  # Insights builders read the six-stage table since 2026-10-28: fuel production is Extraction.
   env <- new.env(parent = globalenv())
   sys.source(file.path(repo_root, "R", "dashboard", "sector", "sector_files.R"), envir = env)
   for (f in env$sector_files()) sys.source(file.path(repo_root, f), envir = env)
   pdm <- tibble::tibble(
-    iso3c = c("EST", "EST", "NZL"), tech = c("Coal", "Gas", "Gas"), supply_chain = "Upstream",
+    iso3c = c("EST", "EST", "NZL"), tech = c("Coal", "Gas", "Gas"), supply_chain = "Extraction",
     variable = "production_latest", value = c(NA, 0, 0.12), data_type = "raw"
   )
   x <- env$sector_facts_production(pdm, tibble::tibble(ei_var = character(), iso3 = character()))

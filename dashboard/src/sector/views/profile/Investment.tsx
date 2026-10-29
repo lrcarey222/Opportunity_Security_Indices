@@ -1,9 +1,12 @@
 // Profile S7 Investment (spec_sector.md 4.3), shown before production for a finance audience:
 // (i) annual investment by group 2018-2025 (Value | Share), (ii) the top investors table, (iii) small
 // multiples of the top 6; and, from sector-series, power capacity additions 2018-2025 (Solar, Wind and
-// Nuclear Downstream) in the same forms. In the four Midstream cells CM-FDI covers (Solar, Wind,
-// Batteries, Electric Vehicles), a "Cross-border manufacturing projects" subsection follows (sector-fdi,
-// loaded when it mounts): see views/fdi/FdiBlock.tsx.
+// Nuclear Deployment) in the same forms. The manufacturing capex Components and Assembly both carry
+// says it is the same figure as the other stage's (design C2), and the critical-minerals capex says
+// which Refining cells split it. In the Components and Assembly cells CM-FDI covers (Solar, Wind,
+// Batteries, Electric Vehicles; the same projects on both stages, design E5), a "Cross-border
+// manufacturing projects" subsection follows (sector-fdi, loaded when it mounts): see
+// views/fdi/FdiBlock.tsx.
 
 import { useMemo, useState } from 'react';
 import * as Plot from '@observablehq/plot';
@@ -16,6 +19,7 @@ import { growth } from '../../derive/concentration.ts';
 import { hasFdi } from '../../derive/fdi.ts';
 import { GROUP_SHORT, partOf } from '../../derive/groups.ts';
 import { groupArea, topLines } from '../../derive/series.ts';
+import { sameFigureText, splitText } from '../../derive/pairs.ts';
 import { sectorCsv } from '../../derive/csv.ts';
 import { axisFormatter, fmtShare, fmtSignedPct, fmtValue, lc } from '../../format.ts';
 import { AREA_READING, ChunkGate, HowToRead, markGroup } from '../common.tsx';
@@ -26,11 +30,9 @@ import { GroupArea, GroupLegend, LabelledLines, SectorChartCard, SmallMultiples 
 import { useCardCsv, useProfile } from './ctx.tsx';
 
 const CELL_NOTES: Record<string, string> = {
-  'electric-vehicles-downstream': 'EV Downstream investment is consumer purchases of electric vehicles.',
-  'batteries-upstream': 'Batteries and EV Upstream are one critical-minerals series split by a constant: never add them.',
-  'electric-vehicles-upstream': 'Batteries and EV Upstream are one critical-minerals series split by a constant: never add them.',
-  'geothermal-downstream': 'Geothermal covers enhanced geothermal only.',
-  'nuclear-downstream': 'Nuclear covers advanced nuclear only.',
+  'electric-vehicles-deployment': 'Electric Vehicles — Deployment investment is consumer purchases of electric vehicles.',
+  'geothermal-deployment': 'Geothermal covers enhanced geothermal only.',
+  'nuclear-deployment': 'Nuclear covers advanced nuclear only.',
 };
 
 interface InvRow {
@@ -71,6 +73,9 @@ function AnnualBlock({ idx, v, title, kindNote }: { idx: FactsIndex; v: VarInfo;
   const csv = useCardCsv(() => ({ name: `${cell.slug}-${v.id}`, text: sectorCsv(model, rows.flatMap((r) => [...r.values.entries()].map(([y, val]) => ({ geo: model.geos[r.geo], v, item: cell, year: y, value: val, status: idx.value(v.idx, cell.idx, y, r.geo)?.status ?? 'obs' })))) }), [v.id]);
   const yFmt = axisFormatter(area.map((p) => p.value), unit, v.display_scale);
   const est = area.some((p) => p.est);
+  // copied and split figures (design C2): said on each cell, never added across cells
+  const same = sameFigureText(model, idx, v, cell);
+  const split = splitText(model, idx, v, cell);
   return (
     <div className="space-y-6">
       <SectorChartCard
@@ -91,6 +96,8 @@ function AnnualBlock({ idx, v, title, kindNote }: { idx: FactsIndex; v: VarInfo;
           <>
             {est && <p>The {last} point is hollow: it includes estimated Q4 construction starts.</p>}
             {CELL_NOTES[cell.slug] && <p>{CELL_NOTES[cell.slug]}</p>}
+            {same && <p data-testid="same-figure-note">{same}</p>}
+            {split && <p data-testid="split-note">{split}</p>}
             {kindNote && <p>{kindNote}</p>}
           </>
         }
@@ -195,7 +202,7 @@ function PowerAdditions() {
   );
 }
 
-/** The CM-FDI subsection of a covered Midstream cell (mounts, and loads sector-fdi, near the viewport). */
+/** The CM-FDI subsection of a covered Components or Assembly cell (mounts, and loads sector-fdi, near the viewport). */
 function CrossBorderProjects() {
   const { model, cell, highlight, tech, stage } = useProfile();
   const { set, state, link } = useSectorUrl();

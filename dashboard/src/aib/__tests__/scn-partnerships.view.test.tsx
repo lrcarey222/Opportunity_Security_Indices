@@ -2,7 +2,7 @@
 // cross-lens summary and its three tagged panels (Today, OSI recommends, AIB model with the toggled
 // scenario); Today's trade from the Baseline scenario file; the AIB lens under Managed Interdependence from
 // its file (trade relationships, investment flows, coalitions); a lens with no data at the focus says so in
-// one line; the filters (economy, sector, stage, sub-sector) stay; no bare acronym.
+// one line; the filters (economy, OSI technology, stage, node) stay; no bare acronym.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -93,7 +93,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     const kinds = within(screen.getByRole('radiogroup', { name: 'Partnership type' })).getAllByRole('radio');
     expect(kinds.map((r) => r.parentElement?.textContent)).toEqual(['Trade', 'Investment', 'Development', 'Geopolitical']);
     // the filters stay
-    for (const f of ['Economy', 'Stage', 'Sub-sector']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
+    for (const f of ['Economy', 'Technology', 'Stage', 'Node']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
     expect(screen.getAllByTestId(/^lens-(today|osi|aib)$/).map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual([
       'Today · observed',
       'OSI recommends · NEIS defaults',

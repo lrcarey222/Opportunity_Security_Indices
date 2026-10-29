@@ -1,8 +1,8 @@
 // Friendshore's CM-FDI parts in the TypeScript engine (commit 78be8b5; R/dashboard/dash_partner.R): on
-// the committed synthetic bundle s1 (Solar and Wind Midstream are CM-FDI cells), the Friendshore
-// cells equal R's bit for bit, the ownership component moves only the CM-FDI cells, the CM-FDI tie
-// replaces the IMF position there, and the hawkishness dial scales the ownership weight like the
-// alignment weight.
+// the committed synthetic bundle s1 (the Components and Assembly cells of Solar and Wind are CM-FDI
+// cells with the same projects, as the pipeline copies them), the Friendshore cells equal R's bit
+// for bit, the ownership component moves only the CM-FDI cells, the CM-FDI tie replaces the IMF
+// position there, and the hawkishness dial scales the ownership weight like the alignment weight.
 import { describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -23,9 +23,25 @@ const withFsWeights = (p: Params, w: Record<string, number>): Params => ({ ...p,
 
 describe('Friendshore CM-FDI parts', () => {
   it('the bundle carries CM-FDI cells, ties and an undefined exposure', () => {
-    expect(cm.length).toBe(2);
-    expect(pa.fs.outbound_cmfdi?.shape).toEqual([U, U, 2]);
+    const tech = pa.cells.cols.tech as string[];
+    const stage = pa.cells.cols.supply_chain as string[];
+    expect(cm.map((c) => `${tech[c]} - ${stage[c]}`)).toEqual(['Solar - Components', 'Solar - Assembly', 'Wind - Components', 'Wind - Assembly']);
+    expect(pa.fs.outbound_cmfdi?.shape).toEqual([U, U, 4]);
+    // Components and Assembly carry the same projects: one tie and one exposure per technology, equal
+    // wherever both stages have the dyad (each cell keeps its own dyads)
+    const sameWhereBoth = (a: (i: number) => number, b: (i: number) => number, n: number) => {
+      let both = 0;
+      for (let i = 0; i < n; i++) {
+        if (a(i) !== a(i) || b(i) !== b(i)) continue;
+        both++;
+        expect(a(i)).toBe(b(i));
+      }
+      expect(both).toBeGreaterThan(0);
+    };
+    const tie = (pa.fs.outbound_cmfdi as NDArray<Float64Array>).data;
+    for (const k of [0, 2]) sameWhereBoth((i) => tie[i + UU * k], (i) => tie[i + UU * (k + 1)], UU);
     const cpe = pa.fs.cpe as NDArray<Float64Array>;
+    for (const k of [0, 2]) sameWhereBoth((p) => cpe.data[p + U * cm[k]], (p) => cpe.data[p + U * cm[k + 1]], U);
     expect(cpe.shape).toEqual([U, C]);
     const jpn = pa.U.indexOf('JPN');
     const chn = pa.U.indexOf('CHN');

@@ -2,24 +2,52 @@
 
 COUNTRY_TECHS <- c("Batteries", "Coal", "Electric Grid", "Electric Vehicles", "Gas", "Geothermal", "Green Hydrogen",
                    "Nuclear", "Oil", "Solar", "Wind")
-COUNTRY_STAGES <- c("Upstream", "Midstream", "Downstream")
-COUNTRY_NO_ES_CELLS <- c("geothermal-upstream", "geothermal-midstream", "electric-grid-downstream")
+# The six supply-chain stages in chain order (2026-10-28; they replace Upstream, Midstream and Downstream):
+# SUPPLY_CHAIN_STAGES of R/utils/supply_chain_stages.R, which country_helper_files() sources first. Written
+# out here so that this file still stands alone for scripts/84 and the AIB tests, which source it by itself
+# for country_json(); tests/testthat/test-country-check.R checks that the two are equal.
+COUNTRY_STAGES <- c("Extraction", "Refining", "Components", "Assembly", "Deployment", "Recovery")
+# A technology in running text, as the modifier of a stage ("battery refining", "electric-vehicle
+# assembly"): label_prose of the cells.
+COUNTRY_TECH_PROSE <- c(Batteries = "battery", Coal = "coal", `Electric Grid` = "electric-grid", `Electric Vehicles` = "electric-vehicle",
+                        Gas = "gas", Geothermal = "geothermal", `Green Hydrogen` = "green-hydrogen", Nuclear = "nuclear", Oil = "oil",
+                        Solar = "solar", Wind = "wind")
+# The sectors with an Economic Opportunity score but no Energy Security score for any economy: the pipeline
+# computes none there (index_outputs.rds of 2026-10-27: 58 of the 66 sectors have Energy Security rows), so
+# at most 58 sectors can be placed (57: Oil - Recovery's Energy Security is the same for every economy, and a
+# sector with a constant pillar is not placed either, country_constant_pillars()). scripts/88 derives the
+# list from the data (country_no_es_cells()), stops when it differs from this one, and ships it in every sheet
+# and the manifest (no_es_cells); the dashboard's NO_ES_CELLS (dashboard/src/country/contract.ts) is the same
+# list.
+COUNTRY_NO_ES_CELLS <- c("coal-recovery", "electric-grid-deployment", "gas-recovery", "geothermal-extraction", "geothermal-refining",
+                         "geothermal-components", "geothermal-assembly", "geothermal-recovery")
 COUNTRY_CHINA_HOMES <- c("CHN", "HKG", "MAC")
-COUNTRY_SCHEMA_VERSION <- 1L
+# 2 since 2026-10-28: the sheets are keyed on the 66 six-stage sectors (version 1: the 33 three-stage ones).
+COUNTRY_SCHEMA_VERSION <- 2L
 
 country_slug <- function(x) gsub("[^a-z0-9]+", "-", tolower(x))
 
-# "Oil", "Upstream" -> "oil-upstream" (the Sector cellSlug() rule).
+# "Oil", "Extraction" -> "oil-extraction" (the Sector cellSlug() rule: the lower-case stage id).
 country_cell_key <- function(tech, stage) paste0(country_slug(tech), "-", tolower(stage))
 
-# The 33 cells in the Sector cell order: tech (alphabetical), then Upstream, Midstream, Downstream.
+# The 66 cells in the Sector cell order: tech (alphabetical), then the six stages in chain order
+# (Extraction, Refining, Components, Assembly, Deployment, Recovery). label "Batteries — Refining" (the
+# stage id as its label); label_prose, the sector in running text: the technology as the modifier of the
+# lower-case stage ("battery refining", "solar components", "electric-vehicle deployment").
 country_cells_tbl <- function() {
   g <- expand.grid(stage = COUNTRY_STAGES, tech = COUNTRY_TECHS, stringsAsFactors = FALSE)[, c("tech", "stage")]
   g$key <- country_cell_key(g$tech, g$stage)
   g$label <- paste0(g$tech, " — ", g$stage)
-  g$label_prose <- paste(tolower(g$stage), tolower(g$tech))
+  g$label_prose <- paste(unname(COUNTRY_TECH_PROSE[g$tech]), tolower(g$stage))
   g$order <- seq_len(nrow(g))
   g
+}
+
+# The sectors (cell keys, in the Sector cell order) where no economy has a finite Energy Security score:
+# es as in country_cell_stats() (iso3, key, value). The data side of COUNTRY_NO_ES_CELLS.
+country_no_es_cells <- function(es, keys = country_cells_tbl()$key) {
+  have <- unique(es$key[is.finite(es$value)])
+  keys[!keys %in% have]
 }
 
 # A character vector that stays a JSON array (jsonlite unboxes length-1 vectors otherwise).

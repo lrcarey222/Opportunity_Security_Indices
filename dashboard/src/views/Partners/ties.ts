@@ -5,8 +5,14 @@
 //                 centres, the CM-FDI factory-project flows behind Friendshore's investment tie,
 //                 Development Potential by sector, agreements, UN-vote alignment and each economy's top
 //                 partners by Friendshore / Partnership Opportunity (best five sectors)
-//   pcell-<slug>  one per sector: each economy's top 10 friendshoring opportunities (Friendshore) and export markets
-//                 (Partnership Opportunity) at the paper baseline, with their Partnership Strength rank
+//   pcell-<slug>  one per sector (technology x six stages, "pcell-batteries-refining"): each economy's top 10
+//                 friendshoring opportunities (Friendshore) and export markets (Partnership Opportunity) at the
+//                 NEIS baseline, with their Partnership Strength rank
+//
+// CM-FDI (2026-10-29, design E5): the factory projects are the investment tie of the CM-FDI technologies at
+// the stages the chunk names in meta.cmfdi_stages (config/partnership.yml cm_fdi.stages: Components and
+// Assembly). The data do not say which part of manufacturing a project serves, so scripts/85 repeats every
+// project flow once per stage: count and sum them once per project (cmfdiOnce, projectFlows with no stage).
 //
 // The loaders cache one promise per file; the derive functions below are pure (unit-tested).
 
@@ -14,6 +20,7 @@ import { readOsb } from '../../engine/codec.ts';
 import { toRows } from '../../engine/table.ts';
 import type { Manifest, NDArray, Table } from '../../engine/types.ts';
 import { stageSlug } from '../../lib/format.ts';
+import { stageLabel, stagesInChainOrder } from '../../lib/stages.ts';
 
 export type DipMeasure = 'out_debt' | 'in_debt' | 'out_all' | 'in_all';
 
@@ -26,6 +33,9 @@ export interface TiesMeta {
   conduit_scope: string;
   top_k: number;
   cmfdi_attribution?: string;
+  /** the stages whose cells carry the CM-FDI factory projects, each with the same projects (scripts/85
+   * meta.cmfdi_stages; empty in a build that predates it: see cmfdiStages) */
+  cmfdi_stages: string[];
 }
 
 export interface DipRow {
@@ -78,9 +88,45 @@ export interface SectorTop {
   top: TopRow[];
 }
 
-/** The four sectors whose investment tie is the CM-FDI factory projects (config/partnership.yml cm_fdi). */
+/** The four technologies whose investment tie is the CM-FDI factory projects (config/partnership.yml cm_fdi). */
 export const CMFDI_SECTORS = ['Solar', 'Wind', 'Batteries', 'Electric Vehicles'];
-export const hasCmfdi = (tech: string, stage: string): boolean => stage === 'Midstream' && CMFDI_SECTORS.includes(tech);
+
+/** config/partnership.yml cm_fdi.stages: the stages a factory project counts in, when the data do not say. */
+export const CMFDI_STAGES_CONFIG: readonly string[] = ['Components', 'Assembly'];
+
+/**
+ * The stages whose cells carry the CM-FDI factory projects, in chain order, from the data: the ties
+ * chunk's meta.cmfdi_stages, else the stages of its project rows, else (no chunk, or an older build)
+ * config/partnership.yml cm_fdi.stages (Components and Assembly).
+ */
+export function cmfdiStages(ties?: Ties | null): string[] {
+  const meta = ties?.meta.cmfdi_stages ?? [];
+  const own = meta.length ? meta : [...new Set((ties?.cmfdi ?? []).map((r) => r.supply_chain))];
+  return stagesInChainOrder(own.length ? own : CMFDI_STAGES_CONFIG);
+}
+
+const isStageList = (x: unknown): x is readonly string[] => Array.isArray(x);
+
+/**
+ * Whether a sector's investment tie is the CM-FDI factory projects: one of the CM-FDI technologies at one
+ * of the CM-FDI stages. `from` is the ties chunk (its cmfdi_stages) or the stage list itself (a Country
+ * sheet's meta.cmfdi_stages); without it, the configured stages (cmfdiStages()).
+ */
+export function hasCmfdi(tech: string, stage: string, from?: Ties | readonly string[] | null): boolean {
+  const stages = isStageList(from) ? from : cmfdiStages(from);
+  return CMFDI_SECTORS.includes(tech) && stages.includes(stage);
+}
+
+/**
+ * The one sentence a page shows once where factory projects appear at several stages: "Components and
+ * Assembly carry the same factory projects ..." (null with one stage or none).
+ */
+export function cmfdiSameProjectsNote(stages: readonly string[]): string | null {
+  const s = stagesInChainOrder(stages).map(stageLabel);
+  if (s.length < 2) return null;
+  const words = `${s.slice(0, -1).join(', ')} and ${s[s.length - 1]}`;
+  return `${words} carry the same factory projects: the data do not say which part of manufacturing a project serves, so each project is counted once, not once per stage.`;
+}
 
 export const CMFDI_ATTRIBUTION =
   'Source: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: project counts and sums of disclosed capital computed by the OSI authors; no record altered.';
@@ -134,7 +180,7 @@ export async function loadTies(m?: Manifest): Promise<Ties | null> {
 }
 
 /**
- * The sectors (stage slugs, "solar-midstream") this data build keeps partner rankings for: its
+ * The sectors (cell slugs, "solar-assembly") this data build keeps partner rankings for: its
  * pcell-<slug> chunks, one per engine sector. Null when the build has none (not known).
  */
 export async function loadRankedCells(m?: Manifest): Promise<Set<string> | null> {
@@ -166,6 +212,7 @@ export function parseTies(o: Record<string, unknown>): Ties {
       conduit_scope: String(meta.conduit_scope ?? 'both'),
       top_k: Number(meta.top_k ?? 10),
       cmfdi_attribution: typeof meta.cmfdi_attribution === 'string' ? meta.cmfdi_attribution : undefined,
+      cmfdi_stages: Array.isArray(meta.cmfdi_stages) ? meta.cmfdi_stages.map(String) : typeof meta.cmfdi_stages === 'string' ? [meta.cmfdi_stages] : [],
     },
     U: Array.isArray(o.U) ? o.U.map(String) : [],
     U_names: Array.isArray(o.U_names) ? o.U_names.map(String) : [],
@@ -258,8 +305,20 @@ export interface ProjectFlowRow {
   in_disclosed: number | null;
 }
 
-/** The CM-FDI factory projects in one sector, both directions, by partner (largest first). */
-export function projectFlows(ties: Ties, iso: string, tech: string, stage: string): ProjectFlowRow[] {
+/**
+ * The project rows once per project: the rows of the first CM-FDI stage (scripts/85 repeats every flow
+ * once per stage of cmfdi_stages, with the same projects).
+ */
+export function cmfdiOnce(ties: Ties): CmfdiRow[] {
+  const first = cmfdiStages(ties)[0];
+  return ties.cmfdi.filter((r) => r.supply_chain === first);
+}
+
+/**
+ * The CM-FDI factory projects in one sector, both directions, by partner (largest first). With
+ * `stage` null: the technology's projects across its CM-FDI stages, each project once (cmfdiOnce).
+ */
+export function projectFlows(ties: Ties, iso: string, tech: string, stage: string | null): ProjectFlowRow[] {
   const by = new Map<string, ProjectFlowRow>();
   const row = (p: string) => {
     let r = by.get(p);
@@ -270,8 +329,9 @@ export function projectFlows(ties: Ties, iso: string, tech: string, stage: strin
     return r;
   };
   const add = (a: number | null, b: number | null) => (b === null ? a : (a ?? 0) + b);
-  for (const f of ties.cmfdi) {
-    if (f.tech !== tech || f.supply_chain !== stage || f.investor_iso === f.destination_iso) continue;
+  const src = stage === null ? cmfdiOnce(ties) : ties.cmfdi.filter((f) => f.supply_chain === stage);
+  for (const f of src) {
+    if (f.tech !== tech || f.investor_iso === f.destination_iso) continue;
     if (f.investor_iso === iso) {
       const r = row(f.destination_iso);
       r.out_projects += f.n_projects;

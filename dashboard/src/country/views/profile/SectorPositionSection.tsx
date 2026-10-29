@@ -4,7 +4,8 @@
 // around the typical economy, 50%) | Policy (the policy-activity third) | Climate (the Strategic Index's
 // low-emission technology term: one value per technology, the same for every economy) | Strategic
 // priority (the Strategic Index rank, under the reader's Perspective). Only the last column is
-// preference-adjusted. "Explore details" opens the embedded Country scores view (the model). Under the table
+// preference-adjusted. The sector links go to the six-stage Sector profile (/sector/<tech>/<stage>?c=ISO3).
+// "Explore details" opens the embedded Country scores view (the model). Under the table
 // (2026-10-19), core members get the monthly trade of the selected sector by sub-component (TradeMonthlyCard).
 
 import { useMemo } from 'react';
@@ -103,8 +104,8 @@ export function SectorPositionSection() {
       }
       intro={
         <>
-          Every sector of {name} (the paper&apos;s three stages) in one table. Opportunity and Security give the share of other economies {name} beats in that sector (orange below the typical economy, blue above). Strategic
-          priority is the rank on the Strategic Index and is the only column the perspective dials change. Click a sector name for its Sector profile; click a row to select it on the Security and opportunity chart above.
+          Every sector of {name} (each technology at each of the six supply-chain stages) in one table. Opportunity and Security give the share of other economies {name} beats in that sector (orange below the typical economy, blue above). Strategic
+          priority is the rank on the Strategic Index and is the only column the perspective dials change. Click a sector name for its Sector profile; click a row to select it on the chart in the Security and opportunity section.
         </>
       }
     >

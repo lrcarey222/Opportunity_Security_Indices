@@ -397,7 +397,32 @@ Assembly, stays out of the index as before.
 
 ## Status
 
-Not yet on six stages, or not yet rerun (2026-10-27):
+Moved to six stages on 2026-10-28 (branch feat/supply-chain-stages; design and handoffs of the
+dashboard migration, "six stages across the whole dashboard"):
+
+- **Strategic Insights export and engine** (`scripts/85`, `R/dashboard/dash_*.R`, `dashboard/src/engine`):
+  `DASH_STAGES = SUPPLY_CHAIN_STAGES`; 66 cells and 66 `pcell-<tech>-<stage>` chunks; baseline stage
+  weights `SUPPLY_CHAIN_STAGE_SI_WEIGHTS`; excluded sectors read from
+  `index_outputs$strategic_excluded_sectors`; allied picks at `STRATEGIC_ALLIED_STAGES` (every stage but
+  Deployment) with the endowment screen on Extraction; the populism dial's per-stage contrast against the
+  Components and Assembly weight; the "NEIS baseline" preset. Parity fixtures (`scripts/86`) regenerated.
+- **Sector Insights export** (`scripts/87`, `R/dashboard/sector/`, `config/sector_dictionary.yml`): schema 2,
+  trade and every processed table at six stages, 69 cells (66 headline + Semiconductors Refining,
+  Components, Assembly), CM-FDI on Components and Assembly; the climate maps re-keyed and scripts/16-18 rerun.
+- **Country Insights export** (`scripts/88`, `R/dashboard/country/`): schema 2, fact sheets on the 66 cells,
+  corners recomputed at six stages; the memos stay hidden until they are revised; NIPO (still three-stage)
+  is not listed per sector.
+- **Dashboard shell and shared content** (`dashboard/src/shell`, `state`, `content`, `lib`, `theme`): six
+  stage slugs in the routes, the default cell Batteries — Refining, Home's 11 x 6 coverage glyph and stage
+  picker, the glossary and Methods text at six stages (no three-stage qualifiers; the NEIS baseline is the
+  pipeline's six-stage defaults), no stage colour palette (`theme/palette.ts` `STAGE_NEUTRAL`), and the
+  legacy links: `/sector/<tech>/downstream[/<economy>]` opens Deployment, `/upstream` and `/midstream` the
+  technology's chain page, each with a notice (`src/shell/legacySector.tsx`, `src/lib/stages.ts`), and a
+  Strategic `?stage=` of an old stage is mapped (Downstream) or dropped with a notice (`src/state/url.ts`).
+  The Sector, Country and Allied Industrial Base views move in their own modules (their handoffs say what
+  is done).
+
+Not yet on six stages, or not yet rerun (2026-10-27; updated 2026-10-28):
 
 - **Allied network design** (`scripts/30`): the code solves the five supply stages but has not been
   rerun. Its calibration is three-stage: the portfolio caps (2 to 10 top-5 places per node, about 225
@@ -410,14 +435,14 @@ Not yet on six stages, or not yet rerun (2026-10-27):
   Hydrogen Components, whose only Security input is the electrolyser share copied from Assembly)
   would be solved.
 - **Dashboard exports and TypeScript**:
-  - `scripts/85` checks the CM-FDI tie cells (now Components and Assembly) against three-stage
-    dashboard cells and exports `STRATEGIC_SUPPLY_CHAIN_WEIGHTS`; `R/dashboard/dash_bundle.R`
-    (Strategic Insights) keys partner rows on three-stage cells and drops six-stage ones.
-  - `scripts/87` (Sector): its own trade cells stay three-stage (it passes the master as it is), but
-    it reads six-stage pillar and partner tables. `R/dashboard/sector/sector_fdi.R` keeps its own
-    `stage: Midstream` default.
-  - `scripts/88` (Country) keys partner best-five cells on the 33 three-stage cells; the Yards &
-    Fences network views (`R/dashboard/yards_fences/yf_build.R`) key on scripts/30's stages.
+  - ~~`scripts/85` checks the CM-FDI tie cells against three-stage dashboard cells; `dash_bundle.R` keys
+    partner rows on three-stage cells~~ (moved 2026-10-28, above).
+  - ~~`scripts/87` (Sector) trade cells three-stage; `sector_fdi.R` `stage: Midstream` default~~ (moved
+    2026-10-28, above).
+  - ~~`scripts/88` (Country) keys partner best-five cells on the 33 three-stage cells~~ (moved 2026-10-28,
+    above). The Yards & Fences site (`dashboard/src/fence`, `scripts/89`,
+    `R/dashboard/yards_fences/yf_build.R`) stays three-stage by decision (out of scope of the 2026-10-28
+    migration; it keys on scripts/30's stages and its own curated assessments).
   - `dashboard/src/aib` (`contract.ts` AIB_STAGES and the network side fields, `derive/nodes.ts`,
     `derive/partnerships.ts`, `derive/taxonomy.ts` OSI_STAGES and its cell-id regex,
     `views/CompactView.tsx`, `views/compact/OverviewSections.tsx`), `dashboard/src/country/derive/framing.ts`
@@ -436,7 +461,8 @@ Not yet on six stages, or not yet rerun (2026-10-27):
 - **Compatibility shims to remove when the above move:** `legacy_stages` in the trade themes (no
   caller passes it now), the `legacy` argument of `iea_critical_minerals_supply_stage()` (default
   six-stage since 2026-10-27), `build_policy_table(stages = "legacy")`,
-  `STRATEGIC_SUPPLY_CHAIN_WEIGHTS` and `STRATEGIC_EXCLUDED_SECTORS` (scripts/85 and the paper), the
+  `STRATEGIC_SUPPLY_CHAIN_WEIGHTS` and `STRATEGIC_EXCLUDED_SECTORS` (now the paper only: scripts/85 reads the
+  six-stage weights and the stored exclusions since 2026-10-28), the
   Upstream / Midstream values still accepted by `select_allied_strategic_sectors()`, and
   `partnership_strength_build_oecd_supplychain()`, the 3-digit aid check kept at the roll-up for the
   dashboard's parity check.

@@ -314,7 +314,7 @@ export function resultLine(model: SectorModel, v: VarInfo, rows: readonly FactRo
 export interface AcrossRow {
   item: ItemInfo;
   s: SummaryInfo;
-  /** the stage section of a cell item ('minerals' / 'fuels' for other axes) */
+  /** the stage section of a cell item (a stage slug); '<axis>s' for other axes ('minerals', 'mineral_stages', 'fuels') */
   section: string;
 }
 
@@ -327,7 +327,7 @@ export function acrossRows(model: SectorModel, v: VarInfo, eu: 'members' | 'bloc
     if (!s || !Number.isFinite(s.W)) continue;
     out.push({ item: it, s, section: it.axis === 'cell' ? (it.stageSlug ?? 'other') : `${it.axis}s` });
   }
-  const order = [...STAGE_SLUGS, 'minerals', 'fuels', 'commoditys', 'activitys'] as string[];
+  const order = [...STAGE_SLUGS, 'minerals', 'mineral_stages', 'fuels', 'commoditys', 'activitys'] as string[];
   return out.sort((a, z) => order.indexOf(a.section) - order.indexOf(z.section) || a.item.sort - z.item.sort);
 }
 

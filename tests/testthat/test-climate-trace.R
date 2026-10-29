@@ -67,19 +67,23 @@ test_that("tracked assets aggregate per country and group; intensity counts only
 
 test_that("the map covers every cell, and match quality follows the best own source", {
   expect_identical(climate_trace_map_validate(map, dict_cells), character())
+  # Keyed on the six-stage cells of the dictionary (66 headline cells and the Semiconductors stages).
+  expect_setequal(names(map$cells), dict_cells)
+  expect_identical(length(map$cells), 69L)
+  expect_true(all(sector_headline_cell_slugs() %in% names(map$cells)))
   bad <- map
-  bad$cells$`coal-upstream`$sources[[1]]$match <- NULL
-  bad$cells$`solar-midstream`$sources[[1]]$match <- "proxy"
-  bad$cells$`wind-downstream` <- NULL
+  bad$cells$`coal-extraction`$sources[[1]]$match <- NULL
+  bad$cells$`solar-assembly`$sources[[1]]$match <- "proxy"
+  bad$cells$`wind-deployment` <- NULL
   p <- climate_trace_map_validate(bad, dict_cells)
-  expect_true(any(grepl("coal-upstream coal-mining: an own source needs", p)))
-  expect_true(any(grepl("solar-midstream aluminum: a context source has no match", p)))
-  expect_true(any(grepl("cells missing from the map: wind-downstream", p)))
+  expect_true(any(grepl("coal-extraction coal-mining: an own source needs", p)))
+  expect_true(any(grepl("solar-assembly aluminum: a context source has no match", p)))
+  expect_true(any(grepl("cells missing from the map: wind-deployment", p)))
   mt <- climate_trace_map_tbl(map)
   cells <- tibble::tibble(slug = dict_cells, tech = "x", stage = "y")
   ct <- climate_trace_cells_tbl(map, mt, cells)
   m <- stats::setNames(ct$match, ct$cell)
-  expect_identical(unname(m[c("coal-upstream", "oil-midstream", "gas-midstream", "wind-midstream", "solar-downstream")]),
+  expect_identical(unname(m[c("coal-extraction", "oil-refining", "gas-assembly", "wind-components", "solar-deployment")]),
                    c("direct", "partial", "proxy", "none", "none"))
   src <- climate_trace_sources_tbl(map, mt)
   expect_identical(src$basis[src$src_id == "electricity-generation:coal"], "assets")
@@ -116,14 +120,14 @@ test_that("a repeated world total is flagged as carried forward", {
 
 # A small processed set: two cells, three sources, three economies (one outside dims.geo).
 climate_processed <- function() {
-  mt <- tibble::tibble(cell = c("coal-upstream", "coal-downstream", "wind-midstream"), src_id = c("coal-mining", "electricity-generation:coal", "iron-and-steel"),
+  mt <- tibble::tibble(cell = c("coal-extraction", "coal-deployment", "wind-components"), src_id = c("coal-mining", "electricity-generation:coal", "iron-and-steel"),
                        role = c("own", "own", "context"), match = c("direct", "partial", NA), order = 1L)
   list(
     sources = tibble::tibble(src_id = c("coal-mining", "electricity-generation:coal", "iron-and-steel"), subsector = c("coal-mining", "electricity-generation", "iron-and-steel"),
                              sector = c("fossil-fuel-operations", "power", "manufacturing"), label = c("Coal mining", "Electricity generation, coal-fired plants", "Iron and steel"),
                              asset_group = c(NA, "coal", NA), basis = c("country", "assets", "country")),
     map = mt,
-    cells = tibble::tibble(cell = c("coal-upstream", "coal-downstream", "wind-midstream"), tech = c("Coal", "Coal", "Wind"), stage = c("Upstream", "Downstream", "Midstream"),
+    cells = tibble::tibble(cell = c("coal-extraction", "coal-deployment", "wind-components"), tech = c("Coal", "Coal", "Wind"), stage = c("Extraction", "Deployment", "Components"),
                            match = c("direct", "partial", "none"), note = c("a", "b", "c")),
     lifecycle = tibble::tibble(tech = c("Coal", "Wind", "Batteries"), ghg_index = c(0.02, 1, 0.97), basis = c("ipcc", "ipcc", "proxy"),
                                g_min = c(820, 11, NA), g_max = c(820, 12, NA), rows = c("Coal (pulverised) 820", "Wind - onshore 11; Wind - offshore 12", NA),
@@ -143,7 +147,7 @@ test_that("sector-climate: part, chunk, contract checks and decoded parity", {
   expect_identical(part$year, 2025L)
   expect_identical(part$src$repeated, c(TRUE, FALSE, FALSE))
   expect_equal(part$outside$share_outside[part$outside$src_id == "coal-mining"], 5 / 75)
-  items <- c("cell:coal-upstream", "cell:coal-downstream", "cell:wind-midstream")
+  items <- c("cell:coal-extraction", "cell:coal-deployment", "cell:wind-components")
   gi <- function(x) as.integer(match(x, geo) - 1L)
   ii <- function(x) as.integer(match(x, items) - 1L)
   ch <- sector_climate_chunk(part, gi, ii)

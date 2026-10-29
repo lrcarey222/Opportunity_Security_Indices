@@ -1,11 +1,12 @@
 // The Country profile /countries/:iso3 (spec_country.md A4.2; IA refactor 2026-10-16, brief s.9-12 and
 // s.25, plan.md 5.3): one economy's strategic position. Loads its fact sheet (and, only when a picked
 // sector needs it, the companion drivers file) and the Allied Industrial Base document, reads the URL
-// state (cell, partner, all, ptab) and renders: the head, the six-stage strategic posture chart (#posture,
-// 2026-10-27), the Perspective control (the four dials), then the paper's three-stage sections: Security
-// and opportunity (#position; "Strategic position" until 2026-10-28), Opportunities & risks, Sector
-// position, Policy & climate, Partnerships, Role in the Allied Industrial Base, the memo and the data
-// notes. States (A5): unknown ISO3 -> the landing with
+// state (cell, partner, all, ptab) and renders: the head, the Perspective control (the four dials), then
+// beside the section nav the "at a glance" tiles and the sections, all at the six supply-chain stages:
+// Strategic posture (#posture, design L2: the posture bundle's card in a real Section, its counts in the
+// first tile), Security and opportunity (#position; "Strategic position" until 2026-10-28), Opportunities &
+// risks, Sector position, Policy & climate, Partnerships, Role in the Allied Industrial Base, the memo and
+// the data notes. States (A5): unknown ISO3 -> the landing with
 // a notice; no index data -> the shell with a notice; not rankable -> every section with its "not
 // available" words.
 //
@@ -43,7 +44,7 @@ import { AibRoleSection } from './profile/AibRoleSection.tsx';
 import { DataNotes, MemoCard } from './profile/MemoNotes.tsx';
 import { EngineSi, PerspectiveControl, PerspectiveTag } from './profile/Perspective.tsx';
 import { ProfileProvider, type ProfileCtx } from './profile/common.tsx';
-import { CountryPostureHero } from '../../posture/CountryPostureHero.tsx';
+import { PostureSection } from './profile/PostureSection.tsx';
 
 /** The query keys the profile owns (the model's parser ignores them and its URL writes keep them). */
 const HOST_KEYS: readonly string[] = [...COUNTRY_KEY_ORDER];
@@ -68,7 +69,7 @@ export default function CountryProfileView() {
       <div className={PAGE}>
         <PageHead eyebrow="COUNTRIES · COUNTRY PROFILE" title={entry.name} lede={`${entry.name} is in the roster of economies but has no index data on the NEIS baseline.`} />
         <Notice kind="info" title="No index data">
-          {entry.name} has no Energy Security or Economic Opportunity scores and no partner rows in the paper&apos;s data, so there is no profile to show.{' '}
+          {entry.name} has no Energy Security or Economic Opportunity scores and no partner rows in the data, so there is no profile to show.{' '}
           <Link className="link" to={sectorCountryLink(entry.iso3)}>
             Its raw data in Sectors &rarr;
           </Link>
@@ -128,6 +129,8 @@ function Profile({ iso3 }: { iso3: string }) {
   });
   const isOpen = useCallback((id: string) => !!open[id], [open]);
   const setOpen = useCallback((id: string, v: boolean) => setOpenMap((m) => ({ ...m, [id]: v })), []);
+  // the open node of the Strategic posture card (lifted for the same reason)
+  const [pcell, setPcell] = useState<string | null>(null);
   const reveal = useCallback(
     (id: string) => {
       if (id === 'perspective') setEngineWanted(true);
@@ -201,6 +204,8 @@ function Profile({ iso3 }: { iso3: string }) {
     setStrategicView,
     aib,
     customInUrl,
+    pcell,
+    setPcell,
   };
   const body = (
     <div className={PAGE}>
@@ -212,20 +217,18 @@ function Profile({ iso3 }: { iso3: string }) {
         </div>
       )}
       <ProfileHead manifest={manifest} />
-      <div id="posture" className="mb-8 scroll-mt-16">
-        <CountryPostureHero iso3={sheet.iso3} name={sheet.meta.country} />
-      </div>
       <PerspectiveControl />
       <div className="xl:grid xl:grid-cols-[200px_minmax(0,1fr)] xl:gap-8">
         <SectionNav footer={<PerspectiveTag />} />
         <div className="min-w-0 space-y-14">
           {sheet.meta.status === 'non_rankable' && (
             <Notice kind="info" title="Scores shown but not ranked">
-              {sheet.meta.country}&apos;s three-stage index scores are shown but not compared with other economies: {sheet.meta.status_reason ?? 'most of its data are filled in'}.
-              The paper&apos;s charts that compare sectors are empty (the posture chart above is computed separately); the tables list every value with its reason.
+              {sheet.meta.country}&apos;s index scores are shown but not compared with other economies: {sheet.meta.status_reason ?? 'most of its data are filled in'}.
+              The charts that compare sectors are empty (the Strategic posture section is computed separately); the tables list every value with its reason.
             </Notice>
           )}
           <Glance />
+          <PostureSection />
           <SpaceSection />
           <OpportunitiesSection />
           <SectorPositionSection />

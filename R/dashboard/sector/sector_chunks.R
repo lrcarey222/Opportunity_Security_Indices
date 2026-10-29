@@ -7,15 +7,31 @@
 # integer, f64 = double, bool = logical, str = character), even when a column is all NA.
 
 SECTOR_SCHEMA <- "osi-sector"
-SECTOR_SCHEMA_VERSION <- 1L
+# 2 (2026-10-28): six supply-chain stages (cells <tech>-<extraction|refining|components|assembly|
+# deployment|recovery>, stage_mask of six bits, mineral_stage items, technology-level trade.excluded,
+# fdi.stages, the activity items mining-utilities / manufacturing / construction). A breaking change:
+# a client of schema 1 rejects the manifest. Mirrored in dashboard/src/sector/contract.ts.
+SECTOR_SCHEMA_VERSION <- 2L
 SECTOR_TRADE_YEARS <- c(2020L, 2024L)
 SECTOR_CHUNK_FILE_RE <- "^sector-[a-z-]+\\.[0-9a-f]{8}\\.osb$"
+# Per-chunk gzip budgets (bytes; mirrored in contract.ts SECTOR_BUDGET_GZ). Schema 2 (2026-10-28) set
+# them from the first real six-stage export (scripts/87, 41 trade cells), as the measured size + ~15%
+# wherever that export left less than ~15% headroom (design E4):
+# - sector-facts 670 kB: 577.4 kB measured (schema 1: 600 kB);
+# - sector-trade 520 kB per chunk: largest 451.3 kB measured, electric-grid (electric-vehicles 444.0,
+#   solar 420.0, oil 414.3, wind 407.1; schema 1: 450 kB);
+# - combined_total 26.5 MiB: Sector 5.67 MiB + the six-stage Strategic chunks 17.18 MiB = 22.84 MiB
+#   measured (schema 1: 25 MiB). This is the exporter's own sum (Sector chunks + the Strategic
+#   manifest's all_gz); real.sector.test.ts checks a different one (bytes on disk in public/data but
+#   country/ and posture/) against its own limit.
+# The others keep their schema-1 limits (measured: meta 110.0 kB, policy 75.6, policy-text 558.6,
+# series 357.0, fdi 208.3, dev 394.0, climate 131.5, climate-src 164.9 kB; sector 5.67 MiB).
 SECTOR_BUDGET_GZ <- list(
-  `sector-meta` = 150 * 1024, `sector-facts` = 600 * 1024, `sector-trade` = 450 * 1024,
+  `sector-meta` = 150 * 1024, `sector-facts` = 670 * 1024, `sector-trade` = 520 * 1024,
   `sector-policy` = 250 * 1024, `sector-policy-text` = 700 * 1024, `sector-series` = 900 * 1024,
   `sector-atlas` = 1.3 * 1024^2, `sector-dev` = 1.2 * 1024^2, `sector-fdi` = 300 * 1024,
   `sector-climate` = 300 * 1024, `sector-climate-src` = 300 * 1024,
-  sector_total = 9 * 1024^2, combined_total = 25 * 1024^2
+  sector_total = 9 * 1024^2, combined_total = 26.5 * 1024^2
 )
 SECTOR_DICT_VAR_COLS <- c("id", "theme", "family", "label", "short", "definition", "unit", "data_year", "years",
                           "year_field", "native_level", "item_axis", "agg", "world_basis", "norms", "scale",
@@ -217,7 +233,7 @@ sector_chunks <- function(b) {
       codes = tibble::tibble(item = ii(tr$codes$item_key), sub_sector = as.character(tr$codes$sub_sector), hs6 = as.character(tr$codes$hs6),
                              description = as.character(tr$codes$description), shared_n = as.integer(tr$codes$shared_n),
                              caveat = as.character(tr$codes$caveat)),
-      excluded = tibble::tibble(item = ii(tr$excluded$item_key), sub_sector = as.character(tr$excluded$sub_sector),
+      excluded = tibble::tibble(tech = as.character(tr$excluded$tech), sub_sector = as.character(tr$excluded$sub_sector),
                                 hs6 = as.character(tr$excluded$hs6), reason = as.character(tr$excluded$reason))
     ))
     # Trade by sub-component (optional tables; sector_data change 2026-10-12).
@@ -331,7 +347,8 @@ sector_fdi_chunk <- function(fd, gi, ii) {
                           n = as.integer(yr$n), n_value = as.integer(yr$n_value), value = as.double(yr$value))
   years <- years[order(years$item, years$year, match(years$basis, SECTOR_FDI_BASES), match(years$group, SECTOR_FDI_GROUPS),
                        method = "radix"), , drop = FALSE]
-  list(fdi = list(projects = projects, sources = sources, flows = flows, groups = groups, years = years))
+  list(fdi = list(projects = projects, sources = sources, flows = flows, groups = groups, years = years,
+                  stages = as.character(fd$stages)))
 }
 
 # The trade tech slug of a chunk name, or NA.

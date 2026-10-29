@@ -29,7 +29,7 @@ export interface SectorRow {
   po_base: number | null;
   po_rank: number | null;
   po_rank_base: number | null;
-  /** Development Potential in this sector (paper baseline; null: high-income or not scored) */
+  /** Development Potential in this sector (NEIS baseline; null: high-income or not scored) */
   dp: number | null;
   /** Partnership Strength (all sectors) under the scenario, and its rank */
   psi: number | null;
@@ -72,7 +72,7 @@ export function SectorBars({ rows, side, sector, rName, show, isBaseline, updati
         height: 40 + top.length * 22,
         marginLeft: labelMargin(top.map((r) => r.Country), { min: 90, max: 170 }),
         marginRight: 56,
-        x: { label: change ? `Change in ${SIDE_NAME[side]} against the paper →` : `${SIDE_NAME[side]} in this sector (0 to 1) →`, grid: true, nice: true, domain: change ? symDomain(top.map((r) => r.shown), 0.005).map((v) => v * 1.5) : [0, 1] },
+        x: { label: change ? `Change in ${SIDE_NAME[side]} against the NEIS baseline →` : `${SIDE_NAME[side]} in this sector (0 to 1) →`, grid: true, nice: true, domain: change ? symDomain(top.map((r) => r.shown), 0.005).map((v) => v * 1.5) : [0, 1] },
         y: { domain: top.map((r) => r.Country), label: null, tickSize: 0 },
         marks: [
           Plot.barX(top, { y: 'Country', x: 'shown', fill: (r: SectorRow) => TIER_COLOR[r.tier], insetTop: 4, insetBottom: 4 }),
@@ -86,7 +86,7 @@ export function SectorBars({ rows, side, sector, rName, show, isBaseline, updati
     },
     [top, side, change, isBaseline],
   );
-  const tick = !isBaseline && !change ? "; the gray tick is the paper's value" : '';
+  const tick = !isBaseline && !change ? '; the gray tick is the NEIS baseline value' : '';
   const what =
     side === 'fs'
       ? `The 15 strongest friendshoring opportunities for ${rName} in ${sector} alone, by Friendshore in this sector (0 to 1)${tick}: partners where ${rName}'s security need meets the partner's economic opportunity, on existing trade and investment ties. ${rName}'s own need is the same for every partner here; the ranking turns on the partner's opportunity, the trade and investment ties, UN-vote alignment and ownership.`
@@ -103,7 +103,7 @@ export function SectorBars({ rows, side, sector, rName, show, isBaseline, updati
             { label: 'Coalition core', color: TIER_COLOR.core },
             { label: 'Coalition partner', color: TIER_COLOR.partner },
             { label: 'Other economy', color: TIER_COLOR.other },
-            ...(!isBaseline && !change ? [{ label: "Paper's value (tick)", kind: 'tick' as const, color: COMPARE_COLOR.baseline }] : []),
+            ...(!isBaseline && !change ? [{ label: 'NEIS baseline (tick)', kind: 'tick' as const, color: COMPARE_COLOR.baseline }] : []),
           ]}
         />
       }
@@ -133,7 +133,7 @@ export function sectorTip(r: SectorRow, sector: string, isBaseline: boolean) {
       title={`${r.Country} (${tierLabel(r.tier)})`}
       lines={[
         `Friendshore ${fmtNum(r.fs, 3)} (rank ${r.fs_rank ?? DASH}) · Partnership Opportunity ${fmtNum(r.po, 3)} (rank ${r.po_rank ?? DASH})`,
-        !isBaseline ? `paper: Friendshore ${fmtNum(r.fs_base, 3)} (rank ${r.fs_rank_base ?? DASH}), Partnership Opportunity ${fmtNum(r.po_base, 3)} (rank ${r.po_rank_base ?? DASH})` : null,
+        !isBaseline ? `NEIS baseline: Friendshore ${fmtNum(r.fs_base, 3)} (rank ${r.fs_rank_base ?? DASH}), Partnership Opportunity ${fmtNum(r.po_base, 3)} (rank ${r.po_rank_base ?? DASH})` : null,
         `Development Potential in this sector ${r.dp === null ? 'not scored' : fmtNum(r.dp, 3)} · Partnership Strength rank (all sectors) ${r.psi_rank ?? DASH}`,
       ]}
     />
@@ -150,7 +150,7 @@ export function sectorCols(sector: string): Col<SectorRow>[] {
     { id: 'po_rank', header: 'Market rank', value: (r) => r.po_rank, num: true },
     { id: 'dp', header: `Development Potential, ${sector}`, title: 'NEIS baseline; scored for middle- and lower-income partners only', value: (r) => r.dp, cell: (r) => (r.dp === null ? 'not scored' : fmtNum(r.dp, 3)), num: true, minWidth: 120 },
     { id: 'psi_rank', header: 'Partnership Strength rank (all sectors)', value: (r) => r.psi_rank, num: true },
-    { id: 'fs_base', header: 'Friendshore, paper', value: (r) => r.fs_base, cell: (r) => fmtNum(r.fs_base, 3), num: true },
-    { id: 'po_base', header: 'Partnership Opportunity, paper', value: (r) => r.po_base, cell: (r) => fmtNum(r.po_base, 3), num: true },
+    { id: 'fs_base', header: 'Friendshore, baseline', value: (r) => r.fs_base, cell: (r) => fmtNum(r.fs_base, 3), num: true },
+    { id: 'po_base', header: 'Partnership Opportunity, baseline', value: (r) => r.po_base, cell: (r) => fmtNum(r.po_base, 3), num: true },
   ];
 }

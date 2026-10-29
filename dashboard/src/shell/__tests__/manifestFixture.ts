@@ -1,14 +1,15 @@
 // A hand-made Sector manifest that passes isSectorManifest(), for the shell tests (Home's facts and
-// coverage glyph) before and independently of builder A's synthetic bundle.
+// coverage glyph) before and independently of builder A's synthetic bundle. It follows the contract: its schema
+// version and stage slugs (six since schema 2, 2026-10-28: a 66-row coverage glyph).
 
-import { HEADLINE_TECH_SLUGS, STAGE_SLUGS, type SectorManifest } from '../../sector/contract.ts';
+import { HEADLINE_TECH_SLUGS, SECTOR_SCHEMA_VERSION, STAGE_SLUGS, type SectorManifest } from '../../sector/contract.ts';
 
 const MD5 = 'd'.repeat(32);
 
 export function sectorManifestFixture(over: Partial<SectorManifest> = {}): SectorManifest {
   return {
     schema: 'osi-sector',
-    schema_version: 1,
+    schema_version: SECTOR_SCHEMA_VERSION,
     bundle_id: 'fixture-bundle-0001',
     created: '2026-10-10T18:00:00Z',
     git_commit: null,

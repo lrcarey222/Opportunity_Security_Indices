@@ -184,7 +184,7 @@ describe('every view renders', () => {
 });
 
 describe('dial panel and status strip', () => {
-  it('sliders write the URL; PageUp steps by 25; chips and reset return to the paper', async () => {
+  it('sliders write the URL; PageUp steps by 25; chips and reset return to the NEIS baseline', async () => {
     const router = renderAt('/overview');
     const slider = (await screen.findByLabelText('HAWKISHNESS', {}, { timeout: 20_000 })) as HTMLInputElement;
     expect(slider.type).toBe('range');
@@ -228,15 +228,29 @@ describe('dial panel and status strip', () => {
     const preset = screen.getByLabelText('Preset') as HTMLSelectElement;
     const options = [...preset.options].map((o) => o.value).filter(Boolean);
     expect(options.length).toBeGreaterThanOrEqual(5);
-    const pick = options.find((o) => !/paper/i.test(o)) as string;
+    // any preset but the NEIS baseline itself (every dial at 50: it would write the bare URL)
+    const pick = options.find((o) => !/baseline/i.test(o)) as string;
     fireEvent.change(preset, { target: { value: pick } });
     await waitFor(() => expect(router.state.location.search).not.toBe('?h=100'));
     expect(router.state.location.search).toMatch(/^\?([hbpg]=\d+&?)+$/);
     await settle(300);
   }, 60_000);
 
+  it('an old three-stage ?stage= is reported: Downstream opens Deployment, Midstream is dropped (design U1)', async () => {
+    const router = renderAt('/overview?stage=Downstream');
+    expect(await screen.findByText(/Ignored in the link/, {}, { timeout: 20_000 })).toBeTruthy();
+    await waitFor(() => expect(router.state.location.search).toBe('?stage=Deployment'));
+    expect(screen.getByText(/stage=Downstream \(Downstream is now Deployment; showing Deployment\)/)).toBeTruthy();
+    await settle(300);
+    cleanup();
+    const r2 = renderAt('/overview?h=80&stage=Midstream');
+    expect(await screen.findByText(/Midstream is no longer a stage: it is now mostly Components and Assembly/, {}, { timeout: 20_000 })).toBeTruthy();
+    await waitFor(() => expect(r2.state.location.search).toBe('?h=80'));
+    await settle(300);
+  }, 60_000);
+
   it('the endowment screen has its own chip, and the chip resets it', async () => {
-    // the synthetic bundle applies the screen (the paper's default): ?screen=0 moves it
+    // the synthetic bundle applies the screen (the baseline default): ?screen=0 moves it
     const router = renderAt('/strategic?screen=0');
     expect(await screen.findByRole('heading', { level: 1, name: /^Strategic Index$/ }, { timeout: 20_000 })).toBeTruthy();
     const chips = await screen.findByRole('list', { name: 'Changed settings' }, { timeout: 20_000 });
@@ -340,7 +354,9 @@ describe('home and the shell', () => {
       expect(screen.getByText("What is this country's strategic position?")).toBeTruthy();
       expect(screen.getByRole('link', { name: 'Japan' }).getAttribute('href')).toBe('/countries/JPN');
       expect(screen.getByRole('link', { name: 'Germany' }).getAttribute('href')).toBe('/countries/DEU');
-      expect(screen.getByRole('link', { name: 'United States: policy memo' }).getAttribute('href')).toBe('/countries/USA/memo');
+      // the memos are hidden while they are revised, so no Home link leads to one (a dead end)
+      expect(screen.getByRole('link', { name: 'United States' }).getAttribute('href')).toBe('/countries/USA');
+      expect(screen.queryAllByRole('link').filter((a) => /\/memo$/.test(a.getAttribute('href') ?? ''))).toEqual([]);
       expect(screen.getByTestId('quadrant-glyph').getAttribute('aria-hidden')).toBe('true');
       expect(screen.getByRole('link', { name: 'Which supply chains justify a sectoral compact?' }).getAttribute('href')).toBe('/compacts');
       expect(screen.getByRole('link', { name: 'glossary' }).getAttribute('href')).toBe('/glossary');
@@ -372,8 +388,12 @@ describe('home and the shell', () => {
       // a headline of another rule version shows no fact
       expect(screen.getByRole('link', { name: 'Where are the reserves?' }).getAttribute('aria-describedby')).toBeNull();
       const n = manifest.coverage_glyph.filter((g) => g.country_data).length;
-      expect(screen.getByText(`Country data for ${n} of 33 technology-stage cells`)).toBeTruthy();
-      expect(screen.getByTestId('coverage-glyph').children.length).toBe(33);
+      // 11 headline technologies x 6 stages, one row per technology, the stages across
+      expect(screen.getByText(`Country data for ${n} of 66 technology-stage cells`)).toBeTruthy();
+      const glyph = screen.getByTestId('coverage-glyph');
+      expect(glyph.children.length).toBe(66);
+      expect(glyph.className).toContain('grid-cols-6');
+      expect([...glyph.children].filter((c) => c.className.includes('bg-ink-500')).length).toBe(n);
       expect(create).not.toHaveBeenCalled();
       expect(screen.getByText(/Sector data: export 2026-10-10 18:00 UTC/)).toBeTruthy();
     } finally {
@@ -388,23 +408,36 @@ describe('home and the shell', () => {
     }
   }, 60_000);
 
-  it('the jump picker opens a sector profile and a mineral page', async () => {
+  it('the jump picker opens a sector profile at one of the six stages, and a mineral page', async () => {
     setEngineClient(null);
     try {
       const router = renderAt('/');
       const tech = (await screen.findByLabelText('Technology', {}, { timeout: 20_000 })) as HTMLSelectElement;
+      // six stages in chain order, in a select; the default cell is Batteries — Refining (E6)
+      const stage = screen.getByLabelText('Stage') as HTMLSelectElement;
+      expect(tech.value).toBe('batteries');
+      expect(stage.value).toBe('refining');
+      expect([...stage.options].map((o) => o.textContent)).toEqual(['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery']);
+      expect(screen.queryByRole('radio', { name: /stream$/ })).toBeNull();
       fireEvent.change(tech, { target: { value: 'solar' } });
-      fireEvent.click(screen.getByRole('radio', { name: 'Upstream' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Go to Solar Upstream' }));
-      await waitFor(() => expect(router.state.location.pathname).toBe('/sector/solar/upstream'), { timeout: 20_000 });
+      fireEvent.change(stage, { target: { value: 'extraction' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Go to Solar Extraction' }));
+      await waitFor(() => expect(router.state.location.pathname).toBe('/sector/solar/extraction'), { timeout: 20_000 });
       await act(async () => {
         await router.navigate('/');
       });
-      // Semiconductors is Midstream only
-      fireEvent.change(await screen.findByLabelText('Technology', {}, { timeout: 20_000 }), { target: { value: 'semiconductors' } });
-      expect((screen.getByRole('radio', { name: 'Upstream' }) as HTMLInputElement).disabled).toBe(true);
-      fireEvent.click(screen.getByRole('button', { name: 'Go to Semiconductors Midstream' }));
-      await waitFor(() => expect(router.state.location.pathname).toBe('/sector/semiconductors/midstream'), { timeout: 20_000 });
+      // Semiconductors has pages at its three trade stages only: the others are listed, disabled, and a
+      // stage it has no page for moves to its first one
+      fireEvent.change(await screen.findByLabelText('Stage', {}, { timeout: 20_000 }), { target: { value: 'deployment' } });
+      fireEvent.change(screen.getByLabelText('Technology'), { target: { value: 'semiconductors' } });
+      const semis = screen.getByLabelText('Stage') as HTMLSelectElement;
+      expect(semis.value).toBe('refining');
+      expect([...semis.options].filter((o) => o.disabled).map((o) => o.textContent)).toEqual([
+        'Extraction (no Semiconductors page)', 'Deployment (no Semiconductors page)', 'Recovery (no Semiconductors page)',
+      ]);
+      fireEvent.change(semis, { target: { value: 'assembly' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Go to Semiconductors Assembly' }));
+      await waitFor(() => expect(router.state.location.pathname).toBe('/sector/semiconductors/assembly'), { timeout: 20_000 });
       await act(async () => {
         await router.navigate('/');
       });
@@ -522,7 +555,7 @@ describe('home and the shell', () => {
     expect(within(tabs()).getByRole('link', { name: 'Sectors' }).getAttribute('aria-current')).toBe('true');
     expect(screen.getByRole('navigation', { name: 'Sector views' })).toBeTruthy();
     await act(async () => {
-      await router.navigate('/sector/batteries/midstream');
+      await router.navigate('/sector/batteries/refining');
     });
     // PROFILE follows the last visited cell
     await waitFor(() =>
@@ -535,14 +568,14 @@ describe('home and the shell', () => {
       await router.navigate('/country/USA');
     });
     await waitFor(() => expect(pathOf(router)).toBe('/countries/USA'), { timeout: 20_000 });
-    await waitFor(() => expect(within(tabs()).getByRole('link', { name: 'Sectors' }).getAttribute('href')).toBe('/sector/batteries/midstream?c=USA'));
+    await waitFor(() => expect(within(tabs()).getByRole('link', { name: 'Sectors' }).getAttribute('href')).toBe('/sector/batteries/refining?c=USA'));
     fireEvent.click(screen.getByRole('link', { name: 'Allied Industrial Base Explorer' }));
     await waitFor(() => expect(pathOf(router)).toBe('/'), { timeout: 20_000 });
     // ... and from elsewhere the Countries tab reopens the same country (A2.2)
     expect(within(tabs()).getByRole('link', { name: 'Countries' }).getAttribute('href')).toBe('/countries/USA');
     // Home's CTAs open the landing pages; the tabs resume where the reader was
     expect((await screen.findByRole('link', { name: 'Explore sectors' }, { timeout: 20_000 })).getAttribute('href')).toBe('/sector');
-    expect(within(tabs()).getByRole('link', { name: 'Sectors' }).getAttribute('href')).toBe('/sector/batteries/midstream');
+    expect(within(tabs()).getByRole('link', { name: 'Sectors' }).getAttribute('href')).toBe('/sector/batteries/refining');
     // the About pages carry the scenario between Methods and Data
     await act(async () => {
       await router.navigate('/data?h=80');
@@ -659,17 +692,17 @@ describe('EngineScope (IA refactor)', () => {
   it("embeds the engine without the dial chrome; the host page's keys and hash survive a dial move", async () => {
     const router = createMemoryRouter(
       [{ path: '/host', element: <EngineScope hostKeys={['cell', 'all']}><Probe /></EngineScope> }],
-      { initialEntries: ['/host?cell=solar-midstream&all=1#why'] },
+      { initialEntries: ['/host?cell=solar-assembly&all=1#why'] },
     );
     render(<RouterProvider router={router} />);
     fireEvent.click(await screen.findByRole('button', { name: 'baseline 50' }, { timeout: 20_000 }));
-    await waitFor(() => expect(router.state.location.search).toBe('?h=80&cell=solar-midstream&all=1'));
+    await waitFor(() => expect(router.state.location.search).toBe('?h=80&cell=solar-assembly&all=1'));
     expect(router.state.location.hash).toBe('#why');
     expect(screen.getByRole('button', { name: 'custom 80' })).toBeTruthy();
     // no "unknown setting" rewrite of the host keys, and no Strategic chrome
     expect(screen.queryByRole('complementary', { name: 'Scenario dials' })).toBeNull();
     await settle(200);
-    expect(router.state.location.search).toBe('?h=80&cell=solar-midstream&all=1');
+    expect(router.state.location.search).toBe('?h=80&cell=solar-assembly&all=1');
   }, 60_000);
 });
 

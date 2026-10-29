@@ -6,6 +6,7 @@ dash_engine_files <- function() {
   c(
     "R/utils/scurve.R",
     "R/utils/schema.R",
+    "R/utils/supply_chain_stages.R",
     "R/themes/partnership_strength/partnership_strength_helpers.R",
     "R/dashboard/dash_bundle.R",
     "R/dashboard/dash_engine.R",

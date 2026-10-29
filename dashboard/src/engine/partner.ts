@@ -7,7 +7,8 @@
 // pipeline's order with the same operations, so the cells are bit-identical to R's.
 //
 // Friendshore's CM-FDI parts (since October 2026): in the cells whose outbound_source is 'cm_fdi'
-// (Solar, Wind, Batteries and Electric Vehicles Midstream) the outbound component is the CM-FDI
+// (the Components and Assembly cells of Solar, Wind, Batteries and Electric Vehicles, which carry
+// the same projects) the outbound component is the CM-FDI
 // investment tie outbound_cmfdi[r, p, k] instead of the IMF position outbound[r, p] (NA where the
 // reporter's parents have no project there: the component drops out), and chinese_parent_exposure
 // [p, c] enters the mean as 1 - share (a risk; NA = undefined, dropped, never 0).

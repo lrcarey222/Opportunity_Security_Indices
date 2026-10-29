@@ -1,5 +1,5 @@
 // The dial panel (spec_react.md 8.5): four NEIS sliders with readouts, presets, reset to the NEIS
-// baseline (the paper's weights), and the advanced settings. `layout="wide"` (IA refactor 2026-10-16) lays
+// baseline (the pipeline's six-stage default weights), and the advanced settings. `layout="wide"` (IA refactor 2026-10-16) lays
 // the four dials out in a row for the Country profile's Perspective control; the legacy Strategic
 // sidebar keeps the column. Every change writes the URL (drags replace the history entry;
 // discrete actions push); releasing a slider flushes the debounced run.
@@ -19,7 +19,7 @@ import { InfoTip } from './InfoTip.tsx';
 export const DIAL_SPECS: { key: DialName; label: string; help: string }[] = [
   { key: 'hawkishness', label: 'Hawkishness', help: 'Security first: weight on exposure and on aligned partners.' },
   { key: 'bullishness', label: 'Bullishness', help: 'Opportunity first: weight on opportunity and export markets.' },
-  { key: 'populism', label: 'Populism', help: 'Policy signals and the manufacturing (midstream) stages.' },
+  { key: 'populism', label: 'Populism', help: 'Policy signals and the manufacturing stages (components and assembly).' },
   { key: 'greenness', label: 'Climate', help: 'Climate first: low-emission technologies; at 90 and above coal, oil and gas drop out.' },
 ];
 
@@ -135,16 +135,16 @@ export function DialSlider({
 }
 
 function WeightSlider({
-  label, value, paper, onChange, onCommit,
+  label, value, baseline, onChange, onCommit,
 }: {
   label: string;
   value: number;
-  paper: number;
+  baseline: number;
   onChange: (v: number) => void;
   onCommit: () => void;
 }) {
   const id = useId();
-  const changed = value !== paper;
+  const changed = value !== baseline;
   return (
     <div className="py-1">
       <div className="flex items-baseline justify-between gap-2 text-xs">
@@ -153,7 +153,7 @@ function WeightSlider({
         </label>
         <span className={`tabular ${changed ? 'text-paper' : 'text-paper-mute'}`}>
           {value}
-          {changed && <span className="text-paper-mute"> (paper {paper})</span>}
+          {changed && <span className="text-paper-mute"> (baseline {baseline})</span>}
         </span>
       </div>
       <input
@@ -184,21 +184,21 @@ function CategoryWeights({
   const { scenario, setAdvanced } = useScenario();
   const { flush } = useRun();
   const w = scenario.advanced[which];
-  const paper = app.urlCtx.defaults[which];
-  const changed = cats.some((c) => w[c] !== paper[c]);
+  const base = app.urlCtx.defaults[which];
+  const changed = cats.some((c) => w[c] !== base[c]);
   const positive = (next: Record<string, number>) => cats.some((c) => next[c] > 0);
   return (
     <Disclosure summary={title} badge={changed ? <ChangedDot /> : undefined}>
       <p className="mb-1 text-xs text-paper-mute">Weights are relative: what counts is each category&rsquo;s share of the total. The score is recomputed exactly from the category scores.</p>
       {changed && !app.manifest.flags?.partner_pillar_consistent && (
-        <p className="mb-1 text-xs text-paper">The partnership measures keep the paper&rsquo;s pillars.</p>
+        <p className="mb-1 text-xs text-paper">The partnership measures keep the baseline pillars.</p>
       )}
       {cats.map((c) => (
         <WeightSlider
           key={c}
           label={c}
           value={w[c]}
-          paper={paper[c]}
+          baseline={base[c]}
           onCommit={flush}
           onChange={(v) =>
             setAdvanced(
@@ -212,7 +212,7 @@ function CategoryWeights({
           }
         />
       ))}
-      <button type="button" className="btn-quiet mt-1 -ml-2" disabled={!changed} onClick={() => setAdvanced((a) => ({ ...a, [which]: { ...paper } }))}>
+      <button type="button" className="btn-quiet mt-1 -ml-2" disabled={!changed} onClick={() => setAdvanced((a) => ({ ...a, [which]: { ...base } }))}>
         Reset
       </button>
     </Disclosure>
@@ -272,7 +272,7 @@ export function AdvancedPanel() {
             onKeyUp={flush}
           />
         </div>
-        {d.tau === null && <p className="mt-1 text-xs text-paper-mute">The paper&rsquo;s stored scores predate the rule, so it is off at the baseline.</p>}
+        {d.tau === null && <p className="mt-1 text-xs text-paper-mute">The stored baseline scores predate the rule, so it is off at the baseline.</p>}
       </Disclosure>
       <Disclosure summary="Fossil technologies" badge={ch.fossil ? <ChangedDot /> : undefined}>
         <Segmented
@@ -290,12 +290,12 @@ export function AdvancedPanel() {
       <Disclosure summary="Allied picks" badge={ch.screen ? <ChangedDot /> : undefined}>
         <Switch
           label="Endowment screen"
-          hint="An upstream (extraction) sector is a member's pick only where it has recorded reserves or production of the sector's resources."
+          hint="An extraction sector is a member's pick only where it has recorded reserves or production of the sector's resources."
           checked={a.require_resource_base}
           onChange={(on) => set((x) => ({ ...x, require_resource_base: on }))}
         />
         <p className="mt-1.5 text-xs text-paper-mute">
-          The Strategic Index values do not change; only the allied selection does. The paper applies the screen{d.require_resource_base ? '' : ' (off in this build)'}.
+          The Strategic Index values do not change; only the allied selection does. The baseline applies the screen{d.require_resource_base ? '' : ' (off in this build)'}.
         </p>
       </Disclosure>
       <Disclosure summary="Partnership Strength viewpoint" badge={ch.psi ? <ChangedDot /> : undefined}>
@@ -309,7 +309,7 @@ export function AdvancedPanel() {
           onChange={(v) => set((x) => ({ ...x, psi_view: v }))}
         />
         <p className="mt-1.5 text-xs text-paper-mute">
-          A partner&rsquo;s headline Partnership Strength averages how strong a partner it is for each reporting economy. The paper averages over {d.psi_view === 'world' ? 'all reporters (world)' : 'the coalition reporters'}.
+          A partner&rsquo;s headline Partnership Strength averages how strong a partner it is for each reporting economy. The baseline averages over {d.psi_view === 'world' ? 'all reporters (world)' : 'the coalition reporters'}.
         </p>
       </Disclosure>
     </details>
@@ -337,7 +337,7 @@ export function DialPanel({ layout = 'sidebar' }: { layout?: 'sidebar' | 'wide' 
         </div>
       )}
       <p className="mt-1 text-xs leading-snug text-paper-mute">
-        Each dial runs 0&ndash;100; 50 is the NEIS baseline (the paper&rsquo;s weights). Moving a dial 25 points halves or doubles every weight it owns.
+        Each dial runs 0&ndash;100; 50 is the NEIS baseline (the pipeline&rsquo;s six-stage default weights). Moving a dial 25 points halves or doubles every weight it owns.
       </p>
       <div className={wide ? 'grid gap-x-6 sm:grid-cols-2 xl:grid-cols-4' : undefined}>
         {DIAL_SPECS.map((s) => (

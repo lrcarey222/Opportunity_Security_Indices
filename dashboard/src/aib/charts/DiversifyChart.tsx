@@ -113,7 +113,7 @@ export interface DiversifyChartProps {
   max: number;
   /** a capped supplier's name */
   name: (iso3: string) => string;
-  /** the node's place and links (index > sector > stage, its compact, its Sector Profiles) */
+  /** the node's place and links (its OSI cells, its compact, its Sector Profiles) */
   where: (r: DiversifyRow) => ReactNode;
   label: string;
 }

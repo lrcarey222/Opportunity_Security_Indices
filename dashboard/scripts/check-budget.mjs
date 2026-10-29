@@ -9,15 +9,15 @@
 //                           + data/manifest.json + the `initial` data chunks                    <= 3 MB
 //   Sector landing /sector  entry + SectorLayout + the Sector home view + sector manifest + meta <= 700 kB
 //   Sector profile          the landing + the profile view + facts                             <= 1.3 MB
-//   each sector chunk       meta 150 kB, facts 600 kB, trade 450 kB each, policy 250 kB,
+//   each sector chunk       meta 150 kB, facts 670 kB, trade 520 kB each, policy 250 kB,
 //                           policy-text 700 kB, series 900 kB, atlas 1.3 MB, dev 1.2 MB, fdi, climate and
 //                           climate-src 300 kB each
 //   Sector data             public/data/sector/* (manifest + chunks)                           <= 9 MB
 //   Country landing         entry + CountryLayout + landing view + world atlas + manifest      <= 700 kB
 //   Country profile         entry + CountryLayout + profile view + the largest fact sheet      <= 900 kB
 //   Country memo view       entry + CountryLayout + memo view + the largest memo JSON          <= 450 kB
-//   each Country file       fact sheet 40 kB, manifest 20 kB, memo JSON 25 kB / PDF 400 kB / DOCX 100 kB
-//   Country data            public/data/country/** (every file)                                <= 11 MB
+//   each Country file       fact sheet 59 kB, manifest 21 kB, memo JSON 25 kB / PDF 400 kB / DOCX 100 kB
+//   Country data            public/data/country/** (every file)                                <= 16 MB
 //   Compacts landing        entry + AibLayout + the strategic compacts view (2026-10-20; the
 //                           compacts index view in a build without it) + manifest + document   <= 700 kB
 //   Compacts workstreams    entry + AibLayout + the compacts index view + manifest + document  <= 700 kB
@@ -27,7 +27,7 @@
 //                           page that shows the scenario; never on the landing)                <= 250 kB
 //   Compacts data           public/data/aib/* (manifest + the compacts document + the scenario
 //                           files)                                                             <= 2 MB
-//   All data                Strategic + Sector + Country + Compacts                            <= 25 MB
+//   All data                Strategic + Sector + Country + Compacts                            <= 42.5 MB
 //
 // Fails above a limit, when a manifest lists a chunk file that does not exist, or when a route chunk
 // the figures need cannot be found in the build. A data bundle that is absent (CI without the
@@ -61,24 +61,36 @@ const LIMITS = {
   countryLanding: 700 * KB,
   countryProfile: 900 * KB,
   countryMemo: 450 * KB,
-  // 10 MB until 2026-10-14; 11 MB once the 31 memos (PDF, Word, Markdown, JSON) were published (10.23 MB)
-  countryData: 11 * MB,
+  // 10 MB until 2026-10-14; 11 MB once the 31 memos (PDF, Word, Markdown, JSON) were published (10.23 MB);
+  // 16 MB once the six-stage Country export (2026-10-28: 66 sectors a sheet, 219 sheets) measured 13.58 MB
+  // (2026-10-29 build): the measured size + ~15% (design E4)
+  countryData: 16 * MB,
   aibLanding: 700 * KB,
   aibCompact: 900 * KB,
   aibData: 2 * MB,
   // each lazily loaded scenario file (2026-10-19: manifest.files.scenarios)
   aibScenario: 250 * KB,
-  allData: 25 * MB,
+  // 25 MB until 2026-10-28; 38 MB once the six-stage Strategic export (66 cells, 17.19 MB) brought the
+  // total to 32.63 MB (Strategic 17.19 + Sector 4.44 + Country 10.58 + Compacts 0.43); 42.5 MB once the
+  // six-stage Sector (scripts/87) and Country (scripts/88) exports brought it to 36.87 MB (2026-10-29:
+  // Strategic 17.19 + Sector 5.68 + Country 13.58 + Compacts 0.43): the measured size + ~15% (design E4).
+  // public/data/posture/ is not counted here (src/posture/__tests__/budget.test.ts checks it).
+  allData: 42.5 * MB,
 };
 // spec_country.md A10 (the same numbers as COUNTRY_BUDGET_GZ in src/country/contract.ts)
-// manifest: 15 kB until 2026-10-14; 20 kB once the 31 memo entries (2.8 kB gz) were added (16.9 kB)
+// manifest: 15 kB until 2026-10-14; 20 kB once the 31 memo entries (2.8 kB gz) were added (16.9 kB);
+// 21 kB at six stages (2026-10-28: 18,560 B). sheet: 40 kB until the six-stage export (2026-10-28), whose
+// largest sheet is 51,998 B (JPN; 50.0 kB here at gzip level 9): 59 kB (60,416 B; design E4)
 // tradeMonthly (2026-10-19): the companion monthly trade file of a core member (trade-<ISO3>)
-const COUNTRY_FILE_LIMIT = { manifest: 20 * KB, sheet: 40 * KB, memoJson: 25 * KB, memoPdf: 400 * KB, memoDocx: 100 * KB, tradeMonthly: 25 * KB };
+const COUNTRY_FILE_LIMIT = { manifest: 21 * KB, sheet: 59 * KB, memoJson: 25 * KB, memoPdf: 400 * KB, memoDocx: 100 * KB, tradeMonthly: 25 * KB };
 const TARGET_APP = 350 * KB;
+// the same numbers as SECTOR_BUDGET_GZ (src/sector/contract.ts) and R SECTOR_BUDGET_GZ (sector_chunks.R).
+// Schema 2 (2026-10-28, design E4): sector-facts 600 -> 670 kB (577.4 kB measured), sector-trade
+// 450 -> 520 kB each (largest: electric-grid 451.3 kB)
 const SECTOR_CHUNK_LIMIT = {
   'sector-meta': 150 * KB,
-  'sector-facts': 600 * KB,
-  'sector-trade': 450 * KB,
+  'sector-facts': 670 * KB,
+  'sector-trade': 520 * KB,
   'sector-policy': 250 * KB,
   'sector-policy-text': 700 * KB,
   'sector-series': 900 * KB,

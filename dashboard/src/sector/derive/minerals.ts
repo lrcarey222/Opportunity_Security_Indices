@@ -4,7 +4,7 @@
 // against USGS reserves and the IMF commodity of a mineral. Pure. Shares are always within one
 // measure, one source and one year; projected years carry `projection`.
 
-import { techSlugOf, TECH_LABELS, type SplitPart, type TechSlug } from '../contract.ts';
+import { techSlugOf, TECH_LABELS, type SplitPart, type StageSlug, type TechSlug } from '../contract.ts';
 import type { FactsIndex } from '../data/facts.ts';
 import type { GeoInfo, ItemInfo, MineralDemandRow, SectorModel, SummaryInfo, VarInfo } from '../data/model.ts';
 import { concentration, isHolder } from './concentration.ts';
@@ -18,6 +18,31 @@ export const RESERVES_VAR = 'resources.mineral_reserves';
 export const CRITMIN_EXPORTS_VAR = 'trade.critmin_exports';
 export const CRITMIN_DEP_VAR = 'trade.critmin_dependence';
 export const DEMAND_VAR = 'consumption.mineral_demand';
+
+/**
+ * The mineral step a stage shows (design C3, 2026-10-28): the mining of the minerals a technology uses at
+ * its Extraction cell, their refining at its Refining cell (the item links reach both; the measures'
+ * link_stage picks one).
+ */
+export const MINERAL_STEP: Partial<Record<StageSlug, { id: typeof MINING_VAR | typeof REFINING_VAR; words: 'mining' | 'refining' }>> = {
+  extraction: { id: MINING_VAR, words: 'mining' },
+  refining: { id: REFINING_VAR, words: 'refining' },
+};
+
+/**
+ * The stages a mineral's trade is measured at (design C3): ores and concentrates at Extraction, refined
+ * products at Refining, scrap at Recovery (R SECTOR_CRITMIN_STAGES), with the words a heading uses.
+ */
+export const CRITMIN_STAGE_WORDS: Partial<Record<StageSlug, string>> = {
+  extraction: 'ores and concentrates',
+  refining: 'refined products',
+  recovery: 'scrap and waste',
+};
+
+/** A mineral's items on the mineral_stage axis ("lithium-refining"), in chain order (dims.items sort). */
+export function mineralStageItems(model: SectorModel, mineral: ItemInfo): ItemInfo[] {
+  return model.items.filter((x) => x.axis === 'mineral_stage' && x.slug.startsWith(`${mineral.slug}-`) && x.stageSlug !== null && x.slug === `${mineral.slug}-${x.stageSlug}`).sort((a, z) => a.sort - z.sort);
+}
 
 /** Mineral items in dictionary order. */
 export function mineralItems(model: SectorModel): ItemInfo[] {

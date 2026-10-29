@@ -5,13 +5,26 @@
 // mineral and step). Every number is within one measure, one source and one year; nothing is added
 // across tiles.
 
-import { FAMILY_SECTION, TECH_LABELS, TECH_SLUGS, type StageSlug, type TechSlug } from '../contract.ts';
+import { FAMILY_SECTION, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS, type StageSlug, type TechSlug } from '../contract.ts';
 import type { ItemInfo, SectorModel, SummaryInfo, VarInfo } from '../data/model.ts';
 import { familyMeasure, measureItem, primaryMeasure } from './cells.ts';
 import { lensValue } from './text.ts';
 import type { FamilyId } from '../contract.ts';
 
-export type BoardColKey = 'reserves' | 'mining' | 'refining' | 'capacity' | 'exports_up' | 'exports_mid' | 'investment_mid' | 'production_down' | 'investment_down';
+export type BoardColKey =
+  | 'reserves'
+  | 'mining'
+  | 'exports_extraction'
+  | 'refining'
+  | 'exports_refining'
+  | 'investment_refining'
+  | 'exports_components'
+  | 'exports_assembly'
+  | 'capacity'
+  | 'investment_manufacturing'
+  | 'generation'
+  | 'investment_deployment'
+  | 'exports_recovery';
 
 export interface BoardColDef {
   key: BoardColKey;
@@ -19,23 +32,36 @@ export interface BoardColDef {
   stage: StageSlug;
   /** candidate vars of a technology row (first with a summary wins), measured on the stage's cell or its linked fuel */
   vars: readonly string[];
-  /** candidate vars of a mineral sub-row */
+  /**
+   * candidate vars of a mineral sub-row; a var on the mineral_stage axis (the critical-minerals trade,
+   * schema 2) is read on the mineral's item at the column's stage ("lithium-refining")
+   */
   mineralVars: readonly string[];
   /** the anchor on a mineral page */
   mineralAnchor?: string;
 }
 
-/** The board columns in chain order (4.7). */
+/**
+ * The board columns in chain order (4.7), at the six stages (2026-10-28): Extraction (reserves, mining,
+ * exports), Refining (refined output, exports, the critical-minerals capex), Components and Assembly
+ * (exports; the manufacturing capacity shares and capex, which the sources give once for the two stages
+ * and the bundle carries on both: shown once, on Assembly), Deployment (generation, investment) and
+ * Recovery (exports). Columns without data are dropped.
+ */
 export const BOARD_COLS: readonly BoardColDef[] = [
-  { key: 'reserves', label: 'Reserves', stage: 'upstream', vars: ['resources.fuel_reserves', 'resources.uranium_resources'], mineralVars: ['resources.mineral_reserves'], mineralAnchor: 'reserves' },
-  { key: 'mining', label: 'Mining', stage: 'upstream', vars: ['production.fuels', 'production.uranium'], mineralVars: ['production.mining', 'production.mine_usgs'], mineralAnchor: 'mining-refining' },
-  { key: 'refining', label: 'Refining', stage: 'upstream', vars: [], mineralVars: ['production.refining'], mineralAnchor: 'mining-refining' },
-  { key: 'capacity', label: 'Manufacturing capacity', stage: 'midstream', vars: ['manufacturing.share_now'], mineralVars: [] },
-  { key: 'exports_up', label: 'Exports Up', stage: 'upstream', vars: ['trade.exports'], mineralVars: ['trade.critmin_exports'], mineralAnchor: 'trade' },
-  { key: 'exports_mid', label: 'Exports Mid', stage: 'midstream', vars: ['trade.exports'], mineralVars: [] },
-  { key: 'investment_mid', label: 'Investment Mid', stage: 'midstream', vars: ['investment.annual'], mineralVars: [] },
-  { key: 'production_down', label: 'Production/Generation Down', stage: 'downstream', vars: ['production.generation'], mineralVars: [] },
-  { key: 'investment_down', label: 'Investment Down', stage: 'downstream', vars: ['investment.annual'], mineralVars: [] },
+  { key: 'reserves', label: 'Reserves', stage: 'extraction', vars: ['resources.fuel_reserves', 'resources.uranium_resources'], mineralVars: ['resources.mineral_reserves'], mineralAnchor: 'reserves' },
+  { key: 'mining', label: 'Mining', stage: 'extraction', vars: ['production.fuels', 'production.uranium'], mineralVars: ['production.mining', 'production.mine_usgs'], mineralAnchor: 'mining-refining' },
+  { key: 'exports_extraction', label: 'Exports: Extraction', stage: 'extraction', vars: ['trade.exports'], mineralVars: ['trade.critmin_exports'], mineralAnchor: 'trade' },
+  { key: 'refining', label: 'Refining', stage: 'refining', vars: [], mineralVars: ['production.refining'], mineralAnchor: 'mining-refining' },
+  { key: 'exports_refining', label: 'Exports: Refining', stage: 'refining', vars: ['trade.exports'], mineralVars: ['trade.critmin_exports'], mineralAnchor: 'trade' },
+  { key: 'investment_refining', label: 'Investment: Refining', stage: 'refining', vars: ['investment.annual'], mineralVars: [] },
+  { key: 'exports_components', label: 'Exports: Components', stage: 'components', vars: ['trade.exports'], mineralVars: [] },
+  { key: 'exports_assembly', label: 'Exports: Assembly', stage: 'assembly', vars: ['trade.exports'], mineralVars: [] },
+  { key: 'capacity', label: 'Manufacturing capacity', stage: 'assembly', vars: ['manufacturing.share_now'], mineralVars: [] },
+  { key: 'investment_manufacturing', label: 'Manufacturing investment', stage: 'assembly', vars: ['investment.annual'], mineralVars: [] },
+  { key: 'generation', label: 'Generation', stage: 'deployment', vars: ['production.generation'], mineralVars: [] },
+  { key: 'investment_deployment', label: 'Investment: Deployment', stage: 'deployment', vars: ['investment.annual'], mineralVars: [] },
+  { key: 'exports_recovery', label: 'Exports: Recovery', stage: 'recovery', vars: ['trade.exports'], mineralVars: ['trade.critmin_exports'], mineralAnchor: 'trade' },
 ];
 
 export interface BoardTile {
@@ -83,9 +109,12 @@ function mineralTile(model: SectorModel, mineral: ItemInfo, col: BoardColDef, eu
   for (const id of col.mineralVars) {
     const v = model.varById.get(id);
     if (!v) continue;
-    const s = model.summaryLatest(mineral.idx, v.idx, eu);
+    // a mineral_stage measure (the critical-minerals trade) is read at the column's stage
+    const item = v.item_axis === 'mineral_stage' ? model.item('mineral_stage', `${mineral.slug}-${col.stage}`) : mineral;
+    if (!item) continue;
+    const s = model.summaryLatest(item.idx, v.idx, eu);
     if (!s || !Number.isFinite(s.W)) continue;
-    return { v, item: mineral, s, path: `/sector/minerals/${mineral.slug}`, hash: col.mineralAnchor ?? '' };
+    return { v, item, s, path: `/sector/minerals/${mineral.slug}`, hash: col.mineralAnchor ?? '' };
   }
   return null;
 }
@@ -153,7 +182,7 @@ export interface SplitEntry {
   /** the item the measure is on (the cell, its fuel, or the mineral) */
   item: ItemInfo;
   s: SummaryInfo;
-  /** 'upstream' | 'midstream' | 'downstream' | 'minerals' */
+  /** a stage slug ('extraction' ... 'recovery'), 'minerals' or 'other' */
   section: string;
   lens: number;
   words?: string;
@@ -183,7 +212,7 @@ export function familySplit(model: SectorModel, fam: FamChoice, lens: string, eu
       }
     }
   }
-  const order = ['upstream', 'midstream', 'downstream', 'minerals', 'other'];
+  const order: string[] = [...STAGE_SLUGS, 'minerals', 'other'];
   return out.sort((a, z) => order.indexOf(a.section) - order.indexOf(z.section) || (Number.isFinite(z.lens) ? z.lens : -1) - (Number.isFinite(a.lens) ? a.lens : -1) || a.of.sort - z.of.sort);
 }
 

@@ -3,13 +3,14 @@
 #
 # policy.pams has one row per policy x jurisdiction (the unit build_policy_table() works on, before
 # expand_cross_cutting()): tech_mask bit i = policy.tags[i] (the 11 technologies, then Critical
-# Minerals), stage_mask bit i = Upstream, Midstream, Downstream; cross_cutting = no technology tag
-# (tech_mask 0); stage_mask 0 = no stage tag (any stage). tech_src: "iea" when the tag comes from
-# the IEA's own technology list, "text" when from keyword rules on the text, NA when none.
+# Minerals), stage_mask bit i = the six stages in chain order (Extraction, Refining, Components,
+# Assembly, Deployment, Recovery; build_policy_table(stages = "six"), schema 2); cross_cutting = no
+# technology tag (tech_mask 0); stage_mask 0 = no stage tag (any stage). tech_src: "iea" when the tag
+# comes from the IEA's own technology list, "text" when from keyword rules on the text, NA when none.
 
 SECTOR_POLICY_TAGS <- c("Batteries", "Coal", "Electric Grid", "Electric Vehicles", "Gas", "Geothermal",
                         "Green Hydrogen", "Nuclear", "Oil", "Solar", "Wind", "Critical Minerals")
-SECTOR_POLICY_STAGES <- c("Upstream", "Midstream", "Downstream")
+SECTOR_POLICY_STAGES <- SUPPLY_CHAIN_STAGES
 
 # policy_tbl: build_policy_table() output (one row per policy x country x tech x supply_chain);
 # columns policy_id, iso3, year, status, jurisdiction, policy_type_bucket, tech, tech_source,
@@ -20,6 +21,8 @@ sector_policy_compact <- function(policy_tbl, eu_from = "EUR", eu_to = "EUU") {
   p$iso3 <- ifelse(p$iso3 == eu_from, eu_to, p$iso3)
   key <- paste(p$policy_id, p$iso3, sep = "\r")
   bit_t <- match(p$tech, SECTOR_POLICY_TAGS) - 1L
+  # A former three-stage tag means the table was built with build_policy_table(stages = "legacy").
+  if (any(p$supply_chain %in% SUPPLY_CHAIN_LEGACY_STAGES)) stop("sector_policy_compact(): three-stage policy tags; build the table with build_policy_table(..., stages = \"six\")")
   bit_s <- match(p$supply_chain, SECTOR_POLICY_STAGES) - 1L
   tmask <- tapply(ifelse(is.na(bit_t), 0L, bitwShiftL(1L, pmax(bit_t, 0L))), key, function(v) Reduce(bitwOr, v, 0L))
   smask <- tapply(ifelse(is.na(bit_s), 0L, bitwShiftL(1L, pmax(bit_s, 0L))), key, function(v) Reduce(bitwOr, v, 0L))

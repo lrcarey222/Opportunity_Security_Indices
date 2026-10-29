@@ -13,7 +13,9 @@ import {
 import { isLegacyStrategicSearch } from './HomeOrLegacy.tsx';
 import { pageTitle } from './title.ts';
 import { RESERVED_SEGMENTS, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS, techSlugOf } from '../sector/contract.ts';
-import { SHELL_RESERVED_SEGMENTS, SHELL_STAGE_SLUGS, SHELL_TECH_SLUGS } from './sectorSlugs.ts';
+import { isShellLegacyStageSlug, isShellStageSlug, SHELL_RESERVED_SEGMENTS, SHELL_STAGE_SLUGS, SHELL_TECH_SLUGS } from './sectorSlugs.ts';
+import { SUPPLY_STAGE_SLUGS } from '../lib/stages.ts';
+import { legacySectorRedirect } from './legacySector.tsx';
 
 afterEach(() => resetLastLocations());
 
@@ -23,7 +25,7 @@ describe('places and nav keys', () => {
   it('classifies paths', () => {
     expect(placeOf('/')).toBe('home');
     expect(placeOf('/sector')).toBe('sector');
-    expect(placeOf('/sector/batteries/midstream/USA')).toBe('sector');
+    expect(placeOf('/sector/batteries/refining/USA')).toBe('sector');
     for (const p of ['/overview', '/country/USA', '/space', '/strategic', '/partners/CAN', '/methods', '/data']) expect(placeOf(p)).toBe('strategic');
     expect(placeOf('/sectors')).toBeNull();
     expect(placeOf('/nothing')).toBeNull();
@@ -83,8 +85,8 @@ describe('places and nav keys', () => {
   it('maps Sector paths to their nav entry', () => {
     expect(sectorNavKeyOf('/sector')).toBe('sectors');
     expect(sectorNavKeyOf('/sector/batteries')).toBe('sectors');
-    expect(sectorNavKeyOf('/sector/batteries/midstream')).toBe('profile');
-    expect(sectorNavKeyOf('/sector/batteries/midstream/USA')).toBe('profile');
+    expect(sectorNavKeyOf('/sector/batteries/refining')).toBe('profile');
+    expect(sectorNavKeyOf('/sector/batteries/refining/USA')).toBe('profile');
     expect(sectorNavKeyOf('/sector/minerals/lithium')).toBe('minerals');
     expect(sectorNavKeyOf('/sector/explore/trade')).toBe('explore');
     expect(sectorNavKeyOf('/sector/concentration')).toBe('concentration');
@@ -92,13 +94,17 @@ describe('places and nav keys', () => {
     expect(sectorNavKeyOf('/sector/data')).toBe('sources');
     expect(sectorNavKeyOf('/sector/country/JPN')).toBeNull();
     expect(strategicNavOf('/country/USA')).toBe('/country');
-    expect(sectorCellOfPath('/sector/batteries/midstream/USA')).toEqual({ tech: 'batteries', stage: 'midstream' });
+    expect(sectorCellOfPath('/sector/batteries/refining/USA')).toEqual({ tech: 'batteries', stage: 'refining' });
+    for (const s of SUPPLY_STAGE_SLUGS) expect(sectorCellOfPath(`/sector/wind/${s}`)).toEqual({ tech: 'wind', stage: s });
     expect(sectorCellOfPath('/sector/minerals/lithium')).toBeNull();
-    expect(sectorCellOfPath('/sector/baterries/midstream')).toBeNull();
+    expect(sectorCellOfPath('/sector/baterries/refining')).toBeNull();
+    // an old three-stage path is not a cell (the shell redirects it, design U1)
+    for (const s of ['upstream', 'midstream', 'downstream']) expect(sectorCellOfPath(`/sector/batteries/${s}`)).toBeNull();
+    expect(isSectorProfilePath('/sector/batteries/midstream')).toBe(false);
     // the "Skip to sections" link shows on profiles only
-    expect(isSectorProfilePath('/sector/batteries/midstream')).toBe(true);
-    expect(isSectorProfilePath('/sector/batteries/midstream/')).toBe(true);
-    expect(isSectorProfilePath('/sector/batteries/midstream/USA')).toBe(false);
+    expect(isSectorProfilePath('/sector/batteries/refining')).toBe(true);
+    expect(isSectorProfilePath('/sector/batteries/refining/')).toBe(true);
+    expect(isSectorProfilePath('/sector/batteries/refining/USA')).toBe(false);
     expect(isSectorProfilePath('/sector/minerals/lithium')).toBe(false);
     expect(isSectorProfilePath('/sector/batteries')).toBe(false);
   });
@@ -109,8 +115,8 @@ describe('places and nav keys', () => {
     expect(isLegacyStrategicSearch('?c=USA&eu=bloc')).toBe(false);
     expect(pageTitle('')).toBe('Allied Industrial Base Explorer | NEIS Center');
     expect(pageTitle('Overview')).toBe('Overview | Allied Industrial Base Explorer | NEIS Center');
-    expect(pageTitle('Batteries — Midstream', 'Sector Insights')).toBe('Batteries — Midstream | Sectors | Allied Industrial Base Explorer | NEIS Center');
-    expect(pageTitle('Batteries — Midstream', 'sector')).toBe('Batteries — Midstream | Sectors | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('Batteries — Refining', 'Sector Insights')).toBe('Batteries — Refining | Sectors | Allied Industrial Base Explorer | NEIS Center');
+    expect(pageTitle('Batteries — Refining', 'sector')).toBe('Batteries — Refining | Sectors | Allied Industrial Base Explorer | NEIS Center');
     expect(pageTitle('Compacts', 'aib')).toBe('Compacts | Allied Industrial Base | Allied Industrial Base Explorer | NEIS Center');
     expect(pageTitle('Countries', 'country')).toBe('Countries | Allied Industrial Base Explorer | NEIS Center');
     expect(pageTitle('Overview', 'strategic')).toBe('Overview | Allied Industrial Base Explorer | NEIS Center');
@@ -120,6 +126,12 @@ describe('places and nav keys', () => {
   it("the shell's slug copies equal the contract's", () => {
     expect(SHELL_TECH_SLUGS).toEqual([...TECH_SLUGS]);
     expect(SHELL_STAGE_SLUGS).toEqual([...STAGE_SLUGS]);
+    // the six stages in chain order (lib/stages.ts, which the Sector contract reads too); no legacy slug
+    expect(SHELL_STAGE_SLUGS).toEqual(['extraction', 'refining', 'components', 'assembly', 'deployment', 'recovery']);
+    for (const s of ['upstream', 'midstream', 'downstream']) {
+      expect(isShellStageSlug(s), s).toBe(false);
+      expect(isShellLegacyStageSlug(s), s).toBe(true);
+    }
     expect(SHELL_RESERVED_SEGMENTS).toEqual([...RESERVED_SEGMENTS]);
     for (const t of SHELL_TECH_SLUGS) expect(SHELL_RESERVED_SEGMENTS).not.toContain(t);
   });
@@ -133,7 +145,7 @@ describe('places and nav keys', () => {
 
 describe('carried keys', () => {
   it('Strategic: the scenario and show / tech / stage, in order', () => {
-    expect(strategicCarry('?h=80&g=95&show=change&tech=Solar&stage=Upstream&metric=si&partner=CAN')).toBe('?h=80&g=95&show=change&tech=Solar&stage=Upstream');
+    expect(strategicCarry('?h=80&g=95&show=change&tech=Solar&stage=Refining&metric=si&partner=CAN')).toBe('?h=80&g=95&show=change&tech=Solar&stage=Refining');
     expect(strategicCarry('')).toBe('');
     expect(strategicCarry('?metric=si')).toBe('');
   });
@@ -152,9 +164,14 @@ describe('carried keys', () => {
 
 describe('tab targets (2.6)', () => {
   it('Strategic -> SECTOR with tech and stage: the profile, with the country as c', () => {
-    expect(sectorTabHref('/overview', '?h=80&tech=Batteries&stage=Midstream', none)).toBe('/sector/batteries/midstream');
-    expect(sectorTabHref('/country/USA', '?tech=Electric%20Vehicles&stage=Downstream', none)).toBe('/sector/electric-vehicles/downstream?c=USA');
-    expect(sectorTabHref('/strategic/JPN', '?tech=Green+Hydrogen&stage=Midstream', none)).toBe('/sector/green-hydrogen/midstream?c=JPN');
+    expect(sectorTabHref('/overview', '?h=80&tech=Batteries&stage=Refining', none)).toBe('/sector/batteries/refining');
+    expect(sectorTabHref('/country/USA', '?tech=Electric%20Vehicles&stage=Deployment', none)).toBe('/sector/electric-vehicles/deployment?c=USA');
+    expect(sectorTabHref('/strategic/JPN', '?tech=Green+Hydrogen&stage=Components', none)).toBe('/sector/green-hydrogen/components?c=JPN');
+  });
+  it('Strategic -> SECTOR with an old three-stage stage: Downstream opens Deployment, Upstream and Midstream the chain', () => {
+    expect(sectorTabHref('/country/USA', '?tech=Electric%20Vehicles&stage=Downstream', none)).toBe('/sector/electric-vehicles/deployment?c=USA');
+    expect(sectorTabHref('/overview', '?tech=Batteries&stage=Midstream', none)).toBe('/sector/batteries');
+    expect(sectorTabHref('/strategic/JPN', '?tech=Solar&stage=Upstream', none)).toBe('/sector/solar?c=JPN');
   });
   it('Strategic -> SECTOR otherwise: the last Sector location (c added), else /sector', () => {
     expect(sectorTabHref('/overview', '?h=80', none)).toBe('/sector');
@@ -163,10 +180,10 @@ describe('tab targets (2.6)', () => {
     expect(sectorTabHref('/overview', '?tech=Batteries', last)).toBe('/sector/explore/trade?c=DEU&m=trade.exports');
     expect(sectorTabHref('/partners/CAN', '', last)).toBe('/sector/explore/trade?c=CAN&m=trade.exports');
     // an unknown technology is not carried
-    expect(sectorTabHref('/overview', '?tech=Tech%20A&stage=Midstream', none)).toBe('/sector');
+    expect(sectorTabHref('/overview', '?tech=Tech%20A&stage=Refining', none)).toBe('/sector');
   });
   it('inside a module the tab is its landing; Home and other places resume', () => {
-    expect(sectorTabHref('/sector/batteries/midstream', '?c=USA&eu=bloc&lens=hhi', none)).toBe('/sector?c=USA&eu=bloc');
+    expect(sectorTabHref('/sector/batteries/refining', '?c=USA&eu=bloc&lens=hhi', none)).toBe('/sector?c=USA&eu=bloc');
     expect(strategicTabHref('/country/USA', '?h=80&metric=si', none)).toBe('/overview?h=80');
     expect(strategicTabHref('/sector', '', { ...none, strategic: '/partners/CAN?h=80&partner=USA' })).toBe('/partners/CAN?h=80&partner=USA');
     expect(strategicTabHref('/', '', none)).toBe('/overview');
@@ -177,16 +194,19 @@ describe('tab targets (2.6)', () => {
     rememberLocation('/', '');
     rememberLocation('/nothing', '?x=1');
     rememberLocation('/glossary', '?module=country');
-    rememberLocation('/sector/solar/upstream/CHN', '?c=CHN');
+    rememberLocation('/sector/solar/refining/CHN', '?c=CHN');
     rememberLocation('/sector/explore/trade', '');
-    expect(lastLocations()).toEqual({ strategic: '/overview?h=80', sector: '/sector/explore/trade', sectorCell: '/sector/solar/upstream', country: null, countryIso: null });
+    // an old three-stage link, about to be redirected, is not remembered
+    rememberLocation('/sector/wind/midstream', '?c=DEU');
+    expect(lastLocations()).toEqual({ strategic: '/overview?h=80', sector: '/sector/explore/trade', sectorCell: '/sector/solar/refining', country: null, countryIso: null });
     expect(moduleResumeHref('strategic')).toBe('/overview?h=80');
     expect(moduleResumeHref('sector')).toBe('/sector/explore/trade');
-    expect(sectorProfileHref()).toBe('/sector/solar/upstream');
+    expect(sectorProfileHref()).toBe('/sector/solar/refining');
     resetLastLocations();
     expect(moduleResumeHref('sector')).toBe('/sector');
     expect(moduleResumeHref('strategic')).toBe('/overview');
-    expect(sectorProfileHref()).toBe('/sector/batteries/midstream');
+    // the default cell: Batteries — Refining (design E6)
+    expect(sectorProfileHref()).toBe('/sector/batteries/refining');
   });
 });
 
@@ -199,11 +219,11 @@ describe('Country Insights tab targets (A2.2)', () => {
     expect(countryTabHref('/overview', '', { ...none, country: '/countries/KOR?x=1', countryIso: 'KOR' })).toBe('/countries/KOR?x=1');
   });
   it('Sector -> COUNTRY: the highlighted country (path or c, never the EU aggregate)', () => {
-    expect(countryTabHref('/sector/batteries/midstream/CHN', '', none)).toBe('/countries/CHN');
+    expect(countryTabHref('/sector/batteries/refining/CHN', '', none)).toBe('/countries/CHN');
     expect(countryTabHref('/sector/explore/trade', '?c=USA&m=trade.exports', none)).toBe('/countries/USA');
     expect(countryTabHref('/sector', '?c=EUU', none)).toBe('/countries');
     expect(countryTabHref('/sector/minerals/lithium', '', { ...none, country: '/countries/about' })).toBe('/countries/about');
-    expect(sectorCountry('/sector/batteries/midstream/fra', '')).toBe('FRA');
+    expect(sectorCountry('/sector/batteries/refining/fra', '')).toBe('FRA');
     expect(sectorCountry('/sector/minerals/lithium', '?c=xx')).toBeNull();
   });
   it('inside Country the tab is its landing; Home resumes; PROFILE follows the country on screen, else the last one, else USA', () => {
@@ -215,7 +235,7 @@ describe('Country Insights tab targets (A2.2)', () => {
   });
   it('Country -> SECTOR adds the profile country as the highlight; Country -> STRATEGIC resumes unchanged', () => {
     expect(sectorTabHref('/countries/JPN', '', none)).toBe('/sector?c=JPN');
-    expect(sectorTabHref('/countries/JPN/memo', '', { ...none, sector: '/sector/solar/midstream?c=USA' })).toBe('/sector/solar/midstream?c=JPN');
+    expect(sectorTabHref('/countries/JPN/memo', '', { ...none, sector: '/sector/solar/assembly?c=USA' })).toBe('/sector/solar/assembly?c=JPN');
     expect(sectorTabHref('/countries', '', { ...none, sector: '/sector/explore/trade' })).toBe('/sector/explore/trade');
     expect(sectorTabHref('/countries/about', '', none)).toBe('/sector');
     expect(strategicTabHref('/countries/JPN', '', { ...none, strategic: '/partners/CAN?h=80' })).toBe('/partners/CAN?h=80');
@@ -232,5 +252,34 @@ describe('Country Insights tab targets (A2.2)', () => {
     expect(lastLocations().countryIso).toBe('DEU');
     resetLastLocations();
     expect(moduleResumeHref('country')).toBe('/countries');
+  });
+});
+
+describe('old three-stage Sector links (design U1)', () => {
+  it('Downstream opens the Deployment page, the query and hash kept, with a notice', () => {
+    expect(legacySectorRedirect('/sector/solar/downstream', '?c=USA', '#trade')).toEqual({
+      to: { pathname: '/sector/solar/deployment', search: '?c=USA', hash: '#trade' },
+      notice: 'Solar — Downstream is now Solar — Deployment.',
+    });
+    expect(legacySectorRedirect('/sector/electric-vehicles/downstream/IND', '', '#aid-investment')?.to).toEqual({
+      pathname: '/sector/electric-vehicles/deployment/IND', search: '', hash: '#aid-investment',
+    });
+  });
+  it('Upstream and Midstream open the chain page with the query kept, the economy as c and the hash dropped; the notice names the new stages', () => {
+    const mid = legacySectorRedirect('/sector/batteries/midstream', '?eu=bloc', '#trade');
+    expect(mid?.to).toEqual({ pathname: '/sector/batteries', search: '?eu=bloc', hash: '' });
+    expect(mid?.notice).toBe(
+      'Batteries — Midstream is no longer a stage: it is now mostly Components and Assembly (some refined materials are under Refining). Showing the Batteries supply chain: pick a stage there.',
+    );
+    const up = legacySectorRedirect('/sector/green-hydrogen/upstream/jpn', '?lens=hhi', '');
+    expect(up?.to).toEqual({ pathname: '/sector/green-hydrogen', search: '?c=JPN&lens=hhi', hash: '' });
+    expect(up?.notice).toContain('Green Hydrogen — Upstream is no longer a stage: it is now Extraction, Refining and Recovery.');
+    // a highlight already in the link wins over the economy segment
+    expect(legacySectorRedirect('/sector/wind/midstream/CHN', '?c=DEU', '')?.to.search).toBe('?c=DEU');
+  });
+  it('only legacy Sector paths', () => {
+    for (const p of ['/sector/batteries/refining', '/sector/batteries', '/sector/minerals/lithium', '/overview', '/network/batteries-midstream']) {
+      expect(legacySectorRedirect(p), p).toBeNull();
+    }
   });
 });

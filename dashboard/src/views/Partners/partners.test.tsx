@@ -152,17 +152,30 @@ describe('bilateral investment cards', () => {
   });
 
   it('adds the factory projects of a CM-FDI sector, both ways, with the CC BY attribution', () => {
-    render(<InvestmentCards iso="USA" name="the United States" ties={ties} sector={{ tech: 'Solar', stage: 'Midstream' }} nameOf={nameOf} />);
-    expect(screen.getByRole('heading', { name: /^Factory projects in Solar . Midstream/ })).toBeTruthy();
-    const list = screen.getByRole('list', { name: /factory projects in Solar . Midstream by partner/ });
+    render(<InvestmentCards iso="USA" name="the United States" ties={ties} sector={{ tech: 'Solar', stage: 'Components' }} nameOf={nameOf} />);
+    expect(screen.getByRole('heading', { name: /^Factory projects in Solar . Components/ })).toBeTruthy();
+    const list = screen.getByRole('list', { name: /factory projects in Solar . Components by partner/ });
     const items = within(list).getAllByRole('listitem');
     expect(items[0].textContent).toMatch(/^Japan/);
     expect(items[0].textContent).toMatch(/into the United States: 3 projects, \$500 million of disclosed capital/);
     expect(items[0].textContent).toMatch(/abroad: 1 project, capital not disclosed/);
     expect(screen.getByTestId('cmfdi-attribution').textContent).toMatch(/CC BY 4\.0/);
+    // said once: the two CM-FDI stages carry the same projects
+    expect(screen.getAllByTestId('cmfdi-same-projects')).toHaveLength(1);
+    expect(screen.getByTestId('cmfdi-same-projects').textContent).toMatch(/^Components and Assembly carry the same factory projects: .* counted once, not once per stage\./);
+    // the positions card names the CM-FDI stages from the data
+    expect(screen.getByText(/at\s+the Components and Assembly stages the tie is the factory projects instead/)).toBeTruthy();
     cleanup();
-    render(<InvestmentCards iso="USA" name="the United States" ties={ties} sector={{ tech: 'Solar', stage: 'Upstream' }} nameOf={nameOf} />);
-    expect(screen.queryByTestId('cmfdi-attribution')).toBeNull();
+    // Assembly carries the same projects (the same counts, not doubled)
+    render(<InvestmentCards iso="USA" name="the United States" ties={ties} sector={{ tech: 'Solar', stage: 'Assembly' }} nameOf={nameOf} />);
+    const asm = within(screen.getByRole('list', { name: /factory projects in Solar . Assembly by partner/ })).getAllByRole('listitem');
+    expect(asm[0].textContent).toMatch(/into the United States: 3 projects, \$500 million of disclosed capital/);
+    cleanup();
+    for (const stage of ['Extraction', 'Refining', 'Deployment', 'Recovery', 'Midstream']) {
+      render(<InvestmentCards iso="USA" name="the United States" ties={ties} sector={{ tech: 'Solar', stage }} nameOf={nameOf} />);
+      expect(screen.queryByTestId('cmfdi-attribution')).toBeNull();
+      cleanup();
+    }
   });
 
   it('says so when the data are missing', () => {

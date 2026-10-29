@@ -7,30 +7,37 @@ import { devDataLink } from '../country/derive/links.ts';
 import { cellLabel, cellOptions } from './format.ts';
 
 describe('cellOptions', () => {
-  it('orders by stage, then technology, with one label form', () => {
+  it('orders by stage in chain order, then technology, with one label form', () => {
     const cells = [
-      { tech: 'Solar', stage: 'Midstream' },
-      { tech: 'Electric Vehicles', stage: 'Downstream' },
-      { tech: 'Nuclear', stage: 'Upstream' },
-      { tech: 'Batteries', stage: 'Midstream' },
-      { tech: 'Coal', stage: 'Upstream' },
+      { tech: 'Solar', stage: 'Assembly' },
+      { tech: 'Electric Vehicles', stage: 'Deployment' },
+      { tech: 'Nuclear', stage: 'Extraction' },
+      { tech: 'Batteries', stage: 'Recovery' },
+      { tech: 'Batteries', stage: 'Refining' },
+      { tech: 'Wind', stage: 'Components' },
+      { tech: 'Batteries', stage: 'Assembly' },
+      { tech: 'Coal', stage: 'Extraction' },
     ];
     const o = cellOptions(cells, (x) => x.stage, (x) => `${x.tech}|${x.stage}`);
     expect(o.map((x) => x.label)).toEqual([
-      cellLabel('Coal', 'Upstream'),
-      cellLabel('Nuclear', 'Upstream'),
-      cellLabel('Batteries', 'Midstream'),
-      cellLabel('Solar', 'Midstream'),
-      cellLabel('Electric Vehicles', 'Downstream'),
+      cellLabel('Coal', 'Extraction'),
+      cellLabel('Nuclear', 'Extraction'),
+      cellLabel('Batteries', 'Refining'),
+      cellLabel('Wind', 'Components'),
+      cellLabel('Batteries', 'Assembly'),
+      cellLabel('Solar', 'Assembly'),
+      cellLabel('Electric Vehicles', 'Deployment'),
+      cellLabel('Batteries', 'Recovery'),
     ]);
-    expect(o[0]).toEqual({ value: 'Coal|Upstream', label: 'Coal – Upstream', group: 'Upstream' });
+    expect(o.map((x) => x.group)).toEqual(['Extraction', 'Extraction', 'Refining', 'Components', 'Assembly', 'Assembly', 'Deployment', 'Recovery']);
+    expect(o[0]).toEqual({ value: 'Coal|Extraction', label: 'Coal – Extraction', group: 'Extraction' });
   });
 });
 
 describe('devDataLink', () => {
   it('opens the partner page in a sector, else the World Bank indicators', () => {
-    expect(devDataLink('IND', { tech: 'Electric Vehicles', stage: 'Midstream' })).toBe('/sector/electric-vehicles/midstream/IND#aid-investment');
+    expect(devDataLink('IND', { tech: 'Electric Vehicles', stage: 'Assembly' })).toBe('/sector/electric-vehicles/assembly/IND#aid-investment');
     expect(devDataLink('IND', null)).toBe('/sector/explore/development?m=development.wdi&c=IND');
-    expect(devDataLink(null, { tech: 'Solar', stage: 'Midstream' })).toBe('/sector/explore/development?m=development.wdi');
+    expect(devDataLink(null, { tech: 'Solar', stage: 'Assembly' })).toBe('/sector/explore/development?m=development.wdi');
   });
 });

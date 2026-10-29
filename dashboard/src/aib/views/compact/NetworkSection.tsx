@@ -39,7 +39,7 @@ export const REL_LINK = { new: 'rgb(139 157 23 / 0.6)', expanded: 'rgb(24 137 17
 export const REL_WORDS = { new: 'New relationship', expanded: 'Expanded relationship' } as const;
 
 export function NetworkSection() {
-  const { c, meta, name: baseName, nodeLabel, shockLabel } = useCompact();
+  const { c, displayName, meta, name: baseName, nodeLabel, shockLabel } = useCompact();
   const { doc, names, nodeOf, scenario, hasScenarios } = useAibCtx();
   const mi = useManagedDoc(scenario === 'managed');
   const today = useBaselineDoc(hasScenarios);
@@ -163,11 +163,11 @@ export function NetworkSection() {
             ]}
           />
         }
-        summary={`Trade relationships of ${c.name}, ${scope}${under}: ${trade
+        summary={`Trade relationships of ${displayName}, ${scope}${under}: ${trade
           .slice(0, 5)
           .map((f) => `${name(f.producer)} to ${name(f.consumer)} ${fmtUsd(f.value)} (${f.relationship})`)
           .join('; ') || 'none'}.`}
-        table={() => <TableView rows={tradeEdges} cols={tradeCols} caption={`${c.name}: trade relationships, ${scope}${under}`} search pageSize={20} initialSort={{ id: 'usd', desc: true }} />}
+        table={() => <TableView rows={tradeEdges} cols={tradeCols} caption={`${displayName}: trade relationships, ${scope}${under}`} search pageSize={20} initialSort={{ id: 'usd', desc: true }} />}
         csv={tradeCsv}
       >
         <div className="space-y-4">
@@ -175,7 +175,7 @@ export function NetworkSection() {
             <SankeyChart
               flows={trade}
               label={(code) => name(code)}
-              ariaLabel={`Trade relationships of ${c.name}, ${scope}${under}, exporter to importer`}
+              ariaLabel={`Trade relationships of ${displayName}, ${scope}${under}, exporter to importer`}
               valueFormat={fmtUsd}
               linkColor={(f: SankeyFlow) => REL_LINK[(f as TradeFlow).relationship] ?? REL_LINK.expanded}
               nodeColor={(_, side) => (side === 'producer' ? '#1889b0' : '#6b7280')}
@@ -225,18 +225,18 @@ export function NetworkSection() {
           title="Investment relationships"
           badge={badge}
           sub={`Investor to host, ${scope}${under}: supply from the standardized new capacity at each eligible host (USD a year). A host must show revealed capability; the Friendshore score only orders eligible hosts.`}
-          summary={`Investment relationships of ${c.name}, ${scope}${under}: ${invest
+          summary={`Investment relationships of ${displayName}, ${scope}${under}: ${invest
             .slice(0, 5)
             .map((f) => `${name(f.producer)} in ${name(f.consumer)} ${fmtUsd(f.value)}`)
             .join('; ') || 'none'}.`}
-          table={() => <TableView rows={invEdges} cols={invCols} caption={`${c.name}: investment relationships, ${scope}${under}`} search pageSize={20} initialSort={{ id: 'usd', desc: true }} />}
+          table={() => <TableView rows={invEdges} cols={invCols} caption={`${displayName}: investment relationships, ${scope}${under}`} search pageSize={20} initialSort={{ id: 'usd', desc: true }} />}
           csv={invCsv}
         >
           {invest.length ? (
             <SankeyChart
               flows={invest}
               label={(code) => name(code)}
-              ariaLabel={`Investment relationships of ${c.name}, ${scope}${under}, investor to host`}
+              ariaLabel={`Investment relationships of ${displayName}, ${scope}${under}, investor to host`}
               valueFormat={fmtUsd}
               sideLabels={{ left: 'INVESTORS', right: 'HOSTS' }}
               tipNote="supply from the simulated new capacity a year"

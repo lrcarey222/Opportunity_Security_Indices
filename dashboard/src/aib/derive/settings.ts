@@ -8,7 +8,7 @@
 // supplier cap on the allied market's demand, in words for About and the Diversification page).
 // An older bundle carries only meta.universe, one set for both roles; the words then say that. Pure.
 
-import { diversifyMetaOf, type AibMeta } from '../contract.ts';
+import { diversifyMetaOf, isDictionary, type AibMeta } from '../contract.ts';
 import { listWords } from './format.ts';
 import { taxonomyOf } from './taxonomy.ts';
 
@@ -28,9 +28,9 @@ export const DIVERSIFY_BENCHMARK_WORDS: Readonly<Record<string, { label: string;
   hs4: {
     label: 'Its customs heading',
     words:
-      "the trade-weighted mean concentration of the other HS6 lines of the node's HS4 customs heading (electric cars against the petrol, diesel and hybrid cars of heading 8703; lithium-ion cells against the other accumulators of heading 8507), falling back to the other nodes of its sector when the heading has no other line",
+      "the trade-weighted mean concentration of the other HS6 lines of the node's HS4 customs heading (electric cars against the petrol, diesel and hybrid cars of heading 8703; lithium-ion cells against the other accumulators of heading 8507), falling back to the other nodes of its electro-industrial dictionary sector (the dictionary's grouping of the node, not an OSI technology) when the heading has no other line",
   },
-  sector: { label: 'Its sector', words: "the trade-weighted mean concentration of the other nodes of the node's sector" },
+  sector: { label: 'Its dictionary sector', words: "the trade-weighted mean concentration of the other nodes of the node's electro-industrial dictionary sector (the dictionary's grouping of the node, not an OSI technology)" },
 };
 
 export interface DiversifySetting extends SettingWords {
@@ -88,9 +88,14 @@ export const DICTIONARY_SCOPE_WORDS: Record<string, { label: string; words: stri
   extended: { label: 'Extended', words: 'the core codes plus the other shared codes (specificity 3)', role: 'a sensitivity' },
 };
 
+/** How the views show a node (2026-10-29, design A1): by the OSI technology x stage cells of its codes. */
+export const OSI_PRESENTATION_WORDS =
+  'the views show each node by OSI technology and its stage: its technologies and stages are those of the OSI basket cells its codes sit in, as equals (a node can sit in several), and a node none of whose codes is in the OSI basket is shown as Not in the OSI basket';
+
 /**
- * Where the nodes come from, in words: the electro-industrial dictionary (index > sector > stage, its
- * scope, primary rows) or, for an older bundle, the OSI basket (technology x stage x sub-sector).
+ * Where the nodes come from, in words: the electro-industrial dictionary (its scope, primary rows; the
+ * dictionary's own sectors and indices are provenance, not how the views group nodes) or, for an older
+ * bundle, the OSI basket (technology x stage x sub-sector); then how the views show them.
  */
 export function nodeTaxonomy(m: AibMeta): SettingWords & { dictionary: boolean } {
   const tx = taxonomyOf(m);
@@ -99,22 +104,37 @@ export function nodeTaxonomy(m: AibMeta): SettingWords & { dictionary: boolean }
       mode: 'master',
       dictionary: false,
       label: 'OSI basket',
-      words: 'nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one of the six stages of a technology’s supply chain',
+      words: `nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one of the six stages of a technology’s supply chain; ${OSI_PRESENTATION_WORDS}`,
     };
   }
   const sc = tx.scope ? DICTIONARY_SCOPE_WORDS[tx.scope] : null;
-  const n = tx.indices.length;
-  const nSectors = new Set(tx.indices.flatMap((ix) => ix.sectors)).size;
   return {
     mode: 'dictionary',
     dictionary: true,
     label: `Electro-industrial dictionary${tx.scope ? ` (${sc?.label.toLowerCase() ?? tx.scope} scope)` : ''}`,
     words:
-      `nodes come from the electro-industrial HS6 dictionary (RMI Electro-Industrial Stack): ${n ? `${n} indices` : 'indices'} > ${nSectors ? `${nSectors} sectors` : 'sectors'} > the dictionary’s own stage > HS6 code, ` +
-      `each sector split into nodes where its chain steps differ; each node sits at the supply-chain stage holding most of its trade, a code’s stage set by its item type ` +
+      `nodes are groups of HS6 codes from the electro-industrial HS6 dictionary (RMI Electro-Industrial Stack), each at one of the six supply-chain stages: ` +
+      `the stage holding most of its trade, a code’s stage set by its item type ` +
       `(raw material: Extraction, or Recovery for recycled feed; processed material: Refining; component: Components; final product or process equipment: Assembly), so no node is at Deployment` +
-      `${tx.scope ? `; ${tx.scope} scope: ${sc ? `${sc.words}, ${sc.role}` : tx.scope}` : ''}; primary rows only, so each code sits in one node`,
+      `${tx.scope ? `; ${tx.scope} scope: ${sc ? `${sc.words}, ${sc.role}` : tx.scope}` : ''}; primary rows only, so each code sits in one node; ${OSI_PRESENTATION_WORDS}`,
   };
+}
+
+/**
+ * The largest-supplier shocks whose level the model takes from the node's sector: in a dictionary run that
+ * sector is the electro-industrial dictionary's (config/aib.yml level stage / technology), not an OSI
+ * technology, so their labels are reworded (the model is not rerun; design A1).
+ */
+const DICTIONARY_SHOCK_LABELS: Readonly<Record<string, string>> = {
+  largest_stage: 'Largest supplier of the node’s dictionary sector at its stage removed',
+  largest_technology: 'Largest supplier of the node’s dictionary sector removed',
+};
+
+/** A shock's label (meta.shocks), reworded for a dictionary run where the model's level is the dictionary sector; the id when the bundle lacks it. */
+export function shockLabelOf(m: Pick<AibMeta, 'shocks' | 'taxonomy'>, id: string | null | undefined): string {
+  if (!id) return '';
+  if (isDictionary(m) && DICTIONARY_SHOCK_LABELS[id]) return DICTIONARY_SHOCK_LABELS[id];
+  return m.shocks.find((s) => s.id === id)?.label ?? id;
 }
 
 export interface SettingWords {
@@ -162,8 +182,8 @@ export const CONSTRAINT_WORDS: Record<string, { label: string; words: string }> 
   trade_only: { label: 'Trade-only', words: 'observed exports alone bound what a supplier can provide' },
 };
 
-/** The strategic scope labels ("all" reads "All sectors" in a dictionary bundle: strategicScope()). */
-export const STRATEGIC_WORDS: Record<string, string> = { electro_industrial: 'Electro-industrial', all: 'All technologies' };
+/** The strategic scope labels. */
+export const STRATEGIC_WORDS: Record<string, string> = { electro_industrial: 'Electro-industrial', all: 'All nodes' };
 
 const known = <T>(table: Record<string, T>, mode: string | null | undefined): T | null => (mode && table[mode] ? table[mode] : null);
 
@@ -201,28 +221,28 @@ export function supplyConstraint(m: AibMeta): SettingWords | null {
 }
 
 /**
- * The strategic scope with its technologies (a dictionary bundle: its sectors, "sectors" in the words);
- * null in an older bundle.
+ * The strategic scope: which nodes compacts can be formed from (meta.scopeTechs: the model's scope list,
+ * dictionary sectors in a dictionary run, OSI technologies in a master one; relabelled in words, design
+ * A1); null in an older bundle.
  */
 export function strategicScope(m: AibMeta): (SettingWords & { techs: string[] }) | null {
   if (!m.strategicScope) return null;
   const tx = taxonomyOf(m);
   const techs = m.scopeTechs ?? [];
-  const label = m.strategicScope === 'all' ? tx.all : (STRATEGIC_WORDS[m.strategicScope] ?? m.strategicScope);
+  const label = STRATEGIC_WORDS[m.strategicScope] ?? m.strategicScope;
   const words =
     m.strategicScope === 'all'
       ? tx.dictionary
-        ? `compacts can be formed from the nodes of every sector of the electro-industrial dictionary${techs.length ? ` (${techs.length} sectors${tx.indices.length ? ` in ${tx.indices.length} indices` : ''})` : ''}`
-        : 'compacts can be formed from the nodes of every technology'
-      : `compacts are formed only from the nodes of ${techs.length ? listWords(techs) : `the scope ${tx.many}`}; other nodes stay in the data, outside the headline`;
+        ? 'compacts can be formed from every node of the electro-industrial dictionary'
+        : 'compacts can be formed from every node'
+      : `compacts are formed only from the nodes of ${techs.length ? `the ${tx.dictionary ? 'dictionary sectors' : 'technologies'} ${listWords(techs)}` : 'the scope'}; other nodes stay in the data, outside the headline`;
   return { mode: m.strategicScope, label, words, techs };
 }
 
-/** The strategic scope in a few words for a variant line ("all sectors", "electro-industrial technologies"). */
-export function strategicScopeShort(m: AibMeta, mode: string | null | undefined = m.strategicScope): string {
-  const tx = taxonomyOf(m);
-  if (!mode) return tx.many;
-  return mode === 'all' ? `all ${tx.many}` : `${mode.replace(/_/g, '-')} ${tx.many}`;
+/** The strategic scope in a few words for a variant line ("all nodes", "electro-industrial nodes"). */
+export function strategicScopeShort(_m: AibMeta, mode: string | null | undefined = _m.strategicScope): string {
+  if (!mode) return 'nodes';
+  return mode === 'all' ? 'all nodes' : `${mode.replace(/_/g, '-')} nodes`;
 }
 
 /** The constraint label of a mode ("Trade-only"), the mode itself when unknown. */

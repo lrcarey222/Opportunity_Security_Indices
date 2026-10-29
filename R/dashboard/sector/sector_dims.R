@@ -139,10 +139,35 @@ sector_region_members <- function(geo, region_of) {
   out[!duplicated(out), , drop = FALSE]
 }
 
-# dims.items: the 34 cells (has_trade for the basket cells), the minerals / fuels / commodities
-# present in the data, activities, policy tags and none.
-sector_items <- function(trade_cells, minerals, fuels, commodities) {
-  cells <- sector_cell_items(trade_cells)
+# The stages a mineral is shown at, and the stage of each critical-mineral trade basket
+# (critical_minerals_trade_flows_tbl: ores and concentrates at Extraction, refined metal and chemicals
+# at Refining, scrap at Recovery). Mineral items link to the Extraction and Refining cells of the
+# technologies that use them (mining and reserves are shown at Extraction, refining at Refining, by the
+# measures' link_stage); a mineral_stage item links to the cells of its own stage.
+SECTOR_MINERAL_STAGES <- c("Extraction", "Refining")
+SECTOR_CRITMIN_STAGES <- c("Extraction", "Refining", "Recovery")
+
+# mineral_stage items (dims.items axis mineral_stage, schema 2) of the (mineral slug, stage) pairs in
+# `pairs` (tibble(mineral, stage)): slug "<mineral>-<stage slug>", label "Lithium — Refining", running
+# text "lithium (refining)"; stage = the stage label, tech NA. Mineral then stage order.
+sector_mineral_stage_items <- function(pairs) {
+  mt <- sector_mineral_table()
+  p <- unique(tibble::tibble(mineral = as.character(pairs$mineral), stage = as.character(pairs$stage)))
+  bad <- !p$mineral %in% mt$slug | !p$stage %in% SUPPLY_CHAIN_STAGES
+  if (any(bad)) stop("sector_mineral_stage_items(): unknown minerals or stages ", paste(utils::head(paste(p$mineral, p$stage)[bad], 5), collapse = ", "))
+  p <- p[order(match(p$mineral, mt$slug), match(p$stage, SUPPLY_CHAIN_STAGES)), , drop = FALSE]
+  m <- match(p$mineral, mt$slug)
+  tibble::tibble(axis = "mineral_stage", slug = paste0(p$mineral, "-", tolower(p$stage)),
+                 label = paste0(mt$label[m], " — ", p$stage), text = paste0(mt$text[m], " (", tolower(p$stage), ")"),
+                 tech = NA_character_, stage = p$stage, headline = FALSE, has_trade = FALSE, sort = seq_len(nrow(p)))
+}
+
+# dims.items: the cells (has_trade for the basket cells: sector_cell_items()), the minerals / fuels /
+# commodities present in the data, the mineral x stage items of the critical-mineral trade, activities,
+# policy tags and none. cell_slugs: the dictionary's cells (NULL: the 66 headline cells and the
+# Semiconductors trade cells); mineral_stages: tibble(mineral, stage) or NULL.
+sector_items <- function(trade_cells, minerals, fuels, commodities, cell_slugs = NULL, mineral_stages = NULL) {
+  cells <- sector_cell_items(trade_cells, cell_slugs)
   mt <- sector_mineral_table()
   mt <- mt[mt$slug %in% minerals, , drop = FALSE]
   ft <- sector_fuel_table()
@@ -157,31 +182,51 @@ sector_items <- function(trade_cells, minerals, fuels, commodities) {
   other$headline <- FALSE
   other$has_trade <- FALSE
   other$sort <- stats::ave(seq_len(nrow(other)), other$axis, FUN = seq_along)
-  dplyr::bind_rows(cells, other[names(cells)], sector_fixed_items())
+  ms <- if (is.null(mineral_stages) || !nrow(mineral_stages)) NULL else sector_mineral_stage_items(mineral_stages)
+  dplyr::bind_rows(cells, other[names(cells)], if (!is.null(ms)) ms[names(cells)], sector_fixed_items())
 }
 
+# The fuel items -> cells: production and reserves at Extraction, use and generation at Deployment.
+SECTOR_FUEL_LINKS <- tibble::tribble(
+  ~item_key, ~cell,
+  "fuel:oil", "oil-extraction", "fuel:oil", "oil-deployment",
+  "fuel:gas", "gas-extraction", "fuel:gas", "gas-deployment",
+  "fuel:coal", "coal-extraction", "fuel:coal", "coal-deployment",
+  "fuel:nuclear", "nuclear-deployment",
+  "fuel:solar", "solar-deployment",
+  "fuel:wind", "wind-deployment",
+  "fuel:hydrogen", "green-hydrogen-deployment"
+)
+
 # dims.item_links. mineral_links: coalition_mineral_links() (mineral, tech, mineral_demand_share);
-# price_techs: distinct (sub_sector, tech) of the processed prices; cells: the cell items.
-sector_item_links <- function(mineral_links, price_techs, commodities, cells) {
-  ml <- tibble::tibble(item_key = paste0("mineral:", sector_mineral_slug(mineral_links$mineral)),
-                       cell = sector_cell_slug(mineral_links$tech, "Upstream"),
-                       weight = as.double(mineral_links$mineral_demand_share))
+# price_techs: distinct (sub_sector, tech, supply_chain) of the processed prices (each commodity is
+# filed at the stage it prices: crude oil, gas, coal and ores at Extraction, metals and chemicals at
+# Refining); cells: the cell items; mineral_stage_items: the mineral_stage items (NULL = none), linked
+# with the mineral's demand share to the cells of their stage.
+sector_item_links <- function(mineral_links, price_techs, commodities, cells, mineral_stage_items = NULL) {
+  slug <- sector_mineral_slug(mineral_links$mineral)
+  ml <- dplyr::bind_rows(lapply(SECTOR_MINERAL_STAGES, function(s) {
+    tibble::tibble(item_key = paste0("mineral:", slug), cell = sector_cell_slug(mineral_links$tech, s),
+                   weight = as.double(mineral_links$mineral_demand_share))
+  }))
   ml <- ml[ml$item_key != "mineral:NA", , drop = FALSE]
-  fuel <- tibble::tribble(
-    ~item_key, ~cell,
-    "fuel:oil", "oil-upstream", "fuel:oil", "oil-downstream",
-    "fuel:gas", "gas-upstream", "fuel:gas", "gas-downstream",
-    "fuel:coal", "coal-upstream", "fuel:coal", "coal-downstream",
-    "fuel:nuclear", "nuclear-downstream",
-    "fuel:solar", "solar-downstream",
-    "fuel:wind", "wind-downstream",
-    "fuel:hydrogen", "green-hydrogen-downstream"
-  )
+  msl <- NULL
+  if (!is.null(mineral_stage_items) && nrow(mineral_stage_items)) {
+    ms <- mineral_stage_items
+    base <- substr(ms$slug, 1, nchar(ms$slug) - nchar(ms$stage) - 1L)
+    msl <- dplyr::bind_rows(lapply(seq_len(nrow(ms)), function(i) {
+      hit <- !is.na(slug) & slug == base[i]
+      tibble::tibble(item_key = rep(paste0("mineral_stage:", ms$slug[i]), sum(hit)), cell = sector_cell_slug(mineral_links$tech[hit], ms$stage[i]),
+                     weight = as.double(mineral_links$mineral_demand_share[hit]))
+    }))
+  }
+  fuel <- SECTOR_FUEL_LINKS
   fuel$weight <- 1
+  if (!"supply_chain" %in% names(price_techs)) stop("sector_item_links(): price_techs needs the processed prices' supply_chain (the stage each commodity is filed at)")
   pt <- price_techs[!is.na(price_techs$tech), , drop = FALSE]
   cm <- tibble::tibble(item_key = paste0("commodity:", commodities$slug[match(pt$sub_sector, commodities$sub_sector)]),
-                       cell = sector_cell_slug(pt$tech, "Upstream"), weight = 1)
-  out <- dplyr::bind_rows(ml, fuel, cm, sector_fixed_links(cells))
+                       cell = sector_cell_slug(pt$tech, pt$supply_chain), weight = 1)
+  out <- dplyr::bind_rows(ml, msl, fuel, cm, sector_fixed_links(cells))
   out <- out[out$cell %in% cells$slug, , drop = FALSE]
   out[!duplicated(out[c("item_key", "cell")]), , drop = FALSE]
 }

@@ -7,8 +7,8 @@ and every page shares one header with four tabs:
 
 | Tab | Main paths | The question |
 |---|---|---|
-| **Sectors** | `/sector` (all sectors), `/sector/:tech` (the supply chain, Upstream -> Midstream -> Downstream), `/sector/:tech/:stage` (the Sector profile: Economic Opportunity, Energy Security, Policy and Climate at the top, the detail below), `/sector/minerals`, `/sector/explore` (advanced explorer) | What matters about this sector? Measured values in their sources' own units and years; no indices, no weights, no dials |
-| **Countries** | `/countries`, `/countries/:iso3` (the Country profile: strategic position, opportunities and risks, sector position, policy and climate, partnerships, role in the Allied Industrial Base), `/countries/:iso3/memo`, `/countries/about` | What is this country's strategic position? The only place with the preference dials |
+| **Sectors** | `/sector` (all sectors), `/sector/:tech` (the supply chain, Extraction -> Refining -> Components -> Assembly -> Deployment -> Recovery), `/sector/:tech/:stage` (the Sector profile: Economic Opportunity, Energy Security, Policy and Climate at the top, the strategic posture of the node, the detail below), `/sector/minerals`, `/sector/explore` (advanced explorer) | What matters about this sector? Measured values in their sources' own units and years; no indices, no weights, no dials (the strategic posture sections are the one recommendation, at fixed thresholds) |
+| **Countries** | `/countries`, `/countries/:iso3` (the Country profile: strategic posture, security and opportunity, opportunities and risks, sector position, policy and climate, partnerships, role in the Allied Industrial Base), `/countries/:iso3/memo`, `/countries/about` | What is this country's strategic position? The only place with the preference dials |
 | **Allied Industrial Base** | `/aib` (overview), `/aib/partnerships` (trade, investment, development), `/compacts` and `/compacts/:id` (Sectoral Compacts), `/aib/roles` (country roles), `/compacts/about` | Where does international coordination add value, who needs to coordinate, and in what form? The AIB trade and investment model (scripts/31, 32, 84) |
 | **About** (secondary) | `/about`, `/methods`, `/data` (Data & sources), `/glossary` | the methods, the data and their sources, the glossary |
 
@@ -25,23 +25,29 @@ dividend, classes, compacts and roles). Pages label the two "Observed / modelled
 |---|---|
 | Hawkishness | security: supply need, aligned partners |
 | Bullishness | opportunity: economic opportunity, export markets |
-| Populism | policy signals and manufacturing: industrial policy, midstream stages |
+| Populism | policy signals and manufacturing: industrial policy, the components and assembly stages |
 | Climate (URL key `g`, engine key `greenness`) | clean technologies and climate ambition (coal, oil and gas dropped at 90+) |
 
-Every dial runs from 0 to 100; 50 is the NEIS baseline (the paper). With every dial at 50 and the
-advanced settings at their defaults, every page shows the pipeline's exported values exactly. Any other
+Every dial runs from 0 to 100; 50 is the NEIS baseline (the pipeline's default weights at the six
+supply-chain stages). With every dial at 50 and the advanced settings at their defaults, every page
+shows the pipeline's exported values exactly. Any other
 setting is a custom perspective, recomputed in a Web Worker; it lives in the page address, so a copied
 link reproduces it.
 
-The model is the paper's final method (data build of 10 Oct 2026): a coalition of 57 economies (31
-core members and 26 partners, Brazil among them through its mineral reserves); the Policy index
-from IEA Policies and Measures (required) plus Climate Action Tracker ratings where CAT rates the
-economy; critical-mineral reserves from USGS Mineral Commodity Summaries 2026; and an endowment screen
-on the allied picks (an Upstream stage with no recorded reserves or production is not picked; a
-switch in the advanced panel). The Methods page has the details. The paper's original allied network
-design (a lambda-calibrated production design over the Upstream and Midstream stages) is retired
-(2026-10-17): the Allied Industrial Base pages replace it, the Strategic bundle no longer has a network
-chunk, the engine no longer recomputes it and `/network` redirects to `/aib` with a notice.
+Since 28 October 2026 every page reads the six supply-chain stages (Extraction, Refining, Components,
+Assembly, Deployment, Recovery; `src/lib/stages.ts`, R `SUPPLY_CHAIN_STAGES`): 11 technologies x 6
+stages = 66 cells (the Sector pages add Semiconductors' Refining, Components and Assembly). The model
+is the paper's method run at six stages: a coalition of 60 economies (31 core members and 29 partners,
+Brazil among them through its mineral reserves); the Policy index from IEA Policies and Measures
+(required) plus Climate Action Tracker ratings where CAT rates the economy; critical-mineral reserves
+from USGS Mineral Commodity Summaries 2026; the Strategic Index stage weights 0.375 for Components and
+Assembly, 0.25 for Deployment and 0.167 for Extraction, Refining and Recovery; allied picks at every
+stage but Deployment; and an endowment screen on them (an Extraction sector with no recorded reserves
+or production is not picked; a switch in the advanced panel). The paper's own figures come from an
+earlier build. The Methods page has the details. The original allied network design (a
+lambda-calibrated production design) is retired (2026-10-17): the Allied Industrial Base pages replace
+it, the Strategic bundle no longer has a network chunk, the engine no longer recomputes it and
+`/network` redirects to `/aib` with a notice.
 
 It is a static site: Vite + React + TypeScript, Tailwind v4 with the NEIS design tokens, Observable
 Plot and d3 for the charts. There is no server; the data are files next to the app.
@@ -54,7 +60,12 @@ matching section of the Country profile, which embeds the same views (`/country/
 old module paths are aliases (`/strategic-insights` and `/country-insights` -> `/countries`,
 `/sector-insights` and `/sectors` -> `/sector`, `/sectoral-compacts` -> `/compacts`,
 `/allied-industrial-base` -> `/aib`), and a bare `/` carrying a scenario key (`/?h=80&tech=Solar`) still
-redirects to `/overview?h=80&tech=Solar`. Home, Sectors, the AIB pages and a Country profile at the
+redirects to `/overview?h=80&tech=Solar`. Links made before the six stages still open (client-side,
+`src/shell/legacySector.tsx`): `/sector/:tech/downstream[/:iso3]` opens the Deployment page with the
+query and hash kept; `/sector/:tech/upstream` and `/midstream` open the technology's chain page
+(`?c=` for an economy segment), each with a notice naming the stages that replaced the old one; a
+Strategic `?stage=Downstream` becomes Deployment and `?stage=Upstream|Midstream` is dropped, with a
+notice. Home, Sectors, the AIB pages and a Country profile at the
 NEIS baseline never start the model's Web Worker; it starts when a page needs it (a custom
 perspective, AIB development partnerships, Methods and Data, a legacy Strategic page) and survives
 switching tabs. The tabs remember the last page of each for the session.
@@ -65,7 +76,7 @@ switching tabs. The tabs remember the last page of each for the session.
 R pipeline (scripts/0x-4x)                 data/processed/...
   -> scripts/85_export_dashboard_data.R    dashboard/public/data/  manifest.json + 4 data chunks
                                            (builders in R/dashboard/; checks the R engine at the
-                                           paper's baseline against the stored outputs)
+                                           NEIS baseline against the stored outputs)
   -> scripts/86_export_dashboard_fixtures.R  src/engine/__fixtures__/  parity fixtures
   -> scripts/87_export_sector_data.R       dashboard/public/data/sector/  Sector Insights: manifest.json
                                            + lazy chunks (pure helpers in R/dashboard/sector/; the
@@ -89,8 +100,8 @@ R pipeline (scripts/0x-4x)                 data/processed/...
 | `core.<md5>.osb` | at start | pillars, Policy, Strategic Index inputs and the shipped baseline tables |
 | `vars.<md5>.osb` | Country view (variable drill-down) | variable-level components |
 | `partner.<md5>.osb` | Partners, PSI metric | Friendshore / Opportunity components, dyads, baseline best-five and PSI |
-| `ties.<md5>.osb` | lazily, main thread: Partners view, Country partners section (never the engine) | IMF direct investment positions by partner (both directions, latest year, and the 2020-2024 mean Friendshore ranks; conduit centres flagged), CM-FDI factory-project flows by sector, Development Potential by sector, agreements, UN-vote alignment, top partners by best-five Friendshore / Partnership Opportunity (R/dashboard/dash_ties.R; scripts/85 checks the positions reproduce the investment tie bit for bit) |
-| `pcell-<slug>.<md5>.osb` | lazily, one sector: Country partners section | each economy's top 10 friendshoring opportunities (Friendshore) and export markets (Partnership Opportunity) in that sector at the baseline, with the Partnership Strength rank; the Partners view ranks the sector in the worker instead (`cellPartners`, so the dials apply) |
+| `ties.<md5>.osb` | lazily, main thread: Partners view, Country partners section (never the engine) | IMF direct investment positions by partner (both directions, latest year, and the 2020-2024 mean Friendshore ranks; conduit centres flagged), CM-FDI factory-project flows by sector (the Components and Assembly cells carry the same flows, `meta.cmfdi_stages`: count by project), Development Potential by sector, agreements, UN-vote alignment, top partners by best-five Friendshore / Partnership Opportunity (R/dashboard/dash_ties.R; scripts/85 checks the positions reproduce the investment tie bit for bit) |
+| `pcell-<slug>.<md5>.osb` | lazily, one sector (66: `pcell-batteries-refining` ...): Country partners section | each economy's top 10 friendshoring opportunities (Friendshore) and export markets (Partnership Opportunity) in that sector at the baseline, with the Partnership Strength rank; the Partners view ranks the sector in the worker instead (`cellPartners`, so the dials apply) |
 
 OSB is a small container (a JSON header and typed columns, gzipped) written by
 `R/dashboard/dash_osb.R` and read by `src/engine/codec.ts`. Chunk names carry their md5, so they can
@@ -114,7 +125,7 @@ rows, and no licensed BNEF or BCG data.
 | `sector-policy-text.<h8>.osb` | the policy list | PAMS titles and links (with attribution) |
 | `sector-series.<h8>.osb` | series cards | EI 1965-2025, IMF monthly prices, IEA EV regions 2021-2024, CIM additions and manufacturing capacity |
 | `sector-dev.<h8>.osb` | lazily, by the Development & finance flow layouts (Explore: aid flows, investment positions), the economy page's "Aid and investment partners" and Sources | OECD CRS official development assistance by aid sector, year, donor and recipient (USD m, constant 2023 prices; `data/raw/oecd_crs_api.csv`) and IMF Direct Investment Positions, outward debt instruments, the 2020-2024 mean per investor and destination with the conduit-centre flag (`data/raw/imf_dip.csv`), parsed with the Development Potential and Friendshore outbound builders' functions (R/dashboard/sector/sector_dev.R); the WDI and Doing Business values and the per-economy aid totals are in sector-facts. `--no-dev` leaves the chunk and its measures out |
-| `sector-fdi.<h8>.osb` | lazily, by the CM-FDI views only (Solar, Wind, Batteries and EV Midstream: profile Investment section, Explore, Country in sector, Sources download) | CM-FDI cross-border manufacturing projects (Net Zero Industrial Policy Lab, edition 2026.10.05, CC BY 4.0): every project with its source text and links per field, home -> destination flows, parent-HQ group splits and announcements by year, for all projects and for those the partnership indices use (`data/raw/cm_fdi_projects.csv`, or `--cmfdi <csv>`; `--no-fdi` leaves the chunk and its measures out) |
+| `sector-fdi.<h8>.osb` | lazily, by the CM-FDI views only (Solar, Wind, Batteries and EV Components and Assembly, which carry the same projects: profile Investment section, Explore, Country in sector, Sources download) | CM-FDI cross-border manufacturing projects (Net Zero Industrial Policy Lab, edition 2026.10.05, CC BY 4.0): every project with its source text and links per field, home -> destination flows, parent-HQ group splits and announcements by year, for all projects and for those the partnership indices use (`data/raw/cm_fdi_projects.csv`, or `--cmfdi <csv>`; `--no-fdi` leaves the chunk and its measures out) |
 
 Refresh after a pipeline rerun (scripts 10-25):
 
@@ -272,8 +283,10 @@ Budget (`npm run budget`, gzip sizes; it also fails when a manifest lists a miss
 | Strategic deep link `/overview` | entry, StrategicLayout, Overview, world map, engine worker, manifest, core chunk | 3 MB |
 | Sector landing `/sector` | entry, SectorLayout, the Sector home view, sector manifest, meta | 700 kB |
 | Sector profile first view | the landing, the profile view, facts | 1.3 MB |
-| Each Sector chunk | meta 150 kB, facts 600 kB, trade 450 kB each, policy 250 kB, policy text 700 kB, series 900 kB | |
-| Sector data / all data | `public/data/sector/` / Strategic + Sector | 9 MB / 25 MB |
+| Each Sector chunk | meta 150 kB, facts 670 kB, trade 520 kB each, policy 250 kB, policy text 700 kB, series 900 kB | |
+| Each Country file | fact sheet 59 kB, manifest 21 kB, memo JSON 25 kB / PDF 400 kB / Word 100 kB | |
+| Sector data / Country data | `public/data/sector/` / `public/data/country/` | 9 MB / 16 MB |
+| All data | Strategic + Sector + Country + Compacts | 42.5 MB |
 
 On 11 Oct 2026 (Strategic export of 10 Oct, Sector export of 11 Oct on the final data): Home
 181 kB, `/overview` 1.27 MB, Sector landing 395 kB (278 kB of code, 75 kB of manifest and meta),

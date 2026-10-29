@@ -1,11 +1,13 @@
 // S3 of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16: "Policy & climate", with the
 // Strategic Index table reused under "Opportunities & risks"): "Which sectors the Strategic Index puts first"
-// (the paper's ranking with its five parts as bars), "Do priorities and policy agree?" (the 3 x 3
+// (the NEIS baseline ranking with its five parts as bars), "Do priorities and policy agree?" (the 3 x 3
 // matrix of the Strategic Index without its policy term against policy activity, thirds within the
 // country, with the Climate Action Tracker and IEA record tiles), "Policy records by technology and
-// stage" (IEA Policies and Measures coverage on the three-colour scale) and the user's addition of
-// 2026-10-12: the strongest active industrial-policy measures by sector from the latest completed GTA
-// New Industrial Policy Observatory run (context; not part of the Policy index). Since 2026-10-17 the
+// stage" (IEA Policies and Measures coverage on the three-colour scale, 11 technologies x the six stages)
+// and the user's addition of 2026-10-12: the strongest active industrial-policy measures by sector from
+// the latest completed GTA New Industrial Policy Observatory run (context; not part of the Policy index).
+// Six stages (schema 2, design K1): while the NIPO run is not matched to the six stages (policy.nipo.staged
+// false) the card shows the economy's counts and the sheet's words for it, with no sector list. Since 2026-10-17 the
 // section also shows the economy's Climate TRACE emissions in the mapped sectors
 // (src/sector/views/climate/CountryClimate.tsx, the Sector data's sector-climate chunk) and, before them,
 // its fossil CO2 (Global Carbon Project), its transition indicators against the median economy (Energy
@@ -26,8 +28,9 @@ import {
   coverageRows, matrixCaption, matrixCells, maxPart, nipoCells, nipoOfCell, POLICY_THIRD_LABEL, PRIORITY_THIRD_LABEL, priorityRows,
   SI_PART_GLOSSARY, SI_PART_KEYS, SI_PART_LABEL, SI_PART_SHORT,
 } from '../../derive/model.ts';
-import { quadrantWord, proseName, poss, cap } from '../../derive/text.ts';
+import { quadrantWord, proseName, poss, cap, numberWord } from '../../derive/text.ts';
 import { policyBehaviour } from '../../derive/framing.ts';
+import { stageLabel, stageSlug, type SupplyStageSlug } from '../../../lib/stages.ts';
 import { CountryClimateCard } from '../../../sector/views/climate/CountryClimate.tsx';
 import { CountryTransitionCards } from '../../../sector/views/climate/CountryTransition.tsx';
 import { BasisTag, csvWithSource, Fold, Section, useProfile } from './common.tsx';
@@ -83,11 +86,18 @@ export function PolicyClimateSection() {
         <AgreementMatrix />
       ) : (
         <Notice kind="info" title="No Strategic Index">
-          {cap(name)} has no Policy index (no International Energy Agency Policies and Measures records), so the paper computes no Strategic Index for it. Its policy records and the
+          {cap(name)} has no Policy index (no International Energy Agency Policies and Measures records), so no Strategic Index is computed for it. Its policy records and the
           industrial-policy measures below are shown as they are.
         </Notice>
       )}
-      <Fold id="policy-records" summary={`Policy records by technology and stage, and the strongest industrial-policy measures in ${poss(name)} sectors`}>
+      <Fold
+        id="policy-records"
+        summary={
+          sheet.policy.nipo?.staged === false
+            ? `Policy records by technology and stage, and ${poss(name)} active industrial-policy measures`
+            : `Policy records by technology and stage, and the strongest industrial-policy measures in ${poss(name)} sectors`
+        }
+      >
         <PolicyCoverage />
         <NipoCard />
       </Fold>
@@ -121,7 +131,8 @@ export function PriorityTable() {
       near.add(all[i + 1].key);
     }
   });
-  const noBase = (c: CellFacts) => c.stage === 'Upstream' && c.si.pick_exclusion === 'no resource base';
+  // the resource screen applies to extraction sectors only (the pipeline's allied-pick rule)
+  const noBase = (c: CellFacts) => c.stage === 'Extraction' && c.si.pick_exclusion === 'no resource base';
   const twinCols: Col<CellFacts>[] = [
     { id: 'rank', header: 'Rank', value: (c) => c.si.rank.v, num: true },
     { id: 'sector', header: 'Sector', value: (c) => c.label },
@@ -140,7 +151,7 @@ export function PriorityTable() {
         strategic_index: c.si.v, lead_over_next: c.si.margin_next.v, corner: c.quadrant ? quadrantWord(c.quadrant) : null, allied_pick: c.si.pick,
         policy_records_specific: c.policy?.records_specific.v ?? null, policy_third: c.policy?.third ?? null,
       })),
-      'Opportunity Security Indices, paper baseline (Strategic Index terms)',
+      'Opportunity Security Indices, NEIS baseline (Strategic Index terms)',
       sheet.meta.as_of,
     ),
   });
@@ -148,9 +159,9 @@ export function PriorityTable() {
     <ChartCard
       headingLevel={3}
       title="Which sectors the Strategic Index puts first"
-      sub={`The Strategic Index ranks ${poss(name)} own sectors. It adds up five things: economic opportunity (30%), security need, meaning how exposed the country is (30%), how much policy it already has in the sector compared with its other sectors (20%), the supply-chain stage (10%; of the paper's three stages, midstream manufacturing counts most, then upstream raw materials, then downstream use) and the technology's low-emission value (10%). The last two are the same for every country. The bars show what each adds. Ranks compare sectors within ${name} only; they say nothing about other countries.`}
+      sub={`The Strategic Index ranks ${poss(name)} own sectors. It adds up five things: economic opportunity (30%), security need, meaning how exposed the country is (30%), how much policy it already has in the sector compared with its other sectors (20%), the supply-chain stage (10%; of the six stages, the two manufacturing stages, components and assembly, count most, then deployment, then extraction, refining and recovery) and the technology's low-emission value (10%). The last two are the same for every country. The bars show what each adds. Ranks compare sectors within ${name} only; they say nothing about other countries.`}
       summary={`${poss(name)} ${all.length} sectors in the Strategic Index, ranked; the top one is ${all[0]?.label ?? 'none'}.`}
-      table={() => <TableView rows={all} cols={twinCols} caption={`${cap(name)}: Strategic Index parts by sector`} rowKey={(c) => c.key} pageSize={33} />}
+      table={() => <TableView rows={all} cols={twinCols} caption={`${cap(name)}: Strategic Index parts by sector`} rowKey={(c) => c.key} pageSize={66} />}
       csv={csv}
       notes={near.size ? 'NEAR-TIE: two neighbouring sectors whose scores differ by less than 0.01; small changes in the data or the weights can swap them.' : undefined}
     >
@@ -268,7 +279,7 @@ export function AgreementMatrix() {
         records_all: c.policy?.records_all.v ?? null, latest_record_year: c.policy?.latest_year.v ?? null, policy_index: c.policy?.index.v ?? null,
         policy_basis: sheet.meta.policy_basis,
       })),
-      'Opportunity Security Indices, paper baseline; International Energy Agency, Policies and Measures; Climate Action Tracker',
+      'Opportunity Security Indices, NEIS baseline; International Energy Agency, Policies and Measures; Climate Action Tracker',
       sheet.meta.as_of,
     ),
   });
@@ -276,9 +287,9 @@ export function AgreementMatrix() {
     <ChartCard
       headingLevel={3}
       title="Do priorities and policy agree?"
-      sub={`On the paper's three-stage Strategic Index (separate from the policy alignment marked on the posture chart above): to compare like with like, sectors are ranked here on the Strategic Index without its policy term (so policy is not counted twice), and separately on policy activity, ranked within ${name}. Policy activity combines International Energy Agency Policies and Measures records with, where it rates ${name}, the Climate Action Tracker rating read against the technology: a strong climate rating counts for low-emission technologies and against high-emission ones such as coal, oil and gas. Each ranking is cut into thirds. Sectors on the diagonal are where the data-based priority and current policy line up.`}
+      sub={`On the Strategic Index (separate from the policy alignment marked in the Strategic posture section): to compare like with like, sectors are ranked here on the Strategic Index without its policy term (so policy is not counted twice), and separately on policy activity, ranked within ${name}. Policy activity combines International Energy Agency Policies and Measures records with, where it rates ${name}, the Climate Action Tracker rating read against the technology: a strong climate rating counts for low-emission technologies and against high-emission ones such as coal, oil and gas. Each ranking is cut into thirds. Sectors on the diagonal are where the data-based priority and current policy line up.`}
       summary={`${cap(name)}: sectors placed by data-based priority third and policy-activity third.`}
-      table={() => <TableView rows={insample} cols={twin} caption={`${cap(name)}: priority and policy thirds by sector`} rowKey={(c) => c.key} pageSize={33} />}
+      table={() => <TableView rows={insample} cols={twin} caption={`${cap(name)}: priority and policy thirds by sector`} rowKey={(c) => c.key} pageSize={66} />}
       csv={csv}
       notes="Policy activity counts and rates policies; it does not measure whether they work."
       badge={<InfoTip id="priority_no_policy" term="the priority without policy" />}
@@ -392,7 +403,7 @@ export function PolicyCoverage() {
     <ChartCard
       headingLevel={3}
       title="Policy records by technology and stage"
-      sub={`How many of ${poss(name)} International Energy Agency Policies and Measures records concern each technology at each stage. A record that names no technology counts in every technology and is shown separately. Colour: orange fewer records, white the middle sector of ${poss(name)} 33 (the paper's 11 technologies at three stages), blue more.`}
+      sub={`How many of ${poss(name)} International Energy Agency Policies and Measures records concern each technology at each stage. A record that names no technology counts in every technology and is shown separately. Colour: orange fewer records, white the middle sector of ${poss(name)} ${rows.length * sheet.policy.coverage.cols.length} (${rows.length} technologies at ${numberWord(sheet.policy.coverage.cols.length)} stages), blue more.`}
       summary={`${cap(name)}: International Energy Agency Policies and Measures records by technology and stage.`}
       table={() => (
         <TableView<TwinRow>
@@ -406,20 +417,20 @@ export function PolicyCoverage() {
             { id: 'latest', header: 'Latest record year', value: (r) => r.latest },
           ]}
           caption={`${cap(name)}: policy records by technology and stage`}
-          pageSize={33}
+          pageSize={66}
         />
       )}
       csv={csv}
       legend={<TriLegend scale={scale} label="Records for the stage" format={(v) => String(Math.round(v))} noun="sectors" />}
       notes={
         <>
-          Records naming no technology: {sheet.policy.pams_no_tech.d} (they count in every technology). {cmLine ? `Critical-minerals records (a tag outside the 33 sectors): ${cmLine}.` : ''}
+          Records naming no technology: {sheet.policy.pams_no_tech.d} (they count in every technology). {cmLine ? `Critical-minerals records (a tag outside the technology sectors): ${cmLine}.` : ''}
         </>
       }
     >
       <HeatTable
         rows={rows.map((r) => ({ key: r.slug, label: r.tech, sub: `any stage: ${r.any.d}` }))}
-        cols={sheet.policy.coverage.cols.map((st) => ({ key: st.toLowerCase(), label: st, stage: st.toLowerCase() as 'upstream' | 'midstream' | 'downstream' }))}
+        cols={sheet.policy.coverage.cols.map((st) => ({ key: stageSlug(st), label: stageLabel(st), stage: stageSlug(st) as SupplyStageSlug }))}
         cell={(rk, ck) => {
           const hit = byKey.get(`${rk}|${ck}`);
           const k = `${rk}-${ck}`;
@@ -485,6 +496,72 @@ function NipoItem({ p }: { p: NipoPolicy }) {
   );
 }
 
+/**
+ * The NIPO card while the run is not matched to the six supply-chain stages (policy.nipo.staged false,
+ * design K1): the sheet's words for it and the economy's counts (active, not yet in force, without
+ * products, EU-wide or shared); no sector picker, no list, no table or CSV.
+ */
+function NipoUnstaged() {
+  const { sheet } = useProfile();
+  const name = proseName(sheet.meta.country);
+  const n = sheet.policy.nipo!;
+  const vintage = n.vintage_label ?? 'Global Trade Alert, New Industrial Policy Observatory';
+  const eu = n.n_active_eu && (n.n_active_eu.v ?? 0) > 0 ? n.n_active_eu : null;
+  const shared = n.n_active_shared && (n.n_active_shared.v ?? 0) > 0 ? n.n_active_shared : null;
+  return (
+    <ChartCard
+      headingLevel={3}
+      title="Active industrial-policy measures"
+      sub={`The active industrial-policy measures of ${name} in the ${vintage}. Shown as context: these measures are not part of the Policy index, which counts International Energy Agency Policies and Measures records and the Climate Action Tracker rating.`}
+      summary={`${cap(name)}: ${n.n_active.d} active industrial-policy measures, counted for the whole economy.`}
+      badge={<Tag>CONTEXT</Tag>}
+      notes={
+        <div className="space-y-1.5">
+          {n.strength_words && <p>{n.strength_words}</p>}
+          <p>
+            {n.active_rule === 'in_force'
+              ? `Active here means implemented on or before ${sheet.meta.as_of_label} and not removed (no removal date, or one after it).`
+              : `Active means not removed: no removal date, or one after ${sheet.meta.as_of_label}.`}{' '}
+            Source: {vintage}, the latest completed run; strength scored by the authors.
+          </p>
+        </div>
+      }
+    >
+      <p className="mb-3 max-w-3xl text-sm text-paper-dim" data-testid="nipo-not-staged">
+        {n.staged_d ?? 'The measures are not yet matched to the six supply-chain stages, so they are counted for the whole economy and not listed by sector.'}
+      </p>
+      <dl className="grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-[auto_1fr]" aria-label={`Industrial-policy measures of ${name}`}>
+        <dt className="text-paper-mute">Active measures</dt>
+        <dd className="tabular text-paper">{n.n_active.d}</dd>
+        {n.n_not_in_force && (n.n_not_in_force.v ?? 0) > 0 && (
+          <>
+            <dt className="text-paper-mute">Of which not yet in force</dt>
+            <dd className="tabular text-paper">{n.n_not_in_force.d}</dd>
+          </>
+        )}
+        {(n.n_crosscut.v ?? 0) > 0 && (
+          <>
+            <dt className="text-paper-mute">Listing no products (not tied to any sector)</dt>
+            <dd className="tabular text-paper">{n.n_crosscut.d}</dd>
+          </>
+        )}
+        {eu && (
+          <>
+            <dt className="text-paper-mute">EU-wide</dt>
+            <dd className="tabular text-paper">{eu.d}</dd>
+          </>
+        )}
+        {shared && (
+          <>
+            <dt className="text-paper-mute">Recorded under more than one jurisdiction</dt>
+            <dd className="tabular text-paper">{shared.d}</dd>
+          </>
+        )}
+      </dl>
+    </ChartCard>
+  );
+}
+
 export function NipoCard() {
   const { sheet, cell, setCell } = useProfile();
   const name = proseName(sheet.meta.country);
@@ -494,6 +571,9 @@ export function NipoCard() {
   const list = nipoOfCell(sheet, current?.key);
   const vintage = n?.vintage_label ?? 'Global Trade Alert, New Industrial Policy Observatory';
   const strictRule = n?.active_rule === 'in_force';
+  // schema 2 (design K1): the run's measures are not matched to the six stages yet, so no sector list
+  const staged = n?.staged !== false;
+  if (n && n.covered && !staged) return <NipoUnstaged />;
   const sub = `The five strongest active industrial-policy measures in each sector, from the ${vintage}. Sector-specific measures come first; economy-wide ones (sanctions, export controls and other measures that map to almost every technology) follow and are tagged. Shown as context: these measures are not part of the Policy index, which counts International Energy Agency Policies and Measures records and the Climate Action Tracker rating.`;
   // EU-wide and shared measures (2026-10-14): Global Trade Alert records an EU measure under every member it covers
   const scopeWord = (sc: NipoPolicy['scope']) => (sc ? (sheet.words?.nipo_scope?.[sc] ?? sc) : '');
@@ -571,7 +651,7 @@ export function NipoCard() {
           The {vintage} run scores measures for {n.jurisdictions?.d ?? 'a set of'} implementing jurisdictions; {name} is not among them.
         </p>
       ) : !withMeasures.length ? (
-        <p className="text-sm text-paper-mute">No active measure is tied to one of {poss(name)} 33 sectors in this run.</p>
+        <p className="text-sm text-paper-mute">No active measure is tied to one of {poss(name)} {numberWord(sheet.cells.length)} sectors in this run.</p>
       ) : (
         <>
           {sharedLine && <p className="mb-3 text-sm text-paper-dim">{sharedLine}</p>}

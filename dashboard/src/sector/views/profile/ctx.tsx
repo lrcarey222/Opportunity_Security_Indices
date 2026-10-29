@@ -90,7 +90,7 @@ export function itemForCell(model: SectorModel, v: VarInfo, cell: ItemInfo): Ite
   return null;
 }
 
-/** Linked items of an axis that have data for a var (fuels of Oil Upstream, minerals of Batteries Upstream). */
+/** Linked items of an axis that have data for a var (fuels of Oil Extraction, minerals of Batteries Extraction). */
 export function linkedWith(model: SectorModel, cell: ItemInfo, axis: 'mineral' | 'fuel' | 'commodity' | 'activity', v: VarInfo | null): ItemInfo[] {
   return model
     .itemsOfCell(cell.idx, axis)

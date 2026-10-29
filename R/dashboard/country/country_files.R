@@ -1,8 +1,11 @@
 # The R files scripts/88_export_country_data.R and the tests source, relative to the repository root,
 # in order (pure helpers of Country Insights; spec_country.md A7.2). The OSB decoder is the Strategic
-# export's (R/dashboard/dash_osb.R), read only.
+# export's (R/dashboard/dash_osb.R), read only. The six supply-chain stages (SUPPLY_CHAIN_STAGES, the
+# supply stages of the allied pick, the Strategic Index stage weights) come from the pipeline's
+# R/utils/supply_chain_stages.R (pure), sourced first (2026-10-28).
 country_helper_files <- function() {
   c(
+    "R/utils/supply_chain_stages.R",
     "R/dashboard/dash_osb.R",
     "R/dashboard/country/country_format.R",
     "R/dashboard/country/country_util.R",

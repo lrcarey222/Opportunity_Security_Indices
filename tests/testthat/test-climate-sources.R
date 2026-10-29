@@ -77,14 +77,19 @@ wei_sheets <- function() {
 
 test_that("the real map lists every cell and passes its validation", {
   expect_identical(climate_sources_map_validate(map, dict_cells, weo_ids), character())
+  # Keyed on the six-stage cells of the dictionary.
+  expect_setequal(names(map$cells), dict_cells)
+  # No WEI row name the views show names an old stage (the published labels stay as published).
+  nm <- vapply(map$wei$rows, function(r) r$name, character(1))
+  expect_false(any(grepl("\\b(upstream|midstream|downstream)\\b", nm, ignore.case = TRUE)))
   bad <- map
-  bad$cells$`solar-downstream`$wei[[1]]$match <- "maybe"
-  bad$cells$`wind-downstream` <- NULL
+  bad$cells$`solar-deployment`$wei[[1]]$match <- "maybe"
+  bad$cells$`wind-deployment` <- NULL
   bad$nze2021$series[[1]]$weo <- "no_such_series"
   bad$weo_regions$own$DEU <- "Germany"
   p <- climate_sources_map_validate(bad, dict_cells, weo_ids)
   expect_match(p, "match must be direct, partial or proxy", all = FALSE)
-  expect_match(p, "cells missing from the map: wind-downstream", all = FALSE)
+  expect_match(p, "cells missing from the map: wind-deployment", all = FALSE)
   expect_match(p, "is not a series of config/iea_pathways_map.yml", all = FALSE)
   expect_match(p, "own names a region that is not read", all = FALSE)
 })
@@ -206,8 +211,8 @@ src_processed <- function() {
 test_that("cells take the best match of their WEI rows; GCP fuels are context on the fossil cells only", {
   p <- src_processed()
   expect_identical(nrow(p$cells), length(dict_cells))
-  expect_identical(p$cells$match[p$cells$cell == "solar-downstream"], "direct")
-  expect_identical(p$cells$match[p$cells$cell == "semiconductors-upstream"], "none")
+  expect_identical(p$cells$match[p$cells$cell == "solar-deployment"], "direct")
+  expect_identical(p$cells$match[p$cells$cell == "semiconductors-refining"], "none")
   g <- p$map[p$map$src == "gcp", ]
   expect_true(all(g$role == "context") && all(is.na(g$match)))
   expect_true(all(sub("-.*$", "", g$cell) %in% c("coal", "oil", "gas")))

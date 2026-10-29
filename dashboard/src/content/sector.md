@@ -1,12 +1,15 @@
 ## What the Sector pages show
 
 The Sector pages show the measured data that the country rankings start from: who produces,
-holds, trades, invests in and regulates each energy technology, from raw materials (Upstream) through
-manufacturing and processing (Midstream) to deployment and use (Downstream). Eleven technologies at
-three stages make 33 sectors; Semiconductors are shown as well, outside the paper's headline set.
-Every number is shown in its source's own unit and year, with the source, the coverage and the caveats
-beside it. Nothing here is an index, a weight or a score, and nothing moves with the Perspective dials
-of the Country profile.
+holds, trades, invests in and regulates each energy technology, along six supply-chain stages:
+extraction (mining and fuels), refining (processed materials), components (parts), assembly (finished
+equipment), deployment (installation and use) and recovery (recycling). Eleven technologies at six
+stages make 66 sectors; Semiconductors are shown as well at their three trade stages (refining,
+components and assembly), outside the headline set. Every number is shown in its source's own unit and
+year, with the source, the coverage and the caveats beside it. Apart from the Strategic posture
+sections, which show the strategic position framework's recommendation at fixed thresholds, nothing
+here is an index, a weight or a score, and nothing moves with the Perspective dials of the Country
+profile.
 
 ## Reading the colours
 
@@ -83,16 +86,17 @@ bloc all sum this one matrix, so the cards on a page agree to the dollar.
   measure shown here, and it is labelled so.
 * **Re-export hubs.** Hong Kong and Macao stay in the matrix, tagged "re-export hub"; importers record
   the country of origin, so their share there is small.
-* **Baskets.** The Electric Grid Upstream basket is the copper and aluminium basket; HS 851762
-  (communication equipment) is outside Electric Grid Midstream. Excluded codes are listed on each
-  profile.
-* **Upstream baskets (2026-10 review).** Electric Vehicles, Solar, Wind, Nuclear and Semiconductors
-  Upstream now have trade baskets: the battery minerals and magnet rare earths as ores and concentrates
-  (Electric Vehicles), silicon metal (Solar), rare-earth compounds, metals and ore (Wind), uranium ores
-  and natural uranium compounds, moved from Nuclear Midstream (Nuclear), and gallium, germanium and
-  indium (Semiconductors). Each profile states what its basket holds and leaves out. Rare-earth
-  compounds and metals moved from the Electric Vehicles and Wind Midstream baskets to these Upstream
-  baskets.
+* **Baskets.** Each six-digit code sits at the stage of what it physically is: refined battery
+  chemicals, polysilicon and electrical steel are refining, cells and blades components, modules and
+  turbines assembly. Electric Grid's material baskets are copper and aluminium (ores at extraction,
+  refined metal at refining); HS 851762 (communication equipment) is outside its manufacturing
+  baskets. Excluded codes are listed with each technology's baskets.
+* **Material baskets (2026-10 review).** Electric Vehicles, Solar, Wind, Nuclear and Semiconductors
+  have material baskets: the battery minerals and magnet rare earths as ores and concentrates
+  (Electric Vehicles, extraction) and as compounds and metals (refining), silicon metal (Solar,
+  refining), rare-earth ore (Wind, extraction) and compounds and metals (refining), uranium ores
+  (Nuclear, extraction) and natural uranium compounds (refining), and gallium, germanium and indium
+  (Semiconductors, refining). Each profile states what its basket holds and leaves out.
 * **Sub-components.** A basket is built from groups of codes, such as cells and modules in solar.
   Every Trade section can be viewed by sub-component: the exporter, net-trade and 2020-2024 cards and
   the ranking then show one group, on the same reconciled basis, so a sector's sub-components add up to
@@ -107,11 +111,13 @@ bloc all sum this one matrix, so the cards on a page agree to the dollar.
 
 ## Cross-border manufacturing projects
 
-The Solar, Wind, Batteries and Electric Vehicles midstream pages also show the Cleantech Manufacturing
-FDI Dataset (CM-FDI) of the Net Zero Industrial Policy Lab, Johns Hopkins University (P. Bandara and the
-Net Zero Industrial Policy Lab, edition 2026.10.05, licensed under CC BY 4.0): one record per
-cross-border greenfield or expansion project, announced 1996-2026, with its parent company, the economy
-where the parent is headquartered, the destination, the status and a source link per field.
+The components and assembly pages of Solar, Wind, Batteries and Electric Vehicles also show the
+Cleantech Manufacturing FDI Dataset (CM-FDI) of the Net Zero Industrial Policy Lab, Johns Hopkins
+University (P. Bandara and the Net Zero Industrial Policy Lab, edition 2026.10.05, licensed under
+CC BY 4.0): one record per cross-border greenfield or expansion project, announced 1996-2026, with its
+parent company, the economy where the parent is headquartered, the destination, the status and a
+source link per field. A project makes parts and finished equipment alike, so both stages show the same
+projects, and every sum counts a project once.
 
 * **What is counted.** Projects, and the capital a project announced where it is disclosed. An
   undisclosed amount reads "not disclosed"; it is never counted as 0, and every sum says how many
@@ -133,7 +139,7 @@ Climate TRACE's estimates of direct emissions (tonnes of CO2-equivalent on a 100
 * **Mapped, with a match quality.** Climate TRACE reports subsectors (coal mining, oil and gas
   production, aluminium, electricity generation, ...), not technologies. Each sector says how well its
   subsectors match: *direct* (the subsector is the sector's own activity, as coal mining for Coal
-  Upstream), *partial* (it also covers other activity, or only part of the sector's: oil and gas
+  extraction), *partial* (it also covers other activity, or only part of the sector's: oil and gas
   production is one subsector; coal-fired power is part of coal use), *proxy* (a related activity shown
   for scale, not the sector's own emissions) or *none*. Sectors with no match show the technology's IPCC
   lifecycle intensity (grams of CO2e per kWh over a plant's life) instead, which is a property of the
@@ -165,14 +171,15 @@ are **IEA scenario projections, not observed data and not forecasts**, and every
   Country profiles use the same edition's Regions file (below); its regions have no Net Zero scenario.
 * **Mapped, with a match quality.** Each sector shows the WEO series for its own activity (installed
   solar, wind, nuclear, geothermal and battery storage capacity; coal, oil and gas supply and use;
-  coal-, gas- and oil-fired electricity), the demand it serves (Midstream factories and Upstream
-  minerals: the deployment of the technology they supply) and emissions trajectories as context (the CO2
+  coal-, gas- and oil-fired electricity), the demand it serves (the factories of the components and
+  assembly stages and the minerals of extraction and refining: the deployment of the technology they
+  supply) and emissions trajectories as context (the CO2
   intensity of electricity; CO2 from iron and steel, aluminium and chemicals beside the sectors made of
   them). *Direct*, *partial* and *proxy* mean what they mean for the emissions above. The free dataset
   has no EV stock, electrolyser capacity or grid length, so electricity used in transport stands in for
   the EV fleet, low-emissions hydrogen production (which also counts hydrogen from fossil fuels with
   carbon capture) for electrolysers, and electricity generation for the grid: each is labelled a proxy.
-* **Mineral demand by scenario.** For Upstream mineral sectors, the IEA Critical Minerals Dataset 2026
+* **Mineral demand by scenario.** For the mineral sectors (extraction and refining), the IEA Critical Minerals Dataset 2026
   (CC BY 4.0) gives demand from the sector's technologies in the Current Policies, Stated Policies and
   High Demand scenarios, summed over the technologies named. That dataset has **no Net Zero scenario**,
   so mineral demand on the Net Zero pathway is not shown.
@@ -221,7 +228,7 @@ Added 2026-10-17. Each is cited wherever its figures are shown.
   (mostly electric vehicles) stands in for EVs, each labelled a proxy.
 * **Not shown: manufacturing emissions per value added.** The IEA Energy and Emissions per Value Added
   database was staged, but its terms require the IEA's permission for any external dissemination, so the
-  Midstream sectors do not show it and say why.
+  manufacturing sectors (components and assembly) do not show it and say why.
 
 ## Money
 
@@ -250,8 +257,12 @@ note" column of every table carries the fact's own notes (an assumed-zero produc
 ## What this module does not show, and why
 
 * **Index, weight and score values.** Rankings and weights belong to the Country profiles. Each measure's
-  notes say which index it feeds, without showing the index.
+  notes say which index it feeds, without showing the index. The one exception is the strategic
+  posture, a recommendation at fixed thresholds, shown in its own section.
 * **Totals across technologies.** Trade baskets overlap, so a sum would count some goods twice.
+* **The same figure twice.** Where a source reports one figure for manufacturing as a whole
+  (manufacturing investment, the IEA's manufacturing shares, development aid), the components and
+  assembly pages both show it, each with a note naming the other; headline sums count it once.
 * **Regional or world values as country values.** World prices, IEA regions and entities, and
   technology readiness are shown at their own level and never ranked as if they were national.
 * **Two trade bases on one page.** The matrix is shown; the exporter-reported basis appears only in the

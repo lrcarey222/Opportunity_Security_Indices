@@ -1,5 +1,7 @@
 // Sector profile /sector/:tech/:stage (spec_sector.md 4.3): the core page. IA refactor 2026-10-16 (brief
-// s.5-8): the supply-chain navigator under the head, the four lenses (./Lenses.tsx) on top, and the
+// s.5-8): the supply-chain navigator under the head, the four lenses (./Lenses.tsx) on top, then the
+// "Strategic posture" section (design L3, 2026-10-28: the posture scatter of the strategic position
+// framework fixed to this technology and stage, #posture; the posture and Sector links land there), and the
 // existing sections grouped under Competitiveness & markets, Security & concentration, Policy, Climate
 // and Advanced & evidence (PROFILE_GROUPS; the rail lists the groups, section ids keep working; on
 // phones the groups start folded and open on a pick or a link to one of their sections). Sections appear in
@@ -16,7 +18,9 @@ import { Notice, PageHead, StatTile } from '../../../components/ui.tsx';
 import { downloadBlob } from '../../../lib/download.ts';
 import { withBom } from '../../../lib/csv.ts';
 import { useTitle } from '../../../shell/title.ts';
-import { FAMILY_SECTION, isStageSlug, isTechSlug, STAGE_LABELS, TECH_LABELS, type SectionId, type SectorManifest, type StageSlug, type TechSlug } from '../../contract.ts';
+import { ACTIVITY_OF_STAGE, FAMILY_SECTION, isStageSlug, isTechSlug, STAGE_LABELS, TECH_LABELS, type SectionId, type SectorManifest, type StageSlug, type TechSlug } from '../../contract.ts';
+import { isLegacyStageSlug, legacyStageNote, legacyStageOfSlug, legacyStageTarget } from '../../../lib/stages.ts';
+import { PostureBasisTag, SectorPostureCard, SectorPostureIntro } from '../../../posture/index.ts';
 import { useModel, useSectorManifest } from '../../data/SectorDataProvider.tsx';
 import type { FactsIndex } from '../../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
@@ -82,14 +86,18 @@ export function profileSections(model: SectorModel, cell: ItemInfo, hasPolicy: b
   return out;
 }
 
-/** The activity item (ILO wages) of a cell's stage. */
+/**
+ * The activity item (ILO wages) of a cell's stage: the linked activity, else the ILO activity of the stage
+ * (ACTIVITY_OF_STAGE: mining and utilities for Extraction and Recovery, manufacturing for Refining,
+ * Components and Assembly, construction for Deployment).
+ */
 export function contextItem(model: SectorModel, cell: ItemInfo): ItemInfo | null {
   const w = vOf(model, 'prices.wages');
   if (!w) return null;
   const linked = linkedWith(model, cell, 'activity', w);
   if (linked.length) return linked[0];
-  const stage = (cell.stage ?? '').toLowerCase();
-  return model.items.find((x) => x.axis === 'activity' && (x.slug === cell.stageSlug || lc(x.label).includes(stage)) && model.availOf(w, x.idx).length) ?? null;
+  const slug = cell.stageSlug ? ACTIVITY_OF_STAGE[cell.stageSlug] : null;
+  return model.items.find((x) => x.axis === 'activity' && x.slug === slug && model.availOf(w, x.idx).length) ?? null;
 }
 
 /** A section that mounts its content when it nears the viewport. */
@@ -510,7 +518,7 @@ function Deeper({ tech, stage }: { tech: TechSlug; stage: StageSlug }) {
   const minerals = model.itemsOfCell(cell.idx, 'mineral');
   const items: { to: string; label: string; text: string }[] = [
     { to: link('/sector/explore', { tech: TECH_LABELS[tech], stage: STAGE_LABELS[stage] }), label: 'Advanced explorer', text: 'Any measure for every economy and every sector: a map, a ranking, the spread and the trend.' },
-    { to: link('/sector/concentration'), label: 'Compare concentration across sectors', text: 'The same concentration measures for all 33 sectors side by side.' },
+    { to: link('/sector/concentration'), label: 'Compare concentration across sectors', text: `The same concentration measures for all ${model.cells.length} sectors side by side.` },
     ...(minerals.length ? [{ to: link('/sector/minerals'), label: 'Minerals', text: 'Mining, refining, reserves and trade of the minerals this technology uses.' }] : []),
     { to: link('/sector/sources'), label: 'Sources & data', text: 'The variable dictionary, every source, coverage, and the full data as downloads.' },
   ];
@@ -526,6 +534,27 @@ function Deeper({ tech, stage }: { tech: TechSlug; stage: StageSlug }) {
           </li>
         ))}
       </ul>
+    </Section>
+  );
+}
+
+/**
+ * The profile's "Strategic posture" section (design L3): the posture scatter of the strategic position
+ * framework fixed to this node (a recommendation at fixed thresholds, unlike the measured values around
+ * it). The 66 headline cells only: the posture data has no Semiconductors node.
+ */
+export function PostureSection({ tech, stage }: { tech: TechSlug; stage: StageSlug }) {
+  return (
+    <Section
+      id="posture"
+      title="Strategic posture"
+      sub={
+        <>
+          <PostureBasisTag /> <SectorPostureIntro />
+        </>
+      }
+    >
+      <SectorPostureCard node={{ tech: TECH_LABELS[tech], stage: STAGE_LABELS[stage] }} compact />
     </Section>
   );
 }
@@ -628,13 +657,13 @@ function Body({ cell, tech, stage, facts }: { cell: ItemInfo; tech: TechSlug; st
         style={{ top: 'var(--sector-bar-h, 3.5rem)' }}
         data-testid="section-nav-band"
       >
-        <SectionRail sections={[{ id: 'overview', label: 'What to know' }, ...groups.map((g) => ({ id: g.id, label: g.title }))]} onNavigate={openGroup} />
+        <SectionRail sections={[{ id: 'overview', label: 'What to know' }, ...(cell.headline ? [{ id: 'posture', label: 'Strategic posture' }] : []), ...groups.map((g) => ({ id: g.id, label: g.title }))]} onNavigate={openGroup} />
       </div>
       <div className="min-w-0">
         {thin && (
           <div className="mb-6">
             <Notice kind="info">{thinNotice(model, cell)}</Notice>
-            {cell.stageSlug === 'upstream' && model.itemsOfCell(cell.idx, 'mineral').length > 0 && (
+            {model.itemsOfCell(cell.idx, 'mineral').length > 0 && (
               <p className="mt-2 text-sm text-paper-dim">
                 Minerals:{' '}
                 {model.itemsOfCell(cell.idx, 'mineral').map((l, i) => (
@@ -650,6 +679,11 @@ function Body({ cell, tech, stage, facts }: { cell: ItemInfo; tech: TechSlug; st
           </div>
         )}
         <Lenses />
+        {cell.headline && (
+          <div className="mb-12">
+            <PostureSection tech={tech} stage={stage} />
+          </div>
+        )}
         <div className="space-y-12">
           {groups.map((g) => (
             <Group key={g.id} id={g.id} title={g.title} lede={g.lede} open={open.has(g.id)} onToggle={() => toggle(g.id)}>
@@ -676,7 +710,15 @@ export default function SectorProfileView() {
   useTitle(cell ? (sub ? `${sub} · ${model.cellLabel(cell)}` : model.cellLabel(cell)) : 'Sectors', 'Sector Insights');
   const { facts, h } = useFacts();
   const highlight = useHighlight(model);
+  const loc = useLocation();
   if (!tech) return <Redirect to="/sector" notice={`No sector called '${rawT}'; showing all sectors.`} />;
+  // an old three-stage link (design U1): Downstream is Deployment exactly (query and hash kept); Upstream
+  // and Midstream split, so their links go to the technology's chain page (query kept, the section hash dropped)
+  if (rawS && isLegacyStageSlug(rawS)) {
+    const to = legacyStageTarget(rawS);
+    const legacy = legacyStageOfSlug(rawS)!;
+    return <Redirect to={{ pathname: to ? `/sector/${tech}/${to}` : `/sector/${tech}`, search: loc.search, hash: to ? loc.hash : '' }} notice={legacyStageNote(legacy, TECH_LABELS[tech])} />;
+  }
   if (!stage || !cell) {
     return <Redirect to={`/sector/${tech}`} notice={stage ? `${TECH_LABELS[tech]} has no ${STAGE_LABELS[stage]} cell; showing the whole chain.` : `No stage called '${rawS}'; showing the whole ${TECH_LABELS[tech]} chain.`} />;
   }

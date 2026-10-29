@@ -32,6 +32,8 @@ describe.skipIf(!haveFixture())('monthly trade files (fixture)', () => {
       ['string value', (d) => (d.cells[0].subs[0].imports[0] = '5'), 'length'],
       ['total', (d) => (d.cells[0].total.imports[2] = 1), 'do not sum'],
       ['cell key', (d) => (d.cells[0].key = 'batteries-sideways'), 'unknown cell key'],
+      // a three-stage key is not a sector of the six-stage sheets
+      ['legacy cell key', (d) => (d.cells[0].key = 'batteries-midstream'), 'unknown cell key'],
       ['months', (d) => d.window.months.shift(), 'expected 12 months'],
       ['iso3', (d) => (d.iso3 = 'DEU'), 'is not USA'],
       ['negative', (d) => (d.cells[0].subs[0].exports[1] = -5), 'negative value'],
@@ -48,15 +50,20 @@ describe.skipIf(!haveFixture())('monthly trade files (fixture)', () => {
 
   it('the selected sector is shown when the file has it, else the sector with the most trade', () => {
     const d = doc();
-    expect(pickTradeCell(d, 'solar-midstream')).toEqual({ cell: d.cells.find((c) => c.key === 'solar-midstream'), fallback: false });
-    const fb = pickTradeCell(d, 'oil-upstream');
+    // the six-stage cells of the fixture's monthly basket, in the cell order
+    expect(d.cells.map((c) => c.key)).toEqual(['batteries-refining', 'batteries-components', 'batteries-assembly', 'electric-vehicles-components', 'solar-refining', 'solar-assembly']);
+    expect(pickTradeCell(d, 'solar-assembly')).toEqual({ cell: d.cells.find((c) => c.key === 'solar-assembly'), fallback: false });
+    // oil extraction has no traded-goods basket in the monthly file (six stages: 38 cells with a basket)
+    const fb = pickTradeCell(d, 'oil-extraction');
     expect(fb.fallback).toBe(true);
-    expect(fb.cell.key).toBe('batteries-midstream');
+    expect(fb.cell.key).toBe('batteries-assembly');
     expect(pickTradeCell(d, null).fallback).toBe(false);
   });
 
   it('lines: sub-components largest first, at most six, each indexed to its first month, plus the total', () => {
-    const c = doc().cells.find((x) => x.key === 'batteries-midstream')!;
+    // the sector with the most sub-components in the fixture (Cathode Materials & Battery Precursors, Anode Materials)
+    const c = doc().cells.find((x) => x.key === 'batteries-refining')!;
+    expect(c.subs.length).toBe(2);
     const l = tradeLines(c, 'imports');
     const subs = l.lines.filter((x) => x.id !== TOTAL_ID);
     expect(subs.length).toBeLessThanOrEqual(SUB_LINES);

@@ -21,7 +21,7 @@ const ctx: UrlCtx = {
     psi_view: 'world',
   },
   techs: ['Batteries', 'Solar', 'Electric Vehicles'],
-  stages: ['Upstream', 'Midstream', 'Downstream'],
+  stages: ['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery'],
 };
 
 const roundTrip = (q: string) => {
@@ -30,7 +30,7 @@ const roundTrip = (q: string) => {
 };
 
 describe('parseSearch / writeSearch', () => {
-  it('the paper baseline is the bare URL', () => {
+  it('the NEIS baseline is the bare URL', () => {
     const p = parseSearch('', ctx);
     expect(p.problems).toEqual([]);
     expect(p.scenario.dials).toEqual({ hawkishness: 50, bullishness: 50, populism: 50, greenness: 50 });
@@ -41,7 +41,7 @@ describe('parseSearch / writeSearch', () => {
   it('round-trips every key in the canonical order', () => {
     const q =
       '?h=80&b=25&p=55&g=95&es=1,0.5,3&eo=2,0&tau=0.25&fossil=never&screen=0&psi=coalition' +
-      '&show=change&tech=Solar&stage=Upstream&metric=si_rank&rankable=0&partner=CAN';
+      '&show=change&tech=Solar&stage=Refining&metric=si_rank&rankable=0&partner=CAN';
     expect(roundTrip(q)).toBe(q.replace(/,/g, '%2C'));
     // any order in, canonical order out
     const shuffled = '?metric=si_rank&g=95&h=80&show=change';
@@ -78,6 +78,28 @@ describe('parseSearch / writeSearch', () => {
     expect(p.problems).toHaveLength(5);
     for (const k of ['lambda', 'maxshare', 'minprod', 'caps', 'cmp']) expect(p.problems.join(' | ')).toContain(`${k} (a setting of the original allied network design, which is retired)`);
     expect(writeSearch(p.scenario, p.view, ctx)).toBe('?h=80');
+  });
+
+  it('an old three-stage stage: Downstream opens Deployment, Upstream and Midstream are dropped; each is named', () => {
+    const down = parseSearch('?h=80&tech=Solar&stage=Downstream', ctx);
+    expect(down.view.stage).toBe('Deployment');
+    expect(down.problems).toEqual(['stage=Downstream (Downstream is now Deployment; showing Deployment)']);
+    expect(writeSearch(down.scenario, down.view, ctx)).toBe('?h=80&tech=Solar&stage=Deployment');
+    const mid = parseSearch('?tech=Batteries&stage=Midstream', ctx);
+    expect(mid.view.stage).toBeNull();
+    expect(mid.view.tech).toBe('Batteries');
+    expect(mid.problems).toHaveLength(1);
+    expect(mid.problems[0]).toMatch(/^stage=Midstream \(Midstream is no longer a stage: it is now mostly Components and Assembly .*; the stage was dropped\)$/);
+    const up = parseSearch('?stage=Upstream', ctx);
+    expect(up.view.stage).toBeNull();
+    expect(up.problems[0]).toContain('Extraction, Refining and Recovery');
+    expect(writeSearch(up.scenario, up.view, ctx)).toBe('');
+    // anything else is still just not a stage
+    expect(parseSearch('?stage=Sidestream', ctx).problems).toEqual(['stage=Sidestream (not a supply-chain stage)']);
+    // a build without Deployment drops Downstream too
+    const noDep = parseSearch('?stage=Downstream', { ...ctx, stages: ['Extraction', 'Refining'] });
+    expect(noDep.view.stage).toBeNull();
+    expect(noDep.problems[0]).toContain('the stage was dropped');
   });
 
   it('rejects all-zero category weights and repeated keys', () => {

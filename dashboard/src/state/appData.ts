@@ -147,7 +147,8 @@ export function buildAppData(manifest: Manifest, dims: Dims, baseline: BaselineC
     U,
     Uindex: new Map(U.map((x, i) => [x, i])),
     defaultTech: pick('Batteries', techs),
-    defaultStage: pick('Midstream', stages),
+    // Batteries — Refining (design E6, the posture module's default node)
+    defaultStage: pick('Refining', stages),
     defaultCountry: scoredIso.has('USA') ? 'USA' : (scored[0]?.iso3c ?? 'USA'),
     fixture: /synthetic|fixture/i.test(manifest.paper?.title ?? '') || manifest.schema !== 'osi-dashboard',
   };

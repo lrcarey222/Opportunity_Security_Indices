@@ -8,7 +8,10 @@
 //   * right-aligned: an aria-live status ("Loading trade data for Batteries, 310 kB") and
 //     "Data notes (n)": the notes passed in plus the page's overflow caveats (pageNotes.tsx).
 //
-// Phones (< 768 px): one summary button ("Batteries · Midstream ▾" or "Filters ▾") and the highlight
+// The stage control lists the six stages; below 1280 px it shows their shorts (Ext, Ref, Com, Asm, Dep,
+// Rec) with the full name in the title and the accessible name.
+//
+// Phones (< 768 px): one summary button ("Batteries · Refining ▾" or "Filters ▾") and the highlight
 // chip; the button opens a BottomSheet with the same controls. The SectorBar never shows a dial.
 //
 // The bar's height (it wraps: about 76 px at 1280, 105 px at 1024, 145 px at 768) is published as
@@ -34,9 +37,11 @@ export const COVERAGE_GLYPH: Record<StageCoverage, { glyph: string; words: strin
 export interface SectorBarStage {
   slug: StageSlug;
   label: string;
+  /** the short label for narrow widths ("Ref"); the label when absent */
+  short?: string;
   coverage: StageCoverage | null;
   disabled?: boolean;
-  /** why it is disabled ("Semiconductors: Midstream only") */
+  /** why it is disabled ("Semiconductors has no Extraction cell") */
   title?: string;
 }
 
@@ -58,7 +63,7 @@ export interface SectorBarProps {
   status: string;
   /** manifest notes and view notes; the page's overflow caveats are added from pageNotes */
   notes: readonly string[];
-  /** the phone summary ("Batteries · Midstream"); "Filters" when absent */
+  /** the phone summary ("Batteries · Refining"); "Filters" when absent */
   summary?: string | null;
 }
 
@@ -69,7 +74,7 @@ function StagePicker({ picker, name }: { picker: SectorBarPicker; name: string }
       <div className="segmented" role="radiogroup" aria-label="Stage">
         {picker.stages.map((s) => {
           const cov = s.coverage ? COVERAGE_GLYPH[s.coverage] : null;
-          const title = [s.title, cov ? `${s.label}: ${cov.words}` : null].filter(Boolean).join('. ');
+          const title = [s.title, cov ? `${s.label}: ${cov.words}` : s.short && s.short !== s.label ? s.label : null].filter(Boolean).join('. ');
           return (
             <label key={s.slug} title={title || undefined}>
               <input
@@ -86,7 +91,18 @@ function StagePicker({ picker, name }: { picker: SectorBarPicker; name: string }
                   {cov.glyph}
                 </span>
               )}
-              {s.label}
+              {s.short && s.short !== s.label ? (
+                <>
+                  <span aria-hidden="true" className="xl:hidden">
+                    {s.short}
+                  </span>
+                  <span aria-hidden="true" className="hidden xl:inline">
+                    {s.label}
+                  </span>
+                </>
+              ) : (
+                s.label
+              )}
             </label>
           );
         })}

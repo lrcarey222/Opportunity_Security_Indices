@@ -47,7 +47,7 @@ dash_fixture_scenarios <- function(bundle) {
     list(id = id, label = label, dials = dials, advanced = advanced, exercises = exercises)
   }
   list(
-    sc("S00", "Paper baseline", d(), exercises = "the baseline; also checked against the shipped baseline tables"),
+    sc("S00", "NEIS baseline", d(),exercises = "the baseline; also checked against the shipped baseline tables"),
     sc("S01", "Hawkishness 0", d(H = 0), exercises = "SI need weight, PSI FS share, geo and Chinese-parent ownership weights (down)"),
     sc("S02", "Hawkishness 100", d(H = 100), exercises = "the same, up"),
     sc("S03", "Bullishness 0", d(B = 0), exercises = "SI EO weight, PSI PO share (down)"),
@@ -65,7 +65,7 @@ dash_fixture_scenarios <- function(bundle) {
        "pillar recompute, IWS, rankable, SI resample, degenerate rebuild, partner layer uses baseline pillars"),
     sc("S16", "Hawkishness 70", d(H = 70), exercises = "an intermediate hawkishness multiplier (x1.74)"),
     sc("S17", if (screen_other) "Endowment screen on" else "Endowment screen off", d(), list(require_resource_base = screen_other),
-       "the allied picks with the endowment screen flipped (Upstream stages without a resource base picked or barred)")
+       "the allied picks with the endowment screen flipped (Extraction stages without a resource base picked or barred)")
   )
 }
 

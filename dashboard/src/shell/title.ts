@@ -1,6 +1,6 @@
 // Document titles (spec_react.md 8.1, spec_sector.md 2.3, spec_country.md A2.4; IA refactor 2026-10-16).
 // A view passes its own name and its module (the id 'sector' / 'country' / 'aib', or a label); the
-// module's tab name goes before the app name ("Batteries — Midstream | Sectors | Allied ...", "Japan |
+// module's tab name goes before the app name ("Batteries — Refining | Sectors | Allied ...", "Japan |
 // Countries | Allied ...", "Compacts | Allied Industrial Base | Allied ..."). The labels of the modules
 // before the refactor, which some views still pass ("Sector Insights", "Country Insights", "Sectoral
 // Compacts"), map to the tab that holds them now. A tab name equal to the view's is not repeated

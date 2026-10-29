@@ -13,7 +13,7 @@
 import { isNum } from '../../lib/format.ts';
 import { AIB_CONSTRAINTS, AIB_PHYSICAL_WARNING, AIB_SEMANTICS, diversifyShockIdOf, supplyScenariosOf, variantsOf, variantWarningsOf, type AibMeta, type AibNode } from '../contract.ts';
 import { listWords } from './format.ts';
-import { constraintLabel, diversifySetting, DIVERSIFY_LABEL, SEMANTICS_WORDS } from './settings.ts';
+import { constraintLabel, diversifySetting, DIVERSIFY_LABEL, SEMANTICS_WORDS, shockLabelOf } from './settings.ts';
 
 export type VariantGroup = 'Supply constraint' | 'Shock semantics' | 'Supply scenario' | 'Shock' | 'Diversification' | 'Other';
 
@@ -75,7 +75,7 @@ export function classVariants(n: AibNode, meta: AibMeta): VariantRow[] {
   // the diversification scenario removes no supplier: its own group, after the shocks
   const dvId = diversifyShockIdOf(meta);
   const shocks = [...meta.shocks].sort((a, b) => Number(b.id === meta.headlineShock) - Number(a.id === meta.headlineShock));
-  for (const s of shocks) if (s.id !== dvId) add('Shock', s.id, s.label, s.id === meta.headlineShock);
+  for (const s of shocks) if (s.id !== dvId) add('Shock', s.id, shockLabelOf(meta, s.id), s.id === meta.headlineShock);
   if (dvId in v) add('Diversification', dvId, diversifySetting(meta)?.label ?? meta.shocks.find((s) => s.id === dvId)?.label ?? DIVERSIFY_LABEL, false);
   for (const k of Object.keys(v)) add('Other', k, k, false);
   return rows;

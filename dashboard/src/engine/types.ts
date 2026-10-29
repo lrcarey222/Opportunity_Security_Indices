@@ -62,6 +62,9 @@ export interface BaselineInputs {
   stage_weights: NumRecord;
   excluded_sectors: string[];
   allied_excluded_techs: string[] | null;
+  /** the stages an allied pick may take (the pipeline's STRATEGIC_ALLIED_STAGES: every stage but
+   * Deployment); null in a manifest without them, which alliedSelection() refuses */
+  allied_stages: string[] | null;
   /** the endowment screen of the allied picks at the baseline (absent = on) */
   require_resource_base?: boolean;
   fossil_techs: string[];
@@ -91,7 +94,7 @@ export interface Advanced {
   eo_weights: NumRecord;
   tau: number | null;
   fossil: Fossil;
-  /** the endowment screen: an Upstream stage without recorded reserves or production is never an allied pick */
+  /** the endowment screen: an Extraction stage without recorded reserves or production is never an allied pick */
   require_resource_base: boolean;
   psi_view: PsiView;
 }

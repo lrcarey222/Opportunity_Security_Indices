@@ -37,8 +37,7 @@ import { compactScenario, compactSuppliersToday, nodeScenario, runMetaOf, scenar
 import { ROLE_ORDER, roleMatrix, type RoleRow } from '../../derive/roles.ts';
 import { additionsNeeded, coalitionMethod, coalitionTiers, replacementWords, tierEconomies, tierName, tierShares, type TierEconomy } from '../../derive/tiers.ts';
 import { AIB_PHYSICAL_WARNING, coalitionMembersOf, type AibCompact, type AibMeta, type AibNode } from '../../contract.ts';
-import { groupedSectorWords, indexLabel, indexOfNode, indicesOfCompact } from '../../derive/taxonomy.ts';
-import { stageRank, stagesInChainOrder } from '../../../lib/stages.ts';
+import { cellStagesOfNodes, nodeCellWords, nodeStageRank, nodeStageWords, nodeTechWords, nodeWhere, osiFields, technologiesOfNodes } from '../../derive/taxonomy.ts';
 import { csvWithRun, Section } from '../common.tsx';
 import { Economy, ScenarioGate, useCompact } from './shared.tsx';
 
@@ -82,7 +81,7 @@ function warnedNodes(physicalWarnings: readonly string[] | undefined, nodes: rea
  * criticalPartners; the compact's suppliers in a bundle without it).
  */
 export function OverviewSection({ title = 'Compact overview', policy = true }: { title?: string; policy?: boolean } = {}) {
-  const { c, nodes, meta, name, shockLabel, tx, scenario, hasScenarios, view, viewState } = useCompact();
+  const { c, displayName, nodes, meta, name, shockLabel, tx, scenario, hasScenarios, view, viewState } = useCompact();
   const mi = scenario === 'managed';
   const critical = view ? (view.coalition.criticalPartners ?? view.suppliers).map((x) => name(x)) : null;
   const miRows = nodes.map((n) => nodeScenario(n, 'managed'));
@@ -99,16 +98,11 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
   const byNode = parseNodePolicyNeeds(c.nodePolicyNeeds);
   const warned = warnedNodes(c.physicalWarnings, nodes);
   const warning = nodes.find((n) => n.warning)?.warning ?? AIB_PHYSICAL_WARNING;
-  const indices = indicesOfCompact(tx, c);
-  const nodeIndex = (n: AibNode) => {
-    const ix = indexOfNode(tx, n);
-    return ix ? indexLabel(ix) : null;
-  };
   const nodeCols: Col<AibNode>[] = [
-    { id: 'node', header: 'Sub-sector', value: (n) => n.label },
-    ...(tx.dictionary ? [{ id: 'index', header: 'Index', value: nodeIndex }] : []),
-    { id: 'techs', header: tx.Many, value: (n) => n.techs.join(', ') },
-    { id: 'stage', header: 'Stage', value: (n) => n.stage, sortValue: (n) => stageRank(n.stage) },
+    { id: 'node', header: 'Node', value: (n) => n.label },
+    { id: 'techs', header: tx.Many, value: (n) => nodeTechWords(n) },
+    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the node's codes sit in; none when no code is in the OSI basket." },
+    { id: 'cells', header: 'OSI cells', value: (n) => nodeCellWords(n), minWidth: 200 },
     { id: 'cls', header: hasScenarios ? 'Class under Decoupling' : 'Class', value: (n) => classInfo(n.cls).label },
     ...(hasScenarios
       ? [
@@ -131,8 +125,8 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
     text: csvWithRun(
       nodes.map((n) => ({
         compact: c.id, node_id: n.id, sub_sector: n.label,
-        ...(tx.dictionary ? { index: nodeIndex(n), sectors: n.techs.join('; '), osi_cells: n.yfCells.join('; ') } : { technologies: n.techs.join('; ') }),
-        stage: n.stage, classification: n.cls,
+        ...((p) => ({ technologies: p.technologies, osi_cells: p.osiCells, dictionary_sector: p.dictionarySector, stage: p.stages, aib_model_stage: p.modelStage }))(osiFields(tx, n)),
+        classification: n.cls,
         ...(hasScenarios ? { class_managed_interdependence: nodeScenario(n, 'managed').ran ? nodeScenario(n, 'managed').cls : null } : {}),
         policy_needs: policyNeedsText(n.policyNeeds), classification_warning: n.warning ?? null, physical_validation: n.physicalValidation ?? null, recommended_treatment: n.treatment,
       })),
@@ -166,7 +160,7 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
         badge={<ScenarioBadge />}
         sub={`What the compact covers, how its nodes are treated and what it needs.${type ? ` ${type.short}.` : ''}`}
         legend={<ClassLegend classes={mix.map((m) => m.cls)} />}
-        table={() => <TableView rows={nodes} cols={nodeCols} caption={`${c.name}: included nodes`} rowKey={(n) => n.id} pageSize={50} />}
+        table={() => <TableView rows={nodes} cols={nodeCols} caption={`${displayName}: included nodes`} rowKey={(n) => n.id} pageSize={50} />}
         csv={nodesCsv}
       >
         <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[10rem_minmax(0,1fr)]">
@@ -201,18 +195,10 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
               <span className="text-paper-dim">{noneWords}</span>
             )}
           </dd>
-          {tx.dictionary && (
-            <>
-              <dt className="text-paper-mute">{indices.length === 1 ? 'Index' : 'Indices'}</dt>
-              <dd className="text-paper-dim" data-testid="compact-indices">
-                {indices.length ? indices.map(indexLabel).join(', ') : '–'}
-              </dd>
-            </>
-          )}
           <dt className="text-paper-mute">{tx.Many}</dt>
-          <dd className="text-paper-dim">{(tx.dictionary ? groupedSectorWords(tx, c.technologies) : c.technologies.join(', ')) || '–'}</dd>
+          <dd className="text-paper-dim" data-testid="compact-technologies">{technologiesOfNodes(nodes).join(', ') || '–'}</dd>
           <dt className="text-paper-mute">Stages</dt>
-          <dd className="text-paper-dim">{stagesInChainOrder(c.stages).join(', ') || '–'}</dd>
+          <dd className="text-paper-dim">{cellStagesOfNodes(nodes).join(', ') || '–'}</dd>
           <dt className="text-paper-mute">Included nodes</dt>
           <dd>
             <ul className="flex flex-wrap gap-2">
@@ -220,7 +206,7 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
                 <li key={n.id} className="inline-flex flex-wrap items-center gap-2 border hairline px-2 py-1">
                   {mi ? miRows[i].ran && miRows[i].cls ? <ClassChip cls={miRows[i].cls as string} /> : <span className="tag text-paper-mute">Unchanged</span> : <NodeClass n={n} />}
                   <span className="text-paper">{n.label}</span>
-                  <span className="text-xs text-paper-mute">{tx.dictionary ? `${n.techs.join(', ')} · ${n.stage}` : n.stage}</span>
+                  <span className="text-xs text-paper-mute">{nodeWhere(n)}</span>
                 </li>
               ))}
             </ul>
@@ -310,7 +296,7 @@ function CoalitionCard() {
 }
 
 function CoalitionCardOf({ c }: { c: AibCompact }) {
-  const { meta, names, name, scenario, hasScenarios } = useCompact();
+  const { displayName, meta, names, name, scenario, hasScenarios } = useCompact();
   const { doc } = useAibCtx();
   const mt = coalitionMethod(c, meta.targets);
   const mid = targetLabel(mt.mid);
@@ -391,7 +377,7 @@ function CoalitionCardOf({ c }: { c: AibCompact }) {
       title="The coalition and its tiers"
       badge={<ScenarioBadge />}
       sub={`${mt.label}: ${plural(members.length, 'economy', 'economies')}.${mt.method ? ` Method: ${mt.method}.` : ''}`}
-      table={() => <TableView rows={econ} cols={cols} caption={`${c.name}: coalition tiers`} pageSize={50} />}
+      table={() => <TableView rows={econ} cols={cols} caption={`${displayName}: coalition tiers`} pageSize={50} />}
       csv={csv}
     >
       <p className="max-w-3xl text-sm leading-relaxed text-paper-dim" data-testid="coalition-method">
@@ -456,7 +442,7 @@ function RolesCard() {
 }
 
 function RolesCardOf({ c }: { c: AibCompact }) {
-  const { meta, names, name, href, scenario, hasScenarios } = useCompact();
+  const { displayName, meta, names, name, href, scenario, hasScenarios } = useCompact();
   const rows = roleMatrix(c, names);
   const tiers = new Map(tierEconomies(c, names).map((e) => [e.iso3, e]));
   const flat = c.roles.map((r) => ({ ...r, name: name(r.iso3), tierName: tierName(tiers.get(r.iso3)?.tier ?? r.tier) }));
@@ -488,10 +474,10 @@ function RolesCardOf({ c }: { c: AibCompact }) {
       title="Economies and their roles"
       badge={<ScenarioBadge />}
       sub={`${plural(nMembers, 'economy', 'economies')} in the coalition${nOutside ? `; ${plural(nOutside, 'economy', 'economies')} outside it (associates or external dependencies)` : ''}. The model assigns the roles from its results; an economy can hold several. Hover a mark for the reason.`}
-      table={() => <TableView rows={flat} cols={cols} caption={`${c.name}: economies and roles`} pageSize={50} />}
+      table={() => <TableView rows={flat} cols={cols} caption={`${displayName}: economies and roles`} pageSize={50} />}
       csv={csv}
     >
-      {rows.length ? <RoleMatrix rows={rows} c={c} href={href} /> : <EmptyState>The model assigned no roles in this compact.</EmptyState>}
+      {rows.length ? <RoleMatrix rows={rows} label={displayName} href={href} /> : <EmptyState>The model assigned no roles in this compact.</EmptyState>}
     </ChartCard>
   );
 }
@@ -510,11 +496,11 @@ const ROW_HEAD = {
   borderBottom: '1px solid rgb(255 255 255 / 0.08)',
 } as const;
 
-function RoleMatrix({ rows, c, href }: { rows: RoleRow[]; c: AibCompact; href: (to: string) => string }) {
+function RoleMatrix({ rows, label, href }: { rows: RoleRow[]; label: string; href: (to: string) => string }) {
   return (
     <div className="relative overflow-x-auto">
       <table className="data-table">
-        <caption className="sr-only">{c.name}: the role of each economy</caption>
+        <caption className="sr-only">{label}: the role of each economy</caption>
         <thead>
           <tr>
             <th scope="col">Economy</th>
@@ -580,7 +566,7 @@ function miConcentration(nodes: readonly AibNode[]): { node: AibNode; share: num
 
 /** `title`: the section heading (the compact page asks "Why this compact?"). */
 export function WhySection({ title = 'Why it exists' }: { title?: string } = {}) {
-  const { c, view, viewState, scenario, hasScenarios, nodes, meta, name } = useCompact();
+  const { c, displayName, view, viewState, scenario, hasScenarios, nodes, meta, name } = useCompact();
   const { nodeOf } = useAibCtx();
   const mi = scenario === 'managed';
   // Managed Interdependence: the compact as its file solves it, else its figures from compact.managed (loading, or no coalition)
@@ -674,7 +660,7 @@ export function WhySection({ title = 'Why it exists' }: { title?: string } = {})
               { id: 'value', header: 'Value', value: (t) => t.value, num: true },
               { id: 'sub', header: 'What it is', value: (t) => t.sub, minWidth: 260 },
             ]}
-            caption={`${c.name}: why the compact exists`}
+            caption={`${displayName}: why the compact exists`}
           />
         )}
         csv={csv}

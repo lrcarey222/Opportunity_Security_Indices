@@ -20,13 +20,25 @@
 // i32 columns named in `ref` are 0-based row indices into that meta table (dims.geo, dims.items or
 // dict.vars). Pipe-joined text columns ("2020|2024") hold the arrays of the dictionary YAML.
 
+//
+// Schema 2 (2026-10-28, the six supply-chain stages; R SECTOR_SCHEMA_VERSION 2L, a breaking change): the
+// stages are lib/stages.ts SUPPLY_STAGES (Extraction, Refining, Components, Assembly, Deployment,
+// Recovery; R SUPPLY_CHAIN_STAGES), slugs their lower-case ids; cells are the 11 headline technologies x
+// the six stages (66, a stable grid) plus the Semiconductors stages with trade (Refining, Components,
+// Assembly); policy.pams.stage_mask has 6 bits; a new item axis `mineral_stage` carries the critical-
+// minerals trade per mineral and stage; trade.excluded is per technology (the excluded reference rows have
+// no six-stage stage); sector-fdi lists the stages its projects count in (fdi.stages); the activity items
+// are the three ILO wage activities, no longer stages (SECTOR_ACTIVITY_OF_STAGE).
+
 import type { Column, OsbDecoded, Table } from '../engine/codec.ts';
 import { NA_BOOL, NA_INT } from '../engine/numeric.ts';
+import { STAGE_LABEL, STAGE_SHORT, SUPPLY_STAGE_SLUGS, SUPPLY_STAGES, type SupplyStage, type SupplyStageSlug } from '../lib/stages.ts';
 
 // ---- Schema ------------------------------------------------------------------------------------
 
 export const SECTOR_SCHEMA = 'osi-sector';
-export const SECTOR_SCHEMA_VERSION = 1;
+/** 2 since 2026-10-28 (six stages; R SECTOR_SCHEMA_VERSION 2L). A cached schema-1 manifest is refused. */
+export const SECTOR_SCHEMA_VERSION = 2;
 /** Relative to the app's base URL. Written only by scripts/87. */
 export const SECTOR_DATA_DIR = 'data/sector/';
 export const SECTOR_MANIFEST_FILE = 'manifest.json';
@@ -50,9 +62,9 @@ export const HEADLINE_TECH_SLUGS = [
   'wind',
 ] as const;
 /**
- * Every technology slug: the headline techs, then Semiconductors (non-headline, trade only: Midstream,
- * and Upstream where the basket has it; the basket review of 2026-10-11 moved gallium, germanium and
- * indium there; dims.items lists the Semiconductors stages the build has).
+ * Every technology slug: the headline techs, then Semiconductors (non-headline, trade only: the stages
+ * its basket has, Refining, Components and Assembly in the 2026-10-28 export; dims.items lists the
+ * Semiconductors stages the build has).
  */
 export const TECH_SLUGS = [...HEADLINE_TECH_SLUGS, 'semiconductors'] as const;
 export type HeadlineTechSlug = (typeof HEADLINE_TECH_SLUGS)[number];
@@ -74,12 +86,32 @@ export const TECH_LABELS: Readonly<Record<TechSlug, string>> = {
   semiconductors: 'Semiconductors',
 };
 
-export const STAGE_SLUGS = ['upstream', 'midstream', 'downstream'] as const;
-export type StageSlug = (typeof STAGE_SLUGS)[number];
-export const STAGE_LABELS: Readonly<Record<StageSlug, 'Upstream' | 'Midstream' | 'Downstream'>> = {
-  upstream: 'Upstream',
-  midstream: 'Midstream',
-  downstream: 'Downstream',
+/** The six stage slugs in chain order (lib/stages.ts SUPPLY_STAGE_SLUGS; R SECTOR_STAGE_SLUGS). */
+export const STAGE_SLUGS = SUPPLY_STAGE_SLUGS;
+export type StageSlug = SupplyStageSlug;
+/**
+ * Slug -> the stage name, which is also its label on screen (design S2) and the vocabulary of
+ * dims.items.stage (R SECTOR_STAGE_LABELS = SUPPLY_CHAIN_STAGES).
+ */
+export const STAGE_LABELS: Readonly<Record<StageSlug, SupplyStage>> = Object.fromEntries(
+  SUPPLY_STAGES.map((s, i) => [SUPPLY_STAGE_SLUGS[i], STAGE_LABEL[s] as SupplyStage]),
+) as Record<StageSlug, SupplyStage>;
+/** Slug -> the short label for tight axes (Ext, Ref, Com, Asm, Dep, Rec; lib/stages.ts STAGE_SHORT). */
+export const STAGE_SHORTS: Readonly<Record<StageSlug, string>> = Object.fromEntries(
+  SUPPLY_STAGES.map((s, i) => [SUPPLY_STAGE_SLUGS[i], STAGE_SHORT[s]]),
+) as Record<StageSlug, string>;
+/**
+ * The ILO wage activity of each stage (R SECTOR_ACTIVITY_OF_STAGE): the `activity` item slug whose
+ * prices.wages a cell's profile shows. Extraction and Recovery: mining and utilities; Refining,
+ * Components and Assembly: manufacturing; Deployment: construction.
+ */
+export const ACTIVITY_OF_STAGE: Readonly<Record<StageSlug, 'mining-utilities' | 'manufacturing' | 'construction'>> = {
+  extraction: 'mining-utilities',
+  refining: 'manufacturing',
+  components: 'manufacturing',
+  assembly: 'manufacturing',
+  deployment: 'construction',
+  recovery: 'mining-utilities',
 };
 
 /**
@@ -103,7 +135,7 @@ export const MINERAL_SLUGS = [
 ] as const;
 export type MineralSlug = (typeof MINERAL_SLUGS)[number];
 /** Mineral slugs that are not mineral pages: /sector/minerals/<slug> redirects here. */
-export const MINERAL_REDIRECTS: Readonly<Record<string, string>> = { uranium: '/sector/nuclear/upstream' };
+export const MINERAL_REDIRECTS: Readonly<Record<string, string>> = { uranium: '/sector/nuclear/extraction' };
 
 /** Static path segments under /sector; they outrank `:tech`, so no tech slug may equal one. */
 export const RESERVED_SEGMENTS = ['explore', 'concentration', 'minerals', 'sources', 'country', 'data'] as const;
@@ -126,7 +158,7 @@ export type TradeTechSlug = (typeof TRADE_TECH_SLUGS)[number];
 /** The two trade years of the matrix; trade.flows has one value and one status column per year. */
 export const TRADE_YEARS = [2020, 2024] as const;
 
-/** "batteries-midstream": the cell slug, the same rule as lib/format.ts stageSlug(). */
+/** "batteries-refining": the cell slug, the same rule as lib/stages.ts cellSlug(). */
 export function cellSlug(tech: TechSlug, stage: StageSlug): string {
   return `${tech}-${stage}`;
 }
@@ -154,7 +186,7 @@ export function techSlugOf(label: string): TechSlug | null {
   return null;
 }
 
-/** The slug of a stage label ("Midstream" -> "midstream"), or null. */
+/** The slug of a stage label ("Refining" -> "refining"), or null (a legacy three-stage name gives null). */
 export function stageSlugOf(label: string): StageSlug | null {
   for (const s of STAGE_SLUGS) if (STAGE_LABELS[s] === label) return s;
   return null;
@@ -261,9 +293,13 @@ export type SplitPart = (typeof SPLIT_PARTS)[number];
 /**
  * Item axes. `indicator`: the World Bank WDI series of development.wdi; `aid_sector`: the OECD CRS
  * sectors of the aid measures (all sectors, energy, industry, mining), linked to the cells of the
- * stage the Development Potential builder maps them to (development data change 2026-10-15, additive).
+ * stages the pipeline's purpose crosswalk maps them to (development data change 2026-10-15; six-stage
+ * links in schema 2). `mineral_stage` (schema 2): a mineral at one stage of its trade ("lithium-refining":
+ * ores at Extraction, refined products at Refining, scrap at Recovery), slug "<mineral>-<stage slug>",
+ * stage set, tech NA; the critical-minerals trade measures use it. `activity` (schema 2): the three ILO
+ * wage activities (mining-utilities, manufacturing, construction), not stages.
  */
-export const ITEM_AXES = ['cell', 'mineral', 'fuel', 'commodity', 'activity', 'policy_tag', 'indicator', 'aid_sector', 'none'] as const;
+export const ITEM_AXES = ['cell', 'mineral', 'mineral_stage', 'fuel', 'commodity', 'activity', 'policy_tag', 'indicator', 'aid_sector', 'none'] as const;
 export type ItemAxis = (typeof ITEM_AXES)[number];
 export const NATIVE_LEVELS = ['country', 'eu', 'region', 'entity', 'world', 'cell_global', 'dyad'] as const;
 export type NativeLevel = (typeof NATIVE_LEVELS)[number];
@@ -289,7 +325,7 @@ export const COVERAGE_STATUSES = ['country', 'region', 'global', 'licensed', 'no
 export const COVERAGE_REASONS = ['no_basket', 'index_only', 'not_applicable', 'no_source', 'licensed', 'mineral_level', 'thin'] as const;
 export const TRADE_FLOW_STATUSES = ['importer', 'mirror', 'none'] as const;
 export const POLICY_TECH_SOURCES = ['iea', 'text'] as const;
-/** Bit i of policy.pams `stage_mask` is STAGE_LABELS[STAGE_SLUGS[i]]. */
+/** Bit i of policy.pams `stage_mask` is STAGE_LABELS[STAGE_SLUGS[i]]: 6 bits, 0 Extraction ... 5 Recovery (R SUPPLY_CHAIN_STAGES); 0 = no stage tag. */
 export const STAGE_MASK_ORDER = STAGE_SLUGS;
 /** Chunk families a measure's data can live in (`fdi`: sector-fdi, integrator change 2026-10-11, additive). */
 export const CHUNK_KINDS = ['meta', 'facts', 'trade', 'policy', 'series', 'atlas', 'dev', 'fdi'] as const;
@@ -409,7 +445,8 @@ export const VAR_CATALOGUE = [
   { id: 'investment.power_additions', phase: '2', level: 'country', chunks: ['series'], scope: 'build' },
   // CM-FDI cross-border projects (sector-fdi; integrator change 2026-10-11, additive): projects and
   // their announced capital (home -> destination dyads) and the destination's split by the parent's
-  // headquarters group. Item = the Midstream cell of the project's technology. Not in facts.
+  // headquarters group. Item = the cell of the project's technology at fdi.stages[0] (Components); the
+  // Assembly cell carries the same projects (schema 2, design E5). Not in facts.
   { id: 'investment.fdi_projects', phase: '1', level: 'dyad', chunks: ['fdi'], scope: 'build' },
   { id: 'investment.fdi_value', phase: '1', level: 'dyad', chunks: ['fdi'], scope: 'build' },
   { id: 'investment.fdi_parent_share', phase: '1', level: 'country', chunks: ['fdi'], scope: 'build' },
@@ -517,13 +554,13 @@ export const HEADLINE_RULES = {
   },
   dependence: {
     rule: 'dependence@1',
-    doc: 'The headline Midstream trade cell with the largest 2024 matrix world total (trade.exports W; Semiconductors excluded): China\'s share of its 2024 exports. href: /sector/<tech>/midstream#trade.',
+    doc: 'Among the headline Components and Assembly trade cells (manufacturing), the one with the largest 2024 matrix world total (trade.exports W; Semiconductors excluded): China\'s share of its 2024 exports. href: /sector/<tech>/<stage>#trade.',
     values: { share: 'share 0-1', total_usd: 'USD, the cell\'s 2024 world total' },
-    labels: { cell: 'cell slug', cell_label: 'display label ("Electric Vehicles — Midstream")' },
+    labels: { cell: 'cell slug', cell_label: 'display label ("Electric Vehicles — Assembly")' },
   },
   investment: {
     rule: 'investment@1',
-    doc: 'investment.annual, 2025, summed over every CIM cell and economy (includes estimated Q4); China\'s share and the coalition\'s (core + partner members). href: /sector/explore/investment.',
+    doc: 'investment.annual, 2025, summed over every CIM cell and economy (includes estimated Q4), the manufacturing capex Components and Assembly both carry (facts.notes same_figure_pair) counted once; China\'s share and the coalition\'s (core + partner members). href: /sector/explore/investment.',
     values: { total_bn: 'USD bn (2024$)', china: 'share 0-1', coalition: 'share 0-1' },
     labels: {},
   },
@@ -582,10 +619,10 @@ export interface SectorHeadline {
   href: string;
 }
 
-/** manifest.json (schema "osi-sector", schema_version 1; 8.6). Unknown extra keys are allowed. */
+/** manifest.json (schema "osi-sector", schema_version 2; 8.6). Unknown extra keys are allowed. */
 export interface SectorManifest {
   schema: 'osi-sector';
-  schema_version: 1;
+  schema_version: 2;
   bundle_id: string;
   created: string;
   git_commit: string | null;
@@ -627,7 +664,7 @@ export interface SectorManifest {
   };
   chunks: SectorChunkInfo[];
   headlines: SectorHeadline[];
-  /** 33 rows, one per headline cell */
+  /** 66 rows, one per headline cell (11 technologies x 6 stages), technology-major in chain order */
   coverage_glyph: { tech: HeadlineTechSlug; stage: StageSlug; country_data: boolean }[];
   notes: string[];
   validation: { check: string; status: 'PASS' | 'WARN'; n: number; detail: string | null }[];
@@ -637,11 +674,17 @@ export interface SectorManifest {
   encoding: { lossy: false };
 }
 
-/** Per-chunk gzip budgets in bytes (8.3) and the totals (11). */
+/**
+ * Per-chunk gzip budgets in bytes (8.3) and the totals (11), mirrored in R SECTOR_BUDGET_GZ
+ * (sector_chunks.R). Schema 2 (2026-10-28, measured on the six-stage export, design E4: where the
+ * export left less than ~15% headroom the limit became the measured size + ~15%): sector-facts 577.4 kB
+ * (600 -> 670 kB), sector-trade largest 451.3 kB, electric-grid (450 -> 520 kB per chunk); sector-meta
+ * 110.0 kB stays 150 kB; the others kept their schema-1 values.
+ */
 export const SECTOR_BUDGET_GZ = {
   'sector-meta': 150 * 1024,
-  'sector-facts': 600 * 1024,
-  'sector-trade': 450 * 1024,
+  'sector-facts': 670 * 1024,
+  'sector-trade': 520 * 1024,
   'sector-policy': 250 * 1024,
   'sector-policy-text': 700 * 1024,
   'sector-series': 900 * 1024,
@@ -654,7 +697,13 @@ export const SECTOR_BUDGET_GZ = {
   /** Climate sources: GCP, EI Country Transition Tracker, IEA WEO regions, NZE 2021, WEI (2026-10-17, additive) */
   'sector-climate-src': 300 * 1024,
   sector_total: 9 * 1024 * 1024,
-  combined_total: 25 * 1024 * 1024,
+  /** everything in public/data but country/ and posture/ (Strategic + Sector + Compacts, bytes on
+   * disk; real.sector.test.ts): 25 MiB until 2026-10-28, when the six-stage Strategic export (66 cells,
+   * 17.2 MiB of chunks) brought it to 26.9 MiB (31 MiB); the six-stage Sector export (5.73 MiB on disk)
+   * then brought it to 28.16 MiB (29,528,481 B: Strategic 17.2 + Sector 5.7 + Compacts folder 5.2),
+   * 91% of 31: the measured size + ~15% = 32.5 MiB (E4). It is not R's combined_total (26.5 MiB:
+   * Sector chunks + Strategic all_gz, a different sum). */
+  combined_total: 32.5 * 1024 * 1024,
 } as const;
 
 const isObj = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
@@ -737,6 +786,7 @@ export function sectorManifestProblems(x: unknown): string[] {
     });
   }
 
+  // 66 rows (11 headline technologies x 6 stages) since schema 2
   if (!Array.isArray(x.coverage_glyph)) p.push('coverage_glyph must be an array');
   else {
     if (x.coverage_glyph.length !== HEADLINE_TECH_SLUGS.length * STAGE_SLUGS.length) {
@@ -874,7 +924,9 @@ const WORLD = {
  *   Rows of kind `residual` (RES:<src>, e.g. EI "Other" = WLD minus the listed economies) appear only
  *   in series.obs and are never holders of a share (3.6).
  * dims.items: one row per item; (axis, slug) is unique. Cell rows: slug = cellSlug(), tech / stage =
- *   the Strategic labels, headline = FALSE only for Semiconductors; other axes: tech / stage NA.
+ *   the Strategic labels, headline = FALSE only for Semiconductors; the 66 headline cells are all
+ *   present (schema 2). mineral_stage rows: slug "<mineral>-<stage slug>" of a mineral item, stage set,
+ *   tech NA. Only cell and mineral_stage rows carry a stage; other axes: tech / stage NA.
  *   Exactly one row has axis "none": the item of measures with item_axis none.
  * dims.mineral_demand: IEA CM demand (kt) by mineral, technology (`tech` = the Strategic tech label,
  *   as in dims.items.tech, or NA for IEA categories outside the techs and for totals; `label` =
@@ -1179,9 +1231,15 @@ export const TRADE_SPEC = {
     cols: { item: ITEM, sub_sector: SR, hs6: SR, description: S, shared_n: IR, caveat: S },
     unique: ['item', 'hs6'],
   },
+  /**
+   * The reference master's codes kept out of the technology's baskets, with the reason (schema 2: per
+   * technology, design C6; the excluded rows have no six-stage stage, so none is invented). `tech` = the
+   * chunk's technology label.
+   */
   'trade.excluded': {
     kind: 'table',
-    cols: { item: ITEM, sub_sector: S, hs6: SR, reason: SR },
+    cols: { tech: { t: 'str', req: true, values: Object.values(TECH_LABELS) }, sub_sector: S, hs6: SR, reason: SR },
+    unique: ['tech', 'sub_sector', 'hs6'],
   },
   /**
    * Trade by sub-component (measures trade.sub_exports / trade.sub_imports; shipped since the
@@ -1387,7 +1445,7 @@ export const CLIMATE_MATCHES = ['direct', 'partial', 'proxy'] as const;
 /** Match quality of a cell: the best of its own sources, none without one. */
 export const CLIMATE_CELL_MATCHES = ['direct', 'partial', 'proxy', 'none'] as const;
 export type ClimateMatch = (typeof CLIMATE_CELL_MATCHES)[number];
-/** ipcc: the technology has its own IPCC rows; proxy: the paper scores it with other technologies' values. */
+/** ipcc: the technology has its own IPCC rows; proxy: the pipeline scores it with other technologies' values. */
 export const CLIMATE_LIFECYCLE_BASES = ['ipcc', 'proxy'] as const;
 /** IEA pathways (climate.nze_*): what a WEO series measures. */
 export const NZE_GROUPS = ['deployment', 'power', 'fuel', 'emissions'] as const;
@@ -1640,11 +1698,28 @@ export const FDI_VALUE_STATUSES = ['obs', 'nq'] as const satisfies readonly Stat
 export const FDI_VAR_IDS = VAR_CATALOGUE.filter((v) => (v.chunks as readonly ChunkKind[]).includes('fdi')).map((v) => v.id);
 
 /**
- * sector-fdi (lazy; load it only for the CM-FDI views). Five tables:
+ * The cell slug the sector-fdi rows of a cell are keyed on (schema 2, design E5): the technology's cell at
+ * fdi.stages[0] when the cell's stage is one of fdi.stages ("batteries-assembly" -> "batteries-components"
+ * with stages Components, Assembly), else null (the cell carries no CM-FDI project).
+ */
+export function fdiCellSlug(cell: string, stages: readonly (string | null)[]): string | null {
+  const c = parseCellSlug(cell);
+  if (!c || !stages.length) return null;
+  if (!stages.includes(STAGE_LABELS[c.stage])) return null;
+  const first = stageSlugOf(stages[0] ?? '');
+  return first ? cellSlug(c.tech, first) : null;
+}
+
+/**
+ * sector-fdi (lazy; load it only for the CM-FDI views). Five tables and the stage list:
  *
+ * fdi.stages (schema 2): the stages a project counts in (config/partnership.yml cm_fdi stages:
+ *   Components, Assembly; design E5). Every fdi.* row's item is the cell of fdi.stages[0]; the cells of
+ *   the other stages carry the same projects (look them up on the first stage's cell of the same
+ *   technology: fdiCellSlug()). Each project is listed once, so counts and value sums are never doubled.
  * fdi.projects: one row per CM-FDI project, every status and activity, sorted by (item, year_announced,
- *   pid); pid unique. `item` = the Midstream cell (Battery -> batteries-midstream, EV ->
- *   electric-vehicles-midstream, Solar, Wind); `technology` = CM-FDI's own label. `home` = the parent's
+ *   pid); pid unique. `item` = the fdi.stages[0] cell (Battery -> batteries-components, EV ->
+ *   electric-vehicles-components, Solar, Wind); `technology` = CM-FDI's own label. `home` = the parent's
  *   HQ economy, `dest` = the destination (never equal). Text fields are the CSV's, trimmed (city,
  *   phase, jv_company NA when blank). `year_completed` NA = "N/A" or blank; for projects not yet
  *   complete it is the planned year. `value` = Capital Investment (US$m, current, as published; unit
@@ -1750,6 +1825,7 @@ export const FDI_SPEC = {
     sorted: ['item', 'year'],
     unique: ['item', 'year', 'basis', 'group'],
   },
+  'fdi.stages': { kind: 'strv' },
 } as const satisfies ChunkSpec;
 
 export type SectorMetaChunk = ChunkOf<typeof META_SPEC>;
@@ -2107,25 +2183,44 @@ function checkMeta(m: SectorMetaChunk, out: ChunkCheck) {
   if (nNone !== 1) out.errors.push(`dims.items has ${nNone} rows with axis none, expected 1`);
   const badCell = new Tally();
   const badMineral = new Tally();
+  const badMineralStage = new Tally();
+  const strayStage = new Tally();
+  const mineralSlugs = new Set<string>();
+  for (let i = 0; i < items.nrow; i++) if (items.cols.axis[i] === 'mineral') mineralSlugs.add(items.cols.slug[i] ?? '');
+  const headlineCells = new Set<string>();
   let nCells = 0;
   let nHeadline = 0;
   for (let i = 0; i < items.nrow; i++) {
     const axis = items.cols.axis[i];
+    const slug = items.cols.slug[i] ?? '';
     if (axis === 'cell') {
       nCells++;
-      if (items.cols.headline[i] === 1) nHeadline++;
+      if (items.cols.headline[i] === 1) {
+        nHeadline++;
+        headlineCells.add(slug);
+      }
       const tech = techSlugOf(items.cols.tech[i] ?? '');
       const stage = stageSlugOf(items.cols.stage[i] ?? '');
-      if (!tech || !stage || items.cols.slug[i] !== cellSlug(tech, stage) || (items.cols.headline[i] === 1) !== (tech !== 'semiconductors')) badCell.hit(i);
-    } else if (axis === 'mineral' && !(MINERAL_SLUGS as readonly string[]).includes(items.cols.slug[i] ?? '')) {
-      badMineral.hit(i);
+      if (!tech || !stage || slug !== cellSlug(tech, stage) || (items.cols.headline[i] === 1) !== (tech !== 'semiconductors')) badCell.hit(i);
+    } else if (axis === 'mineral_stage') {
+      // "<mineral>-<stage slug>" of a mineral item, a stage, no technology (R sector_check_chunk)
+      const stage = stageSlugOf(items.cols.stage[i] ?? '');
+      const base = stage && slug.endsWith(`-${stage}`) ? slug.slice(0, -(stage.length + 1)) : null;
+      if (!stage || base === null || !mineralSlugs.has(base) || items.cols.tech[i] !== null) badMineralStage.hit(i);
+    } else {
+      if (axis === 'mineral' && !(MINERAL_SLUGS as readonly string[]).includes(slug)) badMineral.hit(i);
+      if (items.cols.stage[i] !== null) strayStage.hit(i);
     }
   }
   badCell.report(out.errors, 'dims.items cell rows need slug = cellSlug(tech, stage) of known labels, headline FALSE only for Semiconductors');
+  badMineralStage.report(out.errors, 'dims.items mineral_stage rows need slug = <mineral>-<stage> of a mineral item, a stage and no tech');
+  strayStage.report(out.errors, 'dims.items: only cell and mineral_stage rows carry a stage');
   badMineral.report(out.warnings, `dims.items mineral slugs outside MINERAL_SLUGS`);
-  if (nHeadline !== HEADLINE_TECH_SLUGS.length * STAGE_SLUGS.length) out.warnings.push(`dims.items has ${nHeadline} headline cells, expected 33`);
+  // the 66 headline cells (11 technologies x 6 stages) are all present: a stable grid (schema 2)
+  const missing = HEADLINE_TECH_SLUGS.flatMap((t) => STAGE_SLUGS.map((s) => cellSlug(t, s))).filter((c) => !headlineCells.has(c));
+  if (missing.length) out.errors.push(`dims.items lacks ${missing.length} headline cells of the ${HEADLINE_TECH_SLUGS.length} x ${STAGE_SLUGS.length} grid (e.g. ${missing.slice(0, MAX_REPORTED).join(', ')})`);
   if (nCells - nHeadline < 1 || nCells - nHeadline > STAGE_SLUGS.length) {
-    out.warnings.push(`dims.items has ${nCells - nHeadline} non-headline cells, expected the Semiconductors stages of the basket (Midstream; Upstream since 2026-10-11)`);
+    out.warnings.push(`dims.items has ${nCells - nHeadline} non-headline cells, expected the Semiconductors stages of its basket (Refining, Components and Assembly in the 2026-10-28 export)`);
   }
 
   const vars = m['dict.vars'];
@@ -2176,7 +2271,12 @@ function checkMeta(m: SectorMetaChunk, out: ChunkCheck) {
   for (const s of TECH_SLUGS) if (!m['dict.techs'].cols.slug.includes(s)) out.errors.push(`dict.techs has no row for ${s}`);
 }
 
-function checkTrade(t: SectorTradeChunk, out: ChunkCheck) {
+function checkTrade(t: SectorTradeChunk, tech: TradeTechSlug, out: ChunkCheck) {
+  // trade.excluded is per technology (schema 2): every row names the chunk's technology
+  const ex = t['trade.excluded'];
+  const otherTech = new Tally();
+  for (let i = 0; i < ex.nrow; i++) if (ex.cols.tech[i] !== TECH_LABELS[tech]) otherTech.hit(i);
+  otherTech.report(out.errors, `trade.excluded.tech is not the chunk's technology (${TECH_LABELS[tech]})`);
   const f = t['trade.flows'];
   for (const y of TRADE_YEARS) {
     const v = f.cols[`v${y}`];
@@ -2390,6 +2490,10 @@ function checkClimateSrc(c: SectorClimateSrcChunk, out: ChunkCheck) {
 
 /** Cross-table rules of sector-fdi (FDI_SPEC); the R mirror is sector_check_fdi(). */
 function checkFdi(c: SectorFdiChunk, out: ChunkCheck) {
+  // fdi.stages: distinct supply-chain stages, at least one (R sector_check_fdi); every row's item is a
+  // cell of the first
+  const st = c['fdi.stages'];
+  if (!st.length || new Set(st).size !== st.length || !st.every((s) => (SUPPLY_STAGES as readonly (string | null)[]).includes(s))) out.errors.push('fdi.stages must list distinct supply-chain stages');
   const p = c['fdi.projects'];
   const valueState = new Tally();
   const nonPositive = new Tally();
@@ -2500,7 +2604,7 @@ export function checkChunk(name: string, objects: OsbDecoded | Record<string, un
     if (notes) checkFactNotes(get('facts.obs'), notes, out);
   }
   else if (name === 'sector-series') checkObsIndex('series', get('series.obs'), get('series.index'), out);
-  else if (name.startsWith('sector-trade-')) checkTrade(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorTradeChunk, out);
+  else if (name.startsWith('sector-trade-')) checkTrade(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorTradeChunk, name.slice('sector-trade-'.length) as TradeTechSlug, out);
   else if (name === 'sector-fdi') checkFdi(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorFdiChunk, out);
   else if (name === 'sector-dev') checkDev(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorDevChunk, out);
   else if (name === 'sector-climate') checkClimate(Object.fromEntries(Object.keys(spec).map((p) => [p, get(p)])) as SectorClimateChunk, out);

@@ -46,9 +46,12 @@ describe('explore: measures, items, years', () => {
 
   it('cell items come from tech + stage (Strategic vocabulary); others from the item slug; else the default', () => {
     const ex = v('trade.exports');
-    expect(pickItem(model, ex, { tech: 'Oil', stage: 'Upstream', item: null })?.slug).toBe('oil-upstream');
-    expect(pickItem(model, ex, { tech: 'Geothermal', stage: 'Upstream', item: null })?.slug).toBe(defaultItem(model, ex)?.slug);
-    expect(defaultItem(model, ex)?.slug).toBe('batteries-midstream');
+    expect(pickItem(model, ex, { tech: 'Oil', stage: 'Extraction', item: null })?.slug).toBe('oil-extraction');
+    expect(pickItem(model, ex, { tech: 'Geothermal', stage: 'Extraction', item: null })?.slug).toBe(defaultItem(model, ex)?.slug);
+    // an old three-stage name is not a stage of the data: the technology's first cell with data, as with no stage
+    expect(pickItem(model, ex, { tech: 'Batteries', stage: 'Midstream', item: null })?.slug).toBe('batteries-extraction');
+    expect(pickItem(model, ex, { tech: 'Batteries', stage: null, item: null })?.slug).toBe('batteries-extraction');
+    expect(defaultItem(model, ex)?.slug).toBe('batteries-assembly');
     expect(pickItem(model, v('resources.mineral_reserves'), { tech: null, stage: null, item: 'graphite' })?.slug).toBe('graphite');
   });
 
@@ -69,7 +72,7 @@ describe('explore: measures, items, years', () => {
 
 describe('explore: KPI strip, result line, table and across sectors', () => {
   const ex = v('trade.exports');
-  const bm = model.items[fixtureItem('cell', 'batteries-midstream')];
+  const bm = model.items[fixtureItem('cell', 'batteries-assembly')];
   const sl = slice(model, facts, ex, bm.idx, 2024, 'members');
 
   it('scope: coalition and coalition + China', () => {
@@ -120,9 +123,12 @@ describe('explore: KPI strip, result line, table and across sectors', () => {
 
   it('across sectors: one summary per cell with a world total, grouped by stage', () => {
     const rows = acrossRows(model, ex, 'members', 2024);
-    expect(rows.map((r) => r.item.slug)).toContain('batteries-midstream');
+    expect(rows.map((r) => r.item.slug)).toContain('batteries-assembly');
     const order = rows.map((r) => r.section);
-    expect(order).toEqual([...order].sort((a, z) => ['upstream', 'midstream', 'downstream'].indexOf(a) - ['upstream', 'midstream', 'downstream'].indexOf(z)));
+    const chain = ['extraction', 'refining', 'components', 'assembly', 'deployment', 'recovery'];
+    expect(order.every((s) => chain.includes(s))).toBe(true);
+    expect(order).toEqual([...order].sort((a, z) => chain.indexOf(a) - chain.indexOf(z)));
+    expect(new Set(order)).toEqual(new Set(['extraction', 'refining', 'components', 'assembly']));
     expect(acrossRows(model, v('trade.rca'), 'members', 2024)).toEqual([]);
   });
 });

@@ -5,13 +5,14 @@
 
 import { SCENARIO_KEYS, SHARED_VIEW_KEYS } from '../state/url.ts';
 import { scenarioCarry } from '../aib/scenarioUrl.ts';
-import { isShellStageSlug, isShellTechSlug } from './sectorSlugs.ts';
+import { legacySectorTarget, legacyStageTarget } from '../lib/stages.ts';
+import { isShellLegacyStageSlug, isShellStageSlug, isShellTechSlug } from './sectorSlugs.ts';
 import { COUNTRY_DEFAULT_ISO, countryIsoOfPath, placeOf, sectorCellOfPath, SECTOR_NAV } from './modules.ts';
 
 export interface LastLocations {
   strategic: string | null;
   sector: string | null;
-  /** the last Sector profile cell, "/sector/batteries/midstream" (PROFILE's target) */
+  /** the last Sector profile cell, "/sector/batteries/refining" (PROFILE's target) */
   sectorCell: string | null;
   country: string | null;
   /** the ISO3 of the last Country Insights profile (the Country PROFILE target) */
@@ -22,8 +23,10 @@ export interface LastLocations {
 
 const store: LastLocations = { strategic: null, sector: null, sectorCell: null, country: null, countryIso: null };
 
-/** Record a location (called on every route change). Home and unknown paths are not recorded. */
+/** Record a location (called on every route change). Home, unknown paths and old three-stage Sector
+ *  links (about to be redirected) are not recorded. */
 export function rememberLocation(pathname: string, search: string): void {
+  if (legacySectorTarget(pathname)) return;
   const place = placeOf(pathname);
   if (place === 'strategic') store.strategic = pathname + search;
   else if (place === 'sector') {
@@ -106,7 +109,9 @@ export function strategicCountry(pathname: string): string | null {
 /**
  * Where the SECTOR INSIGHTS tab goes from `pathname + search` (2.6):
  *   * inside Sector: the Sector landing, keeping c and eu;
- *   * from Strategic with tech and stage set: /sector/:tech/:stage?c=…;
+ *   * from Strategic with tech and stage set: /sector/:tech/:stage?c=… (one of the six stages; an old
+ *     link's Downstream opens Deployment, its Upstream or Midstream the technology's chain /sector/:tech,
+ *     as the legacy Sector redirect does, design U1);
  *   * else the last Sector location (with c added when Strategic names a country);
  *   * else /sector?c=… (or /sector).
  */
@@ -124,7 +129,13 @@ export function sectorTabHref(pathname: string, search: string, last: Readonly<L
     const q = new URLSearchParams(search);
     const tech = slugOf(q.get('tech'));
     const stage = slugOf(q.get('stage'));
-    if (tech && stage && isShellTechSlug(tech) && isShellStageSlug(stage)) return withC(`/sector/${tech}/${stage}`, c);
+    if (tech && stage && isShellTechSlug(tech)) {
+      if (isShellStageSlug(stage)) return withC(`/sector/${tech}/${stage}`, c);
+      if (isShellLegacyStageSlug(stage)) {
+        const to = legacyStageTarget(stage);
+        return withC(to ? `/sector/${tech}/${to}` : `/sector/${tech}`, c);
+      }
+    }
   }
   if (last.sector) return withC(last.sector, c);
   return withC('/sector', c);
@@ -189,7 +200,7 @@ export function countryProfileHref(pathname = '', last: Readonly<LastLocations> 
   return `/countries/${countryIsoOfPath(pathname) ?? last.countryIso ?? COUNTRY_DEFAULT_ISO}`;
 }
 
-/** PROFILE in the Sector nav: the last visited cell, else Batteries — Midstream. */
+/** PROFILE in the Sector nav: the last visited cell, else Batteries — Refining (modules.ts SECTOR_DEFAULT_CELL). */
 export function sectorProfileHref(last: Readonly<LastLocations> = store): string {
   return last.sectorCell ?? (SECTOR_NAV.find((n) => n.key === 'profile')?.to as string);
 }

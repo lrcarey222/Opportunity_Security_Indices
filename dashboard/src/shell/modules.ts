@@ -66,13 +66,19 @@ const STRATEGIC_TAB: Readonly<Record<string, ModuleId>> = {
 export type SectorNavKey = 'sectors' | 'profile' | 'minerals' | 'explore' | 'concentration' | 'sources';
 
 /**
+ * The default Sector profile, before any cell was visited: Batteries — Refining (design E6, the posture
+ * module's DEFAULT_NODE), slugs of the six stages.
+ */
+export const SECTOR_DEFAULT_CELL = { tech: 'batteries', stage: 'refining' } as const;
+
+/**
  * Sector views. PROFILE's target is the last visited cell (see lastLocation.ts). Concentration and
  * Sources & data keep their paths but leave the nav: the Sector profile links to them (Security &
  * concentration; Evidence) and About lists the sources.
  */
 export const SECTOR_NAV: { key: SectorNavKey; to: string; label: string }[] = [
   { key: 'sectors', to: '/sector', label: 'All sectors' },
-  { key: 'profile', to: '/sector/batteries/midstream', label: 'Sector profile' },
+  { key: 'profile', to: `/sector/${SECTOR_DEFAULT_CELL.tech}/${SECTOR_DEFAULT_CELL.stage}`, label: 'Sector profile' },
   { key: 'minerals', to: '/sector/minerals', label: 'Minerals' },
   { key: 'explore', to: '/sector/explore', label: 'Advanced explorer' },
 ];
@@ -196,7 +202,11 @@ export function aboutNavKeyOf(pathname: string): AboutNavKey | null {
   }
 }
 
-/** The (tech, stage) of a profile or country-in-sector path (/sector/:tech/:stage[/:iso3]), or null. */
+/**
+ * The (tech, stage) of a profile or country-in-sector path (/sector/:tech/:stage[/:iso3]), or null. The
+ * stage is one of the six slugs; an old three-stage path (/sector/batteries/midstream) is not a cell (the
+ * shell redirects it), so it is never remembered as the PROFILE target.
+ */
 export function sectorCellOfPath(pathname: string): { tech: string; stage: string } | null {
   const s = segments(pathname);
   if (s[0] !== 'sector' || s.length < 3 || s.length > 4) return null;

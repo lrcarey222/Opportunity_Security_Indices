@@ -3,8 +3,10 @@
 // stage, coloured by coalition tier,
 // with the medians, the four named corners (Upgrade, Grow, Exposed, Stable: the names Country Insights
 // uses; Exposed and Stable were Secure and Watch until 2026-10-28) and, in Change mode, arrows from the
-// paper's position to the scenario's; the selected economy's own sectors faceted by stage; and the corner
-// counts.
+// NEIS baseline position to the scenario's; the selected economy's own sectors in one panel per stage
+// (six stages since 2026-10-29: the panels wrap on a narrow screen, views/stageFacets.ts; the stage is
+// named above its panel, never a colour series, design S4); and the corner counts. The corners are kept
+// at six stages (the user's decision, 2026-10-28).
 
 import { useCallback, useMemo, useState } from 'react';
 import * as Plot from '@observablehq/plot';
@@ -20,9 +22,15 @@ import { rowsToCsv } from '../../lib/csv.ts';
 import { cellLabel, fmtNum, tierLabel } from '../../lib/format.ts';
 import { useAdvancedChanged, useApp, useCore, useScenario } from '../../state/EngineProvider.tsx';
 import type { ShowMode } from '../../state/url.ts';
-import { COMPARE_COLOR, INK, PAPER_MUTE, SIGNAL, STAGE_COLOR, TIER_COLOR, tierKey } from '../../theme/palette.ts';
+import { COMPARE_COLOR, INK, PAPER_MUTE, SIGNAL, TIER_COLOR, tierKey } from '../../theme/palette.ts';
+import { stageLabel, stageRank } from '../../lib/stages.ts';
 import { numOr, rowsOf, showWord, TechStageFilters, useCountryOptions, useTechStage, useViewTitle } from '../common.tsx';
+import { panelAxisX, stageFacetLayout, stageLabels } from '../stageFacets.ts';
 import { cornerAnnotation, fitDomain, median, regionOf, REGIONS } from './derive.ts';
+
+/** The own-sectors chart: one panel's plotting height and the margins around the grid of panels (the
+ * top margin holds the y axis label above the first row's stage names). */
+const OWN = { panel: 180, left: 44, right: 16, top: 44, bottom: 40 } as const;
 
 interface SpacePoint {
   iso3c: string;
@@ -103,7 +111,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
     return REGIONS.map((r) => ({
       region: r,
       scenario: scen.filter((p) => regionOf(p.es, p.eo, mS.es, mS.eo) === r).length,
-      paper: base.filter((p) => regionOf(p.es_base, p.eo_base, mB.es, mB.eo) === r).length,
+      baseline: base.filter((p) => regionOf(p.es_base, p.eo_base, mB.es, mB.eo) === r).length,
       coalition: scen.filter((p) => p.tier !== 'other' && regionOf(p.es, p.eo, mS.es, mS.eo) === r).length,
     }));
   }, [all, tech, stage, view.rankable]);
@@ -113,7 +121,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
       if (pts.length < 2) return null;
       const arrows = show === 'change' ? moved : [];
       const selP = pts.filter((p) => p.iso3c === sel);
-      // fitted to the economies shown (and the paper's positions when arrows are drawn)
+      // fitted to the economies shown (and the NEIS baseline positions when arrows are drawn)
       const xd = fitDomain([...pts.map((p) => p.x), ...arrows.map((p) => p.eo_base)]);
       const yd = fitDomain([...pts.map((p) => p.y), ...arrows.map((p) => p.es_base)]);
       return {
@@ -153,18 +161,17 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
   const buildOwn = useCallback(
     (width: number): Plot.PlotOptions | null => {
       if (!own.length) return null;
-      const H = 320;
-      const M = { left: 44, right: 16, top: 28, bottom: 36 };
       const xd = fitDomain(own.map((p) => p.x));
       const yd = fitDomain(own.map((p) => p.y));
+      // the stage panels side by side where each gets 120 px, else three or two a row (a phone shows 2 x 3)
+      const L = stageFacetLayout(app.stages, {
+        width, marginLeft: OWN.left, marginRight: OWN.right, marginTop: OWN.top, marginBottom: OWN.bottom, panelHeight: OWN.panel, minPanel: 120, gapX: 16, gapY: 52,
+      });
+      const narrow = L.panelWidth < 150;
       // label only where a label fits without overlapping another (outliers first); hover and the
       // table carry every value
-      const n = app.stages.length;
-      const pad = 0.08;
-      const step = (width - M.left - M.right) / (n - pad + 2 * pad);
-      const bw = step * (1 - pad);
-      const sx = (v: number) => ((v - xd[0]) / (xd[1] - xd[0])) * bw;
-      const sy = (v: number) => M.top + (1 - (v - yd[0]) / (yd[1] - yd[0])) * (H - M.top - M.bottom);
+      const sx = (v: number) => ((v - xd[0]) / (xd[1] - xd[0])) * L.panelWidth;
+      const sy = (v: number) => (1 - (v - yd[0]) / (yd[1] - yd[0])) * L.panelHeight;
       const labelled: SpacePoint[] = [];
       for (const st of app.stages) {
         const ps = own.filter((p) => p.stage === st);
@@ -177,21 +184,28 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
           if (keep.has(i)) labelled.push(p);
         });
       }
+      // one economy, one tier: every dot takes its tier colour (the stage is the panel, not a colour)
+      const fill = TIER_COLOR[own[0].tier];
       return {
         width,
-        height: H,
-        marginLeft: M.left,
-        marginRight: M.right,
-        marginTop: M.top,
-        marginBottom: M.bottom,
-        fx: { domain: app.stages, label: null, axis: 'top', padding: pad },
-        x: { domain: xd, label: 'Economic Opportunity →', grid: true, ticks: 4 },
+        height: L.height,
+        marginLeft: OWN.left,
+        marginRight: OWN.right,
+        marginTop: OWN.top,
+        marginBottom: OWN.bottom,
+        fx: L.fx,
+        fy: L.fy,
+        x: { domain: xd },
+        // the y axis on the left panel of each row; its label once, above the first row
         y: { domain: yd, label: '↑ Energy Security', grid: true, ticks: 4 },
         marks: [
+          // repeated in every panel that holds a dot (Plot skips empty facets)
           Plot.frame({ stroke: 'rgb(255 255 255 / 0.12)' }),
-          Plot.dot(own, { fx: 'stage', x: 'x', y: 'y', r: 4.5, fill: (p: SpacePoint) => STAGE_COLOR[p.stage] ?? COMPARE_COLOR.scenario, stroke: INK[800], strokeWidth: 1.5 }),
-          Plot.text(labelled, { fx: 'stage', x: 'x', y: 'y', text: 'tech', dy: -10, fill: '#d1d5db', fontSize: 10 }),
-          Plot.dot(own, Plot.pointer({ fx: 'stage', x: 'x', y: 'y', r: 8, fill: 'none', stroke: SIGNAL, strokeWidth: 2, maxRadius: 24 })),
+          ...panelAxisX({ ticks: narrow ? 3 : 4, label: 'Economic Opportunity →' }),
+          stageLabels(L.grid),
+          Plot.dot(own, { ...L.facet, x: 'x', y: 'y', r: 4.5, fill, stroke: INK[800], strokeWidth: 1.5 }),
+          Plot.text(labelled, { ...L.facet, x: 'x', y: 'y', text: 'tech', dy: -10, fill: '#d1d5db', fontSize: 10 }),
+          Plot.dot(own, Plot.pointer({ ...L.facet, x: 'x', y: 'y', r: 8, fill: 'none', stroke: SIGNAL, strokeWidth: 2, maxRadius: 24 })),
         ],
       };
     },
@@ -205,7 +219,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
       lines={[
         cellLabel(p.tech, p.stage),
         regionOf(p.y, p.x, med.es, med.eo),
-        !isBaseline ? `paper: Economic Opportunity ${fmtNum(p.eo_base, 3)} · Energy Security ${fmtNum(p.es_base, 3)}` : null,
+        !isBaseline ? `NEIS baseline: Economic Opportunity ${fmtNum(p.eo_base, 3)} · Energy Security ${fmtNum(p.es_base, 3)}` : null,
       ]}
     />
   );
@@ -223,8 +237,8 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
             Every economy in one sector, placed by <Term id="eo" /> (across) and <Term id="es" /> (up). The dashed lines are the middle economy in this sector. The lower right,
             high opportunity with low security, is where building capacity would both meet a need and create value; the Country profile calls it{' '}
             <Term id="upgrade">Upgrade</Term>. The other corners are <Term id="grow">Grow</Term> (high opportunity, high security),{' '}
-            <Term id="exposed">Exposed</Term> (low opportunity, low security) and <Term id="stable">Stable</Term> (low opportunity, high security). These are the paper&apos;s
-            three-stage sectors, not the six-stage postures. Pick a technology and a stage.
+            <Term id="exposed">Exposed</Term> (low opportunity, low security) and <Term id="stable">Stable</Term> (low opportunity, high security). The corners place an
+            economy; they are not its strategic posture. Pick a technology and one of the {app.stages.length} supply-chain stages.
           </>
         }
       />
@@ -238,12 +252,12 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
       ) : (
         <div className="flex flex-col gap-6">
           {!isBaseline && !pillarsMove && (
-            <Notice kind="info">The dials do not move Energy Security or Economic Opportunity (they are measurements, not preferences); only the advanced category weights and the rankability rule do, so this view matches the paper.</Notice>
+            <Notice kind="info">The dials do not move Energy Security or Economic Opportunity (they are measurements, not preferences); only the advanced category weights and the rankability rule do, so this view matches the NEIS baseline.</Notice>
           )}
           <div className="grid gap-6 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <ChartCard
               title={`${cellLabel(tech, stage)}: Energy Security against Economic Opportunity`}
-              sub={`${showWord(show)} Each dot is one economy: further right is a bigger economic opening in this sector, higher up is more secure. The dashed lines are the medians of the economies shown, so each corner holds the economies above or below the middle on both scores. Colour shows the economy's place in the coalition.${show === 'change' ? " Arrows run from the paper's position to the scenario's." : ''} Click a dot to select the economy.`}
+              sub={`${showWord(show)} Each dot is one economy: further right is a bigger economic opening in this sector, higher up is more secure. The dashed lines are the medians of the economies shown, so each corner holds the economies above or below the middle on both scores. Colour shows the economy's place in the coalition.${show === 'change' ? ' Arrows run from the NEIS baseline position to the scenario’s.' : ''} Click a dot to select the economy.`}
               updating={updating}
               summary={`Scatter of ${pts.length} economies; median Energy Security ${fmtNum(med.es, 2)}, median Economic Opportunity ${fmtNum(med.eo, 2)}.`}
               legend={
@@ -253,7 +267,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
                     { label: 'Coalition partner', kind: 'dot', color: TIER_COLOR.partner },
                     { label: 'Other economy', kind: 'dot', color: TIER_COLOR.other },
                     { label: `Selected: ${app.byIso.get(sel)?.country ?? sel}`, kind: 'outline', color: SIGNAL },
-                    ...(show === 'change' && moved.length ? [{ label: 'Paper → scenario', kind: 'line' as const, color: COMPARE_COLOR.baseline }] : []),
+                    ...(show === 'change' && moved.length ? [{ label: 'NEIS baseline → scenario', kind: 'line' as const, color: COMPARE_COLOR.baseline }] : []),
                   ]}
                 />
               }
@@ -266,9 +280,9 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
                     { id: 'Country', header: 'Economy', value: (p) => p.Country, minWidth: 150 },
                     { id: 'tier', header: 'Tier', value: (p) => tierLabel(p.tier) },
                     { id: 'es', header: 'Energy Security', value: (p) => p.es, cell: (p) => fmtNum(p.es, 3), num: true },
-                    { id: 'es_base', header: 'Energy Security, paper', value: (p) => p.es_base, cell: (p) => fmtNum(p.es_base, 3), num: true },
+                    { id: 'es_base', header: 'Energy Security, baseline', value: (p) => p.es_base, cell: (p) => fmtNum(p.es_base, 3), num: true },
                     { id: 'eo', header: 'Economic Opportunity', value: (p) => p.eo, cell: (p) => fmtNum(p.eo, 3), num: true },
-                    { id: 'eo_base', header: 'Economic Opportunity, paper', value: (p) => p.eo_base, cell: (p) => fmtNum(p.eo_base, 3), num: true },
+                    { id: 'eo_base', header: 'Economic Opportunity, baseline', value: (p) => p.eo_base, cell: (p) => fmtNum(p.eo_base, 3), num: true },
                     { id: 'region', header: 'Corner', value: (p) => regionOf(p.y, p.x, med.es, med.eo), minWidth: 260 },
                   ]}
                 />
@@ -284,7 +298,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
                 <EmptyState>Too few economies have both scores in this sector.</EmptyState>
               )}
             </ChartCard>
-            <ChartCard title="Economies in each corner" sub="How many economies fall in each corner of this sector (split at the medians), in the scenario and in the paper, and how many of them are coalition members." updating={updating}>
+            <ChartCard title="Economies in each corner" sub="How many economies fall in each corner of this sector (split at the medians), in the scenario and at the NEIS baseline, and how many of them are coalition members." updating={updating}>
               <TableView
                 rows={counts}
                 caption="Economies in each corner"
@@ -292,7 +306,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
                 cols={[
                   { id: 'region', header: 'Corner', value: (r) => r.region, minWidth: 220 },
                   { id: 'scenario', header: 'Scenario', value: (r) => r.scenario, num: true },
-                  { id: 'paper', header: 'Paper', value: (r) => r.paper, num: true },
+                  { id: 'baseline', header: 'Baseline', value: (r) => r.baseline, num: true },
                   { id: 'coalition', header: 'Coalition', value: (r) => r.coalition, num: true, title: 'Coalition members, scenario' },
                 ]}
               />
@@ -300,14 +314,14 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
           </div>
           <ChartCard
             title={`${app.byIso.get(sel)?.country ?? sel}: its own sectors`}
-            sub="The selected economy's sectors in the same space, one panel per supply-chain stage: each dot is one technology. Labels are drawn where they fit; hover a dot or open the table for every sector."
+            sub={`The selected economy's sectors in the same space, one panel for each of the ${app.stages.length} supply-chain stages, named above it (on a narrow screen the panels wrap into rows): each dot is one technology. Labels are drawn where they fit; hover a dot or open the table for every sector.`}
             tools={<CountrySelect label="Economy" value={sel} options={options} onChange={setSel} className="w-56" />}
             updating={updating}
+            summary={`Scatter of ${own.length} sectors of ${app.byIso.get(sel)?.country ?? sel}, one panel per supply-chain stage.`}
             legend={
-              <Legend
-                items={app.stages.map((s) => ({ label: s, kind: 'dot' as const, color: STAGE_COLOR[s] }))}
-                label="Stage (one per panel)"
-              />
+              own.length ? (
+                <Legend items={[{ label: `${app.byIso.get(sel)?.country ?? sel} (${tierLabel(own[0].tier)})`, kind: 'dot' as const, color: TIER_COLOR[own[0].tier] }]} />
+              ) : undefined
             }
             table={() => (
               <TableView
@@ -315,7 +329,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
                 caption="Own sectors"
                 cols={[
                   { id: 'tech', header: 'Technology', value: (p) => p.tech },
-                  { id: 'stage', header: 'Stage', value: (p) => p.stage },
+                  { id: 'stage', header: 'Stage', value: (p) => stageLabel(p.stage), sortValue: (p) => stageRank(p.stage) },
                   { id: 'eo', header: 'Economic Opportunity', value: (p) => p.x, cell: (p) => fmtNum(p.x, 3), num: true },
                   { id: 'es', header: 'Energy Security', value: (p) => p.y, cell: (p) => fmtNum(p.y, 3), num: true },
                   { id: 'ok', header: 'Ranked', value: (p) => (p.ok ? 'yes' : 'no') },
@@ -324,7 +338,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
             )}
           >
             {own.length ? (
-              <PlotFigure<SpacePoint> build={buildOwn} height={320} ariaLabel="The selected economy's cells by stage" tooltip={tip} />
+              <PlotFigure<SpacePoint> build={buildOwn} height={OWN.top + OWN.panel + OWN.bottom} ariaLabel="The selected economy's cells by stage" tooltip={tip} />
             ) : (
               <EmptyState>No sector of this economy has both scores.</EmptyState>
             )}

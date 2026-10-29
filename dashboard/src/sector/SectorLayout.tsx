@@ -9,7 +9,7 @@ import { Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { Loading, Notice } from '../components/ui.tsx';
 import { setSectorBuild } from '../shell/buildInfo.ts';
 import { useTitle } from '../shell/title.ts';
-import { HEADLINE_TECH_SLUGS, isStageSlug, isTechSlug, STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS, type StageSlug, type TechSlug } from './contract.ts';
+import { HEADLINE_TECH_SLUGS, isStageSlug, isTechSlug, STAGE_LABELS, STAGE_SHORTS, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS, type StageSlug, type TechSlug } from './contract.ts';
 import { factsIndexOf } from './data/facts.ts';
 import { SectorDataProvider, useSectorManifest, useSectorMeta, useSectorStore } from './data/SectorDataProvider.tsx';
 import type { SectorModel } from './data/model.ts';
@@ -22,8 +22,13 @@ import { useLoadingStatus } from './views/data.ts';
 import { CaptionProvider, PageNotesProvider, SectorBar, SvgDefs, type SectorBarPicker } from './views/kit.tsx';
 import { SectorUrlProvider, useSectorUrl } from './views/state.tsx';
 
-/** Notes always in "Data notes" (spec 9: the dials apply to Strategic Insights only). */
-const ALWAYS_NOTES = ['The Perspective dials of the Country profile never change these pages: they show measured values with no weights and no scores.'];
+/**
+ * Notes always in "Data notes" (spec 9: the dials apply to Strategic Insights only). The Strategic posture
+ * sections (design L3) are the one recommendation on these pages, at fixed thresholds: the note says so.
+ */
+const ALWAYS_NOTES = [
+  'The Perspective dials of the Country profile never change these pages. They show measured values, with no weights and no scores, except the Strategic posture sections: a recommendation of the strategic position framework at fixed thresholds, which the dials do not change either.',
+];
 
 /** The module title while no view is mounted (loading, no data, errors); views set their own. */
 function ModuleTitle() {
@@ -86,13 +91,13 @@ function Bar({ model }: { model: SectorModel | null }) {
             const next = t as TechSlug;
             const hasStage = s && model.cell(next, s as StageSlug);
             const firstStage = STAGE_SLUGS.find((x) => model.cell(next, x));
-            const path = s ? `/sector/${next}/${hasStage ? s : (firstStage ?? 'midstream')}${params.iso3 ? `/${params.iso3}` : ''}` : `/sector/${next}`;
+            const path = s ? `/sector/${next}/${hasStage ? s : (firstStage ?? 'refining')}${params.iso3 ? `/${params.iso3}` : ''}` : `/sector/${next}`;
             navigate(`${path}${keep()}`);
           },
           stage,
           stages: STAGE_SLUGS.map((s) => {
             const cell = model.cell(tech, s);
-            return { slug: s, label: STAGE_LABELS[s], coverage: cell ? richness(model, cell) : null, disabled: !cell, title: cell ? undefined : `${TECH_LABELS[tech]} has no ${STAGE_LABELS[s]} cell` };
+            return { slug: s, label: STAGE_LABELS[s], short: STAGE_SHORTS[s], coverage: cell ? richness(model, cell) : null, disabled: !cell, title: cell ? undefined : `${TECH_LABELS[tech]} has no ${STAGE_LABELS[s]} cell` };
           }),
           onStage: (s: StageSlug) => navigate(`/sector/${tech}/${s}${params.iso3 ? `/${params.iso3}` : ''}${keep()}`),
         }

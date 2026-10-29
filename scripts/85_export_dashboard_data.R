@@ -6,7 +6,7 @@
 # The ONE place the dashboard reads the pipeline's outputs. It reads data/processed (and the few
 # raw files the partner layer needs; the reserves and production themes for the endowment screen
 # of the allied picks), builds the R bundle with the pure builders of R/dashboard/, runs the R
-# reference engine at the paper's baseline (every dial at 50) and checks it against the stored
+# reference engine at the NEIS baseline (every dial at 50) and checks it against the stored
 # outputs, then writes
 #
 #   <out-dir>/manifest.json          schema, vintage, flags, notes, the validation report, sources,
@@ -36,12 +36,22 @@
 # only, with a warning.
 #
 # Friendshore's CM-FDI parts (commit 78be8b5; R/themes/partnership_strength/cm_fdi.R): the cells
-# whose outbound rows name CM-FDI as their source (Solar, Wind, Batteries and Electric Vehicles
-# Midstream) carry the CM-FDI investment tie in place of the IMF position, and the
+# whose outbound rows name CM-FDI as their source (the Components and Assembly cells of Solar, Wind,
+# Batteries and Electric Vehicles, which config/partnership.yml cm_fdi.stages gives the same
+# projects) carry the CM-FDI investment tie in place of the IMF position, and the
 # chinese_parent_exposure rows the ownership component; both reach the bundle as
 # partner$fs$outbound_source / outbound_cmfdi / cpe (dash_bundle_fs_cmfdi()) and are checked against
 # config/partnership.yml cm_fdi, the stored exposure table and, through the Friendshore index array,
 # bit for bit against the pipeline.
+#
+# Six stages (2026-10-28): the cells are the 11 headline technologies x the pipeline's six
+# supply-chain stages (DASH_STAGES = SUPPLY_CHAIN_STAGES, 66 cells, one pcell chunk each). The
+# baseline stage weights are SUPPLY_CHAIN_STAGE_SI_WEIGHTS, the sectors left out of the Strategic
+# Index are the pipeline's own list (index_outputs$strategic_excluded_sectors; its rule-based part is
+# shipped as excluded_sectors and the engine finds the degenerate sectors itself) and the allied pick's
+# stages are STRATEGIC_ALLIED_STAGES (every stage but Deployment), shipped as
+# baseline_inputs$allied_stages. A dyad table labelled with other stages stops the export
+# (dash_bundle_dyads()).
 
 source(local({
   resolve_bootstrap_path <- function() {
@@ -91,6 +101,7 @@ source(file.path(repo_root, "R", "utils", "scurve.R"))
 source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "utils", "levels.R"))
 source(file.path(repo_root, "R", "utils", "country.R"))
+source(file.path(repo_root, "R", "utils", "supply_chain_stages.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "safer_friendshore.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "cm_fdi.R"))
@@ -185,8 +196,14 @@ stored <- list(
   eo_cc = eo_cc[eo_cc$tech %in% techs, , drop = FALSE],
   policy_index = io$policy_index,
   policy_eligibility = io$policy_eligibility,
-  strategic_index = io$strategic_index
+  strategic_index = io$strategic_index,
+  # the sectors scripts/20 left out of the Strategic Index by rule (those no stage-specific source
+  # measures, and those in which a pillar is constant across countries): the baseline's exclusions
+  strategic_excluded_sectors = io$strategic_excluded_sectors
 )
+if (is.null(stored$strategic_excluded_sectors)) {
+  stop(rel(outputs_rds), " has no strategic_excluded_sectors (the sectors the six-stage Strategic Index leaves out); rerun scripts/20.")
+}
 policy_component_tbl <- io$policy_component_tbl
 policy_provenance <- io$policy_index_provenance
 io_coalition <- io$coalition_members
@@ -285,8 +302,9 @@ allies <- allies[!is.na(allies$Country) & !duplicated(allies$iso3), c("Country",
 # ---- Endowment screen of the allied picks ---------------------------------------------------------
 
 # strategic_resource_base() (R/indices/build_indices.R) on the same reserves and production theme
-# tables as scripts/20: one row per Country x screened Upstream stage, resource_base TRUE where the
-# technology-level reserves or production are positive. The engine flags the SI cells with it
+# tables as scripts/20: one row per Country x screened Extraction stage (its default stage, as
+# scripts/20 calls it), resource_base TRUE where the technology-level reserves or production are
+# positive. The engine flags the SI cells with it
 # (dash_si()) and the allied selection skips the FALSE ones unless the advanced setting turns the
 # screen off; checked below against the stored Strategic Index's flags. OPSI_SI_RESOURCE_SCREEN=0
 # (scripts/20's robustness switch) sets the baseline to screen off.
@@ -320,7 +338,7 @@ step("Friendshore dyads")
 fs_long <- read_long("partner_friendshore_tbl", extra = "source")
 po_keys_U <- NULL
 U_fs <- unique(c(fs_long$reporter_iso, fs_long$partner_iso))
-fs_dup <- sum(duplicated(fs_long[c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable")]))
+fs_dup <- dash_count_duplicate_keys(fs_long, c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable"))
 if (fs_dup > 0) stop("partner_friendshore_tbl has ", fs_dup, " duplicate rows per (dyad, cell, variable).")
 fs_vars <- unique(fs_long$variable)
 geo_in_fs <- "geo_alignment" %in% fs_vars
@@ -381,7 +399,7 @@ if (!is.null(cm_parts$cpe)) {
     add_check("chinese_parent_exposure == partner_cm_fdi_exposure_tbl", "friendshore", "INFO", nrow(nz), NA, "no stored exposure table")
   }
 }
-po_dup <- sum(duplicated(po_long[c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable")]))
+po_dup <- dash_count_duplicate_keys(po_long, c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable"))
 if (po_dup > 0) stop("partner_opportunity_tbl has ", po_dup, " duplicate rows per (dyad, cell, variable).")
 po_spec <- c(trade_index = "rpc", econ_opp_index = "rc", partner_es_need = "pc")
 pob <- dash_bundle_dyads(po_long, U, techs, po_spec, "Opportunity Index", stages)
@@ -647,9 +665,14 @@ baseline_inputs <- c(
     policy_iea_var = "IEA PAMS Policy Index",
     policy_cat_var = "CAT Policy Index",
     si_weights = STRATEGIC_INDEX_WEIGHTS,
-    stage_weights = STRATEGIC_SUPPLY_CHAIN_WEIGHTS,
-    excluded_sectors = STRATEGIC_EXCLUDED_SECTORS,
+    # the six stages' weights (each stage an equal share of its roll-up's 0.50 / 0.75 / 0.25), as
+    # build_strategic_index() weights them in scripts/20; checked against the stored sc_weight below
+    stage_weights = SUPPLY_CHAIN_STAGE_SI_WEIGHTS[stages],
+    excluded_sectors = as.character(stored$strategic_excluded_sectors),
     allied_excluded_techs = eval(formals(select_allied_strategic_sectors)$excluded_techs),
+    # the stages the allied pick may take (scripts/20 passes stages = STRATEGIC_ALLIED_STAGES; the
+    # function's default also accepts the old Upstream / Midstream labels, which no cell carries)
+    allied_stages = STRATEGIC_ALLIED_STAGES,
     require_resource_base = si_resource_screen && isTRUE(eval(formals(select_allied_strategic_sectors)$require_resource_base)),
     fossil_techs = c("Coal", "Oil", "Gas"),
     fossil_threshold = 90,
@@ -664,6 +687,10 @@ baseline_inputs <- c(
   )
 )
 sources_params$tau <- if (pillar_rule) "config/rankability.yml" else "NA: the stored pillars predate the rankability rule"
+sources_params$stage_weights <- "SUPPLY_CHAIN_STAGE_SI_WEIGHTS (R/utils/supply_chain_stages.R)"
+sources_params$excluded_sectors <- "index_outputs$strategic_excluded_sectors less its degenerate sectors (scripts/20: unmeasured and unevidenced sectors; the engine finds the degenerate ones, dash_si_rule_excluded())"
+sources_params$allied_stages <- "STRATEGIC_ALLIED_STAGES (R/indices/build_indices.R), as scripts/20 passes it"
+if (!all(STRATEGIC_ALLIED_STAGES %in% stages)) stop("STRATEGIC_ALLIED_STAGES names a stage outside the bundle's stages.")
 if (!pillar_rule) notes <- c(notes, "The stored ES / EO pillars predate the rankability rule: every scored cell counts as rankable at the baseline (tau = rule off).")
 
 manifest <- list(
@@ -688,6 +715,19 @@ si_parts <- list(tech_ghg = if (!is.null(tg)) tibble::as_tibble(tg)[c("tech", "g
                  trl = tibble::as_tibble(trl), allies = tibble::as_tibble(allies))
 if (!is.null(resource_base_tbl)) si_parts$resource_base <- resource_base_tbl
 bundle <- dash_bundle_assemble(manifest, dims, pillars, policy_bundle, si_parts, partner_bundle)
+# Ship the rule-based exclusions only: scripts/20 appends the sectors in which a pillar is constant
+# across countries to its list; pre-excluded, the engine would keep them out at every setting as "not
+# reported (pipeline rule)". It finds them itself (checked below: SI excluded sectors ==
+# strategic_excluded_sectors).
+p0 <- bundle$manifest$baseline
+rule_excluded <- dash_si_rule_excluded(bundle, p0, dash_pillars(bundle, p0), dash_policy(bundle, p0), as.character(stored$strategic_excluded_sectors))
+if (!identical(rule_excluded, manifest$baseline_inputs$excluded_sectors)) {
+  step("  excluded_sectors: ", length(rule_excluded), " by rule; left to the engine (a pillar constant across countries): ",
+       paste(setdiff(manifest$baseline_inputs$excluded_sectors, rule_excluded), collapse = ", "))
+  manifest$baseline_inputs$excluded_sectors <- rule_excluded
+  bundle <- dash_bundle_assemble(manifest, dims, pillars, policy_bundle, si_parts, partner_bundle)
+}
+rm(p0)
 dash_validate_bundle(bundle)
 
 # ---- Validation: the engine at the baseline against the stored outputs ---------------------------------
@@ -766,6 +806,17 @@ cmp_str("SI resource_base (endowment screen)", "si", es_$resource_base[ks], ss$r
                sum(!is.na(ss$resource_base) & !is.na(ss$strategic_index)), " scored screened cells without a resource base"))
 cmp_str("SI resource_evidence", "si", es_$resource_evidence[ks], ss$resource_evidence, "resource_evidence" %in% names(ss))
 cmp_str("SI pick_exclusion", "si", es_$pick_exclusion[ks], ss$pick_exclusion, "pick_exclusion" %in% names(ss))
+# The sectors left out: the engine's (the shipped list plus any it finds degenerate) against scripts/20's
+ex_eng <- res$si$excluded$sector
+ex_st <- unique(as.character(stored$strategic_excluded_sectors))
+add_check("SI excluded sectors == strategic_excluded_sectors", "si",
+          if (setequal(ex_eng, ex_st) && length(ex_eng) == length(ex_st)) "PASS" else "FAIL", length(ex_st), NA,
+          paste0(length(setdiff(ex_eng, ex_st)), " extra in the engine (", paste(setdiff(ex_eng, ex_st), collapse = ", "), "), ",
+                 length(setdiff(ex_st, ex_eng)), " missing"))
+sc_ok <- "sc_weight" %in% names(ss) &&
+  isTRUE(all(ss$sc_weight == unname(SUPPLY_CHAIN_STAGE_SI_WEIGHTS[as.character(ss$supply_chain)])))
+add_check("SI stored sc_weight == SUPPLY_CHAIN_STAGE_SI_WEIGHTS by stage", "si", if (sc_ok) "PASS" else "FAIL",
+          nrow(ss), NA, paste0("stages ", paste(sort(unique(as.character(ss$supply_chain))), collapse = ", ")))
 allied_csv <- maybe_src(file.path(processed_dir, "charts", "allied_strategic.csv"), read.csv, stringsAsFactors = FALSE)
 if (!is.null(allied_csv)) {
   a_eng <- paste(res$allied$Country, res$allied$sector, sep = "\r")
@@ -932,7 +983,11 @@ conduits_ship$in_rule <- conduits_ship$iso3 %in% conduit_rule$iso3
 ties_meta <- list(
   dip_years = I(dip_years), dip_gdp_year = dip_gdp_year, dip_unit = "US$ millions",
   dip_source = "IMF, Direct Investment Positions (DIP), reported official data",
-  conduit_rule = conduit_cfg$conduit_rule %||% "conduits", conduit_scope = conduit_rule$scope, top_k = 10L
+  conduit_rule = conduit_cfg$conduit_rule %||% "conduits", conduit_scope = conduit_rule$scope, top_k = 10L,
+  # the stages whose cells carry the CM-FDI investment tie (config/partnership.yml cm_fdi.stages,
+  # Components and Assembly), each with the same projects: the cmfdi rows repeat every flow once
+  # per stage, so counts and totals across stages must be taken once per project
+  cmfdi_stages = I(if (length(cm_split$cells)) unique(as.character(bundle$partner$cells$supply_chain[cm_split$cells])) else character())
 )
 # the CC BY 4.0 attribution of CM-FDI, as the Sector module shows it (config/sector_dictionary.yml sources)
 sector_dict_ties <- maybe_src(file.path(repo_root, "config", "sector_dictionary.yml"), yaml::read_yaml)

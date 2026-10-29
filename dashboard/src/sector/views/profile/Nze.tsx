@@ -2,7 +2,7 @@
 // data for the Climate section): for the WEO series config/iea_pathways_map.yml maps to the cell (its own
 // activity, the demand it supplies, or emissions context), the World pathway from the IEA's historical
 // estimates through 2035, 2040 and 2050 under Stated Policies, Current Policies and Net Zero Emissions by
-// 2050, with the match quality stated; for Upstream mineral cells, the IEA's mineral demand by scenario
+// 2050, with the match quality stated; for the mineral cells (Extraction and Refining), the IEA's mineral demand by scenario
 // (Current Policies, Stated Policies, High Demand: the mineral dataset has no Net Zero scenario). Every
 // figure is labelled as an IEA scenario projection, World only. Data: the optional climate.nze_* tables of
 // the lazy sector-climate chunk. Beside each series, the 2030 milestone of the IEA's 2021 Net Zero roadmap

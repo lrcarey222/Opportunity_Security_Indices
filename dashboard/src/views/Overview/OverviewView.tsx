@@ -26,6 +26,7 @@ import { useApp, useCore, usePartner, useScenario } from '../../state/EngineProv
 import { useGoto } from '../../state/nav.ts';
 import { METRICS, type Metric, type ShowMode } from '../../state/url.ts';
 import { COMPARE_COLOR, INK, PAPER_DIM, PAPER_MUTE } from '../../theme/palette.ts';
+import { stageLabel, stageRank } from '../../lib/stages.ts';
 import { noteText, showWord, TechStageFilters, useTechStage } from '../common.tsx';
 import { cellRows, METRIC_LABEL, METRIC_NOUN, METRIC_TERM, metricRows, scaleValues, sideWords, triOptions, withShown, type MetricRow } from './derive.ts';
 
@@ -47,7 +48,7 @@ function MetricTip({ r, metric, mode, isBaseline, cell, scale, noun }: { r: Metr
       lines={[
         cell && r.tech ? cellLabel(r.tech, r.supply_chain) : null,
         visible ? sideWords(scale.side(r.shown), metric, mode, fmtTick(metric, mode)(scale.mid), noun) : null,
-        !isBaseline ? `Scenario ${f(r.value)} · paper ${f(r.value_base)} · change ${fmtChange(metric)(r.delta)}` : null,
+        !isBaseline ? `Scenario ${f(r.value)} · baseline ${f(r.value_base)} · change ${fmtChange(metric)(r.delta)}` : null,
         !r.shown_ok && r.reason ? `Not ranked: ${r.reason}` : null,
       ]}
     />
@@ -60,6 +61,10 @@ function legendWords(metric: Metric, mode: ShowMode): { lowWord?: string; highWo
   if (metric === 'si_rank') return { lowWord: 'near the top of its own list', highWord: 'further down its own list' };
   return {};
 }
+
+/** The coalition heatmap's columns: the narrowest a sector column may be, the gap between stage groups
+ * and the right margin (px). */
+const HEAT = { col: 12, gap: 8, right: 8 } as const;
 
 interface SwarmP extends SwarmPoint {
   row: MetricRow;
@@ -112,7 +117,7 @@ export default function OverviewView() {
 
   const updating = !core.fresh || (isPsi && !partner.fresh);
   const title = isPsi ? label : `${label}: ${sectorName}`;
-  const legendLabel = mode === 'change' ? `Change in ${noun} against the paper${isPsi ? '' : `, ${sectorName}`}` : isPsi ? label : `${label}, ${sectorName}`;
+  const legendLabel = mode === 'change' ? `Change in ${noun} against the NEIS baseline${isPsi ? '' : `, ${sectorName}`}` : isPsi ? label : `${label}, ${sectorName}`;
   const termWords = metric === 'si_rank' || metric === 'si' ? 'Strategic Index' : isPsi ? 'Partnership Strength' : label;
   const term = <Term id={METRIC_TERM[metric]}>{termWords}</Term>;
   const mapSub = (
@@ -120,9 +125,9 @@ export default function OverviewView() {
       {showWord(mode)}{' '}
       {mode === 'change' ? (
         metric === 'si_rank' ? (
-          <>Each economy is coloured by how far this sector moved in its own {term} ranking against the paper: blue moved up, white did not move, orange moved down.</>
+          <>Each economy is coloured by how far this sector moved in its own {term} ranking against the NEIS baseline: blue moved up, white did not move, orange moved down.</>
         ) : (
-          <>Each economy is coloured by how much its {term}{isPsi ? '' : ` in ${sectorName}`} moved against the paper: orange fell, white no change, blue rose.</>
+          <>Each economy is coloured by how much its {term}{isPsi ? '' : ` in ${sectorName}`} moved against the NEIS baseline: orange fell, white no change, blue rose.</>
         )
       ) : metric === 'si_rank' ? (
         <>
@@ -156,7 +161,7 @@ export default function OverviewView() {
   const tableCols: Col<MetricRow>[] = [
     { id: 'Country', header: 'Economy', value: (r) => r.Country, minWidth: 150 },
     { id: 'value', header: 'Scenario', value: (r) => r.value, cell: (r) => f(r.value), num: true },
-    { id: 'value_base', header: 'Paper', value: (r) => r.value_base, cell: (r) => f(r.value_base), num: true },
+    { id: 'value_base', header: 'Baseline', value: (r) => r.value_base, cell: (r) => f(r.value_base), num: true },
     { id: 'delta', header: 'Change', value: (r) => r.delta, cell: (r) => fmtChange(metric)(r.delta), num: true },
     { id: 'ok', header: 'Ranked', value: (r) => (r.ok ? 'yes' : 'no') },
     { id: 'reason', header: 'Why not ranked', value: (r) => (r.ok ? null : r.reason), minWidth: 180 },
@@ -199,16 +204,21 @@ export default function OverviewView() {
     return { data, labels: rows.map(rowLabel), scale, nCells: data.filter((d) => !d.missing).length };
   }, [all, isPsi, app, view.rankable, metric, mode]);
 
-  const heatHeight = heat ? 130 + 14 * heat.labels.length : 200;
+  const heatHeight = heat ? 140 + 14 * heat.labels.length : 200;
+  // one column per sector (66 at six stages), each at least HEAT.col px wide, in one row of stage groups
+  // HEAT.gap px apart: below that width the chart scrolls sideways inside its card
+  const heatMarginLeft = heat ? labelMargin(heat.labels, { min: 120, max: 280 }) : 120;
+  const heatMinWidth = heatMarginLeft + HEAT.right + app.cells.length * HEAT.col + Math.max(0, app.stages.length - 1) * HEAT.gap;
   const buildHeat = useCallback(
     (width: number): Plot.PlotOptions | null => {
       if (!heat) return null;
       const s = heat.scale;
-      const marginLeft = labelMargin(heat.labels, { min: 120, max: 280 });
-      const marginRight = 8;
-      // an 8 px gap between the stage groups
+      const marginLeft = heatMarginLeft;
+      const marginRight = HEAT.right;
+      // exactly HEAT.gap px between the stage groups (band step = group + gap, no outer padding)
       const frame = Math.max(240, width - marginLeft - marginRight);
-      const gap = Math.min(0.1, 24 / frame);
+      const nStages = Math.max(1, app.stages.length);
+      const gap = nStages > 1 ? HEAT.gap / ((frame + HEAT.gap) / nStages) : 0;
       const cellCh = { fx: 'stageName', x: 'tech', y: 'label', inset: 0.5 };
       const sel = heat.data.filter((d) => d.iso3c === focus && d.tech === tech && d.supply_chain === stage);
       return {
@@ -216,10 +226,11 @@ export default function OverviewView() {
         height: heatHeight,
         marginLeft,
         marginTop: 28,
-        marginBottom: 100,
+        marginBottom: 110,
         marginRight,
         fx: { domain: app.stages, label: null, paddingInner: gap, paddingOuter: 0 },
-        x: { domain: app.techs, label: null, tickRotate: -50, tickSize: 0, axis: 'bottom', padding: 0 },
+        // upright technology names: a column is only ~12 px wide at six stages
+        x: { domain: app.techs, label: null, tickRotate: -90, tickSize: 0, axis: 'bottom', padding: 0 },
         y: { domain: heat.labels, label: null, tickSize: 0, padding: 0 },
         marks: [
           () => {
@@ -230,7 +241,7 @@ export default function OverviewView() {
             return defs as unknown as SVGElement;
           },
           // the stage groups are named by text headers (no colour stripe: every coloured cell is the measure)
-          Plot.axisFx({ anchor: 'top', label: null, tickSize: 0, tickFormat: (d: string) => d.toUpperCase(), fill: PAPER_DIM, fontSize: 11, fontWeight: 500 }),
+          Plot.axisFx({ anchor: 'top', label: null, tickSize: 0, tickFormat: (d: string) => stageLabel(d).toUpperCase(), fill: PAPER_DIM, fontSize: 11, fontWeight: 500 }),
           Plot.cell(heat.data.filter((d) => d.missing), { ...cellCh, fill: 'url(#ov-hatch)' }),
           Plot.cell(heat.data.filter((d) => !d.missing), { ...cellCh, fill: (d: MetricRow) => s.color(d.shown) ?? 'none' }),
           ...(sel.length ? ringMarks(sel, cellCh, 'selected', 'cell') : []),
@@ -238,7 +249,7 @@ export default function OverviewView() {
         ],
       };
     },
-    [heat, heatHeight, app, focus, tech, stage],
+    [heat, heatHeight, heatMarginLeft, app, focus, tech, stage],
   );
 
   // ---- where each economy sits (beeswarm) -------------------------------------------------------
@@ -258,12 +269,12 @@ export default function OverviewView() {
       row: r,
       ghost: false,
     }));
-    // Scenario mode: the paper's positions where they differ, as hollow gray rings in the same layout
+    // Scenario mode: the NEIS baseline positions where they differ, as hollow gray rings in the same layout
     const ghosts: SwarmP[] =
       mode === 'scenario' && !isBaseline
         ? vis
             .filter((r) => r.ok_base && r.value_base !== null && r.value !== null && Math.abs(r.value - r.value_base) > 1e-12)
-            .map((r) => ({ id: `${r.iso3c ?? r.Country}~paper`, value: val(r.value_base as number), label: `${r.Country} (paper)`, fill: 'none', stroke: COMPARE_COLOR.baseline, strokeWidth: 1.5, row: r, ghost: true }))
+            .map((r) => ({ id: `${r.iso3c ?? r.Country}~baseline`, value: val(r.value_base as number), label: `${r.Country} (NEIS baseline)`, fill: 'none', stroke: COMPARE_COLOR.baseline, strokeWidth: 1.5, row: r, ghost: true }))
         : [];
     return { pts: [...ghosts, ...pts], n: pts.length, nGhost: ghosts.length };
   }, [cell, visible, mapScale, mode, isBaseline, negRank]);
@@ -272,8 +283,8 @@ export default function OverviewView() {
   const swarmX =
     mode === 'change'
       ? metric === 'si_rank'
-        ? 'Change in rank against the paper (right = moved up its own list) →'
-        : `Change in ${noun} against the paper →`
+        ? 'Change in rank against the NEIS baseline (right = moved up its own list) →'
+        : `Change in ${noun} against the NEIS baseline →`
       : metric === 'si_rank'
         ? 'Rank of this sector in the economy’s own list (1 = its top sector) →'
         : `${label} →`;
@@ -286,7 +297,7 @@ export default function OverviewView() {
   const nSectors = app.cells.length;
   const heatWords =
     mode === 'change'
-      ? ' against the paper: orange fell, white no change, blue rose'
+      ? ' against the NEIS baseline: orange fell, white no change, blue rose'
       : metric === 'si_rank'
         ? ': blue near the top of the member’s own list, white the middle of the cells shown, orange further down'
         : ': orange is lower than most cells shown, white the middle, blue higher';
@@ -303,7 +314,7 @@ export default function OverviewView() {
             <Term id="eo" />: how well placed is it to create value there, through exports, investment, costs, demand and know-how? Both run from 0 to 1 and
             compare an economy with all others in the same sector, so 0.8 means doing better than most. Pick a measure, a technology and a stage: the map, the
             coalition table and the dot chart show the same numbers three ways. The priority dials re-weight everything; at 50 they
-            reproduce the paper.
+            give the NEIS baseline.
           </>
         }
       />
@@ -359,7 +370,7 @@ export default function OverviewView() {
           ) : (
             <ChartCard
               title={`Coalition members across all ${nSectors} sectors`}
-              sub={`Rows are the ${heat?.labels.length ?? 0} coalition members (core first, then partners); columns are the ${app.techs.length} technologies at each stage. Each cell is the member's ${noun} in that sector${heatWords}. Hatched: missing or not ranked. Click a row for that country's scores.`}
+              sub={`Rows are the ${heat?.labels.length ?? 0} coalition members (core first, then partners); columns are the ${app.techs.length} technologies at each of the ${app.stages.length} supply-chain stages, grouped by stage in chain order. Each cell is the member's ${noun} in that sector${heatWords}. Hatched: missing or not ranked. On a narrow screen the table scrolls sideways. Click a row for that country's scores.`}
               updating={updating}
               summary={`Table of ${label} for ${heat?.labels.length ?? 0} coalition members across ${nSectors} sectors, coloured from orange (lower) through white (the median of the ${heat?.nCells ?? 0} cells shown) to blue (higher).`}
               table={() => (
@@ -368,7 +379,7 @@ export default function OverviewView() {
                   cols={[
                     { id: 'Country', header: 'Economy', value: (r) => r.Country, minWidth: 150 },
                     { id: 'tech', header: 'Technology', value: (r) => r.tech },
-                    { id: 'supply_chain', header: 'Stage', value: (r) => r.supply_chain },
+                    { id: 'supply_chain', header: 'Stage', value: (r) => stageLabel(r.supply_chain), sortValue: (r) => stageRank(r.supply_chain) },
                     ...tableCols.slice(1, 4),
                     { id: 'side', header: 'Colour', value: (r) => (r.missing || !heat ? 'hatched' : sideWords(heat.scale.side(r.shown), metric, mode, fTick(heat.scale.mid), 'cells shown')), minWidth: 220 },
                     ...tableCols.slice(4),
@@ -382,7 +393,7 @@ export default function OverviewView() {
                 heat && (
                   <TriLegend
                     scale={heat.scale}
-                    label={mode === 'change' ? `Change in ${noun} against the paper, all sectors` : `${label}, all sectors`}
+                    label={mode === 'change' ? `Change in ${noun} against the NEIS baseline, all sectors` : `${label}, all sectors`}
                     format={fTick}
                     noun="cells"
                     {...words}
@@ -395,7 +406,7 @@ export default function OverviewView() {
                 <PlotFigure<MetricRow & { label: string }>
                   build={buildHeat}
                   height={heatHeight}
-                  minWidth={760}
+                  minWidth={heatMinWidth}
                   ariaLabel={`Coalition table of ${label}`}
                   tooltip={(d) => heat && <MetricTip r={d} metric={metric} mode={mode} isBaseline={isBaseline} cell scale={heat.scale} noun="cells shown" />}
                   onSelect={(d) => d.iso3c && goto(`/country/${d.iso3c}`)}
@@ -408,7 +419,7 @@ export default function OverviewView() {
             title="Where each economy sits"
             sub={`Each dot is one economy, placed by its ${noun}${isPsi ? '' : ` in ${sectorName}`} and coloured as on the map; dots with close values are stacked so that none hides another.${
               negRank ? ' Rank 1 is the economy’s own top sector.' : ''
-            }${swarm.nGhost ? ' Hollow gray rings are the paper’s values where the scenario differs.' : ''} Click a dot to highlight that economy here, on the map and in the coalition table.`}
+            }${swarm.nGhost ? ' Hollow gray rings are the NEIS baseline values where the scenario differs.' : ''} Click a dot to highlight that economy here, on the map and in the coalition table.`}
             updating={updating}
             summary={`Dot chart of ${swarm.n} economies by ${label}${isPsi ? '' : ` in ${sectorName}`}; ${focusName} is highlighted.`}
             legend={

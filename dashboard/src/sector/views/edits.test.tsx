@@ -1,5 +1,5 @@
-// The 2026-10-11/12 Sector edits on the TS fixture (spec_country.md C1.5, C3.6, C5.1-C5.8): Upstream trade
-// baskets (Solar and Semiconductors Upstream), the export-feasibility card, the HHI explainer, trade by
+// The 2026-10-11/12 Sector edits on the TS fixture (spec_country.md C1.5, C3.6, C5.1-C5.8): the materials
+// trade baskets (Solar and Semiconductors Refining), the export-feasibility card, the HHI explainer, trade by
 // sub-component (profile and Explore; the `sub` key), the three-colour legends, unique landmark names,
 // the bridge link to Country Insights, and no bare acronym on any Sector route (C3.4).
 
@@ -10,6 +10,8 @@ import { routes } from '../../routes.tsx';
 import { bareAcronyms } from '../../components/testing/acronyms.ts';
 import { buildSectorFixture, fixtureSource } from '../__fixtures__/build.ts';
 import { SectorStore, setSectorStoreForTests } from '../data/store.ts';
+import { fixtureStore } from '../../posture/__tests__/fixture.ts';
+import { setPostureStore } from '../../posture/store.ts';
 
 const restore: (() => void)[] = [];
 let source: ReturnType<typeof fixtureSource>;
@@ -43,6 +45,7 @@ afterAll(() => {
 beforeEach(() => {
   source = fixtureSource(buildSectorFixture());
   setSectorStoreForTests(new SectorStore(source));
+  setPostureStore(fixtureStore());
   try {
     localStorage.clear();
   } catch {
@@ -53,6 +56,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   setSectorStoreForTests(null);
+  setPostureStore(null);
 });
 
 function renderAt(path: string) {
@@ -69,9 +73,9 @@ const openGroups = async () => {
 const main = () => document.querySelector('main') ?? document.body;
 
 describe('Sector edits 2026-10 (C5)', () => {
-  it('Batteries — Midstream: the HHI explainer, sub-components, the basket composition and export feasibility', async () => {
-    const r = renderAt('/sector/batteries/midstream');
-    expect(await h1('Batteries — Midstream')).toBeTruthy();
+  it('Batteries — Assembly: the HHI explainer, sub-components, the basket composition and export feasibility', async () => {
+    const r = renderAt('/sector/batteries/assembly');
+    expect(await h1('Batteries — Assembly')).toBeTruthy();
     await openGroups();
     const explainer = await screen.findByTestId('hhi-explainer', {}, { timeout: 20_000 });
     expect(explainer.textContent).toMatch(/Ten equal exporters give 0\.10; four give 0\.25/);
@@ -96,41 +100,41 @@ describe('Sector edits 2026-10 (C5)', () => {
   });
 
   it('an unknown sub-component in the link shows the whole basket; the explainer is collapsed after the first visit', async () => {
-    renderAt('/sector/batteries/midstream?sub=Nope');
-    expect(await h1('Batteries — Midstream')).toBeTruthy();
+    renderAt('/sector/batteries/assembly?sub=Nope');
+    expect(await h1('Batteries — Assembly')).toBeTruthy();
     await openGroups();
     expect(await screen.findByRole('heading', { name: 'Exporters and importers' }, { timeout: 20_000 })).toBeTruthy();
     expect((screen.getByRole('radio', { name: 'Whole basket' }) as HTMLInputElement).checked).toBe(true);
     cleanup();
-    renderAt('/sector/batteries/midstream');
-    expect(await h1('Batteries — Midstream')).toBeTruthy();
+    renderAt('/sector/batteries/assembly');
+    expect(await h1('Batteries — Assembly')).toBeTruthy();
     await openGroups();
     const explainer = await screen.findByTestId('hhi-explainer', {}, { timeout: 20_000 });
     expect(explainer.hasAttribute('open')).toBe(false);
   });
 
-  it('Solar — Upstream: a trade basket with one group of codes and its basket note (C5.1)', async () => {
-    renderAt('/sector/solar/upstream');
-    expect(await h1('Solar — Upstream')).toBeTruthy();
+  it('Solar — Refining: a trade basket with one group of codes and its basket note (C5.1)', async () => {
+    renderAt('/sector/solar/refining');
+    expect(await h1('Solar — Refining')).toBeTruthy();
     await openGroups();
     expect(await screen.findByText('One group of codes: the whole basket.', {}, { timeout: 20_000 })).toBeTruthy();
-    expect(screen.getByText(/Solar Upstream trade is silicon metal only/)).toBeTruthy();
+    expect(screen.getByText(/Solar Refining trade is silicon metal only/)).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Exporters and importers' })).toBeTruthy();
     expect(screen.queryByRole('radio', { name: 'Sub-component' })).toBeNull();
     expect(screen.getByRole('heading', { name: 'How close is each economy to exporting these goods?' })).toBeTruthy();
     expect(bareAcronyms(main())).toEqual([]);
   });
 
-  it('Semiconductors — Upstream renders with its trade basket', async () => {
-    renderAt('/sector/semiconductors/upstream');
-    expect(await h1('Semiconductors — Upstream')).toBeTruthy();
+  it('Semiconductors — Refining renders with its trade basket', async () => {
+    renderAt('/sector/semiconductors/refining');
+    expect(await h1('Semiconductors — Refining')).toBeTruthy();
     await openGroups();
     expect(await screen.findByRole('heading', { name: 'Exporters and importers' }, { timeout: 20_000 })).toBeTruthy();
     expect(screen.getByText(/gallium, germanium and indium/i, { selector: 'li' })).toBeTruthy();
   });
 
   it('Explore trade: three-colour map legend, and the sub-component view loads the trade chunk on demand', async () => {
-    const r = renderAt('/sector/explore/trade?tech=Batteries&stage=Midstream');
+    const r = renderAt('/sector/explore/trade?tech=Batteries&stage=Assembly');
     expect(await h1('Trade')).toBeTruthy();
     expect(await screen.findByRole('heading', { level: 2, name: /^Results: Exports of the sector’s traded goods/ }, { timeout: 20_000 })).toBeTruthy();
     const legend = (await screen.findAllByTestId('tri-legend'))[0];
@@ -144,7 +148,7 @@ describe('Sector edits 2026-10 (C5)', () => {
   });
 
   it('Explore: the measure select never offers the sub-component vars; a link naming one opens its whole-basket measure (C5.4)', async () => {
-    renderAt('/sector/explore/trade?m=trade.sub_imports&tech=Batteries&stage=Midstream');
+    renderAt('/sector/explore/trade?m=trade.sub_imports&tech=Batteries&stage=Assembly');
     expect(await screen.findByRole('heading', { level: 2, name: /^Results: Imports of the sector’s traded goods/ }, { timeout: 20_000 })).toBeTruthy();
     const measure = screen.getByRole('combobox', { name: 'Measure' }) as HTMLSelectElement;
     const ids = [...measure.options].map((o) => o.value);
@@ -173,8 +177,8 @@ describe('Sector edits 2026-10 (C5)', () => {
   });
 
   it('Country in sector links to Country Insights; the SectorBar highlight does too', async () => {
-    renderAt('/sector/batteries/midstream/USA');
-    expect(await h1('United States in Batteries — Midstream')).toBeTruthy();
+    renderAt('/sector/batteries/assembly/USA');
+    expect(await h1('United States in Batteries — Assembly')).toBeTruthy();
     const links = screen.getAllByRole('link', { name: 'United States: Country profile →' });
     expect(links.length).toBeGreaterThan(0);
     for (const a of links) expect(a.getAttribute('href')).toBe('/countries/USA');
@@ -192,10 +196,10 @@ describe('Sector edits 2026-10 (C5)', () => {
     expect(bareAcronyms(main())).toEqual([]);
   });
 
-  it.each(['/sector/batteries/midstream', '/sector/oil/upstream', '/sector/explore/trade?tech=Batteries&stage=Midstream', '/sector/explore/prices'])('every chart card on %s says how to read it (C3.6)', async (path) => {
+  it.each(['/sector/batteries/refining', '/sector/batteries/assembly', '/sector/oil/extraction', '/sector/explore/trade?tech=Batteries&stage=Assembly', '/sector/explore/prices'])('every chart card on %s says how to read it (C3.6)', async (path) => {
     renderAt(path);
     await screen.findByRole('heading', { level: 1 }, { timeout: 30_000 });
-    if (/^\/sector\/[a-z-]+\/(?:up|mid|down)stream$/.test(path)) await openGroups();
+    if (/^\/sector\/[a-z-]+\/(?:extraction|refining|components|assembly|deployment|recovery)$/.test(path)) await openGroups();
     await waitFor(() => expect(document.querySelectorAll('main section.card > figure').length).toBeGreaterThan(1), { timeout: 20_000 });
     await waitFor(() => expect(main().textContent ?? '').not.toMatch(/Loading /), { timeout: 20_000 });
     // a chart card's reading line is the HowToRead span under its measure caption
@@ -205,10 +209,10 @@ describe('Sector edits 2026-10 (C5)', () => {
     expect(without).toEqual([]);
   });
 
-  it.each(['/sector', '/sector/batteries', '/sector/minerals', '/sector/explore/policy', '/sector/explore/technology', '/sector/oil/upstream'])('no bare acronym on %s (C3.4)', async (path) => {
+  it.each(['/sector', '/sector/batteries', '/sector/minerals', '/sector/explore/policy', '/sector/explore/technology', '/sector/oil/extraction'])('no bare acronym on %s (C3.4)', async (path) => {
     renderAt(path);
     await screen.findByRole('heading', { level: 1 }, { timeout: 30_000 });
-    if (/^\/sector\/[a-z-]+\/(?:up|mid|down)stream$/.test(path)) await openGroups();
+    if (/^\/sector\/[a-z-]+\/(?:extraction|refining|components|assembly|deployment|recovery)$/.test(path)) await openGroups();
     await waitFor(() => expect(document.querySelectorAll('figure, [data-testid="sector-bar"]').length).toBeGreaterThan(0), { timeout: 20_000 });
     expect(bareAcronyms(main())).toEqual([]);
   });

@@ -648,7 +648,7 @@ export class SectorModel {
       .sort((a, z) => (z.weight || 0) - (a.weight || 0));
   }
 
-  /** Items linked to a cell (Batteries Upstream -> lithium, nickel, ...), heaviest first. */
+  /** Items linked to a cell (Batteries Extraction -> lithium, nickel, ...), heaviest first. */
   itemsOfCell(cell: number, axis?: ItemAxis): { item: ItemInfo; weight: number }[] {
     return (this.linksByCell.get(cell) ?? [])
       .map((l) => ({ item: this.items[l.item], weight: l.weight }))
@@ -656,7 +656,7 @@ export class SectorModel {
       .sort((a, z) => (z.weight || 0) - (a.weight || 0));
   }
 
-  /** "Batteries — Midstream". */
+  /** "Batteries — Refining". */
   cellLabel(item: ItemInfo): string {
     return item.tech && item.stage ? `${item.tech} — ${item.stage}` : item.label;
   }

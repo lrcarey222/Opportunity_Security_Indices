@@ -1,6 +1,6 @@
 // Overview derivations (pure; spec_react.md 8.6 view 1; port of shiny mod_overview.R
 // overview_metric_data() and show_values()): one long table of the metric for every economy x
-// technology x stage with the scenario value, the paper's value, the change and rankability.
+// technology x stage with the scenario value, the NEIS baseline value, the change and rankability.
 
 import type { CorePayload, PartnerPayload } from '../../worker/protocol.ts';
 import type { Metric, ShowMode } from '../../state/url.ts';
@@ -13,7 +13,7 @@ export interface MetricRow {
   supply_chain: string;
   value: number | null;
   value_base: number | null;
-  /** scenario minus paper; for ranks, rank_base - rank (positive = moved up) */
+  /** scenario minus the NEIS baseline; for ranks, rank_base - rank (positive = moved up) */
   delta: number | null;
   ok: boolean;
   ok_base: boolean;
@@ -159,7 +159,7 @@ export function sideWords(side: 'below' | 'median' | 'above' | null, metric: Met
   if (side === null) return null;
   if (mode === 'change') {
     if (metric === 'si_rank') return side === 'above' ? 'moved up its own list' : side === 'below' ? 'moved down its own list' : 'no change in rank';
-    return side === 'above' ? 'rose against the paper' : side === 'below' ? 'fell against the paper' : 'no change';
+    return side === 'above' ? 'rose against the NEIS baseline' : side === 'below' ? 'fell against the NEIS baseline' : 'no change';
   }
   if (metric === 'si_rank') {
     if (side === 'median') return `at the median rank of the ${noun} (${mid})`;

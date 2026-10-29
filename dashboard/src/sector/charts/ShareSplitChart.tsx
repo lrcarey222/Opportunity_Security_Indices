@@ -2,7 +2,7 @@
 // measure (or item, or year), split into China | coalition core | coalition partners | rest of world
 // | not attributed (hatched), always in that order; 2 px surface gaps between segments; direct "%"
 // labels inside segments at least 9% wide (text colour by contrast); text columns aligned per row;
-// optional section headers with the stage stripe; the highlighted economy as an orange caret above
+// optional section headers with a neutral stage stripe (never a stage colour); the highlighted economy as an orange caret above
 // the bar (it never crosses a segment label). Projected rows are outlined and say "projection".
 // The layout follows the chart's own width (ResizeObserver, not the viewport): from 1024 px the
 // text columns sit beside a bar of at least 240 px; below, they drop under each bar as one line
@@ -14,13 +14,12 @@
 
 import { Fragment, useLayoutEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router';
-import { SIGNAL, STAGE_COLOR } from '../../theme/palette.ts';
+import { SIGNAL } from '../../theme/palette.ts';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
 import { groupBg, groupColor, groupLabel, SPLIT_ORDER, textOn } from './color.ts';
 import { TipBox, useHtmlTip } from './HtmlTip.tsx';
 import type { BlocBarProps, GroupKey, ShareSplitChartProps, ShareSplitColumn, ShareSplitRow } from './types.ts';
 
-const STAGE_NAME: Record<string, string> = { upstream: 'Upstream', midstream: 'Midstream', downstream: 'Downstream' };
 /** The chart width from which the text columns sit beside the bars. */
 export const SPLIT_WIDE_PX = 1024;
 
@@ -210,7 +209,7 @@ export function ShareSplitChart({ rows, columns: allColumns, sections, onRowClic
                   <tr>
                     <th scope="colgroup" colSpan={nCols} className="pb-1 pt-3 text-left">
                       <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-paper-dim">
-                        {g.section.stage && <span className="inline-block h-4 w-[3px]" style={{ background: STAGE_COLOR[STAGE_NAME[g.section.stage]] }} aria-hidden="true" />}
+                        {g.section.stage && <span className="inline-block h-4 w-[3px] bg-ink-500" aria-hidden="true" />}
                         {g.section.label}
                       </span>
                     </th>
@@ -255,7 +254,7 @@ export function ShareSplitChart({ rows, columns: allColumns, sections, onRowClic
               {g.section && (
                 <div role="row" className="pb-1 pt-3">
                   <span role="rowheader" className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-paper-dim">
-                    {g.section.stage && <span className="inline-block h-4 w-[3px]" style={{ background: STAGE_COLOR[STAGE_NAME[g.section.stage]] }} aria-hidden="true" />}
+                    {g.section.stage && <span className="inline-block h-4 w-[3px] bg-ink-500" aria-hidden="true" />}
                     {g.section.label}
                   </span>
                 </div>

@@ -138,8 +138,9 @@ climate_trace_aggregate_assets <- function(rows, subsector, year, rule) {
 
 # ---- Map ------------------------------------------------------------------------------------------
 
-# Every problem of the parsed config/climate_trace_map.yml (empty when valid). cells: the 32 cell
-# slugs the map must cover (sector dictionary `cells`).
+# Every problem of the parsed config/climate_trace_map.yml (empty when valid). cells: the cell
+# slugs the map must cover (sector dictionary `cells`: the 66 six-stage headline cells and the
+# Semiconductors stages).
 climate_trace_map_validate <- function(map, cells) {
   p <- character()
   add <- function(...) p <<- c(p, paste0(...))

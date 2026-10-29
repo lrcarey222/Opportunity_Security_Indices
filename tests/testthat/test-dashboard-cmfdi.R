@@ -22,9 +22,25 @@ fs_wide <- function(bundle) {
 for (seed in 1:2) {
   test_that(paste0("Friendshore raw scores equal the pipeline's weighted mean with the CM-FDI parts (seed ", seed, ")"), {
     b <- dash_fixture_bundle(seed = seed)
-    expect_identical(b$partner$fs$outbound_source[b$partner$cells$supply_chain == "Midstream" & b$partner$cells$tech %in% c("Solar", "Wind")],
-                     c("cm_fdi", "cm_fdi"))
+    # the CM-FDI cells are the Components and Assembly cells of Solar and Wind (cm_fdi.stages), and
+    # the two manufacturing stages carry the same projects
+    pc <- b$partner$cells
+    cm_cells <- which(pc$supply_chain %in% c("Components", "Assembly") & pc$tech %in% c("Solar", "Wind"))
+    expect_identical(which(b$partner$fs$outbound_source == "cm_fdi"), cm_cells)
+    expect_identical(paste(pc$tech[cm_cells], pc$supply_chain[cm_cells]),
+                     c("Solar Components", "Solar Assembly", "Wind Components", "Wind Assembly"))
     expect_identical(sum(b$partner$fs$outbound_source == "cm_fdi"), dim(b$partner$fs$outbound_cmfdi)[3])
+    # (each cell keeps its own dyads, so compare where both stages have the dyad, as in the pipeline)
+    same_where_both <- function(a, b) {
+      both <- !is.na(a) & !is.na(b)
+      expect_true(any(both))
+      expect_identical(a[both], b[both])
+    }
+    oc <- b$partner$fs$outbound_cmfdi
+    same_where_both(oc[, , 1], oc[, , 2])
+    same_where_both(oc[, , 3], oc[, , 4])
+    same_where_both(b$partner$fs$cpe[, cm_cells[1]], b$partner$fs$cpe[, cm_cells[2]])
+    same_where_both(b$partner$fs$cpe[, cm_cells[3]], b$partner$fs$cpe[, cm_cells[4]])
     expect_identical(attr(b, "fixture_raw")$cm_fdi$n_mixed, 0L)
     for (dials in list(list(), list(hawkishness = 100), list(hawkishness = 0, greenness = 80))) {
       p <- dash_params(dials = dials, bundle = b)
@@ -90,16 +106,18 @@ test_that("the dyad decomposition shows the CM-FDI tie, the ownership share and 
 test_that("dash_bundle_fs_cmfdi() finds the CM-FDI cells from the source column and flags mixed cells", {
   long <- data.frame(
     reporter_iso = "A", partner_iso = "B", tech = c("Solar", "Solar", "Wind", "Wind", "Coal"),
-    supply_chain = c("Midstream", "Upstream", "Midstream", "Midstream", "Upstream"),
+    supply_chain = c("Components", "Extraction", "Assembly", "Assembly", "Extraction"),
     variable = c("outbound_index", "outbound_index", "outbound_index", "outbound_index", "geo_alignment"),
     value = c(0.5, 0.2, 0.1, NA, 1),
     source = c("CM-FDI X (CM-FDI); author calculation", "Author calculation", "x (CM-FDI)", "Author calculation", "y (CM-FDI)"),
     stringsAsFactors = FALSE
   )
+  # cell ids over 3 technologies x the six stages: Solar - Components 3, Wind - Assembly 6 + 4
   cm <- dash_bundle_fs_cmfdi(long, c("Solar", "Wind", "Coal"))
-  expect_identical(cm$cells, c(2L, 5L))
-  expect_identical(cm$outbound_source[c(2, 5)], c("cm_fdi", "cm_fdi"))
-  expect_identical(sum(cm$outbound_source == "imf_dip"), 7L)
+  expect_identical(cm$cells, c(3L, 10L))
+  expect_identical(cm$outbound_source[c(3, 10)], c("cm_fdi", "cm_fdi"))
+  expect_identical(length(cm$outbound_source), 18L)
+  expect_identical(sum(cm$outbound_source == "imf_dip"), 16L)
   expect_identical(cm$n_rows, 2L)
   expect_identical(cm$n_mixed, 1L)
   expect_identical(cm$long$variable, c("outbound_index_cmfdi", "outbound_index", "outbound_index_cmfdi", "outbound_index_cmfdi", "geo_alignment"))
@@ -107,4 +125,38 @@ test_that("dash_bundle_fs_cmfdi() finds the CM-FDI cells from the source column 
   none <- dash_bundle_fs_cmfdi(long[, names(long) != "source"], c("Solar", "Wind", "Coal"))
   expect_identical(none$cells, integer())
   expect_identical(none$long$variable, long$variable)
+})
+
+test_that("a dyad table labelled with stages outside the bundle's stops instead of dropping rows", {
+  expect_identical(DASH_STAGES, SUPPLY_CHAIN_STAGES)
+  long <- data.frame(
+    reporter_iso = "A", partner_iso = "B", tech = "Solar", supply_chain = c("Components", "Midstream"),
+    variable = "outbound_index", value = c(0.5, 0.2), source = "x (CM-FDI)", stringsAsFactors = FALSE
+  )
+  expect_error(dash_bundle_fs_cmfdi(long, "Solar"), "outside the bundle's stages: Midstream")
+  expect_error(dash_bundle_dyads(long, c("A", "B"), "Solar", c(outbound_index = "rp"), "Friendshore Index"),
+               "outside the bundle's stages: Midstream")
+  long$supply_chain[2] <- NA
+  expect_error(dash_bundle_dyads(long, c("A", "B"), "Solar", c(outbound_index = "rp"), "Friendshore Index"), "outside the bundle's stages")
+  # a technology or economy outside the bundle is still left out quietly
+  long$supply_chain[2] <- "Assembly"
+  long$tech[2] <- "Nuclear"
+  d <- dash_bundle_dyads(long, c("A", "B"), "Solar", c(outbound_index = "rp"), "Friendshore Index")
+  expect_identical(d$checks$n_rows[d$checks$variable == "outbound_index"], 1L)
+})
+
+test_that("the duplicate-key count scripts/85 runs on the dyad tables equals duplicated() on the data frame", {
+  set.seed(3)
+  n <- 4000
+  tbl <- data.frame(
+    reporter_iso = sample(c("A", "B", "C", NA), n, replace = TRUE), partner_iso = sample(c("A", "B", "C"), n, replace = TRUE),
+    tech = sample(c("Solar", "Wind"), n, replace = TRUE), supply_chain = sample(SUPPLY_CHAIN_STAGES, n, replace = TRUE),
+    variable = sample(c("x", "y", "z"), n, replace = TRUE), value = stats::runif(n), stringsAsFactors = FALSE
+  )
+  cols <- c("reporter_iso", "partner_iso", "tech", "supply_chain", "variable")
+  expect_identical(dash_count_duplicate_keys(tbl, cols), sum(duplicated(tbl[cols])))
+  expect_gt(dash_count_duplicate_keys(tbl, cols), 0L)
+  u <- tbl[!duplicated(tbl[cols]), ]
+  expect_identical(dash_count_duplicate_keys(u, cols), 0L)
+  expect_identical(dash_count_duplicate_keys(u[0, ], cols), 0L)
 })

@@ -33,7 +33,7 @@ export function tileScale(values: Iterable<number | null | undefined>, opts?: Tr
   return triScale(values, opts);
 }
 
-/** "above the median of the 33 tiles shown" (tooltips and aria-labels say the side in words). */
+/** "above the median of the 66 tiles shown" (tooltips and aria-labels say the side in words). */
 export function sideWords(side: TriTile['side'] | null, n: number, noun = 'tiles'): string {
   if (!side) return '';
   return side === 'median' ? `at the median of the ${n} ${noun} shown` : `${side} the median of the ${n} ${noun} shown`;

@@ -16,13 +16,13 @@ import { classInfo, classMix, parseNodePolicyNeeds, policyNeedsText } from '../.
 import { fmtShare, plural } from '../../derive/format.ts';
 import { nodeScenarioNote, UNCHANGED } from '../../derive/scenarioPages.ts';
 import { nodeScenario, runMetaOf, scenarioCsvFields, scenarioLabel } from '../../derive/scenarios.ts';
+import { nodeStageRank, nodeStagesOf, nodeStageWords, nodeWhere } from '../../derive/taxonomy.ts';
 import { csvWithRun } from '../common.tsx';
 import { NodePolicyNeeds, PolicyNeeds, ScenarioBadge } from './OverviewSections.tsx';
 import { useCompact } from './shared.tsx';
-import { stageRank } from '../../../lib/stages.ts';
 
 export function PolicySection() {
-  const { c, nodes, meta, name, scenario, hasScenarios, view } = useCompact();
+  const { c, displayName, nodes, meta, name, scenario, hasScenarios, view } = useCompact();
   const mi = scenario === 'managed';
   // the class of each node under the toggled scenario (Managed Interdependence: UNCHANGED where it does not run)
   const clsOf = (n: AibNode): string => {
@@ -42,7 +42,7 @@ export function PolicySection() {
   const needs = mi && view ? view.policyNeeds : c.policyNeeds;
   const cols: Col<AibNode>[] = [
     { id: 'node', header: 'Sub-sector', value: (n) => n.label },
-    { id: 'stage', header: 'Stage', value: (n) => n.stage, sortValue: (n) => stageRank(n.stage) },
+    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the node's codes sit in; none when no code is in the OSI basket." },
     { id: 'cls', header: mi ? 'Class under Managed Interdependence' : 'Treatment class', value: clsLabel },
     { id: 'needs', header: mi ? 'Policy needs under Decoupling' : 'Policy needs', value: (n) => policyNeedsText(n.policyNeeds) },
     { id: 'treatment', header: mi ? 'Recommended treatment under Decoupling' : 'Recommended treatment', value: (n) => n.treatment, minWidth: 260 },
@@ -54,7 +54,7 @@ export function PolicySection() {
       name: `${c.id} node treatments${hasScenarios ? ` (${scenarioLabel(scenario, meta)})` : ''}`,
       text: csvWithRun(
         nodes.map((n) => ({
-          compact: c.id, node_id: n.id, sub_sector: n.label, stage: n.stage,
+          compact: c.id, node_id: n.id, sub_sector: n.label, stage: nodeStagesOf(n).join('; '), aib_model_stage: n.stage,
           classification: mi ? (clsOf(n) === UNCHANGED ? 'unchanged' : clsOf(n)) : n.cls,
           ...(mi ? { classification_decoupling: n.cls, policy_needs_decoupling: policyNeedsText(n.policyNeeds), recommended_treatment_decoupling: n.treatment } : { policy_needs: policyNeedsText(n.policyNeeds), recommended_treatment: n.treatment }),
           eligible_hosts_best_first: hostsOf(n).join('; '),
@@ -72,7 +72,7 @@ export function PolicySection() {
         badge={<ScenarioBadge />}
         sub={`One treatment per node from its own results${mi ? ' under the cap' : ''}: ${mix.map((m) => `${plural(m.n, 'node')} ${m.cls === UNCHANGED ? 'unchanged' : classInfo(m.cls).label}`).join(', ')}.${mi ? ' The recommended treatments are written for Decoupling.' : ''}`}
         legend={<ClassLegend classes={mix.map((m) => m.cls).filter((x) => x !== UNCHANGED)} />}
-        table={() => <TableView rows={nodes} cols={cols} caption={`${c.name}: node treatments`} rowKey={(n) => n.id} pageSize={50} />}
+        table={() => <TableView rows={nodes} cols={cols} caption={`${displayName}: node treatments`} rowKey={(n) => n.id} pageSize={50} />}
         csv={csv}
       >
         <div className="space-y-5">
@@ -94,7 +94,7 @@ export function PolicySection() {
                       <li key={n.id} className="leading-relaxed">
                         <span className="text-paper">{n.label}</span>{' '}
                         <span className="text-xs text-paper-mute">
-                          ({n.stage}
+                          ({nodeWhere(n)}
                           {r && !r.ran ? `, ${nodeScenarioNote(r) ?? 'unchanged'}` : `, residual gap ${fmtShare(r ? r.residual : n.residual, 0)}`})
                         </span>
                         {!mi && n.treatment && <span className="text-paper-dim">: {n.treatment}</span>}

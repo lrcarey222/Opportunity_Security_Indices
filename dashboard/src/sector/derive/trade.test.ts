@@ -11,14 +11,14 @@ const fx = buildSectorFixture();
 const model = modelOf(validateChunk('sector-meta', fx.chunks['sector-meta']));
 const facts = factsIndexOf(validateChunk('sector-facts', fx.chunks['sector-facts']));
 const trade = validateChunk('sector-trade-batteries', fx.chunks['sector-trade-batteries']);
-const bm = fixtureItem('cell', 'batteries-midstream');
+const bm = fixtureItem('cell', 'batteries-assembly');
 const g = fixtureGeo;
 
 describe('trade on the matrix (3.8, 4.3 S4)', () => {
   const flows = flowsOf(trade, bm, 2024);
 
   it('reads the positive flows of one cell and year', () => {
-    expect(tradeItems(trade)).toEqual([fixtureItem('cell', 'batteries-upstream'), bm].sort((a, z) => a - z));
+    expect(tradeItems(trade)).toEqual([fixtureItem('cell', 'batteries-extraction'), bm].sort((a, z) => a - z));
     expect(flows.every((f) => f.v > 0)).toBe(true);
     expect(flowsOf(trade, bm, 2020).length).toBe(flows.length - 1); // BRA->USA has no 2020 value
   });

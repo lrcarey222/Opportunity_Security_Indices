@@ -110,27 +110,29 @@ sector_ei_var_map <- function() {
   )
 }
 
-# IEA EV regions 2021-2024 (ev_Midstream_capacity.csv: Region, Year, Domestic sales, Domestic
-# Production) -> production.ev_region and production.ev_region_sales.
+# IEA EV regions 2021-2024 (the raw extract data/raw/ev_Midstream_capacity.csv, named before the six
+# stages: Region, Year, Domestic sales, Domestic Production) -> production.ev_region (the Assembly cell)
+# and production.ev_region_sales (the Deployment cell), the cells of the facts (SECTOR_EV_REGION_CELLS).
 sector_iea_ev_series <- function(ev) {
   nm <- names(ev)
   prod <- nm[grepl("^Domestic.?Production$", nm)]
   sales <- nm[grepl("^Domestic.?sales$", nm)]
-  if (length(prod) != 1 || length(sales) != 1) stop("ev_Midstream_capacity.csv: production / sales columns not found")
+  if (length(prod) != 1 || length(sales) != 1) stop("IEA EV regions extract: production / sales columns not found")
   reg <- SECTOR_EV_REGIONS[trimws(ev$Region)]
-  if (anyNA(reg)) stop("ev_Midstream_capacity.csv: unknown regions ", paste(unique(ev$Region[is.na(reg)]), collapse = ", "))
+  if (anyNA(reg)) stop("IEA EV regions extract: unknown regions ", paste(unique(ev$Region[is.na(reg)]), collapse = ", "))
   geo <- paste0("R:iea_ev:", unname(reg))
-  mk <- function(var, v) tibble::tibble(var = var, item_key = "cell:electric-vehicles-midstream", geo = geo, year = as.integer(ev$Year),
-                                        value = as.double(v), status = ifelse(v == 0, "zero", "obs"), obs_year = NA_integer_)
-  dplyr::bind_rows(mk("production.ev_region", ev[[prod]]), mk("production.ev_region_sales", ev[[sales]]))
+  mk <- function(var, cell, v) tibble::tibble(var = var, item_key = paste0("cell:", cell), geo = geo, year = as.integer(ev$Year),
+                                              value = as.double(v), status = ifelse(v == 0, "zero", "obs"), obs_year = NA_integer_)
+  dplyr::bind_rows(mk("production.ev_region", SECTOR_EV_REGION_CELLS[["Domestic.Production"]], ev[[prod]]),
+                   mk("production.ev_region_sales", SECTOR_EV_REGION_CELLS[["Domestic.sales"]], ev[[sales]]))
 }
 
-# CIM electric power capacity additions (GW) -> investment.power_additions per cell. Nuclear and
-# Advanced Nuclear add up (both GW, disjoint); Other Renewables is not a cell and is dropped.
+# CIM electric power capacity additions (GW) -> investment.power_additions per Deployment cell. Nuclear
+# and Advanced Nuclear add up (both GW, disjoint); Other Renewables is not a cell and is dropped.
 # country_iso3: names -> ISO3.
 sector_cim_power <- function(pw, country_iso3) {
-  cell <- c(Solar = "solar-downstream", Wind = "wind-downstream", Nuclear = "nuclear-downstream",
-            `Advanced Nuclear` = "nuclear-downstream", `Enhanced Geothermal` = "geothermal-downstream")[pw$Technology]
+  cell <- c(Solar = "solar-deployment", Wind = "wind-deployment", Nuclear = "nuclear-deployment",
+            `Advanced Nuclear` = "nuclear-deployment", `Enhanced Geothermal` = "geothermal-deployment")[pw$Technology]
   x <- pw[!is.na(cell), , drop = FALSE]
   x$cell <- cell[!is.na(cell)]
   x$iso3 <- country_iso3(x$Country)
@@ -144,11 +146,19 @@ sector_cim_power <- function(pw, country_iso3) {
 # one snapshot (year 2025). Status (contract vocabulary): operational = CIM's "current operational"
 # plus "operational yet to come online" (built and in operation, still ramping up: the same product
 # and unit, so the two add); construction / announced / paused = capacity CIM anticipates by 2030.
-sector_cim_capacity <- function(cap, country_iso3, year = 2025L) {
-  cell <- c(Batteries = "batteries-midstream", Solar = "solar-midstream", Wind = "wind-midstream",
-            `Zero Emission Vehicles` = "electric-vehicles-midstream", `Critical Minerals` = "batteries-upstream")[cap$Technology]
-  x <- cap[!is.na(cell) & !is.na(cap$Value), , drop = FALSE]
-  x$cell <- cell[!is.na(cell) & !is.na(cap$Value)]
+# Each product is staged as the pipeline stages it (product_stage: investment_product_to_stage() of
+# R/categories/investment/investment_momentum.R): polysilicon and the critical-minerals chemicals at
+# Refining, wafers, cells, blades and electrode active materials at Components, modules, nacelles
+# and ZEVs at Assembly. The critical-minerals plants are the Batteries Refining cell. A product the
+# rule does not stage stops (a new CIM product must be reviewed).
+SECTOR_CIM_CAPACITY_TECH <- c(Batteries = "batteries", Solar = "solar", Wind = "wind", `Zero Emission Vehicles` = "electric-vehicles",
+                              `Critical Minerals` = "batteries")
+sector_cim_capacity <- function(cap, country_iso3, product_stage, year = 2025L) {
+  tech <- SECTOR_CIM_CAPACITY_TECH[cap$Technology]
+  x <- cap[!is.na(tech) & !is.na(cap$Value), , drop = FALSE]
+  stage <- product_stage(x$Product)
+  if (anyNA(stage)) stop("CIM capacity: products the stage rule does not know: ", paste(unique(paste(x$Technology, x$Product)[is.na(stage)]), collapse = ", "))
+  x$cell <- paste0(unname(SECTOR_CIM_CAPACITY_TECH[x$Technology]), "-", tolower(stage))
   cat <- tolower(x$Category)
   x$cap_status <- ifelse(grepl("^current operational", cat) | grepl("yet to come online", cat), "operational",
                   ifelse(grepl("under construction", cat), "construction", ifelse(grepl("^announced", cat), "announced",

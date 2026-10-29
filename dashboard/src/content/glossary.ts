@@ -1,6 +1,8 @@
 // The shared glossary (spec_country.md C3.2; the content there is normative): a plain-language
 // definition of every index, category and acronym, for a reader who knows energy and economics but has
-// not read the paper. Used by InfoTip (the `short` text), Term (the name on first use), GlossaryList
+// not read the paper. Since 2026-10-28 every entry reads the six supply-chain stages (Extraction,
+// Refining, Components, Assembly, Deployment, Recovery; lib/stages.ts), and the strategic position
+// framework's terms (the posture cards' Term ids, posture/basis.tsx POSTURE_TERMS) are here too. Used by InfoTip (the `short` text), Term (the name on first use), GlossaryList
 // and the /glossary page (`more`), in all three modules. Pure data and helpers.
 //
 // Numbers that change with the data are written as {{placeholders}} and filled from GLOSSARY_DEFAULTS,
@@ -20,14 +22,17 @@ export interface GlossaryEntry {
   related?: string[];
 }
 
-/** Values filled into {{placeholders}} unless a manifest supplies newer ones (final run, 2026-10-12). */
+/** Values filled into {{placeholders}} unless a manifest supplies newer ones (the six-stage build,
+ *  2026-10-28: the coalition of 31 core members and 29 partners; 11 headline technologies x 6 stages
+ *  = 66 sectors; the Sector pages add Semiconductors' Refining, Components and Assembly: 69 cells). */
 export const GLOSSARY_DEFAULTS = {
   n_core: '31',
-  n_partner: '26',
+  n_partner: '29',
   n_codes: '259',
   un_window: '2019-2023',
   n_tech: '11',
-  n_sectors: '33',
+  n_sectors: '66',
+  n_sector_cells: '69',
 } as const;
 
 export type GlossaryVars = Partial<Record<keyof typeof GLOSSARY_DEFAULTS, string>>;
@@ -61,7 +66,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     term: 'Strategic Index',
     abbr: 'SI',
     short: "Ranks a country's own sectors by how strongly the data point to prioritising them: opportunity, security need, existing policy activity, the stage and the technology's low-emission value.",
-    more: 'Paper weights: Economic Opportunity 30%, security need (1 minus Energy Security) 30%, policy activity 20%, stage 10%, technology 10%. It compares sectors within one country: compare countries by rank, not by level.',
+    more: 'Baseline weights: Economic Opportunity 30%, security need (1 minus Energy Security) 30%, policy activity 20%, stage 10%, technology 10%. The stage term favours manufacturing: Components and Assembly 0.375 each, Deployment 0.25, Extraction, Refining and Recovery about 0.167 each. It compares sectors within one country: compare countries by rank, not by level.',
     modules: SC,
     related: ['need', 'policy_index', 'allied_pick', 'priority_no_policy'],
   },
@@ -69,9 +74,9 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     id: 'need',
     term: 'Security need',
     short: '1 minus Energy Security: how exposed a country is in a sector. The Strategic Index rewards it, so exposed sectors rank higher.',
-    more: 'Not the same as Strategic Need on the six-stage posture charts, which reads import dependence, supplier concentration and exposure to China and opposite-bloc suppliers.',
+    more: 'Not the same as Strategic Need on the strategic posture charts, which reads import dependence, supplier concentration and exposure to China and opposite-bloc suppliers.',
     modules: SC,
-    related: ['es', 'si'],
+    related: ['es', 'si', 'strategic_need'],
   },
   {
     id: 'psi',
@@ -150,7 +155,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'imputed',
     term: 'Filled-in data',
-    short: 'Where a measure is missing, the paper fills it (with zero when a source lists every holder, else with the world average). The filled-in share is the part of a score resting on such fills.',
+    short: 'Where a measure is missing, the pipeline fills it (with zero when a source lists every holder, else with the world average). The filled-in share is the part of a score resting on such fills.',
     modules: SC,
     related: ['rankable'],
   },
@@ -187,23 +192,24 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'sector',
     term: 'Sector',
-    short: 'One technology at one supply-chain stage, for example Batteries — Midstream. The paper covers {{n_tech}} technologies at 3 stages: {{n_sectors}} sectors.',
+    short: 'One technology at one supply-chain stage, for example Batteries — Refining. The indices cover {{n_tech}} technologies at six stages: {{n_sectors}} sectors; the Sector pages add three Semiconductors stages ({{n_sector_cells}} in all).',
+    more: 'A few sectors have no value for an index (most geothermal stages, or the recovery of coal, gas and oil): they are shown as not scored, never dropped.',
     modules: ALL,
     related: ['stage'],
   },
   {
     id: 'stage',
     term: 'Supply-chain stage',
-    short: "The paper's three stages: Upstream (raw materials and fuels), Midstream (processing, refining and manufacturing), Downstream (deployment and use). The headline posture charts use six: Extraction, Refining, Components, Assembly, Deployment, Recovery.",
-    more: 'The six do not map one to one onto the three: some refined materials the paper files under Midstream, such as battery chemicals and polysilicon, are Refining in the six.',
+    short: 'One of six links of a supply chain, in order: Extraction (mining and fuels), Refining (processed materials), Components (parts), Assembly (finished equipment), Deployment (installation and use) and Recovery (recycling).',
+    more: "Stage is relative to the technology: a battery pack is Assembly for Batteries and Components for Electric Vehicles. Each traded product code sits at the stage of what it physically is, so refined battery chemicals and polysilicon are Refining. Deployment is where the technology is used: measures of who supplies the chain (allied picks, the allied division of labour) leave it out.",
     modules: ALL,
-    related: ['sector'],
+    related: ['sector', 'basket'],
   },
   {
     id: 'coalition',
     term: 'Allied coalition',
-    short: 'The group the paper studies: {{n_core}} core members (U.S.-leaning in UN votes) and {{n_partner}} partners (in U.S. trade or security agreements, or major suppliers not leaning towards China).',
-    more: 'Core members: U.S.-leaning in UN votes, with economies of at least $100 billion. Partners: members of U.S. trade or security agreements with economies of at least $100 billion, or major suppliers that do not lean towards China.',
+    short: 'The group of economies the analysis studies: {{n_core}} core members (U.S.-leaning in UN votes) and {{n_partner}} partners (in U.S. trade or security agreements, or major suppliers not leaning towards China).',
+    more: 'Core members: U.S.-leaning in UN votes, with economies of at least $100 billion. Partners: members of U.S. trade or security agreements with economies of at least $100 billion, or major suppliers that do not lean towards China (at least 5% of world supply at a stage other than deployment, or 10% of the reserves of a headline mineral or fuel).',
     modules: ALL,
     related: ['alignment'],
   },
@@ -217,14 +223,14 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'allied_pick',
     term: 'Allied pick',
-    short: "Each coalition member's top upstream or midstream sector on the Strategic Index, leaving out geothermal and green hydrogen and, after the endowment screen, upstream sectors without recorded resources.",
+    short: "Each coalition member's top sector on the Strategic Index at any stage but deployment, leaving out geothermal and green hydrogen and, after the endowment screen, extraction sectors without recorded resources.",
     modules: SC,
     related: ['si', 'endowment_screen'],
   },
   {
     id: 'endowment_screen',
     term: 'Endowment screen',
-    short: "An upstream sector counts as a member's allied pick only if the country has recorded reserves or production of that sector's resources. The index itself does not change.",
+    short: "An extraction sector counts as a member's allied pick only if the country has recorded reserves or production of that sector's resources. The index itself does not change.",
     modules: ['strategic'],
     related: ['allied_pick'],
   },
@@ -314,7 +320,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     term: 'Factory projects (CM-FDI)',
     abbr: 'CM-FDI',
     short: "Cross-border manufacturing projects in solar, wind, batteries and electric vehicles, with the parent company's home country, from the Cleantech Manufacturing FDI dataset (Net Zero Industrial Policy Lab, Johns Hopkins University).",
-    more: "Announced projects are included and may never be built; a company's investment at home is not covered.",
+    more: "Announced projects are included and may never be built; a company's investment at home is not covered. The projects make components and finished equipment, so the same projects sit under both the Components and the Assembly stage of each technology, and are counted once.",
     modules: ALL,
     related: ['chinese_parent', 'investment_ties'],
   },
@@ -349,8 +355,8 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'paper_baseline',
     term: 'NEIS baseline',
-    short: "The paper's three-stage numbers: every dial at 50 and the default settings. Every index starts from it; only a custom perspective on a country moves priorities and partner rankings away from it.",
-    more: 'The six-stage posture charts are separate and do not move with the dials.',
+    short: "Every dial at 50 and the default settings: the pipeline's own six-stage weights. Every index starts from it; only a custom perspective on a country moves priorities and partner rankings away from it.",
+    more: 'The strategic posture (Secure, Compete, Deploy) does not move with the dials.',
     modules: SC,
     related: ['scenario', 'dials'],
   },
@@ -385,7 +391,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'populism',
     term: 'Populism',
-    short: "Policy signals and manufacturing: more weight on governments' policy activity and on the midstream stage.",
+    short: "Policy signals and manufacturing: more weight on governments' policy activity and on the components and assembly stages.",
     modules: ['strategic'],
     related: ['dials'],
   },
@@ -397,13 +403,14 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     related: ['dials'],
   },
   // ---- Country profile: the four corners and the comparisons ----------------------------------
-  // The paper's three-stage corners (country/contract.ts QUADRANTS). Since 2026-10-28 the corners with the keys
-  // secure and watch are shown as Exposed and Stable, so they are not read as the six-stage posture words
-  // (Secure / Compete / Deploy, Catch up / Preserve / Partner, Watch); their glossary ids follow the names.
+  // The corners of the Security and opportunity chart (country/contract.ts QUADRANTS), kept and recomputed
+  // at the six stages (user, 2026-10-28). Since 2026-10-28 the corners with the keys secure and watch are
+  // shown as Exposed and Stable, so they are not read as the posture words (Secure / Compete / Deploy,
+  // Catch up / Preserve / Partner, Watch); their glossary ids follow the names.
   {
     id: 'grow',
     term: 'Grow',
-    short: "High opportunity, high energy security: build on strength (RMI 2025: export promotion). A corner of the paper's three-stage chart, against the country's own median sector; not a six-stage posture.",
+    short: "High opportunity, high energy security: build on strength (RMI 2025: export promotion). A corner of the Security and opportunity chart, against the country's median sector; not a strategic posture.",
     more: "A sector exactly at the median counts as high. In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead.",
     modules: SC,
     related: ['upgrade', 'exposed', 'stable', 'quadrant'],
@@ -411,7 +418,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'upgrade',
     term: 'Upgrade',
-    short: "High opportunity, low energy security: building capability could close a gap and create value (RMI 2025: leapfrog). A corner of the paper's three-stage chart, against the country's own median sector; not a six-stage posture.",
+    short: "High opportunity, low energy security: building capability could close a gap and create value (RMI 2025: leapfrog). A corner of the Security and opportunity chart, against the country's median sector; not a strategic posture.",
     more: "In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead.",
     modules: SC,
     related: ['grow', 'exposed', 'stable', 'quadrant'],
@@ -419,7 +426,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'exposed',
     term: 'Exposed',
-    short: "Low opportunity, low energy security: lean on trusted partners for supply (RMI 2025: friendshore). A corner of the paper's three-stage chart, against the country's own median sector; not the six-stage Secure posture.",
+    short: "Low opportunity, low energy security: lean on trusted partners for supply (RMI 2025: friendshore). A corner of the Security and opportunity chart, against the country's median sector; not the Secure posture.",
     more: "In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead. Called Secure before 28 October 2026, as in the memos written before then.",
     modules: SC,
     related: ['grow', 'upgrade', 'stable', 'quadrant'],
@@ -427,7 +434,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'stable',
     term: 'Stable',
-    short: "Low opportunity, high energy security: little pressure to act; value may lie elsewhere (RMI 2025: alternative value creation). A corner of the paper's three-stage chart, against the country's own median sector; not a six-stage posture.",
+    short: "Low opportunity, high energy security: little pressure to act; value may lie elsewhere (RMI 2025: alternative value creation). A corner of the Security and opportunity chart, against the country's median sector; not a strategic posture.",
     more: "In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead. Called Watch before 28 October 2026, as in the memos written before then.",
     modules: SC,
     related: ['grow', 'upgrade', 'exposed', 'quadrant'],
@@ -437,9 +444,9 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     term: 'Corner (quadrant)',
     short: "One of the four corners of a profile's Security and opportunity chart. The dashed lines sit at the country's median sector on each axis, so the corners show its relatively strong and weak sectors.",
     more:
-      "The median sector is the middle of the country's own sectors on each axis; a sector exactly at it counts as high. The axes still compare the country with other economies: each sector sits at the share of them it beats. The corners are Grow, Upgrade, Exposed and Stable: the paper's three-stage reading, not the need × opportunity quadrant of the posture charts.",
+      "The median sector is the middle of the country's own sectors on each axis; a sector exactly at it counts as high. The axes still compare the country with other economies: each sector sits at the share of them it beats. The corners are Grow, Upgrade, Exposed and Stable, over the country's sectors at the six stages; they are not the need × opportunity quadrant of the strategic posture charts.",
     modules: ['country'],
-    related: ['grow', 'upgrade', 'exposed', 'stable', 'percentile', 'median'],
+    related: ['grow', 'upgrade', 'exposed', 'stable', 'percentile', 'median', 'posture'],
   },
   {
     id: 'priority_no_policy',
@@ -492,6 +499,88 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     short: "The World Bank's statistics on each economy's development: income, energy access and use, credit, debt, tariffs, governance and business regulation. Development Potential ranks them; the Sector pages show the values.",
     modules: ['sector'],
     related: ['dp'],
+  },
+  // ---- the strategic position framework (the Strategic posture sections, 2026-10-28) ------------
+  // The ids of posture/basis.tsx POSTURE_TERMS. 'policy_alignment' is not UN-vote 'alignment', and
+  // 'strategic_need' is not the Strategic Index's security 'need'.
+  {
+    id: 'posture',
+    term: 'Strategic posture',
+    short: "The strategic position framework's recommendation for a country at one technology and stage: Secure the node, Compete in it (preserve, catch up or partner) or Deploy openly. Fixed thresholds: the dials do not change it.",
+    more: 'Secure comes first and overrides the rest: it needs an acute consequence and one of three routes (see Secure rationale). Elsewhere at the producing stages, Strategic Need and Industrial Opportunity split Compete into catch up (both high), preserve (opportunity only) and partner (need only); neither high is Deploy. Deployment itself stays Deploy unless a control layer is Secure.',
+    modules: ALL,
+    related: ['strategic_need', 'industrial_opportunity', 'security_rationale', 'competitive_position', 'policy_alignment'],
+  },
+  {
+    id: 'strategic_need',
+    term: 'Strategic Need',
+    short: 'How exposed a country is if supply of a node is disrupted: its import dependence, how concentrated its suppliers are and its imports from China and opposite-bloc suppliers, ranked against other countries.',
+    more: "Each part is a percentile among the countries in the same technology and stage; higher is more need. Deployment reads the technology's Assembly need. Not the same as the Strategic Index's security need (1 minus Energy Security).",
+    modules: ALL,
+    related: ['posture', 'industrial_opportunity', 'need'],
+  },
+  {
+    id: 'industrial_opportunity',
+    term: 'Industrial Opportunity',
+    short: "Economic Opportunity placed among a node's contenders, the economies holding at least 0.5% of world supply there: how well placed a country is to build or keep the industry, against those already in it.",
+    more: 'With fewer than five contenders it is placed among the coalition members and the large economies instead. It is a percentile across countries, never within one country; coal, a declining market, is capped below the thresholds.',
+    modules: ALL,
+    related: ['posture', 'strategic_need', 'eo'],
+  },
+  {
+    id: 'competitive_position',
+    term: 'Competitive Position',
+    short: 'How strong a country already is in a node, against every other country: its export share and specialization, production share and manufacturing plants, with trade momentum. A consistency check on the posture, never an override.',
+    more: 'Its trade evidence is a 2022-24 benchmark of exports, world share and revealed comparative advantage; current trade momentum takes 15% of the trade evidence where a matched 12-month comparison exists.',
+    modules: ALL,
+    related: ['posture', 'trade_momentum', 'rca'],
+  },
+  {
+    id: 'security_rationale',
+    term: 'Secure rationale',
+    short: 'Why a node is Secure: operational control (a foreign actor could command or disable it), a coercive chokepoint (a coercive supplier could withhold it) or systemic resilience (essential, import-dependent and slow to rebuild).',
+    more: 'Each route also needs an acute consequence. Concentration alone does not make a chokepoint: substitution must be hard and trusted supply too slow to restore. Secure does not mean reshoring.',
+    modules: ALL,
+    related: ['posture'],
+  },
+  {
+    id: 'policy_alignment',
+    term: 'Policy alignment',
+    short: 'Observed policy against the recommended posture: aligned, under-prioritized (Secure or Compete with little policy effort), over-prioritized (heavy support where Deploy is recommended) or mixed. Observed policy never enters the recommendation.',
+    more: "Policy effort is the country's revealed policy priority, compared among its own nodes. Not the same as UN-vote alignment.",
+    modules: ALL,
+    related: ['posture', 'policy_index'],
+  },
+  {
+    id: 'partner_gap',
+    term: 'Partner gap',
+    short: "A node where a country's posture is to partner with trusted suppliers, but no trusted supplier holds at least 2% of world supply.",
+    more: "Elsewhere a Partner node names up to three trusted partners, ranked on capability, relationship strength and how much they would diversify the country's supply.",
+    modules: ALL,
+    related: ['posture', 'aib_gap'],
+  },
+  {
+    id: 'trade_momentum',
+    term: 'Trade momentum',
+    short: "Whether a country's exports in a node are rising, flat or falling: the latest 12 months against the 12 before, in growth and in the basket's share of its exports, where monthly reporting is complete.",
+    more: "Ranked against the node's other reporters. A reporter without the 24 matched months has no momentum (never zero).",
+    modules: ALL,
+    related: ['competitive_position'],
+  },
+  {
+    id: 'aib_gap',
+    term: 'Allied gap',
+    short: 'Where trusted allied supply of a node is thin: no trusted supplier, a single point of failure (one holder with half of allied supply), fewer than three holders, or weak evidence.',
+    more: 'From the allied division of labour: per node the primary allied holder, two backups and the number of allied holders with at least 2% of supply. Deployment is left out: no allied supply node sits there.',
+    modules: ALL,
+    related: ['partner_demand', 'partner_gap'],
+  },
+  {
+    id: 'partner_demand',
+    term: 'Partner demand',
+    short: "How many countries' postures ask trusted partners for a node: those whose posture there is Compete, partner. Shown beside the allied gap, so a gap many countries rely on stands out.",
+    modules: ALL,
+    related: ['aib_gap', 'posture'],
   },
 ];
 

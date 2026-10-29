@@ -1,5 +1,5 @@
 // The CM-FDI views on builder A's R synthetic bundle (14 projects; skipped when absent): the profile's
-// Investment subsection in a covered Midstream cell (loads sector-fdi; captions with the unit, the
+// Investment subsection in a covered Components or Assembly cell (the two stages show the same projects; loads sector-fdi; captions with the unit, the
 // announcement years and the source; the CC BY 4.0 attribution on every card; "not disclosed", never
 // 0; source links that open safely; the basis switch), no sector-fdi load in an uncovered cell, the
 // Explore investment layout (the measure picks the lead card; no year select), Country in sector's
@@ -67,11 +67,13 @@ const fdiLoaded = () => source.calls.some((f) => f.startsWith('sector-fdi'));
 const realErrors = () => errors.filter((e) => !/Could not parse CSS stylesheet/.test(e));
 
 describe.skipIf(!haveSynthetic())('CM-FDI views on the R synthetic bundle', () => {
-  it('profile: the Investment subsection of Batteries Midstream with captions, attribution, value states and source links', async () => {
-    renderAt('/sector/batteries/midstream#investment'); // the link opens the folded Competitiveness & markets group
+  it('profile: the Investment subsection of Batteries Assembly with captions, attribution, value states and source links', async () => {
+    renderAt('/sector/batteries/assembly#investment'); // the link opens the folded Competitiveness & markets group
     expect(await screen.findByRole('heading', { level: 3, name: 'Cross-border manufacturing projects (CM-FDI)' }, { timeout: 30_000 })).toBeTruthy();
     const block = await screen.findByTestId('fdi-block', {}, { timeout: 30_000 });
     expect(fdiLoaded()).toBe(true);
+    // the projects are keyed on Batteries — Components (fdi.stages[0]); Assembly reads them and says so once (design E5)
+    expect(within(block).getAllByTestId('fdi-stages-note').map((x) => x.textContent)).toEqual(['Batteries — Components and Batteries — Assembly show the same projects: CM-FDI files a project under the technology’s manufacturing, not under one stage. Never add them.']);
     for (const t of ['Where the projects go', 'From headquarters to destination', 'Who invests: the parents’ headquarters', 'Whose parents: projects by the parent’s headquarters group', 'Announcements by year', 'The projects']) {
       expect(within(block).getByRole('heading', { level: 3, name: t })).toBeTruthy();
     }
@@ -89,7 +91,7 @@ describe.skipIf(!haveSynthetic())('CM-FDI views on the R synthetic bundle', () =
     expect(cc.getAttribute('rel')).toBe('noopener noreferrer');
     expect(cc.getAttribute('target')).toBe('_blank');
     // an undisclosed value reads "not disclosed" in the table, never 0
-    const table = within(block).getByRole('table', { name: /Cross-border projects, Batteries — Midstream/ });
+    const table = within(block).getByRole('table', { name: /Cross-border projects, Batteries — Assembly/ });
     const rosatom = within(table).getByText('Rosatom').closest('tr') as HTMLElement;
     expect(within(rosatom).getByText('not disclosed')).toBeTruthy();
     expect(within(rosatom).queryByText(/^0$/)).toBeNull();
@@ -111,15 +113,15 @@ describe.skipIf(!haveSynthetic())('CM-FDI views on the R synthetic bundle', () =
   });
 
   it('profile: a cell without CM-FDI data never loads sector-fdi', async () => {
-    renderAt('/sector/solar/downstream');
-    expect(await screen.findByRole('heading', { level: 1, name: /Solar — Downstream/ }, { timeout: 30_000 })).toBeTruthy();
+    renderAt('/sector/solar/deployment');
+    expect(await screen.findByRole('heading', { level: 1, name: /Solar — Deployment/ }, { timeout: 30_000 })).toBeTruthy();
     await new Promise((r) => setTimeout(r, 100));
     expect(screen.queryByText('Cross-border manufacturing projects (CM-FDI)')).toBeNull();
     expect(fdiLoaded()).toBe(false);
   });
 
   it('Explore: the investment layout leads with the measure (parent groups first), with no year select', async () => {
-    renderAt('/sector/explore/investment?m=investment.fdi_parent_share&tech=Wind&stage=Midstream');
+    renderAt('/sector/explore/investment?m=investment.fdi_parent_share&tech=Wind&stage=Components');
     const block = await screen.findByTestId('fdi-block', {}, { timeout: 30_000 });
     expect(screen.getByText(/Project-level data: .*Not a country total/)).toBeTruthy();
     expect(screen.queryByRole('combobox', { name: 'Year' })).toBeNull();
@@ -131,7 +133,7 @@ describe.skipIf(!haveSynthetic())('CM-FDI views on the R synthetic bundle', () =
   });
 
   it('Explore: disclosed capital leads with the value view', async () => {
-    renderAt('/sector/explore/investment?m=investment.fdi_value&tech=Solar&stage=Midstream');
+    renderAt('/sector/explore/investment?m=investment.fdi_value&tech=Solar&stage=Assembly');
     const block = await screen.findByTestId('fdi-block', {}, { timeout: 30_000 });
     const radio = within(block).getByRole('radio', { name: 'Disclosed capital (US$ m)' }) as HTMLInputElement;
     expect(radio.checked).toBe(true);
@@ -139,7 +141,7 @@ describe.skipIf(!haveSynthetic())('CM-FDI views on the R synthetic bundle', () =
   });
 
   it('Country in sector: inbound and outbound projects of an economy and of the EU node', async () => {
-    renderAt('/sector/batteries/midstream/DEU');
+    renderAt('/sector/batteries/assembly/DEU');
     const sec = await screen.findByTestId('fdi-country', {}, { timeout: 30_000 });
     const tiles = within(sec).getAllByRole('listitem');
     expect(tiles[0].textContent).toMatch(/Inbound projects2/);
@@ -149,7 +151,7 @@ describe.skipIf(!haveSynthetic())('CM-FDI views on the R synthetic bundle', () =
     expect(within(table).getAllByText('Inbound').length).toBe(2);
     expect(within(table).getByText('Rosatom')).toBeTruthy();
     cleanup();
-    renderAt('/sector/batteries/midstream/EUU');
+    renderAt('/sector/batteries/assembly/EUU');
     const eu = await screen.findByTestId('fdi-country', {}, { timeout: 30_000 });
     expect(within(eu).getAllByRole('listitem')[0].textContent).toMatch(/Inbound projects3/);
     expect(within(eu).getByText(/projects between two EU members are left out/)).toBeTruthy();

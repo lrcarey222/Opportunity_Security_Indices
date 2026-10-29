@@ -1,7 +1,7 @@
 // Allied Industrial Base partnerships /aib/partnerships (IA refactor, 2026-10-16; three lenses 2026-10-19,
 // aib_scenarios_spec.md s.5 C and s.6): "Who should work with whom?" The kind of partnership, Trade |
-// Investment | Development | Geopolitical (URL `mode`), and four filters, economy / sector or technology /
-// stage / sub-sector (URL `country`, `tech`, `stage`, `node`), read through the shared three-lens component
+// Investment | Development | Geopolitical (URL `mode`), and four filters, economy / OSI technology / stage /
+// node (URL `country`, `tech`, `stage`, `node`), read through the shared three-lens component
 // (src/partnerships): a cross-lens summary, then three tagged panels.
 //   Today           Trade: who supplies whom today and today's largest suppliers (the Baseline scenario
 //                   file: observed 2024 supplier -> buyer pairs, each node's top suppliers). Investment:
@@ -28,22 +28,20 @@
 // economy's relationships with the most priority compacts. The lenses stay the economy's.
 //
 // The partner indices (Partnership Opportunity, Friendshore, Development Potential) and the factory
-// projects are kept by OSI technology x stage. The AIB filter (a dictionary sector, a stage, a node) never
-// reads as an OSI technology by name: it maps to OSI cells through the matching nodes' crosswalk
-// (osiCellPick, the nodes' three-stage cells: yfCellsLegacy, else the roll-up of yfCells); in a master bundle (OSI technologies) the filter's technology also limits
-// the cells, so a node in two technologies never lends the other one's cell. Only the cells this build
-// keeps partner indices for count (its pcell chunks; the engine's cells for Development Potential): the
-// OSI basket has Semiconductors, the indices do not. The OSI cards say which OSI cell they reflect (the
-// dominant one: the first such cell of the matching node with the largest lost supply) and, where no
-// matching node has one, say so instead of falling back silently. The Investment tab says the IMF
-// positions are economy-wide and whether the dominant cell has factory projects at all.
-// Stages (2026-10-28): the nodes, the Stage filter and the scope words are six-stage (Extraction ...
-// Recovery, chain order), while the partner rankings, the factory projects (CM-FDI) and the aid are still
-// kept by the paper's three-stage cells (Upstream, Midstream, Downstream). So every three-stage lookup reads
-// the matching nodes' three-stage cells (node yfCellsLegacy, else the roll-up of yfCells; the pcell chunk,
-// hasCmfdi, InvestmentCards, Development Potential) and the aid the paper's stage those cells carry
-// (legacyStageOf); the cards label the three-stage cell they read and say that the rankings keep the
-// paper's three stages. Old ?stage=Upstream / Midstream / Downstream links are dropped (no stage filter).
+// projects are kept by OSI technology x six-stage stage (the cells of the Strategic data). The AIB filter (an
+// OSI technology, a stage, a node; 2026-10-29, design A1/A2) maps to OSI cells through the matching nodes'
+// six-stage cells (osiCellPick, node.yfCells): a node matches by its cells (nodeInCell(), never node.stage),
+// and the filter's technology and stage also limit the cells, so a node in two cells never lends the other
+// one. The Stage choices are the stages that hold the nodes' cells (of the chosen technology). Only
+// the cells this build keeps partner indices for count (its pcell chunks; the engine's cells for
+// Development Potential). The OSI cards say which OSI cell they reflect (the dominant one: the first such
+// cell of the matching node with the largest lost supply) and, where no matching node has one, say so
+// instead of falling back silently. The Investment tab says the IMF positions are economy-wide and whether
+// the dominant cell has factory projects at all (CM-FDI: the Components and Assembly cells of four
+// technologies, the same projects on both, counted once). The aid (the Sector data's aid sectors, linked to
+// six-stage cells) is read at the filter's stage, else the stage of the node's dominant cell (aidStageOf).
+// Old ?stage=Upstream / Midstream / Downstream links name no stage of the nodes' cells and are dropped; old
+// ?tech=<dictionary sector> links name no option and are dropped.
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -59,7 +57,7 @@ import { EngineScope } from '../../shell/EngineScope.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { useApp } from '../../state/EngineProvider.tsx';
 import { InvestmentCards } from '../../views/Partners/InvestmentCard.tsx';
-import { alignmentOf, CMFDI_SECTORS, hasCmfdi, loadRankedCells, loadSectorTop, loadTies, type Ties, type TopRow } from '../../views/Partners/ties.ts';
+import { alignmentOf, CMFDI_SECTORS, cmfdiSameProjectsNote, cmfdiStages, hasCmfdi, loadRankedCells, loadSectorTop, loadTies, type Ties, type TopRow } from '../../views/Partners/ties.ts';
 import { AGGREGATE_NAMES, agreementList, agreementNames, agreementMembers, agreementTies, alignmentCounts, alignmentWords, coalitionOf, dipPartners, tierWords } from '../../partnerships/derive.ts';
 import { kindOf, lensNames, lensNone, LENS_LOADING, type LensId, type LensNames, type PartnershipKind } from '../../partnerships/lenses.ts';
 import { LensCard, PartnershipLenses, RankedNames, type LensPanelSpec } from '../../partnerships/PartnershipLenses.tsx';
@@ -72,10 +70,10 @@ import { useAibScenarioDoc, type ScenarioLoad } from '../data/hooks.ts';
 import { fmtPp, fmtScore, fmtShare, fmtUsd, listWords, plural } from '../derive/format.ts';
 import { investmentPairs } from '../derive/investment.ts';
 import {
+  aidStageOf,
   dpRows,
   filterChoices,
   hostsNamed,
-  legacyStageOf,
   lensBuildGaps,
   lensCoalitions,
   lensHostRows,
@@ -106,7 +104,7 @@ import {
   type TodaySupplier,
 } from '../derive/partnerships.ts';
 import { runMetaOf, scenarioCsvFields, scenarioLabel, scenarioNameOf, scenarioShockLabel } from '../derive/scenarios.ts';
-import { nodeWhere, techOptions, type OsiCell } from '../derive/taxonomy.ts';
+import { nodeWhere, osiFields, techOptions, type OsiCell } from '../derive/taxonomy.ts';
 import { compactHref, strategicCompactHref } from '../nav.ts';
 import { csvWithRun } from './common.tsx';
 import { REL_COLOR, REL_LINK, REL_WORDS } from './compact/NetworkSection.tsx';
@@ -141,8 +139,8 @@ function useTies(): { ties: Ties | null; error: string | null } | null {
 
 /**
  * The top partners of one OSI cell at the NEIS defaults (null while loading or when the build has none).
- * The cell comes from the crosswalk (osiCellPick), never from the AIB filter's names, and is three-stage,
- * as the pcell chunks are (pcell-batteries-midstream).
+ * The cell comes from the crosswalk (osiCellPick), never from the AIB filter's names, and is six-stage, as
+ * the pcell chunks are (pcell-batteries-refining).
  */
 function useSectorTop(cell: OsiCell | null): { key: string; top: TopRow[] | null } | null {
   const key = cell?.slug ?? '';
@@ -181,46 +179,43 @@ function useRankedCells(): ReadonlySet<string> | null {
 }
 
 /**
- * The OSI cells of the page's filter (memoized; null without a sector, stage or node). A master bundle's
- * filter names OSI technologies, so its technology limits the cells; its stage limits the nodes, whose
- * three-stage cells (yfCellsLegacy, else the roll-up) are read. `scored`: the cells with
- * partner indices (default: the build's ranked cells).
+ * The OSI cells of the page's filter (memoized; null without a technology, stage or node). Its technology
+ * limits the cells; its stage limits the nodes, whose six-stage cells (node.yfCells) are read. `scored`:
+ * the cells with partner indices (default: the build's ranked cells).
  */
 function useCellPick(f: PartnershipFilter, scored?: ReadonlySet<string> | null): OsiCellPick | null {
-  const { doc, tx } = useAibCtx();
+  const { doc } = useAibCtx();
   const ranked = useRankedCells();
   const set = scored === undefined ? ranked : scored;
-  const osiTech = !tx.dictionary;
   const { tech, stage, node } = f;
-  return useMemo(() => osiCellPick(doc.nodes, { country: null, tech, stage, node }, { osiTech, scored: set }), [doc, osiTech, set, tech, stage, node]);
+  return useMemo(() => osiCellPick(doc.nodes, { country: null, tech, stage, node }, { scored: set }), [doc, set, tech, stage, node]);
 }
+
+/** A node's place in a CSV: its OSI technologies and cells, its dictionary sector (provenance), the stages of its cells and the AIB model's own stage. */
+const osiCsv = (tx: Parameters<typeof osiFields>[0], n: Parameters<typeof osiFields>[1]) => {
+  const p = osiFields(tx, n);
+  return { technologies: p.technologies, osi_cells: p.osiCells, dictionary_sector: p.dictionarySector, stage: p.stages, aib_model_stage: p.modelStage };
+};
 
 /** "Rare-earth oxides & compounds", "these 3 nodes" or "2 of these 3 nodes". */
 const whoOf = (list: readonly { label: string }[], all: readonly { label: string }[]): string =>
   list.length === 1 ? list[0].label : list.length === all.length ? `these ${plural(all.length, 'node')}` : `${list.length} of these ${plural(all.length, 'node')}`;
 const whoWords = (pick: OsiCellPick): string => whoOf(pick.nodes, pick.nodes);
 const itsOf = (k: number) => (k === 1 ? 'its' : 'their');
-/** The three-stage cells a card reads, labelled as their data are ("Solar – Midstream"). */
+/** The cells a card reads, labelled as their data are ("Solar – Components"). */
 const cellWordsOf = (cells: readonly OsiCell[]) => cells.map((c) => cellLabel(c.tech, c.stage)).join(', ');
 
-/** "the basket cell the codes of Wafers (Refining) sit in; its codes also sit in Solar – Midstream" (the node's own, six-stage stage in brackets) */
+/** "the basket cell the codes of Wafers sit in; its codes also sit in Solar – Components" (the node is where its cells are: no node.stage) */
 function cellSourceWords(pick: OsiCellPick, cell: OsiCell): string {
   const others = pick.cells.filter((c) => c.slug !== cell.slug);
   const who =
     pick.from && pick.nodes.length > 1
-      ? `${pick.from.label} (${pick.from.stage}; the largest lost supply of ${whoWords(pick)})`
+      ? `${pick.from.label} (the largest lost supply of ${whoWords(pick)})`
       : pick.nodes.length === 1
-        ? `${pick.nodes[0].label} (${pick.nodes[0].stage})`
+        ? pick.nodes[0].label
         : whoWords(pick);
   return `the basket cell the codes of ${who} sit in${others.length ? `; ${itsOf(pick.nodes.length)} codes also sit in ${cellWordsOf(others)}` : ''}`;
 }
-
-/**
- * The note beside a card that reads three-stage partner data for six-stage nodes: the rankings keep the
- * paper's three stages until the Strategic data migrate.
- */
-export const THREE_STAGE_NOTE =
-  'Partner rankings are kept by the paper’s three-stage OSI cells (Upstream, Midstream, Downstream); the nodes use the six stages, so each is read through the three-stage cells its codes sit in.';
 
 /** After a note on the cells with partner indices: the cells without them and the matching nodes left with none. */
 function pickCaveats(pick: OsiCellPick): string {
@@ -247,8 +242,8 @@ function NoCellNotice({ pick, fallback }: { pick: OsiCellPick; fallback: string 
     <div data-testid="osi-cell-notice">
       <Notice kind="info" title={pick.unscoredNodes.length ? 'No OSI cell with partner indices for this selection' : 'No OSI cell for this selection'}>
         {pick.nodes.length
-          ? `Partner indices are kept by OSI technology × stage (the paper’s three stages), and ${parts.join('; ')}. ${fallback}`
-          : `No node matches this selection, so it reaches no OSI cell (partner indices are kept by OSI technology × stage, the paper’s three stages). ${fallback}`}
+          ? `Partner indices are kept by OSI technology × stage, and ${parts.join('; ')}. ${fallback}`
+          : `No node matches this selection, so it reaches no OSI cell (partner indices are kept by OSI technology × stage). ${fallback}`}
       </Notice>
     </div>
   );
@@ -270,35 +265,36 @@ function OsiCellNote({ pick, cells = false, fallback }: { pick: OsiCellPick | nu
   return (
     <p className="text-xs text-paper-mute" data-testid="osi-cell-note">
       {text}
-      {pickCaveats(pick)} <span data-testid="three-stage-note">{THREE_STAGE_NOTE}</span>
+      {pickCaveats(pick)}
     </p>
   );
 }
 
 const ECONOMY_WIDE = 'The direct-investment positions below are economy-wide';
 /**
- * The cells with factory projects (hasCmfdi: the partner data's three-stage Midstream cells). They hold
- * manufacturing and the refined materials the paper files under Midstream, so a Refining node (lithium
- * chemicals, polysilicon) can read through one; they are not just Components and Assembly.
+ * The cells with factory projects (hasCmfdi: the CM-FDI technologies at the stages the ties chunk records
+ * them at, Components and Assembly, which carry the same projects), in words.
  */
-const CMFDI_WORDS = `the Midstream cells of ${listWords(CMFDI_SECTORS)} (manufacturing, plus refined materials such as battery chemicals and polysilicon)`;
+const cmfdiWords = (stages: readonly string[]) => `the ${listWords([...stages])} cells of ${listWords(CMFDI_SECTORS)}`;
 
 /**
  * What the Investment tab's cards for one economy read (null without a filter): the IMF positions are
- * economy-wide; the factory projects are kept by (three-stage) OSI cell and recorded only for the CM-FDI
- * cells, so they are shown for the dominant cell when it is one of those, and the note says so when it is
- * not.
+ * economy-wide; the factory projects are kept by OSI cell and recorded only for the CM-FDI cells, so they
+ * are shown for the dominant cell when it is one of those (saying once that the CM-FDI stages carry the
+ * same projects), and the note says so when it is not.
  */
-function InvestmentCellNote({ pick }: { pick: OsiCellPick | null }) {
+function InvestmentCellNote({ pick, ties }: { pick: OsiCellPick | null; ties: Ties | null }) {
   if (!pick) return null;
+  const stages = cmfdiStages(ties);
+  const same = cmfdiSameProjectsNote(stages);
   const notShown = `${ECONOMY_WIDE}; factory projects are kept by OSI cell and are not shown.`;
   if (!pick.cells.length) return <NoCellNotice pick={pick} fallback={notShown} />;
   const cell = pick.cell;
   const text = !cell
     ? `This selection spans ${plural(pick.cells.length, 'OSI cell')} (${cellWordsOf(pick.cells)}): ${notShown}`
-    : hasCmfdi(cell.tech, cell.stage)
-      ? `Factory projects are kept by OSI cell (the paper’s three stages): shown for ${cellLabel(cell.tech, cell.stage)}, ${cellSourceWords(pick, cell)}. ${ECONOMY_WIDE}.`
-      : `${ECONOMY_WIDE}. Factory projects are kept by OSI cell (the paper’s three stages) and recorded only for ${CMFDI_WORDS}; ${cellLabel(cell.tech, cell.stage)}, ${cellSourceWords(pick, cell)}, has none, so none are shown.`;
+    : hasCmfdi(cell.tech, cell.stage, stages)
+      ? `Factory projects are kept by OSI cell: shown for ${cellLabel(cell.tech, cell.stage)}, ${cellSourceWords(pick, cell)}.${same ? ` ${same}` : ''} ${ECONOMY_WIDE}.`
+      : `${ECONOMY_WIDE}. Factory projects are kept by OSI cell and recorded only for ${cmfdiWords(stages)}; ${cellLabel(cell.tech, cell.stage)}, ${cellSourceWords(pick, cell)}, has none, so none are shown.`;
   return (
     <p className="text-xs text-paper-mute" data-testid="osi-cell-investment-note">
       {text}
@@ -390,8 +386,9 @@ export default function AibPartnershipsView() {
   const raw: PartnershipFilter = { country: params.get('country'), tech: params.get('tech'), stage: params.get('stage'), node: params.get('node') };
   const all = useMemo(() => filterChoices(doc, { country: null, tech: null, stage: null, node: null }), [doc]);
   const tech = raw.tech && all.techs.includes(raw.tech) ? raw.tech : null;
-  // a stage the nodes have (six-stage; an old three-stage link names none and is dropped)
-  const stage = raw.stage && isSupplyStage(raw.stage) && all.stages.includes(raw.stage) ? raw.stage : null;
+  // a stage that holds the nodes' cells, of the chosen technology (six-stage; an old three-stage link names none and is dropped)
+  const stages = useMemo(() => filterChoices(doc, { country: null, tech, stage: null, node: null }).stages, [doc, tech]);
+  const stage = raw.stage && isSupplyStage(raw.stage) && stages.includes(raw.stage) ? raw.stage : null;
   const country = raw.country && all.countries.some((c) => c.iso3 === raw.country) ? raw.country : null;
   const scopedNodes = useMemo(() => filterChoices(doc, { country: null, tech, stage, node: null }).nodes, [doc, tech, stage]);
   const node = raw.node && scopedNodes.some((n) => n.id === raw.node) ? raw.node : null;
@@ -443,12 +440,12 @@ export default function AibPartnershipsView() {
           disabled={!country}
           title={country ? 'A second economy: the relationship thesis of the pair, above the lenses' : 'Choose an economy first'}
         />
-        <Select label={tx.One} value={tech ?? ''} options={[{ value: '', label: tx.all }, ...techOptions(tx, all.techs)]} onChange={(v) => set('tech', v)} />
-        <Select label="Stage" value={stage ?? ''} options={[{ value: '', label: 'All stages' }, ...all.stages.map((s) => ({ value: s, label: s }))]} onChange={(v) => set('stage', v)} className="min-w-[9rem]" />
+        <Select label={tx.One} value={tech ?? ''} options={[{ value: '', label: tx.all }, ...techOptions(all.techs)]} onChange={(v) => set('tech', v)} />
+        <Select label="Stage" value={stage ?? ''} options={[{ value: '', label: 'All stages' }, ...stages.map((s) => ({ value: s, label: s }))]} onChange={(v) => set('stage', v)} className="min-w-[9rem]" />
         <Select
-          label="Sub-sector"
+          label="Node"
           value={node ?? ''}
-          options={[{ value: '', label: 'All sub-sectors' }, ...scopedNodes.map((n) => ({ value: n.id, label: n.label }))]}
+          options={[{ value: '', label: 'All nodes' }, ...scopedNodes.map((n) => ({ value: n.id, label: n.label }))]}
           onChange={(v) => set('node', v)}
           className="min-w-[14rem]"
         />
@@ -917,13 +914,13 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
         names: !ties ? LENS_LOADING : ties.ties ? lensNames(dipPartners(ties.ties, f.country), 10, f.country) : lensNone('the direct-investment positions are not in this build'),
         content: (
           <div className="space-y-4">
-            <InvestmentCellNote pick={pick} />
+            <InvestmentCellNote pick={pick} ties={ties?.ties ?? null} />
             <InvestmentCards
               iso={f.country}
               name={name(f.country)}
               ties={ties?.ties ?? null}
               error={ties?.error ?? null}
-              sector={pick?.cell ? { tech: pick.cell.tech, stage: pick.cell.stage /* three-stage, as the CM-FDI records */ } : null}
+              sector={pick?.cell ? { tech: pick.cell.tech, stage: pick.cell.stage } : null}
               nameOf={name}
               headingLevel={3}
               projectsHint="shown below when the selection's OSI cell is one of those"
@@ -942,8 +939,8 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
   if (!sc.ready) aib = pendingSpec(sc.load);
   else {
     const nodeCols: Col<LensNode>[] = [
-      { id: 'node', header: 'Sub-sector', value: (n) => n.node.label },
-      { id: 'stage', header: `${tx.One} and stage`, value: (n) => nodeWhere(tx, n.node) },
+      { id: 'node', header: 'Node', value: (n) => n.node.label },
+      { id: 'stage', header: `${tx.Many} and stage`, value: (n) => nodeWhere(n.node) },
       { id: 'cls', header: 'Treatment', value: (n) => n.cls, cell: (n) => (n.cls ? <ClassChip cls={n.cls} /> : '–') },
       { id: 'residual', header: 'Residual gap after trade', value: (n) => n.residual, cell: (n) => fmtShare(n.residual), num: true },
       { id: 'gain', header: 'Resilience gain of the best host', value: (n) => n.bestGain, cell: (n) => fmtPp(n.bestGain), num: true },
@@ -966,7 +963,7 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
     const csv = () => ({
       name: `Allied Industrial Base investment hosts ${sc.label} ${scope}`,
       text: csvScenario(
-        nodes.map((n) => ({ node_id: n.node.id, sub_sector: n.node.label, [tx.csv]: n.node.techs.join('; '), stage: n.node.stage, classification: n.cls, residual_gap: n.residual, best_host_resilience_gain: n.bestGain, eligible_hosts_best_first: n.hosts.join('; '), compact: n.node.compact })),
+        nodes.map((n) => ({ node_id: n.node.id, sub_sector: n.node.label, ...osiCsv(tx, n.node), classification: n.cls, residual_gap: n.residual, best_host_resilience_gain: n.bestGain, eligible_hosts_best_first: n.hosts.join('; '), compact: n.node.compact })),
         doc.meta,
         sc.id,
       ),
@@ -993,7 +990,7 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
                   <>
                     <span className="w-14 shrink-0 text-right font-medium tabular text-paper">{fmtPp(n.bestGain, 0)}</span>
                     <span className="min-w-0 flex-1 text-paper-dim">
-                      <span className="text-paper">{n.node.label}</span> ({nodeWhere(tx, n.node)}): best hosts {listWords(n.hosts.slice(0, 3).map((h) => name(h)))}
+                      <span className="text-paper">{n.node.label}</span> ({nodeWhere(n.node)}): best hosts {listWords(n.hosts.slice(0, 3).map((h) => name(h)))}
                     </span>
                     {n.cls && <ClassChip cls={n.cls} />}
                   </>
@@ -1084,8 +1081,8 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
   const gaps = useMemo(() => lensBuildGaps(rows, f), [rows, f]);
   const buildIds = useMemo(() => new Set(lensBuildGaps(rows, { ...f, country: null }).map((g) => g.node.id)), [rows, f]);
   const buildFlows = useMemo(() => (flows ? investmentPairs({ nodes: doc.nodes, investmentFlows: flows }, f).filter((p) => buildIds.has(p.node)) : []), [doc, flows, f, buildIds]);
-  // the aid of the Sector data is kept by the paper's three stages: the stage the matching nodes' three-stage cells carry
-  const odaStage = useMemo(() => legacyStageOf(doc.nodes, f), [doc, f]);
+  // the aid of the Sector data is linked to six-stage cells: read at the filter's stage, else the node's own
+  const odaStage = useMemo(() => aidStageOf(doc.nodes, f), [doc, f]);
 
   const today: LensPanelSpec = {
     names: odaNames,
@@ -1107,8 +1104,8 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
   if (!sc.ready) aib = pendingSpec(sc.load);
   else {
     const cols: Col<LensNode>[] = [
-      { id: 'node', header: 'Sub-sector', value: (n) => n.node.label },
-      { id: 'stage', header: `${tx.One} and stage`, value: (n) => nodeWhere(tx, n.node) },
+      { id: 'node', header: 'Node', value: (n) => n.node.label },
+      { id: 'stage', header: `${tx.Many} and stage`, value: (n) => nodeWhere(n.node) },
       { id: 'residual', header: 'Residual gap after trade', value: (n) => n.residual, cell: (n) => fmtShare(n.residual), num: true },
       { id: 'lost', header: sc.id === 'managed' ? 'Supply to shift' : 'Lost supply', value: (n) => n.lostUsd, cell: (n) => fmtUsd(n.lostUsd), num: true },
       { id: 'hosts', header: 'Eligible hosts, best first', value: (n) => n.hosts.map((h) => name(h)).join(', '), minWidth: 220 },
@@ -1117,7 +1114,7 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
     const csv = () => ({
       name: `Allied Industrial Base capacity gaps ${sc.label} ${scope}`,
       text: csvScenario(
-        gaps.map((n) => ({ node_id: n.node.id, sub_sector: n.node.label, [tx.csv]: n.node.techs.join('; '), stage: n.node.stage, residual_gap: n.residual, lost_usd: n.lostUsd, eligible_hosts_best_first: n.hosts.join('; '), compact: n.node.compact })),
+        gaps.map((n) => ({ node_id: n.node.id, sub_sector: n.node.label, ...osiCsv(tx, n.node), residual_gap: n.residual, lost_usd: n.lostUsd, eligible_hosts_best_first: n.hosts.join('; '), compact: n.node.compact })),
         doc.meta,
         sc.id,
       ),
@@ -1147,7 +1144,7 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
                   <>
                     <span className="w-14 shrink-0 text-right font-medium tabular text-paper">{fmtShare(n.residual, 0)}</span>
                     <span className="min-w-0 flex-1 text-paper-dim">
-                      <span className="text-paper">{n.node.label}</span> ({nodeWhere(tx, n.node)}, {fmtUsd(n.lostUsd)} {sc.id === 'managed' ? 'to shift' : 'lost'})
+                      <span className="text-paper">{n.node.label}</span> ({nodeWhere(n.node)}, {fmtUsd(n.lostUsd)} {sc.id === 'managed' ? 'to shift' : 'lost'})
                       {n.hosts.length ? `: hosts ${listWords(n.hosts.slice(0, 3).map((h) => name(h)))}` : ''}
                     </span>
                   </>
@@ -1166,7 +1163,7 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
 
 function DevelopmentPartners({ f, scope, onNames }: { f: PartnershipFilter; scope: string; onNames: (n: LensNames) => void }) {
   const app = useApp();
-  const { doc, nodeOf, tx } = useAibCtx();
+  const { doc, nodeOf } = useAibCtx();
   const ties = useTies();
   const name = useNamer(ties?.ties);
   const toCountry = useCountryHref();
@@ -1174,9 +1171,8 @@ function DevelopmentPartners({ f, scope, onNames }: { f: PartnershipFilter; scop
   // the cells with Development Potential are the engine's own; the note and the rows read the same pick
   const scored = useMemo(() => scoredCellsOf(app.cells), [app.cells]);
   const pick = useCellPick(f, scored);
-  const osiTech = !tx.dictionary;
-  // the OSI cells come from the matching nodes' crosswalk (never the AIB sector name); none: no rows and a notice
-  const rows = useMemo(() => (ties?.ties ? dpRows(ties.ties.dp, app.cells, doc.nodes, f, { osiTech }) : []), [ties, app.cells, doc.nodes, f, osiTech]);
+  // the OSI cells come from the matching nodes' crosswalk; none: no rows and a notice
+  const rows = useMemo(() => (ties?.ties ? dpRows(ties.ties.dp, app.cells, doc.nodes, f) : []), [ties, app.cells, doc.nodes, f]);
   const noCell = !!pick && !pick.cells.length;
   const names: LensNames = !ties ? LENS_LOADING : ties.error ? lensNone('the Development Potential scores are not in this build') : noCell ? lensNone('no OSI cell with partner indices for this selection') : lensNames(rows.map((r) => r.iso3));
   const sig = `${names.status}|${names.keys.join(',')}`;

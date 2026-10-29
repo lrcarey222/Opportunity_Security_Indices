@@ -22,6 +22,7 @@
 // and the CSV carry the scenario's columns; the frontier says it is computed under Decoupling.
 
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { Legend } from '../../../charts/legends.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
@@ -39,18 +40,52 @@ import { nodeCsvRow, nodeRow } from '../../derive/nodes.ts';
 import { nodeScenarioCsv, nodeScenarioNote } from '../../derive/scenarioPages.ts';
 import { nodeScenario, nodeSuppliersToday, scenarioCsvFields } from '../../derive/scenarios.ts';
 import { classVariants, constraintClasses, growthFlag, growthRows, robustnessSummary, variantWarning } from '../../derive/sensitivity.ts';
-import { nodeWhere } from '../../derive/taxonomy.ts';
+import { nodeStageRank, nodeStageWords, nodeTechWords, nodeWhere, osiCellHref, osiCellsOfNode, subcomponentsOfCell } from '../../derive/taxonomy.ts';
+import { cellLabel } from '../../../lib/format.ts';
 import { csvWithRun, Section } from '../common.tsx';
 import { DiversifyBlock, NodeScenarioRows } from '../DiversifyBlock.tsx';
 import { NodeRobustness } from '../NodeRobustness.tsx';
 import { Economy, useCompact } from './shared.tsx';
-import { stageRank } from '../../../lib/stages.ts';
+
+/**
+ * The OSI technology x stage cells a node's codes sit in (node.yfCells), each a link to its Sector profile
+ * where the Sector module has one, with the OSI sub-components there; a node none of whose codes is in the
+ * OSI basket says so.
+ */
+function NodeCells({ n }: { n: AibNode }) {
+  const cells = osiCellsOfNode(n);
+  return (
+    <p className="mt-1.5 text-xs leading-relaxed text-paper-dim" data-testid="node-osi-cells">
+      <span className="text-paper-mute">{cells.length === 1 ? 'OSI cell:' : 'OSI cells:'}</span>{' '}
+      {cells.length
+        ? cells.map((c, i) => {
+            const href = osiCellHref(c);
+            const label = cellLabel(c.tech, c.stage);
+            const subs = subcomponentsOfCell(n, c.slug);
+            return (
+              <span key={c.slug}>
+                {i > 0 && '; '}
+                {href ? (
+                  <Link className="link" to={href}>
+                    {label}
+                  </Link>
+                ) : (
+                  label
+                )}
+                {subs.length ? <span className="text-paper-mute"> ({subs.join(', ')})</span> : null}
+              </span>
+            );
+          })
+        : 'none: none of its codes is in the OSI technology basket.'}
+    </p>
+  );
+}
 
 /** A class with the warning named after it in a plain-text cell ("COORDINATE (PHYSICAL CAPABILITY NOT VALIDATED)"). */
 const clsText = (cls: string | null, warning: boolean | null) => (cls ? `${classInfo(cls).label}${warning ? ` (${AIB_PHYSICAL_WARNING})` : ''}` : null);
 
 function NodeItem({ n }: { n: AibNode }) {
-  const { name, names, meta, tx, scenario, hasScenarios } = useCompact();
+  const { name, names, meta, scenario, hasScenarios } = useCompact();
   const mi = scenario === 'managed';
   const r = nodeScenario(n, 'managed');
   const miWarning = mi && r.ran && r.cls ? variantWarning(n, diversifyShockIdOf(meta)) : null;
@@ -78,8 +113,9 @@ function NodeItem({ n }: { n: AibNode }) {
           <ClassChip cls={n.cls} needs={n.policyNeeds} warning={n.warning} />
         )}
         <h4 className="text-base font-medium text-paper">{n.label}</h4>
-        <span className="text-xs text-paper-mute">{nodeWhere(tx, n)}</span>
+        <span className="text-xs text-paper-mute">{nodeWhere(n)}</span>
       </div>
+      <NodeCells n={n} />
       {!mi && (n.policyNeeds !== undefined || n.warning) && (
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
           {n.policyNeeds !== undefined && (
@@ -265,7 +301,7 @@ function NodeItem({ n }: { n: AibNode }) {
 
 /** `frontier`: also show the specialization frontier card (false when the page puts it under method details). */
 export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
-  const { c, nodes, meta, names, tx, scenario, hasScenarios } = useCompact();
+  const { c, displayName, nodes, meta, names, tx, scenario, hasScenarios } = useCompact();
   const mi = scenario === 'managed';
   const mix = classMix(nodes.map((n) => n.cls));
   const rows = nodes.map((n) => nodeRow(n, names, tx));
@@ -299,9 +335,15 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
     },
   ];
   const cols: Col<(typeof rows)[number]>[] = [
-    { id: 'node', header: 'Sub-sector', value: (r) => r.node },
-    ...(tx.dictionary ? [{ id: 'sector', header: tx.One, value: (r: (typeof rows)[number]) => r.technologies }] : []),
-    { id: 'stage', header: 'Stage', value: (r) => r.stage, sortValue: (r) => stageRank(r.stage) },
+    { id: 'node', header: 'Node', value: (r) => r.node },
+    { id: 'techs', header: tx.Many, value: (r) => nodeTechWords(nodeById.get(r.id) ?? { yfCells: [] }) },
+    {
+      id: 'stage',
+      header: 'Stage',
+      value: (r) => nodeStageWords(nodeById.get(r.id) ?? { yfCells: [] }),
+      sortValue: (r) => nodeStageRank(nodeById.get(r.id) ?? { yfCells: [] }),
+      title: "The stages of the OSI cells the node's codes sit in; none when no code is in the OSI basket.",
+    },
     { id: 'cls', header: hasScenarios ? 'Class under Decoupling' : 'Class', value: (r) => classInfo(r.cls).label },
     { id: 'needs', header: 'Policy needs', value: (r) => r.policyNeeds },
     { id: 'warning', header: 'Warning', value: (r) => r.warning ?? 'none', minWidth: 200 },
@@ -376,7 +418,7 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
             />
           )
         }
-        table={() => <TableView rows={rows} cols={cols} caption={`${c.name}: node by node`} rowKey={(r) => r.id} pageSize={50} />}
+        table={() => <TableView rows={rows} cols={cols} caption={`${displayName}: node by node`} rowKey={(r) => r.id} pageSize={50} />}
         csv={csv}
       >
         <ul>
@@ -391,7 +433,7 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
 }
 
 export function FrontierCard() {
-  const { c, nodes, meta, names, name, scenario, hasScenarios } = useCompact();
+  const { c, displayName, nodes, meta, names, name, scenario, hasScenarios } = useCompact();
   const withFrontier = nodesWithFrontier(nodes);
   const [pick, setPick] = useState('');
   const node = withFrontier.find((n) => n.id === pick) ?? withFrontier[0] ?? null;
@@ -470,7 +512,7 @@ export function FrontierCard() {
           </span>
         ) : undefined
       }
-      table={() => <TableView rows={rows} cols={cols} caption={`${node?.label ?? c.name}: specialization and resilience by supplier limit`} />}
+      table={() => <TableView rows={rows} cols={cols} caption={`${node?.label ?? displayName}: specialization and resilience by supplier limit`} />}
       csv={csv}
     >
       {node && rows.length ? (

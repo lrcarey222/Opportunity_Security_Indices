@@ -3,6 +3,9 @@
 // partner (Development Potential), summarised by the Partnership Strength Index; the pair drill-down
 // (with the CM-FDI investment tie and the Chinese-parent ownership component, spec_country.md C4.1);
 // the partner-level Partnership Strength on the three-colour scale (C1.5). No bare acronyms (C3.1).
+// Six stages (2026-10-29): the pair's sectors are drawn as one panel per stage (technologies as rows, as
+// in the Country scores view), wrapping on a narrow screen (views/stageFacets.ts); the stage is named
+// above its panel, never a colour series (design S4).
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
@@ -27,10 +30,15 @@ import { useApp, useEngine, usePartner, useScenario } from '../../state/EnginePr
 import { useGoto } from '../../state/nav.ts';
 import { toSpec } from '../../state/url.ts';
 import { COMPARE_COLOR, INK, PILLAR_COLOR, SIGNAL, TIER_COLOR, tierKey } from '../../theme/palette.ts';
-import { CountryInsightsLink, numOr, rowsOf, showWord, strOr, useCountryOptions, type Row } from '../common.tsx';
+import { andList, CountryInsightsLink, numOr, rowsOf, showWord, strOr, useCountryOptions, type Row } from '../common.tsx';
+import { panelAxisX, stageFacetLayout, stageLabels } from '../stageFacets.ts';
 import { InvestmentCards } from './InvestmentCard.tsx';
 import { SectorBars, sectorCols, sideValue, type SectorRow } from './SectorPanels.tsx';
-import { dpOfCell, loadTies, type Ties } from './ties.ts';
+import { stageLabel } from '../../lib/stages.ts';
+import { cmfdiStages, dpOfCell, loadTies, type Ties } from './ties.ts';
+
+/** The pair-by-sector dot plot: one panel's height per technology row and the margins around the grid. */
+const CELLS = { row: 22, right: 16, top: 30, bottom: 44 } as const;
 
 /** The source of the investment tie in a sector (Friendshore's outbound component). */
 const tieSource = (v: unknown): string | null => (v === 'cm_fdi' ? 'Factory projects (CM-FDI)' : v === 'imf_dip' ? 'IMF direct investment' : null);
@@ -255,7 +263,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
         height: 40 + top20.length * 22,
         marginLeft: labelMargin(top20.map((r) => r.Country), { min: 90, max: 180 }),
         marginRight: 60,
-        x: { label: change ? 'Change in Partnership Strength against the paper →' : 'Partnership Strength (0 to 1) →', grid: true, nice: true, domain: change ? symDomain(top20.map((r) => r.shown), 0.005).map((v) => v * 1.5) : [0, 1] },
+        x: { label: change ? 'Change in Partnership Strength against the NEIS baseline →' : 'Partnership Strength (0 to 1) →', grid: true, nice: true, domain: change ? symDomain(top20.map((r) => r.shown), 0.005).map((v) => v * 1.5) : [0, 1] },
         y: { domain: top20.map((r) => r.Country), label: null, tickSize: 0 },
         marks: [
           Plot.barX(top20, { y: 'Country', x: 'shown', fill: (r: DyadRow) => TIER_COLOR[r.tier], insetTop: 4, insetBottom: 4 }),
@@ -272,7 +280,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
   );
 
   // (c) bloc vs Friendshore
-  // with a sector chosen: Friendshore in that sector (scenario, or the paper in Baseline mode)
+  // with a sector chosen: Friendshore in that sector (scenario, or the NEIS baseline in Baseline mode)
   const secBy = useMemo(() => new Map((secRows ?? []).map((r) => [r.partner_iso, r])), [secRows]);
   const blocY = useCallback(
     (r: DyadRow): number | null => {
@@ -310,6 +318,8 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
   );
 
   // (d) dyad cells
+  // the stages whose cells carry the factory projects (the ties chunk, else config/partnership.yml)
+  const cmWords = andList(cmfdiStages(ties?.ties ?? null).map(stageLabel));
   const cellPts = useMemo((): CellPoint[] => {
     if (!dec?.table) return [];
     const out: CellPoint[] = [];
@@ -320,35 +330,50 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
     }
     return out;
   }, [dec]);
+  // one stage panel's height (a row per technology); the figure's own height follows its rows of panels
+  const cellsPanel = app.techs.length * CELLS.row;
   const buildCells = useCallback(
     (width: number): Plot.PlotOptions | null => {
       const pts = cellPts.filter((p) => p.value !== null);
       if (!pts.length) return null;
+      const marginLeft = labelMargin(app.techs, { min: 80, max: 160 });
+      // the stage panels side by side where each gets 104 px, else three or two a row (a phone shows 2 x 3);
+      // the technologies label the left panel of each row, the stage names each panel
+      const L = stageFacetLayout(app.stages, { width, marginLeft, marginRight: CELLS.right, marginTop: CELLS.top, marginBottom: CELLS.bottom, panelHeight: cellsPanel, minPanel: 104, gapX: 16, gapY: 48 });
+      const narrow = L.panelWidth < 140;
       return {
         width,
-        height: 300,
-        marginLeft: 44,
-        marginTop: 28,
-        marginBottom: 96,
-        fx: { domain: app.stages, label: null, axis: 'top', padding: 0.06 },
-        x: { domain: app.techs, label: null, tickRotate: -50, tickSize: 0 },
-        y: { domain: [0, 1], label: '↑ Score (0 to 1)', grid: true, ticks: 4 },
+        height: L.height,
+        marginLeft,
+        marginRight: CELLS.right,
+        marginTop: CELLS.top,
+        marginBottom: CELLS.bottom,
+        fx: L.fx,
+        fy: L.fy,
+        x: { domain: [0, 1] },
+        y: { domain: app.techs, label: null, tickSize: 0 },
         color: { domain: ['Friendshore', 'Opportunity'], range: [PILLAR_COLOR.ES, PILLAR_COLOR.EO] },
         symbol: { domain: ['best five', 'other'], range: ['star', 'circle'] },
         marks: [
+          ...panelAxisX({
+            label: 'Score (0 to 1; right = stronger) →',
+            ticks: narrow ? [0, 0.5, 1] : 4,
+            tickFormat: (narrow ? (v: number) => (v === 0.5 ? '0.5' : '') : (v: number) => (v === 0 || v === 1 ? String(v) : v.toFixed(1))) as (v: never) => string,
+          }),
+          stageLabels(L.grid),
           ...(['Friendshore', 'Opportunity'] as const).map((ix) =>
             Plot.dot(pts.filter((p) => p.index === ix), {
-              fx: 'stage', x: 'tech', y: 'value', fill: 'index', symbol: (p: CellPoint) => (p.best ? 'best five' : 'other'),
-              r: (p: CellPoint) => (p.best ? 7 : 4), stroke: INK[800], strokeWidth: 1, dx: ix === 'Friendshore' ? -3 : 3,
+              ...L.facet, x: 'value', y: 'tech', fill: 'index', symbol: (p: CellPoint) => (p.best ? 'best five' : 'other'),
+              r: (p: CellPoint) => (p.best ? 7 : 4), stroke: INK[800], strokeWidth: 1, dy: ix === 'Friendshore' ? -3 : 3,
             }),
           ),
           // the sector chosen above
-          sector ? Plot.dot(pts.filter((p) => p.tech === sector.tech && p.stage === sector.stage), { fx: 'stage', x: 'tech', y: 'value', r: 11, fill: 'none', stroke: SIGNAL, strokeWidth: 1.5, strokeDasharray: '2 2' }) : null,
-          Plot.dot(pts, Plot.pointer({ fx: 'stage', x: 'tech', y: 'value', r: 9, fill: 'none', stroke: SIGNAL, strokeWidth: 2, maxRadius: 20 })),
+          sector ? Plot.dot(pts.filter((p) => p.tech === sector.tech && p.stage === sector.stage), { ...L.facet, x: 'value', y: 'tech', r: 11, fill: 'none', stroke: SIGNAL, strokeWidth: 1.5, strokeDasharray: '2 2' }) : null,
+          Plot.dot(pts, Plot.pointer({ ...L.facet, x: 'value', y: 'tech', r: 9, fill: 'none', stroke: SIGNAL, strokeWidth: 2, maxRadius: 20 })),
         ],
       };
     },
-    [cellPts, app, sector],
+    [cellPts, app, sector, cellsPanel],
   );
 
   // (e) partner-level PSI
@@ -378,7 +403,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
   const psiSide = (v: number | null) => {
     const sd = psiScale.side(v);
     if (sd === null) return null;
-    if (show === 'change') return sd === 'above' ? 'rose against the paper' : sd === 'below' ? 'fell against the paper' : 'no change';
+    if (show === 'change') return sd === 'above' ? 'rose against the NEIS baseline' : sd === 'below' ? 'fell against the NEIS baseline' : 'no change';
     return sd === 'median' ? `at the median of the ${psiScale.n} ranked partners (${fmtNum(psiScale.mid, 2)})` : `${sd} the median of the ${psiScale.n} ranked partners (${fmtNum(psiScale.mid, 2)})`;
   };
   const psiCells = useMemo(() => {
@@ -414,7 +439,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
       title={`${r.Country} (${tierLabel(r.tier)})`}
       lines={[
         `Friendshore ${fmtNum(r.friendshore, 3)} · Partnership Opportunity ${fmtNum(r.opportunity, 3)} · Development Potential ${fmtNum(r.development, 3)}`,
-        `rank ${r.rank ?? DASH}${!isBaseline ? `; paper ${fmtNum(r.psi_base, 3)}, rank ${r.rank_base ?? DASH}` : ''}`,
+        `rank ${r.rank ?? DASH}${!isBaseline ? `; baseline ${fmtNum(r.psi_base, 3)}, rank ${r.rank_base ?? DASH}` : ''}`,
         r.bloc ? `UN-voting bloc: ${r.bloc}` : null,
         !r.rankable ? `Not ranked: ${r.reason ?? 'no reason recorded'}` : null,
       ]}
@@ -516,7 +541,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
             {!sector && (
             <ChartCard
               title={`${rName}: its 20 strongest partners`}
-              sub={`${showWord(show)} Each bar is one partner's Partnership Strength from ${rName}'s point of view (0 to 1; longer is a stronger partner)${!isBaseline && show !== 'change' ? "; the gray tick is the paper's value" : ''}. Colour shows the partner's place in the coalition. Click a bar to see the pair sector by sector.`}
+              sub={`${showWord(show)} Each bar is one partner's Partnership Strength from ${rName}'s point of view (0 to 1; longer is a stronger partner)${!isBaseline && show !== 'change' ? '; the gray tick is the NEIS baseline value' : ''}. Colour shows the partner's place in the coalition. Click a bar to see the pair sector by sector.`}
               updating={dyUpdating}
               summary={`The ${top20.length} strongest partners of ${rName} by Partnership Strength.`}
               legend={
@@ -525,7 +550,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
                     { label: 'Coalition core', color: TIER_COLOR.core },
                     { label: 'Coalition partner', color: TIER_COLOR.partner },
                     { label: 'Other economy', color: TIER_COLOR.other },
-                    ...(!isBaseline && show !== 'change' ? [{ label: "Paper's value (tick)", kind: 'tick' as const, color: COMPARE_COLOR.baseline }] : []),
+                    ...(!isBaseline && show !== 'change' ? [{ label: 'NEIS baseline (tick)', kind: 'tick' as const, color: COMPARE_COLOR.baseline }] : []),
                   ]}
                 />
               }
@@ -577,7 +602,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
           {sector ? (
             <ChartCard
               title={`${rName}: every partner in ${sector.label}`}
-              sub={`${rName}'s partners in ${sector.label}: Friendshore (as a friendshoring opportunity: where ${rName}'s security need meets the partner's economic opportunity, on existing trade and investment ties) and Partnership Opportunity (as an export market) in this sector under the scenario, with their ranks among sovereign economies, Development Potential in this sector (paper baseline) and the Partnership Strength rank across all sectors. Select a row to see the pair sector by sector.`}
+              sub={`${rName}'s partners in ${sector.label}: Friendshore (as a friendshoring opportunity: where ${rName}'s security need meets the partner's economic opportunity, on existing trade and investment ties) and Partnership Opportunity (as an export market) in this sector under the scenario, with their ranks among sovereign economies, Development Potential in this sector (NEIS baseline) and the Partnership Strength rank across all sectors. Select a row to see the pair sector by sector.`}
               updating={!partner.fresh || (!!cellTab && cellTab.key !== cpKey)}
               notes={<DevDataNote iso3={sel} name={selRow?.Country ?? null} sector={sector} />}
               csv={secRows ? () => ({ name: `partners-${reporter}-${stageSlug(sector.tech, sector.stage)}`, text: rowsToCsv(secRows.map((r) => ({ ...r, sector: sector.label })) as unknown as Record<string, unknown>[]) }) : undefined}
@@ -591,7 +616,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
           ) : (
           <ChartCard
             title={`${rName}: every partner, ranked`}
-            sub={`All of ${rName}'s partners by Partnership Strength. Select a row to see the pair sector by sector. Rank change compares with the paper; the last column says why a partner is not ranked.`}
+            sub={`All of ${rName}'s partners by Partnership Strength. Select a row to see the pair sector by sector. Rank change compares with the NEIS baseline; the last column says why a partner is not ranked.`}
             updating={dyUpdating}
             notes={<DevDataNote iso3={sel} name={selRow?.Country ?? null} sector={null} />}
             csv={dyads?.table ? () => ({ name: `psi-dyads-${reporter}`, text: tableToCsv(dyads.table as Table) }) : undefined}
@@ -606,7 +631,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
 
           <ChartCard
             title={selRow ? `${rName} and ${selRow.Country}, sector by sector` : 'The pair, sector by sector'}
-            sub={`For each sector: Friendshore (how strong a friendshoring opportunity ${selRow?.Country ?? 'the partner'} is for ${rName}: where ${rName}'s security need meets the partner's economic opportunity, on their trade and investment ties) and Partnership Opportunity (how good a market it is for ${rName}'s exports), both 0 to 1. Stars mark the five sectors that make up each summary. The table lists every part of both scores, including the investment tie (factory projects in Solar, Wind, Batteries and Electric Vehicles manufacturing, IMF direct investment elsewhere) and the Chinese-parent share of the partner's foreign-owned factories.`}
+            sub={`For each sector: Friendshore (how strong a friendshoring opportunity ${selRow?.Country ?? 'the partner'} is for ${rName}: where ${rName}'s security need meets the partner's economic opportunity, on their trade and investment ties) and Partnership Opportunity (how good a market it is for ${rName}'s exports), both 0 to 1. Stars mark the five sectors that make up each summary. Each panel is one of the ${app.stages.length} supply-chain stages, with the technologies as rows (on a narrow screen the panels wrap into rows). The table lists every part of both scores, including the investment tie (factory projects in Solar, Wind, Batteries and Electric Vehicles at ${cmWords}, which carry the same projects; IMF direct investment elsewhere) and the Chinese-parent share of the partner's foreign-owned factories.`}
             updating={!!dec && dec.key !== decKey}
             legend={
               <Legend
@@ -618,7 +643,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
                 ]}
               />
             }
-            table={() => <TableView rows={rowsOf(dec?.table)} cols={decCols} caption="The pair's components by sector" pageSize={33} />}
+            table={() => <TableView rows={rowsOf(dec?.table)} cols={decCols} caption="The pair's components by sector" pageSize={app.cells.length} />}
             csv={dec?.table ? () => ({ name: `dyad-${reporter}-${sel}`, text: tableToCsv(dec.table as Table) }) : undefined}
           >
             {!sel ? (
@@ -628,12 +653,11 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
             ) : dec.error ? (
               <Notice kind="error">{dec.error}</Notice>
             ) : (
-              // 33 technology labels need ~640 px: on a phone the chart scrolls inside the card
-              <div className="overflow-x-auto">
+              // the stage panels wrap into rows on a narrow screen, so the chart never scrolls sideways
+              <div>
                 <PlotFigure<CellPoint>
                   build={buildCells}
-                  height={300}
-                  minWidth={640}
+                  height={CELLS.top + cellsPanel + CELLS.bottom}
                   ariaLabel="Friendshore and Partnership Opportunity by sector"
                   tooltip={(p) => (
                     <Tip value={fmtNum(p.value, 3)} title={`${INDEX_NAME[p.index]}: ${cellLabel(p.tech, p.stage)}`} lines={[p.best ? 'one of the five strongest sectors' : null, p.excluded ? 'excluded (coal, oil or gas)' : null]} />
@@ -656,12 +680,12 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
 
           <ChartCard
             title={`Partnership Strength as a partner, ${partner.data?.psi.view === 'world' ? 'all reporting economies' : 'core coalition'} view`}
-            sub={`${showWord(show)} Each economy is coloured by how strongly the ${partner.data?.psi.reporters.length ?? 0} ${partner.data?.psi.view === 'world' ? 'reporting economies' : 'core coalition members'}, on average, rate it as a partner (the viewpoint is set under Advanced): ${show === 'change' ? 'orange fell against the paper, white no change, blue rose' : 'orange weaker than most ranked partners, white the middle, blue stronger'}. Hatched: not ranked (hover for why). Click an economy to see its own partners.`}
+            sub={`${showWord(show)} Each economy is coloured by how strongly the ${partner.data?.psi.reporters.length ?? 0} ${partner.data?.psi.view === 'world' ? 'reporting economies' : 'core coalition members'}, on average, rate it as a partner (the viewpoint is set under Advanced): ${show === 'change' ? 'orange fell against the NEIS baseline, white no change, blue rose' : 'orange weaker than most ranked partners, white the middle, blue stronger'}. Hatched: not ranked (hover for why). Click an economy to see its own partners.`}
             updating={!partner.fresh}
             legend={
               <TriLegend
                 scale={psiScale}
-                label={show === 'change' ? 'Change in Partnership Strength against the paper' : 'Partnership Strength as a partner'}
+                label={show === 'change' ? 'Change in Partnership Strength against the NEIS baseline' : 'Partnership Strength as a partner'}
                 format={(v) => (show === 'change' ? fmtSigned(v, 2) : fmtNum(v, 2))}
                 noun="ranked partners"
                 {...(show === 'change' ? { lowWord: 'fell', highWord: 'rose' } : { lowWord: 'weaker', highWord: 'stronger' })}
@@ -678,7 +702,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
                   { id: 'rank', header: 'Rank', value: (r) => r.rank, num: true },
                   { id: 'Country', header: 'Partner', value: (r) => r.Country, minWidth: 150 },
                   { id: 'psi', header: 'Partnership Strength', value: (r) => r.psi, cell: (r) => fmtNum(r.psi, 3), num: true },
-                  { id: 'psi_base', header: 'Paper', value: (r) => r.psi_base, cell: (r) => fmtNum(r.psi_base, 3), num: true },
+                  { id: 'psi_base', header: 'Baseline', value: (r) => r.psi_base, cell: (r) => fmtNum(r.psi_base, 3), num: true },
                   { id: 'side', header: 'Colour', value: (r) => (r.rankable && r.shown !== null ? psiSide(r.shown) : 'hatched'), minWidth: 220 },
                   { id: 'fs', header: 'Friendshore', value: (r) => r.friendshore, cell: (r) => fmtNum(r.friendshore, 3), num: true },
                   { id: 'po', header: 'Partnership Opportunity', value: (r) => r.opportunity, cell: (r) => fmtNum(r.opportunity, 3), num: true },

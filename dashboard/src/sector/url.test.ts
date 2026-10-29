@@ -4,10 +4,27 @@ import { navSectorSearch, parseSectorSearch, patchReplaces, SECTOR_DEFAULTS, SEC
 const ctx = {
   countries: new Set(['USA', 'CHN', 'DEU']),
   vars: new Set(['trade.exports', 'investment.annual']),
-  items: new Set(['lithium', 'batteries-midstream']),
+  items: new Set(['lithium', 'batteries-assembly']),
   techs: new Set(['Batteries', 'Solar']),
-  stages: new Set(['Upstream', 'Midstream', 'Downstream']),
+  stages: new Set(['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery']),
 };
+
+describe('sector url: old three-stage stages (design U1)', () => {
+  it('Downstream becomes Deployment, listed; Upstream and Midstream are dropped, listed with the stages that replaced them', () => {
+    const d = parseSectorSearch('?tech=Solar&stage=Downstream', ctx);
+    expect(d.state.stage).toBe('Deployment');
+    expect(d.problems).toEqual(['stage=Downstream (Downstream is now Deployment; showing it)']);
+    const m = parseSectorSearch('?tech=Batteries&stage=Midstream', ctx);
+    expect(m.state.stage).toBeNull();
+    expect(m.problems).toEqual(['stage=Midstream (Midstream is no longer a stage: it is now mostly Components and Assembly (some refined materials are under Refining))']);
+    const u = parseSectorSearch('?stage=Upstream');
+    expect(u.state.stage).toBeNull();
+    expect(u.problems).toEqual(['stage=Upstream (Upstream is no longer a stage: it is now Extraction, Refining and Recovery)']);
+    // without the data's stages: the six are accepted, anything else is not a stage
+    expect(parseSectorSearch('?stage=Recovery').state.stage).toBe('Recovery');
+    expect(parseSectorSearch('?stage=Middle').problems).toEqual(['stage=Middle (not a stage)']);
+  });
+});
 
 describe('sector url (2.7)', () => {
   it('defaults are omitted', () => {
@@ -18,10 +35,10 @@ describe('sector url (2.7)', () => {
   it('round-trips every key in the fixed order', () => {
     const s: SectorUrlState = {
       c: 'USA', eu: 'bloc', lens: 'hhi', fam: 'exports', m: 'trade.exports', y: 2024, tdir: 'imports', xc: true,
-      tech: 'Batteries', stage: 'Midstream', item: 'lithium', sub: 'Cells and packs', as: 'share', scale: 'log', geo: 'coalition',
+      tech: 'Batteries', stage: 'Refining', item: 'lithium', sub: 'Cells and packs', as: 'share', scale: 'log', geo: 'coalition',
     };
     const q = writeSectorSearch(s);
-    expect(q).toBe('c=USA&eu=bloc&lens=hhi&fam=exports&m=trade.exports&y=2024&tdir=imports&xc=1&tech=Batteries&stage=Midstream&item=lithium&sub=Cells%20and%20packs&as=share&scale=log&geo=coalition');
+    expect(q).toBe('c=USA&eu=bloc&lens=hhi&fam=exports&m=trade.exports&y=2024&tdir=imports&xc=1&tech=Batteries&stage=Refining&item=lithium&sub=Cells%20and%20packs&as=share&scale=log&geo=coalition');
     expect(q.split('&').map((p) => p.split('=')[0])).toEqual([...SECTOR_KEY_ORDER]);
     const back = parseSectorSearch(`?${q}`, ctx);
     expect(back.problems).toEqual([]);
@@ -63,7 +80,7 @@ describe('sector url (2.7)', () => {
     expect(navSectorSearch({ ...SECTOR_DEFAULTS, c: 'USA', eu: 'bloc', m: 'trade.exports', lens: 'hhi' })).toBe('?c=USA&eu=bloc');
     expect(navSectorSearch({ ...SECTOR_DEFAULTS })).toBe('');
     expect(navSectorSearch({ ...SECTOR_DEFAULTS, c: 'EUU', eu: 'members' })).toBe('');
-    expect(sectorHref('/sector/batteries/midstream', { c: 'USA' }, { m: 'trade.exports' }, 'leaders')).toBe('/sector/batteries/midstream?c=USA&m=trade.exports#leaders');
+    expect(sectorHref('/sector/batteries/assembly', { c: 'USA' }, { m: 'trade.exports' }, 'leaders')).toBe('/sector/batteries/assembly?c=USA&m=trade.exports#leaders');
   });
 
   it('a sub-component name round-trips with commas and is dropped when empty', () => {

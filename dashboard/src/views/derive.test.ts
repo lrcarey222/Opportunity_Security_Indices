@@ -12,11 +12,11 @@ import type { Table } from '../engine/types.ts';
 
 type Base = Omit<MetricRow, 'shown' | 'shown_ok'>;
 const row = (p: Partial<Base>): Base => ({
-  iso3c: 'AAA', Country: 'A', tech: 'Batteries', supply_chain: 'Midstream', value: 0.5, value_base: 0.4, delta: 0.1, ok: true, ok_base: true, reason: null, ...p,
+  iso3c: 'AAA', Country: 'A', tech: 'Batteries', supply_chain: 'Refining', value: 0.5, value_base: 0.4, delta: 0.1, ok: true, ok_base: true, reason: null, ...p,
 });
 
 describe('Overview: Show modes and colour domains', () => {
-  it('picks the scenario, the paper or the change, with its validity', () => {
+  it('picks the scenario, the NEIS baseline or the change, with its validity', () => {
     const rows = [row({}), row({ iso3c: 'BBB', ok_base: false }), row({ iso3c: 'CCC', ok: false, reason: null })];
     const sc = withShown(rows, 'scenario');
     expect(sc.map((r) => r.shown)).toEqual([0.5, 0.5, 0.5]);
@@ -51,14 +51,16 @@ describe('Overview: Show modes and colour domains', () => {
     expect(sideWords('median', 'eo', 'baseline', '0.42', 'economies shown')).toBe('at the median of the economies shown (0.42)');
     expect(sideWords('below', 'si_rank', 'scenario', '7', 'economies shown')).toMatch(/^nearer the top of its own list/);
     expect(sideWords('above', 'si_rank', 'change', '0', 'economies shown')).toBe('moved up its own list');
-    expect(sideWords('below', 'es', 'change', '0', 'economies shown')).toBe('fell against the paper');
+    expect(sideWords('below', 'es', 'change', '0', 'economies shown')).toBe('fell against the NEIS baseline');
+    expect(sideWords('above', 'eo', 'change', '0', 'economies shown')).toBe('rose against the NEIS baseline');
     expect(sideWords(null, 'es', 'scenario', '0', 'x')).toBeNull();
   });
 
   it('selects one technology and stage (PSI has one row per partner)', () => {
-    const rows = withShown([row({}), row({ tech: 'Solar' }), row({ supply_chain: 'Upstream' })], 'scenario');
-    expect(cellRows(rows, 'es', 'Batteries', 'Midstream')).toHaveLength(1);
-    expect(cellRows(rows, 'psi', 'Batteries', 'Midstream')).toHaveLength(3);
+    const rows = withShown([row({}), row({ tech: 'Solar' }), row({ supply_chain: 'Extraction' })], 'scenario');
+    expect(cellRows(rows, 'es', 'Batteries', 'Refining')).toHaveLength(1);
+    expect(cellRows(rows, 'es', 'Batteries', 'Extraction')).toHaveLength(1);
+    expect(cellRows(rows, 'psi', 'Batteries', 'Refining')).toHaveLength(3);
   });
 });
 
@@ -122,7 +124,9 @@ describe('formats', () => {
     expect(fmtRankChange(2)).toBe('↑ up 2');
     expect(fmtRankChange(-1)).toBe('↓ down 1');
     expect(fmtRankChange(0)).toBe('no change');
-    expect(stageSlug('Electric Vehicles', 'Midstream')).toBe('electric-vehicles-midstream');
+    // the pcell-<slug> chunk names of the six-stage Strategic bundle
+    expect(stageSlug('Electric Vehicles', 'Assembly')).toBe('electric-vehicles-assembly');
+    expect(stageSlug('Batteries', 'Refining')).toBe('batteries-refining');
   });
 });
 

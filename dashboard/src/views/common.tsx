@@ -11,6 +11,7 @@ import type { ShowMode } from '../state/url.ts';
 import { Select } from '../components/ui.tsx';
 import type { CountryOption } from '../components/CountrySelect.tsx';
 import { pageTitle } from '../shell/title.ts';
+import { stageLabel, stagesInChainOrder } from '../lib/stages.ts';
 
 /** The view's document title, unless it is embedded in another page that owns the title (IA refactor 2026-10-16). */
 export function useViewTitle(view: string, embedded?: boolean): void {
@@ -55,12 +56,31 @@ export function TechStageFilters({ techLabel = 'Technology', stageDisabled, tech
   return (
     <>
       <Select label={techLabel} value={tech} options={app.techs.map((t) => ({ value: t, label: t }))} onChange={setTech} disabled={techDisabled} title={title} />
-      <Select label="Stage" value={stage} options={app.stages.map((s) => ({ value: s, label: s }))} onChange={setStage} disabled={stageDisabled} className="min-w-[9rem]" title={title} />
+      <Select label="Stage" value={stage} options={app.stages.map((s) => ({ value: s, label: stageLabel(s) }))} onChange={setStage} disabled={stageDisabled} className="min-w-[9rem]" title={title} />
     </>
   );
 }
 
-export const showWord = (m: ShowMode): string => (m === 'baseline' ? 'Paper baseline values.' : m === 'change' ? 'Scenario minus the paper baseline.' : 'Scenario values.');
+export const showWord = (m: ShowMode): string => (m === 'baseline' ? 'NEIS baseline values.' : m === 'change' ? 'Scenario minus the NEIS baseline.' : 'Scenario values.');
+
+/** 'A', 'A and B', 'A, B and C'. */
+export function andList(xs: readonly string[]): string {
+  return xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
+}
+
+/**
+ * The stages an allied pick may take, in words (baseline_inputs.allied_stages: every stage but
+ * Deployment): "any stage but Deployment" when one stage of the build is left out, else the list in chain
+ * order. Null without the list.
+ */
+export function alliedStagesWords(allied: readonly string[] | null | undefined, stages: readonly string[]): string | null {
+  if (!allied || !allied.length) return null;
+  const set = new Set(allied);
+  const out = stages.filter((s) => !set.has(s));
+  if (out.length === 0) return 'any stage';
+  if (out.length === 1 && allied.every((s) => stages.includes(s))) return `any stage but ${stageLabel(out[0])}`;
+  return andList(stagesInChainOrder(allied).map(stageLabel));
+}
 
 /** Economy options grouped by coalition tier (for CountrySelect). */
 export function useCountryOptions(only?: (c: AppData['countries'][number]) => boolean): CountryOption[] {
@@ -86,8 +106,8 @@ export function shownValue(value: number | null, base: number | null, mode: Show
 /** The core payload's notes in reader-facing words. */
 export function noteText(n: string): string {
   if (/fossil/i.test(n)) return 'Coal, oil and gas are excluded from the Strategic Index and the partnership best-five summaries.';
-  if (/endowment screen off/i.test(n)) return 'The endowment screen is off: an upstream sector can be a member’s allied pick without recorded reserves or production of its resources.';
-  if (/baseline pillars/i.test(n)) return "Partnerships keep the paper's Energy Security and Economic Opportunity (category weights move those two scores and the Strategic Index only).";
+  if (/endowment screen off/i.test(n)) return 'The endowment screen is off: an extraction sector can be a member’s allied pick without recorded reserves or production of its resources.';
+  if (/baseline pillars/i.test(n)) return 'Partnerships keep the NEIS baseline Energy Security and Economic Opportunity (category weights move those two scores and the Strategic Index only).';
   return n;
 }
 
@@ -116,8 +136,8 @@ export function policyComponentName(key: string): string {
 
 /**
  * The bridge from a Strategic view to the same economy in Country Insights (spec_country.md A2.2): one
- * quiet link, "{Country} in Country Insights ->", to /countries/ISO3 (the paper's baseline there; the
- * Strategic scenario is not carried, Country Insights always shows the paper).
+ * quiet link, "{Country} in Country Insights ->", to /countries/ISO3 (the NEIS baseline there; the
+ * Strategic scenario is not carried, Country Insights always shows the baseline).
  */
 export function CountryInsightsLink({ iso3, country }: { iso3: string; country: string }) {
   return (
@@ -130,7 +150,7 @@ export function CountryInsightsLink({ iso3, country }: { iso3: string; country: 
   );
 }
 
-/** The endowment screen of a cell (resource_base): true / false in a screened upstream sector, null elsewhere. */
+/** The endowment screen of a cell (resource_base): true / false in a screened (Extraction) sector, null elsewhere. */
 export function resourceBaseText(rb: unknown, evidence?: unknown): string {
   if (rb === true) return typeof evidence === 'string' && evidence ? `yes (${evidence.toLowerCase()})` : 'yes';
   if (rb === false) return 'none recorded';

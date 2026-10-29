@@ -10,7 +10,7 @@ import { agreementList, agreementMembers, agreementTies, alignmentCounts, alignm
 import {
   comparedWords, crossLens, kindOf, KIND_LABEL, KIND_LENS_WORDS, LENS_IDS, LENS_LOADING, lensNames, lensNone, PARTNERSHIP_KINDS, readingWords, summaryLine, type LensNames,
 } from '../lenses.ts';
-import { odaPartners, odaRecipients, odaView } from '../oda.ts';
+import { aidItemsOfStage, aidSharedStages, aidStages, odaPartners, odaRecipients, odaView, type AidCellLink } from '../oda.ts';
 import { bareAcronymsInText } from '../../components/testing/acronyms.ts';
 
 const ready = (keys: string[]): LensNames => ({ status: 'ready', keys });
@@ -158,5 +158,32 @@ describe('aid flows (the Development lens, Today)', () => {
     ]);
     expect(odaRecipients(all)).toEqual([1]);
     expect(odaView(chunk, [], null).years).toBeNull();
+  });
+
+  it('six stages: a stage reads the aid sectors linked to its cells (energy at Deployment, industry at Refining, Components and Assembly, mining at Extraction, none at Recovery)', () => {
+    // items 0 energy, 1 mining, 2 industry, as scripts/87 links them (the pipeline's CRS purpose crosswalk);
+    // item 3 is the "All sectors" total, linked to no cell
+    const links: AidCellLink[] = [
+      { stage: 'Extraction', items: [1] },
+      { stage: 'Refining', items: [2] },
+      { stage: 'Components', items: [2] },
+      { stage: 'Assembly', items: [2] },
+      { stage: 'Deployment', items: [0] },
+      { stage: 'Recovery', items: [] },
+      { stage: 'Deployment', items: [0] },
+    ];
+    expect(aidItemsOfStage(links, [0, 1, 2], 'Deployment')).toEqual([0]);
+    expect(aidItemsOfStage(links, [0, 1, 2], 'Components')).toEqual([2]);
+    expect(aidItemsOfStage(links, [0, 1, 2], 'Extraction')).toEqual([1]);
+    expect(aidItemsOfStage(links, [0, 1, 2], 'Recovery')).toEqual([]);
+    // a legacy stage name matches no cell
+    expect(aidItemsOfStage(links, [0, 1, 2], 'Midstream')).toEqual([]);
+    // no stage: the three linked aid sectors, never the All sectors total (it would count them again)
+    expect(aidItemsOfStage(links, [0, 1, 2, 3], null)).toEqual([0, 1, 2]);
+    expect(aidItemsOfStage(links, [3, 2, 1, 0], null)).toEqual([2, 1, 0]);
+    expect(aidStages(links)).toEqual(['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment']);
+    // the same industry aid sits on three stages: never added across them
+    expect(aidSharedStages(links, [2], 'Components')).toEqual(['Refining', 'Assembly']);
+    expect(aidSharedStages(links, [0], 'Deployment')).toEqual([]);
   });
 });

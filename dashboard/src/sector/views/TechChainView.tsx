@@ -1,7 +1,10 @@
 // Technology chain /sector/:tech (spec_sector.md 4.2): the whole supply chain of one technology and
-// where in it concentration sits. (a) the chain concentration ladder (one share-split row per
-// country-level measure, grouped by stage, plus the minerals for clean-tech Upstream), (b) three stage
-// cards, (c) the minerals this technology uses (IEA demand, observed vs 2040 STEPS).
+// where in it concentration sits, at the six stages. (a) the chain concentration ladder (one share-split
+// row per country-level measure, grouped by stage in chain order, plus the mining of the minerals the
+// technology uses under Extraction and their refining under Refining, design C3), (b) the stage cards
+// (three by two on wide screens), (c) the codes kept out of the technology's trade baskets (listed for
+// the technology: they have no stage, design C6), (d) the minerals this technology uses (IEA demand,
+// observed vs 2040 STEPS).
 
 import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -10,8 +13,8 @@ import { TableView } from '../../components/TableView.tsx';
 import { PageHead } from '../../components/ui.tsx';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { useTitle } from '../../shell/title.ts';
-import { GROUP_COLOR, STAGE_COLOR } from '../../theme/palette.ts';
-import { FAMILY_SECTION, isTechSlug, STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, type StageSlug, type TechSlug } from '../contract.ts';
+import { GROUP_COLOR } from '../../theme/palette.ts';
+import { FAMILY_SECTION, isTechSlug, isTradeTechSlug, STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, type StageSlug, type TechSlug } from '../contract.ts';
 import { useModel } from '../data/SectorDataProvider.tsx';
 import type { ItemInfo, SectorModel, VarInfo } from '../data/model.ts';
 import type { FactsIndex } from '../data/facts.ts';
@@ -19,7 +22,11 @@ import { countryFamilies, coverageChips, familyMeasure, primaryMeasure } from '.
 import { growthKindWords, growthWords } from '../derive/concentration.ts';
 import { lc, fmtShare, listText } from '../format.ts';
 import { fmtFact, HowToRead, markGroup, measureConc, SPLIT_COLUMNS, SPLIT_READING, shareSplitRow, useHighlight } from './common.tsx';
-import { useFacts } from './data.ts';
+import { EXCLUDED_WORDS, excludedCodes } from '../derive/trade.ts';
+import { Disclosure } from '../../components/ui.tsx';
+import { ChunkGate } from './common.tsx';
+import { useFacts, useTrade } from './data.ts';
+import { MINERAL_STEP } from '../derive/minerals.ts';
 import { CoverageChips, Dumbbell, GroupLegend, SectorChartCard, ShareSplitChart, type CoverageChip, type DumbbellRow, type ShareSplitRow, type VarRef } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
 import { ChainNav } from './ChainNav.tsx';
@@ -81,25 +88,22 @@ function useLadder(tech: TechSlug, facts: FactsIndex | null): LadderRow[] {
           words: `${STAGE_LABELS[stage]} ${lc(v.short)}`,
         });
       }
-      // clean-tech Upstream: the minerals this technology uses (mining and refining, base year)
-      if (stage === 'upstream') {
+      // the minerals this technology uses: their mining under Extraction, their refining under Refining (base year)
+      const step = MINERAL_STEP[stage];
+      const v = step ? model.varById.get(step.id) : undefined;
+      if (step && v) {
         for (const { item: mineral } of model.itemsOfCell(cell.idx, 'mineral')) {
-          for (const id of ['production.mining', 'production.refining']) {
-            const v = model.varById.get(id);
-            if (!v) continue;
-            const year = baseYear(model, facts, v, mineral, state.eu);
-            if (year === null) continue;
-            const m = measureConc(model, facts, v, mineral, year, state.eu);
-            if (!m || m.conc.W === null) continue;
-            const step = id === 'production.mining' ? 'mining' : 'refining';
-            out.push({
-              row: shareSplitRow(model, v, mineral, m.conc, { id: `${mineral.slug}|${id}`, label: `${mineral.label} ${step}`, year, highlight, href: link(`/sector/minerals/${mineral.slug}`), section: stage }),
-              ref: { var: v.id, item: mineral.slug, year },
-              china: m.conc.split.china,
-              stage,
-              words: `${lc(mineral.label)} ${step}`,
-            });
-          }
+          const year = baseYear(model, facts, v, mineral, state.eu);
+          if (year === null) continue;
+          const m = measureConc(model, facts, v, mineral, year, state.eu);
+          if (!m || m.conc.W === null) continue;
+          out.push({
+            row: shareSplitRow(model, v, mineral, m.conc, { id: `${mineral.slug}|${step.id}`, label: `${mineral.label} ${step.words}`, year, highlight, href: link(`/sector/minerals/${mineral.slug}`), section: stage }),
+            ref: { var: v.id, item: mineral.slug, year },
+            china: m.conc.split.china,
+            stage,
+            words: `${lc(mineral.label)} ${step.words}`,
+          });
         }
       }
     }
@@ -120,7 +124,7 @@ function StageCard({ tech, stage, facts }: { tech: TechSlug; stage: StageSlug; f
   const s = v && year !== null ? model.summaryOf(item.idx, v.idx, year, state.eu) : null;
   const top3 = m?.fromFacts ? m.conc.rows.slice(0, 3) : [];
   return (
-    <article className="panel flex h-full flex-col p-4" style={{ borderTop: `3px solid ${STAGE_COLOR[STAGE_LABELS[stage]]}` }} aria-labelledby={`stage-${stage}`}>
+    <article className="panel flex h-full flex-col border-t-[3px] border-t-ink-500 p-4" aria-labelledby={`stage-${stage}`}>
       <h3 id={`stage-${stage}`} className="text-lg font-medium text-paper">
         {STAGE_LABELS[stage]}
       </h3>
@@ -221,6 +225,46 @@ export function MineralsUsed({ tech, headingLevel = 2 }: { tech: TechSlug; headi
   );
 }
 
+/**
+ * The codes the reference list keeps out of the technology's trade baskets, with the reason (design C6):
+ * listed once for the technology, since they have no supply-chain stage. Loads the technology's trade
+ * chunk (shared with the chain navigator); nothing when the technology has no basket or excludes nothing.
+ */
+export function ExcludedCodes({ tech }: { tech: TechSlug }) {
+  const model = useModel();
+  const has = isTradeTechSlug(tech) && STAGE_SLUGS.some((s) => model.cell(tech, s)?.has_trade);
+  const { h } = useTrade(tech, has);
+  if (!has) return null;
+  return (
+    <ChunkGate h={h} name={`sector-trade-${tech}`}>
+      {(t) => {
+        const rows = excludedCodes(t, TECH_LABELS[tech]);
+        if (!rows.length) return null;
+        return (
+          <section aria-labelledby="excluded-h" className="panel p-4" data-testid="excluded-codes">
+            <h2 id="excluded-h" className="text-base font-medium text-paper">
+              Codes kept out of the {TECH_LABELS[tech]} trade baskets
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm text-paper-mute">{EXCLUDED_WORDS} Each stage’s profile lists the codes its basket holds.</p>
+            <div className="mt-2">
+              <Disclosure summary={`${rows.length} code${rows.length === 1 ? '' : 's'} and the reasons`}>
+                <ul className="space-y-1 text-sm text-paper-dim">
+                  {rows.map((e) => (
+                    <li key={`${e.sub ?? ''}|${e.hs6}`}>
+                      <span className="tabular text-paper">{e.hs6}</span>
+                      {e.sub ? ` (${e.sub})` : ''}: {e.reason}
+                    </li>
+                  ))}
+                </ul>
+              </Disclosure>
+            </div>
+          </section>
+        );
+      }}
+    </ChunkGate>
+  );
+}
+
 export default function TechChainView() {
   const { tech: raw } = useParams();
   const model = useModel();
@@ -246,7 +290,7 @@ export default function TechChainView() {
         headingLevel={2}
         title="Where concentration sits along the chain"
         vars={ladder.map((r) => r.ref)}
-        subExtra={<HowToRead>{SPLIT_READING} Rows run from raw materials (upstream) to use (downstream), so the chart shows at which step one economy holds the most. Click a row for that sector.</HowToRead>}
+        subExtra={<HowToRead>{SPLIT_READING} Rows run along the chain, from extraction of the raw materials to deployment and recovery, so the chart shows at which step one economy holds the most. Click a row for that sector.</HowToRead>}
         table={() => (
           <TableView
             rows={ladder}
@@ -289,12 +333,13 @@ export default function TechChainView() {
         <h2 id="stages-h" className="sr-only">
           The stages of the chain
         </h2>
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stages.map((s) => (
             <StageCard key={s} tech={tech} stage={s} facts={facts} />
           ))}
         </div>
       </section>
+      <ExcludedCodes tech={tech} />
       <MineralsUsed tech={tech} />
     </div>
   );

@@ -4,12 +4,11 @@
 // supplier share across its nodes). Pure.
 
 import { isNum } from '../../lib/format.ts';
-import { stageRank } from '../../lib/stages.ts';
 import { AIB_CLASSES, inStrategicScope, type AibClass, type AibCompact, type AibNode } from '../contract.ts';
 import { classInfo, classOrder, policyNeedsText, type ClassInfo } from './classes.ts';
 import { nameOf } from './format.ts';
 import { constraintClasses, growthFlag, warnedGrowthBounds, warnedVariants } from './sensitivity.ts';
-import { nodeIndexFields, type Taxonomy } from './taxonomy.ts';
+import { nodeInCell, nodeStageRank, osiFields, technologiesOfNodes, type Taxonomy } from './taxonomy.ts';
 
 /** The nodes of the strategic scope, or every node with `all`. */
 export function scopedNodes(nodes: readonly AibNode[], all = false): AibNode[] {
@@ -19,16 +18,19 @@ export function scopedNodes(nodes: readonly AibNode[], all = false): AibNode[] {
 /** How many nodes lie outside the strategic scope. */
 export const outOfScopeCount = (nodes: readonly AibNode[]): number => nodes.filter((n) => !inStrategicScope(n)).length;
 
-/** Every technology (dictionary: sector) named by the nodes, alphabetical. */
+/**
+ * Every OSI technology the nodes' six-stage cells sit in, alphabetical, then 'Not in the OSI basket' when a
+ * node has no basket cell (taxonomy.ts technologiesOfNodes(): a node's technologies are equals).
+ */
 export function technologiesOf(nodes: readonly AibNode[]): string[] {
-  return [...new Set(nodes.flatMap((n) => n.techs))].sort((a, b) => a.localeCompare(b, 'en'));
+  return technologiesOfNodes(nodes);
 }
 
-/** Nodes in reading order: lost supply, largest first; then stage (chain order) and label. */
+/** Nodes in reading order: lost supply, largest first; then stage (chain order, of their earliest cell; no cell last) and label. */
 export function byLostSupply(a: AibNode, b: AibNode): number {
   const la = isNum(a.lostUsd) ? a.lostUsd : -1;
   const lb = isNum(b.lostUsd) ? b.lostUsd : -1;
-  return lb - la || stageRank(a.stage) - stageRank(b.stage) || a.label.localeCompare(b.label, 'en');
+  return lb - la || nodeStageRank(a) - nodeStageRank(b) || a.label.localeCompare(b.label, 'en');
 }
 
 export interface ClassGroup {
@@ -41,10 +43,12 @@ export interface ClassGroup {
 
 /**
  * The nodes grouped by class in the view order (every class of the order, empty groups included, then
- * any unknown class), optionally only those of one technology. Nodes within a group by lost supply.
+ * any unknown class), optionally only those with a cell of one OSI technology and / or at one stage
+ * (taxonomy.ts nodeInCell(): a node in several cells is in each; 'Not in the OSI basket': the nodes with no
+ * basket cell, under no stage). Nodes within a group by lost supply.
  */
-export function nodesByClass(nodes: readonly AibNode[], tech: string | null = null): ClassGroup[] {
-  const pick = tech ? nodes.filter((n) => n.techs.includes(tech)) : [...nodes];
+export function nodesByClass(nodes: readonly AibNode[], tech: string | null = null, stage: string | null = null): ClassGroup[] {
+  const pick = nodes.filter((n) => nodeInCell(n, tech, stage));
   const classes = [...new Set<string>([...AIB_CLASSES, ...pick.map((n) => n.cls)])].sort((a, b) => classOrder(a) - classOrder(b) || a.localeCompare(b));
   return classes.map((cls) => {
     const ns = pick.filter((n) => n.cls === cls).sort(byLostSupply);
@@ -74,16 +78,16 @@ export const mixedTreatments = (nodes: readonly AibNode[]): boolean => new Set(n
 export interface NodeRow {
   id: string;
   node: string;
-  /** the node's techs, "; "-joined: OSI technologies (master) or EIS sectors (dictionary) */
+  /** its OSI technologies, "; "-joined (the technologies of its six-stage cells, as equals), or 'Not in the OSI basket' */
   technologies: string;
-  /** the node comes from the electro-industrial dictionary: the CSV names its sectors and index */
-  dictionary: boolean;
-  /** its EIS index (dictionary; null otherwise) */
-  indexCode: string | null;
-  indexName: string | null;
-  /** the OSI cells its codes sit in ("; "-joined crosswalk ids; "" when none) */
+  /** the OSI cells its codes sit in ("; "-joined six-stage crosswalk ids; "" when none) */
   osiCells: string;
+  /** its electro-industrial dictionary sector (provenance; null in a master bundle or without the taxonomy) */
+  dictionarySector: string | null;
+  /** the stages of its OSI cells, "; "-joined in chain order ("" when none) */
   stage: string;
+  /** the AIB model's own stage for it (node.stage; it can differ from the stages of its cells) */
+  modelStage: string;
   cls: string;
   reason: string | null;
   /** the multi-label policy needs in words ("BUILD + MANAGE SPECIALIZATION", "none"; null in an older bundle) */
@@ -130,20 +134,19 @@ export interface NodeRow {
   compact: string | null;
 }
 
-/** A node's table and CSV row; `tx` (the bundle's taxonomy) adds the EIS index of a dictionary node. */
+/** A node's table and CSV row; `tx` (the bundle's taxonomy) adds the dictionary sector of a dictionary node (provenance). */
 export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>, tx?: Taxonomy): NodeRow {
   const modes = constraintClasses(n);
   const num = (x: number | null | undefined) => (isNum(x) ? x : null);
-  const ix = tx ? nodeIndexFields(tx, n) : { indexCode: null, indexName: null };
+  const place = osiFields({ dictionary: !!tx?.dictionary }, n);
   return {
     id: n.id,
     node: n.label,
-    technologies: n.techs.join('; '),
-    dictionary: !!tx?.dictionary,
-    indexCode: ix.indexCode,
-    indexName: ix.indexName,
-    osiCells: n.yfCells.join('; '),
-    stage: n.stage,
+    technologies: place.technologies,
+    osiCells: place.osiCells,
+    dictionarySector: place.dictionarySector,
+    stage: place.stages,
+    modelStage: place.modelStage,
     cls: n.cls,
     reason: n.reason,
     policyNeeds: policyNeedsText(n.policyNeeds),
@@ -186,16 +189,19 @@ export function nodeRow(n: AibNode, names: Readonly<Record<string, string>>, tx?
 }
 
 /**
- * The CSV columns of a node row, in plain words. A dictionary node: its sectors (never called
- * technologies), its EIS index and the OSI cells its codes sit in; a master node: its technologies.
+ * The CSV columns of a node row, in plain words: its OSI technologies (or 'Not in the OSI basket') and the
+ * six-stage OSI cells its codes sit in, then its electro-industrial dictionary sector as provenance (empty
+ * in a master bundle), the stages of its cells and the AIB model's own stage for it (aib_model_stage).
  */
 export function nodeCsvRow(r: NodeRow): Record<string, unknown> {
-  const place = r.dictionary ? { sectors: r.technologies, index_code: r.indexCode, index_name: r.indexName, osi_cells: r.osiCells } : { technologies: r.technologies };
   return {
     node_id: r.id,
     sub_sector: r.node,
-    ...place,
+    technologies: r.technologies,
+    osi_cells: r.osiCells,
+    dictionary_sector: r.dictionarySector,
     stage: r.stage,
+    aib_model_stage: r.modelStage,
     classification: r.cls,
     classification_reason: r.reason,
     policy_needs: r.policyNeeds,

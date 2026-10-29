@@ -16,25 +16,43 @@
 // Runtime checks: checkCountryManifest(), checkFactSheet(), checkMemoDoc() return problem strings;
 // validateFactSheet() throws CountryContractError. The R mirror is country_check_sheet()
 // (R/dashboard/country/country_check.R); both are fed the same broken fixtures.
+//
+// Schema 2 (2026-10-28, the six supply-chain stages): the sheets are keyed on the 66 cells of the 11
+// headline technologies x Extraction, Refining, Components, Assembly, Deployment, Recovery (lib/stages.ts,
+// R SUPPLY_CHAIN_STAGES); the sectors without an Energy Security score ship as `no_es_cells` (sheet and
+// manifest); `meta.cmfdi_stages` names the stages whose cells carry the same CM-FDI factory projects
+// (Components and Assembly); `policy.nipo.staged` false hides the per-sector NIPO lists until the NIPO
+// run is six-stage. Data and app ship together: a schema-1 (three-stage) sheet fails the checks.
+
+import { STAGE_LABEL, SUPPLY_STAGES, isSupplyStage, stageSlug, type SupplyStage, type SupplyStageSlug } from '../lib/stages.ts';
 
 // ---- Schema --------------------------------------------------------------------------------------
 
 export const COUNTRY_SCHEMA = 'osi-country';
 export const COUNTRY_FACTS_SCHEMA = 'osi-country-facts';
 export const COUNTRY_MEMO_SCHEMA = 'osi-country-memo';
-export const COUNTRY_SCHEMA_VERSION = 1;
+export const COUNTRY_SCHEMA_VERSION = 2;
 /** Relative to the app's base URL. Written only by scripts/88. */
 export const COUNTRY_DATA_DIR = 'data/country/';
 export const COUNTRY_MANIFEST_FILE = 'manifest.json';
 /** File names scripts/88 writes (and deletes when the manifest no longer lists them). */
 export const COUNTRY_FILE_RE = /^(facts|drivers|trade|memo)-[A-Z0-9]{3}\.[0-9a-f]{8}\.(json|pdf|docx|md)$/;
-/** gzip budgets in bytes (A10). */
-export const COUNTRY_BUDGET_GZ = { manifest: 20_480, sheet: 40_960, memoJson: 25_600, memoPdf: 409_600, memoDocx: 102_400, tradeMonthly: 25_600 } as const;
+/**
+ * gzip budgets in bytes (A10), equal to R COUNTRY_BUDGET_GZ (country_check.R). Six-stage export of
+ * 2026-10-28 (design E4: measured + ~15%, rounded up to a KiB): the largest sheet 51,998 B (JPN; 52,001 in
+ * the check-only run; median 37,621) -> sheet 60,416 (59 KiB; was 40,960 at three stages); the manifest
+ * 18,560 B -> 21,504 (21 KiB; was 20,480); the largest monthly trade file 17,043 B (USA) stays under 25,600.
+ * R also warns above 37,888 B a sheet (its sheet_target line, not a limit).
+ */
+export const COUNTRY_BUDGET_GZ = { manifest: 21_504, sheet: 60_416, memoJson: 25_600, memoPdf: 409_600, memoDocx: 102_400, tradeMonthly: 25_600 } as const;
 /** Path segments under /countries that are not ISO3 codes. */
 export const COUNTRY_RESERVED = ['about'] as const;
 
-/** The verbatim memo label (also in the manifest, from config/country_insights.yml). */
-export const MEMO_LABEL_PREFIX = 'AI-generated from the data and checked against it; paper baseline as of';
+/** The verbatim memo label (also in the manifest, from config/country_insights.yml; design E3: the NEIS baseline). */
+export const MEMO_LABEL_PREFIX = 'AI-generated from the data and checked against it; NEIS baseline as of';
+/** The label of the schema-1 memos (2026-10-14, three-stage sheets), which stay hidden as stale until rewritten (design K3);
+ *  checkMemoDoc() accepts it for a schema-1 memo only. Never shown. */
+export const MEMO_LABEL_PREFIX_V1 = 'AI-generated from the data and checked against it; paper baseline as of';
 
 // ---- Sectors ---------------------------------------------------------------------------------------
 
@@ -52,26 +70,30 @@ export const COUNTRY_TECHS = [
   { slug: 'solar', label: 'Solar' },
   { slug: 'wind', label: 'Wind' },
 ] as const;
-export const COUNTRY_STAGES = [
-  { slug: 'upstream', label: 'Upstream' },
-  { slug: 'midstream', label: 'Midstream' },
-  { slug: 'downstream', label: 'Downstream' },
-] as const;
+/** The six supply-chain stages in chain order (lib/stages.ts SUPPLY_STAGES; R COUNTRY_STAGES = SUPPLY_CHAIN_STAGES):
+ *  the slug is the lower-case id ("refining"), the label the id itself ("Refining", design S2). */
+export const COUNTRY_STAGES: readonly { slug: SupplyStageSlug; label: SupplyStage }[] = SUPPLY_STAGES.map((s) => ({
+  slug: stageSlug(s) as SupplyStageSlug,
+  label: STAGE_LABEL[s] as SupplyStage,
+}));
 export type CountryTechSlug = (typeof COUNTRY_TECHS)[number]['slug'];
-export type CountryStageSlug = (typeof COUNTRY_STAGES)[number]['slug'];
-export type StageLabel = (typeof COUNTRY_STAGES)[number]['label'];
+export type CountryStageSlug = SupplyStageSlug;
+export type StageLabel = SupplyStage;
+/** The stage labels in chain order (the fact sheet's `cells[].stage` and `policy.coverage.cols`). */
+export const COUNTRY_STAGE_LABELS: readonly StageLabel[] = COUNTRY_STAGES.map((s) => s.label);
+export const isStageLabel = (x: unknown): x is StageLabel => isSupplyStage(x);
 
-/** "batteries-midstream" (the Sector cellSlug() rule). */
+/** "batteries-refining" (the Sector cellSlug() rule). */
 export const cellKey = (tech: string, stage: string): string => `${tech}-${stage}`;
 
-/** The 33 cell keys in the Sector cell order (technology, then Upstream, Midstream, Downstream). */
+/** The 66 cell keys in the Sector cell order (technology, then the six stages in chain order). */
 export const COUNTRY_CELL_KEYS: readonly string[] = COUNTRY_TECHS.flatMap((t) => COUNTRY_STAGES.map((s) => cellKey(t.slug, s.slug)));
 const CELL_KEY_SET = new Set(COUNTRY_CELL_KEYS);
 export const isCellKey = (k: unknown): k is string => typeof k === 'string' && CELL_KEY_SET.has(k);
 /** Position of a cell key in the Sector cell order (-1 if unknown). */
 export const cellOrder = (k: string): number => COUNTRY_CELL_KEYS.indexOf(k);
 
-/** The (tech, stage) slugs of a cell key, or null. */
+/** The (tech, stage) slugs of a cell key, or null. No technology slug ends in a stage slug (R tests it). */
 export function parseCellKey(k: string): { tech: CountryTechSlug; stage: CountryStageSlug } | null {
   for (const s of COUNTRY_STAGES) {
     if (k.endsWith(`-${s.slug}`)) {
@@ -83,8 +105,26 @@ export function parseCellKey(k: string): { tech: CountryTechSlug; stage: Country
   return null;
 }
 
-/** The paper has no Energy Security score for these sectors (A9.1); at most 30 can be placed. */
-export const NO_ES_CELLS: readonly string[] = ['geothermal-upstream', 'geothermal-midstream', 'electric-grid-downstream'];
+/** The stage label of a cell key ("batteries-refining" -> "Refining"), or null. */
+export function stageOfCellKey(k: string): StageLabel | null {
+  const p = parseCellKey(k);
+  return p ? (COUNTRY_STAGES.find((s) => s.slug === p.stage)?.label ?? null) : null;
+}
+
+/**
+ * The sectors without an Energy Security score for any economy (A9.1; R COUNTRY_NO_ES_CELLS): scripts/88
+ * derives the list from the data, FAILs when it differs from this constant and ships it as `no_es_cells`
+ * in every sheet and in the manifest; prefer the shipped list (noEsCellsOf()). 8 of the 66, so at most 58
+ * sectors can be placed.
+ */
+export const NO_ES_CELLS: readonly string[] = [
+  'coal-recovery', 'electric-grid-deployment', 'gas-recovery', 'geothermal-extraction', 'geothermal-refining', 'geothermal-components', 'geothermal-assembly',
+  'geothermal-recovery',
+];
+
+/** The sheet's sectors without an Energy Security score: its shipped `no_es_cells`, else the constant. */
+export const noEsCellsOf = (sheet: { no_es_cells?: readonly string[] | null }): readonly string[] =>
+  Array.isArray(sheet.no_es_cells) ? sheet.no_es_cells : NO_ES_CELLS;
 
 // ---- Enums ----------------------------------------------------------------------------------------
 
@@ -93,14 +133,14 @@ export type Quadrant = 'grow' | 'upgrade' | 'secure' | 'watch';
  *  2026-10-15 Economic Opportunity runs across and Energy Security up, and high / low are against the
  *  country's own median sector (A9.2).
  *
- *  Display names (2026-10-28): the corners are the paper's three-stage reading, shown on the same pages as
- *  the six-stage posture (Secure / Compete / Deploy, with Catch up / Preserve / Partner and Watch), so the
- *  two corners whose names clashed with those words are shown as Exposed (key `secure`: low opportunity, low
- *  energy security) and Stable (key `watch`: low opportunity, high energy security). The keys are unchanged:
- *  they are a contract with R, the published fact sheets and the memo tokens. The app owns the display
- *  names: every display path reads `label` here and ignores the fact sheet's words.quadrant, which keeps
- *  the older names until the next Country export. `glossary` is the corner's glossary id (content/glossary.ts),
- *  which follows the display name. */
+ *  Display names (2026-10-28): the corners (recomputed on the 66 six-stage sectors since schema 2) are
+ *  shown on the same pages as the strategic posture (Secure / Compete / Deploy, with Catch up / Preserve /
+ *  Partner and Watch), so the two corners whose names clashed with those words are shown as Exposed (key
+ *  `secure`: low opportunity, low energy security) and Stable (key `watch`: low opportunity, high energy
+ *  security). The keys are unchanged: they are a contract with R, the published fact sheets and the memo
+ *  tokens. The app owns the display names: every display path reads `label` here and ignores the fact
+ *  sheet's words.quadrant (the memo tokens' words). `glossary` is the corner's glossary id
+ *  (content/glossary.ts), which follows the display name. */
 export const QUADRANTS: readonly {
   id: Quadrant;
   label: string;
@@ -242,6 +282,10 @@ export interface CountryManifest {
   /** false when built with --no-validate-bundles or --synthetic (the memo phase refuses such sheets) */
   validated: boolean;
   synthetic?: boolean;
+  /** schema 2: the sectors without an Energy Security score for any economy (as each sheet's `no_es_cells`) */
+  no_es_cells?: string[];
+  /** schema 2: the stages whose cells carry the same CM-FDI factory projects (["Components", "Assembly"]) */
+  cmfdi_stages?: string[];
   /** additive 2026-10-13: the GTA New Industrial Policy Observatory run the sheets list measures from */
   nipo?: { vintage: string | null; vintage_label: string | null } | null;
   countries: CountryEntry[];
@@ -284,6 +328,9 @@ export interface SheetMeta {
   trade_year: string;
   un_window: string;
   cmfdi_edition: string;
+  /** schema 2: the stages whose cells carry the same CM-FDI factory projects (Components and Assembly: the
+   *  data do not say which part of manufacturing a project serves); counts and totals count a project once */
+  cmfdi_stages: StageLabel[];
   memo_eligible: boolean;
 }
 
@@ -461,10 +508,11 @@ export interface Driver {
 export interface CellFacts {
   key: string;
   tech: string;
+  /** one of the six stages, the key's own */
   stage: StageLabel;
-  /** "Oil — Upstream" */
+  /** "Batteries — Refining" */
   label: string;
-  /** "upstream oil" (running text) */
+  /** "battery refining" (running text: R COUNTRY_TECH_PROSE as a modifier, then the lower-case stage) */
   label_prose: string;
   es: PillarFacts | null;
   eo: PillarFacts | null;
@@ -535,6 +583,7 @@ export interface NipoPolicy {
   /** mapping_confidence_mean (0.10 to 2; 0.75 or more is a clear fit) */
   confidence: Fv;
   techs: string[];
+  /** the NIPO run's own stage tags (three-stage words until the NIPO run is six-stage; never shown) */
   stages: string[];
   url: string | null;
   source: string | null;
@@ -558,9 +607,18 @@ export interface NipoFacts {
   vintage: string | null;
   /** e.g. "Global Trade Alert, New Industrial Policy Observatory, October 2026 extract (as of 5 October 2026)" */
   vintage_label: string | null;
-  /** the date "in force" is judged on (the paper baseline date) */
+  /** the date "in force" is judged on (the NEIS baseline date) */
   as_of: string;
   measure: string;
+  /**
+   * schema 2: the run's measures are matched to the six supply-chain stages. False while the NIPO run is
+   * still three-stage: the per-sector lists are hidden (cells, n_by_cell and policies empty, n_listed* 0)
+   * and only the economy's counts are kept (n_active, n_not_in_force, n_crosscut, EU / shared); `staged_d`
+   * says so in words. Absent in exports before schema 2 (treated as staged).
+   */
+  staged?: boolean;
+  /** the words for staged false (config nipo.not_staged_words), null when staged */
+  staged_d?: string | null;
   /** additive 2026-10-13: 'not_removed' (the user's rule and the default: no removal date or a later one, whatever the
    *  implementation date; measures not yet implemented are listed with in_force false) or 'in_force' (also implemented by
    *  as_of: the NIPO pipeline's rule; measures not yet implemented are counted, never listed) */
@@ -604,12 +662,13 @@ export interface PolicyFacts {
   pams_eu_records: Fv | null;
   coverage: {
     rows: string[];
+    /** the six stages in chain order */
     cols: StageLabel[];
-    /** records_specific per technology x stage */
+    /** records_specific per technology x stage (11 x 6) */
     specific: Fv[][];
     /** records_tech per technology */
     tech_any_stage: Fv[];
-    /** Critical Minerals records per stage (a PAMS tag outside the 33 sectors) */
+    /** Critical Minerals records per stage (a PAMS tag outside the 66 sectors) */
     critical_minerals: Fv[];
   };
   agreement: {
@@ -710,6 +769,8 @@ export interface FactSheet {
   src_map: { prefix: string; src: string }[];
   summary: Summary;
   cells: CellFacts[];
+  /** schema 2: the sectors without an Energy Security score for any economy (R country_no_es_cells(); noEsCellsOf()) */
+  no_es_cells: string[];
   priority_sectors: string[];
   priority_rule: PriorityRule;
   policy: PolicyFacts;
@@ -841,6 +902,7 @@ export function checkCountryManifest(x: unknown): string[] {
   if (x.schema !== COUNTRY_SCHEMA) p.add(`manifest.schema: expected '${COUNTRY_SCHEMA}'`);
   if (!isNumber(x.schema_version)) p.add('manifest.schema_version: not a number');
   else if (Math.floor(x.schema_version) > COUNTRY_SCHEMA_VERSION) p.add(`manifest: schema_version ${x.schema_version} needs a newer app`);
+  else if (Math.floor(x.schema_version) < COUNTRY_SCHEMA_VERSION) p.add(`manifest: schema_version ${x.schema_version} is an export from before the six supply-chain stages (this app reads ${COUNTRY_SCHEMA_VERSION})`);
   for (const k of ['created', 'as_of', 'as_of_label', 'label']) p.str(x[k], `manifest.${k}`);
   for (const k of ['git_commit', 'strategic_bundle_id', 'sector_bundle_id']) p.str(x[k], `manifest.${k}`, true);
   p.bool(x.validated, 'manifest.validated');
@@ -888,6 +950,12 @@ export function checkCountryManifest(x: unknown): string[] {
   if (!Array.isArray(x.sources)) p.add('manifest.sources: not an array');
   else x.sources.forEach((s, i) => checkSource(p, s, `manifest.sources[${i}]`));
   if (!Array.isArray(x.validation)) p.add('manifest.validation: not an array');
+  // schema 2 (six stages): the shipped no-Energy-Security sectors and the CM-FDI stages
+  if (x.no_es_cells !== undefined) {
+    if (!isStrArr(x.no_es_cells)) p.add('manifest.no_es_cells: not an array of strings');
+    else for (const k of x.no_es_cells) if (!isCellKey(k)) p.add(`manifest.no_es_cells: '${k}' is not a sector key`);
+  }
+  if (x.cmfdi_stages !== undefined && !(isStrArr(x.cmfdi_stages) && x.cmfdi_stages.every(isStageLabel))) p.add('manifest.cmfdi_stages: not supply-chain stages');
   return p.list;
 }
 
@@ -1097,6 +1165,7 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
   if (x.schema !== COUNTRY_FACTS_SCHEMA) p.add(`schema: expected '${COUNTRY_FACTS_SCHEMA}'`);
   if (!isNumber(x.schema_version)) p.add('schema_version: not a number');
   else if (Math.floor(x.schema_version) > COUNTRY_SCHEMA_VERSION) p.add(`schema_version ${x.schema_version} needs a newer app`);
+  else if (Math.floor(x.schema_version) < COUNTRY_SCHEMA_VERSION) p.add(`schema_version ${x.schema_version} is an export from before the six supply-chain stages (this app reads ${COUNTRY_SCHEMA_VERSION})`);
   if (!isStr(x.iso3)) p.add('iso3: not a string');
   const meta = x.meta;
   if (!isObj(meta)) {
@@ -1116,6 +1185,7 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
   for (const k of ['region', 'income_group', 'bloc', 'policy_basis', 'status_reason']) p.str(meta[k], `meta.${k}`, true);
   p.fv(meta.rank_threshold, 'meta.rank_threshold');
   p.fv(meta.alignment_s, 'meta.alignment_s');
+  if (!(isStrArr(meta.cmfdi_stages) && meta.cmfdi_stages.every(isStageLabel))) p.add('meta.cmfdi_stages: not supply-chain stages');
   if (entry) {
     if (entry.iso3 !== x.iso3) p.add(`iso3: ${String(x.iso3)} does not match the manifest's ${entry.iso3}`);
     if (entry.tier !== meta.tier) p.add('meta.tier: does not match the manifest');
@@ -1131,6 +1201,11 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
   };
 
   if (!Array.isArray(x.src_map)) p.add('src_map: not an array');
+
+  // the sectors without an Energy Security score: shipped (schema 2), else the constant (as R)
+  if (!isStrArr(x.no_es_cells)) p.add('no_es_cells: not an array of strings');
+  else for (const k of x.no_es_cells) if (!isCellKey(k)) p.add(`no_es_cells: '${k}' is not a sector key`);
+  const noEs: readonly string[] = isStrArr(x.no_es_cells) ? x.no_es_cells : NO_ES_CELLS;
 
   // cells
   const cells = x.cells;
@@ -1151,10 +1226,11 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
       }
       p.str(c.label, `${at}.label`);
       p.str(c.label_prose, `${at}.label_prose`);
-      p.oneOf(c.stage, COUNTRY_STAGES.map((s) => s.label), `${at}.stage`);
+      if (!isStageLabel(c.stage)) p.add(`${at}.stage: '${String(c.stage)}' is not a supply-chain stage`);
+      else if (isCellKey(c.key) && stageOfCellKey(c.key) !== c.stage) p.add(`${at}.stage: '${c.stage}' is not the stage of the key ${c.key}`);
       const hasEs = checkPillar(p, c.es, `${at}.es`);
       const hasEo = checkPillar(p, c.eo, `${at}.eo`);
-      if (isCellKey(c.key) && NO_ES_CELLS.includes(c.key) && c.es !== null) p.add(`${at}.es: the paper has no Energy Security score for ${c.key}`);
+      if (isCellKey(c.key) && noEs.includes(c.key) && c.es !== null) p.add(`${at}.es: no economy has an Energy Security score in this sector (no_es_cells: ${c.key})`);
       p.bool(c.placed, `${at}.placed`);
       p.oneOf(c.quadrant, QUADRANT_IDS, `${at}.quadrant`, true);
       if (c.placed === true) {
@@ -1340,6 +1416,7 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
       const t = sm.top_si as Obj;
       if (!isObj(t) || !isCellKey(t.cell)) p.add('summary.top_si.cell: not a sector key');
       else if (isStrArr(sio) && sio[0] !== t.cell) p.add('summary.top_si.cell: not the first of si_order');
+      if (isObj(t) && t.next !== null && t.next !== undefined && !isCellKey(t.next)) p.add(`summary.top_si.next: '${String(t.next)}' is not a sector key`);
     }
   }
 
@@ -1363,6 +1440,21 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
     const cov = pol.coverage;
     if (!isObj(cov) || !Array.isArray(cov.specific) || !isStrArr(cov.rows)) p.add('policy.coverage: malformed');
     else if (cov.specific.length !== cov.rows.length) p.add('policy.coverage.specific: one row per technology expected');
+    if (isObj(cov) && !(isStrArr(cov.cols) && cov.cols.length === COUNTRY_STAGE_LABELS.length && cov.cols.every((c, i) => c === COUNTRY_STAGE_LABELS[i]))) {
+      p.add('policy.coverage.cols: not the six supply-chain stages in chain order');
+    }
+    const np = pol.nipo;
+    if (isObj(np)) {
+      for (const part of ['cells', 'n_by_cell'] as const) {
+        const o = np[part];
+        if (isObj(o)) for (const k of Object.keys(o)) if (!isCellKey(k)) p.add(`policy.nipo.${part}: '${k}' is not a sector key`);
+      }
+      if (np.staged !== undefined) p.bool(np.staged, 'policy.nipo.staged');
+      const listed = (o: unknown) => (isObj(o) ? Object.keys(o).length : Array.isArray(o) ? o.length : 0);
+      if (np.staged === false && (listed(np.cells) || listed(np.n_by_cell) || listed(np.policies))) {
+        p.add('policy.nipo: per-sector measures listed although the run is not at the six stages (staged false)');
+      }
+    }
     const ag = pol.agreement;
     if (ag !== null && ag !== undefined) {
       if (!isObj(ag)) p.add('policy.agreement: not an object');
@@ -1451,13 +1543,20 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
     }
     const sm2 = pt.supplier_matrix;
     if (!isObj(sm2) || !isStrArr(sm2.partners) || !isStrArr(sm2.cells) || !Array.isArray(sm2.share)) p.add('partners.supplier_matrix: malformed');
-    else if (sm2.share.length !== sm2.partners.length) p.add('partners.supplier_matrix.share: one row per partner expected');
+    else {
+      if (sm2.share.length !== sm2.partners.length) p.add('partners.supplier_matrix.share: one row per partner expected');
+      for (const k of sm2.cells) if (!isCellKey(k)) p.add(`partners.supplier_matrix.cells: '${k}' is not a sector key`);
+    }
   }
 
   // pick, caveats, sources, checks
   if (x.pick !== null && x.pick !== undefined) {
     if (!isObj(x.pick) || !isStr(x.pick.cell)) p.add('pick: expected null or { cell, si, runner_up, margin, near_tie }');
-    else p.bool(x.pick.near_tie, 'pick.near_tie');
+    else {
+      p.bool(x.pick.near_tie, 'pick.near_tie');
+      if (!isCellKey(x.pick.cell)) p.add(`pick.cell: '${x.pick.cell}' is not a sector key`);
+      if (x.pick.runner_up !== null && x.pick.runner_up !== undefined && !isCellKey(x.pick.runner_up)) p.add(`pick.runner_up: '${String(x.pick.runner_up)}' is not a sector key`);
+    }
   }
   if (!Array.isArray(x.caveats)) p.add('caveats: not an array');
   else
@@ -1512,7 +1611,9 @@ export function checkMemoDoc(x: unknown, iso3?: string): string[] {
   if (!isNumber(x.schema_version) || Math.floor(x.schema_version) > COUNTRY_SCHEMA_VERSION) p.add('memo.schema_version: unsupported');
   if (iso3 && x.iso3 !== iso3) p.add(`memo.iso3: ${String(x.iso3)} is not ${iso3}`);
   for (const k of ['title', 'subtitle', 'label', 'as_of', 'facts_sha256']) p.str(x[k], `memo.${k}`);
-  if (isStr(x.label) && !x.label.startsWith(MEMO_LABEL_PREFIX)) p.add('memo.label: not the verbatim label');
+  // a schema-1 memo (written on the three-stage sheets; kept hidden as stale) carries the label of its day
+  const prefix = isNumber(x.schema_version) && Math.floor(x.schema_version) < COUNTRY_SCHEMA_VERSION ? MEMO_LABEL_PREFIX_V1 : MEMO_LABEL_PREFIX;
+  if (isStr(x.label) && !x.label.startsWith(prefix)) p.add('memo.label: not the verbatim label');
   if (!Array.isArray(x.summary)) p.add('memo.summary: not an array');
   else x.summary.forEach((it, i) => checkItem(p, it, `memo.summary[${i}]`));
   if (!Array.isArray(x.sections)) p.add('memo.sections: not an array');

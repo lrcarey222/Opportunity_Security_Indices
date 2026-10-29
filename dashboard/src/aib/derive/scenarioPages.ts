@@ -12,6 +12,7 @@ import { AIB_CLASSES, type AibCompact, type AibManagedScenarioDoc, type AibMeta,
 import { classInfo, classOrder, type ClassInfo } from './classes.ts';
 import { ALREADY_DIVERSIFIED, DIVERSIFIED, NO_BENCHMARK, WITHIN_CAP } from './diversify.ts';
 import { byLostSupply, type ClassGroup } from './nodes.ts';
+import { nodeInCell } from './taxonomy.ts';
 import {
   classMixText, compactDetail, compactScenario, comparableNodes, nodeScenario, scenarioInfo, scenarioTotals, SCENARIO_ORDER, type AibScenarioId, type CompactScenario, type NodeScenario,
   type ScenarioTotals,
@@ -127,13 +128,15 @@ const UNCHANGED_INFO: ClassInfo = {
 
 /**
  * The nodes grouped by their class under a scenario, in the class order (every class of the order, empty
- * groups included), optionally only those of one technology (sector); each group's lost (or shifted)
- * supply is the scenario's. Decoupling: the headline classes. Managed Interdependence: the class under the
- * scenario where it ran, then the unchanged nodes in their own group. Nodes within a group by that lost
- * supply, largest first.
+ * groups included), optionally only those with a cell of one OSI technology and / or at one stage
+ * (taxonomy.ts nodeInCell(): a node in several cells is in each; 'Not in the OSI basket': the nodes with no
+ * basket cell, under no stage); each group's lost (or shifted) supply is the
+ * scenario's. Decoupling: the headline classes. Managed Interdependence: the class under the scenario where
+ * it ran, then the unchanged nodes in their own group. Nodes within a group by that lost supply, largest
+ * first.
  */
-export function scenarioClassGroups(nodes: readonly AibNode[], id: AibScenarioId, tech: string | null = null): ScenarioClassGroup[] {
-  const pick = tech ? nodes.filter((n) => n.techs.includes(tech)) : [...nodes];
+export function scenarioClassGroups(nodes: readonly AibNode[], id: AibScenarioId, tech: string | null = null, stage: string | null = null): ScenarioClassGroup[] {
+  const pick = nodes.filter((n) => nodeInCell(n, tech, stage));
   const rows = pick.map((n) => nodeScenario(n, id));
   const lost = new Map(rows.map((r) => [r.node.id, isNum(r.lostUsd) ? r.lostUsd : 0]));
   const order = (a: AibNode, b: AibNode) => (lost.get(b.id) ?? 0) - (lost.get(a.id) ?? 0) || byLostSupply(a, b);

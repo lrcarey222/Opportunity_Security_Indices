@@ -180,35 +180,45 @@ sector_reported_trade <- function(tc, china = "CHN") {
 }
 
 # Mineral exports and export dependence (critical_minerals_trade_flows_tbl, one row per exporter x
-# mineral). Status: mirror (partner-reported), zero, obs. World = the sum over every exporter,
-# cross-checked against the processed market shares.
+# mineral x stage since 2026-10-27: ores and concentrates at Extraction, refined metal and chemicals at
+# Refining, scrap at Recovery). The item carries the stage (axis mineral_stage, "lithium-refining"):
+# each stage is its own basket with its own world total. Status: mirror (partner-reported), zero, obs.
+# World = the sum over every exporter of the mineral and stage, cross-checked against the processed
+# market shares. Returns also `pairs`: the (mineral slug, stage) pairs (the mineral_stage items).
 sector_facts_critmin <- function(fl) {
   sector_check_iso3(fl$iso3c, "critical_minerals_trade_flows_tbl")
   slug <- sector_mineral_slug(fl$mineral)
   if (anyNA(slug)) stop("critical minerals flows: unknown minerals ", paste(unique(fl$mineral[is.na(slug)]), collapse = ", "))
+  if (!"supply_chain" %in% names(fl)) stop("critical_minerals_trade_flows_tbl has no supply_chain (built before the six-stage minerals trade): rerun scripts/10")
+  stage <- as.character(fl$supply_chain)
+  bad <- !stage %in% SECTOR_CRITMIN_STAGES
+  if (any(bad)) stop("critical minerals flows: stages outside ", paste(SECTOR_CRITMIN_STAGES, collapse = ", "), ": ", paste(unique(stage[bad]), collapse = ", "))
   year <- as.integer(fl$Year)
-  item <- paste0("mineral:", slug)
+  item <- paste0("mineral_stage:", slug, "-", tolower(stage))
+  key <- paste(fl$iso3c, fl$mineral, stage)
   # A mirror row is from partners' declarations even when they declare nothing (a 0 there is no
   # report of zero by the economy itself): mirror, never zero.
   st <- ifelse(fl$export_source == "mirror", "mirror", ifelse(fl$exports == 0, "zero", "obs"))
-  a <- sector_fx("trade.critmin_exports", item, fl$iso3c, year, fl$exports, st, "critical_minerals_trade_flows_tbl", "exports",
-                 key = paste(fl$iso3c, fl$mineral))
+  a <- sector_fx("trade.critmin_exports", item, fl$iso3c, year, fl$exports, st, "critical_minerals_trade_flows_tbl", "exports", key = key)
   st2 <- ifelse(fl$export_source == "mirror", "mirror", ifelse(fl$exp_share == 0, "zero", "obs"))
   ok2 <- !is.na(fl$exp_share)
   b <- sector_fx("trade.critmin_dependence", item[ok2], fl$iso3c[ok2], year[ok2], fl$exp_share[ok2], st2[ok2],
-                 "critical_minerals_trade_flows_tbl", "exp_share", key = paste(fl$iso3c, fl$mineral)[ok2])
+                 "critical_minerals_trade_flows_tbl", "exp_share", key = key[ok2])
   w <- stats::aggregate(list(value = fl$exports), list(item_key = item, year = year), sum)
   world <- tibble::tibble(var = "trade.critmin_exports", item_key = w$item_key, year = as.integer(w$year), value = w$value, basis = "sum_all")
-  # Cross-check: exports / W = the processed market share.
+  # Cross-check: exports / W = the processed market share (per mineral and stage).
   W <- w$value[match(paste(item, year), paste(w$item_key, w$year))]
   rel <- abs(fl$exports / W - fl$market_share) / pmax(abs(fl$market_share), 1e-300)
   rel[fl$exports == 0 & fl$market_share == 0] <- 0
   out <- sector_result(dplyr::bind_rows(a$facts, b$facts), dplyr::bind_rows(a$ledger, b$ledger),
                        sector_excl("critical_minerals_trade_flows_tbl", "exp_share", "NA", sum(!ok2)))
-  c(out, list(world = world, check = list(max_rel = max(rel, na.rm = TRUE))))
+  c(out, list(world = world, check = list(max_rel = max(rel, na.rm = TRUE)), pairs = unique(tibble::tibble(mineral = slug, stage = stage))))
 }
 
 # ---- Reserves and potentials ---------------------------------------------------------------------------
+
+# Uranium (resources, mine production and the Red Book series) is the Nuclear Extraction cell.
+SECTOR_URANIUM_CELL <- "nuclear-extraction"
 
 # reserves_tbl: fuels (end-2020), minerals (USGS end-2025) and uranium resources (1 Jan 2025).
 # NA rows: listed-without-a-figure holders (unquantified: tibble(tech, ISO3166_alpha3)) ship as nq
@@ -232,7 +242,7 @@ sector_facts_reserves <- function(res, unquantified) {
   out[[2]] <- sector_fx("resources.mineral_reserves", paste0("mineral:", sector_mineral_slug(r$tech_name[sel])), r$iso3c[sel], 2025L,
                         ifelse(nq[sel], NaN, r$value[sel]), st[sel], "reserves_tbl", r$variable[sel], key = r$iso3c[sel])
   sel <- keep & uran
-  out[[3]] <- sector_fx("resources.uranium_resources", "cell:nuclear-upstream", r$iso3c[sel], 2025L,
+  out[[3]] <- sector_fx("resources.uranium_resources", paste0("cell:", SECTOR_URANIUM_CELL), r$iso3c[sel], 2025L,
                         r$value[sel], st[sel], "reserves_tbl", r$variable[sel], key = r$iso3c[sel])
   ex <- dplyr::bind_rows(
     sector_excl("reserves_tbl", "*", "NA (roster completion: economy not listed by the source)", sum(na & !nq)),
@@ -241,19 +251,27 @@ sector_facts_reserves <- function(res, unquantified) {
   sector_result(dplyr::bind_rows(lapply(out, `[[`, "facts")), dplyr::bind_rows(lapply(out, `[[`, "ledger")), ex)
 }
 
-# Solar, wind and geothermal potentials (static GIS layers; true year: the dataset label).
+# Solar, wind and geothermal potentials (static GIS layers; true year: the dataset label). The site
+# resource is the Deployment cell of its technology (where the plants are built); a processed table
+# filed at another stage stops.
 sector_facts_potential <- function(solar, wind, geo) {
   spec <- tibble::tribble(
     ~tbl, ~variable, ~var, ~cell,
-    "solar_pv_potential_tbl", "Solar PV power potential per sq km", "resources.pv_quality", "solar-downstream",
-    "solar_pv_potential_tbl", "Solar PV power potential", "resources.pv_area", "solar-downstream",
-    "wind_potential_tbl", "Wind power potential per sq km", "resources.wind_density", "wind-downstream",
-    "wind_potential_tbl", "Wind power potential", "resources.wind_area", "wind-downstream",
-    "wind_potential_tbl", "Wind power potential share over threshold", "resources.wind_share", "wind-downstream",
-    "geothermal_potential_tbl", "Geothermal total potential (MW)", "resources.geo_potential", "geothermal-downstream",
-    "geothermal_potential_tbl", "Geothermal LCOE (500 MW)", "resources.geo_lcoe_500", "geothermal-downstream",
-    "geothermal_potential_tbl", "Geothermal LCOE (5 GW)", "resources.geo_lcoe_5000", "geothermal-downstream"
+    "solar_pv_potential_tbl", "Solar PV power potential per sq km", "resources.pv_quality", "solar-deployment",
+    "solar_pv_potential_tbl", "Solar PV power potential", "resources.pv_area", "solar-deployment",
+    "wind_potential_tbl", "Wind power potential per sq km", "resources.wind_density", "wind-deployment",
+    "wind_potential_tbl", "Wind power potential", "resources.wind_area", "wind-deployment",
+    "wind_potential_tbl", "Wind power potential share over threshold", "resources.wind_share", "wind-deployment",
+    "geothermal_potential_tbl", "Geothermal total potential (MW)", "resources.geo_potential", "geothermal-deployment",
+    "geothermal_potential_tbl", "Geothermal LCOE (500 MW)", "resources.geo_lcoe_500", "geothermal-deployment",
+    "geothermal_potential_tbl", "Geothermal LCOE (5 GW)", "resources.geo_lcoe_5000", "geothermal-deployment"
   )
+  for (t in list(solar, wind, geo)) {
+    if ("supply_chain" %in% names(t)) {
+      st <- unique(as.character(sector_raw_rows(t)$supply_chain))
+      if (length(setdiff(st, c("Deployment", NA)))) stop("resource potentials filed at ", paste(setdiff(st, "Deployment"), collapse = ", "), ", not Deployment")
+    }
+  }
   src <- list(solar_pv_potential_tbl = sector_raw_rows(solar), wind_potential_tbl = sector_raw_rows(wind),
               geothermal_potential_tbl = sector_raw_rows(geo))
   rs <- lapply(seq_len(nrow(spec)), function(i) {
@@ -287,8 +305,11 @@ SECTOR_EIA_SOURCE <- "EIA International Energy Statistics"
 SECTOR_EI_PRODUCTION_VARS <- c(Oil = "oilprod_kbd", Gas = "gasprod_ej", Coal = "coalprod_ej")
 SECTOR_EI_CONSUMPTION_VARS <- c(Oil = "oil_tes_ej", Gas = "gas_tes_ej", Coal = "coal_tes_ej")
 # Per-fact notes (dict.caveats ids) whose var-level caveat is shown only where the build has such a
-# fact (sector_assemble()).
-SECTOR_DATA_CAVEATS <- c("eia_production", "eia_consumption", "production_assumed_zero", "fossil_assumed_zero", "ei_oil_shale")
+# fact (sector_assemble()): the EIA and assumed-zero notes, a figure the source gives once for
+# Components and Assembly (same_figure_pair) and the critical-minerals investment split
+# (cim_minerals_split).
+SECTOR_DATA_CAVEATS <- c("eia_production", "eia_consumption", "production_assumed_zero", "fossil_assumed_zero", "ei_oil_shale",
+                         "same_figure_pair", "cim_minerals_split")
 
 # Rows of a processed table whose source names the EIA International Energy Statistics.
 sector_cites_eia <- function(rows) {
@@ -349,22 +370,22 @@ sector_eia_check <- function(prod, eia_cells) {
 
 # ---- Production -------------------------------------------------------------------------------------
 
-# production_depth_momentum_tbl production_latest: fuels (Upstream), generation (Downstream) and
-# uranium (Nuclear Upstream, 2024). ei_present: tibble(ei_var, iso3) of EI rows present in the raw
+# production_depth_momentum_tbl production_latest: fuels (Extraction), generation (Deployment) and
+# uranium (Nuclear Extraction, 2024). ei_present: tibble(ei_var, iso3) of EI rows present in the raw
 # CSV for the latest year. A fuel value without an EI row is EIA's when the row's source names EIA
 # (obs or zero; obs_year = the EIA year from eia_cells, note eia_production), NA when neither gives
 # one (nsr, NaN), else the zero-fill of a table built before the EIA fill (nsr, 0); note ei_oil_shale
 # where EIA's value fails the comparability check (eia_cells eia_basis not_comparable). Generation EI does not report is still
 # the zero-fill (nsr). eia_cells: eia_intl_lookup() of sector_eia_gap_cells() (iso3, ei_var,
-# value, eia_year, eia_basis), or NULL. Mineral Upstream cells are a cross-mineral roll-up and are
-# not shipped.
+# value, eia_year, eia_basis), or NULL. The clean-tech Extraction and Refining cells hold a
+# cross-mineral roll-up and are not shipped.
 sector_facts_production <- function(pdm, ei_present, latest_year = 2025L, uranium_year = 2024L, eia_cells = NULL) {
   r <- sector_raw_rows(pdm)
   r <- r[r$variable == "production_latest", , drop = FALSE]
   cell <- paste(r$tech, r$supply_chain)
-  fuel_map <- c("Oil Upstream" = "oilprod_kbd", "Gas Upstream" = "gasprod_ej", "Coal Upstream" = "coalprod_ej")
-  gen_map <- c("Solar Downstream" = "solar_twh", "Wind Downstream" = "wind_twh", "Nuclear Downstream" = "nuclear_twh",
-               "Coal Downstream" = "electbyfuel_coal", "Gas Downstream" = "electbyfuel_gas", "Oil Downstream" = "electbyfuel_oil")
+  fuel_map <- c("Oil Extraction" = "oilprod_kbd", "Gas Extraction" = "gasprod_ej", "Coal Extraction" = "coalprod_ej")
+  gen_map <- c("Solar Deployment" = "solar_twh", "Wind Deployment" = "wind_twh", "Nuclear Deployment" = "nuclear_twh",
+               "Coal Deployment" = "electbyfuel_coal", "Gas Deployment" = "electbyfuel_gas", "Oil Deployment" = "electbyfuel_oil")
   pres <- paste(ei_present$ei_var, ei_present$iso3)
   out <- list()
   f <- r[cell %in% names(fuel_map), , drop = FALSE]
@@ -388,14 +409,17 @@ sector_facts_production <- function(pdm, ei_present, latest_year = 2025L, uraniu
                         ifelse(is.na(g$value), NaN, g$value),
                         ifelse(is.na(g$value), "nsr", ifelse(g$value > 0, "obs", ifelse(gp, "zero", "nsr"))),
                         "production_depth_momentum_tbl", "production_latest", key = paste(g$iso3c, g$tech, g$supply_chain))
-  u <- r[cell == "Nuclear Upstream", , drop = FALSE]
+  u <- r[cell == "Nuclear Extraction", , drop = FALSE]
   sector_check_iso3(u$iso3c, "production_depth_momentum_tbl uranium")
-  out[[3]] <- sector_fx("production.uranium", "cell:nuclear-upstream", u$iso3c, uranium_year, u$value,
+  out[[3]] <- sector_fx("production.uranium", paste0("cell:", SECTOR_URANIUM_CELL), u$iso3c, uranium_year, u$value,
                         ifelse(u$value > 0, "obs", "zero"), "production_depth_momentum_tbl", "production_latest", key = u$iso3c)
-  roll <- !cell %in% c(names(fuel_map), names(gen_map), "Nuclear Upstream")
+  roll <- !cell %in% c(names(fuel_map), names(gen_map), "Nuclear Extraction")
+  # Anything else must be the clean-tech mineral roll-up (Extraction or Refining): a new cell stops.
+  odd <- unique(cell[roll & !r$supply_chain %in% SECTOR_MINERAL_STAGES])
+  if (length(odd)) stop("production_depth_momentum_tbl production_latest: cells without a rule: ", paste(odd, collapse = ", "))
   c(sector_result(dplyr::bind_rows(lapply(out, `[[`, "facts")), dplyr::bind_rows(lapply(out, `[[`, "ledger")),
                   dplyr::bind_rows(
-                    sector_excl("production_depth_momentum_tbl", "production_latest", "mineral Upstream roll-up (not a quantity of one mineral)", sum(roll)),
+                    sector_excl("production_depth_momentum_tbl", "production_latest", "mineral Extraction / Refining roll-up (not a quantity of one mineral)", sum(roll)),
                     sector_excl("production_depth_momentum_tbl", "production_latest (fuels)",
                                 "NA: neither EI nor EIA reports a comparable value (shipped as nsr, NaN)", sum(is.na(f$value))))),
     list(notes = notes))
@@ -556,8 +580,41 @@ sector_facts_balance <- function(idp, ei_present = NULL, year = 2025L, eia_cells
 
 # ---- Manufacturing and EV regions --------------------------------------------------------------------
 
-SECTOR_ETP_TECH <- c(Solar = "solar-midstream", Wind = "wind-midstream", Batteries = "batteries-midstream",
-                     Electrolyzers = "green-hydrogen-midstream", `Green Hydrogen` = "green-hydrogen-midstream")
+# IEA ETP technologies -> tech slugs; the stage is the row's (the IEA files battery capacity as
+# Components, solar, wind and electrolyser capacity as Assembly).
+SECTOR_ETP_TECH <- c(Solar = "solar", Wind = "wind", Batteries = "batteries", Electrolyzers = "green-hydrogen", `Green Hydrogen` = "green-hydrogen")
+
+# The per-fact note of a value the source gives once for a technology's manufacturing (Components and
+# Assembly carry the same figure: manufacturing capex, the IEA ETP capacity shares; user decision C2,
+# 2026-10-28): shown on both cells, never added across them (headline sums count it once,
+# sector_count_once()).
+SECTOR_PAIR_NOTE <- "same_figure_pair"
+
+# Rows of `rows` (columns tech_col, stage_col, by) at one manufacturing stage only, copied onto the other
+# (the pipeline's rule, supply_chain_fill_manufacturing_pair()); a pair present at both stages must hold
+# the same value (stops otherwise). Returns rows with `pair` TRUE on every row of a Components /
+# Assembly pair.
+sector_pair_fill <- function(rows, by, value_col = "value", stage_col = "supply_chain", label = "manufacturing pair") {
+  pair <- SUPPLY_CHAIN_MANUFACTURING_STAGES
+  rows$pair <- rows[[stage_col]] %in% pair
+  if (!any(rows$pair)) return(rows)
+  key <- do.call(paste, c(unname(as.list(rows[by])), sep = "\r"))
+  p <- rows$pair
+  n_st <- tapply(rows[[stage_col]][p], key[p], function(s) length(unique(s)))
+  both <- key %in% names(n_st)[n_st == 2]
+  if (any(both & p)) {
+    v <- tapply(rows[[value_col]][both & p], key[both & p], function(x) length(unique(x)))
+    if (any(v > 1)) stop("sector_pair_fill(", label, "): Components and Assembly differ for ", sum(v > 1), " figure(s), e.g. ",
+                         gsub("\r", " / ", names(v)[v > 1][1]))
+  }
+  lone <- p & !both
+  if (any(lone)) {
+    add <- rows[lone, , drop = FALSE]
+    add[[stage_col]] <- ifelse(add[[stage_col]] == pair[1], pair[2], pair[1])
+    rows <- dplyr::bind_rows(rows, add)
+  }
+  rows
+}
 
 sector_etp_entity <- function(iso3, eu_members) {
   ifelse(iso3 %in% c(eu_members, "EUU"), "E:iea_etp:eu",
@@ -567,50 +624,72 @@ sector_etp_entity <- function(iso3, eu_members) {
 
 # IEA ETP shares: current (major_supplier_shares_tbl iea_manufacturing_capacity world_share) and
 # announced 2035 (foreign_dependency_tbl Market Share, EU members carry the EU value). A 0 means
-# "under 1% or not reported" (status nq, value kept).
+# "under 1% or not reported" (status nq, value kept). The IEA reports one share per technology's
+# manufacturing: the pipeline files it at one manufacturing stage and copies it onto the other
+# (supply_chain_fill_manufacturing_pair(): foreign_dependency_tbl holds the copies, explanation
+# "; copied from"; major_supplier_shares_tbl only the filed rows, which sector_pair_fill() copies the
+# same way). Both cells ship the figure, each with the note same_figure_pair.
 sector_facts_mfg <- function(fd, mss, eu_members) {
   s <- mss[mss$measure == "iea_manufacturing_capacity", , drop = FALSE]
   ent <- sector_etp_entity(s$iso3, eu_members)
   if (anyNA(ent)) stop("IEA manufacturing capacity: unknown entities ", paste(unique(s$iso3[is.na(ent)]), collapse = ", "))
-  cell <- SECTOR_ETP_TECH[s$tech]
-  if (anyNA(cell)) stop("IEA manufacturing capacity: unknown techs ", paste(unique(s$tech[is.na(cell)]), collapse = ", "))
-  a <- sector_fx("manufacturing.share_now", paste0("cell:", cell), ent, as.integer(s$year), s$world_share,
-                 ifelse(s$world_share == 0, "nq", "obs"), "major_supplier_shares_tbl", "iea_manufacturing_capacity",
-                 key = paste(s$iso3, s$tech))
+  tslug <- SECTOR_ETP_TECH[s$tech]
+  if (anyNA(tslug)) stop("IEA manufacturing capacity: unknown techs ", paste(unique(s$tech[is.na(tslug)]), collapse = ", "))
+  if (!all(s$supply_chain %in% SUPPLY_CHAIN_MANUFACTURING_STAGES)) stop("IEA manufacturing capacity filed outside Components and Assembly")
+  s <- tibble::tibble(iso3 = s$iso3, entity = ent, tslug = unname(tslug), tech = s$tech, supply_chain = as.character(s$supply_chain),
+                      year = as.integer(s$year), value = s$world_share)
+  s <- sector_pair_fill(s, c("entity", "tslug", "year"), label = "IEA ETP current shares")
+  a <- sector_fx("manufacturing.share_now", paste0("cell:", s$tslug, "-", tolower(s$supply_chain)), s$entity, s$year, s$value,
+                 ifelse(s$value == 0, "nq", "obs"), "major_supplier_shares_tbl", "iea_manufacturing_capacity",
+                 key = paste(s$iso3, s$tech, s$supply_chain))
+  na <- sector_fact_notes(a$facts, ifelse(s$pair, SECTOR_PAIR_NOTE, NA_character_))
   r <- sector_raw_rows(fd)
   r <- r[r$variable == "Market Share", , drop = FALSE]
-  # Each share is also copied onto the other manufacturing stage for scoring
-  # (supply_chain_fill_manufacturing_pair(), whose copies' explanation carries "; copied from ");
-  # the facts and the exclusion counts take the filed row only.
-  r <- r[!grepl("; copied from ", as.character(r$explanation), fixed = TRUE), , drop = FALSE]
   heat <- !r$tech %in% names(SECTOR_ETP_TECH)
   r <- r[!heat, , drop = FALSE]
+  if (!all(r$supply_chain %in% SUPPLY_CHAIN_MANUFACTURING_STAGES)) stop("IEA 2035 shares filed outside Components and Assembly")
   r$entity <- sector_etp_entity(r$iso3c, eu_members)
   if (anyNA(r$entity)) stop("IEA 2035 shares: unknown economies ", paste(unique(r$iso3c[is.na(r$entity)]), collapse = ", "))
-  d <- sector_debroadcast(r[c("entity", "tech", "value", "iso3c")], c("entity", "tech"), "IEA 2035 shares (EU members)")
-  b <- sector_fx("manufacturing.share_2035", paste0("cell:", SECTOR_ETP_TECH[d$tech]), d$entity, 2035L, d$value,
-                 ifelse(d$value == 0, "nq", "obs"), "foreign_dependency_tbl", "Market Share", key = paste(d$entity, d$tech))
+  r$copy <- grepl("; copied from ", as.character(r$explanation), fixed = TRUE)
+  d <- sector_debroadcast(r[c("entity", "tech", "supply_chain", "value", "iso3c", "copy")], c("entity", "tech", "supply_chain"), "IEA 2035 shares (EU members)")
+  d$tslug <- unname(SECTOR_ETP_TECH[d$tech])
+  n_eu_copies <- nrow(r) - nrow(d)
+  d <- sector_pair_fill(d, c("entity", "tslug"), label = "IEA ETP 2035 shares")
+  b <- sector_fx("manufacturing.share_2035", paste0("cell:", d$tslug, "-", tolower(d$supply_chain)), d$entity, 2035L, d$value,
+                 ifelse(d$value == 0, "nq", "obs"), "foreign_dependency_tbl", "Market Share", key = paste(d$entity, d$tech, d$supply_chain))
+  nb <- sector_fact_notes(b$facts, ifelse(d$pair, SECTOR_PAIR_NOTE, NA_character_))
   world <- unique(dplyr::bind_rows(a$facts, b$facts)[c("var", "item_key", "year")])
   world$value <- 1
   world$basis <- "one"
   c(sector_result(dplyr::bind_rows(a$facts, b$facts), dplyr::bind_rows(a$ledger, b$ledger),
                   dplyr::bind_rows(sector_excl("foreign_dependency_tbl", "Market Share", "Heat Pumps (no cell)", sum(heat)),
-                                   sector_excl("foreign_dependency_tbl", "Market Share", "EU member copies of the EU value", nrow(r) - nrow(d)))),
-    list(world = world))
+                                   sector_excl("foreign_dependency_tbl", "Market Share", "EU member copies of the EU value", n_eu_copies))),
+    list(world = world, notes = dplyr::bind_rows(na, nb)))
 }
 
+# The IEA EV region measures and the cell each is filed at in market_share_manufacturing_tbl:
+# production and the net-export ratio at Assembly (vehicle plants), sales at Deployment (the series
+# of sector_iea_ev_series() follow the same cells; scripts/87 checks facts and series agree).
+SECTOR_EV_REGION_CELLS <- c(Domestic.Production = "electric-vehicles-assembly", net_export_ratio = "electric-vehicles-assembly",
+                            Domestic.sales = "electric-vehicles-deployment")
+
 # IEA EV regions (market_share_manufacturing_tbl): production, sales and the net-export ratio, one
-# value per region (the region from the row's explanation; copies asserted identical).
+# value per region (the region from the row's explanation; copies asserted identical), on the cell
+# the processed table files each at (SECTOR_EV_REGION_CELLS; any other stops).
 sector_facts_ev_regions <- function(msm, year = 2024L) {
   r <- sector_raw_rows(msm)
   r <- r[r$tech == "Electric Vehicles" & r$variable %in% c("Domestic.Production", "Domestic.sales", "net_export_ratio"), , drop = FALSE]
   r$region <- sub("^.*IEA region: ([^(]+?) \\(.*$", "\\1", r$explanation)
   bad <- !r$region %in% names(SECTOR_EV_REGIONS)
   if (any(bad)) stop("EV regions: unknown region text ", paste(utils::head(unique(r$region[bad]), 3), collapse = "; "))
-  d <- sector_debroadcast(r[c("region", "variable", "value")], c("region", "variable"), "IEA EV regions")
+  r$cell <- sector_cell_slug(r$tech, r$supply_chain)
+  off <- r$cell != SECTOR_EV_REGION_CELLS[r$variable]
+  if (any(off)) stop("EV regions: market_share_manufacturing_tbl files ", paste(unique(paste(r$variable[off], r$cell[off])), collapse = ", "),
+                     "; SECTOR_EV_REGION_CELLS expects ", paste(names(SECTOR_EV_REGION_CELLS), SECTOR_EV_REGION_CELLS, collapse = ", "))
+  d <- sector_debroadcast(r[c("region", "variable", "cell", "value")], c("region", "variable"), "IEA EV regions")
   vmap <- c(Domestic.Production = "production.ev_region", Domestic.sales = "production.ev_region_sales",
             net_export_ratio = "manufacturing.ev_net_export_ratio")
-  x <- sector_fx(unname(vmap[d$variable]), "cell:electric-vehicles-midstream", paste0("R:iea_ev:", SECTOR_EV_REGIONS[d$region]),
+  x <- sector_fx(unname(vmap[d$variable]), paste0("cell:", d$cell), paste0("R:iea_ev:", SECTOR_EV_REGIONS[d$region]),
                  year, d$value, ifelse(d$value == 0, "zero", "obs"), "market_share_manufacturing_tbl", d$variable, key = d$region)
   region_of <- stats::setNames(r$region, r$iso3c)
   region_of <- region_of[!duplicated(names(region_of))]
@@ -621,17 +700,55 @@ sector_facts_ev_regions <- function(msm, year = 2024L) {
 # ---- Investment -------------------------------------------------------------------------------------
 
 # investment_momentum_tbl annual investment, 2018-2025. 2025 includes estimated Q4 construction
-# starts for wind, solar and critical minerals (CIM README): those rows are `est`.
+# starts for wind, solar and critical minerals (CIM README): those rows are `est`; the
+# critical-minerals capex is the Refining cells of Batteries and Electric Vehicles (the monitor's
+# processing plants, split between the two by their demand shares: per-fact note cim_minerals_split).
+# Manufacturing capex has no product detail, so the pipeline replicates it onto Components and
+# Assembly (its explanation says so): both cells ship it with the note same_figure_pair, and
+# investment@1 counts it once (sector_count_once()). A pair whose two values differ stops.
 sector_facts_investment <- function(im, est_year = 2025L) {
   r <- sector_raw_rows(im)
   a <- r[r$variable == "Annual Investment (USD bn, 2024$)", , drop = FALSE]
   sector_check_iso3(a$iso3c, "investment_momentum_tbl")
-  est <- a$Year == est_year & (a$tech %in% c("Solar", "Wind") | a$supply_chain == "Upstream")
+  est <- a$Year == est_year & (a$tech %in% c("Solar", "Wind") | a$supply_chain == "Refining")
   x <- sector_fx("investment.annual", paste0("cell:", sector_cell_slug(a$tech, a$supply_chain)), a$iso3c, as.integer(a$Year), a$value,
                  ifelse(est, "est", ifelse(a$value == 0, "zero", "obs")), "investment_momentum_tbl", "Annual Investment (USD bn, 2024$)",
                  key = paste(a$iso3c, a$tech, a$supply_chain, a$Year))
+  ex <- as.character(a$explanation)
+  pair <- a$supply_chain %in% SUPPLY_CHAIN_MANUFACTURING_STAGES & grepl("replicated onto Components and Assembly", ex, fixed = TRUE)
+  if (any(pair)) {
+    k <- paste(a$iso3c, a$tech, a$Year)[pair]
+    n_v <- tapply(a$value[pair], k, function(v) length(unique(v)))
+    n_s <- tapply(a$supply_chain[pair], k, function(s) length(unique(s)))
+    if (any(n_v > 1) || any(n_s != 2)) stop("investment_momentum_tbl: replicated manufacturing capex differs between Components and Assembly, or one stage is missing (",
+                                            paste(utils::head(names(n_v)[n_v > 1 | n_s != 2], 3), collapse = "; "), ")")
+  }
+  split <- a$supply_chain == "Refining" & grepl("split between Batteries and Electric Vehicles", ex, fixed = TRUE)
+  notes <- dplyr::bind_rows(sector_fact_notes(x$facts, ifelse(pair, SECTOR_PAIR_NOTE, NA_character_)),
+                            sector_fact_notes(x$facts, ifelse(split, "cim_minerals_split", NA_character_)))
   other <- r$variable != "Annual Investment (USD bn, 2024$)"
-  sector_result(x$facts, x$ledger, sector_excl("investment_momentum_tbl", "momentum and raw stage sums", "a transform / mixed units", sum(other)))
+  c(sector_result(x$facts, x$ledger, sector_excl("investment_momentum_tbl", "momentum and raw stage sums", "a transform / mixed units", sum(other))),
+    list(notes = notes))
+}
+
+# The facts a headline sum may add: every row except the Assembly copy of a figure the source gives once
+# for Components and Assembly (note same_figure_pair), so it is counted once. notes: facts.notes rows.
+sector_count_once <- function(facts, notes) {
+  if (is.null(notes) || !nrow(notes) || !nrow(facts)) return(facts)
+  n <- notes[notes$note == SECTOR_PAIR_NOTE, , drop = FALSE]
+  copy <- paste(facts$var, facts$item_key, facts$geo, facts$year) %in% paste(n$var, n$item_key, n$geo, n$year) &
+    endsWith(facts$item_key, "-assembly")
+  facts[!copy, , drop = FALSE]
+}
+
+# The slices (var, item_key, year) that are wholly the Assembly copy of a same_figure_pair figure: every
+# fact of the slice is dropped by sector_count_once(). A headline count of measures counts such a slice
+# once, at Components. Returns paste(var, item_key, year, sep = "\r") keys.
+sector_pair_copy_slices <- function(facts, notes) {
+  if (is.null(notes) || !nrow(notes) || !nrow(facts)) return(character())
+  key <- function(f) paste(f$var, f$item_key, f$year, sep = "\r")
+  kept <- key(sector_count_once(facts, notes))
+  setdiff(unique(key(facts)), kept)
 }
 
 # ---- Future demand: WEO world supply, IEA GEVO EV cars ---------------------------------------------
@@ -652,7 +769,9 @@ sector_facts_future <- function(fdm, ev_min_base = 1000) {
                  formula_value = v24, key = v35$tech)
   ev <- r[r$source == "IEA Global EV Outlook 2026" & r$tech == "Electric Vehicles", , drop = FALSE]
   sector_check_iso3(ev$iso3c, "future_demand_tbl GEVO")
-  cell <- "cell:electric-vehicles-downstream"
+  # Car sales and stock: the Deployment cell (as the processed table files them).
+  if (length(setdiff(unique(ev$supply_chain), "Deployment"))) stop("future_demand_tbl GEVO rows filed outside Electric Vehicles Deployment")
+  cell <- "cell:electric-vehicles-deployment"
   pick <- function(vn) ev[ev$variable == vn & !is.na(ev$value), , drop = FALSE]
   lvl <- list()
   for (spec in list(c("sales_2025", "consumption.ev_sales", 2025), c("sales_2035", "consumption.ev_sales", 2035),
@@ -703,15 +822,18 @@ sector_facts_prices <- function(ep, commodities, year = 2025L) {
   ))
 }
 
-# cost_competitiveness_tbl: wages per (economy, stage activity), the lending rate and PPI y/y per
-# economy; copies across technologies (and stages) collapse; obs_year = the observation year.
+# cost_competitiveness_tbl: wages per (economy, ILO activity), the lending rate and PPI y/y per
+# economy; copies across technologies and stages collapse (the six stages read three ILO activities:
+# SECTOR_ACTIVITY_OF_STAGE; the stages of one activity must agree); obs_year = the observation year.
 sector_facts_costs <- function(cc, nominal_year = 2025L) {
   r <- sector_raw_rows(cc)
   sector_check_iso3(r$iso3c[!is.na(r$value)], "cost_competitiveness_tbl")
   w <- r[r$variable == "earnings_usd" & !is.na(r$value), c("iso3c", "supply_chain", "value", "Year")]
-  w <- sector_debroadcast(w, c("iso3c", "supply_chain"), "wages (techs)", c("value", "Year"))
-  a <- sector_fx("prices.wages", paste0("activity:", tolower(w$supply_chain)), w$iso3c, nominal_year, w$value, "obs",
-                 "cost_competitiveness_tbl", "earnings_usd", obs_year = as.integer(w$Year), key = paste(w$iso3c, w$supply_chain))
+  w$activity <- unname(SECTOR_ACTIVITY_OF_STAGE[as.character(w$supply_chain)])
+  if (anyNA(w$activity)) stop("cost_competitiveness_tbl earnings_usd: stages without an ILO activity: ", paste(unique(w$supply_chain[is.na(w$activity)]), collapse = ", "))
+  w <- sector_debroadcast(w, c("iso3c", "activity"), "wages (techs and the stages of one activity)", c("value", "Year"))
+  a <- sector_fx("prices.wages", paste0("activity:", w$activity), w$iso3c, nominal_year, w$value, "obs",
+                 "cost_competitiveness_tbl", "earnings_usd", obs_year = as.integer(w$Year), key = paste(w$iso3c, w$activity))
   one <- function(vn, var) {
     x <- r[r$variable == vn & !is.na(r$value), c("iso3c", "value", "Year")]
     x <- sector_debroadcast(x, "iso3c", paste(vn, "(techs x stages)"), c("value", "Year"))
@@ -739,6 +861,7 @@ sector_facts_trl <- function(tr, year = 2025L) {
   x <- sector_fx(unname(vmap[d$variable]), paste0("cell:", sector_cell_slug(d$tech, d$supply_chain)), "WLD", year, d$value, "obs",
                  "technological_readiness_tbl", d$variable, key = paste(d$tech, d$supply_chain))
   fb <- d[d$variable == "TRL 2025" & !grepl("Stage-specific", d$explanation), , drop = FALSE]
+  fb <- fb[order(match(fb$tech, SECTOR_TECH_LABELS), match(fb$supply_chain, SUPPLY_CHAIN_STAGES)), , drop = FALSE]
   c(sector_result(x$facts, x$ledger, sector_excl("technological_readiness_tbl", "*", "copies across economies", nrow(r) - nrow(d))),
     list(fallback = paste(fb$tech, fb$supply_chain)))
 }

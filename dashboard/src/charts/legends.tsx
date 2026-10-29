@@ -89,7 +89,7 @@ export function RampLegend({
 
 export interface TriLegendProps {
   scale: TriScale;
-  /** what the colour shows ("Energy Security, Batteries Midstream") */
+  /** what the colour shows ("Energy Security, Batteries Refining") */
   label: string;
   format: (v: number) => string;
   /** the things counted in "median of the {n} {noun} shown" (default "values") */

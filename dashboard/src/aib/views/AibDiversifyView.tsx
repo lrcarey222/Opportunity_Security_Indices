@@ -6,12 +6,12 @@
 // the allied demand in those nodes, what trade restores, what is left for new capacity, the most-capped
 // suppliers); the chart of the nodes where the scenario ran, largest capacity gap first (current vs
 // benchmark concentration on one HHI axis; the allied demand split to scale: kept / restored by trade / new
-// capacity), with its table twin; and the table of every node (filters by index and sector, URL `index` and
-// `sector`, shared with the chart; `all=1` includes the nodes the scenario did not diversify, shown with
-// their status and without the run columns; the class under the scenario with its physical-capability
-// flag), CSV (shock: the scenario's id). Each node links
-// to its compact (#nodes) and to the Sector Profiles of its three-stage OSI cells. Modelled facts:
-// nothing follows the Perspective. An older bundle without the scenario says so.
+// capacity), with its table twin; and the table of every node (filters by OSI technology and stage, URL
+// `tech` and `stage`, shared with the chart; an old `index` / `sector` link is dropped; `all=1`
+// includes the nodes the scenario did not diversify, shown with their status and without the run columns;
+// the class under the scenario with its physical-capability flag), CSV (shock: the scenario's id). Each
+// node links to its compact (#nodes) and to the Sector Profiles of its six-stage OSI cells. Modelled
+// facts: nothing follows the Perspective. An older bundle without the scenario says so.
 //
 // The Managed Interdependence explainer (2026-10-19, page work A): the scenario toggle's Managed
 // Interdependence is this scenario, so the page is titled after it (nav "Managed Interdependence") and
@@ -34,14 +34,14 @@ import { DIVERSIFY_MARK, DiversifyChart, SPLIT_WORDS } from '../charts/Diversify
 import { FlaggedClass } from '../charts/ClassChip.tsx';
 import { ScenarioCoverageCompare } from '../charts/ScenarioCompare.tsx';
 import {
-  basisWords, cappedWords, diversifyClassText, diversifyCsvRow, diversifyIndices, diversifyLabel, diversifyRows, diversifySectorOptions, diversifyTotals, filterDiversify, hasDiversify, hhiAxisMax,
+  basisWords, cappedWords, diversifyClassText, diversifyCsvRow, diversifyLabel, diversifyRows, diversifyStageOptions, diversifyTechOptions, diversifyTotals, filterDiversify, hasDiversify, hhiAxisMax,
   orderDiversify, relationshipWords, rowStatusLabel, totalsWords, type DiversifyRow,
 } from '../derive/diversify.ts';
 import { fmtScore, fmtShare, fmtUsd, nameOf, plural } from '../derive/format.ts';
 import { DIVERSIFY_BENCHMARK_WORDS, diversifySetting, HHI_SHORT, strategicScopeShort } from '../derive/settings.ts';
 import { overviewRows } from '../derive/scenarioPages.ts';
 import { scenarioCaveat, scenarioInfo } from '../derive/scenarios.ts';
-import { indexLabel, nodeWhere, profiledCellsOfNode } from '../derive/taxonomy.ts';
+import { nodeWhere, profiledCellsOfNode, techStageWords } from '../derive/taxonomy.ts';
 import { compactHref } from '../nav.ts';
 import { AIB_EYEBROW } from './AibOverviewView.tsx';
 import { BasisTag } from './basis.tsx';
@@ -53,12 +53,12 @@ export const CHART_ROWS = 15;
 
 /** A node's place, its compact (node section) and the Sector Profiles of the OSI cells its codes sit in. */
 function NodePlace({ n }: { n: AibNode }) {
-  const { tx, compactOf, title, href } = useAibCtx();
+  const { compactOf, title, href } = useAibCtx();
   const c = compactOf(n.compact);
-  const cells = profiledCellsOfNode(n).slice(0, 2);
+  const cells = profiledCellsOfNode(n);
   return (
     <>
-      {nodeWhere(tx, n)}
+      {nodeWhere(n)}
       {n.compact && (
         <>
           {' · '}
@@ -69,7 +69,7 @@ function NodePlace({ n }: { n: AibNode }) {
       )}
       {cells.length > 0 && (
         <>
-          {' · Sector profile (the paper’s three stages): '}
+          {cells.length === 1 ? ' · Sector profile: ' : ' · Sector profiles: '}
           {cells.map((cell, i) => (
             <span key={cell.href}>
               {i > 0 && ', '}
@@ -103,31 +103,31 @@ export default function AibDiversifyView() {
   const three = useMemo(() => (hasScenarios ? overviewRows(doc.nodes, m) : []), [doc, m, hasScenarios]);
   const managedRow = three.find((r) => r.id === 'managed') ?? null;
   const miLabel = scenarioInfo(m, 'managed').label;
-  const indices = useMemo(() => diversifyIndices(rows, tx), [rows, tx]);
-  const rawIndex = params.get('index');
-  const index = rawIndex && indices.some((ix) => ix.code === rawIndex) ? rawIndex : null;
-  const sectorOpts = useMemo(() => diversifySectorOptions(rows, tx, index), [rows, tx, index]);
-  const rawSector = params.get('sector');
-  const sector = rawSector && sectorOpts.some((o) => o.value === rawSector) ? rawSector : null;
+  // the filters: an OSI technology (a node in several passes each; 'Not in the OSI basket') and a stage, by the
+  // nodes' cells (nodeInCell()); the stages offered are those of the chosen technology's cells
+  const techOpts = useMemo(() => diversifyTechOptions(rows), [rows]);
+  const rawTech = params.get('tech');
+  const tech = rawTech && techOpts.some((o) => o.value === rawTech) ? rawTech : null;
+  const stageOpts = useMemo(() => diversifyStageOptions(rows, tech), [rows, tech]);
+  const rawStage = params.get('stage');
+  const stage = rawStage && stageOpts.some((o) => o.value === rawStage) ? rawStage : null;
   const all = params.get('all') === '1';
-  const ran = useMemo(() => orderDiversify(filterDiversify(rows, { index, sector, all: false }, tx)), [rows, index, sector, tx]);
-  const table = useMemo(() => orderDiversify(filterDiversify(rows, { index, sector, all }, tx)), [rows, index, sector, all, tx]);
+  const ran = useMemo(() => orderDiversify(filterDiversify(rows, { tech, stage, all: false })), [rows, tech, stage]);
+  const table = useMemo(() => orderDiversify(filterDiversify(rows, { tech, stage, all })), [rows, tech, stage, all]);
   const max = useMemo(() => hhiAxisMax(ran), [ran]);
   const shown = showAll ? ran : ran.slice(0, CHART_ROWS);
   const setParam = (k: string, v: string | null) => {
     const q = new URLSearchParams(params);
     if (v) q.set(k, v);
     else q.delete(k);
-    // a sector outside the chosen index no longer applies
-    if (k === 'index') q.delete('sector');
     setParams(q, { replace: true, preventScrollReset: true });
   };
   const name = (iso3: string) => nameOf(names, iso3);
   // the CSV's run columns: the scenario's own shock id, also when only the nodes carry the scenario
   const runMeta = { ...m, headlineShock: shockId };
-  const scope = `${index ? ` in ${indexLabel(indices.find((ix) => ix.code === index)!)}` : ''}${sector ? ` in ${sector}` : ''}`;
+  const scope = techStageWords(tech, stage);
   const csvOf = (rs: DiversifyRow[], what: string) => () => ({
-    name: `Allied Industrial Base diversification ${what}${index ? ` index ${index}` : ''}${sector ? ` ${sector}` : ''}`,
+    name: `Allied Industrial Base diversification ${what}${scope}`,
     text: csvWithRun(
       rs.map((r) => diversifyCsvRow(r, names, tx)),
       runMeta,
@@ -150,8 +150,8 @@ export default function AibDiversifyView() {
     { id: 'node', header: 'Node', value: (r) => r.node.label, cell: (r) => <span className="text-paper">{r.node.label}</span>, minWidth: 180 },
     {
       id: 'where',
-      header: tx.dictionary ? 'Index › sector · stage' : `${tx.Many} · stage`,
-      value: (r) => nodeWhere(tx, r.node),
+      header: `${tx.Many} · stage`,
+      value: (r) => nodeWhere(r.node),
       cell: (r) => (
         <span className="text-xs">
           <NodePlace n={r.node} />
@@ -232,16 +232,8 @@ export default function AibDiversifyView() {
   );
   const filters: ReactNode = (
     <FilterRow result={`${plural(ran.length, 'node')} diversified${scope}`}>
-      {indices.length > 0 && (
-        <Select
-          label="Index"
-          value={index ?? ''}
-          options={[{ value: '', label: 'All indices' }, ...indices.map((ix) => ({ value: ix.code, label: indexLabel(ix) }))]}
-          onChange={(v) => setParam('index', v || null)}
-          className="min-w-[14rem]"
-        />
-      )}
-      <Select label={tx.One} value={sector ?? ''} options={[{ value: '', label: tx.all }, ...sectorOpts]} onChange={(v) => setParam('sector', v || null)} className="min-w-[14rem]" />
+      <Select label={tx.One} value={tech ?? ''} options={[{ value: '', label: tx.all }, ...techOpts]} onChange={(v) => setParam('tech', v || null)} className="min-w-[14rem]" />
+      <Select label="Stage" value={stage ?? ''} options={[{ value: '', label: 'All stages' }, ...stageOpts]} onChange={(v) => setParam('stage', v || null)} />
     </FilterRow>
   );
 

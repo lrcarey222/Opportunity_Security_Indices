@@ -1,15 +1,21 @@
 # A small synthetic bundle with every component of the real one (pure; no IO): 8 economies (one
-# territory; two members sharing the network node "XEU"), 3 technologies (one fossil) x 3 stages,
-# 4 ES categories (one never observed) and 3 EO categories with 2 variables each, three policy
-# components (IEA PAMS, CAT and a stale NIPO), Friendshore / Opportunity dyad components with gaps,
-# Friendshore's CM-FDI parts (Solar and Wind Midstream are CM-FDI cells: investment ties with
-# reporters that have no project there, and Chinese-parent ownership defined for some partners only,
-# 1 for CHN and HKG, undefined for JPN), Development for half the partners, and the
-# endowment screen of the allied picks over two Upstream stages (Coal, Solar; explicit FALSE rows and
-# countries without a row). The policy components' pipeline order (bundle$policy$components) is
-# IEA PAMS, CAT, NIPO (not alphabetical), so the policy_basis labels exercise the reordering. The
-# pipeline-format tables it was built from are attached as attr(bundle, "fixture_raw"), so tests
-# can compute the pipeline's own results on the same data. Used by the tests and the synthetic fixtures.
+# territory; two members sharing the network node "XEU"), 3 technologies (one fossil) x the six
+# supply-chain stages (DASH_STAGES = SUPPLY_CHAIN_STAGES: 18 cells), 4 ES categories (one never
+# observed) and 3 EO categories with 2 variables each, three policy components (IEA PAMS, CAT and a
+# stale NIPO, the last in every stage but Deployment), Friendshore / Opportunity dyad components with
+# gaps, Friendshore's CM-FDI parts (the Components and Assembly cells of Solar and Wind are CM-FDI
+# cells carrying the same projects, as config/partnership.yml cm_fdi.stages copies them in the
+# pipeline: investment ties with reporters that have no project there, and Chinese-parent ownership
+# defined for some partners only, 1 for CHN and HKG, undefined for JPN), Development for half the
+# partners, and the endowment screen of the allied picks over two Extraction stages (Coal, Solar;
+# explicit FALSE rows and countries without a row). The baseline stage weights are the pipeline's
+# (SUPPLY_CHAIN_STAGE_SI_WEIGHTS), the allied pick takes every stage but Deployment
+# (SUPPLY_CHAIN_SUPPLY_STAGES, the pipeline's STRATEGIC_ALLIED_STAGES) and one sector is excluded by
+# the pipeline's rule (Wind - Components). The policy components' pipeline order
+# (bundle$policy$components) is IEA PAMS, CAT, NIPO (not alphabetical), so the policy_basis labels
+# exercise the reordering. The pipeline-format tables it was built from are attached as
+# attr(bundle, "fixture_raw"), so tests can compute the pipeline's own results on the same data.
+# Used by the tests and the synthetic fixtures.
 
 # policy_required: the required Policy components (bundle$policy$required, dash_policy()); NULL = all.
 dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
@@ -73,7 +79,7 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
     }
     list(category_scores = dplyr::bind_rows(cat_rows), variable_contributions = dplyr::bind_rows(var_rows))
   }
-  es_raw <- make_pillar(c("Imports", "Reserves", "Trade"), constant_cell = c("Wind", "Upstream"))
+  es_raw <- make_pillar(c("Imports", "Reserves", "Trade"), constant_cell = c("Wind", "Extraction"))
   eo_raw <- make_pillar(c("Production", "Technological Readiness", "Trade"))
   es_weights <- c(Imports = 4, Prices = 2, Reserves = 3, Trade = 2)
   eo_weights <- c(Production = 3, `Technological Readiness` = 2, Trade = 3)
@@ -97,7 +103,7 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
       pol_rows[[length(pol_rows) + 1]] <- tibble::tibble(Country = ctry, tech = grid$tech[k], supply_chain = grid$supply_chain[k],
                                                          variable = "CAT Policy Index", value = c(0.25, 0.5, 0.75, 1)[(match(ctry, countries$country) %% 4) + 1])
     }
-    if (grid$supply_chain[k] != "Downstream" && stats::runif(1) < 0.7) {
+    if (grid$supply_chain[k] != "Deployment" && stats::runif(1) < 0.7) {
       pol_rows[[length(pol_rows) + 1]] <- tibble::tibble(Country = ctry, tech = grid$tech[k], supply_chain = grid$supply_chain[k],
                                                          variable = "NIPO Policy Index", value = round(stats::runif(1), 6))
     }
@@ -116,12 +122,12 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
   names(trl)[4] <- "trl_index"
   members_tbl <- countries[countries$tier %in% c("core", "partner"), ]
   allies <- tibble::tibble(Country = members_tbl$country, iso3 = members_tbl$iso3c, tier = members_tbl$tier, network_node = members_tbl$network_node)
-  # strategic_resource_base() output for the screened stages Coal - Upstream and Solar - Upstream:
+  # strategic_resource_base() output for the screened stages Coal - Extraction and Solar - Extraction:
   # explicit FALSE rows (a zero reserve) and countries without a row (no recorded resources: FALSE)
   resource_base <- tibble::tibble(
     Country = c("China", "India", "Japan", "United States", "Brazil", "China", "Germany", "United States"),
     tech = c("Coal", "Coal", "Coal", "Coal", "Solar", "Solar", "Solar", "Solar"),
-    supply_chain = "Upstream",
+    supply_chain = "Extraction",
     resource_base = c(TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE),
     resource_evidence = c("Production; Reserves", "Reserves", NA, "Production; Reserves", "Reserves", "Production", NA, NA)
   )
@@ -204,23 +210,23 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
     psi = list(coalition_reporters = members_tbl$iso3c, tau = 0.5)
   )
 
-  # ---- (retired) network inputs ----
-  # The original allied network design is retired (2026-10-17): its synthetic inputs (member-level
-  # node inputs and basket trade of the 6 members over 2 technologies) are no longer built, but their
-  # 576 random draws are kept so the CM-FDI parts drawn after them keep their values.
-  n_net <- nrow(members_tbl) * 2L * length(stages)
-  invisible(stats::runif(3L * 2L * n_net + 2L * (n_net * nrow(members_tbl) - n_net)))
-
   # ---- Friendshore's CM-FDI parts (drawn last, so the other synthetic inputs keep their values) ----
-  # In the CM-FDI cells the outbound rows are investment ties (NA for a reporter whose parents have no
-  # project in the cell: FRA in Solar Midstream, IND in both) and their source names CM-FDI;
-  # chinese_parent_exposure rows exist only where it is defined, as in the pipeline's long table.
-  cm_cells <- cells$cell_id[cells$tech %in% c("Solar", "Wind") & cells$supply_chain == "Midstream"]
-  tie <- array(rnd(Un * Un * length(cm_cells), 0.3), c(Un, Un, length(cm_cells)))
-  tie[match("FRA", U), , 1] <- NA_real_
-  tie[match("IND", U), , ] <- NA_real_
+  # (The draws of the retired allied network design's inputs, 2026-10-17, went with the move to six
+  # stages, which redrew every input.) In the CM-FDI cells the outbound rows are investment ties (NA
+  # for a reporter whose parents have no project in the cell: FRA in Solar, IND in both technologies)
+  # and their source names CM-FDI; chinese_parent_exposure rows exist only where it is defined, as in
+  # the pipeline's long table. One draw per technology, copied onto its Components and Assembly
+  # cells: the pipeline gives both manufacturing stages the same projects (cm_fdi.stages).
+  cm_techs <- c("Solar", "Wind")
+  cm_cells <- cells$cell_id[cells$tech %in% cm_techs & cells$supply_chain %in% c("Components", "Assembly")]
+  cm_tech_k <- match(cells$tech[cm_cells], cm_techs)
+  tie_t <- array(rnd(Un * Un * length(cm_techs), 0.3), c(Un, Un, length(cm_techs)))
+  tie_t[match("FRA", U), , 1] <- NA_real_
+  tie_t[match("IND", U), , ] <- NA_real_
+  tie <- tie_t[, , cm_tech_k, drop = FALSE]
+  cpe_t <- matrix(rnd(Un * length(cm_techs), 0.25), Un, length(cm_techs))
   cpe <- matrix(NA_real_, Un, Cn)
-  cpe[, cm_cells] <- rnd(Un * length(cm_cells), 0.25)
+  cpe[, cm_cells] <- cpe_t[, cm_tech_k]
   cpe[match(c("CHN", "HKG"), U), cm_cells] <- 1
   cpe[match("JPN", U), cm_cells] <- NA_real_
   fs_long$source <- "Author calculation"
@@ -269,9 +275,10 @@ dash_fixture_bundle <- function(seed = 1, policy_required = NULL) {
     policy_iea_var = "IEA PAMS Policy Index",
     policy_cat_var = "CAT Policy Index",
     si_weights = c(policy = 0.2, economic_opportunity = 0.3, energy_security_need = 0.3, supply_chain = 0.1, technology = 0.1),
-    stage_weights = c(Upstream = 0.5, Midstream = 0.75, Downstream = 0.25),
-    excluded_sectors = "Wind - Midstream",
+    stage_weights = SUPPLY_CHAIN_STAGE_SI_WEIGHTS[stages],
+    excluded_sectors = "Wind - Components",
     allied_excluded_techs = c("Geothermal", "Green Hydrogen"),
+    allied_stages = SUPPLY_CHAIN_SUPPLY_STAGES,
     require_resource_base = TRUE,
     fossil_techs = "Coal",
     fossil_threshold = 90,

@@ -1,8 +1,8 @@
 // Profile S6 Resources & potential (spec_sector.md 4.3): fuel reserves (EI, end-2020, not updated) and
-// uranium resources (Red Book) for fuel and nuclear Upstream; USGS reserves of the minerals a clean
-// technology uses (holders without a figure listed as such, never as 0); for Solar, Wind and
-// Geothermal Downstream the resource quality (map + league), the scatter of area-integrated potential
-// against quality, and the geothermal LCOE at 500 MW against 5 GW.
+// uranium resources (Red Book) for fuel and nuclear Extraction; USGS reserves of the minerals a clean
+// technology uses, at Extraction (holders without a figure listed as such, never as 0); for Solar,
+// Wind and Geothermal Deployment the resource quality (map + league), the scatter of area-integrated
+// potential against quality, and the geothermal LCOE at 500 MW against 5 GW.
 
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
@@ -27,7 +27,7 @@ const QUALITY: Record<string, { quality: string; area?: string; extra?: string[]
 };
 
 function qualityVars(model: SectorModel, cell: ItemInfo): { q: VarInfo | null; area: VarInfo | null; extra: VarInfo[] } {
-  const spec = cell.techSlug && cell.stageSlug === 'downstream' ? QUALITY[cell.techSlug] : undefined;
+  const spec = cell.techSlug && cell.stageSlug === 'deployment' ? QUALITY[cell.techSlug] : undefined;
   if (!spec) return { q: null, area: null, extra: [] };
   const ok = (id: string | undefined) => {
     const v = id ? vOf(model, id) : null;
@@ -38,8 +38,8 @@ function qualityVars(model: SectorModel, cell: ItemInfo): { q: VarInfo | null; a
 
 export function hasResources(model: SectorModel, cell: ItemInfo): boolean {
   const uran = vOf(model, 'resources.uranium_resources');
-  if (cell.slug === 'nuclear-upstream' && uran && itemForCell(model, uran, cell)) return true;
-  if (cell.stageSlug === 'upstream') {
+  if (cell.slug === 'nuclear-extraction' && uran && itemForCell(model, uran, cell)) return true;
+  if (cell.stageSlug === 'extraction') {
     const fr = vOf(model, 'resources.fuel_reserves');
     if (fr && linkedWith(model, cell, 'fuel', fr).length) return true;
     const mr = vOf(model, 'resources.mineral_reserves');
@@ -48,7 +48,7 @@ export function hasResources(model: SectorModel, cell: ItemInfo): boolean {
   const q = qualityVars(model, cell);
   if (q.q) return true;
   const g500 = vOf(model, 'resources.geo_lcoe_500');
-  return !!(cell.slug === 'geothermal-downstream' && g500 && itemForCell(model, g500, cell));
+  return !!(cell.slug === 'geothermal-deployment' && g500 && itemForCell(model, g500, cell));
 }
 
 function MineralReserves() {
@@ -188,9 +188,9 @@ function GeoLcoe() {
 export function ResourcesSection() {
   const { model, cell, facts, eu } = useProfile();
   const fr = vOf(model, 'resources.fuel_reserves');
-  const fuels = cell.stageSlug === 'upstream' && fr ? linkedWith(model, cell, 'fuel', fr) : [];
+  const fuels = cell.stageSlug === 'extraction' && fr ? linkedWith(model, cell, 'fuel', fr) : [];
   const uran = vOf(model, 'resources.uranium_resources');
-  const uItem = uran && cell.slug === 'nuclear-upstream' ? itemForCell(model, uran, cell) : null;
+  const uItem = uran && cell.slug === 'nuclear-extraction' ? itemForCell(model, uran, cell) : null;
   const { q, area, extra } = qualityVars(model, cell);
   const qItem = q ? itemForCell(model, q, cell) : null;
   const yearOf = (v: VarInfo, it: ItemInfo) => baseYear(model, facts, v, it, eu);
@@ -205,7 +205,7 @@ export function ResourcesSection() {
         const y = yearOf(uran, uItem);
         return y === null ? null : <SliceLeague v={uran} item={uItem} year={y} title="Identified recoverable uranium" />;
       })()}
-      {cell.stageSlug === 'upstream' && <MineralReserves />}
+      {cell.stageSlug === 'extraction' && <MineralReserves />}
       {q && qItem && (() => {
         const y = yearOf(q, qItem) ?? facts?.latestYear(q.idx, qItem.idx) ?? null;
         return y === null ? null : <SliceLeague v={q} item={qItem} year={y} title={q.label} />;
@@ -216,7 +216,7 @@ export function ResourcesSection() {
         return it && y !== null ? <SliceLeague key={v.id} v={v} item={it} year={y} title={v.label} notes={<p>Threshold and hub height are not recorded in the source: unit to confirm.</p>} /> : null;
       })}
       {q && area && <QualityScatter q={q} area={area} />}
-      {cell.slug === 'geothermal-downstream' && <GeoLcoe />}
+      {cell.slug === 'geothermal-deployment' && <GeoLcoe />}
     </div>
   );
 }

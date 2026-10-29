@@ -3,12 +3,15 @@ source(file.path(repo_root, "R", "dashboard", "country", "country_util.R"))
 source(file.path(repo_root, "R", "dashboard", "sector", "sector_trade.R"))
 source(file.path(repo_root, "R", "dashboard", "country", "country_trade_monthly.R"))
 
+# The basket at the six stages (2026-10-28): the HS6 master's `stage` column places each code; its old
+# three-stage supply_chain is not used.
 basket_fixture <- function() {
-  sector_trade_basket(data.frame(
+  country_monthly_basket(data.frame(
     tech = c("Batteries", "Batteries", "Batteries", "Electric Vehicles", "Semiconductors"),
     supply_chain = c("Midstream", "Midstream", "Midstream", "Midstream", "Midstream"),
     sub_sector = c("Battery Cells", "Battery Cells", "Cathode Materials", "Vehicle Batteries", "ICs"),
-    hs6 = c("850760", "850790", "284190", "850760", "854231")
+    hs6 = c("850760", "850790", "284190", "850760", "854231"),
+    stage = c("Assembly", "Assembly", "Refining", "Components", "Assembly")
   ))
 }
 months12 <- country_month_seq(202508L)
@@ -32,9 +35,22 @@ test_that("months roll over the year and the index is relative to the first mont
   expect_true(all(is.na(country_index_100(c(NA, 5)))))
 })
 
+test_that("the basket takes the master's six-stage stage; a sub-component that spans stages sits under each", {
+  b <- basket_fixture()
+  expect_equal(sort(unique(b$supply_chain[b$tech != "Semiconductors"])), c("Assembly", "Components", "Refining"))
+  expect_setequal(intersect(b$cell, country_cells_tbl()$key), c("batteries-assembly", "batteries-refining", "electric-vehicles-components"))
+  m <- data.frame(tech = "Solar", supply_chain = "Midstream", sub_sector = c("Polysilicon & Wafers", "Polysilicon & Wafers", "Other"),
+                  hs6 = c("280461", "381800", "999999"), stage = c("Refining", "Components", ""))
+  sb <- country_monthly_basket(m)
+  expect_equal(sb$cell, c("solar-refining", "solar-components"))                           # the row without a stage is left out
+  expect_equal(sb$sub_sector, c("Polysilicon & Wafers", "Polysilicon & Wafers"))
+  expect_error(country_monthly_basket(m[, setdiff(names(m), "stage")]), "no `stage` column")
+})
+
 test_that("the table maps codes to cells and sub-components, counting a shared code in each cell", {
   t <- country_monthly_table(raw_fixture(), basket_fixture(), windows_fixture)
-  expect_setequal(unique(t$cell), c("batteries-midstream", "electric-vehicles-midstream"))  # no Semiconductors cell
+  expect_setequal(unique(t$cell), c("batteries-refining", "batteries-assembly", "electric-vehicles-components"))  # no Semiconductors cell
+  expect_setequal(unique(t$stage), c("Refining", "Assembly", "Components"))
   cells <- t[t$flow == "import" & t$month == 202508L, ]
   expect_equal(cells$value_usd[cells$sub_sector == "Battery Cells"], 110)
   expect_equal(cells$value_usd[cells$sub_sector == "Vehicle Batteries"], 100)
@@ -65,8 +81,10 @@ test_that("the doc passes its check, survives a JSON round trip, and broken docs
   expect_equal(country_check_monthly_doc(doc), character())
   expect_equal(doc$window$first, "2025-08")
   expect_equal(doc$window$last, "2026-07")
-  bc <- doc$cells[[1]]
-  expect_equal(bc$key, "batteries-midstream")
+  expect_equal(vapply(doc$cells, function(c) c$key, ""), c("batteries-refining", "batteries-assembly", "electric-vehicles-components"))  # chain order
+  bc <- doc$cells[[2]]
+  expect_equal(bc$key, "batteries-assembly")
+  expect_equal(bc$label, "Batteries \u2014 Assembly")
   expect_equal(bc$subs[[1]]$name, "Battery Cells")      # largest first
   expect_equal(bc$subs[[1]]$n_codes, 2L)
   expect_equal(as.numeric(bc$subs[[1]]$imports)[c(1, 12)], c(110, 121))
@@ -75,7 +93,7 @@ test_that("the doc passes its check, survives a JSON round trip, and broken docs
 
   back <- jsonlite::fromJSON(as.character(country_json(doc)), simplifyVector = FALSE)
   expect_equal(country_check_monthly_doc(back), character())
-  expect_equal(unlist(back$cells[[1]]$subs[[1]]$imports), as.numeric(bc$subs[[1]]$imports))
+  expect_equal(unlist(back$cells[[2]]$subs[[1]]$imports), as.numeric(bc$subs[[1]]$imports))
 
   broken <- back
   broken$window$declared <- NULL
@@ -96,7 +114,7 @@ test_that("the doc passes its check, survives a JSON round trip, and broken docs
   broken$cells[[1]]$total$imports[[2]] <- 1
   expect_match(country_check_monthly_doc(broken), "do not sum", all = FALSE)
   broken <- back
-  broken$cells[[1]]$key <- "batteries-sideways"
+  broken$cells[[1]]$key <- "batteries-midstream"                                          # a three-stage key is unknown
   expect_match(country_check_monthly_doc(broken), "unknown cell key", all = FALSE)
   broken <- back
   broken$window$months <- broken$window$months[-1]

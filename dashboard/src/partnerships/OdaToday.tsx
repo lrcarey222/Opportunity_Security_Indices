@@ -3,6 +3,9 @@
 // development aid (OECD CRS), donor -> recipient, summed over the aid sectors in scope and the years. For an
 // economy, its donors and its recipients; without one, the largest flows. It reports the partners it names
 // to the page (onNames) for the cross-lens summary. Export credits are not in this build: the panel says so.
+// With a stage (six stages since 2026-10-29: the Sector bundle's cells, labels such as "Refining"), only the
+// aid sectors linked to that stage's cells (oda.ts); a stage without any says so and names the stages that
+// have aid, and a stage whose aid sector is shared with other stages says it is the same aid.
 
 import { useEffect, useMemo } from 'react';
 import { Loading } from '../components/ui.tsx';
@@ -10,7 +13,8 @@ import { useSectorChunk, useSectorManifest, useSectorMeta, useSectorStore } from
 import type { SectorModel } from '../sector/data/model.ts';
 import { fmtUsdM } from '../views/Partners/ties.ts';
 import { lensNames, lensNone, LENS_LOADING, type LensNames } from './lenses.ts';
-import { odaPartners, odaRecipients, odaView } from './oda.ts';
+import { stageLabel } from '../lib/stages.ts';
+import { aidItemsOfStage, aidSharedStages, aidStages, odaPartners, odaRecipients, odaView, type AidCellLink } from './oda.ts';
 import { LensCard, RankedNames } from './PartnershipLenses.tsx';
 
 export interface OdaTodayProps {
@@ -18,7 +22,7 @@ export interface OdaTodayProps {
   iso: string | null;
   /** the economy in prose ("Japan") */
   focusName?: string;
-  /** a supply-chain stage ("Midstream") limiting the aid sectors, or null for all of them */
+  /** a supply-chain stage ("Refining") limiting the aid sectors, or null for all of them */
   stage: string | null;
   /** a link to an economy's page (null: plain text) */
   href?: (iso3: string) => string | null;
@@ -28,13 +32,13 @@ export interface OdaTodayProps {
   level?: 3 | 4;
 }
 
-/** The aid-sector items in scope: those linked to the stage's cells, or every one. */
-function aidItems(model: SectorModel, stage: string | null) {
-  const all = model.items.filter((i) => i.axis === 'aid_sector');
-  if (!stage) return all;
-  const ids = new Set(model.cells.filter((c) => c.stage === stage).flatMap((c) => model.itemsOfCell(c.idx, 'aid_sector').map((x) => x.item.idx)));
-  return all.filter((i) => ids.has(i.idx));
+/** Each Sector cell's stage and its aid-sector items. */
+function aidLinks(model: SectorModel): AidCellLink[] {
+  return model.cells.map((c) => ({ stage: c.stage, items: model.itemsOfCell(c.idx, 'aid_sector').map((x) => x.item.idx) }));
 }
+
+/** 'A', 'A and B', 'A, B and C'. */
+const andWords = (xs: readonly string[]): string => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 const EXPORT_CREDIT = 'Export credits (official export finance) are not in this build yet, so the aid below is only part of development finance.';
 
@@ -45,7 +49,15 @@ export default function OdaToday({ iso, focusName, stage, href, onNames, level =
   const dev = useSectorChunk('sector-dev', true);
   const model = meta.model;
   const has = man.status !== 'ready' || store.hasChunk('sector-dev');
-  const items = useMemo(() => (model ? aidItems(model, stage) : []), [model, stage]);
+  const links = useMemo(() => (model ? aidLinks(model) : []), [model]);
+  const items = useMemo(() => {
+    if (!model) return [];
+    const all = model.items.filter((i) => i.axis === 'aid_sector');
+    const ids = new Set(aidItemsOfStage(links, all.map((i) => i.idx), stage));
+    return all.filter((i) => ids.has(i.idx));
+  }, [model, links, stage]);
+  // a stage without any aid sector (Recovery): the stages that have aid, for the notice
+  const noAid = !!model && !!stage && items.length === 0;
   const geo = model && iso ? (model.geoByCode.get(iso)?.idx ?? null) : null;
   const view = useMemo(() => (dev.data && model ? odaView(dev.data, items.map((i) => i.idx), geo) : null), [dev.data, model, items, geo]);
   const isCountry = (g: number) => {
@@ -58,7 +70,9 @@ export default function OdaToday({ iso, focusName, stage, href, onNames, level =
     ? lensNone('this data build has no aid flows')
     : failed
       ? lensNone('the aid flows could not be loaded')
-      : !view
+      : noAid
+        ? lensNone(`no aid sector is linked to ${stageLabel(stage as string)}`)
+        : !view
         ? LENS_LOADING
         : iso && geo === null
           ? lensNone(`no aid data for ${focusName ?? iso}`)
@@ -80,9 +94,21 @@ export default function OdaToday({ iso, focusName, stage, href, onNames, level =
       </p>
     );
   }
+  if (noAid) {
+    const withAid = aidStages(links).map(stageLabel);
+    return (
+      <p className="text-sm text-paper-mute" data-testid="lens-empty">
+        No aid sector is linked to {stageLabel(stage as string)}
+        {withAid.length ? `: the aid data cover ${andWords(withAid)}` : ''}. {EXPORT_CREDIT}
+      </p>
+    );
+  }
   if (!view || !model) return <Loading label="Loading the aid flows" />;
   const nameOf = (g: number) => model.geos[g]?.name ?? code(g);
-  const what = items.length === 1 ? `aid for ${items[0].label.toLowerCase()}` : stage ? `aid for the aid sectors of ${stage}` : 'aid for energy, industry and mining';
+  const what = items.length === 1 ? `aid for ${items[0].label.toLowerCase()}` : stage ? `aid for the aid sectors of ${stageLabel(stage)}` : 'aid for energy, industry and mining';
+  // the same aid on other stages (industry: Refining, Components and Assembly), said once
+  const shared = stage ? aidSharedStages(links, items.map((i) => i.idx), stage).map(stageLabel) : [];
+  const sharedNote = shared.length ? ` The aid data do not split this by stage: the same ${what} is shown at ${andWords(shared)}.` : '';
   const span = view.years ? `${view.years[0]}-${view.years[1]}` : '';
   const unit = 'USD, constant prices, summed over the years';
   const link = (g: number) => (isCountry(g) ? (href?.(code(g)) ?? null) : null);
@@ -107,7 +133,9 @@ export default function OdaToday({ iso, focusName, stage, href, onNames, level =
             )}
           </LensCard>
         </div>
-        <p className="text-xs text-paper-mute">Source: OECD Creditor Reporting System, gross disbursements. {EXPORT_CREDIT}</p>
+        <p className="text-xs text-paper-mute">
+          Source: OECD Creditor Reporting System, gross disbursements.{sharedNote} {EXPORT_CREDIT}
+        </p>
       </div>
     );
   }
@@ -127,7 +155,9 @@ export default function OdaToday({ iso, focusName, stage, href, onNames, level =
           <p className="text-paper-mute">No aid flow in the data for this selection.</p>
         )}
       </LensCard>
-      <p className="text-xs text-paper-mute">Source: OECD Creditor Reporting System, gross disbursements. {EXPORT_CREDIT}</p>
+      <p className="text-xs text-paper-mute">
+        Source: OECD Creditor Reporting System, gross disbursements.{sharedNote} {EXPORT_CREDIT}
+      </p>
     </div>
   );
 }

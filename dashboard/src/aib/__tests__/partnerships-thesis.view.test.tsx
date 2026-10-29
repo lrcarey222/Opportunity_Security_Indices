@@ -86,7 +86,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the relationshi
   it('a pair: the Partner filter beside the others, the thesis above the lenses, and where the partner sits in the summary', async () => {
     renderAt('/aib/partnerships?country=AAA&partner=CCC');
     await h1();
-    for (const f of ['Economy', 'Partner', 'Stage', 'Sub-sector']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
+    for (const f of ['Economy', 'Partner', 'Technology', 'Stage', 'Node']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
     // the Partner filter: the economies with a thesis first, in their own group
     const box = partnerBox();
     expect(box.value).toBe('CCC');

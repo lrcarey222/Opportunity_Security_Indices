@@ -25,6 +25,7 @@ import { useAibManifest, useCompactsDoc } from './data/hooks.ts';
 import { aibStore, type AibLoadError } from './data/store.ts';
 import { compactTitle, nameOf } from './derive/format.ts';
 import { effectiveScenario, hasScenarios } from './derive/scenarios.ts';
+import { shockLabelOf } from './derive/settings.ts';
 import { strategicScenarioFor } from './derive/strategic.ts';
 import { taxonomyOf, type Taxonomy } from './derive/taxonomy.ts';
 import { aibNavItems } from './nav.ts';
@@ -46,9 +47,9 @@ export interface AibCtx {
   nodeOf: (id: string | null | undefined) => AibNode | null;
   /** the label of the headline shock ("China supply removed") */
   shockLabel: string;
-  /** the node taxonomy: dictionary (EIS sectors) or master (OSI technologies), its words and indices */
+  /** the node taxonomy: where the nodes come from (dictionary or master) and the OSI technology words every view groups and filters them by */
   tx: Taxonomy;
-  /** a compact's display title from its sectors and node labels (compactTitle; `full`: every label) */
+  /** a compact's display title from its nodes' OSI technologies and labels (compactTitle; `full`: every label) */
   title: (c: AibCompact, full?: boolean) => string;
   /** the toggled scenario the pages show (2026-10-19): the URL's scn (absent: Managed Interdependence); always 'decoupling' when the bundle has no scenarios */
   scenario: AibToggle;
@@ -133,7 +134,6 @@ function buildCtx(manifest: AibManifest, doc: AibDoc): DataCtx {
   const names = countryNamesOf(doc);
   const byId = new Map(doc.compacts.map((c) => [c.id.toUpperCase(), c]));
   const nodes = new Map(doc.nodes.map((n) => [n.id, n]));
-  const shock = doc.meta.shocks.find((s) => s.id === doc.meta.headlineShock);
   const find = (id: string) => nodes.get(id) ?? null;
   return {
     manifest,
@@ -142,7 +142,7 @@ function buildCtx(manifest: AibManifest, doc: AibDoc): DataCtx {
     name: (iso) => nameOf(names, iso),
     compactOf: (id) => (id ? (byId.get(id.toUpperCase()) ?? null) : null),
     nodeOf: (id) => (id ? (nodes.get(id) ?? null) : null),
-    shockLabel: shock?.label ?? doc.meta.headlineShock,
+    shockLabel: shockLabelOf(doc.meta, doc.meta.headlineShock),
     tx: taxonomyOf(doc.meta),
     title: (c, full = false) => compactTitle(c, find, { full }),
     strategic: strategicOf(doc),

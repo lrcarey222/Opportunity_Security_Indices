@@ -92,6 +92,11 @@ export interface CompactViewState {
 
 export interface CompactCtx {
   c: AibCompact;
+  /**
+   * the compact's display title (compactTitle: the OSI technologies and labels of its nodes), for headings,
+   * summaries, captions and aria-labels; c.name (built from dictionary sectors) is provenance only (design A1)
+   */
+  displayName: string;
   /** the compact's nodes, in its own order */
   nodes: AibNode[];
   meta: AibMeta;

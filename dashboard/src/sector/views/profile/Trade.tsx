@@ -21,7 +21,7 @@ import { GROUP_COLOR } from '../../../theme/palette.ts';
 import type { SectorTradeChunk } from '../../contract.ts';
 import type { GeoInfo } from '../../data/model.ts';
 import { blocNote, GROUP_SHORT, isCoalition, partOf } from '../../derive/groups.ts';
-import { blocFlows, countryTotals, declaredImporters, flowsOf, league, matrixTotal, netTrade, OTHER_EXPORTERS, OTHER_IMPORTERS, partners, sankeyLinks, supplierMixes, tradeQuality, type Flow, type TradeYear } from '../../derive/trade.ts';
+import { blocFlows, countryTotals, declaredImporters, EXCLUDED_WORDS, excludedCodes, flowsOf, league, matrixTotal, netTrade, OTHER_EXPORTERS, OTHER_IMPORTERS, partners, sankeyLinks, supplierMixes, tradeQuality, type Flow, type TradeYear } from '../../derive/trade.ts';
 import { sectorCsv } from '../../derive/csv.ts';
 import { hasSubTrade, subComponents, subTotals, validSub, type SubComponent } from '../../derive/subs.ts';
 import { fmtShare, fmtSignedPct, fmtUsd, listText } from '../../format.ts';
@@ -90,12 +90,8 @@ function TradeBody({ trade }: { trade: SectorTradeChunk }) {
     for (let i = 0; i < t.nrow; i++) if (t.cols.item[i] === cell.idx) out.push({ sub: t.cols.sub_sector[i] ?? '', hs6: t.cols.hs6[i] ?? '', description: t.cols.description[i], shared: t.cols.shared_n[i], caveat: t.cols.caveat[i] });
     return out.sort((a, z) => a.sub.localeCompare(z.sub) || a.hs6.localeCompare(z.hs6));
   }, [trade, cell]);
-  const excluded = useMemo(() => {
-    const t = trade['trade.excluded'];
-    const out: { sub: string | null; hs6: string; reason: string }[] = [];
-    for (let i = 0; i < t.nrow; i++) if (t.cols.item[i] === cell.idx) out.push({ sub: t.cols.sub_sector[i], hs6: t.cols.hs6[i] ?? '', reason: t.cols.reason[i] ?? '' });
-    return out;
-  }, [trade, cell]);
+  // excluded codes are listed per technology (schema 2, design C6): the reference master gives them no stage
+  const excluded = useMemo(() => excludedCodes(trade, cell.tech ?? ''), [trade, cell]);
   const nSub = new Set(codes.map((c) => c.sub)).size;
   const nShared = codes.filter((c) => c.shared > 0).length;
 
@@ -433,10 +429,11 @@ function TradeBody({ trade }: { trade: SectorTradeChunk }) {
         />
         {excluded.length > 0 && (
           <div className="mt-3">
-            <Disclosure summary={`Excluded from the basket (${excluded.length} code${excluded.length === 1 ? '' : 's'})`}>
+            <Disclosure summary={`Excluded from the ${cell.tech} baskets (${excluded.length} code${excluded.length === 1 ? '' : 's'})`}>
+              <p className="mb-2 text-xs text-paper-mute">{EXCLUDED_WORDS}</p>
               <ul className="space-y-1 text-sm text-paper-dim">
                 {excluded.map((e) => (
-                  <li key={e.hs6}>
+                  <li key={`${e.sub ?? ''}|${e.hs6}`}>
                     <span className="tabular text-paper">{e.hs6}</span>
                     {e.sub ? ` (${e.sub})` : ''}: {e.reason}
                   </li>

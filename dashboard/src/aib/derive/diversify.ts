@@ -2,7 +2,8 @@
 // node.diversify; scripts/32, a shock of type "diversify"). It removes no supplier. Each supply-chain node's
 // world exporter concentration (HHI; Hong Kong and Macao counted with China) is set against a benchmark:
 // the trade-weighted mean concentration of the OTHER HS6 lines of the node's HS4 customs heading or, where
-// the heading has no other line, of the other nodes of its sector. A node more concentrated than its
+// the heading has no other line, of the other nodes of its electro-industrial dictionary sector (the model
+// keeps that sector; the views present nodes by OSI technology x stage). A node more concentrated than its
 // benchmark (by more than a small tolerance the export does not state; config/aib.yml min_excess) gets the
 // supplier-share cap that would bring its concentration down to it; suppliers above the cap in the allied
 // market (the demand scope) lose the excess; existing relationships, then optimized trade, replace what they
@@ -23,13 +24,12 @@
 // sentences per status, and the CSV row. Pure.
 
 import { isNum } from '../../lib/format.ts';
-import { AIB_DIVERSIFY_SHOCK, AIB_DIVERSIFY_STATUSES, AIB_PHYSICAL_WARNING, diversifyShockIdOf, type AibIndex, type AibMeta, type AibNode, type AibNodeDiversify } from '../contract.ts';
+import { AIB_DIVERSIFY_SHOCK, AIB_DIVERSIFY_STATUSES, AIB_PHYSICAL_WARNING, diversifyShockIdOf, type AibMeta, type AibNode, type AibNodeDiversify } from '../contract.ts';
 import { classInfo } from './classes.ts';
 import { fmtScore, fmtShare, fmtUsd, listWords, nameOf, plural } from './format.ts';
-import { technologiesOf } from './nodes.ts';
 import { variantWarning } from './sensitivity.ts';
 import { diversifySetting, DIVERSIFY_LABEL } from './settings.ts';
-import { indexOfNode, indexOfSector, nodeIndexFields, techOptions, type Taxonomy } from './taxonomy.ts';
+import { cellStagesOfNodes, cellTechsOfNodes, nodeInCell, osiFields, stageOptions, techOptions, type Taxonomy } from './taxonomy.ts';
 
 export const [DIVERSIFIED, WITHIN_CAP, ALREADY_DIVERSIFIED, NO_BENCHMARK] = AIB_DIVERSIFY_STATUSES;
 
@@ -44,7 +44,7 @@ export const DIVERSIFY_STATUS_WORDS: Readonly<Record<string, { label: string; me
     label: 'Already as diversified as its benchmark',
     meaning: 'as diversified as its benchmark, or above it by less than a small tolerance: the scenario leaves it as it is',
   },
-  [NO_BENCHMARK]: { label: 'No benchmark', meaning: 'no other line of its heading and no other node of its sector to compare it with' },
+  [NO_BENCHMARK]: { label: 'No benchmark', meaning: 'no other line of its heading and no other node of its dictionary sector to compare it with' },
 };
 
 /** A status in words (an unknown status as written). */
@@ -183,31 +183,32 @@ export function orderDiversify(rows: readonly DiversifyRow[]): DiversifyRow[] {
 }
 
 export interface DiversifyFilter {
-  /** an EIS index code (dictionary) */
-  index: string | null;
-  /** a sector (dictionary) or technology (master) */
-  sector: string | null;
+  /** an OSI technology, or 'Not in the OSI basket' (taxonomy.ts NOT_IN_BASKET) */
+  tech: string | null;
+  /** one of the six stages: a node passes with a cell there (of the technology, when one is chosen; never node.stage) */
+  stage: string | null;
   /** include the nodes the scenario did not diversify (within the cap, already as diversified, no benchmark) */
   all: boolean;
 }
 
-export const NO_DIVERSIFY_FILTER: DiversifyFilter = { index: null, sector: null, all: false };
+export const NO_DIVERSIFY_FILTER: DiversifyFilter = { tech: null, stage: null, all: false };
 
-/** The rows a filter keeps: by default only the nodes the scenario diversified. */
-export function filterDiversify(rows: readonly DiversifyRow[], f: DiversifyFilter, tx: Taxonomy): DiversifyRow[] {
-  return rows.filter((r) => (f.all || r.ran) && (!f.index || indexOfNode(tx, r.node)?.code === f.index) && (!f.sector || r.node.techs.includes(f.sector)));
+/**
+ * The rows a filter keeps: by default only the nodes the scenario diversified; the technology and stage by
+ * the node's cells (taxonomy.ts nodeInCell(): a node in several cells passes each).
+ */
+export function filterDiversify(rows: readonly DiversifyRow[], f: DiversifyFilter): DiversifyRow[] {
+  return rows.filter((r) => (f.all || r.ran) && nodeInCell(r.node, f.tech, f.stage));
 }
 
-/** The sector (technology) choices of some rows, grouped by index (dictionary); only those of `index` when one is chosen. */
-export function diversifySectorOptions(rows: readonly DiversifyRow[], tx: Taxonomy, index: string | null): { value: string; label: string; group?: string }[] {
-  const sectors = technologiesOf(rows.map((r) => r.node)).filter((s) => !index || indexOfSector(tx, s)?.code === index);
-  return techOptions(tx, sectors);
+/** The Technology choices of some rows: the OSI technologies of their cells, 'Not in the OSI basket' last; only those with a cell at `stage` when one is chosen. */
+export function diversifyTechOptions(rows: readonly DiversifyRow[], stage: string | null = null): { value: string; label: string }[] {
+  return techOptions(cellTechsOfNodes(rows.map((r) => r.node), stage));
 }
 
-/** The indices some rows sit in, in code order (the Index choices; [] for master). */
-export function diversifyIndices(rows: readonly DiversifyRow[], tx: Taxonomy): AibIndex[] {
-  const codes = new Set(rows.map((r) => indexOfNode(tx, r.node)?.code).filter((x): x is string => !!x));
-  return tx.indices.filter((ix) => codes.has(ix.code)).sort((a, b) => a.code.localeCompare(b.code));
+/** The Stage choices of some rows: the stages that hold their nodes' cells (of `tech` when one is chosen), in chain order (no AIB node has a Deployment cell). */
+export function diversifyStageOptions(rows: readonly DiversifyRow[], tech: string | null = null): { value: string; label: string }[] {
+  return stageOptions(cellStagesOfNodes(rows.map((r) => r.node), tech));
 }
 
 export interface DiversifyTotals {
@@ -331,7 +332,8 @@ export function relationshipWords(s: string | null | undefined, names: Readonly<
 
 /**
  * The basis as a phrase: "the other HS6 lines of heading 8507", "the other HS6 lines of headings 2826 and
- * 7410", "the other nodes of its sector" ("its benchmark" when the export has none).
+ * 7410", "the other nodes of its dictionary sector" (the export's "other nodes of the sector": the sector is
+ * the electro-industrial dictionary's, not an OSI technology; "its benchmark" when the export has none).
  */
 export function basisWords(basis: string | null | undefined): string {
   if (!basis) return 'its benchmark';
@@ -341,7 +343,7 @@ export function basisWords(basis: string | null | undefined): string {
     const codes = hs[1].split(/\s*[;,]\s*/).filter(Boolean);
     return `the other HS6 lines of heading${codes.length > 1 ? 's' : ''} ${listWords(codes)}`;
   }
-  if (/^other nodes of the sector$/i.test(b)) return 'the other nodes of its sector';
+  if (/^other nodes of the sector$/i.test(b)) return 'the other nodes of its dictionary sector';
   return /^other\b/i.test(b) ? `the ${b}` : b;
 }
 
@@ -371,7 +373,7 @@ export function diversifyWords(r: DiversifyRow, names: Readonly<Record<string, s
       ];
     case NO_BENCHMARK:
       return [
-        `No benchmark: its customs heading has no other line and its sector no other node to compare it with, so the scenario leaves it as it is.${isNum(d.currentHhi) ? ` Its concentration (HHI) is ${fmtScore(d.currentHhi)}.` : ''}`,
+        `No benchmark: its customs heading has no other line and its dictionary sector no other node to compare it with, so the scenario leaves it as it is.${isNum(d.currentHhi) ? ` Its concentration (HHI) is ${fmtScore(d.currentHhi)}.` : ''}`,
       ];
     case WITHIN_CAP:
       return [
@@ -411,12 +413,13 @@ export function diversifyWords(r: DiversifyRow, names: Readonly<Record<string, s
 /** A row of the table and the CSV: plain values, names resolved; the run columns empty where the scenario did not run. */
 export function diversifyCsvRow(r: DiversifyRow, names: Readonly<Record<string, string>>, tx: Taxonomy): Record<string, unknown> {
   const { node: n, d } = r;
-  const ix = nodeIndexFields(tx, n);
+  const place = osiFields(tx, n);
   return {
     node_id: n.id,
     node: n.label,
-    ...(tx.dictionary ? { index_code: ix.indexCode, index_name: ix.indexName, sectors: n.techs.join('; ') } : { technologies: n.techs.join('; ') }),
-    stage: n.stage,
+    technologies: place.technologies,
+    stage: place.stages,
+    aib_model_stage: place.modelStage,
     status: d.status,
     within_tolerance_of_benchmark: r.nearBenchmark,
     current_hhi: d.currentHhi,
@@ -440,6 +443,7 @@ export function diversifyCsvRow(r: DiversifyRow, names: Readonly<Record<string, 
     investment_hosts: d.hosts.map((x) => nameOf(names, x)).join('; '),
     largest_new_or_expanded_relationships: relationshipWords(d.partners, names),
     compact: n.compact,
-    osi_cells: n.yfCells.join('; '),
+    osi_cells: place.osiCells,
+    dictionary_sector: place.dictionarySector,
   };
 }

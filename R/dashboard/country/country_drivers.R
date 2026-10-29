@@ -117,7 +117,7 @@ country_cell_drivers <- function(iso3, country, key, pillar, cat_c, var_c, dstat
         )
       })
       # 2026-10-14: an index made only of the EU's regional figures (config var_labels `eu_region_mean`: EV
-      # midstream "Overall Production", the mean of the IEA EV-region indices) is the EU's too when every
+      # manufacturing "Overall Production", the mean of the IEA EV-region indices) is the EU's too when every
       # sibling raw figure is (raw note eu_region_share): it gets the note on a raw value without a figure
       sib <- Filter(function(v) !is.null(v$raw) && !is.null(v$raw$v), vars)
       if (length(sib) && all(vapply(sib, function(v) identical(v$raw$note, "eu_region_share"), TRUE))) {

@@ -1,11 +1,47 @@
 // The Development lens's Today panel (2026-10-19): official development aid from the Sector bundle's
 // sector-dev chunk (OECD CRS gross disbursements, USD millions at constant prices, donor -> recipient by aid
-// sector and year), summed over the aid sectors in scope (energy for Downstream, industry for Midstream,
-// mining for Upstream) and over the years. For an economy: what it receives by donor and what it gives by
-// recipient; without one, the largest donor -> recipient flows. Export credits are not in this build. Pure.
+// sector and year), summed over the aid sectors in scope and over the years. For an economy: what it receives
+// by donor and what it gives by recipient; without one, the largest donor -> recipient flows. Export credits
+// are not in this build. Pure.
+//
+// Six stages (2026-10-29, design C4): a stage's aid sectors are the ones the Sector bundle links to its
+// cells, from the pipeline's OECD CRS purpose crosswalk (scripts/87): energy at Deployment; industry at
+// Refining, Components and Assembly; mining at Extraction; none at Recovery. One aid sector can sit on several
+// stages (industry): the same aid, never added across them (each item is summed once here).
 
 import type { SectorDevChunk } from '../sector/contract.ts';
 import { odaFlows, odaYears } from '../sector/derive/dev.ts';
+import { stagesInChainOrder } from '../lib/stages.ts';
+
+/** One Sector cell's stage and the aid-sector items linked to it (sector model itemsOfCell(cell, 'aid_sector')). */
+export interface AidCellLink {
+  stage: string | null;
+  items: readonly number[];
+}
+
+/**
+ * The aid-sector items in scope, in the order of `all`: those linked to the stage's cells; with no stage, those
+ * linked to any cell (energy, industry and mining: never the "All sectors" total, which holds every CRS sector
+ * and would count those three again).
+ */
+export function aidItemsOfStage(links: readonly AidCellLink[], all: readonly number[], stage: string | null): number[] {
+  const ids = new Set(links.filter((c) => stage === null || c.stage === stage).flatMap((c) => c.items));
+  return all.filter((i) => ids.has(i));
+}
+
+/** The stages whose cells carry any aid sector, in chain order. */
+export function aidStages(links: readonly AidCellLink[]): string[] {
+  return stagesInChainOrder(links.filter((c) => c.stage && c.items.length).map((c) => c.stage as string));
+}
+
+/**
+ * The other stages the given aid items are linked to too, in chain order: the aid data do not split those
+ * items by stage, so the same aid appears there (never add across them).
+ */
+export function aidSharedStages(links: readonly AidCellLink[], items: readonly number[], stage: string): string[] {
+  const ids = new Set(items);
+  return stagesInChainOrder(links.filter((c) => c.stage && c.stage !== stage && c.items.some((i) => ids.has(i))).map((c) => c.stage as string));
+}
 
 export interface OdaFlow {
   /** dims.geo rows of the Sector bundle */

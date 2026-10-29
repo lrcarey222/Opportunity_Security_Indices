@@ -19,7 +19,7 @@ import { DIAL_SPECS } from '../../components/DialPanel.tsx';
 const TABLE_LABEL: Record<string, string> = {
   parameters: 'Parameters',
   data_vintage: 'Data vintage',
-  strategic_index: 'Strategic Index (with the paper for comparison)',
+  strategic_index: 'Strategic Index (with the NEIS baseline for comparison)',
   strategic_excluded: 'Strategic Index: excluded sectors',
   allied_selection: 'Allied strategic selection',
   energy_security: 'Energy Security',
@@ -52,14 +52,14 @@ export default function DataView() {
     [
       'Allied Industrial Base Explorer: scenario tables',
       '',
-      `Paper: ${m.paper?.title ?? DASH}`,
+      `Methods paper: ${m.paper?.title ?? DASH}`,
       `Scenario: ${isBaseline ? "the NEIS baseline (all dials at 50, advanced settings at their defaults)" : DIAL_SPECS.map((d) => `${d.label} ${scenario.dials[d.key]}`).join(', ')}`,
       `Link: ${link}`,
       `Data build: ${m.bundle_id} (exported ${m.created}, git ${m.git_commit ?? DASH})`,
       `Engine: ${ENGINE_VERSION}`,
       '',
       'Every table is a CSV (UTF-8 with a byte-order mark) with the R pipeline\'s column names. Empty cells are NA.',
-      'Columns ending in _base hold the paper\'s value; delta = scenario minus paper; rank_delta = paper rank minus scenario rank (positive = moved up).',
+      'Columns ending in _base hold the NEIS baseline value (every dial at 50, the pipeline\'s six-stage defaults); delta = scenario minus baseline; rank_delta = baseline rank minus scenario rank (positive = moved up).',
       'parameters.csv lists every parameter of the scenario; data_vintage.csv the export the numbers come from.',
       'Scenario results are model outputs for exploration, not forecasts.',
       '',
@@ -74,7 +74,7 @@ export default function DataView() {
       const files: Record<string, string> = { 'README.txt': readme() };
       for (const [name, t] of Object.entries(tables)) files[`${name}.csv`] = withBom(tableToCsv(t));
       const bytes = zipTexts(files);
-      downloadBlob(new Blob([bytes as BlobPart], { type: 'application/zip' }), `allied-industrial-base-${isBaseline ? 'paper-baseline' : 'scenario'}.zip`);
+      downloadBlob(new Blob([bytes as BlobPart], { type: 'application/zip' }), `allied-industrial-base-${isBaseline ? 'neis-baseline' : 'scenario'}.zip`);
       setStatus({ kind: 'done', text: `Downloaded ${Object.keys(tables).length} tables.` });
     } catch (e) {
       setStatus({ kind: 'error', text: (e as Error).message });
@@ -143,6 +143,10 @@ export default function DataView() {
     [m.sources],
   );
   const budget = (m.budget ?? {}) as Record<string, unknown>;
+  // the per-sector partner lists (pcell-<technology>-<stage>: one per technology and stage, 66 at six stages)
+  // are read on the main thread by the partner lists that need them, never by the engine: one line for all
+  const pcells = m.chunks.filter((c) => c.name.startsWith('pcell-'));
+  const sumOf = (k: 'bytes' | 'bytes_gz') => pcells.reduce((s, c) => s + (isNum(c[k]) ? (c[k] as number) : 0), 0);
   const tableOptions = Object.entries(TABLE_LABEL).map(([value, label]) => ({ value, label }));
 
   return (
@@ -153,7 +157,7 @@ export default function DataView() {
           <section className="card p-5">
             <h2 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">Download the current scenario</h2>
             <p className="mt-1 text-sm text-paper-mute">
-              Every table of the scenario as CSV files in one zip: parameters and data vintage, the Strategic Index, pillars and their contributions, Policy and partnership tables, with the paper&rsquo;s values for comparison.
+              Every table of the scenario as CSV files in one zip: parameters and data vintage, the Strategic Index, pillars and their contributions, Policy and partnership tables, with the NEIS baseline values for comparison.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button type="button" className="btn btn-primary" onClick={downloadZip} disabled={status.kind === 'busy'}>
@@ -230,7 +234,7 @@ export default function DataView() {
         <section className="card p-5">
           <h2 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">Validation of this export</h2>
           <p className="mt-1 text-sm text-paper-mute">
-            At the paper&rsquo;s settings the engine must reproduce the pipeline. The export script checks every layer and records the result here
+            At the NEIS baseline (every dial at 50, the default settings) the engine must reproduce the pipeline. The export script checks every layer and records the result here
             ({Object.entries(statusCount).map(([k, v]) => `${v} ${k}`).join(', ') || 'no checks'}).
           </p>
           <div className="mt-4">
@@ -290,11 +294,17 @@ export default function DataView() {
             </div>
             <h3 className="mt-5 text-sm font-medium text-paper">Data chunks</h3>
             <ul className="mt-2 space-y-1 text-sm text-paper-dim tabular">
-              {m.chunks.map((c) => (
+              {m.chunks.filter((c) => !c.name.startsWith('pcell-')).map((c) => (
                 <li key={c.name}>
                   {c.name}: {fmtBytes(c.bytes_gz)} compressed ({fmtBytes(c.bytes)}), {c.initial ? 'loaded at start' : 'loaded on first use'}; {state.chunks[c.name as keyof typeof state.chunks]?.state ?? 'idle'}
                 </li>
               ))}
+              {pcells.length > 0 && (
+                <li key="pcell" data-testid="pcell-chunks">
+                  pcell-&lt;technology&gt;-&lt;stage&gt;: {pcells.length} sector partner lists (one per technology and supply-chain stage), {fmtBytes(sumOf('bytes_gz'))} compressed in all ({fmtBytes(sumOf('bytes'))}),
+                  each read when a partner list needs it
+                </li>
+              )}
             </ul>
           </section>
           <section className="card p-5">

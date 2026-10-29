@@ -1,10 +1,17 @@
 # A small deterministic Sector Insights bundle with the real schema (spec_sector.md 8.3
-# `--synthetic`): 10 economies (China, three coalition-core EU and non-EU members, an EU member
-# outside the coalition, two partners, a non-reporter and a re-export hub), the EU, the world, three
-# IEA EV regions, three IEA ETP entities and one residual; trade for three cells of two
-# technologies over two years; two minerals; two fuels; two commodities; a thin cell
-# (geothermal-upstream); every value state; policy records and CAT ratings; and every series table.
-# Pure: the dictionary arrives as tables (sector_dictionary_tables()).
+# `--synthetic`; schema 2, six stages): 10 economies (China, three coalition-core EU and non-EU
+# members, an EU member outside the coalition, two partners, a non-reporter and a re-export hub), the
+# EU, the world, three IEA EV regions, three IEA ETP entities and one residual; trade for three cells
+# of two technologies over two years (batteries-extraction, batteries-assembly, oil-extraction); two
+# minerals with their trade at three stages (lithium at Extraction and Refining, graphite at Refining
+# and Recovery); two fuels; two commodities; a thin cell (geothermal-extraction); figures the source
+# gives once for Components and Assembly (manufacturing capex, IEA ETP shares: note same_figure_pair)
+# and the Batteries / EV Refining critical-minerals split (note cim_minerals_split); every value
+# state; policy records with six-stage tags and CAT ratings; and every series table. Pure: the
+# dictionary arrives as tables (sector_dictionary_tables()).
+
+# The trade cells of the fixture.
+SECTOR_SYNTHETIC_TRADE_CELLS <- c("batteries-extraction", "batteries-assembly", "oil-extraction")
 
 sector_synthetic_geo <- function() {
   g <- tibble::tribble(
@@ -46,9 +53,10 @@ sector_synthetic_geo <- function() {
   dplyr::bind_rows(g, agg[names(g)])
 }
 
-# Items: all 34 cells, plus the axes the synthetic data use.
-sector_synthetic_items <- function(trade_cells = c("batteries-upstream", "batteries-midstream", "oil-upstream")) {
-  cells <- sector_cell_items(trade_cells)
+# Items: the cells (cell_slugs: the dictionary's; NULL = the 66 headline cells), plus the axes the
+# synthetic data use, the mineral x stage items of its mineral trade among them.
+sector_synthetic_items <- function(trade_cells = SECTOR_SYNTHETIC_TRADE_CELLS, cell_slugs = NULL) {
+  cells <- sector_cell_items(trade_cells, cell_slugs)
   other <- tibble::tribble(
     ~axis, ~slug, ~label, ~text,
     "mineral", "lithium", "Lithium", "lithium",
@@ -64,17 +72,30 @@ sector_synthetic_items <- function(trade_cells = c("batteries-upstream", "batter
   other$headline <- FALSE
   other$has_trade <- FALSE
   other$sort <- stats::ave(seq_len(nrow(other)), other$axis, FUN = seq_along)
-  dplyr::bind_rows(cells, other[names(cells)], sector_fixed_items())
+  ms <- sector_mineral_stage_items(sector_synthetic_mineral_stages())
+  dplyr::bind_rows(cells, other[names(cells)], ms[names(cells)], sector_fixed_items())
 }
 
-# The cell items (Strategic tech order x stage), has_trade for `trade_cells`: the 33 headline cells,
-# Semiconductors Midstream, and any other Semiconductors stage the trade basket has (Upstream since
-# the basket review of 2026-10-11: gallium, germanium and indium). Semiconductors cells are
-# non-headline (trade only).
-sector_cell_items <- function(trade_cells) {
+# The (mineral, stage) pairs of the fixture's mineral trade.
+sector_synthetic_mineral_stages <- function() {
+  tibble::tibble(mineral = c("lithium", "lithium", "graphite", "graphite"), stage = c("Extraction", "Refining", "Refining", "Recovery"))
+}
+
+# The cell items (Strategic tech order x the six stages in chain order), has_trade for `trade_cells`:
+# the cells of `cell_slugs` (the dictionary's cells: the 66 headline cells and the Semiconductors stages
+# its basket has), or, when NULL, the 66 headline cells and the Semiconductors cells of `trade_cells`.
+# Semiconductors cells are non-headline (trade only). A trade cell missing from `cell_slugs` stops (a new
+# basket cell needs a dictionary entry).
+sector_cell_items <- function(trade_cells, cell_slugs = NULL) {
   g <- expand.grid(stage = SECTOR_STAGE_SLUGS, tech = SECTOR_TECH_SLUGS, stringsAsFactors = FALSE)
-  semi <- g$tech == "semiconductors"
-  g <- g[!semi | g$stage == "midstream" | paste0(g$tech, "-", g$stage) %in% trade_cells, c("tech", "stage")]
+  slug_all <- paste0(g$tech, "-", g$stage)
+  keep <- if (is.null(cell_slugs)) g$tech != "semiconductors" | slug_all %in% trade_cells else slug_all %in% cell_slugs
+  if (!is.null(cell_slugs) && length(setdiff(trade_cells, cell_slugs))) {
+    stop("sector_cell_items(): trade cells without a dictionary entry (config/sector_dictionary.yml cells): ",
+         paste(setdiff(trade_cells, cell_slugs), collapse = ", "))
+  }
+  if (!all(sector_headline_cell_slugs() %in% slug_all[keep])) stop("sector_cell_items(): the 66 headline cells are required")
+  g <- g[keep, c("tech", "stage")]
   slug <- paste0(g$tech, "-", g$stage)
   tibble::tibble(
     axis = "cell", slug = slug,
@@ -85,11 +106,11 @@ sector_cell_items <- function(trade_cells) {
   )
 }
 
-# Activity, policy-tag and none items (the same in the real export).
+# Activity, policy-tag and none items (the same in the real export). The activities are the three
+# ILO activities of the wage context (SECTOR_ACTIVITIES), not stages: each serves the stages
+# SECTOR_ACTIVITY_OF_STAGE gives it.
 sector_fixed_items <- function() {
-  act <- tibble::tibble(axis = "activity", slug = SECTOR_STAGE_SLUGS,
-                        label = c("Mining and utilities", "Manufacturing", "Construction"),
-                        text = c("mining and utilities", "manufacturing", "construction"))
+  act <- tibble::tibble(axis = "activity", slug = SECTOR_ACTIVITIES$slug, label = SECTOR_ACTIVITIES$label, text = SECTOR_ACTIVITIES$text)
   tags <- c(SECTOR_POLICY_TAGS, "Cross-cutting")
   pol <- tibble::tibble(axis = "policy_tag", slug = sector_policy_tag_slugs(tags),
                         label = ifelse(tags == "Cross-cutting", "Cross-cutting (economy-wide)", tags), text = tolower(tags))
@@ -103,18 +124,22 @@ sector_fixed_items <- function() {
   out
 }
 
-# Links that are the same in the real export: activities -> every cell of their stage; policy tags
-# -> every cell of their technology (Critical Minerals -> the clean-tech Upstream cells).
+# The clean technologies whose materials the Critical Minerals policy tag covers.
+SECTOR_CRITMIN_TECHS <- c("Batteries", "Electric Vehicles", "Solar", "Wind", "Electric Grid", "Green Hydrogen")
+
+# Links that are the same in the real export: activities -> every cell of the stages they serve
+# (SECTOR_ACTIVITY_OF_STAGE); policy tags -> every cell of their technology (Critical Minerals -> the
+# clean-tech Extraction, Refining and Recovery cells: the stages that make or recover the materials).
 sector_fixed_links <- function(cells) {
-  act <- dplyr::bind_rows(lapply(SECTOR_STAGE_SLUGS, function(s) {
-    cs <- cells$slug[tolower(cells$stage) == s]
-    tibble::tibble(item_key = paste0("activity:", s), cell = cs, weight = 1)
+  act <- dplyr::bind_rows(lapply(SECTOR_ACTIVITIES$slug, function(a) {
+    cs <- cells$slug[cells$stage %in% names(SECTOR_ACTIVITY_OF_STAGE)[SECTOR_ACTIVITY_OF_STAGE == a]]
+    tibble::tibble(item_key = rep(paste0("activity:", a), length(cs)), cell = cs, weight = 1)
   }))
   pol <- dplyr::bind_rows(lapply(SECTOR_POLICY_TAGS, function(t) {
     cs <- if (t == "Critical Minerals") {
-      cells$slug[cells$stage == "Upstream" & cells$tech %in% c("Batteries", "Electric Vehicles", "Solar", "Wind", "Electric Grid", "Green Hydrogen")]
+      cells$slug[cells$stage %in% c("Extraction", "Refining", "Recovery") & cells$tech %in% SECTOR_CRITMIN_TECHS]
     } else cells$slug[cells$tech == t]
-    tibble::tibble(item_key = paste0("policy_tag:", sector_policy_tag_slugs(t)), cell = cs, weight = 1)
+    tibble::tibble(item_key = rep(paste0("policy_tag:", sector_policy_tag_slugs(t)), length(cs)), cell = cs, weight = 1)
   }))
   dplyr::bind_rows(act, pol)
 }
@@ -149,13 +174,13 @@ sector_synthetic_dyads <- function(tc, basket, cif_fob_factor = 1.06) {
 sector_synthetic_trade_cells <- function() {
   econ <- c("BRA", "CHN", "DEU", "EST", "HKG", "IDN", "JPN", "POL", "RUS", "USA")
   spec <- list(
-    list(tech = "Batteries", stage = "Midstream",
+    list(tech = "Batteries", stage = "Assembly",
          s = c(BRA = 0.05, CHN = 40, DEU = 6, EST = 0.1, HKG = 0.3, IDN = 1, JPN = 5, POL = 8, RUS = 0.2, USA = 4),
          w = c(BRA = 0.02, CHN = 0.05, DEU = 0.2, EST = 0.01, HKG = 0.03, IDN = 0.02, JPN = 0.1, POL = 0.08, RUS = 0.04, USA = 0.3)),
-    list(tech = "Batteries", stage = "Upstream",
+    list(tech = "Batteries", stage = "Extraction",
          s = c(BRA = 2, CHN = 1, DEU = 0.05, EST = 0, HKG = 0.01, IDN = 1.5, JPN = 0.02, POL = 0, RUS = 0.1, USA = 0.5),
          w = c(BRA = 0.01, CHN = 0.6, DEU = 0.05, EST = 0.01, HKG = 0.01, IDN = 0.02, JPN = 0.15, POL = 0.03, RUS = 0.01, USA = 0.1)),
-    list(tech = "Oil", stage = "Upstream",
+    list(tech = "Oil", stage = "Extraction",
          s = c(BRA = 30, CHN = 1, DEU = 0.5, EST = 0.1, HKG = 0, IDN = 10, JPN = 0.2, POL = 0.3, RUS = 60, USA = 100),
          w = c(BRA = 0.02, CHN = 0.3, DEU = 0.15, EST = 0.01, HKG = 0.02, IDN = 0.05, JPN = 0.15, POL = 0.05, RUS = 0, USA = 0.2))
   )
@@ -196,7 +221,7 @@ sector_synthetic_reporters <- function(trade_cells) {
 # Every synthetic long table (the `parts` of sector_assemble()). dict: sector_dictionary_tables().
 sector_synthetic_parts <- function(dict) {
   geo <- sector_synthetic_geo()
-  items <- sector_synthetic_items()
+  items <- sector_synthetic_items(cell_slugs = dict$cells$slug)
   cells <- items[items$axis == "cell", , drop = FALSE]
   econ <- geo$code[geo$kind == "country"]
   f <- list()
@@ -220,24 +245,25 @@ sector_synthetic_parts <- function(dict) {
   tw <- sector_trade_world(country)
   w[[length(w) + 1]] <- tw
   flows <- sector_trade_flows(tc)
+  # The basket by the codes' six-stage stage (the master's `stage` column), with one code shared with
+  # an Electric Grid cell that has no flows here.
   basket <- sector_trade_basket(tibble::tribble(
-    ~tech, ~supply_chain, ~sub_sector, ~hs6, ~note,
-    "Batteries", "Midstream", "Cells", 850760, NA,
-    "Batteries", "Midstream", "Lithium chemicals", 282520, NA,
-    "Batteries", "Midstream", "Anode materials", 380110, NA,
-    "Batteries", "Midstream", "Battery management", 850440, "kept with caveat (basket review 2026-10): static converters of every kind; general-purpose goods.",
-    "Batteries", "Upstream", "Ores and concentrates", 253090, NA,
-    "Batteries", "Upstream", "Lithium carbonate", 283691, NA,
-    "Oil", "Upstream", "Crude oil", 270900, NA,
-    "Electric Grid", "Midstream", "Converters", 850440, NA
+    ~tech, ~stage, ~sub_sector, ~hs6, ~note,
+    "Batteries", "Assembly", "Battery Cells", 850760, NA,
+    "Batteries", "Assembly", "Battery Packs, Parts & BMS", 850790, NA,
+    "Batteries", "Assembly", "Battery management", 850440, "kept with caveat (basket review 2026-10): static converters of every kind; general-purpose goods.",
+    "Batteries", "Extraction", "Ores & Concentrates", 253090, NA,
+    "Batteries", "Extraction", "Natural graphite", 250410, NA,
+    "Oil", "Extraction", "Crude Oils", 270900, NA,
+    "Electric Grid", "Components", "Power Converters & Parts", 850440, NA
   ))
-  desc <- c(`850760` = "Lithium-ion accumulators", `282520` = "Lithium oxide and hydroxide", `380110` = "Artificial graphite",
-            `850440` = "Static converters", `253090` = "Mineral substances n.e.c.", `283691` = "Lithium carbonates",
-            `270900` = "Crude petroleum oils")
-  ref <- tibble::tibble(tech = "Batteries", supply_chain = "Midstream", sub_sector = "Cells", hs6 = 850680, excluded = TRUE,
+  desc <- c(`850760` = "Lithium-ion accumulators", `850790` = "Parts of electric accumulators", `850440` = "Static converters",
+            `253090` = "Mineral substances n.e.c.", `250410` = "Natural graphite in powder or flakes", `270900` = "Crude petroleum oils")
+  # The reference master's excluded rows have no stage: shipped at the technology level.
+  ref <- tibble::tibble(tech = "Batteries", sub_sector = "Battery Cells", hs6 = 850680, excluded = TRUE,
                         note = "excluded (basket review 2026-10): primary lithium cells are not rechargeable storage")
-  codes_all <- sector_trade_codes(basket[basket$cell != "electric-grid-midstream", ], desc)
-  excl_all <- sector_trade_excluded(ref, cells$slug)
+  codes_all <- sector_trade_codes(basket[basket$cell != "electric-grid-components", ], desc)
+  excl_all <- sector_trade_excluded(ref, c("Batteries", "Oil"))
   eu_members <- geo$code[geo$eu_member]
   eu_intra <- sector_eu_intra(tc, eu_members)
   # Trade by sub-component: the real helpers on HS6-level dyads that reproduce the synthetic matrix.
@@ -251,30 +277,42 @@ sector_synthetic_parts <- function(dict) {
       flows = flows[flows$item_key %in% ck, , drop = FALSE],
       declared = declared[declared$item_key %in% ck, , drop = FALSE],
       codes = codes_all[codes_all$item_key %in% ck, , drop = FALSE],
-      excluded = excl_all[excl_all$item_key %in% ck, , drop = FALSE],
+      excluded = excl_all[excl_all$tech == SECTOR_TECH_LABELS[[tech]], , drop = FALSE],
       cty_sub = cty_sub[cty_sub$item_key %in% ck, , drop = FALSE],
       sub_intra = sub$intra[sub$intra$item_key %in% ck, , drop = FALSE]
     )
   }
 
-  bm <- "cell:batteries-midstream"
+  ba <- "cell:batteries-assembly"
+  bc <- "cell:batteries-components"
+  be <- "cell:batteries-extraction"
   # trade.rca (exporter-reported; HKG excluded; RUS did not report; small exporters nq).
-  add("trade.rca", bm, c("CHN", "POL", "DEU", "JPN", "USA", "IDN", "EST", "BRA"), 2024,
+  add("trade.rca", ba, c("CHN", "POL", "DEU", "JPN", "USA", "IDN", "EST", "BRA"), 2024,
       c(3.1, 4.2, 0.9, 1.1, 0.3, NaN, NaN, NaN), c("obs", "obs", "obs", "obs", "obs", "nq", "nq", "nq"))
-  add("trade.atlas_share", bm, econ, 2023,
+  add("trade.atlas_share", ba, econ, 2023,
       c(0.0005, 0.409, 0.044, 0.0004, 0.003, 0.01, 0.04, 0.05, 0.001, 0.03))
   # Export feasibility (Atlas relatedness, 0-1); HKG has none (not in the Atlas HS4 panel here).
-  add("trade.feasibility", bm, setdiff(econ, "HKG"), 2023, c(0.071, 0.513, 0.412, 0.205, 0.188, 0.397, 0.371, 0.096, 0.402))
-  add("trade.feasibility", "cell:batteries-upstream", setdiff(econ, "HKG"), 2023, c(0.144, 0.162, 0.083, 0.051, 0.122, 0.064, 0.077, 0.139, 0.095))
-  addw("trade.atlas_share", bm, 2023, 1, "one")
-  add("trade.critmin_exports", "mineral:lithium", c("CHN", "BRA", "USA", "IDN", "RUS", "HKG"), 2024,
-      c(2.3e9, 0.4e9, 0.1e9, 0, 0.05e9, 0.02e9), c("obs", "obs", "obs", "zero", "mirror", "obs"))
-  add("trade.critmin_exports", "mineral:graphite", c("CHN", "DEU", "JPN", "BRA", "POL"), 2024,
+  add("trade.feasibility", ba, setdiff(econ, "HKG"), 2023, c(0.071, 0.513, 0.412, 0.205, 0.188, 0.397, 0.371, 0.096, 0.402))
+  add("trade.feasibility", be, setdiff(econ, "HKG"), 2023, c(0.144, 0.162, 0.083, 0.051, 0.122, 0.064, 0.077, 0.139, 0.095))
+  addw("trade.atlas_share", ba, 2023, 1, "one")
+  # Mineral trade by stage (items mineral_stage): each stage its own basket and world total.
+  le <- "mineral_stage:lithium-extraction"
+  lr <- "mineral_stage:lithium-refining"
+  gr <- "mineral_stage:graphite-refining"
+  gv <- "mineral_stage:graphite-recovery"
+  add("trade.critmin_exports", le, c("CHN", "BRA", "USA", "IDN", "RUS", "HKG"), 2024,
+      c(0.3e9, 0.4e9, 0.1e9, 0, 0.05e9, 0.02e9), c("obs", "obs", "obs", "zero", "mirror", "obs"))
+  add("trade.critmin_exports", lr, c("CHN", "USA", "JPN", "DEU"), 2024, c(2.0e9, 0.15e9, 0.1e9, 0.02e9))
+  add("trade.critmin_exports", gr, c("CHN", "DEU", "JPN", "BRA", "POL"), 2024,
       c(1.5e9, 0.2e9, 0.1e9, 0.05e9, 0), c("obs", "obs", "obs", "obs", "zero"))
-  addw("trade.critmin_exports", "mineral:lithium", 2024, 2.87e9, "sum_all")
-  addw("trade.critmin_exports", "mineral:graphite", 2024, 1.85e9, "sum_all")
-  add("trade.critmin_dependence", "mineral:lithium", c("CHN", "BRA", "USA", "IDN", "RUS", "HKG"), 2024,
-      c(0.00065, 0.0012, 0.00005, 0, 0.00012, 0.00003), c("obs", "obs", "obs", "zero", "mirror", "obs"))
+  add("trade.critmin_exports", gv, c("DEU", "JPN", "USA"), 2024, c(0.03e9, 0.02e9, 0.01e9))
+  addw("trade.critmin_exports", le, 2024, 0.87e9, "sum_all")
+  addw("trade.critmin_exports", lr, 2024, 2.27e9, "sum_all")
+  addw("trade.critmin_exports", gr, 2024, 1.85e9, "sum_all")
+  addw("trade.critmin_exports", gv, 2024, 0.06e9, "sum_all")
+  add("trade.critmin_dependence", le, c("CHN", "BRA", "USA", "IDN", "RUS", "HKG"), 2024,
+      c(0.00008, 0.0012, 0.00005, 0, 0.00012, 0.00003), c("obs", "obs", "obs", "zero", "mirror", "obs"))
+  add("trade.critmin_dependence", lr, c("CHN", "USA", "JPN", "DEU"), 2024, c(0.00057, 0.00007, 0.00014, 0.00001))
 
   # Resources.
   add("resources.fuel_reserves", "fuel:oil", c("USA", "RUS", "BRA", "CHN", "IDN"), 2020, c(68.8, 107.8, 11.9, 26, 2.4))
@@ -284,10 +322,10 @@ sector_synthetic_parts <- function(dict) {
       c(81000, 74000, 14000, NaN, NaN), c("obs", "obs", "obs", "nq", "nq"))
   addw("resources.mineral_reserves", "mineral:lithium", 2025, 30000, "source_world")
   addw("resources.mineral_reserves", "mineral:graphite", 2025, 290000, "source_world")
-  sd <- "cell:solar-downstream"
+  sd <- "cell:solar-deployment"
   add("resources.pv_quality", sd, econ, 2023, c(4.88, 4.01, 2.83, 2.61, 3.68, 3.95, 3.52, 2.9, 2.75, 4.43))
   add("resources.pv_area", sd, econ, 2023, c(4.16e7, 3.85e7, 1.01e6, 1.18e5, 4.0e3, 7.5e6, 1.33e6, 9.07e5, 4.69e7, 4.2e7))
-  gd <- "cell:geothermal-downstream"
+  gd <- "cell:geothermal-deployment"
   add("resources.geo_potential", gd, c("USA", "CHN", "BRA", "IDN", "JPN", "DEU"), 2023, c(1128988, 850000, 410000, 120000, 45000, 30000))
   add("resources.geo_lcoe_500", gd, c("USA", "CHN", "IDN", "JPN"), 2023, c(0.03, 0.035, 0.04, 0.068))
 
@@ -314,39 +352,64 @@ sector_synthetic_parts <- function(dict) {
   }
   add("production.mine_usgs", "mineral:lithium", c("CHN", "BRA", "USA"), 2025, c(22000, 10000, NaN), c("obs", "obs", "nq"))
   addw("production.mine_usgs", "mineral:lithium", 2025, 240000, "source_world")
-  nu <- "cell:nuclear-upstream"
+  nu <- "cell:nuclear-extraction"
   for (yr in 2023:2024) {
     add("production.uranium", nu, econ, yr,
         c(50, 1700, 0, 0, 0, 0, 0, 0, 2600 + 100 * (yr - 2023), 600 + 77 * (yr - 2023)),
         ifelse(c(50, 1700, 0, 0, 0, 0, 0, 0, 1, 1) > 0, "obs", "zero"))
   }
-  em <- "cell:electric-vehicles-midstream"
+  # IEA EV regions: production and the net-export ratio at Assembly, sales at Deployment.
+  em <- "cell:electric-vehicles-assembly"
+  emd <- "cell:electric-vehicles-deployment"
   reg <- c("R:iea_ev:china", "R:iea_ev:european-union", "R:iea_ev:rest-of-world")
   add("production.ev_region", em, reg, 2024, c(12.4047, 2.369, 2.5))
-  add("production.ev_region_sales", em, reg, 2024, c(11.23, 2.226, 4.0))
+  add("production.ev_region_sales", emd, reg, 2024, c(11.23, 2.226, 4.0))
   add("manufacturing.ev_net_export_ratio", em, reg, 2024, c(0.1045948, 0.064240791, -0.375))
+  # IEA ETP shares: one figure per technology's manufacturing, filed at one stage (batteries at
+  # Components, solar at Assembly) and shown on both with the note same_figure_pair.
   ent <- c("E:iea_etp:china", "E:iea_etp:eu", "E:iea_etp:us")
-  add("manufacturing.share_now", bm, ent, 2024, c(0.76, 0.08, 0.07))
-  add("manufacturing.share_now", "cell:solar-midstream", ent, 2024, c(0.79, 0, 0), c("obs", "nq", "nq"))
-  add("manufacturing.share_2035", bm, ent, 2035, c(0.68, 0.11, 0.15))
-  for (k in c(bm, "cell:solar-midstream")) {
+  sa <- "cell:solar-assembly"
+  sc <- "cell:solar-components"
+  for (k in c(bc, ba)) {
+    add("manufacturing.share_now", k, ent, 2024, c(0.76, 0.08, 0.07))
+    add("manufacturing.share_2035", k, ent, 2035, c(0.68, 0.11, 0.15))
+    addw("manufacturing.share_now", k, 2024, 1, "one")
+    addw("manufacturing.share_2035", k, 2035, 1, "one")
+  }
+  for (k in c(sc, sa)) {
+    add("manufacturing.share_now", k, ent, 2024, c(0.79, 0, 0), c("obs", "nq", "nq"))
     addw("manufacturing.share_now", k, 2024, 1, "one")
   }
-  addw("manufacturing.share_2035", bm, 2035, 1, "one")
 
-  # Investment (CIM), 2018-2025; 2025 rows are estimates.
+  # Investment (CIM), 2018-2025; 2025 rows are estimates for solar and the critical minerals.
+  # Manufacturing capex has no product detail: the same amount on Components and Assembly (note
+  # same_figure_pair, counted once by investment@1); the critical-minerals capex is split between
+  # Batteries and Electric Vehicles Refining (note cim_minerals_split).
   inv <- tibble::tribble(
     ~cell, ~geo, ~v2018, ~g,
-    "batteries-midstream", "CHN", 9, 1.25, "batteries-midstream", "USA", 2.5, 1.4, "batteries-midstream", "DEU", 1.5, 1.2,
-    "batteries-midstream", "POL", 1.2, 1.1, "batteries-midstream", "JPN", 0.8, 1.05, "batteries-midstream", "IDN", 0.1, 1.6,
-    "solar-downstream", "CHN", 60, 1.2, "solar-downstream", "USA", 20, 1.15, "solar-downstream", "DEU", 9, 1.08,
-    "solar-downstream", "JPN", 12, 0.95, "solar-downstream", "BRA", 2, 1.35, "solar-downstream", "POL", 1, 1.3
+    "batteries-components", "CHN", 9, 1.25, "batteries-components", "USA", 2.5, 1.4, "batteries-components", "DEU", 1.5, 1.2,
+    "batteries-components", "POL", 1.2, 1.1, "batteries-components", "JPN", 0.8, 1.05, "batteries-components", "IDN", 0.1, 1.6,
+    "batteries-assembly", "CHN", 9, 1.25, "batteries-assembly", "USA", 2.5, 1.4, "batteries-assembly", "DEU", 1.5, 1.2,
+    "batteries-assembly", "POL", 1.2, 1.1, "batteries-assembly", "JPN", 0.8, 1.05, "batteries-assembly", "IDN", 0.1, 1.6,
+    "batteries-refining", "CHN", 1.2, 1.3, "batteries-refining", "IDN", 0.6, 1.5,
+    "electric-vehicles-refining", "CHN", 1.8, 1.3, "electric-vehicles-refining", "IDN", 0.9, 1.5,
+    "solar-deployment", "CHN", 60, 1.2, "solar-deployment", "USA", 20, 1.15, "solar-deployment", "DEU", 9, 1.08,
+    "solar-deployment", "JPN", 12, 0.95, "solar-deployment", "BRA", 2, 1.35, "solar-deployment", "POL", 1, 1.3
   )
+  inv_notes <- list()
   for (i in seq_len(nrow(inv))) {
     yrs <- 2018:2025
     v <- inv$v2018[i] * inv$g[i]^(yrs - 2018)
-    add("investment.annual", paste0("cell:", inv$cell[i]), inv$geo[i], yrs, v, ifelse(yrs == 2025, "est", "obs"))
+    est <- yrs == 2025 & (startsWith(inv$cell[i], "solar-") | endsWith(inv$cell[i], "-refining"))
+    add("investment.annual", paste0("cell:", inv$cell[i]), inv$geo[i], yrs, v, ifelse(est, "est", "obs"))
+    note <- if (endsWith(inv$cell[i], "-components") || endsWith(inv$cell[i], "-assembly")) SECTOR_PAIR_NOTE else if (endsWith(inv$cell[i], "-refining")) "cim_minerals_split" else NA_character_
+    if (!is.na(note)) inv_notes[[length(inv_notes) + 1]] <- tibble::tibble(var = "investment.annual", item_key = paste0("cell:", inv$cell[i]), geo = inv$geo[i],
+                                                                         year = yrs, note = note)
   }
+  etp_notes <- dplyr::bind_rows(lapply(c(bc, ba, sc, sa), function(k) {
+    dplyr::bind_rows(tibble::tibble(var = "manufacturing.share_now", item_key = k, geo = ent, year = 2024L, note = SECTOR_PAIR_NOTE),
+                     if (k %in% c(bc, ba)) tibble::tibble(var = "manufacturing.share_2035", item_key = k, geo = ent, year = 2035L, note = SECTOR_PAIR_NOTE))
+  }))
   for (cl in unique(inv$cell)) for (yr in 2018:2025) {
     x <- dplyr::bind_rows(f)
     x <- x[x$var == "investment.annual" & x$item_key == paste0("cell:", cl) & x$year == yr, ]
@@ -368,7 +431,7 @@ sector_synthetic_parts <- function(dict) {
       c(5.2, 7.1, -6.5, -3.6, -2.9, -0.6, 0.9, -0.3, -0.02))
   add("consumption.self_sufficiency", "fuel:oil", c("USA", "RUS", "BRA", "CHN", "JPN", "DEU", "POL", "IDN"), 2025,
       c(115, 380, 130, 30, 0.3, 2, 4, 60))
-  ed <- "cell:electric-vehicles-downstream"
+  ed <- "cell:electric-vehicles-deployment"
   add("consumption.ev_sales", ed, c("CHN", "USA", "DEU", "JPN", "POL", "BRA", "IDN", "EST"), 2025,
       c(13300005, 1530000, 860000, 110000, 40000, 180000, 90000, 2270))
   add("consumption.ev_sales", ed, c("CHN", "USA", "JPN"), 2035, c(25600000, 4000000, 2000000))
@@ -386,18 +449,18 @@ sector_synthetic_parts <- function(dict) {
   add("prices.vol_5y", c("commodity:oil-brent", "commodity:lithium"), "WLD", 2025, c(0.31, 0.81))
   add("prices.vol_10y", c("commodity:oil-brent", "commodity:lithium"), "WLD", 2025, c(0.33, 0.73))
   add("prices.vol_20y", c("commodity:oil-brent", "commodity:lithium"), "WLD", 2025, c(0.35, 0.55))
-  add("prices.wages", "activity:midstream", c("CHN", "USA", "DEU", "JPN", "POL", "BRA", "IDN"), 2025,
+  add("prices.wages", "activity:manufacturing", c("CHN", "USA", "DEU", "JPN", "POL", "BRA", "IDN"), 2025,
       c(833, 7055, 5545, 2687, 1900, 600, 250), "obs", c(2022, 2024, 2022, 2021, 2023, 2024, 2015))
-  add("prices.wages", "activity:upstream", c("CHN", "USA", "BRA"), 2025, c(1100, 8100, 900), "obs", c(2022, 2024, 2024))
+  add("prices.wages", "activity:mining-utilities", c("CHN", "USA", "BRA"), 2025, c(1100, 8100, 900), "obs", c(2022, 2024, 2024))
   add("prices.lending_rate", "none:none", c("CHN", "USA", "DEU", "JPN", "BRA", "POL"), 2025, c(3, 7.5, 4.1, 1.4, 46, 7.2), "obs",
       c(2026, 2021, 2025, 2017, 2025, 2025))
   add("prices.ppi_yoy", "none:none", c("DEU", "USA", "CHN", "POL"), 2025, c(-1.2, 2.1, -2.3, 0.5), "obs", c(2025, 2025, 2025, 2024))
 
   # Technology (cell_global, the WLD row).
-  trl <- c(`batteries-upstream` = 6.9, `batteries-midstream` = 7.318182, `oil-upstream` = 9.5, `solar-downstream` = 9.4,
-           `geothermal-upstream` = 5.444444, `nuclear-upstream` = 9, `electric-vehicles-midstream` = 9.666667)
+  trl <- c(`batteries-extraction` = 6.9, `batteries-refining` = 7.1, `batteries-assembly` = 7.318182, `oil-extraction` = 9.5,
+           `solar-deployment` = 9.4, `geothermal-extraction` = 5.444444, `nuclear-extraction` = 9, `electric-vehicles-assembly` = 9.666667)
   add("technology.trl", paste0("cell:", names(trl)), "WLD", 2025, unname(trl))
-  add("technology.trl_change", paste0("cell:", names(trl)), "WLD", 2025, c(1.2, 1.35, 0.1, 0.4, 0, 0.2, 0.9))
+  add("technology.trl_change", paste0("cell:", names(trl)), "WLD", 2025, c(1.2, 1.25, 1.35, 0.1, 0.4, 0, 0.2, 0.9))
   add("development.alignment", "none:none", econ, 2023, geo$s_axis[match(econ, geo$code)])
 
   facts <- dplyr::bind_rows(f)
@@ -430,7 +493,7 @@ sector_synthetic_parts <- function(dict) {
   for (j in seq_along(reg)) {
     s[[length(s) + 1]] <- tibble::tibble(var = "production.ev_region", item_key = em, geo = reg[j], year = 2021:2024,
                                          value = c(3.29, 6.45, 8.6, 12.4047)[c(1, 2, 3, 4)] * c(1, 0.191, 0.2015)[j], status = "obs", obs_year = NA_integer_)
-    s[[length(s) + 1]] <- tibble::tibble(var = "production.ev_region_sales", item_key = em, geo = reg[j], year = 2021:2024,
+    s[[length(s) + 1]] <- tibble::tibble(var = "production.ev_region_sales", item_key = emd, geo = reg[j], year = 2021:2024,
                                          value = c(3.33, 6.0, 8.1, 11.23) * c(1, 0.1982, 0.3562)[j], status = "obs", obs_year = NA_integer_)
   }
   for (g in c("CHN", "USA", "DEU", "BRA")) {
@@ -469,41 +532,46 @@ sector_synthetic_parts <- function(dict) {
   for (cm in c("commodity:oil-brent", "commodity:lithium")) {
     monthly$value[monthly$item_key == cm & monthly$year == 2025 & monthly$month == 12] <- facts$value[facts$var == "prices.latest" & facts$item_key == cm]
   }
+  # CIM capacity staged by product (cells and electrode active material at Components, the
+  # critical-minerals chemicals at Refining).
+  br <- "cell:batteries-refining"
   capacity <- tibble::tribble(
     ~item_key, ~product, ~unit, ~geo, ~year, ~cap_status, ~value, ~status,
-    bm, "Battery cells", "GWh", "CHN", 2025L, "operational", 1500, "obs",
-    bm, "Battery cells", "GWh", "CHN", 2025L, "construction", 300, "obs",
-    bm, "Battery cells", "GWh", "CHN", 2025L, "announced", 800, "obs",
-    bm, "Battery cells", "GWh", "USA", 2025L, "operational", 120, "obs",
-    bm, "Battery cells", "GWh", "USA", 2025L, "announced", 400, "obs",
-    bm, "Battery cells", "GWh", "USA", 2025L, "paused", 30, "obs",
-    bm, "Battery cells", "GWh", "DEU", 2025L, "operational", 60, "obs",
-    bm, "Cathode active material", "kt", "CHN", 2025L, "operational", 4200, "obs",
-    bm, "Cathode active material", "kt", "POL", 2025L, "operational", 90, "est"
+    bc, "Battery cells", "GWh", "CHN", 2025L, "operational", 1500, "obs",
+    bc, "Battery cells", "GWh", "CHN", 2025L, "construction", 300, "obs",
+    bc, "Battery cells", "GWh", "CHN", 2025L, "announced", 800, "obs",
+    bc, "Battery cells", "GWh", "USA", 2025L, "operational", 120, "obs",
+    bc, "Battery cells", "GWh", "USA", 2025L, "announced", 400, "obs",
+    bc, "Battery cells", "GWh", "USA", 2025L, "paused", 30, "obs",
+    bc, "Battery cells", "GWh", "DEU", 2025L, "operational", 60, "obs",
+    bc, "Cathode active material", "kt", "CHN", 2025L, "operational", 4200, "obs",
+    bc, "Cathode active material", "kt", "POL", 2025L, "operational", 90, "est",
+    br, "Lithium Hydroxide", "t/yr", "CHN", 2025L, "operational", 520000, "obs",
+    br, "Lithium Hydroxide", "t/yr", "USA", 2025L, "announced", 50000, "obs"
   )
   series <- list(obs = series_obs, world = series_world, monthly = monthly, capacity = capacity)
 
   # Policy.
   pams <- tibble::tribble(
     ~geo, ~year, ~status, ~jurisdiction, ~type, ~tags, ~stages, ~tech_src, ~title,
-    "USA", 2022L, "In force", "National", "Financial incentive", "Batteries|Electric Vehicles", "Midstream", "iea", "Advanced manufacturing production credit",
-    "USA", 2023L, "In force", "National", "Regulation/standard", "Electric Vehicles", "Downstream", "iea", "Clean vehicle credit sourcing rules",
-    "USA", 2027L, "Planned", "National", "Financial incentive", "Critical Minerals", "Upstream", "text", "Critical minerals stockpile programme",
-    "CHN", 2021L, "In force", "National", "Regulation/standard", "Batteries", "Midstream", "iea", "Battery industry standard conditions",
-    "CHN", 2016L, "Ended", "National", "Financial incentive", "Solar", "Downstream", "iea", "Solar feed-in tariff",
+    "USA", 2022L, "In force", "National", "Financial incentive", "Batteries|Electric Vehicles", "Components|Assembly", "iea", "Advanced manufacturing production credit",
+    "USA", 2023L, "In force", "National", "Regulation/standard", "Electric Vehicles", "Deployment", "iea", "Clean vehicle credit sourcing rules",
+    "USA", 2027L, "Planned", "National", "Financial incentive", "Critical Minerals", "Extraction|Refining", "text", "Critical minerals stockpile programme",
+    "CHN", 2021L, "In force", "National", "Regulation/standard", "Batteries", "Assembly", "iea", "Battery industry standard conditions",
+    "CHN", 2016L, "Ended", "National", "Financial incentive", "Solar", "Deployment", "iea", "Solar feed-in tariff",
     "CHN", 2026L, "Planned", "National", "Other", "Oil", "", "text", "Strategic petroleum reserve expansion",
-    "DEU", 2020L, "In force", "National", "R&D / Demonstration", "Batteries", "Midstream|Upstream", "iea", "Battery cell research programme",
+    "DEU", 2020L, "In force", "National", "R&D / Demonstration", "Batteries", "Refining|Components", "iea", "Battery cell research programme",
     "DEU", 2019L, "In force", "National", "Regulation/standard", "", "", NA, "Climate action programme",
-    "POL", 2021L, "In force", "National", "Financial incentive", "Electric Vehicles", "Downstream", "iea", "Clean transport fund",
-    "EUU", 2023L, "In force", "International", "Regulation/standard", "Batteries", "Midstream|Downstream", "iea", "Batteries regulation",
-    "EUU", 2024L, "In force", "International", "Regulation/standard", "Critical Minerals", "Upstream|Midstream", "iea", "Critical raw materials act",
+    "POL", 2021L, "In force", "National", "Financial incentive", "Electric Vehicles", "Deployment", "iea", "Clean transport fund",
+    "EUU", 2023L, "In force", "International", "Regulation/standard", "Batteries", "Assembly|Recovery", "iea", "Batteries regulation",
+    "EUU", 2024L, "In force", "International", "Regulation/standard", "Critical Minerals", "Extraction|Refining|Recovery", "iea", "Critical raw materials act",
     "EUU", 2028L, "Planned", "International", "Financial incentive", "", "", NA, "Clean industrial deal fund",
-    "JPN", 2022L, "In force", "National", "Financial incentive", "Batteries", "Midstream", "iea", "Storage battery supply chain subsidy",
+    "JPN", 2022L, "In force", "National", "Financial incentive", "Batteries", "Components", "iea", "Storage battery supply chain subsidy",
     "JPN", 2015L, "Unknown", "National", "Information/labeling", "Solar", "", "text", "Solar labelling scheme",
-    "BRA", 2024L, "In force", "National", "Financial incentive", "Critical Minerals", "Upstream", "text", "Strategic minerals fund",
-    "IDN", 2020L, "In force", "National", "Regulation/standard", "Critical Minerals", "Upstream|Midstream", "iea", "Nickel ore export ban",
-    "IDN", 2029L, "Planned", "National", "Other", "Electric Vehicles", "Midstream", "text", "EV industrial estate plan",
-    "RUS", 2018L, "In force", "National", "Other", "Oil|Gas", "Upstream", "iea", "Tax manoeuvre for oil and gas",
+    "BRA", 2024L, "In force", "National", "Financial incentive", "Critical Minerals", "Extraction", "text", "Strategic minerals fund",
+    "IDN", 2020L, "In force", "National", "Regulation/standard", "Critical Minerals", "Extraction|Refining", "iea", "Nickel ore export ban",
+    "IDN", 2029L, "Planned", "National", "Other", "Electric Vehicles", "Assembly", "text", "EV industrial estate plan",
+    "RUS", 2018L, "In force", "National", "Other", "Oil|Gas", "Extraction", "iea", "Tax manoeuvre for oil and gas",
     "HKG", 2021L, "In force", "Subnational", "Voluntary/coordination", "", "", NA, "Climate action plan"
   )
   pams$tech_mask <- vapply(pams$tags, function(t) {
@@ -535,22 +603,17 @@ sector_synthetic_parts <- function(dict) {
     )
   )
 
-  # Links and IEA demand.
-  item_links <- dplyr::bind_rows(
-    tibble::tribble(
-      ~item_key, ~cell, ~weight,
-      "mineral:lithium", "batteries-upstream", 0.12,
-      "mineral:lithium", "electric-vehicles-upstream", 0.85,
-      "mineral:graphite", "batteries-upstream", 0.1,
-      "mineral:graphite", "electric-vehicles-upstream", 0.82,
-      "fuel:oil", "oil-upstream", 1, "fuel:oil", "oil-downstream", 1,
-      "fuel:gas", "gas-upstream", 1, "fuel:gas", "gas-downstream", 1, "fuel:solar", "solar-downstream", 1,
-      "commodity:oil-brent", "oil-upstream", 1,
-      "commodity:lithium", "batteries-upstream", 1,
-      "commodity:lithium", "electric-vehicles-upstream", 1
-    ),
-    sector_fixed_links(cells)
-  )
+  # Links (the real rule, sector_item_links(), on the fixture's demand shares and price stages) and
+  # IEA demand.
+  mineral_links <- tibble::tibble(mineral = c("Lithium", "Lithium", "Graphite", "Graphite"),
+                                  tech = c("Batteries", "Electric Vehicles", "Batteries", "Electric Vehicles"),
+                                  mineral_demand_share = c(0.12, 0.85, 0.1, 0.82))
+  price_techs <- tibble::tibble(sub_sector = c("Oil_Brent", "Lithium", "Lithium"), tech = c("Oil", "Batteries", "Electric Vehicles"),
+                                supply_chain = c("Extraction", "Refining", "Refining"))
+  commodities <- tibble::tibble(sub_sector = c("Oil_Brent", "Lithium"), slug = c("oil-brent", "lithium"))
+  item_links <- sector_item_links(mineral_links, price_techs, commodities, cells, items[items$axis == "mineral_stage", , drop = FALSE])
+  # Fuels the fixture has no item for (coal, nuclear, wind, hydrogen) are not linked.
+  item_links <- item_links[!startsWith(item_links$item_key, "fuel:") | item_links$item_key %in% sector_item_key("fuel", items$slug[items$axis == "fuel"]), , drop = FALSE]
   mineral_demand <- tibble::tribble(
     ~mineral, ~tech, ~label, ~scenario, ~year, ~kt,
     "lithium", "Electric Vehicles", "Electric vehicles", "observed", 2025L, 180,
@@ -575,7 +638,7 @@ sector_synthetic_parts <- function(dict) {
                        item_key = rep(c("commodity:oil-brent", "commodity:lithium"), 2), unit = rep(c("usd_bbl", "usd_t"), 2))
   item_units <- dplyr::bind_rows(item_units, pu)
 
-  reported <- tibble::tibble(item_key = bm, year = 2024L, total = 6.2e10, china_reported = 0.61, hhi_reported = 0.41, n_reporters = 8L)
+  reported <- tibble::tibble(item_key = ba, year = 2024L, total = 6.2e10, china_reported = 0.61, hhi_reported = 0.41, n_reporters = 8L)
 
   fdi_clean <- sector_fdi_clean(sector_synthetic_cmfdi_raw(), sector_synthetic_iso3)
   fdi <- sector_fdi_part(fdi_clean, geo)
@@ -608,14 +671,18 @@ sector_synthetic_parts <- function(dict) {
     ),
     facts = facts, world = world, series = series, trade = trade, eu_intra = eu_intra, policy = policy, fdi = fdi,
     dev = dev$part, dev_year = 2024L,
-    # Per-fact notes (facts.notes): Japan's gas production as if from EIA, Estonia's oil balance assumed zero.
-    fact_notes = tibble::tibble(
-      var = c("production.fuels", "consumption.balance", "consumption.balance"),
-      item_key = c("fuel:gas", "fuel:gas", "fuel:oil"), geo = c("JPN", "JPN", "EST"), year = 2025L,
-      note = c("eia_production", "eia_production", "production_assumed_zero")
+    # Per-fact notes (facts.notes): Japan's gas production as if from EIA, Estonia's oil balance assumed
+    # zero, the figures shown on both manufacturing stages and the critical-minerals split.
+    fact_notes = dplyr::bind_rows(
+      tibble::tibble(
+        var = c("production.fuels", "consumption.balance", "consumption.balance"),
+        item_key = c("fuel:gas", "fuel:gas", "fuel:oil"), geo = c("JPN", "JPN", "EST"), year = 2025L,
+        note = c("eia_production", "eia_production", "production_assumed_zero")
+      ),
+      dplyr::bind_rows(inv_notes), etp_notes
     ),
     reported = reported,
-    licensed = tibble::tibble(item_key = c("cell:solar-downstream", "cell:wind-downstream"), family = "prices", sources = "BNEF LCOE"),
+    licensed = tibble::tibble(item_key = c("cell:solar-deployment", "cell:wind-deployment"), family = "prices", sources = "BNEF LCOE"),
     headline_sources = sector_headline_sources()
   )
 }
@@ -630,8 +697,8 @@ sector_headline_sources <- function() {
 
 # Placeholder values of the synthetic bundle (the CM-FDI counts from its synthetic projects).
 sector_synthetic_fill <- function() {
-  c(list(n_shared_codes = 1, n_codes = 7, n_rca_reporters = 8, critmin_year = 2024, pams_export_date = "2026-01-22",
-         pams_year_max = 2030, trl_fallback_cells = "Geothermal Upstream", pct_cross_cutting = 16),
+  c(list(n_shared_codes = 1, n_codes = 6, n_rca_reporters = 8, critmin_year = 2024, pams_export_date = "2026-01-22",
+         pams_year_max = 2030, trl_fallback_cells = "Geothermal Extraction", pct_cross_cutting = 16),
     sector_fdi_fill(sector_fdi_clean(sector_synthetic_cmfdi_raw(), sector_synthetic_iso3)),
     sector_dev_synthetic(sector_synthetic_items()[0, ])$fill)
 }

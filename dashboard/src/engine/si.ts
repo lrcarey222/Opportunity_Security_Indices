@@ -7,11 +7,12 @@
 //
 // Each cell also carries the country's policy_basis ("IEA PAMS + CAT" / "IEA PAMS only"; NA without
 // a Policy value) and the endowment screen of the allied picks (flag_strategic_resource_base()):
-// resource_base TRUE / FALSE in a screened Upstream stage of bundle.si.resource_base, NA elsewhere,
+// resource_base TRUE / FALSE in a screened Extraction stage of bundle.si.resource_base, NA elsewhere,
 // and pick_exclusion "no resource base" where FALSE. alliedSelection() skips those cells while
-// params.si.require_resource_base is on (the default).
+// params.si.require_resource_base is on (the default), and picks only in the stages of
+// baselineInputs.allied_stages (every stage but Deployment).
 
-import { cmpC, medianScurve, meanR, NA_BOOL, orderBy, rankMin, sdR } from './numeric.ts';
+import { cmpC, EngineError, medianScurve, meanR, NA_BOOL, orderBy, rankMin, sdR } from './numeric.ts';
 import { has, lgl, matchIdx, num, rowKeys, str, table } from './table.ts';
 import type { Bundle, NumRecord, Params, PillarsResult, PolicyResult, SiResult, Str, Table } from './types.ts';
 
@@ -354,19 +355,23 @@ export function si(bundle: Pick<Bundle, 'dims' | 'si' | 'pillars'>, params: Para
         ? 'excluded: fossil technology (greenness)'
         : degSet.has(s)
           ? 'excluded: a pillar is constant across countries'
-          : 'excluded: not reported (pipeline list)',
+          : 'excluded: not reported (pipeline rule)',
     ),
   });
   return { cells, excluded, weights: { ...w }, stage_weights: { ...sp.stage_weights }, degenerate };
 }
 
-/** select_allied_strategic_sectors(): each coalition member's top Upstream / Midstream sector (ties
- * kept), outside Geothermal and Green Hydrogen. With params.si.require_resource_base (the default;
- * params absent = on) a cell flagged resource_base FALSE is not eligible. The picks carry the cell's
- * policy_basis and screen flags. */
+/** select_allied_strategic_sectors(): each coalition member's top sector (ties kept) in the stages of
+ * baselineInputs.allied_stages (the pipeline's STRATEGIC_ALLIED_STAGES: every stage but Deployment),
+ * outside Geothermal and Green Hydrogen. With params.si.require_resource_base (the default; params
+ * absent = on) a cell flagged resource_base FALSE is not eligible. The picks carry the cell's
+ * policy_basis and screen flags. A bundle without allied_stages throws (no stage list is assumed). */
 export function alliedSelection(siRes: SiResult, bundle: Pick<Bundle, 'si' | 'baselineInputs'>, params?: Pick<Params, 'si'>): Table {
   const allies = bundle.si.allies;
   const ex = new Set(bundle.baselineInputs.allied_excluded_techs ?? ['Geothermal', 'Green Hydrogen']);
+  const stagesIn = bundle.baselineInputs.allied_stages;
+  if (!stagesIn) throw new EngineError('BUNDLE', 'baseline_inputs.allied_stages is missing; rebuild the data with scripts/85.');
+  const alliedStages = new Set(stagesIn);
   const screen = !params || params.si.require_resource_base !== false;
   const x = siRes.cells;
   const aC = str(allies, 'Country');
@@ -381,7 +386,7 @@ export function alliedSelection(siRes: SiResult, bundle: Pick<Bundle, 'si' | 'ba
   const sel: number[] = [];
   for (let i = 0; i < x.nrow; i++) {
     if (screen && RB[i] === 0) continue;
-    if (allySet.has(C[i]) && (S[i] === 'Midstream' || S[i] === 'Upstream') && SI[i] === SI[i] && !ex.has(T[i] as string)) sel.push(i);
+    if (allySet.has(C[i]) && alliedStages.has(S[i] as string) && SI[i] === SI[i] && !ex.has(T[i] as string)) sel.push(i);
   }
   const best = new Map<string | null, number>();
   for (const i of sel) {

@@ -2,13 +2,17 @@
 // strategic position framework, docs/strategic_position.md): the recommended posture of every country x
 // technology x six-stage node, its decision quadrant, Secure rationale, partner recommendations and trade
 // freshness, and the allied division of labour. The core document is columnar; decodeCore() turns it
-// into rows. Checks throw PostureContractError with every problem found.
+// into rows. Checks throw PostureContractError with every problem found. The stages are the six of
+// src/lib/stages.ts (SUPPLY_STAGES, in chain order); a three-stage core is refused.
+
+import { SUPPLY_STAGES, type SupplyStage } from '../lib/stages.ts';
 
 export const POSTURE_SCHEMA = 'osi-posture';
 export const POSTURE_SCHEMA_VERSION = 1;
 export const POSTURE_DATA_DIR = 'data/posture/';
-export const POSTURE_STAGES = ['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery'] as const;
-export type PostureStage = (typeof POSTURE_STAGES)[number];
+/** The six stages, in chain order (the shared SUPPLY_STAGES). */
+export const POSTURE_STAGES = SUPPLY_STAGES;
+export type PostureStage = SupplyStage;
 
 export type PostureCode = 'S' | 'C' | 'D';
 export type CompeteMode = 'catch_up' | 'preserve' | 'partner';
@@ -98,6 +102,10 @@ export interface DivisionNode {
 }
 
 export interface PostureCore {
+  /** when scripts/91 wrote the core (ISO 8601), for the CSVs' as-of column; null when the document has none */
+  created: string | null;
+  /** the commit the export ran on, for the CSVs' provenance; null when the document has none */
+  gitCommit: string | null;
   meta: PostureMeta;
   countries: { iso3: string; name: string; tier: string }[];
   cells: PostureCell[];
@@ -284,7 +292,7 @@ export function decodeCore(doc: unknown): PostureCore {
   if (p.length) throw new PostureContractError(p);
   const h = (isObj(doc.aib_header) ? doc.aib_header : {}) as PostureCore['aibHeader'];
   const design = (isObj(doc.design) ? doc.design : {}) as PostureCore['design'];
-  return { meta: { ...(meta as PostureMeta), techs, stages }, countries, cells, division, aibHeader: h, design };
+  return { created: str(doc.created), gitCommit: str(doc.git_commit), meta: { ...(meta as PostureMeta), techs, stages }, countries, cells, division, aibHeader: h, design };
 }
 
 export function checkPostureDetail(doc: unknown): PostureDetail {
@@ -294,7 +302,7 @@ export function checkPostureDetail(doc: unknown): PostureDetail {
     if (!Array.isArray(doc.cells)) p.push('detail: no cells');
     else
       for (const c of doc.cells) {
-        if (!isObj(c) || typeof c.tech !== 'string' || !POSTURE_STAGES.includes(c.stage as PostureStage) || !['secure', 'compete', 'deploy'].includes(String(c.posture))) {
+        if (!isObj(c) || typeof c.tech !== 'string' || !(POSTURE_STAGES as readonly unknown[]).includes(c.stage) || !['secure', 'compete', 'deploy'].includes(String(c.posture))) {
           p.push('detail: a cell without tech, six-stage stage or posture');
           break;
         }

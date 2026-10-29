@@ -5,9 +5,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { glossaryById } from '../../content/glossary.ts';
-import { QUADRANT_IDS, QUADRANTS, type CellFacts, type Driver, type FactSheet } from '../contract.ts';
-import { matrixCells, partnerTableRows, priorityRows, quadrantLine, slopeModel } from '../derive/model.ts';
-import { editionSuffix, euRegionSentence, ledeOf, poss, proseName, quadrantWord, rawNoteLine, whyIntro, whySentence } from '../derive/text.ts';
+import { SUPPLY_STAGES } from '../../lib/stages.ts';
+import { cellOf, NO_ES_CELLS, QUADRANT_IDS, QUADRANTS, type CellFacts, type Driver, type FactSheet } from '../contract.ts';
+import { coverageRows, isNoEsCell, matrixCells, partnerTableRows, priorityRows, quadrantLine, scatterPoints, slopeModel, supplierModel } from '../derive/model.ts';
+import {
+  editionSuffix, euRegionSentence, ledeOf, notPlacedReason, poss, proseName, quadrantWord, rawNoteLine, sectorsByTechText, shortCellLabel, whyIntro, whySentence,
+} from '../derive/text.ts';
 import { haveFixture, readSheet } from './fixture.ts';
 
 const fv = (v: number | null, d = String(v)) => ({ v, d });
@@ -72,14 +75,50 @@ describe.skipIf(!haveFixture())('derive helpers on the synthetic sheets', () => 
   it('the lede names the tier, the Upgrade count, the top Strategic Index sector and the top partner', () => {
     const l = ledeOf(usa);
     expect(l.startsWith('The United States is a core member of the allied coalition.')).toBe(true);
-    expect(l).toMatch(/On the paper's three-stage NEIS baseline, none of its \d+ placed sectors combines high economic opportunity with low energy security/);
+    expect(l).toMatch(/On the NEIS baseline, none of its \d+ placed sectors combines high economic opportunity with low energy security/);
     const top = usa.cells.find((c) => c.key === usa.summary.top_si!.cell)!;
     if (usa.summary.top_si!.near_tie) expect(l).toContain('are almost tied');
     else expect(l).toContain(`its top Strategic Index sector is ${top.label_prose}.`);
     expect(l).toContain(`rates highest for it is ${proseName(usa.summary.psi_1!.name)}.`);
     expect(ledeOf(deu)).toMatch(/^Germany is a core member/);
     expect(ledeOf(nga)).toContain('It has no Strategic Index because it has no International Energy Agency policy records.');
-    expect(ledeOf(pri)).toMatch(/three-stage index scores are shown but not ranked/);
+    expect(ledeOf(pri)).toMatch(/Puerto Rico's index scores are shown but not ranked against other economies: it is not a sovereign economy\.$/);
+    // six stages (2026-10-28): no stage-count or paper qualifier in any lede
+    for (const x of [usa, deu, nga, pri]) expect(ledeOf(x), x.iso3).not.toMatch(/three-stage|paper|upstream|midstream|downstream/i);
+  });
+
+  it('six stages: cell labels, running text, the scatter and the short labels, the coverage grid, the sectors without Energy Security', () => {
+    // labels and running text from R (COUNTRY_TECH_PROSE as a modifier, then the stage)
+    const bat = usa.cells.find((c) => c.key === 'batteries-refining')!;
+    expect(bat).toMatchObject({ tech: 'Batteries', stage: 'Refining', label: 'Batteries — Refining', label_prose: 'battery refining' });
+    expect(usa.cells.find((c) => c.key === 'electric-vehicles-deployment')!.label_prose).toBe('electric-vehicle deployment');
+    expect(shortCellLabel(bat)).toBe('Batteries · Ref');
+    expect(SUPPLY_STAGES.map((s) => shortCellLabel({ ...bat, stage: s }))).toEqual(['Batteries · Ext', 'Batteries · Ref', 'Batteries · Com', 'Batteries · Asm', 'Batteries · Dep', 'Batteries · Rec']);
+    // the scatter: every placed sector, at most 58, never a sector without Energy Security
+    const pts = scatterPoints(usa);
+    expect(pts.length).toBe(usa.cells.filter((c) => c.placed).length);
+    expect(pts.length).toBeLessThanOrEqual(58);
+    for (const p of pts) {
+      expect(isNoEsCell(usa, p.key)).toBe(false);
+      expect(p.short).toBe(shortCellLabel(p.cell));
+    }
+    expect(NO_ES_CELLS.every((k) => isNoEsCell(usa, k))).toBe(true);
+    expect(notPlacedReason({ ...bat, quadrant_reason: null, es: null })).toBe('no Energy Security score for any economy in this sector');
+    expect(usa.cells.find((c) => c.key === 'geothermal-extraction')!.quadrant_reason).toMatch(/Energy Security/);
+    // the policy coverage grid: 11 technologies x the six stages, cell keys of the sheet
+    const cov = coverageRows(usa);
+    expect(cov).toHaveLength(11);
+    for (const r of cov) {
+      expect(r.cells.map((c) => c.stage)).toEqual([...SUPPLY_STAGES]);
+      for (const c of r.cells) expect(cellOf(usa, c.key)?.stage).toBe(c.stage);
+    }
+    // the supplier matrix: six-stage sectors with a trade basket (never Deployment in the fixture)
+    const sm = supplierModel(usa);
+    expect(sm.cells.length).toBeGreaterThan(0);
+    for (const c of sm.cells) expect(SUPPLY_STAGES).toContain(c.stage);
+    // sectors in words, grouped by technology (the About page's no-Energy-Security sentence)
+    expect(sectorsByTechText(NO_ES_CELLS)).toBe('Coal (recovery), Electric Grid (deployment), Gas (recovery) and Geothermal (extraction, refining, components, assembly and recovery)');
+    expect(sectorsByTechText(['solar-assembly', 'oil-upstream', 'solar-refining'])).toBe('Solar (refining and assembly)');
   });
 
   it('a near-tie at the top is said as such', () => {

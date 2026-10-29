@@ -3,13 +3,18 @@
 // without a Strategic Index, a territory, an economy without index data, the memo, About, an unknown
 // ISO3); the memo button and memo route follow the tier and memo state (core with a memo, core without,
 // stale, kept under an earlier rule with its notice, non-core); every chart card has its table twin; the URL state (cell, partner, all) round-trips
-// through clicks; no bare acronym in headings, legends, column headers, buttons or labels (C3.4).
+// through clicks; no bare acronym in headings, legends, column headers, buttons or labels (C3.4). Six stages (2026-10-29): the
+// Strategic posture section (design L2) on the posture fixture (AAA served as USA), six-stage Sector links and legends, old
+// three-stage cells in the link (U1), and no three-stage word on the profile.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { routes } from '../../routes.tsx';
 import { bareAcronyms } from '../../components/testing/acronyms.ts';
+import { SUPPLY_STAGES } from '../../lib/stages.ts';
+import { setPostureStore } from '../../posture/store.ts';
+import { fixtureStore } from '../../posture/__tests__/fixture.ts';
 import type { CountryEntry, CountryManifest } from '../contract.ts';
 import { CountryStore, setCountryStoreForTests, type CountrySource } from '../data/store.ts';
 import { fixtureSource, haveFixture, readManifest } from './fixture.ts';
@@ -71,11 +76,17 @@ function useSource(edit?: (m: CountryManifest) => void): void {
   setCountryStoreForTests(new CountryStore(source));
 }
 
-beforeEach(() => useSource());
+// the posture bundle's fixture with its economy AAA served as the United States (design L2: the Strategic
+// posture section is tested with data; every other economy has no posture)
+beforeEach(() => {
+  useSource();
+  setPostureStore(fixtureStore({ economies: { AAA: { iso3: 'USA', name: 'United States' } } }));
+});
 
 afterEach(() => {
   cleanup();
   setCountryStoreForTests(null);
+  setPostureStore(null);
 });
 
 function renderAt(path: string) {
@@ -117,9 +128,32 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(await h1('United States')).toBeTruthy();
     // the title effect can trail the h1 when the suite runs under load
     await waitFor(() => expect(document.title).toMatch(/United States \| Countries \| /));
-    // the paper's three-stage scatter is 'Security and opportunity' since 2026-10-28 ('Strategic position' names the posture)
+    // the corners scatter is 'Security and opportunity' since 2026-10-28 (so it does not clash with the posture)
     await screen.findByRole('heading', { level: 2, name: 'Security and opportunity' }, { timeout: 30_000 });
     expect(screen.queryByRole('heading', { level: 2, name: 'Strategic position' })).toBeNull();
+    // design L2: Strategic posture is a real section, first in the sections column after the glance tiles
+    const posture = document.getElementById('posture')!;
+    expect(posture.tagName).toBe('SECTION');
+    expect(within(posture).getByRole('heading', { level: 2, name: 'Strategic posture' })).toBeTruthy();
+    expect(document.getElementById('glance')!.nextElementSibling).toBe(posture);
+    expect(posture.nextElementSibling?.id).toBe('position');
+    // the Perspective control stays above the grid; the section nav comes before the section
+    expect(document.getElementById('perspective')!.compareDocumentPosition(posture) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(posture.querySelector('[data-basis="posture"]')?.textContent).toMatch(/^Strategic position framework/);
+    expect(posture.textContent).toMatch(/recommends whether the United States should secure the node/);
+    const card = await within(posture).findByRole('region', { name: 'Secure, compete or deploy, by technology and stage' }, { timeout: 30_000 });
+    expect(within(card).getByTestId('posture-takeaway').textContent).toMatch(/^The United States should secure 1 node/);
+    expect(within(card).getByRole('button', { name: 'Table' })).toBeTruthy();
+    expect(within(card).getByRole('button', { name: 'Download CSV' })).toBeTruthy();
+    // the drawer links the node to its six-stage Sector profile, at that profile's Strategic posture section
+    fireEvent.click(within(posture).getByRole('button', { name: /^Batteries Components/ }));
+    await waitFor(() => expect(within(posture).getByTestId('cell-drawer-sector-link').getAttribute('href')).toBe('/sector/batteries/components?c=USA#posture'), { timeout: 30_000 });
+    fireEvent.click(within(posture).getByRole('button', { name: 'Close the detail' }));
+    // the counts are the first glance tile, linking to the section
+    const glance = document.getElementById('glance')!;
+    expect(within(glance).getByText('STRATEGIC POSTURE')).toBeTruthy();
+    expect(within(glance).getByTestId('posture-tile-counts').textContent).toContain('Secure 1 · Compete 2 · Deploy 9');
+    expect(within(glance).getByRole('link', { name: 'Strategic posture' }).getAttribute('href')).toBe('#posture');
     for (const h of ['Opportunities & risks', 'Sector position', 'Policy & climate', 'Partnerships', 'Role in the Allied Industrial Base', 'Policy memo', 'Data notes']) {
       expect(screen.getAllByRole('heading', { level: 2, name: h }).length).toBeGreaterThan(0);
     }
@@ -127,7 +161,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     const memo = screen.getAllByRole('link', { name: 'GENERATE MEMO' });
     expect(memo.length).toBe(2); // the header action and the memo section
     for (const a of memo) expect(a.getAttribute('href')).toBe('/countries/USA/memo');
-    expect(screen.getByText(/AI-generated from the data and checked against it; paper baseline as of 12 October 2026\./)).toBeTruthy();
+    expect(screen.getByText(/AI-generated from the data and checked against it; NEIS baseline as of 12 October 2026\./)).toBeTruthy();
     // the dials live on the page now: no bridge to Strategic Insights, a closed Perspective control
     expect(screen.queryByRole('link', { name: 'OPEN IN STRATEGIC INSIGHTS' })).toBeNull();
     expect(screen.getByRole('button', { name: /^Perspective: NEIS baseline/ }).getAttribute('aria-expanded')).toBe('false');
@@ -136,20 +170,45 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     const nav = screen.getByRole('navigation', { name: 'Sections of this page' });
     expect(within(nav).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['#posture', '#position', '#opportunities', '#sectors', '#policy', '#partnerships', '#aib-role', '#memo', '#notes']);
     expect(within(nav).getAllByRole('link').slice(0, 2).map((a) => a.textContent)).toEqual(['Strategic posture', 'Security and opportunity']);
-    // the posture chart's wrapper is the #posture anchor
-    expect(document.getElementById('posture')).toBeTruthy();
+    // every nav entry is a section of the page (#posture is the Strategic posture section itself)
+    for (const a of within(nav).getAllByRole('link')) expect(document.getElementById(a.getAttribute('href')!.slice(1))?.tagName).toBe('SECTION');
     // old anchors still exist
     for (const id of ['space', 'priorities', 'partners', 'aib-role']) expect(document.getElementById(id)).toBeTruthy();
-    // Sector position rows link to the Sector profile
+    // Sector position rows link to the six-stage Sector profiles
     const sectors = document.getElementById('sectors')!;
-    expect(within(sectors).getAllByRole('link').some((a) => /^\/sector\/[a-z-]+\/(upstream|midstream|downstream)\?c=USA$/.test(a.getAttribute('href') ?? ''))).toBe(true);
+    const sectorLinks = within(sectors).getAllByRole('link').map((a) => a.getAttribute('href') ?? '').filter((h) => h.startsWith('/sector/'));
+    expect(sectorLinks.length).toBeGreaterThan(0);
+    for (const h of sectorLinks) expect(h).toMatch(/^\/sector\/[a-z-]+\/(extraction|refining|components|assembly|deployment|recovery)\?c=USA$/);
+    // six stages everywhere (design S1): no three-stage word or paper qualifier on the page
+    expect(main().textContent).not.toMatch(/upstream|midstream|downstream|three-stage|paper's/i);
+    // the corners scatter: the six stage shapes in its legend
+    expect(within(screen.getByRole('list', { name: 'How to read the dots' })).getAllByRole('listitem').slice(0, 6).map((li) => li.textContent)).toEqual([...SUPPLY_STAGES]);
+    // the supplier matrix groups its columns by the six stages (chain order; stages without a traded column left out)
+    fireEvent.click(screen.getByText(/^Who supplies the United States in each sector today/));
+    const matrix = await screen.findByRole('region', { name: /^Who supplies the United States in each sector: a table that scrolls sideways/ });
+    const groups = [...matrix.querySelectorAll('th[scope="colgroup"]')].map((th) => th.getAttribute('title'));
+    expect(groups.length).toBeGreaterThan(1);
+    expect(groups).toEqual(SUPPLY_STAGES.filter((s) => groups.includes(s)));
     // the top Strategic Index sector of an all-Grow country: the fallback rule (A9.5) explains its top three (behind "Why these sectors")
     fireEvent.click(screen.getByText(/^Why these sectors/));
     expect(await screen.findByText(/None of the United States' placed sectors is in the Upgrade corner/)).toBeTruthy();
-    // the strongest measures card says it is context and names the extract (behind a disclosure)
-    fireEvent.click(screen.getByText(/^Policy records by technology and stage/));
-    expect(await screen.findByRole('heading', { name: 'Strongest active industrial-policy measures' })).toBeTruthy();
+    // the industrial-policy measures card says it is context and names the extract (behind a disclosure). Six stages (design
+    // K1): the NIPO run is not matched to the six stages (staged false), so the card gives the economy's counts and says why,
+    // with no sector list, picker, table or CSV
+    fireEvent.click(screen.getByText(/^Policy records by technology and stage, and the United States' active industrial-policy measures/));
+    const nipoCard = await screen.findByRole('region', { name: 'Active industrial-policy measures' });
+    expect(screen.queryByRole('heading', { name: 'Strongest active industrial-policy measures' })).toBeNull();
+    expect(within(nipoCard).getByTestId('nipo-not-staged').textContent).toBe(
+      "Global Trade Alert's measures are not yet matched to the six supply-chain stages, so they are counted for the whole economy and not listed by sector.",
+    );
+    expect(within(nipoCard).getByText('Active measures').nextElementSibling?.textContent).toBe('5');
+    expect(within(nipoCard).queryByRole('combobox')).toBeNull();
+    expect(within(nipoCard).queryByRole('button', { name: 'Table' })).toBeNull();
+    expect(within(nipoCard).queryByRole('button', { name: 'Download CSV' })).toBeNull();
     expect(screen.getAllByText(/not part of the Policy index/).length).toBeGreaterThan(0);
+    // the coverage grid: 11 technologies x the six stages
+    const cov = screen.getByRole('region', { name: 'Policy records by technology and stage' });
+    expect(within(within(cov).getByRole('table')).getAllByRole('columnheader').slice(1).map((h) => h.textContent)).toEqual([...SUPPLY_STAGES]);
     noAcronyms();
     // every chart card has a table twin; opening them all keeps the page free of bare acronyms
     const n = openTwins();
@@ -185,7 +244,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(await h1('Nigeria')).toBeTruthy();
     await screen.findByRole('heading', { level: 2, name: 'Policy & climate' }, { timeout: 30_000 });
     expect(screen.getAllByText('No Strategic Index').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/so the paper computes no Strategic Index for it/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/so no Strategic Index is computed for it/).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: 'Which sectors the Strategic Index puts first' })).toBeNull();
     expect(screen.getByText('POLICY: RECORDS ONLY, NO CLIMATE RATING')).toBeTruthy();
     expect(screen.getByText(/Nigeria has no Climate Action Tracker rating/)).toBeTruthy();
@@ -230,7 +289,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(await h1(/^United States: energy security, economic opportunity and partnership priorities$/)).toBeTruthy();
     expect(document.title).toMatch(/United States memo \| Countries \| /);
     // the label under the title and again at the end of the memo
-    expect(screen.getAllByText('AI-generated from the data and checked against it; paper baseline as of 12 October 2026.').length).toBe(2);
+    expect(screen.getAllByText('AI-generated from the data and checked against it; NEIS baseline as of 12 October 2026.').length).toBe(2);
     const pdf = screen.getByText('DOWNLOAD PDF');
     const docx = screen.getByText('DOWNLOAD WORD (.DOCX)');
     const entry = readManifest().countries.find((c) => c.iso3 === 'USA')!;
@@ -313,10 +372,10 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
   });
 
   it('URL state: a bad cell is reported; picking a sector and a partner writes cell and partner', async () => {
-    const r = renderAt('/countries/JPN?cell=fusion-upstream&partner=ZZZ');
+    const r = renderAt('/countries/JPN?cell=fusion-extraction&partner=ZZZ');
     expect(await h1('Japan')).toBeTruthy();
     expect(await screen.findByText('Ignored in the link', undefined, { timeout: 30_000 })).toBeTruthy();
-    expect(screen.getByText(/cell=fusion-upstream \(not a sector\)/)).toBeTruthy();
+    expect(screen.getByText(/cell=fusion-extraction \(not a sector\)/)).toBeTruthy();
     // a sector chip of the four-corners card selects the sector
     const corners = screen.getByRole('region', { name: 'The four corners' });
     // the app's corner names (2026-10-28), not the older words the synthetic sheets were exported with
@@ -332,6 +391,31 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(row).toBeTruthy();
     fireEvent.click(row!);
     await waitFor(() => expect(r.state.location.search).toMatch(/partner=[A-Z]{3}/));
+  });
+
+  it('URL state: an old three-stage cell (design U1) is mapped (Downstream) or dropped (Upstream, Midstream) with a notice', async () => {
+    renderAt('/countries/JPN?cell=wind-downstream');
+    expect(await h1('Japan')).toBeTruthy();
+    expect(await screen.findByText('Ignored in the link', undefined, { timeout: 30_000 })).toBeTruthy();
+    expect(screen.getByText(/cell=wind-downstream \(Wind — Downstream is now Wind — Deployment; showing it\)/)).toBeTruthy();
+    // the mapped sector is the selected one (its "why" link under the scatter, when it is placed)
+    const jpn = readManifest().countries.find((c) => c.iso3 === 'JPN')!;
+    const sheet = JSON.parse(JSON.stringify(await source.json(jpn.file!))) as { cells: { key: string; placed: boolean }[] };
+    if (sheet.cells.find((c) => c.key === 'wind-deployment')?.placed) expect(screen.getByRole('button', { name: /^Why Wind — Deployment\?/ })).toBeTruthy();
+    cleanup();
+    renderAt('/countries/JPN?cell=batteries-midstream');
+    expect(await h1('Japan')).toBeTruthy();
+    expect(await screen.findByText(/cell=batteries-midstream \(Batteries — Midstream is no longer a stage: .*Components and Assembly.*; the sector was dropped\)/, undefined, { timeout: 30_000 })).toBeTruthy();
+  });
+
+  it('an economy without a posture keeps the Strategic posture section, with the notice', async () => {
+    renderAt('/countries/DEU');
+    expect(await h1('Germany')).toBeTruthy();
+    const posture = (await screen.findByRole('heading', { level: 2, name: 'Strategic posture' }, { timeout: 30_000 })).closest('section')!;
+    expect(posture.id).toBe('posture');
+    expect(await within(posture).findByText('No posture', undefined, { timeout: 30_000 })).toBeTruthy();
+    expect(within(document.getElementById('glance')!).getByText('No posture')).toBeTruthy();
+    noAcronyms();
   });
 
   it('priorities table: "Show all" writes all=1 and lists every in-sample sector', async () => {

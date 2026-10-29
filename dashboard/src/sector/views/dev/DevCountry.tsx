@@ -1,7 +1,7 @@
 // The economy page's "Aid and investment partners" (development data change 2026-10-15; sector-dev,
 // loaded when the section nears the viewport): for the sector's stage, who funds this economy's aid
-// in the stage's aid sector (OECD CRS: energy for Downstream, industry for Midstream, mining for
-// Upstream) and, for a donor, whom it funds; then its bilateral direct-investment positions (IMF DIP):
+// in the stage's aid sector (OECD CRS, the pipeline's purpose crosswalk: energy for Deployment, industry
+// for Refining, Components and Assembly, mining for Extraction; none for Recovery) and, for a donor, whom it funds; then its bilateral direct-investment positions (IMF DIP):
 // where its firms invest and who invests in it, as the investors report it, conduit centres flagged.
 // Raw values in USD millions; nothing here is a score.
 

@@ -12,12 +12,20 @@
 #   * Doing Business (wb_doingbusiness.csv): partnership_strength_build_doing_business(), its
 #     `doingbusiness` (ease of doing business score, DB17-20 methodology, 2019).
 #   * OECD CRS (oecd_crs_api.csv): official development assistance, gross disbursements, constant
-#     2023 US dollars, millions, by donor, recipient, CRS sector and year. The stage rule is
-#     partnership_strength_build_oecd_supplychain()'s, applied here row by row: Energy -> Downstream,
-#     Industry -> Midstream, Mineral resources and mining less its coal and oil-and-gas (upstream)
-#     sub-rows -> Upstream; recipients restricted to the WDI countries. Its stage totals (2013-2024
-#     over every donor per recipient and stage, and that total / 2023 GDP) are rebuilt with the same
-#     steps by sector_dev_crs_stage() and checked against that builder (sector_dev_crs_parity()).
+#     2023 US dollars, millions, by donor, recipient, CRS sector and year: the aid sectors energy,
+#     industry and mineral resources and mining less its "Coal" and "Oil and gas (upstream)" sub-rows;
+#     recipients restricted to the WDI countries. Each aid sector links to the technology x stage cells
+#     the pipeline's six-stage purpose-code crosswalk (data/reference/oecd_crs_purpose_crosswalk.csv,
+#     the one Development Potential allocates aid with) files its purpose codes under
+#     (sector_dev_aid_links(); user decision C4, 2026-10-28): energy (23x) the Deployment cells,
+#     industry (321x) the Refining, Components and Assembly cells, mining (322x less the two netted
+#     codes) the Extraction cells, each of the technologies the crosswalk names. No CRS code funds
+#     recycling, so no aid sector links to a Recovery cell. The totals per recipient and aid sector
+#     (2013-2024 over every donor, and that total / 2023 GDP) are rebuilt with the steps of
+#     partnership_strength_build_oecd_supplychain() by sector_dev_crs_stage() and checked against that
+#     builder (sector_dev_crs_parity()); that builder still labels its three aid sectors with the old
+#     three stage names (its `supply_chain`), which stay internal here (SECTOR_DEV_AID_ITEMS crs_rollup)
+#     and never reach the chunk.
 #     Since October 2026 Development Potential no longer ranks these totals: its aid components come
 #     from oecd_crs_purpose.csv by purpose code and oci_energy_finance.csv (export-credit and lender
 #     energy finance the CRS lacks), per (tech, stage) (partnership_strength_build_oecd_tech()), and
@@ -34,14 +42,39 @@
 SECTOR_DEV_VARS <- c("development.wdi", "development.doing_business", "development.oda_received", "development.oda_given",
                      "development.oda", "development.oda_received_total", "development.oda_received_gdp", "development.fdi_out")
 
-# CRS sector items (dims.items axis `aid_sector`) and the stage each maps to (the builder's rule).
+# CRS sector items (dims.items axis `aid_sector`). crs_rollup: the label partnership_strength_build_oecd_supplychain()
+# gives the sector's totals in its `supply_chain` column (internal: only to match that builder's rows).
 SECTOR_DEV_AID_ITEMS <- tibble::tribble(
-  ~slug, ~label, ~text, ~stage,
+  ~slug, ~label, ~text, ~crs_rollup,
   "all-sectors", "All sectors", "all sectors", NA_character_,
   "energy", "Energy", "energy", "Downstream",
   "industry", "Industry", "industry", "Midstream",
   "mining", "Mineral resources and mining (less coal, oil and gas)", "mineral resources and mining (less coal, oil and gas)", "Upstream"
 )
+# The CRS purpose codes the mining aid sector is netted of ("Coal" and "Oil and gas (upstream)"), so
+# their crosswalk rows do not link it to cells.
+SECTOR_DEV_MINING_NET_CODES <- c("32261", "32262")
+
+# The aid sector of each CRS purpose code (23x energy, 321x industry, 322x mining; NA otherwise).
+sector_dev_aid_sector_of <- function(purpose_code) {
+  pc <- as.character(purpose_code)
+  ifelse(startsWith(pc, "23"), "energy", ifelse(startsWith(pc, "321"), "industry",
+         ifelse(startsWith(pc, "322") & !pc %in% SECTOR_DEV_MINING_NET_CODES, "mining", NA_character_)))
+}
+
+# dims.item_links of the aid sectors: each aid sector -> the cells (tech, stage) the pipeline's purpose
+# crosswalk (oecd_crs_purpose_crosswalk.csv: purpose_code, supply_chain, tech, ...) allocates any of its
+# purpose codes to, within `cells` (the cell items). Returns tibble(item_key, cell, weight = 1).
+sector_dev_aid_links <- function(crosswalk, cells) {
+  require_cols <- c("purpose_code", "supply_chain", "tech")
+  if (!all(require_cols %in% names(crosswalk))) stop("sector_dev_aid_links(): the crosswalk needs ", paste(require_cols, collapse = ", "))
+  assert_supply_chain_stages(crosswalk$supply_chain, label = "oecd_crs_purpose_crosswalk.csv supply_chain")
+  item <- sector_dev_aid_sector_of(crosswalk$purpose_code)
+  cw <- unique(tibble::tibble(item = item, cell = sector_cell_slug(crosswalk$tech, crosswalk$supply_chain))[!is.na(item), ])
+  cw <- cw[cw$cell %in% cells$slug, , drop = FALSE]
+  cw <- cw[order(match(cw$item, SECTOR_DEV_AID_ITEMS$slug), match(cw$cell, cells$slug)), , drop = FALSE]
+  tibble::tibble(item_key = paste0("aid_sector:", cw$item), cell = cw$cell, weight = 1)
+}
 # The CRS sector names of the extract (lower case, squished) -> item; sign -1 for the fossil sub-rows
 # netted out of mining, as in partnership_strength_build_oecd_supplychain().
 SECTOR_DEV_CRS_MAP <- tibble::tribble(
@@ -289,7 +322,7 @@ sector_dev_crs_parity <- function(stage, builder, flows) {
       same_keys && identical(s$a[m], builder$aid_index_supplychain), nrow(builder))
   add("parity X: CRS aid received / GDP by stage, ranked as the builder ranks it, reproduces its aidgdp_index_supplychain identical()",
       same_keys && identical(s$g[m], builder$aidgdp_index_supplychain), nrow(builder))
-  st <- SECTOR_DEV_AID_ITEMS$stage[match(flows$item, SECTOR_DEV_AID_ITEMS$slug)]
+  st <- SECTOR_DEV_AID_ITEMS$crs_rollup[match(flows$item, SECTOR_DEV_AID_ITEMS$slug)]
   f <- flows[!is.na(st), , drop = FALSE]
   f$supply_chain <- st[!is.na(st)]
   sums <- dplyr::summarise(dplyr::group_by(f, recipient, supply_chain), v = pmax(0, sum(value)), .groups = "drop")
@@ -386,8 +419,10 @@ sector_dev_dip_parity <- function(dip, builder, gdp_data, gdp_year, scope, condu
 }
 
 # dims.items rows of the two development axes (indicator: the dictionary's dev_indicators order;
-# aid_sector: SECTOR_DEV_AID_ITEMS) and dims.item_links (aid sectors -> every cell of their stage).
-sector_dev_items <- function(indicators, cells) {
+# aid_sector: SECTOR_DEV_AID_ITEMS) and dims.item_links (aid sectors -> the cells the pipeline's purpose
+# crosswalk files their codes under: sector_dev_aid_links()). crosswalk: oecd_crs_purpose_crosswalk.csv
+# as read (the synthetic fixture passes its own small one).
+sector_dev_items <- function(indicators, cells, crosswalk) {
   ind <- tibble::tibble(axis = "indicator", slug = sector_dev_indicator_slug(indicators$code), label = indicators$label,
                         text = sector_lower_first(indicators$label))
   aid <- tibble::tibble(axis = "aid_sector", slug = SECTOR_DEV_AID_ITEMS$slug, label = SECTOR_DEV_AID_ITEMS$label,
@@ -398,12 +433,7 @@ sector_dev_items <- function(indicators, cells) {
   items$headline <- FALSE
   items$has_trade <- FALSE
   items$sort <- stats::ave(seq_len(nrow(items)), items$axis, FUN = seq_along)
-  st <- SECTOR_DEV_AID_ITEMS[!is.na(SECTOR_DEV_AID_ITEMS$stage), , drop = FALSE]
-  links <- dplyr::bind_rows(lapply(seq_len(nrow(st)), function(i) {
-    cs <- cells$slug[cells$stage == st$stage[i]]
-    tibble::tibble(item_key = paste0("aid_sector:", st$slug[i]), cell = cs, weight = 1)
-  }))
-  list(items = items, links = links)
+  list(items = items, links = sector_dev_aid_links(crosswalk, cells))
 }
 
 # Item units of the development measures: each WDI series in its dictionary unit.
@@ -430,7 +460,7 @@ sector_dev_facts <- function(wdi, db, crs, stage, wdi_year, total_year) {
                  table = "oecd_crs_api.csv", variable = rec$item, prov = "X")
   g <- sector_fx("development.oda_given", paste0("aid_sector:", don$item), don$donor, don$year, don$value, "obs",
                  table = "oecd_crs_api.csv", variable = don$item, prov = "X")
-  item <- SECTOR_DEV_AID_ITEMS$slug[match(stage$supply_chain, SECTOR_DEV_AID_ITEMS$stage)]
+  item <- SECTOR_DEV_AID_ITEMS$slug[match(stage$supply_chain, SECTOR_DEV_AID_ITEMS$crs_rollup)]
   yr <- total_year
   t <- sector_fx("development.oda_received_total", paste0("aid_sector:", item), stage$recipient, yr, stage$aid, "obs",
                  table = "oecd_crs_api.csv", variable = "aid", prov = "X")
@@ -514,7 +544,7 @@ sector_dev_facts_parity <- function(dv, ref) {
   add("parity X: decoded development.doing_business identical() to partnership_strength_build_doing_business()$doingbusiness on wb_doingbusiness.csv",
       identical(d$value, ref$db$value[match(d$geo, ref$db$key)]), nrow(d))
   st <- ref$stage
-  item <- SECTOR_DEV_AID_ITEMS$slug[match(st$supply_chain, SECTOR_DEV_AID_ITEMS$stage)]
+  item <- SECTOR_DEV_AID_ITEMS$slug[match(st$supply_chain, SECTOR_DEV_AID_ITEMS$crs_rollup)]
   sk <- paste0("aid_sector:", item, " ", st$recipient)
   t <- dv[dv$var == "development.oda_received_total", , drop = FALSE]
   add("parity X: decoded development.oda_received_total identical() to the builder's aid per recipient and stage (oecd_crs_api.csv)",
@@ -576,8 +606,8 @@ sector_dev_synthetic <- function(cells) {
   flows <- tibble::as_tibble(grid[order(match(grid$item, SECTOR_DEV_AID_ITEMS$slug), grid$year, grid$donor, grid$recipient, method = "radix"), c("item", "year", "donor", "recipient", "value")])
   flows$year <- as.integer(flows$year)
   crs <- list(flows = flows, meta = list(BaseYear = "2023"))
-  st <- flows[!is.na(SECTOR_DEV_AID_ITEMS$stage[match(flows$item, SECTOR_DEV_AID_ITEMS$slug)]), , drop = FALSE]
-  st$supply_chain <- SECTOR_DEV_AID_ITEMS$stage[match(st$item, SECTOR_DEV_AID_ITEMS$slug)]
+  st <- flows[!is.na(SECTOR_DEV_AID_ITEMS$crs_rollup[match(flows$item, SECTOR_DEV_AID_ITEMS$slug)]), , drop = FALSE]
+  st$supply_chain <- SECTOR_DEV_AID_ITEMS$crs_rollup[match(st$item, SECTOR_DEV_AID_ITEMS$slug)]
   stage <- dplyr::summarise(dplyr::group_by(st, recipient, supply_chain), aid = pmax(0, sum(value)), .groups = "drop")
   gdp <- c(BRA = 2.17e12, IDN = 1.37e12, CHN = 1.79e13)
   stage$aid_gdp <- stage$aid / unname(gdp[stage$recipient])
@@ -599,10 +629,25 @@ sector_dev_synthetic <- function(cells) {
   dip$conduit <- ifelse(dip$counterpart %in% centres$iso3 & dip$reporter %in% centres$iso3, "both",
                         ifelse(dip$counterpart %in% centres$iso3, "counterpart", ifelse(dip$reporter %in% centres$iso3, "investor", "none")))
   fx <- sector_dev_facts(wdi, db, crs, stage, 2024L, 2024L)
-  it <- sector_dev_items(ind, cells)
+  it <- sector_dev_items(ind, cells, sector_dev_synthetic_crosswalk())
   list(part = sector_dev_part(crs, dip, centres), facts = fx$facts, ledger = fx$ledger, items = it$items, links = it$links,
        item_units = sector_dev_item_units(ind),
        fill = sector_dev_fill(list(values = wdi, empty = "HD.HCI.OVRL"), db, crs, dip, 2020:2024, centres, "both", sector_dev_crs_incomplete(crs$flows)))
+}
+
+# A small purpose crosswalk in the layout of data/reference/oecd_crs_purpose_crosswalk.csv for the
+# synthetic fixture: energy codes at Deployment, industry codes at Refining, Components and Assembly,
+# mining codes at Extraction (the netted coal code included, which must not link).
+sector_dev_synthetic_crosswalk <- function() {
+  tibble::tribble(
+    ~purpose_code, ~supply_chain, ~tech, ~method,
+    "23230", "Deployment", "Solar", "direct",
+    "23210", "Deployment", "Oil", "pooled", "23210", "Deployment", "Gas", "pooled", "23210", "Deployment", "Solar", "pooled",
+    "32169", "Refining", "Batteries", "pooled", "32169", "Refining", "Solar", "pooled",
+    "32110", "Components", "Batteries", "pooled", "32110", "Assembly", "Batteries", "pooled", "32110", "Assembly", "Solar", "pooled",
+    "32220", "Extraction", "Batteries", "pooled", "32220", "Extraction", "Electric Vehicles", "pooled", "32220", "Extraction", "Oil", "pooled",
+    "32261", "Extraction", "Coal", "direct"
+  )
 }
 
 # The same placeholders for a build without the development data.

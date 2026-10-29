@@ -53,7 +53,7 @@ good_src <- function(caveats = vapply(sheet$caveats, function(c) c$id, "")) past
   "## Energy security risks and why\n\n",
   "{{summary.n_insecure}} of its {{summary.n_placed}} placed sectors sit in the two low-energy-security corners. ",
   "Its lowest Energy Security scores are in {{cells.", k1, ".label_prose}} and {{cells.", k2, ".label_prose}}, higher than {{cells.", k1, ".es.pct}} and {{cells.", k2, ".es.pct}} of the other economies scored. ",
-  "On the paper's split, {{cells.", k1, ".label_prose}} sits in the {{cells.", k1, ".quadrant}} corner. ",
+  "On this split, {{cells.", k1, ".label_prose}} sits in the {{cells.", k1, ".quadrant}} corner. ",
   "The score in {{cells.", k1, ".label_prose}} is low mainly because of {{cells.", k1, ".drivers.es.", d_es, ".category}}.",
   if (!is.null(raw_tok)) paste0(" A figure behind the scores: {{", raw_tok, "}} in {{", raw_tok, ".year}}.") else "", "\n\n",
   "## Economic opportunities and why\n\n",
@@ -70,7 +70,7 @@ good_src <- function(caveats = vapply(sheet$caveats, function(c) c$id, "")) past
   "{{partners.", p_tie, ".name}} is its {{partners.", p_tie, ".ties.tie_rank}} trade partner on average across its energy-goods baskets. ",
   "As a partner to the coalition, {{meta.country}} ranks {{summary.as_partner.rank}}. Its allied pick is {{pick.cell}}.\n\n",
   "## Data notes and caveats\n\n",
-  "All values are the paper's baseline as of {{meta.as_of_label}}. ", paste(sprintf("{{caveats.%s}}", caveats), collapse = " "), "\n"
+  "All values are the NEIS baseline as of {{meta.as_of_label}}. ", paste(sprintf("{{caveats.%s}}", caveats), collapse = " "), "\n"
 )
 
 run <- function(src, sh = sheet, cf = cfg_short) {
@@ -132,8 +132,24 @@ test_that("each lint rule fires on a broken copy", {
   expect_true(length(errors_of(run(sub1("All values are", "See [the site](https://example.org). All values are")), "structure")) > 0)
   expect_true(length(errors_of(run(sub1("All values are", "The secure sectors are fine. All values are")), "secure_label")) > 0)
   expect_true(length(errors_of(run(sub1("All values are", "The CAT agrees. All values are")), "acronym")) > 0)
+  # the three stages the six replaced are never a memo's own words (2026-10-28)
+  expect_true(length(errors_of(run(sub1("All values are", "Its upstream sectors lead. All values are")), "legacy_stage")) > 0)
+  expect_true(length(errors_of(run(sub1("All values are", "Midstream trade is small. All values are")), "legacy_stage")) > 0)
   # the word bounds of B2 apply with the real configuration
   expect_true(length(errors_of(run(g, cf = cfg), "words")) > 0)
+})
+
+test_that("six-stage words lint clean: the six-stage phrases and the capitalised stage names (2026-10-28)", {
+  g <- sub("All values are", "Across the six supply-chain stages, Extraction and Refining lead the two manufacturing stages. All values are", good_src(), fixed = TRUE)
+  r <- run(g)
+  expect_equal(errors_of(r), character())
+  caps <- Filter(function(x) identical(x$check, "capitalised"), r$lint$items)
+  expect_false(any(grepl("Extraction|Refining", vapply(caps, function(x) x$detail, ""))))
+  # a bare number word is still an error
+  expect_true(length(errors_of(run(sub("All values are", "Six sectors lead. All values are", good_src(), fixed = TRUE)), "number_word")) > 0)
+  # the sector tokens print the six-stage names
+  expect_match(cells[[k1]]$label, paste0(" — (", paste(SUPPLY_CHAIN_STAGES, collapse = "|"), ")$"))
+  expect_false(grepl("stream", cells[[k1]]$label_prose, ignore.case = TRUE))
 })
 
 test_that("the verifier's record must cover every claim and sentence with matching hashes; unchanged claims keep the sign-off", {
@@ -179,7 +195,7 @@ test_that("the document, print HTML and Markdown carry the label; sources are nu
   r <- run(good_src())
   doc <- country_memo_document(r$res, r$claims, sheet, cfg,
                                list(generated_at = "2026-10-12T00:00:00Z", verified_at = "2026-10-12T00:00:00Z", writer = "w", verifier = "v", src_sha256 = "s", claims_sha256 = "c"))
-  expect_equal(doc$label, "AI-generated from the data and checked against it; paper baseline as of 12 October 2026.")
+  expect_equal(doc$label, "AI-generated from the data and checked against it; NEIS baseline as of 12 October 2026.")
   expect_equal(doc$title, "United States: energy security, economic opportunity and partnership priorities")
   expect_equal(vapply(doc$sections, function(s) s$title, ""), unlist(cfg$memo$sections))
   expect_equal(vapply(doc$sources, function(s) s$n, 1), seq_along(doc$sources))

@@ -80,6 +80,11 @@
 //                     three-stage ones are yfCellsLegacy / yfSubcomponentsLegacy (see Stages below).
 //   compact           indices: the EIS indices of its sectors ([] for master). compact.name joins the sectors
 //                     with " / " and lists node labels that may contain ", ": display it, never parse it.
+// Presentation (2026-10-29, design A1; no schema change): the dashboard shows every node by OSI technology
+// x six-stage stage from node.yfCells (its technologies, as equals; 'Not in the OSI basket' without a
+// cell) and node.stage; the dictionary's sectors and indices (node.techs, indexCode, compact.technologies /
+// indices, meta.indices) stay in the bundle as provenance (one dictionary_sector CSV column, one About
+// sentence) and are no longer grouped, filtered or titled by (src/aib/derive/taxonomy.ts).
 //
 // Diversification fields (2026-10-19, later; still v1, all optional so an older bundle validates): the
 // scenario "Diversified to its sector's concentration" (a shock of type "diversify" in config/aib.yml,
@@ -148,10 +153,10 @@
 // deployment count is 0 and no node or list carries Deployment, but the stage is valid. node.yfCells and
 // yfSubcomponents are six-stage cells; the optional node.yfCellsLegacy and yfSubcomponentsLegacy are the same
 // node's three-stage cells ("<tech slug>-<upstream|midstream|downstream>" and "<legacy cell>::<sub-component>",
-// from the OSI master's three-stage supply_chain column), the cells of the three-stage Country, Sector and
-// Strategic bundles of 2026-10-22: join those through them (src/lib/stages.ts legacyCellsOf() /
-// legacySubcomponentsOf(); the roll-up of yfCells they fall back to is approximate, as the paper filed refined
-// materials under Midstream and Refining rolls up to Upstream). A three-stage bundle (version 1 or 2) no
+// from the OSI master's three-stage supply_chain column), written for the three-stage Country, Sector and
+// Strategic bundles of 2026-10-22. Since those bundles are six-stage (2026-10-28/29) the dashboard joins
+// them through yfCells and no longer reads the legacy fields; they stay optional (and the R writer keeps
+// them) so an export with or without them validates. A three-stage bundle (version 1 or 2) no
 // longer validates: its stages are not AIB_STAGES and its sides lack the six keys. The scenario files carry
 // stages only in their network (AIB_SCENARIO_VERSION stays 1).
 
@@ -618,9 +623,9 @@ export interface AibInvestmentEdge {
 export interface AibCompact {
   /** "AIB-C01" */
   id: string;
-  /** "Sector A / Sector B: Node 1, Node 2, and N more": display only (labels may contain ", "); build titles with compactTitle() */
+  /** "Sector A / Sector B: Node 1, Node 2, and N more": display only (labels may contain ", "); build titles with compactTitle() (OSI technologies of its nodes' cells) */
   name: string;
-  /** the OSI technologies (master) or the EIS sectors (dictionary) of its nodes */
+  /** the OSI technologies (master) or the EIS sectors (dictionary) of its nodes (provenance: the views read the nodes' yfCells) */
   technologies: string[];
   /** the stages of its nodes (AIB_STAGES), each once, in chain order */
   stages: AibStage[];
@@ -694,7 +699,7 @@ export interface AibGrowthPoint {
 export interface AibNode {
   id: string;
   label: string;
-  /** the OSI technologies (master) or the node's EIS sector (dictionary) */
+  /** the OSI technologies (master) or the node's EIS sector (dictionary; provenance: the views read yfCells, taxonomy.ts) */
   techs: string[];
   /** one of AIB_STAGES (since 2026-10-28; never Deployment in practice) */
   stage: AibStage;
@@ -765,9 +770,9 @@ export interface AibNode {
   /** their OSI sub-components ("batteries-refining::Anode Materials") */
   yfSubcomponents: string[];
   /**
-   * the node's three-stage cells ("batteries-midstream", from the OSI master's supply_chain column): the cells of the
-   * three-stage Country, Sector and Strategic bundles of 2026-10-22, for the joins with them (additive, 2026-10-28;
-   * absent in an earlier export: read both with legacyCellsOf() / legacySubcomponentsOf() of src/lib/stages.ts)
+   * the node's three-stage cells ("batteries-midstream", from the OSI master's supply_chain column), written for
+   * the three-stage bundles of 2026-10-22 (additive, 2026-10-28). Optional and no longer read by the dashboard,
+   * whose joins use yfCells since the Country, Sector and Strategic bundles went six-stage.
    */
   yfCellsLegacy?: string[];
   /** the same node's three-stage sub-components ("<legacy cell>::<sub-component>"; additive, 2026-10-28) */

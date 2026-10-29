@@ -8,11 +8,11 @@
     {"op": "si_parts_off", "keyword": "parts", "what": "the five Strategic Index parts no longer sum to the index"},
     {"op": "partner_rank_dup", "keyword": "rank", "what": "two partners share a rank"},
     {"op": "reason_unknown", "keyword": "reason", "what": "a partner reason outside the enum (no word for it)"},
-    {"op": "cell_key_unknown", "keyword": "key", "what": "a sector key that is not one of the 33"},
+    {"op": "cell_key_unknown", "keyword": "key", "what": "a sector key that is not one of the 66 (11 technologies x the six supply-chain stages)"},
     {"op": "summary_count", "keyword": "n_placed", "what": "a summary count that the cells do not give"},
     {"op": "order_swap", "keyword": "order", "what": "two sectors of es_order swapped"},
     {"op": "fv_empty_d", "keyword": "Fv", "what": "a value without its display string"},
-    {"op": "no_es_cell_with_es", "keyword": "Energy Security", "what": "an Energy Security score on a sector the paper does not score"},
+    {"op": "no_es_cell_with_es", "keyword": "Energy Security", "what": "an Energy Security score on a sector without one for any economy (no_es_cells)"},
     {"op": "placed_not_rankable", "keyword": "rankable", "what": "a placed sector whose Energy Security is not rankable"},
     {"op": "caveat_unknown", "keyword": "caveat", "what": "a caveat id outside the list"},
     {"op": "priority_rank_offset", "keyword": "priority.rank", "what": "an in-sample sector's priority rank above the number of in-sample sectors (the 2026-10 rank-offset bug)"}

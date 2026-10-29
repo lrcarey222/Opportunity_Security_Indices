@@ -13,14 +13,14 @@
 #     values verbatim (prov P), so parity with data/processed stays identical().
 #   * `prov`: P = a data/processed raw row shipped verbatim; D = derived from processed values by
 #     `parity.formula`; X = read from data/raw through a pipeline function.
-#   * `link_stage` (not shipped): for measures whose items are not cells (fuels, minerals,
-#     commodities, activities, policy tags), the stage of the cells they appear on, through
-#     dims.item_links. `any` = every stage.
+#   * `link_stage` (not shipped): for measures whose items are not cells (fuels, minerals, mineral x
+#     stage, commodities, activities, policy tags), the stage or stages (a list) of the cells they
+#     appear on, through dims.item_links; `any` = every stage the links reach.
 #   * Caveat texts may hold {placeholders}; scripts/87 fills them from the data (counts) and stops on
 #     any it cannot fill.
 #   * No index, weight or contribution measure may appear here (a test greps for them).
 
-version: 1
+version: 2
 
 units:
   - {id: usd_cif, short: "USD", long: "US dollars, current (importer-declared, including cost, insurance and freight)", unit_kind: usd}
@@ -400,8 +400,8 @@ sources:
     licence: attribution
     attribution: "Source: Clean Investment Monitor, Rhodium Group and MIT CEEPR."
     accessed: "2026-03"
-    transform: "investment_momentum (scripts/10): manufacturing to Midstream, electric power and transport to Downstream, critical minerals split between Batteries and EV Upstream by IEA demand shares."
-    issues: "2025 includes estimated fourth-quarter values; EV Downstream is consumer purchases."
+    transform: "investment_momentum (scripts/10): electric power and transport to Deployment; manufacturing capacity by product (polysilicon and critical-minerals chemicals to Refining, wafers, cells, blades and electrode materials to Components, modules, nacelles and vehicles to Assembly); manufacturing capex, which has no product detail, to both Components and Assembly (the same figure on each); critical minerals to Refining, split between Batteries and Electric Vehicles by IEA demand shares."
+    issues: "2025 includes estimated fourth-quarter values; Electric Vehicles Deployment is consumer purchases."
   - id: imf_pcps
     short: "IMF Primary Commodity Prices"
     citation: "IMF, Primary Commodity Price System (PCPS), monthly prices"
@@ -444,7 +444,7 @@ sources:
     licence: attribution
     attribution: "Source: ILOSTAT, International Labour Organization."
     accessed: "2026-10"
-    transform: "Upstream = mining and utilities (economy-wide where missing), Midstream = manufacturing, Downstream = construction; latest year per economy."
+    transform: "Three activities, filed under the stages they serve: mining and utilities (economy-wide where missing) for Extraction and Recovery, manufacturing for Refining, Components and Assembly, construction for Deployment; latest year per economy."
     issues: "Observation years differ by economy."
   - id: gsa
     short: "Global Solar Atlas"
@@ -499,7 +499,7 @@ sources:
     licence: attribution
     attribution: "Source: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: project counts and sums of disclosed capital computed by the OSI authors; no record altered."
     accessed: "2026-10-11"
-    transform: "One row per project as published ({fdi_n} projects; {fdi_n_dest} destination and {fdi_n_home} home economies; {fdi_n_parents} parent companies; announced {fdi_years}). Country names to ISO3 (Czechia and Czech Republic as one); technology to its Midstream sector (Battery -> Batteries, EV -> Electric Vehicles, Solar, Wind); undisclosed capital investment kept as not disclosed, never zero; source cells verbatim with their http(s) links. Flows (home -> destination), parent-headquarters group splits and announcements by year are counts and sums computed by the OSI authors, over all projects and over the projects the Partnership indices use (config/partnership.yml cm_fdi)."
+    transform: "One row per project as published ({fdi_n} projects; {fdi_n_dest} destination and {fdi_n_home} home economies; {fdi_n_parents} parent companies; announced {fdi_years}). Country names to ISO3 (Czechia and Czech Republic as one); technology to its manufacturing sectors, Components and Assembly, which carry the same projects (Battery -> Batteries, EV -> Electric Vehicles, Solar, Wind); undisclosed capital investment kept as not disclosed, never zero; source cells verbatim with their http(s) links. Flows (home -> destination), parent-headquarters group splits and announcements by year are counts and sums computed by the OSI authors, over all projects and over the projects the Partnership indices use (config/partnership.yml cm_fdi)."
     issues: "{fdi_n_undisclosed} of {fdi_n} projects disclose no capital investment; values are announced, not audited. Cross-border projects only: domestic investment is not covered."
   # Development & finance (development data change 2026-10-15): the raw inputs of Development Potential
   # (R/themes/partnership_strength/stronger_development.R) and of Friendshore's outbound component
@@ -535,7 +535,7 @@ sources:
     licence: attribution
     attribution: "Source: OECD Creditor Reporting System (CC BY 4.0)."
     accessed: "2026-09"
-    transform: "Rows by donor, recipient, CRS sector and year summed as read; the mining sector net of its coal and upstream oil-and-gas sub-rows; recipients restricted to the WDI country list ({crs_n_recipients} recipients, {crs_n_donors} donors). Per stage, the 2013-2024 total over every donor and its ratio to 2023 GDP, rebuilt with partnership_strength_build_oecd_supplychain()'s steps: the aid Development Potential ranked until October 2026. It now reads the CRS bulk file by purpose code and OCI's Public Finance for Energy Database for the export-credit and lender finance the CRS lacks, per technology and stage (oecd_crs_purpose.csv, oci_energy_finance.csv; partnership_strength_build_oecd_tech())."
+    transform: "Rows by donor, recipient, CRS sector and year summed as read; the mining sector net of its \"Coal\" and \"Oil and gas (upstream)\" sub-rows; recipients restricted to the WDI country list ({crs_n_recipients} recipients, {crs_n_donors} donors). Per aid sector, the 2013-2024 total over every donor and its ratio to 2023 GDP, rebuilt with partnership_strength_build_oecd_supplychain()'s steps: the aid Development Potential ranked until October 2026. It now reads the CRS bulk file by purpose code and OCI's Public Finance for Energy Database for the export-credit and lender finance the CRS lacks, per technology and stage (oecd_crs_purpose.csv, oci_energy_finance.csv; partnership_strength_build_oecd_tech())."
     issues: "Bilateral official donors only: multilateral lenders and private flows are not in the extract. Constant prices use the OECD DAC deflators of each donor."
   - id: imf_dip
     short: "IMF Direct Investment Positions"
@@ -635,7 +635,7 @@ sources:
     licence: attribution
     attribution: "Source: IPCC AR5 WGIII Annex III (2014); IPCC SRREN Annex II (2011) for oil."
     accessed: "2026-10-07"
-    transform: "The medians the paper's technology climate weight is built from (data/raw/ipcc_ghg_intensity.csv, oil corrected to the SRREN median of 840 g): grams of CO2e per kWh over the plant's life. Batteries, Electric Vehicles, Green Hydrogen and Electric Grid have no IPCC row; the paper scores them with other technologies' values, named where shown."
+    transform: "The medians the pipeline's technology climate weight is built from (data/raw/ipcc_ghg_intensity.csv, oil corrected to the SRREN median of 840 g): grams of CO2e per kWh over the plant's life. Batteries, Electric Vehicles, Green Hydrogen and Electric Grid have no IPCC row; the paper scores them with other technologies' values, named where shown."
     issues: "Per kWh of electricity generated, over a plant's whole life: not comparable with Climate TRACE's annual tonnes."
 caveats:
   - {id: climate_trace_direct, text: "Climate TRACE counts direct emissions where they happen: the electricity a smelter or factory buys is counted in power, not in its own sector."}
@@ -667,13 +667,15 @@ caveats:
   - {id: sub_component_rule, text: "Sub-components are the groups of HS6 codes the sector's basket is built from (listed with their codes). Each flow uses the same source as the whole sector (the importer's declaration where it reported the sector that year, otherwise the exporter's x1.06), so a sector's sub-components add up to its total. Within one sector each code sits in one sub-component; a code shared with another sector counts in both sectors, so sub-components are never added across sectors."}
   - {id: hhi_reading, text: "Concentration (HHI): take each holder's share of the world total, square it and add up the squares. If one economy held everything the index would be 1; ten equal holders give 0.10 and four give 0.25. One divided by the index is the 'effective number' of equal-sized holders the market behaves like: 0.25 behaves like 4. Where part of the world total is not attributed to any economy, the index is a lower bound ('at least')."}
   - {id: hhi_refs_context, text: "Competition authorities screen mergers with HHI thresholds, usually quoted on a 0-10,000 scale (shares in percent: 1,800 there is 0.18 here). They were written for markets of competing firms, not for trade between whole economies, so they are a yardstick, not a verdict: an economy's exports come from many firms, which may compete with each other."}
-  - {id: basket_ev_upstream, text: "Electric Vehicles Upstream trade (a basket since the 2026-10 review) is the battery minerals as ores and concentrates (lithium minerals, nickel, cobalt and manganese ores, natural graphite), codes it shares with Batteries Upstream, plus the magnet rare earths of the traction motor (rare-earth compounds and metals, monazite ore), codes it shares with Wind Upstream. Each code counts fully in every sector that lists it. Steel is the larger use of nickel and manganese ore, and the lithium heading also holds other minerals."}
-  - {id: basket_solar_upstream, text: "Solar Upstream trade is silicon metal only (HS 2804.69), the feedstock of polysilicon. Aluminium alloys and silicones use as much silicon metal as solar or more, so most traded silicon metal serves other uses. Silver, quartz, tellurium and copper are left out (copper is in Electric Grid Upstream)."}
-  - {id: basket_wind_upstream, text: "Wind Upstream trade is the raw material of the magnet rare earths: rare-earth compounds (HS 2846.90), rare-earth metals (2805.30) and monazite ore (2612.20), the same codes as in Electric Vehicles Upstream. Magnets also go into electronics and industrial motors, and the compounds heading also holds lanthanum and cerium for catalysts and glass."}
-  - {id: basket_nuclear_upstream, text: "Nuclear Upstream trade is uranium ores and concentrates (HS 2612.10) and natural uranium and its compounds (2844.10, the heading under which most yellowcake is shipped), moved from Nuclear Midstream in the 2026-10 basket review. The 2844.10 heading also holds natural uranium hexafluoride from conversion, a Midstream step with no code of its own."}
-  - {id: basket_nuclear_midstream, text: "Since the 2026-10 basket review Nuclear Midstream no longer includes uranium ores and yellowcake (now in Nuclear Upstream): it keeps enriched uranium, spent fuel, and reactor and steam-plant hardware."}
-  - {id: basket_semis_upstream, text: "Semiconductors Upstream trade is unwrought gallium, germanium and indium, their powders and scrap (HS 8112.92, which also holds niobium and vanadium); the Atlas sees it through the older code 8112.91. Semiconductors and LEDs take most gallium, but germanium goes mainly into fibre and infrared optics and indium into display coatings."}
-  - {id: basket_ree_moved, text: "Rare-earth compounds and metals moved to the Upstream baskets in the 2026-10 basket review, so this sector's trade starts at the permanent magnet (HS 8505.11)."}
+  - {id: basket_ev_extraction, text: "Electric Vehicles Extraction trade is the battery minerals as ores and concentrates (lithium minerals, nickel, cobalt and manganese ores, natural graphite), codes it shares with Batteries Extraction, plus monazite (HS 2612.20), the ore of the traction motor's magnet rare earths, a code it shares with Wind Extraction. Each code counts fully in every sector that lists it. Steel is the larger use of nickel and manganese ore, and the lithium heading also holds other minerals."}
+  - {id: basket_ev_refining, text: "Electric Vehicles Refining trade is the magnet rare earths as compounds (HS 2846.90) and metals (2805.30), the same codes as Wind Refining. Magnets also go into electronics and industrial motors, and the compounds heading also holds lanthanum and cerium for catalysts and glass."}
+  - {id: basket_solar_refining, text: "Solar Refining trade includes silicon metal (HS 2804.69), the feedstock of polysilicon. Aluminium alloys and silicones use as much silicon metal as solar or more, so most traded silicon metal serves other uses. Silver, quartz, tellurium and copper are left out (copper is in the Electric Grid sectors)."}
+  - {id: basket_wind_extraction, text: "Wind Extraction trade is monazite ore (HS 2612.20), the raw material of the magnet rare earths, a code shared with Electric Vehicles Extraction. Magnets also go into electronics and industrial motors."}
+  - {id: basket_wind_refining, text: "Wind Refining trade includes the magnet rare earths as compounds (HS 2846.90) and metals (2805.30), the same codes as Electric Vehicles Refining; the compounds heading also holds lanthanum and cerium for catalysts and glass."}
+  - {id: basket_nuclear_extraction, text: "Nuclear Extraction trade is uranium ores and concentrates (HS 2612.10); yellowcake and the rest of the fuel cycle are in Nuclear Refining."}
+  - {id: basket_nuclear_refining, text: "Nuclear Refining trade holds natural uranium and its compounds (HS 2844.10, the heading under which most yellowcake is shipped; it also holds natural uranium hexafluoride from conversion, which has no code of its own) and enriched uranium and fuel materials; spent fuel is in Nuclear Recovery."}
+  - {id: basket_semis_refining, text: "Semiconductors Refining trade includes unwrought gallium, germanium and indium, their powders and scrap (HS 8112.92, which also holds niobium and vanadium); the Atlas sees it through the older code 8112.91. Semiconductors and LEDs take most gallium, but germanium goes mainly into fibre and infrared optics and indium into display coatings."}
+  - {id: basket_magnets, text: "Rare-earth compounds and metals are in the Refining sector of the technology, so this sector's trade starts at the permanent magnet (HS 8505.11)."}
   - {id: critmin_basket, text: "Mineral labels come from HS descriptions: zinc includes galvanized steel, copper includes wire and scrap, silicon includes silicones, graphite includes artificial graphite."}
   - {id: critmin_no_ree_pgm, text: "The Comtrade mineral pull has no rare-earth or PGM codes."}
   - {id: critmin_hkg, text: "Hong Kong is kept in the mineral trade data and tagged as a re-export hub."}
@@ -706,8 +708,9 @@ caveats:
   - {id: projection_pipeline, text: "Pipeline shares are of announced capacity, over the world total including 'Other'. The IEA extract names no year (stored as 2035 by the pipeline): year to confirm."}
   - {id: ev_net_export, text: "(Production - sales) / sales: positive means the region produces more EVs than it buys."}
   - {id: cim_estimate, text: "2025 includes estimated fourth-quarter values."}
-  - {id: cim_ev_purchases, text: "EV Downstream investment is consumer purchases of zero-emission vehicles."}
-  - {id: cim_split, text: "Batteries and EV Upstream are one critical-minerals investment series split by a constant demand share; never add them."}
+  - {id: cim_ev_purchases, text: "Electric Vehicles Deployment investment is consumer purchases of zero-emission vehicles."}
+  - {id: cim_minerals_split, text: "Batteries Refining and Electric Vehicles Refining split one critical-minerals investment series (plants making lithium, nickel, cobalt and graphite chemicals) by the two technologies' IEA demand shares: each holds part of the series, and the two add up to it."}
+  - {id: same_figure_pair, text: "Same figure on Components and Assembly: the source gives one figure for the technology's manufacturing, not one per stage, so the value is shown on both sectors. Never add the two; totals count it once."}
   - {id: cim_geothermal, text: "Geothermal is enhanced geothermal only."}
   - {id: per_capita_six_fuels, text: "Six fuels only; hydro, biomass and total consumption are not included, so these are not an energy mix."}
   - {id: growth_base_zero, text: "A zero base year reads 'new'; zero to zero reads 'n/a'."}
@@ -719,7 +722,7 @@ caveats:
   - {id: coal_mean, text: "Coal is the mean of the Australian and South African benchmarks."}
   - {id: prices_world, text: "World prices: the same for every country."}
   - {id: wage_years, text: "Each economy's latest observation; the year is shown beside the value, and values more than 5 years old are marked."}
-  - {id: wage_activity, text: "Upstream = mining and utilities (economy-wide total where missing); Midstream = manufacturing; Downstream = construction."}
+  - {id: wage_activity, text: "Three activities serve the six stages: mining and utilities (economy-wide total where missing) for Extraction and Recovery, manufacturing for Refining, Components and Assembly, construction for Deployment."}
   - {id: lending_mixed, text: "The rate series differs by economy (lending rate, loans to firms, money-market or policy rate); China is the PBoC one-year loan prime rate."}
   - {id: ppi_levels, text: "Year-on-year change only; PPI levels are not comparable across economies."}
   - {id: trl_global, text: "A property of the technology, the same in every country."}
@@ -734,7 +737,7 @@ caveats:
   - {id: wdi_empty, text: "Series of the extract without any value in {wdi_years}, so not shown: {wdi_empty}."}
   - {id: db_discontinued, text: "The World Bank stopped Doing Business in 2021 after data irregularities; these {db_year} scores are its last. Its successor, B-READY (2024, 50 economies), is in the World Bank indicators of this theme."}
   - {id: crs_scope, text: "Official development assistance from {crs_n_donors} bilateral donors (OECD DAC members and other reporting countries), gross disbursements, {crs_years}, constant {crs_base_year} US dollars (OECD DAC deflators). Multilateral lenders (World Bank, regional development banks, EU institutions) and private flows are not in the extract."}
-  - {id: crs_stage, text: "Aid sectors are CRS purpose codes, not technologies. They map to stages by the rule Development Potential used until October 2026: energy to Downstream, industry to Midstream, mineral resources and mining (less its coal and upstream oil and gas) to Upstream, so aid for energy counts on every Downstream sector. Mining aid net of its fossil sub-rows can be negative in a year."}
+  - {id: crs_stage, text: "Aid sectors are CRS sectors, not technologies. Each is shown on the sectors the pipeline's purpose-code crosswalk files its codes under: energy on Deployment, industry on Refining, Components and Assembly, mineral resources and mining (less its 'Coal' and 'Oil and gas (upstream)' sub-sectors) on Extraction, each for the technologies the crosswalk names; no CRS sector funds recycling, so Recovery shows none. The same aid therefore appears on several sectors: never add it across them. Mining aid net of its fossil sub-sectors can be negative in a year."}
   - {id: crs_gdp, text: "The {crs_years_total} total divided by one year's GDP (2023, World Bank, current US dollars), as the Development Potential builder divided it until October 2026."}
   - {id: crs_incomplete, text: "Years most donors had not yet reported when the extract was taken are counted in the totals but not shown as years: {crs_incomplete}."}
   - {id: dip_debt, text: "IMF Direct Investment Positions, outward, debt instruments only (loans and debt securities between related firms; equity is not in this measure), as reported by the investing economy: the mean of the years each pair reports in {dip_years}. A reported zero is a real zero; a pair not shown was not reported."}
@@ -786,55 +789,92 @@ families:
   - {id: development, label: "Development & alignment", section: null}
 
 techs:
-  - {slug: batteries, tech_blurb: "From lithium, nickel, cobalt, graphite and manganese through cathode and anode materials, cells and packs to stationary storage."}
-  - {slug: coal, tech_blurb: "Coal mining and trade, processing and handling equipment, and coal use and coal-fired power."}
-  - {slug: electric-grid, tech_blurb: "Copper and aluminium inputs, cables, transformers, switchgear and converters, and grid deployment."}
-  - {slug: electric-vehicles, tech_blurb: "Battery minerals, vehicle and component manufacturing, and the sale of electric cars."}
-  - {slug: gas, tech_blurb: "Natural gas production and trade, pipes, compressors and LNG equipment, and gas use and gas-fired power."}
-  - {slug: geothermal, tech_blurb: "Enhanced geothermal resources and costs; little country data exists upstream and midstream."}
+  - {slug: batteries, tech_blurb: "From lithium, nickel, cobalt, graphite and manganese through refined battery materials, cells and packs to stationary storage and battery recycling."}
+  - {slug: coal, tech_blurb: "Coal mining and trade, coke and briquettes, handling and boiler equipment, and coal use and coal-fired power."}
+  - {slug: electric-grid, tech_blurb: "Copper and aluminium from ore to refined metal, electrical steel, cables, transformers, switchgear and converters, and grid deployment."}
+  - {slug: electric-vehicles, tech_blurb: "Battery minerals and magnet rare earths, motors, magnets and vehicle batteries, vehicle assembly and charging equipment, and the sale of electric cars."}
+  - {slug: gas, tech_blurb: "Natural gas production and trade, natural gas liquids, pipes, compressors and LNG equipment, and gas use and gas-fired power."}
+  - {slug: geothermal, tech_blurb: "Enhanced geothermal resources, costs and capacity; little country data exists before deployment."}
   - {slug: green-hydrogen, tech_blurb: "Nickel and platinum-group metals, electrolyser manufacturing, and hydrogen use."}
-  - {slug: nuclear, tech_blurb: "Uranium resources and mining, fuel-cycle and reactor hardware, and nuclear generation."}
-  - {slug: oil, tech_blurb: "Crude oil production, reserves and trade, refining and handling equipment, and oil use."}
-  - {slug: solar, tech_blurb: "The minerals behind solar, polysilicon, wafers, cells, modules and inverters, and solar generation and resource."}
-  - {slug: wind, tech_blurb: "The minerals behind wind, nacelles, blades, towers and cables, and wind generation and resource."}
-  - {slug: semiconductors, tech_blurb: "Non-headline basket, trade only: semiconductor devices and manufacturing equipment (Midstream) and, where the basket has them, the minor metals the industry uses (Upstream)."}
+  - {slug: nuclear, tech_blurb: "Uranium resources and mining, the fuel cycle from yellowcake to enrichment and spent fuel, reactor hardware, and nuclear generation."}
+  - {slug: oil, tech_blurb: "Crude oil production, reserves and trade, refined products, drilling, pumping and pipeline equipment, oil use and waste oils."}
+  - {slug: solar, tech_blurb: "The minerals behind solar, silicon metal and polysilicon, wafers, cells, modules and inverters, and solar generation and resource."}
+  - {slug: wind, tech_blurb: "The magnet rare earths and other wind minerals, blades, towers, nacelles, generators and cables, and wind generation and resource."}
+  - {slug: semiconductors, tech_blurb: "Non-headline basket, trade only: gallium, germanium, indium and semiconductor materials (Refining), device and equipment parts (Components), and chips and manufacturing equipment (Assembly)."}
 
+# One entry per technology x stage (schema 2, six stages): the 66 headline cells and the Semiconductors
+# stages its basket has. "The same figures as ..." marks a figure the source gives once for a
+# technology's manufacturing (shown on Components and Assembly, never added across them).
 cells:
-  - {slug: batteries-upstream, cell_blurb: "Battery minerals: lithium, nickel, cobalt, graphite and manganese ores, concentrates and intermediates, mining and refining."}
-  - {slug: batteries-midstream, cell_blurb: "Cathode and anode materials, lithium chemicals, electrolytes, separators, cells, packs and battery-management parts, plus manufacturing investment and capacity."}
-  - {slug: batteries-downstream, cell_blurb: "Stationary battery storage: deployment investment."}
-  - {slug: coal-upstream, cell_blurb: "Coal mining, reserves and trade in coal."}
-  - {slug: coal-midstream, cell_blurb: "Coal processing, briquettes, coke and handling equipment."}
-  - {slug: coal-downstream, cell_blurb: "Coal use and coal-fired electricity."}
-  - {slug: electric-grid-upstream, cell_blurb: "Copper and aluminium: ores, concentrates, cathodes and unwrought metal for grid equipment."}
-  - {slug: electric-grid-midstream, cell_blurb: "Cables, transformers, switchgear, converters and other grid equipment."}
-  - {slug: electric-grid-downstream, cell_blurb: "Grid deployment: little country-level data exists; see Grid Midstream."}
-  - {slug: electric-vehicles-upstream, cell_blurb: "The battery minerals EVs use and the magnet rare earths of the traction motor: trade in their ores and concentrates, and critical-minerals investment (shared with Batteries Upstream).", caveats: [basket_ev_upstream]}
-  - {slug: electric-vehicles-midstream, cell_blurb: "Electric and hybrid vehicles, components and charging equipment, and EV production by region.", caveats: [basket_ree_moved]}
-  - {slug: electric-vehicles-downstream, cell_blurb: "Electric-car sales, stock and sales share, and consumer purchases."}
-  - {slug: gas-upstream, cell_blurb: "Natural gas production, reserves and trade, including LNG."}
-  - {slug: gas-midstream, cell_blurb: "Pipes, compressors, liquefaction and regasification equipment."}
-  - {slug: gas-downstream, cell_blurb: "Gas use and gas-fired electricity."}
-  - {slug: geothermal-upstream, cell_blurb: "Geothermal exploration: little country-level data exists; the resource data sit in Geothermal Downstream."}
-  - {slug: geothermal-midstream, cell_blurb: "Geothermal equipment: little country-level data exists; the resource data sit in Geothermal Downstream."}
-  - {slug: geothermal-downstream, cell_blurb: "Enhanced geothermal technical potential and costs, and enhanced geothermal investment."}
-  - {slug: green-hydrogen-upstream, cell_blurb: "The minerals behind electrolysers: nickel and platinum-group metals."}
-  - {slug: green-hydrogen-midstream, cell_blurb: "Electrolyser manufacturing capacity, reported by the IEA for five economies and the EU."}
-  - {slug: green-hydrogen-downstream, cell_blurb: "Hydrogen use: little country-level data exists."}
-  - {slug: nuclear-upstream, cell_blurb: "Uranium resources, mine production and trade in uranium ores and concentrates (yellowcake).", caveats: [basket_nuclear_upstream]}
-  - {slug: nuclear-midstream, cell_blurb: "Enriched uranium and spent fuel, reactors and their parts, and steam-plant hardware.", caveats: [basket_nuclear_midstream]}
-  - {slug: nuclear-downstream, cell_blurb: "Nuclear generation and investment in nuclear power."}
-  - {slug: oil-upstream, cell_blurb: "Crude oil production, reserves and trade."}
-  - {slug: oil-midstream, cell_blurb: "Refining and handling equipment, pipes and tanks."}
-  - {slug: oil-downstream, cell_blurb: "Oil use and oil-fired electricity."}
-  - {slug: solar-upstream, cell_blurb: "The materials behind solar: trade in silicon metal, the feedstock of polysilicon, and the mining and refining of silicon, silver, copper and other minerals.", caveats: [basket_solar_upstream]}
-  - {slug: solar-midstream, cell_blurb: "Polysilicon, wafers, cells, modules, inverters and related equipment, plus manufacturing investment and capacity."}
-  - {slug: solar-downstream, cell_blurb: "Solar generation, deployment investment and the solar resource."}
-  - {slug: wind-upstream, cell_blurb: "The materials behind wind: trade in the rare-earth compounds, metals and ores that magnets are made from, and the mining and refining of rare earths, copper, zinc and other minerals.", caveats: [basket_wind_upstream]}
-  - {slug: wind-midstream, cell_blurb: "Nacelles, blades, towers, generators and cables, plus manufacturing investment and capacity.", caveats: [basket_ree_moved]}
-  - {slug: wind-downstream, cell_blurb: "Wind generation, deployment investment and the wind resource."}
-  - {slug: semiconductors-upstream, cell_blurb: "Non-headline basket: unwrought gallium, germanium and indium (with niobium and vanadium), their powders and scrap.", caveats: [basket_semis_upstream]}
-  - {slug: semiconductors-midstream, cell_blurb: "Non-headline basket: semiconductor devices, wafers and manufacturing equipment."}
+  - {slug: batteries-extraction, cell_blurb: "Battery minerals as mined: lithium, nickel, cobalt, graphite and manganese ores and concentrates, their mining and their reserves."}
+  - {slug: batteries-refining, cell_blurb: "Refined battery materials: lithium chemicals, nickel and cobalt refining, cathode and anode materials and their precursors, electrolytes, separators and foils; the refining of the battery minerals, lithium, nickel and cobalt chemicals capacity, and critical-minerals investment (split with Electric Vehicles Refining)."}
+  - {slug: batteries-components, cell_blurb: "Battery packs, parts and battery-management systems; cell and electrode-material manufacturing capacity, the IEA's battery manufacturing-capacity shares and manufacturing investment (the same figures as Batteries Assembly)."}
+  - {slug: batteries-assembly, cell_blurb: "Battery cells and packs; battery-module manufacturing capacity, manufacturing investment and the IEA's manufacturing-capacity shares (the same figures as Batteries Components)."}
+  - {slug: batteries-deployment, cell_blurb: "Stationary battery storage: deployment investment."}
+  - {slug: batteries-recovery, cell_blurb: "Battery recycling: trade in battery waste and scrap and in materials recovered from them."}
+  - {slug: coal-extraction, cell_blurb: "Coal mining, reserves and trade in coal and lignite."}
+  - {slug: coal-refining, cell_blurb: "Coal processing: briquettes, coke and semicoke."}
+  - {slug: coal-components, cell_blurb: "Parts of coal- and ash-handling equipment."}
+  - {slug: coal-assembly, cell_blurb: "Ash-handling equipment, boilers and burners for coal-fired plants."}
+  - {slug: coal-deployment, cell_blurb: "Coal use and coal-fired electricity."}
+  - {slug: coal-recovery, cell_blurb: "Coal recovery: no traded basket and little country-level data."}
+  - {slug: electric-grid-extraction, cell_blurb: "Copper and aluminium ores and concentrates for grid equipment, and their mining."}
+  - {slug: electric-grid-refining, cell_blurb: "Refined copper, alumina and primary aluminium, grain-oriented electrical steel and copper wire rod for cables; the refining of copper and aluminium."}
+  - {slug: electric-grid-components, cell_blurb: "Cable and conductor components, metering parts and power-converter parts."}
+  - {slug: electric-grid-assembly, cell_blurb: "Transformers, switchgear, circuit breakers, cables, control panels, converters and other high-voltage apparatus."}
+  - {slug: electric-grid-deployment, cell_blurb: "Grid deployment: little country-level data exists; the equipment is in Electric Grid Assembly."}
+  - {slug: electric-grid-recovery, cell_blurb: "Grid-equipment recovery: no traded basket and little country-level data."}
+  - {slug: electric-vehicles-extraction, cell_blurb: "The battery minerals EVs use and the ore of the traction motor's magnet rare earths: trade in their ores and concentrates, and their mining.", caveats: [basket_ev_extraction]}
+  - {slug: electric-vehicles-refining, cell_blurb: "Rare-earth compounds and metals for traction-motor magnets, the refining of the battery minerals, and critical-minerals investment (split with Batteries Refining).", caveats: [basket_ev_refining]}
+  - {slug: electric-vehicles-components, cell_blurb: "Electric drive units and motors, permanent magnets, vehicle batteries and packs, wiring harnesses and charging-equipment parts; manufacturing investment (the same figures as Electric Vehicles Assembly).", caveats: [basket_magnets]}
+  - {slug: electric-vehicles-assembly, cell_blurb: "Electric and hybrid vehicles and charging equipment, EV production by region, vehicle manufacturing capacity and manufacturing investment (the same figures as Electric Vehicles Components)."}
+  - {slug: electric-vehicles-deployment, cell_blurb: "Electric-car sales, stock and sales share, EV sales by region, and consumer purchases of electric vehicles."}
+  - {slug: electric-vehicles-recovery, cell_blurb: "Vehicle recycling: little country-level data exists; battery recycling is in Batteries Recovery."}
+  - {slug: gas-extraction, cell_blurb: "Natural gas production, reserves and trade, including LNG."}
+  - {slug: gas-refining, cell_blurb: "Natural gas liquids: propane, butane and ethane."}
+  - {slug: gas-components, cell_blurb: "Parts of LNG and LPG equipment."}
+  - {slug: gas-assembly, cell_blurb: "Pipelines, compressors, liquefaction and regasification equipment."}
+  - {slug: gas-deployment, cell_blurb: "Gas use and gas-fired electricity."}
+  - {slug: gas-recovery, cell_blurb: "Gas recovery: no traded basket and little country-level data."}
+  - {slug: geothermal-extraction, cell_blurb: "Geothermal exploration and drilling: little country-level data exists; the resource data sit in Geothermal Deployment."}
+  - {slug: geothermal-refining, cell_blurb: "Geothermal has no refined material of its own: little country-level data exists."}
+  - {slug: geothermal-components, cell_blurb: "Geothermal equipment parts: little country-level data exists."}
+  - {slug: geothermal-assembly, cell_blurb: "Geothermal power-plant equipment: little country-level data exists."}
+  - {slug: geothermal-deployment, cell_blurb: "Enhanced geothermal technical potential and costs, power capacity additions and enhanced geothermal investment."}
+  - {slug: geothermal-recovery, cell_blurb: "Geothermal recovery: no traded basket and little country-level data."}
+  - {slug: green-hydrogen-extraction, cell_blurb: "The minerals behind electrolysers as mined: nickel and platinum-group metals."}
+  - {slug: green-hydrogen-refining, cell_blurb: "The refining of the electrolyser minerals: nickel and platinum-group metals."}
+  - {slug: green-hydrogen-components, cell_blurb: "Electrolyser components: the IEA's electrolyser manufacturing-capacity shares (the same figures as Green Hydrogen Assembly)."}
+  - {slug: green-hydrogen-assembly, cell_blurb: "Electrolyser manufacturing capacity, reported by the IEA for five economies and the EU."}
+  - {slug: green-hydrogen-deployment, cell_blurb: "Hydrogen use: little country-level data exists."}
+  - {slug: green-hydrogen-recovery, cell_blurb: "Electrolyser recovery: no traded basket and little country-level data."}
+  - {slug: nuclear-extraction, cell_blurb: "Uranium resources, mine production and trade in uranium ores and concentrates.", caveats: [basket_nuclear_extraction]}
+  - {slug: nuclear-refining, cell_blurb: "The front of the fuel cycle: natural uranium and its compounds (yellowcake), enriched uranium and fuel materials.", caveats: [basket_nuclear_refining]}
+  - {slug: nuclear-components, cell_blurb: "Reactor components and steam-cycle parts."}
+  - {slug: nuclear-assembly, cell_blurb: "Reactors and their parts, and steam-plant and balance-of-plant hardware."}
+  - {slug: nuclear-deployment, cell_blurb: "Nuclear generation, capacity additions and investment in nuclear power."}
+  - {slug: nuclear-recovery, cell_blurb: "The back of the fuel cycle: spent fuel."}
+  - {slug: oil-extraction, cell_blurb: "Crude oil production, reserves and trade."}
+  - {slug: oil-refining, cell_blurb: "Refined oil products: heavy and light fuel oils and petroleum solids."}
+  - {slug: oil-components, cell_blurb: "Parts of drilling, field and pumping equipment."}
+  - {slug: oil-assembly, cell_blurb: "Drilling and field equipment, pipelines, pumps and compressors, generating sets, and storage, transport and processing equipment."}
+  - {slug: oil-deployment, cell_blurb: "Oil use and oil-fired electricity."}
+  - {slug: oil-recovery, cell_blurb: "Waste oils."}
+  - {slug: solar-extraction, cell_blurb: "The minerals behind solar as mined (silver, copper and others): their mining and reserves; no traded basket."}
+  - {slug: solar-refining, cell_blurb: "Silicon metal and polysilicon, the feedstock of wafers, and cabling inputs; polysilicon manufacturing capacity and the refining of silicon, silver, copper and other solar minerals.", caveats: [basket_solar_refining]}
+  - {slug: solar-components, cell_blurb: "Wafers, solar cells, inverters and power electronics, cabling, module inputs and cell-manufacturing equipment; wafer and cell manufacturing capacity and manufacturing investment (the same figures as Solar Assembly)."}
+  - {slug: solar-assembly, cell_blurb: "Solar modules, inverters, racking and trackers, transformers and cabling; module manufacturing capacity, the IEA's manufacturing-capacity shares and manufacturing investment (the same figures as Solar Components)."}
+  - {slug: solar-deployment, cell_blurb: "Solar generation, capacity additions, deployment investment and the solar resource."}
+  - {slug: solar-recovery, cell_blurb: "Solar-panel recycling: no traded basket and little country-level data."}
+  - {slug: wind-extraction, cell_blurb: "Monazite, the ore of the magnet rare earths, and the mining of rare earths, copper, zinc and other wind minerals.", caveats: [basket_wind_extraction]}
+  - {slug: wind-refining, cell_blurb: "Rare-earth compounds and metals for generator magnets and array-cable inputs; the refining of the wind minerals.", caveats: [basket_wind_refining]}
+  - {slug: wind-components, cell_blurb: "Blades, towers, nacelles and drivetrains, generators, permanent magnets, array cables and substation parts; blade manufacturing capacity and manufacturing investment (the same figures as Wind Assembly).", caveats: [basket_magnets]}
+  - {slug: wind-assembly, cell_blurb: "Wind turbines, substations, foundations and array cables; nacelle manufacturing capacity, the IEA's manufacturing-capacity shares and manufacturing investment (the same figures as Wind Components)."}
+  - {slug: wind-deployment, cell_blurb: "Wind generation, capacity additions, deployment investment and the wind resource."}
+  - {slug: wind-recovery, cell_blurb: "Wind-turbine recycling: no traded basket and little country-level data."}
+  - {slug: semiconductors-refining, cell_blurb: "Non-headline basket: unwrought gallium, germanium and indium (with niobium and vanadium), their powders and scrap, and semiconductor materials.", caveats: [basket_semis_refining]}
+  - {slug: semiconductors-components, cell_blurb: "Non-headline basket: discrete semiconductors, integrated-circuit and device parts, semiconductor-equipment parts and materials."}
+  - {slug: semiconductors-assembly, cell_blurb: "Non-headline basket: integrated circuits, discrete semiconductors, piezoelectric components and semiconductor manufacturing equipment."}
 
 vars:
   # ---- trade --------------------------------------------------------------------------------------
@@ -861,7 +901,7 @@ vars:
     roster: comtrade_matrix
     licence: attribution
     caveats: [hs6_overlap, nominal_usd, mirror_factor, hkg_hub_matrix]
-    primary_for: [oil-midstream, gas-midstream, coal-midstream, nuclear-midstream, solar-upstream, solar-midstream, wind-upstream, wind-midstream, batteries-upstream, batteries-midstream, electric-vehicles-upstream, electric-vehicles-midstream, electric-grid-upstream, electric-grid-midstream, semiconductors-upstream, semiconductors-midstream]
+    primary_for: [batteries-extraction, batteries-refining, batteries-components, batteries-assembly, batteries-recovery, coal-refining, coal-components, coal-assembly, electric-grid-extraction, electric-grid-refining, electric-grid-components, electric-grid-assembly, electric-vehicles-extraction, electric-vehicles-refining, electric-vehicles-components, electric-vehicles-assembly, gas-refining, gas-components, gas-assembly, nuclear-refining, nuclear-components, nuclear-assembly, nuclear-recovery, oil-refining, oil-components, oil-assembly, oil-recovery, semiconductors-refining, semiconductors-components, semiconductors-assembly, solar-refining, solar-components, solar-assembly, wind-extraction, wind-refining, wind-components, wind-assembly]
     section: trade
     stale_years: null
     min_base: null
@@ -965,7 +1005,7 @@ vars:
     family: exports
     label: "Exports by sub-component"
     short: "Exports (sub-component)"
-    definition: "Value of the economy's exports of one group of the sector's HS6 codes (a sub-component, such as battery cells within Batteries Midstream), on the same reconciled basis as the sector's exports, so a sector's sub-components add up to its total."
+    definition: "Value of the economy's exports of one group of the sector's HS6 codes (a sub-component, such as battery cells within Batteries Assembly), on the same reconciled basis as the sector's exports, so a sector's sub-components add up to its total."
     unit: usd_cif
     data_year: "2024"
     years: [2020, 2024]
@@ -1116,13 +1156,13 @@ vars:
     family: exports
     label: "Mineral exports"
     short: "Mineral exports"
-    definition: "Value of the economy's exports of the mineral's HS codes (ores, refined metal, chemicals and semi-manufactures), FOB."
+    definition: "Value of the economy's exports of the mineral's HS codes at one stage of its chain, FOB: ores and concentrates (Extraction), refined metal, chemicals and semi-manufactures (Refining) or waste and scrap (Recovery). Each stage is its own basket with its own world total."
     unit: usd_fob
     data_year: "{critmin_year}"
     years: [2024]
     year_field: false
     native_level: country
-    item_axis: mineral
+    item_axis: mineral_stage
     agg: sum
     world_basis: sum_all
     norms: [value, share]
@@ -1136,7 +1176,7 @@ vars:
     caveats: [critmin_basket, critmin_no_ree_pgm, critmin_mirror, critmin_hkg]
     primary_for: []
     section: trade
-    link_stage: Upstream
+    link_stage: [Extraction, Refining, Recovery]
     feeds: ["ES: Minerals Trade"]
     prov: P
     prov_detail: "critical_minerals_trade_flows_tbl, column exports (export_source reported / mirror)"
@@ -1147,13 +1187,13 @@ vars:
     family: exports
     label: "Mineral exports as a share of total exports"
     short: "Export dependence"
-    definition: "The mineral's exports as a share of the economy's total exports."
+    definition: "The mineral's exports at one stage of its chain (ores, refined products or scrap) as a share of the economy's total exports."
     unit: share
     data_year: "{critmin_year}"
     years: [2024]
     year_field: false
     native_level: country
-    item_axis: mineral
+    item_axis: mineral_stage
     agg: none
     world_basis: none
     norms: [value]
@@ -1167,7 +1207,7 @@ vars:
     caveats: [critmin_basket, critmin_mirror]
     primary_for: []
     section: trade
-    link_stage: Upstream
+    link_stage: [Extraction, Refining, Recovery]
     feeds: ["ES: Minerals Trade"]
     prov: P
     prov_detail: "critical_minerals_trade_flows_tbl, column exp_share"
@@ -1199,7 +1239,7 @@ vars:
     caveats: [ei_reserves_stale]
     primary_for: []
     section: resources
-    link_stage: Upstream
+    link_stage: Extraction
     feeds: ["ES: Reserves"]
     prov: P
     prov_detail: "reserves_tbl, variables Oil / Gas / Coal Reserves"
@@ -1230,7 +1270,7 @@ vars:
     caveats: [usgs_withheld, usgs_units, brazil_ree]
     primary_for: []
     section: resources
-    link_stage: Upstream
+    link_stage: Extraction
     feeds: ["ES: Reserves"]
     prov: P
     prov_detail: "reserves_tbl, variables <Mineral> Reserves; world totals from usgs_mcs_world_reserves()"
@@ -1439,7 +1479,7 @@ vars:
     roster: egs
     licence: attribution
     caveats: []
-    primary_for: [geothermal-downstream]
+    primary_for: [geothermal-deployment]
     section: resources
     feeds: ["ES: Reserves", "EO: Reserves"]
     prov: P
@@ -1530,12 +1570,12 @@ vars:
     roster: ei
     licence: attribution
     caveats: [eia_production, ei_residual, ei_oil_shale]
-    primary_for: [oil-upstream, gas-upstream, coal-upstream]
+    primary_for: [oil-extraction, gas-extraction, coal-extraction]
     section: production
-    link_stage: Upstream
+    link_stage: Extraction
     feeds: ["EO: Production"]
     prov: P
-    prov_detail: "production_depth_momentum_tbl, variable production_latest, Upstream Oil / Gas / Coal: EI's value or, where EI does not report the fuel, the EIA International Energy Statistics value the pipeline took (obs_year = the EIA year; note eia_production; checked against eia_intl_lookup() of data/raw/eia_intl_fossil_production.csv); NA where neither reports a comparable value (nsr). Series and world totals from the EI long CSV (EI economies only)"
+    prov_detail: "production_depth_momentum_tbl, variable production_latest, Oil / Gas / Coal Extraction: EI's value or, where EI does not report the fuel, the EIA International Energy Statistics value the pipeline took (obs_year = the EIA year; note eia_production; checked against eia_intl_lookup() of data/raw/eia_intl_fossil_production.csv); NA where neither reports a comparable value (nsr). Series and world totals from the EI long CSV (EI economies only)"
     parity: {table: production_depth_momentum_tbl, variable: production_latest}
     phase: "1"
   - id: production.generation
@@ -1561,12 +1601,12 @@ vars:
     roster: ei
     licence: attribution
     caveats: [gross_generation, ei_residual]
-    primary_for: [nuclear-downstream, solar-downstream, wind-downstream]
+    primary_for: [nuclear-deployment, solar-deployment, wind-deployment]
     section: production
-    link_stage: Downstream
+    link_stage: Deployment
     feeds: ["EO: Production"]
     prov: P
-    prov_detail: "production_depth_momentum_tbl, variable production_latest, Downstream cells; series and world totals from the EI long CSV"
+    prov_detail: "production_depth_momentum_tbl, variable production_latest, the Deployment cells; series and world totals from the EI long CSV"
     parity: {table: production_depth_momentum_tbl, variable: production_latest}
     phase: "1"
   - id: production.mining
@@ -1595,7 +1635,7 @@ vars:
     caveats: [iea_top6, projection_base_case, iea_magnet_ree]
     primary_for: []
     section: production
-    link_stage: Upstream
+    link_stage: Extraction
     feeds: ["ES: Foreign Dependency (Mineral Supply)"]
     prov: X
     prov_detail: "read_iea_critical_minerals(IEA Critical Minerals Dataset 2026.xlsx), sheet 2, mining blocks"
@@ -1627,7 +1667,7 @@ vars:
     caveats: [iea_top6, projection_base_case, graphite_grade, iea_magnet_ree]
     primary_for: []
     section: production
-    link_stage: Upstream
+    link_stage: Refining
     feeds: ["ES: Foreign Dependency (Mineral Supply)"]
     prov: X
     prov_detail: "read_iea_critical_minerals(IEA Critical Minerals Dataset 2026.xlsx), sheet 2, refining blocks"
@@ -1658,7 +1698,7 @@ vars:
     caveats: [ei_minerals_named]
     primary_for: []
     section: production
-    link_stage: Upstream
+    link_stage: Extraction
     feeds: ["ES: Production"]
     prov: P
     prov_detail: "critical_minerals_production_tbl, variables Manganese / Zinc / PGMs Production; world totals from major_supplier_shares_tbl ei_mineral_mining"
@@ -1689,7 +1729,7 @@ vars:
     caveats: [usgs_estimates, usgs_withheld]
     primary_for: []
     section: production
-    link_stage: Upstream
+    link_stage: Extraction
     feeds: []
     prov: X
     prov_detail: "MCS2026_World_Data.csv, Mine production rows, year 2025"
@@ -1718,11 +1758,11 @@ vars:
     roster: redbook_production
     licence: attribution
     caveats: [uranium_zero]
-    primary_for: [nuclear-upstream]
+    primary_for: [nuclear-extraction]
     section: production
     feeds: ["ES: Production", "EO: Production"]
     prov: P
-    prov_detail: "2024: production_depth_momentum_tbl production_latest (Nuclear Upstream); 2019-2023: data/reference/uranium_production.csv"
+    prov_detail: "2024: production_depth_momentum_tbl production_latest (Nuclear Extraction); 2019-2023: data/reference/uranium_production.csv"
     parity: {table: production_depth_momentum_tbl, variable: production_latest}
     phase: "1"
   - id: production.ev_region
@@ -1752,7 +1792,7 @@ vars:
     section: production
     feeds: ["ES: Foreign Dependency"]
     prov: P
-    prov_detail: "market_share_manufacturing_tbl, variable Domestic.Production, one value per IEA region; series from ev_Midstream_capacity.csv"
+    prov_detail: "market_share_manufacturing_tbl, variable Domestic.Production, one value per IEA region; series from the IEA EV regions extract in data/raw"
     parity: {table: market_share_manufacturing_tbl, variable: Domestic.Production}
     phase: "1"
   - id: production.ev_region_sales
@@ -1782,7 +1822,7 @@ vars:
     section: production
     feeds: []  # demand context for the net export ratio; not an index term since 2026-10-26
     prov: P
-    prov_detail: "market_share_manufacturing_tbl, variable Domestic.sales, one value per IEA region; series from ev_Midstream_capacity.csv"
+    prov_detail: "market_share_manufacturing_tbl, variable Domestic.sales, one value per IEA region; series from the IEA EV regions extract in data/raw"
     parity: {table: market_share_manufacturing_tbl, variable: Domestic.sales}
     phase: "1"
   # ---- manufacturing ------------------------------------------------------------------------------
@@ -1808,8 +1848,8 @@ vars:
     source: iea_etp
     roster: iea_etp
     licence: attribution
-    caveats: [iea_etp_zero]
-    primary_for: [green-hydrogen-midstream]
+    caveats: [iea_etp_zero, same_figure_pair]
+    primary_for: [green-hydrogen-components, green-hydrogen-assembly]
     section: production
     feeds: []
     prov: P
@@ -1839,7 +1879,7 @@ vars:
     source: iea_etp
     roster: iea_etp
     licence: attribution
-    caveats: [projection_pipeline, iea_etp_zero]
+    caveats: [projection_pipeline, iea_etp_zero, same_figure_pair]
     primary_for: []
     section: production
     feeds: ["ES: Foreign Dependency", "EO: Foreign Dependency"]
@@ -1913,7 +1953,7 @@ vars:
     family: investment
     label: "Annual investment"
     short: "Investment"
-    definition: "Actual capital investment in the technology and stage: factories for Midstream, deployment for Downstream, mines and processing for Upstream."
+    definition: "Actual capital investment in the technology and stage: deployment (power plants, storage, vehicles bought) for Deployment; factories for Components and Assembly, the same figure on both (the source has no product detail); critical-minerals processing plants for Refining."
     unit: usd_bn_2024
     data_year: "2018-2025"
     years: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
@@ -1930,8 +1970,8 @@ vars:
     source: cim
     roster: cim
     licence: attribution
-    caveats: [cim_estimate, cim_ev_purchases, cim_split, cim_geothermal]
-    primary_for: [batteries-downstream]
+    caveats: [cim_estimate, cim_ev_purchases, same_figure_pair, cim_minerals_split, cim_geothermal]
+    primary_for: [batteries-deployment]
     section: investment
     feeds: ["ES: Investment", "EO: Investment"]
     prov: P
@@ -1969,8 +2009,9 @@ vars:
     parity: {none: "no processed table carries capacity additions"}
     phase: "2"
   # CM-FDI (Cleantech Manufacturing FDI Dataset): the sector-fdi chunk, not facts. `years` is set by
-  # scripts/87 from the announcement years in the data; the item is the Midstream cell of the
-  # project's technology; the economy (avail, rosters) is the destination.
+  # scripts/87 from the announcement years in the data; the item is the Components cell of the
+  # project's technology, and Assembly carries the same projects (fdi.stages); the economy (avail,
+  # rosters) is the destination.
   - id: investment.fdi_projects
     theme: investment
     family: investment
@@ -1996,7 +2037,7 @@ vars:
     caveats: [cmfdi_coverage, cmfdi_status, cmfdi_hq]
     primary_for: []
     section: investment
-    feeds: ["Partners: investment ties in Solar, Wind, Batteries and EV Midstream", "Partners: Friendshore, Chinese-parent ownership exposure"]
+    feeds: ["Partners: investment ties in Solar, Wind, Batteries and EV Components and Assembly", "Partners: Friendshore, Chinese-parent ownership exposure"]
     prov: X
     prov_detail: "cm_fdi_projects.csv via sector_fdi_clean(); counts by sector_fdi_tables()"
     parity: {cross_check: "decoded sector-fdi projects identical() to the CSV after the documented cleaning; flows, group splits and years recomputed from the decoded projects (sector_fdi_parity())"}
@@ -2026,7 +2067,7 @@ vars:
     caveats: [cmfdi_undisclosed, cmfdi_announced, cmfdi_status, cmfdi_year_completed]
     primary_for: []
     section: investment
-    feeds: ["Partners: investment ties in Solar, Wind, Batteries and EV Midstream", "Partners: Friendshore, Chinese-parent ownership exposure"]
+    feeds: ["Partners: investment ties in Solar, Wind, Batteries and EV Components and Assembly", "Partners: Friendshore, Chinese-parent ownership exposure"]
     prov: X
     prov_detail: "cm_fdi_projects.csv, Capital Investment (US$m), via sector_fdi_clean(); sums of disclosed values by sector_fdi_tables()"
     parity: {cross_check: "decoded sector-fdi values identical() to the CSV (blank = not disclosed, NaN with status nq); sums recomputed from the decoded projects (sector_fdi_parity())"}
@@ -2085,9 +2126,9 @@ vars:
     roster: ei
     licence: attribution
     caveats: [per_capita_six_fuels, ei_residual]
-    primary_for: [oil-downstream, gas-downstream, coal-downstream]
+    primary_for: [oil-deployment, gas-deployment, coal-deployment]
     section: demand
-    link_stage: Downstream
+    link_stage: Deployment
     feeds: ["ES: Energy Access", "ES: Consumption", "EO: Energy Access", "EO: Consumption"]
     prov: P
     prov_detail: "energy_access_tbl, variable Energy consumption per capita (EJ per million persons; identical to the EI rows of energy_consumption_tbl)"
@@ -2118,7 +2159,7 @@ vars:
     caveats: [growth_base_zero]
     primary_for: []
     section: demand
-    link_stage: Downstream
+    link_stage: Deployment
     feeds: ["ES: Energy Access", "ES: Consumption"]
     prov: P
     prov_detail: "energy_access_tbl, variable Energy consumption per capita growth (fraction)"
@@ -2149,7 +2190,7 @@ vars:
     caveats: [production_assumed_zero, eia_production, eia_consumption, fossil_assumed_zero, ei_oil_shale]
     primary_for: []
     section: demand
-    link_stage: Upstream
+    link_stage: Extraction
     feeds: ["ES: Energy Imports"]
     prov: P
     prov_detail: "import_dependence_tbl, variable Production surplus/deficit, verbatim (production EI's, or EIA's where EI does not report it: notes eia_production / eia_consumption). Where neither reports the production it is assumed 0 (user rule 2026-10-11; status nsr, note production_assumed_zero): a table built before the EIA fill holds that value (its zero-fill), one built with it holds NA and the value is minus EI's consumption (D)"
@@ -2180,7 +2221,7 @@ vars:
     caveats: [self_sufficiency_ref, production_assumed_zero, eia_production, eia_consumption, fossil_assumed_zero, ei_oil_shale]
     primary_for: []
     section: demand
-    link_stage: Upstream
+    link_stage: Extraction
     feeds: []
     prov: P
     prov_detail: "import_dependence_tbl, variable Self-sufficiency (percent), verbatim; not shipped where consumption is zero. Where neither EI nor EIA reports the production it is assumed 0 (status nsr, note production_assumed_zero): the zero-filled 0 verbatim, or 0 derived (D) where the table holds NA"
@@ -2210,7 +2251,7 @@ vars:
     roster: iea_gevo
     licence: attribution
     caveats: [gevo_projection]
-    primary_for: [electric-vehicles-downstream]
+    primary_for: [electric-vehicles-deployment]
     section: demand
     feeds: ["EO: Technology Demand"]
     prov: P
@@ -2367,7 +2408,7 @@ vars:
     caveats: [weo_world]
     primary_for: []
     section: demand
-    link_stage: Downstream
+    link_stage: Deployment
     feeds: ["EO: Technology Demand"]
     prov: P
     prov_detail: "future_demand_tbl, variable 2035 (world, de-broadcast); 2024 = 2035 - global_growth"
@@ -2399,7 +2440,7 @@ vars:
     caveats: [projection_base_case]
     primary_for: []
     section: demand
-    link_stage: Upstream
+    link_stage: [Extraction, Refining]
     feeds: []
     prov: X
     prov_detail: "read_iea_critical_minerals(), sheet 3.1 demand by technology (meta dims.mineral_demand)"
@@ -2430,7 +2471,7 @@ vars:
     caveats: [ei_residual]
     primary_for: []
     section: demand
-    link_stage: Downstream
+    link_stage: Deployment
     feeds: []
     prov: X
     prov_detail: "EI long CSV, <fuel>_tes_ej, 1965-2025"
@@ -2462,7 +2503,7 @@ vars:
     caveats: [prices_world, imf_units, coal_mean]
     primary_for: []
     section: prices
-    link_stage: Upstream
+    link_stage: [Extraction, Refining]
     feeds: ["ES: Energy Prices", "EO: Energy Prices"]
     prov: P
     prov_detail: "energy_prices_tbl, variable latest_price, de-broadcast (one value per commodity)"
@@ -2493,7 +2534,7 @@ vars:
     caveats: [prices_world]
     primary_for: []
     section: prices
-    link_stage: Upstream
+    link_stage: [Extraction, Refining]
     feeds: ["ES: Energy Prices", "EO: Energy Prices"]
     prov: P
     prov_detail: "energy_prices_tbl, variable yoy_price_change_pct, de-broadcast"
@@ -2524,7 +2565,7 @@ vars:
     caveats: [prices_world]
     primary_for: []
     section: prices
-    link_stage: Upstream
+    link_stage: [Extraction, Refining]
     feeds: ["ES: Energy Prices", "EO: Energy Prices"]
     prov: P
     prov_detail: "energy_prices_tbl, variable price_volatility_1yr, de-broadcast"
@@ -2555,7 +2596,7 @@ vars:
     caveats: [prices_world]
     primary_for: []
     section: prices
-    link_stage: Upstream
+    link_stage: [Extraction, Refining]
     feeds: ["ES: Energy Prices", "EO: Energy Prices"]
     prov: P
     prov_detail: "energy_prices_tbl, variable price_volatility_5yr, de-broadcast"
@@ -2586,7 +2627,7 @@ vars:
     caveats: [prices_world]
     primary_for: []
     section: prices
-    link_stage: Upstream
+    link_stage: [Extraction, Refining]
     feeds: ["ES: Energy Prices", "EO: Energy Prices"]
     prov: P
     prov_detail: "energy_prices_tbl, variable price_volatility_10yr, de-broadcast"
@@ -2617,7 +2658,7 @@ vars:
     caveats: [prices_world]
     primary_for: []
     section: prices
-    link_stage: Upstream
+    link_stage: [Extraction, Refining]
     feeds: ["ES: Energy Prices", "EO: Energy Prices"]
     prov: P
     prov_detail: "energy_prices_tbl, variable price_volatility_20yr, de-broadcast"
@@ -2648,7 +2689,7 @@ vars:
     caveats: [prices_world, imf_units, imf_monthly_coal]
     primary_for: []
     section: prices
-    link_stage: Upstream
+    link_stage: [Extraction, Refining]
     feeds: []
     prov: X
     prov_detail: "imf_commodity_prices.csv via energy_prices_imf_monthly_usd_long() and energy_prices_imf_clean(); mean over a commodity's series per month"
@@ -2659,7 +2700,7 @@ vars:
     family: context
     label: "Average monthly earnings in the stage's activity"
     short: "Monthly earnings"
-    definition: "Average monthly earnings of employees in mining and utilities (Upstream), manufacturing (Midstream) or construction (Downstream), market-rate US dollars."
+    definition: "Average monthly earnings of employees in the activity the stage belongs to: mining and utilities (Extraction, Recovery), manufacturing (Refining, Components, Assembly) or construction (Deployment), market-rate US dollars."
     unit: usd_month
     data_year: "latest available per economy"
     years: [2025]

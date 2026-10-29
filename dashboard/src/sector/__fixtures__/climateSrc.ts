@@ -1,8 +1,8 @@
 // A small sector-climate-src chunk on the TS fixture (climate sources, user request 2026-10-17): GCP fossil
 // CO2 for Japan, Germany and the World and World CO2 by fuel; EI tracker indicators for Japan, Germany and
 // Brazil with their medians; the IEA WEO regions Japan (own) and European Union (Germany); one NZE 2021
-// series paired with cap_solar; World Energy Investment rows; the cell map of Solar Downstream (WEI solar)
-// and Coal Upstream (GCP coal). Shared by sources.test.tsx and nze.test.tsx.
+// series paired with cap_solar; World Energy Investment rows; the cell map of Solar Deployment (WEI solar)
+// and Coal Extraction (GCP coal). Shared by sources.test.tsx and nze.test.tsx.
 
 import { CLIMATE_SRC_SPEC } from '../contract.ts';
 import { fixtureGeo, fixtureItem, table, type SectorFixture } from './build.ts';
@@ -46,12 +46,12 @@ export function climateSrcChunk(): Record<string, unknown> {
   i(3, 'Europe', [[2015, 30], [2025, 62], [2026, 60]]);
   const cell = (s: string) => fixtureItem('cell', s);
   const map = [
-    { item: cell('solar-downstream'), src: 'wei', key: 'solar', role: 'own', match: 'direct', order: 1 },
-    { item: cell('coal-upstream'), src: 'gcp', key: 'coal', role: 'context', match: null, order: 1 },
+    { item: cell('solar-deployment'), src: 'wei', key: 'solar', role: 'own', match: 'direct', order: 1 },
+    { item: cell('coal-extraction'), src: 'gcp', key: 'coal', role: 'context', match: null, order: 1 },
   ].sort((a, z) => a.item - z.item);
   const cells = [
-    { item: cell('solar-downstream'), match: 'direct', note: 'Investment in solar power.' },
-    { item: cell('coal-upstream'), match: 'none', note: 'Coal.' },
+    { item: cell('solar-deployment'), match: 'direct', note: 'Investment in solar power.' },
+    { item: cell('coal-extraction'), match: 'none', note: 'Coal.' },
   ].sort((a, z) => a.item - z.item);
   return {
     'csrc.gcp': t('csrc.gcp', gcp),

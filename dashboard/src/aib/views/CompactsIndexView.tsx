@@ -9,9 +9,14 @@
 // full classification of every node behind "Explore all nodes" (open on #nodes or a technology filter),
 // grouped by class with each node's policy needs where they say more than the class, its warning and its
 // growth-bound flag; a node outside every compact opens its class under other assumptions and growth
-// bounds in place, and its place in the diversification scenario (2026-10-19). Table twins and CSVs. A dictionary bundle (2026-10-19) calls the node techs sectors,
-// groups the sector filter by EIS index and names each node's and compact's index; titles come from the
-// compacts' structured fields (compactTitle), never from parsing their names.
+// bounds in place, and its place in the diversification scenario (2026-10-19). Table twins and CSVs. Nodes
+// are shown by OSI technology x six-stage stage (2026-10-29, design A1): the technologies of a node's
+// six-stage cells, as equals ('Not in the OSI basket' for a node with none), and the stages of those cells
+// (never node.stage, the model's own); the map's filters are Technology (URL `tech`) and Stage (URL
+// `stage`), matched by the nodes' cells (nodeInCell(): a node passes T x S with a cell of T at S; the Stage
+// choices are the stages that hold cells of the chosen technology); an old `?tech=<dictionary sector>` link no
+// longer matches an option and is dropped. Titles come from the compacts' structured fields (compactTitle),
+// never from parsing their names.
 //
 // The scenario toggle (2026-10-19, page work A): the run line names the scenario shown; the strategic map
 // places the nodes under it (Managed Interdependence: the share shifted, its dividend, its class; the nodes
@@ -57,7 +62,7 @@ import {
 import { compactDetail, compactScenario, compactScenarios, compactSuppliersToday, nodeScenario, scenarioCsvFields, scenarioInfo, scenarioLabel, scenarioShockLabel, type CompactScenario } from '../derive/scenarios.ts';
 import { growthFlag, robustnessSummary, variantWarning } from '../derive/sensitivity.ts';
 import { candidateUniverse, coverageBase, demandScope, nodeTaxonomy, shockSemantics, strategicScope, supplyConstraint } from '../derive/settings.ts';
-import { groupedSectorWords, indexLabel, indexOfNode, nodeWhere, techOptions } from '../derive/taxonomy.ts';
+import { cellStagesOfNodes, nodeCellWords, nodeStageRank, nodeStageWords, nodeTechWords, nodeWhere, stageOptions, technologiesOfNodes, techOptions, techStageWords } from '../derive/taxonomy.ts';
 import { tierEconomies } from '../derive/tiers.ts';
 import { compactTypeInfo } from '../derive/types.ts';
 import { alsoTouchingOf, strategicCompactOf, workstreamHomeOf, workstreamOf, workstreamsOf } from '../derive/strategic.ts';
@@ -66,7 +71,6 @@ import type { AibToggle } from '../scenarioUrl.ts';
 import { BasisTag } from './basis.tsx';
 import { csvWithRun, ReadingNotes, Section } from './common.tsx';
 import { NodeRobustness } from './NodeRobustness.tsx';
-import { stageRank } from '../../lib/stages.ts';
 
 /** The coalition line of a card: members, associates and critical external dependencies of a compact as solved under a scenario. */
 function coalitionLine(c: AibCompact, names: Readonly<Record<string, string>>): string {
@@ -221,6 +225,8 @@ function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: Aib
   const type = solved ? compactTypeInfo(solved.type, compactVsFragmented(solved.metrics)?.gain) : null;
   const pending = managedState === 'loading' ? 'loading…' : managedState === 'ready' ? 'none: no coalition under this scenario' : '–';
   const nodes = compactNodes(c, nodeOf);
+  // the compact's stages: those of its nodes' cells (none when no node has a basket cell)
+  const cellStages = cellStagesOfNodes(nodes);
   // why Managed Interdependence leaves the compact unchanged (the file's reason once loaded; the same words before)
   const unchangedWhy = detail?.reason ?? compactUnchangedReasonOf(nodes);
   const main = nodes
@@ -263,11 +269,10 @@ function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: Aib
           </Link>
         </h3>
         <WorkstreamHome id={c.id} />
-        {tx.dictionary && c.technologies.length > 0 && (
-          <p className="mt-1 text-xs text-paper-mute" data-testid="compact-taxonomy">
-            {tx.Many}: {groupedSectorWords(tx, c.technologies)}
-          </p>
-        )}
+        <p className="mt-1 text-xs text-paper-mute" data-testid="compact-taxonomy">
+          {tx.Many}: {technologiesOfNodes(nodes).join(', ')}
+          {cellStages.length > 0 && ` · ${cellStages.length === 1 ? 'Stage' : 'Stages'}: ${cellStages.join(', ')}`}
+        </p>
         <dl className="mt-3 grid grid-cols-[7.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
           <dt className="text-paper-mute">Why it exists</dt>
           <dd className="text-paper-dim">
@@ -327,7 +332,7 @@ function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: Aib
 }
 
 function NodeChip({ n, scenario }: { n: AibNode; scenario: AibToggle }) {
-  const { doc, names, tx, href, hasScenarios } = useAibCtx();
+  const { doc, names, href, hasScenarios } = useAibCtx();
   const flag = growthFlag(n);
   const mi = scenario === 'managed';
   const r = mi ? nodeScenario(n, 'managed') : null;
@@ -336,7 +341,7 @@ function NodeChip({ n, scenario }: { n: AibNode; scenario: AibToggle }) {
     <li className="max-w-full border hairline px-2.5 py-1.5 text-xs">
       <span className="block text-paper">{n.label}</span>
       <span className="block text-paper-mute">
-        {nodeWhere(tx, n)}
+        {nodeWhere(n)}
         {n.compact && (
           <>
             {' · '}
@@ -422,8 +427,8 @@ function RunLine() {
       ) : (
         <>Candidate universe: {m.universe}.</>
       )}{' '}
-      {nt.dictionary ? `Nodes: ${nt.label.charAt(0).toLowerCase()}${nt.label.slice(1)}, index > sector > stage. ` : ''}
-      {st && st.mode !== 'all' ? `Strategic scope: ${st.label.toLowerCase()} (${listWords(st.techs)}). ` : ''}
+      {nt.dictionary ? `Nodes: ${nt.label.charAt(0).toLowerCase()}${nt.label.slice(1)}, shown by OSI technology × stage. ` : ''}
+      {st && st.mode !== 'all' ? `Strategic scope: ${st.label.toLowerCase()} (${nt.dictionary ? 'dictionary sectors ' : ''}${listWords(st.techs)}). ` : ''}
       Coverage is the share of {coverageBase(m)} served after {mi ? 'the cap' : 'the shock'}.{' '}
       <Link className="link" to={href('/compacts/about')}>
         How compacts are derived &rarr;
@@ -498,7 +503,11 @@ export default function CompactsIndexView() {
   const techs = useMemo(() => technologiesOf(pool), [pool]);
   const raw = params.get('tech');
   const tech = raw && techs.includes(raw) ? raw : null;
-  const groups = useMemo(() => scenarioClassGroups(pool, scenario, tech), [pool, scenario, tech]);
+  const stages = useMemo(() => stageOptions(cellStagesOfNodes(pool, tech)), [pool, tech]);
+  const rawStage = params.get('stage');
+  const stage = rawStage && stages.some((o) => o.value === rawStage) ? rawStage : null;
+  const scopeWords = techStageWords(tech, stage);
+  const groups = useMemo(() => scenarioClassGroups(pool, scenario, tech, stage), [pool, scenario, tech, stage]);
   const classed = groups.filter((g) => !g.unchanged);
   const shown = groups.flatMap((g) => g.nodes);
   const points = useMemo(() => (mi ? mapPointsFor(shown.map((n) => nodeScenario(n, 'managed'))) : mapPoints(shown)), [shown, mi]);
@@ -509,7 +518,7 @@ export default function CompactsIndexView() {
   const lostWord = mi ? 'shifted supply' : 'lost supply';
   const ordered = useMemo(() => (hasScenarios ? compactsByScenario(doc.compacts, scenario, nodeOf) : doc.compacts), [doc, scenario, nodeOf, hasScenarios]);
   const compactRows = useMemo(() => compactScenarioRows(ordered, nodeOf), [ordered, nodeOf]);
-  const openNodes = loc.hash === '#nodes' || tech !== null || all;
+  const openNodes = loc.hash === '#nodes' || tech !== null || stage !== null || all;
   const setParam = (k: string, v: string | null) => {
     const q = new URLSearchParams(params);
     if (v) q.set(k, v);
@@ -530,10 +539,16 @@ export default function CompactsIndexView() {
     return r.ran && r.cls ? classInfo(r.cls).label : 'Unchanged';
   };
   const cols: Col<AibNode>[] = [
-    { id: 'node', header: 'Sub-sector', value: (n) => n.label },
-    ...(tx.dictionary ? [{ id: 'index', header: 'Index', value: (n: AibNode) => { const ix = indexOfNode(tx, n); return ix ? indexLabel(ix) : null; } }] : []),
-    { id: 'techs', header: tx.Many, value: (n) => n.techs.join(', ') },
-    { id: 'stage', header: 'Stage', value: (n) => n.stage, sortValue: (n) => stageRank(n.stage) },
+    { id: 'node', header: 'Node', value: (n) => n.label },
+    { id: 'techs', header: tx.Many, value: (n) => nodeTechWords(n) },
+    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the node's codes sit in; none when no code is in the OSI basket." },
+    {
+      id: 'cells',
+      header: 'OSI cells',
+      value: (n) => nodeCellWords(n),
+      minWidth: 200,
+      title: "The OSI technology x stage cells the node's codes sit in; none when no code is in the OSI basket.",
+    },
     mi ? { id: 'cls', header: 'Class under Managed Interdependence', value: miCls, minWidth: 160 } : { id: 'cls', header: 'Class', value: (n) => classInfo(n.cls).label },
     ...(mi ? [{ id: 'headlineCls', header: 'Class under Decoupling', value: (n: AibNode) => classInfo(n.cls).label }] : []),
     { id: 'needs', header: 'Policy needs', value: (n) => policyNeedsText(n.policyNeeds) },
@@ -566,7 +581,7 @@ export default function CompactsIndexView() {
     ...(nOut ? [{ id: 'scope', header: 'Strategic scope', value: (n: AibNode) => (inStrategicScope(n) ? 'in scope' : 'outside') }] : []),
   ];
   const csv = () => ({
-    name: `Sectoral compacts node classification${tech ? ` ${tech}` : ''}${all ? ' all nodes' : ''}${hasScenarios ? ` ${scenarioLabel(scenario, m).toLowerCase()}` : ''}`,
+    name: `Sectoral compacts node classification${scopeWords}${all ? ' all nodes' : ''}${hasScenarios ? ` ${scenarioLabel(scenario, m).toLowerCase()}` : ''}`,
     text: csvWithRun(
       // the unprefixed columns are Decoupling's (aib_scenario names it); baseline_* and managed_* name their scenario
       shown.map((n) => ({ ...nodeCsvRow(nodeRow(n, names, tx)), ...(hasScenarios ? { ...scenarioCsvFields(m, 'decoupling'), ...nodeScenarioCsv(n) } : {}) })),
@@ -590,7 +605,7 @@ export default function CompactsIndexView() {
   const unchangedGroup = groups.find((g) => g.unchanged);
   const high = typeof m.thresholds.high_severity === 'number' ? m.thresholds.high_severity : null;
   const rule = typeof m.thresholds.coordinate_dividend === 'number' ? m.thresholds.coordinate_dividend : null;
-  const table = () => <TableView rows={shown} cols={cols} caption={`Node classification${tech ? `: ${tech}` : ''}${hasScenarios ? `, ${sc.label}` : ''}`} rowKey={(n) => n.id} search pageSize={25} initialSort={{ id: 'lost', desc: true }} />;
+  const table = () => <TableView rows={shown} cols={cols} caption={`Node classification${scopeWords}${hasScenarios ? `, ${sc.label}` : ''}`} rowKey={(n) => n.id} search pageSize={25} initialSort={{ id: 'lost', desc: true }} />;
   const xWords = mi ? 'Share shifted' : 'Shock exposure';
 
   return (
@@ -634,7 +649,8 @@ export default function CompactsIndexView() {
           }
         >
           <FilterRow result={`${plural(shown.length, 'node')} of ${pool.length}${!all && nOut ? ` in the strategic scope (${nOut} outside it not shown)` : ''}`}>
-            <Select label={tx.One} value={tech ?? ''} options={[{ value: '', label: tx.all }, ...techOptions(tx, techs)]} onChange={(v) => setParam('tech', v || null)} />
+            <Select label={tx.One} value={tech ?? ''} options={[{ value: '', label: tx.all }, ...techOptions(techs)]} onChange={(v) => setParam('tech', v || null)} />
+            <Select label="Stage" value={stage ?? ''} options={[{ value: '', label: 'All stages' }, ...stages]} onChange={(v) => setParam('stage', v || null)} />
             {nOut > 0 && <Checkbox label="Include nodes outside the strategic scope" checked={all} onChange={(v) => setParam('scope', v ? 'all' : null)} />}
           </FilterRow>
           <ChartCard
@@ -651,17 +667,16 @@ export default function CompactsIndexView() {
                 points={points}
                 highSeverity={high}
                 dividendRule={rule}
-                ariaLabel={`Strategic map of ${plural(points.length, 'node')}${tech ? ` in ${tech}` : ''}${hasScenarios ? `, ${sc.label}` : ''}: ${xWords.toLowerCase()} across, coordination dividend up, bubble area ${lostWord}. ${shareLine}`}
+                ariaLabel={`Strategic map of ${plural(points.length, 'node')}${scopeWords}${hasScenarios ? `, ${sc.label}` : ''}: ${xWords.toLowerCase()} across, coordination dividend up, bubble area ${lostWord}. ${shareLine}`}
                 onSelect={(p) => p.node.compact && navigate(href(compactHref(p.node.compact)))}
-                where={(n) => nodeWhere(tx, n)}
                 xWords={xWords}
                 lostWord={mi ? 'shifted' : 'lost'}
               />
             ) : (
               <EmptyState>
                 {mi
-                  ? `Managed Interdependence runs on no node${tech ? ` in ${tech}` : ''}: every one is already as diversified as its benchmark, within the cap, or without one.`
-                  : `No node with both a shock exposure and a coordination dividend${tech ? ` in ${tech}` : ''}.`}
+                  ? `Managed Interdependence runs on no node${scopeWords}: every one is already as diversified as its benchmark, within the cap, or without one.`
+                  : `No node with both a shock exposure and a coordination dividend${scopeWords}.`}
               </EmptyState>
             )}
           </ChartCard>
@@ -733,11 +748,11 @@ export default function CompactsIndexView() {
             </p>
           }
         >
-          <Disclosure summary={`Explore all nodes (${shown.length}${tech ? ` in ${tech}` : ''})`} defaultOpen={openNodes}>
+          <Disclosure summary={`Explore all nodes (${shown.length}${scopeWords})`} defaultOpen={openNodes}>
             <ChartCard
               headingLevel={3}
               title="Nodes by class"
-              sub={`Where the ${lostWord} sits${tech ? ` in ${tech}` : ''}${!all && nOut ? ', nodes of the strategic scope' : ''}${hasScenarios ? `, ${sc.label}` : ''}: the bar splits it by class; below, every node by class, largest ${mi ? 'shift' : 'loss'} first, with its compact${mi ? '' : ', its policy needs where they say more than its class, any physical-capability warning, and a flag where the class depends on the existing-relationship growth bound'}. A node outside every compact opens its class under other assumptions and growth bounds in place; the others show it on their compact's page.`}
+              sub={`Where the ${lostWord} sits${scopeWords}${!all && nOut ? ', nodes of the strategic scope' : ''}${hasScenarios ? `, ${sc.label}` : ''}: the bar splits it by class; below, every node by class, largest ${mi ? 'shift' : 'loss'} first, with its compact${mi ? '' : ', its policy needs where they say more than its class, any physical-capability warning, and a flag where the class depends on the existing-relationship growth bound'}. A node outside every compact opens its class under other assumptions and growth bounds in place; the others show it on their compact's page.`}
               summary={shareLine}
               legend={<ClassLegend />}
               table={table}
@@ -745,7 +760,7 @@ export default function CompactsIndexView() {
               notes={<span>Classes are policy interpretations of continuous results under the thresholds on the About page.</span>}
             >
               {lostTotal > 0 ? <LostByClassBar groups={classed} label={`${mi ? 'Shifted' : 'Lost'} supply by class. ${shareLine}`} /> : null}
-              <p className="mt-2 text-xs text-paper-mute">{shareLine || `No node for this ${tx.one}.`}</p>
+              <p className="mt-2 text-xs text-paper-mute">{shareLine || `No node${scopeWords || ' to show'}.`}</p>
               <div className="mt-5 space-y-6">
                 {groups
                   .filter((g) => g.nodes.length)

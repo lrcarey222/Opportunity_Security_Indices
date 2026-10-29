@@ -14,11 +14,12 @@ source(file.path(repo_root, "R", "utils", "schema.R"))
 source(file.path(repo_root, "R", "themes", "partnership_strength", "partnership_strength_helpers.R"))
 `%>%` <- dplyr::`%>%`
 
-# Batteries Midstream has three sub-components (cells: 850760; parts: 850790; chemicals: 282520) and
-# Batteries Upstream one (lithium: 282520, the code it shares with Midstream).
+# Batteries Assembly has three sub-components (cells: 850760; parts: 850790; chemicals: 282520) and
+# Batteries Refining one (lithium: 282520, the code it shares with Assembly). The crosswalk is staged as
+# scripts/87 passes it: the six-stage `stage`, copied into supply_chain for the pipeline matrix.
 sub_crosswalk <- function() {
   data.frame(
-    tech = "Batteries", supply_chain = c("Midstream", "Midstream", "Midstream", "Upstream"),
+    tech = "Batteries", supply_chain = c("Assembly", "Assembly", "Assembly", "Refining"), stage = c("Assembly", "Assembly", "Assembly", "Refining"),
     sub_sector = c("Cells", "Parts", "Chemicals", "Lithium"), hs6 = c("850760", "850790", "282520", "282520"),
     note = NA_character_, stringsAsFactors = FALSE
   )
@@ -54,19 +55,19 @@ test_that("sub-components follow the cell's source rule (importer's declaration,
   x <- sub_fixture()$sub
   get <- function(cell, sub, geo, y) x$country[x$country$item_key == paste0("cell:", cell) & x$country$sub_sector == sub &
                                                  x$country$geo == geo & x$country$year == y, , drop = FALSE]
-  expect_equal(get("batteries-midstream", "Cells", "CHN", 2024L)$exports, 100 + 50 * 1.06)
-  expect_identical(get("batteries-midstream", "Parts", "CHN", 2024L)$exports, 20)
-  expect_identical(get("batteries-midstream", "Cells", "USA", 2024L)$imports, 100)
-  expect_equal(get("batteries-midstream", "Cells", "DEU", 2024L)$imports, 53)
+  expect_equal(get("batteries-assembly", "Cells", "CHN", 2024L)$exports, 100 + 50 * 1.06)
+  expect_identical(get("batteries-assembly", "Parts", "CHN", 2024L)$exports, 20)
+  expect_identical(get("batteries-assembly", "Cells", "USA", 2024L)$imports, 100)
+  expect_equal(get("batteries-assembly", "Cells", "DEU", 2024L)$imports, 53)
   # POL declared the shared code: its declaration counts in both cells, DEU's report of it in neither.
-  expect_identical(get("batteries-midstream", "Chemicals", "DEU", 2024L)$exports, 10)
-  expect_identical(get("batteries-upstream", "Lithium", "POL", 2024L)$imports, 10)
-  expect_true(is.na(get("batteries-midstream", "Cells", "CHN", 2024L)$imports))
-  expect_identical(get("batteries-midstream", "Parts", "CHN", 2020L)$exports, 5)
+  expect_identical(get("batteries-assembly", "Chemicals", "DEU", 2024L)$exports, 10)
+  expect_identical(get("batteries-refining", "Lithium", "POL", 2024L)$imports, 10)
+  expect_true(is.na(get("batteries-assembly", "Cells", "CHN", 2024L)$imports))
+  expect_identical(get("batteries-assembly", "Parts", "CHN", 2020L)$exports, 5)
   # Intra-EU flows (DEU -> POL) per sub-component; world totals per sub-component and year.
-  expect_identical(x$intra$intra[x$intra$item_key == "cell:batteries-upstream" & x$intra$year == 2024L], 10)
-  expect_identical(nrow(x$intra[x$intra$item_key == "cell:batteries-midstream" & x$intra$sub_sector == "Cells", ]), 0L)
-  w <- x$world[x$world$item_key == "cell:batteries-midstream" & x$world$year == 2024L, ]
+  expect_identical(x$intra$intra[x$intra$item_key == "cell:batteries-refining" & x$intra$year == 2024L], 10)
+  expect_identical(nrow(x$intra[x$intra$item_key == "cell:batteries-assembly" & x$intra$sub_sector == "Cells", ]), 0L)
+  w <- x$world[x$world$item_key == "cell:batteries-assembly" & x$world$year == 2024L, ]
   expect_equal(sum(w$total), 100 + 20 + 53 + 10)
 })
 
@@ -89,13 +90,13 @@ test_that("the missing side reads 0 where the cell total was observed and NaN wh
   cs <- sector_trade_sub_table(fx$sub, fx$country)
   row <- function(cell, sub, geo, y) cs[cs$item_key == paste0("cell:", cell) & cs$sub_sector == sub & cs$geo == geo & cs$year == y, , drop = FALSE]
   # CHN's 2024 imports of the cell were observed (DEU's declared exports to CHN: none, a mirror zero).
-  expect_identical(row("batteries-midstream", "Cells", "CHN", 2024L)$imports, 0)
+  expect_identical(row("batteries-assembly", "Cells", "CHN", 2024L)$imports, 0)
   # In 2020 only DEU declared, so CHN's imports were not observed at all.
-  expect_true(is.nan(row("batteries-midstream", "Parts", "CHN", 2020L)$imports))
+  expect_true(is.nan(row("batteries-assembly", "Parts", "CHN", 2020L)$imports))
   # No row where neither side is above 0 (USA's 2024 exports are an observed zero only).
   expect_false(any(cs$geo == "USA" & cs$year == 2024L & cs$sub_sector == "Parts" & !(cs$imports > 0)))
   expect_true(all((cs$exports > 0 & !is.na(cs$exports)) | (cs$imports > 0 & !is.na(cs$imports))))
-  w <- row("batteries-midstream", "Cells", "WLD", 2024L)
+  w <- row("batteries-assembly", "Cells", "WLD", 2024L)
   expect_equal(w$exports, 153)
   expect_identical(w$exports, w$imports)
   expect_identical(order(cs$item_key, cs$sub_sector, cs$geo, cs$year, method = "radix"), seq_len(nrow(cs)))
@@ -109,8 +110,8 @@ test_that("the sum check catches a sub-component that does not add up or has no 
   bad$exports[i] <- bad$exports[i] * (1 + 1e-6)
   chk <- sector_trade_sub_check(bad, fx$country, fx$world)
   expect_gt(chk$max_rel, 1e-9)
-  expect_match(paste(chk$examples, collapse = " "), "exports cell:batteries-midstream CHN 2024")
-  extra <- dplyr::bind_rows(cs, tibble::tibble(item_key = "cell:batteries-midstream", sub_sector = "Cells", geo = "JPN", year = 2024L,
+  expect_match(paste(chk$examples, collapse = " "), "exports cell:batteries-assembly CHN 2024")
+  extra <- dplyr::bind_rows(cs, tibble::tibble(item_key = "cell:batteries-assembly", sub_sector = "Cells", geo = "JPN", year = 2024L,
                                                exports = 1, imports = NaN))
   chk2 <- sector_trade_sub_check(extra, fx$country, fx$world)
   expect_identical(chk2$n_unmatched, 1L)
@@ -147,7 +148,7 @@ test_that("the per-sub-component summaries follow the meta.summary rules and add
 test_that("export feasibility ships the processed Atlas value verbatim with the Atlas data year", {
   ef <- tibble::tibble(
     iso3c = c("CHN", "DEU", "MLT", "CHN", "CHN"), tech = c("Batteries", "Batteries", "Batteries", "Solar", "Batteries"),
-    supply_chain = c("Midstream", "Midstream", "Midstream", "Upstream", "Midstream"),
+    supply_chain = c("Assembly", "Assembly", "Assembly", "Refining", "Assembly"),
     variable = c("feasibility", "feasibility", "feasibility", "feasibility", "feas"),
     data_type = c("raw", "raw", "raw", "raw", "index"), value = c(0.5132, 0.41, NA, 0.162, 0.97),
     Year = 2024L, explanation = c(rep("1 - mean Atlas product-space distance over the basket's HS4 headings [2023]", 4), "S-curve")
@@ -156,7 +157,7 @@ test_that("export feasibility ships the processed Atlas value verbatim with the 
   expect_identical(y, 2023L)
   x <- sector_facts_feasibility(ef, y)
   expect_identical(x$facts$var, rep("trade.feasibility", 3))
-  expect_identical(x$facts$item_key, c("cell:batteries-midstream", "cell:batteries-midstream", "cell:solar-upstream"))
+  expect_identical(x$facts$item_key, c("cell:batteries-assembly", "cell:batteries-assembly", "cell:solar-refining"))
   expect_identical(x$facts$value, c(0.5132, 0.41, 0.162))
   expect_identical(unique(x$facts$year), 2023L)
   expect_identical(x$ledger$prov, rep("P", 3))
@@ -180,13 +181,17 @@ test_that("the dictionary carries the feasibility, sub-component and HHI explain
   expect_true("sub_component_rule" %in% unlist(v("trade.sub_imports")$caveats))
   cav <- vapply(d$caveats, `[[`, "", "id")
   expect_true(all(c("hhi_reading", "hhi_refs_context", "feasibility_reading", "sub_component_rule") %in% cav))
-  # The five new Upstream baskets ship exports as their primary trade measure, except Nuclear
-  # Upstream (uranium production stays primary), and each names its basket caveat.
+  # The mineral and materials baskets of the 2026-10 review, at their six stages, ship exports as their
+  # primary trade measure, except the fuel and uranium Extraction cells (production stays primary), and
+  # each names its basket caveat.
   pf <- unlist(v("trade.exports")$primary_for)
-  expect_true(all(c("electric-vehicles-upstream", "solar-upstream", "wind-upstream", "semiconductors-upstream") %in% pf))
-  expect_false("nuclear-upstream" %in% pf)
+  expect_true(all(c("electric-vehicles-extraction", "electric-vehicles-refining", "solar-refining", "wind-extraction", "wind-refining",
+                    "semiconductors-refining", "batteries-recovery") %in% pf))
+  expect_false(any(c("nuclear-extraction", "oil-extraction", "gas-extraction", "coal-extraction") %in% pf))
+  expect_identical(unlist(v("production.uranium")$primary_for), "nuclear-extraction")
   cells <- stats::setNames(lapply(d$cells, function(c) unlist(c$caveats)), vapply(d$cells, `[[`, "", "slug"))
-  for (cl in c("electric-vehicles-upstream", "solar-upstream", "wind-upstream", "nuclear-upstream", "semiconductors-upstream", "nuclear-midstream")) {
+  for (cl in c("electric-vehicles-extraction", "electric-vehicles-refining", "electric-vehicles-components", "solar-refining", "wind-extraction",
+               "wind-refining", "wind-components", "nuclear-extraction", "nuclear-refining", "semiconductors-refining")) {
     expect_true(length(cells[[cl]]) >= 1, info = cl)
   }
   # CM-FDI attribution names the changes (CC BY 4.0).

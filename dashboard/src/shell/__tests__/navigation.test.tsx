@@ -3,7 +3,8 @@
 //   * every primary route renders under the shared header: an h1, its tab current (About is secondary),
 //     its views nav item current, a "<view> | <tab> | Allied Industrial Base Explorer" title, no error
 //     boundary, no console error, and no engine (a baseline visit never starts one);
-//   * the aliases and old deep links still resolve (query string and hash kept);
+//   * the aliases and old deep links still resolve (query string and hash kept), and old three-stage
+//     Sector links (/sector/:tech/<upstream|midstream|downstream>) land on a six-stage page with a notice;
 //   * the three acceptance workflows at navigation level: Home -> Sectors -> a sector profile with the
 //     four lenses; Home -> Countries -> Japan with the profile's sections and the Perspective control;
 //     Home -> Allied Industrial Base -> overview -> a compact -> a country's role in its profile.
@@ -181,7 +182,7 @@ describe('the global navigation', () => {
 // path, tab, the views nav item that is current (null: the module has none for that page)
 const PRIMARY: [string, string, string | null][] = [
   ['/sector', 'Sectors', 'All sectors'],
-  ['/sector/batteries/midstream', 'Sectors', 'Sector profile'],
+  ['/sector/batteries/refining', 'Sectors', 'Sector profile'],
   ['/sector/minerals', 'Sectors', 'Minerals'],
   ['/countries', 'Countries', 'All countries'],
   ['/countries/JPN', 'Countries', 'Country profile'],
@@ -247,6 +248,29 @@ describe('aliases and old deep links still resolve', () => {
   }
 });
 
+// old three-stage Sector link -> where it lands, and its notice (design U1): Downstream is Deployment
+// exactly (query and hash kept); Upstream and Midstream open the chain page (the economy as c, no hash)
+const LEGACY_SECTOR: [string, string, RegExp][] = [
+  ['/sector/batteries/downstream?c=JPN#trade', '/sector/batteries/deployment?c=JPN#trade', /^Batteries — Downstream is now Batteries — Deployment\.$/],
+  ['/sector/solar/midstream/CHN#trade', '/sector/solar?c=CHN', /^Solar — Midstream is no longer a stage: it is now mostly Components and Assembly .*Showing the Solar supply chain: pick a stage there\.$/],
+  ['/sector/wind/upstream?eu=bloc', '/sector/wind?eu=bloc', /^Wind — Upstream is no longer a stage: it is now Extraction, Refining and Recovery\./],
+];
+
+describe('old three-stage Sector links land on the six stages, with a notice (design U1)', () => {
+  for (const [from, to, notice] of LEGACY_SECTOR) {
+    it(`${from} -> ${to}`, async () => {
+      const router = renderAt(from);
+      await waitFor(() => expect(where(router)).toBe(to), { timeout: 20_000 });
+      expect(await h1()).toBeTruthy();
+      expect(await screen.findByText(notice, {}, { timeout: 20_000 })).toBeTruthy();
+      await waitFor(() => expect(currentTabs()).toEqual(['Sectors']), { timeout: 20_000 });
+      await settle(200);
+      expect(peekEngineClient()).toBeNull();
+      expect(errors).toEqual([]);
+    }, 60_000);
+  }
+});
+
 describe('acceptance workflows (brief s.27), at navigation level', () => {
   const path = (p: string | RegExp) => (r: ReturnType<typeof renderAt>) => (typeof p === 'string' ? r.state.location.pathname === p : p.test(r.state.location.pathname));
 
@@ -254,9 +278,10 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
     const router = renderAt('/');
     await follow(router, linkIn('main article a[href="/sector"]', /^Explore sectors$/), path('/sector'));
     expect(await screen.findByRole('heading', { name: 'Pick a technology' }, { timeout: 30_000 })).toBeTruthy();
-    // "Pick a technology" opens the technology's chain (Upstream -> Midstream -> Downstream)
+    // "Pick a technology" opens the technology's chain (the six stages, Extraction -> Recovery); silicon
+    // metal is a refined material, so its sub-component opens Solar — Refining
     await follow(router, linkIn('main a[href^="/sector/solar"]', /^Solar$/), path('/sector/solar'));
-    await follow(router, linkIn('nav[aria-label="Solar supply chain"] a', /^Silicon metal$/), path('/sector/solar/upstream'));
+    await follow(router, linkIn('nav[aria-label="Solar supply chain"] a', /^Silicon metal$/), path('/sector/solar/refining'));
     expect(new URLSearchParams(router.state.location.search).get('sub')).toBe('Silicon metal');
     for (const lens of ['Economic Opportunity', 'Energy Security', 'Policy', 'Climate']) {
       expect(await screen.findByRole('article', { name: lens }, { timeout: 30_000 })).toBeTruthy();
@@ -273,7 +298,8 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
     await follow(router, linkIn('main a[href="/countries/JPN"]'), path('/countries/JPN'));
     expect(await h1(/Japan/)).toBeTruthy();
     expect(await screen.findByRole('button', { name: /^Perspective: NEIS baseline/ }, { timeout: 30_000 })).toBeTruthy();
-    for (const id of ['position', 'opportunities', 'sectors', 'policy', 'partnerships', 'aib-role']) {
+    // the Strategic posture section first (design L2), then Security and opportunity and the rest
+    for (const id of ['posture', 'position', 'opportunities', 'sectors', 'policy', 'partnerships', 'aib-role']) {
       await waitFor(() => expect(document.getElementById(id)).toBeTruthy(), { timeout: 30_000 });
     }
     expect(screen.getAllByText(/Observed \/ modelled facts/).length).toBeGreaterThan(0);

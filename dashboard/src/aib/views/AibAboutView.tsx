@@ -1,10 +1,11 @@
 // About Sectoral Compacts /compacts/about: the method in brief (observed trade network -> demand scope and
 // candidate partners -> shock -> existing response -> optimized partnerships -> coordination dividend and
 // frontier -> residual gaps -> marginal investment -> emergent network -> compacts -> node treatments),
-// the classes; where the nodes come from (the electro-industrial dictionary: index > sector > stage, its
-// scope, primary rows, the six-stage label of each node from its codes' item type (2026-10-28), the
-// partner indices through the OSI crosswalk and its three-stage cells; or the OSI basket of an older
-// bundle); then what the settings mean, with this export's values: demand scope vs candidate-partner
+// the classes; where the nodes come from (the electro-industrial dictionary: groups of HS6 codes, its
+// scope, primary rows, the six-stage label of each node from its codes' item type (2026-10-28); how the
+// pages show each node by OSI technology x stage through the OSI crosswalk, its six-stage cells (2026-10-29,
+// design A1), with one sentence on the dictionary's own sectors as provenance; or the OSI basket of an
+// older bundle); then what the settings mean, with this export's values: demand scope vs candidate-partner
 // universe, hold vs release shock semantics, production-constrained vs trade-only supply, the multi-label
 // policy needs and the physical-capability warning rule, the exact vs greedy coalition and its tiers,
 // true vs instantaneous N-1, the existing-relationship growth bound and the strategic scope; the
@@ -25,9 +26,9 @@ import { targetLabel } from '../derive/coalition.ts';
 import { fmtShare, listWords, plural } from '../derive/format.ts';
 import {
   candidateUniverse, CONSTRAINT_WORDS, constraintLabel, demandScope, DICTIONARY_SCOPE_WORDS, DIVERSIFY_BENCHMARK_WORDS, diversifyRules, diversifySetting, nodeTaxonomy, SEMANTICS_WORDS, semanticsLabel,
-  shockSemantics, strategicScope, supplyConstraint,
+  shockLabelOf, shockSemantics, strategicScope, supplyConstraint,
 } from '../derive/settings.ts';
-import { groupedSectorWords, indexLabel, sectorGroups } from '../derive/taxonomy.ts';
+import { NOT_IN_BASKET } from '../derive/taxonomy.ts';
 import { coalitionTargets, isGreedySetMethod, TIER_LABEL, tierMeanings, tierShares } from '../derive/tiers.ts';
 import { aboveWords, DIVERSIFY_HREF, diversifyTotals, hasDiversify } from '../derive/diversify.ts';
 import { ReadingNotes } from './common.tsx';
@@ -64,7 +65,7 @@ function H({ id, children }: { id: string; children: string }) {
 const tradeNetworkStep = (dictionary: boolean): { step: string; text: string } => ({
   step: 'Observed trade network',
   text: dictionary
-    ? 'Bilateral trade in every node of the electro-industrial dictionary (a group of HS6 goods of one sector at one stage of the electro-industrial stack), importer declarations first, mirrored where missing.'
+    ? 'Bilateral trade in every node of the electro-industrial dictionary (a group of HS6 goods at one stage of the electro-industrial stack), importer declarations first, mirrored where missing.'
     : 'Bilateral trade in every sub-sector node (a group of HS6 goods at one stage of an energy supply chain), importer declarations first, mirrored where missing.',
 });
 
@@ -237,13 +238,12 @@ export default function AibAboutView() {
       {nt.dictionary ? (
         <>
           <p className={P} data-testid="about-taxonomy">
-            The nodes come from the electro-industrial HS6 dictionary (RMI&apos;s Electro-Industrial Stack). It is read top down: index &gt; sector &gt; the dictionary&apos;s own stage
-            (Upstream, Midstream, Downstream, which only groups codes into nodes) &gt; HS6 code, and a sector is split into nodes where its chain steps differ (rare-earth oxides apart
-            from rare-earth metals, wafers apart from gallium). Each node is then labelled with one of the six supply-chain stages the OSI uses (Extraction, Refining, Components,
-            Assembly, Deployment, Recovery), the one holding most of its trade, each code&apos;s stage set by its item type: a raw material is Extraction (Recovery when it is recycled
-            feed such as scrap or spent batteries), a processed material Refining, a component Components, and a final product or process equipment Assembly. No node is at
-            Deployment: the dictionary lists traded goods, not their installation and use. Only each code&apos;s primary row is used, so every code sits in exactly one node and
-            nothing is counted twice.{' '}
+            The nodes come from the electro-industrial HS6 dictionary (RMI&apos;s Electro-Industrial Stack): each is a group of HS6 codes, split where the chain steps differ
+            (rare-earth oxides apart from rare-earth metals, wafers apart from gallium). Each node is labelled with one of the six supply-chain stages the OSI uses (Extraction,
+            Refining, Components, Assembly, Deployment, Recovery), the one holding most of its trade, each code&apos;s stage set by its item type: a raw material is Extraction
+            (Recovery when it is recycled feed such as scrap or spent batteries), a processed material Refining, a component Components, and a final product or process equipment
+            Assembly. No node is at Deployment: the dictionary lists traded goods, not their installation and use. Only each code&apos;s primary row is used, so every code sits in
+            exactly one node and nothing is counted twice.{' '}
             {tx.scope ? (
               <>
                 This export uses the <strong className="font-medium text-paper">{tx.scope}</strong> scope: {DICTIONARY_SCOPE_WORDS[tx.scope] ? `${DICTIONARY_SCOPE_WORDS[tx.scope].words}, ${DICTIONARY_SCOPE_WORDS[tx.scope].role}` : tx.scope}
@@ -259,31 +259,27 @@ export default function AibAboutView() {
             )}{' '}
             The dictionary covers electro-industrial supply chains only: it has no fossil-fuel nodes.
           </p>
-          <p className={P}>
-            The partner indices the model uses to choose among equally good solutions (Partnership Opportunity, Friendshore, policy compatibility) are kept by OSI technology × stage, the
-            cells of the paper&apos;s basket. A dictionary node reads them through the OSI cells its codes sit in (a trade-weighted crosswalk; one node can sit in several cells, and
-            several nodes in one cell). A node with no code in the basket (heat pumps, electrolysers or hydrogen, for example) gets neutral partner scores. The crosswalk is
-            six-stage, like the nodes; the Sector, Country and Strategic pages still keep the paper&apos;s three stages (Upstream, Midstream, Downstream), so they read it through
-            each node&apos;s three-stage cells, the cells its codes sit in at the stage the paper files them under (refined battery materials, polysilicon and electrical steel under
-            Midstream, for example). The Sector and Country pages show a node in each of those cells; the Partnerships page reads the partner rankings for the three-stage cell of
-            the selected nodes and says which.
+          <p className={P} data-testid="about-osi-cells">
+            The pages show each node by OSI technology and stage, the cells of the OSI basket the rest of the dashboard uses. A node&apos;s technologies are those of the OSI cells
+            its codes sit in (a trade-weighted crosswalk), all of them as equals: one node can sit in several cells and technologies, and several nodes in one cell; a node&apos;s
+            codes can even sit in a fossil-fuel technology&apos;s cell where the OSI basket files them there (AC generators in Oil – Assembly). The pages place, group and filter a
+            node by those cells, stage included: a filter on a technology and a stage lists the nodes with a cell there. The model&apos;s own stage for a node (the one holding
+            most of its trade, above) can differ from the stages of its cells (electric motors: Assembly in the model, their codes in Electric Vehicles – Components); it is
+            shown only where the model uses it, as the CSVs&apos; aib_model_stage column. A node none of whose codes is in the OSI basket (heat pumps, electrolysers or hydrogen,
+            for example) is shown as {NOT_IN_BASKET} and gets neutral partner scores; it sits under no stage of the basket. The partner indices the model uses to choose among equally good solutions (Partnership Opportunity, Friendshore, policy compatibility), the
+            Sector and Country pages and the Partnerships page all read a node through those six-stage cells.
           </p>
-          {tx.indices.length > 0 && (
-            <dl className="grid max-w-3xl gap-x-6 gap-y-2 text-[0.9375rem] leading-relaxed sm:grid-cols-[14rem_minmax(0,1fr)]" data-testid="about-indices">
-              {sectorGroups(tx, tx.indices.flatMap((ix) => ix.sectors)).map((g) => (
-                <div key={g.index?.code ?? 'other'} className="contents">
-                  <dt className="font-medium text-paper">{g.index ? indexLabel(g.index) : 'Other sectors'}</dt>
-                  <dd className="text-paper-dim">{g.sectors.join(', ')}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
+          <p className={P} data-testid="about-dictionary-sectors">
+            The dictionary also groups its codes into sectors and six indices; the pages do not group nodes by them, and the CSVs keep each node&apos;s dictionary sector as a
+            dictionary_sector column for traceability. The model itself still reads the dictionary sector in three places: the diversification benchmark falls back to the other
+            nodes of the node&apos;s dictionary sector, two of the shocks remove the largest supplier of the node&apos;s dictionary sector (at the model&apos;s own stage for the node, or across it), and the
+            strategic scope lists the dictionary sectors compacts can be formed from.
+          </p>
         </>
       ) : (
         <p className={P} data-testid="about-taxonomy">
           The nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one stage (Extraction, Refining, Components, Assembly, Deployment, Recovery) of a
-          technology&apos;s supply chain, the stage holding most of the node&apos;s trade. The partner indices are read for each node&apos;s own technology at the paper&apos;s three
-          stages (Upstream, Midstream, Downstream), which the partner data still keep.
+          technology&apos;s supply chain, the stage holding most of the node&apos;s trade. The partner indices are read for each node&apos;s own technology and stage.
         </p>
       )}
 
@@ -411,7 +407,7 @@ export default function AibAboutView() {
               ? `The other nodes${fossilOut ? ' (fossil-fuel supply chains among them)' : ''} are modelled with the same method and kept in the data, marked outside the scope; they are not headline results, and the node lists leave them out unless asked.`
               : nt.dictionary
                 ? 'Every node of the dictionary can join a compact; the dictionary has no fossil-fuel nodes to leave out.'
-                : `Every ${tx.one} can join a compact.`}{' '}
+                : 'Every node can join a compact.'}{' '}
             In this export {nOut} of {nodes.length} nodes are outside the scope.
           </p>
         </>
@@ -463,7 +459,7 @@ export default function AibAboutView() {
           <ul className="list-disc pl-5">
             {m.shocks.map((s) => (
               <li key={s.id}>
-                {s.label}
+                {shockLabelOf(m, s.id)}
                 {s.id === m.headlineShock ? ' (headline)' : ''}
                 {s.id === dvId && s.id !== m.headlineShock ? ' (removes no supplier: Managed Interdependence)' : ''}
               </li>
@@ -496,7 +492,7 @@ export default function AibAboutView() {
             <dt className="text-paper-mute">Strategic scope</dt>
             <dd className="text-paper-dim">
               {st.label}
-              {st.techs.length ? `: ${tx.dictionary ? groupedSectorWords(tx, st.techs) : st.techs.join(', ')}` : ''}
+              {st.mode !== 'all' && st.techs.length ? `: ${tx.dictionary ? 'dictionary sectors ' : ''}${st.techs.join(', ')}` : ''}
             </dd>
           </>
         )}

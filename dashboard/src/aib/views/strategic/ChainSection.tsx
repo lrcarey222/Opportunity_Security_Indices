@@ -42,7 +42,7 @@ function topWords(cells: readonly DivisionCell[], pick: (c: DivisionCell) => num
 }
 
 export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; c: AibStrategicCompact; nodeId: string; sid: AibStrategicScenarioId; onClose: () => void }) {
-  const { doc, names, name, nodeOf, tx, scenario, hasScenarios, href } = useAibCtx();
+  const { doc, names, name, nodeOf, scenario, hasScenarios, href } = useAibCtx();
   const n = nodeOf(nodeId);
   const home = nodeHomeOf(s, nodeId);
   const label = n?.label ?? nodeId;
@@ -72,7 +72,7 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
           <p className="mt-0.5 text-xs text-paper-mute">
             {home ? `Step ${c.steps.findIndex((st) => st.order === home.order) + 1} of ${c.steps.length}: ${home.step}` : ''}
             {home?.fn ? ` · ${FN_WORDS[home.fn] ?? home.fn}` : ''}
-            {n ? ` · ${nodeWhere(tx, n)}` : ''}
+            {n ? ` · ${nodeWhere(n)}` : ''}
           </p>
         </div>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} aria-label={`Close the evidence for ${label}`}>

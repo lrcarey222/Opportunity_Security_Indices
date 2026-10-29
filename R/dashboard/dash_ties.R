@@ -1,15 +1,17 @@
 # Bilateral ties for the Partners view (Strategic Insights) and the Country partners section (pure).
 #
-# The raw values behind Friendshore's investment tie, and per-sector partner lists at the paper's
+# The raw values behind Friendshore's investment tie, and per-sector partner lists at the NEIS
 # baseline, shipped as auxiliary chunks of the Strategic bundle (scripts/85; read in the browser on
 # demand, never by the engine):
 #
 #   ties          IMF direct investment positions by partner (both directions, latest year, and the
 #                 2020-2024 mean the index ranks), the conduit financial centres, the CM-FDI factory
 #                 projects behind the investment tie in Solar, Wind, Batteries and Electric Vehicles
-#                 Midstream, Development Potential by sector, shared agreements, UN-vote alignment and
-#                 each economy's top partners by Friendshore / Partnership Opportunity (best five)
-#   pcell-<slug>  one per sector: each economy's top partners as suppliers (Friendshore) and as
+#                 Components and Assembly (the same projects in both stages), Development Potential by
+#                 sector, shared agreements, UN-vote alignment and each economy's top partners by
+#                 Friendshore / Partnership Opportunity (best five)
+#   pcell-<slug>  one per sector (66: technology x six stages, e.g. pcell-batteries-components):
+#                 each economy's top partners as suppliers (Friendshore) and as
 #                 export markets (Partnership Opportunity) at the baseline, with their Partnership
 #                 Strength rank
 #
@@ -34,7 +36,7 @@ DASH_DIP_AGGREGATES <- c(
   "North Atlantic and Caribbean", "South America", "Sub-Saharan Africa", "US Pacific Islands"
 )
 
-# Same rule as the TypeScript stageSlug(): "Electric Vehicles", "Midstream" -> "electric-vehicles-midstream".
+# Same rule as the TypeScript stageSlug(): "Electric Vehicles", "Components" -> "electric-vehicles-components".
 dash_cell_slug <- function(tech, stage) {
   s <- tolower(paste(tech, stage, sep = "-"))
   s <- gsub("[^a-z0-9]+", "-", s)

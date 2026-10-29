@@ -35,7 +35,7 @@ test_that("de-broadcast collapses identical copies and stops on a copy group wit
   rows$value[2] <- NA
   expect_error(sector_debroadcast(rows, c("sub_sector", "variable"), "prices"), "copies differ")
   # A second checked column (the observation year of wages).
-  w <- tibble::tibble(iso3c = c("USA", "USA"), supply_chain = "Midstream", value = c(5000, 5000), Year = c(2024L, 2023L))
+  w <- tibble::tibble(iso3c = c("USA", "USA"), supply_chain = "Assembly", value = c(5000, 5000), Year = c(2024L, 2023L))
   expect_error(sector_debroadcast(w, c("iso3c", "supply_chain"), "wages", c("value", "Year")), "copies differ in Year")
 })
 
@@ -77,7 +77,7 @@ test_that("EI zero-completions are nsr; zeros EI reports are zero; uranium zeros
   pdm <- raw_tbl(
     iso3c = c("USA", "DEU", "FRA", "USA", "ESP", "KAZ", "NAM", "AUS"),
     tech = c("Oil", "Oil", "Oil", "Solar", "Solar", "Nuclear", "Nuclear", "Batteries"),
-    supply_chain = c("Upstream", "Upstream", "Upstream", "Downstream", "Downstream", "Upstream", "Upstream", "Upstream"),
+    supply_chain = c("Extraction", "Extraction", "Extraction", "Deployment", "Deployment", "Extraction", "Extraction", "Refining"),
     variable = "production_latest",
     value = c(20000, 0, 0, 300, 0, 21000, 0, 50)
   )
@@ -91,9 +91,16 @@ test_that("EI zero-completions are nsr; zeros EI reports are zero; uranium zeros
   expect_identical(unname(st["production.uranium NAM"]), "zero")
   expect_identical(x$facts$year[x$facts$var == "production.uranium"][1], 2024L)
   expect_identical(x$facts$item_key[x$facts$var == "production.fuels"][1], "fuel:oil")
-  # The mineral Upstream roll-up is never shipped (spec 9).
+  # The clean-tech mineral roll-up (Extraction and Refining cells) is never shipped (spec 9); uranium is
+  # the Nuclear Extraction cell.
   expect_false("AUS" %in% x$facts$geo)
   expect_identical(x$excluded$n[grepl("roll-up", x$excluded$reason)], 1L)
+  expect_identical(unique(x$facts$item_key[x$facts$var == "production.uranium"]), "cell:nuclear-extraction")
+  expect_identical(unique(x$facts$item_key[x$facts$var == "production.generation"]), "fuel:solar")
+  # A three-stage table (built before 2026-10-26) or a new cell stops instead of shipping nothing.
+  old <- pdm
+  old$supply_chain[1] <- "Upstream"
+  expect_error(sector_facts_production(old, ei_present), "cells without a rule: Oil Upstream")
 })
 
 test_that("EIA-filled fuel production ships as observed with its EIA year and note; NA is nsr; Estonia's oil shale is noted", {
@@ -101,7 +108,7 @@ test_that("EIA-filled fuel production ships as observed with its EIA year and no
   src_eia <- paste0(src_ei, "; EIA International Energy Statistics")
   pdm <- raw_tbl(
     iso3c = c("USA", "JPN", "KOR", "EST", "NZL", "FRA"),
-    tech = c("Oil", "Oil", "Gas", "Coal", "Gas", "Gas"), supply_chain = "Upstream", variable = "production_latest",
+    tech = c("Oil", "Oil", "Gas", "Coal", "Gas", "Gas"), supply_chain = "Extraction", variable = "production_latest",
     value = c(20000, 7.37, 0, NA, 0.12, 0),
     source = c(src_ei, src_eia, src_eia, src_ei, src_eia, src_ei)
   )
@@ -230,19 +237,34 @@ test_that("self-sufficiency and the EV net-export ratio ship verbatim from their
   expect_true(all(y$notes$note == "production_assumed_zero"))
   expect_identical(sum(y$excluded$n[grepl("assumed 0", y$excluded$reason)]), 2L)
 
+  # IEA EV regions: production and the net-export ratio at Assembly, sales at Deployment (the cells the
+  # processed table files them at).
   msm <- raw_tbl(
-    iso3c = c("CHN", "CHN", "DEU", "FRA", "DEU", "FRA"), tech = "Electric Vehicles",
-    variable = c("net_export_ratio", "Domestic.Production", "net_export_ratio", "net_export_ratio", "Domestic.Production", "Domestic.Production"),
-    value = c(0.21, 12.4, -0.08, -0.08, 2.1, 2.1),
-    explanation = c("IEA region: China (EV Outlook)", "IEA region: China (EV Outlook)", rep("IEA region: European Union (EV Outlook)", 4))
+    iso3c = c("CHN", "CHN", "DEU", "FRA", "DEU", "FRA", "CHN"), tech = "Electric Vehicles",
+    supply_chain = c("Assembly", "Assembly", "Assembly", "Assembly", "Assembly", "Assembly", "Deployment"),
+    variable = c("net_export_ratio", "Domestic.Production", "net_export_ratio", "net_export_ratio", "Domestic.Production", "Domestic.Production",
+                 "Domestic.sales"),
+    value = c(0.21, 12.4, -0.08, -0.08, 2.1, 2.1, 11.2),
+    explanation = c("IEA region: China (EV Outlook)", "IEA region: China (EV Outlook)", rep("IEA region: European Union (EV Outlook)", 4),
+                    "IEA region: China (EV Outlook)")
   )
   e <- sector_facts_ev_regions(msm)
   ner <- e$facts[e$facts$var == "manufacturing.ev_net_export_ratio", ]
   expect_identical(sort(ner$geo), c("R:iea_ev:china", "R:iea_ev:european-union"))
   expect_identical(ner$value[ner$geo == "R:iea_ev:european-union"], -0.08)
+  cell_of <- stats::setNames(e$facts$item_key, e$facts$var)
+  expect_identical(unname(cell_of[c("production.ev_region", "manufacturing.ev_net_export_ratio", "production.ev_region_sales")]),
+                   c("cell:electric-vehicles-assembly", "cell:electric-vehicles-assembly", "cell:electric-vehicles-deployment"))
+  # The series follow the same cells.
+  ser <- sector_iea_ev_series(data.frame(Region = "China", Year = 2024L, `Domestic sales` = 11.2, `Domestic Production` = 12.4, check.names = FALSE))
+  expect_identical(stats::setNames(ser$item_key, ser$var)[c("production.ev_region", "production.ev_region_sales")],
+                   c(production.ev_region = "cell:electric-vehicles-assembly", production.ev_region_sales = "cell:electric-vehicles-deployment"))
   expect_true(all(e$ledger$prov == "P"))
   expect_identical(e$excluded$n, 2L)
   expect_identical(unname(e$region_of[c("DEU", "CHN")]), c("European Union", "China"))
+  moved <- msm
+  moved$supply_chain[7] <- "Assembly"
+  expect_error(sector_facts_ev_regions(moved), "SECTOR_EV_REGION_CELLS expects")
   msm$value[4] <- -0.09
   expect_error(sector_facts_ev_regions(msm), "copies differ")
 })
@@ -268,14 +290,14 @@ test_that("non-finite growth becomes na_growth with NaN, and the per-person tabl
 
 test_that("RCA below USD 50 m of exports is 'too small to compare' (nq, NaN, not in the ledger)", {
   ef <- raw_tbl(
-    iso3c = c("CHN", "CHN", "MLT", "MLT"), tech = "Batteries", supply_chain = "Midstream",
+    iso3c = c("CHN", "CHN", "MLT", "MLT"), tech = "Batteries", supply_chain = "Assembly",
     variable = c("export_rca", "exports", "export_rca", "exports"), value = c(3.1, 8.9e10, 12.5, 2e7)
   )
   x <- sector_facts_rca(ef)
   expect_identical(x$facts$status, c("obs", "nq"))
   expect_true(is.nan(x$facts$value[2]))
   expect_identical(x$ledger$geo, "CHN")
-  expect_identical(x$facts$item_key[1], "cell:batteries-midstream")
+  expect_identical(x$facts$item_key[1], "cell:batteries-assembly")
 })
 
 test_that("reserves: listed-without-a-figure holders are nq; the roster completion is not shipped", {
@@ -291,6 +313,7 @@ test_that("reserves: listed-without-a-figure holders are nq; the roster completi
   expect_true(is.nan(f$value[f$geo == "BOL"]))
   expect_false("SAU" %in% f$geo[f$var == "resources.mineral_reserves"])
   expect_identical(f$var[f$geo == "KAZ"], "resources.uranium_resources")
+  expect_identical(f$item_key[f$geo == "KAZ"], "cell:nuclear-extraction")
   expect_identical(f$year[f$var == "resources.fuel_reserves"], 2020L)
   expect_identical(f$year[f$geo == "CHL"], 2025L)
   # nq rows carry NaN, which is never a parity value: the ledger lists the shipped figures only.
@@ -321,4 +344,151 @@ test_that("EI series: successor zeros before they exist and the USSR's zeros aft
   expect_identical(s$successor_nsr, 3L)
   # The EI residual is computed on the shipped values before the reclassification (zeros add nothing).
   expect_equal(o$value[o$geo == "RES:ei" & o$year == 1985L], 5.2 - 0.58, tolerance = 1e-12)
+})
+
+# ---- Six stages (schema 2, 2026-10-28) -------------------------------------------------------------
+
+test_that("critical-mineral trade is keyed by mineral and stage, each stage its own basket and world total", {
+  fl <- tibble::tibble(
+    iso3c = c("CHN", "CHN", "CHN", "AUS", "AUS", "AUS"), mineral = "Lithium",
+    supply_chain = c("Extraction", "Refining", "Recovery", "Extraction", "Refining", "Recovery"),
+    export_source = "reported", exports = c(1, 30, 2, 9, 0, 0), exp_share = c(1e-5, 3e-4, 2e-5, 4e-4, 0, 0),
+    market_share = c(0.1, 1, 1, 0.9, 0, 0), Year = 2024L
+  )
+  x <- sector_facts_critmin(fl)
+  ex <- x$facts[x$facts$var == "trade.critmin_exports", ]
+  # One fact per (economy, mineral, stage): the same economy and mineral at three stages are three items.
+  expect_setequal(unique(ex$item_key), paste0("mineral_stage:lithium-", c("extraction", "refining", "recovery")))
+  expect_false(anyDuplicated(paste(ex$item_key, ex$geo)) > 0)
+  w <- stats::setNames(x$world$value, x$world$item_key)
+  expect_identical(unname(w[paste0("mineral_stage:lithium-", c("extraction", "refining", "recovery"))]), c(10, 30, 2))
+  expect_identical(x$check$max_rel, 0)
+  expect_identical(x$pairs$stage, c("Extraction", "Refining", "Recovery"))
+  expect_true(all(grepl("Lithium (Extraction|Refining|Recovery)$", x$ledger$key)))
+  items <- sector_mineral_stage_items(x$pairs)
+  expect_identical(items$slug, c("lithium-extraction", "lithium-refining", "lithium-recovery"))
+  expect_identical(items$label, paste0("Lithium — ", c("Extraction", "Refining", "Recovery")))
+  # A table built before the six-stage minerals trade (no stage) or with another stage stops.
+  expect_error(sector_facts_critmin(fl[setdiff(names(fl), "supply_chain")]), "has no supply_chain")
+  bad <- fl
+  bad$supply_chain[1] <- "Assembly"
+  expect_error(sector_facts_critmin(bad), "stages outside Extraction, Refining, Recovery")
+})
+
+test_that("mineral, mineral-stage, fuel and commodity items link to the cells of their stage", {
+  cells <- sector_cell_items(character())
+  ml <- tibble::tibble(mineral = c("Lithium", "Lithium"), tech = c("Batteries", "Electric Vehicles"), mineral_demand_share = c(0.2, 0.8))
+  pt <- tibble::tibble(sub_sector = c("Oil_Brent", "Lithium"), tech = c("Oil", "Batteries"), supply_chain = c("Extraction", "Refining"))
+  cm <- tibble::tibble(sub_sector = c("Oil_Brent", "Lithium"), slug = c("oil-brent", "lithium"))
+  ms <- sector_mineral_stage_items(tibble::tibble(mineral = c("lithium", "lithium"), stage = c("Refining", "Recovery")))
+  l <- sector_item_links(ml, pt, cm, cells, ms)
+  of <- function(k) sort(l$cell[l$item_key == k])
+  # Minerals: the Extraction and Refining cells of the technologies that use them (mining and reserves
+  # show at Extraction, refining at Refining, by the measures' link_stage).
+  expect_identical(of("mineral:lithium"), sort(c("batteries-extraction", "batteries-refining", "electric-vehicles-extraction", "electric-vehicles-refining")))
+  expect_identical(of("mineral_stage:lithium-recovery"), c("batteries-recovery", "electric-vehicles-recovery"))
+  expect_identical(l$weight[l$item_key == "mineral_stage:lithium-refining" & l$cell == "electric-vehicles-refining"], 0.8)
+  expect_identical(of("fuel:oil"), c("oil-deployment", "oil-extraction"))
+  expect_identical(of("fuel:solar"), "solar-deployment")
+  expect_identical(of("commodity:oil-brent"), "oil-extraction")
+  expect_identical(of("commodity:lithium"), "batteries-refining")
+  # The ILO activities serve their stages; Critical Minerals policy covers the clean-tech material stages.
+  expect_identical(sort(unique(sub("^.*-", "", of("activity:mining-utilities")))), c("extraction", "recovery"))
+  expect_identical(sort(unique(sub("^.*-", "", of("activity:manufacturing")))), c("assembly", "components", "refining"))
+  expect_identical(unique(sub("^.*-", "", of("activity:construction"))), "deployment")
+  expect_setequal(unique(sub("^.*-", "", of("policy_tag:critical-minerals"))), c("extraction", "refining", "recovery"))
+  expect_error(sector_item_links(ml, pt[c("sub_sector", "tech")], cm, cells, ms), "needs the processed prices' supply_chain")
+})
+
+test_that("IEA ETP shares ship on Components and Assembly with the note same_figure_pair", {
+  mss <- tibble::tibble(measure = "iea_manufacturing_capacity", iso3 = c("CHN", "USA", "CHN"), tech = c("Batteries", "Batteries", "Solar"),
+                        supply_chain = c("Components", "Components", "Assembly"), year = 2024L, world_share = c(0.8, 0.05, 0.8))
+  fd <- raw_tbl(iso3c = c("CHN", "CHN", "USA", "USA", "DEU", "FRA", "DEU", "FRA"), tech = "Batteries",
+                supply_chain = rep(c("Components", "Assembly"), 4), variable = "Market Share",
+                value = c(0.7, 0.7, 0.1, 0.1, 0.12, 0.12, 0.12, 0.12),
+                explanation = rep(c("IEA ETP pipeline", "IEA ETP pipeline; copied from Components: the source has no separate figure"), 4))
+  x <- sector_facts_mfg(fd, mss, eu_members = c("DEU", "FRA"))
+  now <- x$facts[x$facts$var == "manufacturing.share_now", ]
+  expect_setequal(paste(now$item_key, now$geo), c(paste("cell:batteries-components", c("E:iea_etp:china", "E:iea_etp:us")),
+                                                  paste("cell:batteries-assembly", c("E:iea_etp:china", "E:iea_etp:us")),
+                                                  "cell:solar-assembly E:iea_etp:china", "cell:solar-components E:iea_etp:china"))
+  expect_identical(now$value[now$item_key == "cell:batteries-assembly" & now$geo == "E:iea_etp:china"], 0.8)
+  p35 <- x$facts[x$facts$var == "manufacturing.share_2035", ]
+  expect_identical(sort(unique(p35$item_key)), c("cell:batteries-assembly", "cell:batteries-components"))
+  expect_identical(nrow(p35), 6L)
+  expect_true(all(x$notes$note == "same_figure_pair"))
+  expect_identical(nrow(x$notes), nrow(x$facts))
+  expect_identical(x$excluded$n[grepl("EU member copies", x$excluded$reason)], 2L)
+  # A pair whose two stages differ stops.
+  fd$value[2] <- 0.71
+  expect_error(sector_facts_mfg(fd, mss, eu_members = c("DEU", "FRA")), "Components and Assembly differ")
+})
+
+test_that("manufacturing capex shows on Components and Assembly, critical minerals on Refining; investment@1 counts once", {
+  im <- raw_tbl(
+    iso3c = c("CHN", "CHN", "USA", "USA", "CHN", "CHN", "USA"), tech = c("Batteries", "Batteries", "Batteries", "Batteries", "Batteries", "Electric Vehicles", "Solar"),
+    supply_chain = c("Components", "Assembly", "Components", "Assembly", "Refining", "Refining", "Deployment"),
+    variable = "Annual Investment (USD bn, 2024$)", Year = 2025L, value = c(40, 40, 10, 10, 3, 4.5, 20),
+    explanation = c(rep("Annual investment; manufacturing capex has no product detail, so the same amount is replicated onto Components and Assembly (do not sum across stages)", 4),
+                    rep("Annual investment; critical-minerals (refining) capex, split between Batteries and Electric Vehicles rather than counted in both", 2),
+                    "Annual investment")
+  )
+  x <- sector_facts_investment(im)
+  st <- stats::setNames(x$facts$status, paste(x$facts$item_key, x$facts$geo))
+  # 2025 critical-minerals (Refining) and solar rows are estimates; manufacturing rows are observed.
+  expect_identical(unname(st[c("cell:batteries-refining CHN", "cell:solar-deployment USA", "cell:batteries-assembly CHN")]), c("est", "est", "obs"))
+  n <- x$notes
+  expect_identical(sort(unique(n$note)), c("cim_minerals_split", "same_figure_pair"))
+  expect_identical(sort(n$item_key[n$note == "cim_minerals_split"]), c("cell:batteries-refining", "cell:electric-vehicles-refining"))
+  expect_identical(sum(n$note == "same_figure_pair"), 4L)
+  once <- sector_count_once(x$facts, n)
+  expect_identical(sum(once$value), 40 + 10 + 3 + 4.5 + 20)
+  expect_false(any(once$item_key == "cell:batteries-assembly"))
+  # The headline sums count the copy once.
+  geo <- tibble::tibble(code = c("CHN", "USA"), name = c("China", "United States"), kind = "country", group = c("china", "core"))
+  vars <- tibble::tibble(id = "investment.annual", family = "investment", native_level = "country")
+  h <- sector_headlines(sector_summary_empty(), x$facts, geo, tibble::tibble(axis = character(), slug = character(), label = character()),
+                        vars, notes = n)
+  inv <- Filter(function(z) z$id == "investment", h)[[1]]
+  expect_identical(inv$values$total_bn, 77.5)
+  expect_identical(inv$values$china, 47.5 / 77.5)
+  # concentration@1 counts the pair as one measure too: the Assembly copy is not a second hit or row.
+  expect_identical(sector_pair_copy_slices(x$facts, n), paste("investment.annual", "cell:batteries-assembly", 2025L, sep = "\r"))
+  slugs <- c("batteries-refining", "batteries-components", "batteries-assembly", "electric-vehicles-refining", "solar-deployment")
+  items <- tibble::tibble(axis = "cell", slug = slugs, label = slugs, stage = c("Refining", "Components", "Assembly", "Refining", "Deployment"),
+                          headline = TRUE)
+  sm <- sector_summary_empty()[rep(NA_integer_, length(slugs)), ]
+  sm$var <- "investment.annual"
+  sm$item_key <- paste0("cell:", slugs)
+  sm$year <- 2025L
+  sm$eu_mode <- "members"
+  sm$top1_share <- c(1, 0.8, 0.8, 1, 0.4)
+  h <- sector_headlines(sm, x$facts, geo, items, vars, notes = n)
+  conc <- Filter(function(z) z$id == "concentration", h)[[1]]
+  expect_identical(c(conc$values$n, conc$values$n_total), c(3L, 4L))
+  h0 <- sector_headlines(sm, x$facts, geo, items, vars, notes = NULL)
+  conc0 <- Filter(function(z) z$id == "concentration", h0)[[1]]
+  expect_identical(c(conc0$values$n, conc0$values$n_total), c(4L, 5L))
+  # Replicated capex that differs between the two stages stops.
+  im$value[2] <- 41
+  expect_error(sector_facts_investment(im), "replicated manufacturing capex differs")
+})
+
+test_that("wages: the six stages read three ILO activities, one value each", {
+  cc <- raw_tbl(iso3c = "USA", tech = "Batteries", supply_chain = SUPPLY_CHAIN_STAGES, variable = "earnings_usd",
+                value = c(8100, 7055, 7055, 7055, 6000, 8100), Year = 2024L)
+  x <- sector_facts_costs(cc)
+  w <- x$facts[x$facts$var == "prices.wages", ]
+  expect_identical(stats::setNames(w$value, w$item_key)[c("activity:mining-utilities", "activity:manufacturing", "activity:construction")],
+                   c(`activity:mining-utilities` = 8100, `activity:manufacturing` = 7055, `activity:construction` = 6000))
+  cc$value[2] <- 7000
+  expect_error(sector_facts_costs(cc), "copies differ")
+})
+
+test_that("resource potentials are the Deployment cells; a table filed elsewhere stops", {
+  pv <- raw_tbl(iso3c = c("USA", "CHN"), tech = "Solar", supply_chain = "Deployment", variable = "Solar PV power potential per sq km", value = c(4.4, 4.0))
+  x <- sector_facts_potential(pv, pv[0, ], pv[0, ])
+  expect_identical(unique(x$facts$item_key), "cell:solar-deployment")
+  pv$supply_chain <- "Extraction"
+  expect_error(sector_facts_potential(pv, pv[0, ], pv[0, ]), "not Deployment")
 })

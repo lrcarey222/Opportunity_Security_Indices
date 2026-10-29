@@ -1,12 +1,14 @@
 // Profile S5 Production & capacity (spec_sector.md 4.3), by the kind of cell:
-//   * fuels Upstream and power Downstream: the share split and league of EI 2025; fuels: production vs
-//     consumption pairs; the EI series 1965-2025 (top 6 + rest of world, 10 y | 25 y | All) and the
-//     shares of world production by group (sector-series);
-//   * Nuclear Upstream: uranium by group over the years, and the producers;
-//   * manufacturing Midstream: IEA capacity shares by entity, now vs 2035 (projection); CIM capacity by
-//     product (native units, never summed across products);
-//   * EV Midstream: IEA regions, production and sales, 2021-2024, and the net-export ratio;
-//   * clean-tech Upstream: mining and refining of the minerals the technology uses.
+//   * fuels at Extraction and power at Deployment: the share split and league of EI 2025; fuels:
+//     production vs consumption pairs; the EI series 1965-2025 (top 6 + rest of world, 10 y | 25 y | All)
+//     and the shares of world production by group (sector-series);
+//   * Nuclear Extraction: uranium by group over the years, and the producers;
+//   * manufacturing at Components and Assembly: IEA capacity shares by entity, now vs 2035 (projection;
+//     the IEA gives one figure for the two stages, shown on both with a "same figure as" note); CIM
+//     capacity by product (native units, never summed across products);
+//   * EV Assembly: IEA regions, production and sales, 2021-2024, and the net-export ratio;
+//   * clean technologies at Extraction: mining of the minerals the technology uses; at Refining: their
+//     refining (design C3).
 
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -17,9 +19,11 @@ import { rowsToCsv } from '../../../lib/csv.ts';
 import { GROUP_ORDINAL } from '../../../theme/palette.ts';
 import type { FactsIndex } from '../../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
+import { MINERAL_STEP } from '../../derive/minerals.ts';
 import { GROUP_SHORT, partOf } from '../../derive/groups.ts';
 import { groupArea, normalizeArea, topLines, windowYears } from '../../derive/series.ts';
 import { slice } from '../../derive/summary.ts';
+import { sameFigureText } from '../../derive/pairs.ts';
 import { sectorCsv } from '../../derive/csv.ts';
 import { axisFormatter, fmtShare, fmtValue } from '../../format.ts';
 import { ASSUMED_MARK, ASSUMED_ZERO_WORDS, assumedNote, isAssumedZero, noteLine } from '../../derive/notes.ts';
@@ -45,12 +49,11 @@ export function hasProduction(model: SectorModel, cell: ItemInfo): boolean {
   const cap = vOf(model, 'manufacturing.capacity');
   if (cap && model.availOf(cap, cell.idx).length) return true;
   const fuels = vOf(model, 'production.fuels');
-  if (cell.stageSlug === 'upstream' && fuels && linkedWith(model, cell, 'fuel', fuels).length) return true;
-  if (cell.stageSlug === 'upstream') {
-    for (const id of ['production.mining', 'production.refining']) {
-      const v = vOf(model, id);
-      if (v && linkedWith(model, cell, 'mineral', v).length) return true;
-    }
+  if (cell.stageSlug === 'extraction' && fuels && linkedWith(model, cell, 'fuel', fuels).length) return true;
+  const step = cell.stageSlug ? MINERAL_STEP[cell.stageSlug] : undefined;
+  if (step) {
+    const v = vOf(model, step.id);
+    if (v && linkedWith(model, cell, 'mineral', v).length) return true;
   }
   return false;
 }
@@ -215,6 +218,8 @@ export function EntitySharesCard({ cell, facts }: { cell: ItemInfo; facts: Facts
     const val = (r: typeof a) => (!r || noFigure(r) ? NaN : r.value);
     return { id: gi.code, label: gi.kind === 'residual' ? 'Other' : gi.name, a: val(a), b: val(b), group: gi.kind === 'residual' ? ('neutral' as const) : markGroup(gi), aLabel: `${word(a)} (${y35 ?? '2035'}, projection)`, bLabel: `${word(b)} (current)` };
   }).sort((a, z) => (Number.isFinite(z.b) ? z.b : -1) - (Number.isFinite(a.b) ? a.b : -1));
+  // the IEA gives one figure for the technology's manufacturing: Components and Assembly both carry it (design C2)
+  const same = sameFigureText(model, facts, vNow, cell, yN);
   return (
     <SectorChartCard
       title="Share of global manufacturing capacity: current and announced 2035"
@@ -223,7 +228,12 @@ export function EntitySharesCard({ cell, facts }: { cell: ItemInfo; facts: Facts
       table={() => <TableView rows={rows} caption="Manufacturing capacity shares" cols={[{ id: 'e', header: 'Entity', value: (r) => r.label }, { id: 'b', header: 'Current', value: (r) => r.bLabel }, { id: 'a', header: '2035 (projection)', value: (r) => r.aLabel }]} />}
       csv={() => ({ name: `${cell.slug}-capacity-shares`, text: sectorCsv(model, [...now.map((r) => ({ geo: null, economy: model.geos[r.geo].name, v: vNow, item: cell, year: yN, value: Number.isFinite(r.value) ? r.value : null, status: r.status, share: r.value })), ...(v35 ? later.map((r) => ({ geo: null, economy: model.geos[r.geo].name, v: v35, item: cell, year: y35, value: Number.isFinite(r.value) ? r.value : null, status: r.status, share: r.value })) : [])]) })}
       legend={<GroupLegend groups={['china', 'core', 'partner']} projection />}
-      notes={<p>The IEA reports these shares for a few economies and the EU, not for every country. Where it gives 0, the share is under 1% or not reported, so the chart shows "&lt;1% or not reported" and no dot. Labels name every row because some colours repeat.</p>}
+      notes={
+        <>
+          <p>The IEA reports these shares for a few economies and the EU, not for every country. Where it gives 0, the share is under 1% or not reported, so the chart shows "&lt;1% or not reported" and no dot. Labels name every row because some colours repeat.</p>
+          {same && <p data-testid="same-figure-note">{same}</p>}
+        </>
+      }
       summary={rows[0] ? `${rows[0].label} holds ${fmtShare(rows[0].b)} of current capacity and ${Number.isFinite(rows[0].a) ? fmtShare(rows[0].a) : 'an unreported share'} of announced 2035 capacity.` : 'No entity shares.'}
     >
       <Dumbbell rows={rows} xLabel="Share of global capacity" aName="2035 announced (projection)" bName="Current" ariaLabel="Manufacturing capacity shares by entity" tickFormat={(x) => `${Math.round(x * 100)}%`} />
@@ -400,33 +410,34 @@ function MineralRows() {
   const { model, cell, facts, highlight, eu } = useProfile();
   const { link } = useSectorUrl();
   const navigate = useNavigate();
+  const step = cell.stageSlug ? MINERAL_STEP[cell.stageSlug] : undefined;
   const rows: ShareSplitRow[] = [];
   const refs: { var: string; item: string; year: number }[] = [];
-  for (const { item: m } of model.itemsOfCell(cell.idx, 'mineral')) {
-    for (const id of ['production.mining', 'production.refining']) {
-      const v = vOf(model, id);
-      if (!v) continue;
+  const v = step ? vOf(model, step.id) : null;
+  if (step && v) {
+    for (const { item: m } of model.itemsOfCell(cell.idx, 'mineral')) {
       const y = baseYear(model, facts, v, m, eu);
       if (y === null) continue;
       const c = measureConc(model, facts, v, m, y, eu);
       if (!c || c.conc.W === null) continue;
-      rows.push(shareSplitRow(model, v, m, c.conc, { id: `${m.slug}-${id}`, label: `${m.label}: ${id === 'production.mining' ? 'mining' : 'refining'} ${y}`, year: y, highlight, href: link(`/sector/minerals/${m.slug}`) }));
-      refs.push({ var: id, item: m.slug, year: y });
+      rows.push(shareSplitRow(model, v, m, c.conc, { id: `${m.slug}-${step.id}`, label: `${m.label}: ${step.words} ${y}`, year: y, highlight, href: link(`/sector/minerals/${m.slug}`) }));
+      refs.push({ var: step.id, item: m.slug, year: y });
     }
   }
-  if (!rows.length) return null;
+  if (!step || !rows.length) return null;
+  const other = step.words === 'mining' ? 'refining, under Refining' : 'mining, under Extraction';
   return (
     <SectorChartCard
-      title={`Mining and refining of the minerals ${cell.tech} uses`}
+      title={`${step.words === 'mining' ? 'Mining' : 'Refining'} of the minerals ${cell.tech} uses`}
       vars={refs}
-      subExtra={<HowToRead>{SPLIT_READING} Two rows per mineral: where it is mined and where it is refined, which are often different places. Click a row for the mineral’s page.</HowToRead>}
-      table={() => <SplitTable rows={rows} caption="Mining and refining by mineral" />}
+      subExtra={<HowToRead>{SPLIT_READING} One row per mineral: where it is {step.words === 'mining' ? 'mined' : 'refined'} (its {other}, is often somewhere else). Click a row for the mineral’s page.</HowToRead>}
+      table={() => <SplitTable rows={rows} caption={`${step.words === 'mining' ? 'Mining' : 'Refining'} by mineral`} />}
       legend={<GroupLegend highlight={highlight?.name ?? null} />}
       csv={() => ({ name: `${cell.slug}-minerals`, text: rowsToCsv(rows.map((r) => ({ measure: r.label, ...Object.fromEntries(Object.entries(r.parts).map(([k, x]) => [`share_${k}`, x])), top1: r.cols.top1, top3: r.cols.top3, hhi: r.cols.hhi, source: r.cols.source }))) })}
       notes={<p>IEA lists the top six producers; the rest is one "Rest of world" band, so the <Term id="hhi">concentration index (HHI)</Term> is "at least".</p>}
       summary={rows.map((r) => r.ariaLabel).slice(0, 2).join(' ')}
     >
-      <ShareSplitChart rows={rows} columns={SPLIT_COLUMNS} ariaLabel="Mining and refining by mineral" onRowClick={(r) => r.href && navigate(r.href)} highlightHeader={highlight?.name} />
+      <ShareSplitChart rows={rows} columns={SPLIT_COLUMNS} ariaLabel={`${step.words === 'mining' ? 'Mining' : 'Refining'} by mineral`} onRowClick={(r) => r.href && navigate(r.href)} highlightHeader={highlight?.name} />
     </SectorChartCard>
   );
 }
@@ -457,7 +468,7 @@ export function ProductionSection() {
   const { model, cell, facts, eu } = useProfile();
   const own = ownVars(model, cell);
   const fuelsV = vOf(model, 'production.fuels');
-  const fuels = cell.stageSlug === 'upstream' && fuelsV ? linkedWith(model, cell, 'fuel', fuelsV) : [];
+  const fuels = cell.stageSlug === 'extraction' && fuelsV ? linkedWith(model, cell, 'fuel', fuelsV) : [];
   return (
     <div className="space-y-6">
       {own.map((v) => {
@@ -484,7 +495,7 @@ export function ProductionSection() {
       <EntityShares />
       <CapacityByProduct />
       <EvRegions />
-      {cell.stageSlug === 'upstream' && <MineralRows />}
+      <MineralRows />
     </div>
   );
 }

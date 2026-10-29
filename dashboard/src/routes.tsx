@@ -7,7 +7,10 @@
 //     or Allied Industrial Base (shell/modules.ts tabOf). Their one-economy deep links open that
 //     section of the Country profile, which embeds the same views: /country/:iso3 -> #sectors,
 //     /strategic/:iso3 -> #opportunities, /partners/:iso3 -> #partnerships (query string kept);
-//   * sectorRoute (src/sector/routes.tsx) at /sector: Sectors;
+//   * sectorRoute (src/sector/routes.tsx) at /sector: Sectors. Old three-stage Sector links
+//     (/sector/:tech/<upstream|midstream|downstream>[/:iso3]) are shell routes (shell/legacySector.tsx,
+//     design U1): Downstream opens the Deployment page with the query and hash kept, Upstream and
+//     Midstream the technology's chain page, each with a notice naming the stages that replaced it;
 //   * countryRoute (src/country/routes.tsx) at /countries: Countries;
 //   * aibHubRoute at /aib (Overview, Partnerships, Country roles, Diversification) and aibRoute at /compacts (Sectoral
 //     Compacts), both in src/aib/routes.tsx: Allied Industrial Base;
@@ -30,6 +33,7 @@ import { BootScreen } from './shell/screens.tsx';
 import { RootError, RouteError } from './shell/RouteError.tsx';
 import { Redirect } from './shell/Redirect.tsx';
 import { sectorRoute } from './sector/routes.tsx';
+import { LEGACY_SECTOR_ROUTES } from './shell/legacySector.tsx';
 import { COUNTRY_ALIASES, countryRoute } from './country/routes.tsx';
 import { AIB_ALIASES, aibHubRoute, aibRoute } from './aib/routes.tsx';
 
@@ -86,6 +90,9 @@ export const routes: RouteObject[] = [
       { id: 'about-engine', lazy: view(() => import('./shell/AboutEngineLayout.tsx')), errorElement: <RouteError />, children: ABOUT_ENGINE_ROUTES },
       // a failing Sector chunk shows the notice under the shared header (the module's own errorElement wins)
       { errorElement: <RouteError />, ...sectorRoute },
+      // after the Sector subtree: their static stage segment outranks /sector/:tech/:stage, and on a tie
+      // (/sector/minerals/upstream) the Sector module's own route, defined first, wins
+      ...LEGACY_SECTOR_ROUTES,
       { errorElement: <RouteError />, ...countryRoute },
       { errorElement: <RouteError />, ...aibHubRoute },
       { errorElement: <RouteError />, ...aibRoute },

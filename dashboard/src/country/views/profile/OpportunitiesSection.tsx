@@ -5,8 +5,8 @@
 //                                the largest supplier and any compact where the economy is a demand anchor (facts)
 //   Capabilities to keep         Grow corner, and the economy's supplier / technology roles in the compacts
 //                                ("Preserve capabilities" until 2026-10-28, renamed so it is not read as the
-//                                posture chart's Compete · Preserve mode)
-// The corners are the paper's three-stage reading; their words come from QUADRANTS (contract.ts).
+//                                Strategic posture section's Compete · Preserve mode)
+// The corners (recomputed on the 66 six-stage sectors) take their words from QUADRANTS (contract.ts).
 // Behind disclosures: "Why these sectors" (the existing drivers section) and "How priorities are built"
 // (the existing Strategic Index table at the NEIS baseline; the embedded Strategic Index view under the
 // reader's Perspective).
@@ -67,7 +67,7 @@ export function OpportunitiesSection() {
       title="Opportunities & risks"
       intro={
         <>
-          Three readings of the paper&apos;s three-stage scores: where {name} could build on an opportunity, where it depends most on others, and which capabilities it already has. The corners split{' '}
+          Three readings of the index scores of {poss(name)} sectors: where {name} could build on an opportunity, where it depends most on others, and which capabilities it already has. The corners split{' '}
           {poss(name)} sectors at its own median <Term id="eo" /> and <Term id="es" />; the order of the first list follows the <Term id="si" /> under your perspective.
         </>
       }
@@ -165,7 +165,7 @@ export function OpportunitiesSection() {
             <PriorityTable />
           ) : (
             <Notice kind="info" title="No Strategic Index">
-              {cap(name)} has no Policy index (no International Energy Agency Policies and Measures records), so the paper computes no Strategic Index for it.
+              {cap(name)} has no Policy index (no International Energy Agency Policies and Measures records), so no Strategic Index is computed for it.
             </Notice>
           )}
           <Fold id="si-model" engine summary="The Strategic Index under your perspective: top ten, the five weighted parts and the allied picks (the model)">

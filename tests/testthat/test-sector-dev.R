@@ -122,11 +122,38 @@ test_that("the synthetic sector-dev chunk passes the contract checks and decodes
   expect_true(any(dev$part$oda$value < 0))
   links <- dev$links
   expect_setequal(unique(links$item_key), c("aid_sector:energy", "aid_sector:industry", "aid_sector:mining"))
+  # The aid sectors and items carry no stage of their own; the links do.
+  expect_true(all(is.na(dev$items$stage)))
+})
+
+test_that("aid sectors link to the cells the pipeline's six-stage purpose crosswalk files their codes under", {
+  cw <- utils::read.csv(file.path(repo_root, "data", "reference", "oecd_crs_purpose_crosswalk.csv"), stringsAsFactors = FALSE)
+  cells <- sector_cell_items(character())
+  l <- sector_dev_aid_links(cw, cells)
+  stage_of <- function(item) sort(unique(cells$stage[match(l$cell[l$item_key == item], cells$slug)]))
+  # Energy (23x) at Deployment, industry (321x) at Refining, Components and Assembly, mining (322x less
+  # "Coal" and "Oil and gas (upstream)") at Extraction; no CRS code funds recycling (Recovery).
+  expect_identical(stage_of("aid_sector:energy"), "Deployment")
+  expect_identical(stage_of("aid_sector:industry"), c("Assembly", "Components", "Refining"))
+  expect_identical(stage_of("aid_sector:mining"), "Extraction")
+  expect_false(any(endsWith(l$cell, "-recovery")))
+  expect_false("aid_sector:all-sectors" %in% l$item_key)
+  # Only the technologies the crosswalk names: no energy code funds Batteries or Green Hydrogen deployment.
+  expect_false(any(c("batteries-deployment", "green-hydrogen-deployment") %in% l$cell[l$item_key == "aid_sector:energy"]))
+  expect_true(all(c("solar-deployment", "electric-grid-deployment", "nuclear-deployment") %in% l$cell[l$item_key == "aid_sector:energy"]))
+  # The netted mining codes alone link nothing; the synthetic crosswalk follows the same rule.
+  expect_identical(nrow(sector_dev_aid_links(cw[cw$purpose_code %in% SECTOR_DEV_MINING_NET_CODES, ], cells)), 0L)
+  syn <- sector_dev_aid_links(sector_dev_synthetic_crosswalk(), cells)
+  expect_false("coal-extraction" %in% syn$cell)
+  expect_identical(sector_dev_aid_sector_of(c("23230", "32169", "32220", "32261", "15110")), c("energy", "industry", "mining", NA, NA))
+  bad <- cw
+  bad$supply_chain[1] <- "Downstream"
+  expect_error(sector_dev_aid_links(bad, cells), "not supply-chain stages")
 })
 
 test_that("the stored aid components are checked per tech and stage against the purpose-code builder", {
   aid <- tibble::tibble(
-    iso3c = c("BRA", "BRA", "IDN", "IDN"), tech = c("Solar", "Wind", "Solar", "Wind"), supply_chain = "Downstream",
+    iso3c = c("BRA", "BRA", "IDN", "IDN"), tech = c("Solar", "Wind", "Solar", "Wind"), supply_chain = "Deployment",
     aid_index_supplychain = c(0.9, 0.1, 0.1, 0.9), aidgdp_index_supplychain = c(0.8, 0.2, 0.2, 0.8)
   )
   indicators <- tibble::tibble(iso3c = c("BRA", "IDN"), development_index = c(0.4, 0.6), doingbusiness_index = c(0.5, 0.5), energy_use_index = c(0.3, 0.7))

@@ -1,21 +1,19 @@
-// The supply-chain navigator (IA refactor 2026-10-16, brief s.7): Upstream -> Midstream -> Downstream
-// for one technology, each stage with its trade sub-components (the groups behind the Trade section's
-// "View by: Sub-component", ../derive/subs.ts) and a mark for the Allied Industrial Base node(s) of the
-// same component (../derive/chain.ts). A stage opens its Sector profile; a component opens the profile
-// scoped to it (the existing `sub` URL key). Folded (the three stages in one row, the components behind
-// "Show components"): on phones, and on the Sector profile at every width (`collapsible`), so the
-// profile's four lenses stay on the first screen.
-//
-// The stages here are the Sector bundle's three (the paper's). The AIB nodes are six-stage since
-// 2026-10-28; chain.ts places each under a three-stage column through its three-stage cells
-// (node.yfCellsLegacy, else the roll-up of its six-stage cells), and the footnote says so.
+// The supply-chain navigator (IA refactor 2026-10-16, brief s.7): the six stages of one technology in
+// chain order (Extraction -> Refining -> Components -> Assembly -> Deployment -> Recovery), each with its
+// trade sub-components (the groups behind the Trade section's "View by: Sub-component",
+// ../derive/subs.ts; a sub-component that spans several stages appears under each, with that stage's
+// codes) and a mark for the Allied Industrial Base node(s) of the same component (../derive/chain.ts,
+// joined on the nodes' six-stage cells). A stage opens its Sector profile; a component opens the profile
+// scoped to it (the existing `sub` URL key). Six columns from 1280 px, three by two from 768 px. Folded
+// (the six stages in one row, the components behind "Show components"): on phones, and on the Sector
+// profile at every width (`collapsible`), so the profile's four lenses stay on the first screen. A stage
+// is never a colour (design S4): the columns carry a neutral rule and their name.
 
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { ClassSwatch } from '../../aib/charts/ClassChip.tsx';
 import { classInfo } from '../../aib/derive/classes.ts';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
-import { STAGE_COLOR } from '../../theme/palette.ts';
 import { STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, type StageSlug, type TechSlug } from '../contract.ts';
 import { useModel } from '../data/SectorDataProvider.tsx';
 import { matchNodes, nodeNamedApart } from '../derive/chain.ts';
@@ -100,7 +98,7 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
                   </span>
                 )}
                 {c.exists ? (
-                  <Link to={link(`/sector/${tech}/${c.stage}`)} className="tag" aria-current={cur && !sub ? 'page' : undefined} style={{ borderLeft: `3px solid ${STAGE_COLOR[STAGE_LABELS[c.stage]]}` }}>
+                  <Link to={link(`/sector/${tech}/${c.stage}`)} className="tag" aria-current={cur && !sub ? 'page' : undefined}>
                     {STAGE_LABELS[c.stage]}
                   </Link>
                 ) : (
@@ -123,13 +121,14 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
           )}
         </div>
       ) : (
-        <ol className="mt-3 grid gap-4 md:grid-cols-3 md:gap-6">
+        <ol className="mt-3 grid gap-4 md:grid-cols-3 md:gap-6 xl:grid-cols-6">
           {cols.map((c, i) => {
             const cur = c.stage === stage;
             return (
-              <li key={c.stage} className="relative min-w-0 border-t-[3px] pt-2" style={{ borderTopColor: STAGE_COLOR[STAGE_LABELS[c.stage]] }}>
+              <li key={c.stage} className="relative min-w-0 border-t-[3px] border-ink-500 pt-2">
                 {i > 0 && (
-                  <span aria-hidden="true" className="absolute -left-5 top-1 hidden text-paper-mute md:block">
+                  // the arrow sits between columns; at three by two the fourth stage starts a row
+                  <span aria-hidden="true" className={`absolute -left-5 top-1 hidden text-paper-mute ${i % 3 === 0 ? 'xl:block' : 'md:block'}`}>
                     →
                   </span>
                 )}
@@ -157,7 +156,7 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
                     );
                   })}
                   {c.exists && !c.subs.length && (
-                    <li className="text-xs text-paper-mute">{c.hasTrade ? (trade ? 'One trade basket, no components' : 'Loading the components…') : 'No traded components (deployment and use)'}</li>
+                    <li className="text-xs text-paper-mute">{c.hasTrade ? (trade ? 'One trade basket, no components' : 'Loading the components…') : c.stage === 'deployment' ? 'No traded components (deployment and use)' : 'No trade basket'}</li>
                   )}
                   {c.unmatched.length > 0 && <li className="text-xs text-paper-mute">Also modelled: {joinLabels(c.unmatched.map((n) => n.label))}</li>}
                 </ul>
@@ -173,7 +172,6 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
             <>
               {' '}Marks: the class the <Link className="link" to="/aib">Allied Industrial Base</Link> model gives the matching supply-chain node (shown under Energy Security)
               {dictionary ? ': a node of the electro-industrial dictionary whose codes sit in the component; one node can sit under several components and stages.' : '.'}
-              {' '}The model’s nodes use six supply-chain stages, which roll up into these three; each node sits under the stage its codes are filed under here.
             </>
           )}
         </p>

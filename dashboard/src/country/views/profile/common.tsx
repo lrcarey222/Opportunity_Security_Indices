@@ -48,6 +48,9 @@ export interface ProfileCtx {
   aib?: { doc: AibDoc | null; status: 'loading' | 'ready' | 'error'; names: Readonly<Record<string, string>> };
   /** the URL carries Perspective (dial) settings */
   customInUrl?: boolean;
+  /** the open node of the Strategic posture card ("Tech|Stage"; lifted to the page so it survives the engine mounting) */
+  pcell?: string | null;
+  setPcell?: (key: string | null) => void;
 }
 
 const Ctx = createContext<ProfileCtx | null>(null);

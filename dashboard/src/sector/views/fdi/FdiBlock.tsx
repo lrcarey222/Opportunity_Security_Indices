@@ -1,4 +1,5 @@
-// The CM-FDI block of one Midstream cell (Solar, Wind, Batteries, Electric Vehicles): the profile's
+// The CM-FDI block of one Components or Assembly cell (Solar, Wind, Batteries, Electric Vehicles; the two
+// stages carry the same projects, design E5, and the block says so once): the profile's
 // Investment subsection and the Explore investment layout. It loads sector-fdi lazily (only when it
 // mounts), then shows the switches (all projects or the ones the indices use; every announcement year
 // or a recent window; projects or disclosed capital), the key figures, where the projects go (map and
@@ -8,7 +9,7 @@
 import { useMemo, useState } from 'react';
 import type { GeoInfo, ItemInfo, SectorModel } from '../../data/model.ts';
 import type { FdiBasis } from '../../contract.ts';
-import { filterProjects, fdiTotals, type FdiData, type FdiFrom, type FdiShow } from '../../derive/fdi.ts';
+import { fdiItemOf, fdiStagesNote, filterProjects, fdiTotals, type FdiData, type FdiFrom, type FdiShow } from '../../derive/fdi.ts';
 import { ChunkGate } from '../common.tsx';
 import { useFdi } from '../data.ts';
 import { DestinationsCard, FdiControls, FdiIntro, FdiTiles, FlowsCard, InvestorsCard, ParentGroupsCard, ProjectsCard, YearsCard, type FdiScope } from './cards.tsx';
@@ -18,7 +19,7 @@ export type FdiFocus = 'n' | 'value' | 'share';
 
 export interface FdiBlockProps {
   model: SectorModel;
-  /** the Midstream cell */
+  /** the Components or Assembly cell (its projects are read on fdiItemOf()) */
   item: ItemInfo;
   highlight: GeoInfo | null;
   onPick?: (g: GeoInfo | null) => void;
@@ -33,7 +34,8 @@ function Body({ data, p }: { data: FdiData; p: FdiBlockProps }) {
   const [basis, setBasis] = useState<FdiBasis>('all');
   const [from, setFrom] = useState<FdiFrom>(null);
   const [show, setShow] = useState<FdiShow>(focus === 'value' ? 'value' : 'n');
-  const cellAll = useMemo(() => filterProjects(data.projects, { items: [item.idx] }), [data, item]);
+  const cellAll = useMemo(() => filterProjects(data.projects, { items: [fdiItemOf(model, data, item)] }), [model, data, item]);
+  const stagesNote = fdiStagesNote(model, data, item);
   const windowed = useMemo(() => filterProjects(cellAll, { from }), [cellAll, from]);
   const projects = useMemo(() => filterProjects(windowed, { basis }), [windowed, basis]);
   const counts = useMemo(() => ({ all: windowed.length, index_use: windowed.filter((x) => x.indexUse).length }), [windowed]);
@@ -44,6 +46,11 @@ function Body({ data, p }: { data: FdiData; p: FdiBlockProps }) {
   return (
     <div className="space-y-6" data-testid="fdi-block">
       {p.intro !== false && <FdiIntro model={model} />}
+      {stagesNote && (
+        <p className="max-w-3xl text-sm text-paper-mute" data-testid="fdi-stages-note">
+          {stagesNote}
+        </p>
+      )}
       <FdiControls basis={basis} setBasis={setBasis} from={from} setFrom={setFrom} show={show} setShow={setShow} counts={counts} firstYear={first} />
       {!projects.length ? (
         <p className="text-sm text-paper-mute">No projects for this selection.</p>

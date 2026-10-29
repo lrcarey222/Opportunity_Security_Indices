@@ -9,6 +9,10 @@
 
 import type { AibGap, Alignment, CompeteMode, Momentum, PostureCode, SecurityRationale } from './contract.ts';
 
+// The stage shorts (Ext, Ref, Com, Asm, Dep, Rec) live in src/lib/stages.ts since 2026-10-28, so every module
+// uses one map; re-exported here for the posture views.
+export { STAGE_SHORT, stageShort } from '../lib/stages.ts';
+
 export const POSTURE_COLOR: Record<PostureCode, string> = { S: '#d1497e', C: '#1889b0', D: '#9a8f3d' };
 export const POSTURE_LABEL: Record<PostureCode, string> = { S: 'Secure', C: 'Compete', D: 'Deploy' };
 export const POSTURE_ORDER: PostureCode[] = ['S', 'C', 'D'];
@@ -71,8 +75,4 @@ export const GAP_RING: Record<AibGap, string> = {
   insufficient_redundancy: '#d1d5db',
   weak_evidence: '#6b7280',
   none: 'transparent',
-};
-
-export const STAGE_SHORT: Record<string, string> = {
-  Extraction: 'Ext', Refining: 'Ref', Components: 'Com', Assembly: 'Asm', Deployment: 'Dep', Recovery: 'Rec',
 };

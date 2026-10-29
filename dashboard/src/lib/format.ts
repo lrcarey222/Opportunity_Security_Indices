@@ -1,6 +1,8 @@
 // Number and text formats for the UI (spec_react.md 8.7): indices .3f, shares .1%, HHI .3f, ranks
 // integers, changes signed with an arrow. NA (null / NaN / undefined) prints as an en dash.
 
+import { stageRank } from './stages.ts';
+
 export const DASH = '–';
 export const MINUS = '−';
 export const TIMES = '×';
@@ -75,28 +77,26 @@ export function fmtDate(iso: unknown): string {
 
 export const yesNo = (x: unknown): string => (x === true ? 'yes' : x === false ? 'no' : DASH);
 
-/** "Batteries – Midstream". */
+/** "Batteries – Refining". */
 export const cellLabel = (tech: string, stage: string): string => `${tech} ${DASH} ${stage}`;
 
-/** URL slug of a sector (technology x stage): "batteries-midstream". */
+/** URL slug of a sector (technology x stage): "batteries-refining". */
 export const stageSlug = (tech: string, stage: string): string =>
   `${tech}-${stage}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-const STAGE_ORDER = ['Upstream', 'Midstream', 'Downstream'];
-
 /**
  * The options of a sector select, shared by the Strategic Partners view and the Country partners
- * section: grouped by stage (Upstream, Midstream, Downstream), technologies alphabetical within each,
- * labelled cellLabel() ("Solar – Midstream"). `value` gives each option's value.
+ * section: grouped by stage in chain order (Extraction, Refining, Components, Assembly, Deployment,
+ * Recovery: lib/stages.ts stageRank; an unknown stage last), technologies alphabetical within each,
+ * labelled cellLabel() ("Solar – Assembly"). `value` gives each option's value.
  */
 export function cellOptions<T extends { tech: string }>(
   cells: readonly T[],
   stageOf: (x: T) => string,
   value: (x: T) => string,
 ): { value: string; label: string; group: string }[] {
-  const rank = (s: string) => (STAGE_ORDER.includes(s) ? STAGE_ORDER.indexOf(s) : STAGE_ORDER.length);
   return [...cells]
-    .sort((a, z) => rank(stageOf(a)) - rank(stageOf(z)) || a.tech.localeCompare(z.tech, 'en'))
+    .sort((a, z) => stageRank(stageOf(a)) - stageRank(stageOf(z)) || a.tech.localeCompare(z.tech, 'en'))
     .map((x) => ({ value: value(x), label: cellLabel(x.tech, stageOf(x)), group: stageOf(x) }));
 }
 

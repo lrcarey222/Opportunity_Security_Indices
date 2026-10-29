@@ -10,6 +10,7 @@ import { PageHead } from '../../../components/ui.tsx';
 import { Term } from '../../../components/Term.tsx';
 import { rowsToCsv } from '../../../lib/csv.ts';
 import { useTitle } from '../../../shell/title.ts';
+import { MINERAL_REDIRECTS } from '../../contract.ts';
 import { useModel } from '../../data/SectorDataProvider.tsx';
 import type { SectorModel, SummaryInfo, VarInfo } from '../../data/model.ts';
 import { MINE_VAR, MINING_VAR, mineralIndexRows, REFINING_VAR, type MineralIndexRow } from '../../derive/minerals.ts';
@@ -189,8 +190,8 @@ export default function MineralIndexView() {
       <PageHead eyebrow="SECTORS · MINERALS" title="Minerals" lede={lede}>
         <p className="mt-2 text-sm text-paper-mute">
           Uranium is measured on the{' '}
-          <Link className="link" to={link('/sector/nuclear/upstream')}>
-            Nuclear — Upstream
+          <Link className="link" to={link(MINERAL_REDIRECTS.uranium)}>
+            Nuclear — Extraction
           </Link>{' '}
           page.
         </p>

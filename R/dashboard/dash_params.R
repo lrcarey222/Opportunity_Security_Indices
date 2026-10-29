@@ -2,7 +2,8 @@
 # (pure; no IO). Used by scripts/85 (the data export of the Allied Industrial Base Explorer), the tests
 # and, ported to TypeScript, by the explorer itself (dashboard/src/engine/params.ts).
 #
-# Every dial runs 0-100, and 50 is the paper's baseline. A dial d becomes the multiplier
+# Every dial runs 0-100, and 50 is the NEIS baseline (the pipeline's six-stage weights and settings;
+# the paper's figures stay three-stage until scripts/paper migrates). A dial d becomes the multiplier
 #
 #   m(d) = 4^((d - 50) / 50)       m(0) = 0.25, m(25) = 0.5, m(50) = 1, m(75) = 2, m(100) = 4
 #
@@ -16,25 +17,30 @@
 #   of Friendshore's two security components, geo_alignment (UN-vote alignment) and
 #   chinese_parent_exposure (CM-FDI Chinese-parent ownership, scored 1 - share; since October
 #   2026), both w0 x mH. The CM-FDI investment tie replaces the IMF position inside the outbound
-#   component (Solar, Wind, Batteries, EV Midstream) and keeps that component's weight, which no
-#   dial owns. The robustness switch that drops the ownership component (config/partnership.yml
-#   cm_fdi chinese_parent_exposure: false) is not a dial.
+#   component (the Components and Assembly cells of Solar, Wind, Batteries and EV, which carry the
+#   same projects) and keeps that component's weight, which no dial owns. The robustness switch that
+#   drops the ownership component (config/partnership.yml cm_fdi chinese_parent_exposure: false) is
+#   not a dial.
 # BULLISHNESS (mB): SI weight on EO; Opportunity weight in the PSI.
 # POPULISM (mP): SI policy weight; IEA PAMS weight in the Policy composite; stage weights
-#   lambda_s = lambda_max (lambda0_s / lambda_max)^mP (Midstream emphasis).
+#   lambda_s = lambda_max (lambda0_s / lambda_max)^mP, stage by stage, with lambda_max the largest
+#   weight (the manufacturing stages Components and Assembly, 0.375): at P = 0 / 50 / 100 Extraction,
+#   Refining and Recovery get 0.306 / 0.167 / 0.015 and Deployment 0.339 / 0.25 / 0.074 (emphasis on
+#   manufacturing grows with the dial).
 # GREENNESS (mG): SI technology (GHG) weight; CAT weight in the Policy composite; the climate
 #   penalties of Friendshore (per side) and Opportunity; fossil technologies (Coal, Oil, Gas) are
 #   dropped from the Strategic Index and the partnership best-five when G >= 90 (advanced setting
 #   fossil = "auto"; "never" / "always" override).
 #
-# The original allied network design (scripts/30, a lambda-calibrated design over Upstream and
-# Midstream stages) is retired (2026-10-17): the dashboard no longer recomputes it, so its dial
-# terms (edge, demand and producer-score weights, lambda, home bias) and the advanced network
-# settings are gone. The Allied Industrial Base analysis (docs/aib_methodology.md) replaces it.
+# The original allied network design (scripts/30, a lambda-calibrated design over the supply
+# stages, then labelled Upstream and Midstream) is retired (2026-10-17): the dashboard no longer
+# recomputes it, so its dial terms (edge, demand and producer-score weights, lambda, home bias) and
+# the advanced network settings are gone. The Allied Industrial Base analysis
+# (docs/aib_methodology.md) replaces it.
 #
 # No dial owns the endowment screen of the allied picks: the advanced setting require_resource_base
-# (default TRUE, the paper's) bars an Upstream stage without recorded reserves or production from a
-# member's allied pick (params$si$require_resource_base; dash_allied_selection()).
+# (default TRUE, the pipeline's) bars an Extraction stage without recorded reserves or production
+# from a member's allied pick (params$si$require_resource_base; dash_allied_selection()).
 #
 # Weight sets other than the Strategic Index are ratios inside the pipeline functions that use
 # them (each divides by the sum of the weights present), so a dial scales one weight and the
@@ -75,7 +81,7 @@ dash_check_dials <- function(dials) {
   out[DASH_DIAL_NAMES]
 }
 
-# The advanced panel's defaults (the paper's settings).
+# The advanced panel's defaults (the baseline settings).
 dash_default_advanced <- function(bundle) {
   bi <- dash_baseline_inputs(bundle)
   list(
@@ -161,7 +167,8 @@ dash_si_weights <- function(w0, mult) {
 }
 
 # Stage weights under the populism multiplier: lambda_s = lambda_max (lambda0_s / lambda_max)^mP,
-# which keeps the largest weight (Midstream) and widens (mP > 1) or narrows (mP < 1) the gaps.
+# stage by stage, which keeps the largest weight (Components and Assembly) and widens (mP > 1) or
+# narrows (mP < 1) the gaps.
 dash_stage_weights <- function(sw0, mP) {
   if (mP == 1) return(sw0)
   lmax <- max(sw0)
@@ -238,7 +245,7 @@ print.dash_params <- function(x, ...) {
   invisible(x)
 }
 
-# TRUE when params are the paper's baseline (all dials at 50, advanced at defaults).
+# TRUE when params are the NEIS baseline (all dials at 50, advanced at defaults).
 dash_is_baseline <- function(params, bundle) {
   base <- bundle$manifest$baseline
   if (is.null(base)) base <- dash_params(bundle = bundle)
@@ -292,7 +299,9 @@ dash_dial_readout <- function(params, bundle) {
     if (!var %in% names(w)) return(NA_real_)
     w[[var]] / sum(w)
   }
-  stage_ratio <- function(p, s) p$si$stage_weights[[s]] / p$si$stage_weights[["Midstream"]]
+  # A stage weight over the manufacturing one (Components, equal to Assembly): Extraction stands for
+  # Extraction, Refining and Recovery, which share one weight at every populism setting.
+  stage_ratio <- function(p, s) p$si$stage_weights[[s]] / p$si$stage_weights[["Components"]]
   # Labels spell out every index (no bare acronyms): the dial panel prints them as they are.
   rows <- list(
     list("hawkishness", "si_need", "Strategic Index weight on security need", function(p) p$si$weights[["energy_security_need"]], TRUE),
@@ -303,8 +312,8 @@ dash_dial_readout <- function(params, bundle) {
     list("bullishness", "psi_po_share", "Partnership Opportunity share of Partnership Strength", function(p) share(p$partner$psi_weights, "opportunity"), TRUE),
     list("populism", "si_policy", "Strategic Index weight on policy activity", function(p) p$si$weights[["policy"]], TRUE),
     list("populism", "policy_iea_share", "IEA policy-record share of policy activity", function(p) pol_share(p, bi$policy_iea_var), FALSE),
-    list("populism", "stage_up_ratio", "Upstream / Midstream stage weight", function(p) stage_ratio(p, "Upstream"), TRUE),
-    list("populism", "stage_down_ratio", "Downstream / Midstream stage weight", function(p) stage_ratio(p, "Downstream"), FALSE),
+    list("populism", "stage_up_ratio", "Extraction, Refining, Recovery / Components, Assembly stage weight", function(p) stage_ratio(p, "Extraction"), TRUE),
+    list("populism", "stage_down_ratio", "Deployment / Components, Assembly stage weight", function(p) stage_ratio(p, "Deployment"), FALSE),
     list("greenness", "si_tech", "Strategic Index weight on low-emission technology", function(p) p$si$weights[["technology"]], TRUE),
     list("greenness", "policy_cat_share", "Climate Action Tracker share of policy activity", function(p) pol_share(p, bi$policy_cat_var), FALSE),
     list("greenness", "fs_penalty", "Friendshore climate penalty (per side)", function(p) p$partner$fs_penalty, TRUE),
@@ -320,9 +329,9 @@ dash_dial_readout <- function(params, bundle) {
     } else if (is.finite(ratio) && abs(ratio - 1) > 1e-9) {
       sprintf("%s %.3g (x%.2f vs %.3g)", r[[3]], cur, ratio, b)
     } else if (!is.finite(ratio) && is.finite(cur) && cur != b) {
-      sprintf("%s %.3g (paper: %.3g)", r[[3]], cur, b)
+      sprintf("%s %.3g (baseline: %.3g)", r[[3]], cur, b)
     } else {
-      sprintf("%s %.3g (paper)", r[[3]], cur)
+      sprintf("%s %.3g (baseline)", r[[3]], cur)
     }
     tibble::tibble(
       dial = r[[1]], parameter = r[[2]], label = r[[3]],
@@ -337,7 +346,7 @@ dash_presets <- function() {
   base <- dash_default_dials()
   set <- function(...) utils::modifyList(base, list(...))
   list(
-    "Paper baseline" = base,
+    "NEIS baseline" = base,
     "Hawk" = set(hawkishness = 90),
     "Bull" = set(bullishness = 90),
     "Populist" = set(populism = 90),

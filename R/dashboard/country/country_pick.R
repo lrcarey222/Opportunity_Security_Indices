@@ -7,11 +7,17 @@
 # strategic_index) or NULL.
 
 COUNTRY_PICK_EXCLUDED_TECHS <- c("Geothermal", "Green Hydrogen")
+# The stages an allied pick may take (2026-10-28): every stage but Deployment, the pipeline's
+# STRATEGIC_ALLIED_STAGES (R/indices/build_indices.R; select_allied_strategic_sectors()), which equals
+# SUPPLY_CHAIN_SUPPLY_STAGES of R/utils/supply_chain_stages.R (tests/testthat/test-country-rules.R checks
+# both). The endowment screen (resource_base, pick_exclusion "no resource base") falls on Extraction only.
+COUNTRY_PICK_STAGES <- c("Extraction", "Refining", "Components", "Assembly", "Recovery")
 
-# The pick's runner-up among the economy's eligible sectors: Upstream or Midstream, in the Strategic
-# Index sample, not geothermal or green hydrogen, not screened out (pick_exclusion NA).
+# The pick's runner-up among the economy's eligible sectors: a stage of COUNTRY_PICK_STAGES (any but
+# Deployment), in the Strategic Index sample, not geothermal or green hydrogen, not screened out
+# (pick_exclusion NA: an Extraction sector without a recorded resource base is never eligible).
 country_pick_runner_up <- function(si_rows, pick_key, cells = country_cells_tbl()) {
-  el <- si_rows[is.finite(si_rows$si) & si_rows$stage != "Downstream" & !si_rows$tech %in% COUNTRY_PICK_EXCLUDED_TECHS &
+  el <- si_rows[is.finite(si_rows$si) & si_rows$stage %in% COUNTRY_PICK_STAGES & !si_rows$tech %in% COUNTRY_PICK_EXCLUDED_TECHS &
                   is.na(si_rows$pick_exclusion), , drop = FALSE]
   el <- el[order(-el$si, match(el$key, cells$key)), , drop = FALSE]
   if (!nrow(el)) return(NULL)

@@ -47,6 +47,7 @@ export function parseBaselineInputs(raw: Record<string, unknown>): BaselineInput
     policy_cat_var: s1(r.policy_cat_var),
     excluded_sectors: sv(r.excluded_sectors),
     allied_excluded_techs: r.allied_excluded_techs === null || r.allied_excluded_techs === undefined ? null : sv(r.allied_excluded_techs),
+    allied_stages: r.allied_stages === null || r.allied_stages === undefined ? null : sv(r.allied_stages),
     require_resource_base: r.require_resource_base !== false,
     fossil_techs: sv(r.fossil_techs),
     psi_view: s1(r.psi_view) as 'coalition' | 'world',

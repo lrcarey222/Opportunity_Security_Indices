@@ -82,14 +82,30 @@ test_that("per-fact notes ship in facts.notes; their caveats stay on a measure o
   meta <- chunks$`sector-meta`
   vid <- meta$dict$vars$id
   it <- meta$dims$items
-  got <- paste(vid[nt$var + 1L], paste0(it$axis, ":", it$slug)[nt$item + 1L], meta$dims$geo$code[nt$geo + 1L], nt$note)
-  expect_setequal(got, c("production.fuels fuel:gas JPN eia_production", "consumption.balance fuel:gas JPN eia_production",
-                         "consumption.balance fuel:oil EST production_assumed_zero"))
+  ik <- paste0(it$axis, ":", it$slug)[nt$item + 1L]
+  got <- paste(vid[nt$var + 1L], ik, meta$dims$geo$code[nt$geo + 1L], nt$note)
+  base <- nt$note %in% c("eia_production", "production_assumed_zero")
+  expect_setequal(got[base], c("production.fuels fuel:gas JPN eia_production", "consumption.balance fuel:gas JPN eia_production",
+                               "consumption.balance fuel:oil EST production_assumed_zero"))
   expect_true(all(nt$note %in% meta$dict$caveats$id))
+  # A figure the source gives once for a technology's manufacturing ships on both Components and
+  # Assembly, each fact with the note same_figure_pair (user decision C2, 2026-10-28): the notes come
+  # in pairs, one per stage, and sit on those two stages only.
+  pair <- nt$note == "same_figure_pair"
+  expect_true(any(pair))
+  expect_true(all(grepl("-(components|assembly)$", ik[pair])))
+  key <- paste(vid[nt$var + 1L], sub("-(components|assembly)$", "", ik), nt$geo, nt$year)[pair]
+  expect_true(all(table(key) == 2L))
+  expect_setequal(unique(vid[nt$var + 1L][pair]), c("investment.annual", "manufacturing.share_now", "manufacturing.share_2035"))
+  # The critical-minerals capex split between Batteries and Electric Vehicles Refining.
+  split <- nt$note == "cim_minerals_split"
+  expect_setequal(unique(ik[split]), c("cell:batteries-refining", "cell:electric-vehicles-refining"))
   cv <- stats::setNames(meta$dict$vars$caveats, vid)
   expect_identical(cv[["consumption.balance"]], "production_assumed_zero|eia_production")
   expect_identical(cv[["production.fuels"]], "eia_production|ei_residual")
   expect_identical(cv[["consumption.self_sufficiency"]], "self_sufficiency_ref")
+  expect_identical(cv[["investment.annual"]], "cim_estimate|cim_ev_purchases|same_figure_pair|cim_minerals_split|cim_geothermal")
+  expect_identical(cv[["manufacturing.share_2035"]], "projection_pipeline|iea_etp_zero|same_figure_pair")
   # The R mirror of the contract: a note without its fact is an error; an unknown note id stops the build.
   m <- dash_osb_decode(dash_osb_encode(chunks$`sector-meta`, "m", "chunk"))$objects
   sizes <- list(geo = nrow(m$dims$geo), items = nrow(m$dims$items), vars = nrow(m$dict$vars))
@@ -139,13 +155,17 @@ test_that("the manifest carries the contract fields and never includes restricte
     expect_true(k %in% names(j), info = k)
   }
   expect_identical(j$schema, "osi-sector")
-  expect_identical(j$schema_version, 1L)
+  # Schema 2 (2026-10-28): six supply-chain stages.
+  expect_identical(j$schema_version, 2L)
   expect_null(j$git_commit)
   expect_false(j$flags$include_restricted)
   expect_false(j$encoding$lossy)
   expect_identical(j$chunks[[2]]$tech, "batteries")
   expect_null(j$chunks[[1]]$tech)
-  expect_identical(length(j$coverage_glyph), 33L)
+  # The 66 headline cells (11 technologies x 6 stages), technology-major in chain order.
+  expect_identical(length(j$coverage_glyph), 66L)
+  expect_identical(vapply(j$coverage_glyph, function(g) g$stage, ""), rep(SECTOR_STAGE_SLUGS, 11))
+  expect_identical(unique(vapply(j$coverage_glyph, function(g) g$tech, "")), SECTOR_HEADLINE_TECH_SLUGS)
   expect_null(j$validation[[1]]$detail)
   expect_identical(unlist(j$notes), "a note")
   expect_null(j$budget$combined_gz)
@@ -160,6 +180,65 @@ test_that("stale cleanup only ever touches sector chunk files", {
 })
 
 test_that("per-chunk budgets apply by chunk kind", {
-  ci <- tibble::tibble(name = c("sector-meta", "sector-trade-oil", "sector-facts"), bytes_gz = c(151 * 1024, 449 * 1024, 100))
+  # Schema 2 budgets (2026-10-28), set from the first real six-stage export as the measured size + ~15%
+  # where it left less than ~15% headroom (E4; mirrored in contract.ts): facts 670 kB (577.4 kB
+  # measured), each sector-trade chunk 520 kB (largest 451.3 kB measured, electric-grid), combined
+  # 26.5 MiB (Sector 5.67 + Strategic 17.18 = 22.84 MiB measured); meta keeps 150 kB (110.0 kB
+  # measured). Schema 1: meta 150 kB, facts 600 kB, trade 450 kB, combined 25 MiB.
+  expect_identical(SECTOR_BUDGET_GZ$`sector-meta`, 150 * 1024)
+  expect_identical(SECTOR_BUDGET_GZ$`sector-facts`, 670 * 1024)
+  expect_identical(SECTOR_BUDGET_GZ$`sector-trade`, 520 * 1024)
+  expect_identical(SECTOR_BUDGET_GZ$sector_total, 9 * 1024^2)
+  expect_identical(SECTOR_BUDGET_GZ$combined_total, 26.5 * 1024^2)
+  ci <- tibble::tibble(name = c("sector-meta", "sector-trade-oil", "sector-facts"), bytes_gz = c(151 * 1024, 519 * 1024, 100))
   expect_identical(sector_over_budget(ci), "sector-meta")
+  ci$bytes_gz <- c(149 * 1024, 521 * 1024, 671 * 1024)
+  expect_identical(sector_over_budget(ci), c("sector-trade-oil", "sector-facts"))
+})
+
+test_that("the six-stage contract rules: 66 headline cells, mineral x stage items, technology-level exclusions, CM-FDI stages", {
+  meta <- dash_osb_decode(dash_osb_encode(chunks$`sector-meta`, "m", "chunk"))$objects
+  sizes <- list(geo = nrow(meta$dims$geo), items = nrow(meta$dims$items), vars = nrow(meta$dict$vars))
+  it <- meta$dims$items
+  cells <- it[it$axis == "cell", , drop = FALSE]
+  expect_identical(cells$slug[cells$headline], sector_headline_cell_slugs())
+  expect_setequal(unique(cells$stage), SUPPLY_CHAIN_STAGES)
+  # The non-headline cells are the dictionary's Semiconductors stages.
+  expect_identical(cells$slug[!cells$headline], c("semiconductors-refining", "semiconductors-components", "semiconductors-assembly"))
+  ms <- it[it$axis == "mineral_stage", , drop = FALSE]
+  expect_identical(ms$slug, c("lithium-extraction", "lithium-refining", "graphite-refining", "graphite-recovery"))
+  expect_identical(ms$stage, c("Extraction", "Refining", "Refining", "Recovery"))
+  expect_true(all(is.na(it$stage[!it$axis %in% c("cell", "mineral_stage")])))
+  # Dropping a headline cell, a mineral_stage row without its mineral, a stage on another axis or an old
+  # stage label breaks the contract.
+  m2 <- meta
+  m2$dims$items$headline[m2$dims$items$slug == "geothermal-recovery"] <- FALSE
+  expect_match(paste(sector_check_chunk("sector-meta", m2), collapse = "\n"), "lacks headline cells")
+  m3 <- meta
+  m3$dims$items$slug[m3$dims$items$axis == "mineral_stage"][1] <- "cobalt-extraction"
+  expect_match(paste(sector_check_chunk("sector-meta", m3), collapse = "\n"), "mineral_stage rows need")
+  m4 <- meta
+  m4$dims$items$stage[m4$dims$items$axis == "fuel"][1] <- "Extraction"
+  expect_match(paste(sector_check_chunk("sector-meta", m4), collapse = "\n"), "only cell and mineral_stage rows carry a stage")
+  m5 <- meta
+  m5$dims$items$stage[m5$dims$items$slug == "oil-extraction"] <- "Upstream"
+  expect_match(paste(sector_check_chunk("sector-meta", m5), collapse = "\n"), "stage has values outside the vocabulary")
+  # trade.excluded: technology level, the chunk's own technology (excluded codes have no stage).
+  tr <- dash_osb_decode(dash_osb_encode(chunks$`sector-trade-batteries`, "t", "chunk"))$objects
+  expect_identical(names(tr$trade$excluded), c("tech", "sub_sector", "hs6", "reason"))
+  expect_identical(unique(tr$trade$excluded$tech), "Batteries")
+  bad <- tr
+  bad$trade$excluded$tech <- "Oil"
+  expect_match(paste(sector_check_chunk("sector-trade-batteries", bad, sizes), collapse = "\n"), "not the chunk's technology")
+  # fdi.stages: the configured stages; every row keyed on the first stage's cell.
+  fd <- dash_osb_decode(dash_osb_encode(chunks$`sector-fdi`, "f", "chunk"))$objects
+  expect_identical(fd$fdi$stages, c("Components", "Assembly"))
+  expect_true(all(endsWith(paste0(it$axis, ":", it$slug)[fd$fdi$projects$item + 1L], "-components")))
+  bad <- fd
+  bad$fdi$stages <- c("Components", "Midstream")
+  expect_match(paste(sector_check_chunk("sector-fdi", bad, sizes), collapse = "\n"), "fdi.stages must list distinct supply-chain stages")
+  # policy.pams stage_mask: six bits, one per stage in chain order (Recovery = bit 5).
+  pol <- chunks$`sector-policy`$policy$pams
+  expect_true(all(pol$stage_mask >= 0L & pol$stage_mask < bitwShiftL(1L, 6L)))
+  expect_true(any(bitwAnd(pol$stage_mask, bitwShiftL(1L, 5L)) != 0L))
 })

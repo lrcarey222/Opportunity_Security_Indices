@@ -1,15 +1,15 @@
 {
   "set": "synthetic/s2",
-  "bundle_id": "f25dba6d29fe5e1d586b556bafeb7d1c",
+  "bundle_id": "44edc713db2496814f31bdb4aedcd06a",
   "r_version": "R version 4.4.1 (2024-06-14 ucrt)",
   "platform": "x86_64-w64-mingw32",
   "long_double": true,
-  "created": "2026-10-21T20:53:18Z",
+  "created": "2026-10-29T19:28:38Z",
   "generator": "scripts/86_export_dashboard_fixtures.R",
   "scenarios": [
     {
       "id": "S00",
-      "label": "Paper baseline",
+      "label": "NEIS baseline",
       "exercises": "the baseline; also checked against the shipped baseline tables",
       "dials": {
         "hawkishness": 50,
@@ -29,9 +29,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998
+        "L1-L4": 0.040000000000000001
       },
-      "total_sec": 0.44
+      "total_sec": 0.28999999999999998
     },
     {
       "id": "S01",
@@ -57,7 +57,7 @@
       "elapsed_sec": {
         "L1-L4": 0.059999999999999998
       },
-      "total_sec": 0.48999999999999999
+      "total_sec": 0.31
     },
     {
       "id": "S02",
@@ -81,9 +81,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.070000000000000007
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.54000000000000004
+      "total_sec": 0.29999999999999999
     },
     {
       "id": "S03",
@@ -107,9 +107,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998
+        "L1-L4": 0.040000000000000001
       },
-      "total_sec": 0.40999999999999998
+      "total_sec": 0.28999999999999998
     },
     {
       "id": "S04",
@@ -133,9 +133,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.070000000000000007
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.40999999999999998
+      "total_sec": 0.28000000000000003
     },
     {
       "id": "S05",
@@ -161,7 +161,7 @@
       "elapsed_sec": {
         "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.38
+      "total_sec": 0.28000000000000003
     },
     {
       "id": "S06",
@@ -185,9 +185,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.070000000000000007
+        "L1-L4": 0.029999999999999999
       },
-      "total_sec": 0.40999999999999998
+      "total_sec": 0.26000000000000001
     },
     {
       "id": "S07",
@@ -211,9 +211,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.050000000000000003
+        "L1-L4": 0.040000000000000001
       },
-      "total_sec": 0.38
+      "total_sec": 0.28999999999999998
     },
     {
       "id": "S08",
@@ -237,9 +237,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.040000000000000001
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.37
+      "total_sec": 0.28000000000000003
     },
     {
       "id": "S09",
@@ -265,9 +265,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.059999999999999998
+        "L1-L4": 0.029999999999999999
       },
-      "total_sec": 0.37
+      "total_sec": 0.25
     },
     {
       "id": "S10",
@@ -293,9 +293,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.070000000000000007
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.35999999999999999
+      "total_sec": 0.37
     },
     {
       "id": "S11",
@@ -321,7 +321,7 @@
       "elapsed_sec": {
         "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.35999999999999999
+      "total_sec": 0.28000000000000003
     },
     {
       "id": "S12",
@@ -347,7 +347,7 @@
       "elapsed_sec": {
         "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.38
+      "total_sec": 0.31
     },
     {
       "id": "S13",
@@ -374,9 +374,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.029999999999999999
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.35999999999999999
+      "total_sec": 0.29999999999999999
     },
     {
       "id": "S14",
@@ -410,9 +410,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.050000000000000003
+        "L1-L4": 0.029999999999999999
       },
-      "total_sec": 0.34999999999999998
+      "total_sec": 0.28999999999999998
     },
     {
       "id": "S16",
@@ -436,14 +436,14 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.040000000000000001
+        "L1-L4": 0.050000000000000003
       },
-      "total_sec": 0.34999999999999998
+      "total_sec": 0.33000000000000002
     },
     {
       "id": "S17",
       "label": "Endowment screen off",
-      "exercises": "the allied picks with the endowment screen flipped (Upstream stages without a resource base picked or barred)",
+      "exercises": "the allied picks with the endowment screen flipped (Extraction stages without a resource base picked or barred)",
       "dials": {
         "hawkishness": 50,
         "bullishness": 50,
@@ -464,9 +464,9 @@
       },
       "refs": 0,
       "elapsed_sec": {
-        "L1-L4": 0.050000000000000003
+        "L1-L4": 0.040000000000000001
       },
-      "total_sec": 0.37
+      "total_sec": 0.31
     }
   ]
 }

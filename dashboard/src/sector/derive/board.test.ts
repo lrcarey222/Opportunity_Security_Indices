@@ -18,24 +18,39 @@ describe('concentration board on the TS fixture', () => {
     const order = BOARD_COLS.map((c) => c.key);
     const keys = b.cols.map((c) => c.key);
     expect(keys).toEqual(order.filter((k) => keys.includes(k)));
-    expect(keys).toContain('exports_mid');
+    expect(keys).toContain('exports_assembly');
     expect(keys).toContain('refining');
+    // six-stage columns: every column names one of the six stages, in chain order
+    const stageOrder = ['extraction', 'refining', 'components', 'assembly', 'deployment', 'recovery'];
+    const stages = BOARD_COLS.map((c) => stageOrder.indexOf(c.stage));
+    expect(stages.every((x) => x >= 0)).toBe(true);
+    expect(stages).toEqual([...stages].sort((a, z) => a - z));
+    expect(BOARD_COLS.map((c) => c.label).join(' ')).not.toMatch(/upstream|midstream|downstream|\bup\b|\bmid\b|\bdown\b/i);
   });
 
-  it('technology tiles: Batteries exports mid on the cell; Oil mining on fuel:oil; minerals as sub-rows', () => {
+  it('technology tiles: Batteries Assembly exports on the cell; Oil mining on fuel:oil; minerals as sub-rows', () => {
     const b = concentrationBoard(model, 'members');
-    expect(boardTile(b, 'batteries', 'exports_mid')?.v.id).toBe('trade.exports');
+    expect(boardTile(b, 'batteries', 'exports_assembly')?.v.id).toBe('trade.exports');
+    expect(boardTile(b, 'batteries', 'exports_assembly')?.path).toBe('/sector/batteries/assembly');
+    expect(boardTile(b, 'batteries', 'exports_extraction')?.path).toBe('/sector/batteries/extraction');
+    // the manufacturing capex both manufacturing stages carry: one column, on Assembly
+    expect(boardTile(b, 'batteries', 'investment_manufacturing')?.path).toBe('/sector/batteries/assembly');
     const oil = boardTile(b, 'oil', 'mining');
     expect(oil?.v.id).toBe('production.fuels');
     expect(oil?.item.slug).toBe('oil');
-    expect(oil?.path).toBe('/sector/oil/upstream');
+    expect(oil?.path).toBe('/sector/oil/extraction');
     const bat = b.rows.find((r) => r.key === 'batteries')!;
     expect(bat.children.map((c) => c.mineral?.slug)).toEqual(['graphite', 'lithium']);
     const ref = boardTile(b, 'batteries:lithium', 'refining')!;
     expect(ref.s.year).toBe(2025);
     expect(ref.path).toBe('/sector/minerals/lithium');
     expect(ref.hash).toBe('mining-refining');
-    expect(boardTile(b, 'geothermal', 'exports_mid')).toBeNull();
+    // the critical-minerals trade sits on the mineral's stage items: lithium ores at Extraction, refined lithium at Refining
+    expect(boardTile(b, 'batteries:lithium', 'exports_extraction')?.item.slug).toBe('lithium-extraction');
+    expect(boardTile(b, 'batteries:lithium', 'exports_refining')?.item.slug).toBe('lithium-refining');
+    expect(boardTile(b, 'batteries:lithium', 'exports_refining')?.path).toBe('/sector/minerals/lithium');
+    expect(boardTile(b, 'batteries:lithium', 'exports_recovery')).toBeNull();
+    expect(boardTile(b, 'geothermal', 'exports_assembly')).toBeNull();
   });
 
   it('minerals of a technology: heaviest link first, no duplicates', () => {
@@ -46,7 +61,8 @@ describe('concentration board on the TS fixture', () => {
   it('family split: stage panels, sorted by the lens, minerals in their own panel', () => {
     const rows = familySplit(model, 'primary', 'china', 'members');
     const sections = [...new Set(rows.map((r) => r.section))];
-    expect(sections).toEqual(['upstream', 'midstream', 'downstream', 'minerals'].filter((s) => sections.includes(s)));
+    expect(sections).toEqual(['extraction', 'refining', 'components', 'assembly', 'deployment', 'recovery', 'minerals'].filter((s) => sections.includes(s)));
+    expect(sections).toContain('assembly');
     for (const s of sections) {
       const xs = rows.filter((r) => r.section === s).map((r) => r.lens).filter(Number.isFinite);
       expect(xs).toEqual([...xs].sort((a, z) => z - a));

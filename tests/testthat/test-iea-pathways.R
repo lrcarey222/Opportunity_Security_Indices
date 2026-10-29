@@ -25,9 +25,9 @@ toy_map <- function() {
       list(id = "co2_intensity", group = "emissions", category = "CO2 total intensity", product = "Electricity", flow = "Electricity generation", label = "CO2 intensity of electricity")
     ),
     cells = list(
-      `solar-downstream` = list(series = list(list(id = "cap_solar", role = "own", match = "direct"), list(id = "co2_intensity", role = "context")), note = "a"),
-      `solar-upstream` = list(series = list(list(id = "cap_solar", role = "demand", match = "proxy")), minerals = list("Solar PV"), note = "b"),
-      `semiconductors-upstream` = list(series = list(), note = "c")
+      `solar-deployment` = list(series = list(list(id = "cap_solar", role = "own", match = "direct"), list(id = "co2_intensity", role = "context")), note = "a"),
+      `solar-extraction` = list(series = list(list(id = "cap_solar", role = "demand", match = "proxy")), minerals = list("Solar PV"), note = "b"),
+      `semiconductors-refining` = list(series = list(), note = "c")
     ),
     world_context = "co2_intensity"
   )
@@ -67,6 +67,11 @@ toy_critical <- function() {
 
 test_that("the real map covers every cell and passes its validation", {
   expect_identical(iea_pathways_map_validate(real_map, dict_cells), character())
+  # Keyed on the six-stage cells; mineral demand on the clean-technology Extraction and Refining cells only.
+  expect_setequal(names(real_map$cells), dict_cells)
+  with_minerals <- names(Filter(function(e) length(unlist(e$minerals)) > 0, real_map$cells))
+  expect_true(all(grepl("-(extraction|refining)$", with_minerals)))
+  expect_true(all(c("batteries-extraction", "batteries-refining", "solar-refining", "wind-extraction") %in% with_minerals))
   ids <- vapply(real_map$series, function(s) s$id, character(1))
   expect_true(real_map$world_context %in% ids)
   # Every own / demand row has a match; context rows none; the WEO rows are distinct.
@@ -77,10 +82,10 @@ test_that("the real map covers every cell and passes its validation", {
 
 test_that("map validation names unknown series, bad roles, context matches and missing cells", {
   mp <- toy_map()
-  expect_match(iea_pathways_map_validate(mp, c("solar-downstream", "solar-upstream", "semiconductors-upstream", "wind-downstream")), "cells missing from the map: wind-downstream", all = FALSE)
-  mp$cells$`solar-downstream`$series[[2]]$match <- "direct"
-  mp$cells$`solar-upstream`$series[[1]]$id <- "nope"
-  mp$cells$`solar-upstream`$minerals <- list("Nuclear reactors")
+  expect_match(iea_pathways_map_validate(mp, c("solar-deployment", "solar-extraction", "semiconductors-refining", "wind-deployment")), "cells missing from the map: wind-deployment", all = FALSE)
+  mp$cells$`solar-deployment`$series[[2]]$match <- "direct"
+  mp$cells$`solar-extraction`$series[[1]]$id <- "nope"
+  mp$cells$`solar-extraction`$minerals <- list("Nuclear reactors")
   p <- iea_pathways_map_validate(mp, names(mp$cells), mineral_techs = c("Solar PV", "Wind"))
   expect_match(p, "a context series has no match quality", all = FALSE)
   expect_match(p, "unknown series", all = FALSE)
@@ -159,7 +164,7 @@ climate_part_min <- function(items) {
 
 test_that("sector-climate with the nze tables: chunk, contract checks and decoded parity", {
   p <- nze_processed()
-  items <- c("cell:solar-downstream", "cell:solar-upstream", "cell:semiconductors-upstream")
+  items <- c("cell:solar-deployment", "cell:solar-extraction", "cell:semiconductors-refining")
   cl <- climate_part_min(items)
   cl$nze <- sector_nze_part(p)
   ii <- function(x) as.integer(match(x, items) - 1L)

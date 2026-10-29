@@ -172,12 +172,13 @@ sector_summary_empty <- function() {
 }
 
 # Which measures each cell shows (dict.cells.section_cards): every measure with item axis cell that
-# has data for the cell, plus measures on other axes whose link_stage matches the cell's stage (or
-# is "any") and that have data for an item linked to the cell. Ordered by the dictionary.
-# Returns tibble(cell, var) .
+# has data for the cell, plus measures on other axes whose link_stage names the cell's stage (one or
+# more stages, pipe-joined, or "any") and that have data for an item linked to the cell. Ordered by
+# the dictionary. Returns tibble(cell, var).
 sector_cell_vars <- function(cells, vars, data_keys, item_links) {
   # data_keys: distinct (var, item_key) with data in any chunk; item_links: (item_key, cell)
   out <- list()
+  link_stages <- lapply(vars$link_stage, function(ls) if (is.na(ls)) character() else strsplit(ls, "|", fixed = TRUE)[[1]])
   for (i in seq_len(nrow(cells))) {
     cs <- cells$slug[i]
     stage <- cells$stage[i]
@@ -186,12 +187,10 @@ sector_cell_vars <- function(cells, vars, data_keys, item_links) {
       v <- vars$id[j]
       ax <- vars$item_axis[j]
       have <- data_keys$item_key[data_keys$var == v]
+      ls <- link_stages[[j]]
       hit <- if (ax == "cell") paste0("cell:", cs) %in% have
-             else if (ax == "none") !is.na(vars$link_stage[j]) && length(have) > 0
-             else {
-               ls <- vars$link_stage[j]
-               !is.na(ls) && (ls == "any" || ls == stage) && any(linked %in% have)
-             }
+             else if (ax == "none") length(ls) > 0 && length(have) > 0
+             else length(ls) > 0 && ("any" %in% ls || stage %in% ls) && any(linked %in% have)
       if (isTRUE(hit)) out[[length(out) + 1]] <- tibble::tibble(cell = cs, var = v)
     }
   }
@@ -199,14 +198,22 @@ sector_cell_vars <- function(cells, vars, data_keys, item_links) {
   dplyr::bind_rows(out)
 }
 
-# meta.coverage: one row per (item, family) for the cells and minerals. status: country (country
-# rows), region (region / entity / eu rows only), global (world rows only), licensed, none.
-# data: (var, item_key, geo_kind, geo) with data; licensed: (item_key, family, sources) of
-# restricted measures not built. Returns tibble(item_key, family, status, n_geo, reason, sources).
+# Stages where a cell can have no reserves (the reserves family holds mineral and fuel reserves at
+# Extraction and the site resource of solar, wind and geothermal at Deployment): coverage reason
+# not_applicable instead of no_source.
+SECTOR_NO_RESERVES_STAGES <- c("Refining", "Components", "Assembly", "Recovery")
+
+# meta.coverage: one row per (item, family) for the cells and minerals (a mineral's data include
+# those of its mineral_stage items: its trade at each stage). status: country (country rows), region
+# (region / entity / eu rows only), global (world rows only), licensed, none. data: (var, item_key,
+# geo_kind, geo) with data; licensed: (item_key, family, sources) of restricted measures not built.
+# Returns tibble(item_key, family, status, n_geo, reason, sources).
 sector_coverage <- function(items, vars, cell_vars, data, item_links, sources, licensed = NULL) {
   fams <- setdiff(SECTOR_FAMILIES, "development")
   rows <- list()
   src_short <- stats::setNames(sources$short, sources$id)
+  ms <- items[items$axis == "mineral_stage", , drop = FALSE]
+  ms_base <- substr(ms$slug, 1, nchar(ms$slug) - nchar(ms$stage) - 1L)
   for (i in seq_len(nrow(items))) {
     if (!items$axis[i] %in% c("cell", "mineral")) next
     ik <- items$item_key[i]
@@ -214,15 +221,16 @@ sector_coverage <- function(items, vars, cell_vars, data, item_links, sources, l
       vs <- cell_vars$var[cell_vars$cell == items$slug[i]]
       keys <- c(ik, item_links$item_key[item_links$cell == items$slug[i]])
     } else {
-      vs <- vars$id[vars$item_axis == "mineral"]
-      keys <- ik
+      vs <- vars$id[vars$item_axis %in% c("mineral", "mineral_stage")]
+      keys <- c(ik, sector_item_key("mineral_stage", ms$slug[ms_base == items$slug[i]]))
     }
     for (fam in fams) {
       fv <- vs[vars$family[match(vs, vars$id)] == fam]
       d <- data[data$var %in% fv & data$item_key %in% keys, , drop = FALSE]
-      # mineral_level: the cell's data in this family exist only per linked mineral (clean-tech
-      # Upstream); data through other links (fuels, commodities, policy tags) are the cell's own.
-      mineral_level <- items$axis[i] == "cell" && nrow(d) > 0 && all(startsWith(d$item_key, "mineral:"))
+      # mineral_level: the cell's data in this family exist only per linked mineral (the clean-tech
+      # Extraction, Refining and Recovery cells); data through other links (fuels, commodities,
+      # policy tags) are the cell's own.
+      mineral_level <- items$axis[i] == "cell" && nrow(d) > 0 && all(startsWith(d$item_key, "mineral:") | startsWith(d$item_key, "mineral_stage:"))
       lic <- if (!is.null(licensed)) licensed[licensed$item_key == ik & licensed$family == fam, , drop = FALSE] else NULL
       if (any(d$geo_kind == "country")) {
         status <- "country"
@@ -242,7 +250,7 @@ sector_coverage <- function(items, vars, cell_vars, data, item_links, sources, l
       }
       reason <- if (status == "none") {
         if (fam == "exports" && items$axis[i] == "cell") "no_basket"
-        else if (fam == "reserves" && items$axis[i] == "cell" && items$stage[i] %in% "Midstream") "not_applicable"
+        else if (fam == "reserves" && items$axis[i] == "cell" && items$stage[i] %in% SECTOR_NO_RESERVES_STAGES) "not_applicable"
         else "no_source"
       } else if (status == "licensed") "licensed"
       else if (mineral_level) "mineral_level"
@@ -279,13 +287,14 @@ sector_avail <- function(data) {
   }))
 }
 
-# The 33 headline cells' glyph: country_data = at least one lens family (SECTOR_LENS_FAMILIES) with
-# country data. Policy and context are country-level for every cell and do not count (spec 3.3).
+# The 66 headline cells' glyph (11 technologies x 6 stages, technology-major in chain order):
+# country_data = at least one lens family (SECTOR_LENS_FAMILIES) with country data. Policy and
+# context are country-level for every cell and do not count (spec 3.3). tech / stage: the slugs.
 sector_coverage_glyph <- function(items, coverage) {
   cells <- items[items$axis == "cell" & items$headline, , drop = FALSE]
   lapply(seq_len(nrow(cells)), function(i) {
     cov <- coverage[coverage$item_key == cells$item_key[i] & coverage$family %in% SECTOR_LENS_FAMILIES, , drop = FALSE]
-    list(tech = sub(paste0("-", tolower(cells$stage[i]), "$"), "", cells$slug[i]), stage = tolower(cells$stage[i]),
+    list(tech = names(SECTOR_TECH_LABELS)[match(cells$tech[i], SECTOR_TECH_LABELS)], stage = tolower(cells$stage[i]),
          country_data = any(cov$status == "country"))
   })
 }
@@ -312,8 +321,9 @@ sector_item_text <- function(items, item_key, context = NULL) {
 # HEADLINE_RULES: exactly these values / labels keys). summary: sector_summary() rows with item_key,
 # var and top1_geo as a dims.geo row number (1-based); facts: long facts; geo: dims.geo; items:
 # dims.items (+ text); vars: dictionary vars; pams: policy.pams (geo codes); src: named source
-# strings by rule.
-sector_headlines <- function(summary, facts, geo, items, vars, pams = NULL, src = list()) {
+# strings by rule; notes: the per-fact notes (facts.notes rows; NULL = none), which mark the figures
+# shown on both manufacturing stages.
+sector_headlines <- function(summary, facts, geo, items, vars, pams = NULL, src = list(), notes = NULL) {
   out <- list()
   slug_of <- function(item_key) sub("^[a-z_]+:", "", item_key)
   geo_name <- function(code) geo$name[match(code, geo$code)]
@@ -341,7 +351,9 @@ sector_headlines <- function(summary, facts, geo, items, vars, pams = NULL, src 
       source = src$supply, year = "2025", href = paste0("/sector/minerals/", slug_of(s$item_key[j])))
   }
 
-  # concentration@1: cell items, latest year, each cell's primary var per family with country data.
+  # concentration@1: cell items, latest year, each cell's primary var per family with country data. A
+  # figure the source gives once for Components and Assembly (note same_figure_pair) is one measure:
+  # its Assembly copy is not counted again (sector_pair_copy_slices()).
   cells <- items[items$axis == "cell", , drop = FALSE]
   ck <- sector_item_key("cell", cells$slug)
   s <- latest(sm[sm$item_key %in% ck, , drop = FALSE])
@@ -352,6 +364,8 @@ sector_headlines <- function(summary, facts, geo, items, vars, pams = NULL, src 
     s$ord <- match(s$var, vars$id)
     s <- s[order(s$item_key, s$family, s$ord), , drop = FALSE]
     s <- s[!duplicated(s[c("item_key", "family")]), , drop = FALSE]
+    copies <- sector_pair_copy_slices(facts[facts$var %in% s$var & facts$item_key %in% s$item_key, , drop = FALSE], notes)
+    s <- s[!paste(s$var, s$item_key, s$year, sep = "\r") %in% copies, , drop = FALSE]
     if (nrow(s)) {
       out[[length(out) + 1]] <- hl("concentration",
         values = list(n = sum(s$top1_share >= 0.5, na.rm = TRUE), n_total = nrow(s)), labels = structure(list(), names = character()),
@@ -359,21 +373,24 @@ sector_headlines <- function(summary, facts, geo, items, vars, pams = NULL, src 
     }
   }
 
-  # dependence@1: the headline Midstream trade cell with the largest 2024 W; China's share.
-  mid <- cells$slug[cells$stage == "Midstream" & cells$headline]
+  # dependence@1: the headline manufacturing trade cell (Components or Assembly) with the largest 2024
+  # W; China's share.
+  mid <- cells$slug[cells$stage %in% SUPPLY_CHAIN_MANUFACTURING_STAGES & cells$headline]
   s <- sm[sm$var == "trade.exports" & sm$year == 2024 & sm$item_key %in% sector_item_key("cell", mid), , drop = FALSE]
   if (nrow(s)) {
     j <- order(-s$W, s$item_key)[1]
     cs <- slug_of(s$item_key[j])
     ci <- match(cs, cells$slug)
+    tech_slug <- names(SECTOR_TECH_LABELS)[match(cells$tech[ci], SECTOR_TECH_LABELS)]
     out[[length(out) + 1]] <- hl("dependence",
       values = list(share = s$china[j], total_usd = s$W[j]),
       labels = list(cell = cs, cell_label = paste0(cells$tech[ci], " — ", cells$stage[ci])),
-      source = src$dependence, year = "2024", href = paste0("/sector/", sub("-midstream$", "", cs), "/midstream#trade"))
+      source = src$dependence, year = "2024", href = paste0("/sector/", tech_slug, "/", tolower(cells$stage[ci]), "#trade"))
   }
 
-  # investment@1: investment.annual 2025 over every cell and economy.
-  f <- facts[facts$var == "investment.annual" & facts$year == 2025, , drop = FALSE]
+  # investment@1: investment.annual 2025 over every cell and economy, a figure the source gives once
+  # for Components and Assembly counted once (sector_count_once()).
+  f <- sector_count_once(facts[facts$var == "investment.annual" & facts$year == 2025, , drop = FALSE], notes)
   f <- f[geo$kind[match(f$geo, geo$code)] == "country" & is.finite(f$value), , drop = FALSE]
   if (nrow(f) && sum(f$value) > 0) {
     grp <- geo$group[match(f$geo, geo$code)]

@@ -104,14 +104,14 @@ export function InvestmentFlowsCard({ doc, meta, shockLabel, filter, scope, name
   const tx = taxonomyOf(meta);
   const techStage = (nid: string) => {
     const n = nodeOf.get(nid);
-    return n ? nodeWhere(tx, n) : '';
+    return n ? nodeWhere(n) : '';
   };
   const cols: Col<AibInvestmentPair>[] = [
     { id: 'investor', header: 'Investor', value: (p) => nm(p.investor), title: 'The economy whose lost supply the new capacity replaces' },
     { id: 'host', header: 'Host', value: (p) => nm(p.host) },
-    { id: 'node', header: 'Sub-sector', value: (p) => nodeLabel(p.node), minWidth: 160 },
-    { id: 'ts', header: `${tx.One} and stage`, value: (p) => techStage(p.node) },
-    { id: 'rank', header: 'Host rank', value: (p) => p.rank, num: true, title: '1 = the best-ranked host of the sub-sector; higher ranks are alternatives' },
+    { id: 'node', header: 'Node', value: (p) => nodeLabel(p.node), minWidth: 160 },
+    { id: 'ts', header: `${tx.Many} and stage`, value: (p) => techStage(p.node) },
+    { id: 'rank', header: 'Host rank', value: (p) => p.rank, num: true, title: '1 = the best-ranked host of the node; higher ranks are alternatives' },
     { id: 'usd', header: 'Supply from new capacity', value: (p) => p.usd, cell: (p) => fmtUsd(p.usd), num: true },
     { id: 'share', header: 'Share of node demand', value: (p) => p.share, cell: (p) => fmtShare(p.share), num: true },
     { id: 'lost', header: 'Investor’s lost share', value: (p) => p.lostShare, cell: (p) => fmtShare(p.lostShare), num: true },

@@ -13,6 +13,7 @@ import { rowsToCsv } from '../../../lib/csv.ts';
 import type { FdiBasis } from '../../contract.ts';
 import type { GeoInfo, ItemInfo, SectorModel } from '../../data/model.ts';
 import {
+  fdiItemOf,
   cmfdiSource, coalitionShare, countryProjects, FDI_GROUP_ORDER, FDI_GROUP_WORDS, fdiByGeo, fdiGroupSplit, fdiTotals, filterProjects, fmtUsdM, geoMembers, geoRank, NOT_DISCLOSED, projectsWord, rankWords, splitShares,
   type FdiData, type FdiGroupSplit, type FdiProject,
 } from '../../derive/fdi.ts';
@@ -123,7 +124,7 @@ function Body({ data, p }: { data: FdiData; p: Props }) {
   const { model, cell, g } = p;
   const [basis, setBasis] = useState<FdiBasis>('all');
   const members = useMemo(() => geoMembers(model, g), [model, g]);
-  const cellAll = useMemo(() => filterProjects(data.projects, { items: [cell.idx] }), [data, cell]);
+  const cellAll = useMemo(() => filterProjects(data.projects, { items: [fdiItemOf(model, data, cell)] }), [model, data, cell]);
   const scoped = useMemo(() => filterProjects(cellAll, { basis }), [cellAll, basis]);
   const { inbound, outbound } = useMemo(() => countryProjects(scoped, members), [scoped, members]);
   const both = useMemo(() => {
@@ -191,7 +192,7 @@ function Body({ data, p }: { data: FdiData; p: Props }) {
   );
 }
 
-/** The CM-FDI section of an economy's page in a covered Midstream cell. */
+/** The CM-FDI section of an economy's page in a covered Components or Assembly cell. */
 export function FdiCountry(p: Props) {
   const { fdi, h, has } = useFdi(true);
   if (!has) return <p className="text-sm text-paper-mute">The cross-border project data (CM-FDI) is not part of this data build.</p>;

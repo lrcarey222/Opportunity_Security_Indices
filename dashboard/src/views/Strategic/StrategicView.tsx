@@ -1,9 +1,11 @@
 // View 4: Strategic Index (spec_react.md 8.6; paper section 8). A bar-table of the economy's top ten
-// in-sample sectors with the five weighted terms on one shared scale and the paper's values as
+// in-sample sectors with the five weighted terms on one shared scale and the NEIS baseline values as
 // ticks; the weights in use; the allied strategic selection; the excluded sectors. The economy's
 // policy basis (IEA PAMS + CAT, or IEA PAMS only) and the endowment screen of the allied picks
-// (upstream sectors without recorded reserves or production are flagged and never picked while the
+// (Extraction sectors without recorded reserves or production are flagged and never picked while the
 // screen is on) are shown with the index, because the need reading 1 - ES rates such sectors high.
+// Six stages (2026-10-29): picks at every stage but Deployment (baseline_inputs.allied_stages); a
+// sector's stage is named in text, never a colour series (design S4).
 
 import { useMemo } from 'react';
 import { useParams } from 'react-router';
@@ -17,15 +19,16 @@ import { rowsToCsv } from '../../lib/csv.ts';
 import { DASH, fmtNum, fmtSigned, tierLabel } from '../../lib/format.ts';
 import { useApp, useCore, useScenario } from '../../state/EngineProvider.tsx';
 import { useGoto } from '../../state/nav.ts';
-import { COMPARE_COLOR, STAGE_COLOR } from '../../theme/palette.ts';
-import { CountryInsightsLink, useViewTitle, noteText, numOr, policyBasisShort, policyBasisText, policyComponentName, resourceBaseText, rowsOf, strOr, useCountryOptions, type Row } from '../common.tsx';
+import { stageLabel } from '../../lib/stages.ts';
+import { COMPARE_COLOR } from '../../theme/palette.ts';
+import { alliedStagesWords, CountryInsightsLink, useViewTitle, noteText, numOr, policyBasisShort, policyBasisText, policyComponentName, resourceBaseText, rowsOf, strOr, useCountryOptions, type Row } from '../common.tsx';
 
 // The five parts of the Strategic Index (spec_country.md C3.5 facet labels), each already weighted
 const TERMS: { key: string; label: string; title: string }[] = [
   { key: 'contrib_es_need', label: 'Security need', title: 'Security need (1 minus Energy Security: how exposed the economy is in the sector), times its weight' },
   { key: 'contrib_eo', label: 'Economic Opportunity', title: 'Economic Opportunity (how well placed the economy is to create value in the sector), times its weight' },
   { key: 'contrib_policy', label: 'Policy activity', title: "Policy activity, ranked among the economy's own sectors (more policy ranks higher), times its weight" },
-  { key: 'contrib_sc', label: 'Stage', title: 'The supply-chain stage weight (midstream highest in the paper), times its weight' },
+  { key: 'contrib_sc', label: 'Stage', title: 'The supply-chain stage weight (highest for the manufacturing stages, Components and Assembly, at the baseline), times its weight' },
   { key: 'contrib_ghg', label: 'Technology (low-emission)', title: "The technology's low-emission value, times its weight" },
 ];
 
@@ -46,7 +49,7 @@ interface SiBarRow {
   si: number | null;
   si_base: number | null;
   terms: { key: string; v: number | null; base: number | null }[];
-  /** endowment screen: false = an upstream sector without recorded reserves or production (never an allied pick while the screen is on) */
+  /** endowment screen: false = an Extraction sector without recorded reserves or production (never an allied pick while the screen is on) */
   resource_base: boolean | null;
   resource_evidence: string | null;
 }
@@ -105,7 +108,8 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
     };
   }, [core.data, iso, c.country]);
   const screenOn = core.data ? core.data.params.si.require_resource_base !== false : true;
-  const screenPaper = app.urlCtx.defaults.require_resource_base;
+  const screenBase = app.urlCtx.defaults.require_resource_base;
+  const pickWhere = alliedStagesWords(app.bundleLike.baselineInputs.allied_stages, app.stages) ?? 'its eligible stages';
   const nScreenedOut = rows.filter((r) => r.resource_base === false).length;
 
   const maxTerm = Math.max(0.05, ...rows.flatMap((r) => r.terms.flatMap((t) => [t.v ?? 0, t.base ?? 0])));
@@ -114,7 +118,7 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
   const weights = useMemo(() => {
     if (!core.data) return { si: [], stage: [], policy: [] };
     const mk = (cur: Record<string, number>, base: Record<string, number>, label?: Record<string, string>) =>
-      Object.keys(base).map((k) => ({ name: label?.[k] ?? k, scenario: cur[k] ?? null, paper: base[k] ?? null }));
+      Object.keys(base).map((k) => ({ name: label?.[k] ?? stageLabel(k), scenario: cur[k] ?? null, baseline: base[k] ?? null }));
     return {
       si: mk(core.data.si.weights, app.baseline.si.weights, WEIGHT_LABEL),
       stage: mk(core.data.si.stage_weights, app.baseline.si.stage_weights),
@@ -136,13 +140,13 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
     });
   }, [core.data]);
 
-  const weightCols: Col<{ name: string; scenario: number | null; paper: number | null }>[] = [
+  const weightCols: Col<{ name: string; scenario: number | null; baseline: number | null }>[] = [
     { id: 'name', header: 'Weight', value: (r) => r.name, minWidth: 170 },
     { id: 'scenario', header: 'Scenario', value: (r) => r.scenario, cell: (r) => fmtNum(r.scenario, 3), num: true },
-    { id: 'paper', header: 'Paper', value: (r) => r.paper, cell: (r) => fmtNum(r.paper, 3), num: true },
+    { id: 'baseline', header: 'Baseline', value: (r) => r.baseline, cell: (r) => fmtNum(r.baseline, 3), num: true },
     {
-      id: 'chg', header: 'Change', value: (r) => (r.scenario !== null && r.paper !== null ? r.scenario - r.paper : null),
-      cell: (r) => (r.scenario !== null && r.paper !== null && Math.abs(r.scenario - r.paper) > 1e-12 ? fmtSigned(r.scenario - r.paper, 3) : 'paper'), num: true,
+      id: 'chg', header: 'Change', value: (r) => (r.scenario !== null && r.baseline !== null ? r.scenario - r.baseline : null),
+      cell: (r) => (r.scenario !== null && r.baseline !== null && Math.abs(r.scenario - r.baseline) > 1e-12 ? fmtSigned(r.scenario - r.baseline, 3) : 'no change'), num: true,
     },
   ];
   const alliedCols: Col<Row>[] = [
@@ -150,7 +154,7 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
     { id: 'tier', header: 'Tier', value: (r) => tierLabel(r.tier) },
     { id: 'sector', header: 'Scenario top sector', value: (r) => strOr(r.sector), minWidth: 170 },
     { id: 'si', header: 'Strategic Index', value: (r) => numOr(r.strategic_index), cell: (r) => fmtNum(r.strategic_index, 3), num: true },
-    { id: 'sector_base', header: 'Paper top sector', value: (r) => strOr(r.sector_base), minWidth: 170 },
+    { id: 'sector_base', header: 'Baseline top sector', value: (r) => strOr(r.sector_base), minWidth: 170 },
     { id: 'changed', header: 'Changed', value: (r) => (r.changed === true ? 'changed' : ''), cell: (r) => (r.changed === true ? <ChangedDot /> : '') },
     { id: 'policy_basis', header: 'Policy basis', value: (r) => policyBasisShort(strOr(r.policy_basis)), cell: (r) => policyBasisShort(strOr(r.policy_basis)) ?? DASH, minWidth: 170 },
     {
@@ -171,8 +175,8 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
           <>
             The <Term id="si" /> ranks one economy&rsquo;s own sectors by how strongly the data point to prioritising them. It adds five things: economic
             opportunity (30%), <Term id="need">security need</Term>, meaning how exposed the economy is (30%), how active its policy already is (20%), the
-            supply-chain stage (10%) and the technology&rsquo;s low-emission value (10%). Those are the paper&rsquo;s weights; the dials move them. Ranks compare
-            sectors within an economy, not economies with each other. Because exposure counts in a sector&rsquo;s favour, an upstream sector where the economy has no
+            supply-chain stage (10%) and the technology&rsquo;s low-emission value (10%). Those are the NEIS baseline weights; the dials move them. Ranks compare
+            sectors within an economy, not economies with each other. Because exposure counts in a sector&rsquo;s favour, an extraction sector where the economy has no
             recorded reserves or production can rank high; it is flagged and is never the economy&rsquo;s <Term id="allied_pick">allied pick</Term>.
           </>
         }
@@ -198,15 +202,14 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
           {core.data.notes.length > 0 && <Notice kind="info">{core.data.notes.map(noteText).join(' ')}</Notice>}
           <ChartCard
             title={`${c.country}: top ten sectors`}
-            sub={`${show === 'baseline' ? 'Paper baseline.' : 'Scenario.'} Each row is one of the economy's ten highest-ranked sectors. The five bars show how much each part adds to the sector's Strategic Index, all on one scale: a longer bar adds more${isBaseline ? '' : " (gray tick = the paper's value)"}. The Strategic Index column is their total; the rank chip compares the sector's rank with the paper's. Hover a column name for what it measures.${nScreenedOut ? ` "No resource base" marks an upstream sector without recorded reserves or production: it ranks here, but the endowment screen keeps it out of the allied selection${screenOn ? '' : ' (screen off in this scenario)'}.` : ''}`}
+            sub={`${show === 'baseline' ? 'NEIS baseline.' : 'Scenario.'} Each row is one of the economy's ten highest-ranked sectors, its supply-chain stage named after the technology. The five bars show how much each part adds to the sector's Strategic Index, all on one scale: a longer bar adds more${isBaseline ? '' : ' (gray tick = the NEIS baseline value)'}. The Strategic Index column is their total; the rank chip compares the sector's rank with its rank at the NEIS baseline. Hover a column name for what it measures.${nScreenedOut ? ` "No resource base" marks an extraction sector without recorded reserves or production: it ranks here, but the endowment screen keeps it out of the allied selection${screenOn ? '' : ' (screen off in this scenario)'}.` : ''}`}
             updating={updating}
             summary={`Bar-table of ${rows.length} sectors with the five parts of the Strategic Index each${nScreenedOut ? `; ${nScreenedOut} without a recorded resource base` : ''}.`}
             legend={
               <Legend
                 items={[
                   { label: 'Scenario term', color: COMPARE_COLOR.scenario },
-                  { label: "Paper's value (tick)", kind: 'tick', color: COMPARE_COLOR.baseline },
-                  ...['Upstream', 'Midstream', 'Downstream'].map((s) => ({ label: `${s} sector`, kind: 'dot' as const, color: STAGE_COLOR[s] })),
+                  { label: 'NEIS baseline (tick)', kind: 'tick', color: COMPARE_COLOR.baseline },
                 ]}
               />
             }
@@ -220,7 +223,7 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
                   { id: 'sector', header: 'Sector', value: (r) => r.sector, minWidth: 170 },
                   ...TERMS.map((t, i) => ({ id: t.key, header: t.label, title: t.title, value: (r: SiBarRow) => r.terms[i].v, cell: (r: SiBarRow) => fmtNum(r.terms[i].v, 3), num: true })),
                   { id: 'si', header: 'Strategic Index', value: (r) => r.si, cell: (r) => fmtNum(r.si, 3), num: true },
-                  { id: 'si_base', header: 'Strategic Index, paper', value: (r) => r.si_base, cell: (r) => fmtNum(r.si_base, 3), num: true },
+                  { id: 'si_base', header: 'Strategic Index, baseline', value: (r) => r.si_base, cell: (r) => fmtNum(r.si_base, 3), num: true },
                   { id: 'rd', header: 'Rank change', value: (r) => r.rank_delta, cell: (r) => <RankChip change={r.rank_delta} isNew={r.isNew} /> },
                   { id: 'rb', header: 'Resource base', value: (r) => resourceBaseText(r.resource_base, r.resource_evidence) },
                 ]}
@@ -250,9 +253,8 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
                   {rows.map((r) => (
                     <div role="row" key={r.sector} className="grid grid-cols-[minmax(9rem,1.5fr)_repeat(5,minmax(5rem,1fr))_minmax(6.5rem,1fr)_6.5rem] items-center gap-x-2 border-b border-white/5 py-2">
                       <span role="cell" className="flex items-center gap-2 text-paper-dim">
-                        <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STAGE_COLOR[r.stage] }} aria-hidden="true" />
                         <span>
-                          {r.sector.split(' - ')[0]} <span className="text-paper-mute">{r.stage.toLowerCase()}</span>
+                          {r.sector.split(' - ')[0]} <span className="text-paper-mute">{stageLabel(r.stage).toLowerCase()}</span>
                           {r.resource_base === false && (
                             <span className="ml-1.5 inline-block align-middle">
                               <Tag accent title="No recorded reserves or production of this sector's resources: not eligible as an allied pick while the endowment screen is on">
@@ -263,13 +265,13 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
                         </span>
                       </span>
                       {r.terms.map((t, i) => (
-                        <span role="cell" key={t.key} className="relative h-4" title={`${TERMS[i].label}: ${fmtNum(t.v, 3)} (paper ${fmtNum(t.base, 3)})`}>
+                        <span role="cell" key={t.key} className="relative h-4" title={`${TERMS[i].label}: ${fmtNum(t.v, 3)} (baseline ${fmtNum(t.base, 3)})`}>
                           <span className="absolute inset-y-0.5 left-0 bg-[#1889b0]" style={{ width: `${(100 * Math.max(0, t.v ?? 0)) / maxTerm}%` }} />
                           {t.base !== null && !isBaseline && <span className="absolute -inset-y-0.5 w-0.5 bg-[#9ca3af]" style={{ left: `${(100 * Math.max(0, t.base)) / maxTerm}%` }} />}
                           <span className="sr-only">{fmtNum(t.v, 3)}</span>
                         </span>
                       ))}
-                      <span role="cell" className="flex items-center gap-2 tabular" title={`Strategic Index ${fmtNum(r.si, 3)} (paper ${fmtNum(r.si_base, 3)})`}>
+                      <span role="cell" className="flex items-center gap-2 tabular" title={`Strategic Index ${fmtNum(r.si, 3)} (baseline ${fmtNum(r.si_base, 3)})`}>
                         <span className="relative h-3 flex-1">
                           <span className="absolute inset-y-0 left-0 bg-[#43a8d0]" style={{ width: `${(100 * Math.max(0, r.si ?? 0)) / maxSi}%` }} />
                           {r.si_base !== null && !isBaseline && <span className="absolute -inset-y-0.5 w-0.5 bg-[#9ca3af]" style={{ left: `${(100 * r.si_base) / maxSi}%` }} />}
@@ -289,7 +291,7 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
             )}
           </ChartCard>
           <div className="grid gap-6 2xl:grid-cols-2">
-            <ChartCard title="Weights in use" sub="The weights of the Strategic Index's five parts, the supply-chain stage weights and the weights inside Policy activity, in the scenario against the paper. The dials move them; at 50 they are the paper's." updating={updating}>
+            <ChartCard title="Weights in use" sub="The weights of the Strategic Index's five parts, the weights of the supply-chain stages and the weights inside Policy activity, in the scenario against the NEIS baseline. The dials move them; at 50 they are the baseline weights." updating={updating}>
               <div className="space-y-4">
                 <TableView rows={weights.si} cols={weightCols} caption="Strategic Index weights" />
                 <TableView rows={weights.stage} cols={weightCols.map((c0) => (c0.id === 'name' ? { ...c0, header: 'Stage weight' } : c0))} caption="Stage weights" />
@@ -298,7 +300,7 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
             </ChartCard>
             <ChartCard
               title="Allied strategic selection"
-              sub={`Each coalition member's top upstream or midstream sector on the Strategic Index (its allied pick), in the scenario against the paper; changed rows are marked. Endowment screen ${screenOn ? 'on' : 'off'}${screenOn === screenPaper ? ' (as in the paper)' : ' (the paper has it ' + (screenPaper ? 'on' : 'off') + ')'}: ${screenOn ? 'an upstream sector qualifies only where the member has recorded reserves or production of its resources (USGS, EI, Red Book).' : 'upstream sectors without a resource base can be picked; they are marked.'} Policy basis: IEA Policies and Measures records plus the Climate Action Tracker where the Tracker rates the member, else IEA records only.`}
+              sub={`Each coalition member's top sector on the Strategic Index at ${pickWhere} (its allied pick), in the scenario against the NEIS baseline; changed rows are marked. Endowment screen ${screenOn ? 'on' : 'off'}${screenOn === screenBase ? ' (as at the NEIS baseline)' : ' (the NEIS baseline has it ' + (screenBase ? 'on' : 'off') + ')'}: ${screenOn ? 'an extraction sector qualifies only where the member has recorded reserves or production of its resources (USGS, EI, Red Book).' : 'extraction sectors without a resource base can be picked; they are marked.'} Policy basis: IEA Policies and Measures records plus the Climate Action Tracker where the Tracker rates the member, else IEA records only.`}
               updating={updating}
               csv={() => ({ name: 'allied-selection', text: rowsToCsv(allied as Record<string, unknown>[]) })}
             >

@@ -5,8 +5,12 @@
 #                   flow is zero or unobserved that year; zeros are rebuilt on the client)
 #   trade.declared  who declared imports / exports of a cell in a year (rows with either flag)
 #   trade.codes     the HS6 basket per cell (pipeline view data/raw/energy_hs6_master.csv)
-#   trade.excluded  rows the reference master marks excluded
+#   trade.excluded  rows the reference master marks excluded, at the technology level (schema 2: the
+#                   excluded rows carry no six-stage stage, so none is invented for them)
 # and the country facts trade.exports / trade.imports / trade.net (sums over the matrix).
+#
+# Cells are six-stage (schema 2): each HS6 code sits in the master's `stage` column (scripts/04 stages
+# it; the themes score trade on the same key), not in its former three-stage `supply_chain` column.
 #
 # Zero rebuild (client): a pair absent from trade.flows in a year is an observed zero when the
 # importer declared imports of the cell that year, or, when it did not, when the exporter declared
@@ -16,15 +20,46 @@ sector_cell_slug <- function(tech, stage) {
   tolower(paste0(gsub(" ", "-", tech), "-", stage))
 }
 
-# The basket as distinct (tech, supply_chain, sub_sector, hs6) rows; stops when a code maps to two
-# sub-sectors inside one cell. Returns the rows plus `shared_n` (number of OTHER cells listing the
-# code) and the cell slug.
-sector_trade_basket <- function(hs6_raw) {
+# Basket notes of the master (trade.codes caveat, trade.excluded reason) as shipped: the six stages
+# replace the old three (2026-10-28), so the stage names of the 2026-10 basket review are reworded.
+# The review measured each code's share of the basket of the time; that basket was the technology's
+# materials (the old Upstream: Extraction, Refining and Recovery) or manufacturing (the old Midstream)
+# basket, which the reworded text names. An "Earlier note" about a move between the old stages is
+# history and is dropped. Text naming an old stage in any other way is left as it is: scripts/87
+# reports it (sector_has_legacy_stage()) so that the master's note can be reworded at the source.
+sector_six_stage_text <- function(x) {
+  x <- as.character(x)
+  tl <- paste(gsub(" ", "[ ]", SECTOR_TECH_LABELS), collapse = "|")
+  x <- sub("\\s*Earlier note: moved from (Upstream|Midstream|Downstream):.*$", "", x, perl = TRUE)
+  x <- gsub("Refined chemicals and intermediates stay in Batteries Midstream", "Refined chemicals and intermediates are in Batteries Refining", x, fixed = TRUE)
+  x <- gsub(", a Midstream step with no code of its own", ", a fuel-cycle step with no code of its own", x, fixed = TRUE)
+  x <- gsub("Midstream if anything", "Components if anything", x, fixed = TRUE)
+  x <- gsub(paste0("\\b(Excluded|excluded) from (", tl, ") Upstream\\b"), "\\1 from the \\2 materials basket", x, perl = TRUE)
+  x <- gsub(paste0("\\b(Excluded|excluded) from (", tl, ") Midstream\\b"), "\\1 from the \\2 manufacturing basket", x, perl = TRUE)
+  x <- gsub(paste0("\\bin (", tl, ") Upstream only\\b"), "in the \\1 materials basket only", x, perl = TRUE)
+  x <- gsub(paste0("\\b(", tl, ") Upstream basket\\b"), "\\1 materials basket", x, perl = TRUE)
+  x <- gsub(paste0("\\b(", tl, ") Midstream basket\\b"), "\\1 manufacturing basket", x, perl = TRUE)
+  x
+}
+
+# The basket as distinct (tech, supply_chain, sub_sector, hs6) rows, supply_chain being the code's
+# six-stage stage (hs6_raw[[stage_col]]; stops on a value that is not one of the six); stops when a
+# code maps to two sub-sectors inside one cell. Returns the rows plus `shared_n` (number of OTHER cells
+# listing the code), the cell slug and `listed_as` (the master's former supply_chain column, kept only
+# to match the reference master's excluded rows, which are keyed on it; NA when stage_col is
+# supply_chain itself).
+sector_trade_basket <- function(hs6_raw, stage_col = "stage") {
+  if (!stage_col %in% names(hs6_raw)) {
+    stop("sector_trade_basket(): the HS6 master has no `", stage_col, "` column (staged before the six-stage master); rerun scripts/04_build_hs6_views.R.")
+  }
+  stage <- as.character(hs6_raw[[stage_col]])
+  assert_supply_chain_stages(stage, label = paste0("HS6 master `", stage_col, "`"))
   b <- tibble::tibble(
-    tech = as.character(hs6_raw$tech), supply_chain = as.character(hs6_raw$supply_chain),
+    tech = as.character(hs6_raw$tech), supply_chain = stage,
     sub_sector = as.character(hs6_raw$sub_sector),
     hs6 = formatC(as.integer(hs6_raw$hs6), width = 6, flag = "0"),
-    note = if ("note" %in% names(hs6_raw)) as.character(hs6_raw$note) else NA_character_
+    note = if ("note" %in% names(hs6_raw)) as.character(hs6_raw$note) else NA_character_,
+    listed_as = if (stage_col != "supply_chain" && "supply_chain" %in% names(hs6_raw)) as.character(hs6_raw$supply_chain) else NA_character_
   )
   b <- b[!duplicated(b[c("tech", "supply_chain", "sub_sector", "hs6")]), , drop = FALSE]
   two <- b[duplicated(b[c("tech", "supply_chain", "hs6")]), , drop = FALSE]
@@ -39,11 +74,12 @@ sector_trade_basket <- function(hs6_raw) {
 }
 
 # trade.codes rows of a basket; descriptions: named character vector hs6 -> text (NULL = none).
-# caveat: the basket note from "kept with caveat" on, wherever the phrase sits in the note ("moved
-# from Midstream: ...; kept with caveat: ..." keeps its caveat).
+# caveat: the basket note from "kept with caveat" on, wherever the phrase sits in the note (a note
+# that records a move before its "kept with caveat" keeps only its caveat), reworded for the six stages
+# (sector_six_stage_text()).
 sector_trade_codes <- function(basket, descriptions = NULL) {
   hit <- !is.na(basket$note) & grepl("kept with caveat", basket$note, fixed = TRUE)
-  caveat <- ifelse(hit, sub("^.*?kept with caveat", "kept with caveat", basket$note, perl = TRUE), NA_character_)
+  caveat <- ifelse(hit, sector_six_stage_text(sub("^.*?kept with caveat", "kept with caveat", basket$note, perl = TRUE)), NA_character_)
   tibble::tibble(
     item_key = paste0("cell:", basket$cell), sub_sector = basket$sub_sector, hs6 = basket$hs6,
     description = if (is.null(descriptions)) NA_character_ else unname(descriptions[basket$hs6]),
@@ -51,27 +87,38 @@ sector_trade_codes <- function(basket, descriptions = NULL) {
   )
 }
 
-# trade.excluded rows of the reference master (rows with excluded TRUE), for the cells in `cells`.
-sector_trade_excluded <- function(hs6_ref, cells) {
+# trade.excluded rows of the reference master (rows with excluded TRUE) of the technologies in `techs`
+# (tech labels), at the technology level: tech, sub_sector, hs6, reason (the note, reworded for the
+# six stages). The excluded rows have no six-stage `stage` (data/reference/energy_hs6_master.csv
+# leaves it blank, and its serves_stage too), and the stages their former stage covered are several,
+# so no stage is invented for them (user decision C6, 2026-10-28). One row per (tech, sub_sector, hs6).
+sector_trade_excluded <- function(hs6_ref, techs) {
   ex <- hs6_ref[as.logical(hs6_ref$excluded) %in% TRUE, , drop = FALSE]
   out <- tibble::tibble(
-    item_key = paste0("cell:", sector_cell_slug(ex$tech, ex$supply_chain)),
+    tech = as.character(ex$tech),
     sub_sector = as.character(ex$sub_sector),
     hs6 = formatC(as.integer(ex$hs6), width = 6, flag = "0"),
-    reason = dplyr::coalesce(as.character(ex$note), "excluded")
+    reason = sector_six_stage_text(dplyr::coalesce(as.character(ex$note), "excluded"))
   )
-  out <- out[sub("^cell:", "", out$item_key) %in% cells, , drop = FALSE]
-  out[!duplicated(out[c("item_key", "hs6")]), , drop = FALSE]
+  out <- out[out$tech %in% techs, , drop = FALSE]
+  out <- out[!duplicated(out[c("tech", "sub_sector", "hs6")]), , drop = FALSE]
+  out[order(match(out$tech, SECTOR_TECH_LABELS), out$hs6, out$sub_sector, method = "radix"), , drop = FALSE]
 }
 
-# Codes the reference master marks excluded that are still in the pipeline basket of the same cell
-# (scripts/04 was not rerun): returns them; the exporter stops on any.
+# Codes the reference master marks excluded that are still in the pipeline basket where the reference
+# master excluded them (scripts/04 was not rerun): returns them; the exporter stops on any. The
+# excluded rows are keyed on the master's former supply_chain column (they have no six-stage stage), so
+# the basket's rows are matched on the same column (`listed_as`); a basket without it (staged by hand)
+# is matched per technology.
 sector_trade_excluded_in_basket <- function(basket, hs6_ref) {
   ex <- hs6_ref[as.logical(hs6_ref$excluded) %in% TRUE, , drop = FALSE]
-  k_ex <- paste(sector_cell_slug(ex$tech, ex$supply_chain), formatC(as.integer(ex$hs6), width = 6, flag = "0"))
-  k_b <- paste(basket$cell, basket$hs6)
+  code <- formatC(as.integer(ex$hs6), width = 6, flag = "0")
+  listed <- if ("listed_as" %in% names(basket)) basket$listed_as else rep(NA_character_, nrow(basket))
+  by_cell <- !is.na(listed)
+  k_b <- ifelse(by_cell, paste(basket$tech, listed, basket$hs6), paste(basket$tech, basket$hs6))
+  k_ex <- c(paste(ex$tech, ex$supply_chain, code), paste(ex$tech, code))
   # A code excluded from one cell can legitimately stay in another; only the same cell counts.
-  intersect(k_b, k_ex)
+  unique(k_b[k_b %in% k_ex])
 }
 
 # Who reported which cell in which year, from the standardised dyads (as

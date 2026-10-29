@@ -6,11 +6,9 @@
 // interactive (the current one ringed ink under white, C1.4). Wide tables scroll inside their card.
 
 import { Fragment, useMemo, useState, type CSSProperties } from 'react';
-import { HATCH_STYLE, RING_INNER, RING_OUTER, STAGE_COLOR } from '../../theme/palette.ts';
+import { HATCH_STYLE, RING_INNER, RING_OUTER } from '../../theme/palette.ts';
 import { triScale, triText } from '../../charts/scale.ts';
 import type { HeatCol, HeatRow, HeatTableProps } from './types.ts';
-
-const STAGE_NAME: Record<string, string> = { upstream: 'Upstream', midstream: 'Midstream', downstream: 'Downstream' };
 
 /** Every cell value of the table, sub-rows included (the default scale's values). */
 function allValues(rows: readonly HeatRow[], cols: readonly HeatCol[], cell: HeatTableProps['cell']): number[] {
@@ -120,7 +118,7 @@ export function HeatTable({ rows, cols, cell, onCell, scale, reverse, caption, r
             </th>
             {cols.map((c: HeatCol) => (
               <th key={c.key} scope="col" className="min-w-[5.5rem] px-2 pb-2 text-left align-bottom">
-                {c.stage && <span className="mb-1 block h-[3px] w-full" style={{ background: STAGE_COLOR[STAGE_NAME[c.stage]] }} aria-hidden="true" />}
+                {c.stage && <span className="mb-1 block h-[3px] w-full bg-ink-500" aria-hidden="true" />}
                 <span className="eyebrow block leading-tight">{c.label}</span>
               </th>
             ))}

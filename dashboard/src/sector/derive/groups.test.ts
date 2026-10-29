@@ -26,7 +26,7 @@ describe('EU-27 as one bloc (3.7)', () => {
   });
 
   it('additive measures sum the members', () => {
-    const it = fixtureItem('cell', 'batteries-midstream');
+    const it = fixtureItem('cell', 'batteries-assembly');
     const rows = facts.rows(v('investment.annual').idx, it, 2025);
     const r = euRows(rows, model, v('investment.annual'), 'bloc');
     expect(r.mode).toBe('summed');
@@ -37,14 +37,14 @@ describe('EU-27 as one bloc (3.7)', () => {
   });
 
   it('intensive measures are not defined for the bloc', () => {
-    const rows = facts.rows(v('trade.rca').idx, fixtureItem('cell', 'batteries-midstream'), 2024);
+    const rows = facts.rows(v('trade.rca').idx, fixtureItem('cell', 'batteries-assembly'), 2024);
     const r = euRows(rows, model, v('trade.rca'), 'bloc');
     expect(r.mode).toBe('undefined');
     expect(r.rows.some((x) => x.geo === fixtureGeo('DEU'))).toBe(true);
   });
 
   it('trade measures need the dyads', () => {
-    const rows = facts.rows(v('trade.exports').idx, fixtureItem('cell', 'batteries-midstream'), 2024);
+    const rows = facts.rows(v('trade.exports').idx, fixtureItem('cell', 'batteries-assembly'), 2024);
     expect(euRows(rows, model, v('trade.exports'), 'bloc').mode).toBe('needs_trade');
   });
 

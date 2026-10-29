@@ -42,18 +42,18 @@ function values(): Row[] {
 function nzeTables(): Record<string, unknown> {
   const cell = (s: string) => fixtureItem('cell', s);
   const map = [
-    { item: cell('solar-downstream'), series: 0, role: 'own', match: 'direct', order: 1 },
-    { item: cell('solar-midstream'), series: 0, role: 'demand', match: 'partial', order: 1 },
-    { item: cell('solar-upstream'), series: 0, role: 'demand', match: 'proxy', order: 1 },
-    { item: cell('coal-upstream'), series: 1, role: 'own', match: 'direct', order: 1 },
-    { item: cell('coal-upstream'), series: 2, role: 'context', match: null, order: 2 },
+    { item: cell('solar-deployment'), series: 0, role: 'own', match: 'direct', order: 1 },
+    { item: cell('solar-assembly'), series: 0, role: 'demand', match: 'partial', order: 1 },
+    { item: cell('solar-refining'), series: 0, role: 'demand', match: 'proxy', order: 1 },
+    { item: cell('coal-extraction'), series: 1, role: 'own', match: 'direct', order: 1 },
+    { item: cell('coal-extraction'), series: 2, role: 'context', match: null, order: 2 },
   ].sort((a, z) => a.item - z.item || a.order - z.order);
   const cells = [
-    { item: cell('solar-downstream'), match: 'direct', note: 'Installed solar PV capacity.', mineral_techs: null },
-    { item: cell('solar-midstream'), match: 'partial', note: 'The stock factories add to.', mineral_techs: null },
-    { item: cell('solar-upstream'), match: 'proxy', note: 'Solar minerals follow solar build-out.', mineral_techs: 'Solar PV' },
-    { item: cell('coal-upstream'), match: 'direct', note: 'World coal supply.', mineral_techs: null },
-    { item: cell('semiconductors-upstream'), match: 'none', note: 'Not energy technologies.', mineral_techs: null },
+    { item: cell('solar-deployment'), match: 'direct', note: 'Installed solar PV capacity.', mineral_techs: null },
+    { item: cell('solar-assembly'), match: 'partial', note: 'The stock factories add to.', mineral_techs: null },
+    { item: cell('solar-refining'), match: 'proxy', note: 'Solar minerals follow solar build-out.', mineral_techs: 'Solar PV' },
+    { item: cell('coal-extraction'), match: 'direct', note: 'World coal supply.', mineral_techs: null },
+    { item: cell('semiconductors-refining'), match: 'none', note: 'Not energy technologies.', mineral_techs: null },
   ].sort((a, z) => a.item - z.item);
   const minerals: Row[] = [];
   const add = (mineral: string, tech: string, k: number[], slug: string | null) =>
@@ -80,8 +80,8 @@ function nzeTables(): Record<string, unknown> {
 function climateChunk(withNze = true): Record<string, unknown> {
   return {
     'climate.src': t('climate.src', [{ id: 'coal-mining', subsector: 'coal-mining', sector: 'fossil-fuel-operations', label: 'Coal mining', asset_group: null, basis: 'country', repeated: false }]),
-    'climate.map': t('climate.map', [{ item: fixtureItem('cell', 'coal-upstream'), src: 0, role: 'own', match: 'direct', order: 1 }]),
-    'climate.cells': t('climate.cells', [{ item: fixtureItem('cell', 'coal-upstream'), match: 'direct', note: 'Coal mining.' }]),
+    'climate.map': t('climate.map', [{ item: fixtureItem('cell', 'coal-extraction'), src: 0, role: 'own', match: 'direct', order: 1 }]),
+    'climate.cells': t('climate.cells', [{ item: fixtureItem('cell', 'coal-extraction'), match: 'direct', note: 'Coal mining.' }]),
     'climate.lifecycle': t('climate.lifecycle', [{ tech: 'Solar', basis: 'ipcc', g_min: 41, g_max: 48, rows: 'Solar 41', proxy_of: null }]),
     'climate.em': t('climate.em', [
       { src: 0, geo: fixtureGeo('CHN'), year: 2025, value: 100 },
@@ -123,13 +123,13 @@ describe('climate.nze_*: contract and derive', () => {
   it('derives the lens headline, the pathway lines, mineral demand by scenario and the world line', () => {
     const d = nzeData(decoded())!;
     expect([d.baseYear, d.projYears]).toEqual([2024, [2035, 2050]]);
-    const solar = nzeHeadline(d, fixtureItem('cell', 'solar-downstream'))!;
+    const solar = nzeHeadline(d, fixtureItem('cell', 'solar-deployment'))!;
     expect(solar.text).toBe('The Net Zero pathway needs 6,400 GW of solar PV capacity by 2035, 1.6 times Stated Policies (4,000 GW); 1,900 GW in 2024 (IEA estimate).');
-    expect(nzeHeadline(d, fixtureItem('cell', 'solar-midstream'))!.text).toMatch(/^Demand this sector serves: the Net Zero pathway needs 6,400 GW/);
-    expect(nzeHeadline(d, fixtureItem('cell', 'solar-upstream'))!.text).toMatch(/solar PV capacity \(a proxy\)/);
-    const coal = nzeHeadline(d, fixtureItem('cell', 'coal-upstream'))!;
+    expect(nzeHeadline(d, fixtureItem('cell', 'solar-assembly'))!.text).toMatch(/^Demand this sector serves: the Net Zero pathway needs 6,400 GW/);
+    expect(nzeHeadline(d, fixtureItem('cell', 'solar-refining'))!.text).toMatch(/solar PV capacity \(a proxy\)/);
+    const coal = nzeHeadline(d, fixtureItem('cell', 'coal-extraction'))!;
     expect(coal.text).toBe('On the Net Zero pathway, coal supply falls to 80 EJ by 2035 (−53% from 2024), against 150 EJ under Stated Policies.');
-    expect(nzeHeadline(d, fixtureItem('cell', 'semiconductors-upstream'))).toBeNull();
+    expect(nzeHeadline(d, fixtureItem('cell', 'semiconductors-refining'))).toBeNull();
     const lines = pathwayLines(d, d.byId.get('cap_solar')!);
     expect(lines.map((l) => l.scenario)).toEqual(['historical', 'stated', 'current', 'nze']);
     // every scenario starts at the last historical estimate, and only its own points are projections
@@ -142,7 +142,7 @@ describe('climate.nze_*: contract and derive', () => {
     expect(m[0].base).toBe(2000);
     expect(mineralPaths(d, ['Solar PV', 'Wind'])[0].by.get('stated')?.get(2025)).toBe(2500);
     expect(nzeWorldLine(d)).toBe('World context, not this economy’s: energy-sector CO2 was 37.6 Gt in 2024 (IEA estimate). The IEA’s scenarios project 34 Gt in 2035 under Stated Policies, 38 Gt under Current Policies and 12 Gt on the Net Zero pathway, reaching net zero in 2050.');
-    expect(model.cellLabel(model.items[fixtureItem('cell', 'solar-downstream')])).toMatch(/Solar/);
+    expect(model.cellLabel(model.items[fixtureItem('cell', 'solar-deployment')])).toMatch(/Solar/);
   });
 });
 
@@ -191,8 +191,8 @@ const openGroups = async () => {
 };
 
 describe('Sector profile: IEA pathways in the Climate lens and section', () => {
-  it('Solar — Downstream: the Net Zero line in the lens, the pathway chart and the series table in the section', async () => {
-    renderAt('/sector/solar/downstream');
+  it('Solar — Deployment: the Net Zero line in the lens, the pathway chart and the series table in the section', async () => {
+    renderAt('/sector/solar/deployment');
     const lens = await screen.findByTestId('lens-climate', {}, { timeout: 30_000 });
     const line = await within(lens).findByTestId('nze-lens', {}, { timeout: 10_000 });
     expect(within(line).getByText('IEA scenario projections · World')).toBeTruthy();
@@ -212,8 +212,8 @@ describe('Sector profile: IEA pathways in the Climate lens and section', () => {
     expect(within(block).queryByText(/Mineral demand from/)).toBeNull();
   });
 
-  it('Solar — Upstream: demand context and the mineral demand by scenario, with no Net Zero mineral scenario', async () => {
-    renderAt('/sector/solar/upstream');
+  it('Solar — Refining: demand context and the mineral demand by scenario, with no Net Zero mineral scenario', async () => {
+    renderAt('/sector/solar/refining');
     const lens = await screen.findByTestId('lens-climate', {}, { timeout: 30_000 });
     await waitFor(() => expect(within(lens).getByTestId('nze-lens').textContent).toMatch(/Demand this sector serves: the Net Zero pathway needs/), { timeout: 10_000 });
     await openGroups();
@@ -224,7 +224,7 @@ describe('Sector profile: IEA pathways in the Climate lens and section', () => {
   });
 
   it('a cell with no IEA series says so', async () => {
-    renderAt('/sector/wind/downstream');
+    renderAt('/sector/wind/deployment');
     await openGroups();
     const block = await screen.findByTestId('nze-pathways', {}, { timeout: 10_000 });
     expect(within(block).getByTestId('nze-match').textContent).toBe('No match');

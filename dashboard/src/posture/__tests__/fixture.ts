@@ -1,5 +1,6 @@
 // A small posture bundle in the exporter's shape (scripts/91): three countries, two technologies, the six
-// stages, and a store that serves it without the network.
+// stages, and a store that serves it without the network. `economies` renames the three (AAA, BBB, CCC)
+// so a page's route test can serve a posture for a real economy of its own fixture (e.g. AAA as USA).
 
 import { PostureStore } from '../store.ts';
 
@@ -34,7 +35,7 @@ export function fixtureCore(momentum = true): Record<string, unknown> {
   const rows = fixtureRows();
   const col = <K extends keyof Row>(k: K) => rows.map((r) => (r[k] === undefined ? null : r[k]));
   return {
-    schema: 'osi-posture', schema_version: 1, created: '2026-10-28T00:00:00Z',
+    schema: 'osi-posture', schema_version: 1, created: '2026-10-28T00:00:00Z', git_commit: 'abc1234',
     meta: {
       techs: TECHS, stages: STAGES, benchmark_period: '2022-2024',
       momentum_period: momentum ? 'Sep 2025 - Aug 2026' : null, momentum_previous_period: momentum ? 'Sep 2024 - Aug 2025' : null,
@@ -59,6 +60,13 @@ export function fixtureCore(momentum = true): Record<string, unknown> {
   };
 }
 
+/** The fixture core without one cell (economy, technology, stage indices), as the columnar document. */
+export function withoutCell(core: Record<string, unknown>, c: number, t: number, s: number): Record<string, unknown> {
+  const cells = core.cells as Record<string, unknown[]>;
+  const i = cells.c.findIndex((_, k) => cells.c[k] === c && cells.t[k] === t && cells.s[k] === s);
+  return { ...core, cells: Object.fromEntries(Object.entries(cells).map(([k, v]) => [k, v.filter((_, j) => j !== i)])) };
+}
+
 export function fixtureDetail(): Record<string, unknown> {
   return {
     schema: 'osi-posture', schema_version: 1, created: '2026-10-28T00:00:00Z', iso3: 'AAA', country: 'Aland',
@@ -74,11 +82,34 @@ export function fixtureDetail(): Record<string, unknown> {
   };
 }
 
-export function fixtureStore(opts: { momentum?: boolean; core?: Record<string, unknown> } = {}): PostureStore {
+/** A new economy for a fixture one: its code and, optionally, its name. */
+export type FixtureEconomies = Partial<Record<'AAA' | 'BBB' | 'CCC', { iso3: string; name?: string }>>;
+
+/** The fixture's documents with AAA, BBB and CCC renamed (codes everywhere they appear; names where given). */
+export function renameEconomies<T>(doc: T, economies: FixtureEconomies): T {
+  const pairs = Object.entries(economies) as [string, { iso3: string; name?: string }][];
+  const code = (v: unknown): unknown => (typeof v === 'string' ? (economies[v as 'AAA']?.iso3 ?? v) : v);
+  const NAME: Record<string, string> = { AAA: 'Aland', BBB: 'Bland', CCC: 'Cland' };
+  const nameOf = (v: unknown): unknown => {
+    const hit = pairs.find(([k]) => NAME[k] === v);
+    return hit?.[1].name ?? v;
+  };
+  const walk = (v: unknown, key?: string): unknown => {
+    if (Array.isArray(v)) return v.map((x) => walk(x, key));
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x, k)]));
+    if (key === 'name' || key === 'country') return nameOf(v);
+    return code(v);
+  };
+  return walk(doc) as T;
+}
+
+export function fixtureStore(opts: { momentum?: boolean; core?: Record<string, unknown>; economies?: FixtureEconomies } = {}): PostureStore {
+  const ren = <T,>(d: T): T => (opts.economies ? renameEconomies(d, opts.economies) : d);
+  const aaa = opts.economies?.AAA?.iso3 ?? 'AAA';
   const files: Record<string, unknown> = {
-    'manifest.json': { schema: 'osi-posture', schema_version: 1, created: 'x', core: 'posture-core.1.json', details: { AAA: 'posture-detail-AAA.1.json' }, counts: {} },
-    'posture-core.1.json': opts.core ?? fixtureCore(opts.momentum ?? true),
-    'posture-detail-AAA.1.json': fixtureDetail(),
+    'manifest.json': { schema: 'osi-posture', schema_version: 1, created: 'x', core: 'posture-core.1.json', details: { [aaa]: 'posture-detail-AAA.1.json' }, counts: {} },
+    'posture-core.1.json': ren(opts.core ?? fixtureCore(opts.momentum ?? true)),
+    'posture-detail-AAA.1.json': ren(fixtureDetail()),
   };
   return new PostureStore('/x/', async (url: string) => {
     const f = url.replace('/x/', '');

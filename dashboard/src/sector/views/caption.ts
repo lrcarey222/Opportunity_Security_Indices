@@ -6,6 +6,7 @@ import type { CaptionInfo, CaptionResolver, VarRef } from '../charts/types.ts';
 import type { FactsIndex } from '../data/facts.ts';
 import type { ItemInfo, SectorModel, VarInfo } from '../data/model.ts';
 import { isFdiVar } from '../derive/fdi.ts';
+import { DATA_CAVEAT_IDS, hasFactNote } from '../derive/pairs.ts';
 
 /** The item of a var ref (by slug on the var's item axis), or the var's only item. */
 export function refItem(model: SectorModel, v: VarInfo, slug: string | null | undefined): ItemInfo | null {
@@ -147,7 +148,17 @@ export function makeCaptionResolver(model: SectorModel, getFacts: () => FactsInd
     const uniqueSubs = [...new Set(subs)];
     const badges = [...new Set(xs.map(({ r, v }) => badgeText(v, r)))];
     const sources = [...new Set(xs.map(({ v }) => v.source.id))];
-    const caveats = [...new Set(xs.flatMap(({ v }) => model.caveatTexts(v)))];
+    // a data caveat (the copied manufacturing figures, the split critical-minerals capex; design C2) only
+    // where the card's item has such facts (R SECTOR_DATA_CAVEATS); a card over every item keeps it
+    const caveats = [
+      ...new Set(
+        xs.flatMap(({ r, v }) => {
+          const item = r.item ? refItem(model, v, r.item) : null;
+          const hidden = new Set((v.caveats ?? []).filter((id) => DATA_CAVEAT_IDS.has(id) && item && !hasFactNote(facts, v, item, id)).map((id) => model.caveats.get(id)));
+          return model.caveatTexts(v).filter((x) => !hidden.has(x));
+        }),
+      ),
+    ];
     for (const { r, v } of xs) {
       const unit = model.unitOf(v, refItem(model, v, r.item)?.idx ?? null);
       if (/to confirm|unverified/i.test(`${unit.short} ${unit.long}`) && !caveats.some((c) => /to confirm|unverified/i.test(c))) caveats.push(`Unit to confirm: ${unit.long || unit.short}.`);

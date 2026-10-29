@@ -27,10 +27,18 @@ test_that("the cleaning keeps every project and states its rules", {
   expect_true(is.na(P("HAR0011")$year_completed))
   expect_true(is.na(P("SOL2")$year_completed))
   expect_identical(P("SOL1")$year_completed, 2027L)
-  # technology -> the Midstream cell; the CSV's label is kept
-  expect_identical(P("EVX")$item_key, "cell:electric-vehicles-midstream")
+  # technology -> the cell of the first configured stage (Components; Assembly carries the same
+  # projects: fdi.stages); the CSV's label is kept
+  expect_identical(P("EVX")$item_key, "cell:electric-vehicles-components")
   expect_identical(P("EVX")$technology, "EV")
-  expect_identical(unique(pr$item_key[pr$technology == "Battery"]), "cell:batteries-midstream")
+  expect_identical(unique(pr$item_key[pr$technology == "Battery"]), "cell:batteries-components")
+  expect_identical(fdi$stages, c("Components", "Assembly"))
+  expect_identical(sector_fdi_settings()$stages, SUPPLY_CHAIN_MANUFACTURING_STAGES)
+  # The config's stages are read; the old single `stage` key and unknown stages stop.
+  expect_identical(sector_fdi_settings(list(stages = list("Assembly")))$stages, "Assembly")
+  expect_error(sector_fdi_settings(list(stage = "Midstream")), "replaced by stages")
+  expect_error(sector_fdi_settings(list(stages = list("Components", "Midstream"))), "distinct supply-chain stages")
+  expect_identical(sector_fdi_stage_item("cell:wind-components", "Components", "Assembly"), "cell:wind-assembly")
   # flags by the indices' settings: manufacturing = "Manufacturing" only; active drops Cancelled,
   # Paused and Closed, and plants marked "Ceased operations" or "Paused"; index_use = both
   expect_false(P("SOL3")$manufacturing)
@@ -99,13 +107,13 @@ test_that("source cells ship verbatim with their clean http(s) links", {
 test_that("flows, group splits and years add up, and undisclosed values are never zero", {
   expect_identical(sector_fdi_problems(fdi, geo), character())
   fl <- fdi$flows
-  f <- fl[fl$item_key == "cell:batteries-midstream" & fl$home == "CHN" & fl$dest == "IDN" & fl$basis == "all", , drop = FALSE]
+  f <- fl[fl$item_key == "cell:batteries-components" & fl$home == "CHN" & fl$dest == "IDN" & fl$basis == "all", , drop = FALSE]
   expect_identical(c(f$n, f$n_value), c(1L, 0L))
   expect_true(is.na(f$value))
   expect_identical(sum(fl$n[fl$basis == "all"]), nrow(pr))
   expect_identical(sum(fl$n[fl$basis == "index_use"]), sum(pr$index_use))
   g <- fdi$groups
-  w <- g[g$item_key == "cell:wind-midstream" & g$dest == "WLD", , drop = FALSE]
+  w <- g[g$item_key == "cell:wind-components" & g$dest == "WLD", , drop = FALSE]
   wa <- w[w$basis == "all", , drop = FALSE]
   expect_identical(wa$group, SECTOR_FDI_GROUPS)
   expect_identical(wa$n, c(2L, 1L, 0L, 0L))
@@ -118,7 +126,7 @@ test_that("flows, group splits and years add up, and undisclosed values are neve
   expect_identical(wm$value, c(60, 0, 0, 0))
   expect_identical(wm$share_value, c(1, 0, 0, 0))
   # a group with projects but no disclosed value: NA value and share, not zero
-  bi <- g[g$item_key == "cell:batteries-midstream" & g$dest == "IDN" & g$basis == "all", , drop = FALSE]
+  bi <- g[g$item_key == "cell:batteries-components" & g$dest == "IDN" & g$basis == "all", , drop = FALSE]
   expect_identical(bi$n[bi$group == "china"], 1L)
   expect_true(is.na(bi$value[bi$group == "china"]))
   expect_true(all(is.na(bi$share_value)))
@@ -126,7 +134,7 @@ test_that("flows, group splits and years add up, and undisclosed values are neve
   expect_identical(P("HKB1")$home_group, "china")
   expect_identical(P("RUB1")$home_group, "rest")
   expect_identical(P("EV1")$home_group, "core")
-  hk <- g[g$item_key == "cell:batteries-midstream" & g$dest == "POL" & g$basis == "all", , drop = FALSE]
+  hk <- g[g$item_key == "cell:batteries-components" & g$dest == "POL" & g$basis == "all", , drop = FALSE]
   expect_identical(hk$n[hk$group == "china"], 1L)
   expect_identical(hk$n[hk$group == "rest"], 0L)
   only_chn <- sector_fdi_part(clean, geo, sector_fdi_settings(list(china_hq_iso3 = "CHN")))
@@ -134,7 +142,7 @@ test_that("flows, group splits and years add up, and undisclosed values are neve
   y <- fdi$years
   expect_identical(sum(y$n[y$basis == "all"]), nrow(pr))
   expect_true(all(y$n >= 1L))
-  y24 <- y[y$item_key == "cell:batteries-midstream" & y$year == 2024L & y$basis == "all", , drop = FALSE]
+  y24 <- y[y$item_key == "cell:batteries-components" & y$year == 2024L & y$basis == "all", , drop = FALSE]
   expect_true(is.na(y24$value))
 })
 
@@ -163,12 +171,17 @@ test_that("the measures, availability, rosters and section cards know the CM-FDI
   expect_match(src$citation, "Bandara, P. and the Net Zero Industrial Policy Lab")
   av <- bundle$avail[bundle$avail$var %in% SECTOR_FDI_VARS, , drop = FALSE]
   expect_true(all(av$chunk == "fdi"))
-  expect_setequal(unique(av$item_key), unique(pr$item_key))
-  expect_identical(av$n_geo[av$var == "investment.fdi_projects" & av$item_key == "cell:wind-midstream"], 1L)
+  # Both manufacturing stages carry the same projects: their cells list the measures, with the same
+  # availability (the chunk ships each project once, under the Components cell).
+  expect_setequal(unique(av$item_key), unique(c(pr$item_key, sector_fdi_stage_item(pr$item_key, "Components", "Assembly"))))
+  expect_identical(av$n_geo[av$var == "investment.fdi_projects" & av$item_key == "cell:wind-components"], 1L)
+  expect_identical(av$n_geo[av$var == "investment.fdi_projects" & av$item_key == "cell:wind-assembly"], 1L)
   expect_setequal(bundle$rosters$geo[bundle$rosters$roster == "cmfdi"], unique(pr$dest))
   expect_setequal(bundle$rosters$geo[bundle$rosters$roster == "cmfdi_home"], unique(pr$home))
-  cards <- bundle$dict$cells$section_cards[bundle$dict$cells$slug == "wind-midstream"]
-  expect_true(all(SECTOR_FDI_VARS %in% strsplit(cards, "|", fixed = TRUE)[[1]]))
+  for (cl in c("wind-components", "wind-assembly")) {
+    cards <- bundle$dict$cells$section_cards[bundle$dict$cells$slug == cl]
+    expect_true(all(SECTOR_FDI_VARS %in% strsplit(cards, "|", fixed = TRUE)[[1]]), info = cl)
+  }
   # never in facts or the summary
   expect_false(any(bundle$facts$var %in% SECTOR_FDI_VARS))
   expect_false(any(bundle$summary$var %in% SECTOR_FDI_VARS))
@@ -210,6 +223,13 @@ test_that("decoded projects are identical() to the CSV after cleaning; aggregate
   # flags and groups must follow the settings the export used
   pf4 <- sector_fdi_parity(dec, meta, raw, sector_synthetic_iso3, sector_fdi_settings(list(china_hq_iso3 = "CHN")))
   expect_identical(pf4$status[4], "FAIL")
+  # ... and the stages it used (fdi.stages, rows keyed on the first stage's cell).
+  pf5 <- sector_fdi_parity(dec, meta, raw, sector_synthetic_iso3, sector_fdi_settings(list(stages = list("Assembly", "Components"))))
+  expect_identical(pf5$status[grepl("fdi.stages", pf5$check)], "FAIL")
+  expect_identical(dec$fdi$stages, c("Components", "Assembly"))
+  bad <- fdi
+  bad$stages <- "Assembly"
+  expect_match(paste(sector_fdi_problems(bad, geo), collapse = "; "), "stages differ from the settings")
 })
 
 test_that("the staged CM-FDI edition cleans as reviewed (skipped without data/raw/cm_fdi_projects.csv)", {

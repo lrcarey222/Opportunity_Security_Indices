@@ -1,9 +1,10 @@
 // URL state (spec_react.md 8.2). The query string is the single source of truth for the scenario
-// (dials + advanced settings) and the view settings. Defaults are omitted, so the paper baseline URL
+// (dials + advanced settings) and the view settings. Defaults are omitted, so the NEIS baseline URL
 // is bare and canonical; keys are written in one fixed order. Pure functions (unit-tested).
 
 import type { Advanced, Dials, Fossil, PsiView, ScenarioSpec } from '../engine/types.ts';
 import { DIAL_NAMES } from '../engine/types.ts';
+import { isLegacyStage, legacyStageNote, legacyStageTargetName } from '../lib/stages.ts';
 
 export type ShowMode = 'scenario' | 'baseline' | 'change';
 export type Metric = 'es' | 'eo' | 'si_rank' | 'si' | 'policy' | 'psi';
@@ -26,7 +27,7 @@ export interface Scenario {
 export interface UrlCtx {
   esCategories: string[];
   eoCategories: string[];
-  /** the paper's advanced settings (defaultAdvanced(bundle)) */
+  /** the baseline advanced settings (defaultAdvanced(bundle)) */
   defaults: Advanced;
   techs: string[];
   stages: string[];
@@ -181,7 +182,16 @@ export function parseSearch(search: string, ctx: UrlCtx): Parsed {
         break;
       case 'stage':
         if (ctx.stages.includes(v)) view.stage = v;
-        else bad(k, raw, 'not a supply-chain stage');
+        else if (isLegacyStage(v)) {
+          // an old three-stage link (design U1): Downstream is Deployment exactly; Upstream and Midstream
+          // split into several stages, so the stage is dropped (the view shows its default)
+          const to = legacyStageTargetName(v);
+          const note = legacyStageNote(v).replace(/\.$/, '');
+          if (to && ctx.stages.includes(to)) {
+            view.stage = to;
+            bad(k, raw, `${note}; showing ${to}`);
+          } else bad(k, raw, `${note}; the stage was dropped`);
+        } else bad(k, raw, 'not a supply-chain stage');
         break;
       case 'metric':
         if ((METRICS as string[]).includes(v)) view.metric = v as Metric;
@@ -285,7 +295,7 @@ export function isDefaultScenario(s: Scenario, ctx: UrlCtx): boolean {
   return scenarioKey(s, ctx) === '';
 }
 
-/** Which advanced groups differ from the paper's settings. */
+/** Which advanced groups differ from the baseline settings. */
 export function advancedChanged(a: Advanced, ctx: UrlCtx): { es: boolean; eo: boolean; sample: boolean; fossil: boolean; screen: boolean; psi: boolean; any: boolean } {
   const d = ctx.defaults;
   const es = !sameWeights(a.es_weights, d.es_weights, ctx.esCategories);

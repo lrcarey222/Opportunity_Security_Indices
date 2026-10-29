@@ -2,8 +2,8 @@
 # the Partnership Strength Index (PSI) for any component weights and climate penalties (pure; no
 # IO).
 #
-# The dyad cells are arrays [reporter, partner, cell] over the world economies U and the 33
-# (technology, stage) cells. Exact port of partnership_strength_build_friendshore_dyads() and
+# The dyad cells are arrays [reporter, partner, cell] over the world economies U and the 66
+# (technology, stage) cells (11 headline technologies x the six supply-chain stages). Exact port of partnership_strength_build_friendshore_dyads() and
 # partnership_strength_build_opportunity_dyads() from their stored components:
 #
 #   FS (reporter r = importer rating partner p as a supplier):
@@ -11,8 +11,9 @@
 #             outbound[r,p,c], geo_alignment[r,p] and 1 - chinese_parent_exposure[p,c] over the
 #             components present (weights renormalised)
 #     outbound[r,p,c] is the IMF direct-investment position outbound[r,p] in every cell, except in
-#             the cells CM-FDI covers (outbound_source "cm_fdi": Solar, Wind, Batteries and Electric
-#             Vehicles Midstream), where it is the CM-FDI investment tie outbound_cmfdi[r,p,k] of
+#             the cells CM-FDI covers (outbound_source "cm_fdi": the Components and Assembly cells
+#             of Solar, Wind, Batteries and Electric Vehicles, both with the same projects), where it
+#             is the CM-FDI investment tie outbound_cmfdi[r,p,k] of
 #             the k-th such cell (NA where reporter r's parents have no project in the cell, so the
 #             component drops out, as in partnership_strength_apply_cm_fdi())
 #     chinese_parent_exposure[p,c] is the share of partner p's foreign-invested manufacturing in

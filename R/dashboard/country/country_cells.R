@@ -21,6 +21,28 @@ country_cell_stats <- function(es, eo, keys = country_cells_tbl()$key) {
   out
 }
 
+# Which pillars of a cell's S_c entry (country_cell_stats()) are constant across the economies compared:
+# sd <= tol over two economies or more (strategic_index_degenerate_sectors()'s rule). A constant pillar is
+# a sector constant, not a measurement: its percentiles do not rank the economies, so the sector is not
+# placed. Returns c(es = , eo = ) logicals.
+country_constant_pillars <- function(st, tol = 1e-12) {
+  const <- function(v) length(v) >= 2 && isTRUE(stats::sd(v) <= tol)
+  c(es = const(st$es), eo = const(st$eo))
+}
+
+# The cells with a pillar constant across the economies compared (country_constant_pillars()), in the order
+# of `stats`: data.frame(key, pillar: "es" | "eo"), one row per constant pillar.
+country_constant_cells <- function(stats, tol = 1e-12) {
+  rows <- lapply(names(stats), function(k) {
+    cp <- country_constant_pillars(stats[[k]], tol)
+    if (!any(cp)) return(NULL)
+    data.frame(key = k, pillar = names(cp)[cp], stringsAsFactors = FALSE)
+  })
+  out <- do.call(rbind, c(list(data.frame(key = character(), pillar = character(), stringsAsFactors = FALSE)), rows))
+  rownames(out) <- NULL
+  out
+}
+
 # "imputed weight share above 0.5" / "not a sovereign economy ..." -> plain words.
 country_rank_reason_words <- function(reason, pillar_label) {
   if (is.null(reason) || length(reason) == 0 || is.na(reason) || !nzchar(reason)) return(NA_character_)
@@ -62,24 +84,39 @@ country_pillar <- function(row, st, which, iso3) {
 
 # The cell list of one economy (without SI, policy, trade and drivers, which other helpers add).
 # es_c, eo_c: the economy's rows of the pillar tables (any order); stats: country_cell_stats(); rule: one
-# of COUNTRY_QUADRANT_RULES.
-country_cells_base <- function(iso3, es_c, eo_c, stats, cells = country_cells_tbl(), rule = "country_median") {
+# of COUNTRY_QUADRANT_RULES; no_es: the sectors without an Energy Security score for any economy
+# (scripts/88 derives them from the data, country_no_es_cells(); COUNTRY_NO_ES_CELLS by default).
+country_cells_base <- function(iso3, es_c, eo_c, stats, cells = country_cells_tbl(), rule = "country_median", no_es = COUNTRY_NO_ES_CELLS) {
   out <- lapply(seq_len(nrow(cells)), function(i) {
     k <- cells$key[i]
     st <- stats[[k]]
     er <- es_c[es_c$key == k, , drop = FALSE]
     orr <- eo_c[eo_c$key == k, , drop = FALSE]
-    es <- if (k %in% COUNTRY_NO_ES_CELLS) NULL else country_pillar(er, st, "es", iso3)
+    es <- if (k %in% no_es) NULL else country_pillar(er, st, "es", iso3)
     eo <- country_pillar(orr, st, "eo", iso3)
+    # A pillar constant across the economies compared (country_constant_pillars()) ranks none of them: no
+    # percentile, position or side on it, so the sector is not placed (the Strategic Index drops it too).
+    cp <- country_constant_pillars(st)
+    unrank <- function(x) {
+      x$pct <- country_fv(NA, "pct")
+      x["pos"] <- list(NULL)
+      x["side"] <- list(NULL)
+      x
+    }
+    if (cp[["es"]] && !is.null(es)) es <- unrank(es)
+    if (cp[["eo"]] && !is.null(eo)) eo <- unrank(eo)
     # placed: both scores comparable and a position on both axes (at least one other economy to beat)
     placed <- !is.null(es) && !is.null(eo) && isTRUE(es$rankable) && isTRUE(eo$rankable) && iso3 %in% st$iso3 &&
       !is.null(es$pos) && !is.null(eo$pos)
     reasons <- character()
     if (is.null(es)) {
-      reasons <- c(reasons, if (k %in% COUNTRY_NO_ES_CELLS) "no Energy Security score in the paper for this sector" else "no Energy Security score")
-    } else if (!isTRUE(es$rankable)) reasons <- c(reasons, es$reason_d %||% "Energy Security not comparable")
+      reasons <- c(reasons, if (k %in% no_es) "no Energy Security score for any economy in this sector" else "no Energy Security score")
+    } else if (!isTRUE(es$rankable)) {
+      reasons <- c(reasons, es$reason_d %||% "Energy Security not comparable")
+    } else if (cp[["es"]]) reasons <- c(reasons, "the same Energy Security score for every economy in this sector")
     if (is.null(eo)) reasons <- c(reasons, "no Economic Opportunity score")
     else if (!isTRUE(eo$rankable)) reasons <- c(reasons, eo$reason_d %||% "Economic Opportunity not comparable")
+    else if (cp[["eo"]]) reasons <- c(reasons, "the same Economic Opportunity score for every economy in this sector")
     if (!placed && !length(reasons)) reasons <- "no other economy to compare with"
     if (!is.null(es)) es$reason_d <- NULL
     if (!is.null(eo)) eo$reason_d <- NULL

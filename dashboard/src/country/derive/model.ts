@@ -2,8 +2,9 @@
 // sheet to the rows the cards draw. Nothing here recomputes an index value: the R exporter derived every
 // number (A9); these only select, order and lay out what the sheet carries.
 
+import { stageShort } from '../../lib/stages.ts';
 import {
-  cellOf, COUNTRY_TECHS, NO_ES_CELLS, THIRDS, type CellFacts, type CountryEntry, type CountryManifest, type Driver, type DriversDoc,
+  cellOf, COUNTRY_TECHS, noEsCellsOf, THIRDS, type CellFacts, type CountryEntry, type CountryManifest, type Driver, type DriversDoc,
   type FactSheet, type NipoPolicy, type PartnerRow, type Quadrant, type Third,
 } from '../contract.ts';
 import { QUADRANTS } from '../contract.ts';
@@ -47,7 +48,7 @@ export function quadrantLine(q: Record<Quadrant, number> | null | undefined): st
 // ---- the scatter ---------------------------------------------------------------------------------
 
 /** One placed sector on the quadrant scatter: x = Economic Opportunity, y = Energy Security (the plotted
- *  positions eo.pos and es.pos, 2026-10-15). */
+ *  positions eo.pos and es.pos, 2026-10-15); `short` is "Batteries · Ref" (the stage's short form, lib/stages.ts). */
 export interface ScatterPoint {
   key: string;
   label: string;
@@ -67,9 +68,8 @@ export function scatterPoints(sheet: FactSheet): ScatterPoint[] {
   const out: ScatterPoint[] = [];
   for (const c of sheet.cells) {
     if (!c.placed || !c.es || !c.eo || c.es.pos === null || c.eo.pos === null || !c.quadrant) continue;
-    const st = c.stage === 'Upstream' ? 'Up' : c.stage === 'Midstream' ? 'Mid' : 'Down';
     out.push({
-      key: c.key, label: c.label, short: `${c.tech} · ${st}`, tech: c.tech, stage: c.stage, x: c.eo.pos, y: c.es.pos,
+      key: c.key, label: c.label, short: `${c.tech} · ${stageShort(c.stage)}`, tech: c.tech, stage: c.stage, x: c.eo.pos, y: c.es.pos,
       quadrant: c.quadrant, top5: !!c.si?.top5, priority: prio.has(c.key), cell: c,
     });
   }
@@ -139,7 +139,7 @@ export function matrixCells(sheet: FactSheet): { p: Third; q: Third; key: string
   return out;
 }
 
-/** The PolicyCoverage table: technologies x stages of records_specific, plus "any stage". */
+/** The PolicyCoverage table: technologies x the six stages of records_specific, plus "any stage"; `key` is the cell key ("batteries-refining"). */
 export function coverageRows(sheet: FactSheet): { tech: string; slug: string; cells: { stage: string; key: string; v: number | null; d: string }[]; any: { v: number | null; d: string } }[] {
   const cov = sheet.policy.coverage;
   return cov.rows.map((tech, i) => {
@@ -266,8 +266,8 @@ export function supplierModel(sheet: FactSheet): {
 
 // ---- misc ------------------------------------------------------------------------------------------
 
-/** Every cell that has no Energy Security score in the paper (A9.1). */
-export const isNoEsCell = (k: string): boolean => NO_ES_CELLS.includes(k);
+/** A sector without an Energy Security score for any economy (A9.1): the sheet's shipped no_es_cells. */
+export const isNoEsCell = (sheet: Pick<FactSheet, 'no_es_cells'>, k: string): boolean => noEsCellsOf(sheet).includes(k);
 
 /** "facts-JPN.3f2a9c1e.json" -> "japan-fact-sheet-2026-10-12.json" */
 export function factSheetDownloadName(sheet: FactSheet): string {

@@ -442,7 +442,7 @@ export function statesPresent(model: SectorModel, v: VarInfo, rows: readonly Fac
   return [...s];
 }
 
-/** Item label for headings ("Lithium", "Batteries — Midstream"). */
+/** Item label for headings ("Lithium", "Batteries — Refining"). */
 export const itemLabel = (model: SectorModel, it: ItemInfo | null): string => (it ? (it.axis === 'cell' ? model.cellLabel(it) : it.label) : '');
 
 /** A Concentration from a meta.summary row (no per-economy rows: facts give those). */

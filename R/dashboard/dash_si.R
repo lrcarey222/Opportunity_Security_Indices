@@ -14,11 +14,19 @@
 #
 # Each cell also carries the country's policy_basis (dash_policy(): "IEA PAMS + CAT" or "IEA PAMS
 # only"; NA where the cell has no Policy value) and the endowment screen of the allied picks (the
-# pipeline's flag_strategic_resource_base()): resource_base is TRUE / FALSE in a screened Upstream
-# (tech, stage) of bundle$si$resource_base (strategic_resource_base(): recorded reserves or
-# production of the stage's resources) and NA elsewhere; pick_exclusion is "no resource base" where
-# it is FALSE. The index itself is unchanged; dash_allied_selection() drops those cells when
-# params$si$require_resource_base (the default) is TRUE.
+# pipeline's flag_strategic_resource_base()): resource_base is TRUE / FALSE in a screened Extraction
+# (tech, stage) of bundle$si$resource_base (strategic_resource_base(), whose default stage is
+# Extraction: recorded reserves or production of the stage's resources) and NA elsewhere;
+# pick_exclusion is "no resource base" where it is FALSE. The index itself is unchanged;
+# dash_allied_selection() drops those cells when params$si$require_resource_base (the default) is
+# TRUE.
+#
+# The stage weights lambda_s are the pipeline's six (SUPPLY_CHAIN_STAGE_SI_WEIGHTS: Extraction,
+# Refining and Recovery 1/6, Components and Assembly 0.375, Deployment 0.25 at the baseline), and the
+# sectors left out at the baseline are the pipeline's own list (index_outputs$
+# strategic_excluded_sectors: the sectors no stage-specific source measures, and those in which a
+# pillar is constant across countries). scripts/85 ships the rule-based part as excluded_sectors
+# (dash_si_rule_excluded()); the engine finds the constant-pillar sectors itself.
 
 # Row-wise "; "-join of the non-NA reasons (vectorised paste_reasons()).
 dash_paste_reasons <- function(...) {
@@ -122,6 +130,22 @@ dash_si_degenerate <- function(cells, tol = 1e-12) {
   out[out$es_constant | out$eo_constant, , drop = FALSE]
 }
 
+# The baseline's pre-excluded sectors (baseline_inputs$excluded_sectors) from the pipeline's list
+# `excluded` (index_outputs$strategic_excluded_sectors): scripts/20 appends to its rule-based list
+# (the unmeasured and unevidenced sectors) the sectors in which a pillar is constant across countries.
+# Shipped pre-excluded, those would stay out at every setting, labelled "not reported (pipeline rule)";
+# so the sectors of `excluded` that dash_si() finds degenerate when nothing is pre-excluded are taken
+# off (the test is per sector: a sector's scored cells do not depend on the other exclusions), and
+# dash_si() finds, labels and excludes them itself. At the baseline it then leaves out exactly
+# `excluded`. params: the baseline (dash_params()); pillars, policy: dash_pillars(), dash_policy().
+dash_si_rule_excluded <- function(bundle, params, pillars, policy, excluded = params$si$excluded_sectors) {
+  p <- params
+  p$si$excluded_sectors <- character()
+  p$si$fossil_excluded <- FALSE
+  deg <- dash_si(bundle, p, pillars, policy)$degenerate$sector
+  as.character(excluded[!excluded %in% deg])
+}
+
 # The endowment screen of the cells (flag_strategic_resource_base()): resource_base TRUE / FALSE in
 # the screened (tech, supply_chain) of rb (one row per Country x screened stage: Country, tech,
 # supply_chain, resource_base, resource_evidence), a country without a row there having no recorded
@@ -198,7 +222,7 @@ dash_si <- function(bundle, params, pillars, policy) {
   )]
   reason <- ifelse(
     excl %in% fossil_sectors, "excluded: fossil technology (greenness)",
-    ifelse(excl %in% degenerate$sector, "excluded: a pillar is constant across countries", "excluded: not reported (pipeline list)")
+    ifelse(excl %in% degenerate$sector, "excluded: a pillar is constant across countries", "excluded: not reported (pipeline rule)")
   )
   list(
     cells = cells,
@@ -209,21 +233,25 @@ dash_si <- function(bundle, params, pillars, policy) {
   )
 }
 
-# select_allied_strategic_sectors(): each coalition member's top Upstream / Midstream in-sample
-# sector (ties kept), outside Geothermal and Green Hydrogen (the selection's excluded_techs). With
-# params$si$require_resource_base (the default; the pipeline's require_resource_base) a cell flagged
-# resource_base FALSE by dash_si() (an Upstream stage without recorded reserves or production of its
-# resources) is not eligible; params = NULL applies the screen. The picks carry the cell's
-# policy_basis and its screen flags (resource_base FALSE on a pick only with the screen off).
+# select_allied_strategic_sectors(): each coalition member's top in-sample sector (ties kept) in the
+# stages the pick may take (baseline_inputs$allied_stages, the pipeline's STRATEGIC_ALLIED_STAGES:
+# every stage but Deployment), outside Geothermal and Green Hydrogen (the selection's
+# excluded_techs). With params$si$require_resource_base (the default; the pipeline's
+# require_resource_base) a cell flagged resource_base FALSE by dash_si() (an Extraction stage
+# without recorded reserves or production of its resources) is not eligible; params = NULL applies
+# the screen. The picks carry the cell's policy_basis and its screen flags (resource_base FALSE on a
+# pick only with the screen off). A bundle without allied_stages stops (no stage list is assumed).
 dash_allied_selection <- function(si, bundle, params = NULL) {
   allies <- bundle$si$allies
   ex_techs <- bundle$manifest$baseline_inputs$allied_excluded_techs
   if (is.null(ex_techs)) ex_techs <- c("Geothermal", "Green Hydrogen")
+  allied_stages <- bundle$manifest$baseline_inputs$allied_stages
+  if (is.null(allied_stages)) stop("bundle$manifest$baseline_inputs$allied_stages is missing; rebuild the bundle with scripts/85.")
   screen <- is.null(params) || !isFALSE(params$si$require_resource_base)
   x <- si$cells
   col_or <- function(tbl, nm, fill) if (nm %in% names(tbl)) tbl[[nm]] else rep(fill, nrow(tbl))
   barred <- screen & col_or(x, "resource_base", NA) %in% FALSE
-  x <- x[x$Country %in% allies$Country & x$supply_chain %in% c("Midstream", "Upstream") &
+  x <- x[x$Country %in% allies$Country & x$supply_chain %in% allied_stages &
            !is.na(x$strategic_index) & !x$tech %in% ex_techs & !barred, , drop = FALSE]
   if (!nrow(x)) {
     return(tibble::tibble(iso3c = character(), Country = character(), tier = character(), network_node = character(),

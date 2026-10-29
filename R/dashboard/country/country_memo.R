@@ -24,7 +24,7 @@ country_memo_index <- function(sheet) {
   idx
 }
 
-# The node at a dot path ("cells.oil-upstream.es.pct"); NULL when absent. Numeric segments index
+# The node at a dot path ("cells.oil-extraction.es.pct"); NULL when absent. Numeric segments index
 # plain arrays (0-based, as in the spec: trade.sources.0).
 country_memo_get <- function(idx, path) {
   x <- idx
@@ -126,7 +126,7 @@ country_placeholder_memo <- function(sheet, cfg) {
   sec <- function(n, title, body) list(n = n, title = title, blocks = list(list(type = "p", inlines = list(txt(body)), refs = list())))
   titles <- cfg$memo$sections
   sections <- lapply(seq_along(titles), function(i) sec(i, titles[[i]], "Placeholder section: the memo phase writes this section from the fact sheet."))
-  sections[[5]]$blocks <- list(list(type = "p", inlines = list(txt("All index values are the paper's baseline as of "), val("meta.as_of_label", "c5"), txt(".")), refs = list(1L)))
+  sections[[5]]$blocks <- list(list(type = "p", inlines = list(txt("All index values are the NEIS baseline as of "), val("meta.as_of_label", "c5"), txt(".")), refs = list(1L)))
   doc <- list(
     schema = COUNTRY_MEMO_SCHEMA, schema_version = COUNTRY_SCHEMA_VERSION, iso3 = sheet$iso3,
     title = country_fill(cfg$memo$title, list(country = m$country)), subtitle = cfg$memo$subtitle,
@@ -134,7 +134,7 @@ country_placeholder_memo <- function(sheet, cfg) {
     generated_at = m$created, verified_at = m$created, writer = "placeholder", verifier = "placeholder",
     words = 0L, facts_sha256 = sheet$checks$facts_sha256, src_sha256 = "placeholder", claims_sha256 = "placeholder",
     summary = summary, sections = sections,
-    sources = list(list(n = 1L, id = "osi_indices", text = "Energy Security, Economic Opportunity, Strategic Index and Partnership Strength Index, paper baseline.")),
+    sources = list(list(n = 1L, id = "osi_indices", text = "Energy Security, Economic Opportunity, Strategic Index and Partnership Strength Index, NEIS baseline at six supply-chain stages.")),
     placeholder = TRUE
   )
   doc$words <- country_memo_words(doc)

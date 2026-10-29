@@ -22,6 +22,8 @@ import { overviewRows } from '../derive/scenarioPages.ts';
 import { nodeScenario } from '../derive/scenarios.ts';
 import { resetLastCompact } from '../nav.ts';
 import { fixtureSource, readDoc, readScenarioDoc, stripScenarios, SYNTHETIC_DIR, type FixtureSourceOpts } from './fixture.ts';
+import { setPostureStore } from '../../posture/store.ts';
+import { fixtureStore } from '../../posture/__tests__/fixture.ts';
 
 const restore: (() => void)[] = [];
 let source: AibSource & { calls: string[] };
@@ -99,8 +101,8 @@ describe('the Overview leads with the three scenarios', () => {
     renderAt('/aib?scn=decoupling');
     expect(await h1('Allied Industrial Base')).toBeTruthy();
     const region = screen.getByRole('region', { name: 'Three scenarios compared' });
-    // it comes first
-    expect(screen.getAllByRole('heading', { level: 2 })[0].textContent).toBe('Three scenarios compared');
+    // it comes first after "Allied coverage by technology and stage" (2026-10-29, design L4: the division Section opens the page)
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent).slice(0, 2)).toEqual(['Allied coverage by technology and stage', 'Three scenarios compared']);
     expect(within(region).getByTestId('overview-scenario-words').textContent).toMatch(/^BaselineTrade as it is today \(2024\), before any shock\.Managed Interdependence/);
     const cov = within(region).getByRole('figure', { name: 'Coverage of the allied demand under each scenario' });
     expect(order(cov)).toEqual(['baseline', 'managed', 'decoupling']);
@@ -118,6 +120,83 @@ describe('the Overview leads with the three scenarios', () => {
     expect(screen.getByTestId('overview-run').textContent).toMatch(/^Shown: Decoupling \(/);
     expect(screen.queryByTestId('overview-unchanged')).toBeNull();
     noAcronyms();
+  });
+
+  it('opens with "Allied coverage by technology and stage" (design L4): the posture basis, the stats and the division card in one Section, the node detail listing and linking the model\'s nodes of the cell; no chart above or below in the words', async () => {
+    setPostureStore(fixtureStore());
+    try {
+      renderAt('/aib?scn=decoupling');
+      expect(await h1('Allied Industrial Base')).toBeTruthy();
+      const division = screen.getByRole('region', { name: 'Allied coverage by technology and stage' });
+      expect(division.id).toBe('division');
+      // the basis tag and the intro: the strategic position framework, not the scenario toggle
+      expect(within(division).getByText(/^Strategic position framework/)).toBeTruthy();
+      expect(within(division).getByTestId('division-intro').textContent).toMatch(/It follows the strategic position framework, not the scenario toggle: switching scenarios does not change it\./);
+      // the three metrics as tiles, then the card (its heading an h3 inside the Section)
+      expect(within(await within(division).findByTestId('aib-division-stats')).getAllByRole('listitem')).toHaveLength(3);
+      const m = await within(division).findByTestId('aib-matrix');
+      expect(within(division).getAllByRole('heading', { level: 3 })[0].textContent).toBe('Trusted holders and gaps, node by node');
+      // a cell's detail lists and links the nodes whose six-stage cells are there: the anode node (in a workstream) links to its compact
+      fireEvent.click(within(m).getByRole('button', { name: /^Batteries Refining/ }));
+      const nodes = within(division).getByTestId('aib-node-detail-nodes');
+      const anode = doc.nodes.find((n) => n.id === 'bat-mid-anode')!;
+      expect(within(nodes).getByRole('link', { name: anode.label }).getAttribute('href')).toBe(`/compacts/${anode.compact}?scn=decoupling#nodes`);
+      // a node outside every compact links to the Workstreams node list of its technology and stage
+      fireEvent.click(within(m).getByRole('button', { name: /^Solar Assembly/ }));
+      const modules = doc.nodes.find((n) => n.id === 'solar-down-modules')!;
+      const href = within(within(division).getByTestId('aib-node-detail-nodes')).getByRole('link', { name: modules.label }).getAttribute('href') ?? '';
+      const u = new URL(href, 'http://x');
+      expect([u.pathname, u.searchParams.get('tech'), u.searchParams.get('stage'), u.searchParams.get('scn'), u.hash]).toEqual(['/compacts/workstreams', 'Solar', 'Assembly', 'decoupling', '#nodes']);
+      // a cell without a model node says so
+      fireEvent.click(within(m).getByRole('button', { name: /^Batteries Components/ }));
+      expect(within(division).getByTestId('aib-node-detail-nodes').textContent).toBe('No Allied Industrial Base node is mapped to this cell.');
+      // the run line and the class Section name the division Section, never "the chart above / below"
+      expect(screen.getByTestId('overview-run').textContent).toContain('finer than the technology × stage cells of allied coverage by technology and stage');
+      expect(within(screen.getByTestId('overview-run')).getByRole('link', { name: 'allied coverage by technology and stage' }).getAttribute('href')).toBe('#division');
+      expect(document.body.textContent).not.toMatch(/chart (above|below)|Upstream|Midstream|Downstream|three-stage/);
+      // the partnerships card names the partner scores without three stages
+      expect(document.body.textContent).toContain('the partner scores by technology and stage (Friendshore, Partnership Opportunity, Development Potential)');
+      noAcronyms();
+    } finally {
+      setPostureStore(null);
+    }
+  });
+
+  it("a node is where its cells are, never at its model stage (electric motors: Assembly in the model, codes in Electric Vehicles – Components): the matrix link carries the cell, the Workstreams filter lists it there", async () => {
+    // the PV modules as the model files electric motors: Components in the model, their codes in Solar – Assembly
+    useSource((d) => void (d.nodes.find((n) => n.id === 'solar-down-modules')!.stage = 'Components'));
+    const modules = doc.nodes.find((n) => n.id === 'solar-down-modules')!;
+    setPostureStore(fixtureStore());
+    try {
+      renderAt('/aib?scn=decoupling');
+      expect(await h1('Allied Industrial Base')).toBeTruthy();
+      const division = screen.getByRole('region', { name: 'Allied coverage by technology and stage' });
+      const m = await within(division).findByTestId('aib-matrix');
+      fireEvent.click(within(m).getByRole('button', { name: /^Solar Assembly/ }));
+      const u = new URL(within(within(division).getByTestId('aib-node-detail-nodes')).getByRole('link', { name: modules.label }).getAttribute('href') ?? '', 'http://x');
+      expect([u.pathname, u.searchParams.get('tech'), u.searchParams.get('stage'), u.hash]).toEqual(['/compacts/workstreams', 'Solar', 'Assembly', '#nodes']);
+    } finally {
+      setPostureStore(null);
+    }
+    cleanup();
+    // the link's filter lists the node, in words where its cell is; its model stage is no Stage choice of Solar
+    renderAt('/compacts/workstreams?scn=decoupling&tech=Solar&stage=Assembly#nodes');
+    expect(await h1('Workstreams')).toBeTruthy();
+    const stageSel = screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement;
+    expect([stageSel.value, Array.from(stageSel.options).map((o) => o.value)]).toEqual(['Assembly', ['', 'Assembly']]);
+    expect(screen.getByText(`1 node of ${doc.nodes.length}`)).toBeTruthy();
+    const listed = screen.getByRole('region', { name: 'How every sub-sector is classified' });
+    expect((within(listed).getByText(modules.label).closest('li') as HTMLElement).textContent).toContain('Solar · Assembly');
+    expect((within(listed).getByText(modules.label).closest('li') as HTMLElement).textContent).not.toContain('Components');
+    cleanup();
+    renderAt('/compacts/workstreams?scn=decoupling&tech=Solar&stage=Components#nodes');
+    expect(await h1('Workstreams')).toBeTruthy();
+    expect((screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement).value).toBe('');
+    cleanup();
+    // with only the model's stage: not listed under Components
+    renderAt('/compacts/workstreams?scn=decoupling&stage=Components#nodes');
+    expect(await h1('Workstreams')).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'How every sub-sector is classified' })).queryByText(modules.label)).toBeNull();
   });
 
   it('Managed Interdependence: current in every comparison; the class tiles, the lists and the question cards follow it', async () => {

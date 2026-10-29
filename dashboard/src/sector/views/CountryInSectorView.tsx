@@ -1,20 +1,21 @@
 // Country in sector /sector/:tech/:stage/:iso3 (spec_sector.md 4.4): one economy's position in one
 // sector. Position tiles per country-level measure (with the value states), its rank among peers (a
 // beeswarm of the primary measure), its trade partners (where imports come from, where exports go,
-// and its import mix 2020 vs 2024), in the four CM-FDI cells its inbound and outbound cross-border
+// and its import mix 2020 vs 2024), in the CM-FDI cells (Components and Assembly of four technologies) its inbound and outbound cross-border
 // manufacturing projects (sector-fdi, loaded when the section nears the viewport), its aid and
 // investment partners (sector-dev: aid for the stage's aid sector, bilateral direct-investment
 // positions; loaded near the viewport), its measures over time (separate small charts, never a dual
 // axis), its policies and its stage context.
 
 import { useMemo } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useLocation, useParams } from 'react-router';
 import { Redirect } from '../../shell/Redirect.tsx';
 import { TableView } from '../../components/TableView.tsx';
 import { PageHead, StatTile } from '../../components/ui.tsx';
 import { Term } from '../../components/Term.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { isStageSlug, isTechSlug, TECH_LABELS, type SectorTradeChunk } from '../contract.ts';
+import { isLegacyStageSlug, legacyStageNote, legacyStageOfSlug, legacyStageTarget } from '../../lib/stages.ts';
 import { useModel } from '../data/SectorDataProvider.tsx';
 import type { FactsIndex } from '../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../data/model.ts';
@@ -337,8 +338,16 @@ export default function CountryInSectorView() {
     const log = sorted.length > 2 && med > 0 && sorted[sorted.length - 1] / med > 100;
     return { v, it, y, points, med, log };
   }, [facts, cell, geo, model, state.eu]);
+  const loc = useLocation();
 
   if (!tech) return <Redirect to="/sector" notice={`No sector called '${rawT}'; showing all sectors.`} />;
+  // an old three-stage link (design U1): Downstream is Deployment exactly (the economy, query and hash
+  // kept); Upstream and Midstream split, so the link goes to the technology's chain page
+  if (rawS && isLegacyStageSlug(rawS)) {
+    const to = legacyStageTarget(rawS);
+    const legacy = legacyStageOfSlug(rawS)!;
+    return <Redirect to={{ pathname: to ? `/sector/${tech}/${to}/${rawC ?? ''}` : `/sector/${tech}`, search: loc.search, hash: to ? loc.hash : '' }} notice={legacyStageNote(legacy, TECH_LABELS[tech])} />;
+  }
   if (!stage || !cell) return <Redirect to={`/sector/${tech}`} notice={`No stage called '${rawS}'; showing the whole ${TECH_LABELS[tech]} chain.`} />;
   if (!geo) return <Redirect to={link(`/sector/${tech}/${stage}`)} notice={`No economy '${rawC}' in the sector data; showing the sector.`} />;
 

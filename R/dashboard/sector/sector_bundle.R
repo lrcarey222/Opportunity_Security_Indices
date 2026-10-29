@@ -188,7 +188,7 @@ sector_assemble <- function(parts, dict, ship_vars = NULL) {
     tibble::tibble(item_key = character(), year = integer(), matrix_total = double(), matrix_china = double(), matrix_hhi = double(),
                    reported_total = double(), reported_china = double(), reported_hhi = double(), n_reporters = integer(), warn = logical())
   }
-  headlines <- sector_headlines(summary, parts$facts, geo, items, vars, parts$policy$pams, parts$headline_sources %||% list())
+  headlines <- sector_headlines(summary, parts$facts, geo, items, vars, parts$policy$pams, parts$headline_sources %||% list(), parts$fact_notes)
   glyph <- sector_coverage_glyph(items, coverage)
 
   list(

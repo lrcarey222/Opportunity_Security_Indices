@@ -28,7 +28,8 @@ minimal_dict <- function() {
     themes = lapply(seq_along(SECTOR_THEMES), function(i) list(slug = SECTOR_THEMES[i], label = SECTOR_THEMES[i], order = i, default_var = "trade.exports")),
     families = lapply(SECTOR_FAMILIES, function(f) list(id = f, label = f)),
     techs = lapply(SECTOR_TECH_SLUGS, function(s) list(slug = s)),
-    cells = list(list(slug = "batteries-midstream", cell_blurb = "Cells.")),
+    # The 66 headline cells (11 technologies x 6 stages): the validator requires each.
+    cells = lapply(sector_headline_cell_slugs(), function(s) list(slug = s, cell_blurb = "A sector.")),
     vars = list(list(
       id = "trade.exports", theme = "trade", family = "exports", label = "Exports of the HS6 basket", short = "Exports",
       unit = "usd", data_year = "2024", years = list(2020, 2024), native_level = "country", item_axis = "cell", agg = "sum",
@@ -111,8 +112,50 @@ test_that("the validator accepts a minimal dictionary and names each problem", {
   expect_match(broken(function(d) { d$vars[[1]]$theme <- "production"; d }), "differs from the id prefix")
   expect_match(broken(function(d) { d$vars[[1]]$item_axis <- "mineral"; d }), "needs link_stage")
   expect_match(broken(function(d) { d$families <- d$families[-1]; d }), "families: expected exactly")
-  expect_match(broken(function(d) { d$vars[[1]]$primary_for <- list("batteries-midstream"); d$vars[[2]] <- modifyList(d$vars[[1]], list(id = "trade.imports")); d }),
-               "two primary measures: batteries-midstream")
+  expect_match(broken(function(d) { d$vars[[1]]$primary_for <- list("batteries-assembly"); d$vars[[2]] <- modifyList(d$vars[[1]], list(id = "trade.imports")); d }),
+               "two primary measures: batteries-assembly")
+  # Six stages (2026-10-28): the cells are the 11 x 6 headline grid (plus Semiconductors stages), slugs
+  # <tech>-<stage>; primary_for names known cells; link_stage is one or more stages, or any alone; no
+  # text names an old stage.
+  expect_match(broken(function(d) { d$cells[[1]]$slug <- "batteries-midstream"; d }), "not <tech>-<stage> of the six stages: batteries-midstream")
+  expect_match(broken(function(d) { d$cells <- d$cells[-6]; d }), "headline cells without an entry: batteries-recovery")
+  expect_match(broken(function(d) { d$cells[[2]]$cell_blurb <- NULL; d }), "batteries-refining: no cell_blurb")
+  expect_match(broken(function(d) { d$vars[[1]]$primary_for <- list("batteries-upstream"); d }), "primary_for: cells not in cells: batteries-upstream")
+  expect_identical(broken(function(d) { d$cells[[67]] <- list(slug = "semiconductors-refining", cell_blurb = "Chips."); d }), "")
+  expect_match(broken(function(d) { d$vars[[1]]$item_axis <- "mineral"; d$vars[[1]]$link_stage <- "Upstream"; d }), "link_stage must be one or more of")
+  expect_match(broken(function(d) { d$vars[[1]]$item_axis <- "mineral"; d$vars[[1]]$link_stage <- list("any", "Refining"); d }), "or any alone")
+  expect_identical(broken(function(d) { d$vars[[1]]$item_axis <- "mineral"; d$vars[[1]]$link_stage <- list("Extraction", "Refining"); d }), "")
+  expect_match(broken(function(d) { d$vars[[1]]$label <- "Upstream exports"; d }), "texts naming Upstream, Midstream or Downstream")
+  expect_match(broken(function(d) { d$caveats[[1]]$text <- "On every Downstream sector."; d }), "texts naming Upstream")
+  # The OECD's own CRS sub-sector name is not an old stage.
+  expect_identical(broken(function(d) { d$caveats[[1]]$text <- "Mining less its 'Oil and gas (upstream)' sub-sector."; d }), "")
+})
+
+test_that("the dictionary of this build is six-stage: 66 headline cells, the Semiconductors stages, link stages", {
+  cells <- vapply(dict$cells, function(c) c$slug, "")
+  expect_identical(cells[cells %in% sector_headline_cell_slugs()], sector_headline_cell_slugs())
+  expect_identical(setdiff(cells, sector_headline_cell_slugs()), c("semiconductors-refining", "semiconductors-components", "semiconductors-assembly"))
+  expect_false(any(sector_has_legacy_stage(unlist(dict, use.names = FALSE))))
+  tabs <- sector_dictionary_tables(dict)
+  ls <- stats::setNames(tabs$vars$link_stage, tabs$vars$id)
+  expect_identical(ls[["production.mining"]], "Extraction")
+  expect_identical(ls[["production.refining"]], "Refining")
+  expect_identical(ls[["resources.mineral_reserves"]], "Extraction")
+  expect_identical(ls[["production.generation"]], "Deployment")
+  expect_identical(ls[["trade.critmin_exports"]], "Extraction|Refining|Recovery")
+  expect_identical(ls[["prices.latest"]], "Extraction|Refining")
+  expect_identical(ls[["prices.wages"]], "any")
+  ax <- stats::setNames(tabs$vars$item_axis, tabs$vars$id)
+  expect_identical(unname(ax[c("trade.critmin_exports", "trade.critmin_dependence")]), c("mineral_stage", "mineral_stage"))
+  pf <- unlist(strsplit(stats::na.omit(tabs$vars$primary_for), "|", fixed = TRUE))
+  expect_true(all(pf %in% cells))
+  expect_false(anyDuplicated(pf) > 0)
+  # The figures shown on both manufacturing stages and the critical-minerals split carry their notes.
+  expect_true(all(c("same_figure_pair", "cim_minerals_split") %in% tabs$caveats$id))
+  expect_true(all(c("same_figure_pair", "cim_minerals_split") %in% SECTOR_DATA_CAVEATS))
+  # The ILO activities serve the stages the pipeline files them under.
+  expect_identical(unname(SECTOR_ACTIVITY_OF_STAGE[SUPPLY_CHAIN_STAGES]),
+                   c("mining-utilities", "manufacturing", "manufacturing", "manufacturing", "construction", "mining-utilities"))
 })
 
 test_that("placeholders are filled from the data and unfilled ones are reported", {

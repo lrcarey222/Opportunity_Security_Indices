@@ -607,6 +607,9 @@ country_memo_lint <- function(parsed, res, sents, claims, sheet, cfg, names = ch
     for (p in unlist(cfg$banned_labels)) if (grepl(paste0("(?<![A-Za-z])", p, "(?![A-Za-z])"), msk_own, perl = TRUE)) bl <- c(bl, p)
     if (grepl("(?<![A-Za-z])Insecure(?![A-Za-z])", msk_own, perl = TRUE)) bl <- c(bl, "Insecure")
     if (length(bl)) add("error", "secure_label", sprintf("'secure' or 'insecure' as a label (%s): \"%s\"", paste(unique(bl), collapse = ", "), s$text), sec, sid)
+    # the three stages the six replaced (2026-10-28, config legacy_stage_words): never in a memo's own words
+    ls <- country_memo_has_word(lower, unlist(cfg$legacy_stage_words))
+    if (length(ls)) add("error", "legacy_stage", sprintf("old stage word(s) %s (the sheets are at the six supply-chain stages): \"%s\"", paste(sprintf("'%s'", ls), collapse = ", "), s$text), sec, sid)
     # causal words
     cz <- country_memo_has_word(lower, unlist(cfg$causal_words))
     if (length(cz)) {

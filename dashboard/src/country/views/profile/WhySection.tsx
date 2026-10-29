@@ -127,7 +127,7 @@ function Evidence({ c }: { c: CellFacts }) {
         ))}
       </ul>
       <p className="mt-1 text-xs text-paper-mute">
-        The paper&apos;s Energy Security does not measure how concentrated a country&apos;s own suppliers are; its trade input is the world market&apos;s concentration, the same for every economy in a sector.
+        The index&apos;s Energy Security does not measure how concentrated a country&apos;s own suppliers are; its trade input is the world market&apos;s concentration, the same for every economy in a sector.
       </p>
     </div>
   );
@@ -169,7 +169,7 @@ function WhyPanel({ c }: { c: CellFacts }) {
           })),
         ]),
       ),
-      'Opportunity Security Indices, paper baseline (category and variable contributions); raw figures from their sources',
+      'Opportunity Security Indices, NEIS baseline (category and variable contributions); raw figures from their sources',
       sheet.meta.as_of,
     ),
   });

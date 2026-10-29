@@ -1,5 +1,10 @@
 // Allied Industrial Base overview /aib (IA refactor, 2026-10-16; brief s.13-14): a light orientation page.
-// Since the scenario toggle (2026-10-19) it leads with the three scenarios side by side (Baseline, Managed
+// It opens (2026-10-29, design L4) with "Allied coverage by technology and stage" (#division): the posture
+// module's allied division of labour (who among trusted allies holds each OSI technology x stage cell, the
+// gaps, partner demand), its three header metrics as tiles, the matrix card and its node detail, which lists
+// and links the Allied Industrial Base nodes whose six-stage cells (node.yfCells) are in the cell, each link
+// opening the Workstreams node list filtered on that cell (its technology and stage). It follows
+// the strategic position framework, not the scenario toggle. Then the three scenarios side by side (Baseline, Managed
 // Interdependence, Decoupling; the toggled one highlighted): the allied demand affected, the coverage of
 // the allied demand (kept / restored by trade / new capacity), what is left for new capacity in USD and the
 // class mix of the lost or shifted supply, with a table twin and a CSV. Then where coordination matters
@@ -16,10 +21,10 @@ import { Link } from 'react-router';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { PageHead, StatTile } from '../../components/ui.tsx';
-import { AibDivisionHero } from '../../posture/AibDivisionHero.tsx';
+import { AibDivisionCard, AibDivisionIntro, AibDivisionStats, indexNodesByCell, PostureBasisTag } from '../../posture/index.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
-import { AIB_CLASSES, type AibCompact } from '../contract.ts';
+import { AIB_CLASSES, inStrategicScope, type AibCompact } from '../contract.ts';
 import { ClassChip, ClassLegend, ClassSwatch } from '../charts/ClassChip.tsx';
 import { LostByClassBar } from '../charts/LostByClassBar.tsx';
 import { CoverageLegend, ScenarioBars, ScenarioClassBars, ScenarioCoverageCompare, ScenarioSwatch, ScenarioTag } from '../charts/ScenarioCompare.tsx';
@@ -31,15 +36,15 @@ import { fmtPp, fmtShare, fmtUsd, plural } from '../derive/format.ts';
 import { NO_FILTER, pairTradeFlows } from '../derive/partnerships.ts';
 import { managedCompacts, managedOf, overviewRows, scenarioClassGroups, topScenarioNodes, type OverviewRow } from '../derive/scenarioPages.ts';
 import { nodeScenario, scenarioCaveat, scenarioCsvFields, scenarioInfo, scenarioList, scenarioShockLabel, type NodeScenario } from '../derive/scenarios.ts';
-import { nodeWhere } from '../derive/taxonomy.ts';
-import { compactHref } from '../nav.ts';
+import { cellsInFilter, nodeWhere } from '../derive/taxonomy.ts';
+import { compactHref, workstreamsHref } from '../nav.ts';
 import { csvWithRun, Section } from './common.tsx';
 import { BasisTag, QuestionCard } from './basis.tsx';
 
 export const AIB_EYEBROW = 'ALLIED INDUSTRIAL BASE';
 
 function NodeList({ rows, value, label }: { rows: NodeScenario[]; value: (r: NodeScenario) => string; label: string }) {
-  const { tx, href } = useAibCtx();
+  const { href } = useAibCtx();
   return (
     <ol className="divide-y divide-white/5 text-sm" aria-label={label}>
       {rows.map((r) => {
@@ -50,7 +55,7 @@ function NodeList({ rows, value, label }: { rows: NodeScenario[]; value: (r: Nod
             <span className="min-w-0 flex-1">
               <span className="text-paper">{n.label}</span>{' '}
               <span className="text-xs text-paper-mute">
-                {nodeWhere(tx, n)}
+                {nodeWhere(n)}
                 {n.compact && (
                   <>
                     {' · '}
@@ -66,6 +71,51 @@ function NodeList({ rows, value, label }: { rows: NodeScenario[]; value: (r: Nod
         );
       })}
     </ol>
+  );
+}
+
+/** The id and title of the Overview's first section (design L4; not "Division of labour", the compact pages' own). */
+export const DIVISION_SECTION = { id: 'division', title: 'Allied coverage by technology and stage' } as const;
+
+/**
+ * "Allied coverage by technology and stage": the posture module's division card in the page's Section,
+ * its node detail listing and linking the model's nodes in each six-stage cell (a node in several cells
+ * under each, never placed by node.stage): a node with a compact links to its compact's nodes, the others
+ * to the Workstreams node list filtered on the cell (its technology and stage; with every node when the
+ * node lies outside the strategic scope), which lists the node. It does not follow the scenario toggle.
+ */
+function DivisionSection() {
+  const { doc, href } = useAibCtx();
+  const nodesByCell = useMemo(
+    () =>
+      indexNodesByCell(
+        doc.nodes.flatMap((n) =>
+          cellsInFilter(n).map((c) => {
+            const q = new URLSearchParams({ tech: c.tech, stage: c.stage });
+            if (!inStrategicScope(n)) q.set('scope', 'all');
+            const to = n.compact ? `${compactHref(n.compact)}#nodes` : `${workstreamsHref()}?${q.toString()}#nodes`;
+            return { id: n.id, label: n.label, href: href(to), cells: [c.slug] };
+          }),
+        ),
+      ),
+    [doc, href],
+  );
+  return (
+    <Section
+      id={DIVISION_SECTION.id}
+      title={DIVISION_SECTION.title}
+      intro={
+        <>
+          <PostureBasisTag />
+          <p className="mt-2" data-testid="division-intro">
+            <AibDivisionIntro /> Select a cell for its allied holders and the model&apos;s supply-chain nodes whose traded goods sit there.
+          </p>
+        </>
+      }
+    >
+      <AibDivisionStats />
+      <AibDivisionCard nodesByCell={nodesByCell} />
+    </Section>
   );
 }
 
@@ -249,18 +299,20 @@ export default function AibOverviewView() {
               Headline: <span className="text-paper-dim">{shockLabel}</span>; supply assumption: {m.headlineScenario}
             </>
           )}
-          ; trade in {m.tradeYear}; {plural(total, 'supply-chain node')} (groups of traded goods, finer than the technology × stage cells of the chart below).{' '}
+          ; trade in {m.tradeYear}; {plural(total, 'supply-chain node')} (groups of traded goods, finer than the technology × stage cells of{' '}
+          <a className="link" href={`#${DIVISION_SECTION.id}`}>
+            {DIVISION_SECTION.title.toLowerCase()}
+          </a>
+          ).{' '}
           <Link className="link" to={href('/compacts/about')}>
             How the analysis works &rarr;
           </Link>
         </p>
       </PageHead>
 
-      <div className="mb-14">
-        <AibDivisionHero />
-      </div>
-
       <div className="space-y-14">
+        <DivisionSection />
+
         {hasScenarios && three.length > 0 && (
           <Section
             id="scenarios"
@@ -297,7 +349,7 @@ export default function AibOverviewView() {
                 {hasScenarios && <ScenarioTag id={scenario} meta={m} />}
               </span>
               <p className="mt-2">
-                Every supply-chain node of the model (a group of traded goods at one stage, finer than the technology × stage cells of the chart above) gets one treatment from
+                Every supply-chain node of the model (a group of traded goods at one stage, finer than the technology × stage cells of {DIVISION_SECTION.title.toLowerCase()}) gets one treatment from
                 its own results{mi ? ' under the scenario' : ''}.{' '}
                 {nHigh !== null && typeof high === 'number' ? `${plural(nHigh, 'node')} lose at least ${fmtShare(high, 0)} of their supply to the shock (high severity). ` : ''}
                 {takeaway}
@@ -389,8 +441,8 @@ export default function AibOverviewView() {
               question="Which trade, investment and development relationships matter?"
               answer={
                 trade
-                  ? `${plural(trade.length, 'coordinated trade relationship')} across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; the paper’s three-stage partner scores (Friendshore, Partnership Opportunity, Development Potential).`
-                  : `Coordinated trade relationships across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; the paper’s three-stage partner scores (Friendshore, Partnership Opportunity, Development Potential).`
+                  ? `${plural(trade.length, 'coordinated trade relationship')} across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; the partner scores by technology and stage (Friendshore, Partnership Opportunity, Development Potential).`
+                  : `Coordinated trade relationships across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; the partner scores by technology and stage (Friendshore, Partnership Opportunity, Development Potential).`
               }
               to={href('/aib/partnerships')}
               cta="Partnerships"

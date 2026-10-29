@@ -18,10 +18,11 @@ import { Link } from 'react-router';
 import { ClassChip } from '../../../aib/charts/ClassChip.tsx';
 import type { AibDoc, AibNode } from '../../../aib/contract.ts';
 import { compactTitle, fmtPp, fmtUsd } from '../../../aib/derive/format.ts';
-import { nodeWhere, taxonomyOf } from '../../../aib/derive/taxonomy.ts';
+import { taxonomyOf } from '../../../aib/derive/taxonomy.ts';
+import { parseCellSlug, stageLabel } from '../../../lib/stages.ts';
 import { compactHref } from '../../../aib/nav.ts';
 import { TableView } from '../../../components/TableView.tsx';
-import { STAGE_LABELS, TECH_LABELS, type SectorPolicyChunk, type SectorTradeChunk } from '../../contract.ts';
+import { isTechSlug, STAGE_LABELS, TECH_LABELS, type SectorPolicyChunk, type SectorTradeChunk } from '../../contract.ts';
 import { useSectorManifest } from '../../data/SectorDataProvider.tsx';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
 import { primaryMeasure } from '../../derive/cells.ts';
@@ -482,9 +483,20 @@ export function ClimateSection() {
 const dividendOf = (n: AibNode): number | null => n.dividend ?? (n.optimized !== null && n.existing !== null ? n.optimized - n.existing : null);
 
 /**
+ * The OSI technologies of a node: those of its six-stage cells (node.yfCells), as equals, in the Sector
+ * order (design A1); [] for a node with no OSI cell.
+ */
+export function nodeTechLabels(n: Pick<AibNode, 'yfCells'>): string[] {
+  const slugs = new Set(n.yfCells.map((c) => parseCellSlug(c)?.techSlug).filter((t): t is string => !!t));
+  return Object.keys(TECH_LABELS).filter((t) => slugs.has(t) && isTechSlug(t)).map((t) => TECH_LABELS[t as keyof typeof TECH_LABELS]);
+}
+
+/**
  * Every Allied Industrial Base node of the cell (Security & concentration): model results, never
- * preference-adjusted. The nodes reach this three-stage cell through their three-stage cells
- * (../../derive/chain.ts); the stage the table shows is the node's own, one of the six (2026-10-28).
+ * preference-adjusted. The nodes reach this six-stage cell through their own six-stage cells
+ * (node.yfCells, ../../derive/chain.ts; design A2). A node's stage (node.stage) is where the
+ * electro-industrial dictionary files it; its traded codes can sit in a sector of another stage (Li-ion
+ * cells & packs, an Assembly node, also has codes in Electric Vehicles — Components), which the table says.
  */
 export function AibNodesBlock() {
   const { model, cell, tech, stage } = useProfile();
@@ -500,13 +512,15 @@ export function AibNodesBlock() {
   const shock = doc.meta.shocks.find((x) => x.id === doc.meta.headlineShock)?.label ?? null;
   const tx = taxonomyOf(doc.meta);
   const apart = (n: AibNode) => (subsOf.get(n.id) ?? []).filter((s) => s.toLowerCase() !== n.label.toLowerCase());
+  const here = STAGE_LABELS[stage];
+  const otherStage = rows.filter((n) => n.stage && n.stage !== here);
   return (
     <Section
       id="aib-nodes"
       title="Allied Industrial Base nodes"
       sub={
         tx.dictionary
-          ? `What the Allied Industrial Base model finds for the nodes of the electro-industrial dictionary whose traded codes sit in this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows. The nodes are not this sector's sub-sectors: each belongs to a dictionary sector and supply-chain stage, and reaches this sector through the codes it shares with it (a node can sit in several sectors, and its results are for the whole node).`
+          ? `What the Allied Industrial Base model finds for the nodes of the electro-industrial dictionary whose traded codes sit in this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows. The nodes are not this sector's sub-sectors: each has its own supply-chain stage and reaches this sector through the codes it shares with it (a node can sit in several sectors, and its results are for the whole node).`
           : `What the Allied Industrial Base model finds for the supply-chain nodes of this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows.`
       }
       aside={<span className="eyebrow">Observed / modelled facts</span>}
@@ -517,7 +531,8 @@ export function AibNodesBlock() {
         rowKey={(n) => n.id}
         cols={[
           { id: 'n', header: 'Node', value: (n) => n.label, cell: (n) => (apart(n).length ? <span>{n.label} <span className="text-xs text-paper-mute">(in {apart(n).join(', ')})</span></span> : n.label), minWidth: 150 },
-          ...(tx.dictionary ? [{ id: 's', header: 'Dictionary sector and supply-chain stage', value: (n: AibNode) => nodeWhere(tx, n), minWidth: 180 }] : []),
+          { id: 's', header: 'Supply-chain stage', value: (n) => (n.stage ? stageLabel(n.stage) : '–') },
+          { id: 't', header: 'Technologies', value: (n) => nodeTechLabels(n).join(', ') || '–', minWidth: 160 },
           { id: 'c', header: 'Class', value: (n) => n.cls, cell: (n) => <ClassChip cls={n.cls} /> },
           { id: 'e', header: 'Shock exposure', value: (n) => n.exposure, cell: (n) => fmtShare(n.exposure), num: true },
           { id: 'd', header: 'Coordination dividend', value: (n) => dividendOf(n), cell: (n) => fmtPp(dividendOf(n)), num: true },
@@ -526,9 +541,9 @@ export function AibNodesBlock() {
           { id: 'k', header: 'Compact', value: (n) => n.compact ?? '', cell: (n) => { const k = n.compact ? doc.compacts.find((x) => x.id === n.compact) : null; return k ? <Link className="link" to={compactHref(k.id)}>{compactTitle(k, doc.nodes)}</Link> : <span className="text-paper-mute">none</span>; } },
         ]}
       />
-      {tx.dictionary && (
+      {otherStage.length > 0 && (
         <p className="text-xs text-paper-mute" data-testid="aib-nodes-stages">
-          Supply-chain stage: the Allied Industrial Base nodes use six stages (Extraction, Refining, Components, Assembly, Deployment, Recovery) that roll up into the paper’s three, and this sector ({TECH_LABELS[tech]} {STAGE_LABELS[stage]}) is one of the three. A node sits here because its codes are filed under this sector, so its own stage can read differently (a Refining node in a Midstream sector).
+          A node sits here because some of its traded codes are filed under {TECH_LABELS[tech]} — {here}; its own stage is where the dictionary files the node as a whole, so {listText(otherStage.map((n) => `${n.label} (${stageLabel(n.stage)})`))} {otherStage.length === 1 ? 'reads' : 'read'} another stage here.
         </p>
       )}
       <p className="text-xs text-paper-mute">

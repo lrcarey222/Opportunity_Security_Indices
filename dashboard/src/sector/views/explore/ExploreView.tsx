@@ -13,7 +13,7 @@ import { Redirect } from '../../../shell/Redirect.tsx';
 import { Disclosure, FilterRow, Notice, PageHead, Segmented, Select } from '../../../components/ui.tsx';
 import { useMediaQuery } from '../../../shell/useMediaQuery.ts';
 import { useTitle } from '../../../shell/title.ts';
-import { STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS, type StageSlug, type TechSlug } from '../../contract.ts';
+import { STAGE_LABELS, STAGE_SHORTS, STAGE_SLUGS, TECH_LABELS, TECH_SLUGS, type StageSlug, type TechSlug } from '../../contract.ts';
 import { useModel } from '../../data/SectorDataProvider.tsx';
 import type { GeoInfo, ItemInfo, VarInfo } from '../../data/model.ts';
 import { itemsOf, layoutBanner, layoutOf, pickItem, pickVar, pickYear, resultLine, SCOPE_LABEL, shareLegal, themeVars, type ExploreLayout } from '../../derive/explore.ts';
@@ -37,19 +37,22 @@ import { PolicyExplore } from './PolicyExplore.tsx';
 
 const FACTS_LAYOUTS: ReadonlySet<ExploreLayout> = new Set(['country', 'region', 'entity', 'world', 'cell_global', 'scatter']);
 
-const AXIS_WORDS: Record<string, string> = { mineral: 'Mineral', fuel: 'Fuel', commodity: 'Commodity', activity: 'Activity', policy_tag: 'Policy tag', cell: 'Sector', indicator: 'Series', aid_sector: 'Aid sector' };
+const AXIS_WORDS: Record<string, string> = { mineral: 'Mineral', mineral_stage: 'Mineral and stage', fuel: 'Fuel', commodity: 'Commodity', activity: 'Activity', policy_tag: 'Policy tag', cell: 'Sector', indicator: 'Series', aid_sector: 'Aid sector' };
 
-/** The 11 x 3 picker of cells (>= 1024 px): options without data disabled, the current one outlined. */
+/**
+ * The 11 x 6 picker of cells (>= 1024 px): columns headed by the stage shorts (Ext, Ref, Com, Asm, Dep,
+ * Rec: initials would clash, Refining and Recovery), options without data disabled, the current one outlined.
+ */
 function CellPicker({ v, item, onPick }: { v: VarInfo; item: ItemInfo | null; onPick: (it: ItemInfo) => void }) {
   const model = useModel();
   const has = new Set(itemsOf(model, v).map((x) => x.idx));
   const techs = TECH_SLUGS.filter((t) => model.cells.some((c) => c.techSlug === t));
   return (
-    <div className="grid w-fit grid-cols-[auto_repeat(3,2rem)] items-center gap-1 text-xs" role="group" aria-label="Pick a sector">
+    <div className="grid w-fit grid-cols-[auto_repeat(6,2.25rem)] items-center gap-1 text-xs" role="group" aria-label="Pick a sector">
       <span />
       {STAGE_SLUGS.map((s) => (
-        <span key={s} className="text-center text-paper-mute" aria-hidden="true">
-          {STAGE_LABELS[s][0]}
+        <span key={s} className="text-center text-paper-mute" aria-hidden="true" title={STAGE_LABELS[s]}>
+          {STAGE_SHORTS[s]}
         </span>
       ))}
       {techs.map((t) => (
@@ -63,7 +66,7 @@ function CellPicker({ v, item, onPick }: { v: VarInfo; item: ItemInfo | null; on
               <button
                 key={s}
                 type="button"
-                className={`h-6 w-8 border ${cur ? 'border-signal bg-ink-700' : 'hairline'} ${ok ? 'bg-ink-700/60 hover:bg-ink-600' : 'opacity-30'}`}
+                className={`h-6 w-9 border ${cur ? 'border-signal bg-ink-700' : 'hairline'} ${ok ? 'bg-ink-700/60 hover:bg-ink-600' : 'opacity-30'}`}
                 disabled={!ok}
                 aria-pressed={cur}
                 aria-label={`${TECH_LABELS[t]} — ${STAGE_LABELS[s]}${ok ? '' : ': no data'}`}

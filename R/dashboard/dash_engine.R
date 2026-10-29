@@ -158,6 +158,13 @@ dash_validate_bundle <- function(bundle) {
     need(!is.null(bi[[k]]), paste0("baseline_inputs$", k, " missing"))
   }
   need(!is.null(bundle$dims$techs) && length(bundle$dims$techs) > 0, "dims$techs empty")
+  # the stages: one weight per stage of the cells, and the allied pick's stages among them
+  st <- bundle$dims$stages
+  need(!is.null(st) && length(st) > 0 && !anyDuplicated(st), "dims$stages empty or duplicated")
+  need(setequal(names(bi$stage_weights), st) && length(bi$stage_weights) == length(st),
+       "baseline_inputs$stage_weights must name every stage of dims$stages once")
+  need(!is.null(bi$allied_stages) && length(bi$allied_stages) > 0 && all(bi$allied_stages %in% st),
+       "baseline_inputs$allied_stages missing or naming a stage outside dims$stages")
   for (p in c("es", "eo")) {
     pb <- bundle$pillars[[p]]
     need(!is.null(pb), paste0("pillars$", p, " missing"))

@@ -47,6 +47,11 @@
 # fixture (sector_synthetic_parts()) the dashboard tests use, without reading any data.
 #
 # Restricted sources (BNEF, BCG) are never built: there is no flag for them.
+#
+# Schema 2 (2026-10-28): cells are technology x the six supply-chain stages (SUPPLY_CHAIN_STAGES): the
+# dictionary's 69 cells (66 headline, the Semiconductors stages). Trade reads the HS6 master's `stage`;
+# every processed table is read as six-stage (a three-stage table stops); the climate tables must be
+# rebuilt by scripts/16, 17 and 18 on the six-stage maps first (or export with --no-climate).
 
 source(local({
   resolve_bootstrap_path <- function() {
@@ -145,6 +150,10 @@ if (!is.null(catalogue)) {
   if (length(extra)) stop("Dictionary entries outside this build's scope (contract scope 'build'): ", paste(extra, collapse = ", "))
 }
 add_check("dictionary: valid, every measure of the build has an entry", "PASS", length(dict_ids))
+# The cells of the bundle: the dictionary's (the 66 headline cells and the Semiconductors stages).
+dict_cell_slugs <- vapply(dict_raw$cells, function(c) c$slug, character(1))
+add_check("six stages: the dictionary's cells are the 11 x 6 headline grid plus the Semiconductors stages; no text names an old stage", "PASS",
+          length(dict_cell_slugs), sprintf("%d cells (%d headline)", length(dict_cell_slugs), sum(dict_cell_slugs %in% sector_headline_cell_slugs())))
 
 # ---- Writing (both modes) ---------------------------------------------------------------------------
 
@@ -202,9 +211,15 @@ finish <- function(bundle, chunks, out_dir, created, git_commit, strategic_bundl
     sm <- jsonlite::fromJSON(strategic_manifest, simplifyVector = FALSE)
     if (!is.null(sm$budget$all_gz)) combined <- sector_gz + as.numeric(sm$budget$all_gz)
   }
-  if (sector_gz > SECTOR_BUDGET_GZ$sector_total) stop(sprintf("Sector data %.2f MB gz exceeds the 9 MB budget.", sector_gz / 2^20))
-  if (!is.null(combined) && combined > SECTOR_BUDGET_GZ$combined_total) stop(sprintf("Sector + Strategic %.2f MB gz exceeds 25 MB.", combined / 2^20))
-  add_check("budget: per chunk and in total (sector <= 9 MB gz; with Strategic <= 25 MB gz)", "PASS", nrow(ci),
+  lim_mb <- function(x) format(x / 2^20, nsmall = 0)
+  if (sector_gz > SECTOR_BUDGET_GZ$sector_total) {
+    stop(sprintf("Sector data %.2f MB gz exceeds the %s MB budget.", sector_gz / 2^20, lim_mb(SECTOR_BUDGET_GZ$sector_total)))
+  }
+  if (!is.null(combined) && combined > SECTOR_BUDGET_GZ$combined_total) {
+    stop(sprintf("Sector + Strategic %.2f MB gz exceeds %s MB.", combined / 2^20, lim_mb(SECTOR_BUDGET_GZ$combined_total)))
+  }
+  add_check(sprintf("budget: per chunk and in total (sector <= %s MB gz; with Strategic <= %s MB gz)",
+                    lim_mb(SECTOR_BUDGET_GZ$sector_total), lim_mb(SECTOR_BUDGET_GZ$combined_total)), "PASS", nrow(ci),
             sprintf("sector %.0f kB gz%s", sector_gz / 1024, if (is.null(combined)) "" else sprintf("; combined %.2f MB gz", combined / 2^20)))
   id_file <- tempfile(fileext = ".txt")
   writeBin(charToRaw(paste0(paste(sort(ci$file), collapse = "\n"), "\n")), id_file)
@@ -344,15 +359,22 @@ results <- list()
 worlds <- list()
 
 step("Processed tables (raw rows only) -> facts")
+# The theme tables carry the six supply-chain stages since 2026-10-26 (schema 2 of this bundle): a
+# table built before that (Upstream / Midstream / Downstream) stops here, before any cell is keyed.
+six_stage <- function(t, label) {
+  st <- sector_raw_rows(t)$supply_chain
+  assert_supply_chain_stages(st[!is.na(st)], label = paste0(label, " supply_chain (rerun the pipeline at six stages)"))
+  t
+}
 coal <- rd("coalition_tbl")
 ideal <- rd("geo_ideal_points_tbl")
 eu_members <- coal$iso3[coal$eu_member %in% TRUE]
-tc <- rd("trade_concentration_tbl")
+tc <- six_stage(rd("trade_concentration_tbl"), "trade_concentration_tbl")
 results$atlas <- sector_facts_atlas(tc)
 worlds$atlas <- results$atlas$world
 reported <- sector_reported_trade(tc)
 rm(tc)
-ef <- rd("export_feasibility_tbl")
+ef <- six_stage(rd("export_feasibility_tbl"), "export_feasibility_tbl")
 results$rca <- sector_facts_rca(ef)
 # Export feasibility (Atlas relatedness): its data year is the Atlas HS4 year the rows' explanation
 # names in brackets, not the table's Year column (the Comtrade year); it must be the dictionary's.
@@ -364,7 +386,7 @@ if (!identical(feas_year, feas_dict_year)) {
 }
 results$feasibility <- sector_facts_feasibility(ef, feas_year)
 add_check(paste0("export feasibility: Atlas HS4 data year ", feas_year, " (explanation) = the dictionary's; every basket cell covered"),
-          if (length(unique(results$feasibility$facts$item_key)) >= 18) "PASS" else "WARN", nrow(results$feasibility$facts),
+          if (length(unique(results$feasibility$facts$item_key)) >= 36) "PASS" else "WARN", nrow(results$feasibility$facts),
           sprintf("%d cells, %d economies", length(unique(results$feasibility$facts$item_key)), length(unique(results$feasibility$facts$geo))))
 ef_raw <- sector_raw_rows(ef)
 n_rca_reporters <- length(unique(ef_raw$iso3c[ef_raw$variable == "exports"]))
@@ -372,12 +394,16 @@ rm(ef, ef_raw)
 fl <- rd("critical_minerals_trade_flows_tbl")
 results$critmin <- sector_facts_critmin(fl)
 worlds$critmin <- results$critmin$world
+# The (mineral, stage) pairs of the mineral trade: the mineral_stage items.
+critmin_pairs <- results$critmin$pairs
 critmin_year <- paste(sort(unique(fl$Year)), collapse = ", ")
 n_critmin_reporters <- length(unique(fl$iso3c[fl$export_source == "reported"]))
 if (n_critmin_reporters < 100) stop("Critical-minerals trade: only ", n_critmin_reporters, " reporting exporters (< 100): a stub vintage?")
 add_check("guard: critical-mineral exports from at least 100 reporting economies", "PASS", n_critmin_reporters)
-add_check("parity X: critical-mineral export shares = exports / world (processed market_share)",
-          if (results$critmin$check$max_rel <= 1e-12) "PASS" else "WARN", nrow(fl), sprintf("max relative difference %.3g", results$critmin$check$max_rel))
+add_check("parity X: critical-mineral export shares = exports / world per mineral and stage (processed market_share)",
+          if (results$critmin$check$max_rel <= 1e-12) "PASS" else "WARN", nrow(fl), sprintf("max relative difference %.3g; %d mineral x stage baskets (%s)",
+                                                                                         results$critmin$check$max_rel, nrow(critmin_pairs),
+                                                                                         paste(names(table(critmin_pairs$stage)), table(critmin_pairs$stage), collapse = ", ")))
 rm(fl)
 
 usgs_path <- file.path(raw_dir, "MCS2026_World_Data.csv")
@@ -421,7 +447,7 @@ if (!file.exists(eia_path)) {
 eia_intl <- read.csv(use_src(eia_path), stringsAsFactors = FALSE, na.strings = "")
 # As the themes call it (import_dependence() and production_depth_momentum(), eia_max_lag = 1L).
 eia_max_lag <- 1L
-pdm_tbl <- rd("production_depth_momentum_tbl")
+pdm_tbl <- six_stage(rd("production_depth_momentum_tbl"), "production_depth_momentum_tbl")
 idp_tbl <- rd("import_dependence_tbl")
 eia_gap <- sector_eia_gap_cells(c(pdm_tbl$iso3c, idp_tbl$iso3c), ei_values, ei_latest)
 eia_cells <- eia_intl_lookup(eia_gap, eia_intl, max_lag = eia_max_lag, ei_consumption = eia_gap$ei_consumption)
@@ -458,12 +484,13 @@ rm(fn_all)
 results$mfg <- sector_facts_mfg(rd("foreign_dependency_tbl"), mss, eu_members)
 worlds$mfg <- results$mfg$world
 results$ev <- sector_facts_ev_regions(rd("market_share_manufacturing_tbl"))
-results$investment <- sector_facts_investment(rd("investment_momentum_tbl"))
+results$investment <- sector_facts_investment(six_stage(rd("investment_momentum_tbl"), "investment_momentum_tbl"))
 results$future <- sector_facts_future(rd("future_demand_tbl"))
 ep <- rd("energy_prices_tbl")
 ep_raw <- sector_raw_rows(ep)
 commodities <- sector_commodity_items(ep_raw$sub_sector)
-price_techs <- unique(ep_raw[c("sub_sector", "tech")])
+# Each commodity links to the cells of the technologies it prices at the stage the table files it at.
+price_techs <- unique(ep_raw[c("sub_sector", "tech", "supply_chain")])
 results$prices <- sector_facts_prices(ep, commodities)
 rm(ep, ep_raw)
 results$costs <- sector_facts_costs(rd("cost_competitiveness_tbl"))
@@ -559,10 +586,16 @@ if (!skip_trade) {
   dyad_path <- file.path(raw_dir, "comtrade_energy_dyads_all.csv")
   hs6_raw <- read.csv(use_src(file.path(raw_dir, "energy_hs6_master.csv")), stringsAsFactors = FALSE)
   hs6_ref <- read.csv(use_src(file.path(ref_dir, "energy_hs6_master.csv")), stringsAsFactors = FALSE)
-  basket <- sector_trade_basket(hs6_raw)
+  # Cells are six-stage: each code in the master's `stage` column (as scripts/15 and scripts/30 key the
+  # partner trade cells), never its former three-stage supply_chain column.
+  basket <- sector_trade_basket(hs6_raw, stage_col = "stage")
   bad <- sector_trade_excluded_in_basket(basket, hs6_ref)
   if (length(bad)) stop("Codes excluded in data/reference are still in the pipeline basket (rerun scripts/04): ", paste(bad, collapse = ", "))
+  hs6_six <- hs6_raw
+  hs6_six$supply_chain <- hs6_six$stage
   basket_cells <- unique(basket$cell)
+  no_dict <- setdiff(basket_cells, dict_cell_slugs)
+  if (length(no_dict)) stop("Trade cells without a config/sector_dictionary.yml cells entry: ", paste(no_dict, collapse = ", "))
   n_codes <- length(unique(basket$hs6))
   n_shared <- length(unique(basket$hs6[basket$shared_n > 0]))
   add_check("guard: HS6 basket distinct, one sub-sector per code and cell, no excluded code in the basket", "PASS", nrow(basket),
@@ -586,7 +619,8 @@ if (!skip_trade) {
   sub <- sector_trade_sub(std, basket, declared, eu_members, cif_fob_factor = cif)
   rm(std)
   invisible(gc())
-  trade_cells <- partnership_strength_build_trade_cells(td, hs6_raw, years = SECTOR_TRADE_YEARS, cif_fob_factor = cif)
+  trade_cells <- partnership_strength_build_trade_cells(td, hs6_six, years = SECTOR_TRADE_YEARS, cif_fob_factor = cif)
+  assert_supply_chain_stages(trade_cells$supply_chain, label = "partnership_strength_build_trade_cells() supply_chain")
   rm(td)
   invisible(gc())
   # The importer rule of the matrix agrees with the declared table.
@@ -630,12 +664,18 @@ if (!skip_trade) {
   desc <- desc[!duplicated(names(desc))]
   rm(dd)
   codes <- sector_trade_codes(basket, desc)
-  excluded <- sector_trade_excluded(hs6_ref, basket_cells)
-  tech_of_cell <- sub("-(upstream|midstream|downstream)$", "", basket_cells)
+  # Excluded codes at the technology level (the reference master gives them no six-stage stage).
+  excluded <- sector_trade_excluded(hs6_ref, unique(basket$tech))
+  # Basket notes and exclusion reasons that still name an old stage after the rewording: shown as they
+  # are, reported so that the master's note can be reworded at the source.
+  old_txt <- unique(c(codes$caveat[sector_has_legacy_stage(codes$caveat)], excluded$reason[sector_has_legacy_stage(excluded$reason)]))
+  add_check("six stages: basket notes and exclusion reasons name no old stage (sector_six_stage_text())", if (length(old_txt)) "WARN" else "PASS",
+            nrow(codes) + nrow(excluded), if (length(old_txt)) paste(utils::head(substr(old_txt, 1, 90), 4), collapse = " | ") else NA_character_)
+  tech_of_cell <- sector_cell_parts(basket_cells)$tech
   for (tech in sort(unique(tech_of_cell))) {
     ck <- paste0("cell:", basket_cells[tech_of_cell == tech])
     trade[[tech]] <- list(flows = flows[flows$item_key %in% ck, , drop = FALSE], declared = declared[declared$item_key %in% ck, , drop = FALSE],
-                          codes = codes[codes$item_key %in% ck, , drop = FALSE], excluded = excluded[excluded$item_key %in% ck, , drop = FALSE],
+                          codes = codes[codes$item_key %in% ck, , drop = FALSE], excluded = excluded[excluded$tech == SECTOR_TECH_LABELS[[tech]], , drop = FALSE],
                           cty_sub = cty_sub[cty_sub$item_key %in% ck, , drop = FALSE],
                           sub_intra = sub_intra[sub_intra$item_key %in% ck, , drop = FALSE])
   }
@@ -655,7 +695,7 @@ if (!skip_trade) {
 step("IEA PAMS -> policy records")
 pams_path <- file.path(raw_dir, "IEA_PAMS_Export.csv")
 pams_raw <- readr::read_csv(use_src(pams_path), show_col_types = FALSE, progress = FALSE)
-ptbl <- build_policy_table(clean_pams_raw(pams_raw))
+ptbl <- build_policy_table(clean_pams_raw(pams_raw), stages = "six")
 rm(pams_raw)
 pol <- sector_policy_compact(ptbl)
 rm(ptbl)
@@ -773,6 +813,8 @@ if (with_dev) {
     db = tibble::tibble(key = as.character(dbb$Country.Code), value = dbb$doingbusiness),
     stage = dev_stage
   )
+  # The purpose crosswalk also links the aid sectors to the cells (sector_dev_aid_links()).
+  dev_crosswalk <- crs_crosswalk
   rm(dev_proc, crs_raw, wl, dbb, crs_builder, crs_purpose, crs_crosswalk, oci_raw, oci_inst, oci_cw, aid_builder)
   invisible(gc())
   # IMF DIP: the columns the outbound builder uses (as scripts/15 read_imf_dip()).
@@ -831,7 +873,7 @@ if (with_series) {
   pw <- investment_read_gcim_sheet(g, "electric_power_capacity", c("Country", "Segment", "Technology", "Year", "Value"), "power additions")
   cap <- investment_read_gcim_sheet(g, "mfg_ind_capacity", c("Country", "Segment", "Technology", "Product", "Category", "Value"), "capacity")
   power <- sector_cim_power(pw, iso3_of)
-  capacity <- sector_cim_capacity(cap, iso3_of)
+  capacity <- sector_cim_capacity(cap, iso3_of, investment_product_to_stage)
   rm(pw, cap)
   imf_path <- file.path(raw_dir, "imf_commodity_prices.csv")
   imf <- read.csv(use_src(imf_path), stringsAsFactors = FALSE)
@@ -904,14 +946,16 @@ if (!is.null(fdi_clean)) {
                     paste(fdi_settings$china_hq_iso3, collapse = ", "), sum(fdi$projects$home_group == "china")))
 }
 
-minerals <- unique(c(sub("^mineral:", "", facts$item_key[startsWith(facts$item_key, "mineral:")]), mineral_demand$mineral))
+minerals <- unique(c(sub("^mineral:", "", facts$item_key[startsWith(facts$item_key, "mineral:")]), mineral_demand$mineral, critmin_pairs$mineral))
 fuels <- unique(c(sub("^fuel:", "", facts$item_key[startsWith(facts$item_key, "fuel:")]),
                   if (!is.null(series)) sub("^fuel:", "", series$obs$item_key[startsWith(series$obs$item_key, "fuel:")])))
-items <- sector_items(basket_cells, minerals, fuels, commodities)
+items <- sector_items(basket_cells, minerals, fuels, commodities, cell_slugs = dict_cell_slugs, mineral_stages = critmin_pairs)
 cells <- items[items$axis == "cell", , drop = FALSE]
-item_links <- sector_item_links(mineral_links, price_techs, commodities, cells)
+item_links <- sector_item_links(mineral_links, price_techs, commodities, cells, items[items$axis == "mineral_stage", , drop = FALSE])
+add_check("six stages: dims.items holds the dictionary's cells (66 headline cells, the Semiconductors stages) and the mineral x stage items",
+          "PASS", nrow(cells), sprintf("%d cells (%d with trade); %d mineral x stage items", nrow(cells), sum(cells$has_trade), sum(items$axis == "mineral_stage")))
 if (!is.null(dev_part)) {
-  dev_items <- sector_dev_items(dev_ind, cells)
+  dev_items <- sector_dev_items(dev_ind, cells, dev_crosswalk)
   items <- dplyr::bind_rows(items, dev_items$items[names(items)])
   item_links <- dplyr::bind_rows(item_links, dev_items$links)
 }
@@ -963,6 +1007,16 @@ climate_part <- NULL
 if (with_climate) {
   step("Climate: Climate TRACE sector emissions, IPCC lifecycle intensity")
   climate_proc <- lapply(SECTOR_CLIMATE_PROCESSED, rd)
+  # The climate tables are keyed on the dictionary's cells (config/climate_trace_map.yml lists every
+  # one): tables built from an older map stop here.
+  climate_cells_check <- function(cells, table, script) {
+    if (!setequal(cells, dict_cell_slugs)) {
+      stop(table, " is keyed on cells that are not config/sector_dictionary.yml's (", length(setdiff(cells, dict_cell_slugs)), " unknown, e.g. ",
+           paste(utils::head(setdiff(cells, dict_cell_slugs), 3), collapse = ", "), "; ", length(setdiff(dict_cell_slugs, cells)),
+           " missing): rerun ", script, " on the six-stage map, or export with --no-climate.")
+    }
+  }
+  climate_cells_check(climate_proc$cells$cell, "climate_trace_cells_tbl", "scripts/16_build_climate_trace.R")
   climate_part <- sector_climate_part(climate_proc, geo$code)
   out_share <- climate_part$outside[climate_part$outside$year == climate_part$year, , drop = FALSE]
   add_check("climate: Climate TRACE sources mapped, emissions of dims.geo economies shipped (WLD = Climate TRACE's world total)", "PASS",
@@ -983,6 +1037,7 @@ nze_proc <- NULL
 if (with_nze) {
   step("Climate: IEA pathways (WEO Annex A World; Critical Minerals demand by scenario)")
   nze_proc <- lapply(SECTOR_NZE_PROCESSED, rd)
+  climate_cells_check(nze_proc$cells$cell, "iea_pathways_cells_tbl", "scripts/17_build_iea_pathways.R")
   climate_part$nze <- sector_nze_part(nze_proc)
   nm <- stats::setNames(nze_proc$meta$value, nze_proc$meta$key)
   add_check("climate: IEA pathways mapped to technology x stage (World only; IEA scenario projections and historical estimates)", "PASS",
@@ -1012,6 +1067,8 @@ csrc_part <- NULL
 if (with_csrc) {
   step("Climate: climate sources (GCP, EI Country Transition Tracker, IEA WEO regions, NZE 2021, WEI 2026)")
   csrc_proc <- lapply(SECTOR_SRC_PROCESSED, rd)
+  # (with_csrc implies with_climate, so climate_cells_check() is defined.)
+  climate_cells_check(csrc_proc$cells$cell, "climate_src_cells_tbl", "scripts/18_build_climate_sources.R")
   csrc_part <- sector_src_part(csrc_proc, geo$code)
   cs <- csrc_part
   cm <- stats::setNames(cs$meta$value, cs$meta$key)
@@ -1044,7 +1101,7 @@ parts <- list(
   climate = climate_part,
   climate_src = csrc_part,
   reported = if (!skip_trade) reported else NULL,
-  licensed = tibble::tibble(item_key = paste0("cell:", c("solar-downstream", "wind-downstream", "gas-downstream", "coal-downstream", "batteries-downstream")),
+  licensed = tibble::tibble(item_key = paste0("cell:", c("solar-deployment", "wind-deployment", "gas-deployment", "coal-deployment", "batteries-deployment")),
                             family = "prices", sources = "BNEF LCOE"),
   headline_sources = sector_headline_sources()
 )
@@ -1190,7 +1247,9 @@ processed_mtime_max <- format(max(file.mtime(unique(processed_read))), "%Y-%m-%d
 git_commit <- tryCatch(system2("git", c("-C", shQuote(repo_root), "rev-parse", "--short", "HEAD"), stdout = TRUE, stderr = FALSE)[1],
                        error = function(e) NA_character_)
 notes <- c(notes,
-           "Coalition: 57 economies (31 core, 26 partners); the EU-27 is one node in the Strategic network.",
+           # From coalition_tbl (the six-stage run has 60: 31 core, 29 partners; the three-stage run had 57).
+           sprintf("Coalition: %d economies (%d core, %d partners); the EU-27 is one node in the Strategic network.",
+                   sum(coal$tier %in% c("core", "partner")), sum(coal$tier %in% "core"), sum(coal$tier %in% "partner")),
            "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.",
            "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.",
            "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.",
@@ -1216,8 +1275,11 @@ notes <- c(notes,
                                      "the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; ",
                                      "project counts and sums of disclosed capital computed by the OSI authors, no record altered; ",
                                      "undisclosed capital investment is shown as not disclosed, never zero."),
-           paste0("Trade baskets cover Electric Vehicles, Solar, Wind, Nuclear and Semiconductors Upstream since the 2026-10 basket review; ",
-                  "trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total."),
+           paste0("Sectors are technology x six supply-chain stages (Extraction, Refining, Components, Assembly, Deployment, Recovery): ",
+                  "66 headline sectors and the Semiconductors stages; each HS6 code sits at the stage of the six-stage basket. ",
+                  "Trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total; ",
+                  "codes excluded in the 2026-10 basket review are listed per technology."),
+           "Figures a source gives once for a technology's manufacturing (manufacturing investment, IEA capacity shares) appear on both Components and Assembly and are never added across them.",
            "Scenario dials apply to Strategic Insights only.")
 res <- finish(bundle, chunks, out_dir, created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), git_commit = git_commit,
               strategic_bundle_id = strategic_bundle_id, processed_mtime_max = processed_mtime_max, pipeline_marker = pipeline_marker,
@@ -1232,58 +1294,73 @@ sm <- bundle$summary
 geo_code <- function(i) bundle$geo$code[i]
 pick <- function(v, it, y, mode = "members") sm[sm$var == v & sm$item_key == it & sm$year == y & sm$eu_mode == mode, , drop = FALSE]
 ref_rows <- list()
-for (cl in c("batteries-midstream", "solar-midstream", "electric-vehicles-midstream", "electric-grid-midstream", "wind-midstream",
-             "oil-upstream", "gas-upstream", "coal-upstream", "semiconductors-midstream", "electric-vehicles-upstream", "solar-upstream",
-             "wind-upstream", "nuclear-upstream", "semiconductors-upstream", "nuclear-midstream")) {
+# Every six-stage trade cell, in dims.items order.
+for (cl in cells$slug[cells$has_trade]) {
   s <- pick("trade.exports", paste0("cell:", cl), 2024L)
   if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("%s matrix 2024: W USD %.1f bn; %s %.1f%%; top-3 %.1f%%; HHI %.3f; eff n %.1f; n %d; core %.1f%%, partners %.1f%%; growth since 2020 %+.0f%%",
                                                           cl, s$W / 1e9, geo_code(s$top1_geo), 100 * s$top1_share, 100 * s$top3_share, s$hhi, s$eff_n, s$n,
                                                           100 * s$core, 100 * s$partner, 100 * s$growth)
 }
-s <- pick("investment.annual", "cell:batteries-midstream", 2025L)
-if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("CIM batteries-midstream 2025: USD %.1f bn; %s %.1f%%; core %.1f%%, partners %.1f%%; HHI %.3f; CAGR 2018-25 %+.1f%%",
+# Batteries manufacturing capex: the same figure on Components and Assembly (counted once in the headline).
+s <- pick("investment.annual", "cell:batteries-components", 2025L)
+if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("CIM batteries-components (= batteries-assembly) 2025: USD %.1f bn; %s %.1f%%; core %.1f%%, partners %.1f%%; HHI %.3f; CAGR 2018-25 %+.1f%%",
                                                         s$W, geo_code(s$top1_geo), 100 * s$top1_share, 100 * s$core, 100 * s$partner, s$hhi, 100 * s$growth)
+for (cl in c("batteries-refining", "electric-vehicles-refining")) {
+  s <- pick("investment.annual", paste0("cell:", cl), 2025L)
+  if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("CIM %s 2025 (critical-minerals split): USD %.2f bn; %s %.1f%%", cl, s$W, geo_code(s$top1_geo), 100 * s$top1_share)
+}
 for (k in c("mineral:lithium", "mineral:graphite", "mineral:rare-earths", "mineral:cobalt")) {
   s <- pick("production.refining", k, 2025L)
   if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("IEA refining 2025 %s: W %.1f kt; %s %.1f%%; top-3 %.3f", k, s$W, geo_code(s$top1_geo), 100 * s$top1_share, s$top3_share)
 }
-s <- pick("production.uranium", "cell:nuclear-upstream", u_latest)
-if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Red Book uranium %d: %s %.1f%%", u_latest, geo_code(s$top1_geo), 100 * s$top1_share)
-s <- pick("trade.atlas_share", "cell:batteries-midstream", 2023L)
-if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Atlas 2023 batteries-midstream: %s %.3f", geo_code(s$top1_geo), s$top1_share)
-rc <- bundle$reconcile[bundle$reconcile$item_key == "cell:batteries-midstream", , drop = FALSE]
-if (nrow(rc)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Exporter-reported batteries-midstream 2024: USD %.1f bn; CHN %.1f%%; HHI %.3f; %d reporters",
-                                                         rc$reported_total / 1e9, 100 * rc$reported_china, rc$reported_hhi, rc$n_reporters)
-# Batteries Midstream in detail: 2020 W, rest / unattributed, USA and HKG, coalition presence, top 10.
-bm <- "cell:batteries-midstream"
-s24 <- pick("trade.exports", bm, 2024L)
-s20 <- pick("trade.exports", bm, 2020L)
-ex <- facts[facts$var == "trade.exports" & facts$item_key == bm & facts$year == 2024L, , drop = FALSE]
-if (nrow(s24) && nrow(ex)) {
-  ex <- ex[order(-ex$value, match(ex$geo, geo$code)), , drop = FALSE]
-  sh <- function(g) ex$value[ex$geo == g] / s24$W
-  coal_codes <- geo$code[geo$kind == "country" & geo$tier %in% c("core", "partner")]
-  ref_rows[[length(ref_rows) + 1]] <- sprintf(
-    "batteries-midstream 2024 detail: 2020 W USD %.1f bn; rest %.1f%%; unattributed %.1f%%; USA %.1f%% (#%d of %d with exports > 0); HKG %.1f%%; coalition members with exports %d of %d",
-    s20$W / 1e9, 100 * s24$rest, 100 * s24$unattributed, 100 * sh("USA"), match("USA", ex$geo[ex$value > 0]), sum(ex$value > 0), 100 * sh("HKG"),
-    sum(coal_codes %in% ex$geo[ex$value > 0]), length(coal_codes))
-  top <- utils::head(ex, 10)
-  ref_rows[[length(ref_rows) + 1]] <- paste0("batteries-midstream top exporters 2024 (USD bn): ", paste(sprintf("%s %.2f", top$geo, top$value / 1e9), collapse = "; "))
+for (k in sector_item_key("mineral_stage", c("lithium-extraction", "lithium-refining", "graphite-refining", "cobalt-recovery"))) {
+  s <- pick("trade.critmin_exports", k, 2024L)
+  if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Mineral trade 2024 %s: W USD %.2f bn; %s %.1f%%; HHI %.3f", k, s$W / 1e9, geo_code(s$top1_geo), 100 * s$top1_share, s$hhi)
 }
+s <- pick("production.uranium", paste0("cell:", SECTOR_URANIUM_CELL), u_latest)
+if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Red Book uranium %d: %s %.1f%%", u_latest, geo_code(s$top1_geo), 100 * s$top1_share)
+for (cl in c("batteries-refining", "batteries-assembly")) {
+  s <- pick("trade.atlas_share", paste0("cell:", cl), 2023L)
+  if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Atlas 2023 %s: %s %.3f", cl, geo_code(s$top1_geo), s$top1_share)
+  rc <- bundle$reconcile[bundle$reconcile$item_key == paste0("cell:", cl), , drop = FALSE]
+  if (nrow(rc)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Exporter-reported %s 2024: USD %.1f bn; CHN %.1f%%; HHI %.3f; %d reporters",
+                                                           cl, rc$reported_total / 1e9, 100 * rc$reported_china, rc$reported_hhi, rc$n_reporters)
+}
+# Batteries Refining and Assembly in detail: 2020 W, rest / unattributed, USA and HKG, coalition presence, top 10.
+for (bm in c("cell:batteries-refining", "cell:batteries-assembly")) {
+  cl <- sub("^cell:", "", bm)
+  s24 <- pick("trade.exports", bm, 2024L)
+  s20 <- pick("trade.exports", bm, 2020L)
+  ex <- facts[facts$var == "trade.exports" & facts$item_key == bm & facts$year == 2024L, , drop = FALSE]
+  if (nrow(s24) && nrow(ex)) {
+    ex <- ex[order(-ex$value, match(ex$geo, geo$code)), , drop = FALSE]
+    sh <- function(g) ex$value[ex$geo == g] / s24$W
+    coal_codes <- geo$code[geo$kind == "country" & geo$tier %in% c("core", "partner")]
+    ref_rows[[length(ref_rows) + 1]] <- sprintf(
+      "%s 2024 detail: 2020 W USD %.1f bn; rest %.1f%%; unattributed %.1f%%; USA %.1f%% (#%d of %d with exports > 0); HKG %.1f%%; coalition members with exports %d of %d",
+      cl, s20$W / 1e9, 100 * s24$rest, 100 * s24$unattributed, 100 * sh("USA"), match("USA", ex$geo[ex$value > 0]), sum(ex$value > 0), 100 * sh("HKG"),
+      sum(coal_codes %in% ex$geo[ex$value > 0]), length(coal_codes))
+    top <- utils::head(ex, 10)
+    ref_rows[[length(ref_rows) + 1]] <- paste0(cl, " top exporters 2024 (USD bn): ", paste(sprintf("%s %.2f", top$geo, top$value / 1e9), collapse = "; "))
+  }
+}
+bm <- "cell:batteries-components"
 iv <- facts[facts$var == "investment.annual" & facts$item_key == bm & facts$year == 2025L, , drop = FALSE]
 s25 <- pick("investment.annual", bm, 2025L)
 s22 <- pick("investment.annual", bm, 2022L)
 if (nrow(iv) && nrow(s25) && nrow(s22)) {
-  ref_rows[[length(ref_rows) + 1]] <- sprintf("CIM batteries-midstream 2025 detail: CHN USD %.2f bn; USA USD %.2f bn (%.1f%%); CAGR 2022-25 %+.1f%%",
+  ref_rows[[length(ref_rows) + 1]] <- sprintf("CIM batteries-components 2025 detail: CHN USD %.2f bn; USA USD %.2f bn (%.1f%%); CAGR 2022-25 %+.1f%%",
                                               iv$value[iv$geo == "CHN"], iv$value[iv$geo == "USA"], 100 * iv$value[iv$geo == "USA"] / s25$W,
                                               100 * ((s25$W / s22$W)^(1 / 3) - 1))
 }
-for (h in bundle$headlines) if (h$id == "investment") ref_rows[[length(ref_rows) + 1]] <- sprintf("All CIM cells 2025: USD %.0f bn; China %.1f%%", h$values$total_bn, 100 * h$values$china)
+for (h in bundle$headlines) if (h$id == "investment") ref_rows[[length(ref_rows) + 1]] <- sprintf("All CIM cells 2025 (Components / Assembly copies counted once): USD %.0f bn; China %.1f%%", h$values$total_bn, 100 * h$values$china)
 if (!skip_trade) {
-  bb <- basket[basket$cell == "batteries-midstream", , drop = FALSE]
-  ref_rows[[length(ref_rows) + 1]] <- sprintf("Basket: %d codes, %d in more than one cell (max %d); batteries-midstream %d codes, %d shared, %d sub-sectors; %d excluded reference rows",
-                                              n_codes, n_shared, max(basket$shared_n) + 1L, nrow(bb), sum(bb$shared_n > 0), length(unique(bb$sub_sector)),
-                                              sum(as.logical(hs6_ref$excluded) %in% TRUE))
+  for (cl in c("batteries-refining", "batteries-assembly")) {
+    bb <- basket[basket$cell == cl, , drop = FALSE]
+    ref_rows[[length(ref_rows) + 1]] <- sprintf("Basket: %d codes, %d in more than one cell (max %d); %s %d codes, %d shared, %d sub-sectors; %d excluded reference rows",
+                                                n_codes, n_shared, max(basket$shared_n) + 1L, cl, nrow(bb), sum(bb$shared_n > 0), length(unique(bb$sub_sector)),
+                                                sum(as.logical(hs6_ref$excluded) %in% TRUE))
+  }
 }
 for (k in c("mineral:graphite", "mineral:lithium")) {
   f <- facts[facts$var == "production.refining" & facts$item_key == k & facts$year == 2025L & facts$geo == "CHN", , drop = FALSE]
@@ -1318,7 +1395,7 @@ for (tech in names(bundle$trade)) {
 }
 fe <- facts[facts$var == "trade.feasibility", , drop = FALSE]
 if (nrow(fe)) {
-  for (ck in c("cell:batteries-midstream", "cell:solar-upstream", "cell:semiconductors-upstream")) {
+  for (ck in c("cell:batteries-refining", "cell:batteries-assembly", "cell:solar-refining", "cell:semiconductors-refining")) {
     x <- fe[fe$item_key == ck, , drop = FALSE]
     x <- x[order(-x$value), , drop = FALSE]
     ref_rows[[length(ref_rows) + 1]] <- sprintf("Export feasibility %d %s: %d economies; top %s; median %.3f", feas_year, sub("^cell:", "", ck), nrow(x),

@@ -2,13 +2,15 @@
 // the country's name, the generated lede as the short strategic summary), the country picker with the tier
 // / EU / policy-basis tags, the memo action, and four "at a glance" tiles (where its sectors sit, the top
 // Strategic Index sector under the reader's Perspective, the strongest partner, the climate rating). The dials
-// sit on the page (Perspective), so the bridge to Strategic Insights is gone. The tiles read the paper's
-// three-stage fact sheet; the six-stage posture chart above them is separate (2026-10-28 wording).
+// sit on the page (Perspective), so the bridge to Strategic Insights is gone. Since 2026-10-29 (design L2) the
+// first tile is the strategic posture's Secure / Compete / Deploy counts (CountryPostureTile, the posture
+// bundle, linking to #posture); the others read the fact sheet's 66 six-stage sectors.
 
 import { Link, useNavigate } from 'react-router';
 import { CountrySelect } from '../../../components/CountrySelect.tsx';
 import { InfoTip } from '../../../components/InfoTip.tsx';
 import { PageHead, StatTile, Tag } from '../../../components/ui.tsx';
+import { CountryPostureTile } from '../../../posture/index.ts';
 import { cellOf, dOf, type CountryManifest } from '../../contract.ts';
 import { sectorCountryLink } from '../../derive/links.ts';
 import { siOrder } from '../../derive/framing.ts';
@@ -95,13 +97,17 @@ export function Glance() {
   const qLine = quadrantLine({ grow: q.grow.v ?? 0, upgrade: q.upgrade.v ?? 0, secure: q.secure.v ?? 0, watch: q.watch.v ?? 0 });
   return (
     <section id="glance" aria-label="At a glance" className="scroll-mt-16">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* five tiles: the posture counts across the row on small screens, then 3 + 2 */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex sm:col-span-2 lg:col-span-1 [&>*]:flex-1">
+          <CountryPostureTile iso3={sheet.iso3} label="STRATEGIC POSTURE" link={{ href: '#posture', label: 'Strategic posture' }} />
+        </div>
         <StatTile
           label="WHERE ITS SECTORS SIT"
           value={<span className="text-base">{qLine}</span>}
           sub={
             <span>
-              {dOf(s.n_placed)} of {dOf(s.n_scored)} sectors (the paper&apos;s three stages) can be compared with other economies <InfoTip id="rankable" term="comparable (rankable)" />
+              {dOf(s.n_placed)} of {dOf(s.n_scored)} sectors can be compared with other economies <InfoTip id="rankable" term="comparable (rankable)" />
             </span>
           }
         />
@@ -110,7 +116,7 @@ export function Glance() {
           value={m.has_si && topCell ? topCell.label : 'No Strategic Index'}
           sub={
             !m.has_si || !topCell
-              ? 'No International Energy Agency policy records, so the paper computes no Strategic Index'
+              ? 'No International Energy Agency policy records, so no Strategic Index is computed'
               : order
                 ? `Under your perspective${nextCell ? `; next: ${nextCell.label}` : ''}`
                 : top

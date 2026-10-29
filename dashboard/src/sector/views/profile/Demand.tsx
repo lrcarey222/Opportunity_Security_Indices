@@ -1,10 +1,12 @@
 // Profile S8 Demand & deployment (spec_sector.md 4.3): EI consumption per person (top 25 + highlight)
 // and the 2020 -> 2025 change ("new" / "n/a" in words), the EI consumption series (sector-series);
 // EV sales, stock and sales share (GEVO), 2022 -> 2025 and the 2035 projection; the WEO world outlook
-// as a tile pair; Midstream cells link to the importers ("who buys").
+// as a tile pair; the manufacturing cells (Refining, Components, Assembly: ACTIVITY_OF_STAGE) with a
+// trade basket link to the importers ("who buys").
 
 import { StatTile } from '../../../components/ui.tsx';
 import { TableView } from '../../../components/TableView.tsx';
+import { ACTIVITY_OF_STAGE } from '../../contract.ts';
 import type { ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
 import { lc, fmtSignedValue, fmtValue } from '../../format.ts';
 import { dumbbellReading, HowToRead, markGroup } from '../common.tsx';
@@ -19,13 +21,16 @@ const EV_VARS = ['consumption.ev_sales', 'consumption.ev_stock', 'consumption.ev
 
 function fuelsOf(model: SectorModel, cell: ItemInfo): ItemInfo[] {
   const pc = vOf(model, 'consumption.per_capita');
-  return cell.stageSlug === 'downstream' && pc ? linkedWith(model, cell, 'fuel', pc) : [];
+  return cell.stageSlug === 'deployment' && pc ? linkedWith(model, cell, 'fuel', pc) : [];
 }
+
+/** A manufacturing cell (Refining, Components, Assembly) with a trade basket: its demand is its importers. */
+const buysThroughTrade = (cell: ItemInfo): boolean => !!cell.stageSlug && ACTIVITY_OF_STAGE[cell.stageSlug] === 'manufacturing' && cell.has_trade;
 
 export function hasDemand(model: SectorModel, cell: ItemInfo): boolean {
   if (fuelsOf(model, cell).length) return true;
   if (EV_VARS.some((id) => { const v = vOf(model, id); return v && itemForCell(model, v, cell) && v.item_axis !== 'none'; })) return true;
-  return cell.stageSlug === 'midstream' && cell.has_trade;
+  return buysThroughTrade(cell);
 }
 
 function WorldOutlook({ fuel }: { fuel: ItemInfo }) {
@@ -144,7 +149,7 @@ export function DemandSection() {
           </div>
         );
       })}
-      {cell.stageSlug === 'midstream' && cell.has_trade && (
+      {buysThroughTrade(cell) && (
         <p className="text-sm text-paper-dim">
           Who buys: the importers of this basket are in{' '}
           <a className="link" href={`${link(`/sector/${cell.techSlug}/${cell.stageSlug}`)}#trade`}>

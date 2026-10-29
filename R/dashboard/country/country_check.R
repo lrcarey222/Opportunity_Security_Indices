@@ -5,11 +5,21 @@
 # or as read back with jsonlite::fromJSON(simplifyVector = FALSE).
 
 COUNTRY_QUADRANT_IDS <- c("grow", "upgrade", "secure", "watch")
-# gzip budgets of the export (spec A10; the same numbers as COUNTRY_BUDGET_GZ in dashboard/src/country/contract.ts
-# and dashboard/scripts/check-budget.mjs). manifest: 15 kB until 2026-10-14, raised to 20 kB when the 31 memo
-# entries (2.8 kB gz) took the published manifest to 16.9 kB.
-# trade_monthly (2026-10-19): the companion monthly trade file of a core member (trade-<ISO3>).
-COUNTRY_BUDGET_GZ <- c(manifest = 20480, sheet = 40960, sheet_target = 25600, trade_monthly = 25600)
+# gzip budgets of the export in bytes, as scripts/88 measures them (memCompress gzip; spec A10; the same numbers
+# as COUNTRY_BUDGET_GZ in dashboard/src/country/contract.ts and dashboard/scripts/check-budget.mjs).
+# Six stages (2026-10-28, the first six-stage export, 66 sectors): where the export left less than ~15% headroom
+# the limit became the measured size + ~15%, rounded up to a KiB (design E4).
+# - sheet: 40,960 until the six-stage export (three-stage largest 39,591 B, JPN, 2026-10-22). Six-stage (the
+#   published export of 2026-10-28): largest 51,998 B (JPN; 52,001 in the check-only run, the timestamps move it
+#   by a few bytes), median 37,621 B, 219 sheets -> 60,416 (59 KiB). (The r-country agent's provisional
+#   77,824 / 51,200 estimate is replaced.)
+# - sheet_target, the WARN line (not a limit): spec A10's 25 of 40 kB (0.625) of the sheet limit, 37,888
+#   (37 KiB); about half of the sheets are above it (about 109 of 219), as at three stages (102 of 219 above 25,600).
+# - manifest: 15 kB until 2026-10-14, 20 kB once the 31 memo entries (2.8 kB gz) took it to 16.9 kB; six-stage
+#   18,560 B (the no_es_cells and cmfdi_stages fields and more validation rows; 91% of 20,480) -> 21,504 (21 KiB).
+# - trade_monthly (2026-10-19, the companion monthly trade file of a core member, trade-<ISO3>): six-stage
+#   largest 17,043 B (USA, 38 sectors; three-stage about 14 kB): unchanged.
+COUNTRY_BUDGET_GZ <- c(manifest = 21504, sheet = 60416, sheet_target = 37888, trade_monthly = 25600)
 COUNTRY_CLASSES <- c("aligned_high", "gap", "policy_ahead", "aligned_low", "partial")
 COUNTRY_CAVEAT_IDS <- c("relative_scores", "baseline", "rankability", "imputed_driver", "policy_pams_only", "no_si", "near_tie",
                         "inherited_alignment", "assumed_zero_production", "cmfdi_coverage", "trade_mirror", "few_economies", "cat_eu_bloc",
@@ -39,13 +49,24 @@ country_check_sheet <- function(s) {
   fv(m$rank_threshold, "meta.rank_threshold")
   fv(m$alignment_s, "meta.alignment_s")
   keys <- vapply(s$cells, function(c) c$key, "")
-  all_keys <- country_cells_tbl()$key
+  ct <- country_cells_tbl()
+  all_keys <- ct$key
   if (any(!keys %in% all_keys)) add("cells: unknown keys ", paste(setdiff(keys, all_keys), collapse = ", "))
   if (anyDuplicated(keys)) add("cells: duplicate keys")
   by <- stats::setNames(s$cells, keys)
   cmed <- country_median_sector(s$cells)
+  # the sectors without an Energy Security score: shipped by scripts/88 (no_es_cells, 2026-10-28), else the constant
+  no_es <- if (is.null(s$no_es_cells)) COUNTRY_NO_ES_CELLS else unlist(s$no_es_cells)
+  if (any(!no_es %in% all_keys)) add("no_es_cells: unknown keys ", paste(setdiff(no_es, all_keys), collapse = ", "))
+  known <- function(k, path) {
+    k <- unlist(k)
+    bad <- k[!k %in% all_keys]
+    if (length(bad)) add(path, ": '", paste(bad, collapse = "', '"), "' is not a sector key")
+  }
   for (c in s$cells) {
     at <- paste0("cells.", c$key)
+    if (!isTRUE(c$stage %in% COUNTRY_STAGES)) add(at, ".stage: '", c$stage %||% "null", "' is not a supply-chain stage")
+    else if (c$key %in% all_keys && !identical(ct$stage[match(c$key, all_keys)], c$stage)) add(at, ".stage: '", c$stage, "' is not the stage of the key")
     for (pl in c("es", "eo")) {
       x <- c[[pl]]
       if (is.null(x)) next
@@ -55,7 +76,7 @@ country_check_sheet <- function(s) {
       fv(x$n, paste0(at, ".", pl, ".n"), 0, int = TRUE)
       fv(x$order, paste0(at, ".", pl, ".order"), 1, int = TRUE)
     }
-    if (c$key %in% COUNTRY_NO_ES_CELLS && !is.null(c$es)) add(at, ".es: the paper has no Energy Security score here")
+    if (c$key %in% no_es && !is.null(c$es)) add(at, ".es: no economy has an Energy Security score in this sector (no_es_cells)")
     if (isTRUE(c$placed)) {
       if (is.null(c$es) || is.null(c$eo)) add(at, ": placed without both scores")
       else {
@@ -163,6 +184,25 @@ country_check_sheet <- function(s) {
     for (cl in names(ag$by_class)) for (k in unlist(ag$by_class[[cl]])) if (!identical(by[[k]]$policy$class, cl)) add("policy.agreement.by_class.", cl, ": ", k, " has another class")
   }
   if (!all(unlist(s$priority_sectors) %in% keys)) add("priority_sectors: unknown keys")
+  # every sector key the sheet names elsewhere is one of the 66 (the R mirror of checkFactSheet's isCellKey checks)
+  for (nm in c("es_order", "eo_order", "si_order")) known(sm[[nm]], paste0("summary.", nm))
+  known(sm$top_si$cell, "summary.top_si.cell")
+  known(sm$top_si[["next"]], "summary.top_si.next")
+  known(s$pick$cell, "pick.cell")
+  known(s$pick$runner_up, "pick.runner_up")
+  known(s$partners$supplier_matrix$cells, "partners.supplier_matrix.cells")
+  for (r in s$partners$rows) for (k in c("fs_best5", "po_best5")) known(r[[k]], paste0("partners.", r$iso3, ".", k))
+  cov <- s$policy$coverage
+  if (!is.null(cov) && !identical(unlist(cov$cols), COUNTRY_STAGES)) add("policy.coverage.cols: not the six supply-chain stages in chain order")
+  if (!all(unlist(s$meta$cmfdi_stages) %in% COUNTRY_STAGES)) add("meta.cmfdi_stages: not supply-chain stages")
+  np <- s$policy$nipo
+  if (!is.null(np)) {
+    known(names(np$cells), "policy.nipo.cells")
+    known(names(np$n_by_cell), "policy.nipo.n_by_cell")
+    if (identical(np$staged, FALSE) && (length(np$cells) || length(np$n_by_cell) || length(np$policies))) {
+      add("policy.nipo: per-sector measures listed although the run is not at the six stages (staged false)")
+    }
+  }
   if (!s$priority_rule %in% c("upgrade", "top_si_fallback", "top_eo", "none")) add("priority_rule: '", s$priority_rule, "'")
   rows <- s$partners$rows
   rk <- unlist(lapply(rows, function(r) r$rank$v))

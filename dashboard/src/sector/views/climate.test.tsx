@@ -31,14 +31,14 @@ function climateChunk(): Record<string, unknown> {
   add(2, 2025, [['CHN', 9e8], ['WLD', 1.9e9]]);
   em.sort((a, z) => a.src - z.src || a.year - z.year || a.geo - z.geo);
   const cells = [
-    { item: cell('coal-upstream'), match: 'direct', note: 'Coal mining.' },
-    { item: cell('coal-downstream'), match: 'partial', note: 'Coal-fired power plants only.' },
-    { item: cell('wind-midstream'), match: 'none', note: 'No turbine-manufacturing subsector.' },
+    { item: cell('coal-extraction'), match: 'direct', note: 'Coal mining.' },
+    { item: cell('coal-deployment'), match: 'partial', note: 'Coal-fired power plants only.' },
+    { item: cell('wind-components'), match: 'none', note: 'No turbine-manufacturing subsector.' },
   ].sort((a, z) => a.item - z.item);
   const map = [
-    { item: cell('coal-upstream'), src: 0, role: 'own', match: 'direct', order: 1 },
-    { item: cell('coal-downstream'), src: 1, role: 'own', match: 'partial', order: 1 },
-    { item: cell('wind-midstream'), src: 2, role: 'context', match: null, order: 1 },
+    { item: cell('coal-extraction'), src: 0, role: 'own', match: 'direct', order: 1 },
+    { item: cell('coal-deployment'), src: 1, role: 'own', match: 'partial', order: 1 },
+    { item: cell('wind-components'), src: 2, role: 'context', match: null, order: 1 },
   ].sort((a, z) => a.item - z.item || a.order - z.order);
   return {
     'climate.src': t('climate.src', [
@@ -164,7 +164,7 @@ describe('Country profile: emissions in the mapped sectors', () => {
     expect(within(coal).getByText('100 t')).toBeTruthy();
     expect(within(coal).getByText('71.4%')).toBeTruthy();
     expect(within(coal).getByText('1 of 2')).toBeTruthy();
-    expect(within(coal).getByRole('link', { name: 'Coal — Upstream' }).getAttribute('href')).toBe('/sector/coal/upstream#climate');
+    expect(within(coal).getByRole('link', { name: 'Coal — Extraction' }).getAttribute('href')).toBe('/sector/coal/extraction#climate');
     expect(within(coal).getByText(/direct match/)).toBeTruthy();
     expect(within(table).getByText('Iron and steel').closest('tr')?.textContent).toMatch(/context/);
     expect(within(card).getByText(/Climate TRACE \(climatetrace\.org\), CC BY 4\.0/)).toBeTruthy();
@@ -173,7 +173,7 @@ describe('Country profile: emissions in the mapped sectors', () => {
 
 describe('Sector profile: Climate lens and section with Climate TRACE', () => {
   it('a matched cell: emissions headline, match quality, emitters table and lifecycle', async () => {
-    renderAt('/sector/coal/upstream');
+    renderAt('/sector/coal/extraction');
     const lens = await screen.findByTestId('lens-climate', {}, { timeout: 30_000 });
     await waitFor(() => expect(within(lens).getByText(/Coal mining: 140 t CO2e worldwide in 2025, \+16\.7% since 2021\. Largest emitter: China/)).toBeTruthy(), { timeout: 10_000 });
     expect(within(lens).getByText('Direct match')).toBeTruthy();
@@ -187,9 +187,9 @@ describe('Sector profile: Climate lens and section with Climate TRACE', () => {
   });
 
   it('a cell with no match says so and shows the IPCC lifecycle intensity and the context material', async () => {
-    renderAt('/sector/wind/midstream');
+    renderAt('/sector/wind/components');
     const lens = await screen.findByTestId('lens-climate', {}, { timeout: 30_000 });
-    await waitFor(() => expect(within(lens).getByText(/Climate TRACE has no emissions subsector for Wind — Midstream\. Wind over a plant’s life: 11–12 gCO2e\/kWh/)).toBeTruthy(), { timeout: 10_000 });
+    await waitFor(() => expect(within(lens).getByText(/Climate TRACE has no emissions subsector for Wind — Components\. Wind over a plant’s life: 11–12 gCO2e\/kWh/)).toBeTruthy(), { timeout: 10_000 });
     expect(within(lens).getByText('No match')).toBeTruthy();
     await openGroups();
     const block = await screen.findByTestId('climate-emissions', {}, { timeout: 10_000 });

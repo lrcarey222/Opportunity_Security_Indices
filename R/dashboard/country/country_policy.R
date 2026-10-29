@@ -5,7 +5,9 @@
 # policy_clean (policy_outputs$policy_clean): one row per record x country x technology x stage after
 # the cross-cutting expansion; columns policy_id, iso3, tech, supply_chain, tech_crosscut, sc_crosscut,
 # status_norm, year. tech_crosscut marks rows created by expanding a record that names no technology;
-# sc_crosscut likewise for stage. "Critical Minerals" is a tag outside the 33 sectors.
+# sc_crosscut likewise for stage. "Critical Minerals" is a tag outside the 66 sectors
+# (counted by stage in the coverage table, critical_minerals). Since 2026-10-28 supply_chain is one of the six
+# stages, so the coverage table has the six stage columns of COUNTRY_STAGES.
 
 COUNTRY_PAMS_STATUSES <- c("In force", "Ended", "Unknown")
 COUNTRY_CM_TAG <- "Critical Minerals"

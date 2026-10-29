@@ -1,6 +1,7 @@
 // S2 of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16: "Strategic position", the
-// profile's central visual; since 2026-10-28 "Security and opportunity", the paper's three-stage reading
-// below the six-stage posture chart, with id "position" and the alias "space" kept for old links):
+// profile's central visual; since 2026-10-28 "Security and opportunity", the section after Strategic
+// posture, with id "position" and the alias "space" kept for old links; since schema 2 the 66 six-stage
+// sectors, at most 58 of them placed):
 // the quadrant scatter with its table twin, legend and the sectors not placed;
 // the filled dots are the top five Strategic Index sectors under the reader's Perspective (the only
 // preference-adjusted mark; positions are facts); "Compare with other economies" opens the embedded
@@ -60,7 +61,7 @@ export function SpaceSection() {
         economic_opportunity_median: c.eo?.med.v ?? null, corner: c.quadrant ? quadrantWord(c.quadrant) : null,
         strategic_index_rank: c.si.in_sample ? c.si.rank.v : null, placed: yes(c.placed), not_placed_reason: c.placed ? null : notPlacedReason(c),
       })),
-      'Opportunity Security Indices, paper baseline',
+      'Opportunity Security Indices, NEIS baseline',
       sheet.meta.as_of,
     ),
   });
@@ -79,7 +80,8 @@ export function SpaceSection() {
       }
       intro={
         <>
-          Each sector is one technology at one of the paper&apos;s three supply-chain stages (upstream, midstream, downstream; the posture chart above splits the chain into six). <Term id="es" /> asks how well {name} can rely on what it needs there; <Term id="eo" /> asks how well placed it is to create value there. Both compare {name} with every other economy scored in the same sector, so the chart shows the share of those economies it beats. The four corners then sort {poss(name)} own sectors: the dashed lines are its median sector, so the corners show where {name} is relatively strong or weak.
+          Each sector is one technology at one of the six <Term id="stage">supply-chain stages</Term> (extraction, refining, components, assembly, deployment, recovery), as in the
+          Strategic posture section. <Term id="es" /> asks how well {name} can rely on what it needs there; <Term id="eo" /> asks how well placed it is to create value there. Both compare {name} with every other economy scored in the same sector, so the chart shows the share of those economies it beats. The four corners then sort {poss(name)} own sectors: the dashed lines are its median sector, so the corners show where {name} is relatively strong or weak.
         </>
       }
     >
@@ -88,7 +90,7 @@ export function SpaceSection() {
         title="Security and opportunity, sector by sector"
         sub={`Each dot is one of ${poss(name)} sectors: a technology at one stage of its supply chain. Across: Economic Opportunity, shown as the share of other economies ${name} beats in that sector. Up: Energy Security, read the same way. The dashed lines mark ${poss(name)} median sector on each axis (${cm?.eo.d ?? '–'} across, ${cm?.es.d ?? '–'} up), so the corners sort its relatively strong and weak sectors; the axes still compare ${name} with the other economies.`}
         summary={summary}
-        table={() => <TableView rows={sheet.cells} cols={cols} caption={`${cap(name)}: Energy Security and Economic Opportunity by sector`} rowKey={(c) => c.key} onRowClick={(c) => setCell(c.key)} selectedKey={cell} pageSize={33} />}
+        table={() => <TableView rows={sheet.cells} cols={cols} caption={`${cap(name)}: Energy Security and Economic Opportunity by sector`} rowKey={(c) => c.key} onRowClick={(c) => setCell(c.key)} selectedKey={cell} pageSize={66} />}
         csv={csv}
         legend={<ScatterLegend name={name} />}
         notes={notPlaced ?? undefined}
@@ -132,7 +134,7 @@ function QuadrantList({ byQ }: { byQ: ReturnType<typeof cellsByQuadrant> }) {
         The four corners
       </h3>
       <p className="mt-1 text-sm text-paper-mute">
-        Each corner is a different situation. High and low are against {poss(proseName(sheet.meta.country))} own median sector (a sector at the median counts as high), so the corners show its relatively strong and weak sectors. The descriptions in brackets are the strategies the RMI (2025) framework associates with each corner (not the Secure / Compete / Deploy postures of the chart above); they describe, they do not prescribe.
+        Each corner is a different situation. High and low are against {poss(proseName(sheet.meta.country))} own median sector (a sector at the median counts as high), so the corners show its relatively strong and weak sectors. The descriptions in brackets are the strategies the RMI (2025) framework associates with each corner (not the Secure / Compete / Deploy postures of the Strategic posture section); they describe, they do not prescribe.
       </p>
       <div className="relative mt-3 overflow-x-auto">
         <table className="data-table">

@@ -143,11 +143,11 @@ describe('TriLegend (C1.3)', () => {
 
   it('median centre: nine hard blocks, the words line and the aria-label with both ends', () => {
     const s = triScale([0.1, 0.2, 0.3, 0.5, 0.9]);
-    render(<TriLegend scale={s} label="Energy Security, Batteries Midstream" format={fmt} noun="economies" missing="Not ranked" />);
+    render(<TriLegend scale={s} label="Energy Security, Batteries Refining" format={fmt} noun="economies" missing="Not ranked" />);
     const el = screen.getByTestId('tri-legend');
     expect(el.getAttribute('role')).toBe('group');
     expect(el.getAttribute('aria-label')).toBe(
-      'Energy Security, Batteries Midstream: from 0.10 (orange) to 0.90 (blue). Orange: lower; white: median of the 5 economies shown (0.30); blue: higher.',
+      'Energy Security, Batteries Refining: from 0.10 (orange) to 0.90 (blue). Orange: lower; white: median of the 5 economies shown (0.30); blue: higher.',
     );
     expect(el.textContent).toContain('Orange: lower · White: median of the 5 economies shown (0.30) · Blue: higher');
     expect(el.textContent).toContain('Not ranked');

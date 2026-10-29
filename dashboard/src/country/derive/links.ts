@@ -39,6 +39,11 @@ export const devDataLink = (iso3: string | null, c?: { tech: string; stage: stri
     ? `/sector/${slug(c.tech)}/${slug(c.stage)}/${iso3}#aid-investment`
     : `/sector/explore/development?m=development.wdi${iso3 ? `&c=${iso3}` : ''}`;
 
-/** The Sector profile of one sector (technology and stage) with the economy highlighted (IA refactor 2026-10-16). */
+/** The Sector profile of one sector (technology and stage) with the economy highlighted (IA refactor 2026-10-16);
+ *  the stage is one of the six ("Refining" -> /sector/batteries/refining). */
 export const sectorProfileLink = (c: { tech: string; stage: string }, iso3?: string | null) =>
   `/sector/${slug(c.tech)}/${slug(c.stage)}${iso3 ? `?c=${iso3}` : ''}`;
+
+/** A posture node's Sector profile (the posture drawer's link, design L2): the six-stage profile with the economy
+ *  highlighted, at its Strategic posture section ("Batteries", "Refining" -> /sector/batteries/refining?c=USA#posture). */
+export const postureSectorLink = (tech: string, stage: string, iso3?: string | null) => `${sectorProfileLink({ tech, stage }, iso3)}#posture`;

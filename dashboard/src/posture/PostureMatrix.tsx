@@ -9,7 +9,7 @@ import type { PostureCell, PostureCore } from './contract.ts';
 import { cellKey, pct, postureWord } from './derive.ts';
 import {
   ALIGNMENT_BORDER, ALIGNMENT_ICON, ALIGNMENT_LABEL, evidenceOpacity, MODE_MARK, MOMENTUM_ARROW, MOMENTUM_LABEL, POSTURE_COLOR, QUADRANT_LABEL,
-  RATIONALE_LABEL, RATIONALE_MARK, STAGE_SHORT,
+  RATIONALE_LABEL, RATIONALE_MARK, stageShort,
 } from './grammar.ts';
 
 export function cellLabel(c: PostureCell): string {
@@ -60,7 +60,7 @@ export function PostureMatrix({ core, cells, selected, onSelect }: { core: Postu
         </span>
         {stages.map((s) => (
           <span key={s} role="columnheader" className="truncate px-0.5 pb-1 text-center text-[11px] font-medium text-paper-mute sm:text-xs" title={s}>
-            <span className="sm:hidden">{STAGE_SHORT[s] ?? s}</span>
+            <span className="sm:hidden">{stageShort(s)}</span>
             <span className="hidden sm:inline">{s}</span>
           </span>
         ))}
