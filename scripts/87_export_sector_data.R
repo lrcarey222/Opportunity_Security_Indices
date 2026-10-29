@@ -331,7 +331,15 @@ coal <- rd("coalition_tbl")
 ideal <- rd("geo_ideal_points_tbl")
 eu_members <- coal$iso3[coal$eu_member %in% TRUE]
 tc <- rd("trade_concentration_tbl")
-results$atlas <- sector_facts_atlas(tc)
+# Atlas market share: its data year is the Atlas HS6 year the rows' explanation names in brackets,
+# not the table's Year column (the Comtrade year); it must be the dictionary's.
+atlas_year <- sector_atlas_share_year(tc)
+atlas_dict_year <- as.integer(unlist(Filter(function(v) identical(v$id, "trade.atlas_share"), dict_raw$vars)[[1]]$years))
+if (!identical(atlas_year, atlas_dict_year)) {
+  stop("trade_concentration_tbl market_share is Atlas ", atlas_year, " data; the dictionary entry trade.atlas_share says ",
+       paste(atlas_dict_year, collapse = ", "), ": update its years and data_year.")
+}
+results$atlas <- sector_facts_atlas(tc, atlas_year)
 worlds$atlas <- results$atlas$world
 reported <- sector_reported_trade(tc)
 rm(tc)
@@ -1102,8 +1110,8 @@ for (k in c("mineral:lithium", "mineral:graphite", "mineral:rare-earths", "miner
 }
 s <- pick("production.uranium", "cell:nuclear-upstream", u_latest)
 if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Red Book uranium %d: %s %.1f%%", u_latest, geo_code(s$top1_geo), 100 * s$top1_share)
-s <- pick("trade.atlas_share", "cell:batteries-midstream", 2023L)
-if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Atlas 2023 batteries-midstream: %s %.3f", geo_code(s$top1_geo), s$top1_share)
+s <- pick("trade.atlas_share", "cell:batteries-midstream", atlas_year)
+if (nrow(s)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Atlas %d batteries-midstream: %s %.3f", atlas_year, geo_code(s$top1_geo), s$top1_share)
 rc <- bundle$reconcile[bundle$reconcile$item_key == "cell:batteries-midstream", , drop = FALSE]
 if (nrow(rc)) ref_rows[[length(ref_rows) + 1]] <- sprintf("Exporter-reported batteries-midstream 2024: USD %.1f bn; CHN %.1f%%; HHI %.3f; %d reporters",
                                                          rc$reported_total / 1e9, 100 * rc$reported_china, rc$reported_hhi, rc$n_reporters)

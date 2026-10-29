@@ -102,11 +102,13 @@ sector_check_iso3 <- function(x, label) {
 
 # ---- Trade (processed): Atlas shares, RCA, exporter-reported totals -----------------------------------
 
-sector_facts_atlas <- function(tc) {
+# `year` is the Atlas HS6 data year the rows' explanation names in brackets ("... (Atlas) [2024]"; the
+# table's Year column is the Comtrade year): the caller passes sector_atlas_share_year().
+sector_facts_atlas <- function(tc, year) {
   r <- sector_raw_rows(tc)
   r <- r[r$variable == "market_share" & !is.na(r$value), , drop = FALSE]
   sector_check_iso3(r$iso3c, "trade_concentration_tbl market_share")
-  x <- sector_fx("trade.atlas_share", paste0("cell:", sector_cell_slug(r$tech, r$supply_chain)), r$iso3c, 2023L,
+  x <- sector_fx("trade.atlas_share", paste0("cell:", sector_cell_slug(r$tech, r$supply_chain)), r$iso3c, as.integer(year),
                  r$value, ifelse(r$value == 0, "zero", "obs"), "trade_concentration_tbl", "market_share",
                  key = paste(r$iso3c, r$tech, r$supply_chain))
   w <- unique(x$facts[c("var", "item_key", "year")])
@@ -133,7 +135,7 @@ sector_facts_rca <- function(ef, min_exports = 5e7) {
 # Export feasibility (Harvard Atlas relatedness): the processed raw `feasibility` of
 # export_feasibility_tbl verbatim, 1 - the mean Atlas product-space distance over the basket's HS4
 # headings (trade_core_build_aec_feasibility(); each heading once). `year` is the Atlas HS4 data year
-# that the rows' explanation names in brackets ("... [2023]"; the table's Year column is the Comtrade
+# that the rows' explanation names in brackets ("... [2024]"; the table's Year column is the Comtrade
 # year): the caller passes sector_feasibility_year().
 sector_facts_feasibility <- function(ef, year) {
   r <- sector_raw_rows(ef)
@@ -147,19 +149,25 @@ sector_facts_feasibility <- function(ef, year) {
   sector_result(x$facts, x$ledger, sector_excl("export_feasibility_tbl", "feasibility", "NA", sum(na)))
 }
 
-# The Atlas HS4 data year of the feasibility rows: the single bracketed year their explanation names
-# ("1 - mean Atlas product-space distance over the basket's HS4 headings [2023]"). Stops when the rows
+# The Atlas data year of one variable's rows: the single bracketed year their explanation names
+# ("1 - mean Atlas product-space distance over the basket's HS4 headings [2024]"). Stops when the rows
 # name none or more than one.
-sector_feasibility_year <- function(ef) {
-  r <- sector_raw_rows(ef)
-  ex <- unique(r$explanation[r$variable == "feasibility"])
+sector_atlas_year <- function(tbl, variable, label) {
+  r <- sector_raw_rows(tbl)
+  ex <- unique(r$explanation[r$variable == variable])
   y <- unique(regmatches(ex, regexpr("\\[(19|20)[0-9]{2}\\]", ex)))
   if (length(y) != 1) {
-    stop("export_feasibility_tbl feasibility: expected one bracketed data year in the explanation, found ",
+    stop(label, " ", variable, ": expected one bracketed data year in the explanation, found ",
          if (length(y)) paste(y, collapse = ", ") else "none")
   }
   as.integer(gsub("[^0-9]", "", y))
 }
+
+# The Atlas HS4 data year of the feasibility rows.
+sector_feasibility_year <- function(ef) sector_atlas_year(ef, "feasibility", "export_feasibility_tbl")
+
+# The Atlas HS6 data year of the market-share rows.
+sector_atlas_share_year <- function(tc) sector_atlas_year(tc, "market_share", "trade_concentration_tbl")
 
 # Exporter-reported totals per cell for the reconciliation table: total, China's share, the
 # processed HHI (de-broadcast; one value per cell) and the number of reporters.

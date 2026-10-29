@@ -61,7 +61,7 @@ parse_index_years <- function(x, default = c(2020L, 2025L)) {
 
 # Snap a requested year onto the years a source actually publishes.
 #
-# Sources end at different points (the Atlas of Economic Complexity stops at 2023, the EI
+# Sources end at different points (the Atlas of Economic Complexity stops at 2024, the EI
 # Statistical Review runs to 2025), so a requested 2025 vintage takes the newest year at or
 # before 2025 that the source has. Falling *forward* to the earliest available year is only
 # used when the request predates the source entirely, and the caller is expected to record
@@ -308,8 +308,8 @@ index_vintage_theme_spec <- function() {
     "energy_consumption",              "Consumption",                TRUE,  "EI Statistical Review annual; BNEF NEO projections held fixed",
     "import_dependence",               "Energy Imports",             TRUE,  "EI Statistical Review, annual 1965-2025",
     "production_depth_momentum",       "Production",                 TRUE,  "EI Statistical Review annual; IEA minerals supply held fixed",
-    "trade_concentration",             "Trade",                      TRUE,  "Atlas of Economic Complexity HS92, annual 1995-2023",
-    "export_feasibility",              "Trade",                      TRUE,  "Atlas of Economic Complexity HS92, annual 1995-2023",
+    "trade_concentration",             "Trade",                      TRUE,  "Atlas of Economic Complexity HS92, annual 1995-2024",
+    "export_feasibility",              "Trade",                      TRUE,  "Atlas of Economic Complexity HS92, annual 1995-2024",
     "energy_prices",                   "Energy Prices",              TRUE,  "IMF monthly commodity prices, volatility window ending in the vintage year",
     "cost_competitiveness",            "Cost Competitiveness",       TRUE,  "ILO earnings and IMF rates/PPI annual; IEA relative costs held fixed",
     "investment_momentum",             "Investment",                 TRUE,  "GCIM annual investment 2018-2025; capacity pipeline held fixed",

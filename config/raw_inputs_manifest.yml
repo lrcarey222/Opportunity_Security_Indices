@@ -709,8 +709,12 @@ inputs:
   url: https://atlas.hks.harvard.edu/
   cadence: annual
   owner: lcarey@rmi.org
+  vintage: 1995-2024; Dataverse "International Trade Data (HS, 92)" V18, 2026-04-22
   staged_from: sharepoint
-  notes: Available via Harvard Dataverse; automatable.
+  notes: Downloaded from Harvard Dataverse (https://doi.org/10.7910/DVN/T4CHWJ, file hs92_country_product_year_4.csv);
+    automatable. Each release re-reconciles every year, so earlier years shift slightly
+    between versions; replace this file and the 6-digit one together. The Dataverse
+    citation metadata still gives 1995-2023 for V18, but the files carry 2024.
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
@@ -721,7 +725,10 @@ inputs:
   url: https://atlas.hks.harvard.edu/
   cadence: annual
   owner: lcarey@rmi.org
+  vintage: 1995-2024; Dataverse "International Trade Data (HS, 92)" V18, 2026-04-22
   staged_from: sharepoint
+  notes: Downloaded from Harvard Dataverse (https://doi.org/10.7910/DVN/T4CHWJ, file hs92_country_product_year_6.csv);
+    automatable. Stage with the 4-digit file of the same release.
   required_by:
   - scripts/10_build_themes.R
   - scripts/40_build_index_vintages.R
@@ -732,6 +739,7 @@ inputs:
   url: https://atlas.hks.harvard.edu/
   cadence: annual
   owner: lcarey@rmi.org
+  vintage: 1995-2024; Dataverse "International Trade Data (HS, 92)" V18, 2026-04-22
   staged_from: sharepoint
   optional: yes
   notes: Product list for the HS92 match report in scripts/04; skipped when absent.

@@ -169,6 +169,23 @@ test_that("export feasibility ships the processed Atlas value verbatim with the 
   expect_error(sector_feasibility_year(none), "found none")
 })
 
+test_that("Atlas market share ships at the Atlas data year its explanation names", {
+  tc <- tibble::tibble(
+    iso3c = c("CHN", "DEU", "CHN"), tech = "Batteries", supply_chain = "Midstream",
+    variable = "market_share", data_type = c("raw", "raw", "index"), value = c(0.41, 0, 0.97), Year = 2024L,
+    explanation = c(rep("Share of world exports of the basket's HS6 codes (Atlas) [2024]", 2),
+                    "S-curve of basket market share across countries within the cell [2024]")
+  )
+  y <- sector_atlas_share_year(tc)
+  expect_identical(y, 2024L)
+  x <- sector_facts_atlas(tc, y)
+  expect_identical(unique(x$facts$year), 2024L)
+  expect_identical(x$world$year, 2024L)
+  two <- tc
+  two$explanation[2] <- "Share of world exports of the basket's HS6 codes (Atlas) [2023]"
+  expect_error(sector_atlas_share_year(two), "trade_concentration_tbl market_share: expected one bracketed data year")
+})
+
 test_that("the dictionary carries the feasibility, sub-component and HHI explainer entries", {
   d <- yaml::read_yaml(file.path(repo_root, "config", "sector_dictionary.yml"))
   v <- function(id) Filter(function(x) identical(x$id, id), d$vars)[[1]]

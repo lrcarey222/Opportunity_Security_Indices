@@ -241,11 +241,11 @@ sources:
     short: "Harvard Atlas of Economic Complexity"
     citation: "Growth Lab at Harvard University, The Atlas of Economic Complexity, HS92 6-digit country-product-year data"
     publisher: "Growth Lab at Harvard University"
-    edition: "data to 2023"
+    edition: "Dataverse V18, April 2026 (data to 2024)"
     url: "https://atlas.hks.harvard.edu/"
     licence: attribution
     attribution: "Source: The Atlas of Economic Complexity, Growth Lab at Harvard University."
-    accessed: "2026-09"
+    accessed: "2026-10"
     transform: "Share of world exports of each cell's HS6 basket (sums to 1 per cell)."
     issues: "Basket codes newer than HS92 are missing."
   - id: ei
@@ -558,7 +558,7 @@ caveats:
   - {id: exporter_reported, text: "Exporter-reported basis (exporters' own declarations, {n_rca_reporters} reporters); not comparable with the reconciled matrix."}
   - {id: rca_small, text: "Shown only where exporter-reported basket exports reach USD 50 m; smaller exporters read 'too small to compare'."}
   - {id: hkg_excluded, text: "Hong Kong is excluded from the exporter-reported measures as a re-export hub."}
-  - {id: atlas_source, text: "Harvard Atlas 2023: a different source and year from the Comtrade 2024 matrix, so it is shown in its own card."}
+  - {id: atlas_source, text: "Harvard Atlas 2024 (HS92, reconciled): a different source from the Comtrade 2024 matrix, so it is shown in its own card."}
   - {id: feasibility_reading, text: "Export feasibility is the Atlas of Economic Complexity's relatedness (also called density: 1 minus its 'distance'). For each four-digit product heading in the sector's basket it measures how much of the know-how the product needs the economy already shows: of all other products, each weighted by how often economies export it together with this one (its 'proximity'), the share the economy already exports with a revealed comparative advantage. The sector's value is the average over its headings, each counted once: 0 means none of the related capabilities are in place, 1 means all of them. It describes capabilities, not costs, demand or policy, and it is not a forecast."}
   - {id: sub_component_rule, text: "Sub-components are the groups of HS6 codes the sector's basket is built from (listed with their codes). Each flow uses the same source as the whole sector (the importer's declaration where it reported the sector that year, otherwise the exporter's x1.06), so a sector's sub-components add up to its total. Within one sector each code sits in one sub-component; a code shared with another sector counts in both sectors, so sub-components are never added across sectors."}
   - {id: hhi_reading, text: "Concentration (HHI): take each holder's share of the world total, square it and add up the squares. If one economy held everything the index would be 1; ten equal holders give 0.10 and four give 0.25. One divided by the index is the 'effective number' of equal-sized holders the market behaves like: 0.25 behaves like 4. Where part of the world total is not attributed to any economy, the index is a lower bound ('at least')."}
@@ -954,8 +954,8 @@ vars:
     short: "Atlas share"
     definition: "The economy's share of world exports of the cell's HS6 basket in the Harvard Atlas (HS92), which sums to 1 per cell."
     unit: share
-    data_year: "2023"
-    years: [2023]
+    data_year: "2024"
+    years: [2024]
     year_field: false
     native_level: country
     item_axis: cell
@@ -984,8 +984,8 @@ vars:
     short: "Export feasibility"
     definition: "How close the sector's products are to what the economy already exports well: 1 minus the average Harvard Atlas product-space distance over the basket's HS4 headings. Higher means the needed capabilities are nearer at hand."
     unit: index01
-    data_year: "2023"
-    years: [2023]
+    data_year: "2024"
+    years: [2024]
     year_field: false
     native_level: country
     item_axis: cell

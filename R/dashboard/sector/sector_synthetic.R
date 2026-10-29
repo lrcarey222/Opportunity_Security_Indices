@@ -261,12 +261,12 @@ sector_synthetic_parts <- function(dict) {
   # trade.rca (exporter-reported; HKG excluded; RUS did not report; small exporters nq).
   add("trade.rca", bm, c("CHN", "POL", "DEU", "JPN", "USA", "IDN", "EST", "BRA"), 2024,
       c(3.1, 4.2, 0.9, 1.1, 0.3, NaN, NaN, NaN), c("obs", "obs", "obs", "obs", "obs", "nq", "nq", "nq"))
-  add("trade.atlas_share", bm, econ, 2023,
+  add("trade.atlas_share", bm, econ, 2024,
       c(0.0005, 0.409, 0.044, 0.0004, 0.003, 0.01, 0.04, 0.05, 0.001, 0.03))
   # Export feasibility (Atlas relatedness, 0-1); HKG has none (not in the Atlas HS4 panel here).
-  add("trade.feasibility", bm, setdiff(econ, "HKG"), 2023, c(0.071, 0.513, 0.412, 0.205, 0.188, 0.397, 0.371, 0.096, 0.402))
-  add("trade.feasibility", "cell:batteries-upstream", setdiff(econ, "HKG"), 2023, c(0.144, 0.162, 0.083, 0.051, 0.122, 0.064, 0.077, 0.139, 0.095))
-  addw("trade.atlas_share", bm, 2023, 1, "one")
+  add("trade.feasibility", bm, setdiff(econ, "HKG"), 2024, c(0.071, 0.513, 0.412, 0.205, 0.188, 0.397, 0.371, 0.096, 0.402))
+  add("trade.feasibility", "cell:batteries-upstream", setdiff(econ, "HKG"), 2024, c(0.144, 0.162, 0.083, 0.051, 0.122, 0.064, 0.077, 0.139, 0.095))
+  addw("trade.atlas_share", bm, 2024, 1, "one")
   add("trade.critmin_exports", "mineral:lithium", c("CHN", "BRA", "USA", "IDN", "RUS", "HKG"), 2024,
       c(2.3e9, 0.4e9, 0.1e9, 0, 0.05e9, 0.02e9), c("obs", "obs", "obs", "zero", "mirror", "obs"))
   add("trade.critmin_exports", "mineral:graphite", c("CHN", "DEU", "JPN", "BRA", "POL"), 2024,
