@@ -16,12 +16,12 @@ country_empty_df <- function(cols) {
 
 # High-priority sectors (A9.5).
 country_priority_sectors <- function(cells, si_order, eo_order, n = 3) {
-  q <- vapply(cells, function(c) c$quadrant %||% "", "")
+  q <- vapply(cells, function(c) c$legacy_corner %||% "", "")
   names(q) <- vapply(cells, function(c) c$key, "")
   placed <- vapply(cells, function(c) isTRUE(c$placed), TRUE)
   names(placed) <- names(q)
   if (length(si_order)) {
-    up <- si_order[q[si_order] == "upgrade"]
+    up <- si_order[q[si_order] == "legacy_upgrade"]
     if (length(up)) return(list(keys = utils::head(up, n), rule = "upgrade"))
     fb <- si_order[placed[si_order]]
     if (length(fb)) return(list(keys = utils::head(fb, n), rule = "top_si_fallback"))
@@ -206,8 +206,8 @@ country_fact_sheet <- function(iso3, ctx) {
 
   # summary
   placed <- Filter(function(c) isTRUE(c$placed), cells)
-  qn <- function(q) sum(vapply(placed, function(c) identical(c$quadrant, q), TRUE))
-  quads <- list(grow = qn("grow"), upgrade = qn("upgrade"), secure = qn("secure"), watch = qn("watch"))
+  qn <- function(q) sum(vapply(placed, function(c) identical(c$legacy_corner, q), TRUE))
+  quads <- stats::setNames(lapply(COUNTRY_LEGACY_CORNER_IDS, qn), COUNTRY_LEGACY_CORNER_IDS)
   cmed <- country_median_sector(cells)
   n_scored <- sum(vapply(cells, function(c) !is.null(c$es) && !is.null(c$eo), TRUE))
   ap <- if (!is.null(ctx$psi_partner)) ctx$psi_partner[ctx$psi_partner$partner_iso == iso3, , drop = FALSE] else NULL
@@ -218,10 +218,12 @@ country_fact_sheet <- function(iso3, ctx) {
   } else NULL
   summary <- list(
     n_cells = country_fv(length(cells), "count"), n_scored = country_fv(n_scored, "count"), n_placed = country_fv(length(placed), "count"),
-    quadrants = lapply(quads, function(v) country_fv(v, "count")),
+    # the legacy OSI corners (schema 3: legacy_* keys; Legacy OSI framework, not a current recommendation)
+    legacy_corners = lapply(quads, function(v) country_fv(v, "count")),
     # the dashed lines of the scatter: the country's median sector on each axis (A9.2)
     country_median = list(es = country_fv(cmed$es, "pct"), eo = country_fv(cmed$eo, "pct")),
-    n_insecure = country_fv(quads$upgrade + quads$secure, "count"), n_high_eo = country_fv(quads$grow + quads$upgrade, "count"),
+    n_insecure = country_fv(quads$legacy_upgrade + quads$legacy_exposed, "count"),
+    n_high_eo = country_fv(quads$legacy_grow + quads$legacy_upgrade, "count"),
     es_order = country_arr(oo$es_order), eo_order = country_arr(oo$eo_order), si_order = country_arr(si$si_order),
     top_si = si$top, psi_1 = psi_1, as_partner = as_partner
   )
@@ -322,7 +324,7 @@ country_merge_drivers <- function(sheet, doc) {
 }
 
 # The manifest (A8.1). entries: one list per roster economy (iso3, name, tier, region, eu_member,
-# status, file, bytes_gz, n_placed, quadrants, memo).
+# status, file, bytes_gz, n_placed, legacy_corners, memo).
 country_manifest <- function(entries, meta, sources, validation, counts) {
   list(
     schema = "osi-country", schema_version = COUNTRY_SCHEMA_VERSION, created = meta$created, git_commit = meta$git_commit %||% NULL,
@@ -340,11 +342,11 @@ country_manifest <- function(entries, meta, sources, validation, counts) {
 
 # The manifest entry of one economy.
 country_manifest_entry <- function(ro, sheet, file, bytes_gz, memo = NULL) {
-  q <- if (!is.null(sheet)) lapply(sheet$summary$quadrants, function(f) f$v) else NULL
+  q <- if (!is.null(sheet)) lapply(sheet$summary$legacy_corners, function(f) f$v) else NULL
   list(
     iso3 = ro$iso3, name = ro$name, tier = ro$tier, region = country_chr_or_null(ro$region), eu_member = isTRUE(ro$eu_member),
     iso_n3 = country_chr_or_null(ro$iso_n3),
     status = if (is.null(sheet)) "no_data" else sheet$meta$status, file = file, bytes_gz = bytes_gz,
-    n_placed = if (is.null(sheet)) NULL else sheet$summary$n_placed$v, quadrants = q, memo = memo
+    n_placed = if (is.null(sheet)) NULL else sheet$summary$n_placed$v, legacy_corners = q, memo = memo
   )
 }

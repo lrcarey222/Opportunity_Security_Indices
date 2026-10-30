@@ -1,0 +1,86 @@
+"level","item","tech","n_observed","n_national","n_countries","share_observed"
+"family","deployment_need","Batteries",202,,219,0.922
+"family","deployment_need","Coal",164,,219,0.749
+"family","deployment_need","Electric Grid",202,,219,0.922
+"family","deployment_need","Electric Vehicles",103,,219,0.47
+"family","deployment_need","Gas",202,,219,0.922
+"family","deployment_need","Geothermal",168,,219,0.767
+"family","deployment_need","Green Hydrogen",91,,219,0.416
+"family","deployment_need","Nuclear",168,,219,0.767
+"family","deployment_need","Oil",79,,219,0.361
+"family","deployment_need","Solar",167,,219,0.763
+"family","deployment_need","Wind",167,,219,0.763
+"family","dn_demand","Batteries",162,,219,0.74
+"family","dn_demand","Coal",162,,219,0.74
+"family","dn_demand","Electric Grid",162,,219,0.74
+"family","dn_demand","Electric Vehicles",55,,219,0.251
+"family","dn_demand","Gas",162,,219,0.74
+"family","dn_demand","Geothermal",162,,219,0.74
+"family","dn_demand","Green Hydrogen",0,,219,0
+"family","dn_demand","Nuclear",162,,219,0.74
+"family","dn_demand","Oil",79,,219,0.361
+"family","dn_demand","Solar",162,,219,0.74
+"family","dn_demand","Wind",162,,219,0.74
+"family","dn_policy_gap","Batteries",84,,219,0.384
+"family","dn_policy_gap","Coal",26,,219,0.119
+"family","dn_policy_gap","Electric Grid",84,,219,0.384
+"family","dn_policy_gap","Electric Vehicles",0,,219,0
+"family","dn_policy_gap","Gas",34,,219,0.155
+"family","dn_policy_gap","Geothermal",0,,219,0
+"family","dn_policy_gap","Green Hydrogen",0,,219,0
+"family","dn_policy_gap","Nuclear",21,,219,0.096
+"family","dn_policy_gap","Oil",0,,219,0
+"family","dn_policy_gap","Solar",85,,219,0.388
+"family","dn_policy_gap","Wind",85,,219,0.388
+"family","dn_system","Batteries",202,,219,0.922
+"family","dn_system","Coal",153,,219,0.699
+"family","dn_system","Electric Grid",202,,219,0.922
+"family","dn_system","Electric Vehicles",99,,219,0.452
+"family","dn_system","Gas",202,,219,0.922
+"family","dn_system","Geothermal",158,,219,0.721
+"family","dn_system","Green Hydrogen",91,,219,0.416
+"family","dn_system","Nuclear",158,,219,0.721
+"family","dn_system","Oil",0,,219,0
+"family","dn_system","Solar",108,,219,0.493
+"family","dn_system","Wind",108,,219,0.493
+"measure","demand_growth","Batteries",162,6,219,0.74
+"measure","demand_growth","Coal",162,6,219,0.74
+"measure","demand_growth","Electric Grid",162,6,219,0.74
+"measure","demand_growth","Gas",162,6,219,0.74
+"measure","demand_growth","Geothermal",162,6,219,0.74
+"measure","demand_growth","Nuclear",162,6,219,0.74
+"measure","demand_growth","Solar",162,6,219,0.74
+"measure","demand_growth","Wind",162,6,219,0.74
+"measure","ev_share_growth","Electric Vehicles",55,5,219,0.251
+"measure","firm_capacity_need","Coal",138,138,219,0.63
+"measure","firm_capacity_need","Gas",138,138,219,0.63
+"measure","firm_capacity_need","Geothermal",138,138,219,0.63
+"measure","firm_capacity_need","Nuclear",138,138,219,0.63
+"measure","flexibility_need","Batteries",202,202,219,0.922
+"measure","flexibility_need","Electric Grid",202,202,219,0.922
+"measure","flexibility_need","Gas",202,202,219,0.922
+"measure","import_displacement","Coal",84,84,219,0.384
+"measure","import_displacement","Electric Vehicles",99,99,219,0.452
+"measure","import_displacement","Gas",91,91,219,0.416
+"measure","import_displacement","Geothermal",108,108,219,0.493
+"measure","import_displacement","Green Hydrogen",91,91,219,0.416
+"measure","import_displacement","Nuclear",108,108,219,0.493
+"measure","import_displacement","Solar",108,108,219,0.493
+"measure","import_displacement","Wind",108,108,219,0.493
+"measure","oil_demand_growth","Oil",79,0,219,0.361
+"measure","output_growth","Batteries",156,6,219,0.712
+"measure","output_growth","Coal",156,6,219,0.712
+"measure","output_growth","Gas",156,6,219,0.712
+"measure","output_growth","Nuclear",156,6,219,0.712
+"measure","output_growth","Solar",156,6,219,0.712
+"measure","output_growth","Wind",156,6,219,0.712
+"measure","renewables_target_shortfall","Batteries",84,84,219,0.384
+"measure","renewables_target_shortfall","Electric Grid",84,84,219,0.384
+"measure","renewables_target_shortfall","Solar",84,84,219,0.384
+"measure","renewables_target_shortfall","Wind",84,84,219,0.384
+"measure","target_shortfall","Batteries",5,5,219,0.023
+"measure","target_shortfall","Coal",26,26,219,0.119
+"measure","target_shortfall","Gas",34,34,219,0.155
+"measure","target_shortfall","Nuclear",21,21,219,0.096
+"measure","target_shortfall","Solar",78,78,219,0.356
+"measure","target_shortfall","Wind",72,72,219,0.329

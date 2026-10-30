@@ -2,7 +2,7 @@
   "about": "Broken fact sheets for the two contract checks (spec_country.md A8.5): each case names one mutation of the synthetic United States sheet (scripts/88 --synthetic), applied by tests/testthat/test-country-check.R to country_check_sheet() and by dashboard/src/country/__tests__/contract.test.ts to checkFactSheet(); both must report a problem whose text contains `keyword`.",
   "base": "USA",
   "cases": [
-    {"op": "quadrant_flip", "keyword": "quadrant", "what": "the first placed sector's corner contradicts its plotted position and the country's median sector"},
+    {"op": "legacy_corner_flip", "keyword": "legacy_corner", "what": "the first placed sector's legacy corner (schema 3 cells[].legacy_corner, was quadrant) contradicts its plotted position and the country's median sector"},
     {"op": "country_median_off", "keyword": "country_median", "what": "the country's median sector (summary.country_median) is not the median of the plotted positions"},
     {"op": "pos_wrong_side", "keyword": "pos", "what": "a plotted position on the wrong side of 50"},
     {"op": "si_parts_off", "keyword": "parts", "what": "the five Strategic Index parts no longer sum to the index"},

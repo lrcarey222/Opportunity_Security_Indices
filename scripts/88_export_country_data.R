@@ -32,6 +32,13 @@
 # `stage`; a CM-FDI project counts in each stage of its `stages` list (Components and Assembly), totals once
 # per project; the NIPO run is still three-stage, so the sheets list no measures by sector.
 #
+# Schema 3 (2026-10-29, design D6): the legacy ES x EO corner is namespaced as a Legacy OSI output,
+# cells[].legacy_corner (legacy_grow | legacy_upgrade | legacy_exposed | legacy_stable; was quadrant with
+# grow | upgrade | secure | watch), summary.legacy_corners, words.legacy_corner and the manifest's
+# legacy_corners, so "secure" and "watch" mean only the canonical choices. The corners derive from the
+# stored ES / EO (no upstream rerun); the memos stay hidden (config memo_revision) and new memos cite
+# {{cells.<key>.legacy_corner}}.
+#
 # Every fact sheet is read back and must pass country_check_sheet() and equal data/processed on every
 # shared value (ES, EO, SI, PSI) after the JSON round trip. --check-only builds and validates without
 # writing. --synthetic writes the deterministic fixture (country_synthetic_ctx(), no data read) to

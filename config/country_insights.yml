@@ -34,11 +34,12 @@ max_vars_per_category: 4
 
 # enum -> display words (the fact sheet's `words`; tokens and the UI print enums through it)
 words:
-  # The corner words (2026-10-28): the keys stay; the corners with the keys secure and watch are called Exposed
-  # and Stable, so they do not clash with the six-stage posture words (Secure / Compete / Deploy, Watch) shown on
-  # the same pages. The dashboard prints its own copy of these names (dashboard/src/country/contract.ts
-  # QUADRANTS); this copy reaches the fact sheets, and through them the memo tokens, at the next Country export.
-  quadrant: {grow: "Grow", upgrade: "Upgrade", secure: "Exposed", watch: "Stable"}
+  # The legacy OSI corner words. 2026-10-28: the corners with the keys secure and watch were called Exposed and
+  # Stable; 2026-10-29 (Country schema 3, design D6): the keys are namespaced (legacy_grow, legacy_upgrade,
+  # legacy_exposed, legacy_stable; the fact-sheet field is legacy_corner, was quadrant), so no legacy key reads as
+  # the canonical Secure or Deploy · Watch. The dashboard prints its own copy of these names
+  # (dashboard/src/country/contract.ts); this copy reaches the fact sheets and the memo tokens.
+  legacy_corner: {legacy_grow: "Grow", legacy_upgrade: "Upgrade", legacy_exposed: "Exposed", legacy_stable: "Stable"}
   third: {high: "top third", middle: "middle third", low: "bottom third"}
   policy_third: {high: "most policy", middle: "middle", low: "least policy"}
   class:
@@ -77,13 +78,14 @@ words:
 # (the user's decision) "high" and "low" are against the country's own median sector on each axis (A9.2),
 # so the corners show the country's relatively strong and weak sectors; the percentile axes still compare
 # it with the other economies. Documentation only: the dashboard shows the meaning and posture of
-# dashboard/src/country/contract.ts QUADRANTS, kept in step with these lines (2026-10-28: secure is
-# shown as Exposed, watch as Stable).
+# dashboard/src/country/contract.ts, kept in step with these lines (2026-10-28: secure is shown as Exposed,
+# watch as Stable; 2026-10-29: keys namespaced legacy_*, design D6). Legacy OSI framework: not a current
+# recommendation (the canonical choices are Secure, Preserve, Catch Up, Partner, Accelerate, Watch).
 quadrants:
-  grow: {meaning: "High opportunity, high energy security: build on strength", posture: "export promotion"}
-  upgrade: {meaning: "High opportunity, low energy security: build capability", posture: "leapfrog"}
-  secure: {meaning: "Low opportunity, low energy security: source from trusted partners", posture: "friendshore"}
-  watch: {meaning: "Low opportunity, high energy security: look for value elsewhere", posture: "alternative value creation"}
+  legacy_grow: {meaning: "High opportunity, high energy security: build on strength", posture: "export promotion"}
+  legacy_upgrade: {meaning: "High opportunity, low energy security: build capability", posture: "leapfrog"}
+  legacy_exposed: {meaning: "Low opportunity, low energy security: source from trusted partners", posture: "friendshore"}
+  legacy_stable: {meaning: "Low opportunity, high energy security: look for value elsewhere", posture: "alternative value creation"}
 
 # Memos kept under an earlier rule (scripts/88; the manifest's memo.rule_note and memo.rule_note_d, shown by
 # the memo page and the profile's memo panel). {country}, {written} (the memo's writing date). The note keeps
@@ -308,7 +310,7 @@ src_map:
   - {prefix: "cells.*.es", src: osi_indices}
   - {prefix: "cells.*.eo", src: osi_indices}
   - {prefix: "cells.*.si", src: osi_indices}
-  - {prefix: "cells.*.quadrant", src: osi_indices}
+  - {prefix: "cells.*.legacy_corner", src: osi_indices}
   - {prefix: "cells.*.priority", src: osi_indices}
   - {prefix: "cells.*.drivers", src: osi_indices}
   - {prefix: "cells.*.policy", src: iea_pams}
@@ -383,7 +385,7 @@ tone_words: ["should", "must", "need to", "needs to", "recommend", "urge", "cris
 banned_labels: ["secure sector", "secure sectors", "insecure sector", "insecure sectors", "secure stage", "secure stages", "insecure stage", "insecure stages", "secure corner", "insecure", "is secure", "are secure"]
 # RMI is an organisation's name (the framework's postures are attributed to "RMI (2025)"), not an abbreviation.
 allowed_acronyms: ["EU", "UN", "G7", "NATO", "RMI"]
-# The corner words a memo must print through {{cells.<key>.quadrant}} beside a sector token (2026-10-28: Exposed
+# The corner words a memo must print through {{cells.<key>.legacy_corner}} (schema 2: .quadrant) beside a sector token (2026-10-28: Exposed
 # and Stable replace Secure and Watch, which are now six-stage posture words a memo may use in plain text).
 corner_words: ["Grow", "Upgrade", "Exposed", "Stable"]
 capital_allowlist: ["Global Trade Alert", "New Industrial Policy Observatory", "Energy Security", "Economic Opportunity", "Strategic Index", "Partnership Strength Index", "Partnership Strength", "Friendshore", "Partnership Opportunity", "Development Potential", "Policy activity", "Climate Action Tracker", "IEA", "International Energy Agency", "Policies and Measures", "UN Comtrade", "Country Insights", "Strategic Insights", "Sector Insights", "Allied Industrial Base Explorer", "RMI", "European Union", "United Nations", "Grow", "Upgrade", "Exposed", "Stable", "Secure", "Watch", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "Cleantech Manufacturing", "Harvard Atlas", "Atlas of Economic Complexity", "World Bank", "The", "This", "Its", "It", "For", "On", "In", "A", "An", "Where", "When", "Both", "These", "Those", "Among", "Across", "Against", "Compared", "By", "With", "Of", "As", "At", "No", "None", "Scores", "Values", "Trade", "Factory", "Extraction", "Refining", "Components", "Assembly", "Deployment", "Recovery"]
@@ -416,7 +418,7 @@ path_meanings:
   - {path: "summary.n_cells", meaning: "number of technology-stage sectors: the 11 technologies at the six supply-chain stages"}
   - {path: "summary.n_scored", meaning: "number of {country}'s sectors with both an Energy Security and an Economic Opportunity score"}
   - {path: "summary.n_placed", meaning: "number of {country}'s sectors whose two scores can both be compared with other economies, so they sit in a corner"}
-  - {path: "summary.quadrants.*", meaning: "number of {country}'s placed sectors in the {q} corner (split at {country}'s own median sector)"}
+  - {path: "summary.legacy_corners.*", meaning: "number of {country}'s placed sectors in the legacy {q} corner (split at {country}'s own median sector)"}
   - {path: "summary.country_median.es", meaning: "{country}'s median sector on Energy Security: the middle of the shares of economies it beats across its placed sectors (the corners split here)"}
   - {path: "summary.country_median.eo", meaning: "{country}'s median sector on Economic Opportunity: the middle of the shares of economies it beats across its placed sectors (the corners split here)"}
   - {path: "summary.n_insecure", meaning: "number of {country}'s placed sectors in the two low-energy-security corners (Upgrade and Exposed)"}
@@ -439,7 +441,7 @@ path_meanings:
   - {path: "cells.*.label_prose", meaning: "the sector {label}"}
   - {path: "cells.*.tech", meaning: "the technology of the sector {label}"}
   - {path: "cells.*.stage", meaning: "the supply-chain stage of the sector {label}"}
-  - {path: "cells.*.quadrant", meaning: "the corner of {label} for {country} (Grow, Upgrade, Exposed or Stable), from where it sits against {country}'s own median sector on Economic Opportunity and Energy Security"}
+  - {path: "cells.*.legacy_corner", meaning: "the legacy OSI corner of {label} for {country} (Grow, Upgrade, Exposed or Stable), from where it sits against {country}'s own median sector on Economic Opportunity and Energy Security"}
   - {path: "cells.*.es", meaning: "Energy Security score of {label} for {country}, 0 to 1, NEIS baseline (higher is more secure)"}
   - {path: "cells.*.es.pct", meaning: "share of the other {n_others} economies scored in {label} whose Energy Security is lower than {country}'s"}
   - {path: "cells.*.es.med", meaning: "Energy Security of the middle (median) economy in {label}"}
@@ -573,7 +575,7 @@ path_meanings:
 # verifier. `*` matches one path segment, and a final `.*` the rest of the path; `common` is allowed in
 # every section and in the summary.
 section_fields:
-  common: ["meta.*", "summary.n_*", "summary.quadrants.*", "cells.*.label", "cells.*.label_prose", "cells.*.tech", "cells.*.stage", "cells.*.quadrant", "priority_sectors"]
+  common: ["meta.*", "summary.n_*", "summary.legacy_corners.*", "cells.*.label", "cells.*.label_prose", "cells.*.tech", "cells.*.stage", "cells.*.legacy_corner", "priority_sectors"]
   "1": ["summary.*", "cells.*.es", "cells.*.es.*", "cells.*.drivers.es.*", "cells.*.trade.sources.*", "cells.*.trade.imports", "cells.*.fdi.*"]
   "2": ["summary.*", "cells.*.eo", "cells.*.eo.*", "cells.*.drivers.eo.*", "cells.*.trade.markets.*", "cells.*.trade.exports"]
   "3": ["summary.top_si.*", "summary.si_order", "cells.*.si", "cells.*.si.*", "cells.*.priority.*", "cells.*.policy.*", "policy.*", "pick.*"]

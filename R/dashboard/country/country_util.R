@@ -23,7 +23,12 @@ COUNTRY_NO_ES_CELLS <- c("coal-recovery", "electric-grid-deployment", "gas-recov
                          "geothermal-components", "geothermal-assembly", "geothermal-recovery")
 COUNTRY_CHINA_HOMES <- c("CHN", "HKG", "MAC")
 # 2 since 2026-10-28: the sheets are keyed on the 66 six-stage sectors (version 1: the 33 three-stage ones).
-COUNTRY_SCHEMA_VERSION <- 2L
+# 3 since 2026-10-29 (design D6): the legacy ES x EO corner is namespaced, cells[].legacy_corner (was
+# quadrant) with values legacy_grow | legacy_upgrade | legacy_exposed | legacy_stable (were grow | upgrade |
+# secure | watch), cells[].legacy_corner_reason (was quadrant_reason), summary.legacy_corners (was
+# quadrants), words.legacy_corner (was words.quadrant), manifest countries[].legacy_corners (was quadrants),
+# so "secure" and "watch" mean only the canonical choices (Secure, Deploy · Watch).
+COUNTRY_SCHEMA_VERSION <- 3L
 
 country_slug <- function(x) gsub("[^a-z0-9]+", "-", tolower(x))
 
@@ -120,14 +125,18 @@ country_pos <- function(pct, x, med) {
   if (x >= med) max(pct, 50) else min(pct, 49.5)
 }
 
-# The corner from two positions and the split on each axis: high = at or above the split (ties go high).
-# Grow = high EO, high ES; Upgrade = high EO, low ES; Exposed (key "secure") = low EO, low ES; Stable (key
-# "watch") = low EO, high ES. The keys stay; the display words (config words.quadrant) were Secure and Watch
-# until 2026-10-28, renamed so they do not clash with the six-stage posture words.
+# The legacy OSI corner (Legacy OSI framework, not a current recommendation) from two positions and the
+# split on each axis: high = at or above the split (ties go high). legacy_grow = high EO, high ES;
+# legacy_upgrade = high EO, low ES; legacy_exposed = low EO, low ES; legacy_stable = low EO, high ES. Until
+# schema 2 the keys were grow, upgrade, secure (Exposed) and watch (Stable); they are namespaced since
+# 2026-10-29 (design D6) so they cannot be read as the canonical Secure or Deploy · Watch.
+COUNTRY_LEGACY_CORNER_IDS <- c("legacy_grow", "legacy_upgrade", "legacy_exposed", "legacy_stable")
+# The schema-2 key of each legacy corner (historical sheets and memos written before 2026-10-29).
+COUNTRY_LEGACY_CORNER_OLD_KEYS <- c(grow = "legacy_grow", upgrade = "legacy_upgrade", secure = "legacy_exposed", watch = "legacy_stable")
 country_quadrant <- function(es, eo, es_med, eo_med) {
   high_eo <- eo >= eo_med
   high_es <- es >= es_med
-  ifelse(high_eo, ifelse(high_es, "grow", "upgrade"), ifelse(high_es, "watch", "secure"))
+  ifelse(high_eo, ifelse(high_es, "legacy_grow", "legacy_upgrade"), ifelse(high_es, "legacy_stable", "legacy_exposed"))
 }
 
 # The quadrant rules (A9.2). "country_median" (the user's rule of 2026-10-15): a sector is high on an axis
@@ -157,7 +166,7 @@ country_set_quadrants <- function(cells, rule = "country_median") {
     c <- cells[[i]]
     q <- if (!isTRUE(c$placed)) NULL else if (rule == "sector_median") country_quadrant(c$es$v, c$eo$v, c$es$med$v, c$eo$med$v)
          else country_quadrant(c$es$pos, c$eo$pos, med$es, med$eo)
-    cells[[i]]["quadrant"] <- list(q)
+    cells[[i]]["legacy_corner"] <- list(q)
   }
   list(cells = cells, median = med)
 }

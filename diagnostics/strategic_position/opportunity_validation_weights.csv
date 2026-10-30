@@ -1,0 +1,4 @@
+"component","share_of_prize","cells_with_component","country_varying"
+"io_growth_pct (world demand growth)",0.817631797426318,12045,FALSE
+"io_investment_momentum_pct (global capex trend)",0.0433063511830635,2190,FALSE
+"io_home_market (national, where it lifts the prize)",0.139061851390619,3350,TRUE

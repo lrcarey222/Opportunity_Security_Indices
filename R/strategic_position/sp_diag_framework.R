@@ -29,10 +29,13 @@ sp_diag_momentum_movers <- function(structural, blended, tm_cells, iso3_of, n = 
 # Momentum weight sensitivity: for each weight, Competitive Position against structural only and
 # against the configured weight. rank_corr is the median over cells of the Spearman correlation of the
 # percentiles; movers_5 / movers_10 count cells moving more than 5 / 10 percentile points. With tbl
-# (the final cell table) and cfg (strategic_posture), the quadrant is re-run on each weight's
-# Competitive Position: posture_changes, flag_changes and confidence_changes against tbl.
-sp_diag_momentum_weights <- function(structural, tm_cells, iso3_of, families, weights, base_weight, tbl = NULL, cfg = list()) {
+# (the final cell table) and cfg (strategic_posture), the decision is re-run on each weight's
+# Competitive Position: posture_changes, flag_changes and confidence_changes against tbl. rerun_fn
+# (optional) takes the blended Competitive Position cells and returns those three counts (the canonical
+# choice, decision_engine.R); without it the legacy quadrant is re-run.
+sp_diag_momentum_weights <- function(structural, tm_cells, iso3_of, families, weights, base_weight, tbl = NULL, cfg = list(), rerun_fn = NULL) {
   rerun <- function(bl) {
+    if (!is.null(rerun_fn)) return(rerun_fn(bl))
     if (is.null(tbl)) return(c(NA, NA, NA))
     alt <- tbl %>%
       dplyr::select(-"competitive_position_percentile") %>%

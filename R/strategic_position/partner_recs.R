@@ -1,8 +1,13 @@
-# Partner recommendations and the allied division of labour (docs/strategic_position.md, section 7.4).
-# A node whose quadrant is Partner (high need, no high opportunity) is met with trusted suppliers, not
-# at home. For each such country x technology x six-stage cell this file names up to three trusted
-# partners and why, and flags a partner gap where no credible trusted supplier exists. The same
-# capability measure gives the coalition-level division of labour the Explorer's AIB view draws.
+# Partner recommendations and the allied division of labour (docs/strategic_position.md, "Allied
+# strategy"). A node whose canonical choice is Compete . Partner (an important capability better met
+# through allies), and a Secure node whose mitigation relies on trusted foreign capacity (delivery
+# allied, mixed or diversified_global), is met with trusted suppliers, not at home. For each such
+# country x technology x six-stage cell this file names up to three trusted partners and why, flags a
+# partner gap where no credible trusted supplier exists, and gives the AIB status (covered | gap) with
+# its reasons (no trusted supplier, a single credible supplier, weak capability evidence, insufficient
+# allied capacity, excessive concentration). A genuine "no credible allied solution yet" is reported,
+# not forced. The same capability measure gives the coalition-level division of labour the Explorer's
+# AIB view draws.
 #
 # Capability of a supplier in a cell: the Allied Industrial Base position share (aib_strategic.rds
 # evidence) averaged over the AIB nodes mapped to the cell, weighted by world trade x OSI coverage,
@@ -118,10 +123,14 @@ sp_hhi_drop <- function(shares, coercive, cand, step = 0.1) {
 # imports_usd. aib_cells (optional): sp_aib_cell_capability()$cells. members: coalition ISO3 codes.
 # cfg: strategic_posture.partner_recs.
 #
+# cells may also carry coercive_top_share (the largest coercive supplier's share of world supply) for the
+# excessive-concentration reason.
+#
 # Returns one row per cell with recommended_partner_1..3 (ISO3) and, for each, _capability, _cp
 # (Competitive Position percentile), _relationship (Friendshore) and _diversification (HHI drop);
-# partner_n_credible, partner_gap, partner_capability_source, partner_evidence_quality and
-# partner_reason.
+# partner_n_credible, partner_gap, partner_capability_source, partner_evidence_quality, partner_reason,
+# partner_trusted_capacity (credible trusted partners' combined share of world supply),
+# partner_gap_reasons (";"-list of PARTNER_GAP_REASONS) and partner_aib_status (covered | gap).
 sp_partner_recs <- function(cells, capability, pairs, compat, cp, imports = NULL, aib_cells = NULL, members = character(), cfg = list()) {
   presence <- cfg$presence_min %||% 0.02
   step <- cfg$diversification_step %||% 0.1
@@ -211,8 +220,32 @@ sp_partner_recs <- function(cells, capability, pairs, compat, cp, imports = NULL
     )
   )
   out$recommended_partner_1_member <- out$recommended_partner_1 %in% members
+  # AIB status and its reasons. Capacity is judged on world supply shares (an AIB position share is a
+  # share of allied supply and cannot say whether allies hold enough of the world's).
+  cap_min <- cfg$allied_capacity_min %||% 0.3
+  conc_min <- cfg$excessive_concentration_min %||% 0.5
+  tc <- cand %>% dplyr::filter(.data$credible) %>% dplyr::group_by(.data$iso3, .data$tech, .data$supply_chain) %>%
+    dplyr::summarise(partner_trusted_capacity = if (all(is.na(.data$world_share))) NA_real_ else sum(.data$world_share, na.rm = TRUE),
+                     .groups = "drop")
+  out <- dplyr::left_join(out, tc, by = c("iso3", "tech", "supply_chain"))
+  out$partner_trusted_capacity[out$partner_n_credible == 0] <- 0
+  conc <- if ("coercive_top_share" %in% names(cells)) {
+    cells$coercive_top_share[match(paste(out$iso3, out$tech, out$supply_chain), paste(cells$iso3, cells$tech, cells$supply_chain))]
+  } else rep(NA_real_, nrow(out))
+  r <- cbind(
+    no_trusted_supplier = out$partner_n_credible == 0,
+    single_credible_supplier = out$partner_n_credible == 1,
+    weak_evidence = out$partner_n_credible > 0 & out$partner_evidence_quality %in% c("low", "none"),
+    insufficient_allied_capacity = out$partner_n_credible > 0 & !is.na(out$partner_trusted_capacity) & out$partner_trusted_capacity < cap_min,
+    excessive_concentration = !is.na(conc) & conc >= conc_min
+  )
+  out$partner_gap_reasons <- apply(r, 1, function(z) if (any(z)) paste(colnames(r)[z], collapse = ";") else NA_character_)
+  out$partner_aib_status <- ifelse(r[, "no_trusted_supplier"] | r[, "single_credible_supplier"] | r[, "insufficient_allied_capacity"], "gap", "covered")
   dplyr::select(out, -"aib_high_quality_share", -"aib_stage_mixed")
 }
+
+PARTNER_GAP_REASONS <- c("no_trusted_supplier", "single_credible_supplier", "weak_evidence", "insufficient_allied_capacity",
+                         "excessive_concentration")
 
 # The allied division of labour per technology x six-stage node (the AIB view's matrix): the allied
 # primary holder, up to two backups, redundancy and the gaps. capability: sp_cell_capability(). allied:
@@ -221,7 +254,12 @@ sp_partner_recs <- function(cells, capability, pairs, compat, cp, imports = NULL
 # aib_gap (first that applies, all in aib_gaps): no_trusted_supplier (no allied holder at presence_min),
 # single_point_of_failure (one allied holder has single_share or more of allied supply, or the AIB
 # finds an irreplaceable member), insufficient_redundancy (fewer than redundancy_min allied holders),
-# weak_evidence (no AIB node, or under half of the node weight high-confidence), none.
+# weak_evidence (no AIB node, or under half of the node weight high-confidence),
+# insufficient_allied_capacity (allied holders together hold less than allied_capacity_min of world
+# supply, judged on world supply shares where measured), excessive_concentration (the coercive powers
+# hold excessive_concentration_min or more of world supply, so allied supply cannot dilute it), none.
+# The two capacity reasons (spec XVI.1) come after the original four, so the primary aib_gap of a node is
+# unchanged where one of those applies.
 sp_aib_division <- function(capability, allied, coercive_powers, demand = NULL, aib_cells = NULL, cfg = list()) {
   presence <- cfg$presence_min %||% 0.02
   single <- cfg$single_point_share %||% 0.5
@@ -239,7 +277,10 @@ sp_aib_division <- function(capability, allied, coercive_powers, demand = NULL, 
       primary_holder = as.character(at(1, "iso3")), primary_share = as.numeric(at(1, "capability")),
       backup_1 = as.character(at(2, "iso3")), backup_1_share = as.numeric(at(2, "capability")),
       backup_2 = as.character(at(3, "iso3")), backup_2_share = as.numeric(at(3, "capability")),
-      redundancy = nrow(a), stringsAsFactors = FALSE
+      redundancy = nrow(a),
+      allied_world_share = if (all(is.na(d$world_share))) NA_real_ else sum(d$world_share[d$iso3 %in% allied], na.rm = TRUE),
+      coercive_world_share = if (all(is.na(d$world_share))) NA_real_ else sum(d$world_share[d$iso3 %in% coercive_powers], na.rm = TRUE),
+      stringsAsFactors = FALSE
     )
   }))
   if (!is.null(aib_cells) && nrow(aib_cells)) {
@@ -256,9 +297,12 @@ sp_aib_division <- function(capability, allied, coercive_powers, demand = NULL, 
   g_spof <- !g_none & ((!is.na(top_of_allied) & top_of_allied >= single) | irr)
   g_red <- !g_none & out$redundancy < red_min
   g_weak <- is.na(out$aib_n_nodes) | dplyr::coalesce(out$aib_high_quality_share, 0) < 0.5
+  g_cap <- !g_none & !is.na(out$allied_world_share) & out$allied_world_share < (cfg$allied_capacity_min %||% 0.3)
+  g_conc <- !is.na(out$coercive_world_share) & out$coercive_world_share >= (cfg$excessive_concentration_min %||% 0.5)
   out$primary_share_of_allied <- top_of_allied
   out$aib_gaps <- vapply(seq_len(nrow(out)), function(i) {
-    g <- c(no_trusted_supplier = g_none[i], single_point_of_failure = g_spof[i], insufficient_redundancy = g_red[i], weak_evidence = g_weak[i])
+    g <- c(no_trusted_supplier = g_none[i], single_point_of_failure = g_spof[i], insufficient_redundancy = g_red[i], weak_evidence = g_weak[i],
+           insufficient_allied_capacity = g_cap[i], excessive_concentration = g_conc[i])
     if (any(g)) paste(names(g)[g], collapse = ";") else NA_character_
   }, character(1))
   out$aib_gap <- ifelse(is.na(out$aib_gaps), "none", sub(";.*$", "", out$aib_gaps))

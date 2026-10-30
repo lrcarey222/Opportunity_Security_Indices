@@ -259,8 +259,8 @@ country_memo_path_vals <- function(idx, path, element = NULL) {
   if (is.na(iso) && grepl("^summary\\.psi_1", path)) iso <- idx$summary$psi_1$iso3 %||% NA
   if (is.na(iso) && !is.null(element) && !is.null(idx$partners$rows[[element]])) iso <- element
   if (!is.na(iso) && !is.null(idx$partners$rows[[iso]])) v$name <- idx$partners$rows[[iso]]$name
-  qm <- regmatches(path, regexec("^summary\\.quadrants\\.([a-z]+)$", path))[[1]]
-  if (length(qm) == 2) v$q <- idx$words$quadrant[[qm[2]]] %||% qm[2]
+  qm <- regmatches(path, regexec("^summary\\.legacy_corners\\.([a-z_]+)$", path))[[1]]
+  if (length(qm) == 2) v$q <- idx$words$legacy_corner[[qm[2]]] %||% qm[2]
   cm <- regmatches(path, regexec("^policy\\.agreement\\.by_class\\.([a-z_]+)$", path))[[1]]
   if (length(cm) == 2) v$class <- idx$words$class[[cm[2]]] %||% cm[2]
   if (grepl("^policy\\.cat", path)) v$scope <- if (identical(idx$policy$cat$scope, "eu_bloc")) "the EU's rating, applied to its member states" else "its own rating"
@@ -303,7 +303,7 @@ country_memo_context <- function(idx, path, element = NULL) {
   if (!is.na(pv$cell)) {
     c <- idx$cells[[pv$cell]]
     tops <- function(pl) unname(unlist(lapply(c$drivers[[pl]], function(d) if (isTRUE(d$top)) d$key else NULL)))
-    ctx$cell <- list(key = pv$cell, label = c$label, placed = isTRUE(c$placed), quadrant = c$quadrant %||% NULL,
+    ctx$cell <- list(key = pv$cell, label = c$label, placed = isTRUE(c$placed), legacy_corner = c$legacy_corner %||% NULL,
                      es_pct = c$es$pct$d %||% NULL, eo_pct = c$eo$pct$d %||% NULL,
                      es_order = pos(s$es_order, pv$cell), eo_order = pos(s$eo_order, pv$cell), si_order = pos(s$si_order, pv$cell),
                      si_rank = c$si$rank$d %||% NULL, margin_next = c$si$margin_next$v %||% NULL,
@@ -601,7 +601,7 @@ country_memo_lint <- function(parsed, res, sents, claims, sheet, cfg, names = ch
     if (length(nh)) add("error", "economy_name", sprintf("economy name(s) outside a token: %s in \"%s\"", paste(nh, collapse = ", "), s$text), sec, sid)
     # corner words beside a sector token
     cw <- country_memo_has_word(msk_own, unlist(cfg$corner_words), ignore_case = FALSE)
-    if (length(cw) && any(grepl("^cells\\.", tpaths))) add("error", "corner_word", sprintf("corner word %s in plain text beside a sector token (use {{cells.<key>.quadrant}}): \"%s\"", paste(cw, collapse = ", "), s$text), sec, sid)
+    if (length(cw) && any(grepl("^cells\\.", tpaths))) add("error", "corner_word", sprintf("corner word %s in plain text beside a sector token (use {{cells.<key>.legacy_corner}}): \"%s\"", paste(cw, collapse = ", "), s$text), sec, sid)
     # secure / insecure as a label
     bl <- character()
     for (p in unlist(cfg$banned_labels)) if (grepl(paste0("(?<![A-Za-z])", p, "(?![A-Za-z])"), msk_own, perl = TRUE)) bl <- c(bl, p)
@@ -677,7 +677,7 @@ country_memo_lint <- function(parsed, res, sents, claims, sheet, cfg, names = ch
   need(1, has(1, "^summary\\.n_placed$"), "{{summary.n_placed}}")
   if (n_placed > 0) {
     need(1, length(cells_with(1, "^cells\\.[^.]+\\.es\\.pct$")) >= min(2, n_placed), "the Energy Security percentile ({{cells.<key>.es.pct}}) of two sectors or more")
-    need(1, has(1, "^cells\\.[^.]+\\.quadrant$"), "a corner ({{cells.<key>.quadrant}})")
+    need(1, has(1, "^cells\\.[^.]+\\.legacy_corner$"), "a legacy corner ({{cells.<key>.legacy_corner}})")
     raw_any <- any(vapply(sheet$cells, function(c) any(vapply(c$drivers$es, function(d) isTRUE(d$top) && any(vapply(d$vars, function(v) !is.null(v$raw$v), TRUE)), TRUE)), TRUE))
     if (raw_any) need(1, has(1, "^cells\\.[^.]+\\.drivers\\.es\\.[^.]+\\.vars\\.[^.]+\\.raw$"), "a raw figure behind an Energy Security driver ({{cells.<key>.drivers.es.<category>.vars.<variable>.raw}})")
     need(2, has(2, "^summary\\.n_high_eo$"), "{{summary.n_high_eo}}")

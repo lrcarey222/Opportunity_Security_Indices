@@ -323,28 +323,14 @@ strategic_posture:
   # the stage's within-country Competitive Position percentile: a relative strength of the country),
   # or HS4 export proximity (feas, within-cell percentile across countries).
   complementary: {adjacent_share_yes: 0.05, adjacent_cp_pct_yes: 0.6, adjacent_share_partly: 0.005, adjacent_cp_pct_partly: 0.5, feas_pct_partly: 0.75}
-  # Catch-up needs a market to catch up into: a large domestic market (the country's Deployment
-  # position in the technology) in a technology whose world market is growing; a catch-up bet into a
-  # flat or shrinking market is not a credible path. The outlook is the direction of world demand
-  # 2024-2035 in the IEA World Energy Outlook Stated Policies Scenario, as loaded in
-  # climate_src_weo_values_tbl (scripts/18): coal power 10,797 -> 8,479 TWh (declining), gas power
-  # 6,785 -> 7,880 TWh (growing, flat after 2035), nuclear 2,835 -> 3,902, solar 2,073 -> 10,113, wind
-  # 2,533 -> 6,917 (growing). Oil is not in that extract: flat is the WEO's plateau in oil demand
-  # around 2030 (to verify against the WEO Annex). Batteries, EVs, grid, hydrogen and geothermal
-  # grow in every WEO scenario.
+  # Catch-up (engine Test 4, diagnostic) needs a market to catch up into: a large domestic market (the
+  # country's Deployment position in the technology) in a technology whose world market is growing. The
+  # outlook (growing / flat / declining) is no longer typed here: scripts/26 derives it from data
+  # (decision_framework.industrial_opportunity: WEO 2025 World Stated Policies growth 2024-2035 of the
+  # technology's Deployment series; Oil is flat on oil use, Coal declining on coal power) and sets
+  # market_outlook from it, with the documented manual overrides in
+  # decision_framework.industrial_opportunity.market_outlook_override.
   catch_up_market_pct: 0.75
-  market_outlook:
-    Batteries: growing
-    Electric Grid: growing
-    Electric Vehicles: growing
-    Geothermal: growing
-    Green Hydrogen: growing
-    Nuclear: growing
-    Solar: growing
-    Wind: growing
-    Gas: growing
-    Oil: flat
-    Coal: declining
   catch_up_outlooks: [growing]
   # Test 5 climate cost (the brief's "diffusion/climate consequences"): protecting or subsidising a
   # high-emission technology has a climate cost, so a moderate capability case for it fails
@@ -381,9 +367,10 @@ strategic_posture:
       import_dependence_min: 0.5
       long_lead_times: [y1to3, gt3y]
       trusted_alternative_max: 0.5
-  # Decision quadrant inside the medium yard (docs/strategic_position.md 7.3): applied after the
-  # Secure override at the producing stages. Both axes are percentiles across countries (need) or
-  # contenders (opportunity) within the cell, never within a country.
+  # LEGACY decision quadrant (the 2026-10-28 rule, need x legacy-EO opportunity; decision_quadrant.R):
+  # no longer decides anything. scripts/26 runs it on a copy only to report what the canonical framework
+  # (decision_framework below) changed: legacy_quadrant_* columns and the before-vs-after consistency
+  # counts. Both axes are percentiles across countries (need) or contenders (opportunity) within the cell.
   decision_quadrant:
     need_threshold: 0.67
     opportunity_threshold: 0.67
@@ -413,6 +400,92 @@ strategic_posture:
     relationship_missing: 0.5
     single_point_share: 0.5
     redundancy_min: 3
+    # AIB status reasons (spec XVI.1): credible trusted partners (or allied holders) together below this
+    # share of world supply = insufficient allied capacity; coercive suppliers at or above this share of
+    # world supply = excessive concentration (the coercion screening line above).
+    allied_capacity_min: 0.3
+    excessive_concentration_min: 0.5
+
+# ---- Canonical decision framework: Need -> Prize -> Position -> Choice -> Policy alignment ---------------
+# (docs/strategic_position.md; R/strategic_position/decision_engine.R). After the Secure override,
+# Deployment & Use is decided on deployment_need (Accelerate / Watch); the producing stages are triaged on
+# supply_chain_need x industrial_opportunity and Competitive Position decides the response (Preserve /
+# Catch Up / Partner / Watch). A cell without its Need or Prize is not_assessed (never Watch). All
+# thresholds are inclusive (high = at or above).
+decision_framework:
+  need_threshold: 0.67          # supply_chain_need (within-cell percentile across countries)
+  prize_threshold: 0.6          # industrial_opportunity (0-1); see diagnostics choice_threshold_sensitivity.csv
+  cp_preserve_pct: 0.75         # Competitive Position among the node contenders: the top quarter preserves (user decision 2026-10-29)
+  # deployment_need (0-1), Deployment & Use only. It is the mean of up to three family percentiles, so it is
+  # narrower than a percentile: 0.6 takes about the top 30% of assessed Deployment cells, the selectivity
+  # of supply_chain_need >= 0.67 (a within-cell percentile: the top third). 0.67 took 22% (see
+  # choice_threshold_sensitivity.csv).
+  deployment_threshold: 0.6
+  borderline_band: 0.05
+  thresholds_sensitivity:
+    need: [0.60, 0.75]
+    prize: [0.50, 0.55, 0.65, 0.70]
+    cp: [0.67, 0.85]
+    deployment: [0.55, 0.67, 0.75]
+  # Contenders of a node: economies with at least min_share of world supply. With fewer than min_n, the
+  # cross-country percentile stands in (cp_contender_basis all_countries).
+  contenders: {min_share: 0.005, min_n: 5}
+  # The capability lower bound kept for Preserve: the posture engine Test 3 capability case on its
+  # strict (lower-bound) reading must be at least moderate.
+  capability_floor: [moderate, strong]
+  self_supply_share: 0.10
+  supply_chain_need:
+    # trusted alternatives (trusted partners' share of world supply, less the country's own) is a fourth
+    # need family only if observed for at least this share of the assessed producing cells
+    trusted_alternatives_min_coverage: 0.8
+  industrial_opportunity:
+    # World demand growth base_year -> horizon_year under the WEO 2025 Stated Policies Scenario
+    # (iea_pathways_*_tbl.rds, scripts/17: the node primary series in config/iea_pathways_map.yml);
+    # the IEA Critical Minerals Outlook Stated Policies total key-mineral demand of the node
+    # technologies for the mineral Extraction and Refining nodes (minerals_base_year -> horizon_year).
+    base_year: 2024
+    horizon_year: 2035
+    scenario: stated
+    minerals_base_year: 2025
+    mineral_stages: [Extraction, Refining]
+    outlook: {declining_below: -0.05, growing_from: 0.05}
+    # A declining world market caps the node prize below the prize threshold; an oversupplied node is
+    # capped at 0.5, but only from a shippable source (none is staged: BNEF overcapacity is subscription
+    # data and never ships), so oversupplied_nodes is empty ("Tech|Stage" keys).
+    caps: {declining: 0.33, oversupplied: 0.5}
+    oversupplied_nodes: []
+    # Manual overrides of the data-derived technology outlook (tech: growing | flat | declining), each
+    # with its reason here. None in use.
+    market_outlook_override: {}
+    # Global manufacturing investment momentum (Clean Investment Monitor, investment_momentum_tbl.rds):
+    # log change of world capex, mean of latest_years over mean of baseline_years; weight of its
+    # percentile in the node prize where observed. 0.25: world demand growth is the prize and the capex
+    # trend only corroborates it (it is observed for ten clean-tech manufacturing nodes, ranked among
+    # those ten); at 0.5 the post-2022 dip in EV-manufacturing capex outweighed a tripling of EV demand.
+    investment_momentum:
+      latest_years: [2024, 2025]
+      baseline_years: [2021, 2022]
+      min_baseline_usd_bn: 0.5
+      weight: 0.25
+    # national home-market growth (data/processed/<home_market_file>, scripts/95) enters the score
+    # only on these bases; regional proxies are shown, never scored
+    home_market_bases: [national]
+    # lift (user decision 2026-10-29, "lifted by national home-market growth"): the prize is the node prize,
+    # raised to mean(node prize, home market) where the national home market is above it; a small home market
+    # never lowers a world-market prize. mean: the plain average both ways (sensitivity only).
+    home_market_mode: lift
+    home_market_file: home_market_tbl.rds
+  # Credible pathway for Catch Up (design D3): any of the five evidence legs.
+  pathway:
+    feasibility_pct: 0.75
+    pipeline_min: 0
+    adjacent_share: 0.05
+    adjacent_cp_within_pct: 0.6
+    learning_levels: [moderate, strong]
+    input_cost_pct: 0.75
+  deployment_need:
+    # data/processed/<file> (scripts/95, deployment_need.R); absent -> every Deployment cell not assessed
+    file: deployment_need_tbl.rds
 
 # ---- Policy design (Step 3): fence, gate and build by posture variant and delivery mode -----------------
 policy_design:
@@ -425,7 +498,10 @@ policy_design:
 # below the foothold line, so no position-percentile cap is applied (position_max 1).
 decision_cards: {need_min: 0.5, position_max: 1}
 
-# ---- Policy alignment: recommended posture vs observed policy (Step 4) ----------------------------------
+# ---- Policy alignment: recommended choice vs observed policy (Step 4; spec X, design D5) ------------------
+# Downstream only: observed policy never feeds the choice. Vocabulary: aligned, under_prioritized,
+# over_prioritized, misaligned (wrong treatment), deployment_gap, mixed, insufficient_data; with
+# policy_alignment_confidence high / medium / low (posture_engine.R sp_policy_alignment*).
 policy_alignment:
   # Within-country policy-priority percentile at or above which Secure/Compete are matched, and at or
   # above which Deploy counts as over-prioritized (top third, with at least one attributed record).
@@ -435,8 +511,12 @@ policy_alignment:
   source_gap_mixed: 0.5
   # Compete: protection in the top third with support in the bottom third is a fence without a build.
   fence_without_build: {protection_min: 0.67, support_max: 0.33}
-  # Partner: protection in the top third is autarky where the posture asks for trusted partners.
+  # Partner: protection in the top third is autarky where the choice asks for trusted partners: misaligned.
   partner_autarky: {protection_min: 0.67}
+  # Deploy . Accelerate with deployment-policy priority (PAMS, within-country) below this: deployment_gap.
+  deployment_gap_max: 0.5
+  # Deploy . Watch is over-prioritized at over_min of protection / localisation (NIPO), or of total
+  # attention where the split is not measured (producing stages, with an attributed record).
 
 # ---- Legacy Strategic Index sensitivity (diagnostics only) ---------------------------------------------
 legacy_si_sensitivity:
@@ -461,3 +541,78 @@ stage_scenarios:
 
 # Countries for the review outputs (scripts/27).
 review_countries: [United States, China, Japan, South Korea, India, Germany, United Kingdom, Australia]
+# Spec XXI.4 deployment review and the choice cards (scripts/27).
+deployment_review_countries: [United States, Japan, South Korea, India, Germany, United Kingdom, France, Australia, Canada]
+deployment_review_techs: [Solar, Wind, Nuclear, Batteries, Electric Grid, Electric Vehicles]
+choice_card_countries: [Japan, United States, Germany, South Korea, India, Brazil]
+
+# Node phrases for the generated strategy sentence (Explorer posture bundle meta.phrases; scripts/91): a short
+# noun phrase per technology x six-stage node, keyed "Tech|Stage" with the stage id. Plain words only; the
+# sentence is built from the computed choices, never from these phrases alone.
+node_phrases:
+  "Batteries|Extraction": "battery mineral mining"
+  "Batteries|Refining": "battery materials refining"
+  "Batteries|Components": "battery components"
+  "Batteries|Assembly": "battery cells and packs"
+  "Batteries|Deployment": "battery storage"
+  "Batteries|Recovery": "battery recycling"
+  "Coal|Extraction": "coal mining"
+  "Coal|Refining": "coke and coal processing"
+  "Coal|Components": "coal-plant components"
+  "Coal|Assembly": "coal-plant equipment"
+  "Coal|Deployment": "coal power and use"
+  "Coal|Recovery": "coal recovery"
+  "Electric Grid|Extraction": "copper and bauxite mining"
+  "Electric Grid|Refining": "grid metals refining"
+  "Electric Grid|Components": "grid components"
+  "Electric Grid|Assembly": "transformers, switchgear and cables"
+  "Electric Grid|Deployment": "grid networks"
+  "Electric Grid|Recovery": "grid-equipment recycling"
+  "Electric Vehicles|Extraction": "EV mineral mining"
+  "Electric Vehicles|Refining": "rare-earth and battery-metal refining"
+  "Electric Vehicles|Components": "EV drivetrain components"
+  "Electric Vehicles|Assembly": "EV and charger manufacturing"
+  "Electric Vehicles|Deployment": "EV adoption and charging"
+  "Electric Vehicles|Recovery": "EV recycling"
+  "Gas|Extraction": "gas production"
+  "Gas|Refining": "gas liquids processing"
+  "Gas|Components": "gas-turbine and drilling components"
+  "Gas|Assembly": "gas turbines and LNG plant"
+  "Gas|Deployment": "gas networks and use"
+  "Gas|Recovery": "gas recovery"
+  "Geothermal|Extraction": "geothermal resource development"
+  "Geothermal|Refining": "geothermal refining"
+  "Geothermal|Components": "geothermal plant components"
+  "Geothermal|Assembly": "geothermal power-plant equipment"
+  "Geothermal|Deployment": "geothermal power and heat"
+  "Geothermal|Recovery": "geothermal recovery"
+  "Green Hydrogen|Extraction": "electrolyser mineral mining"
+  "Green Hydrogen|Refining": "PGM and catalyst refining"
+  "Green Hydrogen|Components": "electrolyser stacks"
+  "Green Hydrogen|Assembly": "electrolyser systems"
+  "Green Hydrogen|Deployment": "clean hydrogen production and use"
+  "Green Hydrogen|Recovery": "stack and catalyst recycling"
+  "Nuclear|Extraction": "uranium mining"
+  "Nuclear|Refining": "uranium conversion and enrichment"
+  "Nuclear|Components": "nuclear fuel and reactor parts"
+  "Nuclear|Assembly": "reactors and steam generators"
+  "Nuclear|Deployment": "nuclear power"
+  "Nuclear|Recovery": "spent-fuel reprocessing"
+  "Oil|Extraction": "oil production"
+  "Oil|Refining": "oil refining"
+  "Oil|Components": "drilling and pump components"
+  "Oil|Assembly": "drilling rigs, tankers and oil equipment"
+  "Oil|Deployment": "oil use"
+  "Oil|Recovery": "waste-oil recovery"
+  "Solar|Extraction": "PV mineral mining"
+  "Solar|Refining": "polysilicon refining"
+  "Solar|Components": "wafers and PV cells"
+  "Solar|Assembly": "PV modules and inverters"
+  "Solar|Deployment": "solar power"
+  "Solar|Recovery": "PV module recycling"
+  "Wind|Extraction": "wind mineral mining"
+  "Wind|Refining": "rare-earth and wind materials refining"
+  "Wind|Components": "blades, towers and nacelle parts"
+  "Wind|Assembly": "wind turbines"
+  "Wind|Deployment": "wind power"
+  "Wind|Recovery": "wind-turbine recycling"

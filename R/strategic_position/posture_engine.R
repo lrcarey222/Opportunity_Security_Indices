@@ -1,15 +1,18 @@
-# Strategic posture: the decision layer of the strategic position framework (docs/strategic_position.md,
-# section 7). It ports the NEIS Yards & Fences decision engine (dashboard/src/fence/engine: gates.ts,
-# rules.ts, classify.ts) to R and applies it to every country x technology x six-stage node and to the
-# sensitive layers inside a cell:
+# Strategic posture engine: the Secure override of the canonical decision (docs/strategic_position.md,
+# "Choice"), plus the engine's own Compete tests kept as diagnostics (engine_posture). The canonical
+# choice outside Secure is decision_engine.R. It ports the NEIS Yards & Fences decision engine
+# (dashboard/src/fence/engine: gates.ts, rules.ts, classify.ts) to R and applies it to every country x
+# technology x six-stage node and to the sensitive layers inside a cell:
 #
 #   secure  = small yard   (acute consequence AND one of three routes: operational control through a
 #                           command path or a dual-use node, a coercive physical chokepoint, or systemic
 #                           resilience of an essential, import-dependent, slow-to-rebuild node)
 #   compete = medium yard  (a capability case with a credible strategy that passes proportionality)
 #   deploy  = large yard   (otherwise: open, affordable deployment is the strategic conclusion)
-# The engine's Compete reading (Tests 3-5) is kept as a diagnostic: the recommended posture outside
-# Secure comes from the need x opportunity quadrant (decision_quadrant.R).
+# The engine's Compete reading (Tests 3-5) is kept as a diagnostic (engine_posture, engine_variant): the
+# recommended choice outside Secure comes from decision_engine.R (Need x Prize triage, Competitive
+# Position decides the response; deployment_need at Deployment). Test 3's lower bound
+# (t3_capability_lo) is the capability floor for Preserve there.
 #
 # Every test is tri-state (yes / no / unknown). Unknown inputs are bracketed, never filled: the
 # recommendation is the strict reading (an unproven case for intervention is not met), the corners of
@@ -826,6 +829,10 @@ sp_strategic_posture <- function(x, cfg = list()) {
     security_rationale = ifelse(pv$posture == "secure", routes$primary, NA_character_),
     security_routes_met = ifelse(g$t1$state == "yes", routes$routes, NA_character_),
     t3_capability = g$cap$state,
+    # the strict (lower-bound) reading of the capability case and of learning: the canonical choice's
+    # capability floor for Preserve and the learning leg of the Catch Up pathway (decision_engine.R)
+    t3_capability_lo = ifelse(g$cap$applies, g$cap$strength_lo, "n_a"),
+    t3_learning_lo = ifelse(g$cap$applies, g$cap$learning_lo, "n_a"),
     t3_position = ifelse(g$cap$applies, g$cap$position, "n_a"),
     t3_learning = ifelse(g$cap$applies, g$cap$learning, "n_a"),
     t3_leap = ifelse(g$cap$applies, g$cap$leap, "n_a"),
@@ -902,71 +909,126 @@ sp_decision_trace <- function(x, g, pv, possible, pivotal) {
          "\",\"possible\":", poss, ",\"pivotal\":", piv, "}")
 }
 
-# ---- Policy alignment: recommended posture vs observed policy ------------------------------------------
-# tbl carries strategic_posture, supply_chain and the Revealed Policy Priority columns
-# (policy_priority_percentile, nipo_priority, pams_priority, policy_support_priority,
-# policy_protection_priority); `has_record` says whether the cell has any attributed record.
-sp_policy_alignment <- function(tbl, cfg = list(), has_record = NULL) {
-  matched <- cfg$matched_min %||% 0.5
-  over <- cfg$over_min %||% 0.67
+# ---- Policy alignment: recommended choice vs observed policy (spec X; design D5) ----------------------------
+# Observed policy is downstream of the recommendation and never an input to it. Vocabulary
+# (SP_POLICY_ALIGNMENTS): aligned | under_prioritized | over_prioritized | misaligned | deployment_gap |
+# mixed | insufficient_data. Rules, in order:
+#   not assessed, or no policy priority                      -> insufficient_data
+#   Partner with protection / localisation in the top third  -> misaligned (wrong treatment: autarky
+#                                                               where the choice asks for trusted partners)
+#   Partner otherwise                                        -> aligned (domestic records cannot show
+#                                                               partnership instruments)
+#   Secure / Compete with NIPO and PAMS on opposite sides, or a fence without a build -> mixed
+#   Secure / Compete with support >= matched_min             -> aligned, else under_prioritized
+#     (Preserve and Catch Up are judged on the NIPO support stock where measured, i.e. capability-building
+#     support; Secure on overall policy priority)
+#   Deploy . Accelerate with deployment-policy priority below deployment_gap_max -> deployment_gap
+#   Deploy . Watch: heavy protection / localisation (NIPO protection in the top third; at Deployment, the
+#     technology's Assembly-equipment protection, i.e. local-content rules) -> over_prioritized; where the
+#     protection split is not measured, total policy attention in the top third with an attributed record
+#     at a producing stage -> over_prioritized (alignment_confidence low); an unsettled Watch (other
+#     choices still possible) -> insufficient_data when the over test fires.
+# tbl carries strategic_posture, compete_mode, deploy_mode (optional; absent: every Deploy reads as
+# Watch), supply_chain, posture_possible and the Revealed Policy Priority columns (policy_priority_percentile,
+# nipo_priority, pams_priority, policy_support_priority, policy_protection_priority, and at Deployment
+# optionally deployment_localisation_priority); `has_record` says whether the cell has an attributed record.
+SP_POLICY_ALIGNMENTS <- c("aligned", "under_prioritized", "over_prioritized", "misaligned", "deployment_gap", "mixed", "insufficient_data")
+
+sp_policy_alignment_inputs <- function(tbl, cfg, has_record) {
+  col <- function(n) if (n %in% names(tbl)) tbl[[n]] else rep(NA_real_, nrow(tbl))
+  chr <- function(n) if (n %in% names(tbl)) as.character(tbl[[n]]) else rep(NA_character_, nrow(tbl))
   gap <- cfg$source_gap_mixed %||% 0.5
   fwb <- cfg$fence_without_build %||% list(protection_min = 0.67, support_max = 0.33)
-  col <- function(n) if (n %in% names(tbl)) tbl[[n]] else rep(NA_real_, nrow(tbl))
+  over <- cfg$over_min %||% 0.67
+  posture <- tbl$strategic_posture
+  mode <- chr("compete_mode")
+  dmode <- if ("deploy_mode" %in% names(tbl)) chr("deploy_mode") else ifelse(posture %in% "deploy", "watch", NA_character_)
   pp <- col("policy_priority_percentile")
   nipo <- col("nipo_priority")
   pams <- col("pams_priority")
   sup <- col("policy_support_priority")
   pro <- col("policy_protection_priority")
+  loc_dep <- col("deployment_localisation_priority")
   if (is.null(has_record)) has_record <- rep(TRUE, nrow(tbl))
+  dep <- tbl$supply_chain == "Deployment"
   disagree <- !is.na(nipo) & !is.na(pams) & abs(nipo - pams) >= gap & ((nipo >= 0.5) != (pams >= 0.5))
-  posture <- tbl$strategic_posture
-  fence_no_build <- posture %in% "compete" & !is.na(pro) & !is.na(sup) & pro >= fwb$protection_min & sup <= fwb$support_max
-  # Over-prioritization needs a settled Deploy: where the unknowns still allow Secure or Compete, the
-  # strategic case is unproven, not weak, and heavy policy there is not evidence of a mistake.
-  settled_deploy <- if ("posture_possible" %in% names(tbl)) tbl$posture_possible %in% "deploy" else rep(TRUE, nrow(tbl))
-  mode <- if ("compete_mode" %in% names(tbl)) as.character(tbl$compete_mode) else rep(NA_character_, nrow(tbl))
-  # Partner: the posture asks for trusted partners; heavy protection of the home market is autarky.
-  # Domestic policy records do not show partnership instruments, so Partner is not judged under.
-  autarky_min <- cfg$partner_autarky$protection_min %||% 0.67
-  autarkic <- mode %in% "partner" & !is.na(pro) & pro >= autarky_min
+  fence_no_build <- posture %in% "compete" & !mode %in% "partner" & !is.na(pro) & !is.na(sup) & pro >= fwb$protection_min & sup <= fwb$support_max
+  autarkic <- mode %in% "partner" & !is.na(pro) & pro >= (cfg$partner_autarky$protection_min %||% 0.67)
+  watch <- posture %in% "deploy" & dmode %in% "watch"
+  # protection measure for Watch: the cell's NIPO protection, at Deployment the Assembly equipment's
+  protect <- ifelse(dep, loc_dep, pro)
+  over_protect <- watch & !is.na(protect) & protect >= over
+  over_attention <- watch & !dep & is.na(protect) & !is.na(pp) & pp >= over & has_record
+  list(posture = posture, mode = mode, dmode = dmode, pp = pp, sup = sup, pro = pro, dep = dep, disagree = disagree,
+       fence_no_build = fence_no_build, autarkic = autarkic, watch = watch, protect = protect,
+       over_protect = over_protect, over_attention = over_attention)
+}
+
+sp_policy_alignment <- function(tbl, cfg = list(), has_record = NULL) {
+  matched <- cfg$matched_min %||% 0.5
+  dep_gap <- cfg$deployment_gap_max %||% matched
+  a <- sp_policy_alignment_inputs(tbl, cfg, has_record)
+  settled <- if ("posture_possible" %in% names(tbl)) tbl$posture_possible %in% "deploy" else rep(TRUE, nrow(tbl))
   # Preserve and Catch Up need support for the capability: judged on the support stock where measured.
-  support <- ifelse(mode %in% c("preserve", "catch_up") & !is.na(sup), sup, pp)
+  support <- ifelse(a$mode %in% c("preserve", "catch_up") & !is.na(a$sup), a$sup, a$pp)
   dplyr::case_when(
-    is.na(posture) ~ NA_character_,
-    is.na(pp) ~ "insufficient_data",
-    autarkic ~ "mixed",
-    mode %in% "partner" ~ "aligned",
-    posture %in% c("secure", "compete") & (disagree | fence_no_build) ~ "mixed",
-    posture %in% c("secure", "compete") & support >= matched ~ "aligned",
-    posture %in% c("secure", "compete") ~ "under_prioritized",
-    # Deploy: support for deployment itself is what the posture asks for.
-    tbl$supply_chain == "Deployment" ~ "aligned",
-    !settled_deploy ~ "insufficient_data",
-    disagree ~ "mixed",
-    pp >= over & has_record ~ "over_prioritized",
+    is.na(a$posture) ~ NA_character_,
+    a$posture %in% "not_assessed" ~ "insufficient_data",
+    is.na(a$pp) & !(a$watch & a$over_protect) ~ "insufficient_data",
+    a$autarkic ~ "misaligned",
+    a$mode %in% "partner" ~ "aligned",
+    a$posture %in% c("secure", "compete") & (a$disagree | a$fence_no_build) ~ "mixed",
+    a$posture %in% c("secure", "compete") & support >= matched ~ "aligned",
+    a$posture %in% c("secure", "compete") ~ "under_prioritized",
+    a$dmode %in% "accelerate" & a$pp < dep_gap ~ "deployment_gap",
+    a$dmode %in% "accelerate" ~ "aligned",
+    (a$over_protect | a$over_attention) & !settled ~ "insufficient_data",
+    a$over_protect | a$over_attention ~ "over_prioritized",
+    a$disagree ~ "mixed",
     TRUE ~ "aligned"
   )
 }
 
 # Why a cell's policy alignment is what it is, where a rule beyond the priority levels decides it:
-# partner_autarkic (Partner with protection in the top third), fence_without_build (Compete with
-# heavy protection and little support), sources_disagree (NIPO and PAMS on opposite sides).
-sp_policy_alignment_flag <- function(tbl, cfg = list()) {
-  col <- function(n) if (n %in% names(tbl)) tbl[[n]] else rep(NA_real_, nrow(tbl))
-  pro <- col("policy_protection_priority")
-  sup <- col("policy_support_priority")
-  nipo <- col("nipo_priority")
-  pams <- col("pams_priority")
-  gap <- cfg$source_gap_mixed %||% 0.5
-  fwb <- cfg$fence_without_build %||% list(protection_min = 0.67, support_max = 0.33)
-  mode <- if ("compete_mode" %in% names(tbl)) as.character(tbl$compete_mode) else rep(NA_character_, nrow(tbl))
+# partner_autarkic (Partner with protection in the top third), fence_without_build (Compete with heavy
+# protection and little support), watch_protection (Watch with heavy protection / localisation),
+# watch_attention (Watch with heavy total attention, protection not measured), watch_localisation_deployment
+# (a Watch deployment whose equipment carries heavy local-content protection), weak_deployment_policy
+# (Accelerate with low deployment-policy priority), sources_disagree (NIPO and PAMS on opposite sides).
+sp_policy_alignment_flag <- function(tbl, cfg = list(), has_record = NULL) {
+  matched <- cfg$matched_min %||% 0.5
+  dep_gap <- cfg$deployment_gap_max %||% matched
+  a <- sp_policy_alignment_inputs(tbl, cfg, has_record)
   dplyr::case_when(
-    is.na(tbl$strategic_posture) ~ NA_character_,
-    mode %in% "partner" & !is.na(pro) & pro >= (cfg$partner_autarky$protection_min %||% 0.67) ~ "partner_autarkic",
-    tbl$strategic_posture %in% "compete" & !is.na(pro) & !is.na(sup) & pro >= fwb$protection_min & sup <= fwb$support_max ~ "fence_without_build",
-    !is.na(nipo) & !is.na(pams) & abs(nipo - pams) >= gap & ((nipo >= 0.5) != (pams >= 0.5)) ~ "sources_disagree",
+    is.na(a$posture) | a$posture %in% "not_assessed" ~ NA_character_,
+    a$autarkic ~ "partner_autarkic",
+    a$fence_no_build ~ "fence_without_build",
+    a$over_protect & a$dep ~ "watch_localisation_deployment",
+    a$over_protect ~ "watch_protection",
+    a$over_attention ~ "watch_attention",
+    a$dmode %in% "accelerate" & !is.na(a$pp) & a$pp < dep_gap ~ "weak_deployment_policy",
+    a$disagree ~ "sources_disagree",
     TRUE ~ NA_character_
   )
+}
+
+# How far the alignment can be trusted (high / medium / low): two policy sources ranked = high, one =
+# medium, none = low; one level lower where the rule needed the NIPO support / protection split and it
+# is not measured (judged on total attention instead), and capped at medium at Deployment (one source,
+# PAMS, by construction). insufficient_data is low.
+sp_policy_alignment_confidence <- function(tbl, alignment, cfg = list(), has_record = NULL) {
+  a <- sp_policy_alignment_inputs(tbl, cfg, has_record)
+  nsrc <- if ("pp_n_sources" %in% names(tbl)) suppressWarnings(as.integer(tbl$pp_n_sources)) else
+    as.integer(!is.na(if ("nipo_priority" %in% names(tbl)) tbl$nipo_priority else NA)) + as.integer(!is.na(if ("pams_priority" %in% names(tbl)) tbl$pams_priority else NA))
+  nsrc <- dplyr::coalesce(nsrc, 0L)
+  lvl <- ifelse(nsrc >= 2, 3L, ifelse(nsrc == 1, 2L, 1L))
+  fallback <- (a$mode %in% c("preserve", "catch_up") & is.na(a$sup)) | (a$mode %in% "partner" & is.na(a$pro)) |
+    a$over_attention | (a$watch & is.na(a$protect))
+  lvl <- lvl - as.integer(fallback)
+  lvl <- ifelse(a$dep, pmin(lvl, 2L), lvl)
+  lvl <- pmax(lvl, 1L)
+  out <- c("low", "medium", "high")[lvl]
+  ifelse(is.na(alignment), NA_character_, ifelse(alignment == "insufficient_data", "low", out))
 }
 
 # The strict posture alone (no corners, pivotal inputs or trace): for sensitivity runs.

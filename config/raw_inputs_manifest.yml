@@ -1293,3 +1293,50 @@ inputs:
     Not read by the pipeline and never shipped to the dashboard; the Midstream Climate sections say why
     manufacturing emissions per value added are not shown. Ask the IEA (EnergyIndicators@iea.org) for
     permission before any published use.
+- id: ember_yearly_electricity
+  path: ember/release_generation_yearly_global.csv
+  source_type: manual
+  source_name: Ember, Yearly Electricity Data (global; generation, capacity, demand and net imports by
+    area, year and electricity source)
+  url: https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: retrieved 2026-10-29 (server Last-Modified 2026-10-26 12:24 GMT); years 2000-2025, 2025 for
+    about 90 economies; SHA-256 afe1e315ce8fef7ddb2e2569243b3ac4e93cfe8146ac1be5392e362bd6afbe72
+  licence: CC BY 4.0 (the Ember dataset page, https://ember-energy.org/data/yearly-electricity-data/);
+    cite Ember wherever the figures are shown
+  staged_from: sharepoint
+  notes: Direct download linked from https://ember-energy.org/data/yearly-electricity-data/ (no form or
+    account). The July-2026 layout - one row per area x year x source, metrics as columns (Generation
+    (TWh), Capacity (GW), Share of generation (%), emissions); Demand and Net imports are sources too.
+    It succeeds the older yearly_full_release_long_format.csv. Read by
+    scripts/95_build_deployment_need.R for Deployment Need (demand trend, generation shares, installed
+    capacity, build rate) and national home-market growth. Hashes and the methodology PDF are in
+    data/raw/ember/SOURCES.txt. Staged only in data/raw so far; copy data/raw/ember/ to the SharePoint
+    raw folder.
+  required_by:
+  - scripts/95_build_deployment_need.R
+- id: ember_renewable_targets_2030
+  path: ember/targets_download.xlsx
+  source_type: manual
+  source_name: Ember, 2030 Global Renewable Target Tracker (Global Renewable Power Sector Targets 2030)
+    data download
+  url: https://files.ember-energy.org/public-downloads/res_tracker/outputs/targets_download.xlsx
+  cadence: irregular
+  owner: lcarey@rmi.org
+  vintage: retrieved 2026-10-29 (server Last-Modified 2026-10-13 13:00 GMT); 2030 capacity targets for
+    85 countries and the EU (capacity_target_wide), national-plan rows to 2050 (raw_data_long); SHA-256
+    281377059def3954888e01a12253c74844e90e39edf87a99616dc528dad4c9bc
+  licence: CC BY 4.0 (the Ember dataset page,
+    https://ember-energy.org/data/global-renewable-power-sector-targets-2030/); cite Ember wherever the
+    figures are shown
+  staged_from: sharepoint
+  notes: Direct download linked from https://ember-energy.org/data/global-renewable-power-sector-targets-2030/
+    (no form or account). Sheets raw_data_long, sources, capacity_target_wide, share_target_wide.
+    scripts/95_build_deployment_need.R reads capacity_target_wide (the tool's 2030 solar, wind and
+    total-renewables capacity targets) and the national-plan 2030 capacities in raw_data_long (nuclear,
+    battery, coal, gas; approved plans, laws and executive orders only, via sources) for the Deployment
+    Need policy-gap family. Methodology in data/raw/ember/RES-Tracker-Methodology-V3.pdf. Staged only in
+    data/raw so far; copy data/raw/ember/ to the SharePoint raw folder.
+  required_by:
+  - scripts/95_build_deployment_need.R

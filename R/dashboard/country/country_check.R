@@ -1,10 +1,12 @@
 # The R mirror of the TypeScript runtime checks of dashboard/src/country/contract.ts
-# (checkFactSheet(), checkCountryManifest()): shapes, Fv values, enums, cell keys, quadrants re-derived
+# (checkFactSheet(), checkCountryManifest()): shapes, Fv values, enums, cell keys, legacy corners re-derived
 # from the plotted positions and the country's median sector (A9.2), SI parts summing to the SI, summary counts and order lists, partner
 # ranks. Returns problem strings (empty when the sheet is valid). Pure. Works on the sheet as built in R
 # or as read back with jsonlite::fromJSON(simplifyVector = FALSE).
 
-COUNTRY_QUADRANT_IDS <- c("grow", "upgrade", "secure", "watch")
+# The legacy OSI corners of schema 3 (country_util.R COUNTRY_LEGACY_CORNER_IDS; schema 2 called them grow,
+# upgrade, secure and watch under cells[].quadrant).
+COUNTRY_QUADRANT_IDS <- c("legacy_grow", "legacy_upgrade", "legacy_exposed", "legacy_stable")
 # gzip budgets of the export in bytes, as scripts/88 measures them (memCompress gzip; spec A10; the same numbers
 # as COUNTRY_BUDGET_GZ in dashboard/src/country/contract.ts and dashboard/scripts/check-budget.mjs).
 # Six stages (2026-10-28, the first six-stage export, 66 sectors): where the export left less than ~15% headroom
@@ -84,14 +86,15 @@ country_check_sheet <- function(s) {
         if (is.null(c$es$pos) || is.null(c$eo$pos)) add(at, ": placed without a position on both axes")
         else {
           q <- country_quadrant(c$es$pos, c$eo$pos, cmed$es, cmed$eo)
-          if (!identical(c$quadrant, q)) add(at, ".quadrant: '", c$quadrant %||% "null", "' but the positions and the country's median sector give '", q, "'")
+          if (!identical(c$legacy_corner, q)) add(at, ".legacy_corner: '", c$legacy_corner %||% "null", "' but the positions and the country's median sector give '", q, "'")
         }
         for (pl in c("es", "eo")) {
           x <- c[[pl]]
           if (!is.null(x$pos) && ((x$pos >= 50) != (x$v >= x$med$v))) add(at, ".", pl, ".pos: on the wrong side of 50")
         }
       }
-    } else if (!is.null(c$quadrant)) add(at, ".quadrant: set on a cell that is not placed")
+    } else if (!is.null(c$legacy_corner)) add(at, ".legacy_corner: set on a cell that is not placed")
+    if (!is.null(c$quadrant)) add(at, ".quadrant: the schema-2 name of legacy_corner (schema 3 writes legacy_corner)")
     si <- c$si
     if (isTRUE(si$in_sample)) {
       if (is.null(si$v)) add(at, ".si: in sample without a value")
@@ -128,8 +131,8 @@ country_check_sheet <- function(s) {
     }
   }
   for (q in COUNTRY_QUADRANT_IDS) {
-    n <- sum(vapply(placed, function(c) identical(c$quadrant, q), TRUE))
-    if ((sm$quadrants[[q]]$v %||% -1) != n) add("summary.quadrants.", q, ": ", sm$quadrants[[q]]$v, " but the cells give ", n)
+    n <- sum(vapply(placed, function(c) identical(c$legacy_corner, q), TRUE))
+    if ((sm$legacy_corners[[q]]$v %||% -1) != n) add("summary.legacy_corners.", q, ": ", sm$legacy_corners[[q]]$v, " but the cells give ", n)
   }
   pk <- vapply(placed, function(c) c$key, "")
   for (nm in c("es_order", "eo_order")) {

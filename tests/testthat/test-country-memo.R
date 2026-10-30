@@ -53,7 +53,7 @@ good_src <- function(caveats = vapply(sheet$caveats, function(c) c$id, "")) past
   "## Energy security risks and why\n\n",
   "{{summary.n_insecure}} of its {{summary.n_placed}} placed sectors sit in the two low-energy-security corners. ",
   "Its lowest Energy Security scores are in {{cells.", k1, ".label_prose}} and {{cells.", k2, ".label_prose}}, higher than {{cells.", k1, ".es.pct}} and {{cells.", k2, ".es.pct}} of the other economies scored. ",
-  "On this split, {{cells.", k1, ".label_prose}} sits in the {{cells.", k1, ".quadrant}} corner. ",
+  "On this split, {{cells.", k1, ".label_prose}} sits in the {{cells.", k1, ".legacy_corner}} corner. ",
   "The score in {{cells.", k1, ".label_prose}} is low mainly because of {{cells.", k1, ".drivers.es.", d_es, ".category}}.",
   if (!is.null(raw_tok)) paste0(" A figure behind the scores: {{", raw_tok, "}} in {{", raw_tok, ".year}}.") else "", "\n\n",
   "## Economic opportunities and why\n\n",
@@ -112,9 +112,9 @@ test_that("each lint rule fires on a broken copy", {
   expect_true(any(grepl("does not resolve", errors_of(run(sub1("{{policy.pams_total}}", "{{policy.pams_totally}}")), "token"))))
   expect_true(any(grepl("plain number", errors_of(run(sub1(sprintf("{{cells.%s.es.pct}} and", k1), sprintf("{{cells.%s.es.pos}} and", k1))), "token"))))
   expect_true(length(errors_of(run(sub1("All values are", "Unlike China, all values are")), "economy_name")) > 0)
-  expect_true(length(errors_of(run(sub1(sprintf("sits in the {{cells.%s.quadrant}} corner", k1), sprintf("sits in the Exposed corner beside {{cells.%s.es}}", k1))), "corner_word")) > 0)
+  expect_true(length(errors_of(run(sub1(sprintf("sits in the {{cells.%s.legacy_corner}} corner", k1), sprintf("sits in the Exposed corner beside {{cells.%s.es}}", k1))), "corner_word")) > 0)
   # Secure and Watch were corner words until 2026-10-28; they are now six-stage posture words, not corners
-  expect_length(errors_of(run(sub1(sprintf("sits in the {{cells.%s.quadrant}} corner", k1), sprintf("sits in the Secure posture beside {{cells.%s.es}}", k1))), "corner_word"), 0)
+  expect_length(errors_of(run(sub1(sprintf("sits in the {{cells.%s.legacy_corner}} corner", k1), sprintf("sits in the Secure posture beside {{cells.%s.es}}", k1))), "corner_word"), 0)
   if (length(non_top)) {
     bad <- sub1(sprintf("{{cells.%s.drivers.es.%s.category}}", k1, d_es), sprintf("{{cells.%s.drivers.es.%s.category}}", k1, non_top[[1]]$key))
     expect_true(any(grepl("not a top driver", errors_of(run(bad), "causal"))))
@@ -306,7 +306,7 @@ test_that("a memo written under the earlier quadrant rule stays published with a
   expect_equal(st$status, "rule_note")
   expect_length(st$other, 0)
   expect_true(length(st$changed) > 0)
-  expect_true(all(grepl("quadrant|n_insecure|n_high_eo", st$changed)), info = paste(st$changed, collapse = ", "))
+  expect_true(all(grepl("legacy_corner|n_insecure|n_high_eo", st$changed)), info = paste(st$changed, collapse = ", "))
   # the same memo on the sheet it was written against: nothing changed, no note
   expect_equal(country_memo_rule_status(stored, country_memo_reclaim(src, old, cfg_short), country_memo_reclaim(src, old, cfg_short))$status, "current")
   # the note's words

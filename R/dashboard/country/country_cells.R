@@ -122,8 +122,8 @@ country_cells_base <- function(iso3, es_c, eo_c, stats, cells = country_cells_tb
     if (!is.null(eo)) eo$reason_d <- NULL
     list(
       key = k, tech = cells$tech[i], stage = cells$stage[i], label = cells$label[i], label_prose = cells$label_prose[i],
-      es = es, eo = eo, placed = placed, quadrant = NULL,
-      quadrant_reason = if (placed) NULL else paste(unique(reasons), collapse = "; ")
+      es = es, eo = eo, placed = placed, legacy_corner = NULL,
+      legacy_corner_reason = if (placed) NULL else paste(unique(reasons), collapse = "; ")
     )
   })
   country_set_quadrants(out, rule)$cells

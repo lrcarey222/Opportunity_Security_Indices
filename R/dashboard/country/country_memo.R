@@ -40,11 +40,12 @@ country_memo_get <- function(idx, path) {
   x
 }
 
-# The enum group of a path whose value prints through `words` ("cells.*.quadrant" -> "quadrant").
+# The enum group of a path whose value prints through `words` ("cells.*.legacy_corner" -> "legacy_corner";
+# schema 3, design D6: the legacy OSI corner was cells.*.quadrant until 2026-10-29).
 country_memo_enum_group <- function(path) {
   last <- sub("^.*\\.", "", path)
   p <- gsub("\\.[^.]+", ".*", path)
-  if (grepl("^cells\\.[^.]+\\.quadrant$", path)) return("quadrant")
+  if (grepl("^cells\\.[^.]+\\.legacy_corner$", path)) return("legacy_corner")
   if (grepl("^cells\\.[^.]+\\.priority\\.third$", path)) return("third")
   if (grepl("^cells\\.[^.]+\\.policy\\.third$", path)) return("policy_third")
   if (grepl("^cells\\.[^.]+\\.policy\\.class$", path)) return("class")
@@ -207,7 +208,7 @@ country_memo_claim_diff <- function(stored, fresh) {
 
 # The sectors whose corner differs between two sheets (the new rule and the earlier one).
 country_quadrants_moved <- function(sheet_new, sheet_old) {
-  q <- function(s) stats::setNames(vapply(s$cells, function(c) c$quadrant %||% "", ""), vapply(s$cells, function(c) c$key, ""))
+  q <- function(s) stats::setNames(vapply(s$cells, function(c) c$legacy_corner %||% "", ""), vapply(s$cells, function(c) c$key, ""))
   a <- q(sheet_new)
   b <- q(sheet_old)
   k <- intersect(names(a), names(b))

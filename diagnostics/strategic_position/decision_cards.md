@@ -11,17 +11,17 @@ The posture is categorical: no score or index is computed for it. Observed polic
 
 **Caveat on observed policy.** Revealed Policy Priority rests on GTA NIPO and IEA PAMS records. A low observed policy priority is low observed NIPO/PAMS intervention, not proof that the government gives the node no priority: GTA does not record standards, technical regulation, most domestic regulation or agreed international measures, and NIPO has no Deployment evidence.
 
-The table holds 14454 nodes: 174 Secure, 1839 Compete, 12111 Deploy, 330 not classified.
+The table holds 14454 nodes: 174 Secure, 3338 Compete, 5317 Deploy, 330 not classified.
 
 ## Secure
 
 _A node where an acute consequence meets an exploitable vulnerability (Tests 1 and 2)._
 
-### Germany - Oil - Extraction
+### Japan - Oil - Extraction
 
 **Recommended posture: SECURE** (secure_resilience) | Confidence: High (100% of relevant inputs known) | Primary rationale: Security | Delivery: Diversified global
 
-- **Evidence:** Competitive Position 73rd percentile (across countries) | Strategic Need 80th percentile (across countries) | Observed Policy Priority 27th percentile (within the country) | Evidence specificity: High
+- **Evidence:** Competitive Position 69th percentile (across countries) | Strategic Need 95th percentile (across countries) | Observed Policy Priority 17th percentile (within the country) | Evidence specificity: High
 - **Supply:** world share 0.0% | largest potentially coercive supplier Russia (RUS) with 9.2% of world supply | trusted supply (home and same-bloc partners) 27% of world supply
 
 **Decision tests**
@@ -57,36 +57,36 @@ _A node where an acute consequence meets an exploitable vulnerability (Tests 1 a
 
 _A producing node with a capability case, a credible strategy and a proportionate cost (Tests 3 to 5)._
 
-### India - Gas - Assembly
+### Australia - Batteries - Refining
 
-**Recommended posture: COMPETE** (compete_preserve) | Confidence: High (91% of relevant inputs known) | Primary rationale: Capability | Compete strategy: Preserve | Delivery: Domestic
+**Recommended posture: COMPETE** (compete_catch_up) | Confidence: High (91% of relevant inputs known) | Primary rationale: Capability | Compete strategy: Catch up | Delivery: Domestic
 
-- **Evidence:** Competitive Position 93rd percentile (across countries) | Strategic Need 14th percentile (across countries) | Observed Policy Priority 48th percentile (within the country) | Evidence specificity: High
-- **Supply:** world share 3.6% | largest potentially coercive supplier China (CHN) with 20% of world supply | trusted supply (home and same-bloc partners) 80% of world supply
+- **Evidence:** Competitive Position 98th percentile (across countries) | Strategic Need 49th percentile (across countries) | Observed Policy Priority 89th percentile (within the country) | Evidence specificity: High
+- **Supply:** world share 1.0% | largest potentially coercive supplier China (CHN) with 94% of world supply | trusted supply (home and same-bloc partners) 4.0% of world supply
 
 **Decision tests**
 
 - Critical consequence: **No**. A moderate consequence does not reach the acute threshold, however concentrated supply is.
-- Exploitable vulnerability (no path): **No** (marginal). No potentially coercive supplier holds half of world supply (largest 20%): concentration alone does not create coercive leverage.
-- Competitive capability: **Strong** (marginal). A strong capability case: established position, strong transferable learning on a domestic base, or two rationales together.
+- Exploitable vulnerability (physical path): **Yes** (marginal). CHN holds 94% of world supply, the country takes 51% of its imports from coercive suppliers, substitution is hard, and trusted supply could not be restored before harm becomes intolerable.
+- Competitive capability: **None**. Little present position (1% of world supply) and no base for a learning or leap case.
 - Credible strategy: **No**. No credible path: no present position, no established adjacent stage, and no catch-up or leap case.
-- Proportionality: **Fail**. A high-emission technology: building or protecting it has a climate cost that a moderate capability case does not justify.
+- Proportionality: **Pass**. Premium not measured; trusted partners hold only 3% of world supply.
 
 **Alignment**
 
-- Competitive-policy alignment (diagnostic): Low priority (position and observed priority both low)
+- Competitive-policy alignment (diagnostic): Aligned strength (position and observed priority both high)
 - Policy alignment (observed vs recommended): Aligned: observed policy priority matches the Compete recommendation.
 
 **Policy design**
 
-- Fence (moderate, product): Calibrated, temporary protection only where unfair competition threatens an established base.
-- Gate (open): Open with conditions: allied and conditional investment, equipment imports, talent and import competition keep the industry at the frontier. Delivery (domestic): The gate stays open to foreign technology, capital and talent on terms that deepen domestic capability.
-- Build: Keep the established position competitive: process and next-generation R&D, workforce and supplier development, and finance for expansion, tied to benchmarks. Delivery (domestic): Build at home: production support, finance, workforce and supplier development for the domestic industry, tied to benchmarks.
+- Fence (moderate, product): Calibrated, temporary protection for the learning base, with the gate left open to the frontier.
+- Gate (open): Open: licensing and joint ventures on terms that transfer capability. Learning from the frontier is the point of catching up. Delivery (domestic): The gate stays open to foreign technology, capital and talent on terms that deepen domestic capability.
+- Build: Close the gap to the frontier: time-limited production incentives, first-of-a-kind finance, workforce and supplier development and demand creation, all tied to benchmarks. Delivery (domestic): Build at home: production support, finance, workforce and supplier development for the domestic industry, tied to benchmarks.
 
 **Evaluation**
 
-- **Benchmark:** Yields, cost and quality stay at the global frontier while public support per unit falls.
-- **Exit condition:** Support sunsets at each review unless the benchmarks are met. Move to Deploy if the capability case fails, and re-test for Secure if a control layer or coercive chokepoint is identified.
+- **Benchmark:** The cost and quality gap to the frontier narrows on a stated schedule while support per unit falls.
+- **Exit condition:** Support sunsets on the stated schedule unless the gap is narrowing. Move to Deploy if benchmarks are missed at successive reviews or the capability case fails, and re-test for Secure if a control layer or coercive chokepoint is identified.
 - **Review:** every 3 years
 - **Success metrics:**
   - Yields, costs and quality relative to the global frontier
@@ -97,7 +97,9 @@ _A producing node with a capability case, a credible strategy and a proportionat
 
 **Sensitive layers in this cell**
 
-- Pipeline SCADA, compressor-station and LNG-terminal control systems (control): Compete (compete_preserve)
+- Anode materials (natural and synthetic graphite) (material): Compete (compete_catch_up)
+- Cathode active materials and precursors (material): Compete (compete_catch_up)
+- Battery-grade lithium hydroxide and carbonate (material): Compete (compete_catch_up)
 
 A layer's posture never changes the cell's posture: the layer gets its own fence.
 
@@ -105,15 +107,15 @@ A layer's posture never changes the cell's posture: the layer gets its own fence
 
 _A node with neither a security case nor a capability case: openness is the recommendation._
 
-### Australia - Gas - Deployment
+### China - Batteries - Deployment
 
-**Recommended posture: DEPLOY** (deploy) | Confidence: High (100% of relevant inputs known) | Primary rationale: Openness | Delivery: Diversified global
+**Recommended posture: DEPLOY** (deploy) | Confidence: High (100% of relevant inputs known) | Primary rationale: Deployment | Delivery: Diversified global
 
-- **Evidence:** Competitive Position 73rd percentile (across countries) | Strategic Need 20th percentile (across countries) | Observed Policy Priority 93rd percentile (within the country) | Evidence specificity: High
+- **Evidence:** Competitive Position 99th percentile (across countries) | Strategic Need 24th percentile (across countries) | Observed Policy Priority 93rd percentile (within the country) | Evidence specificity: High
 
 **Decision tests**
 
-- Critical consequence: **Yes**. Disruption would have a severe consequence (Heating, power and industry supplied from the gas network) and the country depends on the node.
+- Critical consequence: **No**. A moderate consequence does not reach the acute threshold, however concentrated supply is.
 - Exploitable vulnerability (no path): **No**. Deployment is where the technology is used: its supply vulnerability is assessed at the producing stages and in its control layers.
 - Competitive capability: **None**. Deployment is where the technology is used, not produced: no industrial-capability case is tested.
 - Credible strategy: **Not applicable**. Not tested at Deployment.
@@ -121,7 +123,7 @@ _A node with neither a security case nor a capability case: openness is the reco
 
 **Alignment**
 
-- Competitive-policy alignment (diagnostic): Policy-led bet (observed priority high, position low)
+- Competitive-policy alignment (diagnostic): Aligned strength (position and observed priority both high)
 - Policy alignment (observed vs recommended): Aligned: support for deployment itself is what a Deploy recommendation asks for.
 
 **Policy design**
@@ -184,36 +186,36 @@ _A Secure node whose observed policy priority is below the matched line._
 
 _A Compete node whose observed policy priority is below the matched line._
 
-### United States - Oil - Refining
+### Germany - Wind - Refining
 
-**Recommended posture: COMPETE** (compete_preserve) | Confidence: High (91% of relevant inputs known) | Primary rationale: Capability | Compete strategy: Preserve | Delivery: Domestic
+**Recommended posture: COMPETE** (compete_catch_up) | Confidence: High (82% of relevant inputs known) | Primary rationale: Capability | Compete strategy: Catch up | Delivery: Domestic
 
-- **Evidence:** Competitive Position 98th percentile (across countries) | Strategic Need 7th percentile (across countries) | Observed Policy Priority 8th percentile (within the country) | Evidence specificity: High
-- **Supply:** world share 14% | largest potentially coercive supplier China (CHN) with 5.8% of world supply | trusted supply (home and same-bloc partners) 51% of world supply
+- **Evidence:** Competitive Position 93rd percentile (across countries) | Strategic Need 44th percentile (across countries) | Observed Policy Priority 4th percentile (within the country) | Evidence specificity: High
+- **Supply:** largest potentially coercive supplier China (CHN) with 84% of world supply | trusted supply (home and same-bloc partners) 6.4% of world supply
 
 **Decision tests**
 
-- Critical consequence: **Yes**. Disruption would have a severe consequence (Transport, heating and industrial fuels) and the country depends on the node.
-- Exploitable vulnerability (no path): **No** (marginal). The country itself holds 14% of world supply: it is not exposed through its imports.
-- Competitive capability: **Strong**. A strong capability case: established position, strong transferable learning on a domestic base, or two rationales together.
-- Credible strategy: **Preserve**. Preserve: the country already holds a meaningful share of world supply that could be hollowed out.
-- Proportionality: **Fail**. A high-emission technology: building or protecting it has a climate cost that a moderate capability case does not justify.
+- Critical consequence: **No**. A moderate consequence does not reach the acute threshold, however concentrated supply is.
+- Exploitable vulnerability (no path): **No** (marginal). Only 3% of the country's imports come from potentially coercive suppliers.
+- Competitive capability: **Unknown**. The capability questions are not fully answered.
+- Credible strategy: **Adjacent capability**. Build adjacent capability: an established position in the same technology's neighbouring stage, and the node carries learning.
+- Proportionality: **Pass**. Premium not measured; trusted partners hold only 6% of world supply.
 
 **Alignment**
 
-- Competitive-policy alignment (diagnostic): Latent advantage (position high, observed priority low)
+- Competitive-policy alignment (diagnostic): Low priority (position and observed priority both low)
 - Policy alignment (observed vs recommended): Under-prioritized: observed policy priority is below what a Compete recommendation implies. This is low observed NIPO/PAMS intervention, not proof that the node has no priority.
 
 **Policy design**
 
-- Fence (moderate, product): Calibrated, temporary protection only where unfair competition threatens an established base.
-- Gate (open): Open with conditions: allied and conditional investment, equipment imports, talent and import competition keep the industry at the frontier. Delivery (domestic): The gate stays open to foreign technology, capital and talent on terms that deepen domestic capability.
-- Build: Keep the established position competitive: process and next-generation R&D, workforce and supplier development, and finance for expansion, tied to benchmarks. Delivery (domestic): Build at home: production support, finance, workforce and supplier development for the domestic industry, tied to benchmarks.
+- Fence (moderate, product): Calibrated, temporary protection for the learning base, with the gate left open to the frontier.
+- Gate (open): Open: licensing and joint ventures on terms that transfer capability. Learning from the frontier is the point of catching up. Delivery (domestic): The gate stays open to foreign technology, capital and talent on terms that deepen domestic capability.
+- Build: Close the gap to the frontier: time-limited production incentives, first-of-a-kind finance, workforce and supplier development and demand creation, all tied to benchmarks. Delivery (domestic): Build at home: production support, finance, workforce and supplier development for the domestic industry, tied to benchmarks.
 
 **Evaluation**
 
-- **Benchmark:** Yields, cost and quality stay at the global frontier while public support per unit falls.
-- **Exit condition:** Support sunsets at each review unless the benchmarks are met. Move to Deploy if the capability case fails, and re-test for Secure if a control layer or coercive chokepoint is identified.
+- **Benchmark:** The cost and quality gap to the frontier narrows on a stated schedule while support per unit falls.
+- **Exit condition:** Support sunsets on the stated schedule unless the gap is narrowing. Move to Deploy if benchmarks are missed at successive reviews or the capability case fails, and re-test for Secure if a control layer or coercive chokepoint is identified.
 - **Review:** every 3 years
 - **Success metrics:**
   - Yields, costs and quality relative to the global frontier
@@ -222,41 +224,47 @@ _A Compete node whose observed policy priority is below the matched line._
   - Process improvements and successor-technology R&D generated domestically
   - Public support per unit falling as competitiveness improves
 
+**Sensitive layers in this cell**
+
+- Rare-earth separation and metal-making (material): Compete (compete_catch_up)
+
+A layer's posture never changes the cell's posture: the layer gets its own fence.
+
 ## Over-prioritized Deploy
 
 _A Deploy node where observed intervention sits among the country's most targeted cells._
 
-### South Korea - Nuclear - Assembly
+### United States - Nuclear - Assembly
 
-**Recommended posture: DEPLOY** (deploy_diversify) | Confidence: High (87% of relevant inputs known) | Primary rationale: Openness | Delivery: Allied
+**Recommended posture: DEPLOY** (deploy) | Confidence: High (87% of relevant inputs known) | Primary rationale: Openness | Delivery: Diversified global
 
-- **Evidence:** Competitive Position 94th percentile (across countries) | Strategic Need 53rd percentile (across countries) | Observed Policy Priority 92nd percentile (within the country) | Evidence specificity: High
-- **Supply:** world share 7.7% | largest potentially coercive supplier China (CHN) with 27% of world supply | trusted supply (home and same-bloc partners) 53% of world supply
+- **Evidence:** Competitive Position 84th percentile (across countries) | Strategic Need 44th percentile (across countries) | Observed Policy Priority 92nd percentile (within the country) | Evidence specificity: High
+- **Supply:** world share 4.3% | largest potentially coercive supplier China (CHN) with 27% of world supply | trusted supply (home and same-bloc partners) 53% of world supply
 
 **Decision tests**
 
 - Critical consequence: **No**. A moderate consequence does not reach the acute threshold, however concentrated supply is.
-- Exploitable vulnerability (dual use): **Yes** (marginal). No potentially coercive supplier holds half of world supply (largest 27%): concentration alone does not create coercive leverage.
-- Competitive capability: **Strong**. A strong capability case: established position, strong transferable learning on a domestic base, or two rationales together.
-- Credible strategy: **Preserve**. Preserve: the country already holds a meaningful share of world supply that could be hollowed out.
-- Proportionality: **Pass**. Premium not measured; trusted partners hold only 46% of world supply.
+- Exploitable vulnerability (no path): **No** (marginal). No potentially coercive supplier holds half of world supply (largest 27%): concentration alone does not create coercive leverage.
+- Competitive capability: **Strong** (marginal). A strong capability case: established position, strong transferable learning on a domestic base, or two rationales together.
+- Credible strategy: **No**. No credible path: no present position, no established adjacent stage, and no catch-up or leap case.
+- Proportionality: **Pass**. Premium not measured; trusted partners hold only 49% of world supply.
 
 **Alignment**
 
-- Competitive-policy alignment (diagnostic): Aligned strength (position and observed priority both high)
+- Competitive-policy alignment (diagnostic): Policy-led bet (observed priority high, position low)
 - Policy alignment (observed vs recommended): Over-prioritized: observed intervention sits among the country's most targeted cells although the recommendation is Deploy.
 
 **Policy design**
 
-- Fence (low, cross cutting): A low fence: manage concentration by diversifying supply, not by restricting it.
-- Gate (wide open): Wide open, and widened: trade agreements and procurement that reward supplier diversity bring in more producers. Delivery (allied): The gate stays wide open; allied sourcing is a diversification tool, not an exclusion of other lawful suppliers.
-- Build: Build what enables deployment and diversify supply toward trusted producers, not a domestic replica. Delivery (allied): Diversify toward trusted partners through offtake and standards recognition, not production subsidies.
+- Fence (low, cross cutting): A low fence: cross-cutting safeguards only (genuine trade remedies, forced-labour restrictions, basic security and safety standards).
+- Gate (wide open): Wide open: diversified imports, broad supplier access and competition keep the good cheap and fast to deploy. Delivery (diversified global): The gate stays wide open to a broad supplier base.
+- Build: Build what enables deployment (infrastructure, permitting, interoperability, procurement efficiency, supply-chain transparency), not domestic production. Delivery (diversified global): Supply comes from a diversified global base; the build is enabling infrastructure, not production.
 
 **Evaluation**
 
-- **Benchmark:** The largest potentially coercive supplier's share of the country's supply falls below the watch line without a material rise in delivered cost.
-- **Exit condition:** Returns to deploy when supply is diversified below the watch lines. Re-test for Secure if the coercive supplier's share passes the screening line and the substitution and timing legs hold, or if a control layer is identified.
-- **Review:** every 3 years
+- **Benchmark:** Delivered cost and deployment pace match or beat peers, with diversified supply and adequate resilience. Domestic production share is not a benchmark.
+- **Exit condition:** Re-test if concentration rises (the largest coercive supplier or the import HHI crosses its watch line), a control layer or physical chokepoint is identified, or a credible capability case emerges.
+- **Review:** every 5 years
 - **Success metrics:**
   - Delivered cost and pace of deployment
   - Supplier diversity (HHI) and the share held by any potentially coercive supplier
@@ -264,7 +272,7 @@ _A Deploy node where observed intervention sits among the country's most targete
 
 **Sensitive layers in this cell**
 
-- Reactor control and safety instrumentation (control): Secure (secure_control)
+- Reactor control and safety instrumentation (control): Deploy (deploy)
 
 A layer's posture never changes the cell's posture: the layer gets its own fence.
 
@@ -272,39 +280,46 @@ A layer's posture never changes the cell's posture: the layer gets its own fence
 
 _High Strategic Need with a low domestic Competitive Position, delivered with allies: capacity is built with partners, not at home._
 
-### China - Gas - Extraction
+### South Korea - Nuclear - Refining
 
-**Recommended posture: SECURE** (secure_resilience) | Confidence: High (90% of relevant inputs known) | Primary rationale: Security | Delivery: Allied
+**Recommended posture: SECURE** (secure_dual_use) | Confidence: High (90% of relevant inputs known) | Primary rationale: Security (secondary: capability) | Delivery: Allied
 
-- **Evidence:** Competitive Position 97th percentile (across countries) | Strategic Need 93rd percentile (across countries) | Observed Policy Priority 58th percentile (within the country) | Evidence specificity: High
-- **Supply:** world share 0.9% | largest potentially coercive supplier Norway (NOR) with 13% of world supply | trusted supply (home and same-bloc partners) 33% of world supply
+- **Evidence:** Competitive Position 86th percentile (across countries) | Strategic Need 98th percentile (across countries) | Observed Policy Priority 14th percentile (within the country) | Evidence specificity: High
+- **Supply:** world share 0.0% | largest potentially coercive supplier Kazakhstan (KAZ) with 23% of world supply | trusted supply (home and same-bloc partners) 54% of world supply
 
 **Decision tests**
 
-- Critical consequence: **Yes**. Disruption would have a severe consequence (Heating, power generation and industrial feedstock) and the country depends on the node.
-- Exploitable vulnerability (resilience): **Yes** (marginal). Potentially coercive suppliers provide 27% of the country's imports, under half: concentration alone does not create coercive leverage.
-- Competitive capability: **None**. Little present position (1% of world supply) and no base for a learning or leap case.
-- Credible strategy: **No**. No credible path: no present position, no established adjacent stage, and no catch-up or leap case.
-- Proportionality: **Fail**. A high-emission technology: building or protecting it has a climate cost that a moderate capability case does not justify.
+- Critical consequence: **Yes**. Disruption would have a high consequence (Enriched fuel for the operating fleet) and the country depends on the node.
+- Exploitable vulnerability (dual use): **Yes**. No potentially coercive supplier holds half of world supply (largest 23%): concentration alone does not create coercive leverage.
+- Competitive capability: **Strong**. A strong capability case: established position, strong transferable learning on a domestic base, or two rationales together.
+- Credible strategy: **Catch up**. Catch up: complementary capabilities, a learning node and a large domestic market make closing the gap plausible.
+- Proportionality: **Pass**. Premium not measured; the good is not deployment-critical.
 
 **Alignment**
 
-- Competitive-policy alignment (diagnostic): Policy-led bet (observed priority high, position low)
-- Policy alignment (observed vs recommended): Aligned: observed policy priority matches the Secure recommendation.
+- Competitive-policy alignment (diagnostic): Low priority (position and observed priority both low)
+- Policy alignment (observed vs recommended): Under-prioritized: observed policy priority is below what a Secure recommendation implies. This is low observed NIPO/PAMS intervention, not proof that the node has no priority.
 
 **Policy design**
 
-- Fence (none, essential supply): No fence: the risk is the loss of an essential supply that takes years to rebuild, not a coercive actor. Restricting imports would deepen the shortfall it guards against.
-- Gate (selective): Selective: open to allied and other trusted supply, investment and equipment that add capacity or shorten the time to rebuild; screening only of foreign control of the essential assets themselves. Delivery (allied): The gate stays open to those partners' products, investment and equipment, and trusted-source rules recognise allied suppliers.
-- Build: Build resilience rather than replacement: reserves and stockpiles sized to the rebuild time, long-lead procurement frameworks, spares and redundancy, demand-side flexibility, and capacity agreements with trusted partners. Delivery (allied): Build trusted capacity with partners, not at home: compacts, offtake agreements, co-investment and shared stockpiles with allied producers.
+- Fence (high, critical end use): A high fence around the national-security end uses (defence and critical infrastructure), not around the whole market: those uses take only trusted supply.
+- Gate (selective): Selective: allied producers and their investment qualify for the restricted end uses; the rest of the market stays open. Delivery (allied): The gate stays open to those partners' products, investment and equipment, and trusted-source rules recognise allied suppliers.
+- Build: Build enough trusted capacity, at home or with allies, to supply the national-security end uses through a cutoff; the civilian market is served openly. Delivery (allied): Build trusted capacity with partners, not at home: compacts, offtake agreements, co-investment and shared stockpiles with allied producers.
 
 **Evaluation**
 
-- **Benchmark:** The essential function could continue on reserves and trusted supply for longer than it takes to rebuild supply.
-- **Exit condition:** Reclassify to Compete or Deploy when reserves and trusted alternatives cover the rebuild time, or the country's import dependence falls below the line.
+- **Benchmark:** The national-security end uses could be supplied through a prolonged cutoff from trusted sources alone.
+- **Exit condition:** Reclassify to Compete or Deploy when trusted supply covers the restricted end uses through a cutoff, or the coercive suppliers' share of the country's supply falls below the screening line.
 - **Review:** every 2 years
 - **Success metrics:**
-  - Months the essential function could continue through a loss of supply (reserves plus trusted alternatives)
-  - Trusted capacity as a share of the essential demand
-  - Time to rebuild supply, and how far it has been shortened
+  - Share of the national-security end uses met by trusted supply
+  - Months the restricted end uses could continue through a cutoff
+  - Allied qualified capacity for the end uses
+
+**Sensitive layers in this cell**
+
+- HALEU enrichment (fuel): Secure (secure_input)
+- LEU enrichment services (fuel): Secure (secure_dual_use)
+
+A layer's posture never changes the cell's posture: the layer gets its own fence.
 

@@ -115,3 +115,52 @@ test_that("the partner sanity checks find no violations on clean recommendations
   expect_equal(unname(v[c("recommended partner is the country itself", "recommended partner is coercive to the country",
                           "recommended partner is not trusted by the country", "recommended partner below the presence line")]), c(0, 0, 0, 0))
 })
+
+test_that("the AIB status names the gap reasons the data support (spec XVI.1)", {
+  r <- pr_recs()
+  expect_equal(r$partner_trusted_capacity, 0.30)            # JPN 0.15 + KOR 0.10 + DEU 0.05 of world supply
+  expect_equal(r$partner_aib_status, "covered")
+  expect_match(r$partner_gap_reasons, "weak_evidence")       # world-share evidence only: weak, but not a gap
+  expect_false(grepl("insufficient_allied_capacity", r$partner_gap_reasons))
+  # one credible supplier holding 15% of world supply: a single supplier and too little allied capacity
+  sup <- pr_supply
+  sup$home_share[sup$iso3 %in% c("KOR", "DEU")] <- 0.01
+  one <- pr_recs(supply = sup)
+  expect_equal(one$partner_n_credible, 1)
+  expect_equal(one$partner_aib_status, "gap")
+  expect_match(one$partner_gap_reasons, "single_credible_supplier")
+  expect_match(one$partner_gap_reasons, "insufficient_allied_capacity")
+  # no credible trusted supplier: an honest gap, no partner forced
+  none <- sup
+  none$home_share[none$iso3 == "JPN"] <- 0.01
+  g <- pr_recs(supply = none)
+  expect_equal(g$partner_aib_status, "gap")
+  expect_equal(g$partner_gap_reasons, "no_trusted_supplier")
+  expect_equal(g$partner_trusted_capacity, 0)
+  # a coercive supplier holding half the world's supply or more: excessive concentration
+  cells <- transform(pr_cells, coercive_top_share = 0.6)
+  conc <- sp_partner_recs(cells, sp_cell_capability(pr_supply), pr_pairs, pr_compat, pr_cp, imports = pr_imports,
+                          members = c("JPN", "KOR", "DEU"))
+  expect_match(conc$partner_gap_reasons, "excessive_concentration")
+  expect_equal(conc$partner_aib_status, "covered")           # allies can still supply: concentration alone is not a gap
+  expect_true(all(unlist(strsplit(stats::na.omit(c(r$partner_gap_reasons, one$partner_gap_reasons, g$partner_gap_reasons,
+                                                   conc$partner_gap_reasons)), ";")) %in% PARTNER_GAP_REASONS))
+})
+
+test_that("the division matrix adds the capacity and concentration gaps after the original four", {
+  cap <- sp_cell_capability(rbind(pr_supply, data.frame(iso3 = c("CHN", "AUS"), tech = "Solar", supply_chain = "Refining", home_share = c(0.9, 0.03)),
+                                  data.frame(iso3 = c("CHN", "JPN"), tech = "Wind", supply_chain = "Refining", home_share = c(0.9, 0.0))))
+  div <- sp_aib_division(cap, allied = c("JPN", "KOR", "DEU", "AUS"), coercive_powers = "CHN")
+  ref <- div[div$tech == "Solar" & div$supply_chain == "Refining", ]
+  expect_equal(ref$aib_gap, "single_point_of_failure")       # the primary gap is unchanged
+  expect_match(ref$aib_gaps, "insufficient_allied_capacity")  # allies hold 3% of world supply
+  expect_match(ref$aib_gaps, "excessive_concentration")       # the coercive power holds 90%
+  expect_equal(ref$allied_world_share, 0.03)
+  expect_equal(ref$coercive_world_share, 0.9)
+  wr <- div[div$tech == "Wind", ]
+  expect_equal(wr$aib_gap, "no_trusted_supplier")
+  expect_false(grepl("insufficient_allied_capacity", wr$aib_gaps))   # no allied holder: already the first gap
+  comp <- div[div$tech == "Solar" & div$supply_chain == "Components", ]
+  expect_equal(comp$allied_world_share, 0.30)
+  expect_false(grepl("insufficient_allied_capacity", comp$aib_gaps))
+})

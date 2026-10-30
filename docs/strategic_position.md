@@ -1,88 +1,214 @@
-# Strategic Position and Strategic Posture
+# Strategic Position: the canonical decision framework
 
-Branch `feat/supply-chain-stages`, 2026-10-27. Results and validation are in
-[strategic_position_readout.md](strategic_position_readout.md); the decision cards are in
-`diagnostics/strategic_position/decision_cards.md`.
+Branch `feat/supply-chain-stages`, 2026-10-29. The framework is **Need -> Prize -> Position -> Choice ->
+Policy alignment**, per country x technology x six-stage node. Results and validation are in
+[strategic_position_readout.md](strategic_position_readout.md) and
+`diagnostics/strategic_position/decision_review.md` (spec Part XXI); the per-country choice cards are in
+`diagnostics/strategic_position/choice_cards.md`; the implementation plan is
+[decision_framework_plan.md](decision_framework_plan.md). The old Energy Security x Economic Opportunity
+framework (Grow / Upgrade / Exposed / Stable, the Strategic Index) is kept only for replication and
+comparison: see [Legacy OSI framework](#legacy-osi-framework) at the end.
 
 The unifying question:
 
-> Where should a country secure critical vulnerabilities, where should it compete industrially, where
-> should it deliberately prioritize affordable deployment instead, and does its current policy mix
-> match those choices?
+> What does this country need, where is there a prize worth pursuing, where does it already have an
+> advantage, and therefore what should it Secure, Preserve, Catch Up in, rely on Partners for, Deploy
+> faster, and deliberately not prioritize? And does its current policy match those choices?
 
-## One system in four steps
+## The decision chain
 
 | Step | Question | Output (per country x technology x six-stage node) |
 |---|---|---|
-| 1. Strategic Position | What does the evidence say? | Competitive Position, Strategic Need, Revealed Policy Priority, evidence quality |
-| 2. Strategic Posture | What kind of problem is this? | Secure, Compete or Deploy, with the five decision tests and their trace |
-| 3. Policy Design | How should government intervene? | Fence, Gate, Build, by posture variant and delivery mode |
-| 4. Evaluation | Is policy aligned, and is it working? | Observed vs recommended policy; benchmarks, review dates, exit conditions |
+| **Need** | What problem does the country need to solve? | `supply_chain_need` at Extraction, Refining, Components, Assembly and Recovery; `deployment_need` at Deployment & Use; `need_type` (supply_chain / deployment) and the family scores. Never combined into one score. |
+| **Prize** | Is there an industrial or technological prize worth pursuing? | `industrial_opportunity` (0-1) with `io_node_prize`, `io_investment_momentum`, `io_home_market`, `io_maturity` (context) |
+| **Position** | How strong is the country today? | `competitive_position_percentile` (cross-country), `cp_contender_pct` (among the node's contenders), the seven families and trade momentum |
+| **Choice** | What strategic posture follows? | `strategic_posture` (secure / compete / deploy / not_assessed), `compete_mode` (preserve / catch_up / partner), `deploy_mode` (accelerate / watch), `security_rationale`, `delivery_mode`, `decision_trace`, `posture_confidence`, `decision_borderline`, `consistency_flag` |
+| **Policy alignment** | Does observed policy match the choice? | `policy_priority_percentile`, `policy_alignment` (aligned / under_prioritized / over_prioritized / misaligned / deployment_gap / mixed / insufficient_data), `policy_alignment_confidence` |
 
-Step 1 is the evidence layer; it has no composite score. Step 2 is the Yards & Fences decision
-engine (small yard = Secure, medium yard = Compete, large yard = Deploy) applied to every node. It is
-categorical: there is no yards index, fence index or posture score. Step 3 is the Gates & Fences
-policy design. Step 4 compares what governments do with what the evidence recommends.
+The six choices: **Secure**; **Compete . Preserve**, **Compete . Catch Up**, **Compete . Partner**;
+**Deploy . Accelerate**, **Deploy . Watch**. A node whose Need or Prize is not measured is **not assessed**
+(never Watch: Watch is a positive conclusion, "domestic industrial priority: low").
 
-**Hard rule.** Observed policy never enters a Step 2 test. Revealed Policy Priority is compared with
-the recommendation afterwards. Otherwise the model is circular: government prioritizes it, therefore
-it is strategic, therefore government is right to prioritize it.
+**Need x Prize triages the problem; Competitive Position decides the industrial response.** Need x Prize
+alone no longer assigns Preserve vs Catch Up (the 2026-10-28 rule did, and produced Partner despite strong
+capability, Catch Up despite a leading position and Preserve without capability).
 
-The old question was "what is a country's overall Strategic Index score in a technology x stage?".
-The Strategic Index mixed demonstrated capability, vulnerability, policy attention and two normative
-priors (a supply-chain-stage weight and a technology emissions weight). It is kept, unchanged, as
-`strategic_index` in `index_outputs.rds` and as `strategic_index_legacy` in the new table, for the
-dashboard export and the paper. It is deprecated.
+**Hard rule.** Observed policy never enters Need, Prize, Position or Choice. Revealed Policy Priority is
+compared with the choice afterwards (Policy alignment). Otherwise the model is circular: government
+prioritizes it, therefore it is strategic, therefore government is right to prioritize it.
+`tests/testthat/test-decision-engine.R` checks that changing every policy column leaves every choice,
+mode, confidence, borderline, flag, delivery mode and trace unchanged.
 
 ### Principles
 
-- **Six stages are the canonical taxonomy** (Extraction, Refining, Components, Assembly, Deployment,
-  Recovery). Upstream / Midstream / Downstream is a derived roll-up (`sp_legacy_rollup()`), for
-  compatibility and charts only.
-- **Source evidence can be coarser than six stages.** Every input carries an evidence status (exact,
-  split, shared, proxy, tech_wide, no_data), and each cell reports how much of its score rests on
-  stage-specific observations. Evidence quality is reported next to a score and never changes it.
-- **The three dimensions are independent.** A country can have any combination of high or low
-  Competitive Position, Strategic Need and policy priority; none of them is computed from another.
+- **Six stages are the canonical taxonomy** (Extraction, Refining & Processing, Component Manufacturing,
+  Final Assembly & Equipment, Deployment & Use, Recovery & Recycling; data ids Extraction ... Recovery).
+  Upstream / Midstream / Downstream is a derived roll-up (`sp_legacy_rollup()`), for compatibility only.
+- **Need is stage-specific** (spec V-VI). Supply-chain need measures dependence on external supply at the
+  producing stages; deployment need measures how much more deployment the energy system needs at
+  Deployment & Use. They answer different questions and are never averaged, maxed or otherwise combined.
+- **The Prize is not capability and not need.** Nothing that measures current capability (export share,
+  RCA, production, operating capacity, annual investment, reserves, deployment scale) and nothing that
+  measures need (HHI, import dependence, risky suppliers) enters `industrial_opportunity`
+  (`SP_IO_FORBIDDEN`, refused by `sp_io_check_inputs()`).
+- **Position is demonstrated capability only**: no future market growth, technology importance, need,
+  policy, climate goals, supplier concentration or generic readiness enters Competitive Position.
+- **Source evidence can be coarser than six stages.** Every input carries an evidence status and each cell
+  reports how much of its score rests on stage-specific observations. Evidence quality is reported next
+  to a score (strong / moderate / weak in the Explorer) and never changes it.
+- **Missing is not zero.** A family that is not observed is NA with basis `not_assessed`; a choice that
+  lacks its Need or Prize is `not_assessed`.
 - **Policy activity is not evidence of competitive advantage**, and a low observed policy priority is
-  low *observed* NIPO / IEA PAMS intervention, not proof that the government gives the node no
-  priority (GTA records no standards, technical regulation, most domestic regulation or agreed
-  international measures, and NIPO has no Deployment evidence).
-- **CAT is context**, not technology x stage policy evidence (`cat_context`, country-level).
-- **No stage prior and no technology prior** in any default output. Stage preferences exist only as
-  named scenarios (`stage_scenarios`) for the legacy-index sensitivity diagnostics.
-- **The framework informs** specialization, build / partner decisions, Gates & Fences analysis and
-  allied industrial-base strategy.
+  low *observed* NIPO / IEA PAMS intervention, not proof that the government gives the node no priority.
+- **No stage prior and no technology prior** in any default output.
 
 ### Code and data
 
 | Piece | File |
 |---|---|
-| Rules and thresholds | `config/strategic_position.yml` |
-| Evidence metadata | `data/reference/index_variable_stage_evidence.csv` (machine-readable; cites `map_id` in `index_variable_stage_map.csv`), `R/utils/variable_stage_evidence.R` |
-| Competitive Position | `R/strategic_position/competitive_position.R` |
-| Strategic Need | `R/strategic_position/import_exposure.R`, `strategic_need.R` (import exposure built by the scripts/15 hook) |
-| Revealed Policy Priority | `R/strategic_position/policy_priority.R`; NIPO in `R/categories/policy/nipo_stage_policy.R`, `config/nipo_instrument_posture.csv`, `scripts/11_build_nipo_stage_policy.R` |
-| Competitive-policy alignment (diagnostic) | `R/strategic_position/alignment.R` |
-| Posture: node attributes | `data/reference/posture_node_attributes.csv`, `R/strategic_position/posture_nodes.R` (inherits `data/reference/yards_fences_assessments.csv`) |
-| Posture: supply structure | `R/strategic_position/supply_structure.R` |
-| Posture: engine and inputs | `R/strategic_position/posture_engine.R`, `posture_inputs.R` |
+| Rules and thresholds | `config/strategic_position.yml` (`decision_framework`, `strategic_posture`, `policy_alignment`, `node_phrases`), `config/deployment_need.yml` |
+| Need: supply chain | `R/strategic_position/import_exposure.R`, `strategic_need.R` (inputs), `supply_chain_need.R` (the score) |
+| Need: deployment | `R/strategic_position/deployment_need.R`, `home_market.R`, `scripts/95_build_deployment_need.R` -> `data/processed/deployment_need_tbl.rds`, `home_market_tbl.rds` |
+| Prize | `R/strategic_position/industrial_opportunity.R` (IEA WEO 2025 / Critical Minerals via `scripts/17`, Clean Investment Monitor, TRL) |
+| Position | `R/strategic_position/competitive_position.R`, `trade_benchmark.R`, `trade_momentum.R` |
+| Choice | `R/strategic_position/posture_engine.R` (Secure override; engine Compete tests as diagnostics), `pathway.R`, `decision_engine.R`; node attributes `data/reference/posture_node_attributes.csv`, `config/security_route_rules.csv` |
+| Allied strategy | `R/strategic_position/partner_recs.R` |
+| Policy alignment | `R/strategic_position/policy_priority.R`, `posture_engine.R` (`sp_policy_alignment*`) |
 | Policy design | `config/posture_policy_design.csv`, `config/posture_delivery_modes.csv`, `R/strategic_position/policy_design.R` |
-| Decision cards | `R/strategic_position/decision_cards.R` |
-| Diagnostics | `R/strategic_position/sp_diagnostics.R`, `legacy_si_sensitivity.R` |
-| Build | `scripts/26_build_strategic_position.R` |
-| Review charts and cards | `scripts/27_review_strategic_position.R`, `R/charts/strategic_position_plots.R` |
+| Diagnostics | `R/strategic_position/sp_diag_choice.R`, `sp_diag_framework.R`, `sp_diagnostics.R`, `legacy_si_sensitivity.R` |
+| Legacy (comparison only) | `R/strategic_position/decision_quadrant.R` (the 2026-10-28 need x EO quadrant), the ES / EO / SI builders in `R/indices/` |
+| Build | `scripts/26_build_strategic_position.R`; review `scripts/27_review_strategic_position.R`; Explorer bundle `scripts/91_export_posture_data.R` (`R/dashboard/posture/posture_export.R`) |
 
+Run order after an engine change: (10, 11, 17, 18, 20 when their inputs change) -> 95 -> 26 -> 27 -> 91.
 Outputs: `<outputs>/strategic_position_tbl.rds|csv` (one row per Country x tech x stage),
-`strategic_posture_layers_tbl.rds` (sensitive layers), `strategic_position_inputs.rds` (long input
-tables), `diagnostics/strategic_position/*.csv` and `decision_cards.md`, and review PNGs in
-`<processed>/charts/strategic_review/` (not tracked). Pipeline order: 10 -> 11 -> ... -> 20 -> 15 ->
-25 -> 26 -> 27.
+`strategic_posture_layers_tbl.rds` (sensitive layers), `strategic_aib_division_tbl.rds|csv`,
+`strategic_position_inputs.rds`, `strategic_position_trade_partner_inputs.rds` (incl. the node prize table),
+`diagnostics/strategic_position/*.csv|md`, and review PNGs in `<processed>/charts/strategic_review/`.
 
-Shared conventions: functions in `R/` are pure; percentiles are mid-rank, `(rank - 0.5) / n` over
-the non-missing values (a singleton gets 0.5); missing is not zero unless the config names the fill.
+Shared conventions: functions in `R/` are pure; percentiles are mid-rank, `(rank - 0.5) / n` over the
+non-missing values (a singleton gets 0.5); thresholds are inclusive (high = at or above).
 
-## Step 1. Strategic Position
+## 1. Need
+
+### Supply-chain need (producing stages)
+
+How costly or dangerous is dependence on external supply for this node? `supply_chain_need` (0-1) is the
+within-cell mid-rank percentile, across countries, of the mean of four family scores (higher = more need):
+
+- `sn_import_dependence`: net imports of the stage basket / GDP; fossil-fuel self-sufficiency;
+- `sn_supplier_concentration`: HHI of the country's own import suppliers;
+- `sn_risky_supplier_exposure`: import share from China (with Hong Kong and Macao) and opposite-bloc
+  partners;
+- `sn_trusted_alternatives`: 1 - the world-supply share of suppliers the country trusts (less its own),
+  the Secure engine's Test 5 input. It is a scored family because it is observed for 94% of the assessed
+  producing cells (design D4 line: 80%, `supply_chain_need.trusted_alternatives_min_coverage`); below that
+  it would be a drawer subcomponent only.
+
+Rules: concentration, risky-supplier and trusted-alternative needs are 0 for immaterial importers (under
+USD 1m) and, with the **self-supply guard**, for a country holding 10% or more of world supply of the node
+(`self_supply_share`, the Secure engine's line): a large producer is not dependent on the composition of
+its small imports. Import dependence is kept for everyone. Thin cells (fewer than five comparable
+importers) and entrepots are NA. Substitutability, qualification / reconstitution time, inventories,
+systemic essentiality and operational-control risk stay Secure-engine inputs (curated node attributes) and
+are shown in the drawer as subcomponents; they do not enter the percentile.
+
+At Deployment & Use, `supply_chain_need` is NA: the Assembly-equipment proxy that `strategic_need.R`
+writes on the Deployment row (`strategic_need_percentile`) is kept only for the legacy comparison and is
+never read by the choice.
+
+### Supply-chain need: the inputs (strategic_need.R)
+
+How exposed is the country if supply of this cell is disrupted? Families, each the mean of its
+measures' within-cell percentiles (higher = more need):
+
+- `import_dependence`: net imports of the stage basket / GDP; fossil-fuel self-sufficiency;
+- `supplier_concentration`: HHI of the country's own import suppliers;
+- `risky_supplier_exposure`: import share from China (with Hong Kong and Macao) and from
+  opposite-bloc partners (`geo_alignment == 0`).
+
+Import exposure comes from the reconciled exporter -> importer flows of scripts/15 (last trade
+year). Concentration and risky-supplier measures are 0 below USD 1m of imports; a cell with fewer
+than 5 importers above that is thin. Entrepots and ship registries (HKG, MAC, MHL, LBR, PAN) are not
+ranked and do not enter others' percentiles. A nonaligned importer's opposite-bloc share is NA (it is
+0 by construction), so its risky family rests on the China share. On the Deployment row
+`strategic_need.R` still writes the technology's Assembly need (proxy) and, for coal, gas and oil,
+Extraction fuel import dependence (shared), as `strategic_need_percentile`, for the legacy comparison
+only: `supply_chain_need` is NA there and the choice never reads the proxy. No world constant and
+nothing from Competitive Position enters.
+
+### Deployment need (Deployment & Use)
+
+How much additional deployment does this country need to meet expected energy-system requirements or
+its own stated goals? It is not supply-chain vulnerability. `deployment_need` (0-1) is the mean of the
+observed family percentiles (each family ranked within the technology across countries), for eleven
+technologies (Batteries = stationary storage), fossil technologies assessed exactly like clean ones:
+
+| family | scenario | measures (technology attribution in `config/deployment_need.yml`) |
+|---|---|---|
+| `dn_demand` demand adequacy | current policy | electricity demand growth (WEO 2025 Current Policies for the six single-country WEO regions, else the Ember 5-year trend); the technology's own generation growth; EV share of new-car sales (GEVO 2026); oil-use trend |
+| `dn_policy_gap` climate / policy gap | national commitments | 2030 shortfall against the country's own targets and approved national plans (Ember 2030 Renewable Target Tracker): projected installed (installed + recent build rate) vs target, per installed fleet; the total-renewables target for Solar, Wind and, as the integration requirement, Batteries and the Grid |
+| `dn_system` system need | current policy | imported fuel the technology displaces; flexibility need (solar + wind share of generation) for storage, grid and gas; firm-capacity need for dispatchable technologies |
+
+Every family carries `basis` (national / observed_trend / not_assessed; regional values are context only)
+and its scenario label. A climate-aligned value (World WEO 2025 Net Zero vs Current Policies at 2035,
+`dn_climate_aligned`, a ratio, not a score) is shown only as an explicitly labelled alternative and never
+enters the score: no 1.5 C pathway is treated as objective fact. Missing evidence stays NA; a technology
+x country with no family is not assessed. Coverage (2026-10-29): 1,713 of 2,354 Deployment cells.
+Not assessed by design: grid congestion / transmission adequacy (no national data), hydrogen and EV
+targets, geothermal targets, oil system need, the committed pipeline (GEM needs a contact form).
+
+## 2. Prize: Industrial Opportunity
+
+Is there a plausible economic or technological prize worth pursuing in this technology x stage node?
+`industrial_opportunity` (0-1, producing stages only; `R/strategic_position/industrial_opportunity.R`):
+
+| component | what it is | varies by country? |
+|---|---|---|
+| `io_growth` -> `io_growth_pct` | expected growth of world demand 2024 -> 2035 under current policy: IEA WEO 2025 World, Stated Policies, for the node's primary series (`config/iea_pathways_map.yml`); for the mineral Extraction and Refining nodes the IEA Critical Minerals Outlook Stated Policies key-mineral demand of the technology (2025 -> 2035). Recovery (and Geothermal Refining), with no series of their own, take the technology's deployment series as a proxy (`io_growth_basis = proxy_deployment`). Percentile across the 55 producing nodes. | no: technology context |
+| `io_investment_momentum` -> `_pct` | global manufacturing investment momentum: log change of world capex, 2021-22 to 2024-25 (Clean Investment Monitor), observed for ten clean-tech manufacturing nodes and ranked among them; weight 0.25 in the node prize where observed (demand growth is the prize, the capex trend corroborates it) | no |
+| `io_node_prize` | (1 - w) x growth pct + w x momentum pct where momentum is observed, else the growth pct; capped at 0.33 where the world market is declining (and at 0.5 for an oversupplied node, from a shippable source only: none is staged, BNEF overcapacity never ships) | no |
+| `io_home_market` | national expected growth of domestic deployment (WEO 2025 single-country Stated Policies, Ember targets and approved plans, Ember / GEVO observed additions; `home_market_tbl.rds`, scripts/95); national basis only, regional values never scored | yes |
+| `industrial_opportunity` | the node prize, **lifted** to mean(node prize, home market) where the national home market is above it (`home_market_mode: lift`, the user's "lifted by national home-market growth"): a fast-growing home market adds to the prize; a small one does not take a world-market prize away from an export-oriented producer. A declining world market stays capped. | through the home market only |
+| `io_maturity` | IEA Clean Technology Guide TRL 2025 and the curated maturity: shown, never scored; an emerging node that lands on Watch carries the `option_value` reason | no |
+
+Removed (spec IV): every capability variable of the legacy EO (market share, RCA, export size,
+production size and growth, operating capacity, annual investment, reserves, LCOE), every need variable
+(world HHI, import dependence, risky suppliers) and the country factor cost (Input Cost Index, 25% of
+legacy EO weight and its main within-cell driver). Feasibility, the investment pipeline, adjacency,
+curated learning and input cost are not in the prize: they are the **credible-pathway test** for Catch Up.
+The old market-outlook list typed in the config is replaced by data (`sp_io_tech_outlook()`: the outlook
+of the technology's deployment series, with documented overrides in
+`decision_framework.industrial_opportunity.market_outlook_override`, none in use); the engine's catch-up
+diagnostic still reads it.
+
+High prize: `industrial_opportunity >= prize_threshold` (0.6). Distribution and sensitivity:
+`decision_review.md` (2026-10-29: median 0.54, 4,734 of 12,045 producing cells at or above 0.6). The legacy
+EO-based column is `legacy_eo_opportunity` (and `legacy_eo_opportunity_pct`); it is never read by the
+choice.
+
+Validation (spec XXI.2, `opportunity_validation_*.csv`): Spearman with Competitive Position 0.09 pooled and
+0.36 median within the 37 nodes where the home market varies the prize; with supply-chain need 0.04 /
+0.13; world demand growth carries 82% of the prize, the capex trend 4%, the home market 14%. The prize is
+not a disguised capability score: within a node only the home market moves it, and large home markets
+are partly large producers (hence 0.36).
+
+Known limitation: the manufacturing nodes use WEO capacity (a stock), the mineral nodes annual mineral
+demand (a flow). Where annual additions plateau while the installed base keeps growing (solar), the
+manufacturing prize is an upper bound and the mineral prize low (Solar Refining 0.20 vs Solar Components
+0.85). Next refinement: WEO capacity additions for the manufacturing nodes.
+
+## 3. Position: Competitive Position
+
+How strong is this country today in this node? Demonstrated capability only (spec III). The choice reads
+it among the node's **contenders** (`cp_contender_pct`): the Competitive Position score placed among the
+economies holding at least 0.5% of world supply of the node. With fewer than five contenders the
+cross-country percentile stands in (`cp_contender_basis = few_contenders`), but a high position still
+requires the country to be a contender: a non-producer cannot preserve a mining node on its ore
+re-exports. Where no supply share is measured at all (Recovery, Deployment), the cross-country percentile
+alone is used (`all_countries`). **High Competitive Position** (user decision 2026-10-29) = the top
+quarter of contenders (`cp_contender_pct >= 0.75`), being a contender, and the posture engine's capability
+lower bound (`t3_capability_lo` moderate or strong: an established world-share position, a foothold in
+one of the country's stronger cells, or transferable learning on a domestic base).
 
 ### Evidence specificity
 
@@ -165,8 +291,10 @@ USD 200bn). Pure code: `R/strategic_position/trade_benchmark.R`, `trade_momentum
   structural alone otherwise (`cp_export_position_structural` keeps the structural value;
   `trade_momentum_weight` says which). Sensitivity at 10 / 15 / 20%:
   `trade_momentum_weight_sensitivity.csv` (rank correlations, movers above 5 and 10 percentile points).
-  The posture does not read Competitive Position (Secure reads supply shares, the quadrant reads need
-  and opportunity), so momentum moves postures only through the quadrant's consistency flags.
+  Competitive Position now decides the response (the contenders' top quarter preserves), so the
+  sensitivity file re-runs the canonical choice at each weight on the stored need, prize, pathway and
+  floor: dropping momentum (weight 0) changes 19 choices and 5 review flags; 0.10 changes 8 and 0.20
+  changes 14 (2026-10-29).
 
 Fields: `trade_benchmark_period`, `trade_benchmark_source`, `trade_benchmark_share`,
 `trade_benchmark_rca`, `trade_benchmark_exports`, `trade_momentum_period`,
@@ -174,81 +302,85 @@ Fields: `trade_benchmark_period`, `trade_benchmark_source`, `trade_benchmark_sha
 no_monthly_data, incomplete_coverage, small_base, hs_break, reporter_mismatch, thin_cell,
 outside_universe), `trade_momentum_coverage`, `trade_momentum_raw`, `trade_momentum_score`.
 
-### Strategic Need
+## 4. Choice
 
-How exposed is the country if supply of this cell is disrupted? Families, each the mean of its
-measures' within-cell percentiles (higher = more need):
+`R/strategic_position/decision_engine.R::sp_decision_choice()`, after the posture engine, supply-chain
+need, the prize, the contender percentile, the pathway test and deployment need. Thresholds are config
+(`decision_framework`): need 0.67, prize 0.6, Competitive Position 0.75 among contenders, deployment need
+0.6, borderline band 0.05.
 
-- `import_dependence`: net imports of the stage basket / GDP; fossil-fuel self-sufficiency;
-- `supplier_concentration`: HHI of the country's own import suppliers;
-- `risky_supplier_exposure`: import share from China (with Hong Kong and Macao) and from
-  opposite-bloc partners (`geo_alignment == 0`).
+**Step 1, Secure override.** If the engine finds an acute vulnerability (Test 1 consequence AND one of the
+three routes below), the node is **Secure** whatever its need, prize or position, with its
+`security_rationale` (operational_control / coercive_chokepoint / systemic_resilience), `delivery_mode`
+and mitigation (the policy design's build text). Secure is a rule-based override, not a high-need label:
+163 of the 2,326 high-need producing cells (7%) are Secure (174 Secure cells in all); 151 on systemic resilience, 18 on a coercive
+chokepoint, 5 on operational control. Secure does not mean reshoring: delivery follows trusted supply
+(72 allied, 42 diversified global, 60 mixed).
 
-Import exposure comes from the reconciled exporter -> importer flows of scripts/15 (last trade
-year). Concentration and risky-supplier measures are 0 below USD 1m of imports; a cell with fewer
-than 5 importers above that is thin. Entrepots and ship registries (HKG, MAC, MHL, LBR, PAN) are not
-ranked and do not enter others' percentiles. A nonaligned importer's opposite-bloc share is NA (it is
-0 by construction), so its risky family rests on the China share. Deployment takes the technology's
-Assembly need (proxy) and, for coal, gas and oil, Extraction fuel import dependence (shared). No
-world constant and nothing from Competitive Position enters.
+**Step 2, Deployment & Use.** Decided on `deployment_need` alone: missing -> not assessed; at or above 0.6
+-> **Deploy . Accelerate** (the energy system needs more of it; this says nothing about where the
+equipment is made); below -> **Deploy . Watch** (no major acceleration required). A Deployment node is
+never Partner, Preserve or Catch Up: those are supply-chain answers. 0.6 on deployment need (a mean of up
+to three family percentiles, narrower than a percentile) takes about the top 30% of assessed Deployment
+cells, the selectivity of supply-chain need at 0.67 (a percentile); 0.67 took 22%.
 
-### Revealed Policy Priority
+**Step 3, producing stages** (Extraction, Refining, Components, Assembly, Recovery). Need or prize missing
+-> **not assessed**. Otherwise, with high need = `supply_chain_need >= 0.67`, high prize =
+`industrial_opportunity >= 0.6` and high position as defined under Position:
 
-Where is the government concentrating observable intervention, relative to its own other cells?
+| | high Competitive Position | otherwise, credible pathway | otherwise, high need | otherwise |
+|---|---|---|---|---|
+| **high prize** | Compete . **Preserve** | Compete . **Catch Up** | Compete . **Partner** | Deploy . **Watch** (keep R&D options) |
+| **low prize, high need** | Compete . **Preserve**, flagged `review_strong_position_low_prize` | | Compete . **Partner** | |
+| **low prize, low need** | Deploy . **Watch** | | | Deploy . **Watch** |
 
-**IEA PAMS.** Each policy x country is classed by what it names: tech- and stage-specific records
-are attributed 1/k to the k cells they name (exact when k = 1, split otherwise); tech-specific but
-stage-cross-cutting records are tech_wide, tech-cross-cutting records shared, and both cross_cutting:
-these are reported, not ranked. Own policy = national, subnational, local and regional records plus
-international records filed under one country. Stock = in force; flow = adopted in the trailing
-window ending at the extract's as-of year (2025).
+- Preserve applies whether need is high or low. A strong position with high need and a low prize is not
+  mechanically Partner (spec VIII): it is Preserve with a review flag (design D2; 16 cells), so strategic
+  redundancy, Secure or a recalibration of the prize can be considered by a reader. A top-quarter score
+  that fails the capability floor gives Catch Up or Partner with `review_top_quarter_below_floor`
+  (31 cells): a leading score in a fragmented node, for review rather than silent override.
+- **Credible pathway** (design D3, `pathway.R`): `pathway_credible` yes when ANY of: Atlas product-space
+  feasibility of the node basket in the top quarter of countries; Clean Investment Monitor pipeline
+  capacity in the node; an established adjacent stage (adjacent world share >= 5%, or that stage among the
+  country's stronger cells, within-country CP percentile >= 0.6); curated learning inputs on a domestic
+  base (engine Test 3 learning lower bound moderate or strong); an input-cost advantage (Input Cost Index
+  in the cheapest quarter). Extraction also needs a resource base. `no` = evidence observed, none fires;
+  `unknown` = nothing observed, read as not credible with lower confidence. `pathway_basis` names the legs
+  that fired. Of the assessed high-prize producing cells without a high position (not Secure), 62% have a
+  credible pathway (Catch Up), 13% go Partner and 25% Watch: not every prize is forced into Catch Up.
+- **Watch reasons** (`watch_reasons`): low_need, low_prize, ample_diversified_supply (no concentration
+  watch), weak_domestic_case (a prize without a top-quarter position or a pathway), option_value (an
+  emerging node), low_deployment_need. Watch is a positive conclusion: domestic industrial priority low.
 
-**NIPO, simplified.** From the raw GTA extract, mapped directly to the six-stage HS6 master (never via
-the three-stage mapping, never expanded):
+**Outputs** (`strategic_position_tbl`): `strategic_choice` (the six verbs or not_assessed),
+`strategic_posture` (secure / compete / deploy / not_assessed), `compete_mode`, `deploy_mode`,
+`posture_variant` (secure_* from the engine; compete_preserve / compete_catch_up / compete_partner; deploy,
+deploy_diversify, deploy_floor), `security_rationale`, `delivery_mode` (domestic / allied /
+diversified_global / mixed: Preserve domestic, Catch Up domestic or mixed, Partner allied where trusted
+partners hold 30% of world supply else diversified global, Deploy diversified global or allied), `need_type`,
+`need_high`, `prize_high`, `cp_high`, `decision_step` (secure_override / deployment_need / triage /
+not_assessed), `decision_trace` (compact JSON array of `{step, test, value, threshold, result}`: secure ->
+need -> prize -> position -> pathway -> choice; the engine's full test trace is `engine_trace`),
+`posture_confidence` (high / moderate / low: one point per borderline input, a still-possible Secure, an
+unknown pathway deciding the node, weak capability evidence, a consistency flag, fewer than two observed
+need families; not assessed is low; Secure keeps the engine's confidence), `decision_borderline` (the
+inputs within 0.05 of their threshold), `choice_possible` and `posture_possible` (the choices and
+postures the borderline inputs and an unknown pathway allow), `pivotal_inputs`, `consistency_flag`,
+`watch_reasons`, `choice_reason` (one plain sentence from the stored inputs). The engine's own Compete
+reading is kept as `engine_posture`, `engine_variant` and the `t3`-`t5` columns; the 2026-10-28 quadrant as
+`legacy_quadrant`, `legacy_quadrant_posture`, `legacy_quadrant_mode`, `legacy_quadrant_flag`,
+`legacy_quadrant_borderline`.
 
-- one row per GTA intervention; EU-level acts collapse to `EUU` and are reported to members
-  (`eu_supranational_*`), never added to their own counts; sanctions and liberalising measures are
-  excluded and counted;
-- `config/nipo_instrument_posture.csv` maps each of the GTA intervention types to support and/or
-  protection, with a strength class (1 ordinary, 2 major or direct) used only in a sensitivity;
-- a measure is **attributed** when it is narrow: at least 50% of its HS6 codes in the basket, or at
-  most 20 codes with at least 10% in the basket. Its share in a cell is the share of its basket codes
-  in the cell (a code shared by k cells counts 1/k), so shares sum to 1 per measure and summing
-  across stages never counts a measure twice. Broad measures are **tech_wide** (one technology) or
-  **cross_cutting**; measures with no basket code are **unmapped**. Only attributed measures enter
-  cells. NIPO has no Deployment, Geothermal or Green Hydrogen evidence (no basket): those cells are
-  no data, not zero;
-- **stock**: implemented on or before the as-of date and not removed; grants, public finance, export
-  support and state aid with no removal date count only for 5 years after implementation (GTA gives
-  one-off measures no end date). **Flow**: announced in the trailing 1, 3 or 5 years;
-- separately reported, never multiplied together: measures in stock, distinct instruments, new
-  measures, identified subsidy and trade covered (USD), fiscal and trade data coverage, and the
-  attributed / tech-wide / cross-cutting / unmapped shares.
+Layers (`strategic_posture_layers_tbl`): a sensitive layer keeps its own Secure; otherwise it follows its
+cell's choice (it has no Need, Prize or Position of its own).
 
-The legacy Domestic Intervention Score (`nipo_policy_index.R`) is untouched and remains a research
-output; it is no longer the basis of policy priority.
+### The Secure override in detail (the posture engine)
 
-**Priority.** For source s and country i: attention `a = x_isc / sum_c x_isc` over the source's
-observable cells; baseline `b_c` = mean attention in cell c over ranked countries; smoothed relative
-attention `rca = (a + l) / (b + l)`, `l = 0.5 / n_cells` (a cell with no record stays lowest). The
-priority is the within-country percentile of `rca` (countries need records in 3 cells). Columns:
-`policy_support_priority` and `policy_protection_priority` (NIPO), `nipo_priority`, `pams_priority`,
-`policy_priority_score` (mean of the available NIPO and PAMS priorities; `policy_priority_sources`
-names them) and `policy_priority_percentile`; `policy_momentum` is the same on 3-year flow (1 and 5
-years as sensitivities).
+The Secure override is the Yards & Fences decision engine (`posture_engine.R`, ported from the Draw the
+Fence tool) applied to every node and sensitive layer. Its Compete tests (3-5) no longer decide anything;
+they are diagnostics and supply the capability floor and the learning leg of the pathway test.
 
-### Competitive-policy alignment (a diagnostic of the posture)
-
-`competitive_policy_alignment` crosses the within-country Competitive Position percentile with the
-within-country policy priority at 0.5: aligned_strength, latent_advantage, policy_led_bet,
-low_priority (insufficient_data without both). Position is compared within the country because
-across ~218 economies 94% of a large economy's cells sit above the world median.
-`priority_gap` = within-country position percentile minus policy priority percentile over the cells
-with both (positive: capability ahead of attention). It explains a posture; it does not set one.
-
-## Step 2. Strategic Posture
-
-### Nodes and sensitive layers
+#### Nodes and sensitive layers
 
 The node is the cell (`layer_id = "stage"`). Where six stages are too coarse, the cell carries
 sensitive layers: control software and firmware, fuels, critical materials, specific hardware
@@ -264,7 +396,7 @@ describe the node, not a country; `Unknown` is used wherever the public record d
 value. Country rows hold only documented country facts (oil stock cover, a few gas and nuclear
 inventories).
 
-### Supply structure
+#### Supply structure
 
 From `major_supplier_shares_tbl` and `geo_alignment_tbl`, per country x cell (and mineral): the
 country's world share on the cell's primary measure (Atlas exports; IEA refining or mining shares for
@@ -275,7 +407,7 @@ partners, plus China (with Hong Kong and Macao) and Russia unless i shares their
 country trusts every partner that is not coercive to it. On the import side: the share of the
 country's own imports from coercive suppliers.
 
-### The five tests (tri-state, unknowns bracketed)
+#### The five tests (tri-state, unknowns bracketed)
 
 1. **Critical consequence**: the node's consequence is high or severe AND the country depends on it
    at scale: imports of at least USD 1m and 0.05% of GDP, at least 0.5% of world supply produced at
@@ -341,7 +473,7 @@ strategies with allied supply; Deploy is diversified_global, or allied for a div
 allied supply. A curated coercive share (HALEU: Russia 90%) applies only to countries for which the
 named supplier is coercive.
 
-### Three Secure routes
+#### Three Secure routes
 
 Test 2 is met through one of three routes, each allowed node by node in an explicit rule table,
 `config/security_route_rules.csv` (technology, six_stage, subnode, critical_function,
@@ -371,40 +503,9 @@ end uses, targeted on a chokepoint input, none for resilience (restricting impor
 shortfall it guards against; the build is reserves, long-lead procurement, spares and trusted
 capacity agreements). Secure does not mean reshoring: delivery follows where trusted supply is.
 
-### The decision quadrant inside the medium yard
+### Allied strategy: partner recommendations and the allied division of labour
 
-After the Secure override, at the producing stages, the posture comes from two axes (no new score):
-
-| | Industrial Opportunity high | Industrial Opportunity low |
-|---|---|---|
-| **Strategic Need high** | Compete, `catch_up` | Compete, `partner` |
-| **Strategic Need low** | Compete, `preserve` | Deploy (`decision_quadrant = watch`) |
-
-- Strategic Need: `strategic_need_percentile` (across countries within the cell).
-- Industrial Opportunity: the EO index placed among the node's **contenders**, the economies holding
-  at least 0.5% of world supply in the node (`opportunity_percentile`; with fewer than five contenders,
-  among the peers: coalition members and economies with GDP of at least USD 200bn). The EO index is
-  compressed (median 0.48, 90th percentile 0.58), so no absolute threshold separates opportunity, and
-  its category mix differs by technology, so a percentile pooled across technologies is not
-  comparable. Coal (a declining world market) is capped below the thresholds. Never within a country.
-- Thresholds 0.67 on both axes (`strategic_posture.decision_quadrant`), tested at 0.60 / 0.67 / 0.70
-  (`quadrant_threshold_sensitivity.csv`, `posture_threshold_sensitivity.csv`). A node within 0.05 of a
-  threshold is `quadrant_borderline`, loses confidence, and its `posture_possible` and
-  `pivotal_inputs` include the neighbouring quadrant.
-- Deployment keeps the engine's posture (Deploy unless a control layer is Secure); its quadrant is
-  reported for information. A node without either axis is `insufficient_data` and Deploy.
-- Competitive Position is a consistency check, never an override (`quadrant_consistency_flag`):
-  catch_up where the country is already in the top 10% (`catch_up_already_leading`), preserve below
-  the bottom quarter or with under 0.5% of world supply (`preserve_without_capability`), partner in the
-  top quarter (`partner_despite_capability`).
-- The engine's own Compete reading (Tests 3-5) is kept as `engine_posture` / `engine_variant` and the
-  `t3`-`t5` columns, as a diagnostic.
-- Delivery: preserve domestic; catch_up domestic or mixed; partner allied where partners hold 30% of
-  world supply, else diversified_global.
-
-### Partner nodes and the allied division of labour
-
-`R/strategic_position/partner_recs.R`. For each Partner node: up to three trusted partners
+`R/strategic_position/partner_recs.R`. For each Compete . Partner node, and each Secure node whose mitigation relies on trusted foreign capacity (delivery allied, mixed or diversified_global; `partner_rec_for` = partner / secure): up to three trusted partners
 (`recommended_partner_1..3`, each with `_capability`, `_cp`, `_relationship`, `_diversification`),
 `partner_n_credible`, `partner_gap` (no trusted supplier with at least 2% of supply),
 `partner_capability_source`, `partner_evidence_quality` and `partner_reason`.
@@ -425,56 +526,212 @@ After the Secure override, at the producing stages, the posture comes from two a
   weak_evidence (no AIB node, or under half of its weight high-confidence), else none; with the Partner
   and Secure demand on the node.
 
-Output columns: `strategic_posture`, `posture_variant`, `posture_confidence`, `evidence_completeness`,
-`posture_possible`, `pivotal_inputs`, `posture_primary_rationale` (security, capability, openness),
-`posture_secondary_rationale`, `compete_strategy`, `delivery_mode`, `t1_consequence` ...
-`t5_proportionality` (with path, coercion, position, learning and leap sub-flags), `decision_trace`
-(JSON: each test's state, marginal flag, detail and inputs with provenance data / assessment /
-unknown), and `sensitive_layers_secure`.
+AIB status (spec XVI.1): `partner_aib_status` covered | gap with `partner_gap_reasons`: no_trusted_supplier,
+single_credible_supplier, weak_evidence, insufficient_allied_capacity (credible trusted partners together
+below 30% of world supply, `partner_trusted_capacity`), excessive_concentration (a coercive supplier with
+50% or more of world supply). A gap is no trusted supplier, a single credible one, or insufficient allied
+capacity; weak evidence and excessive concentration are reported reasons, not gaps by themselves. A
+genuine "no credible allied solution yet" is reported, never forced (2026-10-29: Partner 858 covered /
+734 gap; Secure 56 / 118). The division matrix adds `allied_world_share`, `coercive_world_share` and the
+same two capacity reasons after the original four in `aib_gaps` (the primary `aib_gap` is unchanged where
+one of those applies), with `secure_foreign_demand` and `partner_aib_gaps` per node.
 
-## Step 3. Policy Design
+## 5. Policy alignment
 
-`config/posture_policy_design.csv`, one row per variant: fence (level, scope, instruments), gate
-(level, instruments), build (instruments), the purposes the variant needs (from the Draw the Fence
-`needsFor()`), success metrics (`successMetrics()`), benchmark, exit condition and review interval.
-`config/posture_delivery_modes.csv` adds a build and gate note per delivery mode and posture (allied
-Secure: build trusted capacity with partners through compacts, offtake, co-investment and shared
-stockpiles, not at home).
+Does observed policy match the choice? Downstream only (`sp_policy_alignment()`,
+`sp_policy_alignment_flag()`, `sp_policy_alignment_confidence()` in `posture_engine.R`; config
+`policy_alignment`). Rules, in order (design D5, spec X):
+
+| choice | observed policy | `policy_alignment` | flag |
+|---|---|---|---|
+| not assessed, or no policy priority | | insufficient_data | |
+| Partner | NIPO protection / localisation in the top third | misaligned (wrong treatment: autarky where trusted partners are the answer) | partner_autarkic |
+| Partner | otherwise | aligned (domestic records cannot show partnership instruments) | |
+| Secure, Preserve, Catch Up | NIPO and PAMS on opposite sides of 0.5 at least 0.5 apart, or a fence without a build (protection top third, support bottom third) | mixed | sources_disagree, fence_without_build |
+| Secure | policy priority below 0.5 | under_prioritized | |
+| Preserve, Catch Up | capability-building support (the NIPO support stock where measured, else policy priority) below 0.5 | under_prioritized | |
+| Deploy . Accelerate | deployment-policy priority (PAMS, the only deployment source) below 0.5 | deployment_gap (under-response) | weak_deployment_policy |
+| Deploy . Watch | protection / localisation in the top third (NIPO; at Deployment the technology's Assembly-equipment protection, i.e. local-content rules) | over_prioritized | watch_protection, watch_localisation_deployment |
+| Deploy . Watch | no protection split: total attention in the top third with an attributed record (producing stages) | over_prioritized, low confidence | watch_attention |
+| Deploy . Watch | the over test fires but other choices are still possible | insufficient_data | |
+| otherwise | | aligned (restraint is success for Watch) | |
+
+`policy_alignment_confidence`: high with both sources ranked, medium with one, low with none; one level
+lower where the rule needed the NIPO support / protection split and it is not measured; at most medium at
+Deployment (PAMS only, by construction); insufficient_data is low. No overall policy score is computed.
+2026-10-29: aligned 5,101; under_prioritized 947 (Catch Up 813, Secure 92, Preserve 42); deployment_gap
+182; over_prioritized 475 (all Watch); misaligned 68 (Partner); mixed 206; insufficient_data 7,145
+(5,295 of them not assessed); 994 Watch cells carry top-third policy intensity
+(`watch_high_policy_intensity.csv`).
+
+### Revealed Policy Priority
+
+Where is the government concentrating observable intervention, relative to its own other cells?
+
+**IEA PAMS.** Each policy x country is classed by what it names: tech- and stage-specific records
+are attributed 1/k to the k cells they name (exact when k = 1, split otherwise); tech-specific but
+stage-cross-cutting records are tech_wide, tech-cross-cutting records shared, and both cross_cutting:
+these are reported, not ranked. Own policy = national, subnational, local and regional records plus
+international records filed under one country. Stock = in force; flow = adopted in the trailing
+window ending at the extract's as-of year (2025).
+
+**NIPO, simplified.** From the raw GTA extract, mapped directly to the six-stage HS6 master (never via
+the three-stage mapping, never expanded):
+
+- one row per GTA intervention; EU-level acts collapse to `EUU` and are reported to members
+  (`eu_supranational_*`), never added to their own counts; sanctions and liberalising measures are
+  excluded and counted;
+- `config/nipo_instrument_posture.csv` maps each of the GTA intervention types to support and/or
+  protection, with a strength class (1 ordinary, 2 major or direct) used only in a sensitivity;
+- a measure is **attributed** when it is narrow: at least 50% of its HS6 codes in the basket, or at
+  most 20 codes with at least 10% in the basket. Its share in a cell is the share of its basket codes
+  in the cell (a code shared by k cells counts 1/k), so shares sum to 1 per measure and summing
+  across stages never counts a measure twice. Broad measures are **tech_wide** (one technology) or
+  **cross_cutting**; measures with no basket code are **unmapped**. Only attributed measures enter
+  cells. NIPO has no Deployment, Geothermal or Green Hydrogen evidence (no basket): those cells are
+  no data, not zero;
+- **stock**: implemented on or before the as-of date and not removed; grants, public finance, export
+  support and state aid with no removal date count only for 5 years after implementation (GTA gives
+  one-off measures no end date). **Flow**: announced in the trailing 1, 3 or 5 years;
+- separately reported, never multiplied together: measures in stock, distinct instruments, new
+  measures, identified subsidy and trade covered (USD), fiscal and trade data coverage, and the
+  attributed / tech-wide / cross-cutting / unmapped shares.
+
+The legacy Domestic Intervention Score (`nipo_policy_index.R`) is untouched and remains a research
+output; it is no longer the basis of policy priority.
+
+**Priority.** For source s and country i: attention `a = x_isc / sum_c x_isc` over the source's
+observable cells; baseline `b_c` = mean attention in cell c over ranked countries; smoothed relative
+attention `rca = (a + l) / (b + l)`, `l = 0.5 / n_cells` (a cell with no record stays lowest). The
+priority is the within-country percentile of `rca` (countries need records in 3 cells). Columns:
+`policy_support_priority` and `policy_protection_priority` (NIPO), `nipo_priority`, `pams_priority`,
+`policy_priority_score` (mean of the available NIPO and PAMS priorities; `policy_priority_sources`
+names them) and `policy_priority_percentile`; `policy_momentum` is the same on 3-year flow (1 and 5
+years as sensitivities).
+
+### Competitive-policy alignment (a diagnostic of the posture)
+
+`competitive_policy_alignment` crosses the within-country Competitive Position percentile with the
+within-country policy priority at 0.5: aligned_strength, latent_advantage, policy_led_bet,
+low_priority (insufficient_data without both). Position is compared within the country because
+across ~218 economies 94% of a large economy's cells sit above the world median.
+`priority_gap` = within-country position percentile minus policy priority percentile over the cells
+with both (positive: capability ahead of attention). It explains a posture; it does not set one.
+
+## 6. Validation (spec Part XXI)
+
+`scripts/27` writes `diagnostics/strategic_position/decision_review.md` (all six checks), `choice_cards.md`
+(JPN, USA, DEU, KOR, IND, BRA) and `legacy_osi_corners_vs_choice_*.csv`; `scripts/26` writes the tables
+behind them (`choice_by_country.csv`, `choice_threshold_sensitivity.csv`, `consistency_before_after.csv`,
+`consistency_cells.csv`, `legacy_quadrant_vs_choice.csv`, `opportunity_validation_*.csv`,
+`io_node_prize.csv`, `pathway_by_stage.csv`, `secure_selectivity.csv`, `deployment_review.csv`,
+`manufacturing_vs_deployment.csv`, `watch_high_policy_intensity.csv`, `choice_policy_alignment.csv`).
+
+2026-10-29, 14,124 classified cells: Secure 174, Preserve 115, Catch Up 1,631, Partner 1,592, Accelerate 514,
+Watch 4,803 (1,169 of them at Deployment), not assessed 5,295 (4,624 producing cells without a measured
+supply-chain need, mostly Recovery and Extraction thin cells; 671 Deployment cells without deployment
+need).
+
+Position-choice consistency, before (the 2026-10-28 need x EO quadrant) -> after:
+
+| contradiction | before | after |
+|---|---|---|
+| Partner with Competitive Position in the contenders' top quarter (contenders only) | 17 | 2 (both below the capability floor, flagged) |
+| Partner with cross-country CP >= 0.75 | 363 of 1,456 (25%) | 361 of 1,592 (23%) |
+| Catch Up with 10% or more of world supply | 8 | 5 |
+| Catch Up with CP in the contenders' top decile (contenders only) | 14 | 13 (all below the capability floor, flagged) |
+| Catch Up with cross-country CP >= 0.9 | 49 of 117 (42%) | 198 of 1,631 (12%) |
+| Preserve without capability (cross-country CP < 0.25 or < 0.5% of world supply) | 22 | 0 |
+| Preserve below the contenders' median | 36 | 0 |
+
+By construction Preserve now needs a top-quarter position among contenders, so Preserve without capability
+is gone and Partner despite a top-quarter position falls from 17 to 2. The cross-country counts did not fall
+in number because far more cells are now assessed and decided (Catch Up 117 -> 1,631): as rates they fall
+from 25% to 23% (Partner) and from 42% to 12% (Catch Up). A cross-country top-decile CP is not a leading position in a node
+with 30 or more contenders. The remaining contender-level cases fail the capability floor (a 1-3% world
+share without a specialised foothold or learning base) and carry `review_top_quarter_below_floor`.
+
+## 7. Policy design
+
+`config/posture_policy_design.csv`, one row per variant: fence (level, scope, instruments), gate (level,
+instruments), build (instruments), the purposes the variant needs, success metrics, benchmark, exit
+condition and review interval. `config/posture_delivery_modes.csv` adds a build and gate note per delivery
+mode and posture (allied Secure: build trusted capacity with partners through compacts, offtake,
+co-investment and shared stockpiles, not at home).
 
 - **Secure**: a fence targeted at the vulnerable node (trusted-source and cybersecurity requirements,
   export and investment controls, adversary-source restrictions); a selective gate open to allied
   technology, investment, equipment and alternative inputs; a build that repairs the vulnerability
   (domestic or allied capacity, stockpiles, redundancy, surge, supplier qualification, trusted control
-  architecture). The goal is mitigation, not maximum localization.
-- **Compete**: a calibrated, temporary fence; an open gate that keeps competitive pressure and
-  learning; a build of production support, finance, infrastructure, workforce, R&D, clusters and
-  supplier development, with benchmarks, review dates and sunset conditions.
-- **Deploy**: open unless a specific problem justifies intervention: a low fence (genuine trade
-  remedies, forced-labour restrictions, basic security standards), a wide-open gate, and a build that
-  enables deployment (infrastructure, permitting, interoperability, procurement, transparency).
+  architecture). The goal is mitigation, not maximum localization. The Explorer shows the first sentence
+  of the build text as the node's mitigation.
+- **Compete** (Preserve, Catch Up, Partner): a calibrated, temporary fence; an open gate that keeps
+  competitive pressure and learning; a build of production support, finance, infrastructure, workforce,
+  R&D, clusters and supplier development, with benchmarks, review dates and sunset conditions; Partner
+  builds with trusted partners.
+- **Deploy** (Accelerate, Watch): open unless a specific problem justifies intervention: a low fence, a
+  wide-open gate, and a build that enables deployment (infrastructure, permitting, interoperability,
+  procurement, transparency).
 
-## Step 4. Evaluation
-
-`policy_alignment` compares the recommendation with Revealed Policy Priority:
-
-- Secure or Compete with policy priority >= 0.5: aligned; below: under_prioritized;
-- Deploy with policy priority >= 0.67 and an attributed record: over_prioritized; otherwise aligned
-  (restraint is success); at Deployment, deployment support is what Deploy asks for (aligned);
-- mixed when NIPO and PAMS sit on opposite sides of 0.5 at least 0.5 apart, or a Compete node has
-  top-third protection with bottom-third support (a fence without a build);
-- insufficient_data without policy data, or where Deploy is not settled (the unknowns still allow
-  Secure or Compete: an unproven case is not a weak one).
-
-Benchmarks and exit conditions (Step 3 table) say when to reclassify: a Secure node moves to Compete
-or Deploy when a prolonged cutoff could be survived; Compete support sunsets unless benchmarks are
-met; Deploy is judged on delivered cost, diversified supply, deployment pace and adequate resilience,
-never on domestic production share, and is re-tested if concentration rises or a control layer is
-identified.
+Benchmarks and exit conditions say when to reclassify: a Secure node moves to Compete or Deploy when a
+prolonged cutoff could be survived; Compete support sunsets unless benchmarks are met; Deploy is judged
+on delivered cost, diversified supply, deployment pace and adequate resilience, never on domestic
+production share, and is re-tested if concentration rises or a control layer is identified.
 
 ## Decision cards
 
-`sp_card_cases()` picks one node for each of: Secure, Compete, Deploy, under-prioritized Secure,
-under-supported Compete, over-prioritized Deploy, and high need with low domestic position delivered
-with allies (which may be a sensitive layer); review countries, confidence, settled postures and
-evidence quality come first. `sp_decision_cards_md()` renders them with the tests, alignment, policy
-design and evaluation.
+`choice_cards.md` (scripts/27, `sp_choice_cards_md()`): per review country, the six-verb counts and up to
+three clear examples of each choice with the engine's reason, rationale, delivery, partner, AIB status,
+policy alignment and confidence. `decision_cards.md` keeps the engine's test-by-test cards (`sp_card_cases()`
+picks one node for each of: Secure, Compete, Deploy, under-prioritized Secure, under-supported Compete,
+over-prioritized Deploy, and high need with low domestic position delivered with allies), read from
+`engine_trace`.
+
+## Legacy OSI framework
+
+The OSI paper framework scored every country x technology x stage on two composite indices and read the
+result as a quadrant:
+
+- **Energy Security Index (ES)**: trade, production, reserves, consumption, energy prices and imports,
+  concentration and dependence, combined by category weights (`config/weights.yml`);
+- **Economic Opportunity Index (EO)**: trade (market share, RCA, export size, feasibility, world HHI),
+  production size and growth, investment (annual investment, operating capacity, pipeline, momentum),
+  technology demand (world demand, regional demand, BCG addressable market, overcapacity), technological
+  readiness (TRL), energy prices, input cost, foreign dependency, consumption and energy access;
+- the **corners** of each country's sectors, split at the country's own median sector (Country fact
+  sheets, `legacy_corner`): Grow (high EO, high ES), Upgrade (high EO, low ES), Exposed (low EO, low ES),
+  Stable (low EO, high ES);
+- the **Strategic Index (SI)**: EO, a security need term, policy, a supply-chain-stage weight and a
+  technology emissions weight; its top sectors were the "priority sectors".
+
+All are kept, unchanged and byte-stable, for replication: `index_outputs.rds` (`energy_security_index`,
+`economic_opportunity_index`, `strategic_index`), `strategic_index_legacy` and `legacy_eo_opportunity` in
+the strategic position table, the paper figures, and the Explorer's Evidence & Methodology -> Legacy OSI
+section and the Strategic views (labelled "Legacy OSI framework"). They are not a current recommendation.
+
+**Conceptual mapping.** Grow ~ Preserve, Upgrade ~ Catch Up, Exposed ~ Partner, Stable ~ Watch.
+
+**Why the results differ.** ES and EO each mix capability, vulnerability, production, trade, investment,
+demand, reserves, concentration and deployment. A Grow corner can be high on EO because the country is
+cheap (input cost) or already exports a lot (capability), and high on ES because it produces or holds
+reserves; the canonical framework separates those questions: need is only dependence on external supply
+(or, at Deployment, the system's need for more deployment), the prize is only the market, and position is
+only demonstrated capability. The corners are also relative to the country's own median sector, while the
+choice compares countries within a node. Against the 6,351 country x six-stage cells with a corner
+(2026-10-29): Grow -> Preserve 3%, Upgrade -> Catch Up 9%, Exposed -> Partner 24%, Stable -> Watch 41%
+(`legacy_osi_corners_vs_choice_pairs.csv`). The disagreements come mostly from the cleaned prize (1,895
+cells: a legacy EO high on input cost or capability, or low where world demand is growing), cells not
+assessed now (1,368), Deployment decided on its own need (1,053), the cleaned need (590), Competitive
+Position (200) and Secure (143).
+
+### The need x EO quadrant (the posture rule of 2026-10-28)
+
+Between 2026-10-27 and 2026-10-29 the producing-stage posture came from Strategic Need x the legacy EO
+placed among the node's contenders (`decision_quadrant.R`, kept as `legacy_quadrant_*` columns for
+comparison only): high need + high EO = Catch Up, high need + low EO = Partner, low need + high EO =
+Preserve, low need + low EO = Watch, either missing = insufficient data shown as Deploy; Deployment was
+always Deploy. Competitive Position was a consistency check only. It was replaced because Need x
+Opportunity alone assigned Preserve vs Catch Up (Preserve meant low need, not strong position), because
+within a node the legacy EO ranks countries mainly by input cost (median Spearman 0.77) and capability
+(0.57), and because 60% of producing cells were silently Deploy for lack of an EO value.
+`legacy_quadrant_vs_choice.csv` gives every transition with its driver.

@@ -9,16 +9,9 @@
 "allied_alternative_0.4",14124,0,0,0,0
 "allied_alternative_0.6",14124,0,0,0,0
 "acute_includes_moderate",14124,0.002690455961484,38,0,0
-"acute_severe_only",14124,0.00771736052109884,0,78,31
-"catch_up_market_0.5",14124,0,0,0,0
+"acute_severe_only",14124,0.00771736052109884,0,100,9
 "dual_use_imports_0.15",14124,0.000354007363353158,5,0,0
 "dual_use_imports_0.35",14124,0,0,0,0
-"resilience_alternatives_0.4",14124,0.0011328235627301,0,12,4
+"resilience_alternatives_0.4",14124,0.0011328235627301,0,15,1
 "resilience_alternatives_0.6",14124,0.0051685075049561,73,0,0
-"quadrant_need_0.60",14124,0.0208156329651657,0,294,0
-"quadrant_need_0.70",14124,0.00955819881053526,0,0,135
-"quadrant_opportunity_0.60",14124,0.00509770603228547,0,72,0
-"quadrant_opportunity_0.70",14124,0.00205324270744832,0,0,29
-"quadrant_both_0.60",14124,0.0252761257434155,0,357,0
-"quadrant_both_0.70",14124,0.0117530444633248,0,0,166
 "coercive_powers_only (world shares; import shares unchanged)",14124,0,0,0,0

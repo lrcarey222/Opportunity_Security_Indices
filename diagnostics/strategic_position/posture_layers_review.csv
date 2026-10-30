@@ -1,186 +1,186 @@
 "Country","tech","supply_chain","layer_id","layer_type","strategic_posture","posture_variant","posture_confidence","t1_consequence","t2_vulnerability","t2_path","coercive_top_iso3","coercive_top_share","coercive_import_share","delivery_mode","posture_possible","pivotal_inputs"
-"Australia","Batteries","Refining","bess-anode","material","compete","compete_preserve","low","no","yes","physical","CHN",0.944041592557121,0.511063452440118,"domestic","compete",
-"Australia","Batteries","Refining","bess-cathode","material","compete","compete_preserve","moderate","no","no","none","CHN",0.256563324568776,0.511063452440118,"domestic","compete",
-"Australia","Batteries","Refining","li-chemicals","material","compete","compete_preserve","moderate","no","yes","physical","CHN",0.736792600721116,0.511063452440118,"domestic","compete",
-"Australia","Batteries","Assembly","bess-cells","hardware","compete","compete_partner","low","no","no","none","CHN",0.52885932234819,0.648050472239005,"allied","compete|deploy","strategic_need_percentile"
+"Australia","Batteries","Refining","bess-anode","material","compete","compete_catch_up","high","no","yes","physical","CHN",0.944041592557121,0.511063452440118,"domestic","deploy",
+"Australia","Batteries","Refining","bess-cathode","material","compete","compete_catch_up","high","no","no","none","CHN",0.256563324568776,0.511063452440118,"domestic","deploy",
+"Australia","Batteries","Refining","li-chemicals","material","compete","compete_catch_up","high","no","yes","physical","CHN",0.736792600721116,0.511063452440118,"domestic","deploy",
+"Australia","Batteries","Assembly","bess-cells","hardware","compete","compete_partner","high","no","no","none","CHN",0.52885932234819,0.648050472239005,"allied","deploy",
 "Australia","Batteries","Assembly","bess-comms","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.52885932234819,0.648050472239005,"allied","secure",
 "Australia","Batteries","Assembly","bess-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.52885932234819,0.648050472239005,"allied","secure",
-"Australia","Batteries","Assembly","bess-enclosure","structure","compete","compete_partner","low","no","no","none","CHN",0.52885932234819,0.648050472239005,"allied","compete|deploy","strategic_need_percentile"
-"Australia","Electric Grid","Refining","goes","material","deploy","deploy","high","yes","no","none","RUS",0.0613514524442527,0.273104189761052,"diversified_global","deploy",
-"Australia","Electric Grid","Assembly","bess-pcs","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.228102596534784,0.491049776586083,"allied","deploy",
+"Australia","Batteries","Assembly","bess-enclosure","structure","compete","compete_partner","high","no","no","none","CHN",0.52885932234819,0.648050472239005,"allied","deploy",
+"Australia","Electric Grid","Refining","goes","material","deploy","deploy_diversify","high","yes","no","none","RUS",0.0613514524442527,0.273104189761052,"diversified_global","deploy",
+"Australia","Electric Grid","Assembly","bess-pcs","hardware","compete","compete_partner","moderate","no","no","none","CHN",0.228102596534784,0.491049776586083,"allied","deploy",
 "Australia","Electric Grid","Assembly","grid-ami","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.228102596534784,0.491049776586083,"allied","secure",
-"Australia","Electric Grid","Assembly","grid-cables","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.228102596534784,0.491049776586083,"allied","deploy",
+"Australia","Electric Grid","Assembly","grid-cables","hardware","compete","compete_partner","moderate","no","no","none","CHN",0.228102596534784,0.491049776586083,"allied","deploy",
 "Australia","Electric Grid","Assembly","grid-inverter-firmware","control","secure","secure_unclear","moderate","yes","yes","digital","CHN",0.228102596534784,0.491049776586083,"allied","secure",
 "Australia","Electric Grid","Assembly","grid-scada","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.228102596534784,0.491049776586083,"allied","secure",
-"Australia","Electric Grid","Assembly","grid-transformers","hardware","deploy","deploy_diversify","high","yes","no","none","CHN",0.228102596534784,0.491049776586083,"allied","deploy",
-"Australia","Electric Grid","Assembly","hvdc-control","control","deploy","deploy_diversify","moderate","yes","unknown","unknown","CHN",0.228102596534784,0.491049776586083,"allied","secure|deploy","remote_control"
-"Australia","Electric Vehicles","Components","ev-motors","hardware","compete","compete_partner","high","no","no","none","CHN",0.205429723173868,0.576083568982303,"allied","compete",
+"Australia","Electric Grid","Assembly","grid-transformers","hardware","compete","compete_partner","moderate","yes","no","none","CHN",0.228102596534784,0.491049776586083,"allied","deploy",
+"Australia","Electric Grid","Assembly","hvdc-control","control","compete","compete_partner","moderate","yes","unknown","unknown","CHN",0.228102596534784,0.491049776586083,"allied","secure|deploy","remote_control"
+"Australia","Electric Vehicles","Components","ev-motors","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.205429723173868,0.576083568982303,"mixed","deploy",
 "Australia","Electric Vehicles","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.576083568982303,"mixed","secure|compete","home_share"
 "Australia","Electric Vehicles","Assembly","ev-connected-vehicle","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.181354649091385,0.375425187762776,"allied","secure",
-"Australia","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy_diversify","moderate","no","yes","digital",,,0.375425187762776,"diversified_global","deploy",
+"Australia","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","high","no","yes","digital",,,0.375425187762776,"diversified_global","deploy",
 "Australia","Gas","Assembly","gas-ot-control","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.195884838206318,0.393754619129893,"allied","secure",
-"Australia","Green Hydrogen","Extraction","h2-pgm","material","deploy","deploy","low","no","no","none","RUS",0.286659316427784,,"diversified_global","deploy",
-"Australia","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","moderate","yes","no","none","RUS",0.9,0,"allied","compete|deploy","strategic_need_percentile"
-"Australia","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","moderate","yes","no","none","KAZ",0.233823027019315,0,"allied","compete|deploy","strategic_need_percentile"
+"Australia","Green Hydrogen","Extraction","h2-pgm","material","not_assessed",,"low","no","no","none","RUS",0.286659316427784,,,"deploy",
+"Australia","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","moderate","yes","no","none","RUS",0.9,0,"allied","deploy",
+"Australia","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","moderate","yes","no","none","KAZ",0.233823027019315,0,"allied","deploy",
 "Australia","Nuclear","Components","nuc-fuel-fab","fuel","deploy","deploy","high","no","no","none","CHN",0.157109847998057,0.201442825110781,"diversified_global","deploy",
 "Australia","Nuclear","Assembly","nuc-reactor-controls","control","deploy","deploy","high","no","no","none","CHN",0.268996625654577,0.20855862152792,"diversified_global","deploy",
 "Australia","Oil","Assembly","oil-ot-control","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.22964665765902,0.467093430262835,"allied","secure",
-"Australia","Solar","Refining","polysilicon","material","deploy","deploy_diversify","high","no","no","none","ARE",0.0934316971828628,0.354004848189368,"allied","deploy",
+"Australia","Solar","Refining","polysilicon","material","compete","compete_partner","moderate","no","no","none","ARE",0.0934316971828628,0.354004848189368,"diversified_global","deploy",
 "Australia","Solar","Components","pv-cells-wafers","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.272783279873699,0.486513846952957,"allied","deploy",
 "Australia","Solar","Components","pv-nextgen","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.272783279873699,0.486513846952957,"allied","deploy",
 "Australia","Solar","Assembly","pv-inverter-firmware-dist","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.299543166909054,0.625981680377227,"allied","secure",
-"Australia","Solar","Assembly","pv-modules","hardware","compete","compete_partner","high","no","no","none","CHN",0.797979797979798,0.625981680377227,"diversified_global","compete",
-"Australia","Solar","Assembly","pv-racking","structure","compete","compete_partner","high","no","no","none","CHN",0.299543166909054,0.625981680377227,"allied","compete",
+"Australia","Solar","Assembly","pv-modules","hardware","compete","compete_partner","high","no","no","none","CHN",0.797979797979798,0.625981680377227,"allied","compete|deploy","home_share"
+"Australia","Solar","Assembly","pv-racking","structure","compete","compete_partner","high","no","no","none","CHN",0.299543166909054,0.625981680377227,"allied","deploy",
 "Australia","Wind","Refining","ree-separation","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.369800339841422,"mixed","secure|compete","home_share"
 "Australia","Wind","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.566677864037273,"mixed","secure|compete","home_share"
 "Australia","Wind","Assembly","wind-turbine-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.215021376255937,0.622513830260433,"allied","secure",
-"China","Batteries","Refining","bess-anode","material","compete","compete_preserve","moderate","no","no","none","JPN",0.0302322810145689,0.269276626225461,"domestic","compete",
-"China","Batteries","Refining","bess-cathode","material","compete","compete_preserve","moderate","no","no","none","CAN",0.0479835867580727,0.269276626225461,"domestic","compete",
-"China","Batteries","Refining","li-chemicals","material","compete","compete_preserve","moderate","no","no","none","AUS",0.0199090766577833,0.269276626225461,"domestic","compete",
+"China","Batteries","Refining","bess-anode","material","compete","compete_preserve","high","no","no","none","JPN",0.0302322810145689,0.269276626225461,"domestic","compete",
+"China","Batteries","Refining","bess-cathode","material","compete","compete_preserve","high","no","no","none","CAN",0.0479835867580727,0.269276626225461,"domestic","compete",
+"China","Batteries","Refining","li-chemicals","material","compete","compete_preserve","high","no","no","none","AUS",0.0199090766577833,0.269276626225461,"domestic","compete",
 "China","Batteries","Assembly","bess-cells","hardware","compete","compete_preserve","high","no","no","none","POL",0.0843402665064122,0.669144082571309,"domestic","compete",
-"China","Batteries","Assembly","bess-comms","control","compete","compete_preserve","high","yes","no","none","POL",0.0843402665064122,0.669144082571309,"domestic","compete",
-"China","Batteries","Assembly","bess-control","control","compete","compete_preserve","high","yes","no","none","POL",0.0843402665064122,0.669144082571309,"domestic","compete",
-"China","Batteries","Assembly","bess-enclosure","structure","compete","compete_preserve","high","no","no","none","POL",0.0843402665064122,0.669144082571309,"domestic","compete",
+"China","Batteries","Assembly","bess-comms","control","compete","compete_preserve","high","yes","no","none","POL",0.0843402665064122,0.669144082571309,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"China","Batteries","Assembly","bess-control","control","compete","compete_preserve","high","yes","no","none","POL",0.0843402665064122,0.669144082571309,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"China","Batteries","Assembly","bess-enclosure","structure","compete","compete_preserve","high","no","no","none","POL",0.0843402665064122,0.669144082571309,"domestic","compete|deploy","premium_pct"
 "China","Electric Grid","Refining","goes","material","secure","secure_resilience","high","yes","yes","resilience","AUS",0.0556187535652065,0.134117156568019,"diversified_global","secure",
-"China","Electric Grid","Assembly","bess-pcs","hardware","compete","compete_preserve","high","no","no","none","DEU",0.109447165293099,0.768381498581102,"domestic","compete",
-"China","Electric Grid","Assembly","grid-ami","control","compete","compete_preserve","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"domestic","compete",
-"China","Electric Grid","Assembly","grid-cables","hardware","compete","compete_preserve","high","no","no","none","DEU",0.109447165293099,0.768381498581102,"domestic","compete",
-"China","Electric Grid","Assembly","grid-inverter-firmware","control","compete","compete_preserve","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"domestic","compete",
-"China","Electric Grid","Assembly","grid-scada","control","compete","compete_preserve","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"domestic","compete",
-"China","Electric Grid","Assembly","grid-transformers","hardware","compete","compete_preserve","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"domestic","compete",
-"China","Electric Grid","Assembly","hvdc-control","control","compete","compete_preserve","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"domestic","compete",
+"China","Electric Grid","Assembly","bess-pcs","hardware","deploy","deploy","high","no","no","none","DEU",0.109447165293099,0.768381498581102,"diversified_global","compete",
+"China","Electric Grid","Assembly","grid-ami","control","deploy","deploy","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"China","Electric Grid","Assembly","grid-cables","hardware","deploy","deploy","high","no","no","none","DEU",0.109447165293099,0.768381498581102,"diversified_global","compete|deploy","premium_pct"
+"China","Electric Grid","Assembly","grid-inverter-firmware","control","deploy","deploy","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"China","Electric Grid","Assembly","grid-scada","control","deploy","deploy","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"China","Electric Grid","Assembly","grid-transformers","hardware","deploy","deploy","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"diversified_global","compete",
+"China","Electric Grid","Assembly","hvdc-control","control","deploy","deploy","high","yes","no","none","DEU",0.109447165293099,0.768381498581102,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
 "China","Electric Vehicles","Components","ev-motors","hardware","compete","compete_preserve","high","no","no","none","DEU",0.0897756918316812,0.698189971593994,"domestic","compete",
 "China","Electric Vehicles","Components","ree-magnets","material","compete","compete_preserve","high","yes","no","none","USA",0.0526722775716959,0.698189971593994,"domestic","compete",
-"China","Electric Vehicles","Assembly","ev-connected-vehicle","control","compete","compete_preserve","high","yes","no","none","DEU",0.173557730178652,0.796295552136126,"domestic","compete",
+"China","Electric Vehicles","Assembly","ev-connected-vehicle","control","compete","compete_preserve","high","yes","no","none","DEU",0.173557730178652,0.796295552136126,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
 "China","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","moderate","no","no","none",,,0.796295552136126,"diversified_global","deploy",
-"China","Gas","Assembly","gas-ot-control","control","compete","compete_preserve","high","yes","no","none","KOR",0.122830014705497,0.921328811516666,"domestic","compete",
-"China","Green Hydrogen","Extraction","h2-pgm","material","deploy","deploy","low","no","no","none","CAN",0.0578831312017641,,"diversified_global","deploy",
-"China","Nuclear","Refining","nuc-haleu","fuel","compete","compete_catch_up","moderate","yes","no","none","FRA",0.141720401021387,0.00936093638684737,"mixed","compete",
-"China","Nuclear","Refining","nuc-leu","fuel","compete","compete_catch_up","moderate","yes","no","none","FRA",0.141720401021387,0.00936093638684737,"mixed","compete",
+"China","Gas","Assembly","gas-ot-control","control","compete","compete_preserve","moderate","yes","no","none","KOR",0.122830014705497,0.921328811516666,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation"
+"China","Green Hydrogen","Extraction","h2-pgm","material","not_assessed",,"low","no","no","none","CAN",0.0578831312017641,,,"deploy",
+"China","Nuclear","Refining","nuc-haleu","fuel","compete","compete_catch_up","high","yes","no","none","FRA",0.141720401021387,0.00936093638684737,"mixed","compete",
+"China","Nuclear","Refining","nuc-leu","fuel","compete","compete_catch_up","high","yes","no","none","FRA",0.141720401021387,0.00936093638684737,"mixed","compete",
 "China","Nuclear","Components","nuc-fuel-fab","fuel","compete","compete_preserve","high","yes","no","none","DEU",0.0884607300467773,0.500930088620097,"domestic","compete",
-"China","Nuclear","Assembly","nuc-reactor-controls","control","compete","compete_preserve","high","yes","no","none","DEU",0.0977369939579637,0.946310247732532,"domestic","compete",
-"China","Oil","Assembly","oil-ot-control","control","compete","compete_preserve","high","yes","no","none","KOR",0.116263018206106,0.91513516461746,"domestic","compete",
-"China","Solar","Refining","polysilicon","material","compete","compete_preserve","high","no","no","none","DEU",0.137492706959914,0.531581395356927,"domestic","compete",
-"China","Solar","Components","pv-cells-wafers","hardware","compete","compete_preserve","high","no","no","none","JPN",0.0998468609142822,0.639049763568648,"domestic","compete",
+"China","Nuclear","Assembly","nuc-reactor-controls","control","compete","compete_preserve","high","yes","no","none","DEU",0.0977369939579637,0.946310247732532,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"China","Oil","Assembly","oil-ot-control","control","deploy","deploy","high","yes","no","none","KOR",0.116263018206106,0.91513516461746,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation"
+"China","Solar","Refining","polysilicon","material","deploy","deploy_diversify","moderate","no","no","none","DEU",0.137492706959914,0.531581395356927,"diversified_global","compete",
+"China","Solar","Components","pv-cells-wafers","hardware","compete","compete_preserve","high","no","no","none","JPN",0.0998468609142822,0.639049763568648,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
 "China","Solar","Components","pv-nextgen","hardware","compete","compete_preserve","high","no","no","none","JPN",0.0998468609142822,0.639049763568648,"domestic","compete",
 "China","Solar","Assembly","pv-inverter-firmware-dist","control","compete","compete_preserve","high","yes","no","none","DEU",0.090675610335901,0.751419167621091,"domestic","compete",
 "China","Solar","Assembly","pv-modules","hardware","compete","compete_preserve","high","no","no","none",,0,0.751419167621091,"domestic","compete",
 "China","Solar","Assembly","pv-racking","structure","compete","compete_preserve","high","no","no","none","DEU",0.090675610335901,0.751419167621091,"domestic","compete",
-"China","Wind","Refining","ree-separation","material","compete","compete_preserve","high","yes","no","none","USA",0.0526722775716959,0.100121843146242,"domestic","compete",
+"China","Wind","Refining","ree-separation","material","compete","compete_preserve","moderate","yes","no","none","USA",0.0526722775716959,0.100121843146242,"domestic","compete",
 "China","Wind","Components","ree-magnets","material","compete","compete_preserve","high","yes","no","none","USA",0.0526722775716959,0.763347645856322,"domestic","compete",
 "China","Wind","Assembly","wind-turbine-control","control","compete","compete_preserve","high","yes","no","none","DEU",0.10495957641271,0.72614414265349,"domestic","compete",
-"Germany","Batteries","Refining","bess-anode","material","compete","compete_preserve","low","no","no","none","CHN",0.944041592557121,0.141495708326084,"domestic","compete",
-"Germany","Batteries","Refining","bess-cathode","material","compete","compete_preserve","moderate","no","no","none","CHN",0.256563324568776,0.141495708326084,"domestic","compete",
-"Germany","Batteries","Refining","li-chemicals","material","compete","compete_preserve","moderate","no","no","none","CHN",0.736792600721116,0.141495708326084,"domestic","compete",
-"Germany","Batteries","Assembly","bess-cells","hardware","compete","compete_partner","moderate","no","no","none","CHN",0.52885932234819,0.574814875919861,"allied","compete",
+"Germany","Batteries","Refining","bess-anode","material","compete","compete_catch_up","high","no","no","none","CHN",0.944041592557121,0.141495708326084,"domestic","deploy",
+"Germany","Batteries","Refining","bess-cathode","material","compete","compete_catch_up","high","no","no","none","CHN",0.256563324568776,0.141495708326084,"domestic","compete",
+"Germany","Batteries","Refining","li-chemicals","material","compete","compete_catch_up","high","no","no","none","CHN",0.736792600721116,0.141495708326084,"domestic","deploy",
+"Germany","Batteries","Assembly","bess-cells","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.52885932234819,0.574814875919861,"mixed","deploy",
 "Germany","Batteries","Assembly","bess-comms","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.52885932234819,0.574814875919861,"mixed","secure",
 "Germany","Batteries","Assembly","bess-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.52885932234819,0.574814875919861,"mixed","secure",
-"Germany","Batteries","Assembly","bess-enclosure","structure","compete","compete_partner","moderate","no","no","none","CHN",0.52885932234819,0.574814875919861,"allied","compete",
+"Germany","Batteries","Assembly","bess-enclosure","structure","compete","compete_catch_up","high","no","no","none","CHN",0.52885932234819,0.574814875919861,"mixed","deploy",
 "Germany","Electric Grid","Refining","goes","material","secure","secure_resilience","high","yes","yes","resilience","RUS",0.0613514524442527,0.0713039574162042,"mixed","secure",
-"Germany","Electric Grid","Assembly","bess-pcs","hardware","compete","compete_preserve","high","no","no","none","CHN",0.228102596534784,0.178763719174447,"domestic","compete",
-"Germany","Electric Grid","Assembly","grid-ami","control","compete","compete_preserve","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"domestic","compete",
-"Germany","Electric Grid","Assembly","grid-cables","hardware","compete","compete_preserve","high","no","no","none","CHN",0.228102596534784,0.178763719174447,"domestic","compete",
-"Germany","Electric Grid","Assembly","grid-inverter-firmware","control","compete","compete_preserve","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"domestic","compete",
-"Germany","Electric Grid","Assembly","grid-scada","control","compete","compete_preserve","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"domestic","compete",
-"Germany","Electric Grid","Assembly","grid-transformers","hardware","compete","compete_preserve","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"domestic","compete",
-"Germany","Electric Grid","Assembly","hvdc-control","control","compete","compete_preserve","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"domestic","compete",
-"Germany","Electric Vehicles","Components","ev-motors","hardware","deploy","deploy","moderate","no","no","none","CHN",0.205429723173868,0.414041162088213,"diversified_global","compete|deploy","strategic_need_percentile"
+"Germany","Electric Grid","Assembly","bess-pcs","hardware","deploy","deploy","high","no","no","none","CHN",0.228102596534784,0.178763719174447,"diversified_global","compete",
+"Germany","Electric Grid","Assembly","grid-ami","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"Germany","Electric Grid","Assembly","grid-cables","hardware","deploy","deploy","high","no","no","none","CHN",0.228102596534784,0.178763719174447,"diversified_global","compete|deploy","premium_pct"
+"Germany","Electric Grid","Assembly","grid-inverter-firmware","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"Germany","Electric Grid","Assembly","grid-scada","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"Germany","Electric Grid","Assembly","grid-transformers","hardware","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"diversified_global","compete",
+"Germany","Electric Grid","Assembly","hvdc-control","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.178763719174447,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"Germany","Electric Vehicles","Components","ev-motors","hardware","compete","compete_preserve","moderate","no","no","none","CHN",0.205429723173868,0.414041162088213,"domestic","compete",
 "Germany","Electric Vehicles","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.414041162088213,"mixed","secure|compete","home_share"
-"Germany","Electric Vehicles","Assembly","ev-connected-vehicle","control","compete","compete_preserve","high","yes","no","none","CHN",0.181354649091385,0.170914570096694,"domestic","compete",
-"Germany","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","moderate","no","no","none",,,0.170914570096694,"diversified_global","deploy",
-"Germany","Gas","Assembly","gas-ot-control","control","compete","compete_preserve","high","yes","no","none","CHN",0.195884838206318,0.087514167901851,"domestic","compete",
-"Germany","Green Hydrogen","Extraction","h2-pgm","material","deploy","deploy","low","no","no","none","RUS",0.286659316427784,,"diversified_global","deploy",
-"Germany","Nuclear","Refining","nuc-haleu","fuel","compete","compete_catch_up","moderate","yes","no","none","RUS",0.9,0.0806465683199785,"mixed","compete",
-"Germany","Nuclear","Refining","nuc-leu","fuel","compete","compete_catch_up","moderate","yes","no","none","KAZ",0.233823027019315,0.0806465683199785,"mixed","compete",
-"Germany","Nuclear","Components","nuc-fuel-fab","fuel","compete","compete_preserve","high","yes","no","none","CHN",0.157109847998057,0.153192597390442,"domestic","compete",
-"Germany","Nuclear","Assembly","nuc-reactor-controls","control","compete","compete_preserve","high","yes","no","none","CHN",0.268996625654577,0.0361930744876507,"domestic","compete",
-"Germany","Oil","Assembly","oil-ot-control","control","deploy","deploy_floor","high","yes","no","none","CHN",0.22964665765902,0.0978528268963372,"diversified_global","deploy",
-"Germany","Solar","Refining","polysilicon","material","compete","compete_preserve","high","no","no","none","ARE",0.0934316971828628,0.0042181082541618,"domestic","compete",
-"Germany","Solar","Components","pv-cells-wafers","hardware","deploy","deploy","moderate","no","no","none","CHN",0.272783279873699,0.178167807201634,"diversified_global","compete|deploy","opportunity_percentile"
-"Germany","Solar","Components","pv-nextgen","hardware","deploy","deploy","moderate","no","no","none","CHN",0.272783279873699,0.178167807201634,"diversified_global","compete|deploy","opportunity_percentile"
-"Germany","Solar","Assembly","pv-inverter-firmware-dist","control","compete","compete_preserve","high","yes","no","none","CHN",0.299543166909054,0.211662351636795,"domestic","compete",
-"Germany","Solar","Assembly","pv-modules","hardware","compete","compete_preserve","high","no","no","none","CHN",0.797979797979798,0.211662351636795,"domestic","compete",
-"Germany","Solar","Assembly","pv-racking","structure","compete","compete_preserve","high","no","no","none","CHN",0.299543166909054,0.211662351636795,"domestic","compete",
-"Germany","Wind","Refining","ree-separation","material","deploy","deploy_diversify","high","yes","no","none","CHN",0.839394380876601,0.0291378822443181,"diversified_global","deploy",
+"Germany","Electric Vehicles","Assembly","ev-connected-vehicle","control","compete","compete_preserve","high","yes","no","none","CHN",0.181354649091385,0.170914570096694,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"Germany","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","high","no","no","none",,,0.170914570096694,"diversified_global","deploy",
+"Germany","Gas","Assembly","gas-ot-control","control","deploy","deploy","moderate","yes","no","none","CHN",0.195884838206318,0.087514167901851,"diversified_global","deploy",
+"Germany","Green Hydrogen","Extraction","h2-pgm","material","not_assessed",,"low","no","no","none","RUS",0.286659316427784,,,"deploy",
+"Germany","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","high","yes","no","none","RUS",0.9,0.0806465683199785,"allied","compete",
+"Germany","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","high","yes","no","none","KAZ",0.233823027019315,0.0806465683199785,"allied","compete",
+"Germany","Nuclear","Components","nuc-fuel-fab","fuel","deploy","deploy","high","yes","no","none","CHN",0.157109847998057,0.153192597390442,"diversified_global","compete",
+"Germany","Nuclear","Assembly","nuc-reactor-controls","control","deploy","deploy_diversify","high","yes","no","none","CHN",0.268996625654577,0.0361930744876507,"allied","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"Germany","Oil","Assembly","oil-ot-control","control","deploy","deploy","moderate","yes","no","none","CHN",0.22964665765902,0.0978528268963372,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation"
+"Germany","Solar","Refining","polysilicon","material","deploy","deploy_diversify","moderate","no","no","none","ARE",0.0934316971828628,0.0042181082541618,"diversified_global","compete",
+"Germany","Solar","Components","pv-cells-wafers","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.178167807201634,"mixed","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"Germany","Solar","Components","pv-nextgen","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.178167807201634,"mixed","compete",
+"Germany","Solar","Assembly","pv-inverter-firmware-dist","control","compete","compete_catch_up","moderate","yes","no","none","CHN",0.299543166909054,0.211662351636795,"mixed","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation"
+"Germany","Solar","Assembly","pv-modules","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.797979797979798,0.211662351636795,"mixed","compete|deploy","home_share"
+"Germany","Solar","Assembly","pv-racking","structure","compete","compete_catch_up","moderate","no","no","none","CHN",0.299543166909054,0.211662351636795,"mixed","deploy",
+"Germany","Wind","Refining","ree-separation","material","compete","compete_catch_up","high","yes","no","none","CHN",0.839394380876601,0.0291378822443181,"domestic","compete",
 "Germany","Wind","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.261229361108429,"mixed","secure|compete","home_share"
 "Germany","Wind","Assembly","wind-turbine-control","control","compete","compete_preserve","high","yes","no","none","CHN",0.215021376255937,0.125380047720753,"domestic","compete",
-"India","Batteries","Refining","bess-anode","material","compete","compete_partner","low","no","yes","physical","CHN",0.944041592557121,0.450524564003629,"diversified_global","compete",
-"India","Batteries","Refining","bess-cathode","material","compete","compete_partner","low","no","no","none","CHN",0.256563324568776,0.450524564003629,"allied","compete",
-"India","Batteries","Refining","li-chemicals","material","compete","compete_partner","low","no","yes","physical","CHN",0.736792600721116,0.450524564003629,"diversified_global","compete",
-"India","Batteries","Assembly","bess-cells","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.52885932234819,0.901677217169349,"mixed","compete",
+"India","Batteries","Refining","bess-anode","material","compete","compete_catch_up","moderate","no","yes","physical","CHN",0.944041592557121,0.450524564003629,"domestic","deploy",
+"India","Batteries","Refining","bess-cathode","material","compete","compete_catch_up","moderate","no","no","none","CHN",0.256563324568776,0.450524564003629,"domestic","deploy",
+"India","Batteries","Refining","li-chemicals","material","compete","compete_catch_up","moderate","no","yes","physical","CHN",0.736792600721116,0.450524564003629,"domestic","deploy",
+"India","Batteries","Assembly","bess-cells","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.52885932234819,0.901677217169349,"mixed","deploy",
 "India","Batteries","Assembly","bess-comms","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.52885932234819,0.901677217169349,"allied","secure",
 "India","Batteries","Assembly","bess-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.52885932234819,0.901677217169349,"allied","secure",
-"India","Batteries","Assembly","bess-enclosure","structure","compete","compete_catch_up","moderate","no","no","none","CHN",0.52885932234819,0.901677217169349,"mixed","compete",
-"India","Electric Grid","Refining","goes","material","deploy","deploy","moderate","yes","no","none","RUS",0.0613514524442527,0.0716219153229069,"diversified_global","compete|deploy","strategic_need_percentile"
+"India","Batteries","Assembly","bess-enclosure","structure","compete","compete_catch_up","high","no","no","none","CHN",0.52885932234819,0.901677217169349,"mixed","deploy",
+"India","Electric Grid","Refining","goes","material","compete","compete_partner","high","yes","no","none","RUS",0.0613514524442527,0.0716219153229069,"diversified_global","compete",
 "India","Electric Grid","Assembly","bess-pcs","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.228102596534784,0.459700762337334,"allied","deploy",
 "India","Electric Grid","Assembly","grid-ami","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.228102596534784,0.459700762337334,"allied","secure",
 "India","Electric Grid","Assembly","grid-cables","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.228102596534784,0.459700762337334,"allied","deploy",
 "India","Electric Grid","Assembly","grid-inverter-firmware","control","secure","secure_unclear","moderate","yes","yes","digital","CHN",0.228102596534784,0.459700762337334,"allied","secure",
 "India","Electric Grid","Assembly","grid-scada","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.228102596534784,0.459700762337334,"allied","secure",
 "India","Electric Grid","Assembly","grid-transformers","hardware","deploy","deploy_diversify","high","yes","no","none","CHN",0.228102596534784,0.459700762337334,"allied","deploy",
-"India","Electric Grid","Assembly","hvdc-control","control","deploy","deploy_diversify","moderate","yes","unknown","unknown","CHN",0.228102596534784,0.459700762337334,"allied","secure|deploy","remote_control"
-"India","Electric Vehicles","Components","ev-motors","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.205429723173868,0.749367706873519,"mixed","compete",
+"India","Electric Grid","Assembly","hvdc-control","control","deploy","deploy_diversify","high","yes","unknown","unknown","CHN",0.228102596534784,0.459700762337334,"allied","secure|deploy","remote_control"
+"India","Electric Vehicles","Components","ev-motors","hardware","compete","compete_preserve","low","no","no","none","CHN",0.205429723173868,0.749367706873519,"domestic","deploy",
 "India","Electric Vehicles","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.749367706873519,"mixed","secure|compete","home_share"
 "India","Electric Vehicles","Assembly","ev-connected-vehicle","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.181354649091385,0.466100550049933,"allied","secure",
-"India","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy_diversify","moderate","no","yes","digital",,,0.466100550049933,"diversified_global","deploy",
-"India","Gas","Assembly","gas-ot-control","control","compete","compete_preserve","high","yes","no","none","CHN",0.195884838206318,0.146436706445319,"domestic","compete",
-"India","Green Hydrogen","Extraction","h2-pgm","material","deploy","deploy","low","no","no","none","RUS",0.286659316427784,,"diversified_global","deploy",
-"India","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","high","yes","no","none","RUS",0.9,0,"allied","compete",
-"India","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","high","yes","no","none","RUS",0.149902079463806,0,"allied","compete",
-"India","Nuclear","Components","nuc-fuel-fab","fuel","compete","compete_preserve","high","yes","no","none","CHN",0.157109847998057,0.522034598798035,"domestic","compete",
+"India","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","high","no","yes","digital",,,0.466100550049933,"diversified_global","deploy",
+"India","Gas","Assembly","gas-ot-control","control","deploy","deploy","high","yes","no","none","CHN",0.195884838206318,0.146436706445319,"diversified_global","deploy",
+"India","Green Hydrogen","Extraction","h2-pgm","material","not_assessed",,"low","no","no","none","RUS",0.286659316427784,,,"deploy",
+"India","Nuclear","Refining","nuc-haleu","fuel","compete","compete_catch_up","moderate","yes","no","none","RUS",0.9,0,"mixed","deploy",
+"India","Nuclear","Refining","nuc-leu","fuel","compete","compete_catch_up","moderate","yes","no","none","RUS",0.149902079463806,0,"mixed","deploy",
+"India","Nuclear","Components","nuc-fuel-fab","fuel","compete","compete_catch_up","moderate","yes","no","none","CHN",0.157109847998057,0.522034598798035,"mixed","deploy",
 "India","Nuclear","Assembly","nuc-reactor-controls","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.268996625654577,0.769543404261105,"mixed","secure",
-"India","Oil","Assembly","oil-ot-control","control","compete","compete_preserve","high","yes","no","none","CHN",0.22964665765902,0.148489731833816,"domestic","compete",
-"India","Solar","Refining","polysilicon","material","compete","compete_catch_up","low","no","no","none","CHN",0.0705442835033988,0.153200977574303,"mixed","compete",
-"India","Solar","Components","pv-cells-wafers","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.272783279873699,0.660226988618982,"mixed","compete",
-"India","Solar","Components","pv-nextgen","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.272783279873699,0.660226988618982,"mixed","compete",
+"India","Oil","Assembly","oil-ot-control","control","deploy","deploy","high","yes","no","none","CHN",0.22964665765902,0.148489731833816,"diversified_global","deploy",
+"India","Solar","Refining","polysilicon","material","compete","compete_preserve","low","no","no","none","CHN",0.0705442835033988,0.153200977574303,"domestic","deploy",
+"India","Solar","Components","pv-cells-wafers","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.272783279873699,0.660226988618982,"mixed","deploy",
+"India","Solar","Components","pv-nextgen","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.272783279873699,0.660226988618982,"mixed","deploy",
 "India","Solar","Assembly","pv-inverter-firmware-dist","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.299543166909054,0.651368324369744,"allied","secure",
-"India","Solar","Assembly","pv-modules","hardware","compete","compete_preserve","moderate","no","no","none","CHN",0.797979797979798,0.651368324369744,"domestic","compete",
-"India","Solar","Assembly","pv-racking","structure","compete","compete_preserve","moderate","no","no","none","CHN",0.299543166909054,0.651368324369744,"domestic","compete",
-"India","Wind","Refining","ree-separation","material","deploy","deploy_diversify","high","yes","no","none","CHN",0.839394380876601,0.0554627305448846,"diversified_global","deploy",
+"India","Solar","Assembly","pv-modules","hardware","compete","compete_preserve","high","no","no","none","CHN",0.797979797979798,0.651368324369744,"domestic","compete",
+"India","Solar","Assembly","pv-racking","structure","compete","compete_preserve","high","no","no","none","CHN",0.299543166909054,0.651368324369744,"domestic","deploy",
+"India","Wind","Refining","ree-separation","material","compete","compete_catch_up","moderate","yes","no","none","CHN",0.839394380876601,0.0554627305448846,"domestic","compete|deploy","home_share"
 "India","Wind","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.667142549009313,"mixed","secure|compete","home_share"
 "India","Wind","Assembly","wind-turbine-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.215021376255937,0.423855024115147,"allied","secure",
-"Japan","Batteries","Refining","bess-anode","material","compete","compete_catch_up","low","no","yes","physical","CHN",0.944041592557121,0.426763475987038,"domestic","compete",
-"Japan","Batteries","Refining","bess-cathode","material","compete","compete_catch_up","low","no","no","none","CHN",0.256563324568776,0.426763475987038,"mixed","compete",
-"Japan","Batteries","Refining","li-chemicals","material","compete","compete_catch_up","low","no","yes","physical","CHN",0.736792600721116,0.426763475987038,"domestic","compete",
-"Japan","Batteries","Assembly","bess-cells","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.52885932234819,0.779177458280151,"allied","deploy",
+"Japan","Batteries","Refining","bess-anode","material","compete","compete_catch_up","high","no","yes","physical","CHN",0.944041592557121,0.426763475987038,"domestic","compete",
+"Japan","Batteries","Refining","bess-cathode","material","compete","compete_catch_up","high","no","no","none","CHN",0.256563324568776,0.426763475987038,"domestic","compete",
+"Japan","Batteries","Refining","li-chemicals","material","compete","compete_catch_up","high","no","yes","physical","CHN",0.736792600721116,0.426763475987038,"domestic","compete",
+"Japan","Batteries","Assembly","bess-cells","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.52885932234819,0.779177458280151,"mixed","compete",
 "Japan","Batteries","Assembly","bess-comms","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.52885932234819,0.779177458280151,"mixed","secure",
 "Japan","Batteries","Assembly","bess-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.52885932234819,0.779177458280151,"mixed","secure",
-"Japan","Batteries","Assembly","bess-enclosure","structure","deploy","deploy_diversify","high","no","no","none","CHN",0.52885932234819,0.779177458280151,"allied","deploy",
-"Japan","Electric Grid","Refining","goes","material","compete","compete_preserve","high","yes","no","none","RUS",0.0613514524442527,0.353729532824969,"domestic","compete",
-"Japan","Electric Grid","Assembly","bess-pcs","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.228102596534784,0.583569842770626,"allied","deploy",
+"Japan","Batteries","Assembly","bess-enclosure","structure","compete","compete_catch_up","moderate","no","no","none","CHN",0.52885932234819,0.779177458280151,"mixed","compete|deploy","premium_pct"
+"Japan","Electric Grid","Refining","goes","material","compete","compete_partner","moderate","yes","no","none","RUS",0.0613514524442527,0.353729532824969,"diversified_global","compete",
+"Japan","Electric Grid","Assembly","bess-pcs","hardware","compete","compete_partner","moderate","no","no","none","CHN",0.228102596534784,0.583569842770626,"allied","compete|deploy","market_pct"
 "Japan","Electric Grid","Assembly","grid-ami","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.228102596534784,0.583569842770626,"mixed","secure",
-"Japan","Electric Grid","Assembly","grid-cables","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.228102596534784,0.583569842770626,"allied","deploy",
+"Japan","Electric Grid","Assembly","grid-cables","hardware","compete","compete_partner","moderate","no","no","none","CHN",0.228102596534784,0.583569842770626,"allied","deploy",
 "Japan","Electric Grid","Assembly","grid-inverter-firmware","control","secure","secure_unclear","moderate","yes","yes","digital","CHN",0.228102596534784,0.583569842770626,"mixed","secure",
 "Japan","Electric Grid","Assembly","grid-scada","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.228102596534784,0.583569842770626,"mixed","secure",
-"Japan","Electric Grid","Assembly","grid-transformers","hardware","deploy","deploy_diversify","high","yes","no","none","CHN",0.228102596534784,0.583569842770626,"allied","deploy",
-"Japan","Electric Grid","Assembly","hvdc-control","control","deploy","deploy_diversify","moderate","yes","unknown","unknown","CHN",0.228102596534784,0.583569842770626,"allied","secure|deploy","remote_control;market_pct"
-"Japan","Electric Vehicles","Components","ev-motors","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.205429723173868,0.689556565296496,"allied","deploy",
+"Japan","Electric Grid","Assembly","grid-transformers","hardware","compete","compete_partner","moderate","yes","no","none","CHN",0.228102596534784,0.583569842770626,"allied","compete|deploy","market_pct"
+"Japan","Electric Grid","Assembly","hvdc-control","control","compete","compete_partner","moderate","yes","unknown","unknown","CHN",0.228102596534784,0.583569842770626,"allied","secure|compete|deploy","remote_control;market_pct"
+"Japan","Electric Vehicles","Components","ev-motors","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.205429723173868,0.689556565296496,"mixed","compete",
 "Japan","Electric Vehicles","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.689556565296496,"mixed","secure|compete","home_share"
 "Japan","Electric Vehicles","Assembly","ev-connected-vehicle","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.181354649091385,0.537997041438407,"mixed","secure",
-"Japan","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy_diversify","moderate","no","yes","digital",,,0.537997041438407,"diversified_global","deploy",
-"Japan","Gas","Assembly","gas-ot-control","control","deploy","deploy_floor","high","yes","no","none","CHN",0.195884838206318,0.246923459313653,"diversified_global","deploy",
-"Japan","Green Hydrogen","Extraction","h2-pgm","material","deploy","deploy","low","no","no","none","RUS",0.286659316427784,,"diversified_global","deploy",
-"Japan","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","moderate","yes","no","none","RUS",0.9,0,"allied","compete",
-"Japan","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","moderate","yes","no","none","KAZ",0.233823027019315,0,"allied","compete",
-"Japan","Nuclear","Components","nuc-fuel-fab","fuel","deploy","deploy_diversify","high","yes","no","none","CHN",0.157109847998057,0.41383712099108,"allied","deploy",
+"Japan","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","high","no","yes","digital",,,0.537997041438407,"diversified_global","deploy",
+"Japan","Gas","Assembly","gas-ot-control","control","deploy","deploy","high","yes","no","none","CHN",0.195884838206318,0.246923459313653,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation"
+"Japan","Green Hydrogen","Extraction","h2-pgm","material","not_assessed",,"low","no","no","none","RUS",0.286659316427784,,,"deploy",
+"Japan","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","high","yes","no","none","RUS",0.9,0,"allied","compete",
+"Japan","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","high","yes","no","none","KAZ",0.233823027019315,0,"allied","compete",
+"Japan","Nuclear","Components","nuc-fuel-fab","fuel","deploy","deploy_diversify","high","yes","no","none","CHN",0.157109847998057,0.41383712099108,"allied","compete",
 "Japan","Nuclear","Assembly","nuc-reactor-controls","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.268996625654577,0.540386792433583,"mixed","secure",
 "Japan","Oil","Assembly","oil-ot-control","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.22964665765902,0.303778696985476,"mixed","secure",
-"Japan","Solar","Refining","polysilicon","material","deploy","deploy_diversify","moderate","no","no","none","ARE",0.0934316971828628,0.287695980415627,"allied","compete|deploy","strategic_need_percentile"
-"Japan","Solar","Components","pv-cells-wafers","hardware","deploy","deploy","high","no","no","none","CHN",0.272783279873699,0.301265943801909,"diversified_global","deploy",
-"Japan","Solar","Components","pv-nextgen","hardware","deploy","deploy","high","no","no","none","CHN",0.272783279873699,0.301265943801909,"diversified_global","deploy",
+"Japan","Solar","Refining","polysilicon","material","compete","compete_partner","high","no","no","none","ARE",0.0934316971828628,0.287695980415627,"diversified_global","deploy",
+"Japan","Solar","Components","pv-cells-wafers","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.301265943801909,"mixed","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"Japan","Solar","Components","pv-nextgen","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.301265943801909,"mixed","compete",
 "Japan","Solar","Assembly","pv-inverter-firmware-dist","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.299543166909054,0.5435862271285,"allied","secure",
-"Japan","Solar","Assembly","pv-modules","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.797979797979798,0.5435862271285,"diversified_global","deploy",
-"Japan","Solar","Assembly","pv-racking","structure","deploy","deploy_diversify","high","no","no","none","CHN",0.299543166909054,0.5435862271285,"allied","deploy",
+"Japan","Solar","Assembly","pv-modules","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.797979797979798,0.5435862271285,"mixed","compete|deploy","home_share"
+"Japan","Solar","Assembly","pv-racking","structure","compete","compete_catch_up","high","no","no","none","CHN",0.299543166909054,0.5435862271285,"mixed","deploy",
 "Japan","Wind","Refining","ree-separation","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.752089310477976,"mixed","secure|compete","home_share"
 "Japan","Wind","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.562131892433506,"mixed","secure|compete","home_share"
 "Japan","Wind","Assembly","wind-turbine-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.215021376255937,0.666769215705006,"allied","secure",
-"South Korea","Batteries","Refining","bess-anode","material","compete","compete_partner","low","no","yes","physical","CHN",0.944041592557121,0.478734034535463,"diversified_global","compete",
-"South Korea","Batteries","Refining","bess-cathode","material","compete","compete_partner","low","no","no","none","CHN",0.256563324568776,0.478734034535463,"allied","compete",
-"South Korea","Batteries","Refining","li-chemicals","material","compete","compete_partner","low","no","yes","physical","CHN",0.736792600721116,0.478734034535463,"diversified_global","compete",
-"South Korea","Batteries","Assembly","bess-cells","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.52885932234819,0.962095223377296,"mixed","compete",
+"South Korea","Batteries","Refining","bess-anode","material","compete","compete_catch_up","moderate","no","yes","physical","CHN",0.944041592557121,0.478734034535463,"domestic","compete|deploy","premium_pct"
+"South Korea","Batteries","Refining","bess-cathode","material","compete","compete_catch_up","moderate","no","no","none","CHN",0.256563324568776,0.478734034535463,"domestic","compete",
+"South Korea","Batteries","Refining","li-chemicals","material","compete","compete_catch_up","moderate","no","yes","physical","CHN",0.736792600721116,0.478734034535463,"domestic","compete",
+"South Korea","Batteries","Assembly","bess-cells","hardware","compete","compete_preserve","high","no","no","none","CHN",0.52885932234819,0.962095223377296,"domestic","compete",
 "South Korea","Batteries","Assembly","bess-comms","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.52885932234819,0.962095223377296,"mixed","secure",
 "South Korea","Batteries","Assembly","bess-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.52885932234819,0.962095223377296,"mixed","secure",
-"South Korea","Batteries","Assembly","bess-enclosure","structure","compete","compete_catch_up","moderate","no","no","none","CHN",0.52885932234819,0.962095223377296,"mixed","compete",
+"South Korea","Batteries","Assembly","bess-enclosure","structure","compete","compete_preserve","high","no","no","none","CHN",0.52885932234819,0.962095223377296,"domestic","compete|deploy","premium_pct"
 "South Korea","Electric Grid","Refining","goes","material","secure","secure_resilience","high","yes","yes","resilience","RUS",0.0613514524442527,0.224120477624439,"allied","secure",
 "South Korea","Electric Grid","Assembly","bess-pcs","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.228102596534784,0.478432953479747,"allied","deploy",
 "South Korea","Electric Grid","Assembly","grid-ami","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.228102596534784,0.478432953479747,"allied","secure",
@@ -188,35 +188,35 @@
 "South Korea","Electric Grid","Assembly","grid-inverter-firmware","control","secure","secure_unclear","moderate","yes","yes","digital","CHN",0.228102596534784,0.478432953479747,"allied","secure",
 "South Korea","Electric Grid","Assembly","grid-scada","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.228102596534784,0.478432953479747,"allied","secure",
 "South Korea","Electric Grid","Assembly","grid-transformers","hardware","deploy","deploy_diversify","high","yes","no","none","CHN",0.228102596534784,0.478432953479747,"allied","deploy",
-"South Korea","Electric Grid","Assembly","hvdc-control","control","deploy","deploy_diversify","moderate","yes","unknown","unknown","CHN",0.228102596534784,0.478432953479747,"allied","secure|deploy","remote_control"
-"South Korea","Electric Vehicles","Components","ev-motors","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.205429723173868,0.799810846799541,"mixed","compete",
+"South Korea","Electric Grid","Assembly","hvdc-control","control","deploy","deploy_diversify","high","yes","unknown","unknown","CHN",0.228102596534784,0.478432953479747,"allied","secure|deploy","remote_control"
+"South Korea","Electric Vehicles","Components","ev-motors","hardware","compete","compete_preserve","moderate","no","no","none","CHN",0.205429723173868,0.799810846799541,"domestic","compete",
 "South Korea","Electric Vehicles","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.799810846799541,"mixed","secure|compete","home_share"
 "South Korea","Electric Vehicles","Assembly","ev-connected-vehicle","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.181354649091385,0.329986249234855,"mixed","secure",
-"South Korea","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","moderate","no","yes","digital",,,0.329986249234855,"diversified_global","deploy",
-"South Korea","Gas","Assembly","gas-ot-control","control","deploy","deploy_floor","high","yes","no","none","CHN",0.195884838206318,0.358388086659161,"diversified_global","deploy",
-"South Korea","Green Hydrogen","Extraction","h2-pgm","material","deploy","deploy","low","no","no","none","RUS",0.286659316427784,,"diversified_global","deploy",
+"South Korea","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","high","no","yes","digital",,,0.329986249234855,"diversified_global","deploy",
+"South Korea","Gas","Assembly","gas-ot-control","control","compete","compete_preserve","moderate","yes","no","none","CHN",0.195884838206318,0.358388086659161,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation"
+"South Korea","Green Hydrogen","Extraction","h2-pgm","material","not_assessed",,"low","no","no","none","RUS",0.286659316427784,,,"deploy",
 "South Korea","Nuclear","Refining","nuc-haleu","fuel","secure","secure_input","moderate","yes","yes","physical","RUS",0.9,0.516530479826703,"allied","secure",
 "South Korea","Nuclear","Refining","nuc-leu","fuel","secure","secure_dual_use","moderate","yes","yes","dual_use","KAZ",0.233823027019315,0.516530479826703,"allied","secure",
-"South Korea","Nuclear","Components","nuc-fuel-fab","fuel","deploy","deploy_diversify","high","yes","no","none","CHN",0.157109847998057,0.340329578495239,"allied","deploy",
+"South Korea","Nuclear","Components","nuc-fuel-fab","fuel","compete","compete_preserve","low","yes","no","none","CHN",0.157109847998057,0.340329578495239,"domestic","compete",
 "South Korea","Nuclear","Assembly","nuc-reactor-controls","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.268996625654577,0.469356326804366,"mixed","secure",
-"South Korea","Oil","Assembly","oil-ot-control","control","compete","compete_preserve","moderate","yes","no","none","CHN",0.22964665765902,0.320525700832612,"domestic","compete|deploy","opportunity_percentile"
-"South Korea","Solar","Refining","polysilicon","material","deploy","deploy_diversify","high","no","no","none","ARE",0.0934316971828628,0.548754820998129,"allied","deploy",
-"South Korea","Solar","Components","pv-cells-wafers","hardware","deploy","deploy","high","no","no","none","CHN",0.272783279873699,0.248458557074141,"diversified_global","deploy",
-"South Korea","Solar","Components","pv-nextgen","hardware","deploy","deploy","high","no","no","none","CHN",0.272783279873699,0.248458557074141,"diversified_global","deploy",
+"South Korea","Oil","Assembly","oil-ot-control","control","deploy","deploy","high","yes","no","none","CHN",0.22964665765902,0.320525700832612,"diversified_global","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation"
+"South Korea","Solar","Refining","polysilicon","material","compete","compete_partner","low","no","no","none","ARE",0.0934316971828628,0.548754820998129,"diversified_global","deploy",
+"South Korea","Solar","Components","pv-cells-wafers","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.248458557074141,"mixed","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"South Korea","Solar","Components","pv-nextgen","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.248458557074141,"mixed","compete",
 "South Korea","Solar","Assembly","pv-inverter-firmware-dist","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.299543166909054,0.260927718477978,"allied","secure",
-"South Korea","Solar","Assembly","pv-modules","hardware","deploy","deploy_diversify","high","no","no","none","CHN",0.797979797979798,0.260927718477978,"diversified_global","deploy",
-"South Korea","Solar","Assembly","pv-racking","structure","deploy","deploy","high","no","no","none","CHN",0.299543166909054,0.260927718477978,"diversified_global","deploy",
+"South Korea","Solar","Assembly","pv-modules","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.797979797979798,0.260927718477978,"mixed","compete|deploy","home_share"
+"South Korea","Solar","Assembly","pv-racking","structure","compete","compete_catch_up","moderate","no","no","none","CHN",0.299543166909054,0.260927718477978,"mixed","deploy",
 "South Korea","Wind","Refining","ree-separation","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.656566209186687,"mixed","secure|compete","home_share"
 "South Korea","Wind","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.566589237098051,"mixed","secure|compete","home_share"
 "South Korea","Wind","Assembly","wind-turbine-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.215021376255937,0.620669467899538,"mixed","secure",
-"United Kingdom","Batteries","Refining","bess-anode","material","deploy","deploy_diversify","low","no","yes","physical","CHN",0.944041592557121,0.398668183990099,"diversified_global","deploy",
-"United Kingdom","Batteries","Refining","bess-cathode","material","deploy","deploy","low","no","no","none","CHN",0.256563324568776,0.398668183990099,"diversified_global","deploy",
-"United Kingdom","Batteries","Refining","li-chemicals","material","deploy","deploy_diversify","low","no","yes","physical","CHN",0.736792600721116,0.398668183990099,"diversified_global","deploy",
-"United Kingdom","Batteries","Assembly","bess-cells","hardware","deploy","deploy_diversify","low","no","no","none","CHN",0.52885932234819,0.660295326725041,"allied","deploy",
+"United Kingdom","Batteries","Refining","bess-anode","material","compete","compete_catch_up","high","no","yes","physical","CHN",0.944041592557121,0.398668183990099,"domestic","deploy",
+"United Kingdom","Batteries","Refining","bess-cathode","material","compete","compete_catch_up","high","no","no","none","CHN",0.256563324568776,0.398668183990099,"domestic","deploy",
+"United Kingdom","Batteries","Refining","li-chemicals","material","compete","compete_catch_up","high","no","yes","physical","CHN",0.736792600721116,0.398668183990099,"domestic","deploy",
+"United Kingdom","Batteries","Assembly","bess-cells","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.52885932234819,0.660295326725041,"mixed","deploy",
 "United Kingdom","Batteries","Assembly","bess-comms","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.52885932234819,0.660295326725041,"allied","secure",
 "United Kingdom","Batteries","Assembly","bess-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.52885932234819,0.660295326725041,"allied","secure",
-"United Kingdom","Batteries","Assembly","bess-enclosure","structure","deploy","deploy_diversify","low","no","no","none","CHN",0.52885932234819,0.660295326725041,"allied","deploy",
-"United Kingdom","Electric Grid","Refining","goes","material","deploy","deploy","high","yes","no","none","RUS",0.0613514524442527,0.139820561339697,"diversified_global","deploy",
+"United Kingdom","Batteries","Assembly","bess-enclosure","structure","compete","compete_catch_up","high","no","no","none","CHN",0.52885932234819,0.660295326725041,"mixed","deploy",
+"United Kingdom","Electric Grid","Refining","goes","material","compete","compete_partner","high","yes","no","none","RUS",0.0613514524442527,0.139820561339697,"diversified_global","deploy",
 "United Kingdom","Electric Grid","Assembly","bess-pcs","hardware","deploy","deploy","high","no","no","none","CHN",0.228102596534784,0.243439182819559,"diversified_global","deploy",
 "United Kingdom","Electric Grid","Assembly","grid-ami","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.243439182819559,"diversified_global","deploy",
 "United Kingdom","Electric Grid","Assembly","grid-cables","hardware","deploy","deploy","high","no","no","none","CHN",0.228102596534784,0.243439182819559,"diversified_global","deploy",
@@ -224,33 +224,33 @@
 "United Kingdom","Electric Grid","Assembly","grid-scada","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.243439182819559,"diversified_global","deploy",
 "United Kingdom","Electric Grid","Assembly","grid-transformers","hardware","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.243439182819559,"diversified_global","deploy",
 "United Kingdom","Electric Grid","Assembly","hvdc-control","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.243439182819559,"diversified_global","deploy",
-"United Kingdom","Electric Vehicles","Components","ev-motors","hardware","compete","compete_preserve","moderate","no","no","none","CHN",0.205429723173868,0.39492547893258,"domestic","compete|deploy","opportunity_percentile"
+"United Kingdom","Electric Vehicles","Components","ev-motors","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.205429723173868,0.39492547893258,"mixed","deploy",
 "United Kingdom","Electric Vehicles","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.39492547893258,"mixed","secure|compete","home_share"
-"United Kingdom","Electric Vehicles","Assembly","ev-connected-vehicle","control","deploy","deploy_floor","high","yes","no","none","CHN",0.181354649091385,0.188116171029975,"diversified_global","deploy",
+"United Kingdom","Electric Vehicles","Assembly","ev-connected-vehicle","control","compete","compete_catch_up","high","yes","no","none","CHN",0.181354649091385,0.188116171029975,"mixed","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
 "United Kingdom","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","moderate","no","no","none",,,0.188116171029975,"diversified_global","deploy",
 "United Kingdom","Gas","Assembly","gas-ot-control","control","deploy","deploy","high","yes","no","none","CHN",0.195884838206318,0.0574313390408783,"diversified_global","deploy",
-"United Kingdom","Green Hydrogen","Extraction","h2-pgm","material","deploy","deploy","low","no","no","none","RUS",0.286659316427784,,"diversified_global","deploy",
-"United Kingdom","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","low","yes","no","none","RUS",0.9,0,"allied","compete|deploy","strategic_need_percentile"
-"United Kingdom","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","low","yes","no","none","KAZ",0.233823027019315,0,"allied","compete|deploy","strategic_need_percentile"
-"United Kingdom","Nuclear","Components","nuc-fuel-fab","fuel","deploy","deploy","high","yes","no","none","CHN",0.157109847998057,0.121538816720637,"diversified_global","deploy",
-"United Kingdom","Nuclear","Assembly","nuc-reactor-controls","control","deploy","deploy_diversify","moderate","yes","no","none","CHN",0.268996625654577,0.0521360868457749,"allied","compete|deploy","strategic_need_percentile"
+"United Kingdom","Green Hydrogen","Extraction","h2-pgm","material","not_assessed",,"low","no","no","none","RUS",0.286659316427784,,,"deploy",
+"United Kingdom","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","moderate","yes","no","none","RUS",0.9,0,"allied","compete",
+"United Kingdom","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","moderate","yes","no","none","KAZ",0.233823027019315,0,"allied","compete",
+"United Kingdom","Nuclear","Components","nuc-fuel-fab","fuel","compete","compete_partner","moderate","yes","no","none","CHN",0.157109847998057,0.121538816720637,"allied","compete",
+"United Kingdom","Nuclear","Assembly","nuc-reactor-controls","control","compete","compete_partner","high","yes","no","none","CHN",0.268996625654577,0.0521360868457749,"allied","deploy",
 "United Kingdom","Oil","Assembly","oil-ot-control","control","deploy","deploy","high","yes","no","none","CHN",0.22964665765902,0.0822481031196718,"diversified_global","deploy",
-"United Kingdom","Solar","Refining","polysilicon","material","deploy","deploy_diversify","high","no","no","none","ARE",0.0934316971828628,0.0848550207185848,"allied","deploy",
-"United Kingdom","Solar","Components","pv-cells-wafers","hardware","deploy","deploy","low","no","no","none","CHN",0.272783279873699,0.228916027119688,"diversified_global","deploy",
-"United Kingdom","Solar","Components","pv-nextgen","hardware","deploy","deploy","low","no","no","none","CHN",0.272783279873699,0.228916027119688,"diversified_global","deploy",
+"United Kingdom","Solar","Refining","polysilicon","material","compete","compete_partner","high","no","no","none","ARE",0.0934316971828628,0.0848550207185848,"diversified_global","deploy",
+"United Kingdom","Solar","Components","pv-cells-wafers","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.228916027119688,"mixed","deploy",
+"United Kingdom","Solar","Components","pv-nextgen","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.228916027119688,"mixed","deploy",
 "United Kingdom","Solar","Assembly","pv-inverter-firmware-dist","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.299543166909054,0.267580051031049,"allied","secure",
-"United Kingdom","Solar","Assembly","pv-modules","hardware","deploy","deploy_diversify","low","no","no","none","CHN",0.797979797979798,0.267580051031049,"diversified_global","deploy",
-"United Kingdom","Solar","Assembly","pv-racking","structure","deploy","deploy","low","no","no","none","CHN",0.299543166909054,0.267580051031049,"diversified_global","deploy",
-"United Kingdom","Wind","Refining","ree-separation","material","deploy","deploy_diversify","moderate","yes","no","none","CHN",0.839394380876601,0.00899864532671472,"diversified_global","compete|deploy","strategic_need_percentile"
+"United Kingdom","Solar","Assembly","pv-modules","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.797979797979798,0.267580051031049,"mixed","compete|deploy","home_share"
+"United Kingdom","Solar","Assembly","pv-racking","structure","compete","compete_catch_up","high","no","no","none","CHN",0.299543166909054,0.267580051031049,"mixed","deploy",
+"United Kingdom","Wind","Refining","ree-separation","material","compete","compete_catch_up","moderate","yes","no","none","CHN",0.839394380876601,0.00899864532671472,"domestic","compete|deploy","home_share"
 "United Kingdom","Wind","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.262562946546993,"mixed","secure|compete","home_share"
-"United Kingdom","Wind","Assembly","wind-turbine-control","control","deploy","deploy","low","yes","no","none","CHN",0.215021376255937,0.18347742186882,"diversified_global","deploy",
-"United States","Batteries","Refining","bess-anode","material","compete","compete_preserve","moderate","no","no","none","CHN",0.944041592557121,0.148269015303819,"domestic","compete",
-"United States","Batteries","Refining","bess-cathode","material","compete","compete_preserve","moderate","no","no","none","CHN",0.256563324568776,0.148269015303819,"domestic","compete",
-"United States","Batteries","Refining","li-chemicals","material","compete","compete_preserve","low","no","no","none","CHN",0.736792600721116,0.148269015303819,"domestic","compete",
-"United States","Batteries","Assembly","bess-cells","hardware","compete","compete_catch_up","moderate","no","no","none","CHN",0.52885932234819,0.70084598714136,"mixed","compete",
+"United Kingdom","Wind","Assembly","wind-turbine-control","control","compete","compete_catch_up","high","yes","no","none","CHN",0.215021376255937,0.18347742186882,"mixed","deploy",
+"United States","Batteries","Refining","bess-anode","material","compete","compete_catch_up","high","no","no","none","CHN",0.944041592557121,0.148269015303819,"domestic","compete|deploy","premium_pct"
+"United States","Batteries","Refining","bess-cathode","material","compete","compete_catch_up","high","no","no","none","CHN",0.256563324568776,0.148269015303819,"domestic","compete",
+"United States","Batteries","Refining","li-chemicals","material","compete","compete_catch_up","high","no","no","none","CHN",0.736792600721116,0.148269015303819,"domestic","compete",
+"United States","Batteries","Assembly","bess-cells","hardware","compete","compete_preserve","high","no","no","none","CHN",0.52885932234819,0.70084598714136,"domestic","compete",
 "United States","Batteries","Assembly","bess-comms","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.52885932234819,0.70084598714136,"allied","secure",
 "United States","Batteries","Assembly","bess-control","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.52885932234819,0.70084598714136,"allied","secure",
-"United States","Batteries","Assembly","bess-enclosure","structure","compete","compete_catch_up","moderate","no","no","none","CHN",0.52885932234819,0.70084598714136,"mixed","compete",
+"United States","Batteries","Assembly","bess-enclosure","structure","compete","compete_preserve","high","no","no","none","CHN",0.52885932234819,0.70084598714136,"domestic","deploy",
 "United States","Electric Grid","Refining","goes","material","secure","secure_resilience","high","yes","yes","resilience","RUS",0.0613514524442527,0.0591076531753782,"allied","secure",
 "United States","Electric Grid","Assembly","bess-pcs","hardware","deploy","deploy","high","no","no","none","CHN",0.228102596534784,0.180597162790917,"diversified_global","deploy",
 "United States","Electric Grid","Assembly","grid-ami","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.180597162790917,"diversified_global","deploy",
@@ -259,23 +259,23 @@
 "United States","Electric Grid","Assembly","grid-scada","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.180597162790917,"diversified_global","deploy",
 "United States","Electric Grid","Assembly","grid-transformers","hardware","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.180597162790917,"diversified_global","deploy",
 "United States","Electric Grid","Assembly","hvdc-control","control","deploy","deploy","high","yes","no","none","CHN",0.228102596534784,0.180597162790917,"diversified_global","deploy",
-"United States","Electric Vehicles","Components","ev-motors","hardware","compete","compete_preserve","moderate","no","no","none","CHN",0.205429723173868,0.378288244974118,"domestic","compete",
+"United States","Electric Vehicles","Components","ev-motors","hardware","compete","compete_preserve","high","no","no","none","CHN",0.205429723173868,0.378288244974118,"domestic","compete",
 "United States","Electric Vehicles","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.378288244974118,"mixed","secure",
-"United States","Electric Vehicles","Assembly","ev-connected-vehicle","control","compete","compete_preserve","high","yes","no","none","CHN",0.181354649091385,0.118235326132426,"domestic","compete",
-"United States","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","moderate","no","no","none",,,0.118235326132426,"diversified_global","deploy",
-"United States","Gas","Assembly","gas-ot-control","control","compete","compete_preserve","high","yes","no","none","CHN",0.195884838206318,0.0820590635638726,"domestic","compete",
-"United States","Green Hydrogen","Extraction","h2-pgm","material","deploy","deploy","low","no","no","none","RUS",0.286659316427784,,"diversified_global","deploy",
-"United States","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","moderate","yes","no","none","RUS",0.9,0.202884746780992,"allied","compete",
-"United States","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","moderate","yes","no","none","KAZ",0.233823027019315,0.202884746780992,"allied","compete",
+"United States","Electric Vehicles","Assembly","ev-connected-vehicle","control","compete","compete_preserve","high","yes","no","none","CHN",0.181354649091385,0.118235326132426,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
+"United States","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","high","no","no","none",,,0.118235326132426,"diversified_global","deploy",
+"United States","Gas","Assembly","gas-ot-control","control","deploy","deploy","low","yes","no","none","CHN",0.195884838206318,0.0820590635638726,"diversified_global","compete|deploy",
+"United States","Green Hydrogen","Extraction","h2-pgm","material","not_assessed",,"low","no","no","none","RUS",0.286659316427784,,,"deploy",
+"United States","Nuclear","Refining","nuc-haleu","fuel","compete","compete_partner","high","yes","no","none","RUS",0.9,0.202884746780992,"allied","deploy",
+"United States","Nuclear","Refining","nuc-leu","fuel","compete","compete_partner","high","yes","no","none","KAZ",0.233823027019315,0.202884746780992,"allied","deploy",
 "United States","Nuclear","Components","nuc-fuel-fab","fuel","deploy","deploy","high","yes","no","none","CHN",0.157109847998057,0.124382955824105,"diversified_global","deploy",
 "United States","Nuclear","Assembly","nuc-reactor-controls","control","deploy","deploy","high","yes","no","none","CHN",0.268996625654577,0.0390243524232303,"diversified_global","deploy",
-"United States","Oil","Assembly","oil-ot-control","control","deploy","deploy","moderate","yes","no","none","CHN",0.22964665765902,0.143737896850594,"diversified_global","compete|deploy","opportunity_percentile"
-"United States","Solar","Refining","polysilicon","material","compete","compete_preserve","high","no","no","none","ARE",0.0934316971828628,0.0218928366517791,"domestic","compete",
-"United States","Solar","Components","pv-cells-wafers","hardware","compete","compete_preserve","high","no","no","none","CHN",0.272783279873699,0.161712361997654,"domestic","compete",
+"United States","Oil","Assembly","oil-ot-control","control","deploy","deploy","high","yes","no","none","CHN",0.22964665765902,0.143737896850594,"diversified_global","compete|deploy",
+"United States","Solar","Refining","polysilicon","material","deploy","deploy_diversify","moderate","no","no","none","ARE",0.0934316971828628,0.0218928366517791,"diversified_global","compete",
+"United States","Solar","Components","pv-cells-wafers","hardware","compete","compete_preserve","high","no","no","none","CHN",0.272783279873699,0.161712361997654,"domestic","compete|deploy","process_knowledge;workforce_suppliers;adjacent_innovation;premium_pct"
 "United States","Solar","Components","pv-nextgen","hardware","compete","compete_preserve","high","no","no","none","CHN",0.272783279873699,0.161712361997654,"domestic","compete",
 "United States","Solar","Assembly","pv-inverter-firmware-dist","control","compete","compete_preserve","high","yes","no","none","CHN",0.299543166909054,0.228286295209424,"domestic","compete",
-"United States","Solar","Assembly","pv-modules","hardware","compete","compete_preserve","moderate","no","no","none","CHN",0.797979797979798,0.228286295209424,"domestic","compete",
+"United States","Solar","Assembly","pv-modules","hardware","compete","compete_preserve","high","no","no","none","CHN",0.797979797979798,0.228286295209424,"domestic","compete",
 "United States","Solar","Assembly","pv-racking","structure","compete","compete_preserve","high","no","no","none","CHN",0.299543166909054,0.228286295209424,"domestic","compete",
-"United States","Wind","Refining","ree-separation","material","compete","compete_preserve","low","yes","no","none","CHN",0.839394380876601,0.0600277829115614,"domestic","compete|deploy","opportunity_percentile"
+"United States","Wind","Refining","ree-separation","material","compete","compete_partner","moderate","yes","no","none","CHN",0.839394380876601,0.0600277829115614,"diversified_global","compete",
 "United States","Wind","Components","ree-magnets","material","compete","compete_preserve","high","yes","no","none","CHN",0.839394380876601,0.149455953752849,"domestic","compete",
 "United States","Wind","Assembly","wind-turbine-control","control","compete","compete_preserve","high","yes","no","none","CHN",0.215021376255937,0.15798140332567,"domestic","compete",

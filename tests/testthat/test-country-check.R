@@ -43,7 +43,7 @@ test_that("the sectors are the 11 technologies x the six supply-chain stages, in
   expect_true(all(COUNTRY_NO_ES_CELLS %in% ct$key))
   es <- data.frame(iso3 = "A", key = setdiff(ct$key, COUNTRY_NO_ES_CELLS), value = 0.5)
   expect_identical(country_no_es_cells(rbind(es, data.frame(iso3 = "B", key = "coal-recovery", value = NA))), COUNTRY_NO_ES_CELLS[order(match(COUNTRY_NO_ES_CELLS, ct$key))])
-  expect_identical(COUNTRY_SCHEMA_VERSION, 2L)
+  expect_identical(COUNTRY_SCHEMA_VERSION, 3L)                          # schema 3: legacy_corner (design D6)
 })
 
 test_that("every synthetic sheet builds, round-trips exactly and passes the contract check", {
@@ -61,7 +61,7 @@ test_that("the fixture exercises every path of the profile", {
   b <- lapply(sheets, round_trip)
   expect_equal(b$DEU$priority_rule, "upgrade")
   expect_equal(b$USA$priority_rule, "top_si_fallback")                 # the all-Grow core member (as the United States and Japan)
-  expect_equal(b$USA$summary$quadrants$upgrade$v, 0)
+  expect_equal(b$USA$summary$legacy_corners$legacy_upgrade$v, 0)
   expect_false(b$NGA$meta$has_si)
   expect_equal(b$NGA$priority_rule, "top_eo")
   expect_equal(b$PRI$meta$status, "non_rankable")
@@ -80,7 +80,7 @@ test_that("the fixture exercises every path of the profile", {
     for (c in s$cells) if (c$key %in% COUNTRY_NO_ES_CELLS) {
       expect_null(c$es)
       expect_false(isTRUE(c$placed))
-      expect_match(c$quadrant_reason, "no Energy Security score for any economy in this sector", fixed = TRUE)
+      expect_match(c$legacy_corner_reason, "no Energy Security score for any economy in this sector", fixed = TRUE)
     }
   }
   # the allied pick: any stage but Deployment, never a screened Extraction sector or an excluded technology
@@ -150,15 +150,19 @@ test_that("summary counts, orders and Strategic Index parts agree with the cells
   for (s in lapply(sheets, round_trip)) {
     placed <- Filter(function(c) isTRUE(c$placed), s$cells)
     expect_equal(s$summary$n_placed$v, length(placed))
-    q <- vapply(placed, function(c) c$quadrant, "")
-    for (k in c("grow", "upgrade", "secure", "watch")) expect_equal(s$summary$quadrants[[k]]$v, sum(q == k))
-    expect_equal(s$summary$n_insecure$v, sum(q %in% c("upgrade", "secure")))
+    q <- vapply(placed, function(c) c$legacy_corner, "")
+    # schema 3 (design D6): the legacy corners are namespaced; no key reads as the canonical Secure or Watch
+    expect_true(all(q %in% COUNTRY_LEGACY_CORNER_IDS))
+    expect_null(s$summary$quadrants)
+    for (c in s$cells) expect_null(c$quadrant)
+    for (k in COUNTRY_LEGACY_CORNER_IDS) expect_equal(s$summary$legacy_corners[[k]]$v, sum(q == k))
+    expect_equal(s$summary$n_insecure$v, sum(q %in% c("legacy_upgrade", "legacy_exposed")))
     # the corners split at the country's median sector: the median of the plotted positions (2026-10-15)
     for (pl in c("es", "eo")) {
       pos <- vapply(placed, function(c) c[[pl]]$pos, 1)
       if (!length(pos)) { expect_null(s$summary$country_median[[pl]]$v); next }
       expect_equal(s$summary$country_median[[pl]]$v, stats::median(pos))
-      expect_equal(sum(pos >= stats::median(pos)), sum(q %in% (if (pl == "es") c("grow", "watch") else c("grow", "upgrade"))))
+      expect_equal(sum(pos >= stats::median(pos)), sum(q %in% (if (pl == "es") c("legacy_grow", "legacy_stable") else c("legacy_grow", "legacy_upgrade"))))
     }
     pct <- vapply(s$summary$es_order, function(k) Filter(function(c) c$key == k, s$cells)[[1]]$es$pct$v, 1)
     expect_false(is.unsorted(pct))
@@ -174,7 +178,7 @@ break_sheet <- function(s, op) {
   ins <- which(vapply(s$cells, function(c) isTRUE(c$si$in_sample), TRUE))[1]
   ranked <- which(vapply(s$partners$rows, function(r) !is.null(r$rank$v), TRUE))
   switch(op,
-    quadrant_flip = { q <- s$cells[[placed]]$quadrant; s$cells[[placed]]$quadrant <- if (q == "grow") "watch" else "grow" },
+    legacy_corner_flip = { q <- s$cells[[placed]]$legacy_corner; s$cells[[placed]]$legacy_corner <- if (q == "legacy_grow") "legacy_stable" else "legacy_grow" },
     pos_wrong_side = { p <- s$cells[[placed]]$es; s$cells[[placed]]$es$pos <- if (p$v >= p$med$v) 10 else 90 },
     country_median_off = { s$summary$country_median$es$v <- s$summary$country_median$es$v + 5 },
     si_parts_off = { s$cells[[ins]]$si$parts$eo$v <- s$cells[[ins]]$si$parts$eo$v + 0.1 },
@@ -250,7 +254,9 @@ test_that("the manifest of the synthetic export passes its check; a broken one d
   m <- country_manifest(entries, ctx$meta, list(), list(), counts)
   back <- jsonlite::fromJSON(as.character(country_json(m)), simplifyVector = FALSE)
   expect_equal(country_check_manifest(back), character())
-  expect_identical(back$schema_version, 2L)
+  expect_identical(back$schema_version, 3L)
+  expect_true(all(vapply(back$countries, function(e) is.null(e$quadrants), TRUE)))
+  expect_true(all(vapply(back$countries, function(e) all(names(e$legacy_corners) %in% COUNTRY_LEGACY_CORNER_IDS), TRUE)))
   expect_setequal(unlist(back$no_es_cells), COUNTRY_NO_ES_CELLS)
   expect_equal(unlist(back$cmfdi_stages), c("Components", "Assembly"))
   back$countries[[1]]$file <- "facts-USA.json"

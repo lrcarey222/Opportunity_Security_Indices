@@ -47,8 +47,8 @@ test_that("a pillar constant across the economies compared ranks none of them: t
   expect_true(by[["oil-extraction"]]$placed)
   r <- by[["oil-recovery"]]
   expect_false(r$placed)
-  expect_null(r$quadrant)
-  expect_identical(r$quadrant_reason, "the same Energy Security score for every economy in this sector")
+  expect_null(r$legacy_corner)
+  expect_identical(r$legacy_corner_reason, "the same Energy Security score for every economy in this sector")
   # the score is shown, but no percentile, position or side on it; the other pillar keeps its own
   expect_equal(r$es$v, 0.438)
   expect_null(r$es$pct$v)
@@ -70,28 +70,31 @@ test_that("the plotted position sits on the side of the median its value is on",
 })
 
 test_that("quadrants: at or above the split is high (ties go high)", {
-  expect_equal(country_quadrant(0.5, 0.5, 0.5, 0.5), "grow")
-  expect_equal(country_quadrant(0.4, 0.6, 0.5, 0.5), "upgrade")
-  expect_equal(country_quadrant(0.4, 0.4, 0.5, 0.5), "secure")
-  expect_equal(country_quadrant(0.6, 0.4, 0.5, 0.5), "watch")
+  # schema 3 (design D6): legacy_* keys (were grow, upgrade, secure = Exposed, watch = Stable)
+  expect_equal(country_quadrant(0.5, 0.5, 0.5, 0.5), "legacy_grow")
+  expect_equal(country_quadrant(0.4, 0.6, 0.5, 0.5), "legacy_upgrade")
+  expect_equal(country_quadrant(0.4, 0.4, 0.5, 0.5), "legacy_exposed")
+  expect_equal(country_quadrant(0.6, 0.4, 0.5, 0.5), "legacy_stable")
+  expect_equal(unname(COUNTRY_LEGACY_CORNER_OLD_KEYS[c("grow", "upgrade", "secure", "watch")]), COUNTRY_LEGACY_CORNER_IDS)
 })
 
 test_that("corners split at the country's own median sector: the median of the plotted positions (2026-10-15)", {
   cell <- function(k, es_pos, eo_pos, es_v = 0.5, es_med = 0.4, placed = TRUE) list(
-    key = k, placed = placed, quadrant = NULL,
+    key = k, placed = placed, legacy_corner = NULL,
     es = list(v = es_v, pos = es_pos, med = list(v = es_med)), eo = list(v = 0.5, pos = eo_pos, med = list(v = 0.4)))
   cells <- list(cell("a", 90, 80), cell("b", 70, 20), cell("c", 30, 60), cell("d", 10, 40), cell("e", 50, 50),
                 cell("x", 100, 100, placed = FALSE))
   m <- country_median_sector(cells)
   expect_equal(m, list(es = 50, eo = 50))                              # over the placed sectors only
   q <- country_set_quadrants(cells)
-  expect_equal(vapply(q$cells[1:5], function(c) c$quadrant, ""), c("grow", "watch", "upgrade", "secure", "grow"))  # e ties: high on both
-  expect_null(q$cells[[6]]$quadrant)
-  expect_true("quadrant" %in% names(q$cells[[6]]))                     # kept as null for the JSON
+  expect_equal(vapply(q$cells[1:5], function(c) c$legacy_corner, ""),
+               c("legacy_grow", "legacy_stable", "legacy_upgrade", "legacy_exposed", "legacy_grow"))  # e ties: high on both
+  expect_null(q$cells[[6]]$legacy_corner)
+  expect_true("legacy_corner" %in% names(q$cells[[6]]))                # kept as null for the JSON
   # an even number of sectors: the mean of the two middle positions
   expect_equal(country_median_sector(cells[1:4]), list(es = 50, eo = 50))
   # the earlier rule (sector_median): the score against the sector's median economy, whatever the positions
-  expect_equal(vapply(country_set_quadrants(cells, "sector_median")$cells[1:5], function(c) c$quadrant, ""), rep("grow", 5))
+  expect_equal(vapply(country_set_quadrants(cells, "sector_median")$cells[1:5], function(c) c$legacy_corner, ""), rep("legacy_grow", 5))
   expect_equal(country_median_sector(list(cell("x", 1, 1, placed = FALSE))), list(es = NA_real_, eo = NA_real_))
 })
 

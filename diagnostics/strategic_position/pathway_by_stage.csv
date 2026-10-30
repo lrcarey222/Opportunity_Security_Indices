@@ -1,0 +1,6 @@
+"supply_chain","n_cells","yes","no","unknown","feasibility","pipeline","adjacent_stage","learning","input_cost","decided_catch_up"
+"Extraction",2409,261,2110,38,106,0,173,61,100,64
+"Refining",2409,1666,742,1,442,45,1399,458,396,345
+"Components",2409,1570,838,1,475,48,1317,472,396,638
+"Assembly",2409,1182,1225,2,475,60,785,507,396,483
+"Recovery",2409,1162,1246,1,139,0,823,88,396,130

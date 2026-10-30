@@ -1,0 +1,279 @@
+# Deployment Need and national home-market growth (spec Part V.2 and VI; design D12, D13).
+# Read by scripts/95_build_deployment_need.R; the rules live in R/strategic_position/deployment_need.R and
+# R/strategic_position/home_market.R. Writes data/processed/deployment_need_tbl.rds and
+# data/processed/home_market_tbl.rds; the engine (scripts/26) reads them for the Deployment & Use stage
+# (deployment_need) and for the national lift of the industrial prize (home_market).
+#
+# Deployment Need answers: how much additional deployment does this country need to meet expected
+# energy-system requirements or its own stated goals? It is NOT supply-chain vulnerability, and it is
+# never combined with supply_chain_need (spec VI). One row per country x technology at Deployment.
+#
+# Method (docs/strategic_position.md, Deployment Need):
+#   * each measure is oriented so that higher = more need, then ranked within the technology across the
+#     countries that have it (mid-rank percentile; missing stays missing, never zero);
+#   * a family = mean of its observed measure percentiles; family percentile = mid-rank of that mean
+#     within the technology;
+#   * deployment_need = mean of the observed family percentiles (0-1); deployment_need_pct = its mid-rank
+#     within the technology; families_observed counts the families behind it.
+# A measure applies to a technology only where the attribution below says so. Fossil technologies go
+# through the same code path and the same three families (user decision 2026-10-29); their attribution is
+# set here like any other technology's.
+#
+# YAML note: never use a bare key named yes, no, on or off (YAML 1.1 reads them as booleans).
+
+techs: [Batteries, Coal, Electric Grid, Electric Vehicles, Gas, Geothermal, Green Hydrogen, Nuclear, Oil,
+        Solar, Wind]
+stage: Deployment
+
+# Observed-trend window (years) for demand, generation and capacity trends, and the recent build-rate
+# window (years) for the policy-gap projection.
+trend_years: 5
+build_rate_years: 3
+# Systems smaller than this (TWh of demand or generation at the start of a window) get no growth
+# measure: tiny bases make growth rates meaningless (the KAZ trade-growth artefact of 2026-10-20).
+min_system_twh: 1
+# Oil demand trend needs at least this much consumption (EJ) at the start of the window.
+min_oil_ej: 0.01
+# A fuel with a smaller share of generation than this contributes nothing to import displacement even
+# when its import dependence is unknown; at or above it, an unknown import dependence makes the measure
+# unknown (NA), never zero.
+min_fuel_share: 0.01
+# National scenario horizon (WEO 2025 single-country regions; IEA GEVO 2026).
+scenario_base_year: 2024
+scenario_year: 2035
+# Hours in a year / 1000: converts TWh of annual demand into GW of average load.
+twh_to_avg_gw: 8.76
+
+families:
+  dn_demand:
+    label: Demand adequacy
+    question: How much additional energy or capacity will the system require?
+    scenario: current_policy
+  dn_policy_gap:
+    label: Climate / policy gap
+    question: How far is current and projected deployment from the country's own stated targets?
+    scenario: national_commitments
+  dn_system:
+    label: System need
+    question: Does this technology solve a binding system constraint (fuel imports, flexibility, firm capacity)?
+    scenario: current_policy
+
+# Measures. `family` places the measure; `techs` attributes it; `direction` -1 means a lower raw value is
+# more need. Units are the raw value's.
+measures:
+  demand_growth:
+    family: dn_demand
+    unit: '% per year'
+    label: Electricity demand growth (WEO 2025 Current Policies 2024-2035 for the single-country WEO regions;
+      else the Ember observed trend over trend_years)
+    # Every technology that serves the power system: system-level attribution, the same value for each.
+    techs: [Solar, Wind, Nuclear, Geothermal, Coal, Gas, Batteries, Electric Grid]
+    direction: 1
+  output_growth:
+    family: dn_demand
+    unit: percentage points of total generation per year
+    label: Growth of the technology's generation, as a share of the system (WEO 2025 Current Policies for the
+      single-country WEO regions; else the Ember observed trend). Batteries read the variable renewables
+      (solar + wind) that storage has to firm.
+    # tech -> Ember sources summed; WEO series are in weo_series below.
+    techs:
+      Solar: [Solar]
+      Wind: [Wind]
+      Nuclear: [Nuclear]
+      Coal: [Coal]
+      Gas: [Gas]
+      Batteries: [Solar, Wind]
+    direction: 1
+  ev_share_growth:
+    family: dn_demand
+    unit: percentage points of new-car sales per year
+    label: Electric share of new-car sales, change per year (IEA GEVO 2026 Current Policies 2025-2035 where
+      projected nationally; else the observed trend)
+    techs: [Electric Vehicles]
+    direction: 1
+  oil_demand_growth:
+    family: dn_demand
+    unit: '% per year'
+    label: Oil consumption growth, observed (Energy Institute Statistical Review)
+    techs: [Oil]
+    direction: 1
+  target_shortfall:
+    family: dn_policy_gap
+    unit: '% of the installed power fleet'
+    label: Projected 2030 shortfall against the national target at the recent build rate (target - (installed
+      + recent annual additions x years to the target)), as a share of today's installed capacity
+    # tech -> target key. Solar and Wind are Ember's tracked 2030 targets; Nuclear, Coal, Gas and Battery are
+    # 2030 capacities in approved national plans collected by the same tracker (plan_source_types).
+    techs:
+      Solar: Solar
+      Wind: Wind
+      Nuclear: Nuclear
+      Coal: Coal
+      Gas: Gas
+      Batteries: Battery
+    direction: 1
+  renewables_target_shortfall:
+    family: dn_policy_gap
+    unit: '% of the installed power fleet'
+    label: Projected 2030 shortfall against the total renewable-capacity target (same arithmetic); for
+      Batteries and Electric Grid, the integration requirement of the country's own renewable commitment
+    # Solar and wind deliver most renewable additions; geothermal, hydro and bioenergy are not attributed.
+    # Storage and grids are what connects and firms committed renewable additions (no national grid
+    # targets exist in the data; battery targets, where they exist, are scored by target_shortfall too).
+    techs: [Solar, Wind, Batteries, Electric Grid]
+    direction: 1
+  import_displacement:
+    family: dn_system
+    unit: share (0-1)
+    label: Imported fuel the technology's deployment can displace
+    # displaces: Ember sources whose generation the technology replaces, each weighted by its share of
+    #   generation x the import dependence of its fuel; own_fuel: the technology burns this fuel, so the
+    #   result is scaled by (1 - its import dependence): a technology burning imported fuel displaces no
+    #   imports. fuel: direct attribution to one fuel's import dependence.
+    techs:
+      Solar: {displaces: [Coal, Gas, Other fossil]}
+      Wind: {displaces: [Coal, Gas, Other fossil]}
+      Nuclear: {displaces: [Coal, Gas, Other fossil]}
+      Geothermal: {displaces: [Coal, Gas, Other fossil]}
+      Coal: {displaces: [Gas, Other fossil], own_fuel: Coal}
+      Gas: {displaces: [Coal, Other fossil], own_fuel: Gas}
+      Electric Vehicles: {fuel: Oil}
+      Green Hydrogen: {fuel: Gas}
+    direction: 1
+  flexibility_need:
+    family: dn_system
+    unit: '% of generation'
+    label: Variable-renewable (solar + wind) share of generation, the integration and flexibility need that
+      storage, grids and dispatchable gas answer
+    techs: [Batteries, Electric Grid, Gas]
+    direction: 1
+  firm_capacity_need:
+    family: dn_system
+    unit: GW of dispatchable capacity per GW of average load
+    label: Dispatchable capacity relative to average load (lower = tighter firm-capacity margin = more need)
+    techs: [Nuclear, Geothermal, Coal, Gas]
+    dispatchable_sources: [Coal, Gas, Other fossil, Nuclear, Hydro, Bioenergy, Other renewables]
+    direction: -1
+
+# Ember source -> fuel whose import dependence (data/processed/import_dependence_tbl.rds, self-sufficiency)
+# applies. Ember's "Other fossil" is mostly oil products.
+fuel_of_source:
+  Coal: Coal
+  Gas: Gas
+  Other fossil: Oil
+
+# WEO 2025 Regions (data/processed/climate_src_weo_values_tbl.rds) series per Ember source; the
+# single-country regions (match == own in climate_src_weo_geo_tbl) are national values.
+weo_series:
+  total: gen_total
+  Solar: gen_solar
+  Wind: gen_wind
+  Nuclear: gen_nuclear
+  Coal: gen_coal
+  Gas: gen_gas
+weo_scenarios:
+  current_policy: current
+  stated_policies: stated
+
+# Ember 2030 Global Renewable Target Tracker.
+targets:
+  target_year: 2030
+  # capacity_target_wide columns per target key. Wind is the Wind column, else Onshore + Offshore when the
+  # onshore target is given (an offshore-only target cannot be compared with Ember's total wind capacity).
+  renewables_column: res_capacity_target
+  # National-plan capacities from raw_data_long (METRIC capacity_total_gw, TARGET_YEAR target_year); fuel
+  # category -> target key. Only commitments count: approved plans, laws, executive orders. Official
+  # projections, third-party studies, assumptions and proposals are not national commitments.
+  plan_fuels:
+    Nuclear: Nuclear
+    Coal: Coal
+    Gas: Gas
+    Battery: Battery
+  plan_source_types:
+    - National strategy or plans (approved)
+    - Written into law
+    - Executive order
+  # Ember yearly capacity key per target key (Battery: EI Statistical Review grid-scale BESS, MW -> GW).
+  installed_source:
+    Solar: Solar
+    Wind: Wind
+    Renewables: Renewables
+    Nuclear: Nuclear
+    Coal: Coal
+    Gas: Gas
+    Battery: Battery
+
+# Climate-aligned alternative: a separately labelled column, never in the score (spec V.B: no 1.5C pathway
+# as objective fact). World only (IEA WEO 2025 Annex A, data/processed/iea_pathways_values_tbl.rds):
+# NZE 2035 / Current Policies 2035 - 1, i.e. how much more of the technology a net-zero pathway deploys
+# worldwide by 2035 than current policies do. Country-invariant: basis global_context.
+climate_aligned:
+  scenario: climate_aligned
+  aligned: nze
+  reference: current
+  year: 2035
+  series:
+    Solar: cap_solar
+    Wind: cap_wind
+    Nuclear: cap_nuclear
+    Geothermal: cap_geothermal
+    Batteries: cap_battery
+    Coal: cap_coal
+    Gas: gen_gas
+    Oil: tfc_oil
+    Electric Vehicles: elec_transport
+    Green Hydrogen: h2_low
+    Electric Grid: gen_total
+
+# Confidence by the number of observed families.
+confidence:
+  high: 3
+  moderate: 2
+  low: 1
+
+# Review set (spec XXI.4) written to diagnostics/strategic_position/deployment_need_review.csv.
+review:
+  countries: [USA, JPN, KOR, IND, DEU, GBR, FRA, AUS, CAN]
+  techs: [Solar, Wind, Nuclear, Batteries, Electric Grid, Electric Vehicles]
+
+# ---- National home-market growth (io_home_market input; design section 2, D13) ---------------------
+# Expected growth of domestic deployment of the technology, national evidence only (regional values are
+# never used). Three kinds, each an expected volume of additions per year in the technology's unit:
+#   scenario        IEA WEO 2025 Stated Policies for the single-country regions (generation growth applied
+#                   to Ember installed capacity) and IEA GEVO 2026 Stated Policies EV stock;
+#   target          Ember 2030 targets and national-plan capacities (as in target_shortfall);
+#   observed_trend  Ember installed-capacity additions over trend_years, EI grid-scale BESS additions,
+#                   GEVO EV car sales, EI oil consumption change.
+# home_market = mean of the observed kinds' within-technology percentiles of the additions (volume, so a
+# tiny base growing fast does not outrank a large market); home_market_pct = its mid-rank. BNEF values
+# (subscription) never enter any column here (D13).
+home_market:
+  scenario: stated_policies
+  ev_scenario: Projection-STEPS
+  ev_cps: Projection-CPS
+  units:
+    Solar: GW per year
+    Wind: GW per year
+    Nuclear: GW per year
+    Coal: GW per year
+    Gas: GW per year
+    Batteries: GW per year
+    Electric Vehicles: vehicles per year
+    Oil: EJ per year
+  # tech -> Ember capacity key for the scenario and trend kinds (Batteries: EI BESS).
+  capacity_source:
+    Solar: Solar
+    Wind: Wind
+    Nuclear: Nuclear
+    Coal: Coal
+    Gas: Gas
+    Batteries: Battery
+  # tech -> target key for the target kind.
+  target_key:
+    Solar: Solar
+    Wind: Wind
+    Nuclear: Nuclear
+    Coal: Coal
+    Gas: Gas
+    Batteries: Battery
+  ev_sales_years: 3

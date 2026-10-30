@@ -189,7 +189,8 @@ test_that("policy alignment: weak support under Preserve / Catch Up, heavy polic
   p$policy_priority_percentile <- 0.5
   p$policy_protection_priority <- 0.9
   p$policy_support_priority <- 0.5
-  expect_equal(sp_policy_alignment(p, a_cfg), "mixed")
+  # spec X / design D5: autarky under Partner is the wrong treatment (misaligned), no longer "mixed"
+  expect_equal(sp_policy_alignment(p, a_cfg), "misaligned")
   expect_equal(sp_policy_alignment_flag(p, a_cfg), "partner_autarkic")
   p$policy_protection_priority <- 0.3
   expect_equal(sp_policy_alignment(p, a_cfg), "aligned")

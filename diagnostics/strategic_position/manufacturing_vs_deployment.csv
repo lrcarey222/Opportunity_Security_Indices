@@ -1,0 +1,101 @@
+"tech","deployment_choice","manufacturing_choice","n_countries"
+"Batteries","accelerate","compete_at_home",50
+"Batteries","accelerate","not_assessed",1
+"Batteries","accelerate","partner",3
+"Batteries","accelerate","watch",4
+"Batteries","not_assessed","compete_at_home",9
+"Batteries","not_assessed","not_assessed",5
+"Batteries","not_assessed","partner",1
+"Batteries","not_assessed","watch",1
+"Batteries","watch","compete_at_home",116
+"Batteries","watch","not_assessed",3
+"Batteries","watch","partner",10
+"Batteries","watch","watch",11
+"Coal","accelerate","compete_at_home",1
+"Coal","accelerate","not_assessed",1
+"Coal","accelerate","partner",27
+"Coal","accelerate","watch",12
+"Coal","not_assessed","not_assessed",6
+"Coal","not_assessed","partner",5
+"Coal","not_assessed","watch",42
+"Coal","watch","compete_at_home",1
+"Coal","watch","not_assessed",2
+"Coal","watch","partner",54
+"Coal","watch","watch",63
+"Electric Grid","accelerate","compete_at_home",1
+"Electric Grid","accelerate","partner",23
+"Electric Grid","accelerate","secure",8
+"Electric Grid","accelerate","watch",24
+"Electric Grid","not_assessed","not_assessed",5
+"Electric Grid","not_assessed","partner",2
+"Electric Grid","not_assessed","watch",9
+"Electric Grid","watch","not_assessed",4
+"Electric Grid","watch","partner",39
+"Electric Grid","watch","secure",15
+"Electric Grid","watch","watch",84
+"Electric Vehicles","accelerate","compete_at_home",33
+"Electric Vehicles","not_assessed","compete_at_home",91
+"Electric Vehicles","not_assessed","not_assessed",9
+"Electric Vehicles","not_assessed","partner",7
+"Electric Vehicles","not_assessed","watch",5
+"Electric Vehicles","watch","compete_at_home",57
+"Electric Vehicles","watch","partner",6
+"Electric Vehicles","watch","watch",6
+"Gas","accelerate","compete_at_home",6
+"Gas","accelerate","partner",28
+"Gas","accelerate","watch",28
+"Gas","not_assessed","not_assessed",5
+"Gas","not_assessed","partner",3
+"Gas","not_assessed","watch",8
+"Gas","watch","compete_at_home",3
+"Gas","watch","not_assessed",4
+"Gas","watch","partner",52
+"Gas","watch","watch",77
+"Geothermal","accelerate","not_assessed",50
+"Geothermal","not_assessed","not_assessed",49
+"Geothermal","watch","not_assessed",115
+"Green Hydrogen","accelerate","not_assessed",35
+"Green Hydrogen","not_assessed","not_assessed",124
+"Green Hydrogen","watch","not_assessed",55
+"Nuclear","accelerate","compete_at_home",7
+"Nuclear","accelerate","not_assessed",1
+"Nuclear","accelerate","partner",26
+"Nuclear","accelerate","secure",1
+"Nuclear","accelerate","watch",14
+"Nuclear","not_assessed","not_assessed",6
+"Nuclear","not_assessed","watch",43
+"Nuclear","watch","compete_at_home",5
+"Nuclear","watch","not_assessed",2
+"Nuclear","watch","partner",54
+"Nuclear","watch","secure",1
+"Nuclear","watch","watch",54
+"Oil","accelerate","compete_at_home",1
+"Oil","accelerate","partner",17
+"Oil","accelerate","watch",14
+"Oil","not_assessed","not_assessed",9
+"Oil","not_assessed","partner",63
+"Oil","not_assessed","watch",64
+"Oil","watch","partner",14
+"Oil","watch","watch",32
+"Solar","accelerate","compete_at_home",42
+"Solar","accelerate","partner",6
+"Solar","not_assessed","compete_at_home",37
+"Solar","not_assessed","not_assessed",6
+"Solar","not_assessed","partner",5
+"Solar","not_assessed","watch",2
+"Solar","watch","compete_at_home",95
+"Solar","watch","not_assessed",3
+"Solar","watch","partner",12
+"Solar","watch","watch",6
+"Wind","accelerate","compete_at_home",45
+"Wind","accelerate","not_assessed",1
+"Wind","accelerate","partner",3
+"Wind","accelerate","watch",1
+"Wind","not_assessed","compete_at_home",38
+"Wind","not_assessed","not_assessed",6
+"Wind","not_assessed","partner",4
+"Wind","not_assessed","watch",2
+"Wind","watch","compete_at_home",95
+"Wind","watch","not_assessed",2
+"Wind","watch","partner",13
+"Wind","watch","watch",4

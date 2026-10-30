@@ -1,0 +1,5 @@
+"legacy_corner","maps_to","n_cells","n_agree","agreement","to_secure","to_preserve","to_catch_up","to_partner","to_accelerate","to_watch","to_not_assessed"
+"legacy_grow","preserve",2131,55,0.026,20,55,228,226,156,992,454
+"legacy_upgrade","catch_up",1108,100,0.09,41,12,100,278,40,302,335
+"legacy_exposed","partner",2018,482,0.239,71,6,315,482,81,717,346
+"legacy_stable","watch",1094,452,0.413,11,7,99,114,32,452,379

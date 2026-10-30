@@ -1,19 +1,21 @@
-# The decision quadrant inside the medium yard (docs/strategic_position.md, section 7.3). After the
-# Secure override, the recommended posture of a producing-stage node comes from two axes:
+# LEGACY diagnostic (2026-10-28 rule; docs/strategic_position.md, "Legacy OSI framework"): the need x
+# legacy-EO decision quadrant that decided the posture before the canonical framework (decision_engine.R).
+# It is kept only to report what changed (legacy_quadrant_* columns, the before-vs-after consistency
+# counts) and is never read by the recommendation. After the Secure override, the old rule gave a
+# producing-stage node its posture from two axes:
 #
 #   Strategic Need          strategic_need_percentile (across countries within the cell)
-#   Industrial Opportunity  the EO index placed among the node's contenders (opportunity_percentile)
+#   Legacy EO opportunity   the legacy Economic Opportunity Index placed among the node's contenders
+#                           (opportunity_percentile; the EO value is legacy_eo_opportunity)
 #
 #                        opportunity high        opportunity low
 #     need high          COMPETE catch_up        COMPETE partner
 #     need low           COMPETE preserve        DEPLOY  (quadrant watch)
 #
-# There is no new score: the quadrant is a pair of threshold tests on the two existing axes, and the
-# thresholds are config (strategic_posture.decision_quadrant), tested at 0.60 / 0.67 / 0.70. Cells
-# within the borderline band of a threshold are flagged and lose confidence. Deployment keeps the
-# engine's posture (Deploy unless Secure): its quadrant is reported for information only.
-# Competitive Position is a consistency check, never an override: catch_up where the country already
-# leads the world, preserve without a capability and partner despite a strong one are flagged.
+# Competitive Position was a consistency check only (catch_up where the country already leads the
+# world, preserve without a capability and partner despite a strong one were flagged). The canonical
+# framework replaced it because Need x Opportunity alone assigned Preserve vs Catch Up and the legacy EO
+# ranks countries mainly by input cost and capability.
 #
 # Pure: no IO. Needs posture_engine.R (sp_delivery_mode, SP_POSTURES) and sp_helpers.R.
 
@@ -37,20 +39,24 @@ sp_ref_pct <- function(v, ref) {
 # and large economies). Technologies whose world market is declining (market_outlook in cap_outlooks)
 # are capped below the thresholds: a shrinking market is not an industrial opportunity.
 #
-# eo: iso3, tech, supply_chain, industrial_opportunity (the EO index; NA = not rankable).
-# presence: iso3, tech, supply_chain, home_share. peers: ISO3 codes. outlook: named character, tech ->
-# market outlook. Returns iso3 x tech x supply_chain with industrial_opportunity,
-# opportunity_percentile, opportunity_basis (contenders / peers / none), opportunity_n_ref,
-# opportunity_capped.
+# eo: iso3, tech, supply_chain, legacy_eo_opportunity (the EO index; NA = not rankable; the pre-2026-10-29
+# name industrial_opportunity is accepted). presence: iso3, tech, supply_chain, home_share. peers: ISO3
+# codes. outlook: named character, tech -> market outlook. Returns iso3 x tech x supply_chain with
+# legacy_eo_opportunity, opportunity_percentile, opportunity_basis (contenders / peers / none),
+# opportunity_n_ref, opportunity_capped. The name industrial_opportunity now belongs to the clean prize
+# (industrial_opportunity.R).
 sp_opportunity_axis <- function(eo, presence, peers, cfg = list(), outlook = NULL) {
   min_share <- cfg$contender_min_share %||% 0.005
   min_n <- as.integer(cfg$min_contenders %||% 5L)
   caps <- unlist(cfg$cap_outlooks %||% "declining")
   cap_pct <- cfg$cap_percentile %||% 0.5
+  if (!"legacy_eo_opportunity" %in% names(eo) && "industrial_opportunity" %in% names(eo)) {
+    eo <- dplyr::rename(eo, legacy_eo_opportunity = "industrial_opportunity")
+  }
   x <- eo %>%
     dplyr::left_join(presence[, c("iso3", "tech", "supply_chain", "home_share")], by = c("iso3", "tech", "supply_chain")) %>%
-    dplyr::mutate(.contender = !is.na(.data$home_share) & .data$home_share >= min_share & !is.na(.data$industrial_opportunity),
-                  .peer = .data$iso3 %in% peers & !is.na(.data$industrial_opportunity))
+    dplyr::mutate(.contender = !is.na(.data$home_share) & .data$home_share >= min_share & !is.na(.data$legacy_eo_opportunity),
+                  .peer = .data$iso3 %in% peers & !is.na(.data$legacy_eo_opportunity))
   x <- x %>%
     dplyr::group_by(.data$tech, .data$supply_chain) %>%
     dplyr::mutate(
@@ -62,16 +68,16 @@ sp_opportunity_axis <- function(eo, presence, peers, cfg = list(), outlook = NUL
       ),
       opportunity_percentile = {
         b <- dplyr::first(.data$opportunity_basis)
-        ref <- if (b == "contenders") .data$industrial_opportunity[.data$.contender] else if (b == "peers") .data$industrial_opportunity[.data$.peer] else numeric()
-        if (b == "none") rep(NA_real_, dplyr::n()) else pmin(pmax(sp_ref_pct(.data$industrial_opportunity, ref), 0), 1)
+        ref <- if (b == "contenders") .data$legacy_eo_opportunity[.data$.contender] else if (b == "peers") .data$legacy_eo_opportunity[.data$.peer] else numeric()
+        if (b == "none") rep(NA_real_, dplyr::n()) else pmin(pmax(sp_ref_pct(.data$legacy_eo_opportunity, ref), 0), 1)
       }
     ) %>%
     dplyr::ungroup()
   out_look <- if (is.null(outlook)) rep(NA_character_, nrow(x)) else unname(outlook[x$tech])
   x$opportunity_capped <- out_look %in% caps & !is.na(x$opportunity_percentile) & x$opportunity_percentile > cap_pct
   x$opportunity_percentile <- ifelse(x$opportunity_capped, cap_pct, x$opportunity_percentile)
-  x$opportunity_basis[is.na(x$industrial_opportunity)] <- "none"
-  x[, c("iso3", "tech", "supply_chain", "industrial_opportunity", "opportunity_percentile", "opportunity_basis",
+  x$opportunity_basis[is.na(x$legacy_eo_opportunity)] <- "none"
+  x[, c("iso3", "tech", "supply_chain", "legacy_eo_opportunity", "opportunity_percentile", "opportunity_basis",
         "opportunity_n_ref", "opportunity_capped")]
 }
 
