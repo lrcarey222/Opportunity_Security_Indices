@@ -85,7 +85,7 @@ isos <- core$countries$iso3
 details <- lapply(isos, function(iso) write_doc(paste0("posture-detail-", iso), posture_detail_doc(tbl, iso, sp_cfg, created)))
 detail_bytes <- vapply(details, function(d) d$bytes, numeric(1))
 if (any(detail_bytes > POSTURE_BUDGET_DETAIL)) {
-  stop("posture detail over the 128 KiB budget: ", paste(isos[detail_bytes > POSTURE_BUDGET_DETAIL], collapse = ", "))
+  stop("posture detail over the ", POSTURE_BUDGET_DETAIL / 1024, " KiB budget: ", paste(isos[detail_bytes > POSTURE_BUDGET_DETAIL], collapse = ", "))
 }
 manifest <- list(
   schema = POSTURE_SCHEMA, schema_version = POSTURE_SCHEMA_VERSION, created = created, git_commit = git_commit,

@@ -25,6 +25,7 @@ pn_fixture_stage <- function(tech, stage) {
     digitally_active = "no", remote_control = "no", separability = "Unknown",
     substitutability = "moderate", qualification_time = "m3to12", reconstitution_time = "y1to3", stockpile = "Unknown",
     process_knowledge = "partly", workforce_suppliers = "partly", adjacent_innovation = "no", maturity = "mature",
+    standardization = "moderate", differentiation = "moderate", commoditization = "partly",
     leap_candidate = "no", successor = "", beyond_novelty = "", cost_perf_advantage = "", incumbent_vulnerable = "",
     scale_pathway = "", deployment_critical = if (dep) "no" else "yes",
     primary_measure = if (dep) "none" else "atlas_export_share", mineral = "", market_scope = "global",
@@ -274,4 +275,37 @@ test_that("coverage counts unknowns per field, leap tests only on candidates", {
   expect_equal(cov$n_unknown[cov$field == "separability"], nrow(res) - 1) # only the control layer states it
   expect_false("beyond_novelty" %in% cov$field)
   expect_equal(cov$n_unknown[cov$field == "consequence"], 0)
+})
+
+test_that("the large-yard attributes are optional columns after maturity, with their own vocabularies", {
+  expect_equal(PN_COLUMNS[match("maturity", PN_COLUMNS) + 1:3], PN_OPTIONAL_COLUMNS)
+  expect_equal(PN_DOMAINS$standardization, c("low", "moderate", "high"))
+  expect_equal(PN_DOMAINS$differentiation, c("low", "moderate", "high"))
+  expect_equal(PN_DOMAINS$commoditization, c("no", "partly", "yes"))
+  # a table that predates them passes and reads them as not observed
+  fx <- pn_fixture()
+  old <- fx[, setdiff(names(fx), PN_OPTIONAL_COLUMNS)]
+  expect_silent(tbl <- pn_read_check(old, pn_fixture_yf(), techs = pn_fx_techs))
+  expect_identical(names(tbl), PN_COLUMNS)
+  res <- pn_resolve(old, pn_fixture_yf(), iso3 = "DEU")
+  expect_true(all(is.na(res$standardization) & is.na(res$differentiation) & is.na(res$commoditization)))
+  expect_match(res$attr_provenance[1], "commoditization:unknown")
+  # values outside the vocabulary are refused; Unknown and blank are not observed
+  fx$standardization[1] <- "very"
+  expect_error(pn_read_check(fx, pn_fixture_yf(), techs = pn_fx_techs), "standardization outside")
+  fx <- pn_fixture()
+  fx$commoditization[2] <- "Unknown"
+  fx$differentiation[3] <- ""
+  expect_silent(pn_read_check(fx, pn_fixture_yf(), techs = pn_fx_techs))
+  res <- pn_resolve(fx, pn_fixture_yf(), iso3 = c("JPN", "DEU"))
+  expect_true(is.na(res$commoditization[res$node_id == fx$node_id[2] & res$iso3 == "DEU"]))
+  expect_true(is.na(res$differentiation[res$node_id == fx$node_id[3] & res$iso3 == "DEU"]))
+  expect_equal(res$commoditization[res$node_id == fx$node_id[1] & res$iso3 == "DEU"], "partly")
+  # a country row may state one
+  fx <- pn_fixture()
+  fx$commoditization[fx$country_iso3 == "JPN"] <- "yes"
+  res <- pn_resolve(fx, pn_fixture_yf(), iso3 = c("JPN", "DEU"))
+  key <- res$tech == "Oil" & res$stage == "Extraction" & res$layer_id == "stage"
+  expect_equal(res$commoditization[key & res$iso3 == "JPN"], "yes")
+  expect_equal(res$commoditization[key & res$iso3 == "DEU"], "partly")
 })

@@ -42,10 +42,13 @@ source(local({
 #          stages) and Revealed Policy Priority per country x technology x six-stage cell, with evidence;
 #   Step 2 Secure override: the Yards & Fences engine's three Secure routes (its Compete tests are kept as
 #          diagnostics, engine_posture), for each cell and each sensitive layer;
-#   Step 2b Prize, pathway, deployment need and Choice: industrial_opportunity (node prize + national home
-#          market), the Catch Up pathway, deployment_need (scripts/95), and the canonical choice (Secure,
-#          Preserve, Catch Up, Partner, Accelerate, Watch, or not assessed); the legacy need x EO quadrant
-#          is kept as legacy_quadrant_* for comparison only;
+#   Step 2b Prize, pathway, deployment need and Choice: industrial_opportunity (the market prize: node prize +
+#          national home market), strategic_industrial_value (market, industrial-commons and future-option
+#          value: the prize the rule reads), the large-yard case, the Catch Up pathway, deployment_need
+#          (scripts/95), and the canonical choice (Secure, Preserve, Catch Up, Partner, Accelerate, Watch, or not
+#          assessed) for every cell and, as first-class yard units, every sensitive layer; the yards roll up to
+#          technology x stage (mixed where the units differ); the legacy need x EO quadrant is kept as
+#          legacy_quadrant_* for comparison only;
 #   Step 3 Policy Design: fence, gate and build for the posture and delivery mode;
 #   Step 4 Policy alignment: recommended choice vs observed policy (never an input).
 # Reads index_outputs.rds (scripts/20), policy_outputs.rds (scripts/10), the NIPO six-stage tables
@@ -70,7 +73,8 @@ for (f in c(
   "R/strategic_position/security_routes.R", "R/strategic_position/decision_quadrant.R",
   "R/strategic_position/partner_recs.R", "R/strategic_position/sp_diag_framework.R",
   "R/strategic_position/industrial_opportunity.R", "R/strategic_position/supply_chain_need.R",
-  "R/strategic_position/pathway.R", "R/strategic_position/decision_engine.R", "R/strategic_position/sp_diag_choice.R",
+  "R/strategic_position/pathway.R", "R/strategic_position/strategic_value.R", "R/strategic_position/decision_engine.R",
+  "R/strategic_position/yard_rollup.R", "R/strategic_position/sp_diag_choice.R",
   "R/categories/investment/investment_momentum.R"
 )) source(file.path(repo_root, f))
 
@@ -353,7 +357,7 @@ posture <- sp_strategic_posture(posture_inputs, post_cfg)
 # home_share_exposure is the measured share, or the lower bound where the listing omits the economy: the
 # contender test, the consistency counts and the bundle's share read it (sp_measured_share()).
 carry <- c("layer_label", "critical_function", "home_share", "home_share_exposure", "home_status", "coercive_top_iso3", "coercive_top_share",
-           "coercive_world_share", "trusted_world_share", "coercive_import_share", "complementary",
+           "coercive_world_share", "trusted_world_share", "world_top_iso3", "world_top_share", "coercive_import_share", "complementary",
            "adjacent_established", "resource_base", "market_pct", "premium_pct", "exposed", "supply_basis",
            "attr_confidence", "attr_provenance",
            # the pathway test's feasibility leg, the prize's maturity context and the Secure-engine
@@ -440,6 +444,10 @@ mat_class <- strategic_position_tbl %>%
   dplyr::select(-"n")
 if (nrow(mat_class)) io_nodes <- dplyr::left_join(io_nodes %>% dplyr::select(-dplyr::any_of("io_maturity_class")), mat_class, by = c("tech", "supply_chain"))
 strategic_position_tbl <- sp_industrial_opportunity(strategic_position_tbl, io_nodes, home_market, io_cfg)
+# STRATEGIC INDUSTRIAL VALUE (the prize the rule reads: market, industrial commons, future option) and the
+# LARGE-YARD case (strategic_value.R), from the resolved node attributes and the cell's world supply structure.
+strategic_position_tbl <- sp_strategic_value(strategic_position_tbl, nodes, dec_cfg)
+strategic_position_tbl <- sp_large_yard_case(strategic_position_tbl, nodes, dec_cfg)
 
 # POSITION among the node's contenders, and the Catch Up pathway.
 strategic_position_tbl <- sp_cp_contender_pct(strategic_position_tbl, dec_cfg)
@@ -456,29 +464,20 @@ for (alt in list(list(col = "pathway_credible_legs_1", cfg = list(rule = "legs",
 strategic_position_tbl <- sp_decision_choice(strategic_position_tbl, dec_cfg, post_cfg)
 strategic_position_tbl$choice_reason <- sp_choice_reason(strategic_position_tbl, dec_cfg)
 
-# Layers: Secure is their own; otherwise they follow their cell's choice (they have no axes of their own).
-follow <- c("strategic_choice", "strategic_posture", "compete_mode", "deploy_mode", "posture_variant", "compete_strategy",
-            "delivery_mode", "posture_confidence", "consistency_flag", "need_type", "supply_chain_need", "deployment_need",
-            "industrial_opportunity", "cp_contender_pct", "pathway_credible", "competitive_position_percentile",
-            "strategic_need_percentile", "stage_evidence_quality_cp")
-layer_secure <- layers_tbl$strategic_posture %in% "secure"
-layers_tbl$engine_posture <- layers_tbl$strategic_posture
-layers_tbl$engine_variant <- layers_tbl$posture_variant
-cell_choice <- strategic_position_tbl[, c("iso3", "tech", "supply_chain", follow)]
-names(cell_choice)[-(1:3)] <- paste0(".cell_", follow)
-layers_tbl <- dplyr::left_join(layers_tbl, cell_choice, by = c("iso3", "tech", "supply_chain"))
-for (cl in follow) {
-  cv <- layers_tbl[[paste0(".cell_", cl)]]
-  if (!cl %in% names(layers_tbl)) layers_tbl[[cl]] <- cv
-  else if (cl %in% c("strategic_choice", "strategic_posture", "compete_mode", "deploy_mode", "posture_variant", "compete_strategy",
-                     "delivery_mode", "posture_confidence", "consistency_flag")) {
-    layers_tbl[[cl]] <- ifelse(layer_secure, layers_tbl[[cl]], cv)
-  } else layers_tbl[[cl]] <- cv
-  layers_tbl[[paste0(".cell_", cl)]] <- NULL
-}
-layers_tbl$strategic_choice[layer_secure] <- "secure"
-layers_tbl$compete_mode[layer_secure] <- NA_character_
-layers_tbl$deploy_mode[layer_secure] <- NA_character_
+# LAYERS as first-class yard units (yard_rollup.R; Yards & Fences item 1). A layer is Secure by the engine's own
+# layer tests, exactly as before; otherwise it takes its OWN choice: its own strategic industrial value (its own
+# commons and option attributes with its cell's market prize, placed among the cells' scores) and its own
+# large-yard case (its own attributes with its cell's world supply structure), with its cell's need,
+# Competitive Position and pathway (layers have no trade data of their own).
+layers_tbl <- sp_layer_choice(layers_tbl, strategic_position_tbl, nodes, dec_cfg, post_cfg)
+stopifnot(all(layers_tbl$strategic_choice[layers_tbl$engine_posture %in% "secure"] == "secure"))
+
+# YARDS: each unit's choice maps to a yard (Secure small, Preserve / Catch Up / Partner and Accelerate medium,
+# Watch large), and the cell rolls its stage row and its layers up (mixed where they differ).
+yards <- sp_yard_rollup(strategic_position_tbl, layers_tbl)
+strategic_position_tbl <- yards$cells
+layers_tbl <- yards$layers
+rm(yards)
 
 # ---- Step 2c: Partner nodes -> trusted partners (AIB), and the allied division of labour -------------
 aib_dir <- file.path(outputs_dir, "aib")
@@ -721,12 +720,10 @@ if (!is.null(tm)) {
                        by = c("Country", "tech", "supply_chain")) %>%
       sp_cp_contender_pct(dec_cfg)
     th <- sp_choice_thresholds(dec_cfg)
-    dep <- alt$supply_chain == "Deployment"
-    hc <- sp_choice_high_cp(alt$cp_contender_pct, alt$cp_contender_basis, alt$cp_is_contender, alt$t3_capability_lo, th$cp, th$floor)
-    v <- sp_choice_rule(alt$supply_chain, alt$engine_posture %in% "secure", ifelse(dep, NA_real_, alt$supply_chain_need),
-                        ifelse(dep, NA_real_, alt$industrial_opportunity), hc, alt$pathway_credible, ifelse(dep, alt$deployment_need, NA_real_), th)
+    inp <- sp_choice_inputs(alt, dec_cfg)
+    v <- sp_choice_rerun(alt, dec_cfg)
     v[is.na(tbl$strategic_choice)] <- NA_character_
-    flag <- ifelse(v %in% "preserve" & !(alt$industrial_opportunity >= th$prize) & alt$supply_chain_need >= th$need, "review", NA_character_)
+    flag <- ifelse(v %in% "preserve" & !(inp$prize >= th$prize) & inp$need >= th$need, "review", NA_character_)
     c(sum(!mapply(identical, v, tbl$strategic_choice)),
       sum(!mapply(identical, flag, ifelse(tbl$consistency_flag %in% "review_strong_position_low_prize", "review", NA_character_))), NA)
   }
@@ -752,6 +749,36 @@ wcsv(sp_diag_pathway_rules(tbl, pathway_alts, dec_cfg), "catch_up_rule_compariso
 wcsv(sp_diag_catch_up_capability(tbl, pathway_alts, dec_cfg), "catch_up_capability_bands.csv")
 wcsv(sp_diag_anchor_types(tbl), "catch_up_anchor_types.csv")
 wcsv(io_nodes, "io_node_prize.csv")
+# Strategic industrial value, the large-yard case and the layer-first yards (Yards & Fences items 1-3).
+unit_cols <- function(x, layer = "stage") {
+  if (!"layer_id" %in% names(x)) x$layer_id <- layer
+  x[, intersect(c("iso3", "Country", "tech", "supply_chain", "layer_id", "layer_label", "strategic_choice", "yard", "yard_rollup",
+                  "choice_reason", "industrial_opportunity", SP_SIV_COLUMNS, "large_yard_case", "large_yard_n", "large_yard_signals",
+                  "large_yard_unknown", "large_yard_reason"), names(x)), drop = FALSE]
+}
+units_all <- dplyr::bind_rows(unit_cols(tbl), unit_cols(layers_tbl))
+wcsv(sp_siv_by_node(units_all), "strategic_value_families.csv")
+wcsv(sp_large_yard_by_node(units_all), "large_yard_case.csv")
+wcsv(sp_yard_rollup_counts(tbl), "yard_rollup_by_cell.csv")
+wcsv(sp_yard_layer_counts(layers_tbl), "yard_layers.csv")
+siv_cmp <- sp_choice_measure_comparison(tbl, dec_cfg)
+wcsv(siv_cmp$counts, "strategic_value_vs_market.csv")
+wcsv(siv_cmp$transitions, "strategic_value_vs_market_transitions.csv")
+# the large-yard calibration: the choice with min_signals 4 / 6 and with position tested first (cells)
+ly_sens <- dplyr::bind_rows(lapply(list(min_signals_4 = list(min_signals = 4L), min_signals_5 = list(min_signals = 5L),
+                                        min_signals_6 = list(min_signals = 6L), position_first = list(position_first = TRUE)), function(ch) {
+  c2 <- dec_cfg
+  c2$large_yard <- utils::modifyList(dec_cfg$large_yard %||% list(), ch)
+  ly <- sp_large_yard_case(tbl, nodes, c2)
+  v <- sp_choice_rerun(ly, c2)
+  data.frame(t(as.matrix(table(factor(v, SP_CHOICES)))), large_yard_cases = sum(ly$large_yard_case %in% TRUE),
+             changed_vs_configured = sum(v != tbl$strategic_choice, na.rm = TRUE), check.names = FALSE)
+}), .id = "variant")
+wcsv(ly_sens, "large_yard_sensitivity.csv")
+# The paper's own placements, beside the derived yards (the only place paper_placement is read).
+yf_links <- nodes %>% dplyr::distinct(.data$tech, supply_chain = .data$stage, .data$layer_id, .data$yf_component_id)
+wcsv(sp_yf_reproduction(yf_components, dplyr::left_join(units_all, yf_links, by = c("tech", "supply_chain", "layer_id"))),
+     "yf_paper_reproduction.csv")
 io_val <- sp_io_validation(tbl, momentum_weight = io_cfg$investment_momentum$weight %||% 0.25)
 wcsv(io_val$correlations, "opportunity_validation_correlations.csv")
 wcsv(io_val$weights, "opportunity_validation_weights.csv")
@@ -823,11 +850,11 @@ perturb <- list(
   resilience_alternatives_0.6 = function(cfg) { cfg$security_routes$resilience$trusted_alternative_max <- 0.6; cfg }
 )
 cells_in <- posture_inputs %>% dplyr::filter(.data$layer_id == "stage")
-dep_tbl <- tbl$supply_chain == "Deployment"
+inp_tbl <- sp_choice_inputs(tbl, dec_cfg)
 nonsecure_choice <- sp_choice_rule(
-  tbl$supply_chain, FALSE, ifelse(dep_tbl, NA_real_, tbl$supply_chain_need), ifelse(dep_tbl, NA_real_, tbl$industrial_opportunity),
+  tbl$supply_chain, FALSE, inp_tbl$need, inp_tbl$prize,
   sp_choice_high_cp(tbl$cp_contender_pct, tbl$cp_contender_basis, tbl$cp_is_contender, tbl$t3_capability_lo, th$cp, th$floor),
-  tbl$pathway_credible, ifelse(dep_tbl, tbl$deployment_need, NA_real_), th)
+  tbl$pathway_credible, inp_tbl$dn, th, inp_tbl$large)
 nonsecure_posture <- stats::setNames(unname(SP_CHOICE_VERB_POSTURE[nonsecure_choice]), paste(tbl$iso3, tbl$tech, tbl$supply_chain))
 strict <- function(x, cfg) {
   p <- sp_posture_strict(x, cfg)
@@ -865,5 +892,6 @@ message(
   sum(!is.na(tbl$competitive_position_percentile)), ", need ", sum(!is.na(tbl$strategic_need_percentile)),
   ", policy priority ", sum(!is.na(tbl$policy_priority_percentile)), ". Choices: ",
   paste(names(table(tbl$strategic_choice)), table(tbl$strategic_choice), sep = " ", collapse = ", "),
-  "; ", nrow(layers_tbl), " layer rows (", sum(layers_tbl$strategic_posture %in% "secure"), " secure)."
+  "; ", nrow(layers_tbl), " layer rows (", sum(layers_tbl$strategic_posture %in% "secure"), " secure). Yards: ",
+  paste(names(table(tbl$yard_rollup)), table(tbl$yard_rollup), sep = " ", collapse = ", "), "."
 )

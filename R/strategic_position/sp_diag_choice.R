@@ -124,7 +124,8 @@ sp_diag_watch_policy <- function(tbl, min_pct = 0.67) {
   x <- x[order(-dplyr::coalesce(x$policy_protection_priority, x$deployment_localisation_priority, -1), -dplyr::coalesce(x$policy_priority_percentile, -1)), , drop = FALSE]
   x[, intersect(c("Country", "tech", "supply_chain", "policy_priority_percentile", "policy_support_priority", "policy_protection_priority",
                   "deployment_localisation_priority", "policy_alignment", "policy_alignment_flag", "policy_alignment_confidence",
-                  "watch_reasons", "supply_chain_need", "industrial_opportunity", "deployment_need", "cp_contender_pct"), names(x)), drop = FALSE]
+                  "watch_reasons", "supply_chain_need", "industrial_opportunity", "strategic_industrial_value", "large_yard_case",
+                  "deployment_need", "cp_contender_pct"), names(x)), drop = FALSE]
 }
 
 # Deployment review (spec XXI.4): per country and deployment technology, the deployment need and its
@@ -188,9 +189,9 @@ sp_diag_pathway_rules <- function(tbl, pathways, cfg = list()) {
   th <- sp_choice_thresholds(cfg)
   dep <- tbl$supply_chain == "Deployment"
   hc <- sp_choice_high_cp(tbl$cp_contender_pct, tbl$cp_contender_basis, tbl$cp_is_contender, tbl$t3_capability_lo, th$cp, th$floor)
+  inp <- sp_choice_inputs(tbl, cfg)
   verbs <- lapply(pathways, function(pw) {
-    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", ifelse(dep, NA_real_, tbl$supply_chain_need),
-                        ifelse(dep, NA_real_, tbl$industrial_opportunity), hc, pw, ifelse(dep, tbl$deployment_need, NA_real_), th)
+    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", inp$need, inp$prize, hc, pw, inp$dn, th, inp$large)
     v[is.na(tbl$strategic_choice)] <- NA_character_
     v
   })
@@ -210,9 +211,9 @@ sp_diag_catch_up_capability <- function(tbl, pathways, cfg = list()) {
   hc <- sp_choice_high_cp(tbl$cp_contender_pct, tbl$cp_contender_basis, tbl$cp_is_contender, tbl$t3_capability_lo, th$cp, th$floor)
   bands <- function(v, cu) c(eq_0 = sum(cu & v %in% 0), lt_0.10 = sum(cu & !is.na(v) & v < 0.10), lt_0.25 = sum(cu & !is.na(v) & v < 0.25),
                              na = sum(cu & is.na(v)))
+  inp <- sp_choice_inputs(tbl, cfg)
   dplyr::bind_rows(lapply(names(pathways), function(r) {
-    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", ifelse(dep, NA_real_, tbl$supply_chain_need),
-                        ifelse(dep, NA_real_, tbl$industrial_opportunity), hc, pathways[[r]], ifelse(dep, tbl$deployment_need, NA_real_), th)
+    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", inp$need, inp$prize, hc, pathways[[r]], inp$dn, th, inp$large)
     cu <- v %in% "catch_up" & !is.na(tbl$strategic_choice)
     rbind(
       data.frame(rule = r, measure = "cp_contender_pct", catch_up = sum(cu), t(bands(tbl$cp_contender_pct, cu)),
@@ -239,12 +240,14 @@ sp_diag_anchor_types <- function(tbl) {
 # Up to n examples per country and choice (the clearest: farthest from their thresholds).
 sp_diag_choice_examples <- function(tbl, countries, n = 3) {
   x <- tbl[tbl$Country %in% countries & !is.na(tbl$strategic_choice) & tbl$strategic_choice != "not_assessed", , drop = FALSE]
-  x$clarity <- abs(dplyr::coalesce(x$supply_chain_need, x$deployment_need, 0.5) - 0.67) + abs(dplyr::coalesce(x$industrial_opportunity, 0.6) - 0.6) +
+  prize <- if ("choice_prize" %in% names(x)) x$choice_prize else x$industrial_opportunity
+  x$clarity <- abs(dplyr::coalesce(x$supply_chain_need, x$deployment_need, 0.5) - 0.67) + abs(dplyr::coalesce(prize, 0.6) - 0.6) +
     abs(dplyr::coalesce(x$cp_contender_pct, 0.75) - 0.75)
   x %>% dplyr::group_by(.data$Country, .data$strategic_choice) %>%
     dplyr::arrange(dplyr::desc(.data$clarity), .by_group = TRUE) %>% dplyr::slice_head(n = n) %>% dplyr::ungroup() %>%
     dplyr::select(dplyr::any_of(c("Country", "strategic_choice", "tech", "supply_chain", "security_rationale", "supply_chain_need", "deployment_need",
-                                  "industrial_opportunity", "cp_contender_pct", "pathway_credible", "posture_confidence", "consistency_flag",
+                                  "industrial_opportunity", "strategic_industrial_value", "large_yard_case", "cp_contender_pct", "pathway_credible",
+                                  "posture_confidence", "consistency_flag",
                                   "delivery_mode", "recommended_partner_1", "partner_aib_status", "policy_alignment", "choice_reason")))
 }
 

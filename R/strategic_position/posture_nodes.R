@@ -29,6 +29,7 @@ PN_COLUMNS <- c(
   "critical_function", "consequence", "time_horizon", "digitally_active", "remote_control", "separability",
   "substitutability", "qualification_time", "reconstitution_time", "stockpile",
   "process_knowledge", "workforce_suppliers", "adjacent_innovation", "maturity",
+  "standardization", "differentiation", "commoditization",
   "leap_candidate", "successor", "beyond_novelty", "cost_perf_advantage", "incumbent_vulnerable", "scale_pathway",
   "deployment_critical", "primary_measure", "mineral", "market_scope", "source", "confidence", "notes"
 )
@@ -58,6 +59,10 @@ PN_DOMAINS <- list(
   workforce_suppliers = c("no", "partly", "yes"),
   adjacent_innovation = c("no", "partly", "yes"),
   maturity = c("mature", "scaling", "emerging"),
+  # the large-yard (commoditization) attributes of strategic_value.R sp_large_yard_case(); listed low to high
+  standardization = c("low", "moderate", "high"),
+  differentiation = c("low", "moderate", "high"),
+  commoditization = c("no", "partly", "yes"),
   leap_candidate = c("no", "yes"),
   beyond_novelty = c("no", "partly", "yes"),
   cost_perf_advantage = c("no", "partly", "yes"),
@@ -69,6 +74,9 @@ PN_DOMAINS <- list(
 # market_scope says which coercion share the engine reads (world supply, or the country's own imports
 # where the market is segmented), so it must be stated: Unknown is not allowed there.
 PN_UNKNOWN_ALLOWED <- setdiff(names(PN_DOMAINS), "market_scope")
+# The large-yard attributes (added 2026-10-30): a table that predates them reads as Unknown everywhere
+# (pn_read_check() adds the absent column), and a blank cell reads as Unknown until every row is curated.
+PN_OPTIONAL_COLUMNS <- c("standardization", "differentiation", "commoditization")
 
 PN_LEAP_TESTS <- c("beyond_novelty", "cost_perf_advantage", "incumbent_vulnerable", "scale_pathway")
 PN_PRIMARY_MEASURES <- c(
@@ -122,6 +130,8 @@ pn_normalise <- function(tbl, cols) {
 # tech, supply_chain, measure, mineral) only warns, because measure coverage changes with the data.
 pn_read_check <- function(tbl, yf_components = NULL, techs = PN_HEADLINE_TECHS, measures = NULL) {
   fn <- "pn_read_check()"
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE, check.names = FALSE)
+  for (col in setdiff(PN_OPTIONAL_COLUMNS, names(tbl))) tbl[[col]] <- rep("", nrow(tbl))
   missing <- setdiff(PN_COLUMNS, names(tbl))
   if (length(missing) > 0) pn_stop_values(fn, "missing column(s)", missing)
   extra <- setdiff(names(tbl), PN_COLUMNS)
@@ -194,7 +204,7 @@ pn_read_check <- function(tbl, yf_components = NULL, techs = PN_HEADLINE_TECHS, 
 
   # A '*' row without a Y&F link has nothing to inherit: every attribute is stated (Unknown counts).
   own <- star & pn_blank(tbl$yf_component_id)
-  for (col in c("critical_function", setdiff(names(PN_DOMAINS), PN_LEAP_TESTS))) {
+  for (col in c("critical_function", setdiff(names(PN_DOMAINS), c(PN_LEAP_TESTS, PN_OPTIONAL_COLUMNS)))) {
     bad <- which(own & pn_blank(tbl[[col]]))
     if (length(bad)) pn_stop_values(fn, paste0("empty ", col, " on a '*' row with no Y&F link (use Unknown)"), pn_row_label(tbl, bad))
   }
