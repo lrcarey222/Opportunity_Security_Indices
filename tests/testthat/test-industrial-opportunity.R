@@ -189,13 +189,15 @@ test_that("the validation tables report correlations, weights, movers and the di
   expect_true(all(is.na(v$disguise$spearman_with_cp)))   # no home market: the prize is constant within a node
 })
 
-test_that("with min_legs 1 the credible pathway fires on any evidence leg, and unknown is not yes", {
+legs_cfg <- function(...) utils::modifyList(io_cfg()$pathway, list(rule = "legs", ...))
+
+test_that("with the legs rule at min_legs 1 the credible pathway fires on any evidence leg, and unknown is not yes", {
   x <- data.frame(iso3 = c("A", "B", "C", "D", "E", "F"), tech = "Solar",
                   supply_chain = c("Components", "Components", "Components", "Extraction", "Extraction", "Deployment"),
                   home_share = c(0.01, 0.01, NA, 0.01, 0.01, NA), cp_within_country_pct = c(0.2, 0.2, NA, 0.2, 0.2, NA),
                   feas_pct = c(0.9, 0.1, NA, 0.9, 0.9, 0.9), resource_base = c(NA, NA, NA, FALSE, TRUE, NA),
                   t3_learning_lo = c("none", "none", NA, "none", "none", "n_a"), stringsAsFactors = FALSE)
-  one <- utils::modifyList(io_cfg()$pathway, list(min_legs = 1))
+  one <- legs_cfg(min_legs = 1)
   out <- sp_pathway(x, cfg = one)
   expect_equal(out$pathway_credible, c("yes", "no", "unknown", "no", "yes", NA))
   expect_equal(out$pathway_basis[1], "feasibility")
@@ -207,11 +209,13 @@ test_that("with min_legs 1 the credible pathway fires on any evidence leg, and u
   expect_equal(out2$pathway_credible[2], "yes")
   expect_equal(out2$pathway_basis[2], "pipeline")
   expect_equal(out2$pw_pipeline[1], 0)   # covered by the monitor: absence is an observed zero
-  # without min_legs the function keeps design D3's one leg
+  # without min_legs the function keeps design D3's one leg, and without a rule the legs rule
   expect_equal(sp_pathway(x, cfg = within(one, rm(min_legs)))$pathway_credible, out$pathway_credible)
+  expect_equal(sp_pathway(x, cfg = within(one, rm(rule)))$pathway_credible, out$pathway_credible)
+  expect_true(all(out$pathway_rule[1:5] == "legs"))
 })
 
-test_that("the configured pathway needs two evidence legs; one leg is not enough, and too little evidence is unknown", {
+test_that("the legs rule at two legs: one leg is not enough, and too little evidence is unknown", {
   expect_equal(io_cfg()$pathway$min_legs, 2)
   # A: feasibility only, three legs observed -> no. B: feasibility + adjacent share -> yes. C: feasibility +
   # learning at an Extraction cell without a resource base -> no. D: feasibility + input cost at an Extraction
@@ -228,7 +232,7 @@ test_that("the configured pathway needs two evidence legs; one leg is not enough
   ref$home_share <- 0.2
   x$home_share[2] <- 0.01
   ic <- data.frame(iso3 = c("D", "X1", "X2", "X3"), tech = "Solar", supply_chain = "Extraction", input_cost_index = c(4, 1, 2, 3))
-  out <- sp_pathway(rbind(x, ref), input_cost = ic, cfg = io_cfg()$pathway)[1:7, ]
+  out <- sp_pathway(rbind(x, ref), input_cost = ic, cfg = legs_cfg())[1:7, ]
   expect_equal(out$pathway_credible, c("no", "yes", "no", "unknown", "unknown", "no", "unknown"))
   expect_equal(out$pathway_basis, c("feasibility;too_few_legs", "feasibility;adjacent_stage", "no_resource_base",
                                     "feasibility;input_cost;resource_base_unknown", "feasibility;too_few_observed",
@@ -236,11 +240,109 @@ test_that("the configured pathway needs two evidence legs; one leg is not enough
   # an extra leg makes A credible
   pipe <- data.frame(iso3 = "A", tech = "Solar", supply_chain = "Components", pipeline_capacity = 5)
   cov <- data.frame(tech = "Solar", supply_chain = "Components")
-  expect_equal(sp_pathway(rbind(x, ref), pipe, cov, cfg = io_cfg()$pathway)$pathway_basis[1], "feasibility;pipeline")
-  # min_legs outside 1..5 is refused
+  expect_equal(sp_pathway(rbind(x, ref), pipe, cov, cfg = legs_cfg())$pathway_basis[1], "feasibility;pipeline")
+  # min_legs outside 1..5 is refused, and so is an unknown rule
   for (bad in list(0, 6, 1.5, "2", NA_real_, Inf, c(1, 2))) {
     expect_error(sp_pathway(x, cfg = utils::modifyList(io_cfg()$pathway, list(min_legs = bad))), "min_legs")
   }
+  for (bad in list("two", NA_character_, c("anchor", "legs"), 1)) {
+    expect_error(sp_pathway(x, cfg = utils::modifyList(io_cfg()$pathway, list(rule = bad))), "rule")
+  }
+})
+
+test_that("the configured anchor rule: Catch Up needs a capability anchor and independent corroboration", {
+  expect_equal(io_cfg()$pathway$rule, "anchor")
+  cell <- function(iso3, supply_chain = "Components", tech = "Solar", home_share = NA_real_, trade_benchmark_share = NA_real_,
+                   cp_within_country_pct = NA_real_, feas_pct = NA_real_, resource_base = NA, t3_learning_lo = NA_character_) {
+    data.frame(iso3, tech, supply_chain, home_share, trade_benchmark_share, cp_within_country_pct, feas_pct, resource_base,
+               t3_learning_lo, stringsAsFactors = FALSE)
+  }
+  x <- rbind(
+    cell("A", home_share = 0.001, trade_benchmark_share = 0.001, feas_pct = 0.9),        # feasibility + input cost, no anchor
+    cell("B", home_share = 0.02, feas_pct = 0.9),                                         # direct supply share + feasibility
+    cell("C", home_share = 0.001, trade_benchmark_share = 0.01, feas_pct = 0.1, t3_learning_lo = "weak"),  # anchor alone
+    cell("D", home_share = 0.02, trade_benchmark_share = 0.02, feas_pct = 0.1),           # two anchors of one family
+    cell("E", tech = "Wind", feas_pct = 0.9),                                             # no anchor family observed
+    cell("F", tech = "Wind", home_share = 0.02),                                          # anchor, nothing else observed
+    cell("G", home_share = 0.001, feas_pct = 0.1), cell("G", "Refining", home_share = 0.08, cp_within_country_pct = 0.9),
+    cell("G2", home_share = 0.001, feas_pct = 0.9), cell("G2", "Refining", home_share = 0.08, cp_within_country_pct = 0.9),
+    cell("H", home_share = 0.001, feas_pct = 0.9), cell("H", "Refining", home_share = 0.001, cp_within_country_pct = 0.95),
+    cell("I", home_share = 0.001, feas_pct = 0.9),                                        # operating capacity
+    cell("J", home_share = 0.001, feas_pct = 0.9),                                        # immaterial committed, big announcement
+    cell("J2", home_share = 0.001, feas_pct = 0.9),                                       # material committed pipeline
+    cell("K", "Extraction", resource_base = TRUE, feas_pct = 0.9),                        # resource base + feasibility
+    cell("K2", "Extraction", resource_base = FALSE, home_share = 0.5, feas_pct = 0.9),    # no resource base
+    cell("K3", "Extraction", home_share = 0.02, feas_pct = 0.9),                          # resource base unknown
+    cell("L", "Deployment", home_share = 0.5, feas_pct = 0.9)
+  )
+  ic <- data.frame(iso3 = c("A", "Z1", "Z2", "Z3"), tech = "Solar", supply_chain = "Components", input_cost_index = c(9, 1, 2, 3))
+  capacity <- data.frame(iso3 = c("I", "J", "J2"), tech = "Solar", supply_chain = "Components",
+                         operating_share = c(0.02, 0, 0), committed_share = c(0, 0.005, 0.03), announced_share = c(0, 0.05, 0))
+  out <- sp_pathway(x, input_cost = ic, cfg = io_cfg()$pathway, capacity = capacity)
+  r <- function(iso, stage = "Components") out[out$iso3 == iso & out$supply_chain == stage, ]
+  expect_true(all(out$pathway_rule[out$supply_chain != "Deployment"] == "anchor"))
+  # high feasibility + low input costs is not Catch Up
+  expect_equal(r("A")$pathway_credible, "no")
+  expect_equal(r("A")$pathway_basis, "feasibility;input_cost;no_anchor")
+  expect_false(r("A")$catch_up_anchor)
+  expect_equal(r("B")$pathway_credible, "yes")
+  expect_equal(r("B")$pathway_basis, "direct_supply_share;feasibility")
+  expect_equal(r("B")$catch_up_anchor_type, "direct_supply_share")
+  expect_equal(r("B")$pathway_support, "feasibility")
+  expect_equal(r("C")$pathway_basis, "direct_export_share;anchor_uncorroborated")
+  # supply share and export share are one family: they do not corroborate each other
+  expect_equal(r("D")$pathway_credible, "no")
+  expect_equal(r("D")$pathway_basis, "direct_supply_share;direct_export_share;anchor_uncorroborated")
+  expect_equal(r("E")$pathway_credible, "unknown")
+  expect_equal(r("E")$pathway_basis, "feasibility;anchor_unobserved")
+  expect_true(is.na(r("E")$catch_up_anchor))
+  expect_equal(r("F")$pathway_basis, "direct_supply_share;corroboration_unobserved")
+  expect_equal(r("F")$pathway_credible, "unknown")
+  # absolute adjacency is an anchor; relative adjacency of the same stages does not corroborate it
+  expect_equal(r("G")$pathway_basis, "adjacent_stage_share;adjacent_stage_relative;anchor_uncorroborated")
+  expect_equal(r("G2")$pathway_credible, "yes")
+  expect_equal(r("G2")$pathway_basis, "adjacent_stage_share;feasibility;adjacent_stage_relative")
+  # relative adjacency (a strong cell of a negligible economy) is support only
+  expect_equal(r("H")$pathway_basis, "feasibility;adjacent_stage_relative;no_anchor")
+  expect_equal(r("I")$pathway_basis, "operating_capacity;feasibility")
+  # an immaterial committed pipeline is no anchor; an announcement only supports
+  expect_equal(r("J")$pathway_basis, "feasibility;announced_pipeline;no_anchor")
+  expect_equal(r("J2")$pathway_basis, "committed_pipeline;feasibility")
+  expect_equal(r("K", "Extraction")$pathway_basis, "resource_base;feasibility")
+  expect_equal(r("K2", "Extraction")$pathway_credible, "no")
+  expect_equal(r("K2", "Extraction")$pathway_basis, "no_resource_base")
+  expect_equal(r("K3", "Extraction")$pathway_credible, "unknown")
+  expect_equal(r("K3", "Extraction")$pathway_basis, "direct_supply_share;feasibility;resource_base_unknown")
+  expect_true(is.na(r("L", "Deployment")$pathway_credible))
+  expect_true(is.na(r("L", "Deployment")$catch_up_anchor))
+  # covered by the capacity table: absence is an observed zero; uncovered: NA
+  expect_equal(r("B")$pw_operating_share, 0)
+  expect_true(is.na(r("E")$pw_operating_share))
+  # the legs rule on the same cells still reports the anchor (for the comparison)
+  legs <- sp_pathway(x, input_cost = ic, cfg = legs_cfg(), capacity = capacity)
+  expect_equal(legs$catch_up_anchor, out$catch_up_anchor)
+  expect_equal(legs[legs$iso3 == "A", "pathway_credible"], "yes")   # two enabling legs pass the legs rule, not the anchor rule
+})
+
+test_that("under the anchor rule no pathway is credible without an anchor and a second evidence family", {
+  set.seed(29)
+  n <- 400
+  stages <- c("Extraction", "Refining", "Components", "Assembly", "Recovery")
+  pick <- function(v) sample(v, n, replace = TRUE)
+  x <- data.frame(iso3 = sprintf("C%03d", seq_len(n)), tech = "Solar", supply_chain = pick(stages),
+                  home_share = pick(c(NA, 0, 0.001, 0.004, 0.006, 0.05)), trade_benchmark_share = pick(c(NA, 0, 0.003, 0.02)),
+                  cp_within_country_pct = pick(c(NA, 0.3, 0.7)), feas_pct = pick(c(NA, 0.2, 0.8)), resource_base = pick(c(NA, TRUE, FALSE)),
+                  t3_learning_lo = pick(c(NA, "weak", "moderate")), stringsAsFactors = FALSE)
+  cap <- data.frame(iso3 = x$iso3, tech = "Solar", supply_chain = x$supply_chain, operating_share = pick(c(0, 0.002, 0.01)),
+                    committed_share = pick(c(0, 0.004, 0.02)), announced_share = pick(c(0, 0.01, 0.05)))
+  out <- sp_pathway(x, cfg = io_cfg()$pathway, capacity = cap)
+  yes <- out$pathway_credible %in% "yes"
+  expect_true(any(yes))
+  expect_true(all(out$catch_up_anchor[yes]))
+  fam <- function(b) length(unique(SP_PATHWAY_FAMILY[intersect(strsplit(b, ";", fixed = TRUE)[[1]], names(SP_PATHWAY_FAMILY))]))
+  expect_true(all(vapply(out$pathway_basis[yes], fam, numeric(1)) >= 2))
+  # every anchor-less cell is not credible (no or unknown), never yes
+  expect_false(any(yes & !(out$catch_up_anchor %in% TRUE)))
 })
 
 test_that("supply_chain_need exists only at the producing stages and has no Deployment proxy", {

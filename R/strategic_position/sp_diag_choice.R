@@ -165,17 +165,75 @@ sp_diag_manufacturing_vs_deployment <- function(tbl) {
     dplyr::count(.data$tech, .data$deployment_choice, .data$manufacturing_choice, name = "n_countries")
 }
 
-# Pathway evidence: which legs fire, by stage, among the cells the pathway can decide.
+# Pathway evidence by stage, among the cells the pathway can decide: yes / no / unknown, how many have a
+# capability anchor, each anchor type and supporting signal that fires (pathway.R catch_up_anchor_type,
+# pathway_support; whatever the rule), and the cells decided Catch Up.
 sp_diag_pathway_summary <- function(tbl) {
   x <- tbl[tbl$supply_chain != "Deployment" & !is.na(tbl$pathway_credible), , drop = FALSE]
-  legs <- c("feasibility", "pipeline", "adjacent_stage", "learning", "input_cost")
+  has <- function(v, l) grepl(paste0("(^|;)", l, "($|;)"), dplyr::coalesce(v, ""))
   d <- dplyr::bind_rows(lapply(split(x, x$supply_chain), function(s) {
     data.frame(supply_chain = s$supply_chain[1], n_cells = nrow(s), yes = sum(s$pathway_credible == "yes"), no = sum(s$pathway_credible == "no"),
-               unknown = sum(s$pathway_credible == "unknown"),
-               t(vapply(legs, function(l) sum(grepl(l, dplyr::coalesce(s$pathway_basis, ""), fixed = TRUE)), numeric(1))),
+               unknown = sum(s$pathway_credible == "unknown"), anchor = sum(s$catch_up_anchor %in% TRUE),
+               t(vapply(SP_PATHWAY_ANCHORS, function(l) sum(has(s$catch_up_anchor_type, l)), numeric(1))),
+               t(vapply(SP_PATHWAY_SUPPORT, function(l) sum(has(s$pathway_support, l)), numeric(1))),
                decided_catch_up = sum(s$strategic_choice %in% "catch_up"), check.names = FALSE)
   }))
   d[order(match(d$supply_chain, SUPPLY_CHAIN_STAGES)), , drop = FALSE]
+}
+
+# The choice under alternative pathway rules, from the stored need, prize and position (the engine's Secure
+# kept): pathways is a named list of pathway_credible vectors (e.g. legs_1, legs_2, anchor). One row per
+# rule with the count of each choice and how many cells differ from the first rule.
+sp_diag_pathway_rules <- function(tbl, pathways, cfg = list()) {
+  th <- sp_choice_thresholds(cfg)
+  dep <- tbl$supply_chain == "Deployment"
+  hc <- sp_choice_high_cp(tbl$cp_contender_pct, tbl$cp_contender_basis, tbl$cp_is_contender, tbl$t3_capability_lo, th$cp, th$floor)
+  verbs <- lapply(pathways, function(pw) {
+    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", ifelse(dep, NA_real_, tbl$supply_chain_need),
+                        ifelse(dep, NA_real_, tbl$industrial_opportunity), hc, pw, ifelse(dep, tbl$deployment_need, NA_real_), th)
+    v[is.na(tbl$strategic_choice)] <- NA_character_
+    v
+  })
+  dplyr::bind_rows(lapply(names(verbs), function(r) {
+    v <- verbs[[r]]
+    counts <- vapply(SP_CHOICES, function(ch) sum(v %in% ch), numeric(1))
+    data.frame(rule = r, t(counts), changed_vs_first = sum(!mapply(identical, v, verbs[[1]])), check.names = FALSE)
+  }))
+}
+
+# Catch Up at near-zero or unmeasured capability (user spec 2026-10-30): per rule, the Catch Up cells with
+# Competitive Position == 0, < 0.10, < 0.25 (cumulative) and NA, on the decision's measure (the percentile
+# among the node's contenders) and on the cross-country percentile; and those without a capability anchor.
+sp_diag_catch_up_capability <- function(tbl, pathways, cfg = list()) {
+  th <- sp_choice_thresholds(cfg)
+  dep <- tbl$supply_chain == "Deployment"
+  hc <- sp_choice_high_cp(tbl$cp_contender_pct, tbl$cp_contender_basis, tbl$cp_is_contender, tbl$t3_capability_lo, th$cp, th$floor)
+  bands <- function(v, cu) c(eq_0 = sum(cu & v %in% 0), lt_0.10 = sum(cu & !is.na(v) & v < 0.10), lt_0.25 = sum(cu & !is.na(v) & v < 0.25),
+                             na = sum(cu & is.na(v)))
+  dplyr::bind_rows(lapply(names(pathways), function(r) {
+    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", ifelse(dep, NA_real_, tbl$supply_chain_need),
+                        ifelse(dep, NA_real_, tbl$industrial_opportunity), hc, pathways[[r]], ifelse(dep, tbl$deployment_need, NA_real_), th)
+    cu <- v %in% "catch_up" & !is.na(tbl$strategic_choice)
+    rbind(
+      data.frame(rule = r, measure = "cp_contender_pct", catch_up = sum(cu), t(bands(tbl$cp_contender_pct, cu)),
+                 without_anchor = sum(cu & !(tbl$catch_up_anchor %in% TRUE)), check.names = FALSE),
+      data.frame(rule = r, measure = "competitive_position_percentile", catch_up = sum(cu), t(bands(tbl$competitive_position_percentile, cu)),
+                 without_anchor = sum(cu & !(tbl$catch_up_anchor %in% TRUE)), check.names = FALSE)
+    )
+  }))
+}
+
+# The capability anchors of the producing-stage cells by choice: how often each anchor type fires among the
+# cells of each choice, the cells with no anchor, and the greenfield options (decision_engine.R).
+sp_diag_anchor_types <- function(tbl) {
+  x <- tbl[tbl$supply_chain != "Deployment" & !is.na(tbl$strategic_choice), , drop = FALSE]
+  has <- function(v, l) grepl(paste0("(^|;)", l, "($|;)"), dplyr::coalesce(v, ""))
+  dplyr::bind_rows(lapply(split(x, x$strategic_choice), function(s) {
+    data.frame(strategic_choice = s$strategic_choice[1], n_cells = nrow(s), anchor = sum(s$catch_up_anchor %in% TRUE),
+               no_anchor = sum(s$catch_up_anchor %in% FALSE), anchor_unobserved = sum(is.na(s$catch_up_anchor)),
+               t(vapply(SP_PATHWAY_ANCHORS, function(l) sum(has(s$catch_up_anchor_type, l)), numeric(1))),
+               greenfield_option = sum(s$greenfield_option %in% TRUE), check.names = FALSE)
+  }))
 }
 
 # Up to n examples per country and choice (the clearest: farthest from their thresholds).

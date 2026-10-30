@@ -70,7 +70,8 @@ for (f in c(
   "R/strategic_position/security_routes.R", "R/strategic_position/decision_quadrant.R",
   "R/strategic_position/partner_recs.R", "R/strategic_position/sp_diag_framework.R",
   "R/strategic_position/industrial_opportunity.R", "R/strategic_position/supply_chain_need.R",
-  "R/strategic_position/pathway.R", "R/strategic_position/decision_engine.R", "R/strategic_position/sp_diag_choice.R"
+  "R/strategic_position/pathway.R", "R/strategic_position/decision_engine.R", "R/strategic_position/sp_diag_choice.R",
+  "R/categories/investment/investment_momentum.R"
 )) source(file.path(repo_root, f))
 
 config <- getOption("opportunity_security.config")
@@ -145,6 +146,24 @@ pipeline_raw <- investment_tbl %>%
   dplyr::group_by(iso3 = .data$iso3c, .data$tech, .data$supply_chain) %>%
   dplyr::summarise(pipeline_capacity = sum(.data$value, na.rm = TRUE), .groups = "drop")
 pipeline_covered <- dplyr::distinct(pipeline_raw, .data$tech, .data$supply_chain)
+# GCIM capacity by product and status (the Catch Up anchors operating_capacity and committed_pipeline, and
+# the announced_pipeline support): each country's share of world operating capacity, per product, the stage
+# taking its most material product (investment_capacity_shares()).
+gcim_path <- file.path(raw_data_path, "GCIM_Investment_Capacity_aggregated.xlsx")
+capacity_shares <- NULL
+if (file.exists(gcim_path)) {
+  gcim_sheet <- investment_resolve_gcim_sheet(readxl::excel_sheets(gcim_path), investment_gcim_sheet_patterns$capacity, "manufacturing/industry capacity")
+  gcim_capacity <- investment_read_gcim_sheet(gcim_path, gcim_sheet, c("Country", "Segment", "Technology", "Product", "Category", "Value"),
+                                              label = "manufacturing/industry capacity")
+  capacity_shares <- investment_capacity_shares(investment_capacity_clean(gcim_capacity)) %>%
+    dplyr::mutate(iso3 = country_name_to_iso3(.data$Country)) %>%
+    dplyr::filter(!is.na(.data$iso3), .data$tech %in% techs) %>%
+    dplyr::group_by(.data$iso3, .data$tech, .data$supply_chain) %>%
+    dplyr::summarise(dplyr::across(c("operating_share", "committed_share", "announced_share"), max), .groups = "drop")
+  rm(gcim_capacity)
+} else {
+  warning("GCIM capacity workbook not found (", gcim_path, "): the operating-capacity and committed-pipeline anchors are not observed.")
+}
 input_cost <- eo_contrib %>%
   dplyr::filter(.data$category == "Cost Competitiveness", .data$variable == "Input Cost Index", !.data$imputed, .data$tech %in% techs) %>%
   dplyr::transmute(iso3 = country_name_to_iso3(.data$Country), .data$tech, .data$supply_chain, input_cost_index = .data$component_value) %>%
@@ -424,7 +443,14 @@ strategic_position_tbl <- sp_industrial_opportunity(strategic_position_tbl, io_n
 
 # POSITION among the node's contenders, and the Catch Up pathway.
 strategic_position_tbl <- sp_cp_contender_pct(strategic_position_tbl, dec_cfg)
-strategic_position_tbl <- sp_pathway(strategic_position_tbl, pipeline_raw, pipeline_covered, input_cost, dec_cfg$pathway)
+strategic_position_tbl <- sp_pathway(strategic_position_tbl, pipeline_raw, pipeline_covered, input_cost, dec_cfg$pathway, capacity_shares)
+# the pathway under the other rules too, kept as columns for the rule comparison (the configured rule decides)
+for (alt in list(list(col = "pathway_credible_legs_1", cfg = list(rule = "legs", min_legs = 1)),
+                 list(col = "pathway_credible_legs_2", cfg = list(rule = "legs", min_legs = 2)),
+                 list(col = "pathway_credible_anchor", cfg = list(rule = "anchor")))) {
+  strategic_position_tbl[[alt$col]] <- sp_pathway(strategic_position_tbl, pipeline_raw, pipeline_covered, input_cost,
+                                                  utils::modifyList(dec_cfg$pathway, alt$cfg), capacity_shares)$pathway_credible
+}
 
 # CHOICE.
 strategic_position_tbl <- sp_decision_choice(strategic_position_tbl, dec_cfg, post_cfg)
@@ -721,6 +747,10 @@ wcsv(sp_diag_consistency_before_after(tbl), "consistency_before_after.csv")
 wcsv(sp_diag_consistency_cells(tbl), "consistency_cells.csv")
 wcsv(sp_diag_quadrant_vs_choice(tbl, dq_cfg$need_threshold, dq_cfg$opportunity_threshold), "legacy_quadrant_vs_choice.csv")
 wcsv(sp_diag_pathway_summary(tbl), "pathway_by_stage.csv")
+pathway_alts <- list(legs_1 = tbl$pathway_credible_legs_1, legs_2 = tbl$pathway_credible_legs_2, anchor = tbl$pathway_credible_anchor)
+wcsv(sp_diag_pathway_rules(tbl, pathway_alts, dec_cfg), "catch_up_rule_comparison.csv")
+wcsv(sp_diag_catch_up_capability(tbl, pathway_alts, dec_cfg), "catch_up_capability_bands.csv")
+wcsv(sp_diag_anchor_types(tbl), "catch_up_anchor_types.csv")
 wcsv(io_nodes, "io_node_prize.csv")
 io_val <- sp_io_validation(tbl, momentum_weight = io_cfg$investment_momentum$weight %||% 0.25)
 wcsv(io_val$correlations, "opportunity_validation_correlations.csv")

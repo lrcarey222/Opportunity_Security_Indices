@@ -634,3 +634,27 @@ test_that("manufacturing capex is replicated onto Components and Assembly; power
   asm <- idx %>% dplyr::filter(supply_chain == "Assembly") %>% dplyr::arrange(Country)
   expect_equal(comp$value, asm$value)
 })
+
+test_that("capacity shares are per product of world operating capacity, by status, the stage taking its most material product", {
+  cap <- data.frame(
+    Country = c("Japan", "Japan", "Japan", "Korea, Rep.", "Korea, Rep.", "Japan", "Korea, Rep.", "Japan"),
+    Segment = "Manufacturing", Technology = "Solar",
+    Product = c("Cells", "Cells", "Cells", "Cells", "Wafers", "Wafers", "Wafers", "Modules"),
+    Category = c("Current operational capacity", "Under construction - anticipated capacity", "Announced - anticipated capacity",
+                 "Current operational capacity", "Current operational capacity", "Operational yet to come online",
+                 "Announced - anticipated capacity", "Announced - anticipated capacity"),
+    Value = c(10, 5, 40, 90, 50, 25, 10, 7),
+    stringsAsFactors = FALSE
+  )
+  s <- investment_capacity_shares(investment_capacity_clean(cap))
+  jp <- s[s$Country == "Japan" & s$supply_chain == "Components", ]
+  # cells: operating 10 / 100, committed 5 / 100, announced 40 / 100; wafers: committed 25 / 50 -> max 0.5
+  expect_equal(jp$operating_share, 0.1)
+  expect_equal(jp$committed_share, 0.5)
+  expect_equal(jp$announced_share, 0.4)
+  kr <- s[s$Country != "Japan" & s$supply_chain == "Components", ]
+  expect_equal(kr$operating_share, 1)          # wafers: 50 of 50
+  expect_equal(kr$announced_share, 0.2)
+  # modules have no operating capacity anywhere: no world denominator, so no share
+  expect_false(any(s$supply_chain == "Assembly"))
+})

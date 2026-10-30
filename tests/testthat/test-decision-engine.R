@@ -269,6 +269,38 @@ test_that("a pathway with too few evidence legs is not Catch Up, and the reason 
   expect_false(grepl("where one are", r0, fixed = TRUE))
 })
 
+test_that("without a capability anchor a high prize is Partner or Watch, flagged greenfield, and the reason says why", {
+  # high feasibility + low input cost, no anchor: never Catch Up
+  pa <- de(supply_chain_need = 0.9, industrial_opportunity = 0.9, cp_contender_pct = 0, pathway_credible = "no",
+           pathway_basis = "feasibility;input_cost;no_anchor", catch_up_anchor = FALSE, pathway_rule = "anchor")
+  expect_equal(pa$strategic_choice, "partner")
+  expect_true(pa$greenfield_option)
+  expect_match(sp_choice_reason(pa, de_cfg()), "no capability anchor (only feasibility, input cost): Partner", fixed = TRUE)
+  wa <- de(supply_chain_need = 0.2, industrial_opportunity = 0.9, cp_contender_pct = 0, pathway_credible = "no",
+           pathway_basis = "adjacent_stage_share;adjacent_stage_relative;anchor_uncorroborated", catch_up_anchor = TRUE, pathway_rule = "anchor")
+  expect_equal(wa$strategic_choice, "watch")
+  expect_false(wa$greenfield_option)     # it has an anchor, only not corroborated
+  expect_match(sp_choice_reason(wa, de_cfg()),
+               "a capability anchor (adjacent stage share, adjacent stage relative) without independent corroboration: Watch", fixed = TRUE)
+  un <- de(supply_chain_need = 0.2, industrial_opportunity = 0.9, cp_contender_pct = NA_real_, pathway_credible = "unknown",
+           pathway_basis = "feasibility;anchor_unobserved", catch_up_anchor = NA, pathway_rule = "anchor")
+  expect_equal(un$strategic_choice, "watch")
+  expect_true(un$greenfield_option)
+  expect_match(sp_choice_reason(un, de_cfg()), "no capability anchor observed (only feasibility)", fixed = TRUE)
+  # a credible pathway names its anchor and what corroborates it
+  cu <- de(supply_chain_need = 0.2, industrial_opportunity = 0.9, cp_contender_pct = 0.4, pathway_credible = "yes",
+           pathway_basis = "direct_supply_share;feasibility", catch_up_anchor = TRUE, catch_up_anchor_type = "direct_supply_share",
+           pathway_support = "feasibility", pathway_rule = "anchor")
+  expect_equal(cu$strategic_choice, "catch_up")
+  expect_false(cu$greenfield_option)
+  expect_match(sp_choice_reason(cu, de_cfg()),
+               "a credible pathway (capability anchor: direct supply share; corroborated by feasibility): Catch Up.", fixed = TRUE)
+  # no greenfield flag for a low prize, a Preserve, or Deployment
+  expect_false(de(supply_chain_need = 0.9, industrial_opportunity = 0.2, pathway_credible = "no", catch_up_anchor = FALSE)$greenfield_option)
+  expect_false(de(industrial_opportunity = 0.9, cp_contender_pct = 0.9, pathway_credible = "no", catch_up_anchor = FALSE)$greenfield_option)
+  expect_true(is.na(de(supply_chain = "Deployment", deployment_need = 0.9)$greenfield_option))
+})
+
 test_that("every output respects the posture / mode invariants", {
   grid <- expand.grid(stage = c("Extraction", "Components", "Deployment", "Recovery"), n = c(NA, 0.2, 0.9), o = c(NA, 0.2, 0.9),
                       cp = c(0.3, 0.9), pw = c("yes", "no", "unknown"), dn = c(NA, 0.2, 0.9), sec = c(FALSE, TRUE),

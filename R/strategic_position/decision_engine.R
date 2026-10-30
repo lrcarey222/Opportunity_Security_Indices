@@ -271,6 +271,11 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   dm <- sp_delivery_mode(tbl, ifelse(is.na(posture), "deploy", posture), dplyr::coalesce(variant, "deploy"), mode, post_cfg)
   tbl$delivery_mode <- dplyr::case_when(is.na(verb) | verb == "not_assessed" ~ NA_character_,
                                         verb == "secure" ~ col("delivery_mode", NA_character_), TRUE ~ dm)
+  # An attractive but currently unsupported opportunity (user spec 2026-10-30): a high prize at a producing
+  # stage without a top-quarter position or a capability anchor (pathway.R catch_up_anchor), decided Partner or
+  # Watch. A flag for readers, never Catch Up.
+  anchor <- col("catch_up_anchor", NA)
+  tbl$greenfield_option <- ifelse(is.na(verb) | dep, NA, verb %in% c("partner", "watch") & hp & !(cp_high %in% TRUE) & !(anchor %in% TRUE))
   tbl$watch_reasons <- sp_watch_reasons(tbl, verb, need, prize, hp, hn, cp_high, pathway, dn, th, diversify)
   tbl$decision_trace <- sp_choice_trace(tbl, verb, secure, sec_possible, need, prize, cp_pct, cp_high, cap_lo, pathway, dn, th,
                                         contender = cp_basis %in% "all_countries" | is_c %in% TRUE)
@@ -367,20 +372,36 @@ sp_choice_reason <- function(tbl, cfg = list()) {
   )
   pos_cu <- dplyr::coalesce(why_not, paste0("a position below the top quarter (", p2(cp), ")"))
   pos_no <- dplyr::coalesce(why_not, "no top-quarter position")
-  # why the pathway is not credible where some legs fired (pathway.R: too_few_legs / too_few_observed)
+  # why the pathway is not credible where some evidence fired (pathway.R, legs rule: too_few_legs /
+  # too_few_observed; anchor rule: no_anchor / anchor_unobserved / anchor_uncorroborated /
+  # corroboration_unobserved)
   nw <- function(k) c("no", "one", "two", "three", "four", "five")[k + 1]
-  pw_legs <- sub(";(too_few_legs|too_few_observed)$", "", pw)
+  pw_code_re <- ";?(too_few_legs|too_few_observed|no_anchor|anchor_unobserved|anchor_uncorroborated|corroboration_unobserved)$"
+  pw_legs <- sub(pw_code_re, "", pw)
   pw_n <- lengths(strsplit(pw_legs, ";", fixed = TRUE))
   # a too-few basis means the bar is above the legs that fired, whatever cfg says (or omits)
   pw_min <- pmax(cfg$pathway$min_legs %||% 1, pw_n + 1)
   pw_legs_w <- gsub(";", ", ", gsub("_", " ", pw_legs))
+  pw_some <- ifelse(nzchar(pw_legs), paste0(" (only ", pw_legs_w, ")"), "")
   pw_no <- dplyr::case_when(
     grepl(";too_few_legs$", pw) ~ paste0("only ", nw(pw_n), " piece", ifelse(pw_n == 1, "", "s"), " of pathway evidence (",
                                          pw_legs_w, ") where ", nw(pw_min), " are required"),
     grepl(";too_few_observed$", pw) ~ paste0("too little pathway evidence observed (", pw_legs_w, " only, where ", nw(pw_min),
                                              " pieces are required)"),
+    grepl("(^|;)no_anchor$", pw) ~ paste0("no capability anchor", pw_some),
+    grepl("(^|;)anchor_unobserved$", pw) ~ paste0("no capability anchor observed", pw_some),
+    grepl("(^|;)anchor_uncorroborated$", pw) ~ paste0("a capability anchor (", pw_legs_w, ") without independent corroboration"),
+    grepl("(^|;)corroboration_unobserved$", pw) ~ paste0("a capability anchor (", pw_legs_w, ") with nothing observed to corroborate it"),
     TRUE ~ "no credible pathway"
   )
+  # a credible pathway under the anchor rule names its anchor and what corroborates it
+  rule <- col("pathway_rule", NA_character_)
+  anc <- col("catch_up_anchor_type", NA_character_)
+  sup <- col("pathway_support", NA_character_)
+  words <- function(v) gsub(";", ", ", gsub("_", " ", v))
+  pw_yes <- ifelse(rule %in% "anchor" & !is.na(anc),
+                   paste0("a credible pathway (capability anchor: ", words(anc), ifelse(is.na(sup), "", paste0("; corroborated by ", words(sup))), ")"),
+                   paste0("a credible pathway (", words(pw), ")"))
   cp_na <- ifelse(is.na(cp), ", with Competitive Position not measured", "")
   dplyr::case_when(
     is.na(v) ~ NA_character_,
@@ -393,7 +414,7 @@ sp_choice_reason <- function(tbl, cfg = list()) {
     v == "watch" & tbl$supply_chain == "Deployment" ~ paste0("Deployment need ", p2(dn), " is below ", p2(th$deployment), ": no major acceleration is required."),
     v == "preserve" & !hp ~ paste0(need_w, ", ", prize_w, ", but a top-quarter position (", p2(cp), " among contenders): Preserve, flagged for review rather than handed to partners."),
     v == "preserve" ~ paste0(prize_w, " and a top-quarter position among contenders (", p2(cp), "): Preserve and extend it."),
-    v == "catch_up" ~ paste0(prize_w, ", ", pos_cu, " and a credible pathway (", gsub(";", ", ", gsub("_", " ", pw)), "): Catch Up."),
+    v == "catch_up" ~ paste0(prize_w, ", ", pos_cu, " and ", pw_yes, ": Catch Up."),
     v == "partner" & hp ~ paste0(need_w, " and ", prize_w, ", but ", pos_no, " and ", pw_no, ": Partner with trusted suppliers."),
     v == "partner" ~ paste0(need_w, " and ", prize_w, cp_na, ": a security problem without a domestic industrial prize. Partner with trusted suppliers."),
     v == "watch" & hp ~ paste0(need_w, " and ", prize_w, ", but ", pos_no, " and ", pw_no, ": Watch (keep R&D options open)."),

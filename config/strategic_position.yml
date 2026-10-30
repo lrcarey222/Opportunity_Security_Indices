@@ -475,16 +475,26 @@ decision_framework:
     # never lowers a world-market prize. mean: the plain average both ways (sensitivity only).
     home_market_mode: lift
     home_market_file: home_market_tbl.rds
-  # Credible pathway for Catch Up (design D3): at least min_legs of the five evidence legs. min_legs 2 (user
-  # decision 2026-10-30): with one leg the adjacent-stage leg alone carried most Catch Up cells (1,660 -> 748).
+  # Credible pathway for Catch Up (R/strategic_position/pathway.R). rule anchor (user spec 2026-10-30, "capability
+  # anchor + corroboration"): at least one capability anchor and one more signal from a different evidence family;
+  # two enabling signals alone are never enough. rule legs: min_legs of the five design-D3 legs (1 = design D3,
+  # 2 = the two-leg rule of 2026-10-30 morning; kept for the sensitivity).
   pathway:
-    min_legs: 2
+    rule: anchor
+    # capability anchors (absolute measures; never a Competitive Position score)
+    direct_share_min: 0.005                 # world supply share (home_share) or 2022-24 world export share; = the contender floor
+    operating_capacity_share_min: 0.005     # GCIM operating capacity, share of world operating capacity (most material product)
+    committed_pipeline_share_min: 0.01      # GCIM under construction + built not yet online, share of world operating capacity
+    adjacent_share: 0.05                    # absolute adjacency: adjacent-stage world share (anchor); also a legs-rule leg
+    # supporting signals (corroborate an anchor; never qualify on their own)
+    announced_pipeline_share_min: 0.02      # GCIM announced + paused capacity, share of world operating capacity
+    adjacent_cp_within_pct: 0.6             # relative adjacency: adjacent stage among the country's own stronger cells
     feasibility_pct: 0.75
-    pipeline_min: 0
-    adjacent_share: 0.05
-    adjacent_cp_within_pct: 0.6
     learning_levels: [moderate, strong]
     input_cost_pct: 0.75
+    # legs rule only
+    min_legs: 2
+    pipeline_min: 0
   deployment_need:
     # data/processed/<file> (scripts/95, deployment_need.R); absent -> every Deployment cell not assessed
     file: deployment_need_tbl.rds

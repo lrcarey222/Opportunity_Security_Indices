@@ -232,6 +232,82 @@ investment_standardize_input_names <- function(tbl) {
   tbl
 }
 
+# The GCIM manufacturing/industry capacity sheet, cleaned and staged: Country, tech, supply_chain,
+# Product, capacity_stage (the source's Category), Value. Capacity is staged by the source's own
+# Product labels: Solar polysilicon => Refining, wafers/cells => Components, modules => Assembly; Wind
+# blades => Components, nacelles => Assembly; Batteries EAM/cells => Components, modules => Assembly;
+# ZEVs => Assembly. Rows are staged after the tech filter so the unmapped Industry products (cement,
+# steel, SAF) do not trip the unknown-product warning. Critical minerals are routed to Refining of
+# the battery technologies by critical_minerals_split (investment_route_critical_minerals()).
+investment_capacity_clean <- function(capacity_tbl, critical_minerals_split = NULL) {
+  capacity_tbl <- investment_standardize_input_names(capacity_tbl)
+  investment_assert_columns(capacity_tbl, c("Country", "Segment", "Technology", "Product", "Category", "Value"), label = "capacity_tbl")
+  capacity_clean <- capacity_tbl %>%
+    dplyr::transmute(
+      Country = standardize_country_names(Country),
+      Technology = as.character(Technology),
+      tech = investment_map_tech(Technology),
+      Segment = as.character(Segment),
+      Product = as.character(Product),
+      capacity_stage = as.character(Category),
+      Value = suppressWarnings(as.numeric(Value))
+    ) %>%
+    dplyr::mutate(Value = dplyr::coalesce(Value, 0))
+
+  capacity_regular <- capacity_clean %>%
+    dplyr::filter(!is.na(tech)) %>%
+    dplyr::transmute(
+      Country,
+      tech,
+      supply_chain = investment_segment_to_supply_chain(Segment, Product),
+      Product,
+      capacity_stage,
+      Value
+    ) %>%
+    supply_chain_expand_legacy()
+
+  capacity_critical_minerals <- capacity_clean %>%
+    dplyr::filter(investment_is_critical_minerals(Technology)) %>%
+    dplyr::select(Country, Product, capacity_stage, Value) %>%
+    investment_route_critical_minerals("Value", critical_minerals_split)
+
+  dplyr::bind_rows(capacity_regular, capacity_critical_minerals)
+}
+
+# Each country's share of world operating capacity, per product, from the cleaned capacity
+# (investment_capacity_clean()): operating = "Current operational capacity"; committed = "Operational
+# yet to come online" + "Under construction - anticipated capacity"; announced = "Announced -
+# anticipated capacity" + "Paused - anticipated capacity". Each is divided by the world's current
+# operating capacity of the same product (units differ across products, so shares are per product);
+# a stage takes its most material product (the maximum share). Returns Country, tech, supply_chain,
+# operating_share, committed_share, announced_share, n_products; a node the monitor covers but where
+# a country has no row is an observed zero (the caller's coverage rule).
+investment_capacity_shares <- function(capacity_clean) {
+  require_columns(capacity_clean, c("Country", "tech", "supply_chain", "Product", "capacity_stage", "Value"), label = "capacity_clean")
+  status <- dplyr::case_when(
+    capacity_clean$capacity_stage == "Current operational capacity" ~ "operating",
+    capacity_clean$capacity_stage %in% c("Operational yet to come online", "Under construction - anticipated capacity") ~ "committed",
+    capacity_clean$capacity_stage %in% c("Announced - anticipated capacity", "Paused - anticipated capacity") ~ "announced",
+    TRUE ~ NA_character_
+  )
+  by_product <- capacity_clean %>%
+    dplyr::mutate(status = status) %>%
+    dplyr::filter(!is.na(.data$status)) %>%
+    dplyr::group_by(.data$Country, .data$tech, .data$supply_chain, .data$Product, .data$status) %>%
+    dplyr::summarise(value = sum(.data$Value, na.rm = TRUE), .groups = "drop") %>%
+    tidyr::pivot_wider(names_from = "status", values_from = "value", values_fill = 0)
+  for (s in c("operating", "committed", "announced")) if (!s %in% names(by_product)) by_product[[s]] <- 0
+  by_product %>%
+    dplyr::group_by(.data$tech, .data$supply_chain, .data$Product) %>%
+    dplyr::mutate(world_operating = sum(.data$operating, na.rm = TRUE)) %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(.data$world_operating > 0) %>%
+    dplyr::mutate(dplyr::across(c("operating", "committed", "announced"), ~ .x / .data$world_operating, .names = "{.col}_share")) %>%
+    dplyr::group_by(.data$Country, .data$tech, .data$supply_chain) %>%
+    dplyr::summarise(operating_share = max(.data$operating_share), committed_share = max(.data$committed_share),
+                     announced_share = max(.data$announced_share), n_products = dplyr::n(), .groups = "drop")
+}
+
 investment_momentum <- function(annual_tbl,
                                 capacity_tbl,
                                 quarterly_tbl = NULL,
@@ -476,41 +552,7 @@ investment_momentum <- function(annual_tbl,
       explanation = paste0("Raw momentum signal before normalization", investment_annual_stage_note(supply_chain))
     )
 
-  capacity_clean <- capacity_tbl %>%
-    dplyr::transmute(
-      Country = standardize_country_names(Country),
-      Technology = as.character(Technology),
-      tech = investment_map_tech(Technology),
-      Segment = as.character(Segment),
-      Product = as.character(Product),
-      capacity_stage = as.character(Category),
-      Value = suppressWarnings(as.numeric(Value))
-    ) %>%
-    dplyr::mutate(Value = dplyr::coalesce(Value, 0))
-
-  # Capacity is staged by the source's own Product labels: Solar polysilicon => Refining,
-  # wafers/cells => Components, modules => Assembly; Wind blades => Components, nacelles =>
-  # Assembly; Batteries EAM/cells => Components, modules => Assembly; ZEVs => Assembly. Rows are
-  # staged after the tech filter so the unmapped Industry products (cement, steel, SAF) do not
-  # trip the unknown-product warning.
-  capacity_regular <- capacity_clean %>%
-    dplyr::filter(!is.na(tech)) %>%
-    dplyr::transmute(
-      Country,
-      tech,
-      supply_chain = investment_segment_to_supply_chain(Segment, Product),
-      Product,
-      capacity_stage,
-      Value
-    ) %>%
-    supply_chain_expand_legacy()
-
-  capacity_critical_minerals <- capacity_clean %>%
-    dplyr::filter(investment_is_critical_minerals(Technology)) %>%
-    dplyr::select(Country, Product, capacity_stage, Value) %>%
-    investment_route_critical_minerals("Value", critical_minerals_split)
-
-  capacity_clean <- dplyr::bind_rows(capacity_regular, capacity_critical_minerals)
+  capacity_clean <- investment_capacity_clean(capacity_tbl, critical_minerals_split)
 
   if (!is.null(country_reference_std) && isTRUE(enforce_country_reference)) {
     capacity_filtered <- capacity_clean %>%
