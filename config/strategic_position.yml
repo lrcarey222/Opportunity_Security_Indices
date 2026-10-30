@@ -438,6 +438,12 @@ decision_framework:
     # trusted alternatives (trusted partners' share of world supply, less the country's own) is a fourth
     # need family only if observed for at least this share of the assessed producing cells
     trusted_alternatives_min_coverage: 0.8
+    # High need also needs the need score itself to reach this floor (user decision 2026-10-30). In a thinly traded
+    # node most economies import too little to register and score 0, so a tiny positive score ranks above most of the
+    # field (Australia and Canada at 0.77 on uranium for scores of 0.03 and 0.02). Below the floor the percentile is
+    # capped under the need threshold and its borderline band (supply_chain_need_cap "score_below_floor"; the
+    # uncapped percentile stays in supply_chain_need_uncapped).
+    score_floor: 0.10
   industrial_opportunity:
     # World demand growth base_year -> horizon_year under the WEO 2025 Stated Policies Scenario
     # (iea_pathways_*_tbl.rds, scripts/17: the node primary series in config/iea_pathways_map.yml);

@@ -301,6 +301,16 @@ test_that("without a capability anchor a high prize is Partner or Watch, flagged
   expect_true(is.na(de(supply_chain = "Deployment", deployment_need = 0.9)$greenfield_option))
 })
 
+test_that("a need capped by the score floor reads as low need and the reason says why", {
+  fl <- de(supply_chain_need = 0.61, supply_chain_need_uncapped = 0.77, supply_chain_need_score = 0.03,
+           supply_chain_need_cap = "score_below_floor", industrial_opportunity = 0.45, pathway_credible = "no")
+  expect_equal(fl$strategic_choice, "watch")
+  expect_true(is.na(fl$decision_borderline))
+  expect_match(sp_choice_reason(fl, de_cfg()),
+               "Low supply-chain need (a need score of 0.03, below the 0.10 floor, though it ranks at 0.77 in a thinly traded node)",
+               fixed = TRUE)
+})
+
 test_that("every output respects the posture / mode invariants", {
   grid <- expand.grid(stage = c("Extraction", "Components", "Deployment", "Recovery"), n = c(NA, 0.2, 0.9), o = c(NA, 0.2, 0.9),
                       cp = c(0.3, 0.9), pw = c("yes", "no", "unknown"), dn = c(NA, 0.2, 0.9), sec = c(FALSE, TRUE),

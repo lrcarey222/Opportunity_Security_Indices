@@ -27,7 +27,9 @@ sp_need_type <- function(stage) ifelse(stage == "Deployment", "deployment", "sup
 # family score: within-cell mid-rank percentile of 1 - that share; 0 need when the country is
 # self-supplied or its imports are immaterial), sn_trusted_in_score, supply_chain_need_score,
 # supply_chain_need (0-1, within-cell percentile; NA at Deployment and wherever strategic_need.R found
-# the cell thin or excluded), supply_chain_need_n_families and need_type.
+# the cell thin or excluded; capped below the need threshold where the score is under
+# supply_chain_need$score_floor), supply_chain_need_uncapped, supply_chain_need_cap,
+# supply_chain_need_n_families and need_type.
 sp_supply_chain_need <- function(tbl, cfg = list()) {
   min_cov <- (cfg$supply_chain_need %||% list())$trusted_alternatives_min_coverage %||% 0.8
   self_line <- cfg$self_supply_share %||% 0.10
@@ -62,7 +64,18 @@ sp_supply_chain_need <- function(tbl, cfg = list()) {
   score <- sp_row_mean_available(fm)
   score[!assessed] <- NA_real_
   tbl$supply_chain_need_score <- score
-  tbl$supply_chain_need <- stats::ave(score, cell, FUN = sp_midrank_pct)
+  # Score floor (user decision 2026-10-30): in a thinly traded node most economies import too little to register
+  # and score 0, so a tiny positive score ranks above most of the field. A percentile at or above the need
+  # threshold stands only where the score itself reaches score_floor; below it the percentile is capped under
+  # the threshold and its borderline band, so the node reads plainly as low need (not borderline).
+  floor <- (cfg$supply_chain_need %||% list())$score_floor %||% 0
+  th_need <- cfg$need_threshold %||% 0.67
+  band <- cfg$borderline_band %||% 0.05
+  pct_need <- stats::ave(score, cell, FUN = sp_midrank_pct)
+  capped <- !is.na(pct_need) & pct_need >= th_need - band & !is.na(score) & score < floor
+  tbl$supply_chain_need_uncapped <- pct_need
+  tbl$supply_chain_need <- ifelse(capped, pmin(pct_need, th_need - band - 0.01), pct_need)
+  tbl$supply_chain_need_cap <- ifelse(capped, "score_below_floor", NA_character_)
   tbl$supply_chain_need_n_families <- ifelse(assessed, rowSums(!is.na(fm)), NA_integer_)
   tbl$sn_trusted_in_score <- use_trusted
   attr(tbl, "sn_trusted_alternatives_coverage") <- coverage

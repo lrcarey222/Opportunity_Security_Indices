@@ -365,6 +365,26 @@ test_that("under the anchor rule no pathway is credible without an anchor and a 
   expect_false(any(yes & !(out$catch_up_anchor %in% TRUE)))
 })
 
+test_that("high supply-chain need needs a need score at or above the floor, not only a high rank in a thin node", {
+  expect_equal(io_cfg()$supply_chain_need$score_floor, 0.10)
+  # 15 economies import too little to register (score 0); four score 0.02 and rank above them; one scores 0.5
+  x <- data.frame(iso3 = sprintf("C%02d", 1:20), tech = "Nuclear", supply_chain = "Extraction", strategic_need_percentile = 0.5,
+                  sn_import_dependence = c(rep(0, 15), rep(0.02, 4), 0.5), sn_supplier_concentration = c(rep(0, 15), rep(0.02, 4), 0.5),
+                  sn_risky_supplier_exposure = c(rep(0, 15), rep(0.02, 4), 0.5), trusted_world_share = NA_real_,
+                  home_share = 0.001, sn_import_material = TRUE, stringsAsFactors = FALSE)
+  out <- sp_supply_chain_need(x, io_cfg())
+  tiny <- 16:19
+  expect_true(all(out$supply_chain_need_uncapped[tiny] >= 0.67))     # the rank alone would read as high need
+  expect_true(all(out$supply_chain_need[tiny] < 0.67 - 0.05))         # capped below the threshold and its band
+  expect_true(all(out$supply_chain_need_cap[tiny] == "score_below_floor"))
+  expect_equal(out$supply_chain_need[20], out$supply_chain_need_uncapped[20])   # a material score keeps its rank
+  expect_true(is.na(out$supply_chain_need_cap[20]))
+  expect_true(all(is.na(out$supply_chain_need_cap[1:15])))            # low ranks are not touched
+  # without a floor the rank stands
+  nofloor <- sp_supply_chain_need(x, utils::modifyList(io_cfg(), list(supply_chain_need = list(score_floor = 0))))
+  expect_equal(nofloor$supply_chain_need, nofloor$supply_chain_need_uncapped)
+})
+
 test_that("supply_chain_need exists only at the producing stages and has no Deployment proxy", {
   x <- expand.grid(iso3 = sprintf("C%02d", 1:10), tech = "Solar", supply_chain = c("Components", "Deployment"), stringsAsFactors = FALSE)
   set.seed(5)

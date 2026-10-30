@@ -359,6 +359,11 @@ sp_choice_reason <- function(tbl, cfg = list()) {
   hn <- !is.na(need) & need >= th$need
   hp <- !is.na(prize) & prize >= th$prize
   need_w <- paste0(ifelse(hn, "High", "Low"), " supply-chain need (", p2(need), ")")
+  # a percentile capped by the score floor (supply_chain_need.R) says why it is low
+  floored <- col("supply_chain_need_cap", NA_character_) %in% "score_below_floor"
+  need_w <- ifelse(floored, paste0("Low supply-chain need (a need score of ", p2(col("supply_chain_need_score", NA_real_)),
+                                   ", below the ", p2(cfg$supply_chain_need$score_floor %||% 0), " floor, though it ranks at ",
+                                   p2(col("supply_chain_need_uncapped", NA_real_)), " in a thinly traded node)"), need_w)
   prize_w <- paste0(ifelse(hp, "a high", "a low"), " industrial prize (", p2(prize), ")")
   # why the position is not high (the checks of sp_choice_high_cp(), in the trace's order)
   contender <- col("cp_contender_basis", NA_character_) %in% "all_countries" | col("cp_is_contender", NA) %in% TRUE
