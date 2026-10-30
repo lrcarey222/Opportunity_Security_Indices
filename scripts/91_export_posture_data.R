@@ -78,11 +78,17 @@ write_doc <- function(prefix, doc) {
 old <- list.files(out_dir, pattern = "^posture-.*\\.json$", full.names = TRUE)
 unlink(old)
 
-core <- posture_core_doc(tbl, division, countries, sp_cfg, created, git_commit, stage_display = stage_display)
+# the sensitive layers, for the node-level Yards & Fences evidence the core carries once (labels, large-yard
+# case, the country-invariant strategic-value families)
+layers_path <- file.path(outputs_dir, "strategic_posture_layers_tbl.rds")
+layers <- if (file.exists(layers_path)) readRDS(layers_path) else NULL
+core <- posture_core_doc(tbl, division, countries, sp_cfg, created, git_commit, stage_display = stage_display, layers = layers)
 core_file <- write_doc("posture-core", core)
 if (core_file$bytes > POSTURE_BUDGET_CORE) stop("posture core is ", core_file$bytes, " bytes, over the 3 MiB budget.")
 isos <- core$countries$iso3
-details <- lapply(isos, function(iso) write_doc(paste0("posture-detail-", iso), posture_detail_doc(tbl, iso, sp_cfg, created)))
+techs <- unlist(sp_cfg$headline_techs %||% sort(unique(tbl$tech)))
+yf_nodes <- if ("large_yard_case" %in% names(tbl)) posture_yf_node_rows(tbl[tbl$tech %in% techs, , drop = FALSE]) else NULL
+details <- lapply(isos, function(iso) write_doc(paste0("posture-detail-", iso), posture_detail_doc(tbl, iso, sp_cfg, created, yf_nodes)))
 detail_bytes <- vapply(details, function(d) d$bytes, numeric(1))
 if (any(detail_bytes > POSTURE_BUDGET_DETAIL)) {
   stop("posture detail over the ", POSTURE_BUDGET_DETAIL / 1024, " KiB budget: ", paste(isos[detail_bytes > POSTURE_BUDGET_DETAIL], collapse = ", "))

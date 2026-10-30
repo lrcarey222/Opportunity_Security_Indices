@@ -55,12 +55,75 @@ posture_list <- function(x) {
   if (length(s)) I(s) else NULL
 }
 
-# The cell's child layers (yard_rollup.R yard_children, a JSON array of {layer_id, label, yard, choice, reason})
-# as a list the detail document writes as an array, whatever its length.
+# The cell's child layers (yard_rollup.R yard_children, a JSON array of {layer_id, label, yard, choice, variant,
+# reason}) as a compact array the detail document writes whatever its length: {layer_id, yard, choice, variant}.
+# The label and the node-level evidence (the large-yard signals, the industrial-commons and future-option values)
+# are in the core's yf_nodes once; the drawer composes each child's reason from them, so 214 documents do not
+# repeat them (they took the largest drawer documents over the size budget).
 posture_yard_children <- function(x) {
   if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(x)) return(NULL)
   j <- tryCatch(jsonlite::fromJSON(x, simplifyVector = FALSE), error = function(e) NULL)
-  if (is.null(j) || !length(j)) NULL else I(j)
+  if (is.null(j) || !length(j)) return(NULL)
+  I(lapply(j, function(ch) Filter(Negate(is.null), ch[c("layer_id", "yard", "choice", "variant")])))
+}
+
+# The large-yard signals in a fixed order (strategic_value.R SP_LY_SIGNALS): the core's yf_nodes and a detail
+# exception name them by 0-based index into meta.large_yard_signals.
+POSTURE_LY_SIGNALS <- c("mature", "passive", "standardized", "substitutable", "easy_qualification", "diversified",
+                        "low_learning", "low_spillover", "low_differentiation", "commoditized")
+posture_ly_index <- function(x) {
+  s <- posture_list(x)
+  if (is.null(s)) NULL else I(as.integer(match(s, POSTURE_LY_SIGNALS) - 1L))
+}
+
+# The node-level Yards & Fences evidence, one row per producing-stage node (layer_id "stage") and sensitive
+# layer: the large-yard case (case, n, signals, unknown, floor) and the strategic-value families that do not
+# depend on the country (industrial commons, future option, the observed counts, the market-only cap), each the
+# modal value across countries (they vary by country for 2 of 55 nodes, where a country's own value is in its
+# detail document). x: the cell table; layers: strategic_posture_layers_tbl (optional).
+posture_yf_node_rows <- function(x, layers = NULL) {
+  cols <- c("tech", "supply_chain", "layer_id", "layer_label", "large_yard_case", "large_yard_n", "large_yard_signals",
+            "large_yard_unknown", "large_yard_floor", "siv_commons", "siv_option", "siv_commons_n", "siv_option_n", "siv_cap")
+  pick <- function(d, layer) {
+    d <- as.data.frame(d)
+    if (!"layer_id" %in% names(d)) d$layer_id <- layer
+    for (cl in setdiff(cols, names(d))) d[[cl]] <- NA
+    d[d$supply_chain != "Deployment", cols, drop = FALSE]
+  }
+  rows <- pick(x, "stage")
+  if (!is.null(layers) && nrow(layers)) rows <- rbind(rows, pick(layers, NA_character_))
+  rows$key <- paste(rows$tech, rows$supply_chain, rows$layer_id, sep = "|")
+  modal <- function(v) {
+    v <- v[!is.na(v)]
+    if (!length(v)) return(NA)
+    tb <- table(as.character(v))
+    out <- names(tb)[which.max(tb)]
+    if (is.logical(v)) as.logical(out) else if (is.numeric(v)) as.numeric(out) else out
+  }
+  keys <- unique(rows$key)
+  out <- lapply(keys, function(k) {
+    r <- rows[rows$key == k, , drop = FALSE]
+    c(list(key = k, label = modal(r$layer_label)), lapply(r[, cols[-(1:4)], drop = FALSE], modal))
+  })
+  stats::setNames(out, keys)
+}
+
+# The core's yf_nodes, columnar: key "tech|stage|layer_id", label (layers only), the large-yard case and its
+# signals as indexes into meta.large_yard_signals, and the country-invariant strategic-value families.
+posture_yf_nodes <- function(nodes) {
+  if (!length(nodes)) return(NULL)
+  get <- function(f) lapply(nodes, function(n) n[[f]])
+  num <- function(f) I(unname(vapply(get(f), function(v) if (is.null(v) || is.na(v)) NA_real_ else posture_r3(as.numeric(v)), numeric(1))))
+  lgl <- function(f) I(unname(vapply(get(f), function(v) if (is.null(v) || is.na(v)) NA else as.logical(v), logical(1))))
+  chr <- function(f) I(unname(vapply(get(f), function(v) if (is.null(v) || is.na(v)) NA_character_ else as.character(v), character(1))))
+  idx <- function(f) I(unname(lapply(get(f), function(v) {
+    i <- if (is.null(v) || is.na(v)) NULL else posture_ly_index(v)
+    if (is.null(i)) I(integer()) else i
+  })))
+  list(key = I(unname(names(nodes))), label = chr("label"), case = lgl("large_yard_case"), n = num("large_yard_n"),
+       s = idx("large_yard_signals"), u = idx("large_yard_unknown"), floor = lgl("large_yard_floor"),
+       commons = num("siv_commons"), option = num("siv_option"), commons_n = num("siv_commons_n"),
+       option_n = num("siv_option_n"), cap = chr("siv_cap"))
 }
 
 # Evidence words as the Explorer grammar reads them (spec XX): strong | moderate | weak. The engine
@@ -115,7 +178,7 @@ posture_family_scenarios <- function(x) {
 # (headline_techs, decision_framework thresholds, node_phrases). stage_display: named character, stage id ->
 # display name (config/supply_chain_stages.yml labels).
 posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit = NA_character_, momentum_band = 0.1,
-                             stage_display = NULL) {
+                             stage_display = NULL, layers = NULL) {
   techs <- unlist(cfg$headline_techs %||% sort(unique(tbl$tech)))
   stages <- SUPPLY_CHAIN_STAGES
   x <- tbl[!is.na(tbl$strategic_posture) & tbl$tech %in% techs, , drop = FALSE]
@@ -185,6 +248,9 @@ posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit 
       # what cells.prize holds: strategic_value (strategic_industrial_value) or market (industrial_opportunity)
       prize_measure = posture_prize_measure(x),
       yard_codes = as.list(POSTURE_YARD_CODE),
+      # the node-level Yards & Fences evidence (posture_yf_nodes()), and the signal names its indexes point to
+      large_yard_signals = I(POSTURE_LY_SIGNALS),
+      yf_nodes = if (any(c("large_yard_case", "siv_commons") %in% names(x))) posture_yf_nodes(posture_yf_node_rows(x, layers)) else NULL,
       scenario_labels = POSTURE_SCENARIO_LABELS,
       family_scenarios = posture_family_scenarios(x),
       phrases = phrases[intersect(names(phrases), paste(rep(techs, each = length(stages)), stages, sep = "|"))],
@@ -281,8 +347,10 @@ posture_commit_stamp <- function(sha, porcelain = character()) {
 }
 
 # One country's drawer document (schema 2): per cell, the five questions' evidence.
-posture_detail_doc <- function(tbl, iso3, cfg, created) {
+posture_detail_doc <- function(tbl, iso3, cfg, created, yf_nodes = NULL) {
   techs <- unlist(cfg$headline_techs %||% sort(unique(tbl$tech)))
+  # the node-level large-yard case the core carries (pass it in when writing many documents)
+  if (is.null(yf_nodes) && "large_yard_case" %in% names(tbl)) yf_nodes <- posture_yf_node_rows(tbl[tbl$tech %in% techs, , drop = FALSE])
   x <- tbl[tbl$iso3 == iso3 & !is.na(tbl$strategic_posture) & tbl$tech %in% techs, , drop = FALSE]
   x <- x[order(match(x$tech, techs), match(x$supply_chain, SUPPLY_CHAIN_STAGES)), , drop = FALSE]
   g <- function(r, n) if (n %in% names(r) && length(r[[n]]) && !is.na(r[[n]])) r[[n]] else NULL
@@ -331,13 +399,12 @@ posture_detail_doc <- function(tbl, iso3, cfg, created) {
       stockpile = if (identical(g(r, "stockpile"), "Unknown")) NULL else g(r, "stockpile"),
       systemic_essentiality = g(r, "systemic_essentiality"), operational_control = g(r, "digitally_active")
     )
-    siv <- if (dep) NULL else Filter(Negate(is.null), list(
-      value = num(r, "strategic_industrial_value"), commons = num(r, "siv_commons"), option = num(r, "siv_option"),
-      commons_observed = num(r, "siv_commons_n"), option_observed = num(r, "siv_option_n"), cap = g(r, "siv_cap")))
+    # the strategic-value families that do not depend on the country (commons, option, cap) are in the core's
+    # yf_nodes; the detail keeps what does: the value the choice read and the market prize
     prize <- if (dep) NULL else Filter(Negate(is.null), list(
       value = num(r, posture_prize_col(r)), measure = g(r, "prize_measure"),
       market = if ("choice_prize" %in% names(r)) num(r, "industrial_opportunity") else NULL,
-      strategic_value = if (length(siv)) siv else NULL, node_prize = num(r, "io_node_prize"),
+      node_prize = num(r, "io_node_prize"),
       investment_momentum = num(r, "io_investment_momentum_pct"), home_market = num(r, "io_home_market"),
       home_market_basis = g(r, "io_home_market_basis"), maturity = num(r, "io_maturity"),
       basis = g(r, "io_basis"), outlook = g(r, "io_outlook"), note = posture_prize_note(r)
@@ -389,17 +456,22 @@ posture_detail_doc <- function(tbl, iso3, cfg, created) {
         )),
         watch_reasons = g(r, "watch_reasons"),
         reason = if (identical(posture, "not_assessed")) NULL else g(r, "choice_reason"),
-        # the large-yard case (its reason is in the choice reason where it decides; written here only when
-        # undecided), and the yards: the cell's own, its roll-up and its child layers
+        # the large-yard case only where this country's differs from the node's (core yf_nodes; 2 of 55 nodes),
+        # with its reason only when undecided; the yards: the roll-up is the core's yd and the cell's own yard
+        # follows from its choice, so the detail keeps the fence scope (when not the layer alone) and the
+        # compact child layers
         large_yard = if (dep) NULL else {
-          ly <- Filter(Negate(is.null), list(
-            case = g(r, "large_yard_case"), n = num(r, "large_yard_n"), signals = posture_list(g(r, "large_yard_signals")),
-            unknown = posture_list(g(r, "large_yard_unknown")),
+          nd <- yf_nodes[[paste(r$tech, r$supply_chain, "stage", sep = "|")]]
+          same <- !is.null(nd) && identical(as.logical(g(r, "large_yard_case") %||% NA), as.logical(nd$large_yard_case)) &&
+            identical(as.character(g(r, "large_yard_signals") %||% NA), as.character(nd$large_yard_signals))
+          ly <- if (same) list() else Filter(Negate(is.null), list(
+            case = g(r, "large_yard_case"), n = num(r, "large_yard_n"), s = posture_ly_index(g(r, "large_yard_signals")),
+            u = posture_ly_index(g(r, "large_yard_unknown")),
             floor = if (isTRUE(g(r, "large_yard_floor"))) TRUE else NULL,
             reason = if (is.null(g(r, "large_yard_case"))) g(r, "large_yard_reason") else NULL))
           if (length(ly)) ly else NULL
         },
-        yard = g(r, "yard"), yard_rollup = g(r, "yard_rollup"), yard_fence_scope = g(r, "yard_fence_scope"),
+        yard_fence_scope = if (isTRUE(g(r, "yard_fence_scope") %in% c("extends_to_hardware", "unclear"))) g(r, "yard_fence_scope") else NULL,
         yard_children = posture_yard_children(g(r, "yard_children"))
       )
     )

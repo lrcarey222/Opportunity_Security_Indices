@@ -263,24 +263,41 @@ test_that("the yards and the strategic value travel in the core and the detail, 
   expect_equal(p$prize$value, 0.72)
   expect_equal(p$prize$measure, "strategic_value")
   expect_equal(p$prize$market, 0.3)
-  expect_equal(p$prize$strategic_value$commons, 0.5)
-  expect_identical(p$large_yard$case, FALSE)
-  expect_equal(p$large_yard$signals, list("passive"))     # a one-item list stays an array
-  expect_null(p$large_yard$reason)                        # decided: its words are in the choice reason
-  expect_equal(p$yard, "medium")
-  expect_equal(p$yard_rollup, "mixed_high_medium")
+  # the country-invariant evidence travels once, in the core's yf_nodes (commons, option, the large-yard case
+  # with its signals as indexes into meta.large_yard_signals); the detail keeps only what varies by country
+  expect_null(p$prize$strategic_value)
+  yn <- j$meta$yf_nodes
+  kk <- match("Batteries|Components|stage", unlist(yn$key))
+  expect_false(is.na(kk))
+  expect_equal(yn$commons[[kk]], 0.5)
+  expect_equal(yn$commons_n[[kk]], 2)
+  expect_identical(yn$case[[kk]], FALSE)
+  expect_equal(unlist(j$meta$large_yard_signals)[unlist(yn$s[[kk]]) + 1], "passive")
+  expect_type(yn$s[[kk]], "list")                         # a one-signal index list stays an array
+  expect_null(p$large_yard)                               # the same as its node: not repeated per country
+  expect_null(p$yard)                                     # the cell's own yard follows from its choice
+  expect_null(p$yard_rollup)                              # the roll-up is the core's yd
   expect_length(p$yard_children, 1)                       # one child stays a one-item array
   expect_equal(p$yard_children[[1]]$layer_id, "bess-control")
   expect_equal(p$yard_children[[1]]$yard, "small")
   expect_equal(p$yard_children[[1]]$variant, "secure_integrated")
+  expect_null(p$yard_children[[1]]$label)                 # labels are in the core's yf_nodes
+  expect_null(p$yard_children[[1]]$reason)                # the drawer composes it from the node evidence
   expect_equal(p$yard_fence_scope, "extends_to_hardware")
-  expect_equal(p$prize$strategic_value$commons_observed, 2)
-  expect_null(p$large_yard$floor)                         # only a large yard with a capability floor carries it
+  # a layer passed to the core gets its own node row with its label
+  lay <- data.frame(tech = "Batteries", supply_chain = "Components", layer_id = "bess-control", layer_label = "BMS",
+                    large_yard_case = FALSE, large_yard_n = 1L, large_yard_signals = "easy_qualification", large_yard_unknown = NA,
+                    large_yard_floor = FALSE, siv_commons = 1 / 3, siv_option = 0, siv_commons_n = 1L, siv_option_n = 0L,
+                    siv_cap = "market_only", stringsAsFactors = FALSE)
+  coreL <- posture_core_doc(g, pe_div(), pe_countries, pe_cfg, created = "x", layers = lay)
+  kl <- match("Batteries|Components|bess-control", coreL$meta$yf_nodes$key)
+  expect_equal(as.character(coreL$meta$yf_nodes$label)[kl], "BMS")
+  expect_equal(as.character(coreL$meta$yf_nodes$cap)[kl], "market_only")
   depc <- Filter(function(c) identical(c$stage, "Deployment"), jd$cells)[[1]]
   expect_null(depc$large_yard)
   expect_null(depc$prize)
   expect_null(Filter(function(c) identical(c$stage, "Extraction"), jd$cells)[[1]]$yard_children)
-  # an undecided case carries its reason
+  # a country whose case differs from its node's carries its own; an undecided case carries its reason
   g$large_yard_case[g$iso3 == "AAA" & g$supply_chain == "Refining"] <- NA
   d2 <- posture_detail_doc(g, "AAA", pe_cfg, created = "x")
   expect_match(Filter(function(c) identical(c$stage, "Refining"), d2$cells)[[1]]$large_yard$reason, "large yard")
