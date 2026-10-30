@@ -5,37 +5,73 @@
 
 import { describe, expect, it } from 'vitest';
 import { STAGE_DISPLAY as LIB_STAGE_DISPLAY, STAGE_SHORT as LIB_STAGE_SHORT, SUPPLY_STAGES } from '../../lib/stages.ts';
-import { ALIGNMENTS, decodeCore, POSTURE_STAGES } from '../contract.ts';
+import { ALIGNMENTS, decodeCore, POSTURE_STAGES, type PostureCell } from '../contract.ts';
 import {
   aibHeader, aibHeaderTiles, aibTakeaway, cellKeyParts, countPostures, countryCells, countryNames, countryPostureRows, DIVISION_CSV_COLS, divisionCsvRows, divisionRows,
   freshnessLine, parsePostureNode, POSTURE_CSV_COLS, postureCountsText, postureCsvRows, postureCsvText, postureProvenance, producingStagesOf, score100, sectorPostureRows,
   sectorTakeaway, strategyCountsText,
 } from '../derive.ts';
 import {
-  ALIGNMENT_CLASS_LABEL, ALIGNMENT_LABEL, alignmentClass, alignmentFlagWords, borderlineWords, cellMark, choiceWord, DEPLOY_MARK, EVIDENCE_LABEL, EVIDENCE_LEVELS, evidenceOpacity,
-  flagWords, MODE_MARK, pathwayEvidenceWords, POSTURE_COLOR, POSTURE_LABEL, RATIONALE_MARK, STAGE_DISPLAY, STAGE_SHORT, traceCodeWords, traceTestWords, VERB_FAMILY, VERB_LABEL,
-  VERB_ORDER, verbOf,
+  ALIGNMENT_CLASS_LABEL, ALIGNMENT_LABEL, alignmentClass, alignmentFlagWords, borderlineWords, choiceWord, EVIDENCE_LABEL, EVIDENCE_LEVELS, FENCE_LABEL, FENCE_OF_VERB,
+  FENCE_ORDER, FENCE_VERBS, fenceChoiceWord, flagWords, nodeFence, nodeFill, NOT_ASSESSED_HATCH, pathwayEvidenceWords, POSTURE_COLOR, POSTURE_LABEL, STAGE_DISPLAY, STAGE_SHORT,
+  traceCodeWords, traceTestWords, VERB_COLOR, VERB_FAMILY, VERB_LABEL, VERB_LONG, VERB_ORDER, VERB_OUTLINE, verbOf,
 } from '../grammar.ts';
 import { postureMomentum } from '../momentum.ts';
+import { contrast as contrastRatio } from '../../charts/scale.ts';
 import { fixtureCore, renameEconomies, withoutCell } from './fixture.ts';
 
+// the NEIS tokens of dashboard/src/styles/globals.css (@theme): signal, brand blue / green / teal, the sequential ramp, the ink greys
+const NEIS = new Set(['#f58229', '#1889b0', '#a3b63b', '#55c4c5', '#016787', '#007da3', '#2792ba', '#43a8d0', '#5cbfe8', '#75d5fe', '#b4e7fe', '#111827', '#1f2937', '#374151', '#4b5563', '#6b7280', '#9ca3af', '#d1d5db', '#ffffff']);
+
 describe('one site-wide grammar (spec XX)', () => {
-  it('three background families only; a node not assessed has none', () => {
-    expect(Object.keys(POSTURE_COLOR)).toEqual(['S', 'C', 'D']);
+  it('three families in NEIS colours (orange, blue, green) where they are still drawn; a node not assessed has none', () => {
+    expect(POSTURE_COLOR).toEqual({ S: '#f58229', C: '#1889b0', D: '#a3b63b' });
     expect(Object.values(POSTURE_LABEL)).toEqual(['Secure', 'Compete', 'Deploy', 'Not assessed']);
     expect(new Set(VERB_ORDER.map((v) => VERB_FAMILY[v]))).toEqual(new Set(['S', 'C', 'D']));
   });
 
-  it('the markers: Secure rationale, Compete mode, Deploy mode; nothing when not assessed', () => {
-    expect(RATIONALE_MARK).toEqual({ operational_control: 'O', coercive_chokepoint: 'K', systemic_resilience: 'R' });
-    expect(MODE_MARK).toEqual({ preserve: 'P', catch_up: 'C', partner: '⇄' });
-    expect(DEPLOY_MARK).toEqual({ accelerate: '↑', watch: '•' });
+  it('one colour per choice, NEIS tokens only, all six distinct; not assessed is the hatch, never a colour (2026-10-30)', () => {
+    expect(VERB_COLOR).toEqual({ secure: '#f58229', preserve: '#1889b0', catch_up: '#b4e7fe', partner: '#55c4c5', accelerate: '#a3b63b', watch: '#4b5563' });
+    for (const v of VERB_ORDER) expect(NEIS.has(VERB_COLOR[v]), v).toBe(true);
+    expect(new Set(Object.values(VERB_COLOR)).size).toBe(6);
+    expect(Object.values(VERB_COLOR)).not.toContain(NOT_ASSESSED_HATCH);
     const c = { posture: 'N' as const, mode: null, deployMode: null, rationale: null };
-    expect(cellMark(c)).toBe('');
-    expect(cellMark({ ...c, posture: 'S', rationale: 'systemic_resilience' })).toBe('R');
-    expect(cellMark({ ...c, posture: 'D', deployMode: 'accelerate' })).toBe('↑');
+    expect(nodeFill(c)).toBe(NOT_ASSESSED_HATCH);
+    expect(nodeFill({ ...c, posture: 'C', mode: 'catch_up' })).toBe('#b4e7fe');
+    expect(nodeFill({ ...c, posture: 'D', deployMode: 'watch' })).toBe('#4b5563');
+    // Watch (ink-600) is below 3:1 on the card, so it carries a light outline; the others the card ring
+    expect(contrastRatio(VERB_COLOR.watch, '#1f2937')).toBeLessThan(3);
+    expect(contrastRatio(VERB_OUTLINE.watch, '#1f2937')).toBeGreaterThanOrEqual(3);
+    for (const v of VERB_ORDER.filter((x) => x !== 'watch')) expect(contrastRatio(VERB_COLOR[v], '#1f2937'), v).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio('#ffffff', '#000000')).toBeCloseTo(21, 5);
+  });
+
+  it('the fences: Secure high; Preserve, Catch Up, Partner and Accelerate medium; Watch low; at Deployment & Use, Accelerate medium and Watch low', () => {
+    expect(FENCE_ORDER.map((f) => FENCE_LABEL[f])).toEqual(['High fence', 'Medium fence', 'Low fence']);
+    expect(FENCE_VERBS).toEqual({ high: ['secure'], medium: ['preserve', 'catch_up', 'partner', 'accelerate'], low: ['watch'] });
+    expect(VERB_ORDER.map((v) => FENCE_OF_VERB[v])).toEqual(['high', 'medium', 'medium', 'medium', 'medium', 'low']);
+    for (const s of ['Extraction', 'Refining', 'Components', 'Assembly', 'Recovery']) {
+      expect([nodeFence('secure', s), nodeFence('preserve', s), nodeFence('catch_up', s), nodeFence('partner', s), nodeFence('watch', s)], s).toEqual(['high', 'medium', 'medium', 'medium', 'low']);
+    }
+    expect([nodeFence('accelerate', 'Deployment'), nodeFence('watch', 'Deployment'), nodeFence(null, 'Deployment')]).toEqual(['medium', 'low', null]);
+    const c = { posture: 'C' as const, mode: 'partner' as const, deployMode: null, stage: 'Extraction' as PostureCell['stage'] };
+    expect(fenceChoiceWord(c)).toBe('Partner · Medium fence');
+    expect(fenceChoiceWord({ ...c, posture: 'D', mode: null, deployMode: 'accelerate', stage: 'Deployment' })).toBe('Accelerate · Medium fence');
+    expect(fenceChoiceWord({ ...c, posture: 'S', mode: null })).toBe('Secure · High fence');
+    expect(fenceChoiceWord({ ...c, posture: 'N', mode: null })).toBe('Not assessed');
+  });
+
+  it('the verbs and their words; nothing when not assessed', () => {
+    const c = { posture: 'N' as const, mode: null, deployMode: null, rationale: null };
     expect([verbOf(c), choiceWord(c)]).toEqual([null, 'Not assessed']);
-    expect(choiceWord({ ...c, posture: 'C', mode: 'catch_up' })).toBe('Compete · Catch Up');
+    // a choice is named with its fence, never with the R family: a producing-stage Watch is not "Deploy · Watch"
+    expect(choiceWord({ ...c, posture: 'C', mode: 'catch_up' })).toBe('Catch Up · Medium fence');
+    expect(choiceWord({ ...c, posture: 'D', deployMode: 'watch' })).toBe('Watch · Low fence');
+    expect(choiceWord({ ...c, posture: 'S' })).toBe('Secure · High fence');
+    for (const v of VERB_ORDER) {
+      expect(VERB_LONG[v], v).toBe(`${VERB_LABEL[v]} · ${FENCE_LABEL[FENCE_OF_VERB[v]]}`);
+      expect(VERB_LONG[v], v).not.toMatch(/Compete|Deploy/);
+    }
     expect(VERB_ORDER.map((v) => VERB_LABEL[v])).toEqual(['Secure', 'Preserve', 'Catch Up', 'Partner', 'Accelerate', 'Watch']);
   });
 
@@ -71,9 +107,8 @@ describe('one site-wide grammar (spec XX)', () => {
     ]);
   });
 
-  it('evidence: strong, moderate, weak as opacity, strongest solid', () => {
+  it('evidence: strong, moderate, weak, in words (the map draws no fade since 2026-10-30)', () => {
     expect(EVIDENCE_LEVELS.map((e) => EVIDENCE_LABEL[e])).toEqual(['Strong', 'Moderate', 'Weak']);
-    expect(EVIDENCE_LEVELS.map(evidenceOpacity)).toEqual([1, 0.85, 0.6]);
   });
 });
 
@@ -221,15 +256,15 @@ describe('the table twins and CSVs', () => {
     expect(rows.slice(0, 6).map((r) => r.stageName)).toEqual(SUPPLY_STAGES.map((s) => LIB_STAGE_DISPLAY[s]));
     const sec = rows[1];
     expect([sec.postureWord, sec.choice, sec.rationale, sec.mode, sec.alignment, sec.needType, sec.supplyChainNeed, sec.tier]).toEqual([
-      'Secure', 'Secure', 'Coercive chokepoint', null, 'Under-prioritized', 'Supply-chain need', 0.95, 'core',
+      'Secure', 'Secure · High fence', 'Coercive chokepoint', null, 'Under-prioritized', 'Supply-chain need', 0.95, 'core',
     ]);
     const part = rows[0];
     expect([part.choice, part.mode, part.partner1Name, part.momentum, part.pathway, part.alignment, part.plotted]).toEqual([
-      'Compete · Partner', 'Partner', 'Bland', 'rising', 'Not credible', 'Wrong treatment / misaligned', true,
+      'Partner · Medium fence', 'Partner', 'Bland', 'rising', 'Not credible', 'Wrong treatment / misaligned', true,
     ]);
     const acc = rows[4];
     expect([acc.choice, acc.deployMode, acc.needType, acc.deploymentNeed, acc.supplyChainNeed, acc.alignment]).toEqual([
-      'Deploy · Accelerate', 'Accelerate', 'Deployment need', 0.85, null, 'Under-prioritized: under-response (deployment)',
+      'Accelerate · Medium fence', 'Accelerate', 'Deployment need', 0.85, null, 'Under-prioritized: under-response (deployment)',
     ]);
     const na = rows[5];
     expect([na.posture, na.postureWord, na.choice, na.classified, na.plotted]).toEqual(['N', 'Not assessed', 'Not assessed', true, false]);
@@ -253,10 +288,10 @@ describe('the table twins and CSVs', () => {
     expect(lines[0]).toBe([...POSTURE_CSV_COLS, 'source', 'as_of', 'git_commit'].join(','));
     expect(lines).toHaveLength(14); // header, 12 nodes, the final line break
     expect(lines[1]).toBe(
-      `Aland,AAA,core,Batteries,Extraction,Extraction,TRUE,Compete,Partner,,Compete · Partner,,Supply-chain need,0.8,,0.3,0.2,0.004,Not credible,Wrong treatment / misaligned,high,Strong,high,rising,Bland,BBB,FALSE,,,${source},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Extraction,Extraction,TRUE,Compete,Partner,,Partner · Medium fence,,Supply-chain need,0.8,,0.3,0.2,0.004,Not credible,Wrong treatment / misaligned,high,Strong,high,rising,Bland,BBB,FALSE,,,${source},2026-10-29,abc1234`,
     );
     expect(lines[2]).toBe(
-      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure,Coercive chokepoint,Supply-chain need,0.95,,0.4,0.1,0.002,,Under-prioritized,medium,Strong,high,,,,,,,${source},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Coercive chokepoint,Supply-chain need,0.95,,0.4,0.1,0.002,,Under-prioritized,medium,Strong,high,,,,,,,${source},2026-10-29,abc1234`,
     );
     expect(lines[12]).toBe(['Aland', 'AAA', 'core', 'Solar', 'Recovery', 'Recovery & Recycling', 'FALSE', ...Array(22).fill(''), source, '2026-10-29', 'abc1234'].join(','));
     // an empty table still names its columns

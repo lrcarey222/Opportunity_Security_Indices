@@ -1,8 +1,8 @@
 // The section navigation of a Country profile (spec_country.md A4.2): <nav aria-label="Sections of this
 // page">. At >= 1280 px a 200 px sticky left rail with scrollspy (the profile lays out
 // `xl:grid-cols-[200px_minmax(0,1fr)]`); below, a sticky row of section chips under the header that
-// scrolls horizontally. Links are in-page anchors (#strategy ... #evidence). Country-owned (not imported
-// from sector/chrome).
+// scrolls horizontally, on an opaque ground (no text shows through it). Links are in-page anchors
+// (#strategy ... #evidence). Country-owned (not imported from sector/chrome).
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
@@ -13,11 +13,12 @@ export interface NavSection {
   label: string;
 }
 
-// The seven sections of the canonical framework (spec XI.1, design 4, 2026-10-29): Strategy, Need, Prize &
-// Position, Choices, Policy Alignment, Allied Strategy, Evidence & Methodology. The old ids stay reachable
-// as aliases (derive/strategyPage.ts); the Legacy OSI blocks (corners, Strategic Index, sector position)
-// sit in Evidence & Methodology, and the memo is a header action, so neither has a nav entry.
-export const PROFILE_SECTIONS: readonly NavSection[] = STRATEGY_SECTIONS.map(({ id, label }) => ({ id, label }));
+// The seven sections of the canonical framework (spec XI.1, design 4, 2026-10-29; the fences of 2026-10-30):
+// Strategy, High fence, Medium fence, Low fence, Policy Alignment, Allied Strategy, Evidence & Methodology,
+// each by its nav words (the h2 where it is short). The old ids stay reachable as aliases
+// (derive/strategyPage.ts); the Legacy OSI blocks (corners, Strategic Index, sector position) sit in Evidence
+// & Methodology, and the memo is a header action, so neither has a nav entry.
+export const PROFILE_SECTIONS: readonly NavSection[] = STRATEGY_SECTIONS.map(({ id, label, nav }) => ({ id, label: nav ?? label }));
 
 /** The id of the topmost section in the reading band (IntersectionObserver; the first id without it). */
 export function useSectionSpy(ids: readonly string[]): string | null {
@@ -52,7 +53,7 @@ export function SectionNav({ sections = PROFILE_SECTIONS, rail, footer }: { sect
   if (!sections.length) return null;
   if (!asRail) {
     return (
-      <nav aria-label="Sections of this page" className="sticky top-0 z-20 -mx-4 mb-6 overflow-x-auto border-b hairline bg-ink-900/95 px-4 py-2 sm:-mx-6 sm:px-6">
+      <nav aria-label="Sections of this page" className="sticky top-0 z-20 -mx-4 mb-6 overflow-x-auto border-b hairline bg-ink-900 px-4 py-2 sm:-mx-6 sm:px-6">
         <ul className="flex w-max gap-2">
           {sections.map((s) => (
             <li key={s.id}>

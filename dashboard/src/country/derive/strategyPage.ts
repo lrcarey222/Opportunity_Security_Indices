@@ -1,9 +1,10 @@
-// Pure helpers of the Country page's canonical framework (design 2026-10-29, sections 4 and 5b; spec XI-XIX):
-// the seven sections and their anchors (with the aliases of the old ones), how an old #anchor that now sits
-// in a closed disclosure is reached, the bridge between the posture node key ("Batteries|Refining") and the
-// fact sheet's cell key ("batteries-refining"), the header's data-freshness words, the evidence and coverage
-// counts of Evidence & Methodology, and the Legacy OSI mapping (spec Part II: Grow ~ Preserve, Upgrade ~
-// Catch Up, Exposed ~ Partner, Stable ~ Watch). No React, no IO.
+// Pure helpers of the Country page's canonical framework (design 2026-10-29, sections 4 and 5b; spec XI-XIX;
+// the fences of 2026-10-30): the seven sections and their anchors (with the aliases of the old ones), the
+// Medium fence's sub-sections, how an old #anchor that now sits in a closed disclosure is reached, the bridge
+// between the posture node key ("Batteries|Refining") and the fact sheet's cell key ("batteries-refining"),
+// the header's data-freshness words, the evidence and coverage counts of Evidence & Methodology, and the
+// Legacy OSI mapping (spec Part II: Grow ~ Preserve, Upgrade ~ Catch Up, Exposed ~ Partner, Stable ~ Watch).
+// No React, no IO.
 
 import { cellKey, COUNTRY_STAGES, COUNTRY_TECHS, LEGACY_CORNERS, type LegacyCorner } from '../contract.ts';
 
@@ -11,28 +12,43 @@ import { cellKey, COUNTRY_STAGES, COUNTRY_TECHS, LEGACY_CORNERS, type LegacyCorn
 
 export interface ProfileSection {
   id: string;
+  /** the h2 */
   label: string;
+  /** the section nav's shorter words, when the h2 is long */
+  nav?: string;
   /** old anchors that scroll here (alias spans in the section, always in the page) */
   aliases: readonly string[];
 }
 
-/** The seven sections in reading order (spec XI.1; design 4): the nav, the h2s and the anchors. */
+/**
+ * The seven sections in reading order (spec XI.1; design 4; the fences of 2026-10-30): the nav, the h2s and
+ * the anchors. The three fence sections replace Need, Prize & Position and Choices (their old anchors are
+ * aliases: #need the High fence, #prize-position and #choices the Medium fence). Allied Strategy keeps the old
+ * #aib-role anchors; the partnership analysis moved to the Medium fence's Partner sub-section.
+ */
 export const STRATEGY_SECTIONS: readonly ProfileSection[] = [
   { id: 'strategy', label: 'Strategy', aliases: ['posture', 'glance'] },
-  { id: 'need', label: 'Need', aliases: [] },
-  { id: 'prize-position', label: 'Prize & Position', aliases: [] },
-  { id: 'choices', label: 'Choices', aliases: [] },
+  { id: 'high-fence', label: 'High fence · Secure', aliases: ['need'] },
+  { id: 'medium-fence', label: 'Medium fence · Preserve, Catch Up, Partner, Accelerate', aliases: ['prize-position', 'choices'] },
+  { id: 'low-fence', label: 'Low fence · Watch', aliases: [] },
   { id: 'policy-alignment', label: 'Policy Alignment', aliases: ['policy', 'priorities'] },
-  { id: 'allied', label: 'Allied Strategy', aliases: ['partnerships', 'partners', 'aib-role', 'allies'] },
+  { id: 'allied', label: 'Allied Strategy', aliases: ['aib-role', 'allied-aib-role', 'allies'] },
   { id: 'evidence', label: 'Evidence & Methodology', aliases: ['notes', 'methods'] },
+];
+
+/** The Medium fence's sub-sections (h3s with their own anchors), in order; the partnership analysis's old anchors land on Partner. */
+export const MEDIUM_SUBSECTIONS: readonly ProfileSection[] = [
+  { id: 'medium-prize', label: 'Prize', aliases: [] },
+  { id: 'medium-position', label: 'Competitive Position', aliases: [] },
+  { id: 'medium-partner', label: 'Partner', aliases: ['partnerships', 'partners', 'allied-partnerships'] },
+  { id: 'medium-accelerate', label: 'Accelerate', aliases: [] },
 ];
 
 /** The Legacy OSI sub-section of Evidence & Methodology and the old anchors of its blocks (#why is the Why section itself, inside its disclosure: hashPlan opens it). */
 export const LEGACY_SECTION: ProfileSection = { id: 'legacy-osi', label: 'Legacy OSI framework', aliases: ['position', 'space', 'opportunities', 'sectors', 'si'] };
 
-/** The disclosures of the page an old link may need open: the Legacy OSI results and the generic partnership material. */
+/** The disclosure of the page an old link may need open: the Legacy OSI results. */
 export const LEGACY_FOLD = 'legacy';
-export const EXPLORE_FOLD = 'partnerships-explore';
 
 /**
  * How the page reaches an old #anchor whose content now sits in a closed disclosure: the disclosures to
@@ -47,9 +63,6 @@ const HASH_PLAN: Readonly<Record<string, { folds: readonly string[]; target: str
   si: { folds: [LEGACY_FOLD, 'si'], target: 'fold-si' },
   sectors: { folds: [LEGACY_FOLD], target: 'legacy-sectors' },
   perspective: { folds: [LEGACY_FOLD, 'perspective'], target: 'perspective' },
-  partnerships: { folds: [EXPLORE_FOLD], target: 'allied-partnerships' },
-  partners: { folds: [EXPLORE_FOLD], target: 'allied-partnerships' },
-  'aib-role': { folds: [EXPLORE_FOLD], target: 'allied-aib-role' },
 };
 
 /** The plan for a location hash ("#why"): disclosures to open and the element to scroll to (the anchor itself when none). */

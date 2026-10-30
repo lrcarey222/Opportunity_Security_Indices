@@ -5,7 +5,7 @@
 // strategy.ts, the Country sections' rows in sections.ts. No React here.
 
 import { rowsToCsv } from '../lib/csv.ts';
-import { DEPLOYMENT_STAGE, isLegacyStage, isProducingStage, legacyStageTargetName, legacyStageWords, stageDisplay } from '../lib/stages.ts';
+import { DEPLOYMENT_STAGE, isLegacyStage, isProducingStage, legacyStageTargetName, legacyStageWords, stageDisplay, stageRank } from '../lib/stages.ts';
 import type { DivisionNode, PostureCell, PostureCore, PostureMeta } from './contract.ts';
 import {
   ALIGNMENT_LABEL, choiceWord, DEPLOY_MODE_LABEL, deliveryWords, EVIDENCE_LABEL, flagWords, GAP_LABEL, MODE_LABEL, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE, NEED_TYPE_LABEL,
@@ -291,6 +291,36 @@ export interface PostureRow {
   flag: string | null;
   /** need and prize are both measured, so the Sector scatter places it */
   plotted: boolean;
+}
+
+/** A name as it reads mid-sentence: "The United States" (a caption's capital) -> "the United States". */
+export const nameInText = (name: string): string => name.replace(/^The /, 'the ');
+/** Its possessive in running text: "the United States'", "Aland's". */
+export const namePossessive = (name: string): string => {
+  const n = nameInText(name);
+  return n.endsWith('s') ? `${n}'` : `${n}'s`;
+};
+
+/**
+ * The nodes a chart does not plot, in words, grouped by why and then by technology (chain order within):
+ * "2 not assessed: Batteries (Recovery & Recycling), Coal (Extraction, Refining); 1 with prize or position
+ * not measured: Solar (Extraction)".
+ */
+export function unplottedWords(cells: readonly PostureCell[], why: (c: PostureCell) => string): string {
+  const groups = new Map<string, Map<string, PostureCell[]>>();
+  for (const c of [...cells].sort((a, b) => stageRank(a.stage) - stageRank(b.stage))) {
+    const w = why(c);
+    const byTech = groups.get(w) ?? new Map<string, PostureCell[]>();
+    byTech.set(c.tech, [...(byTech.get(c.tech) ?? []), c]);
+    groups.set(w, byTech);
+  }
+  return [...groups]
+    .map(([w, byTech]) => {
+      const n = [...byTech.values()].reduce((k, xs) => k + xs.length, 0);
+      const techs = [...byTech].sort(([a], [b]) => a.localeCompare(b)).map(([t, xs]) => `${t} (${xs.map((c) => stageDisplay(c.stage)).join(', ')})`);
+      return `${n} ${w}: ${techs.join(', ')}`;
+    })
+    .join('; ');
 }
 
 function postureRow(key: string, iso3: string, tech: string, stage: string, c: PostureCell | null, names: Record<string, string>, tiers: Record<string, string>): PostureRow {

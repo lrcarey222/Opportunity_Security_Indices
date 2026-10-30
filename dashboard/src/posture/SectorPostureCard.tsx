@@ -23,7 +23,7 @@ import { POSTURE_TERMS } from './basis.tsx';
 import type { PostureCell } from './contract.ts';
 import { countPostures, countryNames, parsePostureNode, POSTURE_CSV_COLS, postureCsvRows, postureCsvText, postureProvenance, producingStagesOf, sectorPostureRows, sectorTakeaway } from './derive.ts';
 import { PostureCountsList } from './PostureCounts.tsx';
-import { PostureLegend, TradeFreshness } from './PostureLegend.tsx';
+import { ChoiceLegend, TradeFreshness } from './PostureLegend.tsx';
 import { PostureScatter } from './PostureScatter.tsx';
 import { usePostureCore } from './store.ts';
 import { SECTOR_POSTURE_COLS } from './tables.tsx';
@@ -145,7 +145,7 @@ export function SectorPostureCard({
           />
         )}
         csv={csv}
-        legend={<PostureLegend alignment={false} />}
+        legend={<ChoiceLegend counts={countPostures(cells)} verbs={stage === DEPLOYMENT_STAGE ? ['accelerate', 'watch'] : ['secure', 'preserve', 'catch_up', 'partner', 'watch']} />}
         notes={
           <div className="space-y-1">
             <TradeFreshness meta={c.meta} />

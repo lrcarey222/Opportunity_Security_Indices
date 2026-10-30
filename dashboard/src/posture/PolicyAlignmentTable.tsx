@@ -19,7 +19,7 @@ import { Term } from '../components/Term.tsx';
 import { stageRank } from '../lib/stages.ts';
 import { POSTURE_TERMS, PostureBasisTag } from './basis.tsx';
 import type { Alignment, PostureCell, PostureCore, PostureDetail } from './contract.ts';
-import { postureCsvText, postureProvenance } from './derive.ts';
+import { namePossessive, postureCsvText, postureProvenance } from './derive.ts';
 import {
   ALIGNMENT_BORDER, ALIGNMENT_CLASS_LABEL, ALIGNMENT_CONFIDENCE_LABEL, ALIGNMENT_ICON, ALIGNMENT_LABEL, alignmentClass, stageDisplay, VERB_LONG,
 } from './grammar.ts';
@@ -138,7 +138,7 @@ export function PolicyAlignmentTable({
             {conf.length ? ` Alignment confidence: ${conf.map(([k, n]) => `${n} ${k}`).join(', ')} (from how complete the policy records are).` : ''}
           </p>
           <p data-testid="policy-ranks-note">
-            Intensity, support, protection and momentum are percentile ranks among {name.endsWith('s') ? `${name}'` : `${name}'s`} own nodes (high: the top third; low: the bottom third), not shares of policy
+            Intensity, support, protection and momentum are percentile ranks among {namePossessive(name)} own nodes (high: the top third; low: the bottom third), not shares of policy
             attention or changes. Intensity ranks the node&apos;s revealed policy priority; support and protection rank the support and the protection or localisation measures
             recorded for it, and protection reads &ldquo;none recorded&rdquo; where there are none; momentum ranks recent policy activity and is shown only where the time series
             supports it.

@@ -19,7 +19,7 @@ import { POSTURE_TERMS } from './basis.tsx';
 import type { PostureCell, PostureCore, PostureDetail } from './contract.ts';
 import { postureCsvText, postureProvenance, score100 } from './derive.ts';
 import { ratioVsCurrentWords, type Family } from './detail.ts';
-import { basisWords, cellMark, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, POSTURE_COLOR, RATIONALE_LABEL, stageDisplay, VERB_LONG, type NeedTag } from './grammar.ts';
+import { basisWords, nodeFill, NOT_ASSESSED_BORDER, RATIONALE_LABEL, stageDisplay, VERB_LONG, VERB_OUTLINE, verbOf, type NeedTag } from './grammar.ts';
 import { deploymentNeedRanking, supplyNeedRanking, type DeploymentNeedRow, type SupplyNeedRow } from './sections.ts';
 
 export const NEED_HEADING = 'What problems does this country need to solve?';
@@ -47,14 +47,15 @@ export interface NeedPanelsProps {
 function Mark({ c }: { c: PostureCell | undefined }) {
   if (!c) return null;
   const na = c.posture === 'N';
+  const v = verbOf(c);
+  // the choice colour alone, as on the Country Strategy Map
   return (
     <span
       aria-hidden="true"
-      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] text-[11px] font-semibold text-white"
-      style={{ background: na ? NOT_ASSESSED_HATCH : POSTURE_COLOR[c.posture as 'S' | 'C' | 'D'], border: na ? NOT_ASSESSED_BORDER : undefined }}
-    >
-      {cellMark(c)}
-    </span>
+      className="inline-block h-5 w-5 shrink-0 rounded-[3px]"
+      style={{ background: nodeFill(c), border: na ? NOT_ASSESSED_BORDER : v === 'watch' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }}
+      data-verb={v ?? 'not_assessed'}
+    />
   );
 }
 

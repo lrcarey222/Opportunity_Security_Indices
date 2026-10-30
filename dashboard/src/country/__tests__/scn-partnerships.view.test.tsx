@@ -4,7 +4,7 @@
 // three tagged panels; Today from the fact sheet (trade ties) and the ties chunk, OSI recommends from the
 // fact sheet's partner scores, the AIB model under the scenario toggle (URL scn, the toggle in the panel):
 // its coordinated trade, investment flows, BUILD nodes and compact coalitions follow Managed
-// Interdependence from its file; the Role in the Allied Industrial Base follows the same key; a lens with
+// Interdependence from its file; Allied Strategy's compacts with a role follow the same key; a lens with
 // no data at the focus says so in one line.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -85,12 +85,13 @@ function renderAt(path: string) {
   return router;
 }
 const T = { timeout: 30_000 };
-// since 2026-10-29 (design 5b) the section is generic partnership material under Allied Strategy's "Explore all
-// partnership analysis" (id allied-partnerships, an h3); the #partnerships links open that disclosure
+// since 2026-10-30 (the fences) the section is back on the page, open, as the Medium fence's Partner sub-section (id
+// medium-partner, an h3); the #partnerships links land on it (an alias span), no disclosure to open
 const section = async () => {
-  await screen.findByRole('heading', { level: 3, name: 'Partnerships' }, T);
-  const part = document.getElementById('allied-partnerships')!;
-  expect(part.closest('section#allied')).toBeTruthy();
+  await screen.findByRole('heading', { level: 3, name: 'Partner' }, T);
+  const part = document.getElementById('medium-partner')!;
+  expect(part.closest('section#medium-fence')).toBeTruthy();
+  expect(document.getElementById('partnerships')?.closest('section')).toBe(part);
   return part;
 };
 const lens = (part: HTMLElement, id: 'today' | 'osi' | 'aib') => within(part).getByTestId(`lens-${id}`);
@@ -132,7 +133,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     expect(bareAcronyms(part)).toEqual([]);
   }, 90_000);
 
-  it('Managed Interdependence by default (no scn): the AIB lens and the role section read its file; the toggle in the panel writes scn and keeps the place', async () => {
+  it('Managed Interdependence by default (no scn): the AIB lens and Allied Strategy read its file; the toggle in the panel writes scn and keeps the place', async () => {
     const r = renderAt('/countries/USA#partnerships');
     const part = await section();
     expect(await within(part).findByRole('heading', { level: 3, name: 'AIB model: Managed Interdependence' }, T)).toBeTruthy();
@@ -140,10 +141,11 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const t = aibTradeOf(managed.compacts, 'USA');
     const aib = await within(lens(part, 'aib')).findByTestId('aib-trade', {}, T);
     expect(aib.textContent).toContain(`Under Managed Interdependence, in the compacts' coordinated trade the United States has ${t.trade.n} relationship`);
-    const role = document.getElementById('allied-aib-role')!;
-    expect((await within(role).findByTestId('aib-role-scenario', {}, T)).textContent).toMatch(/^Shown under Managed Interdependence/);
-    // the role cells read the scenario as /aib/roles does: under its own name, no every-shock total
-    const cells = await within(role).findByTestId('aib-roles', {}, T);
+    // Allied Strategy: the compacts in which the economy holds a role, under the toggled scenario
+    const role = document.getElementById('allied')!;
+    expect((await within(role).findByTestId('allied-scenario', {}, T)).textContent).toMatch(/^Shown under Managed Interdependence/);
+    // the compacts read the scenario as /aib/roles does: under its own name, no every-shock total
+    const cells = await within(role).findByTestId('allied-operational-compacts', {}, T);
     expect(cells.textContent).not.toMatch(/under the headline shock|diversification scenario|after the shock/);
     // links into the AIB section carry the scenario
     const c01 = await within(role).findAllByRole('link', { name: managed.compacts[0].id }, T);
@@ -154,8 +156,8 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     await waitFor(() => expect(search(r).get('scn')).toBe('decoupling'));
     expect(r.state.location.hash).toBe('#partnerships');
     expect(await within(part).findByRole('heading', { level: 3, name: 'AIB model: Decoupling' }, T)).toBeTruthy();
-    expect(within(role).getByTestId('aib-role-scenario').textContent).toMatch(/^Shown under Decoupling/);
-    await waitFor(() => expect(within(role).getByTestId('aib-roles').textContent).not.toMatch(/under the headline shock/));
+    expect(within(role).getByTestId('allied-scenario').textContent).toMatch(/^Shown under Decoupling/);
+    await waitFor(() => expect(within(role).getByTestId('allied-operational-compacts').textContent).not.toMatch(/under the headline shock/));
   }, 90_000);
 
   it('Investment under Managed Interdependence: the flows of its file; Today without the ties chunk says so in one line', async () => {

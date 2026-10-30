@@ -11,7 +11,7 @@ import { SUPPLY_STAGES } from '../../lib/stages.ts';
 import { cellOf, COUNTRY_CELL_KEYS, LEGACY_CORNER_IDS, LEGACY_CORNERS, NO_ES_CELLS, type CellFacts, type Driver, type FactSheet } from '../contract.ts';
 import { cellsByLegacyCorner, coverageRows, isNoEsCell, legacyCornerLine, matrixCells, partnerTableRows, priorityRows, quadrantLine, scatterPoints, slopeModel, supplierModel } from '../derive/model.ts';
 import {
-  cellKeyOfNode, coverageCounts, dateLabel, freshnessItems, hashPlan, LEGACY_MAPPING_ROWS, LEGACY_MIXES, LEGACY_SECTION, nodeKeyOfCell, STRATEGY_SECTIONS,
+  cellKeyOfNode, coverageCounts, dateLabel, freshnessItems, hashPlan, LEGACY_MAPPING_ROWS, LEGACY_MIXES, LEGACY_SECTION, MEDIUM_SUBSECTIONS, nodeKeyOfCell, STRATEGY_SECTIONS,
 } from '../derive/strategyPage.ts';
 import {
   editionSuffix, euRegionSentence, ledeOf, legacyCornerWord, notPlacedReason, poss, proseName, quadrantWord, rawNoteLine, sectorsByTechText, shortCellLabel, whyIntro, whySentence,
@@ -205,23 +205,39 @@ describe.skipIf(!haveFixture())('derive helpers on the synthetic sheets', () => 
 
 describe.skipIf(!haveFixture())('Country page helpers (derive/strategyPage.ts, design 2026-10-29)', () => {
   const usa = readSheet('USA');
-  it('seven sections in the spec order, each with its anchor; the old anchors are aliases or open their disclosure', () => {
-    expect(STRATEGY_SECTIONS.map((s) => s.label)).toEqual(['Strategy', 'Need', 'Prize & Position', 'Choices', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology']);
-    expect(STRATEGY_SECTIONS.map((s) => s.id)).toEqual(['strategy', 'need', 'prize-position', 'choices', 'policy-alignment', 'allied', 'evidence']);
-    const alias = (id: string) => STRATEGY_SECTIONS.find((s) => s.aliases.includes(id))?.id ?? (LEGACY_SECTION.aliases.includes(id) ? LEGACY_SECTION.id : null);
+  it('seven sections in the spec order (the three fences in place of Need, Prize & Position and Choices), each with its anchor; the old anchors are aliases or open their disclosure', () => {
+    expect(STRATEGY_SECTIONS.map((s) => s.label)).toEqual([
+      'Strategy', 'High fence · Secure', 'Medium fence · Preserve, Catch Up, Partner, Accelerate', 'Low fence · Watch', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology',
+    ]);
+    expect(STRATEGY_SECTIONS.map((s) => s.nav ?? s.label)).toEqual([
+      'Strategy', 'High fence · Secure', 'Medium fence · Preserve, Catch Up, Partner, Accelerate', 'Low fence · Watch', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology',
+    ]);
+    expect(STRATEGY_SECTIONS.map((s) => s.id)).toEqual(['strategy', 'high-fence', 'medium-fence', 'low-fence', 'policy-alignment', 'allied', 'evidence']);
+    // the Medium fence's sub-sections, in order, with their anchors
+    expect(MEDIUM_SUBSECTIONS.map((s) => [s.id, s.label])).toEqual([
+      ['medium-prize', 'Prize'], ['medium-position', 'Competitive Position'], ['medium-partner', 'Partner'], ['medium-accelerate', 'Accelerate'],
+    ]);
+    const alias = (id: string) =>
+      [...STRATEGY_SECTIONS, ...MEDIUM_SUBSECTIONS].find((s) => s.aliases.includes(id))?.id ?? (LEGACY_SECTION.aliases.includes(id) ? LEGACY_SECTION.id : null);
     expect(alias('posture')).toBe('strategy');
     expect(alias('glance')).toBe('strategy');
+    expect(alias('need')).toBe('high-fence');
+    expect(alias('prize-position')).toBe('medium-fence');
+    expect(alias('choices')).toBe('medium-fence');
     expect(alias('policy')).toBe('policy-alignment');
     expect(alias('priorities')).toBe('policy-alignment');
-    expect(alias('partnerships')).toBe('allied');
-    expect(alias('aib-role')).toBe('allied');
+    // the partnership analysis is the Medium fence's Partner sub-section; the AIB role anchors land on Allied Strategy
+    for (const id of ['partnerships', 'partners', 'allied-partnerships']) expect(alias(id), id).toBe('medium-partner');
+    for (const id of ['aib-role', 'allied-aib-role', 'allies']) expect(alias(id), id).toBe('allied');
     expect(alias('notes')).toBe('evidence');
     for (const id of ['position', 'space', 'opportunities', 'sectors', 'si']) expect(alias(id), id).toBe('legacy-osi');
     // no anchor is claimed twice
-    const all = [...STRATEGY_SECTIONS.flatMap((s) => [s.id, ...s.aliases]), LEGACY_SECTION.id, ...LEGACY_SECTION.aliases];
+    const all = [...[...STRATEGY_SECTIONS, ...MEDIUM_SUBSECTIONS].flatMap((s) => [s.id, ...s.aliases]), LEGACY_SECTION.id, ...LEGACY_SECTION.aliases];
     expect(new Set(all).size).toBe(all.length);
     expect(hashPlan('#why')).toEqual({ folds: ['legacy', 'why'], target: 'fold-why' });
-    expect(hashPlan('#aib-role')).toEqual({ folds: ['partnerships-explore'], target: 'allied-aib-role' });
+    // no disclosure to open any more: the alias spans are always on the page
+    expect(hashPlan('#aib-role')).toEqual({ folds: [], target: 'aib-role' });
+    expect(hashPlan('#partnerships')).toEqual({ folds: [], target: 'partnerships' });
     expect(hashPlan('#sectors')).toEqual({ folds: ['legacy'], target: 'legacy-sectors' });
     expect(hashPlan('#need')).toEqual({ folds: [], target: 'need' });
     expect(hashPlan('')).toEqual({ folds: [], target: null });

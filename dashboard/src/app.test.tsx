@@ -25,6 +25,9 @@ import { resetSectorManifestCache } from './shell/sectorManifest.ts';
 import { sectorManifestFixture } from './shell/__tests__/manifestFixture.ts';
 import { resetPrefetch } from './shell/prefetch.ts';
 import { bareAcronyms } from './components/testing/acronyms.ts';
+import { cssHex } from './components/testing/color.ts';
+import type { Verb } from './posture/contract.ts';
+import { VERB_COLOR } from './posture/grammar.ts';
 import { CountryLoadError, CountryStore, setCountryStoreForTests } from './country/data/store.ts';
 import { fixtureSource } from './country/__tests__/fixture.ts';
 import { EngineClient, type WorkerLike } from './worker/client.ts';
@@ -357,16 +360,23 @@ describe('home and the shell', () => {
       // the memos are hidden while they are revised, so no Home link leads to one (a dead end)
       expect(screen.getByRole('link', { name: 'United States' }).getAttribute('href')).toBe('/countries/USA');
       expect(screen.queryAllByRole('link').filter((a) => /\/memo$/.test(a.getAttribute('href') ?? ''))).toEqual([]);
-      // the Country card speaks the canonical framework, its glyph a miniature Country Strategy Map (design section 5): three
-      // technology rows x six stages, the three backgrounds with their marks and a node not assessed; no legacy corner glyph
+      // the Country card speaks the canonical framework, its glyph a miniature Country Strategy Map (design section 5; colour
+      // alone since 2026-10-30): three technology rows x six stages, all six choice colours and a node not assessed, no
+      // letters or arrows, Accelerate only in the Deployment column; no legacy corner glyph
       expect(screen.getByText(/^Understand what a country needs, where there is a prize worth pursuing and how strong it already is;/)).toBeTruthy();
       expect(screen.getByText(/^Country Strategy Map: every technology at six stages, from need, prize and position to one choice/)).toBeTruthy();
       const map = screen.getByTestId('strategy-map-glyph');
       expect(map.getAttribute('aria-hidden')).toBe('true');
-      const glyphCells = [...map.querySelectorAll('[data-family]')];
+      const glyphCells = [...map.querySelectorAll('[data-verb]')] as HTMLElement[];
       expect(glyphCells.length).toBe(18);
-      expect(new Set(glyphCells.map((c) => c.getAttribute('data-family')))).toEqual(new Set(['S', 'C', 'D', 'N']));
-      expect(glyphCells.map((c) => c.textContent).filter(Boolean).sort()).toEqual(expect.arrayContaining(['P', 'C', '⇄', '↑', '•', 'K', 'R']));
+      expect(new Set(glyphCells.map((c) => c.getAttribute('data-verb')))).toEqual(new Set(['secure', 'preserve', 'catch_up', 'partner', 'accelerate', 'watch', 'not_assessed']));
+      expect(map.textContent).toBe('');
+      for (const c of glyphCells) {
+        const v = c.getAttribute('data-verb') as Verb | 'not_assessed';
+        if (v === 'not_assessed') expect(c.style.background).toContain('repeating-linear-gradient');
+        else expect(cssHex(c.style.background), v).toBe(VERB_COLOR[v]);
+      }
+      expect(glyphCells.filter((c) => c.getAttribute('data-verb') === 'accelerate').every((c) => [...(c.parentElement?.children ?? [])].indexOf(c) === 4)).toBe(true);
       expect(screen.queryByTestId('quadrant-glyph')).toBeNull();
       expect(screen.getByRole('link', { name: 'Which supply chains justify a sectoral compact?' }).getAttribute('href')).toBe('/compacts');
       expect(screen.getByRole('link', { name: 'glossary' }).getAttribute('href')).toBe('/glossary');

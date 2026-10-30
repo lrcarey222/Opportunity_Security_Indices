@@ -85,12 +85,13 @@ function renderAt(path: string) {
   return router;
 }
 const T = { timeout: 30_000 };
-// since 2026-10-29 (design 5b) the section is generic partnership material under Allied Strategy's "Explore all
-// partnership analysis" (id allied-partnerships, an h3); the #partnerships links open that disclosure
+// since 2026-10-30 (the fences) the section is back on the page, open, as the Medium fence's Partner sub-section (id
+// medium-partner, an h3); the #partnerships links land on it (an alias span), no disclosure to open
 const section = async () => {
-  await screen.findByRole('heading', { level: 3, name: 'Partnerships' }, T);
-  const part = document.getElementById('allied-partnerships')!;
-  expect(part.closest('section#allied')).toBeTruthy();
+  await screen.findByRole('heading', { level: 3, name: 'Partner' }, T);
+  const part = document.getElementById('medium-partner')!;
+  expect(part.closest('section#medium-fence')).toBeTruthy();
+  expect(document.getElementById('partnerships')?.closest('section')).toBe(part);
   return part;
 };
 const search = (r: ReturnType<typeof renderAt>) => new URLSearchParams(r.state.location.search);

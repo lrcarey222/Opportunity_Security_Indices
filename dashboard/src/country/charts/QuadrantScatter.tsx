@@ -9,41 +9,25 @@
 // carries the corner). The selected sector gets the orange ring and a bold white label. Labels (six stages,
 // 2026-10-29: up to 58 dots): the selected sector always; then the high-priority and top-five sectors, then
 // the rest, each only where it fits without covering an earlier label (below 640 px the rest go unlabelled);
-// with more than 33 dots the dots are a little smaller. Every sector is in the table twin.
+// with more than 33 dots the dots are a little smaller. Every sector is in the table twin. Since 2026-10-30 its
+// look lives in charts/quadScatter.tsx (quadScatterOptions, the corner rows, the legend shapes), shared with
+// the Country page's Prize x Position scatter.
 
 import { useCallback } from 'react';
-import * as Plot from '@observablehq/plot';
-import { symbol as d3Symbol, symbolCircle, symbolCross, symbolDiamond, symbolSquare, symbolStar, symbolTriangle, type SymbolType } from 'd3';
+import type * as Plot from '@observablehq/plot';
 import { PlotFigure, Tip } from '../../charts/PlotFigure.tsx';
+import { DashedRuleSwatch, QUAD_MARK, QuadCorner, QuadCornerRow, quadScatterOptions, scatterHeight, scatterRadius, STAGE_SYMBOL, StageSymbol } from '../../charts/quadScatter.tsx';
 import { useWidth } from './useWidth.ts';
-import { declutter, textWidth } from '../../charts/theme.ts';
-import { PAPER_MUTE, SIGNAL } from '../../theme/palette.ts';
-import { SUPPLY_STAGES, STAGE_LABEL, type SupplyStage } from '../../lib/stages.ts';
+import { SIGNAL } from '../../theme/palette.ts';
+import { SUPPLY_STAGES, STAGE_LABEL } from '../../lib/stages.ts';
 import type { FactSheet } from '../contract.ts';
 import { LEGACY_CORNERS } from '../contract.ts';
 import type { ScatterPoint } from '../derive/model.ts';
 import { legacyCornerWord, proseName, poss, cap } from '../derive/text.ts';
 
-const MARK = '#d1d5db';
-/** The dot shape of each of the six stages (Plot's fillable symbols, so a top-five sector can be filled). */
-export const STAGE_SYMBOL: Readonly<Record<SupplyStage, 'circle' | 'diamond' | 'square' | 'cross' | 'triangle' | 'star'>> = {
-  Extraction: 'circle',
-  Refining: 'diamond',
-  Components: 'square',
-  Assembly: 'cross',
-  Deployment: 'triangle',
-  Recovery: 'star',
-};
-const D3_SYMBOL: Readonly<Record<(typeof STAGE_SYMBOL)[SupplyStage], SymbolType>> = {
-  circle: symbolCircle,
-  diamond: symbolDiamond,
-  square: symbolSquare,
-  cross: symbolCross,
-  triangle: symbolTriangle,
-  star: symbolStar,
-};
-/** The dot radius: 6 px, 5 px when more than 33 sectors are placed (the six-stage sheets place up to 58). */
-export const scatterRadius = (n: number): number => (n > 33 ? 5 : 6);
+const MARK = QUAD_MARK;
+// the shared core's pieces, under the names this module has always exported
+export { scatterHeight, scatterRadius, STAGE_SYMBOL };
 
 // x = Economic Opportunity, y = Energy Security: Grow top right, Stable top left, Exposed bottom left,
 // Upgrade bottom right (the Legacy OSI corners). The headings print the LEGACY_CORNERS labels.
@@ -62,62 +46,28 @@ export interface QuadrantScatterProps {
   ariaLabel: string;
 }
 
-/** The scatter's height for a width: square-ish, clamped to 320-560 px. */
-export const scatterHeight = (w: number): number => Math.max(320, Math.min(560, Math.round(w)));
-
 export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }: QuadrantScatterProps) {
   const name = proseName(sheet.meta.country);
-  const M = { top: 20, right: 20, bottom: 46, left: 52 };
   const cm = sheet.summary.country_median;
   const medEo = cm?.eo.v ?? null;
   const medEs = cm?.es.v ?? null;
   const build = useCallback(
-    (width: number): Plot.PlotOptions | null => {
-      if (!points.length) return null;
-      const H = scatterHeight(width);
-      const narrow = width < 640;
-      const iw = width - M.left - M.right;
-      const ih = H - M.top - M.bottom;
-      const px = (x: number) => M.left + (x / 100) * iw;
-      const py = (y: number) => M.top + (1 - y / 100) * ih;
-      const r = scatterRadius(points.length);
-      // point labels: the selected sector first (always), then priority and top five, then the rest, each
-      // where it fits (with up to 58 dots, labels that always print would pile up on neighbouring stages)
-      const sel = points.filter((p) => p.key === selected);
-      const must = points.filter((p) => p.key !== selected && (p.priority || p.top5));
-      const rest = points.filter((p) => p.key !== selected && !(p.priority || p.top5));
-      const cands = [...sel, ...must, ...(narrow ? [] : rest)];
-      const boxes = cands.map((p) => ({ x: px(p.x), y: py(p.y) - (p.key === selected ? 16 : 13), w: textWidth(p.short, p.key === selected ? 11 : 10) + 4, h: 12 }));
-      const keep = declutter(boxes, cands.map((_, j) => j));
-      const lab = cands.filter((p, j) => p.key !== selected && keep.has(j));
-      const fill = (d: ScatterPoint) => (d.top5 ? MARK : 'none');
-      const ticks = [0, 25, 50, 75, 100];
-      return {
+    (width: number): Plot.PlotOptions | null =>
+      quadScatterOptions({
         width,
-        height: H,
-        marginTop: M.top,
-        marginRight: M.right,
-        marginBottom: M.bottom,
-        marginLeft: M.left,
-        x: { domain: [0, 100], ticks, label: `Economic Opportunity: share of economies ${name} beats (%) →`, labelAnchor: 'right', grid: true },
-        y: { domain: [0, 100], ticks, label: `↑ Energy Security: share of economies ${name} beats (%)`, labelAnchor: 'top', grid: true },
-        symbol: { domain: [...SUPPLY_STAGES], range: SUPPLY_STAGES.map((s) => STAGE_SYMBOL[s]) },
-        marks: [
-          Plot.frame({ stroke: 'rgb(255 255 255 / 0.12)' }),
-          // the country's median sector on each axis: the corners split here
-          ...(medEo !== null ? [Plot.ruleX([medEo], { stroke: PAPER_MUTE, strokeWidth: 1, strokeDasharray: '4,3' })] : []),
-          ...(medEs !== null ? [Plot.ruleY([medEs], { stroke: PAPER_MUTE, strokeWidth: 1, strokeDasharray: '4,3' })] : []),
-          Plot.dot(points, { x: 'x', y: 'y', symbol: 'stage', r, fill, stroke: MARK, strokeWidth: 1.5 }),
-          Plot.text(lab, { x: 'x', y: 'y', text: 'short', dy: -13, fill: '#d1d5db', fontSize: 10 }),
-          Plot.dot(sel, { x: 'x', y: 'y', symbol: 'stage', r: r + 3, fill: 'none', stroke: SIGNAL, strokeWidth: 2.5 }),
-          Plot.text(sel, { x: 'x', y: 'y', text: 'short', dy: -16, fill: '#ffffff', fontSize: 11, fontWeight: 600 }),
-          Plot.dot(points, Plot.pointer({ x: 'x', y: 'y', r: 10, fill: 'none', stroke: SIGNAL, strokeWidth: 2, maxRadius: 16 })),
-        ],
-      };
-    },
-    // M is a constant
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [points, selected, sheet, name, medEo, medEs],
+        height: scatterHeight(width),
+        points,
+        selected,
+        priority: (p) => p.priority || p.top5,
+        xLabel: `Economic Opportunity: share of economies ${name} beats (%) →`,
+        yLabel: `↑ Energy Security: share of economies ${name} beats (%)`,
+        // the country's median sector on each axis: the corners split here
+        ruleX: medEo,
+        ruleY: medEs,
+        fill: (d) => (d.top5 ? MARK : 'none'),
+        stroke: () => MARK,
+      }),
+    [points, selected, name, medEo, medEs],
   );
   const [ref, w] = useWidth<HTMLDivElement>();
   const height = scatterHeight(w || 440);
@@ -143,38 +93,22 @@ export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }
   const corner = (id: (typeof CORNERS)[number]['id'], right: boolean) => {
     const q = LEGACY_CORNERS.find((x) => x.id === id)!;
     return (
-      <div className={right ? 'text-right' : ''}>
-        <span className="block text-[11px] font-semibold uppercase tracking-wider text-paper">{legacyCornerWord(id)}</span>
-        <span className="block text-[11px] leading-snug text-paper-mute">
-          {q.meaning} <span className="whitespace-nowrap">({q.posture})</span>
-        </span>
-      </div>
+      <QuadCorner title={legacyCornerWord(id)} right={right}>
+        {q.meaning} <span className="whitespace-nowrap">({q.posture})</span>
+      </QuadCorner>
     );
   };
   return (
     <div ref={ref}>
-      <div className="grid grid-cols-2 gap-4 pb-1" style={{ paddingLeft: M.left, paddingRight: M.right }} aria-hidden="true">
-        {corner('legacy_stable', false)}
-        {corner('legacy_grow', true)}
-      </div>
+      <QuadCornerRow left={corner('legacy_stable', false)} right={corner('legacy_grow', true)} />
       <PlotFigure<ScatterPoint> build={build} height={height} ariaLabel={ariaLabel} tooltip={tip} onSelect={(p) => onSelect(p.key)} />
-      <div className="grid grid-cols-2 gap-4 pt-1" style={{ paddingLeft: M.left, paddingRight: M.right }} aria-hidden="true">
-        {corner('legacy_exposed', false)}
-        {corner('legacy_upgrade', true)}
-      </div>
+      <QuadCornerRow below left={corner('legacy_exposed', false)} right={corner('legacy_upgrade', true)} />
     </div>
   );
 }
 
-function Sym({ shape, filled, stroke = MARK }: { shape: (typeof STAGE_SYMBOL)[SupplyStage]; filled?: boolean; stroke?: string }) {
-  const f = filled ? MARK : 'none';
-  // the same shapes Plot draws (d3 symbols), at a legend size (r = 5)
-  const d = d3Symbol(D3_SYMBOL[shape], Math.PI * 25)() ?? '';
-  return (
-    <svg width="14" height="14" viewBox="-7 -7 14 14" aria-hidden="true" className="inline-block">
-      <path d={d} fill={f} stroke={stroke} strokeWidth="1.5" />
-    </svg>
-  );
+function Sym({ shape, filled, stroke = MARK }: { shape: (typeof STAGE_SYMBOL)[keyof typeof STAGE_SYMBOL]; filled?: boolean; stroke?: string }) {
+  return <StageSymbol shape={shape} fill={filled ? MARK : 'none'} stroke={stroke} />;
 }
 
 /** The scatter's legend: the six stage shapes, filled vs hollow, the selection ring and the country's
@@ -184,12 +118,7 @@ export function ScatterLegend({ name }: { name: string }) {
     ...SUPPLY_STAGES.map((s): [React.ReactNode, string] => [<Sym key={s} shape={STAGE_SYMBOL[s]} />, STAGE_LABEL[s]]),
     [<Sym key="f" shape="circle" filled />, `Filled: among ${poss(name)} top five Strategic Index sectors`],
     [<Sym key="s" shape="circle" stroke={SIGNAL} />, 'Selected'],
-    [
-      <svg key="l" width="20" height="4" aria-hidden="true" className="inline-block">
-        <line x1="0" y1="2" x2="20" y2="2" stroke={PAPER_MUTE} strokeWidth="1" strokeDasharray="4,3" />
-      </svg>,
-      `Dashed lines: ${poss(name)} median sector`,
-    ],
+    [<DashedRuleSwatch key="l" />, `Dashed lines: ${poss(name)} median sector`],
   ];
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-paper-dim" aria-label="How to read the dots">

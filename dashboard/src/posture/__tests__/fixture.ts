@@ -207,7 +207,8 @@ export function fixtureDetail(): Record<string, unknown> {
       {
         tech: 'Solar', stage: 'Assembly', posture: 'compete', variant: 'compete_preserve', mode: 'preserve', delivery: 'domestic', consistency_flag: 'review_strong_position_low_prize',
         need: 0.8, import_dependence: 0.8, import_hhi: 0.7, china_bloc: 0.7, industrial_opportunity: 0.3, io_node_prize: 0.3, io_outlook: 'oversupplied',
-        cp: 0.9, home_share: 0.08, cp_export_position: 0.85,
+        // the structural (benchmark) share only where momentum moved the export position (R posture_export.R drops an identical one)
+        cp: 0.9, home_share: 0.08, cp_export_position: 0.85, cp_export_position_structural: 0.7,
         policy: { priority: 0.6, support: 0.6, alignment: 'aligned', alignment_confidence: 'medium' },
       },
       {

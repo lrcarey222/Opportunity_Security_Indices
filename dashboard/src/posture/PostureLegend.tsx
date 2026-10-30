@@ -1,82 +1,74 @@
-// The posture legend and the trade freshness line, shared by the Country, Sector and AIB headline charts
-// (spec XX): the three backgrounds, the Secure, Compete and Deploy marks, the not-assessed hatch, the
-// policy-alignment borders and the evidence fade, each in words.
+// The choice legend and the trade freshness line, shared by the Country, Sector and AIB headline charts
+// (spec XX; the fence grouping of 2026-10-30): one colour per choice, grouped by fence ("High fence:
+// Secure", "Medium fence: Preserve, Catch Up, Partner, Accelerate", "Low fence: Watch"), then the hatched
+// "Not assessed"; each swatch can carry its node count. The legend is text (a list), not decoration, so a
+// screen reader hears the same grouping and counts.
 
-import type { PostureCore } from './contract.ts';
+import type { PostureCore, Verb } from './contract.ts';
 import { freshnessLine } from './derive.ts';
-import {
-  ALIGNMENT_BORDER, ALIGNMENT_CLASS_LABEL, ALIGNMENT_ICON, DEPLOY_MARK, DEPLOY_MODE_LABEL, EVIDENCE_LEVELS, evidenceOpacity, MODE_LABEL, MODE_MARK, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH,
-  POSTURE_COLOR, POSTURE_LABEL, POSTURE_ORDER, RATIONALE_MARK, RATIONALE_ORDER, RATIONALE_SHORT,
-} from './grammar.ts';
+import { FENCE_LABEL, FENCE_ORDER, FENCE_VERBS, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, VERB_COLOR, VERB_LABEL, VERB_OUTLINE } from './grammar.ts';
 
-export function Swatch({ color, mark, size = 18, hatched = false }: { color?: string; mark?: string; size?: number; hatched?: boolean }) {
+/** A colour swatch: a choice colour (Watch with its outline) or the not-assessed hatch. */
+export function Swatch({ color, size = 18, hatched = false, verb }: { color?: string; size?: number; hatched?: boolean; verb?: Verb }) {
+  const fill = verb ? VERB_COLOR[verb] : color;
   return (
     <span
       aria-hidden="true"
-      className="inline-flex shrink-0 items-center justify-center rounded-[3px] text-[11px] font-semibold text-white"
-      style={{ width: size, height: size, background: hatched ? NOT_ASSESSED_HATCH : color, border: hatched ? NOT_ASSESSED_BORDER : undefined }}
-    >
-      {mark}
-    </span>
+      className="inline-block shrink-0 rounded-[3px]"
+      style={{
+        width: size,
+        height: size,
+        background: hatched ? NOT_ASSESSED_HATCH : fill,
+        border: hatched ? NOT_ASSESSED_BORDER : verb === 'watch' ? `1px solid ${VERB_OUTLINE.watch}` : undefined,
+      }}
+      data-swatch={hatched ? 'not_assessed' : (verb ?? undefined)}
+    />
   );
 }
 
-/** The three backgrounds and every mark, then (optionally) the alignment borders and the evidence fade, in words. */
-export function PostureLegend({ alignment = true, compact = false, notAssessed = true }: { alignment?: boolean; compact?: boolean; notAssessed?: boolean }) {
+export type ChoiceLegendCounts = Partial<Record<Verb | 'N', number>>;
+
+export interface ChoiceLegendProps {
+  /** the node count of each choice (and N, not assessed); omit for a legend without counts */
+  counts?: ChoiceLegendCounts | null;
+  /** the choices this chart can show (default all six); a fence with none of them is left out */
+  verbs?: readonly Verb[];
+  /** the hatched "Not assessed" entry (default on) */
+  notAssessed?: boolean;
+  className?: string;
+}
+
+/** The choices grouped by fence, each with its colour and (optionally) its count; then "Not assessed". */
+export function ChoiceLegend({ counts, verbs, notAssessed = true, className }: ChoiceLegendProps) {
+  const shown = (v: Verb) => !verbs || verbs.includes(v);
+  const n = (k: Verb | 'N') => (counts ? (counts[k] ?? 0) : null);
   return (
-    <div className="space-y-2 text-xs text-paper-dim" aria-label="Legend" data-testid="posture-legend">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {POSTURE_ORDER.map((p) => (
-          <span key={p} className="inline-flex items-center gap-1.5">
-            <Swatch color={POSTURE_COLOR[p]} />
-            {POSTURE_LABEL[p]}
-          </span>
-        ))}
-        {notAssessed && (
-          <span className="inline-flex items-center gap-1.5">
-            <Swatch hatched />
-            Not assessed
-          </span>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {RATIONALE_ORDER.map((r) => (
-          <span key={r} className="inline-flex items-center gap-1.5">
-            <Swatch color={POSTURE_COLOR.S} mark={RATIONALE_MARK[r]} />
-            {RATIONALE_SHORT[r][0].toUpperCase() + RATIONALE_SHORT[r].slice(1)}
-          </span>
-        ))}
-        {(['preserve', 'catch_up', 'partner'] as const).map((m) => (
-          <span key={m} className="inline-flex items-center gap-1.5">
-            <Swatch color={POSTURE_COLOR.C} mark={MODE_MARK[m]} />
-            {MODE_LABEL[m]}
-          </span>
-        ))}
-        {(['accelerate', 'watch'] as const).map((m) => (
-          <span key={m} className="inline-flex items-center gap-1.5">
-            <Swatch color={POSTURE_COLOR.D} mark={DEPLOY_MARK[m]} />
-            {DEPLOY_MODE_LABEL[m]}
-          </span>
-        ))}
-      </div>
-      {alignment && !compact && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {(['aligned', 'under_prioritized', 'over_prioritized', 'misaligned', 'mixed'] as const).map((a) => (
-            <span key={a} className="inline-flex items-center gap-1.5">
-              <span aria-hidden="true" className="inline-block h-4 w-4 rounded-[3px]" style={{ border: ALIGNMENT_BORDER[a] }} />
-              {ALIGNMENT_CLASS_LABEL[a]} policy {ALIGNMENT_ICON[a]}
-              {a === 'under_prioritized' ? ' (incl. under-response, deployment)' : ''}
+    <ul className={`flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-paper-dim ${className ?? ''}`} aria-label="Legend: choices by fence" data-testid="posture-legend">
+      {FENCE_ORDER.filter((f) => FENCE_VERBS[f].some(shown)).map((f) => (
+        <li key={f} className="inline-flex flex-wrap items-center gap-x-2.5 gap-y-1" data-fence={f}>
+          <span className="font-medium text-paper">{FENCE_LABEL[f]}:</span>
+          {FENCE_VERBS[f].filter(shown).map((v, i, all) => (
+            <span key={v} className="inline-flex items-center gap-1.5" data-verb={v}>
+              <Swatch verb={v} size={14} />
+              <span>
+                {VERB_LABEL[v]}
+                {n(v) !== null && <span className="tabular text-paper-mute"> {n(v)}</span>}
+                {i < all.length - 1 ? <span className="sr-only">,</span> : null}
+              </span>
             </span>
           ))}
-          <span className="inline-flex items-center gap-1.5" data-testid="legend-evidence">
-            {EVIDENCE_LEVELS.map((e) => (
-              <span key={e} aria-hidden="true" className="inline-block h-4 w-4 rounded-[3px] bg-paper-mute" style={{ opacity: evidenceOpacity(e) }} />
-            ))}
-            Evidence: strong, moderate, weak (fading)
+        </li>
+      ))}
+      {notAssessed && (
+        <li className="inline-flex items-center gap-1.5" data-verb="not_assessed">
+          <Swatch hatched size={14} />
+          <span>
+            Not assessed
+            {n('N') !== null && <span className="tabular text-paper-mute"> {n('N')}</span>}
           </span>
-        </div>
+        </li>
       )}
-    </div>
+    </ul>
   );
 }
 

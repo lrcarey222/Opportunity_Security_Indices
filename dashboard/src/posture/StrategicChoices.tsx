@@ -18,7 +18,7 @@ import type { PostureCell, PostureCore, PostureDetail, Verb } from './contract.t
 import { countryNames, pct, postureCsvText, postureProvenance, score100 } from './derive.ts';
 import type { Family, NodeDetail } from './detail.ts';
 import {
-  ALIGNMENT_LABEL, basisWords, cellMark, choiceWord, deliveryWords, flagWords, PATHWAY_LABEL, pathwayEvidenceWords, POSTURE_COLOR, RATIONALE_LABEL, stageDisplay, VERB_FAMILY, VERB_LONG, VERB_ORDER,
+  ALIGNMENT_LABEL, basisWords, choiceWord, deliveryWords, flagWords, PATHWAY_LABEL, pathwayEvidenceWords, RATIONALE_LABEL, stageDisplay, VERB_LONG, VERB_ORDER,
   VERB_SUBTITLE,
 } from './grammar.ts';
 import { Swatch } from './PostureLegend.tsx';
@@ -80,15 +80,6 @@ function trendWords(t: string | number | null): string {
   if (t === null) return 'not available';
   return typeof t === 'number' ? `${t >= 0 ? '+' : ''}${(t * 100).toFixed(0)}% a year` : t;
 }
-
-const MARK_OF: Record<Verb, Pick<PostureCell, 'posture' | 'mode' | 'deployMode' | 'rationale'>> = {
-  secure: { posture: 'S', mode: null, deployMode: null, rationale: null },
-  preserve: { posture: 'C', mode: 'preserve', deployMode: null, rationale: null },
-  catch_up: { posture: 'C', mode: 'catch_up', deployMode: null, rationale: null },
-  partner: { posture: 'C', mode: 'partner', deployMode: null, rationale: null },
-  accelerate: { posture: 'D', mode: null, deployMode: 'accelerate', rationale: null },
-  watch: { posture: 'D', mode: null, deployMode: 'watch', rationale: null },
-};
 
 /** The AIB status of a Partner node in words. */
 function aibStatusWords(a: AlliedRow | undefined): string {
@@ -225,7 +216,7 @@ export function StrategicChoices({
           return (
             <section key={v} className="rounded-lg border border-white/10 bg-ink-900/40 p-3" data-testid="choice-group" data-verb={v} aria-label={`${VERB_LONG[v]}: ${list.length}`}>
               <h4 className="flex items-center gap-2 text-sm font-medium text-paper">
-                <Swatch color={POSTURE_COLOR[VERB_FAMILY[v]]} mark={v === 'secure' ? undefined : cellMark(MARK_OF[v])} size={16} />
+                <Swatch verb={v} size={16} />
                 {VERB_LONG[v]}
                 <span className="tabular text-paper-mute">{list.length}</span>
               </h4>

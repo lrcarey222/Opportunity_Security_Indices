@@ -146,8 +146,8 @@ export function SectorStrategyCard({
             {/* the reading line, as the Sector pages' chart cards give it */}
             <span className="mt-1 block text-paper-dim" data-testid="posture-reading">
               Each mark is one economy. Across: <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>, among the node&apos;s contenders; up:{' '}
-              {dep ? <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> : <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>}. The shape is the
-              choice. The node&apos;s prize (<Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>) barely varies across economies, so the notes give it in
+              {dep ? <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> : <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>}. The colour is
+              the choice, grouped by fence. The node&apos;s prize (<Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>) barely varies across economies, so the notes give it in
               words.
             </span>
           </>

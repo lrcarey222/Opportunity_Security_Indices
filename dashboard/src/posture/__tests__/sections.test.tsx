@@ -8,6 +8,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { bareAcronyms } from '../../components/testing/acronyms.ts';
+import { cssHex } from '../../components/testing/color.ts';
+import { placeQuadLabels, QUAD_LABEL_DY, quadLeft } from '../../charts/quadScatter.tsx';
+import { textWidth } from '../../charts/theme.ts';
 import { AlliedStrategy, EXPLORE_PARTNERSHIPS } from '../AlliedStrategy.tsx';
 import { PostureNodeDrawer } from '../CellDrawer.tsx';
 import { decodeCore, checkPostureDetail } from '../contract.ts';
@@ -16,6 +19,8 @@ import { countryCells } from '../derive.ts';
 import { DEPLOYMENT_NEED_TITLE, NeedPanels, SUPPLY_NEED_TITLE } from '../NeedPanels.tsx';
 import { POLICY_ALIGNMENT_TITLE, PolicyAlignmentTable } from '../PolicyAlignmentTable.tsx';
 import { PRIZE_POSITION_TITLE, PrizePositionScatter } from '../PrizePositionScatter.tsx';
+import type { Verb } from '../contract.ts';
+import { VERB_COLOR, VERB_OUTLINE } from '../grammar.ts';
 import { useNodeSelection } from '../selection.ts';
 import { setPostureStore, usePostureCore, usePostureDetail } from '../store.ts';
 import { STRATEGIC_CHOICES_TITLE, StrategicChoices } from '../StrategicChoices.tsx';
@@ -121,40 +126,142 @@ describe('Need (spec XII)', () => {
 });
 
 describe('Prize & Position (spec XIII)', () => {
-  it('plots the producing-stage nodes by prize and position, marker by choice, Secure outlined at its true coordinates', () => {
+  it('plots the producing-stage nodes by prize and position on the quadrant-scatter look: a dot per node in its choice colour, Secure at its true coordinates', () => {
     const onOpen = vi.fn();
     inRouter(<PrizePositionScatter core={core} cells={cells} name="Aland" onOpen={onOpen} />);
     expect(screen.getByRole('heading', { name: PRIZE_POSITION_TITLE })).toBeTruthy();
     const sc = screen.getByTestId('prize-position-scatter');
-    const pts = [...sc.querySelectorAll('[data-key]')];
+    const pts = [...sc.querySelectorAll('[data-key]')] as HTMLElement[];
     expect(pts).toHaveLength(9);
     expect(new Set(pts.map((p) => p.getAttribute('data-verb')))).toEqual(new Set(['secure', 'preserve', 'catch_up', 'partner', 'watch']));
-    // Batteries Refining: prize 0.40, position 0.10, an outlined diamond at exactly those coordinates (x 52 + 0.4 * 572, y 396 - 0.1 * 380)
-    const sec = sc.querySelector('[data-key="Batteries|Refining"]') as SVGPathElement;
-    expect(sec.tagName.toLowerCase()).toBe('path');
-    expect(sec.getAttribute('d')).toBe('M280.8 349.5L289.3 358L280.8 366.5L272.3 358Z');
-    expect(sec.getAttribute('stroke')).toBe('#d1497e');
+    // every point is a button over the figure, named in words; Secure is drawn last (on top)
+    expect(pts.every((p) => p.tagName === 'BUTTON')).toBe(true);
+    expect(pts[pts.length - 1].getAttribute('data-verb')).toBe('secure');
+    // Batteries Refining: prize 0.40, position 0.10, placed at exactly those coordinates (not moved for Secure)
+    const sec = sc.querySelector('[data-key="Batteries|Refining"]') as HTMLElement;
+    expect([sec.getAttribute('data-x'), sec.getAttribute('data-y')]).toEqual(['40', '10']);
+    // the plot area between the margins, as the shared core places it (jsdom normalises the calc)
+    const probe = document.createElement('div');
+    probe.style.left = quadLeft(40);
+    expect(sec.style.left).toBe(probe.style.left);
+    expect(sec.style.left).toMatch(/52px.*0\.4.*72px|52px.*72px.*0\.4/);
     expect(sec.getAttribute('aria-label')).toBe(
-      'Batteries Refining & Processing: Secure (coercive chokepoint); Industrial Opportunity 40%; Competitive Position 10%; supply-chain need 95%; trade momentum unavailable; policy under-prioritized; evidence strong',
+      'Batteries Refining & Processing: Secure (coercive chokepoint), high fence; Industrial Opportunity 40%; Competitive Position 10%; supply-chain need 95%; trade momentum unavailable; policy under-prioritized; evidence strong',
     );
-    const q = screen.getByTestId('prize-position-quadrants').textContent;
+    // the corner headings sit in the margins above and below the plot: tendencies, not rules
+    const q = `${screen.getByTestId('prize-position-quadrants').textContent} ${screen.getByTestId('prize-position-quadrants-low').textContent}`;
     for (const w of ['typically Preserve', 'Catch Up candidate', 'Watch unless Need implies Partner', 'mature or specialised: review']) expect(q).toContain(w);
-    expect(screen.getByTestId('prize-position-unplotted').textContent).toContain('Batteries Recovery & Recycling (not assessed)');
-    // the tooltip: need, prize, position, momentum, alignment, evidence
+    expect(screen.getByTestId('prize-position-quadrants').textContent).toMatch(/^Strong position \+ weak prize.*Strong position \+ strong prize/);
+    // the nodes not plotted, grouped by why and by technology (not one sentence per node)
+    expect(screen.getByTestId('prize-position-unplotted').textContent).toBe('Not plotted (1): 1 not assessed: Batteries (Recovery & Recycling).');
+    // the legend: the choices by fence with the counts on the chart, the stage shapes, the selection ring and the dashed lines
+    const legend = screen.getByTestId('prize-position-legend');
+    expect(within(legend).getByTestId('posture-legend').textContent).toBe('High fence:Secure 3Medium fence:Preserve 2,Catch Up 1,Partner 1Low fence:Watch 2');
+    expect([...legend.querySelectorAll('[data-stage]')].map((e) => e.textContent)).toEqual(['Extraction', 'Refining & Processing', 'Component Manufacturing', 'Final Assembly & Equipment', 'Recovery & Recycling']);
+    expect(legend.textContent).toContain('Dashed lines: a high prize at 60% or more; a strong position at 75% or more among contenders');
+    // the tooltip: the node, its choice and fence, need, prize, position, momentum, alignment, evidence
     fireEvent.mouseEnter(sc.querySelector('[data-key="Batteries|Extraction"]') as Element);
     const tip = screen.getByTestId('prize-position-tip').textContent;
-    for (const w of ['Supply-chain need 80%', 'Industrial Opportunity 30%', 'Competitive Position 20%', 'Trade momentum: rising', 'Policy alignment: Wrong treatment / misaligned', 'Evidence: Strong']) {
+    for (const w of ['Partner· Medium fence', 'Batteries · Extraction', 'Supply-chain need 80%', 'Industrial Opportunity 30%', 'Competitive Position 20%', 'Trade momentum: rising', 'Policy alignment: Wrong treatment / misaligned', 'Evidence: Strong']) {
       expect(tip).toContain(w);
     }
     fireEvent.keyDown(sc.querySelector('[data-key="Batteries|Components"]') as Element, { key: 'Enter' });
     expect(onOpen).toHaveBeenLastCalledWith('Batteries|Components');
+    fireEvent.click(sec);
+    expect(onOpen).toHaveBeenLastCalledWith('Batteries|Refining');
     // the stage filter
     fireEvent.change(screen.getByLabelText('Stage'), { target: { value: 'Assembly' } });
     expect([...sc.querySelectorAll('[data-key]')].map((p) => p.getAttribute('data-key')).sort()).toEqual(['Batteries|Assembly', 'Solar|Assembly']);
     expect([...(screen.getByLabelText('Stage') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual([
       'All producing stages', 'Extraction', 'Refining & Processing', 'Component Manufacturing', 'Final Assembly & Equipment', 'Recovery & Recycling',
     ]);
+    // one stage: no stage-shape key
+    expect(screen.getByTestId('prize-position-legend').querySelectorAll('[data-stage]')).toHaveLength(0);
     noAcronyms();
+  });
+
+  describe('the figure (Plot, at a measured width)', () => {
+    const cw = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    beforeAll(() => Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 900 }));
+    afterAll(() => cw && Object.defineProperty(HTMLElement.prototype, 'clientWidth', cw));
+    // 900 px wide: the plot area runs 52..880 across and 24..514 up (height 560; margins 24 / 20 / 46 / 52: the
+    // top margin keeps the y axis's label clear of the "100" tick)
+    const px = (x: number) => 52 + (x / 100) * 828;
+    const py = (y: number) => 24 + (1 - y / 100) * 490;
+    const near = (a: number, b: number) => Math.abs(a - b) < 0.6;
+
+    it('labels never cover another point: each goes above its dot, else below, else unlabelled; the selected one always', () => {
+      // three dots in a tight cluster and one alone, on a 900 x 560 figure
+      const pts = [
+        { key: 'a', x: 50, y: 50, short: 'Alpha · Ref', stage: 'Refining' },
+        { key: 'b', x: 51, y: 52.5, short: 'Bravo · Com', stage: 'Components' },
+        { key: 'c', x: 50.5, y: 47.5, short: 'Charlie · Asm', stage: 'Assembly' },
+        { key: 'd', x: 90, y: 10, short: 'Delta · Ext', stage: 'Extraction' },
+      ];
+      const at = { px, py, r: 6, width: 900, height: 560, left: 52 };
+      const box = (p: (typeof pts)[number], dy: number, sel = false) => {
+        const w = textWidth(p.short, sel ? 11 : 10) + 4;
+        return { x0: px(p.x) - w / 2, x1: px(p.x) + w / 2, y0: py(p.y) + dy - 6, y1: py(p.y) + dy + 6 };
+      };
+      const dot = (p: (typeof pts)[number]) => ({ x0: px(p.x) - 8, x1: px(p.x) + 8, y0: py(p.y) - 8, y1: py(p.y) + 8 });
+      const hit = (a: ReturnType<typeof dot>, b: ReturnType<typeof dot>) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
+      const out = placeQuadLabels(pts, pts, at, null);
+      const placed = [...out.above.map((p) => box(p, QUAD_LABEL_DY.above)), ...out.below.map((p) => box(p, QUAD_LABEL_DY.below))];
+      const owners = [...out.above, ...out.below];
+      placed.forEach((b, i) => {
+        for (const p of pts) if (p.key !== owners[i].key) expect(hit(b, dot(p)), `${owners[i].key} over ${p.key}`).toBe(false);
+        placed.forEach((o, j) => j !== i && expect(hit(b, o)).toBe(false));
+      });
+      // the lone dot is labelled above; the cluster cannot label all three
+      expect(out.above.map((p) => p.key)).toContain('d');
+      expect(owners.length).toBeLessThan(4);
+      // the selected point is labelled even inside the cluster
+      const sel = placeQuadLabels([pts[1], ...pts.filter((p) => p.key !== 'b')], pts, at, 'b');
+      expect([...sel.above, ...sel.below].map((p) => p.key)).toContain('b');
+    });
+
+    it('the dashed lines sit at the prize threshold and the Preserve bar of core.meta.thresholds', () => {
+      inRouter(<PrizePositionScatter core={core} cells={cells} name="Aland" onOpen={() => undefined} />);
+      const sc = screen.getByTestId('prize-position-scatter');
+      const svg = sc.querySelector('svg[role="img"]') as SVGSVGElement;
+      expect(svg.getAttribute('aria-label')).toMatch(/^Aland: 9 producing-stage nodes placed by Industrial Opportunity and Competitive Position/);
+      const rx = sc.querySelector('.quad-rule-x line') as SVGLineElement;
+      const ry = sc.querySelector('.quad-rule-y line') as SVGLineElement;
+      expect(near(Number(rx.getAttribute('x1')), px(core.meta.thresholds.prize * 100))).toBe(true);
+      expect(near(Number(ry.getAttribute('y1')), py(core.meta.thresholds.cp * 100))).toBe(true);
+      for (const g of [rx.parentElement!, ry.parentElement!]) expect(g.getAttribute('stroke-dasharray')).toBe('4,3');
+      // the axes: Industrial Opportunity across, Competitive Position among contenders up, ticks 0-100
+      expect(svg.textContent).toContain('Industrial Opportunity: the prize (percentile) →');
+      expect(svg.textContent).toContain('↑ Competitive Position among contenders (percentile)');
+    });
+
+    it('each dot is drawn at its node, in its choice colour with its outline; the overlay buttons sit on the same spots', () => {
+      inRouter(<PrizePositionScatter core={core} cells={cells} name="Aland" onOpen={() => undefined} selected="Solar|Assembly" />);
+      const sc = screen.getByTestId('prize-position-scatter');
+      const dots = [...sc.querySelectorAll('.quad-dots path')] as SVGPathElement[];
+      const btns = [...sc.querySelectorAll('button[data-key]')] as HTMLElement[];
+      expect(dots).toHaveLength(btns.length);
+      // the same order: dot i is button i (both in drawing order, Secure last)
+      btns.forEach((b, i) => {
+        const v = b.getAttribute('data-verb') as Verb;
+        const [tx, ty] = (dots[i].getAttribute('transform') ?? '').match(/[-\d.]+/g)!.map(Number);
+        expect(near(tx, px(Number(b.getAttribute('data-x')))) && near(ty, py(Number(b.getAttribute('data-y')))), b.getAttribute('data-key') ?? '').toBe(true);
+        expect([dots[i].getAttribute('fill'), dots[i].getAttribute('stroke')]).toEqual([VERB_COLOR[v], VERB_OUTLINE[v]]);
+        expect(b.style.top).toBe(`${py(Number(b.getAttribute('data-y')))}px`);
+      });
+      // one colour per choice on the chart, no other fills
+      expect(new Set(dots.map((d) => d.getAttribute('fill')))).toEqual(new Set(['secure', 'preserve', 'catch_up', 'partner', 'watch'].map((v) => VERB_COLOR[v as Verb])));
+      expect(new Set(dots.map((d) => cssHex(d.getAttribute('fill'))))).not.toContain('#d1497e');
+      // the selected node: a white ring (signal orange is the Secure fill here) and its bold label
+      const ring = sc.querySelector('.quad-selected path') as SVGPathElement;
+      const solar = btns.find((b) => b.getAttribute('data-key') === 'Solar|Assembly')!;
+      const [rx, ry] = (ring.getAttribute('transform') ?? '').match(/[-\d.]+/g)!.map(Number);
+      expect(near(rx, px(Number(solar.getAttribute('data-x')))) && near(ry, py(Number(solar.getAttribute('data-y'))))).toBe(true);
+      expect(ring.parentElement?.getAttribute('stroke')).toBe('#ffffff');
+      expect(Object.values(VERB_COLOR)).not.toContain(ring.parentElement?.getAttribute('stroke'));
+      expect(solar.getAttribute('aria-pressed')).toBe('true');
+      expect(sc.querySelector('svg[role="img"]')?.textContent).toContain('Solar · Asm');
+    });
   });
 
   it('the table twin lists plotted and unplotted nodes with their tendency', () => {
@@ -191,10 +298,14 @@ describe('Strategic Choices (spec XIV)', () => {
     expect(screen.getByRole('heading', { name: STRATEGIC_CHOICES_TITLE })).toBeTruthy();
     const groups = screen.getAllByTestId('choice-group');
     expect(groups.map((g) => g.getAttribute('data-verb'))).toEqual(['secure', 'preserve', 'catch_up', 'partner', 'accelerate', 'watch']);
-    // the marker (decoration), the verb, the count
+    // the choice colour (a swatch, no mark), the verb, the count
     expect(groups.map((g) => within(g).getByRole('heading', { level: 4 }).textContent)).toEqual([
-      'Secure3', 'PCompete · Preserve2', 'CCompete · Catch Up1', '⇄Compete · Partner1', '↑Deploy · Accelerate1', '•Deploy · Watch3',
+      'Secure · High fence3', 'Preserve · Medium fence2', 'Catch Up · Medium fence1', 'Partner · Medium fence1', 'Accelerate · Medium fence1', 'Watch · Low fence3',
     ]);
+    for (const g of groups) {
+      const sw = within(g).getByRole('heading', { level: 4 }).querySelector('[data-swatch]') as HTMLElement;
+      expect(cssHex(sw.style.background), g.getAttribute('data-verb') ?? '').toBe(VERB_COLOR[g.getAttribute('data-verb') as Verb]);
+    }
     const [secure, preserve, catchUp, partner, accelerate, watch] = groups;
     expect(secure.textContent).toContain('Repair acute vulnerabilities');
     expect(secure.textContent).toContain('Main riskXXX holds 70% of world supply; 80% of imports come from potentially coercive suppliers');
@@ -264,7 +375,7 @@ describe('Policy Alignment (spec XV)', () => {
       'misaligned', 'under_prioritized', 'deployment_gap', 'over_prioritized', 'mixed', 'aligned', 'aligned', 'aligned', 'aligned', 'aligned', 'insufficient_data',
     ]);
     // intensity, support, protection and momentum are ranks within the country, never shares or signed changes
-    expect(rows[0].textContent).toBe('Batteries · ExtractionCompete · Partnerhigh, 85th percentilelow, 20th percentilehigh, 90th percentilerising≠Wrong treatment / misaligned(high confidence)');
+    expect(rows[0].textContent).toBe('Batteries · ExtractionPartner · Medium fencehigh, 85th percentilelow, 20th percentilehigh, 90th percentilerising≠Wrong treatment / misaligned(high confidence)');
     const com = rows.find((r) => r.getAttribute('data-key') === 'Batteries|Components')!;
     expect(com.textContent).toContain('moderate, 60th percentilemoderate, 60th percentilenone recordedlow, 12th percentile');
     expect(com.textContent).not.toContain('+12%');

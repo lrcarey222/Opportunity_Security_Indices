@@ -2,14 +2,15 @@
 // Opportunity (x) and need (y). Need x Prize triages (spec VIII): high need with a low prize leans Partner,
 // low need with a low prize is Watch, and with a high prize Competitive Position decides (Preserve or
 // Catch Up). A Secure country keeps its true coordinates and is drawn as an outlined diamond (Secure
-// overrides the triage); a node not assessed is not plotted. Point size = Competitive Position. Hover or
+// overrides the triage); a node not assessed is not plotted. Colour = the choice (grammar VERB_COLOR, grouped by
+// fence in the card's legend). Point size = Competitive Position. Hover or
 // focus for the detail, click for the country's profile. (Schema 2: the Sector wording is finished
 // elsewhere; this keeps the chart on the new fields.)
 
 import { useMemo, useState } from 'react';
 import type { PostureCell, PostureCore } from './contract.ts';
 import { pct } from './derive.ts';
-import { choiceWord, POSTURE_COLOR, RATIONALE_LABEL } from './grammar.ts';
+import { choiceWord, nodeFill, RATIONALE_LABEL, VERB_COLOR, VERB_OUTLINE, verbOf } from './grammar.ts';
 
 const W = 640;
 const H = 420;
@@ -82,23 +83,24 @@ export function PostureScatter({ core, cells, onOpen, highlight }: { core: Postu
                 {...common}
                 d={`M${cx} ${cy - s}L${cx + s} ${cy}L${cx} ${cy + s}L${cx - s} ${cy}Z`}
                 fill="rgb(31 41 55 / 0.9)"
-                stroke={POSTURE_COLOR.S}
+                stroke={VERB_COLOR.secure}
                 strokeWidth={on ? 3 : 2}
                 data-posture="S"
               />
             );
           }
+          const v = verbOf(c);
           return (
             <circle key={c.iso3}
               {...common}
               cx={cx}
               cy={cy}
               r={r(c.cp)}
-              fill={POSTURE_COLOR[c.posture as 'C' | 'D']}
-              fillOpacity={c.posture === 'D' ? 0.55 : 0.85}
-              stroke={on ? '#ffffff' : '#1f2937'}
+              fill={nodeFill(c)}
+              stroke={on ? '#ffffff' : v ? VERB_OUTLINE[v] : '#1f2937'}
               strokeWidth={on ? 2.5 : 1.5}
               data-posture={c.posture}
+              data-verb={v ?? undefined}
             />
           );
         })}

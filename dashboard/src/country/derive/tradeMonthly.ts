@@ -10,8 +10,15 @@ export type TradeFlow = 'imports' | 'exports';
 
 /** At most this many sub-component lines (the cell total is one more line, MAX_LINES = 7). */
 export const SUB_LINES = 6;
-/** The validated line colours; the 5th and 6th lines reuse the first two with a dash pattern. */
-export const SUB_COLORS = ['#1889b0', '#8b9d17', '#2fa5a6', '#c96f7a'] as const;
+/**
+ * The line colours, NEIS tokens only (brand blue, brand green, brand teal, seq-7; 2026-10-30): the dataviz
+ * validator on the dark card #1f2937, all pairs, passes CVD (worst dE 12.9, protan, #b4e7fe vs #55c4c5) and the
+ * normal-vision floor (15.4); the lightness band and chroma checks fail for the pale seq-7 by design (the
+ * NEIS tokens), so every line also carries its end label, its legend entry and, past the fourth, a dash. The
+ * old set (#8b9d17, #2fa5a6, #c96f7a) was off the NEIS tokens and failed the normal-vision floor (blue vs
+ * #2fa5a6, dE 9.1). The 5th and 6th lines reuse the first two with a dash pattern.
+ */
+export const SUB_COLORS = ['#1889b0', '#a3b63b', '#55c4c5', '#b4e7fe'] as const;
 export const TOTAL_ID = '__total__';
 export const TOTAL_LABEL = 'All sub-components';
 

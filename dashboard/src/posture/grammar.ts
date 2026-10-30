@@ -1,21 +1,29 @@
-// The posture visual grammar, one for the whole site (spec XX; design 5b): the same colour, mark and words
-// for a choice on the Country, Sector and AIB views.
+// The posture visual grammar, one for the whole site (spec XX; design 5b): the same colour and words for a
+// choice on the Country, Sector and AIB views.
 //
-// - Three background families only: Secure, Compete, Deploy. A node that is not assessed has no colour: it
-//   is drawn empty and hatched (design D1).
-// - Markers inside: Secure carries its rationale (O operational / control, K chokepoint, R systemic
-//   resilience); Compete its mode (P Preserve, C Catch Up, linked arrows Partner); Deploy its mode (an up
-//   arrow Accelerate, a dot Watch). Arrows mean only these: trade momentum left the cell (design D7) and is
-//   given in words in the drawer and the table.
-// - Secondary treatments: policy alignment as the border (aligned, under-prioritized, over-prioritized,
-//   wrong treatment / misaligned, mixed; a deployment gap is drawn as under-prioritized and worded
-//   "under-response (deployment)"), evidence quality as opacity (strong, moderate, weak).
-// - Need, Prize and Position are evidence dimensions in neutral ink: no colour family of their own.
+// - One colour per choice, NEIS tokens only, grouped by fence (the user's Yards & Fences framing,
+//   2026-10-30; VERB_COLOR, FENCE_OF_VERB): High fence Secure (signal orange); Medium fence Preserve (brand
+//   blue), Catch Up (the lightest step of the NEIS sequential ramp), Partner (teal) and Accelerate (green);
+//   Low fence Watch (ink-600). Supply-chain nodes: High = Secure, Medium = Preserve / Catch Up / Partner,
+//   Low = Watch; Deployment & Use nodes: Medium = Accelerate, Low = Watch (no deployment node is Secure). A
+//   node that is not assessed has no colour: it is drawn empty and hatched (design D1).
+// - The Country Strategy Map is colour alone (user, 2026-10-30: "make it all color-coded, rather than the
+//   arrows"): no letters, arrows, dots or border codes in a cell. Every cell's accessible name and its
+//   tooltip say the choice, its fence, the policy alignment and the evidence in words; the table twin and the
+//   drawer name the choice with its fence (VERB_LONG, "Partner · Medium fence").
+// - Need, Prize and Position are evidence dimensions in neutral ink: no colour of their own.
 //
-// Posture colours are a categorical triad validated with the dataviz validator on the dark surface #1f2937
-// (2026-10-28): "#d1497e,#1889b0,#9a8f3d" passes lightness band, chroma floor, CVD (worst protan dE 10.3),
-// the normal-vision floor (19.8) and 3:1 contrast. A choice is never carried by colour alone: every cell
-// and point also carries its mark or shape, and the legend names all of them.
+// The choice colours, checked with the dataviz validator on the dark card #1f2937 (2026-10-30):
+// - Catch Up: the approved #5cbfe8 (NEIS seq-5) cannot be told from Partner #55c4c5 (CVD dE 5.3 deutan,
+//   normal vision 5.8: FAIL), so Catch Up takes seq-7 #b4e7fe: against Partner CVD dE 12.9 (protan), normal
+//   15.4, and the four Medium-fence colours pass all pairs (CVD and normal floor).
+// - The five producing-stage choices "#f58229,#1889b0,#b4e7fe,#55c4c5,#4b5563" pass all-pairs CVD (worst
+//   12.9) and the normal-vision floor (15.4): the scatters and the five producing columns of the map.
+// - Secure orange and Accelerate green collide under deuteranopia (dE 1.9): they never share a context
+//   (Accelerate only at Deployment & Use, where nothing is Secure; the scatters plot no Accelerate).
+// - Watch #4b5563 is 1.94:1 on the card (below 3:1): it carries a paper-mute outline (VERB_OUTLINE) and the
+//   table twin; the lightness-band and chroma checks fail for the pale Catch Up and the grey Watch by design
+//   (the user's tokens).
 
 import type {
   AibGap, Alignment, AlignmentConfidence, AssessedPosture, CompeteMode, DeployMode, Evidence, Momentum, Pathway, PostureCell, PostureCode, PostureWord,
@@ -25,10 +33,12 @@ import type {
 // The stage shorts (Ext, Ref, Com, Asm, Dep, Rec) and the display names live in src/lib/stages.ts, so every
 // module uses one map; re-exported here for the posture views.
 export { STAGE_DISPLAY, STAGE_SHORT, stageDisplay, stageShort } from '../lib/stages.ts';
+import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
 
 // ---- the three families -----------------------------------------------------------------------------
 
-export const POSTURE_COLOR: Record<AssessedPosture, string> = { S: '#d1497e', C: '#1889b0', D: '#9a8f3d' };
+/** The family colours where the Secure / Compete / Deploy families are still drawn (NEIS orange, blue, green). */
+export const POSTURE_COLOR: Record<AssessedPosture, string> = { S: '#f58229', C: '#1889b0', D: '#a3b63b' };
 export const POSTURE_LABEL: Record<PostureCode, string> = { S: 'Secure', C: 'Compete', D: 'Deploy', N: 'Not assessed' };
 export const POSTURE_ORDER: AssessedPosture[] = ['S', 'C', 'D'];
 export const POSTURE_FROM_WORD: Record<PostureWord, PostureCode> = { secure: 'S', compete: 'C', deploy: 'D', not_assessed: 'N' };
@@ -45,9 +55,19 @@ export const VERB_ORDER: Verb[] = ['secure', 'preserve', 'catch_up', 'partner', 
 export const VERB_LABEL: Record<Verb, string> = { secure: 'Secure', preserve: 'Preserve', catch_up: 'Catch Up', partner: 'Partner', accelerate: 'Accelerate', watch: 'Watch' };
 /** The family each verb belongs to (its background). */
 export const VERB_FAMILY: Record<Verb, AssessedPosture> = { secure: 'S', preserve: 'C', catch_up: 'C', partner: 'C', accelerate: 'D', watch: 'D' };
-/** "Compete · Preserve", "Deploy · Accelerate", "Secure". */
+/**
+ * A choice with its fence, the words of every label that names a node's choice (the drawer, the tables, the
+ * tooltips): "Secure · High fence", "Partner · Medium fence", "Watch · Low fence". The fence of a choice is the
+ * same at every stage (nodeFence), so a producing-stage Watch is never "Deploy · Watch": the R families
+ * (Secure / Compete / Deploy) stay in POSTURE_LABEL and the CSV's posture column only.
+ */
 export const VERB_LONG: Record<Verb, string> = {
-  secure: 'Secure', preserve: 'Compete · Preserve', catch_up: 'Compete · Catch Up', partner: 'Compete · Partner', accelerate: 'Deploy · Accelerate', watch: 'Deploy · Watch',
+  secure: 'Secure · High fence',
+  preserve: 'Preserve · Medium fence',
+  catch_up: 'Catch Up · Medium fence',
+  partner: 'Partner · Medium fence',
+  accelerate: 'Accelerate · Medium fence',
+  watch: 'Watch · Low fence',
 };
 /** The Choices section's subtitles (spec XIV). */
 export const VERB_SUBTITLE: Record<Verb, string> = {
@@ -61,10 +81,6 @@ export const VERB_SUBTITLE: Record<Verb, string> = {
 
 export const MODE_LABEL: Record<CompeteMode, string> = { preserve: 'Preserve', catch_up: 'Catch Up', partner: 'Partner' };
 export const DEPLOY_MODE_LABEL: Record<DeployMode, string> = { accelerate: 'Accelerate', watch: 'Watch' };
-/** Compete marks: P Preserve, C Catch Up, linked arrows Partner. */
-export const MODE_MARK: Record<CompeteMode, string> = { preserve: 'P', catch_up: 'C', partner: '⇄' };
-/** Deploy marks: an up arrow Accelerate, a dot Watch. */
-export const DEPLOY_MARK: Record<DeployMode, string> = { accelerate: '↑', watch: '•' };
 
 /** The verb of a node (null: not assessed). */
 export function verbOf(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode'>): Verb | null {
@@ -74,10 +90,61 @@ export function verbOf(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode'>):
   return null;
 }
 
-/** "Compete · Preserve", "Deploy · Watch", "Secure", "Not assessed" (a Compete or Deploy node without its mode: the family alone). */
+/** "Preserve · Medium fence", "Watch · Low fence", "Secure · High fence", "Not assessed" (a Compete or Deploy node without its mode: the family alone). */
 export function choiceWord(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode'>): string {
   const v = verbOf(c);
   return v ? VERB_LONG[v] : POSTURE_LABEL[c.posture];
+}
+
+// ---- the choice colours and the fences (2026-10-30) ------------------------------------------------------
+
+/** The one colour of each choice (NEIS tokens; the header says how they were checked). */
+export const VERB_COLOR: Record<Verb, string> = {
+  secure: '#f58229',
+  preserve: '#1889b0',
+  catch_up: '#b4e7fe',
+  partner: '#55c4c5',
+  accelerate: '#a3b63b',
+  watch: '#4b5563',
+};
+/** The outline of a choice's mark on the dark card: the card colour as a ring between marks, except Watch,
+ *  whose ink-600 fill is 1.94:1 on the card and so takes a paper-mute hairline to read as a mark. */
+export const VERB_OUTLINE: Record<Verb, string> = {
+  secure: '#1f2937', preserve: '#1f2937', catch_up: '#1f2937', partner: '#1f2937', accelerate: '#1f2937', watch: '#9ca3af',
+};
+
+export type Fence = 'high' | 'medium' | 'low';
+export const FENCE_ORDER: Fence[] = ['high', 'medium', 'low'];
+export const FENCE_LABEL: Record<Fence, 'High fence' | 'Medium fence' | 'Low fence'> = { high: 'High fence', medium: 'Medium fence', low: 'Low fence' };
+/** The fence of each choice: Secure high; Preserve, Catch Up, Partner and Accelerate medium; Watch low. */
+export const FENCE_OF_VERB: Record<Verb, Fence> = { secure: 'high', preserve: 'medium', catch_up: 'medium', partner: 'medium', accelerate: 'medium', watch: 'low' };
+/** The choices of each fence, in VERB_ORDER. */
+export const FENCE_VERBS: Record<Fence, Verb[]> = {
+  high: VERB_ORDER.filter((v) => FENCE_OF_VERB[v] === 'high'),
+  medium: VERB_ORDER.filter((v) => FENCE_OF_VERB[v] === 'medium'),
+  low: VERB_ORDER.filter((v) => FENCE_OF_VERB[v] === 'low'),
+};
+/**
+ * The fence of one node from its choice and stage (null: not assessed). Supply-chain (producing-stage)
+ * nodes: Secure high, Preserve / Catch Up / Partner medium, Watch low. Deployment & Use nodes: Accelerate
+ * medium, Watch low (the engine writes no Secure there; were it to, Secure stays the high fence).
+ */
+export function nodeFence(verb: Verb | null, stage: string): Fence | null {
+  if (!verb) return null;
+  if (stage === DEPLOYMENT_STAGE) return verb === 'watch' ? 'low' : verb === 'secure' ? 'high' : 'medium';
+  return FENCE_OF_VERB[verb];
+}
+/** "Partner · Medium fence", "Secure · High fence", "Not assessed". */
+export function fenceChoiceWord(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode' | 'stage'>): string {
+  const v = verbOf(c);
+  const f = nodeFence(v, c.stage);
+  return v && f ? `${VERB_LABEL[v]} · ${FENCE_LABEL[f]}` : POSTURE_LABEL[c.posture];
+}
+/** The fill of a node: its choice colour, or the not-assessed hatch (a Compete or Deploy node without its mode: its family colour). */
+export function nodeFill(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode'>): string {
+  const v = verbOf(c);
+  if (v) return VERB_COLOR[v];
+  return c.posture === 'N' ? NOT_ASSESSED_HATCH : POSTURE_COLOR[c.posture];
 }
 
 // ---- Secure rationales ---------------------------------------------------------------------------------
@@ -93,7 +160,6 @@ export const RATIONALE_SHORT: Record<SecurityRationale, string> = {
   coercive_chokepoint: 'chokepoint',
   systemic_resilience: 'systemic resilience',
 };
-export const RATIONALE_MARK: Record<SecurityRationale, string> = { operational_control: 'O', coercive_chokepoint: 'K', systemic_resilience: 'R' };
 export const RATIONALE_ORDER: SecurityRationale[] = ['operational_control', 'coercive_chokepoint', 'systemic_resilience'];
 export const RATIONALE_WORDS: Record<SecurityRationale, string> = {
   operational_control: 'a foreign actor could command, update or disable it, or it serves national-security end uses',
@@ -109,21 +175,9 @@ export const RATIONALE_TAG: Record<SecurityRationale, NeedTag> = {
   systemic_resilience: 'SYSTEMIC RESILIENCE',
 };
 
-/** The centre mark of a node: its rationale, Compete mode or Deploy mode; nothing when not assessed. */
-export function cellMark(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode' | 'rationale'>): string {
-  if (c.posture === 'S') return c.rationale ? RATIONALE_MARK[c.rationale] : '';
-  if (c.posture === 'C') return c.mode ? MODE_MARK[c.mode] : '';
-  if (c.posture === 'D') return c.deployMode ? DEPLOY_MARK[c.deployMode] : '';
-  return '';
-}
-
-/** The marker shape of a verb on a scatter (a Secure point keeps its true coordinates, outlined). */
-export type VerbShape = 'diamond' | 'circle' | 'triangle' | 'square' | 'ring';
-export const VERB_SHAPE: Record<Exclude<Verb, 'accelerate'>, VerbShape> = { secure: 'diamond', preserve: 'circle', catch_up: 'triangle', partner: 'square', watch: 'ring' };
-
 // ---- policy alignment ---------------------------------------------------------------------------------
 
-/** The five classes the map draws (plus no data): a deployment gap is drawn as under-prioritized. */
+/** The five classes the Policy Alignment section shows (plus no data): a deployment gap is shown as under-prioritized. */
 export type AlignmentClass = 'aligned' | 'under_prioritized' | 'over_prioritized' | 'misaligned' | 'mixed' | 'insufficient_data';
 export const ALIGNMENT_CLASS_ORDER: AlignmentClass[] = ['aligned', 'under_prioritized', 'over_prioritized', 'misaligned', 'mixed'];
 export const alignmentClass = (a: Alignment): AlignmentClass => (a === 'deployment_gap' ? 'under_prioritized' : a);
@@ -170,10 +224,6 @@ export const ALIGNMENT_ATTENTION: Alignment[] = ['misaligned', 'under_prioritize
 
 export const EVIDENCE_LEVELS: Evidence[] = ['strong', 'moderate', 'weak'];
 export const EVIDENCE_LABEL: Record<Evidence, string> = { strong: 'Strong', moderate: 'Moderate', weak: 'Weak' };
-/** Evidence quality as opacity: strong evidence is solid, weak fades (and says so in words); unknown sits between. */
-export function evidenceOpacity(ev: Evidence | null | undefined): number {
-  return ev === 'strong' ? 1 : ev === 'moderate' ? 0.85 : ev === 'weak' ? 0.6 : 0.75;
-}
 
 // ---- trade momentum (words only: the drawer and the table, never the cell) --------------------------------
 

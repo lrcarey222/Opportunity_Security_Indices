@@ -2,10 +2,13 @@
 // six-stage node, placed by Competitive Position (across, percentile among the node's contenders) and the
 // relevant need (up: supply-chain need at the producing stages, deployment need at Deployment & Use). The
 // node's prize barely varies across economies, so it is stated in words beside the chart, not plotted.
-// Colour is the family (Secure, Compete, Deploy: the site's three backgrounds); the shape is the verb:
-// Secure an outlined diamond at its true coordinates (Secure overrides the triage), Preserve a circle, Catch
-// Up an upward triangle, Partner a square, Accelerate an up arrow, Watch a ring. Dashed lines: the need
-// threshold (the deployment threshold at Deployment & Use) and, at the producing stages, the Preserve bar.
+// Since 2026-10-30 it takes the look of the shared quadrant scatter (charts/quadScatter.tsx; the Country
+// page's Prize x Position chart): one dot per economy in its choice colour (grammar VERB_COLOR, the legend
+// grouped by fence), radius 6 with a 1.5 px outline, a hover / focus ring in white (orange is Secure), the grid at 0 /
+// 25 / 50 / 75 / 100 inside a faint frame, the axis labels at the ends ("... →", "↑ ..."). A Secure economy
+// keeps its true coordinates (Secure overrides the triage) and is drawn last, on top. Dashed lines (paper-
+// mute, 4,3): the need threshold (the deployment threshold at Deployment & Use) and, at the producing
+// stages, the Preserve bar. It stays a React SVG, not Plot, for its strip and spread modes below.
 // An economy without a measured Competitive Position sits in a narrow strip on the left; where no economy
 // of the node has one (Recovery & Recycling today), the economies are spread across the width in verb order
 // instead, the axis says so and there is no Preserve line (nor, at a producing stage, any region label). Light region labels give
@@ -13,68 +16,46 @@
 // opens the economy's Country Strategy Map on this node.
 
 import { useState, type KeyboardEvent } from 'react';
+import { QUAD_DASH, QUAD_TICKS } from '../../charts/quadScatter.tsx';
 import type { PostureMeta, Verb } from '../../posture/contract.ts';
 import { pct } from '../../posture/derive.ts';
 import {
-  ALIGNMENT_LABEL, borderlineWords, EVIDENCE_LABEL, MOMENTUM_LABEL, NEED_TYPE_LABEL, PATHWAY_LABEL, POSTURE_COLOR, RATIONALE_LABEL, VERB_FAMILY, VERB_LONG, VERB_ORDER,
+  ALIGNMENT_LABEL, borderlineWords, EVIDENCE_LABEL, MOMENTUM_LABEL, NEED_TYPE_LABEL, PATHWAY_LABEL, RATIONALE_LABEL, VERB_COLOR, VERB_LONG, VERB_ORDER, VERB_OUTLINE,
 } from '../../posture/grammar.ts';
+import { ChoiceLegend } from '../../posture/PostureLegend.tsx';
+import { PAPER_MUTE } from '../../theme/palette.ts';
 import { DEPLOYMENT_STAGE } from '../../lib/stages.ts';
 import type { RegionLabel, StrategyPoint } from './derive.ts';
 
 const W = 640;
 const H = 420;
-const M = { l: 48, r: 16, t: 16, b: 44 };
+const M = { l: 48, r: 20, t: 30, b: 40 };
 /** the strip of economies without a measured Competitive Position */
 const STRIP = 34;
 const GAP = 14;
 
-const DARK = 'rgb(31 41 55 / 0.9)';
+/** The dot radius of the shared quadrant scatter. */
+const R = 6;
+/** The hover / focus ring: white, since signal orange is the Secure fill. */
+const RING = '#ffffff';
 
-/** The marker of a verb at (cx, cy), drawn in its family colour. */
+/** The mark of a verb at (cx, cy): a dot in its choice colour (the shared scatter's size and outline), ringed in white (orange is the Secure fill) when hovered or focused. */
 export function VerbMark({ verb, cx, cy, on = false, scale = 1 }: { verb: Verb; cx: number; cy: number; on?: boolean; scale?: number }) {
-  const col = POSTURE_COLOR[VERB_FAMILY[verb]];
-  const stroke = on ? '#ffffff' : '#1f2937';
-  const sw = on ? 2.5 : 1.5;
-  const s = 6.5 * scale;
-  switch (verb) {
-    case 'secure':
-      return <path d={`M${cx} ${cy - s - 1.5}L${cx + s + 1.5} ${cy}L${cx} ${cy + s + 1.5}L${cx - s - 1.5} ${cy}Z`} fill={DARK} stroke={col} strokeWidth={on ? 3 : 2} />;
-    case 'preserve':
-      return <circle cx={cx} cy={cy} r={s - 0.5} fill={col} stroke={stroke} strokeWidth={sw} />;
-    case 'catch_up':
-      return <path d={`M${cx} ${cy - s - 1}L${cx + s} ${cy + s * 0.75}L${cx - s} ${cy + s * 0.75}Z`} fill={col} stroke={stroke} strokeWidth={sw} />;
-    case 'partner':
-      return <rect x={cx - s + 1} y={cy - s + 1} width={2 * s - 2} height={2 * s - 2} fill={col} stroke={stroke} strokeWidth={sw} />;
-    case 'accelerate':
-      return (
-        <path
-          d={`M${cx} ${cy - s - 1.5}L${cx + s} ${cy - 0.5}L${cx + s * 0.38} ${cy - 0.5}L${cx + s * 0.38} ${cy + s + 1}L${cx - s * 0.38} ${cy + s + 1}L${cx - s * 0.38} ${cy - 0.5}L${cx - s} ${cy - 0.5}Z`}
-          fill={col}
-          stroke={stroke}
-          strokeWidth={sw}
-        />
-      );
-    case 'watch':
-      return <circle cx={cx} cy={cy} r={s - 1} fill={DARK} stroke={on ? '#ffffff' : col} strokeWidth={on ? 3 : 2.25} />;
-  }
+  return (
+    <>
+      <circle cx={cx} cy={cy} r={R * scale} fill={VERB_COLOR[verb]} stroke={VERB_OUTLINE[verb]} strokeWidth={1.5} data-mark="dot" />
+      {on && <circle cx={cx} cy={cy} r={R * scale + 3} fill="none" stroke={RING} strokeWidth={2.5} data-mark="ring" />}
+    </>
+  );
 }
 
-/** The scatter's legend: the verbs it can show, each with its mark and family, in words. */
+/** The scatter's legend: the choices the stage can take, by fence, in their colours and words. */
 export function VerbMarkLegend({ verbs, notPlotted }: { verbs: readonly Verb[]; notPlotted?: number }) {
   return (
-    <div className="space-y-2 text-xs text-paper-dim" aria-label="Legend" data-testid="sector-strategy-legend">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {verbs.map((v) => (
-          <span key={v} className="inline-flex items-center gap-1.5" data-verb={v}>
-            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-              <VerbMark verb={v} cx={9} cy={9} scale={0.95} />
-            </svg>
-            {VERB_LONG[v]}
-          </span>
-        ))}
-      </div>
+    <div className="space-y-2 text-xs text-paper-dim" data-testid="sector-strategy-legend">
+      <ChoiceLegend verbs={verbs} notAssessed={false} />
       <p className="text-paper-mute">
-        Colour is the family (Secure, Compete, Deploy), the shape the choice.
+        Colour is the choice, grouped by fence.
         {notPlotted ? ` ${notPlotted} not assessed or without a measured need: listed in the table, not plotted.` : ''}
       </p>
     </div>
@@ -109,13 +90,25 @@ export function SectorStrategyScatter({ points, stage, thresholds, regions, onOp
   let k = 0;
   const spread = (i: number) => x(points.length === 1 ? 0.5 : 0.03 + (0.94 * i) / (points.length - 1));
   const order = noCp ? [...points].sort((a, b) => VERB_ORDER.indexOf(a.verb) - VERB_ORDER.indexOf(b.verb) || a.name.localeCompare(b.name)) : points;
-  const placed = order.map((p, i) => ({ p, cx: noCp ? spread(i) : p.cp === null ? stripX(k++) : x(p.cp), cy: y(p.need) }));
+  // Secure last, so it is drawn on top (its coordinates are its own)
+  const placed = order
+    .map((p, i) => ({ p, cx: noCp ? spread(i) : p.cp === null ? stripX(k++) : x(p.cp), cy: y(p.need) }))
+    .sort((a, b) => Number(a.p.verb === 'secure') - Number(b.p.verb === 'secure'));
   const hov = placed.find((q) => q.p.iso3 === hover) ?? null;
   const c = hov?.p.cell ?? null;
   return (
     <div className="relative w-full" data-testid="sector-strategy-scatter" data-stage={stage} data-cp={noCp ? 'none' : strip ? 'partial' : 'all'}>
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="group" aria-label={`${needName} against Competitive Position for ${points.length} economies`}>
-        <rect x={x0} y={M.t} width={W - x0 - M.r} height={H - M.t - M.b} fill="rgb(255 255 255 / 0.02)" />
+        {/* the grid and the frame of the shared quadrant scatter */}
+        <g aria-hidden="true" data-testid="scatter-grid">
+          {QUAD_TICKS.map((v) => (
+            <g key={v}>
+              {!noCp && <line x1={x(v / 100)} x2={x(v / 100)} y1={M.t} y2={H - M.b} stroke={PAPER_MUTE} strokeOpacity={0.1} />}
+              <line x1={x0} x2={W - M.r} y1={y(v / 100)} y2={y(v / 100)} stroke={PAPER_MUTE} strokeOpacity={0.1} />
+            </g>
+          ))}
+          <rect x={x0} y={M.t} width={W - x0 - M.r} height={H - M.t - M.b} fill="none" stroke="rgb(255 255 255 / 0.12)" />
+        </g>
         {strip && (
           <g data-testid="cp-missing-strip">
             <rect x={M.l} y={M.t} width={STRIP} height={H - M.t - M.b} fill="rgb(255 255 255 / 0.04)" />
@@ -124,34 +117,34 @@ export function SectorStrategyScatter({ points, stage, thresholds, regions, onOp
             </text>
           </g>
         )}
-        {!dep && !noCp && <line x1={x(thresholds.cp)} x2={x(thresholds.cp)} y1={M.t} y2={H - M.b} stroke="rgb(255 255 255 / 0.35)" strokeDasharray="4 3" data-testid="line-cp" />}
-        <line x1={strip ? M.l : x0} x2={W - M.r} y1={y(tNeed)} y2={y(tNeed)} stroke="rgb(255 255 255 / 0.35)" strokeDasharray="4 3" data-testid="line-need" />
+        {!dep && !noCp && <line x1={x(thresholds.cp)} x2={x(thresholds.cp)} y1={M.t} y2={H - M.b} stroke={PAPER_MUTE} strokeDasharray={QUAD_DASH} data-testid="line-cp" />}
+        <line x1={strip ? M.l : x0} x2={W - M.r} y1={y(tNeed)} y2={y(tNeed)} stroke={PAPER_MUTE} strokeDasharray={QUAD_DASH} data-testid="line-need" />
         {(noCp && !dep ? [] : regions).map((r) => (
           <text key={r.label} x={x(r.x)} y={y(r.y)} textAnchor="middle" className="fill-paper-mute" style={{ fontSize: 12, letterSpacing: '0.08em', opacity: 0.55 }} data-testid="region-label">
             {r.label}
           </text>
         ))}
-        {[0, 0.25, 0.5, 0.75, 1].map((v) => (
-          <g key={v}>
+        {QUAD_TICKS.map((t) => (
+          <g key={t}>
             {!noCp && (
-              <text x={x(v)} y={H - M.b + 16} textAnchor="middle" className="fill-paper-mute" style={{ fontSize: 11 }}>
-                {Math.round(v * 100)}
+              <text x={x(t / 100)} y={H - M.b + 16} textAnchor="middle" className="fill-paper-mute" style={{ fontSize: 12 }}>
+                {t}
               </text>
             )}
-            <text x={M.l - 8} y={y(v) + 4} textAnchor="end" className="fill-paper-mute" style={{ fontSize: 11 }}>
-              {Math.round(v * 100)}
+            <text x={M.l - 8} y={y(t / 100) + 4} textAnchor="end" className="fill-paper-mute" style={{ fontSize: 12 }}>
+              {t}
             </text>
           </g>
         ))}
-        <text x={(x0 + W - M.r) / 2} y={H - 8} textAnchor="middle" className="fill-paper-dim" style={{ fontSize: 12 }}>
+        <text x={noCp ? (x0 + W - M.r) / 2 : W - M.r} y={H - 4} textAnchor={noCp ? 'middle' : 'end'} className="fill-paper-mute" style={{ fontSize: 12 }}>
           {noCp
             ? 'Competitive Position not measured at this stage: economies spread out by choice'
             : dep
-              ? 'Competitive Position (context: the choice reads deployment need)'
-              : 'Competitive Position (percentile among contenders)'}
+              ? 'Competitive Position (context: the choice reads deployment need) →'
+              : 'Competitive Position (percentile among contenders) →'}
         </text>
-        <text transform={`translate(14 ${(M.t + H - M.b) / 2}) rotate(-90)`} textAnchor="middle" className="fill-paper-dim" style={{ fontSize: 12 }}>
-          {needName} (percentile)
+        <text x={4} y={M.t - 12} textAnchor="start" className="fill-paper-mute" style={{ fontSize: 12 }}>
+          ↑ {needName} (percentile)
         </text>
         {placed.map(({ p, cx, cy }) => {
           const on = hover === p.iso3;

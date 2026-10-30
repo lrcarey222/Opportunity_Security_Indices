@@ -97,12 +97,14 @@ export default function CountryAboutView() {
         Every Country profile reads the 11 technologies at the six supply-chain stages (extraction, refining and processing, component manufacturing, final assembly and equipment,
         deployment and use, recovery and recycling): 66 technology and stage nodes. It answers, in order: what the country needs, where there is a prize worth pursuing, where it is
         already strong, what it should secure, preserve, catch up in, rely on partners for, deploy faster and deliberately not prioritise, whether its current policy matches those
-        choices, and which allies can meet its needs (the{' '}
+        choices, and the roles it holds in the allied compacts (the{' '}
         <Link className="link" to="/methods">
           methods
         </Link>{' '}
-        say how each step is set). Its sections follow that order: Strategy (the Country Strategy Map), Need, Prize &amp; Position, Choices, Policy Alignment, Allied Strategy, and
-        Evidence &amp; Methodology. One drawer answers the same five questions for any node, from every section.
+        say how each step is set). Its sections follow that order: Strategy (the Country Strategy Map, each node coloured by its choice and grouped by fence); the High fence
+        (Secure); the Medium fence (Preserve, Catch Up and Partner at the producing stages, with the prize, the competitive position and the partners behind them, and
+        Accelerate at Deployment &amp; Use); the Low fence (Watch); Policy Alignment; Allied Strategy (the compacts in which the country holds a role); and Evidence &amp;
+        Methodology. One drawer answers the same five questions for any node, from every section.
       </p>
 
       <H id="strategy">The strategy: need, prize, position, choice, policy alignment</H>

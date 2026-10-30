@@ -20,7 +20,7 @@ import { stageRank } from '../lib/stages.ts';
 import { POSTURE_TERMS, PostureBasisTag } from './basis.tsx';
 import type { PostureCell, PostureCore, PostureDetail } from './contract.ts';
 import { countryNames, pct, postureCsvText, postureProvenance } from './derive.ts';
-import { cellMark, deliveryWords, POSTURE_COLOR, RATIONALE_LABEL, stageDisplay } from './grammar.ts';
+import { deliveryWords, RATIONALE_LABEL, stageDisplay } from './grammar.ts';
 import { Swatch } from './PostureLegend.tsx';
 import { alliedRows, alliedSentence, type AlliedRow } from './sections.ts';
 
@@ -119,14 +119,13 @@ export function AlliedStrategy({
           <ul className="space-y-2" data-testid="allied-strategy">
             {rows.map((r) => {
               const href = aibHref ? aibHref(r.tech, r.stage) : null;
-              const mark = r.verb === 'partner' ? cellMark({ posture: 'C', mode: 'partner', deployMode: null, rationale: null }) : cellMark({ posture: 'S', mode: null, deployMode: null, rationale: r.rationale });
               return (
                 <li key={r.key} className="rounded-lg border border-white/10 bg-ink-900/40 p-3" data-key={r.key} data-status={r.status} data-verb={r.verb}>
                   <div className="grid gap-2 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,1fr)] md:items-start">
                     <div>
                       <p className="text-[10px] uppercase tracking-wide text-paper-mute">{name} needs</p>
                       <button type="button" className="inline-flex items-center gap-1.5 text-left text-sm text-paper hover:underline focus-visible:ring-2 focus-visible:ring-signal" aria-pressed={selected === r.key} onClick={() => onOpen(r.key)}>
-                        <Swatch color={POSTURE_COLOR[r.verb === 'partner' ? 'C' : 'S']} mark={mark} size={16} />
+                        <Swatch verb={r.verb === 'partner' ? 'partner' : 'secure'} size={16} />
                         {r.node}
                       </button>
                       <p className="text-xs text-paper-dim">

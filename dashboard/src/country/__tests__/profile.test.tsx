@@ -1,12 +1,12 @@
 // The recomposed Country profile (IA refactor 2026-10-16, brief s.9-12 and s.25): the framing derives
 // (Make bets / dependencies / capabilities, the Allied Industrial Base place, the policy sentences) on the
-// synthetic fixtures, the Partnerships tabs and the Role in the Allied Industrial Base on the AIB fixture
-// (its economy AAA renamed USA), the engine staying idle on a baseline visit, and Workflow 2: the
-// Perspective dials move the Strategic priority column but not the facts, and the country's own URL
-// writes keep the dials. Since 2026-10-29 (design 5b, D10) the Partnerships and Role in the Allied Industrial Base
-// blocks sit under Allied Strategy's "Explore all partnership analysis", and the dials, Sector position and the
-// model's disclosures in Evidence & Methodology -> Legacy OSI framework (its results open on demand); the monthly
-// trade card is in Prize & Position.
+// synthetic fixtures, the Partnerships tabs and Allied Strategy's compacts on the AIB fixture (its economy AAA
+// renamed USA), the engine staying idle on a baseline visit, and Workflow 2: the Perspective dials move the
+// Strategic priority column but not the facts, and the country's own URL writes keep the dials. Since 2026-10-29
+// (design 5b, D10) the dials, Sector position and the model's disclosures sit in Evidence & Methodology -> Legacy
+// OSI framework (its results open on demand); since 2026-10-30 (the fences) the Partnerships section is the Medium
+// fence's Partner sub-section, open, Allied Strategy lists only the compacts in which the economy holds a role,
+// and the monthly trade card is in the Medium fence's Competitive Position.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -283,23 +283,28 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
     }
   }, 90_000);
 
-  it('a baseline visit never starts the engine; Partnerships tabs and the Role in the Allied Industrial Base (under Allied Strategy) read the AIB results', async () => {
+  it('a baseline visit never starts the engine; the Partnerships tabs (the Partner sub-section) and the compacts of Allied Strategy read the AIB results', async () => {
     const stuck = neverReady();
     setEngineClient(stuck);
     try {
-      // an old #aib-role link opens the partnership analysis under Allied Strategy
+      // an old #aib-role link lands on Allied Strategy: the compacts in which the economy holds a role, under the scenario
       const r = renderAt('/countries/usa?scn=decoupling#aib-role');
       await waitFor(() => expect(r.state.location.pathname).toBe('/countries/USA'), { timeout: 30_000 });
       await h2('Allied Strategy');
-      await h3('Role in the Allied Industrial Base');
-      const role = document.getElementById('allied-aib-role')!;
-      expect(role.closest('section#allied')).toBeTruthy();
-      expect(await within(role).findByText('Demand anchor / Buyer', {}, { timeout: 20_000 })).toBeTruthy();
-      expect(within(role).getByTestId('aib-relationships').textContent).toMatch(/Trade against investment/);
-      expect(within(role).getAllByRole('link', { name: 'AIB-C01' })[0].getAttribute('href')).toBe('/compacts/AIB-C01?scn=decoupling');
+      const role = document.getElementById('allied')!;
+      expect(document.getElementById('aib-role')?.closest('section')).toBe(role);
+      const ops = await within(role).findByTestId('allied-operational-compacts', {}, { timeout: 20_000 });
+      expect(within(ops).getByTestId('allied-scenario').textContent).toMatch(/^Shown under Decoupling/);
+      expect(within(ops).getAllByRole('link', { name: 'AIB-C01' })[0].getAttribute('href')).toBe('/compacts/AIB-C01?scn=decoupling');
+      expect(within(ops).getAllByTestId('allied-compact-role').some((x) => /Demand anchor/.test(x.textContent ?? ''))).toBe(true);
+      // only the compacts: no operational role matrix, no network relationships
+      expect(within(role).queryByTestId('aib-roles')).toBeNull();
+      expect(within(role).queryByTestId('aib-relationships')).toBeNull();
       expect(within(role).getByRole('link', { name: /See all country roles/ }).getAttribute('href')).toBe('/aib/roles?economy=USA&scn=decoupling#role-USA');
-      // Partnerships: Trade first, then Investment and Development through the URL
-      const part = document.getElementById('allied-partnerships')!;
+      // Partnerships (the Medium fence's Partner sub-section): Trade first, then Investment and Development through the URL
+      await h3('Partner');
+      const part = document.getElementById('medium-partner')!;
+      expect(part.closest('section#medium-fence')).toBeTruthy();
       expect(within(part).getByTestId('ptab-trade')).toBeTruthy();
       expect(within(part).getByText(/In the compacts' coordinated trade the United States has/)).toBeTruthy();
       fireEvent.click(within(part).getByRole('radio', { name: 'Investment' }));
@@ -316,7 +321,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       fireEvent.click(screen.getByText(/^Explore details/));
       expect(await within(document.getElementById('fold-scores')!).findByText('Loading the model')).toBeTruthy();
       expect(screen.getByRole('heading', { level: 1, name: 'United States' })).toBeTruthy();
-      expect(document.getElementById('allied-aib-role')).toBeTruthy();
+      expect(within(document.getElementById('allied')!).getByTestId('allied-operational-compacts')).toBeTruthy();
       // the strategy sections stay as they were (the model wraps only the Legacy OSI results)
       expect(within(document.getElementById('strategy')!).getByRole('region', { name: 'Country Strategy Map' })).toBeTruthy();
     } finally {
@@ -368,8 +373,8 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by
     try {
       renderAt('/countries/USA?cell=solar-assembly#prize-position');
       const card = await screen.findByTestId('trade-monthly', {}, { timeout: 30_000 });
-      // Prize & Position: the evidence behind the trade momentum of Competitive Position
-      expect(card.closest('section#prize-position')).toBeTruthy();
+      // the Medium fence's Competitive Position: the evidence behind the trade momentum of Competitive Position
+      expect(card.closest('section#medium-position')?.closest('section#medium-fence')).toBeTruthy();
       expect(within(card).getByRole('heading', { level: 3, name: /Solar — Assembly: monthly imports by sub-component/ })).toBeTruthy();
       fireEvent.click(within(card).getByRole('radio', { name: 'Exports' }));
       expect(await within(card).findByRole('heading', { level: 3, name: /monthly exports by sub-component/ })).toBeTruthy();
@@ -395,10 +400,10 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by
     try {
       renderAt('/countries/FRA#prize-position');
       const none = await screen.findByTestId('trade-monthly-none', {}, { timeout: 30_000 });
-      expect(none.closest('section#prize-position')).toBeTruthy();
+      expect(none.closest('section#medium-position')).toBeTruthy();
       cleanup();
       renderAt('/countries/BRA#prize-position');
-      await h2('Prize & Position');
+      await h2('Medium fence · Preserve, Catch Up, Partner, Accelerate');
       expect(screen.queryByTestId('trade-monthly')).toBeNull();
       expect(screen.queryByTestId('trade-monthly-none')).toBeNull();
     } finally {

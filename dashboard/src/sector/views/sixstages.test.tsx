@@ -103,12 +103,12 @@ describe('the Sector home: a Strategic posture section (design L3)', () => {
       'In battery cell manufacturing, 2 economies should catch up, with the prize and a credible pathway (Bland and Aland); and 1 economy should partner, needing it without a domestic case (Cland).',
     );
     expect(within(card).getByTestId('sector-strategy-counts').textContent).toMatch(/^0 Secure · 0 Preserve · 2 Catch Up · 1 Partner · 0 Accelerate · 0 Watch \(0 Secure · 3 Compete · 0 Deploy\)$/);
-    expect(within(card).getByTestId('posture-reading').textContent).toMatch(/Across: Competitive Position\s*, among the node's contenders; up: supply-chain need\s*\. The shape is the choice\./);
+    expect(within(card).getByTestId('posture-reading').textContent).toMatch(/Across: Competitive Position\s*, among the node's contenders; up: supply-chain need\s*\. The colour is the choice, grouped by fence\./);
     const chart = within(card).getByTestId('sector-strategy-scatter');
     expect([...chart.querySelectorAll('[data-verb]')].map((g) => [g.getAttribute('data-iso3'), g.getAttribute('data-verb')]).sort()).toEqual([['AAA', 'catch_up'], ['BBB', 'catch_up'], ['CCC', 'partner']]);
     expect(chart.querySelector('[data-testid="line-cp"]')).toBeTruthy();
     expect(within(card).getByTestId('sector-strategy-prize').textContent).toContain('2 of 3 at or above the bar of 60');
-    expect(within(card).getByTestId('sector-strategy-legend').textContent).toContain('Compete · Catch Up');
+    expect(within(card).getByTestId('sector-strategy-legend').textContent).toContain('Medium fence:Preserve,Catch Up,Partner');
     // every stage is offered, by its display name; Deployment & Use is no longer disabled
     const stage = within(card).getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement;
     expect([...stage.options].map((o) => [o.value, o.textContent, o.disabled])).toEqual([

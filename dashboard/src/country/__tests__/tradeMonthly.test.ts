@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { checkCountryManifest, checkTradeMonthlyDoc, COUNTRY_FILE_RE, indexTo100, type TradeMonthlyDoc } from '../contract.ts';
-import { fmtUsd, monthLabel, monthTick, pickTradeCell, SUB_LINES, TOTAL_ID, tradeLines, tradeRows, unreportedMonths } from '../derive/tradeMonthly.ts';
+import { fmtUsd, monthLabel, monthTick, pickTradeCell, SUB_COLORS, SUB_LINES, TOTAL_ID, tradeLines, tradeRows, unreportedMonths } from '../derive/tradeMonthly.ts';
 import { haveFixture, readJson, readManifest } from './fixture.ts';
 
 type AnyObj = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -71,6 +71,9 @@ describe.skipIf(!haveFixture())('monthly trade files (fixture)', () => {
     expect([...totals].sort((a, b) => b - a)).toEqual(totals);
     expect(l.lines[l.lines.length - 1].id).toBe(TOTAL_ID);
     expect(new Set(subs.map((x) => x.color)).size).toBe(subs.length);
+    // NEIS tokens only (brand blue, green, teal, seq-7): never the off-palette olive, teal-variant or rose
+    expect([...SUB_COLORS]).toEqual(['#1889b0', '#a3b63b', '#55c4c5', '#b4e7fe']);
+    for (const x of subs) expect(SUB_COLORS as readonly string[]).toContain(x.color);
     for (const s of c.subs) expect([null, 100]).toContain(indexTo100(s.imports)[0]);
     expect(tradeRows(doc(), c, 'imports').filter((r) => r.month === doc().window.first && r.index_first_month_100 !== null).every((r) => r.index_first_month_100 === 100)).toBe(true);
   });

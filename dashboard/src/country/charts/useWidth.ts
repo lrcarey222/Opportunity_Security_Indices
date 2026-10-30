@@ -1,20 +1,4 @@
-// The width of an element, tracked with ResizeObserver (0 before the first measure). Country-owned copy
-// so the profile chunk does not import the world map module for it.
+// The width of an element (charts/useWidth.ts, shared with the posture scatters since 2026-10-30), re-exported
+// for the Country charts that import it from here.
 
-import { useEffect, useRef, useState } from 'react';
-
-export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
-  const ref = useRef<T>(null);
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const m = () => setW(Math.floor(el.clientWidth));
-    m();
-    if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(m);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  return [ref, w];
-}
+export { useWidth } from '../../charts/useWidth.ts';

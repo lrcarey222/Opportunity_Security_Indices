@@ -6,8 +6,8 @@
 // through clicks; no bare acronym in headings, legends, column headers, buttons or labels (C3.4). Six stages (2026-10-29): the
 // strategy on the posture fixture (AAA served as USA), six-stage Sector links and legends, old three-stage cells in the link (U1),
 // and no three-stage word on the profile. The canonical page (2026-10-29, spec XI-XIX, XXII UI; design 4, 5b): the head (one
-// generated strategy sentence, data freshness, memo and export actions, no glance tiles), seven sections in order, the old
-// anchors, the Legacy OSI framework out of the primary flow (Evidence & Methodology, in a closed disclosure, the dials as
+// generated strategy sentence, data freshness, memo and export actions, no glance tiles), seven sections in order (the three
+// fences of 2026-10-30 in place of Need, Prize & Position and Choices), the old anchors, the Legacy OSI framework out of the primary flow (Evidence & Methodology, in a closed disclosure, the dials as
 // "Explore scenarios"), the Countries roster's six-verb line and the About page's framework (the page's sections are tested
 // in depth in strategy.view.test.tsx).
 
@@ -127,10 +127,12 @@ async function openLegacy(name: string): Promise<HTMLElement> {
   return screen.findByRole('heading', { level: 3, name: 'Security and opportunity' }, { timeout: 30_000 });
 }
 
-/** Open the generic partnership material under Allied Strategy. */
+/** The partnership analysis: open on the page as the Medium fence's Partner sub-section (2026-10-30), never behind a disclosure. */
 async function openExplore(): Promise<void> {
-  fireEvent.click(screen.getByText('Explore all partnership analysis'));
-  await screen.findByRole('heading', { level: 3, name: 'Partnerships' }, { timeout: 30_000 });
+  const h = await screen.findByRole('heading', { level: 3, name: 'Partner' }, { timeout: 30_000 });
+  expect(h.closest('section')?.id).toBe('medium-partner');
+  expect(h.closest('section#medium-fence')).toBeTruthy();
+  expect(screen.queryByText('Explore all partnership analysis')).toBeNull();
 }
 
 describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixture', () => {
@@ -181,11 +183,13 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     await waitFor(() => expect((within(actions).getByRole('button', { name: 'DOWNLOAD STRATEGY (CSV)' }) as HTMLButtonElement).disabled).toBe(false));
     expect(within(actions).getByRole('link', { name: /All data and downloads/ }).getAttribute('href')).toBe('#downloads');
     expect(screen.queryByRole('heading', { name: 'Policy memo' })).toBeNull();
-    // the nav: the seven sections in the spec's order, each a section with that h2
+    // the nav: the seven sections in the spec's order (the three fences after the Strategy), each a section with its h2
     const nav = screen.getByRole('navigation', { name: 'Sections of this page' });
     const links = within(nav).getAllByRole('link');
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['#strategy', '#need', '#prize-position', '#choices', '#policy-alignment', '#allied', '#evidence']);
-    expect(links.map((a) => a.textContent)).toEqual(['Strategy', 'Need', 'Prize & Position', 'Choices', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['#strategy', '#high-fence', '#medium-fence', '#low-fence', '#policy-alignment', '#allied', '#evidence']);
+    expect(links.map((a) => a.textContent)).toEqual([
+      'Strategy', 'High fence · Secure', 'Medium fence · Preserve, Catch Up, Partner, Accelerate', 'Low fence · Watch', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology',
+    ]);
     for (const s of STRATEGY_SECTIONS) {
       const el = document.getElementById(s.id)!;
       expect(el.tagName, s.id).toBe('SECTION');
@@ -194,12 +198,13 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     // the sections in that order, the Strategy section first
     const column = document.getElementById('strategy')!.parentElement!;
     expect([...column.children].map((c) => c.id)).toEqual(STRATEGY_SECTIONS.map((s) => s.id));
-    // the Country Strategy Map: the dominant visual of the Strategy section, with its counts, table twin and CSV
+    // the Country Strategy Map: the dominant visual of the Strategy section, with its legend by fence (the counts), table twin and CSV
     const strategy = document.getElementById('strategy')!;
     expect(strategy.querySelector('[data-basis="posture"]')?.textContent).toMatch(/^Strategic position framework/);
     expect(strategy.textContent).toMatch(/then recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or Watch/);
     const card = await within(strategy).findByRole('region', { name: 'Country Strategy Map' }, { timeout: 30_000 });
-    expect(within(card).getByTestId('strategy-counts').textContent).toMatch(/3 Secure · 2 Preserve · 1 Catch Up · 1 Partner · 1 Accelerate · 3 Watch\. 3 Secure · 4 Compete · 4 Deploy · 1 not assessed\./);
+    expect(within(card).getByTestId('posture-legend').textContent).toBe('High fence:Secure 3Medium fence:Preserve 2,Catch Up 1,Partner 1,Accelerate 1Low fence:Watch 3Not assessed 1');
+    expect(within(card).getByRole('figure').getAttribute('aria-label')).toMatch(/3 Secure · 2 Preserve · 1 Catch Up · 1 Partner · 1 Accelerate · 3 Watch\.$/);
     expect(within(card).queryByTestId('posture-takeaway')).toBeNull(); // the sentence is the page head's
     expect(within(card).getByRole('button', { name: 'Table' })).toBeTruthy();
     expect(within(card).getByRole('button', { name: 'Download CSV' })).toBeTruthy();
@@ -213,7 +218,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     await waitFor(() => expect(r.state.location.search).not.toMatch(/node=/));
     expect(screen.queryByTestId('cell-drawer')).toBeNull();
     // old anchors still exist (alias spans), so old links scroll to the block's new place
-    for (const id of ['posture', 'glance', 'position', 'space', 'opportunities', 'sectors', 'si', 'policy', 'priorities', 'partnerships', 'partners', 'aib-role', 'memo', 'notes']) {
+    for (const id of ['posture', 'glance', 'need', 'prize-position', 'choices', 'position', 'space', 'opportunities', 'sectors', 'si', 'policy', 'priorities', 'partnerships', 'partners', 'allied-partnerships', 'aib-role', 'allied-aib-role', 'memo', 'notes']) {
       expect(document.getElementById(id), id).toBeTruthy();
     }
     // the Legacy OSI framework is out of the primary flow: no Perspective control, no corners scatter, no Strategic Index list
@@ -249,7 +254,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     // the top Strategic Index sector of an all-Grow country: the fallback rule (A9.5) explains its top three (behind "Why these sectors")
     fireEvent.click(screen.getByText(/^Why these sectors/));
     expect(await screen.findByText(/None of the United States' placed sectors is in the Upgrade corner/)).toBeTruthy();
-    // the generic partnership material, under Allied Strategy: the supplier matrix groups its columns by the six stages
+    // the partnership analysis, the Medium fence's Partner sub-section: the supplier matrix groups its columns by the six stages
     await openExplore();
     fireEvent.click(screen.getByText(/^Who supplies the United States in each sector today/));
     const matrix = await screen.findByRole('region', { name: /^Who supplies the United States in each sector: a table that scrolls sideways/ });
@@ -463,7 +468,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     const chip = within(corners).getAllByRole('button')[0];
     fireEvent.click(chip);
     await waitFor(() => expect(r.state.location.search).toMatch(/^\?cell=[a-z-]+/));
-    // a partner row of the slope chart (behind "Every partner", in the partnership analysis under Allied Strategy) selects the partner
+    // a partner row of the slope chart (behind "Every partner", in the partnership analysis of the Medium fence) selects the partner
     await openExplore();
     fireEvent.click(screen.getByText(/^Every partner of Japan/));
     const slope = await screen.findByRole('region', { name: "Priority partners and today's partners" });
@@ -496,10 +501,21 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(strategy.id).toBe('strategy');
     expect(await within(strategy).findByText('No posture', undefined, { timeout: 30_000 })).toBeTruthy();
     await waitFor(() => expect(screen.getByTestId('strategy-sentence').textContent).toBe('Germany has no strategy map: the strategic position framework classifies none of its technology and stage nodes.'));
-    for (const id of ['need', 'prize-position', 'choices', 'policy-alignment', 'allied']) expect(within(document.getElementById(id)!).getByText('No strategy map'), id).toBeTruthy();
-    // the facts that do not need the framework stay: the observed policy and the partnership analysis
+    for (const id of ['high-fence', 'medium-fence', 'low-fence', 'policy-alignment']) expect(within(document.getElementById(id)!).getByText('No strategy map'), id).toBeTruthy();
+    // each fence says so once, and lists no node
+    for (const id of ['high-fence', 'medium-fence', 'low-fence']) {
+      expect(within(document.getElementById(id)!).getAllByText('No strategy map'), id).toHaveLength(1);
+      expect(document.getElementById(id)!.querySelectorAll('li[data-key]'), id).toHaveLength(0);
+    }
+    // the facts that do not need the framework stay: the observed policy, the monthly trade card, the partnership analysis (the
+    // Partner sub-section, without its lead of Partner nodes) and the energy-system context; Allied Strategy reads the AIB results only
     expect(within(document.getElementById('policy-alignment')!).getByTestId('policy-behaviour')).toBeTruthy();
-    expect(within(document.getElementById('allied')!).getByText('Explore all partnership analysis')).toBeTruthy();
+    expect(document.getElementById('medium-prize')).toBeNull();
+    expect(within(document.getElementById('medium-partner')!).getByRole('heading', { level: 3, name: 'Partner' })).toBeTruthy();
+    expect(within(document.getElementById('medium-partner')!).queryByTestId('partner-lead')).toBeNull();
+    expect(within(document.getElementById('medium-accelerate')!).getByText(/^Energy-system context:/)).toBeTruthy();
+    expect(document.getElementById('medium-position')).toBeTruthy();
+    expect(within(document.getElementById('allied')!).queryByText('No strategy map')).toBeNull();
     expect((screen.getByRole('button', { name: 'DOWNLOAD STRATEGY (CSV)' }) as HTMLButtonElement).disabled).toBe(true);
     noAcronyms();
   });
@@ -521,13 +537,30 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     }
   });
 
-  it('old anchors land in their new place: #posture -> Strategy, #aib-role opens the partnership analysis, #sectors the Legacy OSI results', async () => {
-    renderAt('/countries/USA#aib-role');
+  it('old anchors land in their new place: #posture -> Strategy, #need, #prize-position and #choices -> the fences, #aib-role -> Allied Strategy, #partnerships -> Partner, #sectors the Legacy OSI results', async () => {
+    const scrolled: string[] = [];
+    const before = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this.id);
+    } as typeof Element.prototype.scrollIntoView;
+    try {
+      for (const [hash, section] of [['aib-role', 'allied'], ['allied-aib-role', 'allied'], ['partnerships', 'medium-partner'], ['need', 'high-fence'], ['choices', 'medium-fence']] as const) {
+        scrolled.length = 0;
+        renderAt(`/countries/USA#${hash}`);
+        expect(await h1('United States')).toBeTruthy();
+        // the anchor is an alias span of its new section, always on the page (no disclosure to open), and the page scrolls to it
+        await waitFor(() => expect(document.getElementById(hash)?.closest('section')?.id, hash).toBe(section), { timeout: 30_000 });
+        await waitFor(() => expect(scrolled, hash).toContain(hash), { timeout: 30_000 });
+        expect(document.getElementById('fold-legacy')?.hasAttribute('open')).toBe(false);
+        cleanup();
+      }
+    } finally {
+      Element.prototype.scrollIntoView = before;
+    }
+    // the partnership analysis is open under its old anchor
+    renderAt('/countries/USA#partnerships');
     expect(await h1('United States')).toBeTruthy();
-    await waitFor(() => expect(document.getElementById('fold-partnerships-explore')?.hasAttribute('open')).toBe(true), { timeout: 30_000 });
-    expect(document.getElementById('allied-aib-role')?.closest('section#allied')).toBeTruthy();
-    expect(within(document.getElementById('allied-aib-role')!).getByRole('heading', { level: 3, name: 'Role in the Allied Industrial Base' })).toBeTruthy();
-    expect(document.getElementById('fold-legacy')?.hasAttribute('open')).toBe(false);
+    await openExplore();
     cleanup();
     renderAt('/countries/USA#sectors');
     expect(await h1('United States')).toBeTruthy();

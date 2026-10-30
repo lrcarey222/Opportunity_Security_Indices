@@ -37,12 +37,14 @@ export interface TableViewProps<R> {
   /** a vertical scroll limit (default none: pages, never a scrolling card) */
   maxHeight?: number;
   empty?: string;
+  /** let the column headers wrap (at their words, bottom-aligned), so a wide table of long headers fits its card */
+  wrapHeaders?: boolean;
 }
 
 const text = (v: CellValue): string => (v === null || v === undefined || (typeof v === 'number' && !Number.isFinite(v)) ? DASH : typeof v === 'boolean' ? (v ? 'yes' : 'no') : String(v));
 
 export function TableView<R>({
-  rows, cols, caption, search, pageSize = 15, initialSort, rowKey, onRowClick, selectedKey, maxHeight, empty = 'No rows for this selection',
+  rows, cols, caption, search, pageSize = 15, initialSort, rowKey, onRowClick, selectedKey, maxHeight, empty = 'No rows for this selection', wrapHeaders = false,
 }: TableViewProps<R>) {
   const [sorting, setSorting] = useState<SortingState>(initialSort ? [{ id: initialSort.id, desc: !!initialSort.desc }] : []);
   const [filter, setFilter] = useState('');
@@ -115,12 +117,17 @@ export function TableView<R>({
                     <th
                       key={h.id}
                       className={meta.num ? 'num' : undefined}
-                      style={{ minWidth: meta.minWidth }}
+                      style={wrapHeaders ? { minWidth: meta.minWidth, whiteSpace: 'normal', verticalAlign: 'bottom' } : { minWidth: meta.minWidth }}
                       aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none'}
                       title={meta.title}
                     >
                       {h.column.getCanSort() ? (
-                        <button type="button" className="inline-flex items-center gap-1 uppercase hover:text-paper" onClick={h.column.getToggleSortingHandler()}>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 uppercase hover:text-paper"
+                          style={wrapHeaders ? { textAlign: 'inherit' } : undefined}
+                          onClick={h.column.getToggleSortingHandler()}
+                        >
                           {flexRender(h.column.columnDef.header, h.getContext())}
                           <span aria-hidden="true" className="text-[0.625rem]">
                             {sorted === 'asc' ? '▲' : sorted === 'desc' ? '▼' : ''}

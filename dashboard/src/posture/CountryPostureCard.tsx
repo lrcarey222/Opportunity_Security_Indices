@@ -1,8 +1,9 @@
 // The Country Strategy Map card (spec XI.3-6; design section 4): one economy's choice in every technology x
 // six-stage node, as a ChartCard for the page's Strategy Section (heading level 3 by default; the Section
 // gives the h2 and the basis tag). The generated strategy sentence as the sub (off when the page header
-// carries it); the counts line, six verbs first, above the map; the legend; the trade freshness line and how
-// the choice is made in the notes; a table twin of all 66 nodes (unclassified ones kept) and a CSV with the
+// carries it); above the map, the legend: one colour per choice grouped by fence, each with the economy's
+// node count (the counts line since 2026-10-30; showCounts=false keeps the colours without the counts); the
+// trade freshness line and how the choice is made in the notes; a table twin of all 66 nodes (unclassified ones kept) and a CSV with the
 // posture provenance. The selection can be lifted to the page (`selected` / `onSelect`, e.g. the shared
 // ?node= of selection.ts); the page then mounts one PostureNodeDrawer for every entry point (`drawer={false}`),
 // or the card renders its own. Imports nothing from country/.
@@ -15,8 +16,7 @@ import { Loading, Notice } from '../components/ui.tsx';
 import { POSTURE_TERMS } from './basis.tsx';
 import { PostureNodeDrawer } from './CellDrawer.tsx';
 import { countPostures, countryCells, countryNames, countryPostureRows, POSTURE_CSV_COLS, postureCsvRows, postureCsvText, postureProvenance, strategyCountsText } from './derive.ts';
-import { StrategyCounts } from './PostureCounts.tsx';
-import { PostureLegend, TradeFreshness } from './PostureLegend.tsx';
+import { ChoiceLegend, TradeFreshness } from './PostureLegend.tsx';
 import { PostureMatrix } from './PostureMatrix.tsx';
 import { usePostureCore } from './store.ts';
 import { strategySentence } from './strategy.ts';
@@ -37,7 +37,7 @@ export interface CountryPostureCardProps {
   selected?: string | null;
   /** called with the new selection (null: closed), controlled or not */
   onSelect?: (key: string | null) => void;
-  /** the counts line above the map (default on) */
+  /** the node counts in the legend above the map (default on) */
   showCounts?: boolean;
   /** the strategy sentence as the card's sub (default on; off when the page header carries it) */
   showSentence?: boolean;
@@ -107,19 +107,19 @@ export function CountryPostureCard({
           />
         )}
         csv={csv}
-        legend={<PostureLegend />}
         notes={
           <div className="space-y-1">
             <TradeFreshness meta={c.meta} />
             <p>
               Need and <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term> triage each node; <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>{' '}
               decides the industrial response; the Secure tests override both. Deployment &amp; Use reads <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> and is
-              Accelerate or Watch, never Partner. Select a node, or a row of the table, for its five questions: need, prize, position, choice and policy alignment.
+              Accelerate (medium fence) or Watch (low fence), never Partner. Each cell is coloured by its choice alone; hover or focus a cell for its name, choice and fence, and
+              select it, or a row of the table, for its five questions: need, prize, position, choice and policy alignment.
             </p>
           </div>
         }
       >
-        {showCounts && <StrategyCounts counts={counts} className="mb-3" />}
+        <ChoiceLegend counts={showCounts ? counts : null} className="mb-3" />
         <div className="overflow-x-auto">
           <PostureMatrix core={c} cells={cells} selected={sel} onSelect={toggle} names={names} />
         </div>

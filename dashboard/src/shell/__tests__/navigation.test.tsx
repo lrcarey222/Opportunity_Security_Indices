@@ -297,15 +297,15 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
     await follow(router, linkIn('main article a[href="/countries"]', /^Explore countries$/), path('/countries'));
     await follow(router, linkIn('main a[href="/countries/JPN"]'), path('/countries/JPN'));
     expect(await h1(/Japan/)).toBeTruthy();
-    // Strategy, Need, Prize & Position, Choices, Policy Alignment, Allied Strategy, Evidence & Methodology (design 4), in the nav's
-    // order, then the Legacy OSI sub-section; the old anchors still land (their aliases are on the page)
-    const sections = ['strategy', 'need', 'prize-position', 'choices', 'policy-alignment', 'allied', 'evidence'];
+    // Strategy, the High, Medium and Low fences, Policy Alignment, Allied Strategy, Evidence & Methodology (design 4; the fences
+    // of 2026-10-30), in the nav's order, then the Legacy OSI sub-section; the old anchors still land (their aliases are on the page)
+    const sections = ['strategy', 'high-fence', 'medium-fence', 'low-fence', 'policy-alignment', 'allied', 'evidence'];
     for (const id of [...sections, 'legacy-osi']) {
       await waitFor(() => expect(document.getElementById(id)).toBeTruthy(), { timeout: 30_000 });
     }
     const nav = screen.getAllByRole('navigation', { name: 'Sections of this page' })[0];
     expect(within(nav).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(sections.map((id) => `#${id}`));
-    for (const id of ['posture', 'policy', 'partnerships', 'aib-role']) expect(document.getElementById(id), id).toBeTruthy();
+    for (const id of ['posture', 'need', 'prize-position', 'choices', 'policy', 'partnerships', 'aib-role']) expect(document.getElementById(id), id).toBeTruthy();
     expect(screen.getAllByText(/^Strategic position framework/).length).toBeGreaterThan(0);
     // the canonical sections never need the engine: the Legacy OSI results load it only when opened
     await settle(300);

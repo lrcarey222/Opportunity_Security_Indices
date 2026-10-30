@@ -113,7 +113,7 @@ export function SectorPositionSection({ id = 'sectors', level = 2 }: { id?: stri
       <ChartCard
         headingLevel={3}
         title={`${cap(name)}: sector by sector`}
-        sub={`Sorted by Strategic priority (${perspectiveNote(si)}), then by Economic Opportunity for sectors outside the index. Climate shows the Strategic Index's low-emission technology term (the same for every economy). The economy's own emissions by sector, from Climate TRACE, are in the Need section's energy-system context.`}
+        sub={`Sorted by Strategic priority (${perspectiveNote(si)}), then by Economic Opportunity for sectors outside the index. Climate shows the Strategic Index's low-emission technology term (the same for every economy). The economy's own emissions by sector, from Climate TRACE, are in the energy-system context of the Medium fence's Accelerate sub-section.`}
         summary={`${rows.length} sectors of ${name}.`}
         csv={csv}
       >

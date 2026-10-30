@@ -67,6 +67,13 @@ export interface CountryPosture {
   cells: PostureCell[];
   /** the economy's detail document (null while it loads or when it cannot be loaded) */
   detail: PostureDetail | null;
+  /** the detail document is still loading (its components then read "…", not "not measured") */
+  detailPending?: boolean;
+  /** the detail document's load: 'error' when it could not be loaded (its components then say so, with Retry; never "not measured") */
+  detailStatus?: 'loading' | 'ready' | 'error';
+  detailError?: string | null;
+  /** load the detail document again after an error */
+  retryDetail?: () => void;
   /** the shared node selection (?node=Tech|Stage, design D8): every entry point opens the one drawer through it */
   node: NodeSelection;
 }
@@ -120,10 +127,10 @@ export function perspectiveNote(si: PerspectiveSi): string {
   return si.status === 'custom' ? 'your perspective' : si.status === 'loading' ? 'NEIS baseline until the model loads' : 'NEIS baseline';
 }
 
-/** A page section: <section id> with an h2 (cards inside use h3); `basis` adds the eyebrow above the h2. */
+/** A page section: <section id> with an h2 (cards inside use h3); `basis` adds the eyebrow above the h2; `lead` a block between the heading and the intro. */
 export function Section({
-  id, title, intro, basis, level = 2, aliases, children, className,
-}: { id: string; title: string; intro?: ReactNode; basis?: ReactNode; level?: 2 | 3; aliases?: readonly string[]; children: ReactNode; className?: string }) {
+  id, title, intro, lead, basis, level = 2, aliases, children, className,
+}: { id: string; title: string; intro?: ReactNode; lead?: ReactNode; basis?: ReactNode; level?: 2 | 3; aliases?: readonly string[]; children: ReactNode; className?: string }) {
   const H = level === 3 ? 'h3' : 'h2';
   return (
     <section id={id} aria-labelledby={`${id}-h`} className={`scroll-mt-16${className ? ` ${className}` : ''}`}>
@@ -133,6 +140,7 @@ export function Section({
       <H id={`${id}-h`} className={level === 3 ? 'rule-neis-sm mb-2 text-base font-medium text-paper lg:text-lg' : 'rule-neis-sm mb-2 text-xl font-medium text-paper lg:text-2xl'}>
         {title}
       </H>
+      {lead && <div className="mb-3 max-w-4xl">{lead}</div>}
       {intro && <p className="mb-5 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">{intro}</p>}
       <div className="space-y-6">{children}</div>
     </section>

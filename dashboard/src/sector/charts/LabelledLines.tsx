@@ -110,6 +110,11 @@ export function LabelledLines({ lines, highlight, index, indexLabel, rule, yLabe
       const placed = spreadLabels(lastPts.map((p) => ysc(p.y)), LABEL_GAP, innerH);
       const endLabels = lastPts.map((p, i) => ({ ...p, ly: ysc.invert(placed[i]), moved: Math.abs(placed[i] - ysc(p.y)) > 2 }));
       const mr = labelMargin(endLabels.map((p) => p.label), { min: 16, max: Math.min(160, Math.floor(width * 0.3)) }) + 6;
+      const anyMoved = endLabels.some((p) => p.moved);
+      // a label longer than the right margin is shortened with an ellipsis, so it never runs past the chart's
+      // edge (the legend below names every line in full)
+      const fits = Math.max(4, Math.floor((mr - (anyMoved ? 8 : 6) - 2) / (11 * 0.56)));
+      const endText = (p: { label: string }) => (p.label.length > fits ? `${p.label.slice(0, fits - 1).trimEnd()}…` : p.label);
       const dash = lineDashes(used);
       const marks: Plot.Markish[] = [];
       if (rule !== undefined) marks.push(Plot.ruleY([rule], { stroke: ZERO_RULE, strokeWidth: 1 }));
@@ -131,7 +136,7 @@ export function LabelledLines({ lines, highlight, index, indexLabel, rule, yLabe
       // a label moved off its line end gets a short leader from the end to the label
       const moved = endLabels.filter((p) => p.moved);
       if (moved.length) marks.push(Plot.link(moved, { x1: 'x', x2: 'x', y1: 'y', y2: 'ly', dx: 4, stroke: PAPER_DIM, strokeOpacity: 0.6, strokeWidth: 1 }));
-      marks.push(Plot.text(endLabels, { x: 'x', y: 'ly', text: 'label', dx: moved.length ? 8 : 6, textAnchor: 'start', fill: PAPER_DIM, fontSize: 11 }));
+      marks.push(Plot.text(endLabels, { x: 'x', y: 'ly', text: endText, dx: moved.length ? 8 : 6, textAnchor: 'start', fill: PAPER_DIM, fontSize: 11 }));
       marks.push(Plot.dot(pts, Plot.pointer({ x: 'x', y: 'y', r: 5, fill: 'none', stroke: SIGNAL, strokeWidth: 2, maxRadius: 24 })));
       return {
         marginTop: mt,

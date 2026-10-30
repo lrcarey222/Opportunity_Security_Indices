@@ -4,13 +4,14 @@
 // and the strategic position framework (the posture core and the economy's detail document), reads the URL
 // state (cell, partner, all, ptab, scn; node, the shared selection) and renders the head (name, the generated
 // strategy sentence, data freshness, memo and export actions) and, beside the section nav, seven sections:
-//   1 Strategy, 2 Need, 3 Prize & Position, 4 Choices, 5 Policy Alignment, 6 Allied Strategy
+//   1 Strategy, 2-4 the High, Medium and Low fences (2026-10-30: views/profile/FenceSections.tsx, in place of
+//   Need, Prize & Position and Choices), 5 Policy Alignment, 6 Allied Strategy (the compacts with a role)
 //   (views/profile/StrategySections.tsx), 7 Evidence & Methodology with the Legacy OSI framework
 //   (views/profile/EvidenceSection.tsx).
 // One drawer (posture/PostureNodeDrawer) serves every entry point through ?node=<Tech>|<Stage> (design D8);
 // a value the data do not know is reported in "Ignored in the link". Old anchors reach their new place:
-// alias spans in the sections, and the old blocks now in closed disclosures (the Legacy OSI results, the
-// generic partnership material) open on load (derive/strategyPage.ts hashPlan). States (A5): unknown ISO3 ->
+// alias spans in the sections, and the old blocks now in closed disclosures (the Legacy OSI results) open on
+// load (derive/strategyPage.ts hashPlan). States (A5): unknown ISO3 ->
 // the landing with a notice; no index data -> the shell with a notice; not rankable -> the Legacy OSI blocks
 // say so.
 //
@@ -41,7 +42,8 @@ import { rememberCountry } from '../nav.ts';
 import { COUNTRY_KEY_ORDER, parseCountrySearch, serializeCountrySearch, type CountryUrlState } from '../url.ts';
 import { ProfileHead } from './profile/Header.tsx';
 import { EvidenceSection } from './profile/EvidenceSection.tsx';
-import { AlliedSection, ChoicesSection, NeedSection, PolicyAlignmentSection, PrizePositionSection, StrategySection } from './profile/StrategySections.tsx';
+import { HighFenceSection, LowFenceSection, MediumFenceSection } from './profile/FenceSections.tsx';
+import { AlliedSection, PolicyAlignmentSection, StrategySection } from './profile/StrategySections.tsx';
 import { ProfileProvider, type CountryPosture, type ProfileCtx } from './profile/common.tsx';
 
 /** The query keys the profile owns (the model's parser ignores them and its URL writes keep them): the country's own and the node selection. */
@@ -141,8 +143,11 @@ function Profile({ iso3 }: { iso3: string }) {
   const node = useNodeSelection(core.data?.meta ?? null);
   const cells = useMemo(() => (core.data ? countryCells(core.data, iso3) : []), [core.data, iso3]);
   const posture = useMemo<CountryPosture>(
-    () => ({ status: core.status, error: core.error, retry: core.retry, core: core.data, cells, detail: detail.data, node }),
-    [core.status, core.error, core.retry, core.data, cells, detail.data, node],
+    () => ({
+      status: core.status, error: core.error, retry: core.retry, core: core.data, cells, detail: detail.data,
+      detailPending: detail.status === 'loading', detailStatus: detail.status, detailError: detail.error, retryDetail: detail.retry, node,
+    }),
+    [core.status, core.error, core.retry, core.data, cells, detail.data, detail.status, detail.error, detail.retry, node],
   );
 
   // the Allied Industrial Base document (fetched once and shared with the AIB pages)
@@ -241,9 +246,9 @@ function Profile({ iso3 }: { iso3: string }) {
             <SectionNav />
             <div className="min-w-0 space-y-14">
               <StrategySection />
-              <NeedSection />
-              <PrizePositionSection />
-              <ChoicesSection />
+              <HighFenceSection />
+              <MediumFenceSection />
+              <LowFenceSection />
               <PolicyAlignmentSection />
               <AlliedSection />
               <EvidenceSection engineOn={engineOn} hostKeys={HOST_KEYS} />

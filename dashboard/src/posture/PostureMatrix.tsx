@@ -1,29 +1,35 @@
-// The Country Strategy Map (spec XI.3-5; design section 4): technology rows x the six stages, with the
-// stages' display names (STAGE_DISPLAY; the shorts on a phone). Background = Secure, Compete or Deploy (a
-// node not assessed is empty and hatched); the centre mark = the Secure rationale (O / K / R), the Compete
-// mode (P, C, linked arrows) or the Deploy mode (up arrow Accelerate, dot Watch); the border = policy
-// alignment; opacity = evidence quality. Trade momentum is not in the cell (design D7): the drawer and the
-// table give it. Deployment & Use reads another Need (expected demand, policy and climate gaps, system
+// The Country Strategy Map (spec XI.3-5; design section 4; colour alone since 2026-10-30): technology rows x
+// the six stages, with the stages' display names (STAGE_DISPLAY; the shorts on a phone). Each cell is one
+// solid fill in its choice colour (grammar VERB_COLOR, grouped by fence in the legend); a node not assessed
+// is empty and hatched; a node with no posture at all is a dim empty cell. No letters, arrows, dots, corner
+// marks or border codes: the choice, its fence, the Secure rationale, policy alignment, evidence and
+// borderline flags are in the cell's accessible name, its hover / focus tooltip, the table twin and the
+// drawer. Deployment & Use reads another Need (expected demand, policy and climate gaps, system
 // requirements), so a subtle divider runs before and after its column, under a compact header annotation
 // "Supply-chain strategy -> | Energy-system strategy | -> Circularity", and the helper line says what Need
-// means on each side. Every node is a button that opens the drawer (keyboard: Tab, Enter / Space); its
-// accessible name says everything the colour, mark and border say.
+// means on each side. Every node is a button that opens the drawer (keyboard: Tab, Enter / Space); its focus
+// and selection rings are white (signal orange is the Secure fill). The column minimums (MAP_MIN_WIDTH in all,
+// 268 px) fit a phone's card (about 300 px at 375), so the Recovery & Recycling column is never cut off.
 
 import { Fragment, useId, useMemo, useState } from 'react';
 import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
 import type { PostureCell, PostureCore } from './contract.ts';
 import { cellKey, pct } from './derive.ts';
 import {
-  ALIGNMENT_BORDER, ALIGNMENT_ICON, ALIGNMENT_LABEL, alignmentClass, borderlineWords, cellMark, choiceWord, EVIDENCE_LABEL, evidenceOpacity, flagWords, NEED_TYPE_LABEL,
-  NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, POSTURE_COLOR, RATIONALE_LABEL, stageDisplay, stageShort,
+  ALIGNMENT_LABEL, borderlineWords, EVIDENCE_LABEL, FENCE_LABEL, fenceChoiceWord, flagWords, NEED_TYPE_LABEL, nodeFence, nodeFill, NOT_ASSESSED_BORDER, RATIONALE_LABEL, stageDisplay,
+  stageShort, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
+import { Swatch } from './PostureLegend.tsx';
 
 /** The helper text of the map (design section 4): what Need means on each side of the Deployment column. */
 export const MAP_HELPER =
   'Extraction to Final Assembly & Equipment, and Recovery & Recycling: Need is supply-chain vulnerability and resilience. Deployment & Use: Need is expected energy demand, policy and climate gaps, and system requirements.';
 
+/** The map's narrowest width in px: the column minimums (64 + 5 x 28 + 2 x 8 + 32) and the eight 2 px gaps. */
+export const MAP_MIN_WIDTH = 64 + 5 * 28 + 2 * 8 + 32 + 8 * 2;
+
 export function cellLabel(c: PostureCell): string {
-  const bits = [`${c.tech} ${stageDisplay(c.stage)}: ${choiceWord(c)}`];
+  const bits = [`${c.tech} ${stageDisplay(c.stage)}: ${fenceChoiceWord(c)}`];
   if (c.posture === 'N') {
     bits.push(c.needType === 'deployment' ? 'deployment need not measured' : 'need or prize not measured');
     return bits.join('; ');
@@ -40,6 +46,8 @@ export function cellLabel(c: PostureCell): string {
 }
 
 function Tip({ c, partnerName }: { c: PostureCell; partnerName: string | null }) {
+  const v = verbOf(c);
+  const fence = nodeFence(v, c.stage);
   return (
     <div
       className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 w-64 -translate-x-1/2 rounded-md border border-white/15 bg-ink-900 p-2.5 text-left text-xs font-normal text-paper-dim shadow-lg"
@@ -48,10 +56,12 @@ function Tip({ c, partnerName }: { c: PostureCell; partnerName: string | null })
       <p className="font-medium text-paper">
         {c.tech} · {stageDisplay(c.stage)}
       </p>
-      <p className="mt-0.5">
-        {choiceWord(c)}
-        {c.posture === 'S' && c.rationale ? ` · ${RATIONALE_LABEL[c.rationale]}` : ''}
+      <p className="mt-1 flex items-center gap-1.5" data-testid="strategy-map-tip-choice">
+        {v ? <Swatch verb={v} size={12} /> : <Swatch hatched size={12} />}
+        <span className="font-medium text-paper">{v ? VERB_LABEL[v] : 'Not assessed'}</span>
+        {fence && <span>· {FENCE_LABEL[fence]}</span>}
       </p>
+      {c.posture === 'S' && c.rationale && <p>{RATIONALE_LABEL[c.rationale]}</p>}
       {c.posture === 'N' ? (
         <p className="mt-1">Not assessed: {c.needType === 'deployment' ? 'deployment need is not measured' : 'need or prize is not measured'}.</p>
       ) : (
@@ -94,8 +104,9 @@ export function PostureMatrix({ core, cells, selected, onSelect, names = {} }: P
   const stages = core.meta.stages;
   const dep = stages.indexOf(DEPLOYMENT_STAGE);
   // the columns: technology, then each stage, with a narrow divider column before and after Deployment & Use
-  const tracks = stages.map((s) => (s === DEPLOYMENT_STAGE ? '0.6rem minmax(2.4rem, 1fr) 0.6rem' : 'minmax(2.25rem, 1fr)')).join(' ');
-  const template = `minmax(4.25rem, 9rem) ${tracks}`;
+  // (minimums 4rem, 1.75rem per stage, 2rem for Deployment & Use, 0.5rem per divider: MAP_MIN_WIDTH with the gaps)
+  const tracks = stages.map((s) => (s === DEPLOYMENT_STAGE ? '0.5rem minmax(2rem, 1fr) 0.5rem' : 'minmax(1.75rem, 1fr)')).join(' ');
+  const template = `minmax(4rem, 9rem) ${tracks}`;
   const before = dep < 0 ? stages.length : dep;
   const after = dep < 0 ? 0 : stages.length - dep - 1;
   return (
@@ -116,7 +127,7 @@ export function PostureMatrix({ core, cells, selected, onSelect, names = {} }: P
           <span />
           {after > 0 && (
             <span className="border-b border-white/10 pb-0.5 text-center" style={{ gridColumn: `span ${after}` }}>
-              <span className="sm:hidden">→ Circular</span>
+              <span className="sm:hidden">Circ.</span>
               <span className="hidden sm:inline">→ Circularity</span>
             </span>
           )}
@@ -159,8 +170,8 @@ export function PostureMatrix({ core, cells, selected, onSelect, names = {} }: P
                 node = <span role="gridcell" aria-label={`${t} ${stageDisplay(s)}: not classified`} className="h-9 rounded-[3px] bg-ink-700/40 sm:h-10" data-deployment={isDep ? 'true' : undefined} />;
               } else {
                 const on = selected === k;
-                const cls = c.alignment ? alignmentClass(c.alignment) : null;
                 const na = c.posture === 'N';
+                const v = verbOf(c);
                 node = (
                   <span role="gridcell" className="relative" data-deployment={isDep ? 'true' : undefined}>
                     <button
@@ -172,26 +183,17 @@ export function PostureMatrix({ core, cells, selected, onSelect, names = {} }: P
                       onMouseLeave={() => setHover((h) => (h === k ? null : h))}
                       onFocus={() => setHover(k)}
                       onBlur={() => setHover((h) => (h === k ? null : h))}
-                      className="relative flex h-9 w-full items-center justify-center rounded-[3px] text-sm font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-signal sm:h-10"
+                      className="block h-9 w-full rounded-[3px] outline-none transition-[filter] hover:brightness-110 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-ink-800 sm:h-10"
                       style={{
-                        background: na ? NOT_ASSESSED_HATCH : POSTURE_COLOR[c.posture as 'S' | 'C' | 'D'],
-                        opacity: na ? 1 : evidenceOpacity(c.evidence),
-                        border: na ? NOT_ASSESSED_BORDER : cls ? ALIGNMENT_BORDER[cls] : undefined,
+                        background: nodeFill(c),
+                        border: na ? NOT_ASSESSED_BORDER : v === 'watch' ? `1px solid ${VERB_OUTLINE.watch}` : undefined,
                         boxShadow: on ? '0 0 0 2px #111827, 0 0 0 4px #ffffff' : undefined,
                       }}
                       data-posture={c.posture}
+                      data-verb={v ?? 'not_assessed'}
+                      data-fence={nodeFence(v, c.stage) ?? undefined}
                       data-mode={c.mode ?? c.deployMode ?? undefined}
-                      data-alignment={cls ?? undefined}
-                    >
-                      <span aria-hidden="true" data-testid="cell-mark">
-                        {cellMark(c)}
-                      </span>
-                      {cls && ALIGNMENT_ICON[cls] && (
-                        <span aria-hidden="true" className="absolute right-0.5 top-0 text-[9px] leading-none">
-                          {ALIGNMENT_ICON[cls]}
-                        </span>
-                      )}
-                    </button>
+                    />
                     {hover === k && <Tip c={c} partnerName={c.partner1 ? (names[c.partner1] ?? c.partner1) : null} />}
                   </span>
                 );

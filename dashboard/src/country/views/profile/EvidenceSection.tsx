@@ -158,7 +158,7 @@ function CoverageCard() {
         </Row>
         <Row term="Evidence specificity">
           {n.assessed
-            ? `${n.strong} strong · ${n.moderate} moderate · ${n.weak} weak${n.ungraded ? ` · ${n.ungraded} without a grade` : ''} (how specific the data behind each node are; weak evidence fades a cell on the map).`
+            ? `${n.strong} strong · ${n.moderate} moderate · ${n.weak} weak${n.ungraded ? ` · ${n.ungraded} without a grade` : ''} (how specific the data behind each node are; a node's evidence is in its tooltip, the map's table and its drawer, not drawn in the cell).`
             : '–'}
         </Row>
         <Row term="Sensitivity">

@@ -21,7 +21,8 @@ import {
   type MineralSlug, type SectorManifest, type TechSlug,
 } from '../sector/contract.ts';
 import { STAGE_LABEL, SUPPLY_STAGE_SLUGS, supplyStageOfSlug, type SupplyStage, type SupplyStageSlug } from '../lib/stages.ts';
-import { DEPLOY_MARK, MODE_MARK, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, POSTURE_COLOR, RATIONALE_MARK } from '../posture/grammar.ts';
+import type { Verb } from '../posture/contract.ts';
+import { NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, VERB_COLOR, VERB_OUTLINE } from '../posture/grammar.ts';
 import { moduleInfo, SECTOR_DEFAULT_CELL } from './modules.ts';
 import { onIdle, prefetchAib, prefetchCountry, saveData } from './prefetch.ts';
 import { loadSectorManifest, peekSectorManifest, prefetchSectorChunk } from './sectorManifest.ts';
@@ -123,17 +124,17 @@ export function CoverageGlyph({ glyph }: { glyph: SectorManifest['coverage_glyph
   );
 }
 
-/** One cell of the strategy-map glyph: its family (S, C, D; N not assessed) and its mark. */
-type GlyphCell = [family: 'S' | 'C' | 'D' | 'N', mark: string];
+/** One cell of the strategy-map glyph: its choice, or N (not assessed). */
+type GlyphCell = Verb | 'N';
 
-/** Three technology rows x the six stages of a made-up country (decorative): the Country Strategy Map's
- *  grammar in miniature (design section 5): Secure, Compete and Deploy backgrounds with their marks (a
- *  Secure rationale letter; P Preserve, C Catch Up, linked arrows Partner; an up arrow Accelerate, a dot
- *  Watch) and a hatched node not assessed, with the Deployment & Use column set apart as on the map. */
+/** Three technology rows x the six stages of a made-up country (decorative): the Country Strategy Map in
+ *  miniature (design section 5; colour alone since 2026-10-30): each cell one choice colour (grammar
+ *  VERB_COLOR), a hatched node not assessed, and the Deployment & Use column (Accelerate or Watch) set apart
+ *  as on the map. */
 export const STRATEGY_GLYPH: readonly (readonly GlyphCell[])[] = [
-  [['C', MODE_MARK.partner], ['S', RATIONALE_MARK.coercive_chokepoint], ['C', MODE_MARK.catch_up], ['C', MODE_MARK.preserve], ['D', DEPLOY_MARK.accelerate], ['D', DEPLOY_MARK.watch]],
-  [['D', DEPLOY_MARK.watch], ['C', MODE_MARK.partner], ['C', MODE_MARK.preserve], ['S', RATIONALE_MARK.systemic_resilience], ['D', DEPLOY_MARK.accelerate], ['N', '']],
-  [['D', DEPLOY_MARK.watch], ['D', DEPLOY_MARK.watch], ['C', MODE_MARK.catch_up], ['D', DEPLOY_MARK.watch], ['D', DEPLOY_MARK.watch], ['D', DEPLOY_MARK.watch]],
+  ['partner', 'secure', 'catch_up', 'preserve', 'accelerate', 'watch'],
+  ['watch', 'partner', 'preserve', 'secure', 'accelerate', 'N'],
+  ['watch', 'watch', 'catch_up', 'watch', 'watch', 'watch'],
 ];
 
 function StrategyMapGlyph() {
@@ -141,15 +142,17 @@ function StrategyMapGlyph() {
     <span className="inline-flex flex-col gap-[3px]" aria-hidden="true" data-testid="strategy-map-glyph">
       {STRATEGY_GLYPH.map((row, r) => (
         <span key={r} className="flex gap-[3px]">
-          {row.map(([f, mark], s) => (
+          {row.map((v, s) => (
             <span
               key={s}
-              data-family={f}
-              className={`flex h-3.5 w-3.5 items-center justify-center rounded-[2px] text-[0.5625rem] font-semibold leading-none text-white ${s === 4 ? 'ml-[3px] mr-[3px]' : ''}`}
-              style={f === 'N' ? { background: NOT_ASSESSED_HATCH, border: NOT_ASSESSED_BORDER } : { background: POSTURE_COLOR[f] }}
-            >
-              {mark}
-            </span>
+              data-verb={v === 'N' ? 'not_assessed' : v}
+              className={`block h-3.5 w-3.5 rounded-[2px] ${s === 4 ? 'ml-[3px] mr-[3px]' : ''}`}
+              style={
+                v === 'N'
+                  ? { background: NOT_ASSESSED_HATCH, border: NOT_ASSESSED_BORDER }
+                  : { background: VERB_COLOR[v], border: v === 'watch' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }
+              }
+            />
           ))}
         </span>
       ))}

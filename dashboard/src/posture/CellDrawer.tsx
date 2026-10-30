@@ -8,8 +8,9 @@
 // - PRIZE: Industrial Opportunity and its components (at Deployment: why the prize is read upstream, and the
 //   technology's domestic manufacturing priority beside its deployment priority).
 // - POSITION: Competitive Position, its families, world supply share and the trade evidence with momentum.
-// - CHOICE: the choice, rationale, delivery mode, mitigation and design text, pathway, partners, the compact
-//   trace, borderline, confidence and the consistency flag.
+// - CHOICE: the choice with its fence (the page's: grammar nodeFence), rationale, delivery mode, mitigation
+//   and the policy design text (its trade protection labelled as such, never as the fence), pathway, partners,
+//   the compact trace, borderline, confidence and the consistency flag.
 // - POLICY ALIGNMENT: observed policy intensity, support and protection, momentum (each a percentile rank
 //   within the country, never a share or a change; protection "none recorded" where the records hold none),
 //   sources, the alignment and its confidence; observed policy is a comparator, never an input.
@@ -27,8 +28,8 @@ import { cellKey, cellKeyParts, countryCells, countryNames, pct } from './derive
 import { ratioVsCurrentWords, type Family, type NodeDetail } from './detail.ts';
 import {
   ALIGNMENT_CONFIDENCE_LABEL, ALIGNMENT_LABEL, ALIGNMENT_WORDS, alignmentFlagWords, basisWords, borderlineWords, choiceWord, deliveryWords, EVIDENCE_LABEL, flagWords, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE,
-  pathwayEvidenceWords, traceCodeWords, traceTestWords,
-  NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, PATHWAY_LABEL, POLICY_SOURCE_LABEL, POSTURE_COLOR, RATIONALE_LABEL, RATIONALE_WORDS, verbOf,
+  pathwayEvidenceWords, traceCodeWords, traceTestWords, FENCE_LABEL, nodeFence,
+  nodeFill, NOT_ASSESSED_BORDER, PATHWAY_LABEL, POLICY_SOURCE_LABEL, RATIONALE_LABEL, RATIONALE_WORDS, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
 import { postureMomentum } from './momentum.ts';
 import { catchUpPositionWords, countryRankWords, manufacturingPriority, manufacturingPriorityWord, policyMomentumWords, protectionWords, watchReasons } from './sections.ts';
@@ -225,10 +226,13 @@ function ChoiceAnswer({ cell, d, core, cells, names, status }: { cell: PostureCe
   const v = verbOf(cell);
   const t = core.meta.thresholds;
   const design = d?.variant || cell.variant ? core.design[`${d?.variant ?? cell.variant}|${d?.delivery ?? ''}`] : undefined;
+  // the page's fence (the user's mapping, grammar nodeFence); the policy design's own trade-protection level
+  // (R config/posture_policy_design.csv fence_level) is a different thing and is labelled as such below
+  const fence = nodeFence(v, cell.stage);
   return (
     <>
       <p className="text-sm text-paper">
-        <strong>{choiceWord(cell)}</strong>
+        <strong>{v ? VERB_LABEL[v] : choiceWord(cell)}</strong>
         {cell.posture === 'S' && cell.rationale ? ` · ${RATIONALE_LABEL[cell.rationale]}` : ''}
       </p>
       {cell.posture === 'N' && (
@@ -283,6 +287,7 @@ function ChoiceAnswer({ cell, d, core, cells, names, status }: { cell: PostureCe
         </p>
       )}
       <dl className="mt-1">
+        {fence && <Row k="Fence" v={<span data-testid="drawer-fence">{FENCE_LABEL[fence]}</span>} />}
         {cell.needType === 'supply_chain' && cell.pathway && (
           <Row k={<Term id={POSTURE_TERMS.pathway}>Credible pathway</Term>} v={`${PATHWAY_LABEL[cell.pathway]}${d?.pathway.basis.length ? ` (${pathwayEvidenceWords(d.pathway.basis)})` : ''}`} />
         )}
@@ -297,8 +302,11 @@ function ChoiceAnswer({ cell, d, core, cells, names, status }: { cell: PostureCe
         </p>
       )}
       {design?.fence && (
-        <p className="mt-1 text-xs text-paper-mute">
-          <strong className="text-paper-dim">Fence:</strong> {design.fence}
+        <p className="mt-1 text-xs text-paper-mute" data-testid="drawer-trade-protection">
+          <strong className="text-paper-dim" title="The trade protection the policy design pairs with this kind of choice: not the node's fence above">
+            Trade protection (policy design):
+          </strong>{' '}
+          {design.fence}
         </p>
       )}
       {design?.gate && (
@@ -410,7 +418,9 @@ export function CellDrawer({ cell, detail, detailStatus, detailError, country, c
           <p className="mt-1 inline-flex items-center gap-2 text-sm text-paper-dim">
             <span
               className="inline-block h-3 w-3 rounded-sm"
-              style={{ background: na ? NOT_ASSESSED_HATCH : POSTURE_COLOR[cell.posture as 'S' | 'C' | 'D'], border: na ? NOT_ASSESSED_BORDER : undefined }}
+              style={{ background: nodeFill(cell), border: na ? NOT_ASSESSED_BORDER : verbOf(cell) === 'watch' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }}
+              data-testid="cell-drawer-chip"
+              data-verb={verbOf(cell) ?? 'not_assessed'}
               aria-hidden="true"
             />
             {choiceWord(cell)}

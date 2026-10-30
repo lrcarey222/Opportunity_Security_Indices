@@ -268,6 +268,25 @@ describe('time and comparison charts', () => {
     expect(screen.queryByRole('list', { name: 'Lines' })).toBeNull();
   });
 
+  it('LabelledLines: an end label longer than the right margin is shortened with an ellipsis, never past the edge; the legend keeps it whole', () => {
+    const long = 'Solar Cell Manufacturing Equipment and Its Spare Parts';
+    const lines = [
+      { id: 'a', label: long, group: 'core' as const, points: [{ x: 0, y: 1 }, { x: 1, y: 2 }] },
+      { id: 'b', label: 'Modules', group: 'core' as const, points: [{ x: 0, y: 3 }, { x: 1, y: 1 }] },
+    ];
+    const { container } = render(<LabelledLines lines={lines} yLabel="Index" ariaLabel="Long labels" valueFormat={(v) => `${v}`} />);
+    const svg = container.querySelector('svg[aria-label="Long labels"]') as SVGSVGElement;
+    const texts = [...svg.querySelectorAll('text')].map((t) => t.textContent ?? '');
+    const cut = texts.find((t) => t.endsWith('…'));
+    expect(cut).toBeTruthy();
+    expect(long.startsWith((cut as string).slice(0, -1))).toBe(true);
+    // the right margin: at most 160 px plus 6, at 11 px type (about 6.2 px a character) after a 6-8 px gap
+    expect((cut as string).length * 11 * 0.56).toBeLessThanOrEqual(166 - 6);
+    expect(texts).toContain('Modules');
+    expect(texts).not.toContain(long);
+    expect(within(screen.getByRole('list', { name: 'Lines' })).getByText(long)).toBeTruthy();
+  });
+
   it('Dumbbell: hollow first, filled second, the legend, a missing value left to the text', () => {
     const { container } = render(
       <Dumbbell

@@ -15,10 +15,11 @@
 //                   toggle sits in the panel): its coordinated trade, the investment flows where it invests
 //                   or hosts, the BUILD nodes that concern it, its compact coalitions.
 // The partner-by-partner table (priority partners beside today's partners) stays in a disclosure after the
-// lenses. Since 2026-10-29 (design 5b, spec XVI) the section is generic partnership material: it sits under
-// Allied Strategy's collapsed "Explore all partnership analysis" (id allied-partnerships, heading level 3),
-// after the canonical partner outputs; the model's partner scores under the reader's Perspective (the dials)
-// moved to Legacy OSI (PartnerScoresFold).
+// lenses. Since 2026-10-30 (the fences) the section is back on the page as it read before the 2026-10-29
+// redesign, open, as the Medium fence's Partner sub-section (id medium-partner, heading level 3, the old
+// #partnerships, #partners and #allied-partnerships anchors as aliases) under a lead naming the economy's
+// Partner nodes; the model's partner scores under the reader's Perspective (the dials) stay in Legacy OSI
+// (PartnerScoresFold).
 //
 // Above the lenses (2026-10-20, strategic task spec s.19): the relationship thesis of the economy and its
 // selected partner (URL `partner`, the profile's own; the picker lists the fact sheet's partners, those the
@@ -221,9 +222,12 @@ function ScenarioNote({ sc }: { sc: CountryScenario }) {
 
 /**
  * "Partnerships": the kind of partnership (URL `ptab`), the cross-lens summary and the three lenses, then
- * the partner-by-partner table and the model's partner scores in disclosures.
+ * the partner-by-partner table in a disclosure. `title`, `aliases` and `lead` (a line above the intro) let
+ * a page mount it as a sub-section of its own.
  */
-export function PartnershipsSection({ id = 'partnerships', level = 2 }: { id?: string; level?: 2 | 3 } = {}) {
+export function PartnershipsSection({
+  id = 'partnerships', level = 2, title = 'Partnerships', aliases, lead,
+}: { id?: string; level?: 2 | 3; title?: string; aliases?: readonly string[]; lead?: ReactNode } = {}) {
   const { sheet, state, setPtab } = useProfile();
   const name = proseName(sheet.meta.country);
   const kind = kindOf(state.ptab);
@@ -233,13 +237,15 @@ export function PartnershipsSection({ id = 'partnerships', level = 2 }: { id?: s
     <Section
       id={id}
       level={level}
-      title="Partnerships"
+      title={title}
+      aliases={aliases}
+      lead={lead}
       intro={
         <>
           Who {name} could trade, invest, build and align with, read three ways: as it is today (observed data), as the partner scores recommend (the Legacy OSI partner scores of the{' '}
           <Term id="psi" />, such as <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the NEIS defaults) and as the Allied Industrial Base model arranges it under the
-          chosen scenario. The summary of each kind says where the three agree and where they differ. For each node the strategy puts in Partner, the Allied Strategy above names the
-          recommended partners and the allied coverage instead. First, the relationship thesis of {name} and the partner you choose.
+          chosen scenario. The summary of each kind says where the three agree and where they differ. The nodes the strategy puts in Partner are named above; select one for its
+          recommended partners. First, the relationship thesis of {name} and the partner you choose.
         </>
       }
     >
