@@ -238,7 +238,7 @@ test_that("the configured pathway needs two evidence legs; one leg is not enough
   cov <- data.frame(tech = "Solar", supply_chain = "Components")
   expect_equal(sp_pathway(rbind(x, ref), pipe, cov, cfg = io_cfg()$pathway)$pathway_basis[1], "feasibility;pipeline")
   # min_legs outside 1..5 is refused
-  for (bad in list(0, 6, 1.5, "2")) {
+  for (bad in list(0, 6, 1.5, "2", NA_real_, Inf, c(1, 2))) {
     expect_error(sp_pathway(x, cfg = utils::modifyList(io_cfg()$pathway, list(min_legs = bad))), "min_legs")
   }
 })

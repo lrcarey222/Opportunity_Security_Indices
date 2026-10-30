@@ -59,8 +59,8 @@ sp_pathway <- function(tbl, pipeline = NULL, covered = NULL, input_cost = NULL, 
   a_cp <- cfg$adjacent_cp_within_pct %||% 0.6
   l_lv <- unlist(cfg$learning_levels %||% c("moderate", "strong"))
   c_min <- cfg$input_cost_pct %||% 0.75
-  k_min <- cfg$min_legs %||% 1
-  if (!is.numeric(k_min) || length(k_min) != 1 || k_min < 1 || k_min > length(SP_PATHWAY_EVIDENCE) || k_min != round(k_min)) {
+  k_min <- if (is.null(cfg$min_legs)) 1 else cfg$min_legs   # not %||%: a NA setting must be refused, not defaulted
+  if (!is.numeric(k_min) || length(k_min) != 1 || !is.finite(k_min) || k_min < 1 || k_min > length(SP_PATHWAY_EVIDENCE) || k_min != round(k_min)) {
     stop("decision_framework$pathway$min_legs must be a whole number from 1 to ", length(SP_PATHWAY_EVIDENCE), call. = FALSE)
   }
   col <- function(n, default = NA) if (n %in% names(tbl)) tbl[[n]] else rep(default, nrow(tbl))

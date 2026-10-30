@@ -263,6 +263,10 @@ test_that("a pathway with too few evidence legs is not Catch Up, and the reason 
             pathway_basis = "feasibility;learning;too_few_legs")
   expect_match(sp_choice_reason(two, three), "only two pieces of pathway evidence (feasibility, learning) where three are required",
                fixed = TRUE)
+  # without the pathway setting the bar is still above the legs that fired (never "where one are required")
+  r0 <- sp_choice_reason(one, utils::modifyList(de_cfg(), list(pathway = NULL)))
+  expect_match(r0, "only one piece of pathway evidence (adjacent stage) where two are required", fixed = TRUE)
+  expect_false(grepl("where one are", r0, fixed = TRUE))
 })
 
 test_that("every output respects the posture / mode invariants", {

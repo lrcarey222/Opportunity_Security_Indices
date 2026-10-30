@@ -369,9 +369,10 @@ sp_choice_reason <- function(tbl, cfg = list()) {
   pos_no <- dplyr::coalesce(why_not, "no top-quarter position")
   # why the pathway is not credible where some legs fired (pathway.R: too_few_legs / too_few_observed)
   nw <- function(k) c("no", "one", "two", "three", "four", "five")[k + 1]
-  pw_min <- cfg$pathway$min_legs %||% 1
   pw_legs <- sub(";(too_few_legs|too_few_observed)$", "", pw)
   pw_n <- lengths(strsplit(pw_legs, ";", fixed = TRUE))
+  # a too-few basis means the bar is above the legs that fired, whatever cfg says (or omits)
+  pw_min <- pmax(cfg$pathway$min_legs %||% 1, pw_n + 1)
   pw_legs_w <- gsub(";", ", ", gsub("_", " ", pw_legs))
   pw_no <- dplyr::case_when(
     grepl(";too_few_legs$", pw) ~ paste0("only ", nw(pw_n), " piece", ifelse(pw_n == 1, "", "s"), " of pathway evidence (",
