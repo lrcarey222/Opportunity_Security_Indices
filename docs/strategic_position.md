@@ -10,6 +10,12 @@ technology x six-stage node. Results and validation are in
 framework (Grow / Upgrade / Exposed / Stable, the Strategic Index) is kept only for replication and
 comparison: see [Legacy OSI framework](#legacy-osi-framework) at the end.
 
+**Yards & Fences tightening (branch `feat/yf-method`, 2026-10-30).** The Prize is now **Strategic Industrial
+Value** (market, industrial-commons and future-option value, with a market-only cap); a **large-yard case**
+(mature, passive, commodity nodes) is tested before the prize; and **sensitive layers are yard units of their
+own**, rolled up to technology x stage (mixed where they differ). See sections 2 and 4. Not yet rerun: the
+counts quoted in sections 2 and 4 are from the 2026-10-30 run under the market prize.
+
 The unifying question:
 
 > What does this country need, where is there a prize worth pursuing, where does it already have an
@@ -21,9 +27,9 @@ The unifying question:
 | Step | Question | Output (per country x technology x six-stage node) |
 |---|---|---|
 | **Need** | What problem does the country need to solve? | `supply_chain_need` at Extraction, Refining, Components, Assembly and Recovery; `deployment_need` at Deployment & Use; `need_type` (supply_chain / deployment) and the family scores. Never combined into one score. |
-| **Prize** | Is there an industrial or technological prize worth pursuing? | `industrial_opportunity` (0-1) with `io_node_prize`, `io_investment_momentum`, `io_home_market`, `io_maturity` (context) |
+| **Prize** | Is domestic productive capability in this node strategically valuable? | `strategic_industrial_value` (0-1: market, industrial-commons and future-option value; `siv_*`), built on the market prize `industrial_opportunity` (`io_node_prize`, `io_investment_momentum`, `io_home_market`); and the countervailing `large_yard_case` |
 | **Position** | How strong is the country today? | `competitive_position_percentile` (cross-country), `cp_contender_pct` (among the node's contenders), the seven families and trade momentum |
-| **Choice** | What strategic posture follows? | `strategic_posture` (secure / compete / deploy / not_assessed), `compete_mode` (preserve / catch_up / partner), `deploy_mode` (accelerate / watch), `security_rationale`, `delivery_mode`, `decision_trace`, `posture_confidence`, `decision_borderline`, `consistency_flag` |
+| **Choice** | What strategic posture follows? | `strategic_posture` (secure / compete / deploy / not_assessed), `compete_mode` (preserve / catch_up / partner), `deploy_mode` (accelerate / watch), `security_rationale`, `delivery_mode`, `decision_trace`, `posture_confidence`, `decision_borderline`, `consistency_flag`; per cell and per sensitive layer, with the `yard` of each and the cell's `yard_rollup` |
 | **Policy alignment** | Does observed policy match the choice? | `policy_priority_percentile`, `policy_alignment` (aligned / under_prioritized / over_prioritized / misaligned / deployment_gap / mixed / insufficient_data), `policy_alignment_confidence` |
 
 The six choices: **Secure**; **Compete . Preserve**, **Compete . Catch Up**, **Compete . Partner**;
@@ -51,7 +57,14 @@ mode, confidence, borderline, flag, delivery mode and trace unchanged.
 - **The Prize is not capability and not need.** Nothing that measures current capability (export share,
   RCA, production, operating capacity, annual investment, reserves, deployment scale) and nothing that
   measures need (HHI, import dependence, risky suppliers) enters `industrial_opportunity`
-  (`SP_IO_FORBIDDEN`, refused by `sp_io_check_inputs()`).
+  (`SP_IO_FORBIDDEN`, refused by `sp_io_check_inputs()`) or `strategic_industrial_value` (the same list
+  plus every `cp_*`, `home_share*`, `pw_*`, pathway and need column, refused by `sp_siv_check_inputs()`).
+- **Market size alone never makes a prize, and never makes a Medium yard.** A large market adds to the
+  market family of the prize; a node with little industrial-commons and future-option value is capped below
+  the prize threshold, and a mature, passive, commodity node is a large yard however large its market.
+- **Yards are judged on the specific capability first.** Sensitive layers (control software, firmware,
+  enrichment, magnets, modules, racking...) take their own choice and yard; the technology x stage cell
+  shows the roll-up, mixed where its units differ.
 - **Position is demonstrated capability only**: no future market growth, technology importance, need,
   policy, climate goals, supplier concentration or generic readiness enters Competitive Position.
 - **Source evidence can be coarser than six stages.** Every input carries an evidence status and each cell
@@ -70,9 +83,9 @@ mode, confidence, borderline, flag, delivery mode and trace unchanged.
 | Rules and thresholds | `config/strategic_position.yml` (`decision_framework`, `strategic_posture`, `policy_alignment`, `node_phrases`), `config/deployment_need.yml` |
 | Need: supply chain | `R/strategic_position/import_exposure.R`, `strategic_need.R` (inputs), `supply_chain_need.R` (the score) |
 | Need: deployment | `R/strategic_position/deployment_need.R`, `home_market.R`, `scripts/95_build_deployment_need.R` -> `data/processed/deployment_need_tbl.rds`, `home_market_tbl.rds` |
-| Prize | `R/strategic_position/industrial_opportunity.R` (IEA WEO 2025 / Critical Minerals via `scripts/17`, Clean Investment Monitor, TRL) |
+| Prize | `R/strategic_position/industrial_opportunity.R` (the market prize: IEA WEO 2025 / Critical Minerals via `scripts/17`, Clean Investment Monitor, TRL), `strategic_value.R` (strategic industrial value and the large-yard case; node attributes `data/reference/posture_node_attributes.csv`, documented in `docs/yf_node_attributes.md`) |
 | Position | `R/strategic_position/competitive_position.R`, `trade_benchmark.R`, `trade_momentum.R` |
-| Choice | `R/strategic_position/posture_engine.R` (Secure override; engine Compete tests as diagnostics), `pathway.R`, `decision_engine.R`; node attributes `data/reference/posture_node_attributes.csv`, `config/security_route_rules.csv` |
+| Choice | `R/strategic_position/posture_engine.R` (Secure override; engine Compete tests as diagnostics), `pathway.R`, `decision_engine.R`, `yard_rollup.R` (layers as yard units, the roll-up, the paper-reproduction diagnostic); node attributes `data/reference/posture_node_attributes.csv`, `config/security_route_rules.csv` |
 | Allied strategy | `R/strategic_position/partner_recs.R` |
 | Policy alignment | `R/strategic_position/policy_priority.R`, `posture_engine.R` (`sp_policy_alignment*`) |
 | Policy design | `config/posture_policy_design.csv`, `config/posture_delivery_modes.csv`, `R/strategic_position/policy_design.R` |
@@ -159,10 +172,59 @@ x country with no family is not assessed. Coverage (2026-10-29): 1,683 of the 2,
 Not assessed by design: grid congestion / transmission adequacy (no national data), hydrogen and EV
 targets, geothermal targets, oil system need, the committed pipeline (GEM needs a contact form).
 
-## 2. Prize: Industrial Opportunity
+## 2. Prize: Strategic Industrial Value
 
-Is there a plausible economic or technological prize worth pursuing in this technology x stage node?
-`industrial_opportunity` (0-1, producing stages only; `R/strategic_position/industrial_opportunity.R`):
+Is domestic productive capability in this specific node strategically valuable? A large future market does
+not by itself make domestic manufacturing strategically valuable (user spec 2026-10-30, Yards & Fences item
+2), so the prize the choice reads is **`strategic_industrial_value`** (0-1, producing stages only;
+`R/strategic_position/strategic_value.R::sp_strategic_value()`), built from three families per cell or
+sensitive layer:
+
+| family | inputs | scale |
+|---|---|---|
+| **market** (`siv_market`) | the market prize `industrial_opportunity`, unchanged (below): world demand growth, global investment momentum, lifted by national home-market growth | 0-1, varies by country through the home market |
+| **industrial commons** (`siv_commons`) | `process_knowledge` (the production-innovation linkage: does making it build process knowledge that carries into the next generation), `workforce_suppliers` (the supplier ecosystem and workforce), `adjacent_innovation` (cross-sector spillovers) | yes 1 / partly 0.5 / no 0, **summed over the three and divided by three, an Unknown counting 0** (the strict reading of the paper's learning score, `gates.ts` `learningScore` at its low bound, and of engine Test 3): one "yes" among three questions is a third, never the whole family. `siv_commons_n` = how many were observed |
+| **future option** (`siv_option`) | for a leap candidate (`leap_candidate` yes, with its named `successor`), the four leap tests `beyond_novelty`, `cost_perf_advantage`, `incumbent_vulnerable`, `scale_pathway` (next-generation leadership indicators) | the same scale, summed over four (Unknown 0); 0 for a node that is not a leap candidate. Candidacy gates the family rather than scoring in it, so a candidate whose tests all fail has no option value. `siv_option_n` = tests observed |
+
+- `siv_score` = the weighted mean of the three families (`decision_framework.strategic_value.weights`, 1:1:1;
+  renormalised only where the market prize is missing and `require_market` is false). **Calibration choice
+  to report**: equal weights are a neutral prior, not an estimate.
+- `strategic_industrial_value` = the mid-rank percentile of `siv_score` across the assessed producing-stage
+  cells (as the node prize is a percentile across the producing nodes), so `prize_threshold` (0.6) keeps its
+  selectivity: about the top 40% of producing cells. Layers are placed among the cells' scores.
+- **Market-only cap** (`siv_cap = market_only`): where neither commons nor option reaches
+  `strategic_value.gate` (0.5), observed or not (an unobserved family counts 0, so less evidence never
+  lifts the cap), the value is capped at `prize_threshold - cap_margin` (0.59). Market size alone never makes
+  the prize high. The cap is a rule, not a measurement: a capped prize is never high at any prize threshold
+  (the rule reads `siv_cap`, so `choice_threshold_sensitivity.csv` at 0.50 or 0.55 does not lift it) and never
+  borderline. **Calibration choice to report** (the gate: 0.5 on commons is 1.5 learning points of 3, between
+  the paper's moderate, 1, and strong, 2). On the curated attributes the cap now covers the control layers
+  (process knowledge is not assessed for software, so their commons is at most two thirds), the Recovery rows
+  and other rows whose learning attributes are Unknown, and Solar Components (its stage row's learning
+  attributes are Unknown; its option family is 0.375): 39 producing nodes or layers against 18 under the
+  mean-of-observed reading.
+- Without the market prize (no demand series) the node stays not assessed (`require_market: true`): the
+  curated attributes alone never decide a prize.
+- `siv_families_observed` counts the families with at least one observed input; `siv_commons_n` and
+  `siv_option_n` count the observed attributes within commons (of 3) and option (of 4 leap tests).
+- **No double counting of position, and capability kept separate.** Competitive Position, the capability
+  floor, the measured supply share, the pathway legs and every need variable are refused
+  (`sp_siv_check_inputs()`); the country's own `complementary_capabilities` are not read. The commons and
+  option attributes describe the node (a country row may refine one), not how good the country is at it.
+- `decision_framework.strategic_value.prize_measure: market` restores the market prize as the prize (the rule
+  until 2026-10-30); `strategic_value_vs_market.csv` compares the four combinations of prize measure and
+  large-yard case on the stored inputs.
+
+The attributes behind the commons and option families, and the three product-market attributes of the
+large-yard case, are curated in `posture_node_attributes.csv` with a reason and source for every value
+(`docs/yf_node_attributes.md`); `Unknown` is not observed. They never encode a yard or the paper's
+placement (`paper_placement` is outside the node contract, `PN_COLUMNS`).
+
+### The market prize: Industrial Opportunity
+
+Is there a plausible economic or technological market prize in this technology x stage node?
+`industrial_opportunity` (0-1, producing stages only; `R/strategic_position/industrial_opportunity.R`), the
+market family of the strategic industrial value:
 
 | component | what it is | varies by country? |
 |---|---|---|
@@ -177,13 +239,17 @@ Removed (spec IV): every capability variable of the legacy EO (market share, RCA
 production size and growth, operating capacity, annual investment, reserves, LCOE), every need variable
 (world HHI, import dependence, risky suppliers) and the country factor cost (Input Cost Index, 25% of
 legacy EO weight and its main within-cell driver). Feasibility, the investment pipeline, adjacency,
-curated learning and input cost are not in the prize: they are the **credible-pathway test** for Catch Up.
+curated learning and input cost are not in the market prize: they are the **credible-pathway test** for
+Catch Up. (The curated learning attributes of the node do enter the strategic industrial value, as its
+industrial-commons family: the value of the node to any producer. The pathway reads the same attributes
+only on the country's own base, Test 3's learning lower bound, and only as a supporting leg, never as a
+capability anchor.)
 The old market-outlook list typed in the config is replaced by data (`sp_io_tech_outlook()`: the outlook
 of the technology's deployment series, with documented overrides in
 `decision_framework.industrial_opportunity.market_outlook_override`, none in use); the engine's catch-up
 diagnostic still reads it.
 
-High prize: `industrial_opportunity >= prize_threshold` (0.6). Distribution and sensitivity:
+Before 2026-10-30 the rule read this market prize directly: high prize `industrial_opportunity >= prize_threshold` (0.6). Distribution and sensitivity:
 `decision_review.md` (2026-10-29: median 0.54, 4,734 of 12,045 producing cells at or above 0.6). The legacy
 EO-based column is `legacy_eo_opportunity` (and `legacy_eo_opportunity_pct`); it is never read by the
 choice.
@@ -198,6 +264,70 @@ Known limitation: the manufacturing nodes use WEO capacity (a stock), the minera
 demand (a flow). Where annual additions plateau while the installed base keeps growing (solar), the
 manufacturing prize is an upper bound and the mineral prize low (Solar Refining 0.20 vs Solar Components
 0.85). Next refinement: WEO capacity additions for the manufacturing nodes.
+
+### The large-yard case
+
+The countervailing test (user spec 2026-10-30, Yards & Fences item 3): where affordable, diversified access
+should generally dominate domestic industrial policy, a node is a **large yard** however large its future
+market. `sp_large_yard_case()` reads ten signals per cell or layer, each TRUE / FALSE / not observed; **market
+size is never one**:
+
+| signal | holds when | source |
+|---|---|---|
+| `mature` | `maturity` mature | node attribute |
+| `passive` | `digitally_active` no. On a layer, evidence. On a stage row, a convention: the stage row is the remainder of the stage after its sensitive layers, whose control software is assessed as control layers (digitally active), so the remainder reads passive (`docs/yf_node_attributes.md`) | node attribute |
+| `standardized` | `standardization` high | node attribute (2026-10-30) |
+| `substitutable` | `substitutability` easy or moderate | node attribute |
+| `easy_qualification` | `qualification_time` under 3 months or 3-12 months | node attribute |
+| `diversified` | the largest supplier's share of world supply (`world_top_share`, `supply_structure.R`; a mineral cell's driving mineral) below `diversified_top_share_max` (0.5), and no coercive supplier at or above the line (the largest coercive supplier is a lower bound of the largest supplier, and the two can come from different scopes) | data; a layer with its own world-supply measure or mineral reads its own (`posture_inputs.R` swaps `world_top_share` with the coercive shares: pv-modules reads module capacity, magnets rare-earth refining), any other layer its cell's |
+| `low_learning` | `process_knowledge` no | node attribute |
+| `low_spillover` | `adjacent_innovation` no | node attribute |
+| `low_differentiation` | `differentiation` low | node attribute (2026-10-30) |
+| `commoditized` | `commoditization` yes | node attribute (2026-10-30) |
+
+`large_yard_case` is TRUE when every **required** signal holds (`large_yard.required`: mature and passive,
+the paper's Large Yard: a passive capability past its learning curve), at least **`min_signals`** (5) of the
+other eight hold, and **no Medium-yard rationale of the node vetoes it**:
+
+- a **credible leap** (`large_yard.leap_veto`; `sp_leap_credible()`, the paper's `leapCredible`): a leap
+  candidate with `beyond_novelty` yes, `cost_perf_advantage` yes and two supports not "no" among
+  `incumbent_vulnerable`, complementary capabilities and `scale_pathway`. Complementary capabilities are the
+  country's own strengths, not a node attribute, so they are read as not assessed: a credible leap needs both
+  node supports, and one leaves the test undecided. Candidacy alone is not a veto (the paper says of a
+  candidate with only "partly" evidence: "not yet evidence beyond novelty");
+- **strong industrial learning** (`large_yard.learning_veto_points`, 2): the commons points (process knowledge
+  + workforce and suppliers + adjacent innovation, yes 1 / partly 0.5) at or above 2 even with every unknown at
+  0 (the paper's strong learning, a Medium-yard rationale on its own); undecided where an unknown could reach 2.
+
+FALSE when a required signal fails, a veto holds, or too few of the others could hold even if every unobserved
+one did; NA (undecided) otherwise, an undecided veto included. A large yard whose learning points reach
+`learning_floor_points` (1, the paper's moderate learning) keeps a **capability floor** (`large_yard_floor`;
+the choice variant `deploy_floor`, whose policy design fences a capability floor): the paper's `large-floor`,
+which its tool reaches when a moderate capability case meets a domestic premium above 30%; here the commodity
+evidence stands in for that cost. Columns: `large_yard_case`, `large_yard_signals` (those that hold),
+`large_yard_n` (how many of the eight), `large_yard_unknown`, `large_yard_reason` (one sentence),
+`large_yard_floor`, `large_yard_near` (FALSE only for want of one signal). **Calibration choices to report**:
+`min_signals` (`large_yard_sensitivity.csv` runs 4 and 6), the 0.5 diversification line, and the learning
+veto and floor points (run `no_learning_veto`). This is the Yards & Fences engine's route to its Large Yard,
+spelled out: no strong Medium-yard rationale holds (no present position, with `position_first`; no credible
+leap; no strong learning), and "production becomes commoditised and manufacturing generates little future
+learning" (`dashboard/src/fence/engine/gates.ts`, `classify.ts`); where a moderate learning case holds, the
+large yard carries a capability floor rather than claiming that no capability rationale holds.
+
+Departures from the paper's tool, kept deliberately: concentration is one of the eight votes (the 2026-10-30
+spec lists global supply diversification as a signal), where the paper uses it only to add diversification
+inside the Large yard; and three of the eight signals (standardized, low differentiation, commoditized) are
+facets of one product-market property. Grouping the signals into product-market, learning and supply
+families and requiring one from each is an alternative not adopted.
+
+On the curated attributes (pinned in `tests/testthat/test-strategic-value.R`), passive racking, battery
+enclosures and grid cables are large yards (7 or 8 of 8); conventional PV modules are a large yard **with a
+capability floor** (moderate learning, 1.5 of 3), on 6 of 8 signals where world supply reads diversified and
+on exactly 5 (borderline: `min_signals` 6, or differentiation "moderate", flips it) where its own module
+supply reads concentrated, as it does; next-generation PV, battery cells, polysilicon, magnets, enrichment,
+transformers and motors are not (strong industrial learning, 2 or more of 3); control layers are not
+(digitally active). Whether a node actually is one is decided by its attributes and the world supply data,
+never by the paper's placement.
 
 ## 3. Position: Competitive Position
 
@@ -339,9 +469,16 @@ never Partner, Preserve or Catch Up: those are supply-chain answers. 0.6 on depl
 to three family percentiles, narrower than a percentile) takes about the top 30% of assessed Deployment
 cells, the selectivity of supply-chain need at 0.67 (a percentile); 0.67 took 22%.
 
-**Step 3, producing stages** (Extraction, Refining, Components, Assembly, Recovery). Need or prize missing
--> **not assessed**. Otherwise, with high need = `supply_chain_need >= 0.67`, high prize =
-`industrial_opportunity >= 0.6` and high position as defined under Position:
+**Step 3, producing stages** (Extraction, Refining, Components, Assembly, Recovery). First, need or prize
+missing -> **not assessed** (never Watch, whatever the large-yard case). Then the **large-yard case** (Prize,
+above), after a high Competitive Position (`large_yard.position_first: true`, the paper's gate order: a present
+position worth defending is a Medium-yard rationale that comes before Large, so a top-quarter producer of a
+commodity node goes on to the triage): TRUE -> **Deploy . Watch** (`decision_step` large_yard, `watch_reasons`
+beginning `large_yard_case`, variant deploy_floor where the case keeps a capability floor, else deploy, or
+deploy_diversify where supply is concentrated), whatever need and prize say; Secure has already come first, so
+a genuine chokepoint is never waved through. Otherwise, with high need = `supply_chain_need >= 0.67`, high prize
+= `strategic_industrial_value >= 0.6` and not capped as market-only (`prize_measure: market` reads
+`industrial_opportunity`, with no cap) and high position as defined under Position:
 
 | | high Competitive Position | otherwise, credible pathway | otherwise, high need | otherwise |
 |---|---|---|---|---|
@@ -374,18 +511,30 @@ cells, the selectivity of supply-chain need at 0.67 (a percentile); 0.67 took 22
   Watch (1,297): not every prize is forced into Catch Up. Under the one-leg rule it was 63% (1,660), 13%
   (345) and 24% (643): 912 cells with a single leg (adjacent stage 748, input cost 152, feasibility 7,
   learning 4, pipeline 1) left Catch Up, 258 for Partner and 654 for Watch.
-- **Watch reasons** (`watch_reasons`): low_need, low_prize, ample_diversified_supply (no concentration
-  watch), weak_domestic_case (a prize without a top-quarter position or a pathway), option_value (an
-  emerging node), low_deployment_need. Watch is a positive conclusion: domestic industrial priority low.
+- **Watch reasons** (`watch_reasons`): large_yard_case (a mature, passive commodity node), low_need,
+  low_prize, ample_diversified_supply (no concentration watch), weak_domestic_case (a prize without a
+  top-quarter position or a pathway), option_value (an emerging node), low_deployment_need. Watch is a
+  positive conclusion: domestic industrial priority low.
+- **The large-yard case in the machinery.** A large-yard Watch reads need and prize only to know they are
+  measured, and none of prize level, position or pathway, so their borderlines and confidence issues do not
+  apply to it, and its `watch_reasons` do not list the triage reasons (low_need, low_prize,
+  weak_domestic_case). A case that holds on exactly `min_signals`, or fails for want of one signal
+  (`large_yard_near`), is borderline (`decision_borderline` large_yard_case; the choice the other way is in
+  `choice_possible`); an undecided case (NA) that would change the choice is a confidence issue and adds Watch
+  to `choice_possible` (`pivotal_inputs` large_yard_case). The trace gains a `large_yard` step (the signals
+  that hold against `min_signals`). `large_yard.position_first` was false until the 2026-10-30 fidelity
+  review and is now true (the paper's order); `large_yard_sensitivity.csv` run `position_last` gives the other
+  order. The legacy-vs-choice diagnostics attribute a large-yard Watch to `large_yard_case` and a prize change
+  to the prize column the rule read (`strategic_industrial_value`).
 
 **Outputs** (`strategic_position_tbl`): `strategic_choice` (the six verbs or not_assessed),
 `strategic_posture` (secure / compete / deploy / not_assessed), `compete_mode`, `deploy_mode`,
 `posture_variant` (secure_* from the engine; compete_preserve / compete_catch_up / compete_partner; deploy,
-deploy_diversify, deploy_floor), `security_rationale`, `delivery_mode` (domestic / allied /
+deploy_diversify, deploy_floor: a large yard with a capability floor, or the engine's own), `security_rationale`, `delivery_mode` (domestic / allied /
 diversified_global / mixed: Preserve domestic, Catch Up domestic or mixed, Partner allied where trusted
 partners hold 30% of world supply else diversified global, Deploy diversified global or allied), `need_type`,
-`need_high`, `prize_high`, `cp_high`, `decision_step` (secure_override / deployment_need / triage /
-not_assessed), `decision_trace` (compact JSON array of `{step, test, value, threshold, result}`: secure ->
+`need_high`, `prize_high`, `cp_high`, `decision_step` (secure_override / deployment_need / large_yard /
+triage / not_assessed), `decision_trace` (compact JSON array of `{step, test, value, threshold, result}`: secure ->
 need -> prize -> position -> pathway -> choice; the engine's full test trace is `engine_trace`),
 `posture_confidence` (high / moderate / low: one point per borderline input, a still-possible Secure, an
 unknown pathway deciding the node, an unmeasured Competitive Position where the rule reads it, weak
@@ -398,8 +547,62 @@ reading is kept as `engine_posture`, `engine_variant` and the `t3`-`t5` columns;
 `legacy_quadrant`, `legacy_quadrant_posture`, `legacy_quadrant_mode`, `legacy_quadrant_flag`,
 `legacy_quadrant_borderline`.
 
-Layers (`strategic_posture_layers_tbl`): a sensitive layer keeps its own Secure; otherwise it follows its
-cell's choice (it has no Need, Prize or Position of its own).
+### Layer-first yards and the roll-up
+
+User spec 2026-10-30, Yards & Fences item 1: the technology x six-stage cell is too coarse for Yards &
+Fences (grid-control software vs passive grid hardware, inverter firmware vs inverter hardware, BMS controls
+vs battery cells, enrichment and reactor controls vs the rest of nuclear manufacturing, magnets vs the rest
+of EV and wind components). So each **sensitive layer is a yard unit of its own**
+(`yard_rollup.R::sp_layer_choice()`, `strategic_posture_layers_tbl`):
+
+- **Secure** by the engine's own layer tests, exactly as before (a layer's Secure never comes from its cell);
+- otherwise its **own strategic industrial value** (its own commons and option attributes with its cell's
+  market prize, placed among the cells' scores) and its **own large-yard case** (its own attributes, and its
+  own world supply where it has a measure or mineral of its own, else its cell's), with its **cell's need,
+  Competitive Position and pathway** (layers have no trade data of their own), through the same rule,
+  borderline and confidence machinery as the cells, with its own `choice_reason`. A control layer that misses
+  Secure is therefore still classified on its parent's need, position and pathway; its own attributes keep it
+  out of the large yard (digitally active) and, with process knowledge not assessed for software, usually cap
+  its prize as market-only.
+
+Each unit's choice maps to the paper's three yards (`sp_yard_of_choice()`): **small** (high fence) = Secure;
+**medium** (medium fence) = Preserve, Catch Up, Partner, and Accelerate at Deployment & Use; **large** (low
+fence) = Watch; not assessed has none. The cell's units are its stage row (the rest of the stage) and its
+layers; `sp_yard_rollup()` gives the cell `yard` (the stage row's own), `yard_rollup` (the single yard where
+the units agree, else `mixed_high_medium`, `mixed_medium_low`, `mixed_high_low` or `mixed_high_medium_low`,
+named by the fences spanned), `yard_children` (a JSON array `[{layer_id, label, yard, choice, variant,
+reason}]`, a single child still an array; `variant` carries a Secure child's fence scope), `yard_units`,
+`yard_mixed` and `yard_fence_scope` (`extends_to_hardware` where a Secure child's control cannot be separated
+from its hardware, `secure_integrated` or `secure_whole`, the paper's small-integrated and small-whole, so the
+high fence covers hardware the stage row's own yard does not show; `unclear` where separability is not
+established; `layer` otherwise; NA without a Secure child); every layer carries its own `yard` and its cell's
+`yard_rollup`. Units not assessed do not enter the roll-up. The posture bundle carries them (`cells.yd` in the
+core; `yard`, `yard_rollup`, `yard_fence_scope`, `yard_children`, the strategic-value families and the
+large-yard case in the detail). **The Explorer drawer does not show them yet**: the dashboard decoders
+(`dashboard/src/posture/contract.ts`, `detail.ts`) ignore these fields and the drawer still labels the prize
+"Industrial Opportunity", so the dashboard changes must land before the posture bundle is rebuilt.
+
+**Departure from the paper, by the user's fence mapping.** Partner is a Medium-yard choice, so high import
+need alone (no prize, no position) gives a Medium yard; in the paper's tool dependence and concentration only
+add a diversification posture inside the Large yard (`gates.ts` `evaluateLargeYard`, `large-diversify`), and
+strong learning alone is a Medium rationale, while here it raises the prize and still needs a position, a
+pathway or high need to leave Watch. So next-generation PV and battery cells are a Medium yard in seven of the
+eight combinations of need, position and pathway, and Watch (Large) for a country with low need, no position
+and no pathway. The reproduction diagnostic shows the choice behind each agreement (below) so an agreement by
+Partner (need) is not read as an agreement on capability. Whether need-only Partner should map to Large with
+diversification is an open decision for the user.
+
+**Validation against the paper** (`yf_paper_reproduction.csv`, `sp_yf_reproduction()`): for each of the 21
+curated Yards & Fences components, the unit the tool classifies (the layer linked by `yf_component_id`;
+with none, the stage rows its three-stage label covers: Midstream = Components / Assembly), the derived yard
+for the United States, Japan, Germany, India and Australia and the modal yard over all countries, the
+choice behind the modal yard (`modal_choice`), the large-yard signal count of the first country's unit and its
+distance from `min_signals` (`large_yard_n`, `large_yard_margin`: 0 = holds on exactly the threshold), the
+large yards with a capability floor (`large_yard_floor`), the reasons, and the paper's `paper_placement`
+beside it with agree / differ. This is the only place the
+placement is read; it is never an input to a classification (tests check that no classification function
+reads it). Diagnostics: `yard_rollup_by_cell.csv` (roll-ups by technology x stage), `yard_layers.csv`
+(layer x choice and yard counts), `large_yard_case.csv` and `strategic_value_families.csv` (by node).
 
 ### The Secure override in detail (the posture engine)
 
@@ -413,8 +616,8 @@ The node is the cell (`layer_id = "stage"`). Where six stages are too coarse, th
 sensitive layers: control software and firmware, fuels, critical materials, specific hardware
 (`posture_node_attributes.csv`: 66 cell rows, 35 layers, 41 country rows; the 21 Draw the Fence
 components are linked and inherit their curated values). A layer's posture never changes its cell's:
-inverter firmware can be Secure while Electric Grid Assembly is Deploy. Whole-cell nodes are judged
-on the physical path only; control vulnerabilities live in control layers.
+inverter firmware can be Secure while Electric Grid Assembly is Deploy (the cell's `yard_rollup` then reads
+mixed). Whole-cell nodes are judged on the physical path only; control vulnerabilities live in control layers.
 
 Node attributes are curated assessments with sources and confidence (consequence, time to harm,
 substitutability, qualification and reconstitution time, stockpile cover, whether making the node

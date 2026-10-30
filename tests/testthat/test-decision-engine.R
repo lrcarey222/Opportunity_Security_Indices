@@ -6,6 +6,7 @@
 de_repo_root <- function() normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 suppressPackageStartupMessages(library(dplyr))
 for (f in c("R/utils/supply_chain_stages.R", "R/strategic_position/sp_helpers.R", "R/strategic_position/posture_engine.R",
+            "R/strategic_position/industrial_opportunity.R", "R/strategic_position/strategic_value.R",
             "R/strategic_position/decision_engine.R", "R/strategic_position/sp_diag_choice.R")) {
   source(file.path(de_repo_root(), f))
 }
@@ -13,7 +14,10 @@ de_full_cfg <- function() yaml::read_yaml(file.path(de_repo_root(), "config", "s
 de_cfg <- function() de_full_cfg()$decision_framework
 de_post <- function() de_full_cfg()$strategic_posture
 
-# One cell as it reaches sp_decision_choice() (engine Deploy, a producing stage, all inputs set).
+# One cell as it reaches sp_decision_choice() (engine Deploy, a producing stage, all inputs set). The prize the
+# rule reads is strategic_industrial_value (config prize_measure strategic_value): unless a test sets it, it
+# equals industrial_opportunity, so the tests below that vary the prize vary both. The cell is observed not to
+# be a large-yard case.
 de_cells <- function(...) {
   base <- list(
     Country = "Testland", iso3 = "TST", tech = "Solar", supply_chain = "Components",
@@ -26,10 +30,11 @@ de_cells <- function(...) {
     pathway_credible = "no", pathway_basis = "none_observed_fires",
     home_share = 0.05, trusted_world_share = 0.6, coercive_world_share = 0.3, coercive_top_share = 0.2,
     import_hhi = 0.1, imports_usd = 1e9, stage_evidence_quality_cp = "high", supply_chain_need_n_families = 4L,
-    io_maturity_class = "mature"
+    io_maturity_class = "mature", siv_cap = NA_character_, large_yard_case = FALSE, large_yard_n = 2L
   )
   args <- list(...)
   base[names(args)] <- args
+  if (!"strategic_industrial_value" %in% names(args)) base$strategic_industrial_value <- base$industrial_opportunity
   as.data.frame(base, stringsAsFactors = FALSE)
 }
 de <- function(...) sp_decision_choice(de_cells(...), de_cfg(), de_post())
@@ -398,9 +403,11 @@ test_that("the compact decision trace is a JSON array of {step, test, value, thr
     expect_equal(t[[1]]$step, "secure")
     expect_equal(t[[length(t)]]$step, "choice")
   }
-  expect_equal(vapply(tr[[1]], `[[`, "", "step"), c("secure", "need", "prize", "position", "pathway", "choice"))
-  expect_equal(tr[[1]][[5]]$value, "pipeline")
-  expect_equal(tr[[1]][[6]]$result, "catch_up")
+  expect_equal(vapply(tr[[1]], `[[`, "", "step"), c("secure", "large_yard", "need", "prize", "position", "pathway", "choice"))
+  expect_equal(tr[[1]][[2]]$result, "no")
+  expect_equal(tr[[1]][[4]]$test, "strategic_industrial_value")
+  expect_equal(tr[[1]][[6]]$value, "pipeline")
+  expect_equal(tr[[1]][[7]]$result, "catch_up")
   expect_equal(vapply(tr[[2]], `[[`, "", "test"), c("secure_override", "deployment_need", "choice"))
   expect_equal(tr[[2]][[2]]$result, "high")
   expect_equal(vapply(tr[[3]], `[[`, "", "step"), c("secure", "choice"))
@@ -554,4 +561,18 @@ test_that("the position-choice consistency counts read the right columns", {
   expect_equal(out$catch_up_despite_leading_share10, 1)
   expect_equal(out$preserve_without_capability, 1)
   expect_equal(out$preserve_cp_contender_below50, 1)
+})
+
+test_that("the disagreement attribution names a large-yard Watch and the prize the rule read", {
+  a <- sp_diag_attribution(c("watch", "watch", "partner"), rep("Assembly", 3), c(TRUE, TRUE, TRUE), c(FALSE, FALSE, FALSE),
+                           c(TRUE, FALSE, FALSE), c(FALSE, FALSE, FALSE), decision_step = c("large_yard", "triage", "triage"),
+                           prize_label = "strategic_industrial_value")
+  expect_equal(a, c("large_yard_case", "strategic_industrial_value", "strategic_industrial_value"))
+  # the old call (no decision step, the market prize) is unchanged
+  expect_equal(sp_diag_attribution("watch", "Assembly", TRUE, FALSE, FALSE, FALSE), "industrial_opportunity")
+  d <- sp_decision_choice(de_cells(), de_cfg(), de_post())
+  expect_equal(sp_diag_prize_label(d), "strategic_industrial_value")
+  m_cfg <- de_cfg()
+  m_cfg$strategic_value$prize_measure <- "market"
+  expect_equal(sp_diag_prize_label(sp_decision_choice(de_cells(), m_cfg, de_post())), "industrial_opportunity")
 })

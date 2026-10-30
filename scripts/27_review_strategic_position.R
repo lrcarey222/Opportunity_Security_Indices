@@ -58,6 +58,7 @@ source(file.path(repo_root, "R", "strategic_position", "decision_cards.R"))
 source(file.path(repo_root, "R", "strategic_position", "posture_engine.R")) # sp_policy_alignment()
 source(file.path(repo_root, "R", "strategic_position", "decision_engine.R"))
 source(file.path(repo_root, "R", "strategic_position", "industrial_opportunity.R"))
+source(file.path(repo_root, "R", "strategic_position", "strategic_value.R")) # sp_choice_inputs(): the prize measure and the large-yard case
 source(file.path(repo_root, "R", "strategic_position", "sp_diag_choice.R"))
 
 config <- getOption("opportunity_security.config")

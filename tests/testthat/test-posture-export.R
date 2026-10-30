@@ -217,3 +217,81 @@ test_that("the bundle's commit stamp says -dirty when R, scripts or config have 
   expect_true(is.na(posture_commit_stamp(NA_character_, character())))
   expect_true(is.na(posture_commit_stamp(character(), character())))
 })
+
+test_that("the yards and the strategic value travel in the core and the detail, additive to schema 2", {
+  g <- pe_tbl()
+  prod <- g$supply_chain != "Deployment"
+  g$choice_prize <- ifelse(prod, 0.72, NA_real_)
+  g$prize_measure <- ifelse(prod, "strategic_value", NA_character_)
+  g$strategic_industrial_value <- g$choice_prize
+  g$siv_market <- ifelse(prod, 0.3, NA_real_)
+  g$siv_commons <- ifelse(prod, 0.5, NA_real_)
+  g$siv_option <- ifelse(prod, 0, NA_real_)
+  g$siv_cap <- NA_character_
+  g$large_yard_case <- ifelse(prod, FALSE, NA)
+  g$large_yard_n <- ifelse(prod, 1L, NA_integer_)
+  g$large_yard_signals <- ifelse(prod, "passive", NA_character_)
+  g$large_yard_unknown <- NA_character_
+  g$large_yard_reason <- ifelse(prod, "Not a large yard: not mature (scaling).", NA_character_)
+  g$yard <- "large"
+  g$yard_rollup <- "large"
+  g$yard_children <- NA_character_
+  i <- which(g$iso3 == "AAA" & g$tech == "Batteries" & g$supply_chain == "Components")
+  g$yard[i] <- "medium"
+  g$yard_rollup[i] <- "mixed_high_medium"
+  g$yard_children[i] <- "[{\"layer_id\":\"bess-control\",\"label\":\"BMS\",\"yard\":\"small\",\"choice\":\"secure\",\"variant\":\"secure_integrated\",\"reason\":\"An acute vulnerability.\"}]"
+  g$yard_fence_scope <- NA_character_
+  g$yard_fence_scope[i] <- "extends_to_hardware"
+  g$siv_commons_n <- ifelse(prod, 2L, NA_integer_)
+  g$siv_option_n <- ifelse(prod, 0L, NA_integer_)
+  g$large_yard_floor <- ifelse(prod, FALSE, NA)
+  core <- posture_core_doc(g, pe_div(), pe_countries, pe_cfg, created = "x")
+  dep <- core$cells$s == match("Deployment", SUPPLY_CHAIN_STAGES) - 1L
+  expect_equal(core$meta$prize_measure, "strategic_value")
+  expect_true(all(core$cells$prize[!dep] == 0.72))        # the prize the choice read
+  expect_true(all(core$cells$io[!dep] == 0.3))            # the market prize beside it
+  expect_true(all(is.na(core$cells$prize[dep])))
+  k <- which(core$cells$m %in% "partner")
+  expect_equal(as.character(core$cells$yd)[k], "SM")
+  expect_true(all(as.character(core$cells$yd)[-k] == "L"))
+  expect_equal(core$meta$yard_codes$mixed_medium_low, "ML")
+  j <- jsonlite::fromJSON(as.character(jsonlite::toJSON(core, auto_unbox = TRUE, na = "null", null = "null", digits = NA)), simplifyVector = FALSE)
+  expect_type(j$cells$yd, "list")
+  d <- posture_detail_doc(g, "AAA", pe_cfg, created = "x")
+  jd <- jsonlite::fromJSON(as.character(jsonlite::toJSON(d, auto_unbox = TRUE, na = "null", null = "null", digits = NA)), simplifyVector = FALSE)
+  p <- Filter(function(c) identical(c$mode, "partner"), jd$cells)[[1]]
+  expect_equal(p$prize$value, 0.72)
+  expect_equal(p$prize$measure, "strategic_value")
+  expect_equal(p$prize$market, 0.3)
+  expect_equal(p$prize$strategic_value$commons, 0.5)
+  expect_identical(p$large_yard$case, FALSE)
+  expect_equal(p$large_yard$signals, list("passive"))     # a one-item list stays an array
+  expect_null(p$large_yard$reason)                        # decided: its words are in the choice reason
+  expect_equal(p$yard, "medium")
+  expect_equal(p$yard_rollup, "mixed_high_medium")
+  expect_length(p$yard_children, 1)                       # one child stays a one-item array
+  expect_equal(p$yard_children[[1]]$layer_id, "bess-control")
+  expect_equal(p$yard_children[[1]]$yard, "small")
+  expect_equal(p$yard_children[[1]]$variant, "secure_integrated")
+  expect_equal(p$yard_fence_scope, "extends_to_hardware")
+  expect_equal(p$prize$strategic_value$commons_observed, 2)
+  expect_null(p$large_yard$floor)                         # only a large yard with a capability floor carries it
+  depc <- Filter(function(c) identical(c$stage, "Deployment"), jd$cells)[[1]]
+  expect_null(depc$large_yard)
+  expect_null(depc$prize)
+  expect_null(Filter(function(c) identical(c$stage, "Extraction"), jd$cells)[[1]]$yard_children)
+  # an undecided case carries its reason
+  g$large_yard_case[g$iso3 == "AAA" & g$supply_chain == "Refining"] <- NA
+  d2 <- posture_detail_doc(g, "AAA", pe_cfg, created = "x")
+  expect_match(Filter(function(c) identical(c$stage, "Refining"), d2$cells)[[1]]$large_yard$reason, "large yard")
+  g$large_yard_case[i] <- TRUE
+  g$large_yard_floor[i] <- TRUE
+  d3 <- posture_detail_doc(g, "AAA", pe_cfg, created = "x")
+  expect_true(Filter(function(c) identical(c$mode, "partner"), d3$cells)[[1]]$large_yard$floor)
+  # a table without them exports as before
+  core0 <- posture_core_doc(pe_tbl(), pe_div(), pe_countries, pe_cfg, created = "x")
+  expect_null(core0$cells$yd)
+  expect_null(core0$cells$io)
+  expect_equal(core0$meta$prize_measure, "market")
+  expect_equal(POSTURE_BUDGET_DETAIL, 160 * 1024)
+})

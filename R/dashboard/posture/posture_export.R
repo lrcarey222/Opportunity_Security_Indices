@@ -5,12 +5,23 @@
 # node phrase table and the allied division of labour; and one detail document per country for the
 # five-question cell drawer (NEED, PRIZE, POSITION, CHOICE, POLICY ALIGNMENT). A v1 core (Need x
 # Opportunity quadrants) is refused by the app. Pure: scripts/91_export_posture_data.R writes the files.
+#
+# Yards (2026-10-30, additive within schema 2: the app ignores what it does not read): the core carries the
+# cell's yard roll-up (yd, coded) and the market prize (io) beside the prize the choice read (prize: the
+# strategic industrial value under prize_measure strategic_value, named in meta.prize_measure); the detail
+# carries the strategic-value families, the large-yard case and the cell's yard, roll-up and child layers.
 
 POSTURE_SCHEMA <- "osi-posture"
 POSTURE_SCHEMA_VERSION <- 2L
 POSTURE_CODE <- c(secure = "S", compete = "C", deploy = "D", not_assessed = "N")
 POSTURE_BUDGET_CORE <- 3 * 1024^2
-POSTURE_BUDGET_DETAIL <- 128 * 1024
+# 160 KiB (128 until 2026-10-30): the yard children, strategic-value families and large-yard case add about
+# 25 KiB to the largest country documents, which were at 123 KiB.
+POSTURE_BUDGET_DETAIL <- 160 * 1024
+# The cell's yard roll-up in the core (yard_rollup.R SP_YARD_ROLLUPS): S small, M medium, L large; mixed as the
+# yards it spans.
+POSTURE_YARD_CODE <- c(small = "S", medium = "M", large = "L", mixed_high_medium = "SM", mixed_medium_low = "ML",
+                       mixed_high_low = "SL", mixed_high_medium_low = "SML")
 POSTURE_SCENARIO_LABELS <- list(current_policy = "Current policy", national_commitments = "National commitments",
                                 climate_aligned = "Climate-aligned")
 
@@ -27,6 +38,30 @@ posture_through <- function(period) {
 }
 
 posture_r3 <- function(x) ifelse(is.na(x), NA_real_, round(x, 3))
+
+# The prize the choice read (decision_engine.R choice_prize: strategic_industrial_value or industrial_opportunity)
+# and its measure; a table that predates the strategic value carries the market prize.
+posture_prize_col <- function(x) if ("choice_prize" %in% names(x)) "choice_prize" else "industrial_opportunity"
+posture_prize_measure <- function(x) {
+  if (!"choice_prize" %in% names(x) || !"prize_measure" %in% names(x)) return("market")
+  m <- stats::na.omit(unique(as.character(x$prize_measure)))
+  if (length(m)) m[1] else "market"
+}
+
+# A ";"-separated list as an array (NULL when empty); I() keeps a single item an array.
+posture_list <- function(x) {
+  if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(x)) return(NULL)
+  s <- setdiff(trimws(strsplit(x, ";", fixed = TRUE)[[1]]), "")
+  if (length(s)) I(s) else NULL
+}
+
+# The cell's child layers (yard_rollup.R yard_children, a JSON array of {layer_id, label, yard, choice, reason})
+# as a list the detail document writes as an array, whatever its length.
+posture_yard_children <- function(x) {
+  if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(x)) return(NULL)
+  j <- tryCatch(jsonlite::fromJSON(x, simplifyVector = FALSE), error = function(e) NULL)
+  if (is.null(j) || !length(j)) NULL else I(j)
+}
 
 # Evidence words as the Explorer grammar reads them (spec XX): strong | moderate | weak. The engine
 # writes high | medium | low | none, and the core carries those raw words (the TS contract normalises them
@@ -101,7 +136,7 @@ posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit 
     m = col("compete_mode"),
     dm = col("deploy_mode"),
     need = posture_r3(posture_need(x)),
-    prize = posture_r3(col("industrial_opportunity")),
+    prize = posture_r3(col(posture_prize_col(x))),
     cp = posture_r3(col("cp_contender_pct")),
     v = col("posture_variant"),
     sec = col("security_rationale"),
@@ -121,6 +156,9 @@ posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit 
     mom = posture_momentum_arrow(col("trade_momentum_raw"), momentum_band),
     mq = col("trade_momentum_quality")
   )
+  # the market prize beside the strategic industrial value, and the yard roll-up, where the table has them
+  if ("choice_prize" %in% names(x)) cells$io <- posture_r3(col("industrial_opportunity"))
+  if ("yard_rollup" %in% names(x)) cells$yd <- unname(POSTURE_YARD_CODE[as.character(x$yard_rollup)])
   cells <- lapply(cells, function(v) I(unname(v)))
   div <- division[division$tech %in% techs, , drop = FALSE]
   dcol <- function(n) if (n %in% names(div)) div[[n]] else rep(NA, nrow(div))
@@ -144,6 +182,9 @@ posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit 
       momentum_band = momentum_band,
       thresholds = list(need = df$need_threshold %||% 0.67, prize = df$prize_threshold %||% 0.6, cp = df$cp_preserve_pct %||% 0.75,
                         deployment = df$deployment_threshold %||% 0.6, borderline_band = df$borderline_band %||% 0.05),
+      # what cells.prize holds: strategic_value (strategic_industrial_value) or market (industrial_opportunity)
+      prize_measure = posture_prize_measure(x),
+      yard_codes = as.list(POSTURE_YARD_CODE),
       scenario_labels = POSTURE_SCENARIO_LABELS,
       family_scenarios = posture_family_scenarios(x),
       phrases = phrases[intersect(names(phrases), paste(rep(techs, each = length(stages)), stages, sep = "|"))],
@@ -290,8 +331,13 @@ posture_detail_doc <- function(tbl, iso3, cfg, created) {
       stockpile = if (identical(g(r, "stockpile"), "Unknown")) NULL else g(r, "stockpile"),
       systemic_essentiality = g(r, "systemic_essentiality"), operational_control = g(r, "digitally_active")
     )
+    siv <- if (dep) NULL else Filter(Negate(is.null), list(
+      value = num(r, "strategic_industrial_value"), commons = num(r, "siv_commons"), option = num(r, "siv_option"),
+      commons_observed = num(r, "siv_commons_n"), option_observed = num(r, "siv_option_n"), cap = g(r, "siv_cap")))
     prize <- if (dep) NULL else Filter(Negate(is.null), list(
-      value = num(r, "industrial_opportunity"), node_prize = num(r, "io_node_prize"),
+      value = num(r, posture_prize_col(r)), measure = g(r, "prize_measure"),
+      market = if ("choice_prize" %in% names(r)) num(r, "industrial_opportunity") else NULL,
+      strategic_value = if (length(siv)) siv else NULL, node_prize = num(r, "io_node_prize"),
       investment_momentum = num(r, "io_investment_momentum_pct"), home_market = num(r, "io_home_market"),
       home_market_basis = g(r, "io_home_market_basis"), maturity = num(r, "io_maturity"),
       basis = g(r, "io_basis"), outlook = g(r, "io_outlook"), note = posture_prize_note(r)
@@ -342,7 +388,19 @@ posture_detail_doc <- function(tbl, iso3, cfg, created) {
           exports_previous = num(r, "trade_exports_previous")
         )),
         watch_reasons = g(r, "watch_reasons"),
-        reason = if (identical(posture, "not_assessed")) NULL else g(r, "choice_reason")
+        reason = if (identical(posture, "not_assessed")) NULL else g(r, "choice_reason"),
+        # the large-yard case (its reason is in the choice reason where it decides; written here only when
+        # undecided), and the yards: the cell's own, its roll-up and its child layers
+        large_yard = if (dep) NULL else {
+          ly <- Filter(Negate(is.null), list(
+            case = g(r, "large_yard_case"), n = num(r, "large_yard_n"), signals = posture_list(g(r, "large_yard_signals")),
+            unknown = posture_list(g(r, "large_yard_unknown")),
+            floor = if (isTRUE(g(r, "large_yard_floor"))) TRUE else NULL,
+            reason = if (is.null(g(r, "large_yard_case"))) g(r, "large_yard_reason") else NULL))
+          if (length(ly)) ly else NULL
+        },
+        yard = g(r, "yard"), yard_rollup = g(r, "yard_rollup"), yard_fence_scope = g(r, "yard_fence_scope"),
+        yard_children = posture_yard_children(g(r, "yard_children"))
       )
     )
     if (!length(out$trade)) out$trade <- NULL

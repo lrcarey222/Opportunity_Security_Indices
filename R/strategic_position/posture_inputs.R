@@ -179,9 +179,11 @@ sp_posture_inputs <- function(nodes, supply, imports, cp_cells, countries, cfg =
 
   # Layers with their own world-supply measure: a material layer reads its mineral (at the mineral's
   # own stage, whatever stage the layer sits at: magnets are judged on rare-earth refining), any other
-  # layer the measure named on its row when the cell has it.
+  # layer the measure named on its row when the cell has it. The largest supplier's share (world_top_share)
+  # swaps with the rest, so the large-yard case's diversification reads the layer's own supply
+  # (strategic_value.R); the Secure engine does not read it.
   sup_swap <- c("home_share", "home_share_lo", "home_share_hi", "coercive_top_share", "coercive_top_iso3",
-                "coercive_world_share", "trusted_world_share")
+                "coercive_world_share", "trusted_world_share", "world_top_iso3", "world_top_share")
   x$supply_basis <- "cell"
   swap_from <- function(x, src, keys, basis) {
     src <- src[!duplicated(src[keys]), c(keys, intersect(sup_swap, names(src))), drop = FALSE]
