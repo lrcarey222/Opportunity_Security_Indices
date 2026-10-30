@@ -20,6 +20,9 @@
 //
 // Display (design S2, 2026-10-28): the stage ids are the labels (STAGE_LABEL), with the shorts Ext, Ref,
 // Com, Asm, Dep, Rec for tight axes (STAGE_SHORT; moved here from the posture module, which imports it).
+// Since 2026-10-29 (design D9) the Country Strategy Map, the drawer and the posture cards show the long
+// display names of config/supply_chain_stages.yml (STAGE_DISPLAY: "Refining & Processing" ...); STAGE_LABEL
+// keeps the ids, because it is also the data vocabulary of the Country and Sector contracts.
 // SUPPLY_PRODUCING_STAGES is every stage but Deployment (R SUPPLY_CHAIN_SUPPLY_STAGES), for the views
 // that leave Deployment out. The legacy-URL helpers at the end map an old three-stage link onto the six
 // stages: Downstream is exactly Deployment; Upstream and Midstream split, so their links land on the
@@ -63,6 +66,30 @@ export const STAGE_LABEL: Readonly<Record<SupplyStage, string>> = {
   Deployment: 'Deployment',
   Recovery: 'Recovery',
 };
+
+/**
+ * The display name of each stage (design D9, 2026-10-29): the `label`s of config/supply_chain_stages.yml, for
+ * the Country Strategy Map, the cell drawer, the posture cards and Country page text. STAGE_LABEL (the ids)
+ * stays the data vocabulary: the Country and Sector contracts compare and look up data values with it.
+ */
+export const STAGE_DISPLAY: Readonly<Record<SupplyStage, string>> = {
+  Extraction: 'Extraction',
+  Refining: 'Refining & Processing',
+  Components: 'Component Manufacturing',
+  Assembly: 'Final Assembly & Equipment',
+  Deployment: 'Deployment & Use',
+  Recovery: 'Recovery & Recycling',
+};
+
+/** The display name of a stage name (a name that is not one of the six is returned as it is). */
+export const stageDisplay = (name: string): string => (isSupplyStage(name) ? STAGE_DISPLAY[name] : name);
+
+/** The stage id of a display name ("Refining & Processing" -> "Refining"); an id is returned as itself; anything else null. */
+export function stageOfDisplay(name: string): SupplyStage | null {
+  if (isSupplyStage(name)) return name;
+  const hit = SUPPLY_STAGES.find((s) => STAGE_DISPLAY[s] === name);
+  return hit ?? null;
+}
 
 /** The short label of each stage, for tight axes (phone column headers). */
 export const STAGE_SHORT: Readonly<Record<SupplyStage, string>> = {

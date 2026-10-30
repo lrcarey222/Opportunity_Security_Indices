@@ -1,5 +1,7 @@
-// The Perspective of the Country profile (IA refactor 2026-10-16, brief s.10 and s.25; plan.md 4, 5.3):
-// a compact "Perspective: NEIS baseline ▾" control in the head that opens the existing DialPanel (four
+// The Perspective of the Country profile (IA refactor 2026-10-16, brief s.10 and s.25; plan.md 4, 5.3).
+// Since 2026-10-29 (spec XVIII, design D10) it is "Explore scenarios" in Evidence & Methodology -> Legacy OSI
+// framework, apart from the canonical strategy, which it never changes; it no longer sits under the head:
+// a compact "Perspective: NEIS baseline ▾" control that opens the existing DialPanel (four
 // dials, presets, "Reset to NEIS baseline", the advanced settings), with a live readout of the top
 // priorities so a reader sees what the dials do without leaving the page. The dials re-weight
 // preference-adjusted priorities only (the Strategic Index, partner rankings); facts never move.
@@ -80,8 +82,8 @@ function PriorityReadout() {
         <p className="mt-1 text-sm text-paper-mute">{name} has no Strategic Index (no International Energy Agency policy records), so the dials do not reorder its sectors.</p>
       )}
       <p className="mt-2 text-xs text-paper-mute">
-        Energy Security, Economic Opportunity, the four corners, the Strategic posture section, trade and the Allied Industrial Base shock and compacts results stay as they are. The Strategic priority column in Sector position and
-        &ldquo;Make bets&rdquo; below follow the dials.
+        Energy Security, Economic Opportunity, the four corners, the strategy (Strategy to Allied Strategy), trade and the Allied Industrial Base shock and compacts results stay as they
+        are. The Strategic priority column in Sector position and &ldquo;Make bets&rdquo; below follow the dials.
       </p>
     </div>
   );
@@ -98,16 +100,16 @@ export function PerspectiveControl() {
     p.setOpen?.('perspective', !open);
   };
   return (
-    <div id="perspective" className="card mb-8 scroll-mt-16 p-4">
+    <div id="perspective" className="card scroll-mt-16 p-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <button type="button" className="btn btn-ghost" aria-expanded={open} aria-controls="perspective-panel" onClick={toggle}>
           Perspective: {custom ? 'custom' : 'NEIS baseline'} <span aria-hidden="true">{open ? '▴' : '▾'}</span>
         </button>
         {sc ? <LiveSummary open={open} /> : custom ? <span className="text-sm text-paper-mute">Loading the model to apply the dials in the link…</span> : null}
         <p className="basis-full text-xs leading-snug text-paper-mute">
-          Four dials (Hawkishness, Bullishness, Populism, Climate) re-weight the strategic priorities, sector rankings and how attractive partners look. They never change the
-          Strategic posture section or observed or modelled facts: trade flows, concentration, production, shock coverage, capacity gaps and the Allied Industrial Base shock and
-          compacts results.
+          Four dials (Hawkishness, Bullishness, Populism, Climate) re-weight the Legacy OSI priorities, sector rankings and how attractive partners look. They never change the
+          strategy (Strategy to Allied Strategy) or observed or modelled facts: trade flows, concentration, production, shock coverage, capacity gaps and the Allied Industrial Base
+          shock and compacts results.
         </p>
       </div>
       {open && (

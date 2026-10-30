@@ -1,7 +1,8 @@
 // Sector home /sector (spec_sector.md 4.1): questions, the Atlas of every supply-chain cell (the 11
 // technologies x the six stages, plus Semiconductors; lens and measure family from the URL), the
-// "Strategic posture" section (design L3, 2026-10-28: the posture scatter of the strategic position
-// framework, its node in ?pnode, with its own basis line; the one recommendation on these pages), the
+// "Strategic posture" section (design L3, 2026-10-28; the canonical framework's strategy card since
+// 2026-10-29, design section 5: every economy's choice in one node, Competitive Position against the
+// relevant need, its node in ?pnode, with its own basis line; the one recommendation on these pages), the
 // minerals strip and the ten theme cards. Renders from sector-meta (meta.summary); facts load only when a
 // country is highlighted (its share and rank in every tile).
 
@@ -33,7 +34,8 @@ import { yearText } from './caption.ts';
 import { CellGrid, GroupLegend, type CellGridTech } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
 import { Section } from './common.tsx';
-import { PostureBasisTag, SectorPostureCard, SectorPostureIntro } from '../../posture/index.ts';
+import { PostureBasisTag } from '../../posture/index.ts';
+import { SectorStrategyCard, SectorStrategyIntro } from '../posture/SectorStrategyCard.tsx';
 
 const FAM_LABEL: Record<FamKey, string> = {
   primary: 'Primary',
@@ -383,7 +385,7 @@ export default function SectorHomeView() {
             <a className="link" href="#posture">
               Strategic posture
             </a>
-            , which says, at fixed thresholds, which economies should secure, compete in or deploy each sector.
+            , which says, at fixed thresholds, which economies should secure, preserve, catch up in, partner for, accelerate or watch each sector.
           </>
         }
       />
@@ -412,11 +414,11 @@ export default function SectorHomeView() {
           title="Strategic posture"
           sub={
             <>
-              <PostureBasisTag /> <SectorPostureIntro />
+              <PostureBasisTag /> <SectorStrategyIntro />
             </>
           }
         >
-          <SectorPostureCard />
+          <SectorStrategyCard />
         </Section>
       </div>
       <MineralsStrip />

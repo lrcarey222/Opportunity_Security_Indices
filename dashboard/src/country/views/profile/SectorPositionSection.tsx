@@ -5,8 +5,9 @@
 // low-emission technology term: one value per technology, the same for every economy) | Strategic
 // priority (the Strategic Index rank, under the reader's Perspective). Only the last column is
 // preference-adjusted. The sector links go to the six-stage Sector profile (/sector/<tech>/<stage>?c=ISO3).
-// "Explore details" opens the embedded Country scores view (the model). Under the table
-// (2026-10-19), core members get the monthly trade of the selected sector by sub-component (TradeMonthlyCard).
+// "Explore details" opens the embedded Country scores view (the model). Since 2026-10-29 (design D10) a Legacy
+// OSI block (Evidence & Methodology -> Legacy OSI framework; id legacy-sectors, heading level 3); the monthly
+// trade card moved to Prize & Position.
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';
@@ -19,9 +20,8 @@ import type { CellFacts } from '../../contract.ts';
 import { siOrder, siRankOf } from '../../derive/framing.ts';
 import { sectorProfileLink } from '../../derive/links.ts';
 import { POLICY_THIRD_LABEL } from '../../derive/model.ts';
-import { cap, proseName, quadrantWord } from '../../derive/text.ts';
+import { cap, legacyCornerWord, proseName } from '../../derive/text.ts';
 import { BasisTag, csvWithSource, Fold, perspectiveNote, Section, usePerspectiveSi, useProfile } from './common.tsx';
-import { TradeMonthlyCard } from './TradeMonthlyCard.tsx';
 
 /** Sectors in the order of the Strategic priority (the Perspective's), then the rest by Economic Opportunity. */
 export function sectorPositionRows(cells: readonly CellFacts[], ordered: readonly CellFacts[]): CellFacts[] {
@@ -40,7 +40,7 @@ function Pct({ v, d, color }: { v: number | null | undefined; d: string | undefi
   );
 }
 
-export function SectorPositionSection() {
+export function SectorPositionSection({ id = 'sectors', level = 2 }: { id?: string; level?: 2 | 3 } = {}) {
   const { sheet, cell, setCell } = useProfile();
   const si = usePerspectiveSi();
   const name = proseName(sheet.meta.country);
@@ -51,7 +51,7 @@ export function SectorPositionSection() {
     { id: 'sector', header: 'Sector', value: (c) => c.label, cell: (c) => <Link className="link text-paper" to={sectorProfileLink(c, iso)}>{c.label}</Link>, minWidth: 180 },
     { id: 'eo', header: 'Opportunity (beats)', value: (c) => c.eo?.pct.v ?? null, cell: (c) => <Pct v={c.eo?.pct.v} d={c.eo?.pct.d} color={pctScale.color(c.eo?.pct.v)} />, num: true },
     { id: 'es', header: 'Security (beats)', value: (c) => c.es?.pct.v ?? null, cell: (c) => <Pct v={c.es?.pct.v} d={c.es?.pct.d} color={pctScale.color(c.es?.pct.v)} />, num: true },
-    { id: 'corner', header: 'Corner', value: (c) => (c.quadrant ? quadrantWord(c.quadrant) : 'not placed') },
+    { id: 'corner', header: 'Corner', value: (c) => (c.legacy_corner ? legacyCornerWord(c.legacy_corner) : 'not placed') },
     { id: 'policy', header: 'Policy activity', value: (c) => (c.policy?.third ? POLICY_THIRD_LABEL[c.policy.third] : null) },
     {
       id: 'climate',
@@ -85,7 +85,7 @@ export function SectorPositionSection() {
     text: csvWithSource(
       rows.map((c) => ({
         sector: c.tech, stage: c.stage, economic_opportunity_beats_pct: c.eo?.pct.v ?? null, energy_security_beats_pct: c.es?.pct.v ?? null,
-        corner: c.quadrant ? quadrantWord(c.quadrant) : null, policy_activity_third: c.policy?.third ?? null, low_emission_term: c.si.parts?.tech.v ?? null,
+        legacy_corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null, policy_activity_third: c.policy?.third ?? null, low_emission_term: c.si.parts?.tech.v ?? null,
         strategic_priority_rank: siRankOf(c, si.map), perspective: perspectiveNote(si),
       })),
       'Opportunity Security Indices',
@@ -94,7 +94,8 @@ export function SectorPositionSection() {
   });
   return (
     <Section
-      id="sectors"
+      id={id}
+      level={level}
       title="Sector position"
       basis={
         <>
@@ -105,20 +106,19 @@ export function SectorPositionSection() {
       intro={
         <>
           Every sector of {name} (each technology at each of the six supply-chain stages) in one table. Opportunity and Security give the share of other economies {name} beats in that sector (orange below the typical economy, blue above). Strategic
-          priority is the rank on the Strategic Index and is the only column the perspective dials change. Click a sector name for its Sector profile; click a row to select it on the chart in the Security and opportunity section.
+          priority is the rank on the Strategic Index and is the only column the perspective dials change. Click a sector name for its Sector profile; click a row to select it on the Security and opportunity chart.
         </>
       }
     >
       <ChartCard
         headingLevel={3}
         title={`${cap(name)}: sector by sector`}
-        sub={`Sorted by Strategic priority (${perspectiveNote(si)}), then by Economic Opportunity for sectors outside the index. Climate shows the Strategic Index's low-emission technology term (the same for every economy). The economy's own emissions by sector, from Climate TRACE, are in Policy & climate below.`}
+        sub={`Sorted by Strategic priority (${perspectiveNote(si)}), then by Economic Opportunity for sectors outside the index. Climate shows the Strategic Index's low-emission technology term (the same for every economy). The economy's own emissions by sector, from Climate TRACE, are in the Need section's energy-system context.`}
         summary={`${rows.length} sectors of ${name}.`}
         csv={csv}
       >
         <TableView rows={rows} cols={cols} caption={`${cap(name)}: sector position`} rowKey={(c) => c.key} onRowClick={(c) => setCell(c.key)} selectedKey={cell} pageSize={12} />
       </ChartCard>
-      <TradeMonthlyCard />
       <Fold id="scores" engine summary="Explore details: the scores' categories, contributions and every measure (Country scores, the model)">
         <CountryView embedded />
       </Fold>

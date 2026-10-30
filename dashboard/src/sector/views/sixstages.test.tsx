@@ -91,6 +91,49 @@ describe('the Sector home: a Strategic posture section (design L3)', () => {
     expect(document.querySelector('main')?.textContent ?? '').not.toMatch(LEGACY);
   });
 
+  it('the card speaks the six verbs: Competitive Position against need, marks by verb, the prize in words; every stage is offered, Deployment & Use on deployment need (design 5)', async () => {
+    const router = renderAt('/sector?pnode=Batteries%7CComponents');
+    await h1('Energy supply chains, measured');
+    const section = document.getElementById('posture') as HTMLElement;
+    const card = await within(section).findByTestId('sector-posture-hero', {}, { timeout: 10_000 });
+    expect(within(card).getByRole('heading', { level: 3, name: "Every economy's choice in one node" })).toBeTruthy();
+    expect(section.textContent).toMatch(/recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or Watch/);
+    // the takeaway names the groups ("led by" past three), the counts line gives the six verbs first
+    expect(within(card).getByTestId('posture-takeaway').textContent).toBe(
+      'In battery cell manufacturing, 2 economies should catch up, with the prize and a credible pathway (Bland and Aland); and 1 economy should partner, needing it without a domestic case (Cland).',
+    );
+    expect(within(card).getByTestId('sector-strategy-counts').textContent).toMatch(/^0 Secure · 0 Preserve · 2 Catch Up · 1 Partner · 0 Accelerate · 0 Watch \(0 Secure · 3 Compete · 0 Deploy\)$/);
+    expect(within(card).getByTestId('posture-reading').textContent).toMatch(/Across: Competitive Position\s*, among the node's contenders; up: supply-chain need\s*\. The shape is the choice\./);
+    const chart = within(card).getByTestId('sector-strategy-scatter');
+    expect([...chart.querySelectorAll('[data-verb]')].map((g) => [g.getAttribute('data-iso3'), g.getAttribute('data-verb')]).sort()).toEqual([['AAA', 'catch_up'], ['BBB', 'catch_up'], ['CCC', 'partner']]);
+    expect(chart.querySelector('[data-testid="line-cp"]')).toBeTruthy();
+    expect(within(card).getByTestId('sector-strategy-prize').textContent).toContain('2 of 3 at or above the bar of 60');
+    expect(within(card).getByTestId('sector-strategy-legend').textContent).toContain('Compete · Catch Up');
+    // every stage is offered, by its display name; Deployment & Use is no longer disabled
+    const stage = within(card).getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement;
+    expect([...stage.options].map((o) => [o.value, o.textContent, o.disabled])).toEqual([
+      ['Extraction', 'Extraction', false], ['Refining', 'Refining & Processing', false], ['Components', 'Component Manufacturing', false],
+      ['Assembly', 'Final Assembly & Equipment', false], ['Deployment', 'Deployment & Use', false], ['Recovery', 'Recovery & Recycling', false],
+    ]);
+    fireEvent.change(stage, { target: { value: 'Deployment' } });
+    await waitFor(() => expect(new URLSearchParams(router.state.location.search).get('pnode')).toBe('Batteries|Deployment'));
+    await waitFor(() => expect(within(card).getByTestId('sector-strategy-scatter').getAttribute('data-stage')).toBe('Deployment'));
+    expect(within(card).getByTestId('posture-takeaway').textContent).toBe('In battery storage, 2 economies should accelerate deployment (Bland and Aland); and 1 economy should watch (no acceleration needed).');
+    expect(within(card).getByTestId('sector-strategy-scatter').querySelector('[data-testid="line-cp"]')).toBeNull();
+    // a mark opens that economy's Country Strategy Map on this node (design D8)
+    fireEvent.click(within(card).getByTestId('sector-strategy-scatter').querySelector('[data-iso3="BBB"]') as Element);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/countries/BBB'), { timeout: 20_000 });
+    expect([new URLSearchParams(router.state.location.search).get('node'), router.state.location.hash]).toEqual(['Batteries|Deployment', '#strategy']);
+  });
+
+  it('an old three-stage ?pnode is reported: Downstream is now Deployment and is shown', async () => {
+    renderAt('/sector?pnode=Batteries%7CDownstream');
+    await h1('Energy supply chains, measured');
+    const notice = await screen.findByTestId('posture-node-ignored', {}, { timeout: 10_000 });
+    expect(notice.textContent).toContain('pnode=Batteries|Downstream (Downstream is now Deployment; showing Batteries — Deployment)');
+    expect(within(document.getElementById('posture') as HTMLElement).getByTestId('sector-strategy-scatter').getAttribute('data-stage')).toBe('Deployment');
+  });
+
   it('the Data notes say the posture is the one recommendation, at fixed thresholds', async () => {
     renderAt('/sector');
     await h1('Energy supply chains, measured');
@@ -109,7 +152,7 @@ describe('a sector profile: the Strategic posture section fixed to its node (des
     expect(section.id).toBe('posture');
     expect(within(section).getByRole('heading', { level: 2, name: 'Strategic posture' })).toBeTruthy();
     expect(section.textContent).toMatch(/Strategic position framework · fixed thresholds/);
-    expect(await within(section).findByRole('heading', { level: 3, name: 'Who should secure, compete or deploy in Batteries — Refining' }, { timeout: 10_000 })).toBeTruthy();
+    expect(await within(section).findByRole('heading', { level: 3, name: "Every economy's choice in Batteries — Refining & Processing" }, { timeout: 10_000 })).toBeTruthy();
     expect(within(section).queryByRole('combobox')).toBeNull();
     // the section follows the lenses and comes before the groups (Advanced & evidence is always there); the rail lists it second
     const overview = document.getElementById('overview') as HTMLElement;
@@ -123,7 +166,13 @@ describe('a sector profile: the Strategic posture section fixed to its node (des
     renderAt('/sector/solar/deployment#posture');
     expect(await h1('Solar — Deployment')).toBeTruthy();
     const section = await screen.findByRole('region', { name: 'Strategic posture' }, { timeout: 20_000 });
-    expect(await within(section).findByRole('heading', { level: 3, name: 'Who should secure, compete or deploy in Solar — Deployment' }, { timeout: 10_000 })).toBeTruthy();
+    expect(await within(section).findByRole('heading', { level: 3, name: "Every economy's choice in Solar — Deployment & Use" }, { timeout: 10_000 })).toBeTruthy();
+    // Deployment & Use is plotted on deployment need: Accelerate or Watch, never Partner
+    const chart = await within(section).findByTestId('sector-strategy-scatter', {}, { timeout: 10_000 });
+    expect(chart.getAttribute('data-stage')).toBe('Deployment');
+    expect(within(section).getByTestId('posture-reading').textContent).toContain('deployment need');
+    expect([...chart.querySelectorAll('[data-verb]')].every((g) => ['accelerate', 'watch', 'secure'].includes(g.getAttribute('data-verb') ?? ''))).toBe(true);
+    expect(within(section).getByTestId('sector-strategy-rule').textContent).toMatch(/^At Deployment & Use the choice reads deployment need only/);
     cleanup();
     renderAt('/sector/semiconductors/components');
     expect(await h1('Semiconductors — Components')).toBeTruthy();

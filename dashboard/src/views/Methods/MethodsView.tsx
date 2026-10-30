@@ -1,9 +1,12 @@
-// View 7: Methods (spec_react.md 8.6). The dials in plain language and the exact formulas
-// (content/methods.md, Markdown + KaTeX, loaded with this route only), with the constants of this
-// data build filled in; panels for the data vintage and the paper.
+// View 7: Methods (spec_react.md 8.6). Since 2026-10-29 it opens with the canonical strategic decision
+// framework (need, prize, position, choice, policy alignment; #framework), then the Legacy OSI framework
+// (the paper baseline; #legacy-osi): the indices, the dials in plain language and the exact formulas
+// (content/methods.md, Markdown + KaTeX, loaded with this route only), with the constants of this data
+// build filled in; panels for the data vintage and the paper. A link to #framework or #legacy-osi scrolls
+// there once the text is in.
 
-import { useMemo } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useMemo } from 'react';
+import { Link, useLocation } from 'react-router';
 import { marked } from 'marked';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -34,11 +37,17 @@ export default function MethodsView() {
       (t, display) => katex.renderToString(t, { displayMode: display, throwOnError: false, output: 'htmlAndMathml' }),
     );
   }, [app, m]);
+  const { hash } = useLocation();
+  // the article is set as HTML, so a link to one of its chapters scrolls there once it is in
+  useEffect(() => {
+    const id = decodeURIComponent(hash.replace(/^#/, ''));
+    if (id) document.getElementById(id)?.scrollIntoView?.({ block: 'start' });
+  }, [hash, html]);
   const fl = m.flags ?? {};
   const paper = m.paper;
   return (
     <div>
-      <PageHead eyebrow="About · How it works" title="Methods" lede="How the indices and the dials are built, with the formulas, and a glossary of every term." />
+      <PageHead eyebrow="About · How it works" title="Methods" lede="How the strategic decision framework reads need, prize and position into a choice and compares it with policy; then the Legacy OSI framework: how the indices and the dials are built, with the formulas; and a glossary of every term." />
       <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* the content is this app's own Markdown, filled with numbers from the data build */}
         <div className="min-w-0">

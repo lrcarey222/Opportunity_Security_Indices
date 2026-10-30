@@ -2,7 +2,9 @@
 // definition of every index, category and acronym, for a reader who knows energy and economics but has
 // not read the paper. Since 2026-10-28 every entry reads the six supply-chain stages (Extraction,
 // Refining, Components, Assembly, Deployment, Recovery; lib/stages.ts), and the strategic position
-// framework's terms (the posture cards' Term ids, posture/basis.tsx POSTURE_TERMS) are here too. Used by InfoTip (the `short` text), Term (the name on first use), GlossaryList
+// framework's terms (the posture cards' Term ids, posture/basis.tsx POSTURE_TERMS) are here too. Since
+// 2026-10-29 the framework is canonical (Need -> Prize -> Position -> Choice -> Policy alignment); the
+// indices (ES, EO, SI), the corners and the dials are the Legacy OSI framework (the paper baseline). Used by InfoTip (the `short` text), Term (the name on first use), GlossaryList
 // and the /glossary page (`more`), in all three modules. Pure data and helpers.
 //
 // Numbers that change with the data are written as {{placeholders}} and filled from GLOSSARY_DEFAULTS,
@@ -48,7 +50,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     term: 'Energy Security',
     abbr: 'ES',
     short: 'How well a country can rely on what it needs in a sector: own production and reserves, import needs, concentration of world supply, price stability. 0 to 1; higher is more secure.',
-    more: 'Built for each technology and supply-chain stage from up to ten kinds of data: production, reserves, the gap between production and consumption, market position, trade balance, how concentrated world exports and critical-mineral trade are, price volatility, energy access, consumption growth and investment. Each measure is ranked against every other economy in the same sector, so 0.8 means doing better than most there. It is a relative score, not a probability of disruption, and it does not measure how many suppliers the country itself buys from.',
+    more: 'Built for each technology and supply-chain stage from up to ten kinds of data: production, reserves, the gap between production and consumption, market position, trade balance, how concentrated world exports and critical-mineral trade are, price volatility, energy access, consumption growth and investment. Each measure is ranked against every other economy in the same sector, so 0.8 means doing better than most there. It is a relative score, not a probability of disruption, and it does not measure how many suppliers the country itself buys from. Part of the Legacy OSI framework (the paper baseline): the strategic posture does not read it.',
     modules: ALL,
     related: ['eo', 'need', 's_curve', 'rankable'],
   },
@@ -57,7 +59,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     term: 'Economic Opportunity',
     abbr: 'EO',
     short: 'How well placed a country is to create value in a sector: exports and market share, related capabilities, investment, costs, demand and technology readiness. 0 to 1; higher is a bigger opening.',
-    more: 'Built like Energy Security from ten kinds of data (trade, including export feasibility from the Atlas of Economic Complexity; production; demand; technology readiness; costs; prices; investment; access; consumption; market position) and ranked within the sector. A high score means the country already has, or is close to having, what it takes to compete there.',
+    more: 'Built like Energy Security from ten kinds of data (trade, including export feasibility from the Atlas of Economic Complexity; production; demand; technology readiness; costs; prices; investment; access; consumption; market position) and ranked within the sector. A high score means the country already has, or is close to having, what it takes to compete there. Part of the Legacy OSI framework (the paper baseline): not the same as Industrial Opportunity, the prize of the strategic posture.',
     modules: ALL,
     related: ['es', 'feasibility', 's_curve'],
   },
@@ -66,7 +68,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     term: 'Strategic Index',
     abbr: 'SI',
     short: "Ranks a country's own sectors by how strongly the data point to prioritising them: opportunity, security need, existing policy activity, the stage and the technology's low-emission value.",
-    more: 'Baseline weights: Economic Opportunity 30%, security need (1 minus Energy Security) 30%, policy activity 20%, stage 10%, technology 10%. The stage term favours manufacturing: Components and Assembly 0.375 each, Deployment 0.25, Extraction, Refining and Recovery about 0.167 each. It compares sectors within one country: compare countries by rank, not by level.',
+    more: 'Baseline weights: Economic Opportunity 30%, security need (1 minus Energy Security) 30%, policy activity 20%, stage 10%, technology 10%. The stage term favours manufacturing: Components and Assembly 0.375 each, Deployment 0.25, Extraction, Refining and Recovery about 0.167 each. It compares sectors within one country: compare countries by rank, not by level. Part of the Legacy OSI framework (the paper baseline), not a current recommendation: the strategic posture is.',
     modules: SC,
     related: ['need', 'policy_index', 'allied_pick', 'priority_no_policy'],
   },
@@ -74,9 +76,9 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     id: 'need',
     term: 'Security need',
     short: '1 minus Energy Security: how exposed a country is in a sector. The Strategic Index rewards it, so exposed sectors rank higher.',
-    more: 'Not the same as Strategic Need on the strategic posture charts, which reads import dependence, supplier concentration and exposure to China and opposite-bloc suppliers.',
+    more: 'Part of the Legacy OSI Strategic Index. Not the same as supply-chain need in the strategic posture, which reads import dependence, supplier concentration, exposure to China and opposite-bloc suppliers and trusted alternatives.',
     modules: SC,
-    related: ['es', 'si', 'strategic_need'],
+    related: ['es', 'si', 'supply_chain_need'],
   },
   {
     id: 'psi',
@@ -356,7 +358,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     id: 'paper_baseline',
     term: 'NEIS baseline',
     short: "Every dial at 50 and the default settings: the pipeline's own six-stage weights. Every index starts from it; only a custom perspective on a country moves priorities and partner rankings away from it.",
-    more: 'The strategic posture (Secure, Compete, Deploy) does not move with the dials.',
+    more: 'The dials re-weight only the Legacy OSI indices; the strategic posture (Secure, Preserve, Catch Up, Partner, Accelerate, Watch) does not move with them.',
     modules: SC,
     related: ['scenario', 'dials'],
   },
@@ -402,51 +404,62 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     modules: ['strategic'],
     related: ['dials'],
   },
-  // ---- Country profile: the four corners and the comparisons ----------------------------------
-  // The corners of the Security and opportunity chart (country/contract.ts QUADRANTS), kept and recomputed
-  // at the six stages (user, 2026-10-28). Since 2026-10-28 the corners with the keys secure and watch are
-  // shown as Exposed and Stable, so they are not read as the posture words (Secure / Compete / Deploy,
-  // Catch up / Preserve / Partner, Watch); their glossary ids follow the names.
+  // ---- Country profile: the four corners (Legacy OSI) and the comparisons --------------------------
+  // The corners of the Security and opportunity chart (country/contract.ts), kept and recomputed at the six
+  // stages (user, 2026-10-28) as the Legacy OSI framework (2026-10-29: the paper baseline, under a Country
+  // profile's Evidence & Methodology). Since 2026-10-28 the corners once keyed secure and watch are shown as
+  // Exposed and Stable, so they are not read as the posture words; their glossary ids follow the names.
+  // Each names its closest current choice (Grow ~ Preserve, Upgrade ~ Catch Up, Exposed ~ Partner,
+  // Stable ~ Watch), and says the results differ.
   {
     id: 'grow',
     term: 'Grow',
-    short: "High opportunity, high energy security: build on strength (RMI 2025: export promotion). A corner of the Security and opportunity chart, against the country's median sector; not a strategic posture.",
-    more: "A sector exactly at the median counts as high. In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead.",
+    short: "High opportunity, high energy security: build on strength (RMI 2025: export promotion). A corner of the Security and opportunity chart (Legacy OSI); not a strategic posture.",
+    more: "Placed against the country's median sector; a sector exactly at the median counts as high. In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead. Its closest current choice is Preserve, but the results differ (see Legacy OSI framework).",
     modules: SC,
-    related: ['upgrade', 'exposed', 'stable', 'quadrant'],
+    related: ['upgrade', 'exposed', 'stable', 'quadrant', 'legacy_osi'],
   },
   {
     id: 'upgrade',
     term: 'Upgrade',
-    short: "High opportunity, low energy security: building capability could close a gap and create value (RMI 2025: leapfrog). A corner of the Security and opportunity chart, against the country's median sector; not a strategic posture.",
-    more: "In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead.",
+    short: "High opportunity, low energy security: building capability could close a gap and create value (RMI 2025: leapfrog). A corner of the Security and opportunity chart (Legacy OSI); not a strategic posture.",
+    more: "Placed against the country's median sector; a sector exactly at the median counts as high. In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead. Its closest current choice is Catch Up, but the results differ (see Legacy OSI framework).",
     modules: SC,
-    related: ['grow', 'exposed', 'stable', 'quadrant'],
+    related: ['grow', 'exposed', 'stable', 'quadrant', 'legacy_osi'],
   },
   {
     id: 'exposed',
     term: 'Exposed',
-    short: "Low opportunity, low energy security: lean on trusted partners for supply (RMI 2025: friendshore). A corner of the Security and opportunity chart, against the country's median sector; not the Secure posture.",
-    more: "In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead. Called Secure before 28 October 2026, as in the memos written before then.",
+    short: "Low opportunity, low energy security: lean on trusted partners for supply (RMI 2025: friendshore). A corner of the Security and opportunity chart (Legacy OSI); not the Secure posture.",
+    more: "Placed against the country's median sector; a sector exactly at the median counts as high. In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead. Its closest current choice is Partner, but the results differ (see Legacy OSI framework). Called Secure before 28 October 2026, as in the memos written before then.",
     modules: SC,
-    related: ['grow', 'upgrade', 'stable', 'quadrant'],
+    related: ['grow', 'upgrade', 'stable', 'quadrant', 'legacy_osi'],
   },
   {
     id: 'stable',
     term: 'Stable',
-    short: "Low opportunity, high energy security: little pressure to act; value may lie elsewhere (RMI 2025: alternative value creation). A corner of the Security and opportunity chart, against the country's median sector; not a strategic posture.",
-    more: "In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead. Called Watch before 28 October 2026, as in the memos written before then.",
+    short: "Low opportunity, high energy security: little pressure to act; value may lie elsewhere (RMI 2025: alternative value creation). A corner of the Security and opportunity chart (Legacy OSI); not a strategic posture.",
+    more: "Placed against the country's median sector; a sector exactly at the median counts as high. In the Security vs opportunity comparison, which shows every economy in one sector, high and low are against the sector's median economy instead. Its closest current choice is Watch, but the results differ (see Legacy OSI framework). Called Watch before 28 October 2026, as in the memos written before then.",
     modules: SC,
-    related: ['grow', 'upgrade', 'exposed', 'quadrant'],
+    related: ['grow', 'upgrade', 'exposed', 'quadrant', 'legacy_osi'],
   },
   {
     id: 'quadrant',
     term: 'Corner (quadrant)',
     short: "One of the four corners of a profile's Security and opportunity chart. The dashed lines sit at the country's median sector on each axis, so the corners show its relatively strong and weak sectors.",
     more:
-      "The median sector is the middle of the country's own sectors on each axis; a sector exactly at it counts as high. The axes still compare the country with other economies: each sector sits at the share of them it beats. The corners are Grow, Upgrade, Exposed and Stable, over the country's sectors at the six stages; they are not the need × opportunity quadrant of the strategic posture charts.",
+      "The median sector is the middle of the country's own sectors on each axis; a sector exactly at it counts as high. The axes still compare the country with other economies: each sector sits at the share of them it beats. The corners are Grow, Upgrade, Exposed and Stable, over the country's sectors at the six stages; they are Legacy OSI (the paper baseline), not the strategic posture.",
     modules: ['country'],
-    related: ['grow', 'upgrade', 'exposed', 'stable', 'percentile', 'median', 'posture'],
+    related: ['grow', 'upgrade', 'exposed', 'stable', 'percentile', 'median', 'posture', 'legacy_osi'],
+  },
+  {
+    id: 'legacy_osi',
+    term: 'Legacy OSI framework',
+    short: "The paper baseline's index model: Energy Security, Economic Opportunity, the Strategic Index and the four corners (Grow, Upgrade, Exposed, Stable). Kept for replication and comparison; not a current recommendation.",
+    more:
+      'The corners map loosely onto the current choices: Grow to Preserve, Upgrade to Catch Up, Exposed to Partner, Stable to Watch. Results differ because the legacy indices mix capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment, which the strategic position framework separates into need, prize and position. On a Country profile they sit under Evidence & Methodology, with the dials as scenarios to explore.',
+    modules: ALL,
+    related: ['es', 'eo', 'si', 'quadrant', 'posture', 'dials'],
   },
   {
     id: 'priority_no_policy',
@@ -500,40 +513,86 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     modules: ['sector'],
     related: ['dp'],
   },
-  // ---- the strategic position framework (the Strategic posture sections, 2026-10-28) ------------
-  // The ids of posture/basis.tsx POSTURE_TERMS. 'policy_alignment' is not UN-vote 'alignment', and
-  // 'strategic_need' is not the Strategic Index's security 'need'.
+  // ---- the strategic position framework (canonical since 2026-10-29) ------------------------------
+  // Need -> Prize -> Position -> Choice -> Policy alignment. The ids of posture/basis.tsx POSTURE_TERMS.
+  // 'policy_alignment' is not UN-vote 'alignment', and 'strategic_need' is not the Strategic Index's
+  // security 'need'.
   {
     id: 'posture',
     term: 'Strategic posture',
-    short: "The strategic position framework's recommendation for a country at one technology and stage: Secure the node, Compete in it (preserve, catch up or partner) or Deploy openly. Fixed thresholds: the dials do not change it.",
-    more: 'Secure comes first and overrides the rest: it needs an acute consequence and one of three routes (see Secure rationale). Elsewhere at the producing stages, Strategic Need and Industrial Opportunity split Compete into catch up (both high), preserve (opportunity only) and partner (need only); neither high is Deploy. Deployment itself stays Deploy unless a control layer is Secure.',
+    short: "The framework's choice for a country at one technology and stage: Secure, Compete (Preserve, Catch Up or Partner) or Deploy (Accelerate or Watch), from need, prize and position, at fixed thresholds.",
+    more:
+      'Secure comes first and overrides the rest (see Secure rationale). At Deployment & Use, high deployment need means Accelerate, otherwise Watch. At the producing stages, need and prize triage and Competitive Position decides: a high prize with a top-quarter position is Preserve; below it a credible pathway is Catch Up, else high need is Partner and low need Watch. Observed policy is compared afterwards (policy alignment), never fed in, and the dials do not change it.',
     modules: ALL,
-    related: ['strategic_need', 'industrial_opportunity', 'security_rationale', 'competitive_position', 'policy_alignment'],
+    related: ['strategic_need', 'industrial_opportunity', 'competitive_position', 'security_rationale', 'deploy_mode', 'policy_alignment', 'legacy_osi'],
   },
   {
     id: 'strategic_need',
     term: 'Strategic Need',
-    short: 'How exposed a country is if supply of a node is disrupted: its import dependence, how concentrated its suppliers are and its imports from China and opposite-bloc suppliers, ranked against other countries.',
-    more: "Each part is a percentile among the countries in the same technology and stage; higher is more need. Deployment reads the technology's Assembly need. Not the same as the Strategic Index's security need (1 minus Energy Security).",
+    short: "The umbrella name for a node's Need, measured two separate ways: supply-chain need at the producing stages and deployment need at Deployment & Use. They are never combined into one score.",
+    more: "Only the relevant one appears for each node. Not the same as the Strategic Index's security need (1 minus Energy Security).",
     modules: ALL,
-    related: ['posture', 'industrial_opportunity', 'need'],
+    related: ['supply_chain_need', 'deployment_need', 'need_type', 'posture', 'need'],
+  },
+  {
+    id: 'supply_chain_need',
+    term: 'Supply-chain need',
+    short: 'How costly or dangerous dependence on outside supply is for a node: import dependence, supplier concentration, exposure to China and opposite-bloc suppliers and trusted alternatives, ranked against other countries. Producing stages only.',
+    more:
+      'Each part is a percentile among the countries in the same technology and stage; higher is more need. Substitutability, reconstitution time, inventories, essentiality and operational control feed the Secure tests and are shown beside it. A country holding at least 10% of world supply scores no need from the make-up of its imports.',
+    modules: ALL,
+    related: ['strategic_need', 'deployment_need', 'security_rationale', 'posture'],
+  },
+  {
+    id: 'deployment_need',
+    term: 'Deployment need',
+    short: "How much more deployment a country's energy system needs in a technology: demand adequacy, the gap to its national targets and system requirements. Deployment & Use only; each part names its scenario.",
+    more:
+      "Demand adequacy reads current policy and the target gap national commitments (Ember's 2030 targets); a climate-aligned value is shown only as a labelled alternative. Each part says whether it rests on national data, a regional proxy, an observed trend or global context; a missing part is not assessed, never zero. It is not supply-chain vulnerability: high deployment need means Accelerate, never Partner.",
+    modules: ALL,
+    related: ['strategic_need', 'supply_chain_need', 'deploy_mode', 'posture'],
+  },
+  {
+    id: 'need_type',
+    term: 'Need type',
+    short: 'Which need a node reads: supply-chain need at Extraction, Refining & Processing, Component Manufacturing, Final Assembly & Equipment and Recovery & Recycling; deployment need at Deployment & Use.',
+    modules: ALL,
+    related: ['supply_chain_need', 'deployment_need'],
   },
   {
     id: 'industrial_opportunity',
     term: 'Industrial Opportunity',
-    short: "Economic Opportunity placed among a node's contenders, the economies holding at least 0.5% of world supply there: how well placed a country is to build or keep the industry, against those already in it.",
-    more: 'With fewer than five contenders it is placed among the coalition members and the large economies instead. It is a percentile across countries, never within one country; coal, a declining market, is capped below the thresholds.',
+    short: 'The prize: is there an industrial or economic opportunity worth pursuing in a node? Expected world demand growth to 2035 under current policy and investment momentum, lifted by national home-market growth where measured.',
+    more:
+      'It reads no current capability (exports, production, capacity, investment, reserves) and no need variable, so it stays distinct from Competitive Position and Strategic Need. A declining market is capped below the bar; technology maturity is context, not a score. Feasibility, pipeline, adjacency and cost advantage form the credible-pathway test of Catch Up instead. Not the legacy Economic Opportunity index.',
     modules: ALL,
-    related: ['posture', 'strategic_need', 'eo'],
+    related: ['posture', 'competitive_position', 'pathway', 'eo'],
   },
   {
     id: 'competitive_position',
     term: 'Competitive Position',
-    short: 'How strong a country already is in a node, against every other country: its export share and specialization, production share and manufacturing plants, with trade momentum. A consistency check on the posture, never an override.',
-    more: 'Its trade evidence is a 2022-24 benchmark of exports, world share and revealed comparative advantage; current trade momentum takes 15% of the trade evidence where a matched 12-month comparison exists.',
+    short: "How strong a country already is in a node: export share and specialization, production share, manufacturing capacity, investment, cost, resources and deployment scale where relevant, with trade momentum. Placed among the node's contenders.",
+    more:
+      'Demonstrated capability only: no market growth, need, policy or climate goal. Its trade evidence is a 2022-24 benchmark of exports, world share and revealed comparative advantage; current trade momentum takes 15% of the trade evidence where a matched 12-month comparison exists. With a high prize, the top quarter of contenders (economies with at least 0.5% of world supply) preserve; the others catch up, partner or watch.',
     modules: ALL,
-    related: ['posture', 'trade_momentum', 'rca'],
+    related: ['posture', 'industrial_opportunity', 'trade_momentum', 'rca'],
+  },
+  {
+    id: 'pathway',
+    term: 'Credible pathway',
+    short: 'The test that turns a high prize without a strong position into Catch Up: feasibility, an investment pipeline, an established adjacent stage, learning inputs or an input-cost advantage. Unknown counts as not credible.',
+    more: 'Any one of the five is enough; Extraction also needs a resource base. Without a credible pathway, high need means Partner and low need Watch.',
+    modules: ALL,
+    related: ['posture', 'industrial_opportunity', 'competitive_position', 'feasibility'],
+  },
+  {
+    id: 'deploy_mode',
+    term: 'Accelerate or Watch',
+    short: 'At Deployment & Use, Accelerate where deployment need is high (deployment itself is the priority), Watch where it is not. Watch also ends the triage at the producing stages: domestic industrial priority low.',
+    more:
+      'Accelerate says nothing about making the equipment at home: a technology can be a low manufacturing priority and a high deployment priority. Watch is a positive conclusion, not a failure: no major domestic industrial intervention is needed (low need, low prize, ample diversified supply or a weak domestic case).',
+    modules: ALL,
+    related: ['posture', 'deployment_need'],
   },
   {
     id: 'security_rationale',
@@ -541,21 +600,38 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     short: 'Why a node is Secure: operational control (a foreign actor could command or disable it), a coercive chokepoint (a coercive supplier could withhold it) or systemic resilience (essential, import-dependent and slow to rebuild).',
     more: 'Each route also needs an acute consequence. Concentration alone does not make a chokepoint: substitution must be hard and trusted supply too slow to restore. Secure does not mean reshoring.',
     modules: ALL,
-    related: ['posture'],
+    related: ['posture', 'delivery_mode'],
+  },
+  {
+    id: 'delivery_mode',
+    term: 'Delivery mode',
+    short: 'How a Secure or Compete choice is delivered: domestic, allied, diversified global or mixed. Secure does not mean reshoring: stockpiles, trusted sourcing, substitution and long-term contracts all count.',
+    modules: ALL,
+    related: ['security_rationale', 'posture'],
+  },
+  {
+    id: 'consistency_flag',
+    term: 'Consistency review',
+    short: 'A node whose evidence pulls against its choice, flagged for review rather than silently overridden: for example a strong position with high need but a low prize, kept as Preserve rather than Partner.',
+    more: "A Catch Up or Partner node whose position is in the contenders' top quarter but below the capability floor is flagged too.",
+    modules: ALL,
+    related: ['posture', 'competitive_position'],
   },
   {
     id: 'policy_alignment',
     term: 'Policy alignment',
-    short: 'Observed policy against the recommended posture: aligned, under-prioritized (Secure or Compete with little policy effort), over-prioritized (heavy support where Deploy is recommended) or mixed. Observed policy never enters the recommendation.',
-    more: "Policy effort is the country's revealed policy priority, compared among its own nodes. Not the same as UN-vote alignment.",
+    short: 'Observed policy against the recommended choice: aligned, under-prioritized, over-prioritized, wrong treatment (misaligned), a deployment under-response or mixed, with a confidence. Observed policy never enters the recommendation.',
+    more:
+      "Secure, Preserve or Catch Up with weak policy is under-prioritized; Partner met with heavy localisation is the wrong treatment; Accelerate with weak deployment policy is a deployment under-response; Watch under heavy protection is over-prioritized. Where policy records are thin it says insufficient data or low confidence, never a guess. Not the same as UN-vote alignment.",
     modules: ALL,
     related: ['posture', 'policy_index'],
   },
   {
     id: 'partner_gap',
     term: 'Partner gap',
-    short: "A node where a country's posture is to partner with trusted suppliers, but no trusted supplier holds at least 2% of world supply.",
-    more: "Elsewhere a Partner node names up to three trusted partners, ranked on capability, relationship strength and how much they would diversify the country's supply.",
+    short: "A node where a country's choice is Partner but no credible allied solution exists yet: no trusted supplier, only one, weak capability evidence, too little allied capacity or concentration that stays excessive.",
+    more:
+      "Elsewhere a Partner node names up to three trusted partners, ranked on capability, relationship strength and how much they would diversify the country's supply. A genuine gap is reported, never forced into a solution.",
     modules: ALL,
     related: ['posture', 'aib_gap'],
   },
@@ -570,7 +646,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'aib_gap',
     term: 'Allied gap',
-    short: 'Where trusted allied supply of a node is thin: no trusted supplier, a single point of failure (one holder with half of allied supply), fewer than three holders, or weak evidence.',
+    short: 'Where trusted allied supply of a node is thin: no trusted supplier, a single point of failure, fewer than three holders, too little allied capacity, excessive concentration or weak evidence.',
     more: 'From the allied division of labour: per node the primary allied holder, two backups and the number of allied holders with at least 2% of supply. Deployment is left out: no allied supply node sits there.',
     modules: ALL,
     related: ['partner_demand', 'partner_gap'],
@@ -578,7 +654,8 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'partner_demand',
     term: 'Partner demand',
-    short: "How many countries' postures ask trusted partners for a node: those whose posture there is Compete, partner. Shown beside the allied gap, so a gap many countries rely on stands out.",
+    short: "How many countries' choice for a node is Compete · Partner: they ask trusted partners for it. Secure demand counts Secure choices; Deploy · Accelerate is a deployment priority and is not counted.",
+    more: 'Shown beside the allied gap, so a gap many countries rely on stands out.',
     modules: ALL,
     related: ['aib_gap', 'posture'],
   },

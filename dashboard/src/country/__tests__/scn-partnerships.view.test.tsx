@@ -85,9 +85,13 @@ function renderAt(path: string) {
   return router;
 }
 const T = { timeout: 30_000 };
+// since 2026-10-29 (design 5b) the section is generic partnership material under Allied Strategy's "Explore all
+// partnership analysis" (id allied-partnerships, an h3); the #partnerships links open that disclosure
 const section = async () => {
-  await screen.findByRole('heading', { level: 2, name: 'Partnerships' }, T);
-  return document.getElementById('partnerships')!;
+  await screen.findByRole('heading', { level: 3, name: 'Partnerships' }, T);
+  const part = document.getElementById('allied-partnerships')!;
+  expect(part.closest('section#allied')).toBeTruthy();
+  return part;
 };
 const lens = (part: HTMLElement, id: 'today' | 'osi' | 'aib') => within(part).getByTestId(`lens-${id}`);
 const tags = (part: HTMLElement) => within(part).getAllByTestId(/^lens-(today|osi|aib)$/).map((p) => p.querySelector('[data-lens-tag]')?.textContent);
@@ -136,7 +140,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const t = aibTradeOf(managed.compacts, 'USA');
     const aib = await within(lens(part, 'aib')).findByTestId('aib-trade', {}, T);
     expect(aib.textContent).toContain(`Under Managed Interdependence, in the compacts' coordinated trade the United States has ${t.trade.n} relationship`);
-    const role = document.getElementById('aib-role')!;
+    const role = document.getElementById('allied-aib-role')!;
     expect((await within(role).findByTestId('aib-role-scenario', {}, T)).textContent).toMatch(/^Shown under Managed Interdependence/);
     // the role cells read the scenario as /aib/roles does: under its own name, no every-shock total
     const cells = await within(role).findByTestId('aib-roles', {}, T);

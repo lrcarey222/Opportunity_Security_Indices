@@ -6,6 +6,7 @@
 // Upstream, the paper's Midstream). Since 2026-10-28 also: the producing stages equal R's (every stage but
 // Deployment), the display labels and shorts, the stage slugs, and the legacy-URL helpers (Downstream ->
 // Deployment exactly; Upstream and Midstream -> the chain page, with the words naming their stages).
+// Since 2026-10-29 (design D9): the long display names equal the YAML labels, and STAGE_LABEL stays the ids.
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -13,8 +14,9 @@ import { describe, expect, it } from 'vitest';
 import {
   byStageRank, cellSlug, DEPLOYMENT_STAGE, isLegacyCellSlug, isLegacyStage, isLegacyStageSlug, isLegacySubcomponentId, isProducingStage, isSupplyStage, isSupplyStageSlug,
   LEGACY_STAGE_REPLACED_BY, LEGACY_STAGE_SLUGS, LEGACY_STAGES, legacyCellsOf, legacySectorTarget, legacyStageNote, legacyStageOfSlug, legacyStageTarget, legacyStageTargetName,
-  legacyStageWords, legacySubcomponentsOf, parseCellSlug, parseSubcomponentId, rollUpCellSlug, rollUpStage, rollUpSubcomponentId, STAGE_LABEL, STAGE_ROLLUP, STAGE_SHORT, stageLabel,
-  stageRank, stageShort, stageSlug, stagesInChainOrder, SUPPLY_PRODUCING_STAGES, SUPPLY_STAGE_SLUGS, SUPPLY_STAGES, subcomponentId, supplyStageOfSlug, techSlug,
+  legacyStageWords, legacySubcomponentsOf, parseCellSlug, parseSubcomponentId, rollUpCellSlug, rollUpStage, rollUpSubcomponentId, STAGE_DISPLAY, STAGE_LABEL, STAGE_ROLLUP, STAGE_SHORT,
+  stageDisplay, stageLabel, stageOfDisplay, stageRank, stageShort, stageSlug, stagesInChainOrder, SUPPLY_PRODUCING_STAGES, SUPPLY_STAGE_SLUGS, SUPPLY_STAGES, subcomponentId,
+  supplyStageOfSlug, techSlug,
 } from './stages.ts';
 
 const R_FILE = resolve(process.cwd(), '../R/utils/supply_chain_stages.R');
@@ -156,6 +158,25 @@ describe('stage labels', () => {
     // a name outside the six is shown as it is
     expect(stageShort('Midstream')).toBe('Midstream');
     expect(stageLabel('Sidestream')).toBe('Sidestream');
+  });
+
+  it('the display names (design D9) are the labels of config/supply_chain_stages.yml, in chain order; STAGE_LABEL stays the ids', () => {
+    const yml = readFileSync(resolve(process.cwd(), '../config/supply_chain_stages.yml'), 'utf8');
+    const labels = [...yml.matchAll(/^\s+label:\s*"([^"]*)"/gm)].map((m) => m[1]);
+    expect(labels).toHaveLength(6);
+    expect(SUPPLY_STAGES.map((s) => STAGE_DISPLAY[s])).toEqual(labels);
+    expect(SUPPLY_STAGES.map((s) => STAGE_DISPLAY[s])).toEqual([
+      'Extraction', 'Refining & Processing', 'Component Manufacturing', 'Final Assembly & Equipment', 'Deployment & Use', 'Recovery & Recycling',
+    ]);
+    // the data vocabulary is untouched: the Country and Sector contracts compare data values with STAGE_LABEL
+    expect(SUPPLY_STAGES.map((s) => STAGE_LABEL[s])).toEqual([...SUPPLY_STAGES]);
+    expect(stageDisplay('Assembly')).toBe('Final Assembly & Equipment');
+    expect(stageDisplay('Midstream')).toBe('Midstream');
+    // back from a display name (a hand-written link), an id as itself, anything else null
+    expect(stageOfDisplay('Deployment & Use')).toBe('Deployment');
+    expect(stageOfDisplay('Refining')).toBe('Refining');
+    expect(stageOfDisplay('refining & processing')).toBeNull();
+    expect(stageOfDisplay('Midstream')).toBeNull();
   });
 
   it('slugs and their names, six-stage and legacy kept apart', () => {

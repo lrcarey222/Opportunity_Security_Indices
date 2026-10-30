@@ -344,7 +344,7 @@
 "Hungary","Geothermal","Deployment",0.992424242424242,,,,"aligned",,"low","low_deployment_need",,,0.583880293795906,0.772935779816514
 "Iceland","Geothermal","Deployment",0.992424242424242,,,,"aligned",,"low","low_deployment_need",,,0.374980465697765,0.970183486238532
 "Iran","Oil","Extraction",0.992424242424242,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.252450980392157,0.466340621403913,,0.538461538461538
-"Iraq","Gas","Extraction",0.992424242424242,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.490147783251232,0.620991320237551,,0.222222222222222
+"Iraq","Gas","Extraction",0.992424242424242,,,,"aligned",,"medium","low_need;ample_diversified_supply;weak_domestic_case",0.490147783251232,0.620991320237551,,0.222222222222222
 "Jamaica","Wind","Deployment",0.992424242424242,,,,"aligned",,"low","low_deployment_need",,,0.478395061728395,0.282110091743119
 "Jordan","Electric Grid","Deployment",0.992424242424242,,,,"aligned",,"low","low_deployment_need",,,0.589447238374631,
 "Kuwait","Gas","Refining",0.992424242424242,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.0463414634146341,0.525513933302878,,0.868421052631579
@@ -370,18 +370,18 @@
 "Slovenia","Batteries","Deployment",0.992424242424242,,,,"aligned",,"low","low_deployment_need",,,0.364950582359823,0.454128440366972
 "Sweden","Batteries","Deployment",0.992424242424242,,,,"aligned",,"low","low_deployment_need",,,0.533391103660631,0.454128440366972
 "Switzerland","Geothermal","Deployment",0.992424242424242,,,,"aligned",,"low","low_deployment_need",,,0.284263166119706,0.525229357798165
-"Taiwan","Oil","Refining",0.992424242424242,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.407317073170732,0.0909090909090909,,0.455882352941176
+"Taiwan","Oil","Refining",0.992424242424242,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.407317073170732,0.0909090909090909,,0.455882352941176
 "Tanzania","Geothermal","Deployment",0.992424242424242,,,,"aligned",,"low","low_deployment_need",,,0.400687607438662,0.667431192660551
-"Tunisia","Wind","Refining",0.992424242424242,,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.659313725490196,0.327272727272727,,0
+"Tunisia","Wind","Refining",0.992424242424242,,,,"aligned",,"medium","low_need;low_prize",0.659313725490196,0.327272727272727,,0
 "Turkmenistan","Gas","Extraction",0.992424242424242,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.219211822660099,0.520488807674737,,0.87037037037037
 "Venezuela","Gas","Refining",0.992424242424242,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.119512195121951,0.306920968478757,,0
 "Albania","Gas","Extraction",0.977272727272727,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.529556650246305,0.306920968478757,,0
-"Algeria","Oil","Recovery",0.977272727272727,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.349827387802071,,
+"Algeria","Oil","Recovery",0.977272727272727,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.349827387802071,,
 "Angola","Solar","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.197530864197531,0.754587155963303
 "Austria","Nuclear","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.415611814345992,0.692660550458716
 "Azerbaijan","Batteries","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.139438943894389,0.454128440366972
 "Belgium","Solar","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.372845557976277,0.740825688073395
-"Bolivia","Nuclear","Refining",0.977272727272727,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.330049261083744,0.445882088208821,,0.0769230769230769
+"Bolivia","Nuclear","Refining",0.977272727272727,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.330049261083744,0.445882088208821,,0.0769230769230769
 "Bosnia and Herzegovina","Electric Grid","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.397349986321383,
 "Brunei Darussalam","Solar","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.462191358024691,0.149082568807339
 "Burundi","Batteries","Extraction",0.977272727272727,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.184729064039409,0.727272727272727,,0
@@ -403,14 +403,14 @@
 "Guyana","Solar","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.237654320987654,0.295871559633028
 "Haiti","Batteries","Extraction",0.977272727272727,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.288177339901478,0.727272727272727,,0
 "Hungary","Nuclear","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.593839067116142,0.873853211009174
-"Iraq","Oil","Extraction",0.977272727272727,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.144607843137255,0.504315304948216,,0.942307692307692
+"Iraq","Oil","Extraction",0.977272727272727,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.144607843137255,0.504315304948216,,0.942307692307692
 "Jamaica","Electric Grid","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.485576335411319,
 "Jordan","Solar","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.568500363108206,0.873853211009174
 "Kazakhstan","Nuclear","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.378457571495546,0.692660550458716
 "Kuwait","Oil","Refining",0.977272727272727,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.192682926829268,0.295454545454545,,0.955882352941177
 "Latvia","Oil","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.0443037974683544,0.343434343434343
 "Libya","Gas","Extraction",0.977272727272727,,,,"insufficient_data","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.283251231527094,0.560689812699863,,0.37037037037037
-"Luxembourg","Oil","Recovery",0.977272727272727,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
+"Luxembourg","Oil","Recovery",0.977272727272727,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
 "Madagascar","Wind","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.114197530864198,0.534403669724771
 "Malawi","Solar","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.0709876543209877,0.396788990825688
 "Malaysia","Green Hydrogen","Deployment",0.977272727272727,,,,"aligned",,"low","low_deployment_need",,,0.181318681318681,
@@ -455,7 +455,7 @@
 "Croatia","Gas","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.576306051084411,0.358585858585859
 "Czech Republic","Gas","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.518654534298746,0.358585858585859
 "Finland","Coal","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.39696804647785,0.373737373737374
-"Ghana","Gas","Extraction",0.962121212121212,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.312807881773399,0.485312928277752,,0
+"Ghana","Gas","Extraction",0.962121212121212,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.312807881773399,0.485312928277752,,0
 "Guyana","Electric Grid","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.503758709204254,
 "Hungary","Electric Vehicles","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.437373737373737,0.81712962962963
 "Iran","Geothermal","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.437099546804188,0.759174311926605
@@ -471,7 +471,7 @@
 "Montenegro","Solar","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.467955700798838,0.341743119266055
 "North Korea","Wind","Components",0.962121212121212,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.0048780487804878,0.636363636363636,,0
 "Norway","Green Hydrogen","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.181318681318681,
-"Peru","Oil","Extraction",0.962121212121212,0.934210526315789,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.644607843137255,0.377733026467204,,0.0769230769230769
+"Peru","Oil","Extraction",0.962121212121212,0.934210526315789,,,"aligned",,"high","low_need;low_prize",0.644607843137255,0.377733026467204,,0.0769230769230769
 "Poland","Electric Vehicles","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.572727272727273,0.881944444444444
 "Portugal","Coal","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.404411764705882,0.373737373737374
 "Romania","Wind","Deployment",0.962121212121212,,,,"aligned",,"low","low_deployment_need",,,0.357437666424595,0.832568807339449
@@ -523,9 +523,9 @@
 "Mauritius","Batteries","Extraction",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.514778325123153,0.727272727272727,,0
 "Nepal","Solar","Deployment",0.946969696969697,,,,"aligned",,"low","low_deployment_need",,,0.469135802469136,0.731651376146789
 "Netherlands","Green Hydrogen","Deployment",0.946969696969697,,,,"aligned",,"low","low_deployment_need",,,0.587912087912088,
-"New Zealand","Coal","Assembly",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.551470588235294,0.350853714813106,,0.0666666666666667
+"New Zealand","Coal","Assembly",0.946969696969697,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.551470588235294,0.350853714813106,,0.0666666666666667
 "Niger","Oil","Recovery",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
-"Norway","Solar","Refining",0.946969696969697,0.960526315789474,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.647783251231527,0.443615130743844,,0
+"Norway","Solar","Refining",0.946969696969697,0.960526315789474,,,"aligned",,"high","low_need;low_prize",0.647783251231527,0.443615130743844,,0
 "Oman","Gas","Extraction",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.268472906403941,0.457674737322979,,0.537037037037037
 "Paraguay","Oil","Recovery",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
 "Peru","Gas","Deployment",0.946969696969697,,,,"aligned",,"low","low_deployment_need",,,0.571782178217822,0.358585858585859
@@ -541,10 +541,10 @@
 "St. Vincent and the Grenadines","Batteries","Components",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.263546798029557,0.845454545454545,,0
 "Sweden","Gas","Deployment",0.946969696969697,,,,"aligned",,"low","low_deployment_need",,,0.575137633589067,0.358585858585859
 "Switzerland","Electric Grid","Deployment",0.946969696969697,,,,"aligned",,"low","low_deployment_need",,,0.358050156867539,
-"Taiwan","Nuclear","Components",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.568292682926829,0.363636363636364,,0.12
+"Taiwan","Nuclear","Components",0.946969696969697,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.568292682926829,0.363636363636364,,0.12
 "Tanzania","Gas","Refining",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.553658536585366,0.437481861177545,,0.315789473684211
 "Togo","Oil","Recovery",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
-"Tunisia","Solar","Refining",0.946969696969697,,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.657635467980296,0.44529702970297,,0
+"Tunisia","Solar","Refining",0.946969696969697,,,,"aligned",,"medium","low_need;low_prize",0.657635467980296,0.44529702970297,,0
 "Turkmenistan","Oil","Deployment",0.946969696969697,,,,"aligned",,"low","low_deployment_need",,,0.474683544303797,0.343434343434343
 "Venezuela","Electric Vehicles","Refining",0.946969696969697,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.544334975369458,0.635227272727273,,0
 "Albania","Electric Grid","Deployment",0.931818181818182,,,,"aligned",,"low","low_deployment_need",,,0.38962593349282,
@@ -573,10 +573,10 @@
 "Malawi","Solar","Components",0.931818181818182,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.226829268292683,0.85,,0
 "Maldives","Electric Grid","Deployment",0.931818181818182,,,,"aligned",,"low","low_deployment_need",,,0.522277227722772,
 "Mali","Oil","Recovery",0.931818181818182,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
-"Malta","Oil","Extraction",0.931818181818182,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.610294117647059,0.0909090909090909,,0
+"Malta","Oil","Extraction",0.931818181818182,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.610294117647059,0.0909090909090909,,0
 "Netherlands","Gas","Deployment",0.931818181818182,,,,"aligned",,"low","low_deployment_need",,,0.527158216911016,0.843434343434343
 "Norway","Oil","Deployment",0.931818181818182,,,,"aligned",,"low","low_deployment_need",,,0.170886075949367,0.343434343434343
-"Peru","Oil","Recovery",0.931818181818182,0.986842105263158,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.400460299194476,,
+"Peru","Oil","Recovery",0.931818181818182,0.986842105263158,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.400460299194476,,
 "Poland","Nuclear","Deployment",0.931818181818182,,,,"aligned",,"low","low_deployment_need",,,0.493436474449133,0.692660550458716
 "Romania","Nuclear","Deployment",0.931818181818182,,,,"aligned",,"low","low_deployment_need",,,0.361935272624443,0.864678899082569
 "Slovak Republic","Electric Vehicles","Deployment",0.931818181818182,,,,"aligned",,"low","low_deployment_need",,,0.510606060606061,0.752314814814815
@@ -602,7 +602,7 @@
 "Eswatini","Oil","Recovery",0.916666666666667,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
 "Gabon","Gas","Extraction",0.916666666666667,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.317733990147783,0.306920968478757,,0
 "Gambia","Solar","Refining",0.916666666666667,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.4064039408867,0.252227722772277,,0
-"Ghana","Batteries","Assembly",0.916666666666667,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.34390243902439,0.845454545454545,,0
+"Ghana","Batteries","Assembly",0.916666666666667,,,,"aligned",,"medium","low_need;weak_domestic_case",0.34390243902439,0.845454545454545,,0
 "Greece","Electric Vehicles","Deployment",0.916666666666667,,,,"aligned",,"low","low_deployment_need",,,0.584848484848485,0.821759259259259
 "Guinea","Solar","Refining",0.916666666666667,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.263546798029557,0.225,,0
 "Guinea-Bissau","Solar","Refining",0.916666666666667,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.125615763546798,0.2,,0
@@ -615,7 +615,7 @@
 "Kuwait","Batteries","Deployment",0.916666666666667,,,,"aligned",,"low","low_deployment_need",,,0.493918836328077,0.454128440366972
 "Latvia","Geothermal","Deployment",0.916666666666667,,,,"aligned",,"low","low_deployment_need",,,0.344311611189248,0.126146788990826
 "Libya","Gas","Deployment",0.916666666666667,,,,"aligned",,"low","low_deployment_need",,,0.272643931059773,0.358585858585859
-"Luxembourg","Gas","Components",0.916666666666667,,,,"insufficient_data","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.636585365853659,0.306920968478757,,0
+"Luxembourg","Gas","Components",0.916666666666667,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.636585365853659,0.306920968478757,,0
 "Malta","Wind","Deployment",0.916666666666667,,,,"aligned",,"low","low_deployment_need",,,0.418137254901961,0.557339449541284
 "Namibia","Nuclear","Refining",0.916666666666667,,,,"insufficient_data","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.66256157635468,0.445882088208821,,0.192307692307692
 "Niger","Solar","Refining",0.916666666666667,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.199507389162562,0.322772277227723,,0
@@ -646,25 +646,25 @@
 "Guyana","Batteries","Components",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.495073891625616,0.845454545454545,,0
 "Honduras","Batteries","Extraction",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.411330049261084,0.727272727272727,,0
 "Hungary","Wind","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.339391188574195,0.653669724770642
-"Ireland","Gas","Assembly",0.901515151515151,0.934210526315789,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.34390243902439,0.468519401821944,,0
+"Ireland","Gas","Assembly",0.901515151515151,0.934210526315789,,,"aligned",,"high","low_need;low_prize",0.34390243902439,0.468519401821944,,0
 "Italy","Geothermal","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.421042350367245,0.589449541284404
 "Kazakhstan","Gas","Refining",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.0658536585365854,0.53807674737323,,0.552631578947368
 "Kuwait","Oil","Extraction",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.159313725490196,0.295454545454545,,0.75
 "Latvia","Electric Grid","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.565396156017718,
 "Lesotho","Oil","Recovery",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
 "Lithuania","Gas","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.368445177851118,0.358585858585859
-"Luxembourg","Gas","Assembly",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.519512195121951,0.306920968478757,,0
+"Luxembourg","Gas","Assembly",0.901515151515151,,,,"aligned",,"medium","low_need;low_prize",0.519512195121951,0.306920968478757,,0
 "Madagascar","Electric Grid","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.290948539298374,
 "Mali","Solar","Refining",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.352216748768473,0.368564356435644,,0
 "Mauritius","Gas","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.410127123823493,
 "Namibia","Nuclear","Assembly",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.105392156862745,0.423154815481548,,0.037037037037037
-"Netherlands","Oil","Assembly",0.901515151515151,0.907894736842105,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.246341463414634,0.0909090909090909,,0.191176470588235
-"Norway","Gas","Assembly",0.901515151515151,0.907894736842105,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.617073170731707,0.254545454545455,,0.0735294117647059
+"Netherlands","Oil","Assembly",0.901515151515151,0.907894736842105,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.246341463414634,0.0909090909090909,,0.191176470588235
+"Norway","Gas","Assembly",0.901515151515151,0.907894736842105,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.617073170731707,0.254545454545455,,0.0735294117647059
 "Oman","Oil","Refining",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.397560975609756,0.3397583429229,,0.661764705882353
 "Paraguay","Oil","Components",0.901515151515151,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.153658536585366,0.0909090909090909,,0
 "Peru","Electric Grid","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.537342623151204,
 "Philippines","Green Hydrogen","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.543956043956044,
-"Romania","Electric Grid","Components",0.901515151515151,0.986842105263158,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.548780487804878,0.463636363636364,,0.46551724137931
+"Romania","Electric Grid","Components",0.901515151515151,0.986842105263158,,,"aligned",,"high","low_need;low_prize",0.548780487804878,0.463636363636364,,0.46551724137931
 "Slovak Republic","Solar","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.358672234325829,0.561926605504587
 "Sweden","Nuclear","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.216659597109667,0.924311926605505
 "Switzerland","Batteries","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.430066617772888,0.454128440366972
@@ -675,10 +675,10 @@
 "Uzbekistan","Electric Grid","Deployment",0.901515151515151,,,,"aligned",,"low","low_deployment_need",,,0.507781532121466,
 "Belarus","Batteries","Refining",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.465853658536585,0.632954545454545,,0
 "Benin","Oil","Components",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.217073170731707,0.0909090909090909,,0
-"Bulgaria","Electric Grid","Refining",0.886363636363636,0.986842105263158,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.502450980392157,0.509090909090909,,0
+"Bulgaria","Electric Grid","Refining",0.886363636363636,0.986842105263158,,,"mixed","sources_disagree","high","low_need;low_prize",0.502450980392157,0.509090909090909,,0
 "Burkina Faso","Oil","Components",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.54390243902439,0.0909090909090909,,0
 "Cabo Verde","Oil","Components",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.246341463414634,0.0909090909090909,,0
-"Chile","Oil","Recovery",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.324510932105869,,
+"Chile","Oil","Recovery",0.886363636363636,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.324510932105869,,
 "China","Green Hydrogen","Deployment",0.886363636363636,,,,"aligned",,"low","low_deployment_need",,,0.510989010989011,
 "Cote d'Ivoire","Oil","Recovery",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
 "Czech Republic","Solar","Deployment",0.886363636363636,,,,"aligned",,"low","low_deployment_need",,,0.457679738562091,0.713302752293578
@@ -696,7 +696,7 @@
 "Madagascar","Solar","Deployment",0.886363636363636,,,,"aligned",,"low","low_deployment_need",,,0.182098765432099,0.506880733944954
 "Mauritania","Batteries","Extraction",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.248768472906404,0.727272727272727,,0
 "Mauritius","Electric Grid","Deployment",0.886363636363636,,,,"aligned",,"low","low_deployment_need",,,0.421250458379171,
-"Mozambique","Solar","Refining",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.307881773399015,0.368564356435644,,0
+"Mozambique","Solar","Refining",0.886363636363636,,,,"aligned",,"medium","low_need;low_prize",0.307881773399015,0.368564356435644,,0
 "Namibia","Solar","Components",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.431707317073171,0.85,,0
 "New Zealand","Gas","Deployment",0.886363636363636,,,,"aligned",,"low","low_deployment_need",,,0.443252658599193,0.358585858585859
 "Sierra Leone","Oil","Components",0.886363636363636,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.319512195121951,0.0909090909090909,,0
@@ -711,23 +711,23 @@
 "Austria","Gas","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.467180051338467,0.358585858585859
 "Azerbaijan","Wind","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.154320987654321,0.727064220183486
 "Belarus","Oil","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.069620253164557,0.343434343434343
-"Bulgaria","Oil","Refining",0.871212121212121,0.447368421052632,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.104878048780488,0.225834292289988,,0.0882352941176471
+"Bulgaria","Oil","Refining",0.871212121212121,0.447368421052632,,,"mixed","sources_disagree","medium","low_need;low_prize;ample_diversified_supply",0.104878048780488,0.225834292289988,,0.0882352941176471
 "Colombia","Green Hydrogen","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.423076923076923,
 "Costa Rica","Batteries","Extraction",0.871212121212121,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.4064039408867,0.727272727272727,,0
 "Czech Republic","Geothermal","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.365330520393812,0.571100917431193
-"Estonia","Oil","Assembly",0.871212121212121,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.270731707317073,0.124568469505178,,0
+"Estonia","Oil","Assembly",0.871212121212121,,,,"aligned",,"medium","low_need;low_prize",0.270731707317073,0.124568469505178,,0
 "Eswatini","Oil","Components",0.871212121212121,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.202439024390244,0.0909090909090909,,0
 "Finland","Batteries","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.569940658086973,0.454128440366972
 "Gabon","Solar","Components",0.871212121212121,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.3,0.85,,0
 "Greece","Coal","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.387527233115468,0.00505050505050505
 "Hungary","Electric Grid","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.504357512470824,
-"Ireland","Oil","Assembly",0.871212121212121,0.960526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.139024390243902,0.219505178365938,,0
+"Ireland","Oil","Assembly",0.871212121212121,0.960526315789474,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.139024390243902,0.219505178365938,,0
 "Jamaica","Gas","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.563134091186897,
 "Kuwait","Solar","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.568672839506173,0.415137614678899
 "Lesotho","Solar","Refining",0.871212121212121,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.322660098522167,0.269554455445545,,0
-"Lithuania","Oil","Assembly",0.871212121212121,0.986842105263158,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.514634146341463,0.105581127733026,,0
+"Lithuania","Oil","Assembly",0.871212121212121,0.986842105263158,,,"mixed","sources_disagree","high","low_need;low_prize",0.514634146341463,0.105581127733026,,0
 "Luxembourg","Oil","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.00632911392405063,0.343434343434343
-"Mozambique","Oil","Components",0.871212121212121,,,,"insufficient_data","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.621951219512195,0.0909090909090909,,0
+"Mozambique","Oil","Components",0.871212121212121,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.621951219512195,0.0909090909090909,,0
 "Namibia","Oil","Extraction",0.871212121212121,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.531862745098039,0.0909090909090909,,0
 "Netherlands","Geothermal","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.55379746835443,0.635321100917431
 "New Zealand","Coal","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.469589687726943,0.373737373737374
@@ -735,7 +735,7 @@
 "Poland","Wind","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.573946986201888,0.873853211009174
 "Romania","Batteries","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.464012869540922,0.454128440366972
 "Slovak Republic","Oil","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.158227848101266,0.343434343434343
-"Sweden","Oil","Assembly",0.871212121212121,0.723684210526316,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.382926829268293,0.213176064441887,,0.544117647058823
+"Sweden","Oil","Assembly",0.871212121212121,0.723684210526316,,,"aligned",,"high","low_need;low_prize",0.382926829268293,0.213176064441887,,0.544117647058823
 "Taiwan","Oil","Deployment",0.871212121212121,,,,"aligned",,"low","low_deployment_need",,,0.0949367088607595,0.843434343434343
 "Tanzania","Gas","Extraction",0.871212121212121,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.302955665024631,0.437481861177545,,0
 "Algeria","Wind","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.553280077463084,0.759174311926605
@@ -744,29 +744,29 @@
 "Azerbaijan","Solar","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.12962962962963,0.520642201834862
 "Belarus","Oil","Refining",0.856060606060606,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.573170731707317,0.0909090909090909,,0
 "Botswana","Oil","Components",0.856060606060606,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.617073170731707,0.0909090909090909,,0
-"Bulgaria","Electric Grid","Assembly",0.856060606060606,0.960526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.275609756097561,0.463636363636364,,0.176470588235294
+"Bulgaria","Electric Grid","Assembly",0.856060606060606,0.960526315789474,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.275609756097561,0.463636363636364,,0.176470588235294
 "Burkina Faso","Electric Grid","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.591034103410341,
-"Chile","Solar","Refining",0.856060606060606,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.568965517241379,0.459386900228484,,0.583333333333333
+"Chile","Solar","Refining",0.856060606060606,,,,"aligned",,"medium","low_need;low_prize",0.568965517241379,0.459386900228484,,0.583333333333333
 "Cote d'Ivoire","Solar","Refining",0.856060606060606,,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.637931034482759,0.285643564356436,,0
 "Czech Republic","Oil","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.563291139240506,0.343434343434343
-"Estonia","Gas","Components",0.856060606060606,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.265853658536585,0.306920968478757,,0.0714285714285714
+"Estonia","Gas","Components",0.856060606060606,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.265853658536585,0.306920968478757,,0.0714285714285714
 "Germany","Geothermal","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.486286919831224,0.685779816513762
-"Ghana","Batteries","Recovery",0.856060606060606,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.396551724137931,0.936363636363636,,
+"Ghana","Batteries","Recovery",0.856060606060606,,,,"aligned",,"medium","low_need;ample_diversified_supply;weak_domestic_case",0.396551724137931,0.936363636363636,,
 "Guinea","Batteries","Recovery",0.856060606060606,,,,"insufficient_data","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.642857142857143,0.936363636363636,,
 "Hungary","Solar","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.556796175260228,0.837155963302752
-"Iceland","Oil","Refining",0.856060606060606,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.353658536585366,0.187859608745685,,0
+"Iceland","Oil","Refining",0.856060606060606,,,,"aligned",,"medium","low_need;low_prize",0.353658536585366,0.187859608745685,,0
 "Kazakhstan","Oil","Extraction",0.856060606060606,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.178921568627451,0.396720368239356,,0.673076923076923
 "Lesotho","Oil","Components",0.856060606060606,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.314634146341463,0.0909090909090909,,0
-"Lithuania","Gas","Assembly",0.856060606060606,0.960526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.582926829268293,0.254545454545455,,0
+"Lithuania","Gas","Assembly",0.856060606060606,0.960526315789474,,,"mixed","sources_disagree","high","low_need;low_prize",0.582926829268293,0.254545454545455,,0
 "Luxembourg","Wind","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.494898329702251,0.635321100917431
 "Mauritania","Gas","Extraction",0.856060606060606,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.342364532019704,0.306920968478757,,0
 "Mozambique","Wind","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.138888888888889,0.373853211009174
 "Namibia","Nuclear","Components",0.856060606060606,,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.660975609756098,0.423154815481548,,0
-"Netherlands","Oil","Refining",0.856060606060606,0.855263157894737,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.14390243902439,0.0909090909090909,,0.808823529411765
+"Netherlands","Oil","Refining",0.856060606060606,0.855263157894737,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.14390243902439,0.0909090909090909,,0.808823529411765
 "New Zealand","Green Hydrogen","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.181318681318681,
 "Paraguay","Solar","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.345679012345679,0.38302752293578
-"Peru","Oil","Refining",0.856060606060606,0.960526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.490243902439024,0.377733026467204,,0.176470588235294
-"Poland","Gas","Assembly",0.856060606060606,0.960526315789474,,,"insufficient_data","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.246341463414634,0.574527382903824,,0.191176470588235
+"Peru","Oil","Refining",0.856060606060606,0.960526315789474,,,"aligned",,"high","low_need;low_prize",0.490243902439024,0.377733026467204,,0.176470588235294
+"Poland","Gas","Assembly",0.856060606060606,0.960526315789474,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.246341463414634,0.574527382903824,,0.191176470588235
 "Romania","Green Hydrogen","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.368131868131868,
 "Slovak Republic","Electric Grid","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.284118689646742,
 "Tanzania","Electric Grid","Deployment",0.856060606060606,,,,"aligned",,"low","low_deployment_need",,,0.589471976298159,
@@ -777,49 +777,49 @@
 "Belarus","Electric Grid","Deployment",0.840909090909091,,,,"aligned",,"low","low_deployment_need",,,0.468524630240802,
 "Czech Republic","Batteries","Deployment",0.840909090909091,,,,"aligned",,"low","low_deployment_need",,,0.418153124836293,0.454128440366972
 "El Salvador","Oil","Recovery",0.840909090909091,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
-"Estonia","Gas","Assembly",0.840909090909091,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.275609756097561,0.306920968478757,,0.117647058823529
+"Estonia","Gas","Assembly",0.840909090909091,,,,"aligned",,"medium","low_need;low_prize",0.275609756097561,0.306920968478757,,0.117647058823529
 "Greece","Electric Grid","Deployment",0.840909090909091,,,,"aligned",,"low","low_deployment_need",,,0.510851944982858,
 "Guatemala","Oil","Recovery",0.840909090909091,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
-"Iceland","Electric Vehicles","Refining",0.840909090909091,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.470443349753695,0.635227272727273,,0
+"Iceland","Electric Vehicles","Refining",0.840909090909091,,,,"aligned",,"medium","low_need;weak_domestic_case",0.470443349753695,0.635227272727273,,0
 "Kazakhstan","Gas","Deployment",0.840909090909091,,,,"aligned",,"low","low_deployment_need",,,0.58956729006234,0.833333333333333
 "Kuwait","Batteries","Extraction",0.840909090909091,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.431034482758621,0.727272727272727,,0
 "Luxembourg","Batteries","Deployment",0.840909090909091,,,,"aligned",,"low","low_deployment_need",,,0.587658832020768,0.454128440366972
-"New Zealand","Oil","Extraction",0.840909090909091,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.375,0.200517836593786,,0
-"Norway","Batteries","Assembly",0.840909090909091,0.855263157894737,,,"over_prioritized","watch_attention","medium","low_need;weak_domestic_case",0.592682926829268,0.845454545454545,,0.0625
+"New Zealand","Oil","Extraction",0.840909090909091,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.375,0.200517836593786,,0
+"Norway","Batteries","Assembly",0.840909090909091,0.855263157894737,,,"aligned",,"high","low_need;weak_domestic_case",0.592682926829268,0.845454545454545,,0.0625
 "Romania","Electric Grid","Deployment",0.840909090909091,,,,"aligned",,"low","low_deployment_need",,,0.424918219335161,
 "Slovak Republic","Wind","Deployment",0.840909090909091,,,,"aligned",,"low","low_deployment_need",,,0.418076736867587,0.552752293577982
-"Algeria","Oil","Extraction",0.825757575757576,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.218137254901961,0.327100115074799,,0.403846153846154
+"Algeria","Oil","Extraction",0.825757575757576,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.218137254901961,0.327100115074799,,0.403846153846154
 "Austria","Oil","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.132911392405063,0.343434343434343
-"Bolivia","Oil","Recovery",0.825757575757576,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
+"Bolivia","Oil","Recovery",0.825757575757576,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
 "Cote d'Ivoire","Oil","Components",0.825757575757576,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.470731707317073,0.0909090909090909,,0
 "Finland","Wind","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.429877753570564,0.942660550458716
-"Ghana","Gas","Refining",0.825757575757576,,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.646341463414634,0.485312928277752,,0
+"Ghana","Gas","Refining",0.825757575757576,,,,"aligned",,"medium","low_need;low_prize",0.646341463414634,0.485312928277752,,0
 "Greece","Gas","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.46359990029504,0.0151515151515152
 "Guinea","Solar","Components",0.825757575757576,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.514634146341463,0.85,,0
 "Hungary","Oil","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.208860759493671,0.343434343434343
-"Ireland","Electric Grid","Components",0.825757575757576,0.855263157894737,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.363414634146341,0.463636363636364,,0.0344827586206897
+"Ireland","Electric Grid","Components",0.825757575757576,0.855263157894737,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.363414634146341,0.463636363636364,,0.0344827586206897
 "Kazakhstan","Coal","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.398602033405955,0.924242424242424
 "Kuwait","Green Hydrogen","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.5,
 "Luxembourg","Electric Grid","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.431280231197723,
 "Mauritania","Batteries","Components",0.825757575757576,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.194581280788177,0.845454545454545,,0
 "Netherlands","Solar","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.526258775114984,0.777522935779816
-"New Zealand","Coal","Extraction",0.825757575757576,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.514778325123153,0.0363636363636364,,0.166666666666667
+"New Zealand","Coal","Extraction",0.825757575757576,,,,"aligned",,"medium","low_need;low_prize",0.514778325123153,0.0363636363636364,,0.166666666666667
 "Oman","Solar","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.555555555555556,0.667431192660551
 "Paraguay","Oil","Refining",0.825757575757576,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.075609756097561,0.0909090909090909,,0
-"Peru","Electric Grid","Extraction",0.825757575757576,0.460526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.332512315270936,0.509090909090909,,0.75
+"Peru","Electric Grid","Extraction",0.825757575757576,0.460526315789474,,,"mixed","sources_disagree","high","low_need;low_prize",0.332512315270936,0.509090909090909,,0.75
 "Sierra Leone","Oil","Refining",0.825757575757576,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.451219512195122,0.0909090909090909,,0
 "Slovak Republic","Batteries","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.277798877771375,0.454128440366972
-"Spain","Coal","Assembly",0.825757575757576,0.828947368421053,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.443627450980392,0.163636363636364,,0.416666666666667
+"Spain","Coal","Assembly",0.825757575757576,0.828947368421053,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.443627450980392,0.163636363636364,,0.416666666666667
 "Sweden","Oil","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.259493670886076,0.343434343434343
 "Switzerland","Wind","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.256263616557734,0.772935779816514
 "Taiwan","Electric Grid","Deployment",0.825757575757576,,,,"aligned",,"low","low_deployment_need",,,0.438699425498105,
 "Algeria","Gas","Deployment",0.810606060606061,,,,"aligned",,"low","low_deployment_need",,,0.548099254369881,0.358585858585859
 "Belarus","Oil","Extraction",0.810606060606061,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.443627450980392,0.0909090909090909,,0
 "Burkina Faso","Oil","Refining",0.810606060606061,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.168292682926829,0.0909090909090909,,0
-"Chile","Oil","Components",0.810606060606061,,,,"insufficient_data","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.636585365853659,0.301783659378596,,0
+"Chile","Oil","Components",0.810606060606061,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.636585365853659,0.301783659378596,,0
 "Estonia","Geothermal","Deployment",0.810606060606061,,,,"aligned",,"low","low_deployment_need",,,0.391819034224098,0.126146788990826
 "Finland","Geothermal","Deployment",0.810606060606061,,,,"aligned",,"low","low_deployment_need",,,0.518049695264885,0.126146788990826
-"Greece","Gas","Refining",0.810606060606061,0.986842105263158,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.304878048780488,0.493460282696907,,0
+"Greece","Gas","Refining",0.810606060606061,0.986842105263158,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.304878048780488,0.493460282696907,,0
 "Guatemala","Solar","Refining",0.810606060606061,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.238916256157635,0.239851485148515,,0
 "Honduras","Oil","Recovery",0.810606060606061,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
 "India","Green Hydrogen","Deployment",0.810606060606061,,,,"aligned",,"low","low_deployment_need",,,0.554945054945055,
@@ -829,13 +829,13 @@
 "Netherlands","Oil","Deployment",0.810606060606061,,,,"aligned",,"low","low_deployment_need",,,0.145569620253165,0.752525252525252
 "Oman","Oil","Components",0.810606060606061,,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.651219512195122,0.3397583429229,,0.8125
 "Poland","Electric Grid","Deployment",0.810606060606061,,,,"aligned",,"low","low_deployment_need",,,0.470713936473012,
-"Romania","Oil","Refining",0.810606060606061,0.407894736842105,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.0853658536585366,0.276467203682394,,0.294117647058824
+"Romania","Oil","Refining",0.810606060606061,0.407894736842105,,,"mixed","sources_disagree","medium","low_need;low_prize;ample_diversified_supply",0.0853658536585366,0.276467203682394,,0.294117647058824
 "Sweden","Electric Grid","Deployment",0.810606060606061,,,,"aligned",,"low","low_deployment_need",,,0.452997217711189,
 "Uzbekistan","Batteries","Deployment",0.810606060606061,,,,"aligned",,"low","low_deployment_need",,,0.540703342821055,0.454128440366972
 "Belarus","Gas","Deployment",0.795454545454545,,,,"aligned",,"low","low_deployment_need",,,0.320498716538321,0.358585858585859
 "Belgium","Oil","Deployment",0.795454545454545,,,,"aligned",,"low","low_deployment_need",,,0.272151898734177,0.343434343434343
 "Benin","Oil","Refining",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.182926829268293,0.0909090909090909,,0
-"Bolivia","Solar","Refining",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.524630541871921,0.322772277227723,,0
+"Bolivia","Solar","Refining",0.795454545454545,,,,"aligned",,"medium","low_need;low_prize",0.524630541871921,0.322772277227723,,0
 "Botswana","Oil","Refining",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.524390243902439,0.0909090909090909,,0
 "Cabo Verde","Oil","Refining",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.0658536585365854,0.0909090909090909,,0.529411764705882
 "Costa Rica","Solar","Deployment",0.795454545454545,,,,"aligned",,"low","low_deployment_need",,,0.417162914548535,0.185779816513761
@@ -845,15 +845,15 @@
 "Gambia","Oil","Refining",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.0121951219512195,0.0909090909090909,,0.588235294117647
 "Ghana","Electric Grid","Deployment",0.795454545454545,,,,"aligned",,"low","low_deployment_need",,,0.452681445393217,
 "Guinea","Oil","Refining",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.368292682926829,0.0909090909090909,,0
-"Hungary","Electric Grid","Components",0.795454545454545,0.460526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.392682926829268,0.463636363636364,,0.431034482758621
-"Mozambique","Oil","Refining",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.5,0.0909090909090909,,0
+"Hungary","Electric Grid","Components",0.795454545454545,0.460526315789474,,,"aligned",,"high","low_need;low_prize",0.392682926829268,0.463636363636364,,0.431034482758621
+"Mozambique","Oil","Refining",0.795454545454545,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.5,0.0909090909090909,,0
 "Netherlands","Electric Grid","Deployment",0.795454545454545,,,,"aligned",,"low","low_deployment_need",,,0.468430771648593,
 "New Zealand","Oil","Deployment",0.795454545454545,,,,"aligned",,"low","low_deployment_need",,,0.284810126582278,0.343434343434343
 "Niger","Oil","Refining",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.0804878048780488,0.0909090909090909,,0.294117647058824
 "Oman","Wind","Deployment",0.795454545454545,,,,"aligned",,"low","low_deployment_need",,,0.521604938271605,0.681192660550459
 "Poland","Batteries","Deployment",0.795454545454545,,,,"aligned",,"low","low_deployment_need",,,0.581972019953318,0.454128440366972
-"Romania","Coal","Components",0.795454545454545,0.407894736842105,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.412195121951219,0.163636363636364,,0.416666666666667
-"Slovak Republic","Coal","Assembly",0.795454545454545,0.986842105263158,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.399509803921569,0.163636363636364,,0.1
+"Romania","Coal","Components",0.795454545454545,0.407894736842105,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.412195121951219,0.163636363636364,,0.416666666666667
+"Slovak Republic","Coal","Assembly",0.795454545454545,0.986842105263158,,,"mixed","sources_disagree","high","low_need;low_prize",0.399509803921569,0.163636363636364,,0.1
 "Sweden","Solar","Deployment",0.795454545454545,,,,"aligned",,"low","low_deployment_need",,,0.305948922778988,0.717889908256881
 "Togo","Oil","Refining",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.480487804878049,0.0909090909090909,,0.176470588235294
 "Uruguay","Oil","Components",0.795454545454545,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.134146341463415,0.0909090909090909,,0
@@ -863,49 +863,49 @@
 "Chile","Geothermal","Deployment",0.78030303030303,,,,"aligned",,"low","low_deployment_need",,,0.574152211283013,0.919724770642202
 "Denmark","Coal","Deployment",0.78030303030303,,,,"aligned",,"low","low_deployment_need",,,0.565631808278867,0.373737373737374
 "El Salvador","Oil","Components",0.78030303030303,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.558536585365854,0.0909090909090909,,0
-"Estonia","Oil","Components",0.78030303030303,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.431707317073171,0.124568469505178,,0.375
+"Estonia","Oil","Components",0.78030303030303,,,,"aligned",,"medium","low_need;low_prize",0.431707317073171,0.124568469505178,,0.375
 "Finland","Electric Grid","Deployment",0.78030303030303,,,,"aligned",,"low","low_deployment_need",,,0.430022962613722,
-"Ghana","Oil","Refining",0.78030303030303,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.236585365853659,0.0909090909090909,,0
+"Ghana","Oil","Refining",0.78030303030303,,,,"aligned",,"medium","low_need;low_prize",0.236585365853659,0.0909090909090909,,0
 "Guatemala","Oil","Components",0.78030303030303,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.58780487804878,0.0909090909090909,,0
 "Honduras","Solar","Refining",0.78030303030303,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.431034482758621,0.276980198019802,,0
-"Iceland","Oil","Recovery",0.78030303030303,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.210586881472957,,
+"Iceland","Oil","Recovery",0.78030303030303,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.210586881472957,,
 "Kazakhstan","Wind","Deployment",0.78030303030303,,,,"aligned",,"low","low_deployment_need",,,0.530864197530864,0.896788990825688
 "Mozambique","Solar","Deployment",0.78030303030303,,,,"aligned",,"low","low_deployment_need",,,0.095679012345679,0.465596330275229
 "Nicaragua","Batteries","Recovery",0.78030303030303,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.391625615763547,0.936363636363636,,
 "Norway","Electric Grid","Deployment",0.78030303030303,,,,"aligned",,"low","low_deployment_need",,,0.489655910035448,
-"Peru","Gas","Extraction",0.78030303030303,0.460526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.293103448275862,0.254545454545455,,0.222222222222222
-"Poland","Electric Grid","Assembly",0.78030303030303,0.723684210526316,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.353658536585366,0.463636363636364,,0.661764705882353
+"Peru","Gas","Extraction",0.78030303030303,0.460526315789474,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.293103448275862,0.254545454545455,,0.222222222222222
+"Poland","Electric Grid","Assembly",0.78030303030303,0.723684210526316,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.353658536585366,0.463636363636364,,0.661764705882353
 "Russia","Green Hydrogen","Deployment",0.78030303030303,,,,"aligned",,"low","low_deployment_need",,,0.181318681318681,
 "Sweden","Coal","Deployment",0.78030303030303,,,,"aligned",,"low","low_deployment_need",,,0.381717501815541,0.373737373737374
-"Switzerland","Solar","Refining",0.78030303030303,0.447368421052632,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.598522167487685,0.416704747397817,,0
+"Switzerland","Solar","Refining",0.78030303030303,0.447368421052632,,,"aligned",,"high","low_need;low_prize",0.598522167487685,0.416704747397817,,0
 "Belgium","Batteries","Deployment",0.765151515151515,,,,"aligned",,"low","low_deployment_need",,,0.412406650717982,0.454128440366972
 "Benin","Batteries","Extraction",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.302955665024631,0.727272727272727,,0
-"Bolivia","Electric Vehicles","Components",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.58780487804878,0.645454545454546,,0
+"Bolivia","Electric Vehicles","Components",0.765151515151515,,,,"aligned",,"medium","low_need;weak_domestic_case",0.58780487804878,0.645454545454546,,0
 "Cabo Verde","Batteries","Extraction",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.357142857142857,0.727272727272727,,0
 "Costa Rica","Oil","Recovery",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
 "Cote d'Ivoire","Batteries","Extraction",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.11576354679803,0.727272727272727,,0
-"Czech Republic","Electric Grid","Assembly",0.765151515151515,0.907894736842105,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.207317073170732,0.463636363636364,,0.602941176470588
+"Czech Republic","Electric Grid","Assembly",0.765151515151515,0.907894736842105,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.207317073170732,0.463636363636364,,0.602941176470588
 "Estonia","Oil","Deployment",0.765151515151515,,,,"aligned",,"low","low_deployment_need",,,0.0316455696202532,0.343434343434343
 "Finland","Solar","Deployment",0.765151515151515,,,,"aligned",,"low","low_deployment_need",,,0.364397240377633,0.626146788990826
 "Gambia","Batteries","Extraction",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.24384236453202,0.727272727272727,,0
 "Guinea-Bissau","Batteries","Extraction",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.0369458128078818,0.727272727272727,,0
-"Hungary","Coal","Extraction",0.765151515151515,0.460526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.485221674876847,0.0363636363636364,,0.166666666666667
+"Hungary","Coal","Extraction",0.765151515151515,0.460526315789474,,,"aligned",,"high","low_need;low_prize",0.485221674876847,0.0363636363636364,,0.166666666666667
 "Kazakhstan","Solar","Deployment",0.765151515151515,,,,"aligned",,"low","low_deployment_need",,,0.339506172839506,0.548165137614679
 "Namibia","Oil","Recovery",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
-"New Zealand","Solar","Components",0.765151515151515,,,,"insufficient_data","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.636585365853659,0.85,,0.0357142857142857
+"New Zealand","Solar","Components",0.765151515151515,,,,"aligned",,"medium","low_need;ample_diversified_supply;weak_domestic_case",0.636585365853659,0.85,,0.0357142857142857
 "Nicaragua","Electric Grid","Deployment",0.765151515151515,,,,"aligned",,"low","low_deployment_need",,,0.566587214276983,
 "Niger","Batteries","Extraction",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.524630541871921,0.727272727272727,,0
 "Peru","Electric Vehicles","Deployment",0.765151515151515,,,,"aligned",,"low","low_deployment_need",,,0.388888888888889,0.604166666666667
-"Portugal","Oil","Assembly",0.765151515151515,0.960526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.236585365853659,0.23849252013809,,0.176470588235294
+"Portugal","Oil","Assembly",0.765151515151515,0.960526315789474,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.236585365853659,0.23849252013809,,0.176470588235294
 "Senegal","Oil","Recovery",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.136363636363636,,
-"Spain","Electric Grid","Refining",0.765151515151515,0.855263157894737,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.512254901960784,0.509090909090909,,0
+"Spain","Electric Grid","Refining",0.765151515151515,0.855263157894737,,,"aligned",,"high","low_need;low_prize",0.512254901960784,0.509090909090909,,0
 "Switzerland","Oil","Deployment",0.765151515151515,,,,"aligned",,"low","low_deployment_need",,,0.221518987341772,0.343434343434343
 "Togo","Batteries","Extraction",0.765151515151515,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.386699507389163,0.727272727272727,,0
 "Uzbekistan","Green Hydrogen","Deployment",0.765151515151515,,,,"aligned",,"low","low_deployment_need",,,0.379120879120879,
 "Burkina Faso","Batteries","Extraction",0.75,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.135467980295567,0.727272727272727,,0
 "Cote d'Ivoire","Solar","Deployment",0.75,,,,"aligned",,"low","low_deployment_need",,,0.12037037037037,0.360091743119266
 "Estonia","Solar","Deployment",0.75,,,,"aligned",,"low","low_deployment_need",,,0.483109416606149,0.584862385321101
-"Iceland","Batteries","Extraction",0.75,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.194581280788177,0.727272727272727,,0
+"Iceland","Batteries","Extraction",0.75,,,,"aligned",,"medium","low_need;weak_domestic_case",0.194581280788177,0.727272727272727,,0
 "Iran","Solar","Deployment",0.75,,,,"aligned",,"low","low_deployment_need",,,0.342592592592593,0.878440366972477
 "New Zealand","Electric Grid","Deployment",0.75,,,,"aligned",,"low","low_deployment_need",,,0.508756497342856,
 "Sierra Leone","Electric Grid","Deployment",0.75,,,,"aligned",,"low","low_deployment_need",,,0.586633663366337,
@@ -914,82 +914,82 @@
 "United States","Geothermal","Deployment",0.75,,,,"aligned",,"low","low_deployment_need",,,0.418229410845445,0.997706422018349
 "Venezuela","Batteries","Extraction",0.75,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.396551724137931,0.727272727272727,,0
 "Argentina","Geothermal","Deployment",0.734848484848485,,,,"aligned",,"low","low_deployment_need",,,0.370604781997187,0.951834862385321
-"Chile","Nuclear","Assembly",0.734848484848485,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.526960784313726,0.423154815481548,,0.037037037037037
+"Chile","Nuclear","Assembly",0.734848484848485,,,,"aligned",,"medium","low_need;low_prize",0.526960784313726,0.423154815481548,,0.037037037037037
 "Estonia","Gas","Deployment",0.734848484848485,,,,"aligned",,"low","low_deployment_need",,,0.464674245202298,0.358585858585859
-"Greece","Coal","Extraction",0.734848484848485,0.368421052631579,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.613300492610837,0.0363636363636364,,0.166666666666667
+"Greece","Coal","Extraction",0.734848484848485,0.368421052631579,,,"mixed","sources_disagree","high","low_need;low_prize",0.613300492610837,0.0363636363636364,,0.166666666666667
 "Honduras","Oil","Components",0.734848484848485,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.495121951219512,0.0909090909090909,,0
 "Indonesia","Green Hydrogen","Deployment",0.734848484848485,,,,"aligned",,"low","low_deployment_need",,,0.181318681318681,
-"Ireland","Gas","Components",0.734848484848485,0.407894736842105,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.38780487804878,0.468519401821944,,0
+"Ireland","Gas","Components",0.734848484848485,0.407894736842105,,,"aligned",,"high","low_need;low_prize",0.38780487804878,0.468519401821944,,0
 "Kazakhstan","Electric Grid","Deployment",0.734848484848485,,,,"aligned",,"low","low_deployment_need",,,0.562003422564479,
 "Namibia","Solar","Refining",0.734848484848485,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.317733990147783,0.299257425742574,,0
 "New Zealand","Wind","Deployment",0.734848484848485,,,,"aligned",,"low","low_deployment_need",,,0.494147906076011,0.791284403669725
-"Portugal","Gas","Assembly",0.734848484848485,0.934210526315789,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.163414634146341,0.279596847875742,,0.117647058823529
+"Portugal","Gas","Assembly",0.734848484848485,0.934210526315789,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.163414634146341,0.279596847875742,,0.117647058823529
 "Senegal","Solar","Refining",0.734848484848485,,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.667487684729064,0.358663366336634,,0
 "Sierra Leone","Batteries","Extraction",0.734848484848485,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.258620689655172,0.727272727272727,,0
-"Slovak Republic","Gas","Assembly",0.734848484848485,0.960526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.129268292682927,0.254545454545455,,0.367647058823529
-"Spain","Coal","Components",0.734848484848485,0.644736842105263,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.519512195121951,0.163636363636364,,0.35
-"Switzerland","Oil","Components",0.734848484848485,0.447368421052632,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.412195121951219,0.181530494821634,,0
+"Slovak Republic","Gas","Assembly",0.734848484848485,0.960526315789474,,,"mixed","sources_disagree","high","low_need;low_prize",0.129268292682927,0.254545454545455,,0.367647058823529
+"Spain","Coal","Components",0.734848484848485,0.644736842105263,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.519512195121951,0.163636363636364,,0.35
+"Switzerland","Oil","Components",0.734848484848485,0.447368421052632,,,"aligned",,"high","low_need;low_prize",0.412195121951219,0.181530494821634,,0
 "Venezuela","Solar","Deployment",0.734848484848485,,,,"aligned",,"low","low_deployment_need",,,0.0987654320987654,0.552752293577982
-"Austria","Gas","Components",0.71969696969697,0.855263157894737,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.460975609756098,0.254545454545455,,0.553571428571429
+"Austria","Gas","Components",0.71969696969697,0.855263157894737,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.460975609756098,0.254545454545455,,0.553571428571429
 "Belgium","Electric Grid","Deployment",0.71969696969697,,,,"aligned",,"low","low_deployment_need",,,0.350678255656253,
-"Chile","Nuclear","Components",0.71969696969697,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.573170731707317,0.423154815481548,,0
+"Chile","Nuclear","Components",0.71969696969697,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.573170731707317,0.423154815481548,,0
 "El Salvador","Batteries","Recovery",0.71969696969697,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.583743842364532,0.936363636363636,,
-"Finland","Oil","Refining",0.71969696969697,0.960526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.0365853658536585,0.0909090909090909,,0.602941176470588
+"Finland","Oil","Refining",0.71969696969697,0.960526315789474,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.0365853658536585,0.0909090909090909,,0.602941176470588
 "Ireland","Oil","Deployment",0.71969696969697,,,,"aligned",,"low","low_deployment_need",,,0.424050632911392,0.343434343434343
-"Netherlands","Gas","Assembly",0.71969696969697,0.881578947368421,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.309756097560976,0.389890965522801,,0.397058823529412
+"Netherlands","Gas","Assembly",0.71969696969697,0.881578947368421,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.309756097560976,0.389890965522801,,0.397058823529412
 "Nicaragua","Batteries","Components",0.71969696969697,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.445812807881773,0.845454545454545,,0
 "Peru","Wind","Deployment",0.71969696969697,,,,"aligned",,"low","low_deployment_need",,,0.441358024691358,0.795871559633027
-"Poland","Electric Grid","Components",0.71969696969697,0.697368421052632,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.504878048780488,0.463636363636364,,0.155172413793103
-"Portugal","Electric Grid","Assembly",0.71969696969697,0.460526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.119512195121951,0.463636363636364,,0.294117647058824
+"Poland","Electric Grid","Components",0.71969696969697,0.697368421052632,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.504878048780488,0.463636363636364,,0.155172413793103
+"Portugal","Electric Grid","Assembly",0.71969696969697,0.460526315789474,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.119512195121951,0.463636363636364,,0.294117647058824
 "Sweden","Wind","Deployment",0.71969696969697,,,,"aligned",,"low","low_deployment_need",,,0.378812636165577,0.947247706422018
-"Belgium","Electric Grid","Assembly",0.704545454545455,0.986842105263158,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.192682926829268,0.463636363636364,,0.0441176470588235
-"Chile","Electric Grid","Assembly",0.704545454545455,,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.621951219512195,0.463636363636364,,0
+"Belgium","Electric Grid","Assembly",0.704545454545455,0.986842105263158,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.192682926829268,0.463636363636364,,0.0441176470588235
+"Chile","Electric Grid","Assembly",0.704545454545455,,,,"aligned",,"medium","low_need;low_prize",0.621951219512195,0.463636363636364,,0
 "Costa Rica","Oil","Components",0.704545454545455,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.407317073170732,0.0909090909090909,,0
 "Cote d'Ivoire","Oil","Refining",0.704545454545455,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.0268292682926829,0.0909090909090909,,0.5
-"Denmark","Gas","Refining",0.704545454545455,0.934210526315789,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.280487804878049,0.405742280923333,,0
+"Denmark","Gas","Refining",0.704545454545455,0.934210526315789,,,"mixed","sources_disagree","high","low_need;low_prize",0.280487804878049,0.405742280923333,,0
 "El Salvador","Batteries","Extraction",0.704545454545455,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.485221674876847,0.727272727272727,,0
-"Estonia","Batteries","Extraction",0.704545454545455,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.608374384236453,0.727272727272727,,0
-"Finland","Oil","Assembly",0.704545454545455,0.881578947368421,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.182926829268293,0.0909090909090909,,0.602941176470588
-"Ireland","Electric Vehicles","Assembly",0.704545454545455,0.407894736842105,,,"over_prioritized","watch_attention","medium","low_need;ample_diversified_supply;weak_domestic_case",0.426829268292683,0.645454545454546,,0.137931034482759
-"New Zealand","Batteries","Extraction",0.704545454545455,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.229064039408867,0.727272727272727,,0
-"Norway","Electric Grid","Extraction",0.704545454545455,0.355263157894737,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.504926108374384,0.509090909090909,,0
-"Peru","Solar","Refining",0.704545454545455,0.460526315789474,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.46551724137931,0.426732673267327,,0
+"Estonia","Batteries","Extraction",0.704545454545455,,,,"aligned",,"medium","low_need;weak_domestic_case",0.608374384236453,0.727272727272727,,0
+"Finland","Oil","Assembly",0.704545454545455,0.881578947368421,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.182926829268293,0.0909090909090909,,0.602941176470588
+"Ireland","Electric Vehicles","Assembly",0.704545454545455,0.407894736842105,,,"aligned",,"high","low_need;ample_diversified_supply;weak_domestic_case",0.426829268292683,0.645454545454546,,0.137931034482759
+"New Zealand","Batteries","Extraction",0.704545454545455,,,,"aligned",,"medium","low_need;weak_domestic_case",0.229064039408867,0.727272727272727,,0
+"Norway","Electric Grid","Extraction",0.704545454545455,0.355263157894737,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.504926108374384,0.509090909090909,,0
+"Peru","Solar","Refining",0.704545454545455,0.460526315789474,,,"aligned",,"high","low_need;low_prize",0.46551724137931,0.426732673267327,,0
 "Poland","Solar","Deployment",0.704545454545455,,,,"aligned",,"low","low_deployment_need",,,0.47777172597434,0.901376146788991
-"Romania","Electric Grid","Assembly",0.704545454545455,0.881578947368421,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.0707317073170732,0.463636363636364,,0.75
-"Slovak Republic","Gas","Components",0.704545454545455,0.907894736842105,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.275609756097561,0.254545454545455,,0.446428571428571
-"Switzerland","Electric Grid","Refining",0.704545454545455,0.986842105263158,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.66421568627451,0.509090909090909,,0
+"Romania","Electric Grid","Assembly",0.704545454545455,0.881578947368421,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.0707317073170732,0.463636363636364,,0.75
+"Slovak Republic","Gas","Components",0.704545454545455,0.907894736842105,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.275609756097561,0.254545454545455,,0.446428571428571
+"Switzerland","Electric Grid","Refining",0.704545454545455,0.986842105263158,,,"mixed","sources_disagree","high","low_need;low_prize",0.66421568627451,0.509090909090909,,0
 "Argentina","Green Hydrogen","Deployment",0.689393939393939,,,,"aligned",,"low","low_deployment_need",,,0.181318681318681,
 "Bolivia","Solar","Deployment",0.689393939393939,,,,"aligned",,"low","low_deployment_need",,,0.534722222222222,0.424311926605505
 "Chile","Nuclear","Deployment",0.689393939393939,,,,"aligned",,"low","low_deployment_need",,,0.558720112517581,0.692660550458716
-"Denmark","Electric Grid","Assembly",0.689393939393939,0.907894736842105,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.173170731707317,0.463636363636364,,0.5
+"Denmark","Electric Grid","Assembly",0.689393939393939,0.907894736842105,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.173170731707317,0.463636363636364,,0.5
 "El Salvador","Wind","Deployment",0.689393939393939,,,,"aligned",,"low","low_deployment_need",,,0.305555555555556,0.341743119266055
-"Greece","Gas","Components",0.689393939393939,0.368421052631579,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.5,0.493460282696907,,0
+"Greece","Gas","Components",0.689393939393939,0.368421052631579,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.5,0.493460282696907,,0
 "Guatemala","Oil","Refining",0.689393939393939,,,,"insufficient_data","watch_attention","low","low_need;low_prize",0.65609756097561,0.0909090909090909,,0
 "Honduras","Solar","Deployment",0.689393939393939,,,,"aligned",,"low","low_deployment_need",,,0.453703703703704,0.662844036697248
 "Iceland","Wind","Deployment",0.689393939393939,,,,"aligned",,"low","low_deployment_need",,,0.316920842411039,0.763761467889908
 "Iran","Gas","Deployment",0.689393939393939,,,,"aligned",,"low","low_deployment_need",,,0.564142525363648,0.964646464646465
-"Netherlands","Coal","Components",0.689393939393939,0.828947368421053,,,"over_prioritized","watch_attention","medium","low_need;low_prize",0.54390243902439,0.163636363636364,,0.55
+"Netherlands","Coal","Components",0.689393939393939,0.828947368421053,,,"aligned",,"high","low_need;low_prize",0.54390243902439,0.163636363636364,,0.55
 "Nicaragua","Batteries","Extraction",0.689393939393939,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.366995073891626,0.727272727272727,,0
 "Peru","Coal","Deployment",0.689393939393939,,,,"aligned",,"low","low_deployment_need",,,0.456336238198983,0.373737373737374
-"Sweden","Coal","Assembly",0.689393939393939,0.315789473684211,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.394607843137255,0.350853714813106,,0.15
+"Sweden","Coal","Assembly",0.689393939393939,0.315789473684211,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.394607843137255,0.350853714813106,,0.15
 "Uruguay","Oil","Refining",0.689393939393939,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.00731707317073171,0.0909090909090909,,0
-"Chile","Coal","Assembly",0.674242424242424,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.536764705882353,0.163636363636364,,0.0666666666666667
+"Chile","Coal","Assembly",0.674242424242424,,,,"aligned",,"medium","low_need;low_prize",0.536764705882353,0.163636363636364,,0.0666666666666667
 "Costa Rica","Batteries","Recovery",0.674242424242424,,,,"over_prioritized","watch_attention","low","low_need;ample_diversified_supply;weak_domestic_case",0.509852216748768,0.936363636363636,,
-"Denmark","Oil","Assembly",0.674242424242424,0.881578947368421,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.0853658536585366,0.14355581127733,,0.426470588235294
+"Denmark","Oil","Assembly",0.674242424242424,0.881578947368421,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.0853658536585366,0.14355581127733,,0.426470588235294
 "El Salvador","Oil","Refining",0.674242424242424,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.568292682926829,0.0909090909090909,,0
-"Estonia","Oil","Extraction",0.674242424242424,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.512254901960784,0.124568469505178,,0
-"Finland","Gas","Assembly",0.674242424242424,0.855263157894737,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.158536585365854,0.254545454545455,,0.411764705882353
-"Greece","Oil","Refining",0.674242424242424,0.802631578947368,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.129268292682927,0.308112773302647,,0.691176470588235
+"Estonia","Oil","Extraction",0.674242424242424,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.512254901960784,0.124568469505178,,0
+"Finland","Gas","Assembly",0.674242424242424,0.855263157894737,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.158536585365854,0.254545454545455,,0.411764705882353
+"Greece","Oil","Refining",0.674242424242424,0.802631578947368,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.129268292682927,0.308112773302647,,0.691176470588235
 "Honduras","Oil","Refining",0.674242424242424,,,,"over_prioritized","watch_attention","low","low_need;low_prize",0.465853658536585,0.0909090909090909,,0
-"Iceland","Oil","Extraction",0.674242424242424,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.477941176470588,0.187859608745685,,0
+"Iceland","Oil","Extraction",0.674242424242424,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.477941176470588,0.187859608745685,,0
 "Iran","Wind","Deployment",0.674242424242424,,,,"aligned",,"low","low_deployment_need",,,0.444444444444444,0.809633027522936
 "Namibia","Oil","Refining",0.674242424242424,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.163414634146341,0.0909090909090909,,0.147058823529412
-"Netherlands","Oil","Components",0.674242424242424,0.328947368421053,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.363414634146341,0.0909090909090909,,0.354166666666667
-"New Zealand","Gas","Extraction",0.674242424242424,,,,"over_prioritized","watch_attention","low","low_need;low_prize;ample_diversified_supply",0.322660098522167,0.306920968478757,,0
-"Norway","Gas","Components",0.674242424242424,0.355263157894737,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.280487804878049,0.254545454545455,,0.0535714285714286
+"Netherlands","Oil","Components",0.674242424242424,0.328947368421053,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.363414634146341,0.0909090909090909,,0.354166666666667
+"New Zealand","Gas","Extraction",0.674242424242424,,,,"aligned",,"medium","low_need;low_prize;ample_diversified_supply",0.322660098522167,0.306920968478757,,0
+"Norway","Gas","Components",0.674242424242424,0.355263157894737,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.280487804878049,0.254545454545455,,0.0535714285714286
 "Poland","Oil","Deployment",0.674242424242424,,,,"aligned",,"low","low_deployment_need",,,0.462025316455696,0.813131313131313
-"Slovak Republic","Oil","Assembly",0.674242424242424,0.881578947368421,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.075609756097561,0.13722669735328,,0
-"Switzerland","Oil","Recovery",0.674242424242424,0.447368421052632,,,"over_prioritized","watch_attention","medium","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.204257767548907,,
+"Slovak Republic","Oil","Assembly",0.674242424242424,0.881578947368421,,,"mixed","sources_disagree","high","low_need;low_prize;ample_diversified_supply",0.075609756097561,0.13722669735328,,0
+"Switzerland","Oil","Recovery",0.674242424242424,0.447368421052632,,,"aligned",,"high","low_need;low_prize;ample_diversified_supply",0.426108374384236,0.204257767548907,,
 "United States","Green Hydrogen","Deployment",0.674242424242424,,,,"aligned",,"low","low_deployment_need",,,0.181318681318681,
 "Uruguay","Electric Vehicles","Components",0.674242424242424,,,,"over_prioritized","watch_attention","low","low_need;weak_domestic_case",0.178048780487805,0.645454545454546,,0.0555555555555556
 "Venezuela","Green Hydrogen","Deployment",0.674242424242424,,,,"aligned",,"low","low_deployment_need",,,0.181318681318681,

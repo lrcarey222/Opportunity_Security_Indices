@@ -10,12 +10,14 @@ const SPEC_IDS = [
   'hhi', 'effective_n', 'rca', 'feasibility', 'matrix', 'mirror', 'basket', 'sub_component', 'net_balance', 'self_sufficiency', 'cmfdi', 'chinese_parent',
   'investment_ties', 'trl', 'unattributed', 'paper_baseline', 'scenario', 'dials', 'hawkishness', 'bullishness', 'populism', 'greenness', 'grow',
   // the corners with the keys secure and watch, shown as Exposed and Stable since 2026-10-28
-  'upgrade', 'exposed', 'stable', 'quadrant', 'priority_no_policy', 'ties_today', 'memo',
+  'upgrade', 'exposed', 'stable', 'quadrant',
+  // the paper baseline's index model, demoted to Legacy OSI (2026-10-29)
+  'legacy_osi', 'priority_no_policy', 'ties_today', 'memo',
   // Development & finance raw data (Sector Insights, 2026-10-15)
   'oda', 'dip_position', 'conduit_centre', 'wdi',
-  // the strategic position framework (posture/basis.tsx POSTURE_TERMS, 2026-10-28)
-  'posture', 'strategic_need', 'industrial_opportunity', 'competitive_position', 'security_rationale', 'policy_alignment', 'partner_gap',
-  'trade_momentum', 'aib_gap', 'partner_demand',
+  // the strategic position framework (posture/basis.tsx POSTURE_TERMS; canonical since 2026-10-29)
+  'posture', 'strategic_need', 'supply_chain_need', 'deployment_need', 'need_type', 'industrial_opportunity', 'competitive_position', 'pathway',
+  'deploy_mode', 'security_rationale', 'delivery_mode', 'consistency_flag', 'policy_alignment', 'partner_gap', 'trade_momentum', 'aib_gap', 'partner_demand',
 ];
 
 describe('glossary content (C3.2)', () => {
@@ -88,7 +90,13 @@ describe('glossary content (C3.2)', () => {
       expect(s, id).toMatch(/not (a strategic|the Secure) posture/);
       expect(s, id).not.toMatch(/paper|three-stage|six-stage/i);
     }
-    expect(glossaryById.get('quadrant')?.more).toContain('not the need × opportunity quadrant of the strategic posture charts');
+    // the corners are Legacy OSI (the paper baseline), each with its closest current choice (design 5)
+    expect(glossaryById.get('quadrant')?.more).toContain('they are Legacy OSI (the paper baseline), not the strategic posture');
+    const closest = { grow: 'Preserve', upgrade: 'Catch Up', exposed: 'Partner', stable: 'Watch' } as const;
+    for (const [id, verb] of Object.entries(closest)) {
+      expect(glossaryById.get(id)?.short, id).toContain('(Legacy OSI)');
+      expect(glossaryById.get(id)?.more, id).toContain(`Its closest current choice is ${verb}, but the results differ`);
+    }
   });
 
   it('six stages only: no Upstream, Midstream or Downstream and no three-stage qualifier anywhere (design S1)', () => {
@@ -121,6 +129,34 @@ describe('glossary content (C3.2)', () => {
     expect(glossaryById.get('policy_alignment')?.more).toContain('Not the same as UN-vote alignment');
     expect(glossaryById.get('strategic_need')?.more).toContain("Not the same as the Strategic Index's security need");
     for (const m of ['sector', 'strategic', 'country'] as const) expect(glossaryFor(m).some((e) => e.id === 'posture'), m).toBe(true);
+  });
+
+  it('the canonical framework: Need (two kinds, never combined) -> Prize -> Position -> Choice (six verbs) -> Policy alignment; the legacy indices say so (design 5)', () => {
+    const g = (id: string) => glossaryById.get(id) as { term: string; short: string; more?: string };
+    expect(g('posture').short).toContain('Secure, Compete (Preserve, Catch Up or Partner) or Deploy (Accelerate or Watch)');
+    // the retired need x opportunity rule is gone
+    for (const id of ['posture', 'strategic_need', 'industrial_opportunity', 'competitive_position']) {
+      const text = `${g(id).short} ${g(id).more ?? ''}`;
+      expect(text, id).not.toMatch(/catch up \(both high\)|preserve \(opportunity only\)|consistency check on the posture|Assembly need|Economic Opportunity placed among/);
+    }
+    expect(g('strategic_need').short).toContain('never combined into one score');
+    expect(g('supply_chain_need').short).toMatch(/Producing stages only\.$/);
+    expect(g('deployment_need').short).toContain('Deployment & Use only');
+    expect(g('deployment_need').more).toContain('never Partner');
+    expect(g('deployment_need').more).toContain('not assessed, never zero');
+    expect(g('industrial_opportunity').more).toContain('no current capability');
+    expect(g('industrial_opportunity').more).toContain('Not the legacy Economic Opportunity index');
+    expect(g('competitive_position').more).toMatch(/^Demonstrated capability only/);
+    expect(g('pathway').short).toContain('Unknown counts as not credible');
+    for (const v of ['aligned', 'under-prioritized', 'over-prioritized', 'wrong treatment (misaligned)', 'deployment under-response', 'mixed']) expect(g('policy_alignment').short).toContain(v);
+    expect(g('policy_alignment').more).toContain('insufficient data or low confidence, never a guess');
+    expect(g('partner_demand').short).toContain('Deploy · Accelerate is a deployment priority and is not counted');
+    // the paper baseline's model is Legacy OSI, with the mapping and why the results differ
+    expect(g('legacy_osi').term).toBe('Legacy OSI framework');
+    expect(g('legacy_osi').more).toContain('Grow to Preserve, Upgrade to Catch Up, Exposed to Partner, Stable to Watch');
+    expect(g('legacy_osi').more).toContain('capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment');
+    for (const id of ['es', 'eo', 'si']) expect(g(id).more, id).toContain('Part of the Legacy OSI framework (the paper baseline)');
+    expect(g('paper_baseline').more).toContain('The dials re-weight only the Legacy OSI indices');
   });
 
   it('the renamed corners (2026-10-28) keep no old id and carry their new names', () => {

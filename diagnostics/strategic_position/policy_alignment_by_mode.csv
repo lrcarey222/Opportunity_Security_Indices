@@ -12,12 +12,12 @@
 "compete","preserve","mixed","fence_without_build",3
 "compete","preserve","mixed","sources_disagree",24
 "compete","preserve","under_prioritized",,27
-"deploy","watch","aligned",,3033
-"deploy","watch","insufficient_data","watch_attention",29
+"deploy","watch","aligned",,3117
+"deploy","watch","insufficient_data","watch_attention",17
 "deploy","watch","insufficient_data","watch_protection",16
 "deploy","watch","insufficient_data",,1189
-"deploy","watch","mixed","sources_disagree",61
-"deploy","watch","over_prioritized","watch_attention",307
+"deploy","watch","mixed","sources_disagree",89
+"deploy","watch","over_prioritized","watch_attention",207
 "deploy","watch","over_prioritized","watch_localisation_deployment",65
 "deploy","watch","over_prioritized","watch_protection",103
 "deploy",,"aligned",,273

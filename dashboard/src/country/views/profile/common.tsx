@@ -1,15 +1,17 @@
 // Shared pieces of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16): the profile context
 // (sheet, manifest entry, URL state and its setters, the disclosures lifted to the page so they survive
-// the engine mounting, the Allied Industrial Base document), the Perspective context (the Strategic Index
-// under the reader's dials, else null = the NEIS baseline), the section wrapper (an h2 with its anchor and
-// its basis eyebrow), the controlled disclosure (Fold) and the CSV helper (columns in plain words, last
-// two columns `source` and `baseline_as_of`, A4.0).
+// the engine mounting, the Allied Industrial Base document, and since 2026-10-29 the strategic position
+// framework's data with the shared ?node= selection), the Perspective context (the Strategic Index under
+// the reader's dials, else null = the NEIS baseline; Legacy OSI only), the section wrapper (an h2 with its
+// anchor and its basis eyebrow), the controlled disclosure (Fold) and the CSV helper (columns in plain
+// words, last two columns `source` and `baseline_as_of`, A4.0).
 
 import { createContext, useContext, type ReactNode } from 'react';
 import { rowsToCsv } from '../../../lib/csv.ts';
 import { Loading } from '../../../components/ui.tsx';
 import { useScenarioOptional } from '../../../state/EngineProvider.tsx';
 import type { AibDoc } from '../../../aib/contract.ts';
+import type { NodeSelection, PostureCell, PostureCore, PostureDetail } from '../../../posture/index.ts';
 import type { CountryEntry, CountryManifest, DriversDoc, FactSheet } from '../../contract.ts';
 import type { SiMap } from '../../derive/framing.ts';
 import type { CountryUrlState, PartnerTab } from '../../url.ts';
@@ -51,6 +53,22 @@ export interface ProfileCtx {
   /** the open node of the Strategic posture card ("Tech|Stage"; lifted to the page so it survives the engine mounting) */
   pcell?: string | null;
   setPcell?: (key: string | null) => void;
+  /** the strategic position framework (design 2026-10-29): the posture core, the economy's cells and detail, the ?node= selection */
+  posture?: CountryPosture;
+}
+
+/** The canonical framework's data for the page's sections 1-6 (never the dials or the in-browser engine). */
+export interface CountryPosture {
+  status: 'loading' | 'ready' | 'error';
+  error: string | null;
+  retry: () => void;
+  core: PostureCore | null;
+  /** the economy's cells (empty while loading, or when it has no posture) */
+  cells: PostureCell[];
+  /** the economy's detail document (null while it loads or when it cannot be loaded) */
+  detail: PostureDetail | null;
+  /** the shared node selection (?node=Tech|Stage, design D8): every entry point opens the one drawer through it */
+  node: NodeSelection;
 }
 
 const Ctx = createContext<ProfileCtx | null>(null);
@@ -104,11 +122,11 @@ export function perspectiveNote(si: PerspectiveSi): string {
 
 /** A page section: <section id> with an h2 (cards inside use h3); `basis` adds the eyebrow above the h2. */
 export function Section({
-  id, title, intro, basis, level = 2, aliases, children,
-}: { id: string; title: string; intro?: ReactNode; basis?: ReactNode; level?: 2 | 3; aliases?: readonly string[]; children: ReactNode }) {
+  id, title, intro, basis, level = 2, aliases, children, className,
+}: { id: string; title: string; intro?: ReactNode; basis?: ReactNode; level?: 2 | 3; aliases?: readonly string[]; children: ReactNode; className?: string }) {
   const H = level === 3 ? 'h3' : 'h2';
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-16">
+    <section id={id} aria-labelledby={`${id}-h`} className={`scroll-mt-16${className ? ` ${className}` : ''}`}>
       {/* old section ids (links from before the IA refactor) still scroll here */}
       {aliases?.map((a) => <span key={a} id={a} className="block scroll-mt-16" aria-hidden="true" />)}
       {basis && <div className="mb-1.5 flex flex-wrap gap-1.5">{basis}</div>}

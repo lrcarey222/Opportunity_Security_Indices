@@ -25,7 +25,8 @@ import { diversifyRow, diversifyTotals, relationshipsOf } from '../derive/divers
 import { everyShock } from '../derive/network.ts';
 import { compactTechs, compactTitle, techTitle } from '../derive/format.ts';
 import { NOT_IN_BASKET, nodeInTech, osiCellHref, osiCellOf, osiFields, profiledCellsOfNode, taxonomyOf, techKeysOfNode, technologiesOfNodes } from '../derive/taxonomy.ts';
-import { parseCellSlug } from '../../lib/stages.ts';
+import { DEPLOYMENT_STAGE, parseCellSlug } from '../../lib/stages.ts';
+import { decodeCore, POSTURE_SCHEMA_VERSION } from '../../posture/contract.ts';
 import { REAL_DIR } from './fixture.ts';
 
 const have = existsSync(resolve(REAL_DIR, 'manifest.json'));
@@ -406,5 +407,32 @@ describe.skipIf(!have)('the real Sectoral Compacts bundle (public/data/aib)', ()
         `${doc.compacts.length} compacts, ${doc.nodes.length} nodes, ${Object.keys(countryNamesOf(doc)).length} economies named`,
     );
     expect(gz).toBeLessThan(2 * 1024 * 1024);
+  });
+});
+
+// The allied division the AIB Overview shows comes from the posture bundle (public/data/posture, scripts/91,
+// schema 2; design section 5): its Partner demand is the economies whose canonical choice for the node is
+// Compete · Partner and its Secure demand those that Secure it; Deploy · Accelerate is never counted, and no
+// division node sits at Deployment & Use. Skipped without a schema-2 posture core.
+const POSTURE_DIR = resolve(REAL_DIR, '..', 'posture');
+const postureManifest = existsSync(resolve(POSTURE_DIR, 'manifest.json')) ? (JSON.parse(readFileSync(resolve(POSTURE_DIR, 'manifest.json'), 'utf8')) as { schema_version?: number; core?: string }) : null;
+const havePosture = !!postureManifest && postureManifest.schema_version === POSTURE_SCHEMA_VERSION && !!postureManifest.core && existsSync(resolve(POSTURE_DIR, postureManifest.core));
+
+describe.skipIf(!havePosture)('the real allied division (public/data/posture, schema 2)', () => {
+  it('Partner demand counts Compete · Partner choices and Secure demand Secure ones; Deploy · Accelerate is not counted; no node at Deployment', () => {
+    const core = decodeCore(JSON.parse(readFileSync(resolve(POSTURE_DIR, postureManifest?.core as string), 'utf8')));
+    const key = (t: string, s: string) => `${t}|${s}`;
+    const partner = new Map<string, number>();
+    const secure = new Map<string, number>();
+    for (const c of core.cells) {
+      if (c.posture === 'C' && c.mode === 'partner') partner.set(key(c.tech, c.stage), (partner.get(key(c.tech, c.stage)) ?? 0) + 1);
+      if (c.posture === 'S') secure.set(key(c.tech, c.stage), (secure.get(key(c.tech, c.stage)) ?? 0) + 1);
+    }
+    expect(core.division.length).toBeGreaterThan(0);
+    expect(core.division.filter((d) => d.stage === DEPLOYMENT_STAGE)).toEqual([]);
+    const off = core.division.filter((d) => d.partnerDemand !== (partner.get(key(d.tech, d.stage)) ?? 0) || d.secureDemand !== (secure.get(key(d.tech, d.stage)) ?? 0));
+    expect(off.map((d) => `${d.tech}|${d.stage}: partner ${d.partnerDemand}, secure ${d.secureDemand}`)).toEqual([]);
+    // Accelerate exists only at Deployment, which has no division node
+    expect(core.cells.filter((c) => c.deployMode === 'accelerate' && c.stage !== DEPLOYMENT_STAGE)).toEqual([]);
   });
 });

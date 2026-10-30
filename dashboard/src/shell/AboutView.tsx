@@ -17,7 +17,7 @@ export const ABOUT_MAIN: readonly AboutLink[] = [
   {
     to: '/methods',
     title: 'Methods',
-    body: 'How the strategic posture and the indices (Energy Security, Economic Opportunity, the Strategic Index, the partnership measures) are built at the six supply-chain stages, and what the four perspective dials change, with the formulas.',
+    body: 'How the strategic decision framework reads need, prize and position into one choice per technology and stage and compares it with policy; then the Legacy OSI framework: the indices (Energy Security, Economic Opportunity, the Strategic Index, the partnership measures) and what the four perspective dials change, with the formulas.',
   },
   {
     to: '/data',
@@ -83,9 +83,10 @@ export default function AboutView() {
           <strong className="text-paper">Observed or modelled facts</strong> (trade flows, production, concentration, how much supply a shock removes, what
           existing and coordinated partners can replace, the gaps that remain) are the same for every reader.{' '}
           <strong className="text-paper">Preference-adjusted priorities</strong> (which sectors a country should put first, how attractive a partner is) depend on how
-          much weight you give security, opportunity, home production and climate. The perspective dials on a country profile change only the second kind; every
-          index starts from the NEIS baseline. The strategic posture on the Country, Sector and Allied Industrial Base pages (Secure, Compete, Deploy) is a
-          recommendation from the strategic position framework; it does not move with the dials.
+          much weight you give security, opportunity, home production and climate. The perspective dials change only the second kind, and only for the Legacy
+          OSI framework (the paper baseline&rsquo;s indices); every index starts from the NEIS baseline. The strategic posture on the Country, Sector and Allied
+          Industrial Base pages (Secure, Preserve, Catch Up, Partner, Accelerate or Watch, from need, prize and position) is the current recommendation, at fixed
+          thresholds; it does not move with the dials.
         </p>
       </section>
     </div>

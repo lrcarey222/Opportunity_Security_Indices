@@ -1,15 +1,20 @@
 // Country derive helpers on the synthetic fixture (spec_country.md A12 "TS unit"): the generated lede
 // (scored, near-tie, no Strategic Index, not rankable), the "why" sentence (drivers named only in the
 // direction they push; "despite" otherwise), prose names and possessives, the slope-chart model, the
-// priorities matrix and the partner table rows, the quadrant counts line.
+// priorities matrix and the partner table rows, the Legacy OSI corner counts line (schema 3, legacy_*), and the
+// Country page's own pure helpers (derive/strategyPage.ts: anchors, node <-> cell, freshness, coverage, the
+// Legacy OSI mapping).
 
 import { describe, expect, it } from 'vitest';
 import { glossaryById } from '../../content/glossary.ts';
 import { SUPPLY_STAGES } from '../../lib/stages.ts';
-import { cellOf, NO_ES_CELLS, QUADRANT_IDS, QUADRANTS, type CellFacts, type Driver, type FactSheet } from '../contract.ts';
-import { coverageRows, isNoEsCell, matrixCells, partnerTableRows, priorityRows, quadrantLine, scatterPoints, slopeModel, supplierModel } from '../derive/model.ts';
+import { cellOf, COUNTRY_CELL_KEYS, LEGACY_CORNER_IDS, LEGACY_CORNERS, NO_ES_CELLS, type CellFacts, type Driver, type FactSheet } from '../contract.ts';
+import { cellsByLegacyCorner, coverageRows, isNoEsCell, legacyCornerLine, matrixCells, partnerTableRows, priorityRows, quadrantLine, scatterPoints, slopeModel, supplierModel } from '../derive/model.ts';
 import {
-  editionSuffix, euRegionSentence, ledeOf, notPlacedReason, poss, proseName, quadrantWord, rawNoteLine, sectorsByTechText, shortCellLabel, whyIntro, whySentence,
+  cellKeyOfNode, coverageCounts, dateLabel, freshnessItems, hashPlan, LEGACY_MAPPING_ROWS, LEGACY_MIXES, LEGACY_SECTION, nodeKeyOfCell, STRATEGY_SECTIONS,
+} from '../derive/strategyPage.ts';
+import {
+  editionSuffix, euRegionSentence, ledeOf, legacyCornerWord, notPlacedReason, poss, proseName, quadrantWord, rawNoteLine, sectorsByTechText, shortCellLabel, whyIntro, whySentence,
 } from '../derive/text.ts';
 import { haveFixture, readSheet } from './fixture.ts';
 
@@ -103,8 +108,10 @@ describe.skipIf(!haveFixture())('derive helpers on the synthetic sheets', () => 
       expect(p.short).toBe(shortCellLabel(p.cell));
     }
     expect(NO_ES_CELLS.every((k) => isNoEsCell(usa, k))).toBe(true);
-    expect(notPlacedReason({ ...bat, quadrant_reason: null, es: null })).toBe('no Energy Security score for any economy in this sector');
-    expect(usa.cells.find((c) => c.key === 'geothermal-extraction')!.quadrant_reason).toMatch(/Energy Security/);
+    expect(notPlacedReason({ ...bat, legacy_corner_reason: null, es: null })).toBe('no Energy Security score for any economy in this sector');
+    expect(usa.cells.find((c) => c.key === 'geothermal-extraction')!.legacy_corner_reason).toMatch(/Energy Security/);
+    // every scatter point carries its Legacy OSI corner
+    for (const p of pts) expect(LEGACY_CORNER_IDS).toContain(p.corner);
     // the policy coverage grid: 11 technologies x the six stages, cell keys of the sheet
     const cov = coverageRows(usa);
     expect(cov).toHaveLength(11);
@@ -178,13 +185,79 @@ describe.skipIf(!haveFixture())('derive helpers on the synthetic sheets', () => 
     expect(pt.filter((r) => r.extra).every((r) => r.in_tie_top)).toBe(true);
   });
 
-  it("the quadrant counts line and corner words use the app's names, not the sheet's words (2026-10-28)", () => {
-    // the synthetic sheets were exported with the older words (Secure, Watch); the app prints its own
-    expect(usa.words.quadrant.secure).toBeTruthy();
-    expect(quadrantLine({ grow: 4, upgrade: 6, secure: 9, watch: 3 })).toBe('Grow 4 · Upgrade 6 · Exposed 9 · Stable 3');
-    expect(QUADRANT_IDS.map((q) => quadrantWord(q))).toEqual(['Grow', 'Upgrade', 'Exposed', 'Stable']);
-    expect(quadrantWord(null)).toBe('');
+  it("the Legacy OSI corner counts line and corner words use the app's names, not the sheet's words (2026-10-28; schema 3 keys)", () => {
+    // the sheet carries the memo tokens' words under words.legacy_corner (schema 3); the app prints its own
+    expect(usa.words.legacy_corner.legacy_exposed).toBeTruthy();
+    expect(legacyCornerLine({ legacy_grow: 4, legacy_upgrade: 6, legacy_exposed: 9, legacy_stable: 3 })).toBe('Grow 4 · Upgrade 6 · Exposed 9 · Stable 3');
+    expect(quadrantLine).toBe(legacyCornerLine);
+    expect(legacyCornerLine(null)).toBeNull();
+    expect(LEGACY_CORNER_IDS.map((q) => legacyCornerWord(q))).toEqual(['Grow', 'Upgrade', 'Exposed', 'Stable']);
+    expect(quadrantWord).toBe(legacyCornerWord);
+    expect(legacyCornerWord(null)).toBe('');
     // the glossary id of each corner follows its name and exists
-    for (const q of QUADRANTS) expect(glossaryById.get(q.glossary)?.term, q.id).toBe(q.label);
+    for (const q of LEGACY_CORNERS) expect(glossaryById.get(q.glossary)?.term, q.id).toBe(q.label);
+    // the corners partition the placed sectors, matching summary.legacy_corners
+    const by = cellsByLegacyCorner(usa);
+    for (const q of LEGACY_CORNER_IDS) expect(by[q].length, q).toBe(usa.summary.legacy_corners[q].v);
+    expect(Object.values(by).flat().length).toBe(usa.cells.filter((c) => c.placed).length);
+  });
+});
+
+describe.skipIf(!haveFixture())('Country page helpers (derive/strategyPage.ts, design 2026-10-29)', () => {
+  const usa = readSheet('USA');
+  it('seven sections in the spec order, each with its anchor; the old anchors are aliases or open their disclosure', () => {
+    expect(STRATEGY_SECTIONS.map((s) => s.label)).toEqual(['Strategy', 'Need', 'Prize & Position', 'Choices', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology']);
+    expect(STRATEGY_SECTIONS.map((s) => s.id)).toEqual(['strategy', 'need', 'prize-position', 'choices', 'policy-alignment', 'allied', 'evidence']);
+    const alias = (id: string) => STRATEGY_SECTIONS.find((s) => s.aliases.includes(id))?.id ?? (LEGACY_SECTION.aliases.includes(id) ? LEGACY_SECTION.id : null);
+    expect(alias('posture')).toBe('strategy');
+    expect(alias('glance')).toBe('strategy');
+    expect(alias('policy')).toBe('policy-alignment');
+    expect(alias('priorities')).toBe('policy-alignment');
+    expect(alias('partnerships')).toBe('allied');
+    expect(alias('aib-role')).toBe('allied');
+    expect(alias('notes')).toBe('evidence');
+    for (const id of ['position', 'space', 'opportunities', 'sectors', 'si']) expect(alias(id), id).toBe('legacy-osi');
+    // no anchor is claimed twice
+    const all = [...STRATEGY_SECTIONS.flatMap((s) => [s.id, ...s.aliases]), LEGACY_SECTION.id, ...LEGACY_SECTION.aliases];
+    expect(new Set(all).size).toBe(all.length);
+    expect(hashPlan('#why')).toEqual({ folds: ['legacy', 'why'], target: 'fold-why' });
+    expect(hashPlan('#aib-role')).toEqual({ folds: ['partnerships-explore'], target: 'allied-aib-role' });
+    expect(hashPlan('#sectors')).toEqual({ folds: ['legacy'], target: 'legacy-sectors' });
+    expect(hashPlan('#need')).toEqual({ folds: [], target: 'need' });
+    expect(hashPlan('')).toEqual({ folds: [], target: null });
+  });
+
+  it('a posture node maps to its fact-sheet cell and back; anything else is null', () => {
+    expect(cellKeyOfNode('Batteries|Refining')).toBe('batteries-refining');
+    expect(cellKeyOfNode('Electric Grid|Deployment')).toBe('electric-grid-deployment');
+    expect(cellKeyOfNode('Batteries|Midstream')).toBeNull();
+    expect(cellKeyOfNode('Fusion|Refining')).toBeNull();
+    expect(cellKeyOfNode('Batteries|Refining|x')).toBeNull();
+    expect(cellKeyOfNode(null)).toBeNull();
+    for (const c of usa.cells) expect(cellKeyOfNode(nodeKeyOfCell(c))).toBe(c.key);
+    expect(new Set(usa.cells.map((c) => cellKeyOfNode(nodeKeyOfCell(c))))).toEqual(new Set(COUNTRY_CELL_KEYS));
+  });
+
+  it('freshness names what each date dates; coverage counts evidence, borderline and flags; the Legacy OSI mapping', () => {
+    expect(dateLabel('2026-10-29T07:14:00Z')).toBe('29 October 2026');
+    expect(dateLabel('2026-13-01')).toBeNull();
+    expect(dateLabel(null)).toBeNull();
+    expect(freshnessItems({ created: '2026-10-29T00:00:00Z', benchmark: '2022-2024', momentumThrough: 'Aug 2026', asOfLabel: '12 October 2026' })).toEqual([
+      'Strategy built 29 October 2026', 'trade benchmark 2022-2024', 'trade momentum through Aug 2026', 'country facts as of 12 October 2026',
+    ]);
+    expect(freshnessItems({ created: null, benchmark: null, momentumThrough: null, asOfLabel: 'x' })).toEqual(['country facts as of x']);
+    const n = coverageCounts([
+      { posture: 'S', evidence: 'strong', borderline: null, flag: null },
+      { posture: 'C', evidence: 'moderate', borderline: 'need', flag: 'review_strong_position_low_prize' },
+      { posture: 'D', evidence: 'weak', borderline: null, flag: null },
+      { posture: 'D', evidence: null, borderline: null, flag: null },
+      { posture: 'N', evidence: null, borderline: null, flag: null },
+    ]);
+    expect(n).toEqual({ nodes: 5, assessed: 4, notAssessed: 1, strong: 1, moderate: 1, weak: 1, ungraded: 1, borderline: 1, flagged: 1 });
+    expect(LEGACY_MAPPING_ROWS.map((r) => [r.label, r.mapsTo])).toEqual([['Grow', 'Preserve'], ['Upgrade', 'Catch Up'], ['Exposed', 'Partner'], ['Stable', 'Watch']]);
+    for (const r of LEGACY_MAPPING_ROWS) expect(r.differs.length).toBeGreaterThan(40);
+    // Stable ~ Watch: both Watch routes, not only low need and low prize
+    expect(LEGACY_MAPPING_ROWS.find((r) => r.mapsTo === 'Watch')?.differs).toMatch(/^Watch is a positive conclusion of low need, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway;/);
+    expect(LEGACY_MIXES).toEqual(['capability', 'vulnerability', 'production', 'trade', 'investment', 'demand', 'reserves', 'concentration', 'deployment']);
   });
 });

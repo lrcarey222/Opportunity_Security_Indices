@@ -1,23 +1,27 @@
-// S0 and S1 of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16): the page head (eyebrow,
-// the country's name, the generated lede as the short strategic summary), the country picker with the tier
-// / EU / policy-basis tags, the memo action, and four "at a glance" tiles (where its sectors sit, the top
-// Strategic Index sector under the reader's Perspective, the strongest partner, the climate rating). The dials
-// sit on the page (Perspective), so the bridge to Strategic Insights is gone. Since 2026-10-29 (design L2) the
-// first tile is the strategic posture's Secure / Compete / Deploy counts (CountryPostureTile, the posture
-// bundle, linking to #posture); the others read the fact sheet's 66 six-stage sectors.
+// The head of the Country profile (spec XI.2, design 4, 2026-10-29): the country's name, ONE analytical
+// strategy sentence generated from the strategic position framework's choices (posture/strategy.ts
+// strategySentence: every clause backed by at least one node, nothing invented), the data freshness (when
+// the strategy was built, the trade benchmark and momentum cut-off, the country facts' date), the country picker
+// with the tier / EU / policy-basis tags, and the actions: the memo (memos are being revised: the action says
+// so), the strategy CSV and the data downloads. The "at a glance" tiles (the old corners, the top Strategic
+// Index sector, the strongest partner, the climate rating) are gone: the counts line under the Country
+// Strategy Map replaces them, the corners and the Strategic Index live in Legacy OSI, the partner and the
+// climate rating in Allied Strategy and Policy Alignment. The head never reads the Perspective dials.
 
 import { Link, useNavigate } from 'react-router';
 import { CountrySelect } from '../../../components/CountrySelect.tsx';
 import { InfoTip } from '../../../components/InfoTip.tsx';
-import { PageHead, StatTile, Tag } from '../../../components/ui.tsx';
-import { CountryPostureTile } from '../../../posture/index.ts';
-import { cellOf, dOf, type CountryManifest } from '../../contract.ts';
+import { PageHead, Tag } from '../../../components/ui.tsx';
+import { downloadText, fileSlug } from '../../../lib/download.ts';
+import { countryPostureRows, postureCsvText, postureProvenance, strategySentence } from '../../../posture/index.ts';
+import { POSTURE_CSV_COLS, postureCsvRows } from '../../../posture/derive.ts';
+import type { CountryManifest } from '../../contract.ts';
 import { sectorCountryLink } from '../../derive/links.ts';
-import { siOrder } from '../../derive/framing.ts';
-import { countryOptions, quadrantLine } from '../../derive/model.ts';
-import { cap, ledeOf, poss, proseName, tierTag } from '../../derive/text.ts';
+import { countryOptions } from '../../derive/model.ts';
+import { freshnessItems } from '../../derive/strategyPage.ts';
+import { cap, poss, proseName, tierTag } from '../../derive/text.ts';
 import { countryHref } from '../../url.ts';
-import { usePerspectiveSi, useProfile } from './common.tsx';
+import { useProfile } from './common.tsx';
 
 export function memoReady(e: { tier: string; memo: { stale: boolean } | null }): boolean {
   return e.tier === 'core' && !!e.memo && !e.memo.stale;
@@ -33,109 +37,113 @@ export function memoRevised(e: { tier: string; memo: { stale: boolean } | null }
 export const MEMO_REVISED_TEXT = 'This memo is being revised. It will be available again once it has been rewritten.';
 export const memoRevisedLine = (name: string) => `The memo for ${name} is being revised. It will be available again once it has been rewritten.`;
 
+/** The head's strategy sentence: the framework's (loading and error states in words). */
+function useStrategyLede(): string {
+  const { sheet, posture } = useProfile();
+  const name = cap(proseName(sheet.meta.country));
+  if (!posture || posture.status === 'loading') return `Loading the strategy of ${proseName(sheet.meta.country)}…`;
+  if (posture.status === 'error' || !posture.core) return `The strategy of ${proseName(sheet.meta.country)} could not be loaded; the sections below say why.`;
+  if (!posture.cells.length) return `${name} has no strategy map: the strategic position framework classifies none of its technology and stage nodes.`;
+  return strategySentence(name, posture.cells, posture.core.meta);
+}
+
 export function ProfileHead({ manifest }: { manifest: CountryManifest }) {
-  const { sheet, entry } = useProfile();
+  const { sheet, entry, posture } = useProfile();
   const nav = useNavigate();
   const m = sheet.meta;
   const name = proseName(m.country);
+  const lede = useStrategyLede();
+  const core = posture?.core ?? null;
+  const fresh = freshnessItems({ created: core?.created ?? null, benchmark: core?.meta.benchmark_period ?? null, momentumThrough: core?.meta.momentum_through ?? null, asOfLabel: m.as_of_label });
+  const csv = () => {
+    if (!core) return;
+    const rows = postureCsvRows(countryPostureRows(core, sheet.iso3));
+    downloadText(postureCsvText(rows, POSTURE_CSV_COLS, postureProvenance(core)), `${fileSlug(m.country)}-strategy-map.csv`);
+  };
   return (
     <>
-      <PageHead eyebrow="COUNTRIES · COUNTRY PROFILE" title={m.country} lede={ledeOf(sheet)} />
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-        <CountrySelect label="Choose a country" value={entry.iso3} options={countryOptions(manifest)} onChange={(iso) => nav(countryHref(iso))} className="w-72 max-w-full" />
-        <div className="flex flex-wrap items-center gap-2">
-          <Tag accent={m.tier === 'core'}>{tierTag(m.tier)}</Tag>
-          {m.eu_member && <Tag>EU MEMBER</Tag>}
-          {m.policy_basis === 'IEA PAMS only' && (
-            <span className="inline-flex items-center gap-1">
-              <Tag>POLICY: RECORDS ONLY, NO CLIMATE RATING</Tag>
-              <InfoTip id="policy_basis" />
-            </span>
-          )}
-          {m.alignment_basis === 'inherited' && <Tag>TERRITORY</Tag>}
+      {/* the strategy sentence runs wide so the head stays short and the Country Strategy Map sits near the fold (spec XI.3) */}
+      <PageHead eyebrow="COUNTRIES · COUNTRY PROFILE" title={m.country} wideLede lede={<span data-testid="strategy-sentence">{lede}</span>}>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="max-w-3xl text-xs text-paper-mute" data-testid="data-freshness">
+            Data: {fresh.join(' · ')}.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Tag accent={m.tier === 'core'}>{tierTag(m.tier)}</Tag>
+            {m.eu_member && <Tag>EU MEMBER</Tag>}
+            {m.policy_basis === 'IEA PAMS only' && (
+              <span className="inline-flex items-center gap-1">
+                <Tag>POLICY: RECORDS ONLY, NO CLIMATE RATING</Tag>
+                <InfoTip id="policy_basis" />
+              </span>
+            )}
+            {m.alignment_basis === 'inherited' && <Tag>TERRITORY</Tag>}
+          </div>
         </div>
-      </div>
-      <div className="mb-6 flex flex-wrap items-start gap-x-6 gap-y-3">
-        {memoReady(entry) && (
+      </PageHead>
+      {/* one row on a wide screen (picker, then the actions), so the Country Strategy Map sits near the fold (spec XI.3) */}
+      <div className="mb-6 flex flex-wrap items-start gap-x-8 gap-y-4">
+        <CountrySelect label="Choose a country" value={entry.iso3} options={countryOptions(manifest)} onChange={(iso) => nav(countryHref(iso))} className="w-72 max-w-full" />
+        <div id="memo" className="flex scroll-mt-16 flex-wrap items-start gap-x-6 gap-y-3" data-testid="profile-actions">
+          <MemoAction manifest={manifest} />
           <div>
-            <Link to={`/countries/${entry.iso3}/memo`} className="btn btn-primary">
-              GENERATE MEMO
-            </Link>
-            <p className="mt-1 text-xs text-paper-mute">Opens the pre-written memo for {name}</p>
-          </div>
-        )}
-        {memoRevised(entry) && (
-          <div>
-            <button type="button" className="btn btn-primary" disabled aria-describedby="memo-revised-head">
-              GENERATE MEMO
+            <button type="button" className="btn btn-ghost" onClick={csv} disabled={!core || !posture?.cells.length}>
+              DOWNLOAD STRATEGY (CSV)
             </button>
-            <p id="memo-revised-head" className="mt-1 text-xs text-paper-mute">
-              The memo for {name} is being revised
-            </p>
+            <p className="mt-1 max-w-xs text-xs text-paper-mute">Every technology and stage with its choice, need, prize and position</p>
           </div>
-        )}
-        <Link to={sectorCountryLink(entry.iso3)} className="link self-center text-sm">
-          {cap(poss(name))} raw data in Sectors &rarr;
-        </Link>
+          <div className="flex flex-col gap-1 self-center text-sm">
+            <a className="link" href="#downloads">
+              All data and downloads &darr;
+            </a>
+            <Link to={sectorCountryLink(entry.iso3)} className="link">
+              {cap(poss(name))} raw data in Sectors &rarr;
+            </Link>
+          </div>
+        </div>
       </div>
     </>
   );
 }
 
-export function Glance() {
-  const { sheet } = useProfile();
-  const si = usePerspectiveSi();
-  const s = sheet.summary;
-  const m = sheet.meta;
-  const top = s.top_si;
-  // the top Strategic Index sector follows the Perspective (the fact sheet's at the NEIS baseline)
-  const order = si.map ? siOrder(sheet, si.map) : null;
-  const topCell = order ? (order[0] ?? null) : top ? cellOf(sheet, top.cell) : null;
-  const nextCell = order ? (order[1] ?? null) : top?.next ? cellOf(sheet, top.next) : null;
-  const cat = sheet.policy.cat;
-  const q = s.quadrants;
-  const qLine = quadrantLine({ grow: q.grow.v ?? 0, upgrade: q.upgrade.v ?? 0, secure: q.secure.v ?? 0, watch: q.watch.v ?? 0 });
-  return (
-    <section id="glance" aria-label="At a glance" className="scroll-mt-16">
-      {/* five tiles: the posture counts across the row on small screens, then 3 + 2 */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="flex sm:col-span-2 lg:col-span-1 [&>*]:flex-1">
-          <CountryPostureTile iso3={sheet.iso3} label="STRATEGIC POSTURE" link={{ href: '#posture', label: 'Strategic posture' }} />
-        </div>
-        <StatTile
-          label="WHERE ITS SECTORS SIT"
-          value={<span className="text-base">{qLine}</span>}
-          sub={
-            <span>
-              {dOf(s.n_placed)} of {dOf(s.n_scored)} sectors can be compared with other economies <InfoTip id="rankable" term="comparable (rankable)" />
-            </span>
-          }
-        />
-        <StatTile
-          label="TOP STRATEGIC INDEX SECTOR"
-          value={m.has_si && topCell ? topCell.label : 'No Strategic Index'}
-          sub={
-            !m.has_si || !topCell
-              ? 'No International Energy Agency policy records, so no Strategic Index is computed'
-              : order
-                ? `Under your perspective${nextCell ? `; next: ${nextCell.label}` : ''}`
-                : top
-                  ? `Strategic Index ${top.si.d}${nextCell ? `; next: ${nextCell.label}, ${top.margin.d} lower` : ''}`
-                  : ''
-          }
-          chip={m.has_si && !order && top?.near_tie ? <Tag>NEAR-TIE</Tag> : undefined}
-        />
-        <StatTile
-          label="STRONGEST PARTNER"
-          value={s.psi_1 ? s.psi_1.name : 'No ranked partner'}
-          sub={s.psi_1 ? `Partnership Strength ${s.psi_1.psi.d}, 1st of ${s.psi_1.n_ranked.d} (NEIS baseline)` : 'No partner can be ranked for this economy'}
-        />
-        <StatTile
-          label="CLIMATE ACTION TRACKER"
-          value={cat ? cat.overall : 'Not rated'}
-          sub={cat ? `${cat.date_label ? `As of ${cat.date_label}` : ''}${cat.scope === 'eu_bloc' ? `${cat.date_label ? '; ' : ''}the EU's rating` : ''}` : 'Policy activity rests on International Energy Agency records only'}
-        />
+/** The memo action: GENERATE MEMO for a core member with a memo, else the reason in words (being revised, being prepared, core members only). */
+function MemoAction({ manifest }: { manifest: CountryManifest }) {
+  const { sheet, entry } = useProfile();
+  const name = proseName(sheet.meta.country);
+  if (memoReady(entry)) {
+    return (
+      <div>
+        <Link to={`/countries/${entry.iso3}/memo`} className="btn btn-primary">
+          GENERATE MEMO
+        </Link>
+        <p className="mt-1 max-w-xs text-xs text-paper-mute">AI-generated from the data and checked against it; NEIS baseline as of {manifest.as_of_label}. A Legacy OSI reading, not the strategy above.</p>
+        {entry.memo?.rule_note && entry.memo.rule_note_d && (
+          <p className="mt-1 max-w-md text-xs text-paper-mute" data-testid="memo-rule-note">
+            {entry.memo.rule_note_d}
+          </p>
+        )}
       </div>
-    </section>
+    );
+  }
+  if (memoRevised(entry)) {
+    return (
+      <div>
+        <button type="button" className="btn btn-primary" disabled aria-describedby="memo-revised-head">
+          GENERATE MEMO
+        </button>
+        <p id="memo-revised-head" className="mt-1 max-w-xs text-xs text-paper-mute">
+          {memoRevisedLine(name)}
+        </p>
+      </div>
+    );
+  }
+  if (entry.tier === 'core') return <p className="max-w-xs self-center text-sm text-paper-dim">{`The memo for ${name} is being prepared.`}</p>;
+  return (
+    <p className="max-w-xs self-center text-sm text-paper-dim">
+      Memos are available for the {manifest.counts.core} core coalition members for now.{' '}
+      <Link className="link" to="/countries#core">
+        See the list &rarr;
+      </Link>
+    </p>
   );
 }

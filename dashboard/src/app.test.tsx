@@ -357,7 +357,17 @@ describe('home and the shell', () => {
       // the memos are hidden while they are revised, so no Home link leads to one (a dead end)
       expect(screen.getByRole('link', { name: 'United States' }).getAttribute('href')).toBe('/countries/USA');
       expect(screen.queryAllByRole('link').filter((a) => /\/memo$/.test(a.getAttribute('href') ?? ''))).toEqual([]);
-      expect(screen.getByTestId('quadrant-glyph').getAttribute('aria-hidden')).toBe('true');
+      // the Country card speaks the canonical framework, its glyph a miniature Country Strategy Map (design section 5): three
+      // technology rows x six stages, the three backgrounds with their marks and a node not assessed; no legacy corner glyph
+      expect(screen.getByText(/^Understand what a country needs, where there is a prize worth pursuing and how strong it already is;/)).toBeTruthy();
+      expect(screen.getByText(/^Country Strategy Map: every technology at six stages, from need, prize and position to one choice/)).toBeTruthy();
+      const map = screen.getByTestId('strategy-map-glyph');
+      expect(map.getAttribute('aria-hidden')).toBe('true');
+      const glyphCells = [...map.querySelectorAll('[data-family]')];
+      expect(glyphCells.length).toBe(18);
+      expect(new Set(glyphCells.map((c) => c.getAttribute('data-family')))).toEqual(new Set(['S', 'C', 'D', 'N']));
+      expect(glyphCells.map((c) => c.textContent).filter(Boolean).sort()).toEqual(expect.arrayContaining(['P', 'C', '⇄', '↑', '•', 'K', 'R']));
+      expect(screen.queryByTestId('quadrant-glyph')).toBeNull();
       expect(screen.getByRole('link', { name: 'Which supply chains justify a sectoral compact?' }).getAttribute('href')).toBe('/compacts');
       expect(screen.getByRole('link', { name: 'glossary' }).getAttribute('href')).toBe('/glossary');
       expect(bareAcronyms(document.body)).toEqual([]);

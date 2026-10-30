@@ -9,9 +9,11 @@
 //               scenario); who holds each strategic role, each holder a button that shows its summary and
 //               moves focus to it; the operational part follows under "Operational network roles"; a
 //               bundle without the layer shows the operational part only.
-//   Country profile  "Role in the Allied Industrial Base": strategic AIB roles, the strategic compacts with
-//               its role in each (each linking to its page), its key bilateral relationships (what each side
-//               contributes); an economy the layer does not assess says so; the operational card follows.
+//   Country profile  "Role in the Allied Industrial Base" (since 2026-10-29 under Allied Strategy, in "Explore all
+//               partnership analysis", #allied-aib-role; the old #aib-role link opens it): strategic AIB roles, the
+//               strategic compacts with its role in each (each linking to its page), its key bilateral
+//               relationships (what each side contributes); an economy the layer does not assess says so; the
+//               operational card follows.
 //   AIB_DATA_DIR (the real export)  the summary of the five validation economies (Japan, Korea, the United
 //               States, Australia, India) and China renders its export's words, without a bare acronym.
 
@@ -233,9 +235,11 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR) || !haveCountry())('the Country prof
   });
 
   it('strategic AIB roles, the strategic compacts with its role in each (linking to their pages), its key bilateral relationships; the operational card follows', async () => {
-    renderAt('/countries/USA?scn=decoupling');
-    await screen.findByRole('heading', { level: 2, name: 'Role in the Allied Industrial Base' }, T);
-    const role = document.getElementById('aib-role')!;
+    // the old #aib-role link opens the Allied Strategy section's "Explore all partnership analysis" on the role (design 5b)
+    renderAt('/countries/USA?scn=decoupling#aib-role');
+    await screen.findByRole('heading', { level: 3, name: 'Role in the Allied Industrial Base' }, T);
+    const role = document.getElementById('allied-aib-role')!;
+    expect(document.getElementById('allied')?.contains(role)).toBe(true);
     const strat = await within(role).findByTestId('aib-strategic', {}, T);
     // 1. strategic AIB roles
     const roles = within(strat).getByTestId('aib-strategic-roles');
@@ -276,15 +280,15 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR) || !haveCountry())('the Country prof
   }, 90_000);
 
   it('Managed Interdependence (no scn): the compact links carry no scenario; an economy the layer does not assess says so', async () => {
-    renderAt('/countries/USA');
-    await screen.findByRole('heading', { level: 2, name: 'Role in the Allied Industrial Base' }, T);
-    const role = document.getElementById('aib-role')!;
+    renderAt('/countries/USA#aib-role');
+    await screen.findByRole('heading', { level: 3, name: 'Role in the Allied Industrial Base' }, T);
+    const role = document.getElementById('allied-aib-role')!;
     const compacts = await within(role).findByTestId('aib-strategic-compacts', {}, T);
     expect(within(compacts).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/compacts/s/SC-WIND');
     cleanup();
-    renderAt('/countries/DEU');
-    await screen.findByRole('heading', { level: 2, name: 'Role in the Allied Industrial Base' }, T);
-    expect((await within(document.getElementById('aib-role')!).findByTestId('aib-strategic-none', {}, T)).textContent).toMatch(/^Germany is not among the economies the strategic layer assesses/);
+    renderAt('/countries/DEU#aib-role');
+    await screen.findByRole('heading', { level: 3, name: 'Role in the Allied Industrial Base' }, T);
+    expect((await within(document.getElementById('allied-aib-role')!).findByTestId('aib-strategic-none', {}, T)).textContent).toMatch(/^Germany is not among the economies the strategic layer assesses/);
   }, 90_000);
 });
 

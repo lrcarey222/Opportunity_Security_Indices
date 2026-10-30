@@ -86,7 +86,7 @@ method itself is documented in [strategic_position.md](strategic_position.md); t
 | setting | value | why |
 |---|---|---|
 | `prize_threshold` | 0.6 | design start value; 39% of producing cells at or above it; sensitivity 0.50-0.70 in `choice_threshold_sensitivity.csv` |
-| `deployment_threshold` | 0.6 (design start 0.67) | deployment need is a mean of family percentiles, narrower than a percentile: 0.6 takes about 30% of assessed Deployment cells, the selectivity of need at 0.67; 0.67 took 22% and left the US, Germany and France with no Accelerate |
+| `deployment_threshold` | 0.6 (design start 0.67) | deployment need is a mean of family percentiles, narrower than a percentile: 0.6 takes about 30% of assessed Deployment cells, the selectivity of need at 0.67; 0.67 took 22%. The reason is selectivity: at 0.67 only the US has no Accelerate (its highest is Batteries 0.64), while Germany and France keep Green Hydrogen (0.71, 0.84) |
 | `investment_momentum.weight` | 0.25 (first draft 0.5) | the capex trend is observed for ten nodes only; at 0.5 the post-2022 EV-manufacturing capex dip outweighed a tripling of EV demand |
 | `home_market_mode` | lift | the user's "lifted by national home-market growth": a small home market does not lower a world-market prize |
 | self-supply guard on need | home share >= 10% | the engine's self-supply line; a large producer is not dependent on the composition of its small imports |

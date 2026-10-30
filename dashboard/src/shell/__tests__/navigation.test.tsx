@@ -41,7 +41,7 @@ function countrySourceWithAib(): ReturnType<typeof countrySource> {
         if (m.countries.some((c) => c.iso3 === iso3)) continue;
         const e: CountryEntry = {
           iso3, name, tier: 'none', region: null, eu_member: false, status: 'no_data', file: null, bytes_gz: null,
-          n_placed: null, quadrants: null, memo: null, drivers: null, iso_n3: null,
+          n_placed: null, legacy_corners: null, memo: null, drivers: null, iso_n3: null,
         };
         m.countries.push(e);
         m.counts.economies += 1;
@@ -292,18 +292,22 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
     expect(errors).toEqual([]);
   }, 90_000);
 
-  it('Country: Home -> Countries -> Japan: the profile sections and the Perspective control, no engine yet', async () => {
+  it('Country: Home -> Countries -> Japan: the seven sections of the canonical framework, the Legacy OSI framework under Evidence & Methodology, no engine yet', async () => {
     const router = renderAt('/');
     await follow(router, linkIn('main article a[href="/countries"]', /^Explore countries$/), path('/countries'));
     await follow(router, linkIn('main a[href="/countries/JPN"]'), path('/countries/JPN'));
     expect(await h1(/Japan/)).toBeTruthy();
-    expect(await screen.findByRole('button', { name: /^Perspective: NEIS baseline/ }, { timeout: 30_000 })).toBeTruthy();
-    // the Strategic posture section first (design L2), then Security and opportunity and the rest
-    for (const id of ['posture', 'position', 'opportunities', 'sectors', 'policy', 'partnerships', 'aib-role']) {
+    // Strategy, Need, Prize & Position, Choices, Policy Alignment, Allied Strategy, Evidence & Methodology (design 4), in the nav's
+    // order, then the Legacy OSI sub-section; the old anchors still land (their aliases are on the page)
+    const sections = ['strategy', 'need', 'prize-position', 'choices', 'policy-alignment', 'allied', 'evidence'];
+    for (const id of [...sections, 'legacy-osi']) {
       await waitFor(() => expect(document.getElementById(id)).toBeTruthy(), { timeout: 30_000 });
     }
-    expect(screen.getAllByText(/Observed \/ modelled facts/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Preference-adjusted priorities/).length).toBeGreaterThan(0);
+    const nav = screen.getAllByRole('navigation', { name: 'Sections of this page' })[0];
+    expect(within(nav).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(sections.map((id) => `#${id}`));
+    for (const id of ['posture', 'policy', 'partnerships', 'aib-role']) expect(document.getElementById(id), id).toBeTruthy();
+    expect(screen.getAllByText(/^Strategic position framework/).length).toBeGreaterThan(0);
+    // the canonical sections never need the engine: the Legacy OSI results load it only when opened
     await settle(300);
     expect(peekEngineClient()).toBeNull();
     expect(errors).toEqual([]);

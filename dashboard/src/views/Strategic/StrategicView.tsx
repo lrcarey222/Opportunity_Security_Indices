@@ -169,7 +169,7 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
     <div>
       {!embedded && (<>
       <PageHead
-        eyebrow="Where to focus"
+        eyebrow="Legacy OSI framework · Where to focus"
         title="Strategic Index"
         lede={
           <>

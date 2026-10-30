@@ -230,7 +230,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
     <div>
       {!embedded && (
       <PageHead
-        eyebrow="Security vs opportunity"
+        eyebrow="Legacy OSI framework · Security vs opportunity"
         title="The opportunity–security space"
         lede={
           <>
@@ -238,7 +238,10 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
             high opportunity with low security, is where building capacity would both meet a need and create value; the Country profile calls it{' '}
             <Term id="upgrade">Upgrade</Term>. The other corners are <Term id="grow">Grow</Term> (high opportunity, high security),{' '}
             <Term id="exposed">Exposed</Term> (low opportunity, low security) and <Term id="stable">Stable</Term> (low opportunity, high security). The corners place an
-            economy; they are not its strategic posture. Pick a technology and one of the {app.stages.length} supply-chain stages.
+            economy; they are not its strategic posture. They are the Legacy OSI corners, closest to today&rsquo;s choices Preserve (Grow), Catch Up (Upgrade), Partner
+            (Exposed) and Watch (Stable), but the results differ: each index mixes capability, vulnerability, production, trade, investment, demand, reserves,
+            concentration and deployment, which the strategic posture separates into need, prize and position. Pick a technology and one of the{' '}
+            {app.stages.length} supply-chain stages.
           </>
         }
       />

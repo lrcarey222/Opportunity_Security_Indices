@@ -21,6 +21,7 @@ import {
   type MineralSlug, type SectorManifest, type TechSlug,
 } from '../sector/contract.ts';
 import { STAGE_LABEL, SUPPLY_STAGE_SLUGS, supplyStageOfSlug, type SupplyStage, type SupplyStageSlug } from '../lib/stages.ts';
+import { DEPLOY_MARK, MODE_MARK, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, POSTURE_COLOR, RATIONALE_MARK } from '../posture/grammar.ts';
 import { moduleInfo, SECTOR_DEFAULT_CELL } from './modules.ts';
 import { onIdle, prefetchAib, prefetchCountry, saveData } from './prefetch.ts';
 import { loadSectorManifest, peekSectorManifest, prefetchSectorChunk } from './sectorManifest.ts';
@@ -122,21 +123,34 @@ export function CoverageGlyph({ glyph }: { glyph: SectorManifest['coverage_glyph
   );
 }
 
-/** A static glyph of the four corners of the Country profile's Security and opportunity chart (decorative):
- *  Stable and Grow on top (higher energy security), Exposed and Upgrade below; lower economic opportunity on the left.
- *  The names follow country/contract.ts QUADRANTS (Exposed and Stable were Secure and Watch until 2026-10-28). */
-function QuadrantGlyph() {
-  const cells: [string, string][] = [
-    ['S', 'Stable'],
-    ['G', 'Grow'],
-    ['E', 'Exposed'],
-    ['U', 'Upgrade'],
-  ];
+/** One cell of the strategy-map glyph: its family (S, C, D; N not assessed) and its mark. */
+type GlyphCell = [family: 'S' | 'C' | 'D' | 'N', mark: string];
+
+/** Three technology rows x the six stages of a made-up country (decorative): the Country Strategy Map's
+ *  grammar in miniature (design section 5): Secure, Compete and Deploy backgrounds with their marks (a
+ *  Secure rationale letter; P Preserve, C Catch Up, linked arrows Partner; an up arrow Accelerate, a dot
+ *  Watch) and a hatched node not assessed, with the Deployment & Use column set apart as on the map. */
+export const STRATEGY_GLYPH: readonly (readonly GlyphCell[])[] = [
+  [['C', MODE_MARK.partner], ['S', RATIONALE_MARK.coercive_chokepoint], ['C', MODE_MARK.catch_up], ['C', MODE_MARK.preserve], ['D', DEPLOY_MARK.accelerate], ['D', DEPLOY_MARK.watch]],
+  [['D', DEPLOY_MARK.watch], ['C', MODE_MARK.partner], ['C', MODE_MARK.preserve], ['S', RATIONALE_MARK.systemic_resilience], ['D', DEPLOY_MARK.accelerate], ['N', '']],
+  [['D', DEPLOY_MARK.watch], ['D', DEPLOY_MARK.watch], ['C', MODE_MARK.catch_up], ['D', DEPLOY_MARK.watch], ['D', DEPLOY_MARK.watch], ['D', DEPLOY_MARK.watch]],
+];
+
+function StrategyMapGlyph() {
   return (
-    <span className="inline-grid grid-cols-2 gap-[3px]" aria-hidden="true" data-testid="quadrant-glyph">
-      {cells.map(([l, t]) => (
-        <span key={l} title={t} className="flex h-4 w-4 items-center justify-center border border-ink-500 text-[0.625rem] font-medium leading-none text-paper-mute">
-          {l}
+    <span className="inline-flex flex-col gap-[3px]" aria-hidden="true" data-testid="strategy-map-glyph">
+      {STRATEGY_GLYPH.map((row, r) => (
+        <span key={r} className="flex gap-[3px]">
+          {row.map(([f, mark], s) => (
+            <span
+              key={s}
+              data-family={f}
+              className={`flex h-3.5 w-3.5 items-center justify-center rounded-[2px] text-[0.5625rem] font-semibold leading-none text-white ${s === 4 ? 'ml-[3px] mr-[3px]' : ''}`}
+              style={f === 'N' ? { background: NOT_ASSESSED_HATCH, border: NOT_ASSESSED_BORDER } : { background: POSTURE_COLOR[f] }}
+            >
+              {mark}
+            </span>
+          ))}
         </span>
       ))}
     </span>
@@ -190,8 +204,8 @@ const COUNTRY_CARD: CardSpec = {
   id: 'country',
   title: 'Explore a Country',
   question: "What is this country's strategic position?",
-  lede: 'Understand where a country has strategic opportunities, vulnerabilities, policy strengths, partnership potential, and a role in the Allied Industrial Base.',
-  glyphNote: 'Strategic posture by technology and stage, security and opportunity corners, partners and role; priorities follow a perspective you can adjust',
+  lede: 'Understand what a country needs, where there is a prize worth pursuing and how strong it already is; what it should secure, preserve, catch up in, rely on partners for, deploy faster or deliberately not prioritize; and whether current policy matches.',
+  glyphNote: 'Country Strategy Map: every technology at six stages, from need, prize and position to one choice, with its allies and policy alignment',
   links: [
     { to: '/countries/JPN', label: 'Japan' },
     { to: '/countries/DEU', label: 'Germany' },
@@ -242,7 +256,7 @@ function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManife
       <div className="mt-5 flex min-h-11 items-center gap-4">
         {spec.id === 'country' ? (
           <>
-            <QuadrantGlyph />
+            <StrategyMapGlyph />
             <span className="text-xs text-paper-mute">{spec.glyphNote}</span>
           </>
         ) : spec.id === 'aib' ? (

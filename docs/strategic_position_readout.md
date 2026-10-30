@@ -7,8 +7,10 @@ Every figure below comes from `diagnostics/strategic_position/` as written on 20
 `scripts/95_build_deployment_need.R` (Ember yearly data and 2030 targets, WEO 2025, GEVO 2026),
 `scripts/26_build_strategic_position.R` (run with `SP_BASELINE_TBL` = the 2026-10-28 table, so the old-vs-new files
 are written) and `scripts/27_review_strategic_position.R` (`decision_review.md`, `choice_cards.md`,
-`legacy_osi_corners_vs_choice_*.csv`). The Explorer's posture bundle (`dashboard/public/data/posture`, schema 2) was
-exported from the same table by `scripts/91`. The readouts of the earlier posture engine (2026-10-27 run, 2026-10-28
+`legacy_osi_corners_vs_choice_*.csv`), rerun on commit 91dba6f (the review fixes: an unmeasured Competitive Position
+lowers confidence, a top-quarter score that fails the Preserve test says why, and over-prioritization rests on observed
+NIPO protection; the choices did not change). The Explorer's posture bundle (`dashboard/public/data/posture`, schema 2,
+`git_commit` 91dba6f) was exported from the same table by `scripts/91`. The readouts of the earlier posture engine (2026-10-27 run, 2026-10-28
 trade refresh and need x EO quadrant) are in git history (this file at commit 1bd7bde).
 
 Thresholds (config `decision_framework`): supply-chain need 0.67, industrial opportunity (prize) 0.6, Competitive
@@ -95,9 +97,12 @@ Secure (174) does not move with these thresholds (it is the engine's override; i
 `posture_threshold_sensitivity.csv`). The prize threshold is the knife-edge: between 0.60 and 0.65 Catch Up halves
 (1,660 -> 858), because the node prize is dominated by one country-invariant percentile across 55 nodes, so whole
 nodes cross the line together. The need threshold mostly trades Partner against Watch. The CP bar moves few cells.
-No threshold was tuned to improve these numbers; the configured values are the design's (deployment 0.6 instead of
-the design's starting 0.67, chosen by r-engine for selectivity comparable with need: 0.67 gives the United States,
-Germany and France no Accelerate node).
+No threshold was tuned to improve these numbers; the configured values are the design's, except deployment need 0.6
+instead of the design's starting 0.67, chosen for selectivity: deployment need is a mean of up to three family
+percentiles, narrower than one percentile, so 0.6 takes about the top 30% of assessed Deployment nodes (514 of 1,683,
+31%), the selectivity of supply-chain need at 0.67 (a percentile), where 0.67 would take 22% (372). At 0.67 the United
+States would have no Accelerate node (its highest deployment need is Batteries, 0.64), and Germany and France would keep
+only Green Hydrogen (0.71 and 0.84; `deployment_need.csv`).
 
 The credible-pathway rule is the other lever (not a threshold, reported for transparency):
 
@@ -216,6 +221,11 @@ Remaining flags (kept, not silently overridden):
   dominates); EV-minerals Extraction in Australia, Russia and the Philippines (supply share not quantified); Russia Gas
   Extraction (Partner: 9.6% of world supply, just under the engine's 10% "strong" line, with no complementary
   capability recorded, so the floor reads "none"); Nigeria Gas Refining (Partner); Saudi Arabia Gas Assembly.
+- Not a flag, but now named: a top-quarter score held by an economy below the contender line (under 0.5% of world
+  supply) is not a strong position either. Its trace says `not_a_contender` and its reason "a top-quarter score
+  without a contender share" (32 nodes: 11 Catch Up, 3 Partner, 18 Watch; e.g. Canada Batteries Assembly 0.88 and
+  India Batteries Assembly 0.75, each with 0.13% of world supply). Until this run their reason said "below the top
+  quarter" and their trace "capability floor not met".
 
 ## 6. Deployment validation (spec XXI.4)
 
@@ -231,9 +241,9 @@ Accelerate in the nine review economies:
 | Japan | Nuclear (0.78), Solar (0.66), Wind (0.65), Gas, Green Hydrogen | Geothermal 0.57 |
 | South Korea | Nuclear (0.80), EVs (0.80), Solar (0.73), Wind (0.72), Green Hydrogen, Geothermal | Storage 0.56, Grid 0.56, Gas 0.55 |
 | India | Nuclear (0.81), Storage (0.80), Solar (0.79), Wind (0.75), Grid (0.75), Coal, Gas, Oil, Geothermal | Green Hydrogen 0.55 |
-| Germany | Storage (0.66), EVs (0.65), Solar (0.63), Green Hydrogen | Wind 0.59, Grid 0.58 |
+| Germany | Storage (0.66), EVs (0.65), Solar (0.63), Green Hydrogen (0.71) | Wind 0.59, Grid 0.58 |
 | United Kingdom | Storage (0.69), Wind (0.66), Grid (0.64) | EVs 0.59, Coal 0.58, Solar 0.55 |
-| France | EVs (0.64), Green Hydrogen | Nuclear 0.56 |
+| France | EVs (0.64), Green Hydrogen (0.84) | Nuclear 0.56 |
 | Australia | Storage (0.83), Grid (0.71), Wind (0.66), Solar (0.61), Oil | |
 | Canada | Gas | |
 
@@ -298,20 +308,33 @@ Assembly, 23 cells).
 ## 8. Watch validation (spec XXI.6) and policy alignment
 
 994 of 4,803 Watch cells carry top-third policy intensity (priority, protection or deployment localisation;
-`watch_high_policy_intensity.csv`); 475 of them are judged over-prioritized (410 producing on NIPO protection, 65
-Deployment on the equipment's local-content protection), 453 aligned (mostly Deployment Watch with heavy PAMS
-deployment support but no localisation: support is not over-prioritization), 45 insufficient data, 21 mixed.
-Review economies: Brazil, Canada and the US 14 each, UK 13, France 11, Australia 10. Examples: India, Korea, Germany,
-UK and Canada Electric Grid equipment (protection 0.78-0.99 on a low-need, low-prize node); US Nuclear Assembly and
-Deployment (policy priority 0.92 / 0.99 with deployment need 0.60, just below the line); Australia Solar Components
-(protection 0.91, weak domestic case); France Batteries and Wind Deployment (local-content 0.96 / 0.99 with
-deployment need 0.39 / 0.34).
+`watch_high_policy_intensity.csv`); 375 of them are judged over-prioritized, on three bases:
 
-Policy alignment over all cells: aligned 5,101; under-prioritized 947 (Catch Up 828, Secure 92, Preserve 27);
-deployment gap 182; over-prioritized 475 (all Watch); misaligned 68 (Partner with protection in the top third, e.g.
-Australia Solar and Wind Assembly, US Nuclear Refining, India Coal Refining); mixed 206; insufficient data 7,145
-(5,295 not assessed). Alignment confidence: high 1,434, medium 1,259, low 11,431: NIPO's support / protection split
-covers few cells, so most judgements rest on one source. Secure under-prioritized in the review economies: EV-minerals
+| basis | over-prioritized Watch nodes | alignment confidence |
+|---|---|---|
+| NIPO protection in the top third (producing stages, `watch_protection`) | 103 | high 101, medium 2 |
+| the equipment's local-content protection (Deployment, `watch_localisation_deployment`) | 65 | medium (PAMS-only cap) |
+| total policy attention in the top third, where NIPO does not observe the node at all (producing stages, `watch_attention`, the fallback) | 207 | low, always |
+
+So 168 rest on observed protection or localisation and 207 (55%) on the total-attention fallback, which design D5
+allows only where NIPO has no protection record either way and which always carries low confidence. Where NIPO
+observes a node, protection alone decides: until this run 100 Watch nodes whose NIPO protection stock is recorded (98
+of them at zero, e.g. Bulgaria Electric Grid Refining) were called over-prioritized on total attention because their
+economy protects too few nodes to rank; they are now aligned (73) or mixed (27). The rest of the 994: 537 aligned
+(mostly Deployment Watch with heavy PAMS deployment support but no localisation: support is not over-prioritization),
+33 insufficient data (an unsettled Watch), 49 mixed. Review economies: Brazil, Canada and the US 14 each, UK 13,
+France 11, Australia 10. Examples, all on observed protection: India, Korea, Germany, UK and Canada Electric Grid
+equipment (protection 0.78-0.99 on a low-need, low-prize node); US Nuclear Assembly and Deployment (protection and
+local content 0.78, deployment need 0.60, just below the line); Australia Solar Components (protection 0.91, weak
+domestic case); France Batteries and Wind Deployment (local content 0.96 / 0.99 with deployment need 0.39 / 0.34).
+
+Policy alignment over all cells (`choice_policy_alignment.csv`): aligned 5,185; under-prioritized 947 (Catch Up 828,
+Secure 92, Preserve 27); deployment gap 182; over-prioritized 375 (all Watch: 103 NIPO protection, 65 local content,
+207 total-attention fallback); misaligned 68 (Partner with protection in the top third, e.g.
+Australia Solar and Wind Assembly, US Nuclear Refining, India Coal Refining); mixed 234; insufficient data 7,133
+(5,295 not assessed). Alignment confidence: high 1,893, medium 1,263, low 10,968: NIPO's support / protection split
+covers few cells, so most judgements rest on one source (an observed zero protection stock now counts as a
+measurement, not a gap, which moved 808 judgements up one level). Secure under-prioritized in the review economies: EV-minerals
 refining in Germany, India and Korea; oil, gas or coal Extraction in Japan, France, Germany and the UK; Korea gas
 processing and nuclear fuel.
 Deployment gaps: Japan, Korea Solar; UK Wind and Grid; Australia Solar, Wind, Grid.
@@ -342,3 +365,11 @@ cells have no credible partner at all). Secure cells that rely on foreign capaci
 7. **Systemic-resilience Secure is mostly fossil fuel**; the equipment-resilience route reaches only Grid Assembly.
 8. **Fossil Accelerate** (135 cells) is a consequence of the user's "assess fossil alike" decision and should be
    presented with that framing.
+9. **Competitive Position is not measured at Recovery & Recycling** (no supply share and no Competitive Position family
+   exists for recycling). The 406 assessed Recovery nodes (Catch Up 130, Partner 49, Watch 227) are decided with the
+   position read as not strong, so no Recovery node can be Preserve. Since the 91dba6f rerun an unmeasured position
+   lowers confidence wherever the rule reads it (Recovery Catch Up 120 moderate and 10 low, Partner 41 moderate and 8
+   low; only Watch on low need and a low prize stays high, 172) and the reason says "Competitive Position not
+   measured" (237 nodes, 233 of them Recovery). Before, 207 such nodes had a reason claiming a position "below the top
+   quarter", 185 of them at high confidence. A recycling capability measure (secondary output, scrap processing capacity) is
+   the fix.

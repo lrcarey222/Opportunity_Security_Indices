@@ -5,12 +5,12 @@
 //   (?pnode=Tech|Stage), checked against the data (parsePostureNode): a value that is not used as written
 //   (a three-stage stage such as Batteries|Midstream, an unknown technology) is reported in an "Ignored in
 //   the link" notice above the card, unless the page lists it in its own notice (reportIgnored={false}).
-//   Deployment is not offered (every economy deploys openly there); it shows as a disabled choice.
+//   Deployment is not offered (its choice reads deployment need, Accelerate or Watch, and it has no Industrial Opportunity to plot); it shows as a disabled choice.
 // - a Sector profile (/sector/:tech/:stage): `node` fixes the card to that node (no selects, no URL key);
 //   Deployment is allowed there and says that every economy deploys.
 // Takeaway as the sub and the figure's summary; legend and notes in the card's slots; a table twin of the
 // node's economies (a row opens the profile, like a point) and a CSV with the posture provenance. A point
-// opens /countries/:iso3#posture unless `countryHref` says otherwise. Imports nothing from sector/.
+// opens /countries/:iso3#strategy (the Country Strategy Map; #posture is its old alias) unless `countryHref` says otherwise. Imports nothing from sector/.
 
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
@@ -34,7 +34,7 @@ export const SECTOR_NODE_KEY = 'pnode';
 export const SECTOR_POSTURE_TITLE = 'Who should secure, compete or deploy in this node';
 
 /** The default profile link of a point or a table row: the economy's Strategic posture section. */
-export const postureProfileHref = (iso3: string): string => `/countries/${iso3}#posture`;
+export const postureProfileHref = (iso3: string): string => `/countries/${iso3}#strategy`;
 
 export interface SectorPostureCardProps {
   /** fix the card to one node (a Sector profile); omit on the Sector home (selects + ?pnode) */
@@ -92,7 +92,7 @@ export function SectorPostureCard({
   };
   const offered = producingStagesOf(c.meta.stages);
   const takeaway = sectorTakeaway(tech, stage, cells, names);
-  const notPlotted = cells.length - cells.filter((x) => x.need !== null && x.opp !== null).length;
+  const notPlotted = cells.length - cells.filter((x) => x.posture !== 'N' && x.need !== null && x.prize !== null).length;
   const problem = parsed?.problem ?? null;
   const open = (iso: string) => nav(countryHref(iso));
   const tools = node ? undefined : (
@@ -101,7 +101,7 @@ export function SectorPostureCard({
       <Select
         label="Stage"
         value={stage}
-        options={c.meta.stages.map((s) => (offered.includes(s) ? { value: s, label: s } : { value: s, label: `${s} (every economy deploys)`, disabled: true }))}
+        options={c.meta.stages.map((s) => (offered.includes(s) ? { value: s, label: s } : { value: s, label: `${s} (deployment need: not on this chart)`, disabled: true }))}
         onChange={(s) => set(tech, s)}
         className="min-w-[9rem]"
       />
@@ -126,7 +126,7 @@ export function SectorPostureCard({
             {/* the reading line, as the Sector pages' chart cards give it (spec_country.md C3.6) */}
             <span className="mt-1 block text-paper-dim" data-testid="posture-reading">
               Each point is one economy. Across: <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>, among the node&apos;s contenders; up:{' '}
-              <Term id={POSTURE_TERMS.strategicNeed}>Strategic Need</Term>. Outlined diamonds are Secure: they keep their true coordinates because Secure overrides the quadrant.
+              <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>. Outlined diamonds are Secure: they keep their true coordinates because Secure overrides the triage.
               Point size is <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>.
             </span>
           </>
@@ -150,9 +150,9 @@ export function SectorPostureCard({
           <div className="space-y-1">
             <TradeFreshness meta={c.meta} />
             <p>
-              Economies without a measured need or opportunity are not plotted ({notPlotted} here; the table lists them).
+              Economies without a measured need or prize, or not assessed, are not plotted ({notPlotted} here; the table lists them).
               {stage === DEPLOYMENT_STAGE
-                ? ' Deployment is where the technology is used: every economy deploys openly there, and its supply risks are read at the stages that make or supply it.'
+                ? ' At Deployment & Use the choice reads deployment need (Accelerate or Watch); Industrial Opportunity is read at the stages that make or supply the technology.'
                 : ''}
             </p>
           </div>

@@ -135,17 +135,21 @@ export function policyComponentName(key: string): string {
 }
 
 /**
- * The bridge from a Strategic view to the same economy in Country Insights (spec_country.md A2.2): one
- * quiet link, "{Country} in Country Insights ->", to /countries/ISO3 (the NEIS baseline there; the
- * Strategic scenario is not carried, Country Insights always shows the baseline).
+ * The bridge from a Strategic view (the Legacy OSI framework) to the same economy's Country profile
+ * (spec_country.md A2.2; design section 5, 2026-10-29): its Country Strategy Map, the current
+ * recommendation (#strategy), and its Legacy OSI results under Evidence & Methodology (#legacy-osi). The
+ * Strategic scenario is not carried.
  */
 export function CountryInsightsLink({ iso3, country }: { iso3: string; country: string }) {
   return (
-    <p className="mt-3 text-sm">
-      <Link className="link" to={`/countries/${iso3}`}>
+    <p className="mt-3 text-sm" data-testid="country-insights-link">
+      <Link className="link" to={`/countries/${iso3}#strategy`}>
         {country}&rsquo;s Country profile &rarr;
       </Link>
-      <span className="text-paper-mute"> (a plain-language briefing on the NEIS baseline)</span>
+      <span className="text-paper-mute"> (its Country Strategy Map: the current recommendation) · </span>
+      <Link className="link" to={`/countries/${iso3}#legacy-osi`}>
+        its Legacy OSI results under Evidence &amp; Methodology
+      </Link>
     </p>
   );
 }

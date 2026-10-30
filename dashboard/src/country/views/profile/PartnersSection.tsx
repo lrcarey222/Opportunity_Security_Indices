@@ -14,8 +14,11 @@
 //   AIB model       the toggled scenario (scn: Decoupling, or Managed Interdependence from its file; the
 //                   toggle sits in the panel): its coordinated trade, the investment flows where it invests
 //                   or hosts, the BUILD nodes that concern it, its compact coalitions.
-// The partner-by-partner table (priority partners beside today's partners) and the model's partner scores
-// under the reader's Perspective stay in disclosures after the lenses.
+// The partner-by-partner table (priority partners beside today's partners) stays in a disclosure after the
+// lenses. Since 2026-10-29 (design 5b, spec XVI) the section is generic partnership material: it sits under
+// Allied Strategy's collapsed "Explore all partnership analysis" (id allied-partnerships, heading level 3),
+// after the canonical partner outputs; the model's partner scores under the reader's Perspective (the dials)
+// moved to Legacy OSI (PartnerScoresFold).
 //
 // Above the lenses (2026-10-20, strategic task spec s.19): the relationship thesis of the economy and its
 // selected partner (URL `partner`, the profile's own; the picker lists the fact sheet's partners, those the
@@ -220,7 +223,7 @@ function ScenarioNote({ sc }: { sc: CountryScenario }) {
  * "Partnerships": the kind of partnership (URL `ptab`), the cross-lens summary and the three lenses, then
  * the partner-by-partner table and the model's partner scores in disclosures.
  */
-export function PartnershipsSection() {
+export function PartnershipsSection({ id = 'partnerships', level = 2 }: { id?: string; level?: 2 | 3 } = {}) {
   const { sheet, state, setPtab } = useProfile();
   const name = proseName(sheet.meta.country);
   const kind = kindOf(state.ptab);
@@ -228,18 +231,15 @@ export function PartnershipsSection() {
   const onKind = (k: PartnershipKind) => setPtab?.(k);
   return (
     <Section
-      id="partnerships"
-      aliases={['partners']}
+      id={id}
+      level={level}
       title="Partnerships"
       intro={
         <>
-          Who {name} could trade, invest, build and align with, read three ways: as it is today (observed data), as the partner scores recommend (the partner scores of the{' '}
+          Who {name} could trade, invest, build and align with, read three ways: as it is today (observed data), as the partner scores recommend (the Legacy OSI partner scores of the{' '}
           <Term id="psi" />, such as <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the NEIS defaults) and as the Allied Industrial Base model arranges it under the
-          chosen scenario. The summary of each kind says where the three agree and where they differ. For each technology and stage it puts in Compete · Partner, the{' '}
-          <a className="link" href="#posture">
-            Strategic posture
-          </a>{' '}
-          section names up to three trusted partners (or a partner gap) instead. First, the relationship thesis of {name} and the partner you choose.
+          chosen scenario. The summary of each kind says where the three agree and where they differ. For each node the strategy puts in Partner, the Allied Strategy above names the
+          recommended partners and the allied coverage instead. First, the relationship thesis of {name} and the partner you choose.
         </>
       }
     >
@@ -261,11 +261,17 @@ export function PartnershipsSection() {
             <p className="text-sm text-paper-mute">{cap(name)} has no partner rows in the Partnership Strength Index.</p>
           )}
         </Fold>
-        <Fold id="partners-model" engine summary="Partner scores under your perspective: Partnership Strength, Friendshore, Partnership Opportunity and Development Potential (the model)">
-          <PartnersView embedded />
-        </Fold>
       </div>
     </Section>
+  );
+}
+
+/** The model's partner scores under the reader's Perspective (the dials; Legacy OSI since 2026-10-29). */
+export function PartnerScoresFold() {
+  return (
+    <Fold id="partners-model" engine summary="Partner scores under your perspective: Partnership Strength, Friendshore, Partnership Opportunity and Development Potential (the model)">
+      <PartnersView embedded />
+    </Fold>
   );
 }
 

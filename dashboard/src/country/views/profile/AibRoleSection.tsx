@@ -13,6 +13,8 @@
 // compact links to its page) and its key bilateral relationships (AibStrategicCards.tsx, from
 // aibStrategicOf(); the same in every scenario); the operational roles and the network relationships
 // follow as the evidence beneath them, under the toggled scenario.
+// Since 2026-10-29 (design 5b) the section sits under Allied Strategy's "Explore all partnership analysis"
+// (id allied-aib-role, heading level 3); the old #aib-role links open that disclosure and scroll here.
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';
@@ -28,7 +30,7 @@ import { AibStrategicCards } from './AibStrategicCards.tsx';
 import { BasisTag, LinkRow, Section, useProfile } from './common.tsx';
 import { PartnerName } from './PartnersSection.tsx';
 
-export function AibRoleSection() {
+export function AibRoleSection({ id = 'aib-role', level = 2 }: { id?: string; level?: 2 | 3 } = {}) {
   const { sheet, aib } = useProfile();
   const name = proseName(sheet.meta.country);
   const iso = sheet.iso3;
@@ -68,7 +70,8 @@ export function AibRoleSection() {
   const max = top.reduce((m, e) => Math.max(m, e.trade + e.investment), 0);
   return (
     <Section
-      id="aib-role"
+      id={id}
+      level={level}
       title="Role in the Allied Industrial Base"
       basis={<BasisTag kind="facts" note={available ? `the Allied Industrial Base results · ${label}` : 'the Allied Industrial Base results'} />}
       intro={

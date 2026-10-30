@@ -305,7 +305,7 @@ export default function OverviewView() {
   return (
     <div>
       <PageHead
-        eyebrow="Countries · World map of any measure"
+        eyebrow="Legacy OSI framework · World map of any measure"
         title="Overview"
         lede={
           <>

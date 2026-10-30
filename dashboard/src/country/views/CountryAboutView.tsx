@@ -1,6 +1,8 @@
 // About Country Insights /countries/about (spec_country.md A4.4): what the module shows and how each
 // comparison is made, in plain prose with glossary terms, the memos, the data and its vintage (from the
-// manifest), and the module's glossary.
+// manifest), and the module's glossary. Since 2026-10-29 (design 5) it leads with the canonical framework
+// (Need -> Prize -> Position -> Choice -> Policy Alignment) and puts the corners and the Strategic Index
+// under the Legacy OSI framework, with the conceptual mapping and why the results differ.
 
 import { Link } from 'react-router';
 import { GlossaryList } from '../../components/GlossaryList.tsx';
@@ -92,29 +94,55 @@ export default function CountryAboutView() {
       />
       <H id="what">What the Country profiles show</H>
       <p className={p}>
-        Every Country profile reads the 11 technologies at the six supply-chain stages (extraction, refining, components, assembly, deployment and recovery): 66 sectors. Its first
-        section, Strategic posture, recommends whether the country should secure, compete in or deploy each of them (the{' '}
+        Every Country profile reads the 11 technologies at the six supply-chain stages (extraction, refining and processing, component manufacturing, final assembly and equipment,
+        deployment and use, recovery and recycling): 66 technology and stage nodes. It answers, in order: what the country needs, where there is a prize worth pursuing, where it is
+        already strong, what it should secure, preserve, catch up in, rely on partners for, deploy faster and deliberately not prioritise, whether its current policy matches those
+        choices, and which allies can meet its needs (the{' '}
         <Link className="link" to="/methods">
           methods
         </Link>{' '}
-        say how it is set). The sections after it read the NEIS baseline values for the country and put them next to the raw data behind them. Index values
-        (<Term id="es" />, <Term id="eo" />, the{' '}
-        <Term id="si" /> and the <Term id="psi" />) are always labelled as scores from 0 to 1 that compare the country with other economies; raw values always carry their unit, year and source,
-        as the Sector profiles print them. The two are never mixed on one axis.
-      </p>
-      <p className={p}>
-        Everything starts on the <Term id="paper_baseline" />: the pipeline&apos;s default weights at the six stages. The Perspective control at the top of each profile re-weights the
-        strategic priorities, sector rankings and partner scores; the Strategic posture section and observed and modelled facts (trade, concentration, production, the Allied Industrial
-        Base results) never move.
+        say how each step is set). Its sections follow that order: Strategy (the Country Strategy Map), Need, Prize &amp; Position, Choices, Policy Alignment, Allied Strategy, and
+        Evidence &amp; Methodology. One drawer answers the same five questions for any node, from every section.
       </p>
 
-      <H id="corners">Reading the four corners</H>
+      <H id="strategy">The strategy: need, prize, position, choice, policy alignment</H>
+      <p className={p}>
+        <strong className="text-paper">Need</strong> comes in two kinds that are never added together. At the five producing stages it is{' '}
+        <Term id="supply_chain_need">supply-chain need</Term>: how costly or dangerous dependence on outside supply is (import dependence, supplier concentration, risky supplier exposure,
+        trusted alternatives). At Deployment &amp; Use it is <Term id="deployment_need">deployment need</Term>: how much more of the technology the energy system needs (demand adequacy,
+        the gap to national targets, system requirements), with its scenario named. <strong className="text-paper">Prize</strong> is{' '}
+        <Term id="industrial_opportunity">Industrial Opportunity</Term>, the node&apos;s market prize, kept apart from current capability and from need.{' '}
+        <strong className="text-paper">Position</strong> is <Term id="competitive_position">Competitive Position</Term>, demonstrated capability among the node&apos;s contenders.
+      </p>
+      <p className={p}>
+        <strong className="text-paper">Choice</strong>: the Secure tests come first (operational control, coercive chokepoint, systemic resilience). At Deployment &amp; Use deployment need
+        decides Accelerate or Watch. At the producing stages need and prize triage the node and Competitive Position decides the response: Preserve a strong position with a prize, Catch
+        Up where the prize and a credible pathway justify it, Partner where the need is high and the domestic case weak, and Watch where the need is low, with a low prize and
+        also with a high prize where there is neither a strong position nor a credible pathway (a positive conclusion: domestic industrial priority is low). A node whose need or
+        prize is not measured is not assessed, never Watch. <strong className="text-paper">Policy Alignment</strong>{' '}
+        then compares observed policy with the choice; policy never feeds the choice. The thresholds are fixed, so nothing on the strategy follows the Perspective dials.
+      </p>
+
+      <H id="legacy">The Legacy OSI framework</H>
+      <p className={p}>
+        The paper baseline&apos;s indices (<Term id="es" />, <Term id="eo" />, the <Term id="si" /> and the <Term id="psi" />) stay at the end of each profile under Evidence &amp;
+        Methodology, for replication and comparison; they are not current recommendations. They are always labelled as scores from 0 to 1 that compare the country with other economies;
+        raw values always carry their unit, year and source, as the Sector profiles print them. The two are never mixed on one axis. They start on the <Term id="paper_baseline" />: the
+        pipeline&apos;s default weights at the six stages. The Perspective control (Explore scenarios) re-weights the legacy priorities, sector rankings and partner scores; the strategy
+        and observed and modelled facts (trade, concentration, production, the Allied Industrial Base results) never move.
+      </p>
+      <p className={p}>
+        The four corners map conceptually onto the choices: Grow &asymp; Preserve, Upgrade &asymp; Catch Up, Exposed &asymp; Partner, Stable &asymp; Watch. Results differ because the
+        legacy indices mix capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment, which the strategy measures apart.
+      </p>
+
+      <H id="corners">Legacy OSI: reading the four corners</H>
       <p className={p}>
         For each sector (one technology at one supply-chain stage), the country is compared with every economy whose two scores can both be compared in that sector. The chart plots each
         sector at its <Term id="percentile">share of economies beaten</Term>: Economic Opportunity across, Energy Security up. So the axes compare the country with other economies.
       </p>
       <p className={p}>
-        The corners then sort the country&apos;s own sectors. They describe; they are not the postures of the Strategic posture section.
+        The corners then sort the country&apos;s own sectors. They describe; they are not the choices of the strategy.
         The dashed lines sit at the country&apos;s <Term id="quadrant">median sector</Term> on each axis: the middle of its own sectors&apos; positions. A sector is in the <Term id="grow">Grow</Term> corner when both positions are at or above that median (a sector exactly at the median counts as high),{' '}
         <Term id="upgrade">Upgrade</Term> when opportunity is high but energy security low, <Term id="exposed">Exposed</Term> when both are low, and <Term id="stable">Stable</Term> when
         opportunity is low but energy security high. So the corners show where a country is relatively strong or weak, and every country has sectors in more than one corner; the tooltips
@@ -125,7 +153,15 @@ export default function CountryAboutView() {
         {COUNTRY_CELL_KEYS.length - noEsCellsOf(manifest).length} of the {COUNTRY_CELL_KEYS.length} sectors can be placed.
       </p>
 
-      <H id="priorities">How priorities are compared with policy</H>
+      <H id="alignment">How the strategy is compared with policy</H>
+      <p className={p}>
+        <Term id="policy_alignment">Policy alignment</Term> sets each assessed node&apos;s choice beside its observed policy (support, protection or localisation, and its momentum
+        where the time series allows): under-prioritized when a Secure, Preserve or Catch Up node gets weak support, or an Accelerate node weak deployment policy; over-prioritized when a
+        Watch node gets heavy protection; wrong treatment when a Partner node meets localisation; mixed when the sources disagree. There is no overall score, and where policy data are
+        thin the alignment says so.
+      </p>
+
+      <H id="priorities">Legacy OSI: how priorities are compared with policy</H>
       <p className={p}>
         The Strategic Index adds five parts: 30% economic opportunity, 30% security need (one minus Energy Security), 20% policy activity ranked among the country&apos;s own sectors, 10% the
         supply-chain stage (the two manufacturing stages, components and assembly, count most, then deployment, then extraction, refining and recovery) and 10% the technology&apos;s
@@ -175,7 +211,8 @@ export default function CountryAboutView() {
         it is a reference to a fact-sheet field that the renderer fills in, so no figure is typed by hand. A machine check then rejects stray numbers, unsupported causal words and missing
         caveats, and a separate AI checker, which did not write it, signs off every claim and every sentence against the fact sheet. Each memo is labelled verbatim: &ldquo;
         {manifest.label}&rdquo; The screen, the PDF and the Word file are rendered from the same document. The memos were written on 14 October 2026, when the corners split each
-        sector at its median economy; a memo whose corner statements may differ from today&apos;s chart says so at its top, and its other figures match the current data.
+        sector at its median economy; a memo whose corner statements may differ from today&apos;s chart says so at its top, and its other figures match the current data. The memos
+        read the Legacy OSI framework, not the strategy: they are being revised to it.
       </p>
       <MemoList />
 

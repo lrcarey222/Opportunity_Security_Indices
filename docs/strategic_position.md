@@ -153,7 +153,8 @@ Every family carries `basis` (national / observed_trend / not_assessed; regional
 and its scenario label. A climate-aligned value (World WEO 2025 Net Zero vs Current Policies at 2035,
 `dn_climate_aligned`, a ratio, not a score) is shown only as an explicitly labelled alternative and never
 enters the score: no 1.5 C pathway is treated as objective fact. Missing evidence stays NA; a technology
-x country with no family is not assessed. Coverage (2026-10-29): 1,713 of 2,354 Deployment cells.
+x country with no family is not assessed. Coverage (2026-10-29): 1,683 of the 2,354 classified Deployment cells
+(1,713 of 2,409 over all 219 economies in the table).
 Not assessed by design: grid congestion / transmission adequacy (no national data), hydrogen and EV
 targets, geothermal targets, oil system need, the committed pipeline (GEM needs a contact form).
 
@@ -204,11 +205,24 @@ it among the node's **contenders** (`cp_contender_pct`): the Competitive Positio
 economies holding at least 0.5% of world supply of the node. With fewer than five contenders the
 cross-country percentile stands in (`cp_contender_basis = few_contenders`), but a high position still
 requires the country to be a contender: a non-producer cannot preserve a mining node on its ore
-re-exports. Where no supply share is measured at all (Recovery, Deployment), the cross-country percentile
-alone is used (`all_countries`). **High Competitive Position** (user decision 2026-10-29) = the top
-quarter of contenders (`cp_contender_pct >= 0.75`), being a contender, and the posture engine's capability
-lower bound (`t3_capability_lo` moderate or strong: an established world-share position, a foothold in
-one of the country's stronger cells, or transferable learning on a domestic base).
+re-exports. Where no supply share is measured at all (Deployment & Use, and Green Hydrogen Refining), the
+cross-country percentile alone is used (`all_countries`). **High Competitive
+Position** (user decision 2026-10-29) = the top quarter of contenders (`cp_contender_pct >= 0.75`), being a
+contender, and the posture engine's capability lower bound (`t3_capability_lo` moderate or strong: an
+established world-share position, a foothold in one of the country's stronger cells, or transferable
+learning on a domestic base). A top-quarter score that fails the test says why: an economy below the
+contender line has "a top-quarter score without a contender share" (trace result `not_a_contender`,
+checked first), a contender below the floor "a top-quarter score below the capability floor"
+(`capability_floor_not_met`, flagged for review).
+
+**Unmeasured position.** Competitive Position is not measured for every economy at Recovery & Recycling
+(no supply share and no Competitive Position family exists for recycling) and for a few cells elsewhere
+(`cp_contender_pct` NA). The choice rule treats an unmeasured position as **not strong**: such a node can be
+Catch Up, Partner or Watch, never Preserve. Where the rule reads the position (a high prize, or high need
+with a low prize) the missing measurement lowers `posture_confidence` by one step, as an unknown pathway
+does (design D3); the choice reason says "Competitive Position not measured" and the trace's position
+result is `unknown`. Where need and prize are both low the node is Watch whatever its position, so nothing
+is lowered.
 
 ### Evidence specificity
 
@@ -338,7 +352,8 @@ cells, the selectivity of supply-chain need at 0.67 (a percentile); 0.67 took 22
   mechanically Partner (spec VIII): it is Preserve with a review flag (design D2; 16 cells), so strategic
   redundancy, Secure or a recalibration of the prize can be considered by a reader. A top-quarter score
   that fails the capability floor gives Catch Up or Partner with `review_top_quarter_below_floor`
-  (31 cells): a leading score in a fragmented node, for review rather than silent override.
+  (11 cells: 9 Catch Up, 2 Partner): a leading score in a fragmented node, for review rather than silent
+  override.
 - **Credible pathway** (design D3, `pathway.R`): `pathway_credible` yes when ANY of: Atlas product-space
   feasibility of the node basket in the top quarter of countries; Clean Investment Monitor pipeline
   capacity in the node; an established adjacent stage (adjacent world share >= 5%, or that stage among the
@@ -346,8 +361,9 @@ cells, the selectivity of supply-chain need at 0.67 (a percentile); 0.67 took 22
   base (engine Test 3 learning lower bound moderate or strong); an input-cost advantage (Input Cost Index
   in the cheapest quarter). Extraction also needs a resource base. `no` = evidence observed, none fires;
   `unknown` = nothing observed, read as not credible with lower confidence. `pathway_basis` names the legs
-  that fired. Of the assessed high-prize producing cells without a high position (not Secure), 62% have a
-  credible pathway (Catch Up), 13% go Partner and 25% Watch: not every prize is forced into Catch Up.
+  that fired. Of the assessed high-prize producing cells without a high position (not Secure), 63% have a
+  credible pathway (Catch Up: 1,660), 13% go Partner (345) and 24% Watch (643): not every prize is forced into
+  Catch Up.
 - **Watch reasons** (`watch_reasons`): low_need, low_prize, ample_diversified_supply (no concentration
   watch), weak_domestic_case (a prize without a top-quarter position or a pathway), option_value (an
   emerging node), low_deployment_need. Watch is a positive conclusion: domestic industrial priority low.
@@ -362,8 +378,9 @@ partners hold 30% of world supply else diversified global, Deploy diversified gl
 not_assessed), `decision_trace` (compact JSON array of `{step, test, value, threshold, result}`: secure ->
 need -> prize -> position -> pathway -> choice; the engine's full test trace is `engine_trace`),
 `posture_confidence` (high / moderate / low: one point per borderline input, a still-possible Secure, an
-unknown pathway deciding the node, weak capability evidence, a consistency flag, fewer than two observed
-need families; not assessed is low; Secure keeps the engine's confidence), `decision_borderline` (the
+unknown pathway deciding the node, an unmeasured Competitive Position where the rule reads it, weak
+capability evidence, a consistency flag, fewer than two observed need families; not assessed is low;
+Secure keeps the engine's confidence), `decision_borderline` (the
 inputs within 0.05 of their threshold), `choice_possible` and `posture_possible` (the choices and
 postures the borderline inputs and an unknown pathway allow), `pivotal_inputs`, `consistency_flag`,
 `watch_reasons`, `choice_reason` (one plain sentence from the stored inputs). The engine's own Compete
@@ -552,17 +569,22 @@ Does observed policy match the choice? Downstream only (`sp_policy_alignment()`,
 | Preserve, Catch Up | capability-building support (the NIPO support stock where measured, else policy priority) below 0.5 | under_prioritized | |
 | Deploy . Accelerate | deployment-policy priority (PAMS, the only deployment source) below 0.5 | deployment_gap (under-response) | weak_deployment_policy |
 | Deploy . Watch | protection / localisation in the top third (NIPO; at Deployment the technology's Assembly-equipment protection, i.e. local-content rules) | over_prioritized | watch_protection, watch_localisation_deployment |
-| Deploy . Watch | no protection split: total attention in the top third with an attributed record (producing stages) | over_prioritized, low confidence | watch_attention |
+| Deploy . Watch | NIPO observes the cell (a protection stock is recorded) but protection is not in the top third: a zero stock, or one too thin to rank (the economy protects fewer than three cells) | aligned (protection alone decides; no fallback to total attention) | |
+| Deploy . Watch | NIPO does not observe the cell (no protection stock at all): total attention in the top third with an attributed record (producing stages) | over_prioritized, always low confidence (the total-attention fallback) | watch_attention |
 | Deploy . Watch | the over test fires but other choices are still possible | insufficient_data | |
 | otherwise | | aligned (restraint is success for Watch) | |
 
 `policy_alignment_confidence`: high with both sources ranked, medium with one, low with none; one level
-lower where the rule needed the NIPO support / protection split and it is not measured; at most medium at
-Deployment (PAMS only, by construction); insufficient_data is low. No overall policy score is computed.
-2026-10-29: aligned 5,101; under_prioritized 947 (Catch Up 813, Secure 92, Preserve 42); deployment_gap
-182; over_prioritized 475 (all Watch); misaligned 68 (Partner); mixed 206; insufficient_data 7,145
-(5,295 of them not assessed); 994 Watch cells carry top-third policy intensity
-(`watch_high_policy_intensity.csv`).
+lower where the rule needed the NIPO support / protection split and it is not ranked (an observed zero
+protection stock is a measurement, not a gap); at most medium at Deployment (PAMS only, by construction);
+low whenever the total-attention fallback decides the alignment (design D5), whatever the number of
+sources; insufficient_data is low. No overall policy score is computed.
+2026-10-29 (`choice_policy_alignment.csv`): aligned 5,185; under_prioritized 947 (Catch Up 828, Secure 92,
+Preserve 27); deployment_gap 182; over_prioritized 375 (all Watch: 103 producing cells on NIPO protection,
+65 Deployment cells on the equipment's local-content protection, and 207 producing cells on total attention
+because NIPO does not observe them, all low confidence); misaligned 68 (Partner); mixed 234;
+insufficient_data 7,133 (5,295 of them not assessed). Alignment confidence: high 1,893, medium 1,263, low
+10,968. 994 Watch cells carry top-third policy intensity (`watch_high_policy_intensity.csv`).
 
 ### Revealed Policy Priority
 
@@ -627,26 +649,27 @@ behind them (`choice_by_country.csv`, `choice_threshold_sensitivity.csv`, `consi
 `io_node_prize.csv`, `pathway_by_stage.csv`, `secure_selectivity.csv`, `deployment_review.csv`,
 `manufacturing_vs_deployment.csv`, `watch_high_policy_intensity.csv`, `choice_policy_alignment.csv`).
 
-2026-10-29, 14,124 classified cells: Secure 174, Preserve 115, Catch Up 1,631, Partner 1,592, Accelerate 514,
-Watch 4,803 (1,169 of them at Deployment), not assessed 5,295 (4,624 producing cells without a measured
-supply-chain need, mostly Recovery and Extraction thin cells; 671 Deployment cells without deployment
-need).
+2026-10-29, 14,124 classified cells (`choice_overall.csv`): Secure 174, Preserve 86, Catch Up 1,660, Partner
+1,592, Accelerate 514, Watch 4,803 (1,169 of them at Deployment), not assessed 5,295 (4,624 producing cells
+without a measured supply-chain need, mostly Recovery and Extraction thin cells; 671 Deployment cells without
+deployment need).
 
-Position-choice consistency, before (the 2026-10-28 need x EO quadrant) -> after:
+Position-choice consistency, before (the 2026-10-28 need x EO quadrant) -> after, both counted on the same
+2026-10-29 Competitive Position and measured supply shares (`consistency_before_after.csv`):
 
 | contradiction | before | after |
 |---|---|---|
-| Partner with Competitive Position in the contenders' top quarter (contenders only) | 17 | 2 (both below the capability floor, flagged) |
+| Partner with Competitive Position in the contenders' top quarter (contenders only) | 8 | 2 (both below the capability floor, flagged) |
 | Partner with cross-country CP >= 0.75 | 363 of 1,456 (25%) | 361 of 1,592 (23%) |
-| Catch Up with 10% or more of world supply | 8 | 5 |
-| Catch Up with CP in the contenders' top decile (contenders only) | 14 | 13 (all below the capability floor, flagged) |
-| Catch Up with cross-country CP >= 0.9 | 49 of 117 (42%) | 198 of 1,631 (12%) |
-| Preserve without capability (cross-country CP < 0.25 or < 0.5% of world supply) | 22 | 0 |
-| Preserve below the contenders' median | 36 | 0 |
+| Catch Up with 10% or more of world supply | 8 | 6 (contenders just below the top quarter, 0.59-0.74) |
+| Catch Up with CP in the contenders' top decile (contenders only) | 10 | 3 (all below the capability floor, flagged) |
+| Catch Up with cross-country CP >= 0.9 | 49 of 117 (42%) | 207 of 1,660 (12%) |
+| Preserve without capability (cross-country CP < 0.25 or < 0.5% of world supply) | 66 | 0 |
+| Preserve below the contenders' median | 43 | 0 |
 
 By construction Preserve now needs a top-quarter position among contenders, so Preserve without capability
-is gone and Partner despite a top-quarter position falls from 17 to 2. The cross-country counts did not fall
-in number because far more cells are now assessed and decided (Catch Up 117 -> 1,631): as rates they fall
+is gone and Partner despite a top-quarter position falls from 8 to 2. The cross-country counts did not fall
+in number because far more cells are now assessed and decided (Catch Up 117 -> 1,660): as rates they fall
 from 25% to 23% (Partner) and from 42% to 12% (Catch Up). A cross-country top-decile CP is not a leading position in a node
 with 30 or more contenders. The remaining contender-level cases fail the capability floor (a 1-3% world
 share without a specialised foothold or learning base) and carry `review_top_quarter_below_floor`.
@@ -721,8 +744,8 @@ choice compares countries within a node. Against the 6,351 country x six-stage c
 (2026-10-29): Grow -> Preserve 3%, Upgrade -> Catch Up 9%, Exposed -> Partner 24%, Stable -> Watch 41%
 (`legacy_osi_corners_vs_choice_pairs.csv`). The disagreements come mostly from the cleaned prize (1,895
 cells: a legacy EO high on input cost or capability, or low where world demand is growing), cells not
-assessed now (1,368), Deployment decided on its own need (1,053), the cleaned need (590), Competitive
-Position (200) and Secure (143).
+assessed now (1,368), Deployment decided on its own need (1,053), the cleaned need (595), Competitive
+Position (208) and Secure (143) (`legacy_osi_corners_vs_choice_drivers.csv`).
 
 ### The need x EO quadrant (the posture rule of 2026-10-28)
 

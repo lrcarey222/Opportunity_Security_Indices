@@ -5,9 +5,9 @@
 import { stageShort } from '../../lib/stages.ts';
 import {
   cellOf, COUNTRY_TECHS, noEsCellsOf, THIRDS, type CellFacts, type CountryEntry, type CountryManifest, type Driver, type DriversDoc,
-  type FactSheet, type NipoPolicy, type PartnerRow, type Quadrant, type Third,
+  type FactSheet, type LegacyCorner, type NipoPolicy, type PartnerRow, type Third,
 } from '../contract.ts';
-import { QUADRANTS } from '../contract.ts';
+import { LEGACY_CORNERS } from '../contract.ts';
 
 // ---- the roster ------------------------------------------------------------------------------------
 
@@ -38,16 +38,18 @@ export function countryOptions(m: CountryManifest): { iso3c: string; country: st
   );
 }
 
-/** "Grow 4 · Upgrade 6 · Exposed 9 · Stable 3": the QUADRANTS labels (the app's display names since
- *  2026-10-28, not the sheet's words.quadrant). */
-export function quadrantLine(q: Record<Quadrant, number> | null | undefined): string | null {
+/** "Grow 4 · Upgrade 6 · Exposed 9 · Stable 3": the Legacy OSI corners' counts with the LEGACY_CORNERS
+ *  labels (the app's display names since 2026-10-28, not the sheet's words.legacy_corner). */
+export function legacyCornerLine(q: Partial<Record<LegacyCorner, number>> | null | undefined): string | null {
   if (!q) return null;
-  return QUADRANTS.map((x) => `${x.label} ${q[x.id] ?? 0}`).join(' · ');
+  return LEGACY_CORNERS.map((x) => `${x.label} ${q[x.id] ?? 0}`).join(' · ');
 }
+/** @deprecated the old name of legacyCornerLine. */
+export const quadrantLine = legacyCornerLine;
 
 // ---- the scatter ---------------------------------------------------------------------------------
 
-/** One placed sector on the quadrant scatter: x = Economic Opportunity, y = Energy Security (the plotted
+/** One placed sector on the Legacy OSI corners scatter: x = Economic Opportunity, y = Energy Security (the plotted
  *  positions eo.pos and es.pos, 2026-10-15); `short` is "Batteries · Ref" (the stage's short form, lib/stages.ts). */
 export interface ScatterPoint {
   key: string;
@@ -57,7 +59,7 @@ export interface ScatterPoint {
   stage: string;
   x: number;
   y: number;
-  quadrant: Quadrant;
+  corner: LegacyCorner;
   top5: boolean;
   priority: boolean;
   cell: CellFacts;
@@ -67,23 +69,23 @@ export function scatterPoints(sheet: FactSheet): ScatterPoint[] {
   const prio = new Set(sheet.priority_sectors);
   const out: ScatterPoint[] = [];
   for (const c of sheet.cells) {
-    if (!c.placed || !c.es || !c.eo || c.es.pos === null || c.eo.pos === null || !c.quadrant) continue;
+    if (!c.placed || !c.es || !c.eo || c.es.pos === null || c.eo.pos === null || !c.legacy_corner) continue;
     out.push({
       key: c.key, label: c.label, short: `${c.tech} · ${stageShort(c.stage)}`, tech: c.tech, stage: c.stage, x: c.eo.pos, y: c.es.pos,
-      quadrant: c.quadrant, top5: !!c.si?.top5, priority: prio.has(c.key), cell: c,
+      corner: c.legacy_corner, top5: !!c.si?.top5, priority: prio.has(c.key), cell: c,
     });
   }
   return out;
 }
 
-/** Cells by corner, each ordered by Strategic Index rank (sectors outside the sample last, in cell order). */
-export function cellsByQuadrant(sheet: FactSheet): Record<Quadrant, CellFacts[]> {
-  const out: Record<Quadrant, CellFacts[]> = { grow: [], upgrade: [], secure: [], watch: [] };
+/** Cells by Legacy OSI corner, each ordered by Strategic Index rank (sectors outside the sample last, in cell order). */
+export function cellsByLegacyCorner(sheet: FactSheet): Record<LegacyCorner, CellFacts[]> {
+  const out: Record<LegacyCorner, CellFacts[]> = { legacy_grow: [], legacy_upgrade: [], legacy_exposed: [], legacy_stable: [] };
   const rank = (c: CellFacts) => (c.si?.in_sample && c.si.rank.v !== null ? c.si.rank.v : 1e9);
   sheet.cells.forEach((c) => {
-    if (c.placed && c.quadrant) out[c.quadrant].push(c);
+    if (c.placed && c.legacy_corner) out[c.legacy_corner].push(c);
   });
-  for (const q of Object.keys(out) as Quadrant[]) out[q].sort((a, b) => rank(a) - rank(b));
+  for (const q of Object.keys(out) as LegacyCorner[]) out[q].sort((a, b) => rank(a) - rank(b));
   return out;
 }
 

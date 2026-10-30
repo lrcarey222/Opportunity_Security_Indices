@@ -1,57 +1,62 @@
 // The table twins of the posture cards: TableView columns over the pure rows of derive.ts (one economy's
 // 66 nodes, one node's economies, the allied division). Headers spell every term out (no bare acronym);
-// the stage sorts in chain order; shares and percentiles show as percentages, the CSV keeps fractions.
+// the stage shows its display name and sorts in chain order; shares and percentiles show as percentages,
+// the CSV keeps fractions. Trade momentum is a column here (it left the map's cells, design D7).
 
 import type { Col } from '../components/TableView.tsx';
 import { stageRank } from '../lib/stages.ts';
 import { pct, type DivisionRow, type PostureRow } from './derive.ts';
+import { borderlineWords } from './grammar.ts';
 
 const pctCol = <R,>(id: string, header: string, v: (r: R) => number | null, digits = 0): Col<R> => ({ id, header, value: v, cell: (r) => pct(v(r), digits), num: true });
 
-const postureCol: Col<PostureRow> = { id: 'posture', header: 'Posture', value: (r) => r.postureWord, cell: (r) => r.postureWord ?? 'Not classified', sortValue: (r) => (r.posture ? 'SCD'.indexOf(r.posture) : 3) };
-const modeCol: Col<PostureRow> = { id: 'mode', header: 'Compete mode or Secure rationale', value: (r) => r.mode ?? r.rationale };
-const quadrantCol: Col<PostureRow> = { id: 'quadrant', header: 'Quadrant', value: (r) => r.quadrant };
+const FAMILY_SORT: Record<string, number> = { S: 0, C: 1, D: 2, N: 3 };
+const choiceCol: Col<PostureRow> = {
+  id: 'choice', header: 'Choice', value: (r) => r.choice, cell: (r) => r.choice ?? 'Not classified', sortValue: (r) => (r.posture ? FAMILY_SORT[r.posture] : 4),
+};
+const rationaleCol: Col<PostureRow> = { id: 'rationale', header: 'Secure rationale', value: (r) => r.rationale };
 const partnerCol: Col<PostureRow> = {
   id: 'partner',
   header: 'First trusted partner',
-  value: (r) => (r.mode === 'Partner' && r.partnerGap ? 'Partner gap' : r.partner1Name),
+  value: (r) => (r.mode === 'Partner' && r.partnerGap ? 'No credible allied solution yet' : r.partner1Name),
 };
-const borderlineCol: Col<PostureRow> = { id: 'borderline', header: 'Borderline on', value: (r) => r.borderline };
+const borderlineCol: Col<PostureRow> = { id: 'borderline', header: 'Borderline on', value: (r) => borderlineWords(r.borderline) };
 const measures: Col<PostureRow>[] = [
-  pctCol<PostureRow>('need', 'Strategic Need', (r) => r.need),
-  pctCol<PostureRow>('opp', 'Industrial Opportunity', (r) => r.opp),
+  { id: 'need_type', header: 'Need type', value: (r) => r.needType },
+  pctCol<PostureRow>('need', 'Need', (r) => r.need),
+  pctCol<PostureRow>('prize', 'Industrial Opportunity', (r) => r.prize),
   pctCol<PostureRow>('cp', 'Competitive Position', (r) => r.cp),
   pctCol<PostureRow>('share', 'World supply share', (r) => r.share, 1),
 ];
 
-/** One economy's nodes: technology, stage (chain order), posture and its reasons, the axes, policy, evidence, momentum, partner. */
+/** One economy's nodes: technology, stage (chain order), the choice and its reasons, the three dimensions, policy, evidence, momentum, partner. */
 export const COUNTRY_POSTURE_COLS: Col<PostureRow>[] = [
   { id: 'tech', header: 'Technology', value: (r) => r.tech },
-  { id: 'stage', header: 'Stage', value: (r) => r.stage, sortValue: (r) => stageRank(r.stage) },
-  postureCol,
-  modeCol,
-  quadrantCol,
+  { id: 'stage', header: 'Stage', value: (r) => r.stageName, sortValue: (r) => stageRank(r.stage) },
+  choiceCol,
+  rationaleCol,
   ...measures,
+  { id: 'pathway', header: 'Credible pathway', value: (r) => r.pathway },
   { id: 'alignment', header: 'Policy alignment', value: (r) => r.alignment },
   { id: 'evidence', header: 'Evidence', value: (r) => r.evidence },
   { id: 'momentum', header: 'Trade momentum', value: (r) => r.momentum },
   partnerCol,
   borderlineCol,
+  { id: 'flag', header: 'Consistency review', value: (r) => r.flag },
 ];
 
 const TIER_WORD: Record<string, string> = { core: 'Core member', partner: 'Partner' };
 
-/** One node's economies: country, coalition tier, posture and its reasons, the axes, partner, and whether the scatter places it. */
+/** One node's economies: country, coalition tier, the choice and its reasons, the dimensions, partner, and whether the scatter places it. */
 export const SECTOR_POSTURE_COLS: Col<PostureRow>[] = [
   { id: 'country', header: 'Economy', value: (r) => r.country },
   { id: 'tier', header: 'Coalition', value: (r) => (r.tier ? TIER_WORD[r.tier] : null) },
-  postureCol,
-  modeCol,
-  quadrantCol,
+  choiceCol,
+  rationaleCol,
   ...measures,
   partnerCol,
   borderlineCol,
-  { id: 'plotted', header: 'On the chart', value: (r) => (r.plotted ? 'yes' : 'no: need or opportunity not measured') },
+  { id: 'plotted', header: 'On the chart', value: (r) => (r.plotted ? 'yes' : 'no: need or prize not measured') },
 ];
 
 /** The allied division: one row per node. */

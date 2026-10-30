@@ -85,9 +85,13 @@ function renderAt(path: string) {
   return router;
 }
 const T = { timeout: 30_000 };
+// since 2026-10-29 (design 5b) the section is generic partnership material under Allied Strategy's "Explore all
+// partnership analysis" (id allied-partnerships, an h3); the #partnerships links open that disclosure
 const section = async () => {
-  await screen.findByRole('heading', { level: 2, name: 'Partnerships' }, T);
-  return document.getElementById('partnerships')!;
+  await screen.findByRole('heading', { level: 3, name: 'Partnerships' }, T);
+  const part = document.getElementById('allied-partnerships')!;
+  expect(part.closest('section#allied')).toBeTruthy();
+  return part;
 };
 const search = (r: ReturnType<typeof renderAt>) => new URLSearchParams(r.state.location.search);
 

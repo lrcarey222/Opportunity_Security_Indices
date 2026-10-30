@@ -6,6 +6,8 @@
 // the filled dots are the top five Strategic Index sectors under the reader's Perspective (the only
 // preference-adjusted mark; positions are facts); "Compare with other economies" opens the embedded
 // Security vs Opportunity view (the model); "The four corners" puts the categorisation in words.
+// Since 2026-10-29 (spec XVIII, design D10) this is a Legacy OSI block: it sits in Evidence & Methodology ->
+// Legacy OSI framework (id legacy-space, heading level 3; the old #position and #space links open it there).
 
 import { useMemo } from 'react';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
@@ -13,17 +15,17 @@ import { InfoTip } from '../../../components/InfoTip.tsx';
 import { Term } from '../../../components/Term.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
 import { EmptyState } from '../../../components/ui.tsx';
-import { cellOf, QUADRANTS, type CellFacts } from '../../contract.ts';
+import { cellOf, LEGACY_CORNERS, type CellFacts } from '../../contract.ts';
 import { QuadrantScatter, ScatterLegend } from '../../charts/QuadrantScatter.tsx';
 import SpaceView from '../../../views/Space/SpaceView.tsx';
 import { siOrder } from '../../derive/framing.ts';
-import { cellsByQuadrant, scatterPoints } from '../../derive/model.ts';
-import { notPlacedLine, notPlacedReason, quadrantWord, proseName, poss, cap } from '../../derive/text.ts';
+import { cellsByLegacyCorner, scatterPoints } from '../../derive/model.ts';
+import { notPlacedLine, notPlacedReason, legacyCornerWord, proseName, poss, cap } from '../../derive/text.ts';
 import { BasisTag, csvWithSource, Fold, perspectiveNote, Section, usePerspectiveSi, useProfile } from './common.tsx';
 
 const yes = (b: boolean) => (b ? 'yes' : 'no');
 
-export function SpaceSection() {
+export function SpaceSection({ id = 'position', level = 2 }: { id?: string; level?: 2 | 3 } = {}) {
   const { sheet, cell, setCell, reveal, setStrategicView } = useProfile();
   const si = usePerspectiveSi();
   const name = proseName(sheet.meta.country);
@@ -37,7 +39,7 @@ export function SpaceSection() {
   const sel = cellOf(sheet, cell);
   const placedSel = sel && sel.placed ? sel : null;
   const notPlaced = notPlacedLine(sheet);
-  const byQ = useMemo(() => cellsByQuadrant(sheet), [sheet]);
+  const byQ = useMemo(() => cellsByLegacyCorner(sheet), [sheet]);
 
   const cols: Col<CellFacts>[] = [
     { id: 'sector', header: 'Sector', value: (c) => c.tech },
@@ -48,7 +50,7 @@ export function SpaceSection() {
     { id: 'eo', header: 'Economic Opportunity', value: (c) => c.eo?.v ?? null, cell: (c) => c.eo?.d ?? 'no score', num: true },
     { id: 'eo_pct', header: 'Beats (%)', value: (c) => c.eo?.pct.v ?? null, cell: (c) => c.eo?.pct.d ?? '–', num: true },
     { id: 'eo_med', header: 'Median', value: (c) => c.eo?.med.v ?? null, cell: (c) => c.eo?.med.d ?? '–', num: true },
-    { id: 'corner', header: 'Corner', value: (c) => (c.quadrant ? quadrantWord(c.quadrant) : null) },
+    { id: 'corner', header: 'Corner', value: (c) => (c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null) },
     { id: 'si_rank', header: 'Strategic Index rank', value: (c) => (c.si.in_sample ? c.si.rank.v : null), cell: (c) => (c.si.in_sample ? c.si.rank.d : 'not in the index'), num: true },
     { id: 'placed', header: 'Placed', value: (c) => (c.placed ? 'yes' : notPlacedReason(c)) },
   ];
@@ -58,7 +60,7 @@ export function SpaceSection() {
       sheet.cells.map((c) => ({
         sector: c.tech, stage: c.stage, energy_security: c.es?.v ?? null, energy_security_beats_pct: c.es?.pct.v ?? null, energy_security_median: c.es?.med.v ?? null,
         economies_compared: c.es?.n.v ?? null, economic_opportunity: c.eo?.v ?? null, economic_opportunity_beats_pct: c.eo?.pct.v ?? null,
-        economic_opportunity_median: c.eo?.med.v ?? null, corner: c.quadrant ? quadrantWord(c.quadrant) : null,
+        economic_opportunity_median: c.eo?.med.v ?? null, legacy_corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null,
         strategic_index_rank: c.si.in_sample ? c.si.rank.v : null, placed: yes(c.placed), not_placed_reason: c.placed ? null : notPlacedReason(c),
       })),
       'Opportunity Security Indices, NEIS baseline',
@@ -66,11 +68,11 @@ export function SpaceSection() {
     ),
   });
   const cm = sheet.summary.country_median;
-  const summary = `${pts.length} of ${poss(name)} sectors placed by Economic Opportunity and Energy Security percentiles, split at ${poss(name)} median sector (${cm?.eo.d ?? '–'} and ${cm?.es.d ?? '–'}): ${QUADRANTS.map((q) => `${q.label} ${byQ[q.id].length}`).join(', ')}.`;
+  const summary = `${pts.length} of ${poss(name)} sectors placed by Economic Opportunity and Energy Security percentiles, split at ${poss(name)} median sector (${cm?.eo.d ?? '–'} and ${cm?.es.d ?? '–'}): ${LEGACY_CORNERS.map((q) => `${q.label} ${byQ[q.id].length}`).join(', ')}.`;
   return (
     <Section
-      id="position"
-      aliases={['space']}
+      id={id}
+      level={level}
       title="Security and opportunity"
       basis={
         <>
@@ -81,7 +83,7 @@ export function SpaceSection() {
       intro={
         <>
           Each sector is one technology at one of the six <Term id="stage">supply-chain stages</Term> (extraction, refining, components, assembly, deployment, recovery), as in the
-          Strategic posture section. <Term id="es" /> asks how well {name} can rely on what it needs there; <Term id="eo" /> asks how well placed it is to create value there. Both compare {name} with every other economy scored in the same sector, so the chart shows the share of those economies it beats. The four corners then sort {poss(name)} own sectors: the dashed lines are its median sector, so the corners show where {name} is relatively strong or weak.
+          Country Strategy Map. <Term id="es" /> asks how well {name} can rely on what it needs there; <Term id="eo" /> asks how well placed it is to create value there. Both compare {name} with every other economy scored in the same sector, so the chart shows the share of those economies it beats. The four corners then sort {poss(name)} own sectors: the dashed lines are its median sector, so the corners show where {name} is relatively strong or weak.
         </>
       }
     >
@@ -126,7 +128,7 @@ export function SpaceSection() {
   );
 }
 
-function QuadrantList({ byQ }: { byQ: ReturnType<typeof cellsByQuadrant> }) {
+function QuadrantList({ byQ }: { byQ: ReturnType<typeof cellsByLegacyCorner> }) {
   const { sheet, cell, setCell } = useProfile();
   return (
     <section className="card p-5" aria-labelledby="corners-h">
@@ -150,10 +152,10 @@ function QuadrantList({ byQ }: { byQ: ReturnType<typeof cellsByQuadrant> }) {
             </tr>
           </thead>
           <tbody>
-            {QUADRANTS.map((q) => (
+            {LEGACY_CORNERS.map((q) => (
               <tr key={q.id}>
                 <td className="whitespace-nowrap text-paper">
-                  {quadrantWord(q.id)} <InfoTip id={q.glossary} term={q.label} />
+                  {legacyCornerWord(q.id)} <InfoTip id={q.glossary} term={q.label} />
                 </td>
                 <td className="text-paper-dim">
                   {q.meaning} ({q.posture})
@@ -167,7 +169,7 @@ function QuadrantList({ byQ }: { byQ: ReturnType<typeof cellsByQuadrant> }) {
                         type="button"
                         className="tag"
                         aria-pressed={cell === c.key}
-                        aria-label={`${c.tech}, ${c.stage}: ${quadrantWord(q.id)}${c.si.in_sample ? `, Strategic Index rank ${c.si.rank.d}` : ''}`}
+                        aria-label={`${c.tech}, ${c.stage}: ${legacyCornerWord(q.id)}${c.si.in_sample ? `, Strategic Index rank ${c.si.rank.d}` : ''}`}
                         onClick={() => setCell(c.key)}
                       >
                         {c.label}

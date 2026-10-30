@@ -74,8 +74,12 @@ const LIMITS = {
   // total to 32.63 MB (Strategic 17.19 + Sector 4.44 + Country 10.58 + Compacts 0.43); 42.5 MB once the
   // six-stage Sector (scripts/87) and Country (scripts/88) exports brought it to 36.87 MB (2026-10-29:
   // Strategic 17.19 + Sector 5.68 + Country 13.58 + Compacts 0.43): the measured size + ~15% (design E4).
-  // public/data/posture/ is not counted here (src/posture/__tests__/budget.test.ts checks it).
+  // public/data/posture/ counts here since 2026-10-29 (posture schema 2: 38.72 MB in all, under the limit);
+  // its per-file raw limits stay in src/posture/__tests__/budget.test.ts and the R exporter.
   allData: 42.5 * MB,
+  // the posture bundle (scripts/91, schema 2, 2026-10-29): manifest + core + 214 drawer documents measured
+  // 1.87 MB on the wire; the measured size + ~15% (design E4)
+  postureData: 2.15 * MB,
 };
 // spec_country.md A10 (the same numbers as COUNTRY_BUDGET_GZ in src/country/contract.ts)
 // manifest: 15 kB until 2026-10-14; 20 kB once the 31 memo entries (2.8 kB gz) were added (16.9 kB);
@@ -248,6 +252,27 @@ const countryMemos = (countryManifest?.countries ?? [])
   .map((c) => ({ iso3: c.iso3, json: countryListed(c.memo.json), pdf: countryListed(c.memo.pdf), docx: countryListed(c.memo.docx) }));
 const maxOf = (xs) => xs.reduce((m, x) => Math.max(m, x), 0);
 
+// Posture (scripts/91; 2026-10-29): the Country profile loads the posture manifest, the core and its economy's
+// drawer document on first view (Strategy Map, Need, Choices, Policy Alignment, Allied Strategy); the Countries
+// landing loads the manifest and the core (roster line). JSON travels gzipped. BUDGET_POSTURE_DIR: another bundle.
+const postureDir = process.env.BUDGET_POSTURE_DIR ? resolve(root, process.env.BUDGET_POSTURE_DIR) : join(dataDir, 'posture');
+const postureManifest = readManifest(join(postureDir, 'manifest.json'));
+const postureListed = (name) => {
+  if (!name) return 0;
+  const file = join(postureDir, name);
+  if (!existsSync(file)) {
+    fail(`posture file ${name} is listed in its manifest but missing`);
+    return 0;
+  }
+  return gz(file);
+};
+const postureManifestSize = postureManifest ? gz(join(postureDir, 'manifest.json')) : 0;
+const postureCoreSize = postureManifest ? postureListed(postureManifest.core) : 0;
+const postureDetails = postureManifest ? Object.entries(postureManifest.details ?? {}).map(([iso3, f]) => [iso3, postureListed(f)]) : [];
+const postureMaxDetail = maxOf(postureDetails.map(([, n]) => n));
+const postureData = postureManifestSize + postureCoreSize + postureDetails.reduce((s, [, n]) => s + n, 0);
+const postureNote = postureManifest ? '' : 'posture data absent (scripts/91): not counted';
+
 // ---- the figures -------------------------------------------------------------------------------------
 const figures = [];
 function figure(name, parts, limit, note = '') {
@@ -300,9 +325,9 @@ const countryLandingCode = closure([entryKey, keys.countryLayout, keys.countryHo
 if (atlasKey) countryLandingCode.add(vm[atlasKey].file);
 figure(
   'Country landing /countries',
-  [['code + atlas', codeSize(countryLandingCode)], ['font', fontSize], ['country manifest', countryManifestSize]],
+  [['code + atlas', codeSize(countryLandingCode)], ['font', fontSize], ['country manifest', countryManifestSize], ['posture manifest + core', postureManifestSize + postureCoreSize]],
   LIMITS.countryLanding,
-  countryManifest ? '' : 'Country data absent (scripts/88): code only',
+  [countryManifest ? '' : 'Country data absent (scripts/88): code only', postureNote].filter(Boolean).join('; '),
 );
 const maxSheet = maxOf(countrySheets.map(([, n]) => n));
 figure(
@@ -312,9 +337,11 @@ figure(
     ['font', fontSize],
     ['country manifest', countryManifestSize],
     ['largest fact sheet', maxSheet],
+    ['posture manifest + core', postureManifestSize + postureCoreSize],
+    ['largest posture detail', postureMaxDetail],
   ],
   LIMITS.countryProfile,
-  countryManifest ? '' : 'Country data absent: code only',
+  [countryManifest ? '' : 'Country data absent: code only', postureNote].filter(Boolean).join('; '),
 );
 figure(
   'Country memo view',
@@ -390,7 +417,8 @@ figure(
 for (const s of aibScenarios) figure(`Compacts scenario ${s.id}`, [[s.name, s.size]], LIMITS.aibScenario, 'lazy');
 const aibData = aibManifestSize + aibDocSize + aibScenarioSize;
 if (aibManifest) figure('Compacts data', [['manifest + document', aibManifestSize + aibDocSize], ...aibScenarios.map((s) => [`scenario ${s.id}`, s.size])], LIMITS.aibData);
-figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData], ['Compacts', aibData]], LIMITS.allData);
+if (postureManifest) figure('Posture data', [['manifest + core', postureManifestSize + postureCoreSize], [`${postureDetails.length} drawer documents`, postureData - postureManifestSize - postureCoreSize]], LIMITS.postureData);
+figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData], ['Compacts', aibData], ['Posture', postureData]], LIMITS.allData);
 
 // ---- report ------------------------------------------------------------------------------------------
 console.log('Data chunks');
@@ -417,6 +445,8 @@ if (countryManifest) {
 } else console.log('  (public/data/country/manifest.json not found: export the Country bundle with scripts/88)');
 if (aibManifest) console.log(`  data/aib/: manifest ${size(aibManifestSize)}, ${aibManifest.files.compacts} ${size(aibDocSize)}${aibScenarios.map((s) => `, ${s.name} ${size(s.size)} (lazy)`).join('')}`);
 else console.log('  (public/data/aib/manifest.json not found: export the Sectoral Compacts bundle with scripts/84)');
+if (postureManifest) console.log(`  data/posture/: manifest ${size(postureManifestSize)}, ${postureManifest.core} ${size(postureCoreSize)}; ${postureDetails.length} drawer documents (largest ${size(postureMaxDetail)}), ${size(postureData)} in all`);
+else console.log('  (public/data/posture/manifest.json not found: export the posture bundle with scripts/91)');
 console.log('');
 console.log('Figures');
 for (const f of figures) {
@@ -441,6 +471,9 @@ if (aibRoutes.length) {
   console.log(`Sectoral Compacts route chunks: ${aibRoutes.map(([n, k]) => `${n} ${kb(own(k))} (with its imports ${kb(beyond(k))})`).join('; ')}`);
 }
 if (app > TARGET_APP) console.warn(`budget: warning, the app's entry JS + CSS (${kb(app)}) is above the ${kb(TARGET_APP)} target`);
+// the Sector home and profile mount the posture card, which loads the posture manifest + core (2026-10-29: 89.4 kB;
+// the Sector profile figure would be 1.31 MB against its 1.30 MB limit): reported, not counted (an open decision)
+if (postureManifest && keys.sectorLayout) console.log(`budget: note, the Sector pages' Strategic posture card also loads the posture manifest + core (${size(postureManifestSize + postureCoreSize)}); not counted in the Sector figures`);
 if (!keys.sectorLayout) console.log('budget: note, no SectorLayout chunk in this build (the Sector module is a stub or eagerly bundled): the Sector figures count the entry only');
 if (failed) process.exit(1);
 console.log('budget: OK');

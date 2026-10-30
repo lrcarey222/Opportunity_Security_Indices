@@ -132,6 +132,10 @@ describe('the Overview leads with the three scenarios', () => {
       // the basis tag and the intro: the strategic position framework, not the scenario toggle
       expect(within(division).getByText(/^Strategic position framework/)).toBeTruthy();
       expect(within(division).getByTestId('division-intro').textContent).toMatch(/It follows the strategic position framework, not the scenario toggle: switching scenarios does not change it\./);
+      // partner demand is the canonical Compete · Partner choice; Deploy · Accelerate is never counted (design section 5)
+      expect(within(division).getByTestId('division-demand').textContent).toBe(
+        'Partner demand counts the economies whose choice for a node is Compete · Partner, Secure demand those that must Secure it; a Deploy · Accelerate choice is a deployment priority, not a call on allied supply, so it is not counted.',
+      );
       // the three metrics as tiles, then the card (its heading an h3 inside the Section)
       expect(within(await within(division).findByTestId('aib-division-stats')).getAllByRole('listitem')).toHaveLength(3);
       const m = await within(division).findByTestId('aib-matrix');

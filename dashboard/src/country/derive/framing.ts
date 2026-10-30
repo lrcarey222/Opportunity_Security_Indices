@@ -23,9 +23,10 @@
 // six-stage cells (node.yfCells) directly. The nodes' three-stage cells (yfCellsLegacy) are no longer read:
 // a legacy key ("batteries-midstream") is not a sector of the sheet and finds no compact.
 //
-// The corners (2026-10-28): the keys stay grow / upgrade / secure / watch (the fact sheet's data
-// contract); the app shows them as Grow, Upgrade, Exposed (key secure) and Stable (key watch), so they
-// do not clash with the posture words (../contract.ts QUADRANTS).
+// The corners (Legacy OSI framework since 2026-10-29): the keys are legacy_grow / legacy_upgrade /
+// legacy_exposed / legacy_stable (schema 3, design D6), shown as Grow, Upgrade, Exposed and Stable
+// (../contract.ts LEGACY_CORNERS). Make bets, dependencies and capabilities read the corners: they are
+// Legacy OSI readings, shown only in the Country page's Legacy OSI sub-section.
 
 import { strategicOf, type AibCoalition, type AibCompact, type AibDoc, type AibManagedScenarioDoc, type AibNode, type AibStrategic, type AibTradeEdge } from '../../aib/contract.ts';
 import { strategicSummaryOf, type StrategicSummary } from '../../aib/views/strategicRoles/derive.ts';
@@ -119,7 +120,7 @@ const byRank = (over: SiMap | null) => (a: CellFacts, b: CellFacts) => {
  * after them, highest Economic Opportunity first.
  */
 export function makeBets(sheet: FactSheet, over: SiMap | null, n = 5): CellFacts[] {
-  return sheet.cells.filter((c) => c.placed && (c.quadrant === 'grow' || c.quadrant === 'upgrade')).sort(byRank(over)).slice(0, n);
+  return sheet.cells.filter((c) => c.placed && (c.legacy_corner === 'legacy_grow' || c.legacy_corner === 'legacy_upgrade')).sort(byRank(over)).slice(0, n);
 }
 
 export interface Dependency {
@@ -149,7 +150,7 @@ export function compactsOfCell(doc: Pick<AibDoc, 'compacts' | 'nodes'>, key: str
  * demand anchor (compactsOfCell(), through the nodes' six-stage cells).
  */
 export function dependencies(sheet: FactSheet, doc: Pick<AibDoc, 'compacts' | 'nodes'> | null, n = 5): Dependency[] {
-  const low = new Set(sheet.cells.filter((c) => c.placed && (c.quadrant === 'upgrade' || c.quadrant === 'secure')).map((c) => c.key));
+  const low = new Set(sheet.cells.filter((c) => c.placed && (c.legacy_corner === 'legacy_upgrade' || c.legacy_corner === 'legacy_exposed')).map((c) => c.key));
   return sheet.summary.es_order
     .filter((k) => low.has(k))
     .map((k) => cellOf(sheet, k))
@@ -175,7 +176,7 @@ export const CAPABILITY_ROLES: readonly RoleName[] = ['Specialized supplier', 'R
  * in the compacts.
  */
 export function capabilities(sheet: FactSheet, roles: CountryRoleRow | null, n = 6): { cells: CellFacts[]; roles: { role: RoleName; compacts: string[] }[] } {
-  const grow = new Set(sheet.cells.filter((c) => c.placed && c.quadrant === 'grow').map((c) => c.key));
+  const grow = new Set(sheet.cells.filter((c) => c.placed && c.legacy_corner === 'legacy_grow').map((c) => c.key));
   const cells = sheet.summary.eo_order
     .filter((k) => grow.has(k))
     .map((k) => cellOf(sheet, k))
@@ -400,7 +401,8 @@ export function buildNodesOf(doc: AibDoc, compactIds: readonly string[]): AibNod
  * posture section's policy alignment) and its industrial-policy measures in force (Global Trade
  * Alert). No score.
  */
-export function policyBehaviour(sheet: FactSheet, name: string): string[] {
+/** `withSi` false leaves out the Strategic Index comparison (a Legacy OSI reading), as the Policy Alignment section does. */
+export function policyBehaviour(sheet: FactSheet, name: string, { withSi = true }: { withSi?: boolean } = {}): string[] {
   const out: string[] = [];
   const cat = sheet.policy.cat;
   out.push(
@@ -409,7 +411,7 @@ export function policyBehaviour(sheet: FactSheet, name: string): string[] {
       : `${cap(name)} has no Climate Action Tracker rating, so its policy activity rests on International Energy Agency policy records only.`,
   );
   const ag = sheet.policy.agreement;
-  if (ag && ag.n > 0) {
+  if (withSi && ag && ag.n > 0) {
     const n = (k: keyof typeof ag.by_class) => ag.by_class[k]?.length ?? 0;
     const aligned = n('aligned_high') + n('aligned_low');
     out.push(

@@ -304,7 +304,7 @@ export default function CountryView({ embedded = false }: { embedded?: boolean }
     <div>
       {!embedded && (
       <PageHead
-        eyebrow="Country scores"
+        eyebrow="Legacy OSI framework · Country scores"
         title={`Country scores: ${c.country}`}
         lede={
           <>

@@ -4,7 +4,7 @@
 
 import { stageShort } from '../../lib/stages.ts';
 import {
-  cellOf, cellOrder, COUNTRY_STAGES, COUNTRY_TECHS, dOf, parseCellKey, QUADRANTS, type CellFacts, type Driver, type FactSheet, type PartnerRow, type Quadrant, type Tier,
+  cellOf, cellOrder, COUNTRY_STAGES, COUNTRY_TECHS, dOf, LEGACY_CORNERS, parseCellKey, type CellFacts, type Driver, type FactSheet, type LegacyCorner, type PartnerRow, type Tier,
 } from '../contract.ts';
 
 /** "a, b and c" */
@@ -55,20 +55,22 @@ export function tierTag(tier: Tier): string {
   return tier === 'core' ? 'CORE MEMBER' : tier === 'partner' ? 'PARTNER' : 'NOT IN THE COALITION';
 }
 
-/** The corner's display word: the contract's QUADRANTS label (Grow, Upgrade, Exposed, Stable). Since
- *  2026-10-28 the app owns these names and ignores the sheet's words.quadrant, which keeps the older
- *  Secure and Watch until the next Country export. */
-export function quadrantWord(q: Quadrant | null | undefined): string {
+/** A Legacy OSI corner's display word: the contract's LEGACY_CORNERS label (Grow, Upgrade, Exposed,
+ *  Stable). The app owns these names (2026-10-28) and ignores the sheet's words.legacy_corner. */
+export function legacyCornerWord(q: LegacyCorner | null | undefined): string {
   if (!q) return '';
-  return QUADRANTS.find((x) => x.id === q)?.label ?? q;
+  return LEGACY_CORNERS.find((x) => x.id === q)?.label ?? q;
 }
+/** @deprecated the old name of legacyCornerWord. */
+export const quadrantWord = legacyCornerWord;
 
 /** "Batteries · Ref" (short scatter label: the stage's short form, lib/stages.ts STAGE_SHORT). */
 export function shortCellLabel(c: CellFacts): string {
   return `${c.tech} · ${stageShort(c.stage)}`;
 }
 
-/** The page lede (S0): scored, non-rankable and no-data variants. */
+/** The Legacy OSI reading of the economy (the page lede until 2026-10-29; now the Legacy OSI sub-section's
+ *  summary): scored, non-rankable and no-data variants. */
 export function ledeOf(sheet: FactSheet): string {
   const m = sheet.meta;
   const s = sheet.summary;
@@ -82,10 +84,10 @@ export function ledeOf(sheet: FactSheet): string {
     return `${first} ${cap(poss(proseName(name)))} index scores are shown but not ranked against other economies: ${m.status_reason ?? 'most of its data are filled in'}.`;
   }
   const parts: string[] = [first];
-  const upgrade = s.quadrants.upgrade;
+  const upgrade = s.legacy_corners.legacy_upgrade;
   const nUp = upgrade.v ?? 0;
   const howMany = nUp === 0 ? 'none' : dOf(upgrade);
-  let mid = `On the NEIS baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the ${quadrantWord('upgrade')} corner, split at its own median sector)`;
+  let mid = `On the NEIS baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the ${legacyCornerWord('legacy_upgrade')} corner, split at its own median sector)`;
   if (m.has_si && s.top_si) {
     const top = cellOf(sheet, s.top_si.cell);
     const nxt = cellOf(sheet, s.top_si.next);
@@ -202,7 +204,7 @@ export function whyIntro(sheet: FactSheet): string {
     case 'upgrade':
       return `${cells.length === 1 ? 'One' : cap(numberWord(cells.length))} of ${poss(name)} sectors ${cells.length === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security (against ${poss(name)} own median sector) and ${cells.length === 1 ? 'ranks' : 'rank'} high on the Strategic Index: ${list}. For each, the bars show which kinds of data set each score apart from the middle economy in the same sector, with the figures behind them.`;
     case 'top_si_fallback':
-      return `None of ${poss(name)} placed sectors is in the ${quadrantWord('upgrade')} corner, so this section explains its top Strategic Index sectors: ${list}. The bars show which kinds of data set each score apart from the middle economy in the same sector, with the figures behind them.`;
+      return `None of ${poss(name)} placed sectors is in the ${legacyCornerWord('legacy_upgrade')} corner, so this section explains its top Strategic Index sectors: ${list}. The bars show which kinds of data set each score apart from the middle economy in the same sector, with the figures behind them.`;
     case 'top_eo':
       return `${cap(name)} has no Strategic Index, so this section explains the placed sectors where its Economic Opportunity is highest: ${list}.`;
     default:
@@ -218,7 +220,7 @@ export function numberWord(n: number): string {
 
 /** Why a cell is not placed on the scatter. */
 export function notPlacedReason(c: CellFacts): string {
-  if (c.quadrant_reason) return c.quadrant_reason;
+  if (c.legacy_corner_reason) return c.legacy_corner_reason;
   if (!c.es) return 'no Energy Security score for any economy in this sector';
   if (!c.eo) return 'no Economic Opportunity score';
   if (!c.es.rankable) return `Energy Security not comparable${c.es.reason ? `: ${c.es.reason}` : ''}`;

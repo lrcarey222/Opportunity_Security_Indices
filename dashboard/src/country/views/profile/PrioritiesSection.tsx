@@ -1,3 +1,6 @@
+// Since 2026-10-29 (design 5b, D10): PolicyCoverage and NipoCard are the observed-policy evidence under Policy
+// Alignment; AgreementMatrix and PriorityTable are Legacy OSI blocks (LegacyPolicyAgreement, the Strategic Index
+// disclosure); the climate cards moved to Need. Before:
 // S3 of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16: "Policy & climate", with the
 // Strategic Index table reused under "Opportunities & risks"): "Which sectors the Strategic Index puts first"
 // (the NEIS baseline ranking with its five parts as bars), "Do priorities and policy agree?" (the 3 x 3
@@ -28,79 +31,46 @@ import {
   coverageRows, matrixCaption, matrixCells, maxPart, nipoCells, nipoOfCell, POLICY_THIRD_LABEL, PRIORITY_THIRD_LABEL, priorityRows,
   SI_PART_GLOSSARY, SI_PART_KEYS, SI_PART_LABEL, SI_PART_SHORT,
 } from '../../derive/model.ts';
-import { quadrantWord, proseName, poss, cap, numberWord } from '../../derive/text.ts';
-import { policyBehaviour } from '../../derive/framing.ts';
+import { legacyCornerWord, proseName, poss, cap, numberWord } from '../../derive/text.ts';
 import { stageLabel, stageSlug, type SupplyStageSlug } from '../../../lib/stages.ts';
-import { CountryClimateCard } from '../../../sector/views/climate/CountryClimate.tsx';
-import { CountryTransitionCards } from '../../../sector/views/climate/CountryTransition.tsx';
-import { BasisTag, csvWithSource, Fold, Section, useProfile } from './common.tsx';
+import { BasisTag, csvWithSource, Section, useProfile } from './common.tsx';
 
 /**
- * "Policy & climate" (IA refactor 2026-10-16, brief s.12C; was "Priorities and policy"): how the economy
- * behaves (plain sentences from existing facts), whether its policy matches the data's priority, its
- * policy records by technology and stage, and its strongest industrial-policy measures. The Strategic
- * Index table moved to "Opportunities & risks" (How priorities are built).
+ * The Legacy OSI policy comparison (2026-10-29, design D10; "Policy & climate" until then): whether the
+ * economy's policy activity matches the Strategic Index's priority (AgreementMatrix), and how two of the
+ * Perspective dials touch it. The canonical comparison is Policy Alignment (posture/PolicyAlignmentTable);
+ * the policy records and measures moved there, the emissions and transition cards to Need.
  */
-export function PolicyClimateSection() {
+export function LegacyPolicyAgreement({ id = 'legacy-policy', level = 3 }: { id?: string; level?: 2 | 3 } = {}) {
   const { sheet, reveal } = useProfile();
   const name = proseName(sheet.meta.country);
-  const lines = useMemo(() => policyBehaviour(sheet, name), [sheet, name]);
   return (
     <Section
-      id="policy"
-      aliases={['priorities']}
-      title="Policy & climate"
-      basis={
-        <>
-          <BasisTag kind="facts" note="policy records, measures, climate rating, emissions" />
-          {sheet.meta.has_si && <BasisTag kind="prefs" note="matrix priorities, NEIS baseline" />}
-        </>
-      }
+      id={id}
+      level={level}
+      title="Do priorities and policy agree?"
+      basis={sheet.meta.has_si ? <BasisTag kind="prefs" note="matrix priorities, NEIS baseline" /> : undefined}
       intro={
         <>
-          How {name} behaves: its <Term id="cat" />, its <Term id="pams">International Energy Agency policy records</Term>, its emissions in the mapped sectors (Climate TRACE) and, as
-          context, the strongest industrial-policy measures recorded by Global Trade Alert.
-        </>
-      }
-    >
-      <div className="card p-5" data-testid="policy-behaviour">
-        <h3 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">In brief</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-paper-dim">
-          {lines.map((t) => (
-            <li key={t}>{t}</li>
-          ))}
-        </ul>
-        <p className="mt-3 text-xs text-paper-mute">
-          Two perspective dials touch this: Populism weighs policy signals and home manufacturing; Climate weighs low-emission technologies (at 90 and above coal, oil and gas drop out of
-          the priorities). Neither changes the records or the rating.{' '}
+          The Legacy OSI comparison of {poss(name)} policy activity (its <Term id="pams">International Energy Agency policy records</Term> and <Term id="cat" />) with the{' '}
+          <Term id="si" />. Two Perspective dials touch it: Populism weighs policy signals and home manufacturing; Climate weighs low-emission technologies (at 90 and above coal, oil and
+          gas drop out of the priorities). Neither changes the records or the rating.{' '}
           {reveal && (
             <button type="button" className="link" onClick={() => reveal('perspective')}>
               Open the perspective &uarr;
             </button>
           )}
-        </p>
-      </div>
-      <CountryTransitionCards iso3={sheet.iso3} name={name} />
-      <CountryClimateCard iso3={sheet.iso3} name={name} />
+        </>
+      }
+    >
       {sheet.meta.has_si ? (
         <AgreementMatrix />
       ) : (
         <Notice kind="info" title="No Strategic Index">
-          {cap(name)} has no Policy index (no International Energy Agency Policies and Measures records), so no Strategic Index is computed for it. Its policy records and the
-          industrial-policy measures below are shown as they are.
+          {cap(name)} has no Policy index (no International Energy Agency Policies and Measures records), so no Strategic Index is computed for it. Its policy records and
+          industrial-policy measures are in Policy Alignment.
         </Notice>
       )}
-      <Fold
-        id="policy-records"
-        summary={
-          sheet.policy.nipo?.staged === false
-            ? `Policy records by technology and stage, and ${poss(name)} active industrial-policy measures`
-            : `Policy records by technology and stage, and the strongest industrial-policy measures in ${poss(name)} sectors`
-        }
-      >
-        <PolicyCoverage />
-        <NipoCard />
-      </Fold>
     </Section>
   );
 }
@@ -148,7 +118,7 @@ export function PriorityTable() {
       all.map((c) => ({
         rank: c.si.rank.v, sector: c.tech, stage: c.stage, opportunity_part: c.si.parts?.eo.v ?? null, security_need_part: c.si.parts?.need.v ?? null,
         policy_activity_part: c.si.parts?.pol.v ?? null, stage_part: c.si.parts?.stage.v ?? null, technology_part: c.si.parts?.tech.v ?? null,
-        strategic_index: c.si.v, lead_over_next: c.si.margin_next.v, corner: c.quadrant ? quadrantWord(c.quadrant) : null, allied_pick: c.si.pick,
+        strategic_index: c.si.v, lead_over_next: c.si.margin_next.v, legacy_corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null, allied_pick: c.si.pick,
         policy_records_specific: c.policy?.records_specific.v ?? null, policy_third: c.policy?.third ?? null,
       })),
       'Opportunity Security Indices, NEIS baseline (Strategic Index terms)',
@@ -198,7 +168,7 @@ export function PriorityTable() {
                   {/* tag words on one quiet line (text, not colour): corner, allied pick, near-tie, no resource base */}
                   <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-wider text-paper-mute">
                     {[
-                      c.quadrant ? quadrantWord(c.quadrant).toUpperCase() : null,
+                      c.legacy_corner ? legacyCornerWord(c.legacy_corner).toUpperCase() : null,
                       c.si.pick ? 'ALLIED PICK' : null,
                       near.has(c.key) ? 'NEAR-TIE' : null,
                       noBase(c) ? 'NO RESOURCE BASE' : null,

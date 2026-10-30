@@ -1,9 +1,12 @@
-// Monthly trade by sub-component (additive 2026-10-19), a card of "Sector position": for the selected sector,
+// Monthly trade by sub-component (additive 2026-10-19), a card of Prize & Position since 2026-10-29 (the
+// evidence behind the Competitive Position's trade momentum; "Sector position" before): for the selected sector,
 // one line per sub-component of its HS6 basket, indexed to 100 in the first of the economy's latest 12
 // reported months, with the sector's total as a neutral line. Core members only (the companion trade file,
 // scripts/99 -> scripts/88), loaded when the card comes near the viewport. The sector follows the page's
-// selection; when the file has no monthly trade for it, the card shows the sector with the most trade and
-// says so. Imports | Exports is local state (not in the URL).
+// selection (the ?node= of the Country Strategy Map when given as `cell`, else the URL `cell`); when the file
+// has no monthly trade for it, the card shows the sector with the most trade and says so. Picking a sector in
+// the card calls `onPick` (the page selects that node) or writes the URL `cell`. Imports | Exports is local
+// state (not in the URL).
 
 import { useMemo, useState } from 'react';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
@@ -18,8 +21,9 @@ import { csvWithSource, useProfile } from './common.tsx';
 
 const FLOW_WORD: Record<TradeFlow, string> = { imports: 'imports', exports: 'exports' };
 
-export function TradeMonthlyCard() {
-  const { sheet, entry, manifest, cell, setCell } = useProfile();
+export function TradeMonthlyCard({ cell: cellIn, onPick }: { cell?: string | null; onPick?: (cellKey: string) => void } = {}) {
+  const { sheet, entry, manifest, cell: pageCell, setCell } = useProfile();
+  const cell = cellIn ?? pageCell;
   const [ref, near] = useNear<HTMLDivElement>();
   const t = useTradeMonthly(entry, near);
   const [flow, setFlow] = useState<TradeFlow>('imports');
@@ -109,7 +113,7 @@ export function TradeMonthlyCard() {
         tools={
           <div className="flex flex-wrap items-end gap-3">
             <Segmented label="Flow" hideLabel value={flow} options={[{ value: 'imports', label: 'Imports' }, { value: 'exports', label: 'Exports' }]} onChange={setFlow} />
-            <Select label="Sector" hideLabel value={c.key} options={doc.cells.map((x) => ({ value: x.key, label: x.label }))} onChange={(k) => setCell(k)} className="min-w-[14rem]" />
+            <Select label="Sector" hideLabel value={c.key} options={doc.cells.map((x) => ({ value: x.key, label: x.label }))} onChange={(k) => (onPick ? onPick(k) : setCell(k))} className="min-w-[14rem]" />
           </div>
         }
         summary={summary}

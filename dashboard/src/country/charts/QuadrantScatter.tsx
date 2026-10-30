@@ -1,4 +1,5 @@
-// QuadrantScatter (spec_country.md A4.2 S2): one country's placed sectors at their percentiles of Economic
+// QuadrantScatter (spec_country.md A4.2 S2; a Legacy OSI chart since 2026-10-29, the corners keyed legacy_*):
+// one country's placed sectors at their percentiles of Economic
 // Opportunity (across) and Energy Security (up), 0-100 on both axes (the share of other economies the
 // country beats in each sector), dashed crosshairs at the country's own median sector on each axis
 // (summary.country_median; the user's rule of 2026-10-15), so the corners sort the country's relatively
@@ -19,9 +20,9 @@ import { declutter, textWidth } from '../../charts/theme.ts';
 import { PAPER_MUTE, SIGNAL } from '../../theme/palette.ts';
 import { SUPPLY_STAGES, STAGE_LABEL, type SupplyStage } from '../../lib/stages.ts';
 import type { FactSheet } from '../contract.ts';
-import { QUADRANTS } from '../contract.ts';
+import { LEGACY_CORNERS } from '../contract.ts';
 import type { ScatterPoint } from '../derive/model.ts';
-import { quadrantWord, proseName, poss, cap } from '../derive/text.ts';
+import { legacyCornerWord, proseName, poss, cap } from '../derive/text.ts';
 
 const MARK = '#d1d5db';
 /** The dot shape of each of the six stages (Plot's fillable symbols, so a top-five sector can be filled). */
@@ -44,13 +45,13 @@ const D3_SYMBOL: Readonly<Record<(typeof STAGE_SYMBOL)[SupplyStage], SymbolType>
 /** The dot radius: 6 px, 5 px when more than 33 sectors are placed (the six-stage sheets place up to 58). */
 export const scatterRadius = (n: number): number => (n > 33 ? 5 : 6);
 
-// x = Economic Opportunity, y = Energy Security: Grow top right, Stable (key watch) top left, Exposed
-// (key secure) bottom left, Upgrade bottom right. The headings print the QUADRANTS labels.
+// x = Economic Opportunity, y = Energy Security: Grow top right, Stable top left, Exposed bottom left,
+// Upgrade bottom right (the Legacy OSI corners). The headings print the LEGACY_CORNERS labels.
 const CORNERS = [
-  { id: 'grow', x: 100, y: 100, anchor: 'end', top: true },
-  { id: 'watch', x: 0, y: 100, anchor: 'start', top: true },
-  { id: 'secure', x: 0, y: 0, anchor: 'start', top: false },
-  { id: 'upgrade', x: 100, y: 0, anchor: 'end', top: false },
+  { id: 'legacy_grow', x: 100, y: 100, anchor: 'end', top: true },
+  { id: 'legacy_stable', x: 0, y: 100, anchor: 'start', top: true },
+  { id: 'legacy_exposed', x: 0, y: 0, anchor: 'start', top: false },
+  { id: 'legacy_upgrade', x: 100, y: 0, anchor: 'end', top: false },
 ] as const;
 
 export interface QuadrantScatterProps {
@@ -128,7 +129,7 @@ export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }
     const vs = (high: boolean) => (high ? 'at or above' : 'below');
     return (
       <Tip
-        value={quadrantWord(p.quadrant)}
+        value={legacyCornerWord(p.corner)}
         title={c.label}
         lines={[
           `${cap(name)}: Economic Opportunity ${vs(p.x >= (medEo ?? 0))} its median sector (${cm?.eo.d ?? '–'}), Energy Security ${vs(p.y >= (medEs ?? 0))} it (${cm?.es.d ?? '–'})`,
@@ -140,10 +141,10 @@ export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }
     );
   };
   const corner = (id: (typeof CORNERS)[number]['id'], right: boolean) => {
-    const q = QUADRANTS.find((x) => x.id === id)!;
+    const q = LEGACY_CORNERS.find((x) => x.id === id)!;
     return (
       <div className={right ? 'text-right' : ''}>
-        <span className="block text-[11px] font-semibold uppercase tracking-wider text-paper">{quadrantWord(id)}</span>
+        <span className="block text-[11px] font-semibold uppercase tracking-wider text-paper">{legacyCornerWord(id)}</span>
         <span className="block text-[11px] leading-snug text-paper-mute">
           {q.meaning} <span className="whitespace-nowrap">({q.posture})</span>
         </span>
@@ -153,13 +154,13 @@ export function QuadrantScatter({ sheet, points, selected, onSelect, ariaLabel }
   return (
     <div ref={ref}>
       <div className="grid grid-cols-2 gap-4 pb-1" style={{ paddingLeft: M.left, paddingRight: M.right }} aria-hidden="true">
-        {corner('watch', false)}
-        {corner('grow', true)}
+        {corner('legacy_stable', false)}
+        {corner('legacy_grow', true)}
       </div>
       <PlotFigure<ScatterPoint> build={build} height={height} ariaLabel={ariaLabel} tooltip={tip} onSelect={(p) => onSelect(p.key)} />
       <div className="grid grid-cols-2 gap-4 pt-1" style={{ paddingLeft: M.left, paddingRight: M.right }} aria-hidden="true">
-        {corner('secure', false)}
-        {corner('upgrade', true)}
+        {corner('legacy_exposed', false)}
+        {corner('legacy_upgrade', true)}
       </div>
     </div>
   );

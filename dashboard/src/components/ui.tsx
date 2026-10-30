@@ -4,12 +4,12 @@
 import { useId, type ReactNode } from 'react';
 import { fmtRankChange, isNum } from '../lib/format.ts';
 
-export function PageHead({ eyebrow, title, lede, children }: { eyebrow: string; title: string; lede: ReactNode; children?: ReactNode }) {
+export function PageHead({ eyebrow, title, lede, wideLede, children }: { eyebrow: string; title: string; lede: ReactNode; wideLede?: boolean; children?: ReactNode }) {
   return (
     <header className="mb-6">
       <div className="eyebrow mb-3">{eyebrow}</div>
       <h1 className="rule-neis text-3xl font-medium text-paper lg:text-4xl">{title}</h1>
-      <p className="mt-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">{lede}</p>
+      <p className={`mt-3 ${wideLede ? 'max-w-5xl' : 'max-w-3xl'} text-[0.9375rem] leading-relaxed text-paper-dim`}>{lede}</p>
       {children}
     </header>
   );

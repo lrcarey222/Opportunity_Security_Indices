@@ -1,71 +1,23 @@
-// S6 and S7 of the Country profile (spec_country.md A4.2): the memo card (GENERATE MEMO for core members
-// with a memo, "being prepared" for core members without one, the core-only explanation for everyone
-// else) and the data notes (caveats, sources, the export line, the fact-sheet and all-tables downloads).
+// The data notes of the Country profile (spec_country.md A4.2; a part of Evidence & Methodology since
+// 2026-10-29, id "downloads", the old #notes an alias of the section): caveats, sources, the export line, the
+// fact-sheet and all-tables downloads. The all-tables zip carries the strategy (strategy.csv, the posture
+// rows) beside the Legacy OSI tables. The memo card left the page on 2026-10-29: the memo is a header action
+// (Header.tsx MemoAction).
 
-import { Link } from 'react-router';
-import { Term } from '../../../components/Term.tsx';
 import { rowsToCsv, withBom } from '../../../lib/csv.ts';
 import { downloadBlob } from '../../../lib/download.ts';
+import { countryPostureRows } from '../../../posture/index.ts';
+import { POSTURE_CSV_COLS, postureCsvRows } from '../../../posture/derive.ts';
 import { factSheetDownloadName, supplierModel } from '../../derive/model.ts';
-import { editionSuffix, quadrantWord, proseName } from '../../derive/text.ts';
-import { memoReady, memoRevised, memoRevisedLine } from './Header.tsx';
+import { editionSuffix, legacyCornerWord, proseName } from '../../derive/text.ts';
 import { Section, useProfile } from './common.tsx';
-
-export function MemoCard() {
-  const { sheet, entry, manifest } = useProfile();
-  const name = proseName(sheet.meta.country);
-  const ready = memoReady(entry);
-  return (
-    <Section id="memo" title="Policy memo">
-      <div className="card p-5">
-        {entry.tier !== 'core' ? (
-          <p className="text-sm text-paper-dim">
-            Memos are available for the {manifest.counts.core} core coalition members for now.{' '}
-            <Link className="link" to="/countries#core">
-              See the list &rarr;
-            </Link>
-          </p>
-        ) : memoRevised(entry) ? (
-          <div className="flex flex-wrap items-center gap-4">
-            <button type="button" className="btn btn-primary" disabled aria-describedby="memo-revised">
-              GENERATE MEMO
-            </button>
-            <p id="memo-revised" className="text-sm text-paper-dim">
-              {memoRevisedLine(name)}
-            </p>
-          </div>
-        ) : !ready ? (
-          <p className="text-sm text-paper-dim">{`The memo for ${name} is being prepared.`}</p>
-        ) : (
-          <>
-            <p className="max-w-3xl text-sm text-paper-dim">
-              A short <Term id="memo">policy memo</Term> summarises the index reading of {name}: its energy security risks and why, its economic opportunities and why, its
-              sectoral priorities beside its current policies, and its partnership priorities.
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-4">
-              <Link to={`/countries/${entry.iso3}/memo`} className="btn btn-primary">
-                GENERATE MEMO
-              </Link>
-              <span className="text-sm text-paper-mute">AI-generated from the data and checked against it; NEIS baseline as of {manifest.as_of_label}.</span>
-            </div>
-            {entry.memo?.rule_note && entry.memo.rule_note_d && (
-              <p className="mt-3 max-w-3xl text-xs text-paper-mute" data-testid="memo-rule-note">
-                {entry.memo.rule_note_d}
-              </p>
-            )}
-          </>
-        )}
-      </div>
-    </Section>
-  );
-}
 
 function csvFile(rows: Record<string, unknown>[]): string {
   return withBom(rowsToCsv(rows));
 }
 
 export function DataNotes() {
-  const { sheet, entry, fileUrl } = useProfile();
+  const { sheet, entry, fileUrl, posture } = useProfile();
   const m = sheet.meta;
   const name = proseName(m.country);
   const zipAll = async () => {
@@ -73,7 +25,7 @@ export function DataNotes() {
     const cells = sheet.cells.map((c) => ({
       sector: c.tech, stage: c.stage, energy_security: c.es?.v ?? null, energy_security_beats_pct: c.es?.pct.v ?? null, energy_security_median: c.es?.med.v ?? null,
       economic_opportunity: c.eo?.v ?? null, economic_opportunity_beats_pct: c.eo?.pct.v ?? null, economic_opportunity_median: c.eo?.med.v ?? null,
-      corner: c.quadrant ? quadrantWord(c.quadrant) : null, strategic_index: c.si.v, strategic_index_rank: c.si.rank.v, priority_third: c.priority?.third ?? null,
+      legacy_corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null, strategic_index: c.si.v, strategic_index_rank: c.si.rank.v, priority_third: c.priority?.third ?? null,
       policy_third: c.policy?.third ?? null, policy_records_specific: c.policy?.records_specific.v ?? null, imports_usd: c.trade?.imports.v ?? null, exports_usd: c.trade?.exports.v ?? null,
     }));
     const drivers = sheet.cells.flatMap((c) =>
@@ -98,11 +50,15 @@ export function DataNotes() {
           return { sector: c.tech, stage: c.stage, rank: k + 1, title: p?.title ?? '', implementation_date: p?.date ?? null, in_force: !!p?.date && p?.in_force !== false, strength: p?.strength.v ?? null, mapping_confidence: p?.confidence.v ?? null, link: p?.url ?? null };
         }))
       : [];
+    const core = posture?.core ?? null;
+    const strategy = core && posture?.cells.length ? postureCsvRows(countryPostureRows(core, sheet.iso3)) : [];
+    const strategyCsv = strategy.length ? withBom(rowsToCsv(strategy.map((r) => Object.fromEntries(POSTURE_CSV_COLS.map((k) => [k, r[k] ?? null]))))) : null;
     const readme = [
       `Country profile tables for ${name} (NEIS baseline as of ${m.as_of_label}).`,
       `Built ${m.created} from Strategic export ${(m.strategic_bundle_id ?? '').slice(0, 8)} and Sector export ${(m.sector_bundle_id ?? '').slice(0, 8)}.`,
       '',
-      'sectors.csv     Energy Security, Economic Opportunity, corners, Strategic Index and policy thirds by sector',
+      ...(strategyCsv ? ['strategy.csv    the strategy: each technology and stage with its choice, need, prize, position, alignment and evidence (strategic position framework)'] : []),
+      'sectors.csv     Legacy OSI: Energy Security, Economic Opportunity, corners, Strategic Index and policy thirds by sector (not a current recommendation)',
       'drivers.csv     categories and variables behind the scores (the sectors the fact sheet carries)',
       'partners.csv    partners listed for the country: Partnership Strength, components, trade, factory projects, UN votes',
       'suppliers.csv   import shares by supplier and sector',
@@ -119,6 +75,7 @@ export function DataNotes() {
     ].join('\r\n');
     const bytes = zipTexts({
       'README.txt': readme,
+      ...(strategyCsv ? { 'strategy.csv': strategyCsv } : {}),
       'sectors.csv': csvFile(cells),
       'drivers.csv': csvFile(drivers),
       'partners.csv': csvFile(partners),
@@ -128,7 +85,7 @@ export function DataNotes() {
     downloadBlob(new Blob([bytes as BlobPart], { type: 'application/zip' }), `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-tables-${m.as_of}.zip`);
   };
   return (
-    <Section id="notes" title="Data notes">
+    <Section id="downloads" level={3} title="Data notes, sources and downloads">
       <div className="card p-5">
         <h3 className="mb-2 text-base font-medium text-paper">Notes</h3>
         <ul className="list-disc space-y-1.5 pl-5 text-sm text-paper-dim">

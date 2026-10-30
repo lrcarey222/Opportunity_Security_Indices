@@ -1,7 +1,10 @@
 // The Country contract on the R-written synthetic fixture (scripts/88 --synthetic): the manifest, every
 // fact sheet, the companion drivers files and the placeholder memo pass the runtime checks; the broken
 // sheets shared with the R mirror (tests/testthat/fixtures/country_broken_cases.json) each fail with the
-// expected problem; every display string follows the formatter's rules (A8.3).
+// expected problem; every display string follows the formatter's rules (A8.3). Schema 3 (2026-10-29, design D6):
+// the Legacy OSI corners are namespaced (legacy_corner, legacy_*; no legacy key says `secure`), a schema-2
+// sheet or manifest is refused, and the tests' in-memory upgrade of a schema-2 fixture (fixture.ts toSchema3)
+// renames only.
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -9,9 +12,10 @@ import { describe, expect, it } from 'vitest';
 import { SUPPLY_STAGE_SLUGS, SUPPLY_STAGES } from '../../lib/stages.ts';
 import {
   cellOf, checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc, COUNTRY_BUDGET_GZ, COUNTRY_CELL_KEYS, COUNTRY_FILE_RE, COUNTRY_SCHEMA_VERSION, COUNTRY_STAGE_LABELS,
-  COUNTRY_STAGES, COUNTRY_TECHS, countryMedianOf, isCellKey, MEMO_LABEL_PREFIX, MEMO_LABEL_PREFIX_V1, NO_ES_CELLS, noEsCellsOf, parseCellKey, quadrantOf, stageOfCellKey, type FactSheet, type Fv,
+  COUNTRY_STAGES, COUNTRY_TECHS, countryMedianOf, isCellKey, LEGACY_CORNER_IDS, LEGACY_CORNER_V2_KEY, LEGACY_CORNERS, legacyCornerOf, MEMO_LABEL_PREFIX, MEMO_LABEL_PREFIX_V1, NO_ES_CELLS,
+  noEsCellsOf, parseCellKey, QUADRANTS, quadrantOf, stageOfCellKey, type FactSheet, type Fv,
 } from '../contract.ts';
-import { haveFixture, readJson, readManifest, readSheet } from './fixture.ts';
+import { FIXTURE_DIR, haveFixture, readJson, readManifest, readSheet, toSchema3 } from './fixture.ts';
 
 const CASES = JSON.parse(readFileSync(resolve(process.cwd(), '../tests/testthat/fixtures/country_broken_cases.json'), 'utf8')) as {
   base: string;
@@ -27,9 +31,10 @@ export function breakSheet(sheet: FactSheet, op: string): AnyObj {
   const ins = s.cells.findIndex((c: AnyObj) => c.si?.in_sample);
   const ranked = s.partners.rows.map((r: AnyObj, i: number) => [r, i]).filter(([r]: [AnyObj]) => r.rank?.v !== null);
   switch (op) {
-    case 'quadrant_flip': {
+    case 'legacy_corner_flip': {
+      // schema 3 (was quadrant_flip): as R, legacy_grow -> legacy_stable, anything else -> legacy_grow
       const c = s.cells[placed];
-      c.quadrant = c.quadrant === 'grow' ? 'watch' : 'grow';
+      c.legacy_corner = c.legacy_corner === 'legacy_grow' ? 'legacy_stable' : 'legacy_grow';
       break;
     }
     case 'country_median_off':
@@ -132,14 +137,86 @@ describe.skipIf(!haveFixture())('Country contract on the synthetic fixture', () 
     }
   });
 
-  it("quadrants split at the country's own median sector: the median of the plotted positions (2026-10-15)", () => {
+  it("Legacy OSI corners split at the country's own median sector: the median of the plotted positions (2026-10-15)", () => {
     for (const e of m.countries.filter((c) => c.file)) {
       const s = readJson<FactSheet>(e.file!);
       const cm = countryMedianOf(s.cells);
       expect(s.summary.country_median.es.v, e.iso3).toBe(cm.es);
       expect(s.summary.country_median.eo.v, e.iso3).toBe(cm.eo);
-      for (const c of s.cells.filter((x) => x.placed)) expect(c.quadrant).toBe(quadrantOf(c.es!.pos!, cm.es!, c.eo!.pos!, cm.eo!));
+      for (const c of s.cells.filter((x) => x.placed)) expect(c.legacy_corner).toBe(legacyCornerOf(c.es!.pos!, cm.es!, c.eo!.pos!, cm.eo!));
+      for (const c of s.cells.filter((x) => !x.placed)) expect(c.legacy_corner).toBeNull();
     }
+  });
+
+  it('schema 3 (design D6): every corner key is namespaced legacy_*; no legacy key says secure; the old names are refused', () => {
+    expect(COUNTRY_SCHEMA_VERSION).toBe(3);
+    expect(LEGACY_CORNER_IDS).toEqual(['legacy_grow', 'legacy_upgrade', 'legacy_exposed', 'legacy_stable']);
+    expect(LEGACY_CORNERS.map((q) => q.label)).toEqual(['Grow', 'Upgrade', 'Exposed', 'Stable']);
+    // the conceptual mapping to the canonical choices (spec Part II)
+    expect(LEGACY_CORNERS.map((q) => q.maps_to)).toEqual(['Preserve', 'Catch Up', 'Partner', 'Watch']);
+    expect(LEGACY_CORNER_V2_KEY).toEqual({ legacy_grow: 'grow', legacy_upgrade: 'upgrade', legacy_exposed: 'secure', legacy_stable: 'watch' });
+    // the deprecated aliases name the same corners and rule
+    expect(QUADRANTS).toBe(LEGACY_CORNERS);
+    expect(quadrantOf(10, 50, 90, 50)).toBe('legacy_upgrade');
+    expect(legacyCornerOf(10, 50, 10, 50)).toBe('legacy_exposed');
+    expect(legacyCornerOf(90, 50, 10, 50)).toBe('legacy_stable');
+    expect(legacyCornerOf(50, 50, 50, 50)).toBe('legacy_grow');
+    for (const e of m.countries.filter((c) => c.file)) {
+      const s = readJson<FactSheet>(e.file!) as AnyObj;
+      expect(Object.keys(s.summary.legacy_corners).sort(), e.iso3).toEqual([...LEGACY_CORNER_IDS].sort());
+      expect(Object.keys(s.words.legacy_corner).sort(), e.iso3).toEqual([...LEGACY_CORNER_IDS].sort());
+      expect('quadrants' in s.summary, e.iso3).toBe(false);
+      expect('quadrant' in s.words, e.iso3).toBe(false);
+      for (const c of s.cells) {
+        expect('quadrant' in c, `${e.iso3} ${c.key}`).toBe(false);
+        expect('legacy_corner' in c && 'legacy_corner_reason' in c, `${e.iso3} ${c.key}`).toBe(true);
+      }
+      expect(JSON.stringify(s.summary.legacy_corners)).not.toMatch(/"secure"|"watch"/);
+      if (e.legacy_corners) expect(Object.keys(e.legacy_corners).sort(), e.iso3).toEqual([...LEGACY_CORNER_IDS].sort());
+    }
+    const usa = readSheet('USA') as AnyObj;
+    const old = structuredClone(usa);
+    old.cells[0].quadrant = 'grow';
+    expect(checkFactSheet(old).join(' | ')).toMatch(/cells\[0\]\.quadrant: renamed legacy_corner in schema 3/);
+    const oldSum = structuredClone(usa);
+    oldSum.summary.quadrants = { grow: { v: 0, d: '0' } };
+    expect(checkFactSheet(oldSum).join(' | ')).toMatch(/summary\.quadrants: renamed legacy_corners in schema 3/);
+    const badValue = structuredClone(usa);
+    const k = badValue.cells.findIndex((c: AnyObj) => c.placed);
+    badValue.cells[k].legacy_corner = 'secure';
+    expect(checkFactSheet(badValue).join(' | ')).toMatch(/legacy_corner/);
+    const mm = structuredClone(m) as AnyObj;
+    mm.countries[0].quadrants = { grow: 1, upgrade: 1, secure: 1, watch: 1 };
+    expect(checkCountryManifest(mm).join(' | ')).toMatch(/quadrants: renamed legacy_corners in schema 3/);
+    // a null quadrants (another module's hand-built entry) is tolerated
+    mm.countries[0].quadrants = null;
+    expect(checkCountryManifest(mm)).toEqual([]);
+    mm.countries[0].legacy_corners = { legacy_grow: 1 };
+    expect(checkCountryManifest(mm).join(' | ')).toMatch(/legacy_corners: expected four counts/);
+  });
+
+  it('the tests upgrade a schema-2 export in memory (renames only) and pass a schema-3 one through', () => {
+    const v3 = readSheet('USA') as AnyObj;
+    // rebuild the schema-2 shape from the schema-3 sheet, then upgrade it again
+    const v2: AnyObj = structuredClone(v3);
+    v2.schema_version = 2;
+    const v2key = (q: string) => LEGACY_CORNER_V2_KEY[q as keyof typeof LEGACY_CORNER_V2_KEY];
+    v2.summary.quadrants = Object.fromEntries(Object.entries(v2.summary.legacy_corners).map(([q, f]) => [v2key(q), f]));
+    delete v2.summary.legacy_corners;
+    v2.words.quadrant = Object.fromEntries(Object.entries(v2.words.legacy_corner).map(([q, w]) => [v2key(q), w]));
+    delete v2.words.legacy_corner;
+    v2.cells = v2.cells.map((c: AnyObj) => {
+      const { legacy_corner, legacy_corner_reason, ...rest } = c;
+      return { ...rest, quadrant: legacy_corner ? v2key(legacy_corner) : null, quadrant_reason: legacy_corner_reason };
+    });
+    expect(checkFactSheet(v2).join(' | ')).toMatch(/schema_version 2 is an export from before the Legacy OSI corner names/);
+    const up = toSchema3(v2) as AnyObj;
+    expect(checkFactSheet(up)).toEqual([]);
+    expect(up.summary.legacy_corners).toEqual(v3.summary.legacy_corners);
+    expect(up.words.legacy_corner).toEqual(v3.words.legacy_corner);
+    expect(up.cells.map((c: AnyObj) => [c.legacy_corner, c.legacy_corner_reason])).toEqual(v3.cells.map((c: AnyObj) => [c.legacy_corner, c.legacy_corner_reason]));
+    expect(toSchema3(v3)).toBe(v3);
+    expect(FIXTURE_DIR).toMatch(/country/);
   });
 
   it('a memo kept under the earlier quadrant rule needs its words and cannot be stale', () => {
@@ -197,7 +274,7 @@ describe.skipIf(!haveFixture())('Country contract on the synthetic fixture', () 
     };
 
     it('the stages and the 66 keys come from lib/stages (technology, then the stages in chain order)', () => {
-      expect(COUNTRY_SCHEMA_VERSION).toBe(2);
+      expect(COUNTRY_SCHEMA_VERSION).toBe(3);
       expect(COUNTRY_STAGES.map((s) => s.label)).toEqual([...SUPPLY_STAGES]);
       expect(COUNTRY_STAGES.map((s) => s.slug)).toEqual([...SUPPLY_STAGE_SLUGS]);
       expect(COUNTRY_STAGE_LABELS).toEqual([...SUPPLY_STAGES]);
@@ -270,6 +347,8 @@ describe.skipIf(!haveFixture())('Country contract on the synthetic fixture', () 
       mm.schema_version = 1;
       expect(checkCountryManifest(mm).join(' | ')).toMatch(/schema_version 1 is an export from before the six supply-chain stages/);
       mm.schema_version = 2;
+      expect(checkCountryManifest(mm).join(' | ')).toMatch(/schema_version 2 is an export from before the Legacy OSI corner names/);
+      mm.schema_version = 3;
       mm.no_es_cells = ['electric-grid-downstream'];
       mm.cmfdi_stages = ['Midstream'];
       expect(checkCountryManifest(mm).join(' | ')).toMatch(/manifest\.no_es_cells: 'electric-grid-downstream' is not a sector key.*manifest\.cmfdi_stages: not supply-chain stages/);

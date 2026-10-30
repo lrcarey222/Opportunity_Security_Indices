@@ -1,32 +1,46 @@
 // The Country Insights landing /countries (spec_country.md A4.1): the country picker, the core members
-// (with their corner counts and the MEMO tag), the coalition partners, the other economies (closed
-// <details>), a world map coloured by coalition tier (lazy atlas; omitted below 768 px) and "How to
-// read Country Insights" (the corner names and glossary ids from QUADRANTS, 2026-10-28).
+// (with their strategy counts and the MEMO tag), the coalition partners, the other economies (closed
+// <details>), a world map coloured by coalition tier (lazy atlas; omitted below 768 px) and "How to read a
+// country profile". Since 2026-10-29 (design 5, spec XI) the roster line under each name is the six-verb
+// count of the strategic position framework ("2 Secure · 5 Preserve · ..."), read from the posture core
+// (shared with the profiles, so the first profile opened needs no second fetch), and the reading guide
+// leads with Need -> Prize -> Position -> Choice -> Policy Alignment; the four corners are explained as the
+// Legacy OSI framework with their conceptual mapping (Grow ~ Preserve, Upgrade ~ Catch Up, Exposed ~
+// Partner, Stable ~ Watch).
 
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { CountrySelect } from '../../components/CountrySelect.tsx';
 import { InfoTip } from '../../components/InfoTip.tsx';
 import { Loading, PageHead } from '../../components/ui.tsx';
+import { countPostures, countryCells, strategyCountsText, usePostureCore, VERB_LABEL, VERB_ORDER, VERB_SUBTITLE, type PostureCore } from '../../posture/index.ts';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useCountryCtx } from '../CountryLayout.tsx';
-import { QUADRANTS, type CountryEntry, type Quadrant } from '../contract.ts';
-import { countryOptions, quadrantLine, rosterGroups } from '../derive/model.ts';
+import { LEGACY_CORNERS, type CountryEntry, type LegacyCorner } from '../contract.ts';
+import { countryOptions, rosterGroups } from '../derive/model.ts';
 import { countryHref } from '../url.ts';
 
 const TierMap = lazy(() => import('../charts/TierMap.tsx'));
 
-/** The reading guide's line for each corner (the names and glossary ids come from QUADRANTS). */
-const READING: Record<Quadrant, string> = {
-  grow: 'high economic opportunity and high energy security.',
-  upgrade: 'high economic opportunity but low energy security; building capability there would meet a need and create value.',
-  secure: 'low economic opportunity and low energy security; the sectors where supply leans most on partners.',
-  watch: 'low economic opportunity but high energy security; value may lie elsewhere.',
+/** The reading guide's line for each Legacy OSI corner (the names and glossary ids come from LEGACY_CORNERS). */
+const READING: Record<LegacyCorner, string> = {
+  legacy_grow: 'high economic opportunity and high energy security',
+  legacy_upgrade: 'high economic opportunity but low energy security',
+  legacy_exposed: 'low economic opportunity and low energy security',
+  legacy_stable: 'low economic opportunity but high energy security',
 };
 
-function CountryCard({ c, memo }: { c: CountryEntry; memo: boolean }) {
-  const q = quadrantLine(c.quadrants);
+/** The roster line of an economy: its six-verb counts ("2 Secure · 5 Preserve · ..."), or null without a strategy map. */
+export function rosterStrategyLine(core: PostureCore | null, iso3: string): string | null {
+  if (!core) return null;
+  const cells = countryCells(core, iso3);
+  if (!cells.length) return null;
+  return strategyCountsText(countPostures(cells)).verbs;
+}
+
+function CountryCard({ c, memo, core }: { c: CountryEntry; memo: boolean; core: PostureCore | null }) {
+  const q = rosterStrategyLine(core, c.iso3);
   return (
     <li>
       <Link to={countryHref(c.iso3)} className="card block h-full p-4 hover:border-signal">
@@ -34,8 +48,8 @@ function CountryCard({ c, memo }: { c: CountryEntry; memo: boolean }) {
           <span className="font-medium text-paper">{c.name}</span>
           {memo && c.memo && !c.memo.stale && <span className="tag py-0 text-[10px]">MEMO</span>}
         </span>
-        <span className="mt-1 block text-xs text-paper-mute">
-          {c.status === 'ok' && q ? q : c.status === 'non_rankable' ? 'Scores shown, not ranked' : 'No index data'}
+        <span className="mt-1 block text-xs text-paper-mute" data-testid="roster-line">
+          {q ?? (c.status === 'no_data' ? 'No index data' : core ? 'No strategy map' : c.status === 'non_rankable' ? 'Scores shown, not ranked' : '')}
         </span>
       </Link>
     </li>
@@ -52,12 +66,13 @@ export default function CountryHomeView() {
   const wide = useMediaQuery('(min-width: 768px)');
   const nMemos = manifest.countries.filter((c) => c.memo && !c.memo.stale).length;
   const nRevised = manifest.countries.filter((c) => c.tier === 'core' && c.memo?.stale).length;
+  const core = usePostureCore().data;
   return (
     <div className={PAGE}>
       <PageHead
         eyebrow="COUNTRIES"
         title="Countries"
-        lede={`Pick a country to see its strategic position in one place: where its energy supply chains are secure or exposed, where it has economic openings, which sectors to prioritise and how that compares with its current policies, its trade, investment and development partners, and its role in the Allied Industrial Base. Every technology is read at six supply-chain stages, from extraction to recovery. The first section of each profile is its strategic posture; the index values in the sections after it are the NEIS baseline (as of ${manifest.as_of_label}), and on each profile a Perspective control lets you weigh security, opportunity, policy and climate differently. For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : nRevised ? 'is being revised' : 'is being prepared'}.`}
+        lede={`Pick a country to see its strategy in one place: what it needs (supply-chain need, and deployment need at Deployment & Use), where there is a prize worth pursuing, where it is already strong, what it should secure, preserve, catch up in, rely on partners for, deploy faster or deliberately not prioritise, whether its current policy matches, and which allies can meet its needs. Every technology is read at six supply-chain stages, from extraction to recovery. The legacy index values (the NEIS baseline as of ${manifest.as_of_label}, with a Perspective control to weigh them differently) stay at the end of each profile as the Legacy OSI framework. For the ${manifest.counts.core} core coalition members a short policy memo ${nMemos ? 'is ready to read or download' : nRevised ? 'is being revised' : 'is being prepared'}.`}
       />
       <p className="-mt-4 mb-6 text-sm">
         <Link className="link" to="/overview">
@@ -82,11 +97,12 @@ export default function CountryHomeView() {
           Core coalition members ({g.core.length})
         </h2>
         <p className="mb-4 max-w-3xl text-sm text-paper-mute">
-          The economies the <span className="whitespace-nowrap">allied coalition <InfoTip id="coalition" term="allied coalition" /></span> is built around. The line under each name counts its placed sectors in each corner.
+          The economies the <span className="whitespace-nowrap">allied coalition <InfoTip id="coalition" term="allied coalition" /></span> is built around. The line under each name
+          counts its strategic choices across the 66 technology and stage nodes.
         </p>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {g.core.map((c) => (
-            <CountryCard key={c.iso3} c={c} memo />
+            <CountryCard key={c.iso3} c={c} memo core={core} />
           ))}
         </ul>
       </section>
@@ -97,7 +113,7 @@ export default function CountryHomeView() {
         </h2>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {g.partner.map((c) => (
-            <CountryCard key={c.iso3} c={c} memo={false} />
+            <CountryCard key={c.iso3} c={c} memo={false} core={core} />
           ))}
         </ul>
       </section>
@@ -140,17 +156,30 @@ export default function CountryHomeView() {
           How to read a country profile
         </h2>
         <p className="mt-2 text-sm text-paper-dim">
-          The first section of a profile, Strategic posture, recommends a posture for each technology at each of the six supply-chain stages (Secure, Compete, Deploy). The next,
-          Security and opportunity, places the same sectors in four corners, split at the country&apos;s own median sector; the corners describe, they are not postures.
+          A profile reads Need &rarr; Prize &rarr; Position &rarr; Choice &rarr; Policy Alignment for each technology at each of the six supply-chain stages, on its Country Strategy
+          Map. Need and the prize triage a node; Competitive Position decides the industrial response; the Secure tests override both; at Deployment &amp; Use deployment need decides.
+          Each node takes one of six choices:
         </p>
-        <ul className="mt-3 space-y-2 text-sm text-paper-dim">
-          {QUADRANTS.map((q) => (
+        <ul className="mt-3 space-y-2 text-sm text-paper-dim" data-testid="reading-verbs">
+          {VERB_ORDER.map((v) => (
+            <li key={v}>
+              <strong className="text-paper">{VERB_LABEL[v]}</strong>: {VERB_SUBTITLE[v].toLowerCase()}.
+            </li>
+          ))}
+        </ul>
+        <p className="mt-4 text-sm text-paper-dim">
+          The Legacy OSI framework (the paper baseline) sits at the end of each profile under Evidence &amp; Methodology: the same sectors in four corners of Energy Security and Economic
+          Opportunity, split at the country&apos;s own median sector. The corners describe; they are not current recommendations.
+        </p>
+        <ul className="mt-3 space-y-2 text-sm text-paper-dim" data-testid="reading-corners">
+          {LEGACY_CORNERS.map((q) => (
             <li key={q.id}>
-              <strong className="text-paper">{q.label}</strong> <InfoTip id={q.glossary} term={q.label} />: {READING[q.id]}
+              <strong className="text-paper">{q.label}</strong> <InfoTip id={q.glossary} term={q.label} />: {READING[q.id]}; conceptually close to {q.maps_to}.
             </li>
           ))}
           <li>
-            NEIS baseline <InfoTip id="paper_baseline" term="NEIS baseline" />: every index value is the pipeline&apos;s six-stage baseline, as of {manifest.as_of_label}. To try other weightings, open a country and change its Perspective.
+            NEIS baseline <InfoTip id="paper_baseline" term="NEIS baseline" />: every legacy index value is the pipeline&apos;s six-stage baseline, as of {manifest.as_of_label}. To try other
+            weightings, open a country&apos;s Legacy OSI framework and Explore scenarios.
           </li>
           <li>
             Memos <InfoTip id="memo" term="memo" />: short AI-written briefs for the core members, built from each country&apos;s fact sheet and checked against it.

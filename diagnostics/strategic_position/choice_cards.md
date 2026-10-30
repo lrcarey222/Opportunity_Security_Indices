@@ -59,7 +59,7 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 - battery mineral mining (Batteries, Extraction): a high industrial prize (0.83), a position below the top quarter (0.09) and a credible pathway (feasibility, learning): Catch Up. [delivery domestic; policy mixed; confidence high]
 - battery materials refining (Batteries, Refining): a high industrial prize (0.78), a position below the top quarter (0.31) and a credible pathway (feasibility, pipeline, adjacent stage, learning): Catch Up. [delivery domestic; policy mixed; confidence high]
-- battery recycling (Batteries, Recovery): a high industrial prize (0.94), a position below the top quarter (not measured) and a credible pathway (feasibility, learning): Catch Up. [delivery domestic; policy under prioritized; confidence high]
+- battery recycling (Batteries, Recovery): a high industrial prize (0.94), Competitive Position not measured and a credible pathway (feasibility, learning): Catch Up. [delivery domestic; policy under prioritized; confidence moderate]
 
 **Compete . Partner**
 

@@ -437,19 +437,12 @@ p .link {
   border-color: var(--hairline-strong);
 }
 
-/* Screen-reader-only, for the labels that keep icons and colour from being
-   the only carrier of meaning. */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
+/* Screen-reader-only labels (the ones that keep icons and colour from being
+   the only carrier of meaning) use Tailwind's own `sr-only` utility. No
+   unlayered `.sr-only` rule here (removed 2026-10-29): unlayered CSS beats
+   Tailwind's layered utilities, so it kept `sm:not-sr-only` and
+   `focus:not-sr-only` from revealing a label (the Country Strategy Map's stage
+   names at 640 px and wider, the fence skip link). */
 
 /* --- Disclosure rows ----------------------------------------------------- */
 

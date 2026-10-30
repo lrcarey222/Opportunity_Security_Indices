@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import type { AibCompact, AibDoc } from '../../aib/contract.ts';
 import { compactTitle } from '../../aib/derive/format.ts';
 import { haveFixture as haveAib, readDoc, stripLegacyCells, SYNTHETIC_DIR } from '../../aib/__tests__/fixture.ts';
-import { COUNTRY_CELL_KEYS, type FactSheet, type Quadrant } from '../contract.ts';
+import { COUNTRY_CELL_KEYS, type FactSheet, type LegacyCorner } from '../contract.ts';
 import { compactsOfCell, dependencies } from '../derive/framing.ts';
 import { haveFixture, readSheet } from './fixture.ts';
 
@@ -78,12 +78,12 @@ describe.skipIf(!haveAib(SYNTHETIC_DIR))('Country joins with the AIB document at
 describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country joins with the AIB document at six stages: dependencies', () => {
   const doc = renamed(readDoc(SYNTHETIC_DIR));
   const noLegacy = stripLegacyCells(renamed(readDoc(SYNTHETIC_DIR)));
-  /** The USA fixture sheet with Batteries — Extraction in the Upgrade corner and Batteries — Refining in the Exposed one (key secure). */
+  /** The USA fixture sheet with Batteries — Extraction in the Upgrade corner and Batteries — Refining in the Exposed one (legacy_exposed). */
   const sheetWith = (): FactSheet => {
     const s = structuredClone(readSheet('USA'));
-    const set = (key: string, q: Quadrant) => Object.assign(s.cells.find((c) => c.key === key)!, { placed: true, quadrant: q });
-    set('batteries-extraction', 'upgrade');
-    set('batteries-refining', 'secure');
+    const set = (key: string, q: LegacyCorner) => Object.assign(s.cells.find((c) => c.key === key)!, { placed: true, legacy_corner: q });
+    set('batteries-extraction', 'legacy_upgrade');
+    set('batteries-refining', 'legacy_exposed');
     return s;
   };
 

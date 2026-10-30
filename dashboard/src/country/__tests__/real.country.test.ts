@@ -23,7 +23,7 @@ import type { Bundle, Table } from '../../engine/types.ts';
 import { SUPPLY_STAGES } from '../../lib/stages.ts';
 import { median } from '../../views/Space/derive.ts';
 import {
-  checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc, COUNTRY_BUDGET_GZ, COUNTRY_CELL_KEYS, countryMedianOf, NO_ES_CELLS, quadrantOf, stageOfCellKey,
+  checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc, COUNTRY_BUDGET_GZ, COUNTRY_CELL_KEYS, countryMedianOf, legacyCornerOf, NO_ES_CELLS, stageOfCellKey,
   type CountryManifest, type FactSheet,
 } from '../contract.ts';
 
@@ -70,8 +70,8 @@ describe.skipIf(!wanted || !hasData)('Country Insights on the real export', () =
     }
   });
 
-  it('six stages (schema 2, 2026-10-28): 66 sectors, the shipped no-Energy-Security list, CM-FDI stages, NIPO not staged, picks at a supply stage', () => {
-    expect(m.schema_version).toBe(2);
+  it('six stages (schema 2, 2026-10-28; Legacy OSI corner names, schema 3, 2026-10-29): 66 sectors, the shipped no-Energy-Security list, CM-FDI stages, NIPO not staged, picks at a supply stage', () => {
+    expect(m.schema_version).toBe(3);
     expect(m.no_es_cells).toEqual(NO_ES_CELLS);
     expect(m.cmfdi_stages).toEqual(['Components', 'Assembly']);
     expect(m.label).toMatch(/^AI-generated from the data and checked against it; NEIS baseline as of /);
@@ -119,12 +119,12 @@ describe.skipIf(!wanted || !hasData)('Country Insights on the real export', () =
     }
   });
 
-  it("quadrants re-derive from the plotted positions and the country's median sector", () => {
+  it("Legacy OSI corners (schema 3) re-derive from the plotted positions and the country's median sector", () => {
     let n = 0;
     for (const s of sheets.values()) {
       const cm = countryMedianOf(s.cells);
       for (const c of s.cells.filter((x) => x.placed)) {
-        expect(c.quadrant, `${s.iso3} ${c.key}`).toBe(quadrantOf(c.es!.pos!, cm.es!, c.eo!.pos!, cm.eo!));
+        expect(c.legacy_corner, `${s.iso3} ${c.key}`).toBe(legacyCornerOf(c.es!.pos!, cm.es!, c.eo!.pos!, cm.eo!));
         n++;
       }
     }

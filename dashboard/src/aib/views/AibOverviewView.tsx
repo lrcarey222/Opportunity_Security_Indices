@@ -1,7 +1,8 @@
 // Allied Industrial Base overview /aib (IA refactor, 2026-10-16; brief s.13-14): a light orientation page.
 // It opens (2026-10-29, design L4) with "Allied coverage by technology and stage" (#division): the posture
 // module's allied division of labour (who among trusted allies holds each OSI technology x stage cell, the
-// gaps, partner demand), its three header metrics as tiles, the matrix card and its node detail, which lists
+// gaps, partner demand: the economies whose canonical choice is Compete · Partner; Deploy · Accelerate is
+// never counted), its three header metrics as tiles, the matrix card and its node detail, which lists
 // and links the Allied Industrial Base nodes whose six-stage cells (node.yfCells) are in the cell, each link
 // opening the Workstreams node list filtered on that cell (its technology and stage). It follows
 // the strategic position framework, not the scenario toggle. Then the three scenarios side by side (Baseline, Managed
@@ -74,6 +75,15 @@ function NodeList({ rows, value, label }: { rows: NodeScenario[]; value: (r: Nod
   );
 }
 
+/**
+ * What the division's demand counts (design section 5, the canonical framework): Partner demand is the
+ * economies whose choice for the node is Compete · Partner, Secure demand those that must Secure it. A Deploy ·
+ * Accelerate choice is a deployment priority, not a call on allied supply, so it is never counted (and
+ * Deployment & Use has no column in the matrix).
+ */
+export const DIVISION_DEMAND_WORDS =
+  'Partner demand counts the economies whose choice for a node is Compete · Partner, Secure demand those that must Secure it; a Deploy · Accelerate choice is a deployment priority, not a call on allied supply, so it is not counted.';
+
 /** The id and title of the Overview's first section (design L4; not "Division of labour", the compact pages' own). */
 export const DIVISION_SECTION = { id: 'division', title: 'Allied coverage by technology and stage' } as const;
 
@@ -108,7 +118,7 @@ function DivisionSection() {
         <>
           <PostureBasisTag />
           <p className="mt-2" data-testid="division-intro">
-            <AibDivisionIntro /> Select a cell for its allied holders and the model&apos;s supply-chain nodes whose traded goods sit there.
+            <AibDivisionIntro /> <span data-testid="division-demand">{DIVISION_DEMAND_WORDS}</span> Select a cell for its allied holders and the model&apos;s supply-chain nodes whose traded goods sit there.
           </p>
         </>
       }

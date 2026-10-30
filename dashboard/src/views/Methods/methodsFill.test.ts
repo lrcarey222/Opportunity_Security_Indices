@@ -106,6 +106,25 @@ describe('Methods placeholders', () => {
     expect(excludedSectorsText(['Oil - Recovery'])).toBe('Oil (Recovery)');
   });
 
+  it('opens with the canonical framework (need, prize, position, choice, policy alignment), then the Legacy OSI chapter before the indices (design 5)', () => {
+    const at = (x: string) => md.indexOf(x);
+    expect(at('<h2 id="framework">')).toBe(0);
+    const steps = ['**Need: what problem', '**Prize: is there', '**Position: how strong', '**Choice: what should', '**Policy alignment: does current policy'];
+    expect(steps.map(at).every((v, k, a) => v > 0 && (k === 0 || v > a[k - 1]))).toBe(true);
+    expect(md).toContain('Two separate measures, never combined into one score');
+    expect(md).toContain('**Deploy · Accelerate**');
+    expect(md).toContain('a deployment node is never Partner');
+    expect(md).toContain('It is not the legacy Economic Opportunity index');
+    expect(md).toContain('Observed policy is compared afterwards and never enters the choice');
+    // the retired need x opportunity rule is gone
+    expect(md).not.toMatch(/Competitive Position is a consistency check|high need and high opportunity, \*\*catch up\*\*|## Four steps/);
+    expect(at('<h2 id="legacy-osi">')).toBeGreaterThan(at('**Policy alignment: does current policy'));
+    expect(at('<h2 id="legacy-osi">')).toBeLessThan(at('## The indices in plain words'));
+    expect(md).toContain('Grow ≈ Preserve, Upgrade ≈ Catch Up, Exposed ≈ Partner, Stable ≈ Watch');
+    expect(md).toContain('mixes capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment');
+    expect(md).toContain('## The indices in plain words (Legacy OSI)');
+  });
+
   it('six stages only: no three-stage word, and no claim that the baseline is the paper exported exactly (S1, E3)', () => {
     expect(md).not.toMatch(/\b(upstream|midstream|downstream)\b/i);
     expect(md).not.toMatch(/three[- ]stage/i);

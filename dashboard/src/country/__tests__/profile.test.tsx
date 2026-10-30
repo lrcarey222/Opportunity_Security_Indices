@@ -3,7 +3,10 @@
 // synthetic fixtures, the Partnerships tabs and the Role in the Allied Industrial Base on the AIB fixture
 // (its economy AAA renamed USA), the engine staying idle on a baseline visit, and Workflow 2: the
 // Perspective dials move the Strategic priority column but not the facts, and the country's own URL
-// writes keep the dials.
+// writes keep the dials. Since 2026-10-29 (design 5b, D10) the Partnerships and Role in the Allied Industrial Base
+// blocks sit under Allied Strategy's "Explore all partnership analysis", and the dials, Sector position and the
+// model's disclosures in Evidence & Methodology -> Legacy OSI framework (its results open on demand); the monthly
+// trade card is in Prize & Position.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -13,6 +16,8 @@ import { resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { routes } from '../../routes.tsx';
 import { setEngineClient } from '../../state/EngineProvider.tsx';
+import { setPostureStore } from '../../posture/store.ts';
+import { fixtureStore } from '../../posture/__tests__/fixture.ts';
 import { EngineClient, type WorkerLike } from '../../worker/client.ts';
 import { EngineHost, type FetchBytes } from '../../worker/host.ts';
 import type { FromWorker, ToWorker } from '../../worker/protocol.ts';
@@ -38,7 +43,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile framing (pure)', 
   it('Make bets: Grow or Upgrade sectors by Strategic Index rank; a Perspective map reorders them', () => {
     const bets = makeBets(sheet, null, 99);
     expect(bets.length).toBeGreaterThan(0);
-    for (const c of bets) expect(['grow', 'upgrade']).toContain(c.quadrant);
+    for (const c of bets) expect(['legacy_grow', 'legacy_upgrade']).toContain(c.legacy_corner);
     const ranks = bets.map((c) => (c.si.in_sample ? c.si.rank.v : null)).filter((r): r is number => r !== null);
     expect([...ranks].sort((a, b) => a - b)).toEqual(ranks);
     // reverse the ranks under a "perspective": the order follows, the set does not change
@@ -52,13 +57,13 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile framing (pure)', 
   it('dependencies and capabilities are facts: corners and orders of the fact sheet only', () => {
     const deps = dependencies(sheet, doc, 99);
     for (const d of deps) {
-      expect(['upgrade', 'secure']).toContain(d.cell.quadrant);
+      expect(['legacy_upgrade', 'legacy_exposed']).toContain(d.cell.legacy_corner);
       expect(d.supplier).toBe(d.cell.trade?.sources?.[0] ?? null);
     }
     const es = deps.map((d) => sheet.summary.es_order.indexOf(d.cell.key));
     expect([...es].sort((a, b) => a - b)).toEqual(es);
     const caps = capabilities(sheet, null, 99);
-    for (const c of caps.cells) expect(c.quadrant).toBe('grow');
+    for (const c of caps.cells) expect(c.legacy_corner).toBe('legacy_grow');
   });
 
   it('compactsOfCell: a compact covers a cell through its nodes', () => {
@@ -115,10 +120,14 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile framing (pure)', 
     expect(rows[0].key).toBe(siOrder(sheet, null)[0]?.key ?? rows[0].key);
   });
 
-  it('policy sentences name the climate rating and the agreement counts', () => {
+  it('policy sentences name the climate rating and the agreement counts; without the Strategic Index (Policy Alignment) the agreement line goes', () => {
     const lines = policyBehaviour(sheet, 'the United States');
     expect(lines[0]).toMatch(/Climate Action Tracker/);
     expect(lines.length).toBeGreaterThanOrEqual(1);
+    const facts = policyBehaviour(sheet, 'the United States', { withSi: false });
+    expect(facts[0]).toBe(lines[0]);
+    expect(facts.join(' ')).not.toMatch(/Strategic Index/);
+    expect(facts.length).toBe(lines.filter((l) => !/Strategic Index/.test(l)).length);
   });
 });
 
@@ -201,12 +210,14 @@ afterAll(() => {
 beforeEach(() => {
   setCountryStoreForTests(new CountryStore(fixtureSource()));
   setAibStoreForTests(new AibStore(aibSource(undefined, renamed)));
+  setPostureStore(fixtureStore({ economies: { AAA: { iso3: 'USA', name: 'United States' } } }));
 });
 
 afterEach(() => {
   cleanup();
   setCountryStoreForTests(null);
   setAibStoreForTests(null);
+  setPostureStore(null);
 });
 
 function renderAt(path: string) {
@@ -215,12 +226,19 @@ function renderAt(path: string) {
   return router;
 }
 const h2 = (name: string | RegExp) => screen.findByRole('heading', { level: 2, name }, { timeout: 30_000 });
+const h3 = (name: string | RegExp) => screen.findByRole('heading', { level: 3, name }, { timeout: 30_000 });
+
+/** Open the Legacy OSI results of Evidence & Methodology (the dials, Sector position, the model's disclosures). */
+async function openLegacy(): Promise<void> {
+  fireEvent.click(await screen.findByText(/^Show the Legacy OSI results for /, undefined, { timeout: 30_000 }));
+  await h3('Sector position');
+}
 
 /** Sector -> the text of one column of the Sector position table, every page (66 sectors at six stages,
  *  12 a page: the dials reorder the rows, so the first page alone holds few of the same sectors). */
 function column(header: string): Map<string, string> {
-  const sec = document.getElementById('sectors')!;
-  const pager = (name: string) => within(sec).queryAllByRole('button', { name }).find((b) => b.closest('#sectors table') === null && !!b.closest('#sectors')) as HTMLButtonElement | undefined;
+  const sec = document.getElementById('legacy-sectors')!;
+  const pager = (name: string) => within(sec).queryAllByRole('button', { name }).find((b) => b.closest('#legacy-sectors table') === null && !!b.closest('#legacy-sectors')) as HTMLButtonElement | undefined;
   const out = new Map<string, string>();
   for (let prev = pager('Previous'); prev && !prev.disabled; prev = pager('Previous')) fireEvent.click(prev);
   for (let guard = 0; guard < 20; guard++) {
@@ -265,20 +283,23 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
     }
   }, 90_000);
 
-  it('a baseline visit never starts the engine; Partnerships tabs and the Role in the Allied Industrial Base read the AIB results', async () => {
+  it('a baseline visit never starts the engine; Partnerships tabs and the Role in the Allied Industrial Base (under Allied Strategy) read the AIB results', async () => {
     const stuck = neverReady();
     setEngineClient(stuck);
     try {
-      const r = renderAt('/countries/usa?scn=decoupling');
+      // an old #aib-role link opens the partnership analysis under Allied Strategy
+      const r = renderAt('/countries/usa?scn=decoupling#aib-role');
       await waitFor(() => expect(r.state.location.pathname).toBe('/countries/USA'), { timeout: 30_000 });
-      await h2('Role in the Allied Industrial Base');
-      const role = document.getElementById('aib-role')!;
+      await h2('Allied Strategy');
+      await h3('Role in the Allied Industrial Base');
+      const role = document.getElementById('allied-aib-role')!;
+      expect(role.closest('section#allied')).toBeTruthy();
       expect(await within(role).findByText('Demand anchor / Buyer', {}, { timeout: 20_000 })).toBeTruthy();
       expect(within(role).getByTestId('aib-relationships').textContent).toMatch(/Trade against investment/);
       expect(within(role).getAllByRole('link', { name: 'AIB-C01' })[0].getAttribute('href')).toBe('/compacts/AIB-C01?scn=decoupling');
       expect(within(role).getByRole('link', { name: /See all country roles/ }).getAttribute('href')).toBe('/aib/roles?economy=USA&scn=decoupling#role-USA');
       // Partnerships: Trade first, then Investment and Development through the URL
-      const part = document.getElementById('partnerships')!;
+      const part = document.getElementById('allied-partnerships')!;
       expect(within(part).getByTestId('ptab-trade')).toBeTruthy();
       expect(within(part).getByText(/In the compacts' coordinated trade the United States has/)).toBeTruthy();
       fireEvent.click(within(part).getByRole('radio', { name: 'Investment' }));
@@ -290,11 +311,14 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       await waitFor(() => expect(r.state.location.search).toBe('?ptab=development&scn=decoupling'));
       expect(within(part).getByRole('heading', { name: 'Capacity to build in its compacts' })).toBeTruthy();
       expect(stuck.getSnapshot().status).toBe('starting');
-      // a disclosure of the model while the model loads: a loading line, the rest of the page stays
+      // a disclosure of the model (in the Legacy OSI results) while the model loads: a loading line, the rest of the page stays
+      await openLegacy();
       fireEvent.click(screen.getByText(/^Explore details/));
       expect(await within(document.getElementById('fold-scores')!).findByText('Loading the model')).toBeTruthy();
       expect(screen.getByRole('heading', { level: 1, name: 'United States' })).toBeTruthy();
-      expect(document.getElementById('aib-role')).toBeTruthy();
+      expect(document.getElementById('allied-aib-role')).toBeTruthy();
+      // the strategy sections stay as they were (the model wraps only the Legacy OSI results)
+      expect(within(document.getElementById('strategy')!).getByRole('region', { name: 'Country Strategy Map' })).toBeTruthy();
     } finally {
       setEngineClient(null);
     }
@@ -305,7 +329,8 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
     setEngineClient(client);
     try {
       const r = renderAt('/countries/USA');
-      await h2('Sector position');
+      await h2('Evidence & Methodology');
+      await openLegacy();
       const eo = column('Opportunity');
       const es = column('Security');
       const toggle = screen.getByRole('button', { name: /^Perspective: NEIS baseline/ });
@@ -341,8 +366,10 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by
   it('a core member with a monthly file: the card follows the selected sector and switches flow', async () => {
     setEngineClient(neverReady());
     try {
-      renderAt('/countries/USA?cell=solar-assembly#sectors');
+      renderAt('/countries/USA?cell=solar-assembly#prize-position');
       const card = await screen.findByTestId('trade-monthly', {}, { timeout: 30_000 });
+      // Prize & Position: the evidence behind the trade momentum of Competitive Position
+      expect(card.closest('section#prize-position')).toBeTruthy();
       expect(within(card).getByRole('heading', { level: 3, name: /Solar — Assembly: monthly imports by sub-component/ })).toBeTruthy();
       fireEvent.click(within(card).getByRole('radio', { name: 'Exports' }));
       expect(await within(card).findByRole('heading', { level: 3, name: /monthly exports by sub-component/ })).toBeTruthy();
@@ -354,7 +381,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by
   it('a sector without a traded-goods basket falls back to the one with the most monthly trade and says why', async () => {
     setEngineClient(neverReady());
     try {
-      renderAt('/countries/USA?cell=oil-extraction#sectors');
+      renderAt('/countries/USA?cell=oil-extraction#prize-position');
       const card = await screen.findByTestId('trade-monthly', {}, { timeout: 30_000 });
       expect(within(card).getByRole('heading', { level: 3, name: /Batteries — Assembly/ })).toBeTruthy();
       expect(within(card).getByText(/has no traded-goods basket \(HS6 codes\); showing Batteries — Assembly/)).toBeTruthy();
@@ -366,11 +393,12 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by
   it('a core member without monthly data gets a notice; the card stays off non-core pages', async () => {
     setEngineClient(neverReady());
     try {
-      renderAt('/countries/FRA#sectors');
-      expect(await screen.findByTestId('trade-monthly-none', {}, { timeout: 30_000 })).toBeTruthy();
+      renderAt('/countries/FRA#prize-position');
+      const none = await screen.findByTestId('trade-monthly-none', {}, { timeout: 30_000 });
+      expect(none.closest('section#prize-position')).toBeTruthy();
       cleanup();
-      renderAt('/countries/BRA#sectors');
-      await h2('Sector position');
+      renderAt('/countries/BRA#prize-position');
+      await h2('Prize & Position');
       expect(screen.queryByTestId('trade-monthly')).toBeNull();
       expect(screen.queryByTestId('trade-monthly-none')).toBeNull();
     } finally {

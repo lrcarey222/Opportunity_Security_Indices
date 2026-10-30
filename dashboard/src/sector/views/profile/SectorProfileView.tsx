@@ -1,7 +1,7 @@
 // Sector profile /sector/:tech/:stage (spec_sector.md 4.3): the core page. IA refactor 2026-10-16 (brief
 // s.5-8): the supply-chain navigator under the head, the four lenses (./Lenses.tsx) on top, then the
-// "Strategic posture" section (design L3, 2026-10-28: the posture scatter of the strategic position
-// framework fixed to this technology and stage, #posture; the posture and Sector links land there), and the
+// "Strategic posture" section (design L3, 2026-10-28; since 2026-10-29 the canonical framework's strategy
+// card fixed to this technology and stage, design section 5, #posture; the posture and Sector links land there), and the
 // existing sections grouped under Competitiveness & markets, Security & concentration, Policy, Climate
 // and Advanced & evidence (PROFILE_GROUPS; the rail lists the groups, section ids keep working; on
 // phones the groups start folded and open on a pick or a link to one of their sections). Sections appear in
@@ -20,7 +20,8 @@ import { withBom } from '../../../lib/csv.ts';
 import { useTitle } from '../../../shell/title.ts';
 import { ACTIVITY_OF_STAGE, FAMILY_SECTION, isStageSlug, isTechSlug, STAGE_LABELS, TECH_LABELS, type SectionId, type SectorManifest, type StageSlug, type TechSlug } from '../../contract.ts';
 import { isLegacyStageSlug, legacyStageNote, legacyStageOfSlug, legacyStageTarget } from '../../../lib/stages.ts';
-import { PostureBasisTag, SectorPostureCard, SectorPostureIntro } from '../../../posture/index.ts';
+import { PostureBasisTag } from '../../../posture/index.ts';
+import { SectorStrategyCard, SectorStrategyIntro } from '../../posture/SectorStrategyCard.tsx';
 import { useModel, useSectorManifest } from '../../data/SectorDataProvider.tsx';
 import type { FactsIndex } from '../../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
@@ -539,9 +540,10 @@ function Deeper({ tech, stage }: { tech: TechSlug; stage: StageSlug }) {
 }
 
 /**
- * The profile's "Strategic posture" section (design L3): the posture scatter of the strategic position
- * framework fixed to this node (a recommendation at fixed thresholds, unlike the measured values around
- * it). The 66 headline cells only: the posture data has no Semiconductors node.
+ * The profile's "Strategic posture" section (design L3; design section 5): every economy's choice in this
+ * node, Competitive Position against the relevant need (a recommendation at fixed thresholds, unlike the
+ * measured values around it; Deployment & Use reads deployment need). The 66 headline cells only: the
+ * posture data has no Semiconductors node.
  */
 export function PostureSection({ tech, stage }: { tech: TechSlug; stage: StageSlug }) {
   return (
@@ -550,11 +552,11 @@ export function PostureSection({ tech, stage }: { tech: TechSlug; stage: StageSl
       title="Strategic posture"
       sub={
         <>
-          <PostureBasisTag /> <SectorPostureIntro />
+          <PostureBasisTag /> <SectorStrategyIntro />
         </>
       }
     >
-      <SectorPostureCard node={{ tech: TECH_LABELS[tech], stage: STAGE_LABELS[stage] }} compact />
+      <SectorStrategyCard node={{ tech: TECH_LABELS[tech], stage: STAGE_LABELS[stage] }} compact />
     </Section>
   );
 }

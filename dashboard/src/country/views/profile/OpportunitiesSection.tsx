@@ -6,7 +6,10 @@
 //   Capabilities to keep         Grow corner, and the economy's supplier / technology roles in the compacts
 //                                ("Preserve capabilities" until 2026-10-28, renamed so it is not read as the
 //                                Strategic posture section's Compete · Preserve mode)
-// The corners (recomputed on the 66 six-stage sectors) take their words from QUADRANTS (contract.ts).
+// The corners (recomputed on the 66 six-stage sectors) take their words from LEGACY_CORNERS (contract.ts).
+// Since 2026-10-29 (spec XIV, XVIII; design D10) the three lists are a Legacy OSI reading: Strategic Choices
+// replaces them in the canonical page, and this block sits in Evidence & Methodology -> Legacy OSI framework
+// (id legacy-opportunities, heading level 3), with its Why and Strategic Index disclosures.
 // Behind disclosures: "Why these sectors" (the existing drivers section) and "How priorities are built"
 // (the existing Strategic Index table at the NEIS baseline; the embedded Strategic Index view under the
 // reader's Perspective).
@@ -21,7 +24,7 @@ import StrategicView from '../../../views/Strategic/StrategicView.tsx';
 import type { CellFacts } from '../../contract.ts';
 import { capabilities, dependencies, makeBets, siRankOf } from '../../derive/framing.ts';
 import { sectorProfileLink } from '../../derive/links.ts';
-import { cap, poss, proseName, quadrantWord } from '../../derive/text.ts';
+import { cap, legacyCornerWord, poss, proseName } from '../../derive/text.ts';
 import { PriorityTable } from './PrioritiesSection.tsx';
 import { BasisTag, Fold, perspectiveNote, Section, usePerspectiveSi, useProfile, type Basis } from './common.tsx';
 import { WhySection } from './WhySection.tsx';
@@ -49,7 +52,7 @@ function SectorLink({ c, iso3 }: { c: CellFacts; iso3: string }) {
   );
 }
 
-export function OpportunitiesSection() {
+export function OpportunitiesSection({ id = 'opportunities', level = 2, title = 'Opportunities & risks' }: { id?: string; level?: 2 | 3; title?: string } = {}) {
   const { sheet, aib } = useProfile();
   const si = usePerspectiveSi();
   const name = proseName(sheet.meta.country);
@@ -60,11 +63,12 @@ export function OpportunitiesSection() {
   const deps = useMemo(() => dependencies(sheet, doc), [sheet, doc]);
   const roleRow = useMemo(() => (doc && names ? countryRoleRow(doc, names, iso) : null), [doc, names, iso]);
   const caps = useMemo(() => capabilities(sheet, roleRow), [sheet, roleRow]);
-  const corner = (c: CellFacts) => (c.quadrant ? quadrantWord(c.quadrant) : 'not placed');
+  const corner = (c: CellFacts) => (c.legacy_corner ? legacyCornerWord(c.legacy_corner) : 'not placed');
   return (
     <Section
-      id="opportunities"
-      title="Opportunities & risks"
+      id={id}
+      level={level}
+      title={title}
       intro={
         <>
           Three readings of the index scores of {poss(name)} sectors: where {name} could build on an opportunity, where it depends most on others, and which capabilities it already has. The corners split{' '}
@@ -91,7 +95,7 @@ export function OpportunitiesSection() {
               })}
             </ol>
           ) : (
-            <p className="text-paper-mute">No placed sector of {name} sits in the {quadrantWord('grow')} or {quadrantWord('upgrade')} corner.</p>
+            <p className="text-paper-mute">No placed sector of {name} sits in the {legacyCornerWord('legacy_grow')} or {legacyCornerWord('legacy_upgrade')} corner.</p>
           )}
         </FrameCard>
         <FrameCard id="dependencies" title="Avoid dangerous dependencies" question={`Where are ${poss(name)} largest security vulnerabilities?`} basis="facts">
@@ -121,7 +125,7 @@ export function OpportunitiesSection() {
               ))}
             </ol>
           ) : (
-            <p className="text-paper-mute">No placed sector of {name} sits in the {quadrantWord('upgrade')} or {quadrantWord('secure')} corner.</p>
+            <p className="text-paper-mute">No placed sector of {name} sits in the {legacyCornerWord('legacy_upgrade')} or {legacyCornerWord('legacy_exposed')} corner.</p>
           )}
         </FrameCard>
         <FrameCard id="capabilities" title="Capabilities to keep" question={`Where does ${name} hold specialised capabilities worth keeping?`} basis="facts">
@@ -137,7 +141,7 @@ export function OpportunitiesSection() {
               ))}
             </ul>
           ) : (
-            <p className="text-paper-mute">No placed sector of {name} sits in the {quadrantWord('grow')} corner.</p>
+            <p className="text-paper-mute">No placed sector of {name} sits in the {legacyCornerWord('legacy_grow')} corner.</p>
           )}
           {caps.roles.length > 0 && (
             <p className="mt-3 border-t hairline pt-2 text-xs">

@@ -23,6 +23,14 @@
 // manifest); `meta.cmfdi_stages` names the stages whose cells carry the same CM-FDI factory projects
 // (Components and Assembly); `policy.nipo.staged` false hides the per-sector NIPO lists until the NIPO
 // run is six-stage. Data and app ship together: a schema-1 (three-stage) sheet fails the checks.
+//
+// Schema 3 (2026-10-29, design D6, spec Part II): the four corners of the Energy Security x Economic
+// Opportunity scatter are the Legacy OSI framework (the paper baseline), not a current decision, so every
+// corner field is namespaced: cells[].quadrant -> cells[].legacy_corner, cells[].quadrant_reason ->
+// cells[].legacy_corner_reason, summary.quadrants -> summary.legacy_corners, words.quadrant ->
+// words.legacy_corner, manifest countries[].quadrants -> countries[].legacy_corners, and the values grow /
+// upgrade / secure / watch -> legacy_grow / legacy_upgrade / legacy_exposed / legacy_stable (no legacy key
+// says `secure` for the Exposed corner any more). The corner computation is unchanged (replication).
 
 import { STAGE_LABEL, SUPPLY_STAGES, isSupplyStage, stageSlug, type SupplyStage, type SupplyStageSlug } from '../lib/stages.ts';
 
@@ -31,7 +39,13 @@ import { STAGE_LABEL, SUPPLY_STAGES, isSupplyStage, stageSlug, type SupplyStage,
 export const COUNTRY_SCHEMA = 'osi-country';
 export const COUNTRY_FACTS_SCHEMA = 'osi-country-facts';
 export const COUNTRY_MEMO_SCHEMA = 'osi-country-memo';
-export const COUNTRY_SCHEMA_VERSION = 2;
+export const COUNTRY_SCHEMA_VERSION = 3;
+/** Why an older export is refused ("is an export from before ..."), by its schema version. */
+export function olderSchemaWords(v: number): string {
+  return Math.floor(v) < 2
+    ? `is an export from before the six supply-chain stages (this app reads ${COUNTRY_SCHEMA_VERSION})`
+    : `is an export from before the Legacy OSI corner names (legacy_corner; this app reads ${COUNTRY_SCHEMA_VERSION})`;
+}
 /** Relative to the app's base URL. Written only by scripts/88. */
 export const COUNTRY_DATA_DIR = 'data/country/';
 export const COUNTRY_MANIFEST_FILE = 'manifest.json';
@@ -128,33 +142,45 @@ export const noEsCellsOf = (sheet: { no_es_cells?: readonly string[] | null }): 
 
 // ---- Enums ----------------------------------------------------------------------------------------
 
-export type Quadrant = 'grow' | 'upgrade' | 'secure' | 'watch';
+/** A corner of the Legacy OSI framework (the paper baseline's Energy Security x Economic Opportunity
+ *  scatter). Schema 3 (design D6): legacy_exposed was `secure` and legacy_stable was `watch`. */
+export type LegacyCorner = 'legacy_grow' | 'legacy_upgrade' | 'legacy_exposed' | 'legacy_stable';
+/** The current decision framework's choice a legacy corner maps to conceptually (spec Part II): the
+ *  mapping is a reading aid, not an equivalence, since the legacy indices mix capability, vulnerability,
+ *  production, trade, investment, demand, reserves, concentration and deployment. */
+export type LegacyCornerMapping = 'Preserve' | 'Catch Up' | 'Partner' | 'Watch';
 /** Order and words of the four corners (A4.2 S2); the user's names and RMI (2025) postures. Since
  *  2026-10-15 Economic Opportunity runs across and Energy Security up, and high / low are against the
  *  country's own median sector (A9.2).
  *
- *  Display names (2026-10-28): the corners (recomputed on the 66 six-stage sectors since schema 2) are
- *  shown on the same pages as the strategic posture (Secure / Compete / Deploy, with Catch up / Preserve /
- *  Partner and Watch), so the two corners whose names clashed with those words are shown as Exposed (key
- *  `secure`: low opportunity, low energy security) and Stable (key `watch`: low opportunity, high energy
- *  security). The keys are unchanged: they are a contract with R, the published fact sheets and the memo
- *  tokens. The app owns the display names: every display path reads `label` here and ignores the fact
- *  sheet's words.quadrant (the memo tokens' words). `glossary` is the corner's glossary id
- *  (content/glossary.ts), which follows the display name. */
-export const QUADRANTS: readonly {
-  id: Quadrant;
+ *  Display names (2026-10-28): Grow, Upgrade, Exposed, Stable (the two corners whose names clashed with
+ *  the decision framework's words were Secure and Watch). Since schema 3 (2026-10-29) the keys say the
+ *  same: legacy_grow, legacy_upgrade, legacy_exposed, legacy_stable. The app owns the display names: every
+ *  display path reads `label` here and ignores the fact sheet's words.legacy_corner (the memo tokens'
+ *  words). `glossary` is the corner's glossary id (content/glossary.ts), which follows the display name;
+ *  `maps_to` is the conceptual mapping to the canonical choices (Grow ~ Preserve, Upgrade ~ Catch Up,
+ *  Exposed ~ Partner, Stable ~ Watch). */
+export const LEGACY_CORNERS: readonly {
+  id: LegacyCorner;
   label: string;
   glossary: 'grow' | 'upgrade' | 'exposed' | 'stable';
   corner: 'top right' | 'top left' | 'bottom left' | 'bottom right';
   meaning: string;
   posture: string;
+  maps_to: LegacyCornerMapping;
 }[] = [
-  { id: 'grow', label: 'Grow', glossary: 'grow', corner: 'top right', meaning: 'High opportunity, high energy security: build on strength', posture: 'export promotion' },
-  { id: 'upgrade', label: 'Upgrade', glossary: 'upgrade', corner: 'bottom right', meaning: 'High opportunity, low energy security: build capability', posture: 'leapfrog' },
-  { id: 'secure', label: 'Exposed', glossary: 'exposed', corner: 'bottom left', meaning: 'Low opportunity, low energy security: source from trusted partners', posture: 'friendshore' },
-  { id: 'watch', label: 'Stable', glossary: 'stable', corner: 'top left', meaning: 'Low opportunity, high energy security: look for value elsewhere', posture: 'alternative value creation' },
+  { id: 'legacy_grow', label: 'Grow', glossary: 'grow', corner: 'top right', meaning: 'High opportunity, high energy security: build on strength', posture: 'export promotion', maps_to: 'Preserve' },
+  { id: 'legacy_upgrade', label: 'Upgrade', glossary: 'upgrade', corner: 'bottom right', meaning: 'High opportunity, low energy security: build capability', posture: 'leapfrog', maps_to: 'Catch Up' },
+  { id: 'legacy_exposed', label: 'Exposed', glossary: 'exposed', corner: 'bottom left', meaning: 'Low opportunity, low energy security: source from trusted partners', posture: 'friendshore', maps_to: 'Partner' },
+  { id: 'legacy_stable', label: 'Stable', glossary: 'stable', corner: 'top left', meaning: 'Low opportunity, high energy security: look for value elsewhere', posture: 'alternative value creation', maps_to: 'Watch' },
 ];
-export const QUADRANT_IDS: readonly Quadrant[] = QUADRANTS.map((q) => q.id);
+export const LEGACY_CORNER_IDS: readonly LegacyCorner[] = LEGACY_CORNERS.map((q) => q.id);
+/** The schema-2 key of each corner (grow, upgrade, secure, watch), for reading an older export in tests and tools. */
+export const LEGACY_CORNER_V2_KEY: Readonly<Record<LegacyCorner, 'grow' | 'upgrade' | 'secure' | 'watch'>> = {
+  legacy_grow: 'grow', legacy_upgrade: 'upgrade', legacy_exposed: 'secure', legacy_stable: 'watch',
+};
+/** @deprecated the old name of LEGACY_CORNERS (the ids are the schema-3 legacy_* keys); kept for the Strategic Space view's test. */
+export const QUADRANTS = LEGACY_CORNERS;
 
 export type Third = 'high' | 'middle' | 'low';
 export const THIRDS: readonly Third[] = ['high', 'middle', 'low'];
@@ -250,7 +276,8 @@ export interface CountryEntry {
   file: string | null;
   bytes_gz: number | null;
   n_placed: number | null;
-  quadrants: Record<Quadrant, number> | null;
+  /** schema 3 (was `quadrants`): the counts of the four Legacy OSI corners; null or absent without a sheet */
+  legacy_corners?: Record<LegacyCorner, number> | null;
   memo: MemoEntry | null;
   /** additive 2026-10-12: the companion drivers file (the "why" data of the sectors not carried in the sheet) */
   drivers?: string | null;
@@ -336,9 +363,9 @@ export interface SheetMeta {
 
 /** enum -> display words (config/country_insights.yml); tokens and the UI print enums through it. */
 export interface Words {
-  /** the memo tokens' corner words. The UI prints QUADRANTS labels instead (2026-10-28), since sheets
-   *  exported before then still say Secure and Watch. */
-  quadrant: Record<Quadrant, string>;
+  /** the memo tokens' Legacy OSI corner words (schema 3; was `quadrant`). The UI prints LEGACY_CORNERS
+   *  labels instead (2026-10-28). */
+  legacy_corner: Record<LegacyCorner, string>;
   third: Record<Third, string>;
   policy_third: Record<Third, string>;
   class: Record<AgreementClass, string>;
@@ -355,14 +382,15 @@ export interface Summary {
   n_cells: Fv;
   n_scored: Fv;
   n_placed: Fv;
-  quadrants: Record<Quadrant, Fv>;
+  /** schema 3 (was `quadrants`): the placed sectors in each Legacy OSI corner */
+  legacy_corners: Record<LegacyCorner, Fv>;
   /** the country's median sector on each axis (2026-10-15): the median of the plotted positions (es.pos,
    *  eo.pos) of its placed sectors; the scatter's dashed lines and the corners split here (high = at or
    *  above). v null when nothing is placed. */
   country_median: { es: Fv; eo: Fv };
-  /** upgrade + secure (the two low-energy-security corners) */
+  /** legacy_upgrade + legacy_exposed (the two low-energy-security corners) */
   n_insecure: Fv;
-  /** grow + upgrade */
+  /** legacy_grow + legacy_upgrade */
   n_high_eo: Fv;
   /** placed cell keys by es.pct ascending (lowest Energy Security first); ties by cell order */
   es_order: string[];
@@ -516,11 +544,12 @@ export interface CellFacts {
   label_prose: string;
   es: PillarFacts | null;
   eo: PillarFacts | null;
-  /** both scores rankable: the cell is placed on the scatter and has a quadrant */
+  /** both scores rankable: the cell is placed on the scatter and has a Legacy OSI corner */
   placed: boolean;
-  quadrant: Quadrant | null;
-  /** why it is not placed */
-  quadrant_reason: string | null;
+  /** schema 3 (was `quadrant`): the Legacy OSI corner, null when not placed */
+  legacy_corner: LegacyCorner | null;
+  /** schema 3 (was `quadrant_reason`): why it is not placed */
+  legacy_corner_reason: string | null;
   si: SiFacts;
   priority: { v: Fv; rank: Fv; third: Third | null } | null;
   policy: CellPolicy | null;
@@ -902,7 +931,7 @@ export function checkCountryManifest(x: unknown): string[] {
   if (x.schema !== COUNTRY_SCHEMA) p.add(`manifest.schema: expected '${COUNTRY_SCHEMA}'`);
   if (!isNumber(x.schema_version)) p.add('manifest.schema_version: not a number');
   else if (Math.floor(x.schema_version) > COUNTRY_SCHEMA_VERSION) p.add(`manifest: schema_version ${x.schema_version} needs a newer app`);
-  else if (Math.floor(x.schema_version) < COUNTRY_SCHEMA_VERSION) p.add(`manifest: schema_version ${x.schema_version} is an export from before the six supply-chain stages (this app reads ${COUNTRY_SCHEMA_VERSION})`);
+  else if (Math.floor(x.schema_version) < COUNTRY_SCHEMA_VERSION) p.add(`manifest: schema_version ${x.schema_version} ${olderSchemaWords(x.schema_version)}`);
   for (const k of ['created', 'as_of', 'as_of_label', 'label']) p.str(x[k], `manifest.${k}`);
   for (const k of ['git_commit', 'strategic_bundle_id', 'sector_bundle_id']) p.str(x[k], `manifest.${k}`, true);
   p.bool(x.validated, 'manifest.validated');
@@ -942,8 +971,9 @@ export function checkCountryManifest(x: unknown): string[] {
       if (c.trade_monthly !== null && c.trade_monthly !== undefined && (!isStr(c.trade_monthly) || !/^trade-[A-Z0-9]{3}\.[0-9a-f]{8}\.json$/.test(c.trade_monthly))) {
         p.add(`${at}.trade_monthly: not a monthly trade file name`);
       }
-      if (c.quadrants !== null && c.quadrants !== undefined) {
-        if (!isObj(c.quadrants) || !QUADRANT_IDS.every((q) => isNumber((c.quadrants as Obj)[q]))) p.add(`${at}.quadrants: expected four counts`);
+      if (c.quadrants !== undefined && c.quadrants !== null) p.add(`${at}.quadrants: renamed legacy_corners in schema 3`);
+      if (c.legacy_corners !== null && c.legacy_corners !== undefined) {
+        if (!isObj(c.legacy_corners) || !LEGACY_CORNER_IDS.every((q) => isNumber((c.legacy_corners as Obj)[q]))) p.add(`${at}.legacy_corners: expected four counts`);
       }
     });
   }
@@ -1063,11 +1093,13 @@ export function checkTradeMonthlyDoc(x: unknown, iso3?: string): string[] {
 /** The corner from a position and the split on each axis: high = at or above the split (ties go high).
  *  Country Insights passes the plotted positions (es.pos, eo.pos) and the country's median sector
  *  (countryMedianOf()); the earlier rule passed the scores and the sector's median economy. */
-export function quadrantOf(es: number, esMed: number, eo: number, eoMed: number): Quadrant {
+export function legacyCornerOf(es: number, esMed: number, eo: number, eoMed: number): LegacyCorner {
   const highEo = eo >= eoMed;
   const highEs = es >= esMed;
-  return highEo ? (highEs ? 'grow' : 'upgrade') : highEs ? 'watch' : 'secure';
+  return highEo ? (highEs ? 'legacy_grow' : 'legacy_upgrade') : highEs ? 'legacy_stable' : 'legacy_exposed';
 }
+/** @deprecated the old name of legacyCornerOf. */
+export const quadrantOf = legacyCornerOf;
 
 /** The median of a list (the mean of the two middle values when even); null when empty. */
 function medianOf(xs: number[]): number | null {
@@ -1165,7 +1197,7 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
   if (x.schema !== COUNTRY_FACTS_SCHEMA) p.add(`schema: expected '${COUNTRY_FACTS_SCHEMA}'`);
   if (!isNumber(x.schema_version)) p.add('schema_version: not a number');
   else if (Math.floor(x.schema_version) > COUNTRY_SCHEMA_VERSION) p.add(`schema_version ${x.schema_version} needs a newer app`);
-  else if (Math.floor(x.schema_version) < COUNTRY_SCHEMA_VERSION) p.add(`schema_version ${x.schema_version} is an export from before the six supply-chain stages (this app reads ${COUNTRY_SCHEMA_VERSION})`);
+  else if (Math.floor(x.schema_version) < COUNTRY_SCHEMA_VERSION) p.add(`schema_version ${x.schema_version} ${olderSchemaWords(x.schema_version)}`);
   if (!isStr(x.iso3)) p.add('iso3: not a string');
   const meta = x.meta;
   if (!isObj(meta)) {
@@ -1232,7 +1264,9 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
       const hasEo = checkPillar(p, c.eo, `${at}.eo`);
       if (isCellKey(c.key) && noEs.includes(c.key) && c.es !== null) p.add(`${at}.es: no economy has an Energy Security score in this sector (no_es_cells: ${c.key})`);
       p.bool(c.placed, `${at}.placed`);
-      p.oneOf(c.quadrant, QUADRANT_IDS, `${at}.quadrant`, true);
+      if (c.quadrant !== undefined) p.add(`${at}.quadrant: renamed legacy_corner in schema 3`);
+      p.oneOf(c.legacy_corner, LEGACY_CORNER_IDS, `${at}.legacy_corner`, true);
+      p.str(c.legacy_corner_reason, `${at}.legacy_corner_reason`, true);
       if (c.placed === true) {
         if (!hasEs || !hasEo) p.add(`${at}: placed without both scores`);
         else {
@@ -1242,16 +1276,16 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
           if (es.v === null || eo.v === null || es.med.v === null || eo.med.v === null) p.add(`${at}: placed without values or medians`);
           else if (es.pos === null || eo.pos === null || cmed.es === null || cmed.eo === null) p.add(`${at}: placed without a position on both axes`);
           else {
-            const q = quadrantOf(es.pos, cmed.es, eo.pos, cmed.eo);
-            if (c.quadrant !== q) p.add(`${at}.quadrant: '${String(c.quadrant)}' but the positions and the country's median sector give '${q}'`);
+            const q = legacyCornerOf(es.pos, cmed.es, eo.pos, cmed.eo);
+            if (c.legacy_corner !== q) p.add(`${at}.legacy_corner: '${String(c.legacy_corner)}' but the positions and the country's median sector give '${q}'`);
             for (const [pl, nm] of [[es, 'es'], [eo, 'eo']] as const) {
               if (pl.pos !== null && pl.v !== null && pl.med.v !== null && (pl.pos >= 50) !== (pl.v >= pl.med.v)) p.add(`${at}.${nm}.pos: on the wrong side of 50`);
               if (pl.side !== null && pl.v !== null && pl.med.v !== null && (pl.side === 'above') !== (pl.v >= pl.med.v)) p.add(`${at}.${nm}.side: wrong`);
             }
           }
         }
-      } else if (c.quadrant !== null) p.add(`${at}.quadrant: set on a cell that is not placed`);
-      if (c.quadrant) wordOf('quadrant', String(c.quadrant), `${at}.quadrant`);
+      } else if (c.legacy_corner !== null) p.add(`${at}.legacy_corner: set on a cell that is not placed`);
+      if (c.legacy_corner) wordOf('legacy_corner', String(c.legacy_corner), `${at}.legacy_corner`);
       // SI
       const si = c.si;
       if (!isObj(si)) p.add(`${at}.si: not an object`);
@@ -1369,12 +1403,13 @@ export function checkFactSheet(x: unknown, entry?: CountryEntry): string[] {
         }
       }
     }
-    const qc: Record<Quadrant, number> = { grow: 0, upgrade: 0, secure: 0, watch: 0 };
-    for (const c of placed) if (c.quadrant) qc[c.quadrant]++;
-    if (!isObj(sm.quadrants)) p.add('summary.quadrants: not an object');
-    else for (const q of QUADRANT_IDS) expect(sm.quadrants[q], qc[q], `summary.quadrants.${q}`);
-    expect(sm.n_insecure, qc.upgrade + qc.secure, 'summary.n_insecure');
-    expect(sm.n_high_eo, qc.grow + qc.upgrade, 'summary.n_high_eo');
+    const qc: Record<LegacyCorner, number> = { legacy_grow: 0, legacy_upgrade: 0, legacy_exposed: 0, legacy_stable: 0 };
+    for (const c of placed) if (c.legacy_corner) qc[c.legacy_corner]++;
+    if (sm.quadrants !== undefined) p.add('summary.quadrants: renamed legacy_corners in schema 3');
+    if (!isObj(sm.legacy_corners)) p.add('summary.legacy_corners: not an object');
+    else for (const q of LEGACY_CORNER_IDS) expect(sm.legacy_corners[q], qc[q], `summary.legacy_corners.${q}`);
+    expect(sm.n_insecure, qc.legacy_upgrade + qc.legacy_exposed, 'summary.n_insecure');
+    expect(sm.n_high_eo, qc.legacy_grow + qc.legacy_upgrade, 'summary.n_high_eo');
     const placedKeys = new Set(placed.map((c) => c.key));
     const orderCheck = (name: 'es_order' | 'eo_order', pillar: 'es' | 'eo', dir: 1 | -1) => {
       const xs = sm[name];
@@ -1612,7 +1647,7 @@ export function checkMemoDoc(x: unknown, iso3?: string): string[] {
   if (iso3 && x.iso3 !== iso3) p.add(`memo.iso3: ${String(x.iso3)} is not ${iso3}`);
   for (const k of ['title', 'subtitle', 'label', 'as_of', 'facts_sha256']) p.str(x[k], `memo.${k}`);
   // a schema-1 memo (written on the three-stage sheets; kept hidden as stale) carries the label of its day
-  const prefix = isNumber(x.schema_version) && Math.floor(x.schema_version) < COUNTRY_SCHEMA_VERSION ? MEMO_LABEL_PREFIX_V1 : MEMO_LABEL_PREFIX;
+  const prefix = isNumber(x.schema_version) && Math.floor(x.schema_version) < 2 ? MEMO_LABEL_PREFIX_V1 : MEMO_LABEL_PREFIX;
   if (isStr(x.label) && !x.label.startsWith(prefix)) p.add('memo.label: not the verbatim label');
   if (!Array.isArray(x.summary)) p.add('memo.summary: not an array');
   else x.summary.forEach((it, i) => checkItem(p, it, `memo.summary[${i}]`));

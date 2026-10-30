@@ -28,6 +28,9 @@ import { DIVISION_COLS } from './tables.tsx';
 
 export const AIB_DIVISION_TITLE = 'Trusted holders and gaps, node by node';
 
+/** The gaps of the extended vocabulary (schema 2): in the legend only when the division data carry them. */
+const OPTIONAL_GAPS = new Set<string>(['insufficient_allied_capacity', 'excessive_concentration']);
+
 /** An Allied Industrial Base node in a cell, as the page names and links it. */
 export interface PostureLinkedNode {
   id: string;
@@ -198,7 +201,7 @@ export function AibDivisionCard({
         csv={csv}
         legend={
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-paper-dim" aria-label="Legend">
-            {GAP_ORDER.map((g) => (
+            {GAP_ORDER.filter((g) => !OPTIONAL_GAPS.has(g) || c.division.some((d) => d.gap === g || d.gaps.includes(g))).map((g) => (
               <span key={g} className="inline-flex items-center gap-1.5">
                 <span aria-hidden="true" className="inline-block h-4 w-4 rounded-[3px] bg-ink-900" style={{ boxShadow: `inset 0 0 0 2px ${g === 'none' ? 'rgb(255 255 255 / 0.15)' : GAP_RING[g]}` }} />
                 {GAP_LABEL[g]}

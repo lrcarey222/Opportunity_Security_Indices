@@ -1,32 +1,23 @@
 // The section navigation of a Country profile (spec_country.md A4.2): <nav aria-label="Sections of this
 // page">. At >= 1280 px a 200 px sticky left rail with scrollspy (the profile lays out
 // `xl:grid-cols-[200px_minmax(0,1fr)]`); below, a sticky row of section chips under the header that
-// scrolls horizontally. Links are in-page anchors (#glance ... #notes). Country-owned (not imported from
-// sector/chrome).
+// scrolls horizontally. Links are in-page anchors (#strategy ... #evidence). Country-owned (not imported
+// from sector/chrome).
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
+import { STRATEGY_SECTIONS } from '../derive/strategyPage.ts';
 
 export interface NavSection {
   id: string;
   label: string;
 }
 
-// IA refactor 2026-10-16 (brief s.11-12): the profile's sections; old ids (space, priorities, why,
-// partners) stay as anchors inside them. Since 2026-10-29 (design L2) the first section is Strategic
-// posture (#posture, a Section after the "at a glance" tiles), then Security and opportunity (#position, the
-// corners scatter; "Strategic position" until 2026-10-28, renamed so it does not clash with the posture).
-export const PROFILE_SECTIONS: readonly NavSection[] = [
-  { id: 'posture', label: 'Strategic posture' },
-  { id: 'position', label: 'Security and opportunity' },
-  { id: 'opportunities', label: 'Opportunities & risks' },
-  { id: 'sectors', label: 'Sector position' },
-  { id: 'policy', label: 'Policy & climate' },
-  { id: 'partnerships', label: 'Partnerships' },
-  { id: 'aib-role', label: 'Allied Industrial Base role' },
-  { id: 'memo', label: 'Memo' },
-  { id: 'notes', label: 'Data notes' },
-];
+// The seven sections of the canonical framework (spec XI.1, design 4, 2026-10-29): Strategy, Need, Prize &
+// Position, Choices, Policy Alignment, Allied Strategy, Evidence & Methodology. The old ids stay reachable
+// as aliases (derive/strategyPage.ts); the Legacy OSI blocks (corners, Strategic Index, sector position)
+// sit in Evidence & Methodology, and the memo is a header action, so neither has a nav entry.
+export const PROFILE_SECTIONS: readonly NavSection[] = STRATEGY_SECTIONS.map(({ id, label }) => ({ id, label }));
 
 /** The id of the topmost section in the reading band (IntersectionObserver; the first id without it). */
 export function useSectionSpy(ids: readonly string[]): string | null {
@@ -53,7 +44,7 @@ export function useSectionSpy(ids: readonly string[]): string | null {
   return active;
 }
 
-/** `footer`: shown under the rail on wide screens (the profile's Perspective tag). */
+/** `footer`: shown under the rail on wide screens. */
 export function SectionNav({ sections = PROFILE_SECTIONS, rail, footer }: { sections?: readonly NavSection[]; rail?: boolean; footer?: ReactNode }) {
   const xl = useMediaQuery('(min-width: 1280px)');
   const active = useSectionSpy(sections.map((s) => s.id));

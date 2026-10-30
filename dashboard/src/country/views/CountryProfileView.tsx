@@ -1,27 +1,30 @@
-// The Country profile /countries/:iso3 (spec_country.md A4.2; IA refactor 2026-10-16, brief s.9-12 and
-// s.25, plan.md 5.3): one economy's strategic position. Loads its fact sheet (and, only when a picked
-// sector needs it, the companion drivers file) and the Allied Industrial Base document, reads the URL
-// state (cell, partner, all, ptab) and renders: the head, the Perspective control (the four dials), then
-// beside the section nav the "at a glance" tiles and the sections, all at the six supply-chain stages:
-// Strategic posture (#posture, design L2: the posture bundle's card in a real Section, its counts in the
-// first tile), Security and opportunity (#position; "Strategic position" until 2026-10-28), Opportunities &
-// risks, Sector position, Policy & climate, Partnerships, Role in the Allied Industrial Base, the memo and
-// the data notes. States (A5): unknown ISO3 -> the landing with
-// a notice; no index data -> the shell with a notice; not rankable -> every section with its "not
-// available" words.
+// The Country profile /countries/:iso3 (spec_country.md A4.2; IA refactor 2026-10-16; redesigned 2026-10-29
+// around the canonical framework, spec XI-XIX, design 4 and 5b): one economy's strategy. Loads its fact sheet
+// (and, only when a picked sector needs it, the companion drivers file), the Allied Industrial Base document
+// and the strategic position framework (the posture core and the economy's detail document), reads the URL
+// state (cell, partner, all, ptab, scn; node, the shared selection) and renders the head (name, the generated
+// strategy sentence, data freshness, memo and export actions) and, beside the section nav, seven sections:
+//   1 Strategy, 2 Need, 3 Prize & Position, 4 Choices, 5 Policy Alignment, 6 Allied Strategy
+//   (views/profile/StrategySections.tsx), 7 Evidence & Methodology with the Legacy OSI framework
+//   (views/profile/EvidenceSection.tsx).
+// One drawer (posture/PostureNodeDrawer) serves every entry point through ?node=<Tech>|<Stage> (design D8);
+// a value the data do not know is reported in "Ignored in the link". Old anchors reach their new place:
+// alias spans in the sections, and the old blocks now in closed disclosures (the Legacy OSI results, the
+// generic partnership material) open on load (derive/strategyPage.ts hashPlan). States (A5): unknown ISO3 ->
+// the landing with a notice; no index data -> the shell with a notice; not rankable -> the Legacy OSI blocks
+// say so.
 //
-// The model (engine) is mounted only when needed: the URL carries dial settings, the reader opens the
-// Perspective or a disclosure that shows the model. Until then everything renders from the fact sheet
-// (the NEIS baseline) and the engine never starts. Once mounted, one EngineScope wraps the whole body
-// (one run per page) with the same body as its fallback, and the disclosures' open state lives here so
-// it survives the switch. The country's own URL writes keep every other key (dials, the model's view).
+// The model (engine) is mounted only for the Legacy OSI results (the only blocks that follow the Perspective
+// dials), and only when needed: the URL carries dial settings, or the reader opens the Perspective or a
+// disclosure that shows the model. Sections 1-6 never read it. The disclosures' open state lives here, so it
+// survives the engine mounting; the country's own URL writes keep every other key (dials, node, the model's view).
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { GlossaryVarsProvider } from '../../components/glossaryVars.tsx';
 import { Loading, Notice, PageHead } from '../../components/ui.tsx';
 import { useAibManifest, useCompactsDoc } from '../../aib/data/hooks.ts';
-import { EngineScope } from '../../shell/EngineScope.tsx';
+import { countryCells, NODE_KEY, PostureNodeDrawer, useNodeSelection, usePostureCore, usePostureDetail } from '../../posture/index.ts';
 import { appendSearch, scenarioPairs, splitSearch } from '../../state/url.ts';
 import { useTitle } from '../../shell/title.ts';
 import { Redirect } from '../../shell/Redirect.tsx';
@@ -31,25 +34,18 @@ import { useDriversDoc, useFactSheet } from '../data/hooks.ts';
 import { countryStore } from '../data/store.ts';
 import { SectionNav } from '../chrome/SectionNav.tsx';
 import { defaultCell } from '../derive/model.ts';
-import { sectorCountryLink } from '../derive/links.ts';
+import { postureSectorLink, sectorCountryLink } from '../derive/links.ts';
+import { hashPlan, LEGACY_FOLD } from '../derive/strategyPage.ts';
+import { cap, proseName } from '../derive/text.ts';
 import { rememberCountry } from '../nav.ts';
 import { COUNTRY_KEY_ORDER, parseCountrySearch, serializeCountrySearch, type CountryUrlState } from '../url.ts';
-import { Glance, ProfileHead } from './profile/Header.tsx';
-import { SpaceSection } from './profile/SpaceSection.tsx';
-import { OpportunitiesSection } from './profile/OpportunitiesSection.tsx';
-import { SectorPositionSection } from './profile/SectorPositionSection.tsx';
-import { PolicyClimateSection } from './profile/PrioritiesSection.tsx';
-import { PartnershipsSection } from './profile/PartnersSection.tsx';
-import { AibRoleSection } from './profile/AibRoleSection.tsx';
-import { DataNotes, MemoCard } from './profile/MemoNotes.tsx';
-import { EngineSi, PerspectiveControl, PerspectiveTag } from './profile/Perspective.tsx';
-import { ProfileProvider, type ProfileCtx } from './profile/common.tsx';
-import { PostureSection } from './profile/PostureSection.tsx';
+import { ProfileHead } from './profile/Header.tsx';
+import { EvidenceSection } from './profile/EvidenceSection.tsx';
+import { AlliedSection, ChoicesSection, NeedSection, PolicyAlignmentSection, PrizePositionSection, StrategySection } from './profile/StrategySections.tsx';
+import { ProfileProvider, type CountryPosture, type ProfileCtx } from './profile/common.tsx';
 
-/** The query keys the profile owns (the model's parser ignores them and its URL writes keep them). */
-const HOST_KEYS: readonly string[] = [...COUNTRY_KEY_ORDER];
-/** Old anchors that now sit inside a closed disclosure: the hash opens it. */
-const FOLD_HASH: Readonly<Record<string, string>> = { why: 'why' };
+/** The query keys the profile owns (the model's parser ignores them and its URL writes keep them): the country's own and the node selection. */
+const HOST_KEYS: readonly string[] = [...COUNTRY_KEY_ORDER, NODE_KEY];
 
 export default function CountryProfileView() {
   const params = useParams();
@@ -97,11 +93,11 @@ function Profile({ iso3 }: { iso3: string }) {
     [loc.search, sheet],
   );
   const state = parsed.state;
-  // the country's keys first, then every other key of the URL as it is (the dials, the model's view)
+  // the country's keys first, then every other key of the URL as it is (the node, the dials, the model's view)
   const write = useCallback(
     (next: Partial<CountryUrlState>) => {
       const s = { ...state, ...next };
-      const other = [...new URLSearchParams(splitSearch(loc.search, HOST_KEYS).own)];
+      const other = [...new URLSearchParams(splitSearch(loc.search, COUNTRY_KEY_ORDER).own)];
       nav({ pathname: loc.pathname, search: appendSearch(serializeCountrySearch(s), other), hash: loc.hash }, { replace: true, preventScrollReset: true });
     },
     [state, nav, loc.pathname, loc.search, loc.hash],
@@ -116,28 +112,37 @@ function Profile({ iso3 }: { iso3: string }) {
     [nav, loc.pathname, loc.search, loc.hash],
   );
 
-  // the model: mounted once wanted (or when the link carries dial settings), then kept
+  // the model: mounted once wanted (or when the link carries dial settings), then kept; it wraps only the Legacy OSI results
   const customInUrl = scenarioPairs(loc.search).length > 0;
   const [engineWanted, setEngineWanted] = useState(customInUrl);
   const engineOn = engineWanted || customInUrl;
   const wantEngine = useCallback(() => setEngineWanted(true), []);
 
-  // the disclosures' open state (lifted: survives the engine mounting)
+  // the disclosures' open state (lifted: survives the engine mounting). An old anchor whose block now sits in a
+  // closed disclosure opens it; a link with dial settings opens the Legacy OSI results (the dials apply there)
   const [open, setOpenMap] = useState<Readonly<Record<string, boolean>>>(() => {
-    const f = FOLD_HASH[loc.hash.slice(1)];
-    return f ? { [f]: true } : {};
+    const o: Record<string, boolean> = {};
+    for (const f of hashPlan(loc.hash).folds) o[f] = true;
+    if (customInUrl) o[LEGACY_FOLD] = true;
+    return o;
   });
   const isOpen = useCallback((id: string) => !!open[id], [open]);
   const setOpen = useCallback((id: string, v: boolean) => setOpenMap((m) => ({ ...m, [id]: v })), []);
-  // the open node of the Strategic posture card (lifted for the same reason)
-  const [pcell, setPcell] = useState<string | null>(null);
-  const reveal = useCallback(
-    (id: string) => {
-      if (id === 'perspective') setEngineWanted(true);
-      setOpenMap((m) => ({ ...m, [id]: true }));
-      window.setTimeout(() => (document.getElementById(`fold-${id}`) ?? document.getElementById(id))?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }), 60);
-    },
-    [],
+  const reveal = useCallback((id: string) => {
+    const plan = hashPlan(`#${id}`);
+    if (id === 'perspective') setEngineWanted(true);
+    setOpenMap((m) => ({ ...m, ...Object.fromEntries([...plan.folds, id].map((f) => [f, true])) }));
+    window.setTimeout(() => (document.getElementById(`fold-${id}`) ?? document.getElementById(plan.target ?? id) ?? document.getElementById(id))?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }), 60);
+  }, []);
+
+  // the strategic position framework: the core (shared with the other pages), the economy's detail, the ?node= selection
+  const core = usePostureCore();
+  const detail = usePostureDetail(iso3);
+  const node = useNodeSelection(core.data?.meta ?? null);
+  const cells = useMemo(() => (core.data ? countryCells(core.data, iso3) : []), [core.data, iso3]);
+  const posture = useMemo<CountryPosture>(
+    () => ({ status: core.status, error: core.error, retry: core.retry, core: core.data, cells, detail: detail.data, node }),
+    [core.status, core.error, core.retry, core.data, cells, detail.data, node],
   );
 
   // the Allied Industrial Base document (fetched once and shared with the AIB pages)
@@ -152,11 +157,12 @@ function Profile({ iso3 }: { iso3: string }) {
   const needDrivers = !!sel && sel.drivers_in_sheet === false;
   const drv = useDriversDoc(entry, sheet, needDrivers);
 
-  // follow a deep link's #anchor once the sheet has rendered (#aib-role, #memo, an old #why ...)
+  // follow a deep link's #anchor once the sheet has rendered (#allied, #legacy-osi, an old #aib-role, #why ...)
   useEffect(() => {
     if (!sheet || !loc.hash) return;
     const id = loc.hash.slice(1);
-    (document.getElementById(FOLD_HASH[id] ? `fold-${FOLD_HASH[id]}` : id) ?? document.getElementById(id))?.scrollIntoView?.({ block: 'start' });
+    const plan = hashPlan(loc.hash);
+    (document.getElementById(plan.target ?? id) ?? document.getElementById(id))?.scrollIntoView?.({ block: 'start' });
     // only when this sheet first renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheet]);
@@ -204,53 +210,47 @@ function Profile({ iso3 }: { iso3: string }) {
     setStrategicView,
     aib,
     customInUrl,
-    pcell,
-    setPcell,
+    posture,
   };
-  const body = (
-    <div className={PAGE}>
-      {parsed.problems.length > 0 && (
-        <div className="mb-4">
-          <Notice kind="warning" title="Ignored in the link">
-            {parsed.problems.join('; ')}
-          </Notice>
-        </div>
-      )}
-      <ProfileHead manifest={manifest} />
-      <PerspectiveControl />
-      <div className="xl:grid xl:grid-cols-[200px_minmax(0,1fr)] xl:gap-8">
-        <SectionNav footer={<PerspectiveTag />} />
-        <div className="min-w-0 space-y-14">
-          {sheet.meta.status === 'non_rankable' && (
-            <Notice kind="info" title="Scores shown but not ranked">
-              {sheet.meta.country}&apos;s index scores are shown but not compared with other economies: {sheet.meta.status_reason ?? 'most of its data are filled in'}.
-              The charts that compare sectors are empty (the Strategic posture section is computed separately); the tables list every value with its reason.
-            </Notice>
-          )}
-          <Glance />
-          <PostureSection />
-          <SpaceSection />
-          <OpportunitiesSection />
-          <SectorPositionSection />
-          <PolicyClimateSection />
-          <PartnershipsSection />
-          <AibRoleSection />
-          <MemoCard />
-          <DataNotes />
-        </div>
-      </div>
-    </div>
-  );
+  const problems = node.problem ? [...parsed.problems, node.problem] : parsed.problems;
+  const name = proseName(sheet.meta.country);
   return (
     <GlossaryVarsProvider vars={{ n_core: String(manifest.counts.core), n_partner: String(manifest.counts.partners), un_window: sheet.meta.un_window }}>
       <ProfileProvider value={ctx}>
-        {engineOn ? (
-          <EngineScope hostKeys={HOST_KEYS} fallback={body}>
-            <EngineSi iso3={sheet.iso3}>{body}</EngineSi>
-          </EngineScope>
-        ) : (
-          body
-        )}
+        <div className={PAGE}>
+          {problems.length > 0 && (
+            <div className="mb-4">
+              <Notice kind="warning" title="Ignored in the link">
+                {problems.join('; ')}
+              </Notice>
+            </div>
+          )}
+          {customInUrl && (
+            <div className="mb-4">
+              <Notice kind="info" title="A custom perspective in the link">
+                The link sets the Perspective dials. They re-weight only the Legacy OSI indices, so they are applied in{' '}
+                <a className="link" href="#legacy-osi">
+                  Evidence &amp; Methodology: Legacy OSI framework
+                </a>
+                ; the strategy does not change with them.
+              </Notice>
+            </div>
+          )}
+          <ProfileHead manifest={manifest} />
+          <div className="xl:grid xl:grid-cols-[200px_minmax(0,1fr)] xl:gap-8">
+            <SectionNav />
+            <div className="min-w-0 space-y-14">
+              <StrategySection />
+              <NeedSection />
+              <PrizePositionSection />
+              <ChoicesSection />
+              <PolicyAlignmentSection />
+              <AlliedSection />
+              <EvidenceSection engineOn={engineOn} hostKeys={HOST_KEYS} />
+            </div>
+          </div>
+          <PostureNodeDrawer iso3={sheet.iso3} name={cap(name)} selected={node.selected} onClose={() => node.select(null)} sectorHref={(tech, stage) => postureSectorLink(tech, stage, sheet.iso3)} />
+        </div>
       </ProfileProvider>
     </GlossaryVarsProvider>
   );

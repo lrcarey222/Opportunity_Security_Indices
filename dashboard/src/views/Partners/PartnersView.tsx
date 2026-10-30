@@ -494,7 +494,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
       {!embedded && <PartnersTitle />}
       {!embedded && (
       <PageHead
-        eyebrow="Partners"
+        eyebrow="Legacy OSI framework · Partners"
         title="Partners"
         lede={
           <>

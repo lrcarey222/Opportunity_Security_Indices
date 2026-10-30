@@ -6,7 +6,7 @@
 // app.test.tsx; the chart width is set through a stubbed clientWidth.
 
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -169,7 +169,7 @@ describe('six stage panels, wide and narrow', () => {
   }, 120_000);
 });
 
-describe('no three-stage or paper-baseline words in the Strategic views', () => {
+describe('no three-stage or paper-baseline words in the Strategic views; each is labelled Legacy OSI framework', () => {
   for (const path of ['/overview', '/country', '/space', '/strategic', '/partners', '/overview?h=80&show=change', '/strategic?h=80', '/partners?h=80&show=change', '/data']) {
     it(path, async () => {
       width = 1200;
@@ -181,6 +181,24 @@ describe('no three-stage or paper-baseline words in the Strategic views', () => 
       // the page's own text has rendered (charts' captions, tables), not just its frame
       expect((main.textContent ?? '').length).toBeGreaterThan(1500);
       expect(main.textContent ?? '').not.toMatch(LEGACY);
+      if (!path.startsWith('/data')) {
+        // labelled "Legacy OSI framework" (design D10, section 5): the band says it is not a current recommendation and links a
+        // Country profile's Legacy OSI sub-section (the default profile when none was visited) and the Methods chapter; the eyebrow says it too
+        const band = screen.getByTestId('advanced-band');
+        expect(within(band).getByText('Legacy OSI framework', { selector: '.tag' })).toBeTruthy();
+        expect(band.textContent).toContain('It is not a current recommendation');
+        expect(within(band).getByRole('link', { name: /^Legacy OSI on a Country profile/ }).getAttribute('href')).toBe('/countries/USA#legacy-osi');
+        expect(within(band).getByRole('link', { name: 'Methods: the Legacy OSI framework' }).getAttribute('href')).toBe('/methods#legacy-osi');
+        expect([...main.querySelectorAll('.eyebrow')].some((e) => /^Legacy OSI framework · /.test(e.textContent ?? ''))).toBe(true);
+        // a one-economy view links that economy's Country Strategy Map and its Legacy OSI results
+        if (/^\/(country|strategic|partners)/.test(path)) {
+          const link = screen.getByTestId('country-insights-link');
+          const hrefs = within(link).getAllByRole('link').map((a) => a.getAttribute('href') ?? '');
+          expect(hrefs).toHaveLength(2);
+          expect(hrefs[0]).toMatch(/^\/countries\/[A-Z]{3}#strategy$/);
+          expect(hrefs[1]).toMatch(/^\/countries\/[A-Z]{3}#legacy-osi$/);
+        }
+      }
     }, 120_000);
   }
 

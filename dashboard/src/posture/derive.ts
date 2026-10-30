@@ -1,20 +1,29 @@
-// Pure derivations for the posture cards: one country's cells, posture counts (and the words of a page's
-// tile), the generated takeaway sentences, the trade freshness line, the AIB header, the node of the
-// Sector card (?pnode, checked), and the rows of the table twins and CSVs with their provenance (source,
-// as_of = the core's creation date, git_commit last). No React here.
+// Pure derivations for the posture cards: one country's cells, the counts of the six verbs (and the words of
+// the counts line and a page's tile), the Sector and AIB takeaways, the trade freshness line, the AIB header,
+// the node of the Sector card (?pnode, checked), and the rows of the table twins and CSVs with their
+// provenance (source, as_of = the core's creation date, git_commit last). The strategy sentence is in
+// strategy.ts, the Country sections' rows in sections.ts. No React here.
 
 import { rowsToCsv } from '../lib/csv.ts';
-import { DEPLOYMENT_STAGE, isLegacyStage, isProducingStage, legacyStageTargetName, legacyStageWords } from '../lib/stages.ts';
-import type { DivisionNode, PostureCell, PostureCode, PostureCore, PostureMeta } from './contract.ts';
-import { ALIGNMENT_LABEL, GAP_LABEL, MODE_LABEL, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE, POSTURE_LABEL, POSTURE_ORDER, QUADRANT_LABEL, RATIONALE_LABEL } from './grammar.ts';
+import { DEPLOYMENT_STAGE, isLegacyStage, isProducingStage, legacyStageTargetName, legacyStageWords, stageDisplay } from '../lib/stages.ts';
+import type { DivisionNode, PostureCell, PostureCore, PostureMeta } from './contract.ts';
+import {
+  ALIGNMENT_LABEL, choiceWord, DEPLOY_MODE_LABEL, deliveryWords, EVIDENCE_LABEL, flagWords, GAP_LABEL, MODE_LABEL, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE, NEED_TYPE_LABEL,
+  PATHWAY_LABEL, POSTURE_LABEL, RATIONALE_LABEL, VERB_LABEL, VERB_ORDER, verbOf,
+} from './grammar.ts';
 
+/** The counts of one set of nodes: the three families, not assessed, and the six verbs. */
 export interface PostureCounts {
   S: number;
   C: number;
   D: number;
-  catch_up: number;
+  /** not assessed */
+  N: number;
+  secure: number;
   preserve: number;
+  catch_up: number;
   partner: number;
+  accelerate: number;
   watch: number;
 }
 
@@ -34,45 +43,26 @@ export function cellKeyParts(key: string | null | undefined, meta: Pick<PostureM
   return meta.techs.includes(tech) && meta.stages.includes(stage) ? { tech, stage } : null;
 }
 
-export function countPostures(cells: PostureCell[]): PostureCounts {
-  const n: PostureCounts = { S: 0, C: 0, D: 0, catch_up: 0, preserve: 0, partner: 0, watch: 0 };
+export function countPostures(cells: readonly PostureCell[]): PostureCounts {
+  const n: PostureCounts = { S: 0, C: 0, D: 0, N: 0, secure: 0, preserve: 0, catch_up: 0, partner: 0, accelerate: 0, watch: 0 };
   for (const c of cells) {
     n[c.posture]++;
-    if (c.mode) n[c.mode]++;
-    else if (c.posture === 'D' && c.quadrant === 'watch') n.watch++;
+    const v = verbOf(c);
+    if (v) n[v]++;
   }
   return n;
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-const listAnd = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+export const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
+export const listAnd = (xs: readonly string[]): string => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
-/** The Country view's one-sentence takeaway. */
-export function countryTakeaway(name: string, cells: PostureCell[]): string {
-  if (!cells.length) return `${name} has no classified supply-chain nodes.`;
-  const n = countPostures(cells);
-  const secure = cells.filter((c) => c.posture === 'S');
-  const byTech = (xs: PostureCell[]) => {
-    const m = new Map<string, number>();
-    for (const c of xs) m.set(c.tech, (m.get(c.tech) ?? 0) + 1);
-    return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([t]) => t);
+/** The counts line (spec XI.6): the six verbs first, then the three families and the nodes not assessed. */
+export function strategyCountsText(n: PostureCounts): { verbs: string; families: string; notAssessed: string | null } {
+  return {
+    verbs: VERB_ORDER.map((v) => `${n[v]} ${VERB_LABEL[v]}`).join(' · '),
+    families: `${n.S} ${POSTURE_LABEL.S} · ${n.C} ${POSTURE_LABEL.C} · ${n.D} ${POSTURE_LABEL.D}`,
+    notAssessed: n.N ? `${n.N} not assessed` : null,
   };
-  const parts: string[] = [];
-  if (secure.length) {
-    const nodes = secure.slice(0, 2).map((c) => `${c.tech} ${c.stage.toLowerCase()}`);
-    const why = new Map<string, number>();
-    for (const c of secure) if (c.rationale) why.set(RATIONALE_LABEL[c.rationale].toLowerCase(), (why.get(RATIONALE_LABEL[c.rationale].toLowerCase()) ?? 0) + 1);
-    const whyText = [...why.entries()].sort((a, b) => b[1] - a[1]).map(([r, k]) => (why.size > 1 ? `${k} ${r}` : r)).join(', ');
-    parts.push(`secure ${plural(n.S, 'node')} (${listAnd(secure.length > 2 ? [...nodes, `${secure.length - 2} more`] : nodes)}${whyText ? `; ${whyText}` : ''})`);
-  }
-  const modes = (['partner', 'catch_up', 'preserve'] as const).filter((m) => n[m] > 0).sort((a, b) => n[b] - n[a]);
-  if (modes.length) {
-    const techs = byTech(cells.filter((c) => c.posture === 'C')).slice(0, 2);
-    const mix = modes.map((m) => `${n[m]} ${MODE_LABEL[m].toLowerCase()}`).join(', ');
-    parts.push(`compete in ${plural(n.C, 'node')} (${mix}; most in ${listAnd(techs)})`);
-  }
-  if (!parts.length) return `${name} should deploy openly in all ${plural(n.D, 'node')}: none shows the need or opportunity that would justify intervention.`;
-  return `${name} should ${parts.join(', ')} and deploy openly in the other ${n.D}.`;
 }
 
 /** The Sector view's takeaway for one technology x stage node across countries. */
@@ -80,18 +70,23 @@ export function sectorTakeaway(tech: string, stage: string, cells: PostureCell[]
   const n = countPostures(cells);
   const node = `${tech} ${stage.toLowerCase()}`;
   if (!cells.length) return `No country is classified in ${node}.`;
-  if (stage === DEPLOYMENT_STAGE && n.D === cells.length) {
-    return `In ${node}, every country should deploy openly: deployment is where the technology is used, and its supply risks are read at the stages that make or supply it.`;
+  if (stage === DEPLOYMENT_STAGE) {
+    const bits: string[] = [];
+    if (n.S) bits.push(`${plural(n.S, 'country', 'countries')} must secure it`);
+    if (n.accelerate) bits.push(`${n.accelerate} should accelerate deployment`);
+    if (n.watch) bits.push(`${n.watch} need no acceleration (watch)`);
+    if (n.N) bits.push(`${n.N} are not assessed`);
+    return `In ${node}, ${listAnd(bits)}.`;
   }
   const top = (m: 'catch_up' | 'preserve' | 'partner') =>
-    cells.filter((c) => c.mode === m).sort((a, b) => (b.opp ?? 0) - (a.opp ?? 0)).slice(0, 2).map((c) => names[c.iso3] ?? c.iso3);
+    cells.filter((c) => c.mode === m).sort((a, b) => (b.prize ?? 0) - (a.prize ?? 0)).slice(0, 2).map((c) => names[c.iso3] ?? c.iso3);
   const bits: string[] = [];
   if (n.S) bits.push(`${plural(n.S, 'country', 'countries')} must secure it`);
   // the two named countries are the whole group only when it has no more than two; else they lead it
   if (n.preserve) bits.push(`${n.preserve} hold an advantage to preserve (${n.preserve > 2 ? 'led by ' : ''}${listAnd(top('preserve'))})`);
-  if (n.catch_up) bits.push(`${n.catch_up} have the need and opportunity to catch up`);
-  if (n.partner) bits.push(`${n.partner} need it without the opportunity, and should partner`);
-  if (!bits.length) return `In ${node}, no country shows the need or opportunity that would justify intervention: deploy openly.`;
+  if (n.catch_up) bits.push(`${n.catch_up} have the prize and a credible pathway to catch up`);
+  if (n.partner) bits.push(`${n.partner} need it without a domestic case, and should partner`);
+  if (!bits.length) return `In ${node}, no country shows the need, prize and position that would justify intervention: watch.`;
   return `In ${node}, ${listAnd(bits)}.`;
 }
 
@@ -118,10 +113,14 @@ export function aibTakeaway(division: DivisionNode[], tech: string | null): stri
   if (!gaps.length) return `Every node that countries rely on partners for ${scope} has a credible trusted holder and backups.`;
   return `${gaps.length} of the ${plural(nodes.length, 'node')} that countries rely on partners for ${scope} ${gaps.length === 1 ? 'has' : 'have'} a gap; the most pressing is ${w.tech} ${w.stage.toLowerCase()} (${gapWord(w)}), relied on by ${plural(demand, 'country', 'countries')}.`;
 }
-const SEV: Record<string, number> = { no_trusted_supplier: 0, single_point_of_failure: 1, insufficient_redundancy: 2, weak_evidence: 3, none: 4 };
-const sev = (d: DivisionNode) => SEV[d.gap] ?? 4;
+const SEV: Record<string, number> = {
+  no_trusted_supplier: 0, single_point_of_failure: 1, excessive_concentration: 2, insufficient_allied_capacity: 3, insufficient_redundancy: 3, weak_evidence: 4, none: 5,
+};
+const sev = (d: DivisionNode) => SEV[d.gap] ?? 5;
 function gapWord(d: DivisionNode): string {
-  return d.gap === 'no_trusted_supplier' ? 'no trusted supplier' : d.gap === 'single_point_of_failure' ? `${d.primary ?? 'one holder'} is a single point of failure` : d.gap === 'insufficient_redundancy' ? 'too few trusted holders' : 'weak evidence';
+  if (d.gap === 'single_point_of_failure') return `${d.primary ?? 'one holder'} is a single point of failure`;
+  if (d.gap === 'insufficient_redundancy') return 'too few trusted holders';
+  return GAP_LABEL[d.gap].toLowerCase();
 }
 
 /** The trade freshness line shared by the three views. */
@@ -133,12 +132,13 @@ export function freshnessLine(meta: PostureCore['meta']): { benchmark: string; s
   };
 }
 
-export function postureWord(p: PostureCode, mode: PostureCell['mode']): string {
-  return p === 'C' && mode ? `${POSTURE_LABEL.C} · ${MODE_LABEL[mode]}` : POSTURE_LABEL[p];
-}
-
 export function pct(v: number | null | undefined, digits = 0): string {
   return v === null || v === undefined || !Number.isFinite(v) ? '—' : `${(v * 100).toFixed(digits)}%`;
+}
+
+/** A 0-1 score as 0-100 ("92"), the Need ranking's scale; "—" when not measured. */
+export function score100(v: number | null | undefined): string {
+  return v === null || v === undefined || !Number.isFinite(v) ? '—' : String(Math.round(v * 100));
 }
 
 // ---- names, stages and the counts of a page's tile --------------------------------------------------------
@@ -153,11 +153,11 @@ export function producingStagesOf(stages: readonly string[]): string[] {
   return stages.filter(isProducingStage);
 }
 
-/** The words of a posture-counts tile: "Secure 1 · Compete 2 · Deploy 63" and the Compete mix. */
+/** The words of a posture-counts tile: "Secure 1 · Compete 2 · Deploy 63" and the six verbs. */
 export function postureCountsText(n: PostureCounts): { value: string; sub: string } {
   return {
-    value: POSTURE_ORDER.map((p) => `${POSTURE_LABEL[p]} ${n[p]}`).join(' · '),
-    sub: `Compete: ${(['preserve', 'catch_up', 'partner'] as const).map((m) => `${n[m]} ${MODE_LABEL[m].toLowerCase()}`).join(' · ')}`,
+    value: `${POSTURE_LABEL.S} ${n.S} · ${POSTURE_LABEL.C} ${n.C} · ${POSTURE_LABEL.D} ${n.D}${n.N ? ` · ${n.N} not assessed` : ''}`,
+    sub: strategyCountsText(n).verbs,
   };
 }
 
@@ -219,7 +219,7 @@ export function parsePostureNode(
     return bad(words, tech);
   }
   if (!offered.includes(stage)) {
-    return bad(stage === DEPLOYMENT_STAGE ? `${stage} is left out here: every country deploys openly there` : `${stage || 'an empty name'} is not a supply-chain stage`, tech);
+    return bad(stage === DEPLOYMENT_STAGE ? `${stage} is left out here: its choice reads deployment need (Accelerate or Watch) and it has no Industrial Opportunity` : `${stage || 'an empty name'} is not a supply-chain stage`, tech);
   }
   return { tech, stage, problem: null };
 }
@@ -257,50 +257,70 @@ export interface PostureRow {
   /** coalition tier: "core", "partner", or null */
   tier: string | null;
   tech: string;
+  /** the stage id (the data vocabulary) */
   stage: string;
+  /** the stage's display name ("Refining & Processing") */
+  stageName: string;
   /** false: the node has no posture for this economy (kept, never dropped) */
   classified: boolean;
-  posture: PostureCode | null;
+  posture: PostureCell['posture'] | null;
+  /** "Secure", "Compete", "Deploy", "Not assessed" */
   postureWord: string | null;
+  /** "Compete · Preserve" ... */
+  choice: string | null;
   mode: string | null;
+  deployMode: string | null;
   rationale: string | null;
-  quadrant: string | null;
+  needType: string | null;
   need: number | null;
-  opp: number | null;
+  supplyChainNeed: number | null;
+  deploymentNeed: number | null;
+  prize: number | null;
   cp: number | null;
   share: number | null;
+  pathway: string | null;
   alignment: string | null;
+  alignmentConfidence: string | null;
   evidence: string | null;
+  confidence: string | null;
   momentum: string | null;
   partner1: string | null;
   partner1Name: string | null;
   partnerGap: boolean | null;
   borderline: string | null;
   flag: string | null;
-  /** need and opportunity are both measured, so the node's scatter places it */
+  /** need and prize are both measured, so the Sector scatter places it */
   plotted: boolean;
 }
 
 function postureRow(key: string, iso3: string, tech: string, stage: string, c: PostureCell | null, names: Record<string, string>, tiers: Record<string, string>): PostureRow {
   const tier = tiers[iso3];
   return {
-    key, iso3, country: names[iso3] ?? iso3, tier: tier === 'core' || tier === 'partner' ? tier : null, tech, stage,
+    key, iso3, country: names[iso3] ?? iso3, tier: tier === 'core' || tier === 'partner' ? tier : null, tech, stage, stageName: stageDisplay(stage),
     classified: c !== null,
     posture: c?.posture ?? null,
     postureWord: c ? POSTURE_LABEL[c.posture] : null,
+    choice: c ? choiceWord(c) : null,
     mode: c?.posture === 'C' && c.mode ? MODE_LABEL[c.mode] : null,
+    deployMode: c?.posture === 'D' && c.deployMode ? DEPLOY_MODE_LABEL[c.deployMode] : null,
     rationale: c?.posture === 'S' && c.rationale ? RATIONALE_LABEL[c.rationale] : null,
-    quadrant: c?.quadrant ? (QUADRANT_LABEL[c.quadrant] ?? c.quadrant) : null,
-    need: c?.need ?? null, opp: c?.opp ?? null, cp: c?.cp ?? null, share: c?.share ?? null,
+    needType: c ? NEED_TYPE_LABEL[c.needType] : null,
+    need: c?.need ?? null,
+    supplyChainNeed: c && c.needType === 'supply_chain' ? c.need : null,
+    deploymentNeed: c && c.needType === 'deployment' ? c.need : null,
+    prize: c?.prize ?? null, cp: c?.cp ?? null, share: c?.share ?? null,
+    pathway: c?.pathway ? PATHWAY_LABEL[c.pathway] : null,
     alignment: c?.alignment ? ALIGNMENT_LABEL[c.alignment] : null,
-    evidence: c?.evidence ?? null,
+    alignmentConfidence: c?.alignmentConfidence ?? null,
+    evidence: c?.evidence ? EVIDENCE_LABEL[c.evidence] : null,
+    confidence: c?.confidence ?? null,
     momentum: c?.momentum ? MOMENTUM_LABEL[c.momentum] : null,
     partner1: c?.partner1 ?? null,
     partner1Name: c?.partner1 ? (names[c.partner1] ?? c.partner1) : null,
     partnerGap: c?.partnerGap ?? null,
-    borderline: c?.borderline ?? null,
-    flag: c?.flag ? c.flag.replace(/_/g, ' ') : null,
-    plotted: c !== null && c.need !== null && c.opp !== null,
+    borderline: c?.borderline ? c.borderline.replace(/;/g, ', ') : null,
+    flag: c?.flag ? flagWords(c.flag) : null,
+    plotted: c !== null && c.posture !== 'N' && c.need !== null && c.prize !== null,
   };
 }
 
@@ -314,31 +334,36 @@ export function countryPostureRows(core: PostureCore, iso3: string): PostureRow[
   return core.meta.techs.flatMap((t) => core.meta.stages.map((s) => postureRow(cellKey(t, s), iso3, t, s, by.get(cellKey(t, s)) ?? null, names, tiers)));
 }
 
-/** Every economy classified in one node, Secure first, then Compete and Deploy; within each, highest Industrial Opportunity first (unmeasured last), then by name. */
+const FAMILY_RANK: Record<string, number> = { S: 0, C: 1, D: 2, N: 3 };
+
+/** Every economy classified in one node, Secure first, then Compete, Deploy and not assessed; within each, highest Industrial Opportunity first (unmeasured last), then by name. */
 export function sectorPostureRows(core: PostureCore, tech: string, stage: string): PostureRow[] {
   const names = countryNames(core);
   const tiers = tiersOf(core);
-  const rank = (p: PostureCode | null) => (p ? POSTURE_ORDER.indexOf(p) : 3);
+  const rank = (p: PostureCell['posture'] | null) => (p ? FAMILY_RANK[p] : 4);
   return core.cells
     .filter((c) => c.tech === tech && c.stage === stage)
     .map((c) => postureRow(c.iso3, c.iso3, tech, stage, c, names, tiers))
-    .sort((a, b) => rank(a.posture) - rank(b.posture) || (b.opp ?? -1) - (a.opp ?? -1) || a.country.localeCompare(b.country));
+    .sort((a, b) => rank(a.posture) - rank(b.posture) || (b.prize ?? -1) - (a.prize ?? -1) || a.country.localeCompare(b.country));
 }
 
-/** The CSV columns of the Country and Sector posture tables (provenance follows). */
+/** The CSV columns of the Country and Sector posture tables (provenance follows). Stage is the id; stage_name the display name. */
 export const POSTURE_CSV_COLS = [
-  'country', 'iso3', 'coalition_tier', 'technology', 'stage', 'classified', 'posture', 'compete_mode', 'secure_rationale', 'quadrant',
-  'strategic_need', 'industrial_opportunity', 'competitive_position', 'world_supply_share', 'policy_alignment', 'evidence', 'trade_momentum',
-  'first_partner', 'first_partner_iso3', 'partner_gap', 'borderline', 'check',
+  'country', 'iso3', 'coalition_tier', 'technology', 'stage', 'stage_name', 'classified', 'posture', 'compete_mode', 'deploy_mode', 'choice', 'secure_rationale',
+  'need_type', 'supply_chain_need', 'deployment_need', 'industrial_opportunity', 'competitive_position', 'world_supply_share', 'pathway_credible',
+  'policy_alignment', 'alignment_confidence', 'evidence', 'posture_confidence', 'trade_momentum', 'first_partner', 'first_partner_iso3', 'partner_gap',
+  'borderline', 'consistency_flag',
 ] as const;
 
 /** The posture rows as CSV records (POSTURE_CSV_COLS; shares and percentiles as fractions, 0 to 1). */
 export function postureCsvRows(rows: PostureRow[]): Record<string, unknown>[] {
   return rows.map((r) => ({
-    country: r.country, iso3: r.iso3, coalition_tier: r.tier, technology: r.tech, stage: r.stage, classified: r.classified, posture: r.postureWord,
-    compete_mode: r.mode, secure_rationale: r.rationale, quadrant: r.quadrant, strategic_need: r.need, industrial_opportunity: r.opp,
-    competitive_position: r.cp, world_supply_share: r.share, policy_alignment: r.alignment, evidence: r.evidence, trade_momentum: r.momentum,
-    first_partner: r.partner1Name, first_partner_iso3: r.partner1, partner_gap: r.partnerGap, borderline: r.borderline, check: r.flag,
+    country: r.country, iso3: r.iso3, coalition_tier: r.tier, technology: r.tech, stage: r.stage, stage_name: r.stageName, classified: r.classified,
+    posture: r.postureWord, compete_mode: r.mode, deploy_mode: r.deployMode, choice: r.choice, secure_rationale: r.rationale, need_type: r.needType,
+    supply_chain_need: r.supplyChainNeed, deployment_need: r.deploymentNeed, industrial_opportunity: r.prize, competitive_position: r.cp,
+    world_supply_share: r.share, pathway_credible: r.pathway, policy_alignment: r.alignment, alignment_confidence: r.alignmentConfidence, evidence: r.evidence,
+    posture_confidence: r.confidence, trade_momentum: r.momentum, first_partner: r.partner1Name, first_partner_iso3: r.partner1, partner_gap: r.partnerGap,
+    borderline: r.borderline, consistency_flag: r.flag,
   }));
 }
 
@@ -413,3 +438,6 @@ export function divisionCsvRows(rows: DivisionRow[]): Record<string, unknown>[] 
     capability_source: r.capabilitySource, aib_nodes: r.aibNodes,
   }));
 }
+
+/** Delivery mode words, re-exported for the pages (domestic, allied, diversified global, mixed). */
+export { deliveryWords };
