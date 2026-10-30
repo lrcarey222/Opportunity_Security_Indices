@@ -189,23 +189,58 @@ test_that("the validation tables report correlations, weights, movers and the di
   expect_true(all(is.na(v$disguise$spearman_with_cp)))   # no home market: the prize is constant within a node
 })
 
-test_that("the credible pathway fires on any evidence leg, and unknown is not yes", {
+test_that("with min_legs 1 the credible pathway fires on any evidence leg, and unknown is not yes", {
   x <- data.frame(iso3 = c("A", "B", "C", "D", "E", "F"), tech = "Solar",
                   supply_chain = c("Components", "Components", "Components", "Extraction", "Extraction", "Deployment"),
                   home_share = c(0.01, 0.01, NA, 0.01, 0.01, NA), cp_within_country_pct = c(0.2, 0.2, NA, 0.2, 0.2, NA),
                   feas_pct = c(0.9, 0.1, NA, 0.9, 0.9, 0.9), resource_base = c(NA, NA, NA, FALSE, TRUE, NA),
                   t3_learning_lo = c("none", "none", NA, "none", "none", "n_a"), stringsAsFactors = FALSE)
-  out <- sp_pathway(x, cfg = io_cfg()$pathway)
+  one <- utils::modifyList(io_cfg()$pathway, list(min_legs = 1))
+  out <- sp_pathway(x, cfg = one)
   expect_equal(out$pathway_credible, c("yes", "no", "unknown", "no", "yes", NA))
   expect_equal(out$pathway_basis[1], "feasibility")
   expect_equal(out$pathway_basis[3], "no_evidence")
   expect_equal(out$pathway_basis[4], "no_resource_base")
   pipe <- data.frame(iso3 = "B", tech = "Solar", supply_chain = "Components", pipeline_capacity = 5)
   cov <- data.frame(tech = "Solar", supply_chain = "Components")
-  out2 <- sp_pathway(x, pipe, cov, cfg = io_cfg()$pathway)
+  out2 <- sp_pathway(x, pipe, cov, cfg = one)
   expect_equal(out2$pathway_credible[2], "yes")
   expect_equal(out2$pathway_basis[2], "pipeline")
   expect_equal(out2$pw_pipeline[1], 0)   # covered by the monitor: absence is an observed zero
+  # without min_legs the function keeps design D3's one leg
+  expect_equal(sp_pathway(x, cfg = within(one, rm(min_legs)))$pathway_credible, out$pathway_credible)
+})
+
+test_that("the configured pathway needs two evidence legs; one leg is not enough, and too little evidence is unknown", {
+  expect_equal(io_cfg()$pathway$min_legs, 2)
+  # A: feasibility only, three legs observed -> no. B: feasibility + adjacent share -> yes. C: feasibility +
+  # learning at an Extraction cell without a resource base -> no. D: feasibility + input cost at an Extraction
+  # cell with the resource base unknown -> unknown. E: feasibility is the only observed leg and it fires ->
+  # unknown (the data cannot reach two). F: nothing fires, two legs observed -> no. G: nothing observed.
+  x <- data.frame(iso3 = c("A", "B", "C", "D", "E", "F", "G"), tech = "Solar",
+                  supply_chain = c("Components", "Components", "Extraction", "Extraction", "Components", "Components", "Components"),
+                  home_share = c(0.01, 0.2, 0.01, NA, NA, 0.01, NA), cp_within_country_pct = c(0.2, 0.2, 0.2, NA, NA, 0.2, NA),
+                  feas_pct = c(0.9, 0.9, 0.9, 0.9, 0.9, 0.1, NA), resource_base = c(NA, NA, FALSE, NA, NA, NA, NA),
+                  t3_learning_lo = c("none", "none", "strong", NA, NA, NA, NA), stringsAsFactors = FALSE)
+  # the adjacent-stage leg reads the other stages of the same cell, so give B an established Refining stage
+  ref <- x[2, ]
+  ref$supply_chain <- "Refining"
+  ref$home_share <- 0.2
+  x$home_share[2] <- 0.01
+  ic <- data.frame(iso3 = c("D", "X1", "X2", "X3"), tech = "Solar", supply_chain = "Extraction", input_cost_index = c(4, 1, 2, 3))
+  out <- sp_pathway(rbind(x, ref), input_cost = ic, cfg = io_cfg()$pathway)[1:7, ]
+  expect_equal(out$pathway_credible, c("no", "yes", "no", "unknown", "unknown", "no", "unknown"))
+  expect_equal(out$pathway_basis, c("feasibility;too_few_legs", "feasibility;adjacent_stage", "no_resource_base",
+                                    "feasibility;input_cost;resource_base_unknown", "feasibility;too_few_observed",
+                                    "none_observed_fires", "no_evidence"))
+  # an extra leg makes A credible
+  pipe <- data.frame(iso3 = "A", tech = "Solar", supply_chain = "Components", pipeline_capacity = 5)
+  cov <- data.frame(tech = "Solar", supply_chain = "Components")
+  expect_equal(sp_pathway(rbind(x, ref), pipe, cov, cfg = io_cfg()$pathway)$pathway_basis[1], "feasibility;pipeline")
+  # min_legs outside 1..5 is refused
+  for (bad in list(0, 6, 1.5, "2")) {
+    expect_error(sp_pathway(x, cfg = utils::modifyList(io_cfg()$pathway, list(min_legs = bad))), "min_legs")
+  }
 })
 
 test_that("supply_chain_need exists only at the producing stages and has no Deployment proxy", {

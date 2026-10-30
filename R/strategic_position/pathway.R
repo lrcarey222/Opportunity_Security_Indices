@@ -1,6 +1,7 @@
 # The credible-pathway test for Catch Up (docs/strategic_position.md, "Choice"; design D3). A country
 # with a high prize but no top-quarter position catches up only where there is evidence it can build
-# the capability. pathway_credible is yes when ANY of these fires:
+# the capability. pathway_credible is yes when at least min_legs of these fire (2, user decision
+# 2026-10-30; 1 is design D3's original "any leg"):
 #
 #   feasibility     Atlas product-space feasibility of the node's HS basket in the top quarter of
 #                   countries (feas_pct >= feasibility_pct)
@@ -14,8 +15,10 @@
 #   input_cost      an input-cost advantage: Input Cost Index in the cheapest quarter (input_cost_pct)
 #
 # Extraction also needs a resource base (recorded reserves or resource above the cell floor). no = some
-# evidence observed and none fires (or no resource base at Extraction); unknown = nothing observed,
-# which the decision reads as not credible (with lower confidence). pathway_basis names what fired.
+# evidence observed and fewer than min_legs fire (or no resource base at Extraction); unknown = the
+# observed evidence cannot decide (nothing observed, or every observed leg fires but fewer than min_legs
+# are observed), which the decision reads as not credible (with lower confidence). pathway_basis names
+# the legs that fired, with too_few_legs / too_few_observed where they are not enough.
 #
 # Pure functions: no IO. Needs posture_engine.R (SP_STAGE_ADJACENT) and sp_helpers.R.
 
@@ -56,6 +59,10 @@ sp_pathway <- function(tbl, pipeline = NULL, covered = NULL, input_cost = NULL, 
   a_cp <- cfg$adjacent_cp_within_pct %||% 0.6
   l_lv <- unlist(cfg$learning_levels %||% c("moderate", "strong"))
   c_min <- cfg$input_cost_pct %||% 0.75
+  k_min <- cfg$min_legs %||% 1
+  if (!is.numeric(k_min) || length(k_min) != 1 || k_min < 1 || k_min > length(SP_PATHWAY_EVIDENCE) || k_min != round(k_min)) {
+    stop("decision_framework$pathway$min_legs must be a whole number from 1 to ", length(SP_PATHWAY_EVIDENCE), call. = FALSE)
+  }
   col <- function(n, default = NA) if (n %in% names(tbl)) tbl[[n]] else rep(default, nrow(tbl))
   drop <- c("pw_feasibility_pct", "pw_pipeline", "pw_adjacent_share", "pw_adjacent_cp_within", "pw_learning",
             "pw_input_cost_pct", "pathway_credible", "pathway_basis")
@@ -96,8 +103,11 @@ sp_pathway <- function(tbl, pipeline = NULL, covered = NULL, input_cost = NULL, 
   observed <- cbind(!is.na(x$pw_feasibility_pct), !is.na(x$pw_pipeline),
                     !is.na(x$pw_adjacent_share) | !is.na(x$pw_adjacent_cp_within), !is.na(x$pw_learning),
                     !is.na(x$pw_input_cost_pct))
-  any_fire <- rowSums(fires) > 0
-  any_obs <- rowSums(observed) > 0
+  n_fire <- rowSums(fires)
+  n_obs <- rowSums(observed)
+  enough <- n_fire >= k_min
+  # every observed leg fires, but too few are observed to reach min_legs: the data cannot decide
+  undecided <- !enough & n_obs > 0 & n_fire == n_obs
   basis <- apply(fires, 1, function(r) if (any(r)) paste(SP_PATHWAY_EVIDENCE[r], collapse = ";") else NA_character_)
   rb <- col("resource_base", NA)[x$.row]
   no_resource <- x$supply_chain == "Extraction" & rb %in% FALSE
@@ -105,17 +115,20 @@ sp_pathway <- function(tbl, pipeline = NULL, covered = NULL, input_cost = NULL, 
   x$pathway_credible <- dplyr::case_when(
     x$supply_chain == "Deployment" ~ NA_character_,
     no_resource ~ "no",
-    any_fire & unknown_resource ~ "unknown",
-    any_fire ~ "yes",
-    any_obs ~ "no",
+    enough & unknown_resource ~ "unknown",
+    enough ~ "yes",
+    undecided ~ "unknown",
+    n_obs > 0 ~ "no",
     TRUE ~ "unknown"
   )
   x$pathway_basis <- dplyr::case_when(
     x$supply_chain == "Deployment" ~ NA_character_,
     no_resource ~ "no_resource_base",
-    any_fire & unknown_resource ~ paste0(basis, ";resource_base_unknown"),
-    any_fire ~ basis,
-    any_obs ~ "none_observed_fires",
+    enough & unknown_resource ~ paste0(basis, ";resource_base_unknown"),
+    enough ~ basis,
+    undecided ~ paste0(basis, ";too_few_observed"),
+    n_fire > 0 ~ paste0(basis, ";too_few_legs"),
+    n_obs > 0 ~ "none_observed_fires",
     TRUE ~ "no_evidence"
   )
   x <- x[order(x$.row), , drop = FALSE]

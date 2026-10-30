@@ -242,6 +242,29 @@ test_that("a top-quarter score that fails the Preserve test says why: not a cont
   expect_equal(pos_of(ac)$result, "capability_floor_not_met")
 })
 
+test_that("a pathway with too few evidence legs is not Catch Up, and the reason names the legs and the bar", {
+  expect_equal(de_cfg()$pathway$min_legs, 2)
+  one <- de(supply_chain_need = 0.9, industrial_opportunity = 0.9, cp_contender_pct = 0.4, pathway_credible = "no",
+            pathway_basis = "adjacent_stage;too_few_legs")
+  expect_equal(one$strategic_choice, "partner")
+  expect_match(sp_choice_reason(one, de_cfg()),
+               "but no top-quarter position and only one piece of pathway evidence (adjacent stage) where two are required: Partner",
+               fixed = TRUE)
+  thin <- de(supply_chain_need = 0.2, industrial_opportunity = 0.9, cp_contender_pct = 0.4, pathway_credible = "unknown",
+             pathway_basis = "feasibility;too_few_observed")
+  expect_equal(thin$strategic_choice, "watch")
+  expect_match(sp_choice_reason(thin, de_cfg()),
+               "too little pathway evidence observed (feasibility only, where two pieces are required): Watch", fixed = TRUE)
+  # an unknown pathway is a confidence issue and keeps Catch Up among the possible choices
+  expect_match(thin$choice_possible, "catch_up", fixed = TRUE)
+  # with the bar at three, two legs read "two pieces ... where three are required"
+  three <- utils::modifyList(de_cfg(), list(pathway = list(min_legs = 3)))
+  two <- de(supply_chain_need = 0.9, industrial_opportunity = 0.9, cp_contender_pct = 0.4, pathway_credible = "no",
+            pathway_basis = "feasibility;learning;too_few_legs")
+  expect_match(sp_choice_reason(two, three), "only two pieces of pathway evidence (feasibility, learning) where three are required",
+               fixed = TRUE)
+})
+
 test_that("every output respects the posture / mode invariants", {
   grid <- expand.grid(stage = c("Extraction", "Components", "Deployment", "Recovery"), n = c(NA, 0.2, 0.9), o = c(NA, 0.2, 0.9),
                       cp = c(0.3, 0.9), pw = c("yes", "no", "unknown"), dn = c(NA, 0.2, 0.9), sec = c(FALSE, TRUE),

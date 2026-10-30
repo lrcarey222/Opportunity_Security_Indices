@@ -367,6 +367,19 @@ sp_choice_reason <- function(tbl, cfg = list()) {
   )
   pos_cu <- dplyr::coalesce(why_not, paste0("a position below the top quarter (", p2(cp), ")"))
   pos_no <- dplyr::coalesce(why_not, "no top-quarter position")
+  # why the pathway is not credible where some legs fired (pathway.R: too_few_legs / too_few_observed)
+  nw <- function(k) c("no", "one", "two", "three", "four", "five")[k + 1]
+  pw_min <- cfg$pathway$min_legs %||% 1
+  pw_legs <- sub(";(too_few_legs|too_few_observed)$", "", pw)
+  pw_n <- lengths(strsplit(pw_legs, ";", fixed = TRUE))
+  pw_legs_w <- gsub(";", ", ", gsub("_", " ", pw_legs))
+  pw_no <- dplyr::case_when(
+    grepl(";too_few_legs$", pw) ~ paste0("only ", nw(pw_n), " piece", ifelse(pw_n == 1, "", "s"), " of pathway evidence (",
+                                         pw_legs_w, ") where ", nw(pw_min), " are required"),
+    grepl(";too_few_observed$", pw) ~ paste0("too little pathway evidence observed (", pw_legs_w, " only, where ", nw(pw_min),
+                                             " pieces are required)"),
+    TRUE ~ "no credible pathway"
+  )
   cp_na <- ifelse(is.na(cp), ", with Competitive Position not measured", "")
   dplyr::case_when(
     is.na(v) ~ NA_character_,
@@ -380,9 +393,9 @@ sp_choice_reason <- function(tbl, cfg = list()) {
     v == "preserve" & !hp ~ paste0(need_w, ", ", prize_w, ", but a top-quarter position (", p2(cp), " among contenders): Preserve, flagged for review rather than handed to partners."),
     v == "preserve" ~ paste0(prize_w, " and a top-quarter position among contenders (", p2(cp), "): Preserve and extend it."),
     v == "catch_up" ~ paste0(prize_w, ", ", pos_cu, " and a credible pathway (", gsub(";", ", ", gsub("_", " ", pw)), "): Catch Up."),
-    v == "partner" & hp ~ paste0(need_w, " and ", prize_w, ", but ", pos_no, " and no credible pathway: Partner with trusted suppliers."),
+    v == "partner" & hp ~ paste0(need_w, " and ", prize_w, ", but ", pos_no, " and ", pw_no, ": Partner with trusted suppliers."),
     v == "partner" ~ paste0(need_w, " and ", prize_w, cp_na, ": a security problem without a domestic industrial prize. Partner with trusted suppliers."),
-    v == "watch" & hp ~ paste0(need_w, " and ", prize_w, ", but ", pos_no, " and no credible pathway: Watch (keep R&D options open)."),
+    v == "watch" & hp ~ paste0(need_w, " and ", prize_w, ", but ", pos_no, " and ", pw_no, ": Watch (keep R&D options open)."),
     v == "watch" ~ paste0(need_w, " and ", prize_w, ": Watch. Domestic industrial priority is low."),
     TRUE ~ NA_character_
   )

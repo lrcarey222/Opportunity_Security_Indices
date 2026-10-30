@@ -475,8 +475,10 @@ decision_framework:
     # never lowers a world-market prize. mean: the plain average both ways (sensitivity only).
     home_market_mode: lift
     home_market_file: home_market_tbl.rds
-  # Credible pathway for Catch Up (design D3): any of the five evidence legs.
+  # Credible pathway for Catch Up (design D3): at least min_legs of the five evidence legs. min_legs 2 (user
+  # decision 2026-10-30): with one leg the adjacent-stage leg alone carried most Catch Up cells (1,660 -> 748).
   pathway:
+    min_legs: 2
     feasibility_pct: 0.75
     pipeline_min: 0
     adjacent_share: 0.05
