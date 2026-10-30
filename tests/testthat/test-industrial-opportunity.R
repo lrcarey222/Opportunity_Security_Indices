@@ -324,6 +324,26 @@ test_that("the configured anchor rule: Catch Up needs a capability anchor and in
   expect_equal(legs[legs$iso3 == "A", "pathway_credible"], "yes")   # two enabling legs pass the legs rule, not the anchor rule
 })
 
+test_that("the supply-share anchors read the measured share, never a listing's residual", {
+  # every economy a partial listing omits gets the residual (0.87% of battery refining) as home_share, but a
+  # measured share (home_share_exposure) of 0: no anchor, here or as an adjacent stage
+  x <- data.frame(iso3 = c("U", "U", "M", "M"), tech = "Batteries", supply_chain = c("Refining", "Components", "Refining", "Components"),
+                  home_share = c(0.0087, 0.0001, 0.06, 0.0001), home_share_exposure = c(0, 0.0001, 0.06, 0.0001),
+                  trade_benchmark_share = 0, cp_within_country_pct = c(0.9, 0.2, 0.9, 0.2), feas_pct = 0.9, resource_base = NA,
+                  t3_learning_lo = NA_character_, stringsAsFactors = FALSE)
+  out <- sp_pathway(x, cfg = io_cfg()$pathway)
+  r <- function(iso, stage) out[out$iso3 == iso & out$supply_chain == stage, ]
+  expect_equal(r("U", "Refining")$pw_direct_share, 0)
+  expect_false(r("U", "Refining")$catch_up_anchor)
+  expect_equal(r("U", "Refining")$pathway_credible, "no")
+  expect_false(grepl("adjacent_stage_share", r("U", "Components")$pathway_basis))   # 0.87% residual, 0 measured
+  expect_equal(r("M", "Refining")$catch_up_anchor_type, "direct_supply_share")
+  expect_equal(r("M", "Components")$catch_up_anchor_type, "adjacent_stage_share")   # 6% measured at Refining
+  # the legs rule keeps its historical input
+  legs <- sp_pathway(x, cfg = legs_cfg())
+  expect_equal(legs$pw_adjacent_share[legs$iso3 == "U" & legs$supply_chain == "Components"], 0.0087)
+})
+
 test_that("under the anchor rule no pathway is credible without an anchor and a second evidence family", {
   set.seed(29)
   n <- 400

@@ -8,17 +8,18 @@
 # supporting signal). Two enabling signals without an anchor are never enough (high feasibility + low
 # input costs is not Catch Up). The anchors, each an absolute measure (no Competitive Position score):
 #
-#   direct_supply_share    the node's world supply share on its primary measure (home_share: mine,
-#                          refinery or manufacturing output, or the Atlas export share where that is the
-#                          measure) >= direct_share_min                                   [family direct]
+#   direct_supply_share    the node's MEASURED world supply share on its primary measure (mine, refinery
+#                          or manufacturing output, or the Atlas export share where that is the measure;
+#                          home_share_exposure, never a listing's residual) >= direct_share_min
+#                                                                                         [family direct]
 #   direct_export_share    the node basket's 2022-24 benchmark world export share
 #                          (trade_benchmark_share) >= direct_share_min                    [family direct]
 #   operating_capacity     GCIM operating capacity, share of world operating capacity of the node's most
 #                          material product >= operating_capacity_share_min             [family capacity]
 #   committed_pipeline     GCIM capacity under construction or built and not yet online, share of world
 #                          operating capacity >= committed_pipeline_share_min           [family pipeline]
-#   adjacent_stage_share   absolute adjacency: an adjacent stage of the same technology with world share
-#                          >= adjacent_share                                           [family adjacency]
+#   adjacent_stage_share   absolute adjacency: an adjacent stage of the same technology with measured
+#                          world share >= adjacent_share                               [family adjacency]
 #   resource_base          Extraction only: recorded reserves or resource above the cell floor
 #                                                                                       [family resource]
 #
@@ -63,23 +64,35 @@ SP_PATHWAY_FAMILY <- c(direct_supply_share = "direct", direct_export_share = "di
                        feasibility = "feasibility", input_cost = "input_cost", adjacent_stage_relative = "adjacency",
                        learning = "learning", announced_pipeline = "pipeline")
 
-# Adjacent-stage evidence per cell: the best adjacent stage's world share and within-country CP
-# percentile. tbl: iso3, tech, supply_chain, home_share, cp_within_country_pct.
+# The economy's MEASURED share of world supply: home_share_exposure where the table carries it, else
+# home_share. home_share gives an economy that a partial listing omits the listing's residual ("Rest of
+# world") as an upper bound - every unlisted economy held 0.87% of battery refining - so the anchors read
+# the measured share (as contender status does: decision_engine.R sp_measured_share()).
+sp_pathway_measured_share <- function(tbl) {
+  h <- if ("home_share" %in% names(tbl)) tbl$home_share else rep(NA_real_, nrow(tbl))
+  if ("home_share_exposure" %in% names(tbl)) dplyr::coalesce(tbl$home_share_exposure, h) else h
+}
+
+# Adjacent-stage evidence per cell: the best adjacent stage's world share (home_share, the legs rule's
+# input, and the measured share, the anchor's) and within-country CP percentile. tbl: iso3, tech,
+# supply_chain, home_share, cp_within_country_pct (home_share_exposure optional).
 sp_pathway_adjacent <- function(tbl) {
   pairs <- do.call(rbind, lapply(names(SP_STAGE_ADJACENT), function(s) {
     adj <- SP_STAGE_ADJACENT[[s]]
     if (!length(adj)) return(NULL)
     data.frame(supply_chain = s, adjacent_stage = adj, stringsAsFactors = FALSE)
   }))
-  vals <- tbl[, c("iso3", "tech", "supply_chain", "home_share", "cp_within_country_pct")]
-  names(vals) <- c("iso3", "tech", "adjacent_stage", "adj_share", "adj_cp")
+  vals <- data.frame(iso3 = tbl$iso3, tech = tbl$tech, adjacent_stage = tbl$supply_chain, adj_share = tbl$home_share,
+                     adj_measured = sp_pathway_measured_share(tbl), adj_cp = tbl$cp_within_country_pct, stringsAsFactors = FALSE)
+  top <- function(v) if (all(is.na(v))) NA_real_ else max(v, na.rm = TRUE)
   tbl[, c("iso3", "tech", "supply_chain")] %>%
     dplyr::inner_join(pairs, by = "supply_chain", relationship = "many-to-many") %>%
     dplyr::left_join(vals, by = c("iso3", "tech", "adjacent_stage")) %>%
     dplyr::group_by(.data$iso3, .data$tech, .data$supply_chain) %>%
     dplyr::summarise(
-      pw_adjacent_share = if (all(is.na(.data$adj_share))) NA_real_ else max(.data$adj_share, na.rm = TRUE),
-      pw_adjacent_cp_within = if (all(is.na(.data$adj_cp))) NA_real_ else max(.data$adj_cp, na.rm = TRUE),
+      pw_adjacent_share = top(.data$adj_share),
+      pw_adjacent_share_measured = top(.data$adj_measured),
+      pw_adjacent_cp_within = top(.data$adj_cp),
       .groups = "drop"
     )
 }
@@ -131,7 +144,7 @@ sp_pathway <- function(tbl, pipeline = NULL, covered = NULL, input_cost = NULL, 
     stop("decision_framework$pathway$min_legs must be a whole number from 1 to ", length(SP_PATHWAY_EVIDENCE), call. = FALSE)
   }
   col <- function(n, default = NA) if (n %in% names(tbl)) tbl[[n]] else rep(default, nrow(tbl))
-  drop <- c("pw_feasibility_pct", "pw_pipeline", "pw_adjacent_share", "pw_adjacent_cp_within", "pw_learning",
+  drop <- c("pw_feasibility_pct", "pw_pipeline", "pw_adjacent_share", "pw_adjacent_share_measured", "pw_adjacent_cp_within", "pw_learning",
             "pw_input_cost_pct", "pw_direct_share", "pw_export_share", "pw_operating_share", "pw_committed_share",
             "pw_announced_share", "catch_up_anchor", "catch_up_anchor_type", "pathway_support", "pathway_credible",
             "pathway_basis", "pathway_rule")
@@ -161,7 +174,7 @@ sp_pathway <- function(tbl, pipeline = NULL, covered = NULL, input_cost = NULL, 
     k <- match(paste(x$iso3, x$tech, x$supply_chain), paste(ic$iso3, ic$tech, ic$supply_chain))
     x$pw_input_cost_pct <- ic$pct[k]
   }
-  x$pw_direct_share <- col("home_share", NA_real_)[x$.row]
+  x$pw_direct_share <- sp_pathway_measured_share(tbl)[x$.row]
   x$pw_export_share <- col("trade_benchmark_share", NA_real_)[x$.row]
   x$pw_operating_share <- sp_pathway_covered_value(x, capacity, "operating_share")
   x$pw_committed_share <- sp_pathway_covered_value(x, capacity, "committed_share")
@@ -179,7 +192,7 @@ sp_pathway <- function(tbl, pipeline = NULL, covered = NULL, input_cost = NULL, 
     direct_export_share = ge(x$pw_export_share, d_min),
     operating_capacity = ge(x$pw_operating_share, o_min),
     committed_pipeline = ge(x$pw_committed_share, cm_min),
-    adjacent_stage_share = ge(x$pw_adjacent_share, a_share),
+    adjacent_stage_share = ge(x$pw_adjacent_share_measured, a_share),
     resource_base = ext & rb %in% TRUE
   )
   support <- cbind(
@@ -194,7 +207,7 @@ sp_pathway <- function(tbl, pipeline = NULL, covered = NULL, input_cost = NULL, 
     direct = !is.na(x$pw_direct_share) | !is.na(x$pw_export_share),
     capacity = !is.na(x$pw_operating_share),
     pipeline = !is.na(x$pw_committed_share),
-    adjacency = !is.na(x$pw_adjacent_share) | !is.na(x$pw_adjacent_cp_within),
+    adjacency = !is.na(x$pw_adjacent_share_measured) | !is.na(x$pw_adjacent_cp_within),
     resource = ext & !is.na(rb),
     feasibility = !is.na(x$pw_feasibility_pct),
     input_cost = !is.na(x$pw_input_cost_pct),
@@ -250,7 +263,8 @@ sp_pathway <- function(tbl, pipeline = NULL, covered = NULL, input_cost = NULL, 
     fires <- cbind(
       feasibility = support[, "feasibility"],
       pipeline = !is.na(x$pw_pipeline) & x$pw_pipeline > p_min,
-      adjacent_stage = anchors[, "adjacent_stage_share"] | support[, "adjacent_stage_relative"],
+      # the legs rule keeps its historical input (home_share, residuals included) so its counts reproduce
+      adjacent_stage = ge(x$pw_adjacent_share, a_share) | support[, "adjacent_stage_relative"],
       learning = support[, "learning"],
       input_cost = support[, "input_cost"]
     )
