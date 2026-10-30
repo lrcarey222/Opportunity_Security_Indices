@@ -14,7 +14,7 @@
 "Australia","Electric Grid","Assembly","grid-scada","control","secure","secure_control","moderate","yes","yes","digital","CHN",0.228102596534784,0.491049776586083,"allied","secure",
 "Australia","Electric Grid","Assembly","grid-transformers","hardware","compete","compete_partner","moderate","yes","no","none","CHN",0.228102596534784,0.491049776586083,"allied","deploy",
 "Australia","Electric Grid","Assembly","hvdc-control","control","compete","compete_partner","moderate","yes","unknown","unknown","CHN",0.228102596534784,0.491049776586083,"allied","secure|deploy","remote_control"
-"Australia","Electric Vehicles","Components","ev-motors","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.205429723173868,0.576083568982303,"mixed","deploy",
+"Australia","Electric Vehicles","Components","ev-motors","hardware","compete","compete_partner","high","no","no","none","CHN",0.205429723173868,0.576083568982303,"allied","deploy",
 "Australia","Electric Vehicles","Components","ree-magnets","material","secure","secure_input","moderate","yes","yes","physical","CHN",0.839394380876601,0.576083568982303,"mixed","secure|compete","home_share"
 "Australia","Electric Vehicles","Assembly","ev-connected-vehicle","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.181354649091385,0.375425187762776,"allied","secure",
 "Australia","Electric Vehicles","Deployment","ev-charging-mgmt","control","deploy","deploy","high","no","yes","digital",,,0.375425187762776,"diversified_global","deploy",
@@ -236,8 +236,8 @@
 "United Kingdom","Nuclear","Assembly","nuc-reactor-controls","control","compete","compete_partner","high","yes","no","none","CHN",0.268996625654577,0.0521360868457749,"allied","deploy",
 "United Kingdom","Oil","Assembly","oil-ot-control","control","deploy","deploy","high","yes","no","none","CHN",0.22964665765902,0.0822481031196718,"diversified_global","deploy",
 "United Kingdom","Solar","Refining","polysilicon","material","compete","compete_partner","high","no","no","none","ARE",0.0934316971828628,0.0848550207185848,"diversified_global","deploy",
-"United Kingdom","Solar","Components","pv-cells-wafers","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.228916027119688,"mixed","deploy",
-"United Kingdom","Solar","Components","pv-nextgen","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.272783279873699,0.228916027119688,"mixed","deploy",
+"United Kingdom","Solar","Components","pv-cells-wafers","hardware","deploy","deploy","high","no","no","none","CHN",0.272783279873699,0.228916027119688,"diversified_global","deploy",
+"United Kingdom","Solar","Components","pv-nextgen","hardware","deploy","deploy","high","no","no","none","CHN",0.272783279873699,0.228916027119688,"diversified_global","deploy",
 "United Kingdom","Solar","Assembly","pv-inverter-firmware-dist","control","secure","secure_integrated","moderate","yes","yes","digital","CHN",0.299543166909054,0.267580051031049,"allied","secure",
 "United Kingdom","Solar","Assembly","pv-modules","hardware","compete","compete_catch_up","high","no","no","none","CHN",0.797979797979798,0.267580051031049,"mixed","compete|deploy","home_share"
 "United Kingdom","Solar","Assembly","pv-racking","structure","compete","compete_catch_up","high","no","no","none","CHN",0.299543166909054,0.267580051031049,"mixed","deploy",

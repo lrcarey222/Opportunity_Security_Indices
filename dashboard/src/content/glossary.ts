@@ -580,8 +580,8 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'pathway',
     term: 'Credible pathway',
-    short: 'The test that turns a high prize without a strong position into Catch Up: feasibility, an investment pipeline, an established adjacent stage, learning inputs or an input-cost advantage. Unknown counts as not credible.',
-    more: 'Any one of the five is enough; Extraction also needs a resource base. Without a credible pathway, high need means Partner and low need Watch.',
+    short: 'The test that turns a high prize without a strong position into Catch Up: two or more of feasibility, pipeline, an established adjacent stage, learning inputs, input-cost advantage. Unknown counts as not credible.',
+    more: 'One piece of evidence is not enough: at least two of the five must hold; Extraction also needs a resource base. Unknown means too little evidence was observed to reach two, or, at Extraction, that the resource base is unknown. Without a credible pathway, high need means Partner and low need Watch.',
     modules: ALL,
     related: ['posture', 'industrial_opportunity', 'competitive_position', 'feasibility'],
   },

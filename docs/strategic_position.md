@@ -1,7 +1,8 @@
 # Strategic Position: the canonical decision framework
 
-Branch `feat/supply-chain-stages`, 2026-10-29. The framework is **Need -> Prize -> Position -> Choice ->
-Policy alignment**, per country x technology x six-stage node. Results and validation are in
+Branch `feat/supply-chain-stages`, 2026-10-29 (two-leg Catch Up pathway and rerun 2026-10-30, commit
+7d847ba). The framework is **Need -> Prize -> Position -> Choice -> Policy alignment**, per country x
+technology x six-stage node. Results and validation are in
 [strategic_position_readout.md](strategic_position_readout.md) and
 `diagnostics/strategic_position/decision_review.md` (spec Part XXI); the per-country choice cards are in
 `diagnostics/strategic_position/choice_cards.md`; the implementation plan is
@@ -307,8 +308,8 @@ USD 200bn). Pure code: `R/strategic_position/trade_benchmark.R`, `trade_momentum
   `trade_momentum_weight_sensitivity.csv` (rank correlations, movers above 5 and 10 percentile points).
   Competitive Position now decides the response (the contenders' top quarter preserves), so the
   sensitivity file re-runs the canonical choice at each weight on the stored need, prize, pathway and
-  floor: dropping momentum (weight 0) changes 19 choices and 5 review flags; 0.10 changes 8 and 0.20
-  changes 14 (2026-10-29).
+  floor: dropping momentum (weight 0) changes 16 choices and 5 review flags; 0.10 changes 7 choices and 2
+  flags, 0.20 changes 9 and 1 (the same on the 2026-10-29 run and the 2026-10-30 two-leg rerun).
 
 Fields: `trade_benchmark_period`, `trade_benchmark_source`, `trade_benchmark_share`,
 `trade_benchmark_rca`, `trade_benchmark_exports`, `trade_momentum_period`,
@@ -352,18 +353,27 @@ cells, the selectivity of supply-chain need at 0.67 (a percentile); 0.67 took 22
   mechanically Partner (spec VIII): it is Preserve with a review flag (design D2; 16 cells), so strategic
   redundancy, Secure or a recalibration of the prize can be considered by a reader. A top-quarter score
   that fails the capability floor gives Catch Up or Partner with `review_top_quarter_below_floor`
-  (11 cells: 9 Catch Up, 2 Partner): a leading score in a fragmented node, for review rather than silent
-  override.
-- **Credible pathway** (design D3, `pathway.R`): `pathway_credible` yes when ANY of: Atlas product-space
+  (8 cells on 2026-10-30: 5 Catch Up, 3 Partner): a leading score in a fragmented node, for review rather
+  than silent override.
+- **Credible pathway** (design D3, `pathway.R`): `pathway_credible` yes when at least
+  `decision_framework.pathway.min_legs` of five legs fire: 2, user decision 2026-10-30 (design D3 had
+  "any of", one leg; `sp_pathway()` keeps one when the setting is absent). The legs: Atlas product-space
   feasibility of the node basket in the top quarter of countries; Clean Investment Monitor pipeline
   capacity in the node; an established adjacent stage (adjacent world share >= 5%, or that stage among the
   country's stronger cells, within-country CP percentile >= 0.6); curated learning inputs on a domestic
   base (engine Test 3 learning lower bound moderate or strong); an input-cost advantage (Input Cost Index
-  in the cheapest quarter). Extraction also needs a resource base. `no` = evidence observed, none fires;
-  `unknown` = nothing observed, read as not credible with lower confidence. `pathway_basis` names the legs
-  that fired. Of the assessed high-prize producing cells without a high position (not Secure), 63% have a
-  credible pathway (Catch Up: 1,660), 13% go Partner (345) and 24% Watch (643): not every prize is forced into
-  Catch Up.
+  in the cheapest quarter). Extraction also needs a resource base. `no` = evidence observed and fewer than
+  two legs fire (`pathway_basis` "none_observed_fires", or "<leg>;too_few_legs" when one fired);
+  `unknown` = the evidence cannot decide (nothing observed, every observed leg fires but fewer than two
+  are observed: "<legs>;too_few_observed", or enough legs at Extraction with the resource base unknown:
+  "<legs>;resource_base_unknown"), read as not credible with lower confidence. An unobserved leg does not
+  make a pathway `unknown` once some observed leg fails (483 of the 912 cells that left Catch Up had one). `pathway_basis`
+  names the legs that fired, and the choice reason names a shortfall ("only one piece of pathway evidence
+  (adjacent stage) where two are required"). Of the 2,648 assessed high-prize producing cells without a
+  high position (not Secure), 28% have a credible pathway (Catch Up: 748), 23% go Partner (603) and 49%
+  Watch (1,297): not every prize is forced into Catch Up. Under the one-leg rule it was 63% (1,660), 13%
+  (345) and 24% (643): 912 cells with a single leg (adjacent stage 748, input cost 152, feasibility 7,
+  learning 4, pipeline 1) left Catch Up, 258 for Partner and 654 for Watch.
 - **Watch reasons** (`watch_reasons`): low_need, low_prize, ample_diversified_supply (no concentration
   watch), weak_domestic_case (a prize without a top-quarter position or a pathway), option_value (an
   emerging node), low_deployment_need. Watch is a positive conclusion: domestic industrial priority low.
@@ -548,8 +558,8 @@ single_credible_supplier, weak_evidence, insufficient_allied_capacity (credible 
 below 30% of world supply, `partner_trusted_capacity`), excessive_concentration (a coercive supplier with
 50% or more of world supply). A gap is no trusted supplier, a single credible one, or insufficient allied
 capacity; weak evidence and excessive concentration are reported reasons, not gaps by themselves. A
-genuine "no credible allied solution yet" is reported, never forced (2026-10-29: Partner 858 covered /
-734 gap; Secure 56 / 118). The division matrix adds `allied_world_share`, `coercive_world_share` and the
+genuine "no credible allied solution yet" is reported, never forced (2026-10-30: Partner 1,003 covered /
+847 gap; Secure 56 / 118). The division matrix adds `allied_world_share`, `coercive_world_share` and the
 same two capacity reasons after the original four in `aib_gaps` (the primary `aib_gap` is unchanged where
 one of those applies), with `secure_foreign_demand` and `partner_aib_gaps` per node.
 
@@ -579,12 +589,15 @@ lower where the rule needed the NIPO support / protection split and it is not ra
 protection stock is a measurement, not a gap); at most medium at Deployment (PAMS only, by construction);
 low whenever the total-attention fallback decides the alignment (design D5), whatever the number of
 sources; insufficient_data is low. No overall policy score is computed.
-2026-10-29 (`choice_policy_alignment.csv`): aligned 5,185; under_prioritized 947 (Catch Up 828, Secure 92,
-Preserve 27); deployment_gap 182; over_prioritized 375 (all Watch: 103 producing cells on NIPO protection,
-65 Deployment cells on the equipment's local-content protection, and 207 producing cells on total attention
-because NIPO does not observe them, all low confidence); misaligned 68 (Partner); mixed 234;
-insufficient_data 7,133 (5,295 of them not assessed). Alignment confidence: high 1,893, medium 1,263, low
-10,968. 994 Watch cells carry top-third policy intensity (`watch_high_policy_intensity.csv`).
+2026-10-30 (`choice_policy_alignment.csv`): aligned 5,486; under_prioritized 516 (Catch Up 397, Secure 92,
+Preserve 27); deployment_gap 182; over_prioritized 503 (all Watch: 122 producing cells on NIPO protection,
+65 Deployment cells on the equipment's local-content protection, and 316 producing cells on total attention
+because NIPO does not observe them, all low confidence); misaligned 76 (Partner); mixed 220;
+insufficient_data 7,141 (5,295 of them not assessed). Alignment confidence: high 1,928, medium 1,295, low
+10,901. 1,157 Watch cells carry top-third policy intensity (`watch_high_policy_intensity.csv`). Under the
+one-leg pathway rule (2026-10-29) over_prioritized was 375 (103 / 65 / 207) and under_prioritized 947: the
+cells that left Catch Up keep their observed policy attention, so 126 of the 654 new Watch cells are
+over-prioritized and 431 under-prioritized Catch Up cells are gone.
 
 ### Revealed Policy Priority
 
@@ -649,29 +662,33 @@ behind them (`choice_by_country.csv`, `choice_threshold_sensitivity.csv`, `consi
 `io_node_prize.csv`, `pathway_by_stage.csv`, `secure_selectivity.csv`, `deployment_review.csv`,
 `manufacturing_vs_deployment.csv`, `watch_high_policy_intensity.csv`, `choice_policy_alignment.csv`).
 
-2026-10-29, 14,124 classified cells (`choice_overall.csv`): Secure 174, Preserve 86, Catch Up 1,660, Partner
-1,592, Accelerate 514, Watch 4,803 (1,169 of them at Deployment), not assessed 5,295 (4,624 producing cells
-without a measured supply-chain need, mostly Recovery and Extraction thin cells; 671 Deployment cells without
-deployment need).
+2026-10-30 (two-leg pathway), 14,124 classified cells (`choice_overall.csv`): Secure 174, Preserve 86,
+Catch Up 748, Partner 1,850, Accelerate 514, Watch 5,457 (1,169 of them at Deployment), not assessed 5,295
+(4,624 producing cells without a measured supply-chain need, mostly Recovery and Extraction thin cells; 671
+Deployment cells without deployment need). Under the one-leg rule (2026-10-29): Catch Up 1,660, Partner 1,592,
+Watch 4,803, everything else the same.
 
 Position-choice consistency, before (the 2026-10-28 need x EO quadrant) -> after, both counted on the same
 2026-10-29 Competitive Position and measured supply shares (`consistency_before_after.csv`):
 
 | contradiction | before | after |
 |---|---|---|
-| Partner with Competitive Position in the contenders' top quarter (contenders only) | 8 | 2 (both below the capability floor, flagged) |
-| Partner with cross-country CP >= 0.75 | 363 of 1,456 (25%) | 361 of 1,592 (23%) |
+| Partner with Competitive Position in the contenders' top quarter (contenders only) | 8 | 3 (all below the capability floor, flagged) |
+| Partner with cross-country CP >= 0.75 | 363 of 1,456 (25%) | 396 of 1,850 (21%) |
 | Catch Up with 10% or more of world supply | 8 | 6 (contenders just below the top quarter, 0.59-0.74) |
-| Catch Up with CP in the contenders' top decile (contenders only) | 10 | 3 (all below the capability floor, flagged) |
-| Catch Up with cross-country CP >= 0.9 | 49 of 117 (42%) | 207 of 1,660 (12%) |
+| Catch Up with CP in the contenders' top decile (contenders only) | 10 | 2 (both below the capability floor, flagged) |
+| Catch Up with cross-country CP >= 0.9 | 49 of 117 (42%) | 173 of 748 (23%) |
 | Preserve without capability (cross-country CP < 0.25 or < 0.5% of world supply) | 66 | 0 |
 | Preserve below the contenders' median | 43 | 0 |
 
 By construction Preserve now needs a top-quarter position among contenders, so Preserve without capability
-is gone and Partner despite a top-quarter position falls from 8 to 2. The cross-country counts did not fall
-in number because far more cells are now assessed and decided (Catch Up 117 -> 1,660): as rates they fall
-from 25% to 23% (Partner) and from 42% to 12% (Catch Up). A cross-country top-decile CP is not a leading position in a node
-with 30 or more contenders. The remaining contender-level cases fail the capability floor (a 1-3% world
+is gone and Partner despite a top-quarter position falls from 8 to 3 (2 under the one-leg pathway rule;
+Australia EV Extraction moved from Catch Up to Partner with the two-leg rule). The cross-country counts did
+not fall in number because far more cells are now assessed and decided (Catch Up 117 -> 748): as rates they
+fall from 25% to 21% (Partner) and from 42% to 23% (Catch Up). Under the one-leg rule (2026-10-29) the
+after column read 2, 361 of 1,592 (23%), 6, 3 and 207 of 1,660 (12%); the second leg removed mostly
+lower-ranked Catch Up positions, so the Catch Up rate rose. A cross-country top-decile CP is not a leading
+position in a node with 30 or more contenders. The remaining contender-level cases fail the capability floor (a 1-3% world
 share without a specialised foothold or learning base) and carry `review_top_quarter_below_floor`.
 
 ## 7. Policy design
@@ -741,11 +758,11 @@ reserves; the canonical framework separates those questions: need is only depend
 (or, at Deployment, the system's need for more deployment), the prize is only the market, and position is
 only demonstrated capability. The corners are also relative to the country's own median sector, while the
 choice compares countries within a node. Against the 6,351 country x six-stage cells with a corner
-(2026-10-29): Grow -> Preserve 3%, Upgrade -> Catch Up 9%, Exposed -> Partner 24%, Stable -> Watch 41%
-(`legacy_osi_corners_vs_choice_pairs.csv`). The disagreements come mostly from the cleaned prize (1,895
+(2026-10-30): Grow -> Preserve 3%, Upgrade -> Catch Up 6%, Exposed -> Partner 26%, Stable -> Watch 44%
+(`legacy_osi_corners_vs_choice_pairs.csv`). The disagreements come mostly from the cleaned prize (1,822
 cells: a legacy EO high on input cost or capability, or low where world demand is growing), cells not
-assessed now (1,368), Deployment decided on its own need (1,053), the cleaned need (595), Competitive
-Position (208) and Secure (143) (`legacy_osi_corners_vs_choice_drivers.csv`).
+assessed now (1,368), Deployment decided on its own need (1,053), the cleaned need (612), Competitive
+Position (223) and Secure (143) (`legacy_osi_corners_vs_choice_drivers.csv`).
 
 ### The need x EO quadrant (the posture rule of 2026-10-28)
 

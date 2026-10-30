@@ -182,7 +182,7 @@ export const MOMENTUM_UNAVAILABLE = 'Current momentum unavailable — incomplete
 
 // ---- other words --------------------------------------------------------------------------------------
 
-export const PATHWAY_LABEL: Record<Pathway, string> = { yes: 'Credible', no: 'Not credible', unknown: 'Unknown (no evidence observed; counts as not credible)' };
+export const PATHWAY_LABEL: Record<Pathway, string> = { yes: 'Credible', no: 'Not credible', unknown: 'Unknown (too little evidence observed, or the resource base unknown; counts as not credible)' };
 export const NEED_TYPE_LABEL = { supply_chain: 'Supply-chain need', deployment: 'Deployment need' } as const;
 /** The observed-policy sources of a node (detail policy.sources), in words. */
 export const POLICY_SOURCE_LABEL: Record<string, string> = { nipo: 'NIPO industrial policy records', pams: 'IEA Policies and Measures' };
@@ -250,6 +250,9 @@ export const PATHWAY_EVIDENCE_LABEL: Record<string, string> = {
   resource_base_unknown: 'resource base unknown',
   none_observed_fires: 'evidence observed, none sufficient',
   no_evidence: 'no evidence observed',
+  // fewer legs fired than the pathway requires (config pathway.min_legs)
+  too_few_legs: 'too few pieces of evidence',
+  too_few_observed: 'too little evidence observed to reach the bar',
 };
 /** A ";"-list or array of R codes in words through a label table (unknown codes lose their underscores). */
 function codeList(v: string | readonly string[] | null | undefined, labels: Record<string, string>): string | null {

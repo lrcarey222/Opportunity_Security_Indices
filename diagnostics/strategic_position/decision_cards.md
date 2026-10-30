@@ -11,7 +11,7 @@ The posture is categorical: no score or index is computed for it. Observed polic
 
 **Caveat on observed policy.** Revealed Policy Priority rests on GTA NIPO and IEA PAMS records. A low observed policy priority is low observed NIPO/PAMS intervention, not proof that the government gives the node no priority: GTA does not record standards, technical regulation, most domestic regulation or agreed international measures, and NIPO has no Deployment evidence.
 
-The table holds 14454 nodes: 174 Secure, 3338 Compete, 5317 Deploy, 330 not classified.
+The table holds 14454 nodes: 174 Secure, 2684 Compete, 5971 Deploy, 330 not classified.
 
 ## Secure
 

@@ -1,8 +1,13 @@
-# Canonical decision framework: final report (2026-10-29)
+# Canonical decision framework: final report (2026-10-29, updated 2026-10-30)
 
-Status: final. Numbers are from the 2026-10-29 run of commit 91dba6f (scripts 26 -> 27 -> 91), after the review
-fixes. Method: [strategic_position.md](strategic_position.md); full readout with
-every table: [strategic_position_readout.md](strategic_position_readout.md); plan: [decision_framework_plan.md](decision_framework_plan.md).
+Status: final. Numbers are from the 2026-10-30 rerun of commit 7d847ba ("Require two pieces of evidence for a
+credible Catch Up pathway"; scripts 26 -> 27 -> 91, no input data changed), which followed the 2026-10-29 run of
+commit 91dba6f after the review fixes. Commits on `feat/supply-chain-stages`, none pushed: 784b108 (the canonical
+method), 91dba6f (review fixes), e82f631 (the Country page), 7d847ba (the two-leg pathway, section 7), 3c82b84 (its
+review fixes; no output change). Where a
+number is quoted "under the one-leg rule" it is from the 91dba6f run. Method:
+[strategic_position.md](strategic_position.md); full readout with every table:
+[strategic_position_readout.md](strategic_position_readout.md); plan: [decision_framework_plan.md](decision_framework_plan.md).
 Diagnostics: `diagnostics/strategic_position/` (`decision_review.md`, `choice_cards.md`, `choice_*.csv`).
 
 The canonical chain is **Need -> Prize -> Position -> Choice -> Policy alignment**, decided per country x technology x
@@ -18,7 +23,8 @@ comparison only.
 - **Need split by stage**: `supply_chain_need` at the five producing stages, a new `deployment_need` at Deployment &
   Use (Ember 2030 targets and yearly electricity data, WEO 2025, GEVO 2026). The two are never combined.
 - **Position decides the response**: Need x Prize triages; Competitive Position among the node's contenders (top
-  quarter + capability floor) decides Preserve; a credible-pathway test decides Catch Up vs Partner / Watch.
+  quarter + capability floor) decides Preserve; a credible-pathway test (at least two of five evidence legs since
+  2026-10-30) decides Catch Up vs Partner / Watch.
 - **Secure stays a rule-based override** (three routes, unchanged engine).
 - **Deployment & Use** is decided on deployment need alone: Accelerate or Watch, never Partner, Preserve or Catch Up.
 - **Not assessed** is a state of its own (5,295 nodes, previously shown as Deploy).
@@ -41,15 +47,15 @@ comparison only.
 | legacy corner (ES x EO, relative to the economy's own median sector) | conceptual new choice | agreement on 6,351 placed nodes |
 |---|---|---|
 | Grow (high EO, high ES) | Preserve | 3% |
-| Upgrade (high EO, low ES) | Catch Up | 9% |
-| Exposed (low EO, low ES; key `secure` until schema 3) | Partner | 24% |
-| Stable (low EO, high ES; key `watch` until schema 3) | Watch | 41% |
+| Upgrade (high EO, low ES) | Catch Up | 6% |
+| Exposed (low EO, low ES; key `secure` until schema 3) | Partner | 26% |
+| Stable (low EO, high ES; key `watch` until schema 3) | Watch | 44% |
 
 Results differ because the legacy indices mix capability, vulnerability, production, trade, investment, demand,
 reserves, concentration and deployment, and because the corners are relative to each economy's own median sector
 (every economy has Grow sectors) while Preserve is absolute among the node's contenders. The disagreements are
-attributed to the cleaned prize (1,895), not assessed (1,368), deployment need (1,053), the cleaned need (595),
-Competitive Position (208) and the Secure override (143).
+attributed to the cleaned prize (1,822), not assessed (1,368), deployment need (1,053), the cleaned need (612),
+Competitive Position (223) and the Secure override (143).
 
 ## 3. New Industrial Opportunity definition
 
@@ -126,9 +132,11 @@ contenders (economies with >= 0.5% of world supply, measured) AND the engine's c
 | low prize, high need | Preserve + `review_strong_position_low_prize` | | Partner | |
 | low prize, low need | Watch | | | Watch |
 
-Credible pathway (any of): Atlas feasibility in the top quarter; CIM pipeline capacity in the node; an established
-adjacent stage; curated learning inputs on a domestic base; an input-cost advantage. Extraction also needs a resource
-base. Unknown = not credible, lower confidence. Need or prize missing -> not assessed. An unmeasured Competitive
+Credible pathway (at least two of the five, user decision 2026-10-30; design D3 had any one): Atlas feasibility in
+the top quarter; CIM pipeline capacity in the node; an established adjacent stage; curated learning inputs on a
+domestic base; an input-cost advantage. Extraction also needs a resource base. One leg with other evidence observed is
+not credible; unknown (nothing observed, every observed leg fires but fewer than two are observed, or two legs at
+Extraction with the resource base unknown) = not credible, lower confidence. Need or prize missing -> not assessed. An unmeasured Competitive
 Position (every Recovery & Recycling node, and 128 assessed nodes elsewhere, all Watch) counts as not strong, so Recovery is never
 Preserve; where the rule reads the position it lowers confidence like an unknown pathway, and the reason says
 "Competitive Position not measured".
@@ -137,16 +145,95 @@ Threshold sensitivity (`choice_threshold_sensitivity.csv`; one threshold moved a
 
 | parameter | value | Preserve | Catch Up | Partner | Accelerate | Watch | nodes changed |
 |---|---|---|---|---|---|---|---|
-| base | | 86 | 1,660 | 1,592 | 514 | 4,803 | 0 |
-| need | 0.60 / 0.75 | 95 / 81 | 1,660 / 1,660 | 1,921 / 1,182 | 514 | 4,465 / 5,218 | 338 / 415 |
-| prize | 0.55 / 0.65 | 96 / 73 | 1,728 / 858 | 1,562 / 1,842 | 514 | 4,755 / 5,368 | 78 / 815 |
-| CP bar | 0.67 / 0.85 | 114 / 52 | 1,635 / 1,687 | 1,589 / 1,599 | 514 | 4,803 | 28 / 34 |
-| deployment | 0.55 / 0.67 | 86 | 1,660 | 1,592 | 669 / 372 | 4,648 / 4,945 | 155 / 142 |
+| base | | 86 | 748 | 1,850 | 514 | 5,457 | 0 |
+| need | 0.60 / 0.75 | 95 / 81 | 748 / 748 | 2,237 / 1,368 | 514 | 5,061 / 5,944 | 396 / 487 |
+| prize | 0.55 / 0.65 | 96 / 73 | 796 / 422 | 1,831 / 1,965 | 514 | 5,418 / 5,681 | 58 / 339 |
+| CP bar | 0.67 / 0.85 | 114 / 52 | 724 / 774 | 1,847 / 1,857 | 514 | 5,456 / 5,458 | 28 / 34 |
+| deployment | 0.55 / 0.67 | 86 | 748 | 1,850 | 669 / 372 | 5,302 / 5,599 | 155 / 142 |
 
-The prize threshold is a knife-edge (0.60 -> 0.65 halves Catch Up) because the prize is dominated by one
-country-invariant percentile, so whole nodes cross the line together. The credible-pathway rule is the other lever:
-any one of five legs (used, design D3) keeps 1,660 Catch Up nodes, two legs or more 748, any leg except the
-adjacent stage 912; the adjacent-stage leg alone carries 748.
+The prize threshold is still a knife-edge, but a smaller one: 0.60 -> 0.65 cuts Catch Up from 748 to 422 and changes
+339 nodes (under the one-leg rule it halved Catch Up, 1,660 -> 858, and changed 815), because the prize is dominated by
+one country-invariant percentile, so whole nodes cross the line together. The credible-pathway rule was the other
+lever and is now decided (user decision 2026-10-30): at least two of the five legs (used) keeps 748 Catch Up nodes; any
+one of five legs (design D3, used until 2026-10-29) kept 1,660, of which the adjacent-stage leg alone carried 748. A
+one-leg-era alternative, any one leg except the adjacent stage, would have kept 912; it was not adopted.
+
+### Two-leg pathway (2026-10-30)
+
+Commit 7d847ba sets `decision_framework.pathway.min_legs: 2` (`config/strategic_position.yml`,
+`R/strategic_position/pathway.R`). One leg fired with other evidence observed is now `pathway_credible` "no" with
+`pathway_basis` "<leg>;too_few_legs"; every observed leg fired but fewer than two observed is "unknown" with
+"<legs>;too_few_observed" (no classified node is in that state on this run). Extraction still needs a resource
+base. The choice reason names the shortfall, e.g. "only one piece of pathway evidence (adjacent stage) where two are
+required: Partner with trusted suppliers." Scripts 26, 27 and 91 were rerun; no input data changed.
+
+| rule | Secure | Preserve | Catch Up | Partner | Accelerate | Watch | not assessed |
+|---|---|---|---|---|---|---|---|
+| one leg (2026-10-29) | 174 | 86 | 1,660 | 1,592 | 514 | 4,803 | 5,295 |
+| two legs (2026-10-30, used) | 174 | 86 | 748 | 1,850 | 514 | 5,457 | 5,295 |
+
+Compete falls from 3,338 to 2,684 and Deploy rises from 5,317 to 5,971. The only moves are 912 Catch Up nodes: 258 to
+Partner (high need) and 654 to Watch (all with `low_need` and `weak_domestic_case`, 287 also
+`ample_diversified_supply`). No other node changed choice. Each moved node had one leg: adjacent stage 748, input cost
+152, feasibility 7, learning 4, pipeline 1. Their confidence now: high 328, moderate 515, low 69. 169 economies had a
+node move.
+
+- Catch Up by stage: Extraction 64 -> 32, Refining 345 -> 153, Components 638 -> 269, Assembly 483 -> 243, Recovery
+  130 -> 51.
+- Legs among the 748 Catch Up nodes: adjacent stage 568, feasibility 558, learning 535, input cost 245, pipeline 105.
+  Feasibility and learning fire together in 508 of them; 350 have exactly two legs, 293 three, 93 four, 12 five.
+- Economies with any Catch Up node: 204 -> 112 (92 lost all of theirs); the median economy now has 1 Catch Up node
+  (8 before).
+- Battery-materials refining (Batteries x Refining): 171 -> 75 Catch Up economies. The most common Catch Up nodes now:
+  Batteries Refining 75, Batteries Components 71, EV Components 65, EV Assembly 62, Wind Components 62, Batteries
+  Assembly 60, Solar Assembly 57, Solar Components 57, EV Refining 56, Wind Assembly 53, Batteries Recovery 51, EV
+  Extraction 15.
+
+| economy | Secure | Preserve | Catch Up | Partner | Accelerate | Watch | not assessed |
+|---|---|---|---|---|---|---|---|
+| United States | 1 | 9 | 4 | 5 | 2 | 25 | 20 |
+| Japan | 4 | 1 | 10 | 10 | 5 | 16 | 20 |
+| South Korea | 5 | 6 | 10 | 8 | 6 | 11 | 20 |
+| India | 1 | 6 | 11 | 7 | 9 | 12 | 20 |
+| Germany | 3 | 3 | 8 | 8 | 4 | 20 | 20 |
+| United Kingdom | 2 | 0 | 10 | 13 | 3 | 18 | 20 |
+| France | 2 | 5 | 8 | 7 | 2 | 22 | 20 |
+| Australia | 1 | 1 | 3 | 17 | 5 | 19 | 20 |
+| Canada | 1 | 1 | 19 | 7 | 1 | 17 | 20 |
+
+Of these nine only two moved: the United Kingdom's Solar Components (feasibility its only leg) is now Watch, and
+Australia's Batteries Recovery, EV Components and EV Extraction (adjacent stage only) are now Partner. Elsewhere in
+section 10's table, Brazil (Batteries Refining, Solar Components to Watch), Mexico (Gas Refining to Watch, Solar
+Components to Partner) and Indonesia (Wind Components to Partner) moved.
+
+Caveats:
+
+- **The large economies barely move.** Feasibility and learning fire together for big diversified economies, so they
+  keep their Catch Up nodes; only 9 of the 912 moved nodes are in the fourteen economies of section 10, and Catch Up
+  is now driven by feasibility plus learning (508 of 748) rather than by adjacency alone. The weakness of section 16
+  remains: every country's Catch Up clause leads with the same nodes, because the prize is mostly country-invariant.
+- **The prize knife-edge is smaller, not gone** (0.65 changes 339 nodes, 815 under the one-leg rule).
+- **Over-prioritized Watch rises from 375 to 503** (by basis: NIPO protection 122, local content 65, total-attention
+  fallback 316; was 103 / 65 / 207), because the moved nodes keep their observed policy attention: 126 of the 654 new
+  Watch nodes are over-prioritized (19 on NIPO protection, 107 on the low-confidence fallback). Two more Watch nodes
+  (Libya Gas Extraction and Refining) are over-prioritized because Catch Up is no longer among their possible choices.
+  Under-prioritized falls from 947 to 516 (431 of the moved nodes were under-prioritized Catch Up) and misaligned rises
+  from 68 to 76 (8 of the new Partner nodes, e.g. Australia EV Components).
+- **Australia's EV Extraction now goes Partner.** Its contender score (0.93) is in the top quarter but below the
+  capability floor, and the adjacent stage was its only leg, so Partner with a contender CP >= 0.75 rises from 2 to 3
+  (all three flagged `review_top_quarter_below_floor`). The flag now covers 8 nodes (5 Catch Up, 3 Partner; 11 under
+  the one-leg rule): Russia and Philippines EV Extraction and Saudi Arabia Gas Assembly had only the adjacent-stage leg
+  and are now Watch.
+- **Consistency rates move in opposite directions** (section 12): Partner with cross-country CP >= 0.75 is 396 of 1,850
+  (21%; 361 of 1,592, 23%, under the one-leg rule) and Catch Up with cross-country CP >= 0.9 is 173 of 748 (23%; 207 of
+  1,660, 12%). Only 34 of the 912 moved nodes had a cross-country CP >= 0.9, so the remaining Catch Up set is
+  stronger on average and the rate rises.
+- **An unmeasured leg counts against a node.** "Not credible" needs only one observed leg that does not fire, so 483 of
+  the 912 moved nodes were decided with a leg unobserved that could have made the second (input cost unobserved in
+  329, the investment pipeline in 208, feasibility in 40; 394 with one leg unobserved, 89 with two or three). Design D3
+  already read "some evidence observed, none fires" as "no" rather than "unknown"; the stricter reading would mark these
+  483 "unknown", which leaves the choice unchanged but lowers confidence and keeps Catch Up among the possible choices.
+  Not adopted; a user decision.
 
 ## 8. Accelerate / Watch decision logic
 
@@ -165,24 +252,25 @@ sources disagreeing -> mixed; no data -> insufficient data. Where NIPO observes 
 recorded, zero included), protection alone decides over-prioritization. Only where NIPO does not observe the node at
 all does a fallback judge a Watch on total policy attention in the top third (design D5), and that verdict is always
 low confidence. Alignment confidence high / medium / low from source coverage. Results (`choice_policy_alignment.csv`):
-aligned 5,185; under-prioritized 947 (Catch Up 828, Secure 92, Preserve 27); deployment gap 182; over-prioritized 375;
-misaligned 68; mixed 234; insufficient data 7,133. Confidence is high for 1,893 nodes, medium for 1,263 and low for
-10,968 (one source or none).
+aligned 5,486; under-prioritized 516 (Catch Up 397, Secure 92, Preserve 27); deployment gap 182; over-prioritized 503;
+misaligned 76; mixed 220; insufficient data 7,141. Confidence is high for 1,928 nodes, medium for 1,295 and low for
+10,901 (one source or none).
 
-Watch nodes with high policy intensity (`watch_high_policy_intensity.csv`): 994 of 4,803 Watch nodes carry top-third
-policy intensity (priority, protection or deployment localisation). 375 are judged over-prioritized, by basis:
+Watch nodes with high policy intensity (`watch_high_policy_intensity.csv`): 1,157 of 5,457 Watch nodes carry top-third
+policy intensity (priority, protection or deployment localisation). 503 are judged over-prioritized, by basis:
 
 | basis | over-prioritized Watch nodes | alignment confidence |
 |---|---|---|
-| NIPO protection in the top third (producing stages) | 103 | high 101, medium 2 |
+| NIPO protection in the top third (producing stages) | 122 | high 120, medium 2 |
 | the equipment's local-content protection (Deployment & Use) | 65 | medium |
-| total-attention fallback: total policy attention in the top third, NIPO does not observe the node | 207 | low |
+| total-attention fallback: total policy attention in the top third, NIPO does not observe the node | 316 | low |
 
-So 168 rest on observed protection or local content and 207 on the attention fallback. Until the review fix, 100
-Watch nodes whose NIPO protection stock is recorded (98 at zero) were over-prioritized on total attention because
-their economy protects too few nodes to rank; they are now aligned or mixed. The rest of the 994: 537 aligned (mostly
-Deployment Watch with heavy PAMS deployment support but no localisation: support is not over-prioritization), 33
-insufficient data, 49 mixed. Examples, all on observed protection: India, Korea, Germany, UK and Canada Electric Grid
+So 187 rest on observed protection or local content and 316 on the attention fallback (under the one-leg rule, 168
+and 207 of 375; section 7). Until the review fix, 100 Watch nodes whose NIPO protection stock is recorded (98 at
+zero) were over-prioritized on total attention because their economy protects too few nodes to rank; they are now
+aligned or mixed. The rest of the 1,157: 563 aligned (mostly
+Deployment Watch with heavy PAMS deployment support but no localisation: support is not over-prioritization), 41
+insufficient data, 50 mixed. Examples, all on observed protection: India, Korea, Germany, UK and Canada Electric Grid
 equipment (protection 0.78-0.99 on a low-need, low-prize node); US Nuclear Assembly and Deployment (protection and
 local content 0.78, deployment need 0.60, just below the line); Australia Solar Components (protection 0.91, weak
 domestic case); France Batteries and Wind Deployment (local content 0.96 / 0.99, deployment need 0.39 / 0.34).
@@ -190,10 +278,10 @@ Misaligned Partner nodes: Australia Solar and Wind Assembly, US Nuclear Refining
 
 ## 10. Distribution of all choices by country
 
-All nodes: Secure 174, Preserve 86, Catch Up 1,660, Partner 1,592, Accelerate 514, Watch 4,803, not assessed 5,295.
-Per economy (214, of 66 nodes): median 0 Secure, 0 Preserve, 8 Catch Up, 7 Partner, 1 Accelerate, 23 Watch, 23 not
-assessed; 83 economies have a Secure node, 25 a Preserve node, 129 an Accelerate node. Every economy has at least 20
-not-assessed nodes (the same 20 nodes have no measured supply-chain need anywhere). All economies:
+All nodes: Secure 174, Preserve 86, Catch Up 748, Partner 1,850, Accelerate 514, Watch 5,457, not assessed 5,295.
+Per economy (214, of 66 nodes): median 0 Secure, 0 Preserve, 1 Catch Up, 8 Partner, 1 Accelerate, 26.5 Watch, 23 not
+assessed; 83 economies have a Secure node, 25 a Preserve node, 112 a Catch Up node, 129 an Accelerate node. Every
+economy has at least 20 not-assessed nodes (the same 20 nodes have no measured supply-chain need anywhere). All economies:
 `diagnostics/strategic_position/choice_by_country.csv`.
 
 | economy | Secure | Preserve | Catch Up | Partner | Accelerate | Watch | not assessed |
@@ -203,24 +291,24 @@ not-assessed nodes (the same 20 nodes have no measured supply-chain need anywher
 | South Korea | 5 | 6 | 10 | 8 | 6 | 11 | 20 |
 | India | 1 | 6 | 11 | 7 | 9 | 12 | 20 |
 | Germany | 3 | 3 | 8 | 8 | 4 | 20 | 20 |
-| United Kingdom | 2 | 0 | 11 | 13 | 3 | 17 | 20 |
+| United Kingdom | 2 | 0 | 10 | 13 | 3 | 18 | 20 |
 | France | 2 | 5 | 8 | 7 | 2 | 22 | 20 |
-| Australia | 1 | 1 | 6 | 14 | 5 | 19 | 20 |
+| Australia | 1 | 1 | 3 | 17 | 5 | 19 | 20 |
 | Canada | 1 | 1 | 19 | 7 | 1 | 17 | 20 |
 | China | 3 | 16 | 3 | 2 | 8 | 14 | 20 |
-| Brazil | 2 | 1 | 6 | 6 | 3 | 28 | 20 |
+| Brazil | 2 | 1 | 4 | 6 | 3 | 30 | 20 |
 | Italy | 2 | 1 | 11 | 9 | 6 | 17 | 20 |
-| Mexico | 0 | 0 | 13 | 18 | 4 | 11 | 20 |
-| Indonesia | 2 | 5 | 11 | 11 | 5 | 12 | 20 |
+| Mexico | 0 | 0 | 11 | 19 | 4 | 12 | 20 |
+| Indonesia | 2 | 5 | 10 | 12 | 5 | 12 | 20 |
 
 ## 11. Largest changes from the old methodology
 
 Against the 2026-10-28 need x EO quadrant (the live posture before this work): 4,624 nodes previously shown as Deploy
 on insufficient data are now not assessed; Deployment & Use (2,354 nodes, all previously "Deploy" without a decision)
-splits into 514 Accelerate, 1,169 Watch and 671 not assessed; 1,182 + 647 insufficient-data nodes are now Watch and
-Catch Up through Competitive Position and the pathway; the cleaned prize moves 539 watch -> Catch Up, 248 partner ->
-Catch Up and 119 preserve -> Watch; the cleaned need moves 220 partner -> Watch and 174 watch -> Partner. Preserve
-falls from 266 to 86 (top quarter among contenders), Catch Up rises from 117 to 1,660.
+splits into 514 Accelerate, 1,169 Watch and 671 not assessed; 1,553, 413 and 146 insufficient-data nodes are now
+Watch, Partner and Catch Up through Competitive Position and the pathway; the cleaned prize moves 329 watch -> Catch
+Up, 136 partner -> Catch Up and 119 preserve -> Watch; the cleaned need moves 220 partner -> Watch and 174 watch ->
+Partner. Preserve falls from 266 to 86 (top quarter among contenders), Catch Up rises from 117 to 748.
 
 Named examples: France Nuclear Components and Gas Refining preserve -> Watch (legacy EO 0.93 / 0.89 carried by
 capability and cost; world demand growth gives a prize of 0.42 / 0.25); Australia Batteries Components partner -> Catch
@@ -232,23 +320,25 @@ Canada and India: Catch Up, not Preserve (8 real contenders; China and Indonesia
 
 | contradiction | before (2026-10-28 quadrant) | after |
 |---|---|---|
-| Partner with CP in the contenders' top quarter | 8 | 2 |
-| Catch Up with CP in the contenders' top decile | 10 | 3 |
+| Partner with CP in the contenders' top quarter | 8 | 3 |
+| Catch Up with CP in the contenders' top decile | 10 | 2 |
 | Catch Up with 10%+ of world supply | 8 | 6 |
 | Preserve without capability | 66 | 0 |
 | Preserve below the contenders' median | 43 | 0 |
-| Partner with cross-country CP >= 0.75 | 363 (25%) | 361 (23%) |
-| Catch Up with cross-country CP >= 0.9 | 49 (42%) | 207 (12%) |
+| Partner with cross-country CP >= 0.75 | 363 (25%) | 396 (21%) |
+| Catch Up with cross-country CP >= 0.9 | 49 (42%) | 173 (23%) |
 
 Flags kept for review: `review_strong_position_low_prize` 16 (Preserve; mostly fossil and nuclear incumbents, e.g.
 Russia Nuclear Refining, US and Canada Oil Extraction, Japan Coal Components, France Nuclear Refining);
-`review_top_quarter_below_floor` 11 (Solar Components in India, Viet Nam, Thailand, France; Russia Gas Extraction as
-Partner at 9.6% of world supply, just under the engine's 10% line with no complementary capability recorded). The
-cross-country counts fall as rates only: most are mid-ranked contenders in crowded nodes, which the contender test
-treats as not leading. Partner at 23% "despite" cross-country CP >= 0.75 is the weakest consistency result. A
-top-quarter score held by an economy below the contender line is not flagged but now named: its trace says
-`not_a_contender` and its reason "a top-quarter score without a contender share" (32 nodes, e.g. Canada and India
-Batteries Assembly at 0.13% of world supply).
+`review_top_quarter_below_floor` 8: 5 Catch Up (Solar Components in India, Viet Nam, Thailand, France; Cambodia Solar
+Assembly) and 3 Partner (Russia Gas Extraction at 9.6% of world supply, just under the engine's 10% line with no
+complementary capability recorded; Nigeria Gas Refining; Australia EV Extraction, Catch Up under the one-leg rule).
+The cross-country counts fall as rates only: most are mid-ranked contenders in crowded nodes, which the contender test
+treats as not leading. Under the one-leg rule the Catch Up rate was 12% (207 of 1,660); the second leg removed mostly
+lower-ranked positions, so it is 23% now. Partner at 21% "despite" cross-country CP >= 0.75 and Catch Up at 23%
+with cross-country CP >= 0.9 are the weakest consistency results. A top-quarter score held by an economy below the
+contender line is not flagged but now named: its trace says `not_a_contender` and its reason "a top-quarter score
+without a contender share" (32 nodes, e.g. Canada and India Batteries Assembly at 0.13% of world supply).
 
 ## 13. Deployment-priority examples
 
@@ -271,8 +361,9 @@ no oil-import displacement: a current-policy reading, with the climate-aligned a
 
 ## 14. Where manufacturing priority and deployment priority differ
 
-Across all economies: 328 technology pairs accelerate deployment while manufacturing (Components and Assembly) is
-Watch or Partner; 372 the reverse (deployment Watch, manufacturing Preserve or Catch Up); 186 both high; 797 both low.
+Across all economies: 385 technology pairs accelerate deployment while manufacturing (Components and Assembly) is
+neither Preserve nor Catch Up; 173 the reverse (deployment Watch, manufacturing Preserve or Catch Up); 129 both high;
+996 both low.
 Examples: deploy faster, manufacture elsewhere: Australia Solar, Wind and Grid; Japan Nuclear and Gas; India and UK
 Grid; India Coal, Gas and Oil. Manufacture, deployment on track: United States Solar, Wind and EVs (Preserve
 manufacturing; deployment need 0.47 / 0.37 / 0.09); Canada Solar, Wind, Nuclear, EVs and Storage (Catch Up
@@ -371,20 +462,24 @@ India, Germany and the UK, at 1600 x 1000 (large desktop), 1366 x 800 (laptop), 
   one dense column (about 170 in Batteries Refining). The freshness line dates the strategy build in UTC ("30
   October 2026" for a run on the evening of 29 October, Pacific time).
 - **What the numbers say on screen:** every country's Catch Up clause leads with the same nodes (battery recycling,
-  PV modules & inverters, wafers & PV cells), because the prize is mostly country-invariant and the pathway test is
-  easy to pass (sections 7 and 18); the Sector card shows 171 economies as Catch Up in battery-materials refining.
+  PV modules & inverters, wafers & PV cells), because the prize is mostly country-invariant (sections 7 and 18). The
+  two-leg pathway (2026-10-30) does not change that for the large economies, where feasibility and learning fire
+  together. The Sector card showed 171 economies as Catch Up in battery-materials refining under the one-leg rule; the
+  rerun bundle has 75 (not re-reviewed in the browser).
 
 ## 17. Tests and results
 
-Final run, 2026-10-29, on the real exports in the worktree (posture bundle schema 2 from commit 91dba6f, 214
-economies, 14,124 nodes; Country bundle schema 3, 219 fact sheets), after the integration and review fixes. Totals:
-**1,700 dashboard tests and 6,548 R expectations pass; the one R failure predates this build.**
+Final run, 2026-10-30, on the real exports in the worktree (posture bundle schema 2 from commit 7d847ba, the two-leg
+pathway rerun; 214 economies, 14,124 nodes; Country bundle schema 3, 219 fact sheets), after the integration and
+review fixes. Totals: **1,700 dashboard tests and 6,569 R expectations pass; the one R failure predates this
+build.** The jsdom and browser checks further down were made on the 2026-10-29 bundle (commit 91dba6f); on the
+2026-10-30 bundle the drawer of a moved node (Australia EV Components) was checked in the browser.
 
 **Dashboard (TypeScript, from `dashboard/`)**
 
 - Type check: `tsc -p tsconfig.app.json --noEmit` and `tsc -p tsconfig.node.json --noEmit`, 0 errors each.
-- Vitest, all seven projects: 113 files, 1,700 tests, 0 failures. (One app-shell test timed out once while the R
-  suite was loading the machine; alone, and with its whole file, it passes.)
+- Vitest, all seven projects, 2026-10-30: 113 files, 1,700 tests, 0 failures (the first run caught the pathway
+  glossary entry over its 35-word limit; shortened, keeping "Unknown counts as not credible").
 
 | Project | What it covers here |
 |---|---|
@@ -397,16 +492,19 @@ economies, 14,124 nodes; Country bundle schema 3, 219 fact sheets), after the in
 | country-real | the real Country bundle (schema 3, no `quadrant` key left) |
 
 - `npm run build`: ok. `npm run budget`: OK, all 18 figures within their limits. The posture bundle is now counted
-  where pages load it: Countries landing 552 kB of 700 kB (posture manifest + core 87 kB on the wire), Country profile
-  first view 809 kB of 900 kB (+ the largest drawer document, 13 kB), a new "Posture data" figure 1.88 MB against
-  2.15 MB (measured + ~15%), All data 38.73 MB of 42.5 MB with posture included. No other limit was changed. The
-  Sector pages' posture card also loads the core (87 kB); counted, the Sector profile would read 1.31 MB against its
-  1.30 MB limit, so the script reports it as a note (an open decision: lazy-load the card or raise that limit). Raw
-  file sizes (`posture/__tests__/budget.test.ts`): core 2,334 kB of 3 MiB, largest drawer document 122 kB of 128 KiB.
+  where pages load it (2026-10-30 build): Countries landing 552 kB of 700 kB (posture manifest + core 87 kB on the
+  wire), Country profile first view 809 kB of 900 kB (+ the largest drawer document, 13 kB), a new "Posture data"
+  figure 1.90 MB against 2.15 MB (measured + ~15%), All data 38.75 MB of 42.5 MB with posture included. No other
+  limit was changed. The Sector pages' posture card also loads the core (87 kB); counted, the Sector profile (1.22 MB)
+  would read 1.31 MB against its 1.30 MB limit, so the script
+  reports it as a note (an open decision: lazy-load the card or raise that limit). Raw
+  file sizes (`posture/__tests__/budget.test.ts`) after the 2026-10-30 rerun: core 2,324 kB of 3 MiB, largest drawer
+  document 123 kB of 128 KiB.
 
-**R (testthat, 44 files, each run with `stop_on_failure = FALSE`)**: 6,548 expectations pass, 1 fails, 0 errors.
+**R (testthat, 44 files, each run with `stop_on_failure = FALSE`)**: 6,569 expectations pass, 1 fails, 0 errors
+(with 3c82b84, the hardening of the two-leg setting).
 
-- Decision framework and strategic position (24 files, 2,502): decision-engine 264, industrial-opportunity 84,
+- Decision framework and strategic position (24 files, 2,523): decision-engine 273, industrial-opportunity 96,
   deployment-need 106, home-market 29, decision-quadrant 74, partner-recs 59, posture-export 72, strategic-posture 95,
   posture-nodes 86, posture-policy-design 200, security-routes 50, trade-momentum 63, supply-chain-stages 54,
   strategic-position-plots 221, competitive-position 83, strategic-need 140, strategic-resource-base 36,
@@ -428,7 +526,9 @@ consistently; scenarios labelled per family, the climate-aligned value a separat
 NA, never zero) and `test-decision-engine.R` (Secure override first; Deployment & Use decided on deployment need, high
 -> Accelerate; a Deployment node never becomes Partner, Preserve or Catch Up; high prize + strong position ->
 Preserve; high prize + weak position + credible pathway -> Catch Up; high need + low prize + weak position -> Partner;
-low need + low prize -> Watch; observed policy never determines the recommendation).
+low need + low prize -> Watch; observed policy never determines the recommendation). Commit 7d847ba adds the two-leg
+pathway tests to `test-industrial-opportunity.R` and `test-decision-engine.R`: the one-leg test pinned to
+`min_legs: 1`, the `too_few_legs` / `too_few_observed` states and bases, the reason wording and invalid settings.
 
 **Checks on the real exports beyond the suites**
 
@@ -479,8 +579,8 @@ low need + low prize -> Watch; observed policy never determines the recommendati
   congestion, EV, hydrogen or nuclear targets; no committed pipeline (GEM needs a contact form); Ember capacity ends in
   2024 for some economies; stationary storage installed base for 21 economies; WEO scenario capacity assumes a constant
   capacity factor (inflates Japan's nuclear restarts).
-- Policy alignment rests on one source for most nodes (confidence low for 10,968); PAMS is the only deployment-policy
-  source; NIPO's support / protection split is sparse, so 207 of the 375 over-prioritized Watch nodes rest on the
+- Policy alignment rests on one source for most nodes (confidence low for 10,901); PAMS is the only deployment-policy
+  source; NIPO's support / protection split is sparse, so 316 of the 503 over-prioritized Watch nodes rest on the
   low-confidence total-attention fallback.
 - Competitive Position is not measured at Recovery & Recycling (no supply share or capability family for recycling):
   Recovery nodes are decided with the position read as not strong, at lower confidence.
@@ -488,17 +588,19 @@ low need + low prize -> Watch; observed policy never determines the recommendati
 
 ## 19. Recommended next refinements
 
-1. Tighten the Catch Up pathway (two legs, or a stronger adjacency leg): 1,660 -> 748 or 912 Catch Up nodes. User
-   decision.
+1. Done 2026-10-30 (user decision, commit 7d847ba): the Catch Up pathway now needs two legs; Catch Up 1,660 -> 748,
+   the 912 moved nodes going 258 to Partner and 654 to Watch (section 7). The alternative of one leg other than the
+   adjacent stage (912 Catch Up under the one-leg rule) was not adopted. Still open: Catch Up for large economies
+   rests on feasibility and learning, which fire together for most of them, so their Catch Up lists did not change.
 2. Use WEO capacity additions (a flow) for manufacturing nodes so manufacturing and mineral prizes are comparable.
 3. Measure supply-chain need for the 20 structurally unassessed nodes (hydrogen, geothermal, recovery flows).
 4. Add national grid, storage, EV and nuclear targets and a committed pipeline to deployment need.
-5. Report the prize-threshold knife-edge to users (0.60 -> 0.65 halves Catch Up) or smooth it with a borderline
-   band shown on the map.
+5. Report the prize-threshold knife-edge to users (0.60 -> 0.65 cuts Catch Up from 748 to 422; it halved it under
+   the one-leg rule) or smooth it with a borderline band shown on the map.
 6. Revisit the engine's 10% "strong position" line for large fossil producers (Russia gas extraction) and the
    resilience route for equipment nodes (transformers, power electronics), which today only reaches Grid Assembly.
 7. Improve the weighted-mineral home share for partially listed refiners (Indonesia, Japan battery-metal refining).
 8. Measure recycling capability (secondary output, scrap processing capacity) so Recovery & Recycling has a
    Competitive Position and can be Preserve; today it is read as not strong, at lower confidence.
 9. Extend NIPO's support / protection coverage (or add a second protection source) so fewer Watch nodes rest on the
-   low-confidence total-attention fallback (207 of the 375 over-prioritized).
+   low-confidence total-attention fallback (316 of the 503 over-prioritized).

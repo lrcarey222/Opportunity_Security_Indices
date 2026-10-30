@@ -59,6 +59,9 @@ describe('one site-wide grammar (spec XX)', () => {
     expect(pathwayEvidenceWords(['feasibility', 'adjacent_stage', 'input_cost'])).toBe('feasibility, adjacent stage, input-cost advantage');
     expect(pathwayEvidenceWords('none_observed_fires')).toBe('evidence observed, none sufficient');
     expect(pathwayEvidenceWords('feasibility;resource_base_unknown')).toBe('feasibility, resource base unknown');
+    // the two-leg pathway (config pathway.min_legs): one leg fired, or the only observed leg fired
+    expect(pathwayEvidenceWords('adjacent_stage;too_few_legs')).toBe('adjacent stage, too few pieces of evidence');
+    expect(pathwayEvidenceWords('feasibility;too_few_observed')).toBe('feasibility, too little evidence observed to reach the bar');
     expect(['secure_override', 'deployment_need', 'supply_chain_need', 'industrial_opportunity', 'cp_contender_pct', 'pathway_credible', 'choice'].map(traceTestWords)).toEqual([
       'Secure tests', 'Deployment need', 'Supply-chain need', 'Industrial Opportunity', 'Competitive Position among contenders', 'Credible pathway', 'Choice',
     ]);

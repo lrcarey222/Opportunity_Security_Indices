@@ -198,7 +198,7 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 ## Brazil
 
-2 Secure . 1 Preserve . 6 Catch Up . 6 Partner . 3 Accelerate . 28 Watch (20 not assessed)
+2 Secure . 1 Preserve . 4 Catch Up . 6 Partner . 3 Accelerate . 30 Watch (20 not assessed)
 
 **Secure**
 
@@ -211,9 +211,9 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 **Compete . Catch Up**
 
-- wafers and PV cells (Solar, Components): a high industrial prize (0.85), a position below the top quarter (0.00) and a credible pathway (adjacent stage): Catch Up. [delivery mixed; policy mixed; confidence high]
-- battery materials refining (Batteries, Refining): a high industrial prize (0.63), a position below the top quarter (0.00) and a credible pathway (adjacent stage): Catch Up. [delivery domestic; policy under prioritized; confidence moderate]
 - EV and charger manufacturing (Electric Vehicles, Assembly): a high industrial prize (0.70), a position below the top quarter (0.48) and a credible pathway (pipeline, adjacent stage, learning): Catch Up. [delivery mixed; policy aligned; confidence high]
+- wind turbines (Wind, Assembly): a high industrial prize (0.65), a top-quarter score (0.81) without a contender share and a credible pathway (pipeline, adjacent stage): Catch Up. [delivery mixed; policy aligned; confidence high]
+- blades, towers and nacelle parts (Wind, Components): a high industrial prize (0.65), a top-quarter score (0.80) without a contender share and a credible pathway (pipeline, adjacent stage): Catch Up. [delivery mixed; policy aligned; confidence high]
 
 **Compete . Partner**
 
@@ -229,7 +229,7 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 **Deploy . Watch**
 
+- wafers and PV cells (Solar, Components): Low supply-chain need (0.40) and a high industrial prize (0.85), but no top-quarter position and only one piece of pathway evidence (adjacent stage) where two are required: Watch (keep R&D options open). [delivery allied; policy over prioritized; confidence high]
 - drilling rigs, tankers and oil equipment (Oil, Assembly): Low supply-chain need (0.11) and a low industrial prize (0.52): Watch. Domestic industrial priority is low. [delivery diversified global; policy over prioritized; confidence high]
 - polysilicon refining (Solar, Refining): Low supply-chain need (0.49) and a low industrial prize (0.31): Watch. Domestic industrial priority is low. [delivery diversified global; policy over prioritized; confidence high]
-- transformers, switchgear and cables (Electric Grid, Assembly): Low supply-chain need (0.34) and a low industrial prize (0.46): Watch. Domestic industrial priority is low. [delivery allied; policy over prioritized; confidence high]
 
