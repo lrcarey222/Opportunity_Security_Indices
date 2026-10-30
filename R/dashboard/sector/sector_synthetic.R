@@ -289,12 +289,12 @@ sector_synthetic_parts <- function(dict) {
   # trade.rca (exporter-reported; HKG excluded; RUS did not report; small exporters nq).
   add("trade.rca", ba, c("CHN", "POL", "DEU", "JPN", "USA", "IDN", "EST", "BRA"), 2024,
       c(3.1, 4.2, 0.9, 1.1, 0.3, NaN, NaN, NaN), c("obs", "obs", "obs", "obs", "obs", "nq", "nq", "nq"))
-  add("trade.atlas_share", ba, econ, 2023,
+  add("trade.atlas_share", ba, econ, 2024,
       c(0.0005, 0.409, 0.044, 0.0004, 0.003, 0.01, 0.04, 0.05, 0.001, 0.03))
   # Export feasibility (Atlas relatedness, 0-1); HKG has none (not in the Atlas HS4 panel here).
-  add("trade.feasibility", ba, setdiff(econ, "HKG"), 2023, c(0.071, 0.513, 0.412, 0.205, 0.188, 0.397, 0.371, 0.096, 0.402))
-  add("trade.feasibility", be, setdiff(econ, "HKG"), 2023, c(0.144, 0.162, 0.083, 0.051, 0.122, 0.064, 0.077, 0.139, 0.095))
-  addw("trade.atlas_share", ba, 2023, 1, "one")
+  add("trade.feasibility", ba, setdiff(econ, "HKG"), 2024, c(0.071, 0.513, 0.412, 0.205, 0.188, 0.397, 0.371, 0.096, 0.402))
+  add("trade.feasibility", be, setdiff(econ, "HKG"), 2024, c(0.144, 0.162, 0.083, 0.051, 0.122, 0.064, 0.077, 0.139, 0.095))
+  addw("trade.atlas_share", ba, 2024, 1, "one")
   # Mineral trade by stage (items mineral_stage): each stage its own basket and world total.
   le <- "mineral_stage:lithium-extraction"
   lr <- "mineral_stage:lithium-refining"

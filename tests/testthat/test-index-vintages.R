@@ -30,10 +30,10 @@ test_that("parse_index_years accepts the CLI and env spellings and falls back to
 })
 
 test_that("resolve_available_year snaps back to the newest year at or before the request", {
-  atlas <- 1995:2023
+  atlas <- 1995:2024
 
-  # The Atlas stops in 2023, so a 2025 vintage takes 2023 rather than failing.
-  expect_equal(resolve_available_year(2025, atlas), 2023L)
+  # The Atlas stops in 2024, so a 2025 vintage takes 2024 rather than failing.
+  expect_equal(resolve_available_year(2025, atlas), 2024L)
   expect_equal(resolve_available_year(2020, atlas), 2020L)
 
   # A request that predates the source falls forward to its first year; the builder

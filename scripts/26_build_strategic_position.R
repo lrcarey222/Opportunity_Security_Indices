@@ -189,7 +189,7 @@ trade_bench <- NULL
 bench_idx <- NULL
 annual_totals <- NULL
 eo_contrib_cp <- eo_contrib
-trade_benchmark_period <- "Atlas 2023 / Comtrade 2024 (single year)"
+trade_benchmark_period <- "Atlas 2024 / Comtrade 2024 (single year)"
 if (file.exists(annual_path)) {
   annual <- data.table::fread(annual_path, colClasses = list(character = c("cmd_code", "period")))
   trade_bench <- sp_trade_benchmark(annual, trade_codes, years = unlist(tb_cfg$years), exclude_reporters = reexport_hubs,
