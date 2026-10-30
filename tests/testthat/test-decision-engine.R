@@ -163,6 +163,85 @@ test_that("high Competitive Position needs the top quarter of contenders and the
   expect_equal(de(industrial_opportunity = 0.9, cp_contender_pct = th$cp)$compete_mode, "preserve")   # inclusive
 })
 
+test_that("an unmeasured Competitive Position is not strong, lowers confidence and is named in the reason", {
+  # Recovery: no supply share and no CP family measured, so cp_contender_pct is NA for every economy
+  na_cp <- list(supply_chain = "Recovery", cp_contender_pct = NA_real_, cp_contender_basis = NA_character_, cp_is_contender = FALSE)
+  rc <- function(...) {
+    args <- utils::modifyList(na_cp, list(...))
+    out <- do.call(de, args)
+    out$choice_reason <- sp_choice_reason(out, de_cfg())
+    out
+  }
+  cu <- rc(supply_chain_need = 0.2, industrial_opportunity = 0.9, pathway_credible = "yes", pathway_basis = "adjacent_stage")
+  expect_equal(cu$strategic_choice, "catch_up")
+  expect_equal(cu$posture_confidence, "moderate")     # all else clean: the unmeasured position is the one issue
+  expect_match(cu$choice_reason, "Competitive Position not measured", fixed = TRUE)
+  expect_false(grepl("top quarter", cu$choice_reason))
+  pos <- Filter(function(s) identical(s$step, "position"), jsonlite::fromJSON(cu$decision_trace, simplifyVector = FALSE))[[1]]
+  expect_equal(pos$result, "unknown")
+  expect_null(pos$value)
+  pa <- rc(supply_chain_need = 0.9, industrial_opportunity = 0.9, pathway_credible = "no")
+  expect_equal(pa$strategic_choice, "partner")
+  expect_equal(pa$posture_confidence, "moderate")
+  expect_match(pa$choice_reason, "but Competitive Position not measured and no credible pathway", fixed = TRUE)
+  expect_false(grepl("top-quarter", pa$choice_reason))
+  wa <- rc(supply_chain_need = 0.2, industrial_opportunity = 0.9, pathway_credible = "no")
+  expect_equal(wa$strategic_choice, "watch")
+  expect_equal(wa$posture_confidence, "moderate")
+  expect_match(wa$choice_reason, "Competitive Position not measured", fixed = TRUE)
+  # high need, low prize: the position decides Preserve (D2) or Partner, so an unmeasured one is an issue too
+  pl <- rc(supply_chain_need = 0.9, industrial_opportunity = 0.2)
+  expect_equal(pl$strategic_choice, "partner")
+  expect_equal(pl$posture_confidence, "moderate")
+  expect_match(pl$choice_reason, "Competitive Position not measured", fixed = TRUE)
+  # low need and low prize give Watch whatever the position: not an issue there
+  ll <- rc(supply_chain_need = 0.2, industrial_opportunity = 0.2)
+  expect_equal(ll$strategic_choice, "watch")
+  expect_equal(ll$posture_confidence, "high")
+  # a measured position below the top quarter keeps its old wording and confidence
+  m <- de(supply_chain_need = 0.2, industrial_opportunity = 0.9, cp_contender_pct = 0.3, pathway_credible = "yes", pathway_basis = "pipeline")
+  expect_equal(m$posture_confidence, "high")
+  expect_match(sp_choice_reason(m, de_cfg()), "a position below the top quarter (0.30)", fixed = TRUE)
+})
+
+test_that("a top-quarter score that fails the Preserve test says why: not a contender, or below the capability floor", {
+  pos_of <- function(x) Filter(function(s) identical(s$step, "position"), jsonlite::fromJSON(x$decision_trace, simplifyVector = FALSE))[[1]]
+  # top quarter, capability floor met (strong), but a measured share below the contender line
+  nc <- de(industrial_opportunity = 0.9, cp_contender_pct = 0.875, cp_is_contender = FALSE, t3_capability_lo = "strong",
+           pathway_credible = "yes", pathway_basis = "adjacent_stage")
+  expect_equal(nc$strategic_choice, "catch_up")
+  expect_equal(pos_of(nc)$result, "not_a_contender")
+  r_nc <- sp_choice_reason(nc, de_cfg())
+  expect_match(r_nc, "a top-quarter score (0.88) without a contender share", fixed = TRUE)
+  expect_false(grepl("below the top quarter", r_nc))
+  expect_true(is.na(nc$consistency_flag))      # the review flag is for the capability floor only
+  # a contender in the top quarter below the capability floor
+  fl <- de(industrial_opportunity = 0.9, cp_contender_pct = 0.9, t3_capability_lo = "none", pathway_credible = "yes",
+           pathway_basis = "pipeline")
+  expect_equal(fl$strategic_choice, "catch_up")
+  expect_equal(pos_of(fl)$result, "capability_floor_not_met")
+  expect_match(sp_choice_reason(fl, de_cfg()), "a top-quarter score (0.90) below the capability floor", fixed = TRUE)
+  # neither a contender nor at the floor: contender status is checked first
+  both <- de(industrial_opportunity = 0.9, cp_contender_pct = 0.9, cp_is_contender = FALSE, t3_capability_lo = "none",
+             pathway_credible = "no")
+  expect_equal(both$strategic_choice, "partner")
+  expect_equal(pos_of(both)$result, "not_a_contender")
+  expect_match(sp_choice_reason(both, de_cfg()), "but a top-quarter score (0.90) without a contender share and no credible pathway",
+               fixed = TRUE)
+  # the threshold is inclusive: exactly 0.75 is a top-quarter score
+  ex <- de(industrial_opportunity = 0.9, cp_contender_pct = 0.75, cp_is_contender = FALSE, pathway_credible = "yes")
+  expect_equal(pos_of(ex)$result, "not_a_contender")
+  expect_match(sp_choice_reason(ex, de_cfg()), "a top-quarter score (0.75) without a contender share", fixed = TRUE)
+  # below the top quarter
+  lo <- de(industrial_opportunity = 0.9, cp_contender_pct = 0.5, cp_is_contender = FALSE, pathway_credible = "no")
+  expect_equal(pos_of(lo)$result, "not_top_quarter")
+  expect_match(sp_choice_reason(lo, de_cfg()), "but no top-quarter position and no credible pathway", fixed = TRUE)
+  # where no supply share is measured the cross-country score stands in: not a non-contender
+  ac <- de(industrial_opportunity = 0.9, cp_contender_pct = 0.9, cp_contender_basis = "all_countries", cp_is_contender = FALSE,
+           t3_capability_lo = "none", pathway_credible = "no")
+  expect_equal(pos_of(ac)$result, "capability_floor_not_met")
+})
+
 test_that("every output respects the posture / mode invariants", {
   grid <- expand.grid(stage = c("Extraction", "Components", "Deployment", "Recovery"), n = c(NA, 0.2, 0.9), o = c(NA, 0.2, 0.9),
                       cp = c(0.3, 0.9), pw = c("yes", "no", "unknown"), dn = c(NA, 0.2, 0.9), sec = c(FALSE, TRUE),
@@ -346,6 +425,36 @@ test_that("policy alignment follows spec X and never feeds back", {
   oa <- mk(wat, policy_priority_percentile = 0.9, pams_priority = 0.9)
   expect_equal(al(oa), "over_prioritized")
   expect_equal(conf(oa), "low")
+  expect_equal(sp_policy_alignment_flag(oa, a_cfg, has_record = TRUE), "watch_attention")
+  # two sources ranked: still low when total attention decides (D5), not one level below high
+  oa2 <- mk(wat, policy_priority_percentile = 0.9, nipo_priority = 0.9, pams_priority = 0.9, policy_protection_stock = NA_real_)
+  expect_equal(oa2$pp_n_sources, 2L)
+  expect_equal(al(oa2), "over_prioritized")
+  expect_equal(sp_policy_alignment_flag(oa2, a_cfg, has_record = TRUE), "watch_attention")
+  expect_equal(conf(oa2), "low")
+  # NIPO observes the cell: protection alone decides. An observed zero stock is not heavy protection, even
+  # where the country has too few protected cells to rank (protection priority NA) and attention is heavy
+  # (the 2026-10-29 Bulgaria Electric Grid Refining case)
+  z <- mk(wat, policy_priority_percentile = 0.95, nipo_priority = 0.9, pams_priority = 0.9, policy_support_priority = 0.99,
+          policy_protection_stock = 0)
+  expect_equal(al(z), "aligned")
+  expect_true(is.na(sp_policy_alignment_flag(z, a_cfg, has_record = TRUE)))
+  expect_equal(conf(z), "high")     # an observed zero is a measurement, not a missing split
+  # a protection stock too thin to rank (the country protects fewer than min_cells cells): not heavy
+  # protection on that evidence, and the verdict is one level less certain
+  thin <- mk(wat, policy_priority_percentile = 0.95, nipo_priority = 0.9, pams_priority = 0.9, policy_protection_stock = 1)
+  expect_equal(al(thin), "aligned")
+  expect_true(is.na(sp_policy_alignment_flag(thin, a_cfg, has_record = TRUE)))
+  expect_equal(conf(thin), "medium")
+  # a ranked protection priority in the top third still decides, whatever the stock column says
+  rk <- mk(wat, policy_priority_percentile = 0.5, nipo_priority = 0.5, pams_priority = 0.5, policy_protection_priority = 0.9,
+           policy_protection_stock = 4)
+  expect_equal(al(rk), "over_prioritized")
+  expect_equal(sp_policy_alignment_flag(rk, a_cfg, has_record = TRUE), "watch_protection")
+  # Partner with an observed zero protection stock is not autarkic, at full confidence
+  pz <- mk(par, policy_priority_percentile = 0.5, nipo_priority = 0.5, pams_priority = 0.5, policy_protection_stock = 0)
+  expect_equal(al(pz), "aligned")
+  expect_equal(conf(pz), "high")
   # a Watch deployment whose equipment carries heavy local-content protection
   dw <- mk(list(supply_chain = "Deployment", deployment_need = 0.2), policy_priority_percentile = 0.4, pams_priority = 0.4,
            deployment_localisation_priority = 0.9)

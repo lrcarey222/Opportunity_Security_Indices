@@ -924,14 +924,19 @@ sp_decision_trace <- function(x, g, pv, possible, pivotal) {
 #     support; Secure on overall policy priority)
 #   Deploy . Accelerate with deployment-policy priority below deployment_gap_max -> deployment_gap
 #   Deploy . Watch: heavy protection / localisation (NIPO protection in the top third; at Deployment, the
-#     technology's Assembly-equipment protection, i.e. local-content rules) -> over_prioritized; where the
-#     protection split is not measured, total policy attention in the top third with an attributed record
-#     at a producing stage -> over_prioritized (alignment_confidence low); an unsettled Watch (other
+#     technology's Assembly-equipment protection, i.e. local-content rules) -> over_prioritized. Where NIPO
+#     observes the cell (its protection stock is recorded, zero included) the judgement rests on protection
+#     alone: a zero stock, or one too thin to rank (the country has protection in fewer than
+#     min_cells_with_records cells), is not heavy protection. Only where NIPO does not observe the cell
+#     (no protection stock at all) does total policy attention in the top third with an attributed record
+#     at a producing stage -> over_prioritized, with alignment_confidence low. An unsettled Watch (other
 #     choices still possible) -> insufficient_data when the over test fires.
 # tbl carries strategic_posture, compete_mode, deploy_mode (optional; absent: every Deploy reads as
 # Watch), supply_chain, posture_possible and the Revealed Policy Priority columns (policy_priority_percentile,
-# nipo_priority, pams_priority, policy_support_priority, policy_protection_priority, and at Deployment
-# optionally deployment_localisation_priority); `has_record` says whether the cell has an attributed record.
+# nipo_priority, pams_priority, policy_support_priority, policy_protection_priority, policy_protection_stock
+# (optional; absent: a ranked protection priority is the only sign that NIPO observes the cell), and at
+# Deployment optionally deployment_localisation_priority); `has_record` says whether the cell has an
+# attributed record.
 SP_POLICY_ALIGNMENTS <- c("aligned", "under_prioritized", "over_prioritized", "misaligned", "deployment_gap", "mixed", "insufficient_data")
 
 sp_policy_alignment_inputs <- function(tbl, cfg, has_record) {
@@ -957,10 +962,19 @@ sp_policy_alignment_inputs <- function(tbl, cfg, has_record) {
   watch <- posture %in% "deploy" & dmode %in% "watch"
   # protection measure for Watch: the cell's NIPO protection, at Deployment the Assembly equipment's
   protect <- ifelse(dep, loc_dep, pro)
+  # Does NIPO observe the cell's protection? Its stock says so (a zero is an observed zero); the
+  # within-country percentile is NA also where the country has too few protected cells to rank.
+  pro_stock <- col("policy_protection_stock")
+  pro_observed <- if ("policy_protection_stock" %in% names(tbl)) !is.na(pro_stock) | !is.na(pro) else !is.na(pro)
+  # observed, not ranked: no protection at all, or too little of it in the country to rank
+  pro_unranked <- !dep & pro_observed & is.na(pro)
+  pro_zero <- pro_unranked & !is.na(pro_stock) & pro_stock == 0
   over_protect <- watch & !is.na(protect) & protect >= over
-  over_attention <- watch & !dep & is.na(protect) & !is.na(pp) & pp >= over & has_record
+  # total attention decides only where NIPO does not observe the cell at all
+  over_attention <- watch & !dep & !pro_observed & !is.na(pp) & pp >= over & has_record
   list(posture = posture, mode = mode, dmode = dmode, pp = pp, sup = sup, pro = pro, dep = dep, disagree = disagree,
        fence_no_build = fence_no_build, autarkic = autarkic, watch = watch, protect = protect,
+       pro_observed = pro_observed, pro_unranked = pro_unranked, pro_zero = pro_zero,
        over_protect = over_protect, over_attention = over_attention)
 }
 
@@ -992,7 +1006,8 @@ sp_policy_alignment <- function(tbl, cfg = list(), has_record = NULL) {
 # Why a cell's policy alignment is what it is, where a rule beyond the priority levels decides it:
 # partner_autarkic (Partner with protection in the top third), fence_without_build (Compete with heavy
 # protection and little support), watch_protection (Watch with heavy protection / localisation),
-# watch_attention (Watch with heavy total attention, protection not measured), watch_localisation_deployment
+# watch_attention (Watch with heavy total policy attention in a cell NIPO does not observe, so no
+# protection stock is recorded either way: the low-confidence fallback), watch_localisation_deployment
 # (a Watch deployment whose equipment carries heavy local-content protection), weak_deployment_policy
 # (Accelerate with low deployment-policy priority), sources_disagree (NIPO and PAMS on opposite sides).
 sp_policy_alignment_flag <- function(tbl, cfg = list(), has_record = NULL) {
@@ -1014,20 +1029,24 @@ sp_policy_alignment_flag <- function(tbl, cfg = list(), has_record = NULL) {
 
 # How far the alignment can be trusted (high / medium / low): two policy sources ranked = high, one =
 # medium, none = low; one level lower where the rule needed the NIPO support / protection split and it
-# is not measured (judged on total attention instead), and capped at medium at Deployment (one source,
-# PAMS, by construction). insufficient_data is low.
+# is not ranked (Preserve / Catch Up judged on total attention; Partner or Watch protection not observed,
+# or recorded but too thin to rank; an observed zero protection stock is a measurement, not a gap), and
+# capped at medium at Deployment (one source, PAMS, by construction). An over_prioritized verdict that
+# rests on total attention (the watch_attention fallback, where NIPO does not observe the cell) is low
+# whatever the number of sources (D5). insufficient_data is low.
 sp_policy_alignment_confidence <- function(tbl, alignment, cfg = list(), has_record = NULL) {
   a <- sp_policy_alignment_inputs(tbl, cfg, has_record)
   nsrc <- if ("pp_n_sources" %in% names(tbl)) suppressWarnings(as.integer(tbl$pp_n_sources)) else
     as.integer(!is.na(if ("nipo_priority" %in% names(tbl)) tbl$nipo_priority else NA)) + as.integer(!is.na(if ("pams_priority" %in% names(tbl)) tbl$pams_priority else NA))
   nsrc <- dplyr::coalesce(nsrc, 0L)
   lvl <- ifelse(nsrc >= 2, 3L, ifelse(nsrc == 1, 2L, 1L))
-  fallback <- (a$mode %in% c("preserve", "catch_up") & is.na(a$sup)) | (a$mode %in% "partner" & is.na(a$pro)) |
-    a$over_attention | (a$watch & is.na(a$protect))
+  fallback <- (a$mode %in% c("preserve", "catch_up") & is.na(a$sup)) | (a$mode %in% "partner" & is.na(a$pro) & !a$pro_zero) |
+    a$over_attention | (a$watch & is.na(a$protect) & !a$pro_zero)
   lvl <- lvl - as.integer(fallback)
   lvl <- ifelse(a$dep, pmin(lvl, 2L), lvl)
   lvl <- pmax(lvl, 1L)
   out <- c("low", "medium", "high")[lvl]
+  out[a$over_attention] <- "low"
   ifelse(is.na(alignment), NA_character_, ifelse(alignment == "insufficient_data", "low", out))
 }
 

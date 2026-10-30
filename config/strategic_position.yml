@@ -515,8 +515,10 @@ policy_alignment:
   partner_autarky: {protection_min: 0.67}
   # Deploy . Accelerate with deployment-policy priority (PAMS, within-country) below this: deployment_gap.
   deployment_gap_max: 0.5
-  # Deploy . Watch is over-prioritized at over_min of protection / localisation (NIPO), or of total
-  # attention where the split is not measured (producing stages, with an attributed record).
+  # Deploy . Watch is over-prioritized at over_min of protection / localisation (NIPO). Where NIPO
+  # observes the cell (a protection stock is recorded, zero included) protection alone decides; only
+  # where NIPO does not observe it does total attention at over_min decide (producing stages, with an
+  # attributed record), and that verdict is always low confidence.
 
 # ---- Legacy Strategic Index sensitivity (diagnostics only) ---------------------------------------------
 legacy_si_sensitivity:

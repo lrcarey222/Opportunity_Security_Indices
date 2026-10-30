@@ -11,7 +11,8 @@
 #         high_prize = industrial_opportunity >= prize_threshold
 #         high_cp    = Competitive Position in the top quarter of the node's contenders (cp_preserve_pct)
 #                      AND the country is a contender AND the engine's capability lower bound (Test 3 on
-#                      its strict reading) is at least moderate
+#                      its strict reading) is at least moderate. An unmeasured position (all of
+#                      Recovery) is not high; it lowers posture_confidence where the rule reads it
 #      high prize: high_cp -> compete / preserve; else a credible pathway (pathway.R) -> compete /
 #                  catch_up; else high need -> compete / partner; else deploy / watch.
 #      low prize:  high need: high_cp -> compete / preserve with consistency_flag
@@ -215,8 +216,12 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   # Confidence: one point per issue; not assessed is low; Secure keeps the engine's confidence.
   ev_low <- col("stage_evidence_quality_cp", NA_character_) %in% c("low", "none")
   dn_fam <- suppressWarnings(as.integer(col("dn_families_observed", NA_integer_)))
+  # An unmeasured Competitive Position (all of Recovery, where no supply share or CP family is measured)
+  # counts as not strong, like an unknown pathway (D3): an issue wherever the rule reads the position
+  # (a high prize, or high need with a low prize); low need and a low prize give Watch whatever it is.
+  cp_unmeasured <- !dep & is.na(cp_pct) & verb %in% c("catch_up", "partner", "watch") & (hp | hn)
   issues <- nb_need + nb_prize + nb_cp + nb_dn + (sec_possible & !secure) +
-    (verb %in% c("catch_up", "partner", "watch") & hp & !cp_high & pathway %in% "unknown") +
+    (verb %in% c("catch_up", "partner", "watch") & hp & !cp_high & pathway %in% "unknown") + cp_unmeasured +
     (verb %in% c("preserve", "catch_up", "partner") & ev_low) + !is.na(flag) +
     (!dep & verb %in% SP_CHOICES[2:6] & dplyr::coalesce(col("supply_chain_need_n_families", NA_integer_), 0L) < 2) +
     (dep & verb %in% c("accelerate", "watch") & !is.na(dn_fam) & dn_fam < 2)
@@ -267,7 +272,8 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   tbl$delivery_mode <- dplyr::case_when(is.na(verb) | verb == "not_assessed" ~ NA_character_,
                                         verb == "secure" ~ col("delivery_mode", NA_character_), TRUE ~ dm)
   tbl$watch_reasons <- sp_watch_reasons(tbl, verb, need, prize, hp, hn, cp_high, pathway, dn, th, diversify)
-  tbl$decision_trace <- sp_choice_trace(tbl, verb, secure, sec_possible, need, prize, cp_pct, cp_high, cap_lo, pathway, dn, th)
+  tbl$decision_trace <- sp_choice_trace(tbl, verb, secure, sec_possible, need, prize, cp_pct, cp_high, cap_lo, pathway, dn, th,
+                                        contender = cp_basis %in% "all_countries" | is_c %in% TRUE)
   tbl
 }
 
@@ -292,7 +298,12 @@ sp_watch_reasons <- function(tbl, verb, need, prize, hp, hn, cp_high, pathway, d
 
 # The compact decision trace: a JSON array of {step, test, value, threshold, result} (null keys left
 # out). Steps: secure -> (Deployment: need) / (producing: need, prize, position, pathway) -> choice.
-sp_choice_trace <- function(tbl, verb, secure, sec_possible, need, prize, cp_pct, cp_high, cap_lo, pathway, dn, th) {
+# The position result: high; not_top_quarter; a top-quarter score that is not high because the economy
+# is not a contender (not_a_contender, checked first) or because the capability floor fails
+# (capability_floor_not_met); unknown where Competitive Position is not measured. contender: the
+# economy is a contender, or the node measures no supply share (cp_contender_basis all_countries).
+sp_choice_trace <- function(tbl, verb, secure, sec_possible, need, prize, cp_pct, cp_high, cap_lo, pathway, dn, th,
+                            contender = rep(TRUE, length(verb))) {
   num <- function(v) ifelse(is.na(v), NA_character_, format(round(v, 3), nsmall = 0, trim = TRUE, scientific = FALSE))
   step <- function(st, test, value, thr, result, value_str = FALSE) {
     v <- if (value_str) ifelse(is.na(value), NA_character_, sp_json_str(value)) else value
@@ -309,7 +320,8 @@ sp_choice_trace <- function(tbl, verb, secure, sec_possible, need, prize, cp_pct
   s_need <- step("need", "supply_chain_need", num(need), num(th$need), lvl(need, th$need))
   s_prize <- step("prize", "industrial_opportunity", num(prize), num(th$prize), lvl(prize, th$prize))
   pos_res <- ifelse(is.na(cp_pct), "unknown", ifelse(cp_high %in% TRUE, "high",
-                    ifelse(cp_pct >= th$cp, "capability_floor_not_met", "not_top_quarter")))
+                    ifelse(cp_pct < th$cp, "not_top_quarter",
+                           ifelse(contender %in% TRUE, "capability_floor_not_met", "not_a_contender"))))
   s_cp <- step("position", "cp_contender_pct", num(cp_pct), num(th$cp), pos_res)
   s_pw <- step("pathway", "pathway_credible",
                if ("pathway_basis" %in% names(tbl)) tbl$pathway_basis else rep(NA_character_, nrow(tbl)), NA,
@@ -326,20 +338,36 @@ sp_choice_trace <- function(tbl, verb, secure, sec_possible, need, prize, cp_pct
 }
 
 # One sentence per cell saying why the choice is what it is, from the stored inputs only (the drawer's
-# CHOICE line and the decision cards). Secure cells keep the engine's route wording elsewhere.
+# CHOICE line and the decision cards). Secure cells keep the engine's route wording elsewhere. Where the
+# position is not high it says why: not measured (all of Recovery), a top-quarter score without a
+# contender share, a top-quarter score below the capability floor, or below the top quarter.
 sp_choice_reason <- function(tbl, cfg = list()) {
   th <- sp_choice_thresholds(cfg)
   p2 <- function(v) ifelse(is.na(v), "not measured", format(round(v, 2), nsmall = 2))
+  col <- function(nm, default = NA) if (nm %in% names(tbl)) tbl[[nm]] else rep(default, nrow(tbl))
   v <- tbl$strategic_choice
   need <- tbl$supply_chain_need
   prize <- tbl$industrial_opportunity
-  dn <- if ("deployment_need" %in% names(tbl)) tbl$deployment_need else rep(NA_real_, nrow(tbl))
+  dn <- col("deployment_need", NA_real_)
   cp <- tbl$cp_contender_pct
   pw <- dplyr::coalesce(tbl$pathway_basis, "")
   hn <- !is.na(need) & need >= th$need
   hp <- !is.na(prize) & prize >= th$prize
   need_w <- paste0(ifelse(hn, "High", "Low"), " supply-chain need (", p2(need), ")")
   prize_w <- paste0(ifelse(hp, "a high", "a low"), " industrial prize (", p2(prize), ")")
+  # why the position is not high (the checks of sp_choice_high_cp(), in the trace's order)
+  contender <- col("cp_contender_basis", NA_character_) %in% "all_countries" | col("cp_is_contender", NA) %in% TRUE
+  floor_met <- col("t3_capability_lo", NA_character_) %in% th$floor
+  top_q <- !is.na(cp) & cp >= th$cp
+  why_not <- dplyr::case_when(
+    is.na(cp) ~ "Competitive Position not measured",
+    top_q & !contender ~ paste0("a top-quarter score (", p2(cp), ") without a contender share"),
+    top_q & !floor_met ~ paste0("a top-quarter score (", p2(cp), ") below the capability floor"),
+    TRUE ~ NA_character_
+  )
+  pos_cu <- dplyr::coalesce(why_not, paste0("a position below the top quarter (", p2(cp), ")"))
+  pos_no <- dplyr::coalesce(why_not, "no top-quarter position")
+  cp_na <- ifelse(is.na(cp), ", with Competitive Position not measured", "")
   dplyr::case_when(
     is.na(v) ~ NA_character_,
     v == "secure" ~ paste0("An acute vulnerability (", gsub("_", " ", dplyr::coalesce(tbl$security_rationale, "security")), "): Secure, whatever the prize."),
@@ -351,10 +379,10 @@ sp_choice_reason <- function(tbl, cfg = list()) {
     v == "watch" & tbl$supply_chain == "Deployment" ~ paste0("Deployment need ", p2(dn), " is below ", p2(th$deployment), ": no major acceleration is required."),
     v == "preserve" & !hp ~ paste0(need_w, ", ", prize_w, ", but a top-quarter position (", p2(cp), " among contenders): Preserve, flagged for review rather than handed to partners."),
     v == "preserve" ~ paste0(prize_w, " and a top-quarter position among contenders (", p2(cp), "): Preserve and extend it."),
-    v == "catch_up" ~ paste0(prize_w, ", a position below the top quarter (", p2(cp), ") and a credible pathway (", gsub(";", ", ", gsub("_", " ", pw)), "): Catch Up."),
-    v == "partner" & hp ~ paste0(need_w, " and ", prize_w, ", but no top-quarter position and no credible pathway: Partner with trusted suppliers."),
-    v == "partner" ~ paste0(need_w, " and ", prize_w, ": a security problem without a domestic industrial prize. Partner with trusted suppliers."),
-    v == "watch" & hp ~ paste0(need_w, " and ", prize_w, ", but no top-quarter position and no credible pathway: Watch (keep R&D options open)."),
+    v == "catch_up" ~ paste0(prize_w, ", ", pos_cu, " and a credible pathway (", gsub(";", ", ", gsub("_", " ", pw)), "): Catch Up."),
+    v == "partner" & hp ~ paste0(need_w, " and ", prize_w, ", but ", pos_no, " and no credible pathway: Partner with trusted suppliers."),
+    v == "partner" ~ paste0(need_w, " and ", prize_w, cp_na, ": a security problem without a domestic industrial prize. Partner with trusted suppliers."),
+    v == "watch" & hp ~ paste0(need_w, " and ", prize_w, ", but ", pos_no, " and no credible pathway: Watch (keep R&D options open)."),
     v == "watch" ~ paste0(need_w, " and ", prize_w, ": Watch. Domestic industrial priority is low."),
     TRUE ~ NA_character_
   )

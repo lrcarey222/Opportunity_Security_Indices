@@ -180,3 +180,40 @@ test_that("not assessed cells are coded N with no mode and carry their reason in
   expect_match(n$not_assessed_reason, "not measured")
   expect_null(n$reason)
 })
+
+test_that("the detail policy says whether NIPO records any protection, and leaves it out where NIPO does not observe the cell", {
+  x <- pe_tbl()
+  x$policy_priority_percentile <- 0.5
+  x$policy_protection_stock <- NA_real_
+  a <- which(x$iso3 == "AAA" & x$tech == "Batteries" & x$supply_chain == "Refining")
+  b <- which(x$iso3 == "AAA" & x$tech == "Batteries" & x$supply_chain == "Assembly")
+  x$policy_protection_stock[a] <- 3
+  x$policy_protection_stock[b] <- 0
+  # a Deployment row never reads the producing stock (only a localisation stock, which this table lacks)
+  x$policy_protection_stock[x$supply_chain == "Deployment"] <- 5
+  d <- posture_detail_doc(x, "AAA", pe_cfg, created = "x")
+  cell <- function(tech, stage) Filter(function(c) identical(c$tech, tech) && identical(c$stage, stage), d$cells)[[1]]
+  expect_identical(cell("Batteries", "Refining")$policy$protection_recorded, TRUE)
+  expect_identical(cell("Batteries", "Assembly")$policy$protection_recorded, FALSE)
+  expect_false("protection_recorded" %in% names(cell("Batteries", "Extraction")$policy))
+  expect_false("protection_recorded" %in% names(cell("Batteries", "Deployment")$policy))
+  # with a localisation stock column the Deployment row reads it
+  x$deployment_localisation_stock <- ifelse(x$supply_chain == "Deployment", 0, NA_real_)
+  d2 <- posture_detail_doc(x, "AAA", pe_cfg, created = "x")
+  dep <- Filter(function(c) identical(c$tech, "Batteries") && identical(c$stage, "Deployment"), d2$cells)[[1]]
+  expect_identical(dep$policy$protection_recorded, FALSE)
+  # a JSON boolean, not an array
+  j <- jsonlite::fromJSON(as.character(jsonlite::toJSON(d, auto_unbox = TRUE, na = "null", null = "null", digits = NA)), simplifyVector = FALSE)
+  rj <- Filter(function(c) identical(c$tech, "Batteries") && identical(c$stage, "Refining"), j$cells)[[1]]
+  expect_identical(rj$policy$protection_recorded, TRUE)
+  expect_null(posture_protection_recorded(NULL))
+  expect_null(posture_protection_recorded(NA_real_))
+})
+
+test_that("the bundle's commit stamp says -dirty when R, scripts or config have uncommitted changes", {
+  expect_equal(posture_commit_stamp("abc1234", character()), "abc1234")
+  expect_equal(posture_commit_stamp("abc1234", ""), "abc1234")
+  expect_equal(posture_commit_stamp("abc1234", c(" M R/strategic_position/decision_engine.R", "?? scripts/x.R")), "abc1234-dirty")
+  expect_true(is.na(posture_commit_stamp(NA_character_, character())))
+  expect_true(is.na(posture_commit_stamp(character(), character())))
+})

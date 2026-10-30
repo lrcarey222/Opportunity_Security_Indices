@@ -225,6 +225,20 @@ posture_policy_sources <- function(x) {
   if (length(s)) I(s) else NULL
 }
 
+# Whether NIPO records any protection for a cell: TRUE where the observed stock is above 0, FALSE where it is
+# observed and 0, NULL (left out of the document) where NIPO does not observe the cell.
+posture_protection_recorded <- function(stock) {
+  if (is.null(stock) || length(stock) != 1 || is.na(stock)) return(NULL)
+  as.numeric(stock) > 0
+}
+
+# The bundle's commit stamp: the short sha, with "-dirty" where `git status --porcelain -- R scripts config`
+# printed anything (the code that wrote the bundle is not the commit's). porcelain: its output lines.
+posture_commit_stamp <- function(sha, porcelain = character()) {
+  if (is.null(sha) || !length(sha) || is.na(sha[1]) || !nzchar(sha[1])) return(NA_character_)
+  if (any(nzchar(trimws(porcelain)))) paste0(sha[1], "-dirty") else sha[1]
+}
+
 # One country's drawer document (schema 2): per cell, the five questions' evidence.
 posture_detail_doc <- function(tbl, iso3, cfg, created) {
   techs <- unlist(cfg$headline_techs %||% sort(unique(tbl$tech)))
@@ -285,6 +299,8 @@ posture_detail_doc <- function(tbl, iso3, cfg, created) {
     pol <- Filter(Negate(is.null), list(
       priority = num(r, "policy_priority_percentile"), support = num(r, "policy_support_priority"),
       protection = if (dep) num(r, "deployment_localisation_priority") else num(r, "policy_protection_priority"),
+      # NIPO's observed protection stock above 0 (at Deployment the localisation stock, where the table has one)
+      protection_recorded = posture_protection_recorded(if (dep) g(r, "deployment_localisation_stock") else g(r, "policy_protection_stock")),
       momentum = num(r, "policy_momentum"), alignment = g(r, "policy_alignment"),
       alignment_confidence = g(r, "policy_alignment_confidence"), flag = g(r, "policy_alignment_flag"),
       # the policy sources as a list (the engine writes "nipo+pams" / "pams" / "none"); I() keeps one item an array

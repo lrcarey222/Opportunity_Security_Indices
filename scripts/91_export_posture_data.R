@@ -53,8 +53,12 @@ division <- readRDS(file.path(outputs_dir, "strategic_aib_division_tbl.rds"))
 coalition <- readRDS(file.path(processed_dir, "coalition_tbl.rds"))
 countries <- data.frame(iso3 = coalition$iso3, name = coalition$country, tier = coalition$tier, stringsAsFactors = FALSE)
 created <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-git_commit <- tryCatch(system2("git", c("-C", shQuote(repo_root), "rev-parse", "--short", "HEAD"), stdout = TRUE, stderr = FALSE)[1],
-                       error = function(e) NA_character_)
+# The commit that wrote the bundle; "-dirty" where R/, scripts/ or config/ have uncommitted changes.
+git_sha <- tryCatch(system2("git", c("-C", shQuote(repo_root), "rev-parse", "--short", "HEAD"), stdout = TRUE, stderr = FALSE)[1],
+                    error = function(e) NA_character_)
+git_porcelain <- tryCatch(system2("git", c("-C", shQuote(repo_root), "status", "--porcelain", "--", "R", "scripts", "config"),
+                                  stdout = TRUE, stderr = FALSE), error = function(e) "unknown")
+git_commit <- posture_commit_stamp(git_sha, git_porcelain)
 
 to_json <- function(x) as.character(jsonlite::toJSON(x, auto_unbox = TRUE, na = "null", null = "null", digits = NA))
 md5_8 <- function(txt) {
