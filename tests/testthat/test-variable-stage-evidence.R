@@ -102,7 +102,9 @@ test_that("world constants are global and manufacturing-pair copies are shared a
   # Trade has no basket at Deployment or for Geothermal; Strategic Need takes Assembly at Deployment.
   expect_identical(one("EO", "Trade", "market_share", "Solar", "Deployment")$evidence_status, "no_data")
   expect_identical(one("EO", "Trade", "market_share", "Geothermal", "Refining")$evidence_status, "no_data")
-  expect_identical(one("EO", "Trade", "market_share", "Solar", "Extraction")$evidence_status, "no_data")
+  # A stage without an HS6 code has no trade data; Solar Extraction has quartz and silver ores since 2026-10-30.
+  expect_identical(one("EO", "Trade", "market_share", "Semiconductors", "Extraction")$evidence_status, "no_data")
+  expect_identical(one("EO", "Trade", "market_share", "Solar", "Extraction")$evidence_status, "exact")
   expect_identical(one("SN", "Import Exposure", "import_hhi", "Solar", "Deployment")$evidence_status, "proxy")
   expect_identical(one("SN", "Import Exposure", "import_hhi", "Green Hydrogen", "Deployment")$evidence_status, "no_data")
   expect_identical(one("SN", "Import Exposure", "china_share", "Batteries", "Recovery")$evidence_status, "exact")
