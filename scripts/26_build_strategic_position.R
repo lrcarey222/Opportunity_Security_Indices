@@ -723,7 +723,7 @@ if (!is.null(tm)) {
     inp <- sp_choice_inputs(alt, dec_cfg)
     v <- sp_choice_rerun(alt, dec_cfg)
     v[is.na(tbl$strategic_choice)] <- NA_character_
-    flag <- ifelse(v %in% "preserve" & !(inp$prize >= th$prize) & inp$need >= th$need, "review", NA_character_)
+    flag <- ifelse(v %in% "preserve" & !sp_choice_prize_high(inp$prize, th, inp$capped) & inp$need >= th$need, "review", NA_character_)
     c(sum(!mapply(identical, v, tbl$strategic_choice)),
       sum(!mapply(identical, flag, ifelse(tbl$consistency_flag %in% "review_strong_position_low_prize", "review", NA_character_))), NA)
   }
@@ -752,9 +752,9 @@ wcsv(io_nodes, "io_node_prize.csv")
 # Strategic industrial value, the large-yard case and the layer-first yards (Yards & Fences items 1-3).
 unit_cols <- function(x, layer = "stage") {
   if (!"layer_id" %in% names(x)) x$layer_id <- layer
-  x[, intersect(c("iso3", "Country", "tech", "supply_chain", "layer_id", "layer_label", "strategic_choice", "yard", "yard_rollup",
-                  "choice_reason", "industrial_opportunity", SP_SIV_COLUMNS, "large_yard_case", "large_yard_n", "large_yard_signals",
-                  "large_yard_unknown", "large_yard_reason"), names(x)), drop = FALSE]
+  x[, intersect(c("iso3", "Country", "tech", "supply_chain", "layer_id", "layer_label", "strategic_choice", "posture_variant",
+                  "decision_step", "decision_borderline", "yard", "yard_rollup", "yard_fence_scope", "choice_reason",
+                  "industrial_opportunity", SP_SIV_COLUMNS, SP_LY_COLUMNS), names(x)), drop = FALSE]
 }
 units_all <- dplyr::bind_rows(unit_cols(tbl), unit_cols(layers_tbl))
 wcsv(sp_siv_by_node(units_all), "strategic_value_families.csv")
@@ -764,9 +764,11 @@ wcsv(sp_yard_layer_counts(layers_tbl), "yard_layers.csv")
 siv_cmp <- sp_choice_measure_comparison(tbl, dec_cfg)
 wcsv(siv_cmp$counts, "strategic_value_vs_market.csv")
 wcsv(siv_cmp$transitions, "strategic_value_vs_market_transitions.csv")
-# the large-yard calibration: the choice with min_signals 4 / 6 and with position tested first (cells)
+# the large-yard calibration: the choice with min_signals 4 / 6, with the large-yard case before Competitive
+# Position (position_last), and without the learning veto or the capability floor (cells)
 ly_sens <- dplyr::bind_rows(lapply(list(min_signals_4 = list(min_signals = 4L), min_signals_5 = list(min_signals = 5L),
-                                        min_signals_6 = list(min_signals = 6L), position_first = list(position_first = TRUE)), function(ch) {
+                                        min_signals_6 = list(min_signals = 6L), position_last = list(position_first = FALSE),
+                                        no_learning_veto = list(learning_veto_points = Inf, learning_floor_points = Inf)), function(ch) {
   c2 <- dec_cfg
   c2$large_yard <- utils::modifyList(dec_cfg$large_yard %||% list(), ch)
   ly <- sp_large_yard_case(tbl, nodes, c2)
@@ -777,7 +779,8 @@ ly_sens <- dplyr::bind_rows(lapply(list(min_signals_4 = list(min_signals = 4L), 
 wcsv(ly_sens, "large_yard_sensitivity.csv")
 # The paper's own placements, beside the derived yards (the only place paper_placement is read).
 yf_links <- nodes %>% dplyr::distinct(.data$tech, supply_chain = .data$stage, .data$layer_id, .data$yf_component_id)
-wcsv(sp_yf_reproduction(yf_components, dplyr::left_join(units_all, yf_links, by = c("tech", "supply_chain", "layer_id"))),
+wcsv(sp_yf_reproduction(yf_components, dplyr::left_join(units_all, yf_links, by = c("tech", "supply_chain", "layer_id")),
+                        min_signals = sp_ly_cfg(dec_cfg)$min_signals),
      "yf_paper_reproduction.csv")
 io_val <- sp_io_validation(tbl, momentum_weight = io_cfg$investment_momentum$weight %||% 0.25)
 wcsv(io_val$correlations, "opportunity_validation_correlations.csv")
@@ -854,7 +857,7 @@ inp_tbl <- sp_choice_inputs(tbl, dec_cfg)
 nonsecure_choice <- sp_choice_rule(
   tbl$supply_chain, FALSE, inp_tbl$need, inp_tbl$prize,
   sp_choice_high_cp(tbl$cp_contender_pct, tbl$cp_contender_basis, tbl$cp_is_contender, tbl$t3_capability_lo, th$cp, th$floor),
-  tbl$pathway_credible, inp_tbl$dn, th, inp_tbl$large)
+  tbl$pathway_credible, inp_tbl$dn, th, inp_tbl$large, inp_tbl$capped)
 nonsecure_posture <- stats::setNames(unname(SP_CHOICE_VERB_POSTURE[nonsecure_choice]), paste(tbl$iso3, tbl$tech, tbl$supply_chain))
 strict <- function(x, cfg) {
   p <- sp_posture_strict(x, cfg)

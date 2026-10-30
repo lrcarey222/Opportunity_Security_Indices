@@ -239,7 +239,12 @@ test_that("the yards and the strategic value travel in the core and the detail, 
   i <- which(g$iso3 == "AAA" & g$tech == "Batteries" & g$supply_chain == "Components")
   g$yard[i] <- "medium"
   g$yard_rollup[i] <- "mixed_high_medium"
-  g$yard_children[i] <- "[{\"layer_id\":\"bess-control\",\"label\":\"BMS\",\"yard\":\"small\",\"choice\":\"secure\",\"reason\":\"An acute vulnerability.\"}]"
+  g$yard_children[i] <- "[{\"layer_id\":\"bess-control\",\"label\":\"BMS\",\"yard\":\"small\",\"choice\":\"secure\",\"variant\":\"secure_integrated\",\"reason\":\"An acute vulnerability.\"}]"
+  g$yard_fence_scope <- NA_character_
+  g$yard_fence_scope[i] <- "extends_to_hardware"
+  g$siv_commons_n <- ifelse(prod, 2L, NA_integer_)
+  g$siv_option_n <- ifelse(prod, 0L, NA_integer_)
+  g$large_yard_floor <- ifelse(prod, FALSE, NA)
   core <- posture_core_doc(g, pe_div(), pe_countries, pe_cfg, created = "x")
   dep <- core$cells$s == match("Deployment", SUPPLY_CHAIN_STAGES) - 1L
   expect_equal(core$meta$prize_measure, "strategic_value")
@@ -267,6 +272,10 @@ test_that("the yards and the strategic value travel in the core and the detail, 
   expect_length(p$yard_children, 1)                       # one child stays a one-item array
   expect_equal(p$yard_children[[1]]$layer_id, "bess-control")
   expect_equal(p$yard_children[[1]]$yard, "small")
+  expect_equal(p$yard_children[[1]]$variant, "secure_integrated")
+  expect_equal(p$yard_fence_scope, "extends_to_hardware")
+  expect_equal(p$prize$strategic_value$commons_observed, 2)
+  expect_null(p$large_yard$floor)                         # only a large yard with a capability floor carries it
   depc <- Filter(function(c) identical(c$stage, "Deployment"), jd$cells)[[1]]
   expect_null(depc$large_yard)
   expect_null(depc$prize)
@@ -275,6 +284,10 @@ test_that("the yards and the strategic value travel in the core and the detail, 
   g$large_yard_case[g$iso3 == "AAA" & g$supply_chain == "Refining"] <- NA
   d2 <- posture_detail_doc(g, "AAA", pe_cfg, created = "x")
   expect_match(Filter(function(c) identical(c$stage, "Refining"), d2$cells)[[1]]$large_yard$reason, "large yard")
+  g$large_yard_case[i] <- TRUE
+  g$large_yard_floor[i] <- TRUE
+  d3 <- posture_detail_doc(g, "AAA", pe_cfg, created = "x")
+  expect_true(Filter(function(c) identical(c$mode, "partner"), d3$cells)[[1]]$large_yard$floor)
   # a table without them exports as before
   core0 <- posture_core_doc(pe_tbl(), pe_div(), pe_countries, pe_cfg, created = "x")
   expect_null(core0$cells$yd)

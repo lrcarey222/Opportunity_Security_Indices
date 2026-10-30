@@ -32,18 +32,32 @@ sp_diag_legacy_view <- function(tbl) {
 
 # What explains a disagreement between a legacy reading and the canonical choice, first that applies:
 # secure_override (the new choice is Secure), deployment_need (Deployment & Use, decided on its own
-# need), not_assessed (need or prize missing now), industrial_opportunity (the cleaned prize is high
-# where the legacy opportunity was low, or the reverse), supply_chain_need (need high vs low differs),
-# competitive_position (same triage, the response decided by position or the pathway).
-sp_diag_attribution <- function(verb, stage, old_prize_high, old_need_high, new_prize_high, new_need_high) {
+# need), not_assessed (need or prize missing now), large_yard_case (a large-yard Watch: decision_step
+# large_yard, decided before need, prize and position are read), the prize (prize_label: the column the rule
+# read, strategic_industrial_value or industrial_opportunity; high where the legacy opportunity was low, or
+# the reverse), supply_chain_need (need high vs low differs), competitive_position (same triage, the response
+# decided by position or the pathway).
+sp_diag_attribution <- function(verb, stage, old_prize_high, old_need_high, new_prize_high, new_need_high,
+                                decision_step = rep(NA_character_, length(verb)), prize_label = "industrial_opportunity") {
   dplyr::case_when(
     verb %in% "secure" ~ "secure_override",
     stage == "Deployment" ~ "deployment_need",
     verb %in% "not_assessed" ~ "not_assessed",
-    !is.na(old_prize_high) & !is.na(new_prize_high) & old_prize_high != new_prize_high ~ "industrial_opportunity",
+    decision_step %in% "large_yard" ~ "large_yard_case",
+    !is.na(old_prize_high) & !is.na(new_prize_high) & old_prize_high != new_prize_high ~ prize_label,
     !is.na(old_need_high) & !is.na(new_need_high) & old_need_high != new_need_high ~ "supply_chain_need",
     TRUE ~ "competitive_position"
   )
+}
+
+# A column of tbl, or NA where it is absent.
+sp_diag_col <- function(tbl, nm) if (nm %in% names(tbl)) tbl[[nm]] else rep(NA, nrow(tbl))
+
+# The name of the prize column the rule read (decision_engine.R prize_measure): strategic_industrial_value, or
+# industrial_opportunity under prize_measure market and for a table that predates the strategic value.
+sp_diag_prize_label <- function(tbl) {
+  m <- stats::na.omit(unique(as.character(sp_diag_col(tbl, "prize_measure"))))
+  if ("strategic_value" %in% m) "strategic_industrial_value" else "industrial_opportunity"
 }
 
 # The legacy need x EO quadrant (the posture until 2026-10-28) against the canonical choice: one row
@@ -59,7 +73,7 @@ sp_diag_quadrant_vs_choice <- function(tbl, need_t = 0.67, opp_t = 0.67) {
     x$strategic_choice, x$supply_chain,
     ifelse(is.na(x$legacy_eo_opportunity_pct), NA, x$legacy_eo_opportunity_pct >= opp_t),
     ifelse(is.na(x$strategic_need_percentile), NA, x$strategic_need_percentile >= need_t),
-    x$prize_high, x$need_high))
+    x$prize_high, x$need_high, sp_diag_col(x, "decision_step"), sp_diag_prize_label(x)))
   data.frame(legacy = old, choice = x$strategic_choice, driver = driver, stringsAsFactors = FALSE) %>%
     dplyr::count(.data$legacy, .data$choice, .data$driver, name = "n_cells") %>%
     dplyr::arrange(.data$legacy, dplyr::desc(.data$n_cells))
@@ -191,7 +205,7 @@ sp_diag_pathway_rules <- function(tbl, pathways, cfg = list()) {
   hc <- sp_choice_high_cp(tbl$cp_contender_pct, tbl$cp_contender_basis, tbl$cp_is_contender, tbl$t3_capability_lo, th$cp, th$floor)
   inp <- sp_choice_inputs(tbl, cfg)
   verbs <- lapply(pathways, function(pw) {
-    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", inp$need, inp$prize, hc, pw, inp$dn, th, inp$large)
+    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", inp$need, inp$prize, hc, pw, inp$dn, th, inp$large, inp$capped)
     v[is.na(tbl$strategic_choice)] <- NA_character_
     v
   })
@@ -213,7 +227,7 @@ sp_diag_catch_up_capability <- function(tbl, pathways, cfg = list()) {
                              na = sum(cu & is.na(v)))
   inp <- sp_choice_inputs(tbl, cfg)
   dplyr::bind_rows(lapply(names(pathways), function(r) {
-    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", inp$need, inp$prize, hc, pathways[[r]], inp$dn, th, inp$large)
+    v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", inp$need, inp$prize, hc, pathways[[r]], inp$dn, th, inp$large, inp$capped)
     cu <- v %in% "catch_up" & !is.na(tbl$strategic_choice)
     rbind(
       data.frame(rule = r, measure = "cp_contender_pct", catch_up = sum(cu), t(bands(tbl$cp_contender_pct, cu)),
@@ -277,7 +291,8 @@ sp_diag_corner_vs_choice <- function(tbl, corners) {
   agree <- x$strategic_choice == mapped
   old_need <- x$legacy_corner %in% c("legacy_upgrade", "legacy_exposed")
   old_prize <- x$legacy_corner %in% c("legacy_grow", "legacy_upgrade")
-  driver <- ifelse(agree, "agree", sp_diag_attribution(x$strategic_choice, x$supply_chain, old_prize, old_need, x$prize_high, x$need_high))
+  driver <- ifelse(agree, "agree", sp_diag_attribution(x$strategic_choice, x$supply_chain, old_prize, old_need, x$prize_high, x$need_high,
+                                                       sp_diag_col(x, "decision_step"), sp_diag_prize_label(x)))
   pairs <- data.frame(legacy_corner = names(SP_LEGACY_CORNER_MAP), maps_to = unname(SP_LEGACY_CORNER_MAP), stringsAsFactors = FALSE)
   pairs$n_cells <- vapply(pairs$legacy_corner, function(cn) sum(x$legacy_corner == cn), numeric(1))
   pairs$n_agree <- vapply(pairs$legacy_corner, function(cn) sum(x$legacy_corner == cn & agree), numeric(1))

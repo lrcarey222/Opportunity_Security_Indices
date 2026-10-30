@@ -408,10 +408,11 @@ strategic_posture:
 
 # ---- Canonical decision framework: Need -> Prize -> Position -> Choice -> Policy alignment ---------------
 # (docs/strategic_position.md; R/strategic_position/decision_engine.R). After the Secure override,
-# Deployment & Use is decided on deployment_need (Accelerate / Watch); at the producing stages a large-yard
-# case is Watch, else they are triaged on supply_chain_need x the prize (strategic industrial value) and
-# Competitive Position decides the response (Preserve / Catch Up / Partner / Watch). A cell without its Need or Prize is not_assessed (never Watch). All
-# thresholds are inclusive (high = at or above).
+# Deployment & Use is decided on deployment_need (Accelerate / Watch); at the producing stages a cell without
+# its Need or Prize is not_assessed (never Watch, whatever the large-yard case); then a large-yard case is
+# Watch (after a high Competitive Position, position_first), else the cell is triaged on supply_chain_need x
+# the prize (strategic industrial value) and Competitive Position decides the response (Preserve / Catch Up /
+# Partner / Watch). All thresholds are inclusive (high = at or above).
 decision_framework:
   need_threshold: 0.67          # supply_chain_need (within-cell percentile across countries)
   prize_threshold: 0.6          # the prize (strategic_industrial_value, 0-1; strategic_value.prize_measure below); choice_threshold_sensitivity.csv
@@ -478,20 +479,22 @@ decision_framework:
   # PRIZE = STRATEGIC INDUSTRIAL VALUE (R/strategic_position/strategic_value.R; user spec 2026-10-30, Yards &
   # Fences item 2): is domestic productive capability in this node strategically valuable? Three families per
   # cell or layer: market (industrial_opportunity above, unchanged), industrial commons (process_knowledge,
-  # workforce_suppliers, adjacent_innovation) and future option (leap_candidate, successor, beyond_novelty,
-  # cost_perf_advantage, incumbent_vulnerable, scale_pathway), each yes 1 / partly 0.5 / no 0 averaged over the
-  # observed node attributes. Their weighted mean is ranked (mid-rank percentile) across the assessed
+  # workforce_suppliers, adjacent_innovation: yes 1 / partly 0.5 / no 0 summed over the three and divided by
+  # three, Unknown 0, the strict reading of the paper's learning score) and future option (for a leap candidate,
+  # the four leap tests beyond_novelty, cost_perf_advantage, incumbent_vulnerable, scale_pathway summed over four,
+  # Unknown 0; any other node 0). Their weighted mean is ranked (mid-rank percentile) across the assessed
   # producing-stage cells; layers are placed among the cells. No Competitive Position or need variable enters.
   strategic_value:
     # strategic_value: the rule reads strategic_industrial_value; market: industrial_opportunity (the rule until
     # 2026-10-30, kept for the sensitivity strategic_value_vs_market.csv).
     prize_measure: strategic_value
-    # relative family weights, renormalised over the families observed (1:1:1 = a third each, the spec's default).
-    # CALIBRATION CHOICE to report: equal weights are a neutral prior, not an estimate.
+    # relative family weights (1:1:1 = a third each, the spec's default; renormalised only where the market prize
+    # is missing and require_market is false). CALIBRATION CHOICE to report: equal weights are a neutral prior.
     weights: {market: 1, commons: 1, option: 1}
-    # market-only gate: a node whose commons and option are both observed and both below this is capped just
-    # below the prize threshold (siv_cap market_only), so market size alone never makes the prize high. 0.5 = no
-    # family reaches "partly" on average. CALIBRATION CHOICE to report.
+    # market-only gate: a node where neither commons nor option reaches this (observed or not: an Unknown counts
+    # 0) is capped just below the prize threshold (siv_cap market_only), at every prize threshold, so market size
+    # alone never makes the prize high. 0.5 on commons = 1.5 learning points of 3, between the paper's moderate
+    # (1) and strong (2); on option = the leap tests "partly" on average. CALIBRATION CHOICE to report.
     gate: 0.5
     # the cap sits this far below prize_threshold (0.6 - 0.01 = 0.59); a capped value is never borderline.
     cap_margin: 0.01
@@ -510,19 +513,37 @@ decision_framework:
     # has a control path (the Small-yard question), a scaling or emerging one still teaches.
     required: [mature, passive]
     # of the other eight signals, at least this many must hold. 5 = a clear majority of the commodity evidence.
-    # A case that holds on exactly min_signals is borderline (one signal less and it fails).
-    # CALIBRATION CHOICE to report (diagnostics large_yard_sensitivity.csv runs 4 and 6).
+    # A case that holds on exactly min_signals, or fails one signal short, is borderline.
+    # CALIBRATION CHOICE to report (diagnostics large_yard_sensitivity.csv runs 4 and 6). Three of the eight
+    # (standardized, low_differentiation, commoditized) are facets of one product-market property; grouping the
+    # signals into product-market, learning and supply families is an alternative not adopted.
     min_signals: 5
     # diversified: the largest supplier's share of world supply (world_top_share; a mineral cell's driving
-    # mineral) below this. 0.5 = the Yards & Fences coercion screening line: no single supplier holds a majority.
+    # mineral; a layer's own measure where it has one) below this, and no coercive supplier at or above it.
+    # 0.5 = the Yards & Fences coercion screening line: no single supplier holds a majority. The paper uses
+    # concentration only to add diversification inside the Large yard; here it is one of the eight votes, as the
+    # 2026-10-30 spec lists it.
     diversified_top_share_max: 0.5
-    # future-option veto: a leap candidate, or future-option value at or above this, is never a large yard (the
-    # paper's leap-ahead rationale for a Medium yard).
-    option_veto: 0.5
-    # true: a high Competitive Position (Preserve) is tested before the large-yard case, as the paper's engine
-    # treats a present position worth defending as a Medium-yard rationale. false (the 2026-10-30 spec order):
-    # Secure, then the large-yard case, then prize and position. OPEN DECISION to report.
-    position_first: false
+    # leap veto: a credible leap ahead is never a large yard. The paper's test (gates.ts leapCredible):
+    # leap_candidate yes, beyond_novelty yes, cost_perf_advantage yes and two supports not "no" among
+    # incumbent_vulnerable, complementary capabilities (a country attribute: read as not assessed) and
+    # scale_pathway; undecided where an unknown could make it credible. Candidacy alone is not a veto.
+    leap_veto: true
+    # learning veto and capability floor, in learning points of three (process_knowledge + workforce_suppliers +
+    # adjacent_innovation, yes 1 / partly 0.5): at or above learning_veto_points at the low end of every unknown
+    # (the paper's strong learning, a Medium-yard rationale on its own) the node is never a large yard; a large
+    # yard at or above learning_floor_points (the paper's moderate learning) keeps a capability floor
+    # (large_yard_floor, variant deploy_floor: the paper's large-floor, which it reaches when protection would
+    # cost more than 30%; here the commodity evidence stands in for that cost). CALIBRATION CHOICES to report
+    # (large_yard_sensitivity.csv run no_learning_veto).
+    learning_veto_points: 2
+    learning_floor_points: 1
+    # true (the paper's gate order): a high Competitive Position is tested before the large-yard case, since the
+    # paper treats a present position worth defending as a Medium-yard rationale that comes before Large; a top-
+    # quarter producer of a commodity node goes on to the triage (Preserve). false: Secure, then the large-yard
+    # case, then prize and position (large_yard_sensitivity.csv run position_last). Changed from false on
+    # 2026-10-30 after the fidelity review; reversible.
+    position_first: true
   # Credible pathway for Catch Up (R/strategic_position/pathway.R). rule anchor (user spec 2026-10-30, "capability
   # anchor + corroboration"): at least one capability anchor and one more signal from a different evidence family;
   # two enabling signals alone are never enough. rule legs: min_legs of the five design-D3 legs (1 = design D3,

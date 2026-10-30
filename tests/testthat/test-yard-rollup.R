@@ -87,6 +87,34 @@ test_that("cells roll their stage row and layers up, with the children as a JSON
   expect_true(all(r0$cells$yard_units == 1L))
 })
 
+test_that("the fence scope travels with the children: an inseparable Secure control layer extends the fence to hardware", {
+  l <- yr_layers()
+  l$posture_variant <- ifelse(l$strategic_choice == "secure", "secure_control", ifelse(l$strategic_choice == "watch", "deploy", NA))
+  l$posture_variant[l$layer_id == "bess-control"] <- "secure_integrated"
+  r <- sp_yard_rollup(yr_cells(), l)
+  c <- r$cells
+  expect_equal(c$yard_fence_scope, c(NA, NA, "layer", "extends_to_hardware", NA, "layer"))
+  kids <- jsonlite::fromJSON(c$yard_children[c$tech == "Batteries"], simplifyVector = FALSE)
+  v <- stats::setNames(vapply(kids, function(k) k$variant %||% NA_character_, ""), vapply(kids, `[[`, "", "layer_id"))
+  expect_equal(unname(v["bess-control"]), "secure_integrated")
+  expect_true(is.na(v["bess-cells"]))                     # a missing variant is left out of the child
+  l$posture_variant[l$layer_id == "grid-scada"] <- "secure_unclear"
+  expect_equal(sp_yard_rollup(yr_cells(), l)$cells$yard_fence_scope[3], "unclear")
+  expect_equal(sp_yard_fence_scope(c("secure", "secure"), c("secure_unclear", "secure_whole")), "extends_to_hardware")
+  expect_true(is.na(sp_yard_fence_scope(c("watch", "partner"), c("deploy", "compete_partner"))))
+})
+
+test_that("a layer keeps its own world supply: the cell's largest-supplier share does not replace it", {
+  expect_false(any(c("world_top_share", "world_top_iso3", "coercive_top_share") %in% SP_LAYER_PARENT_COLS))
+  cells <- data.frame(iso3 = "AAA", tech = "Solar", supply_chain = "Assembly", supply_chain_need = 0.4, world_top_share = 0.3,
+                      stringsAsFactors = FALSE)
+  layers <- data.frame(iso3 = "AAA", tech = "Solar", supply_chain = "Assembly", layer_id = c("pv-modules", "pv-racking"),
+                       world_top_share = c(0.8, 0.3), stringsAsFactors = FALSE)
+  x <- sp_layer_inputs(layers, cells)
+  expect_equal(x$world_top_share, c(0.8, 0.3))
+  expect_equal(x$supply_chain_need, c(0.4, 0.4))          # need still comes from the cell
+})
+
 # ---- Layers take their own choice ---------------------------------------------------------------------------------
 yr_attrs <- function() {
   a <- function(tech, stage, layer_id, ...) {
@@ -175,9 +203,11 @@ test_that("the paper reproduction reads paper_placement beside the derived yards
                       layer_id = rep(c("pv-racking", "pv-nextgen", "stage"), 3),
                       yf_component_id = rep(c("pv-racking", "pv-nextgen", NA), 3),
                       yard = c("large", "medium", "medium", "large", "large", "medium", "large", "medium", "small"),
-                      strategic_choice = "watch", choice_reason = "why", large_yard_case = c(TRUE, FALSE, FALSE),
-                      large_yard_reason = "ly", strategic_industrial_value = 0.5, stringsAsFactors = FALSE)
-  out <- sp_yf_reproduction(yf, units, countries = c("USA", "JPN", "DEU"))
+                      strategic_choice = c("watch", "partner", "preserve", "watch", "watch", "partner", "watch", "partner", "secure"),
+                      choice_reason = "why", large_yard_case = c(TRUE, FALSE, FALSE), large_yard_n = c(5L, 2L, 3L),
+                      large_yard_floor = c(TRUE, FALSE, FALSE), large_yard_reason = "ly", strategic_industrial_value = 0.5,
+                      stringsAsFactors = FALSE)
+  out <- sp_yf_reproduction(yf, units, countries = c("USA", "JPN", "DEU"), min_signals = 5L)
   expect_equal(out$agree[out$component_id == "pv-racking"], "agree")
   expect_equal(out$modal_yard[out$component_id == "pv-nextgen"], "medium")
   expect_equal(out$yard_JPN[out$component_id == "pv-nextgen"], "large")
@@ -187,4 +217,33 @@ test_that("the paper reproduction reads paper_placement beside the derived yards
   expect_equal(g$agree, "differ")
   expect_equal(out$agree[out$component_id == "orphan"], "no_unit")
   expect_true(all(c("paper_placement", "modal_yard", "yard_USA", "reason", "large_yard_reason") %in% names(out)))
+  # why a unit agrees: the choice behind the modal yard, and how far the large-yard case is from its threshold
+  rk <- out[out$component_id == "pv-racking", ]
+  expect_equal(rk$modal_choice, "watch")
+  expect_equal(rk$large_yard_n, 5L)
+  expect_equal(rk$large_yard_margin, 0L)                  # holds on exactly min_signals: borderline
+  expect_equal(rk$large_yard_floor, "3/3")
+  expect_equal(out$modal_choice[out$component_id == "pv-nextgen"], "partner")   # a Medium yard on need, not on capability
+})
+
+test_that("a layer with its own world-supply measure carries that measure's largest-supplier share (posture_inputs.R)", {
+  source(file.path(yr_repo_root(), "R/strategic_position/posture_inputs.R"))
+  countries <- data.frame(Country = "Aland", iso3 = "AAA", stringsAsFactors = FALSE)
+  nodes <- data.frame(iso3 = "AAA", tech = "Solar", stage = "Assembly", layer_id = c("stage", "pv-modules", "pv-racking"),
+                      layer_type = c("stage", "hardware", "structure"), primary_measure = c("", "iea_module_capacity", "none"),
+                      mineral = "", stringsAsFactors = FALSE)
+  supply <- data.frame(iso3 = "AAA", tech = "Solar", supply_chain = "Assembly", home_share = 0.02, coercive_top_share = 0.3,
+                       coercive_top_iso3 = "CHN", world_top_iso3 = "DEU", world_top_share = 0.3, primary_measure = "trade",
+                       stringsAsFactors = FALSE)
+  meas <- data.frame(iso3 = "AAA", tech = "Solar", supply_chain = "Assembly", measure = "iea_module_capacity", home_share = 0.01,
+                     coercive_top_share = 0.8, coercive_top_iso3 = "CHN", world_top_iso3 = "CHN", world_top_share = 0.8,
+                     stringsAsFactors = FALSE)
+  imports <- data.frame(iso3 = "AAA", tech = "Solar", supply_chain = "Assembly", imports_usd = 1e9, stringsAsFactors = FALSE)
+  cp <- data.frame(Country = "Aland", tech = "Solar", supply_chain = c("Assembly", "Deployment"), competitive_position_percentile = 0.5,
+                   stringsAsFactors = FALSE)
+  x <- sp_posture_inputs(nodes, supply, imports, cp, countries, list(), supply_measures = meas)
+  x <- x[match(c("stage", "pv-modules", "pv-racking"), x$layer_id), ]
+  expect_equal(x$supply_basis, c("cell", "layer_measure", "cell"))
+  expect_equal(x$world_top_share, c(0.3, 0.8, 0.3))       # the modules layer reads module supply, not the cell basket
+  expect_equal(x$world_top_iso3, c("DEU", "CHN", "DEU"))
 })

@@ -6,12 +6,17 @@
 #   2. Deployment & Use: deployment_need NA -> not_assessed; >= deployment_threshold -> deploy /
 #      accelerate; else deploy / watch. Never Partner, Preserve or Catch Up: those are supply-chain answers.
 #   3. Producing stages (Extraction, Refining, Components, Assembly, Recovery):
-#      a. the large-yard case (strategic_value.R sp_large_yard_case(), decision_framework.large_yard) TRUE ->
+#      a. supply_chain_need or the prize NA -> not_assessed (never Watch, whatever the large-yard case);
+#      b. the large-yard case (strategic_value.R sp_large_yard_case(), decision_framework.large_yard) TRUE ->
 #         deploy / watch: a mature, passive, commodity node where affordable, diversified access should
-#         dominate, whatever the size of the market (watch_reasons large_yard_case);
-#      b. supply_chain_need or the prize NA -> not_assessed. Else, with
+#         dominate, whatever the size of the market (watch_reasons large_yard_case; variant deploy_floor where a
+#         moderate learning case leaves a capability floor). With large_yard.position_first (the default, the
+#         paper's gate order: a present position is a Medium-yard rationale) a high Competitive Position is
+#         tested first and goes on to the triage;
+#      c. else, with
 #         high_need  = supply_chain_need >= need_threshold
-#         high_prize = the prize >= prize_threshold. The prize is strategic_industrial_value (strategic_value.R:
+#         high_prize = the prize >= prize_threshold, and not capped as market-only (siv_cap: a rule at any
+#                      threshold, not a measurement). The prize is strategic_industrial_value (strategic_value.R:
 #                      market, industrial-commons and future-option value; decision_framework.strategic_value
 #                      prize_measure strategic_value), or industrial_opportunity, the market prize alone, under
 #                      prize_measure market (the 2026-10-30 rule, kept for the sensitivity)
@@ -26,8 +31,8 @@
 #                  compete / partner. Low need -> deploy / watch.
 #
 # Observed policy is never an input. Thresholds are config (decision_framework). Every input within
-# borderline_band of its threshold (and a large-yard case that holds on exactly min_signals) is listed in
-# decision_borderline; flipping it gives the other choices
+# borderline_band of its threshold (and a large-yard case that holds on exactly min_signals, or fails for want
+# of one signal) is listed in decision_borderline; flipping it gives the other choices
 # the evidence allows (choice_possible, posture_possible) and the inputs that would change the answer
 # (pivotal_inputs). decision_trace is a compact JSON array of the steps
 # [{step, test, value, threshold, result}]; the engine's full trace stays in engine_trace.
@@ -53,7 +58,7 @@ sp_choice_thresholds <- function(cfg = list()) {
   list(need = cfg$need_threshold %||% 0.67, prize = cfg$prize_threshold %||% 0.6, cp = cfg$cp_preserve_pct %||% 0.75,
        deployment = cfg$deployment_threshold %||% 0.6, band = cfg$borderline_band %||% 0.05,
        floor = unlist(cfg$capability_floor %||% c("moderate", "strong")),
-       large_min = as.integer(cfg$large_yard$min_signals %||% 5L), large_position_first = isTRUE(cfg$large_yard$position_first))
+       large_min = as.integer(cfg$large_yard$min_signals %||% 5L), large_position_first = !isFALSE(cfg$large_yard$position_first))
 }
 
 # The prize column the rule reads: strategic_industrial_value (prize_measure strategic_value, the default) or
@@ -63,17 +68,26 @@ sp_choice_prize_col <- function(cfg = list()) {
 }
 
 # The rule's inputs from a cell or layer table: need and the prize at the producing stages, deployment need at
-# Deployment & Use, and the large-yard case (all FALSE where decision_framework.large_yard.enabled is false;
-# NA at Deployment). prize_col names the prize column read.
+# Deployment & Use, the large-yard case (all FALSE where decision_framework.large_yard.enabled is false; NA at
+# Deployment), capped (the prize is the strategic industrial value and siv_cap is market_only: never a high
+# prize, at any threshold) and near (the large-yard case fails for want of one signal, large_yard_near).
+# prize_col names the prize column read.
 sp_choice_inputs <- function(tbl, cfg = list()) {
   n <- nrow(tbl)
   col <- function(nm) if (nm %in% names(tbl)) tbl[[nm]] else rep(NA, n)
   dep <- tbl$supply_chain == "Deployment"
   pcol <- sp_choice_prize_col(cfg)
-  large <- if (sp_ly_cfg(cfg)$enabled) as.logical(col("large_yard_case")) else rep(FALSE, n)
+  on <- sp_ly_cfg(cfg)$enabled
+  large <- if (on) as.logical(col("large_yard_case")) else rep(FALSE, n)
+  near <- if (on) as.logical(col("large_yard_near")) %in% TRUE else rep(FALSE, n)
+  capped <- pcol == "strategic_industrial_value" & col("siv_cap") %in% "market_only"
   list(need = ifelse(dep, NA_real_, as.numeric(col("supply_chain_need"))), prize = ifelse(dep, NA_real_, as.numeric(col(pcol))),
-       dn = ifelse(dep, as.numeric(col("deployment_need")), NA_real_), large = ifelse(dep, NA, large), prize_col = pcol)
+       dn = ifelse(dep, as.numeric(col("deployment_need")), NA_real_), large = ifelse(dep, NA, large), prize_col = pcol,
+       capped = !dep & capped, near = !dep & near)
 }
+
+# A high prize: at or above the threshold and not capped as market-only.
+sp_choice_prize_high <- function(prize, th, capped = FALSE) !is.na(prize) & prize >= th$prize & !(capped %in% TRUE)
 
 # Position among a reference set: (reference values below + half those equal) / n.
 sp_choice_ref_pct <- function(v, ref) {
@@ -141,11 +155,12 @@ sp_choice_high_cp <- function(cp_pct, basis, is_contender, cap_lo, cp_t, floor) 
 
 # The choice rule itself, vectorised (also used by the threshold sensitivity). stage: supply_chain;
 # secure: logical (the engine's Secure); need, prize, dn: numerics; cp_high: logical; pathway: yes / no /
-# unknown; large: the large-yard case (logical; FALSE / NA do not decide). Returns the choice verb (SP_CHOICES).
-sp_choice_rule <- function(stage, secure, need, prize, cp_high, pathway, dn, th, large = FALSE) {
+# unknown; large: the large-yard case (logical; FALSE / NA do not decide); capped: the prize is capped as
+# market-only (never high). Returns the choice verb (SP_CHOICES).
+sp_choice_rule <- function(stage, secure, need, prize, cp_high, pathway, dn, th, large = FALSE, capped = FALSE) {
   dep <- stage == "Deployment"
   hn <- !is.na(need) & need >= th$need
-  hp <- !is.na(prize) & prize >= th$prize
+  hp <- sp_choice_prize_high(prize, th, capped)
   ch <- cp_high %in% TRUE
   pw <- pathway %in% "yes"
   ly <- !dep & large %in% TRUE & !(isTRUE(th$large_position_first) & ch)
@@ -154,8 +169,8 @@ sp_choice_rule <- function(stage, secure, need, prize, cp_high, pathway, dn, th,
     dep & is.na(dn) ~ "not_assessed",
     dep & dn >= th$deployment ~ "accelerate",
     dep ~ "watch",
-    ly ~ "watch",
     is.na(need) | is.na(prize) ~ "not_assessed",
+    ly ~ "watch",
     hp & ch ~ "preserve",
     hp & pw ~ "catch_up",
     hp & hn ~ "partner",
@@ -190,8 +205,8 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   dn <- inp$dn
   large <- inp$large
   pcol <- inp$prize_col
-  # a market-only cap is a rule, not a measurement near the threshold: never borderline
-  capped <- pcol == "strategic_industrial_value" & col("siv_cap", NA_character_) %in% "market_only"
+  # a market-only cap is a rule, not a measurement near the threshold: never high, never borderline
+  capped <- inp$capped
   ly_n <- suppressWarnings(as.integer(col("large_yard_n", NA_integer_)))
   cp_pct <- col("cp_contender_pct", NA_real_)
   cp_basis <- col("cp_contender_basis", NA_character_)
@@ -199,10 +214,11 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   cap_lo <- col("t3_capability_lo", NA_character_)
   pathway <- col("pathway_credible", NA_character_)
   cp_high <- sp_choice_high_cp(cp_pct, cp_basis, is_c, cap_lo, th$cp, th$floor)
-  verb <- sp_choice_rule(stage, secure, need, prize, cp_high, pathway, dn, th, large)
+  verb <- sp_choice_rule(stage, secure, need, prize, cp_high, pathway, dn, th, large, capped)
   verb[excluded] <- NA_character_
-  # decided by the large-yard case: need, prize, position and pathway are not read
-  ly_dec <- !excluded & !secure & !dep & large %in% TRUE & !(th$large_position_first & cp_high %in% TRUE)
+  assessed <- !is.na(need) & !is.na(prize)
+  # decided by the large-yard case (an assessed cell only): prize, position and pathway are not read
+  ly_dec <- !excluded & !secure & !dep & assessed & large %in% TRUE & !(th$large_position_first & cp_high %in% TRUE)
 
   # Borderline inputs and the choices across them.
   near <- function(v, t) !is.na(v) & abs(v - t) < band
@@ -210,16 +226,18 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   tri <- live & !dep & !ly_dec
   nb_need <- tri & near(need, th$need) & !is.na(prize)
   nb_prize <- tri & near(prize, th$prize) & !is.na(need) & !capped
-  nb_cp <- tri & !is.na(need) & !is.na(prize) & near(cp_pct, th$cp) &
+  nb_cp <- tri & assessed & near(cp_pct, th$cp) &
     (cp_basis %in% "all_countries" | is_c %in% TRUE) & cap_lo %in% th$floor
   nb_dn <- live & dep & near(dn, th$deployment)
-  # a large-yard case that holds on exactly min_signals is narrow: one signal less and it fails
+  # a large-yard case that holds on exactly min_signals is narrow: one signal less and it fails; one that fails
+  # for want of a single signal (large_yard_near) is narrow the other way
   nb_large <- ly_dec & !is.na(ly_n) & ly_n == th$large_min
-  # an undecided case on an assessed cell (a cell without need or prize stays not assessed either way)
-  ly_unknown <- live & !dep & is.na(large) & !(verb %in% "not_assessed")
+  nb_large_near <- tri & assessed & large %in% FALSE & inp$near
+  # an undecided case on an assessed cell (a cell without need or prize is not assessed either way)
+  ly_unknown <- live & !dep & assessed & is.na(large)
   flip <- function(v, t) ifelse(v >= t, t - 1, t)
   rule <- function(need. = need, prize. = prize, cp_high. = cp_high, pathway. = pathway, dn. = dn, large. = large) {
-    sp_choice_rule(stage, secure, need., prize., cp_high., pathway., dn., th, large.)
+    sp_choice_rule(stage, secure, need., prize., cp_high., pathway., dn., th, large., capped)
   }
   alt_need <- ifelse(nb_need, rule(need. = flip(need, th$need)), NA_character_)
   alt_prize <- ifelse(nb_prize, rule(prize. = flip(prize, th$prize)), NA_character_)
@@ -227,10 +245,10 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   alt_dn <- ifelse(nb_dn, rule(dn. = flip(dn, th$deployment)), NA_character_)
   pw_unknown <- tri & pathway %in% "unknown"
   alt_pw <- ifelse(pw_unknown, rule(pathway. = "yes"), NA_character_)
-  alt_large <- ifelse(nb_large, rule(large. = FALSE), ifelse(ly_unknown, rule(large. = TRUE), NA_character_))
+  alt_large <- ifelse(nb_large, rule(large. = FALSE), ifelse(ly_unknown | nb_large_near, rule(large. = TRUE), NA_character_))
   ly_pivotal <- ly_unknown & !is.na(alt_large) & alt_large != dplyr::coalesce(verb, "")
   sec_possible <- !excluded & grepl("secure", eng_possible)
-  bl <- cbind(nb_need, nb_prize, nb_cp, nb_dn, nb_large)
+  bl <- cbind(nb_need, nb_prize, nb_cp, nb_dn, nb_large | nb_large_near)
   colnames(bl) <- c("supply_chain_need", pcol, "cp_contender_pct", "deployment_need", "large_yard_case")
   tbl$decision_borderline <- apply(bl, 1, function(r) if (any(r)) paste(colnames(bl)[r], collapse = ";") else NA_character_)
   alts <- cbind(alt_need, alt_prize, alt_cp, alt_dn, alt_pw, alt_large)
@@ -256,7 +274,7 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
 
   # Consistency: strong position, high need, low prize -> preserve, flagged for review (D2).
   hn <- !is.na(need) & need >= th$need
-  hp <- !is.na(prize) & prize >= th$prize
+  hp <- sp_choice_prize_high(prize, th, capped)
   top_q <- !dep & !is.na(cp_pct) & cp_pct >= th$cp & (cp_basis %in% "all_countries" | is_c %in% TRUE)
   flag <- dplyr::case_when(
     verb %in% "preserve" & !hp & hn & cp_high ~ "review_strong_position_low_prize",
@@ -270,10 +288,11 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   # An unmeasured Competitive Position (all of Recovery, where no supply share or CP family is measured)
   # counts as not strong, like an unknown pathway (D3): an issue wherever the rule reads the position
   # (a high prize, or high need with a low prize); low need and a low prize give Watch whatever it is.
-  # A large-yard Watch reads none of need, prize, position or pathway: their issues do not apply to it; a
-  # narrow case (exactly min_signals) and an undecided case that would change the choice are issues of their own.
+  # A large-yard Watch reads none of need, prize, position or pathway beyond their being measured: their issues
+  # do not apply to it; a narrow case (exactly min_signals, or one signal short) and an undecided case that would
+  # change the choice are issues of their own.
   cp_unmeasured <- !dep & !ly_dec & is.na(cp_pct) & verb %in% c("catch_up", "partner", "watch") & (hp | hn)
-  issues <- nb_need + nb_prize + nb_cp + nb_dn + nb_large + ly_pivotal + (sec_possible & !secure) +
+  issues <- nb_need + nb_prize + nb_cp + nb_dn + nb_large + nb_large_near + ly_pivotal + (sec_possible & !secure) +
     (!ly_dec & verb %in% c("catch_up", "partner", "watch") & hp & !cp_high & pathway %in% "unknown") + cp_unmeasured +
     (verb %in% c("preserve", "catch_up", "partner") & ev_low) + !is.na(flag) +
     (!dep & !ly_dec & verb %in% SP_CHOICES[2:6] & dplyr::coalesce(col("supply_chain_need_n_families", NA_integer_), 0L) < 2) +
@@ -289,10 +308,14 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   diversify <- (!is.na(col("coercive_top_share", NA_real_)) & col("coercive_top_share", NA_real_) >= watch$coercive_share) |
     (!is.na(col("import_hhi", NA_real_)) & col("import_hhi", NA_real_) >= watch$import_hhi & material)
   deploy_variant <- ifelse(grepl("^deploy", eng_var), eng_var, ifelse(diversify & !dep, "deploy_diversify", "deploy"))
+  # a large yard with a capability floor (a moderate learning case: the paper's large-floor, checked before its
+  # concentration watch)
+  ly_floor <- ly_dec & col("large_yard_floor", NA) %in% TRUE
   variant <- dplyr::case_when(
     is.na(verb) | verb == "not_assessed" ~ NA_character_,
     verb == "secure" ~ eng_var,
     posture %in% "compete" ~ paste0("compete_", verb),
+    ly_floor ~ "deploy_floor",
     TRUE ~ deploy_variant
   )
   tbl$engine_posture <- eng_post
@@ -339,19 +362,22 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
 }
 
 # Why a Watch is Watch (spec XIV: "Domestic industrial priority: low"): large_yard_case (a mature, passive,
-# commodity node: affordable, diversified access dominates, strategic_value.R), low_need, low_prize,
+# commodity node: affordable, diversified access dominates, strategic_value.R; the triage reasons low_need,
+# low_prize and weak_domestic_case are not given beside it, since the rule did not read them), low_need, low_prize,
 # ample_diversified_supply (no concentration watch), weak_domestic_case (a prize without a top-quarter
 # position or a credible pathway), option_value (an emerging node: keep R&D options open), and at
 # Deployment low_deployment_need.
 sp_watch_reasons <- function(tbl, verb, need, prize, hp, hn, cp_high, pathway, dn, th, diversify, ly_dec = rep(FALSE, nrow(tbl))) {
   dep <- tbl$supply_chain == "Deployment"
   mat <- if ("io_maturity_class" %in% names(tbl)) tbl$io_maturity_class else rep(NA_character_, nrow(tbl))
+  # a large-yard Watch is decided before the triage: its triage reasons (need, prize, position) were not read
+  tri <- !dep & !(ly_dec %in% TRUE)
   r <- cbind(
     large_yard_case = ly_dec %in% TRUE,
-    low_need = !dep & !is.na(need) & !hn,
-    low_prize = !dep & !is.na(prize) & !hp,
+    low_need = tri & !is.na(need) & !hn,
+    low_prize = tri & !is.na(prize) & !hp,
     ample_diversified_supply = !dep & !diversify,
-    weak_domestic_case = !dep & hp & !(cp_high %in% TRUE) & !(pathway %in% "yes"),
+    weak_domestic_case = tri & hp & !(cp_high %in% TRUE) & !(pathway %in% "yes"),
     option_value = !dep & mat %in% "emerging",
     low_deployment_need = dep & !is.na(dn) & dn < th$deployment
   )
@@ -507,7 +533,8 @@ sp_choice_reason <- function(tbl, cfg = list()) {
 # ---- Diagnostics helpers ------------------------------------------------------------------------------
 # The choice at alternative thresholds, from the stored inputs (no engine rerun): for each parameter and
 # value, cells per choice and how many change against the configured thresholds. tbl: the final cell
-# table. grid: list(need = c(...), prize = c(...), cp = c(...), deployment = c(...)).
+# table. grid: list(need = c(...), prize = c(...), cp = c(...), deployment = c(...)). A prize capped as
+# market-only stays low at every prize threshold (the cap is a rule, not a measurement).
 sp_choice_threshold_sensitivity <- function(tbl, cfg = list(), grid = list()) {
   th0 <- sp_choice_thresholds(cfg)
   x <- tbl[!is.na(tbl$strategic_choice), , drop = FALSE]
@@ -515,7 +542,7 @@ sp_choice_threshold_sensitivity <- function(tbl, cfg = list(), grid = list()) {
   inp <- sp_choice_inputs(x, cfg)
   run <- function(th) {
     ch <- sp_choice_high_cp(x$cp_contender_pct, x$cp_contender_basis, x$cp_is_contender, x$t3_capability_lo, th$cp, th$floor)
-    sp_choice_rule(x$supply_chain, secure, inp$need, inp$prize, ch, x$pathway_credible, inp$dn, th, inp$large)
+    sp_choice_rule(x$supply_chain, secure, inp$need, inp$prize, ch, x$pathway_credible, inp$dn, th, inp$large, inp$capped)
   }
   base <- run(th0)
   rows <- list(data.frame(parameter = "base", value = NA_real_, t(as.matrix(table(factor(base, SP_CHOICES)))), changed_vs_base = 0L,
@@ -538,7 +565,7 @@ sp_choice_rerun <- function(tbl, cfg = list()) {
   inp <- sp_choice_inputs(tbl, cfg)
   ch <- sp_choice_high_cp(tbl$cp_contender_pct, tbl$cp_contender_basis, tbl$cp_is_contender, tbl$t3_capability_lo, th$cp, th$floor)
   v <- sp_choice_rule(tbl$supply_chain, tbl$engine_posture %in% "secure", inp$need, inp$prize, ch, tbl$pathway_credible, inp$dn, th,
-                      inp$large)
+                      inp$large, inp$capped)
   v[is.na(tbl$strategic_choice)] <- NA_character_
   v
 }

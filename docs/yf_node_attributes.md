@@ -87,6 +87,12 @@ standardization = `standardization`; low differentiation = `differentiation`; co
 measured (supplier shares in `major_supplier_shares_tbl`), and **passive vs digitally active** is
 `digitally_active` on layers only, because whole-cell rows carry `digitally_active = no` by convention
 (their control risks live in control layers), so a cell's `no` is not evidence that the cell is passive.
+How the method reads that convention (reconciled 2026-10-30 after the fidelity review): a stage row is the
+**remainder of its stage after its sensitive layers**. Where a stage has control software that matters, it is
+assessed as a control layer of its own (digitally active, never a large yard), so the remainder is read as
+passive for the large-yard case's required `passive` signal. The `no` on a stage row is therefore a statement
+about what the stage row covers, not evidence about the whole stage; a stage whose control software is not yet
+listed as a layer is a gap in the layer list, and its stage row should not be read as evidence of passivity.
 
 No new column was added for the commons family. The case for one is discussed in the report that
 accompanies this change: `adjacent_innovation` mixes cross-sector spillover with successor learning, so a

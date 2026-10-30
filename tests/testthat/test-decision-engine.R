@@ -543,3 +543,17 @@ test_that("the position-choice consistency counts read the right columns", {
   expect_equal(out$preserve_without_capability, 1)
   expect_equal(out$preserve_cp_contender_below50, 1)
 })
+
+test_that("the disagreement attribution names a large-yard Watch and the prize the rule read", {
+  a <- sp_diag_attribution(c("watch", "watch", "partner"), rep("Assembly", 3), c(TRUE, TRUE, TRUE), c(FALSE, FALSE, FALSE),
+                           c(TRUE, FALSE, FALSE), c(FALSE, FALSE, FALSE), decision_step = c("large_yard", "triage", "triage"),
+                           prize_label = "strategic_industrial_value")
+  expect_equal(a, c("large_yard_case", "strategic_industrial_value", "strategic_industrial_value"))
+  # the old call (no decision step, the market prize) is unchanged
+  expect_equal(sp_diag_attribution("watch", "Assembly", TRUE, FALSE, FALSE, FALSE), "industrial_opportunity")
+  d <- sp_decision_choice(de_cells(), de_cfg(), de_post())
+  expect_equal(sp_diag_prize_label(d), "strategic_industrial_value")
+  m_cfg <- de_cfg()
+  m_cfg$strategic_value$prize_measure <- "market"
+  expect_equal(sp_diag_prize_label(sp_decision_choice(de_cells(), m_cfg, de_post())), "industrial_opportunity")
+})

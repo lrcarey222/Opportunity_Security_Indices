@@ -8,15 +8,21 @@
 #            investment momentum (io_node_prize), lifted by national home-market growth;
 #   commons  industrial-commons value, from the curated node attributes: process_knowledge (the
 #            production-innovation linkage), workforce_suppliers (the supplier ecosystem) and
-#            adjacent_innovation (cross-sector spillovers); yes 1, partly 0.5, no 0, the mean of those observed;
-#   option   future-option value: leap_candidate, successor (named = 1), beyond_novelty, cost_perf_advantage,
-#            incumbent_vulnerable, scale_pathway; the same scale, the mean of those observed. A node that is
-#            not a leap candidate has no leap tests (posture_nodes.R): it is an observed 0.
-# siv_score is the weighted mean of the observed families (config weights, renormalised over the families
-# observed); strategic_industrial_value is its mid-rank percentile across the assessed producing-stage rows
-# (as the market prize is a percentile across the producing nodes), so the prize threshold keeps its
-# selectivity. A market-only node (commons and option both observed and both below the gate) is capped just
-# below the prize threshold (siv_cap "market_only"): market size alone never makes a prize high.
+#            adjacent_innovation (cross-sector spillovers); yes 1, partly 0.5, no 0, SUMMED over the three
+#            and divided by three, an Unknown counting 0: the strict reading of the Yards & Fences learning
+#            score (gates.ts learningScore at its low bound; posture_engine.R Test 3), so one "yes" among three
+#            questions is a third, never the whole family. siv_commons_n says how many were observed;
+#   option   future-option value: the four leap tests beyond_novelty, cost_perf_advantage,
+#            incumbent_vulnerable and scale_pathway, summed and divided by four (Unknown 0), for a leap
+#            candidate (leap_candidate yes, with its named successor); 0 for any other node. Candidacy gates
+#            the family rather than scoring in it, so a candidate whose tests all fail has no option value.
+#            siv_option_n counts the tests observed.
+# siv_score is the weighted mean of the families (config weights; renormalised only where the market prize is
+# missing and require_market is false); strategic_industrial_value is its mid-rank percentile across the
+# assessed producing-stage rows (as the market prize is a percentile across the producing nodes), so the prize
+# threshold keeps its selectivity. A market-only node (neither commons nor option reaches the gate, whether
+# their attributes are observed or not) is capped just below the prize threshold (siv_cap "market_only"):
+# market size alone never makes a prize high, and missing evidence never lifts it.
 #
 # Nothing that measures Competitive Position (cp_*, home_share*, export or production shares, the capability
 # floor) or need (supply_chain_need, import dependence, concentration) enters: sp_siv_check_inputs() refuses
@@ -26,18 +32,26 @@
 # The large-yard case is the countervailing test (spec item 3): a capability where affordable, diversified
 # access should dominate domestic industrial policy, whatever the size of the market. Ten signals, each
 # TRUE / FALSE / NA, from the node attributes and the world supply structure; market size is never one. The
-# Yards & Fences engine reaches its Large Yard when no capability rationale holds (dashboard/src/fence/engine/
-# gates.ts: no position, weak learning, no leap) and names the route to it "production becomes commoditised
-# and manufacturing generates little future learning" (classify.ts); the signals spell that out.
+# Yards & Fences engine reaches its Large Yard when no Medium-yard rationale holds (dashboard/src/fence/engine/
+# gates.ts: no position, weak learning, no credible leap) or when only a moderate one holds and protection is
+# costly (variant large-floor), and names the route to it "production becomes commoditised and manufacturing
+# generates little future learning" (classify.ts). The signals spell out commoditisation; two vetoes keep the
+# paper's Medium-yard rationales: a credible leap (gates.ts leapCredible) and strong industrial learning
+# (learningScore >= 2 of 3). A moderate learning case (>= 1 of 3) can still be a large yard, with a capability
+# floor (large_yard_floor; the choice variant deploy_floor, the paper's large-floor).
 #
 # Pure functions: no IO, no yard placement from the paper (paper_placement is never read here). Needs
 # sp_helpers.R and industrial_opportunity.R (SP_IO_FORBIDDEN, SP_IO_PRODUCING_STAGES).
 
 SP_SIV_FAMILIES <- c("market", "commons", "option")
 SP_SIV_COMMONS <- c("process_knowledge", "workforce_suppliers", "adjacent_innovation")
-SP_SIV_OPTION <- c("leap_candidate", "successor", "beyond_novelty", "cost_perf_advantage", "incumbent_vulnerable", "scale_pathway")
+# the leap tests scored in the option family (leap_candidate gates it; successor names the successor)
+SP_SIV_LEAP_TESTS <- c("beyond_novelty", "cost_perf_advantage", "incumbent_vulnerable", "scale_pathway")
+SP_SIV_OPTION <- c("leap_candidate", "successor", SP_SIV_LEAP_TESTS)
 SP_SIV_COLUMNS <- c("siv_market", "siv_commons", "siv_option", "siv_score", "strategic_industrial_value", "siv_cap",
-                    "siv_families_observed")
+                    "siv_families_observed", "siv_commons_n", "siv_option_n")
+SP_LY_COLUMNS <- c("large_yard_case", "large_yard_signals", "large_yard_n", "large_yard_unknown", "large_yard_reason",
+                   "large_yard_floor", "large_yard_near")
 SP_PRIZE_MEASURES <- c("strategic_value", "market")
 # Column-name patterns of Competitive Position, capability and need that may never enter the prize (on top of
 # SP_IO_FORBIDDEN).
@@ -52,6 +66,8 @@ SP_LY_WORDS <- c(mature = "mature", passive = "passive", standardized = "standar
                  low_differentiation = "little product differentiation", commoditized = "commoditized")
 SP_LY_ATTRS <- c("maturity", "digitally_active", "standardization", "substitutability", "qualification_time",
                  "process_knowledge", "adjacent_innovation", "differentiation", "commoditization", "leap_candidate")
+SP_LY_LEARN_WORDS <- c(process_knowledge = "process knowledge", workforce_suppliers = "workforce and suppliers",
+                       adjacent_innovation = "adjacent innovation")
 
 # ---- Configuration ------------------------------------------------------------------------------------
 # decision_framework$strategic_value with its defaults (config/strategic_position.yml documents each).
@@ -78,9 +94,18 @@ sp_ly_cfg <- function(cfg = list()) {
   k <- as.integer(l$min_signals %||% 5L)
   n_other <- length(setdiff(SP_LY_SIGNALS, req))
   if (is.na(k) || k < 0 || k > n_other) stop("sp_ly_cfg(): large_yard$min_signals must be between 0 and ", n_other, call. = FALSE)
+  if (!is.null(l$option_veto)) stop("sp_ly_cfg(): large_yard$option_veto was replaced by leap_veto (a credible leap) on 2026-10-30", call. = FALSE)
+  # learning points of three (process_knowledge + workforce_suppliers + adjacent_innovation, yes 1 / partly 0.5):
+  # the paper's strong (>= 2) and moderate (>= 1) learning levels (gates.ts scoreLevel); above 3 (Inf) switches
+  # the veto or the floor off
+  lv <- as.numeric(l$learning_veto_points %||% 2)
+  lf <- as.numeric(l$learning_floor_points %||% 1)
+  if (is.na(lv) || is.na(lf) || lf < 0 || lf > lv) {
+    stop("sp_ly_cfg(): large_yard learning_floor_points and learning_veto_points must satisfy 0 <= floor <= veto", call. = FALSE)
+  }
   list(enabled = !isFALSE(l$enabled), required = req, min_signals = k,
-       diversified_top_share_max = l$diversified_top_share_max %||% 0.5, option_veto = l$option_veto %||% 0.5,
-       position_first = isTRUE(l$position_first))
+       diversified_top_share_max = l$diversified_top_share_max %||% 0.5, leap_veto = !isFALSE(l$leap_veto),
+       learning_veto_points = lv, learning_floor_points = lf, position_first = !isFALSE(l$position_first))
 }
 
 # ---- Guards and attribute lookup ------------------------------------------------------------------------
@@ -131,15 +156,42 @@ sp_node_attrs <- function(tbl, attrs = NULL, fields) {
 # yes 1, partly 0.5, no 0; anything else NA.
 sp_siv_level <- function(v) unname(c(no = 0, partly = 0.5, yes = 1)[as.character(v)])
 
-# The commons and option families of aligned attributes (sp_node_attrs() over SP_SIV_COMMONS and SP_SIV_OPTION).
+# The commons and option families of aligned attributes (sp_node_attrs() over SP_SIV_COMMONS and SP_SIV_OPTION),
+# on the strict reading (an Unknown counts 0): commons = (sum of the three levels) / 3; option = (sum of the four
+# leap-test levels) / 4 for a leap candidate, else 0. Also: commons_points (the sum, 0-3: the paper's learning
+# score at its low bound), commons_points_hi (Unknown counted 1: its high bound), commons_n and option_n (how many
+# were observed; option_n 0 for a node that is not a leap candidate) and candidate (leap_candidate: TRUE / FALSE /
+# NA when not assessed).
 sp_siv_families <- function(a) {
   n <- nrow(a)
   get <- function(f) if (f %in% names(a)) a[[f]] else rep(NA_character_, n)
-  cm <- do.call(cbind, lapply(SP_SIV_COMMONS, function(f) sp_siv_level(get(f))))
-  succ <- get("successor")
-  om <- cbind(sp_siv_level(get("leap_candidate")), ifelse(is.na(succ), NA_real_, 1),
-              do.call(cbind, lapply(setdiff(SP_SIV_OPTION, c("leap_candidate", "successor")), function(f) sp_siv_level(get(f)))))
-  list(commons = sp_row_mean_available(matrix(cm, nrow = n)), option = sp_row_mean_available(matrix(om, nrow = n)))
+  cm <- matrix(do.call(cbind, lapply(SP_SIV_COMMONS, function(f) sp_siv_level(get(f)))), nrow = n)
+  lt <- matrix(do.call(cbind, lapply(SP_SIV_LEAP_TESTS, function(f) sp_siv_level(get(f)))), nrow = n)
+  lc <- get("leap_candidate")
+  candidate <- ifelse(lc %in% "yes", TRUE, ifelse(lc %in% "no", FALSE, NA))
+  pts <- rowSums(ifelse(is.na(cm), 0, cm))
+  list(commons = pts / length(SP_SIV_COMMONS), commons_points = pts, commons_points_hi = rowSums(ifelse(is.na(cm), 1, cm)),
+       commons_n = as.integer(rowSums(!is.na(cm))),
+       option = ifelse(candidate %in% TRUE, rowSums(ifelse(is.na(lt), 0, lt)) / length(SP_SIV_LEAP_TESTS), 0),
+       option_n = ifelse(candidate %in% TRUE, as.integer(rowSums(!is.na(lt))), 0L), candidate = candidate)
+}
+
+# The Yards & Fences leap-ahead test on the node (gates.ts leapCredible), tri-state: TRUE when a leap candidate
+# has beyond_novelty yes, cost_perf_advantage yes and at least two supports not "no" among incumbent_vulnerable,
+# complementary capabilities and scale_pathway, at the low end of every unknown; FALSE when it fails even at the
+# high end (or the node is not a leap candidate); NA otherwise. complementary capabilities are the country's own
+# strengths, not a node attribute: they are read as not assessed (so a credible leap needs both node supports).
+sp_leap_credible <- function(a) {
+  n <- nrow(a)
+  get <- function(f) if (f %in% names(a)) a[[f]] else rep(NA_character_, n)
+  lc <- get("leap_candidate")
+  bn <- get("beyond_novelty")
+  cpa <- get("cost_perf_advantage")
+  sup <- cbind(get("incumbent_vulnerable"), get("scale_pathway"))
+  lo <- lc %in% "yes" & bn %in% "yes" & cpa %in% "yes" & rowSums(matrix(sup %in% c("yes", "partly"), nrow = n)) >= 2
+  hi <- !(lc %in% "no") & (bn %in% "yes" | is.na(bn)) & (cpa %in% "yes" | is.na(cpa)) &
+    1 + rowSums(matrix(!(sup %in% "no"), nrow = n)) >= 2
+  ifelse(lo, TRUE, ifelse(!hi, FALSE, NA))
 }
 
 # Mid-rank position of each value among a reference set: (below + half of equal) / n.
@@ -169,32 +221,40 @@ sp_strategic_value <- function(tbl, attrs = NULL, cfg = list(), ref = NULL) {
   score <- ifelse(den > 0, rowSums(w * ifelse(is.na(m), 0, m)) / den, NA_real_)
   if (sc$require_market) score[is.na(m[, "market"])] <- NA_real_
   pct <- if (is.null(ref)) sp_midrank_pct(score) else sp_siv_ref_pct(score, ref)
-  market_only <- !is.na(score) & !is.na(m[, "commons"]) & !is.na(m[, "option"]) &
-    m[, "commons"] < sc$gate & m[, "option"] < sc$gate
+  # market only: no non-market family reaches the gate. An unobserved family counts 0 (strict reading), so
+  # less evidence never lifts the cap.
+  market_only <- !is.na(score) & !(dplyr::coalesce(m[, "commons"] >= sc$gate, FALSE) | dplyr::coalesce(m[, "option"] >= sc$gate, FALSE))
   cap <- sc$prize_threshold - sc$cap_margin
+  observed <- cbind(!is.na(m[, "market"]), fam$commons_n > 0, !is.na(fam$candidate)) & matrix(rep(sc$weights > 0, each = n), nrow = n, ncol = 3)
   tbl$siv_market <- unname(m[, "market"])
   tbl$siv_commons <- unname(m[, "commons"])
   tbl$siv_option <- unname(m[, "option"])
   tbl$siv_score <- score
   tbl$strategic_industrial_value <- ifelse(market_only, pmin(pct, cap), pct)
   tbl$siv_cap <- ifelse(market_only, "market_only", NA_character_)
-  tbl$siv_families_observed <- ifelse(prod, as.integer(rowSums(!is.na(m) & matrix(rep(sc$weights > 0, each = n), nrow = n, ncol = 3))), NA_integer_)
+  tbl$siv_families_observed <- ifelse(prod, as.integer(rowSums(observed)), NA_integer_)
+  tbl$siv_commons_n <- ifelse(prod, fam$commons_n, NA_integer_)
+  tbl$siv_option_n <- ifelse(prod, fam$option_n, NA_integer_)
   tbl
 }
 
 # ---- The large-yard case -----------------------------------------------------------------------------------
 # The ten signals, one logical column each (TRUE / FALSE / NA = not observed):
 #   mature               maturity mature
-#   passive              digitally_active no (a whole cell is judged on the physical path, so it is passive by
-#                        convention; control risks live in control layers, which are digitally active)
+#   passive              digitally_active no. On a layer this is evidence. On a stage row it is a convention, not
+#                        evidence: the stage row is the remainder of the stage after its sensitive layers, and the
+#                        stage's control software is assessed as its control layers (digitally active), so the
+#                        remainder is read as passive (docs/yf_node_attributes.md)
 #   standardized         standardization high
 #   substitutable        substitutability easy or moderate
 #   easy_qualification   qualification_time lt3m or m3to12
 #   diversified          world supply is not concentrated: the largest supplier's share of world supply
 #                        (world_top_share, supply_structure.R; for a mineral cell its driving mineral) below
-#                        diversified_top_share_max. Where world_top_share is missing, a coercive_top_share at or
-#                        above the line settles it as FALSE (the largest coercive supplier is a lower bound of the
-#                        largest supplier); otherwise NA. Layers read their parent cell's world supply.
+#                        diversified_top_share_max. A coercive_top_share at or above the line settles it as FALSE
+#                        whatever world_top_share says (the largest coercive supplier is a lower bound of the
+#                        largest supplier, and the two can come from different scopes); with neither, NA. A layer
+#                        with its own world-supply measure or mineral reads its own (posture_inputs.R swaps both
+#                        shares); any other layer its cell's.
 #   low_learning         process_knowledge no
 #   low_spillover        adjacent_innovation no
 #   low_differentiation  differentiation low
@@ -214,7 +274,7 @@ sp_large_yard_signals <- function(tbl, attrs = NULL, cfg = list()) {
     standardized = is_(a$standardization, "high"),
     substitutable = is_(a$substitutability, c("easy", "moderate")),
     easy_qualification = is_(a$qualification_time, c("lt3m", "m3to12")),
-    diversified = ifelse(!is.na(top), top < mx, ifelse(!is.na(coer) & coer >= mx, FALSE, NA)),
+    diversified = ifelse(!is.na(coer) & coer >= mx, FALSE, ifelse(!is.na(top), top < mx, NA)),
     low_learning = is_(a$process_knowledge, "no"),
     low_spillover = is_(a$adjacent_innovation, "no"),
     low_differentiation = is_(a$differentiation, "low"),
@@ -224,20 +284,25 @@ sp_large_yard_signals <- function(tbl, attrs = NULL, cfg = list()) {
 }
 
 # The large-yard case per row. TRUE when every required signal holds (config, default mature AND passive),
-# at least min_signals of the other signals hold, and no future-option veto applies (a leap candidate, or
-# future-option value siv_option at or above option_veto); FALSE when a required signal fails, the veto
-# holds, or too few of the other signals can hold even if every unknown one did; NA when the evidence cannot
-# decide. Producing stages only (Deployment & Use is decided on deployment_need). siv_option is read from
-# tbl where sp_strategic_value() has run, else computed from attrs. Adds large_yard_case, large_yard_signals
-# (";" list of the signals that hold), large_yard_n (how many of the non-required signals hold: the count
-# compared with min_signals), large_yard_unknown (";" list of the signals not observed) and
-# large_yard_reason (one plain sentence). Market size is never a signal.
+# at least min_signals of the other signals hold, and no Medium-yard rationale of the node vetoes it: a credible
+# leap (sp_leap_credible(), the paper's leap-ahead test; leap_veto) or strong industrial learning (the commons
+# points, the paper's learning score, at or above learning_veto_points at the low end of every unknown). FALSE
+# when a required signal fails, a veto holds, or too few of the other signals can hold even if every unknown one
+# did; NA when the evidence cannot decide (an undecided veto included). Producing stages only (Deployment & Use
+# is decided on deployment_need). Adds SP_LY_COLUMNS: large_yard_case; large_yard_signals (";" list of the
+# signals that hold); large_yard_n (how many of the non-required signals hold: the count compared with
+# min_signals); large_yard_unknown (";" list of the signals not observed); large_yard_reason (one plain
+# sentence); large_yard_floor (a large yard whose learning points reach learning_floor_points: a moderate
+# capability case, the paper's large-floor, kept as a capability floor rather than a Medium yard); and
+# large_yard_near (FALSE only for want of one signal: every required signal holds, no veto, min_signals - 1 hold,
+# none unknown). Market size is never a signal.
 sp_large_yard_case <- function(tbl, attrs = NULL, cfg = list()) {
   lc <- sp_ly_cfg(cfg)
   n <- nrow(tbl)
   if (!n) {
     tbl$large_yard_case <- logical(); tbl$large_yard_signals <- character(); tbl$large_yard_n <- integer()
-    tbl$large_yard_unknown <- character(); tbl$large_yard_reason <- character()
+    tbl$large_yard_unknown <- character(); tbl$large_yard_reason <- character(); tbl$large_yard_floor <- logical()
+    tbl$large_yard_near <- logical()
     return(tbl)
   }
   prod <- tbl$supply_chain %in% SP_IO_PRODUCING_STAGES
@@ -249,12 +314,12 @@ sp_large_yard_case <- function(tbl, attrs = NULL, cfg = list()) {
   req_ok <- rowSums(!is.na(req) & req) == length(lc$required)
   n_hold <- as.integer(rowSums(!is.na(oth) & oth))
   n_na <- as.integer(rowSums(is.na(oth)))
-  leap <- sp_node_attrs(tbl, attrs, "leap_candidate")$leap_candidate
-  opt <- if ("siv_option" %in% names(tbl)) tbl$siv_option else
-    sp_siv_families(sp_node_attrs(tbl, attrs, c(SP_SIV_COMMONS, SP_SIV_OPTION)))$option
-  veto_leap <- leap %in% "yes"
-  veto_opt <- !is.na(opt) & opt >= lc$option_veto
-  veto <- ifelse(veto_leap | veto_opt, TRUE, ifelse(is.na(leap) & is.na(opt), NA, FALSE))
+  a <- sp_node_attrs(tbl, attrs, c(SP_SIV_COMMONS, SP_SIV_OPTION))
+  fam <- sp_siv_families(a)
+  leap <- if (lc$leap_veto) sp_leap_credible(a) else rep(FALSE, n)
+  learn <- ifelse(fam$commons_points >= lc$learning_veto_points, TRUE,
+                  ifelse(fam$commons_points_hi < lc$learning_veto_points, FALSE, NA))
+  veto <- ifelse(leap %in% TRUE | learn %in% TRUE, TRUE, ifelse(leap %in% FALSE & learn %in% FALSE, FALSE, NA))
   case <- dplyr::case_when(
     !prod ~ NA,
     veto %in% TRUE ~ FALSE,
@@ -263,6 +328,8 @@ sp_large_yard_case <- function(tbl, attrs = NULL, cfg = list()) {
     req_ok & n_hold >= lc$min_signals & veto %in% FALSE ~ TRUE,
     TRUE ~ NA
   )
+  floor <- ifelse(case %in% TRUE, fam$commons_points >= lc$learning_floor_points, ifelse(prod, FALSE, NA))
+  near <- ifelse(prod, case %in% FALSE & req_ok & veto %in% FALSE & n_na == 0L & n_hold == lc$min_signals - 1L, NA)
   sm <- as.matrix(sig)
   listing <- function(hit) apply(matrix(hit, nrow = n), 1, function(z) if (any(z)) paste(SP_LY_SIGNALS[z], collapse = ";") else NA_character_)
   holds <- listing(!is.na(sm) & sm)
@@ -270,20 +337,28 @@ sp_large_yard_case <- function(tbl, attrs = NULL, cfg = list()) {
   words <- function(ids) paste(unname(SP_LY_WORDS[ids]), collapse = ", ")
   k <- length(others)
   attr_val <- sp_node_attrs(tbl, attrs, c("maturity", "digitally_active"))
+  pts <- function(i) format(fam$commons_points[i], nsmall = 1)
+  learn_w <- function(i) {
+    v <- unlist(a[i, SP_SIV_COMMONS])
+    paste0(paste0(unname(SP_LY_LEARN_WORDS[SP_SIV_COMMONS]), " ", dplyr::coalesce(v, "unknown")), collapse = ", ")
+  }
   reason <- vapply(seq_len(n), function(i) {
     if (!prod[i]) return(NA_character_)
     h <- others[!is.na(oth[i, ]) & oth[i, ]]
     u <- others[is.na(oth[i, ])]
     if (isTRUE(case[i])) {
-      return(paste0("Large yard: ", if (length(lc$required)) paste0(paste(lc$required, collapse = ", "), ", and ") else "",
-                    n_hold[i], " of ", k, " commodity signals (", words(h), "), with no future option to keep: affordable, ",
-                    "diversified access should dominate whatever the size of the market."))
+      lead <- if (isTRUE(floor[i])) "Large yard with a capability floor: " else "Large yard: "
+      tail <- if (isTRUE(floor[i])) {
+        paste0("; moderate industrial learning (", pts(i), " of 3: ", learn_w(i), ") is worth a capability floor, not a domestic ",
+               "industrial priority: affordable, diversified access should dominate whatever the size of the market.")
+      } else ", with no Medium-yard rationale: affordable, diversified access should dominate whatever the size of the market."
+      return(paste0(lead, if (length(lc$required)) paste0(paste(lc$required, collapse = ", "), ", and ") else "",
+                    n_hold[i], " of ", k, " commodity signals (", words(h), ")", tail))
     }
     if (isFALSE(case[i])) {
-      if (veto_leap[i]) return(paste0("Not a large yard: a leap candidate keeps a future option open (option value ",
-                                      format(round(opt[i], 2), nsmall = 2), ")."))
-      if (veto_opt[i]) return(paste0("Not a large yard: future-option value ", format(round(opt[i], 2), nsmall = 2),
-                                     " keeps a domestic option open."))
+      if (leap[i] %in% TRUE) return("Not a large yard: a credible leap ahead (evidence beyond novelty, a cost or performance advantage and two supports) keeps a Medium-yard rationale.")
+      if (learn[i] %in% TRUE) return(paste0("Not a large yard: strong industrial learning (", pts(i), " of 3: ", learn_w(i),
+                                            ") keeps a Medium-yard rationale."))
       if (req_fail[i]) {
         miss <- lc$required[!is.na(req[i, ]) & !req[i, ]]
         why <- vapply(miss, function(s) switch(s,
@@ -296,7 +371,8 @@ sp_large_yard_case <- function(tbl, attrs = NULL, cfg = list()) {
         paste0("only ", n_hold[i], " of ", k, " commodity signals hold (", words(h), ")"), ", where ", lc$min_signals, " are required."))
     }
     parts <- c(
-      if (is.na(veto[i])) "leap candidacy not assessed",
+      if (is.na(leap[i])) "whether a leap ahead is credible is not assessed",
+      if (is.na(learn[i])) paste0("industrial learning not fully assessed (", pts(i), " of 3 observed: ", learn_w(i), ")"),
       if (!req_ok[i]) paste0(words(lc$required[is.na(req[i, ])]), " not assessed"),
       if (n_hold[i] < lc$min_signals) paste0(n_hold[i], " of ", k, " commodity signals hold and ", length(u), " are not assessed (",
                                               words(u), ")")
@@ -308,6 +384,8 @@ sp_large_yard_case <- function(tbl, attrs = NULL, cfg = list()) {
   tbl$large_yard_n <- ifelse(prod, n_hold, NA_integer_)
   tbl$large_yard_unknown <- ifelse(prod, unknown, NA_character_)
   tbl$large_yard_reason <- reason
+  tbl$large_yard_floor <- floor
+  tbl$large_yard_near <- near
   tbl
 }
 

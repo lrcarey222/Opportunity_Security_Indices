@@ -333,7 +333,7 @@ posture_detail_doc <- function(tbl, iso3, cfg, created) {
     )
     siv <- if (dep) NULL else Filter(Negate(is.null), list(
       value = num(r, "strategic_industrial_value"), commons = num(r, "siv_commons"), option = num(r, "siv_option"),
-      cap = g(r, "siv_cap")))
+      commons_observed = num(r, "siv_commons_n"), option_observed = num(r, "siv_option_n"), cap = g(r, "siv_cap")))
     prize <- if (dep) NULL else Filter(Negate(is.null), list(
       value = num(r, posture_prize_col(r)), measure = g(r, "prize_measure"),
       market = if ("choice_prize" %in% names(r)) num(r, "industrial_opportunity") else NULL,
@@ -395,10 +395,12 @@ posture_detail_doc <- function(tbl, iso3, cfg, created) {
           ly <- Filter(Negate(is.null), list(
             case = g(r, "large_yard_case"), n = num(r, "large_yard_n"), signals = posture_list(g(r, "large_yard_signals")),
             unknown = posture_list(g(r, "large_yard_unknown")),
+            floor = if (isTRUE(g(r, "large_yard_floor"))) TRUE else NULL,
             reason = if (is.null(g(r, "large_yard_case"))) g(r, "large_yard_reason") else NULL))
           if (length(ly)) ly else NULL
         },
-        yard = g(r, "yard"), yard_rollup = g(r, "yard_rollup"), yard_children = posture_yard_children(g(r, "yard_children"))
+        yard = g(r, "yard"), yard_rollup = g(r, "yard_rollup"), yard_fence_scope = g(r, "yard_fence_scope"),
+        yard_children = posture_yard_children(g(r, "yard_children"))
       )
     )
     if (!length(out$trade)) out$trade <- NULL
