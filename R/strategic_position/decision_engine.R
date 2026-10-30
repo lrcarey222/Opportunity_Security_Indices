@@ -240,6 +240,8 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
     is.na(verb) | verb == "not_assessed" ~ NA_character_,
     verb == "secure" ~ eng_var,
     posture %in% "compete" ~ paste0("compete_", verb),
+    # Accelerate is a Medium-yard answer (user fence mapping), so its own design: a medium, permeable fence
+    verb == "accelerate" ~ "deploy_accelerate",
     TRUE ~ deploy_variant
   )
   tbl$engine_posture <- eng_post

@@ -167,7 +167,8 @@ test_that("the design follows the Yards & Fences logic", {
   d <- ppd_config()$design
   sec <- d$strategic_posture == "secure"
   com <- d$strategic_posture == "compete"
-  dep <- d$strategic_posture == "deploy"
+  # the Large-yard Deploy variants (Watch); deploy_accelerate is Medium yard (user fence mapping, own test)
+  dep <- d$strategic_posture == "deploy" & d$posture_variant != "deploy_accelerate"
   # No posture closes the gate: Secure stays open to allied supply, Deploy is wide open.
   expect_false(any(d$gate_level == "closed"))
   expect_true(all(d$gate_level[sec] == "selective"))
@@ -188,6 +189,29 @@ test_that("the design follows the Yards & Fences logic", {
   # Exit conditions say what reclassifies the node.
   expect_true(all(grepl("Compete or Deploy", d$exit_condition[sec])))
   expect_true(all(grepl("[Rr]e-test", d$exit_condition[dep])))
+})
+
+test_that("the fence height follows the yard: Secure high, Compete and Accelerate medium, Watch low", {
+  d <- ppd_config()$design
+  v <- d$posture_variant
+  expect_true(all(d$fence_level[d$strategic_posture == "secure"] == "high"))
+  expect_true(all(d$fence_level[d$strategic_posture == "compete"] == "moderate"))
+  expect_equal(d$fence_level[v == "deploy_accelerate"], "moderate")
+  expect_true(all(d$fence_level[d$strategic_posture == "deploy" & v != "deploy_accelerate"] == "low"))
+  # the resilience route keeps its instruments: a high fence that guards the supply, never import protection
+  expect_match(d$fence_posture[v == "secure_resilience"], "rather than restrict imports", fixed = TRUE)
+  expect_equal(d$needs_protect[v == "secure_resilience"], "avoid")
+  # Accelerate: a medium, permeable fence that never slows deployment; judged on deployment, not domestic production
+  a <- d[v == "deploy_accelerate", ]
+  expect_match(a$fence_posture, "medium, permeable", fixed = TRUE)
+  expect_equal(a$needs_protect, "avoid")
+  expect_true(a$gate_level %in% c("open", "wide_open"))
+  expect_match(a$benchmark, "Domestic production share is not a benchmark", fixed = TRUE)
+  expect_match(a$exit_condition, "Re-test", fixed = TRUE)
+  # the check refuses a fence that does not follow the yard
+  cfg <- ppd_config()
+  bad <- cfg$design; bad$fence_level[bad$posture_variant == "compete_partner"] <- "low"
+  expect_error(ppd_read_check(bad, cfg$delivery), "does not follow the yard")
 })
 
 test_that("the check reports bad vocabulary, missing variants and missing delivery pairs", {

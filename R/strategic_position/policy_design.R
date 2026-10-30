@@ -14,6 +14,11 @@
 #                                      gate to where capacity is built (allied delivery builds trusted
 #                                      capacity with partners, not at home)
 #
+# The fence height follows the yard (user decision 2026-10-30): every Secure variant a high fence (the
+# instruments still differ by route: a control layer, an input, essential supply), every Compete variant
+# and deploy_accelerate (Accelerate at Deployment & Use) a medium, permeable fence, the other Deploy
+# variants (Watch) a low fence. ppd_read_check() enforces it.
+#
 # Everything here is categorical text. fence_level (none < low < moderate < high) and gate_level
 # (closed < selective < open < wide_open) are ordered labels of the diagnosed fence geometry, not a
 # score: there is no fence index, yard index or posture score, and nothing is summed or averaged.
@@ -33,7 +38,7 @@ PPD_VARIANTS <- c(
   "secure_dual_use", "secure_resilience",
   "compete_preserve", "compete_adjacent_capability", "compete_catch_up", "compete_leap_ahead", "compete_costly",
   "compete_partner",
-  "deploy", "deploy_floor", "deploy_diversify"
+  "deploy", "deploy_floor", "deploy_diversify", "deploy_accelerate"
 )
 PPD_POSTURES <- c("secure", "compete", "deploy")
 PPD_FENCE_LEVELS <- c("none", "low", "moderate", "high")
@@ -113,6 +118,12 @@ ppd_read_check <- function(design, delivery) {
   }
   bad <- c(bad, vocab("fence_level", PPD_FENCE_LEVELS), vocab("gate_level", PPD_GATE_LEVELS),
            vocab("fence_scope", PPD_FENCE_SCOPES))
+  # the fence height follows the yard (secure high; compete and deploy_accelerate moderate; deploy low)
+  want_fence <- ifelse(ppd_variant_posture(v) == "secure", "high",
+                       ifelse(ppd_variant_posture(v) == "compete" | v %in% "deploy_accelerate", "moderate", "low"))
+  off_yard <- !is.na(v) & design$fence_level %in% PPD_FENCE_LEVELS & design$fence_level != want_fence
+  if (any(off_yard)) bad <- c(bad, paste("fence_level does not follow the yard for:", paste(sprintf("%s (%s, want %s)", v[off_yard],
+                                                                                                    design$fence_level[off_yard], want_fence[off_yard]), collapse = ", ")))
   for (p in PPD_PURPOSES) bad <- c(bad, vocab(paste0("needs_", p), PPD_NEEDS))
 
   for (col in PPD_TEXT_COLS) {

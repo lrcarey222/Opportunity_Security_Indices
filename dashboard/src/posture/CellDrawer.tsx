@@ -304,7 +304,7 @@ function ChoiceAnswer({ cell, d, core, cells, names, status }: { cell: PostureCe
       {design?.fence && (
         <p className="mt-1 text-xs text-paper-mute" data-testid="drawer-trade-protection">
           <strong className="text-paper-dim" title="The trade protection the policy design pairs with this kind of choice: not the node's fence above">
-            Trade protection (policy design):
+            Fence (policy design):
           </strong>{' '}
           {design.fence}
         </p>

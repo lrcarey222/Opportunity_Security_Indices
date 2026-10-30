@@ -150,9 +150,14 @@ test_that("Secure does not mean reshoring: a resilience node with little home su
   expect_false(out$delivery_mode == "domestic")
   d <- ppd_read_check(sr_read("config/posture_policy_design.csv"), sr_read("config/posture_delivery_modes.csv"))$design
   lvl <- setNames(d$fence_level, d$posture_variant)
-  # the fence differs by rationale: none for resilience, high around dual-use end uses, targeted for a chokepoint
-  expect_equal(unname(lvl[c("secure_resilience", "secure_dual_use", "secure_input")]), c("none", "high", "moderate"))
+  # the fence height follows the yard (high for every Secure route, user decision 2026-10-30); what it guards
+  # differs by rationale: the essential supply itself for resilience (never import protection), the
+  # national-security end uses for dual use, the coercive supplier's leverage over the input for a chokepoint
+  expect_equal(unname(lvl[c("secure_resilience", "secure_dual_use", "secure_input")]), c("high", "high", "high"))
+  scope <- setNames(d$fence_scope, d$posture_variant)
+  expect_equal(unname(scope[c("secure_resilience", "secure_dual_use", "secure_input")]), c("essential_supply", "critical_end_use", "input"))
   expect_equal(d$needs_protect[d$posture_variant == "secure_resilience"], "avoid")
+  expect_match(d$fence_instruments[d$posture_variant == "secure_resilience"], "Strategic stockholding", fixed = TRUE)
 })
 
 test_that("route inputs are checked against their vocabulary", {

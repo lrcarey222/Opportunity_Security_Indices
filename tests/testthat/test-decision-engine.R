@@ -301,6 +301,15 @@ test_that("without a capability anchor a high prize is Partner or Watch, flagged
   expect_true(is.na(de(supply_chain = "Deployment", deployment_need = 0.9)$greenfield_option))
 })
 
+test_that("Accelerate takes the deploy_accelerate design (a medium, permeable fence); Watch at Deployment stays deploy", {
+  a <- de(supply_chain = "Deployment", deployment_need = 0.9)
+  expect_equal(a$strategic_choice, "accelerate")
+  expect_equal(a$posture_variant, "deploy_accelerate")
+  w <- de(supply_chain = "Deployment", deployment_need = 0.2)
+  expect_equal(w$strategic_choice, "watch")
+  expect_true(w$posture_variant %in% c("deploy", "deploy_diversify", "deploy_floor"))
+})
+
 test_that("a need capped by the score floor reads as low need and the reason says why", {
   fl <- de(supply_chain_need = 0.61, supply_chain_need_uncapped = 0.77, supply_chain_need_score = 0.03,
            supply_chain_need_cap = "score_below_floor", industrial_opportunity = 0.45, pathway_credible = "no")

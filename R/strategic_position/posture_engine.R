@@ -73,7 +73,7 @@ SP_POSTURE_VARIANTS <- c(
   "secure_dual_use", "secure_resilience",
   "compete_preserve", "compete_adjacent_capability", "compete_catch_up", "compete_leap_ahead", "compete_costly",
   "compete_partner",
-  "deploy", "deploy_floor", "deploy_diversify"
+  "deploy", "deploy_floor", "deploy_diversify", "deploy_accelerate"
 )
 SP_COMPETE_STRATEGIES <- c("preserve", "adjacent_capability", "catch_up", "leap_ahead")
 

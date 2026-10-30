@@ -293,7 +293,7 @@ describe('the Country Strategy Map', () => {
     expect(head(d)).toMatch(/^Secure · High fence/);
     expect(within(d).getByTestId('drawer-fence').textContent).toBe('High fence');
     const tp = await within(d).findByTestId('drawer-trade-protection');
-    expect(tp.textContent).toBe('Trade protection (policy design): Screen coercive suppliers of refined battery materials.');
+    expect(tp.textContent).toBe('Fence (policy design): Screen coercive suppliers of refined battery materials.');
     // every choice and fence word on the cell's name, the drawer and the legend agree
     expect(within(m).getByRole('button', { name: /^Batteries Refining/ }).getAttribute('aria-label')).toMatch(/: Secure · High fence;/);
   });
