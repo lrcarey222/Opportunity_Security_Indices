@@ -1,0 +1,7 @@
+"strategic_choice","n_cells","anchor","no_anchor","anchor_unobserved","direct_supply_share","direct_export_share","operating_capacity","committed_pipeline","adjacent_stage_share","resource_base","greenfield_option"
+"catch_up",355,355,0,0,256,303,43,31,54,0,0
+"not_assessed",4216,96,3049,1071,19,15,0,0,37,48,0
+"partner",1474,90,1384,0,37,64,3,2,10,25,792
+"preserve",103,103,0,0,103,99,41,22,44,4,0
+"secure",206,44,162,0,14,18,4,4,10,25,0
+"watch",5416,633,4783,0,342,447,7,3,107,243,1737

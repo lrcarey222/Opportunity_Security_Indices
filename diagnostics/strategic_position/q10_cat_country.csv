@@ -1,176 +1,177 @@
 "Country","policy_basis","n_policy_cells","rho_policy_all","n_in_sample","n_cells_lost","rho_pol","rho_si","n_third_changed","share_third_changed","n_high_low_flips","top_pol_changed","top1","top1_without_cat","top1_changed","top_n_overlap"
 "Afghanistan","IEA PAMS only",66,1,21,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
 "Albania","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Algeria","IEA PAMS only",66,1,30,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"Algeria","IEA PAMS only",66,1,31,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
 "Andorra","IEA PAMS only",66,1,5,0,,1,0,,0,FALSE,"Electric Grid - Refining","Electric Grid - Refining",FALSE,5
-"Angola","IEA PAMS only",66,1,42,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Angola","IEA PAMS only",66,1,41,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
 "Antigua and Barbuda","IEA PAMS only",66,1,24,0,1,1,0,0,0,FALSE,"Geothermal - Deployment","Geothermal - Deployment",FALSE,5
-"Argentina","IEA PAMS + CAT",66,0.24223064327643,45,0,0.209371293455846,0.857575757575757,29,0.644444444444444,7,TRUE,"Solar - Extraction","Solar - Extraction",FALSE,4
+"Argentina","IEA PAMS + CAT",66,0.24223064327643,44,0,0.171108291457398,0.851726568005638,28,0.636363636363636,8,TRUE,"Green Hydrogen - Extraction","Wind - Extraction",TRUE,4
 "Armenia","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Australia","IEA PAMS + CAT",66,0.472163657238284,43,0,0.376472364844458,0.877076411960133,28,0.651162790697674,4,TRUE,"Batteries - Deployment","Green Hydrogen - Deployment",TRUE,4
-"Austria","IEA PAMS + CAT",66,0.330900702738677,52,0,0.373414748708314,0.887304704174848,32,0.615384615384615,2,TRUE,"Batteries - Extraction","Green Hydrogen - Extraction",TRUE,3
+"Australia","IEA PAMS + CAT",66,0.472163657238284,43,0,0.376472364844458,0.877529447296889,28,0.651162790697674,4,TRUE,"Batteries - Deployment","Green Hydrogen - Deployment",TRUE,4
+"Austria","IEA PAMS + CAT",66,0.330900702738677,52,0,0.373414748708314,0.878340305643302,32,0.615384615384615,2,TRUE,"Batteries - Extraction","Green Hydrogen - Extraction",TRUE,3
 "Azerbaijan","IEA PAMS only",66,1,43,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
 "Bahamas","IEA PAMS only",66,1,28,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
 "Bahrain","IEA PAMS only",66,1,29,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
 "Bangladesh","IEA PAMS only",66,1,34,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Barbados","IEA PAMS only",66,1,29,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"Barbados","IEA PAMS only",66,1,30,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
 "Belarus","IEA PAMS only",66,1,12,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Belgium","IEA PAMS + CAT",66,0.594904993845876,52,0,0.591838053086301,0.936993084606847,23,0.442307692307692,2,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,4
+"Belgium","IEA PAMS + CAT",66,0.594904993845876,52,0,0.591838053086301,0.932041321608469,23,0.442307692307692,2,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,4
 "Belize","IEA PAMS only",66,1,24,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
 "Benin","IEA PAMS only",66,1,26,0,1,1,0,0,0,FALSE,"Batteries - Refining","Batteries - Refining",FALSE,5
-"Bhutan","IEA PAMS + CAT",66,0.605519746034804,23,0,0.613636763286477,0.941699604743083,15,0.652173913043478,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,3
+"Bhutan","IEA PAMS + CAT",66,0.605519746034804,22,0,0.539116258911005,0.92772444946358,12,0.545454545454545,0,TRUE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,4
 "Bolivia","IEA PAMS only",66,1,42,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
 "Bosnia and Herzegovina","IEA PAMS only",66,1,28,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
-"Botswana","IEA PAMS only",66,1,26,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
-"Brazil","IEA PAMS + CAT",66,0.484072311394717,46,0,0.468640148011101,0.847055195806352,29,0.630434782608696,3,TRUE,"Wind - Deployment","Wind - Deployment",FALSE,4
-"Brunei Darussalam","IEA PAMS only",66,1,41,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Bulgaria","IEA PAMS + CAT",66,0.159509761039705,50,0,0.159430438327696,0.839903961584634,34,0.68,8,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
-"Burkina Faso","IEA PAMS only",66,1,24,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Botswana","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
+"Brazil","IEA PAMS + CAT",66,0.484072311394717,46,0,0.468640148011101,0.85531914893617,29,0.630434782608696,3,TRUE,"Wind - Deployment","Wind - Deployment",FALSE,4
+"Brunei Darussalam","IEA PAMS only",66,1,40,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Bulgaria","IEA PAMS + CAT",66,0.159509761039705,49,0,0.176464619365973,0.84234693877551,30,0.612244897959184,6,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
+"Burkina Faso","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
 "Burundi","IEA PAMS only",66,1,23,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
 "Cabo Verde","IEA PAMS only",66,1,23,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
-"Cambodia","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Cambodia","IEA PAMS only",66,1,28,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
 "Cameroon","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
-"Canada","IEA PAMS + CAT",66,0.407640918580376,39,0,0.408524855725423,0.868218623481781,24,0.615384615384615,4,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,4
+"Canada","IEA PAMS + CAT",66,0.407640918580376,40,0,0.396265365487473,0.853658536585366,26,0.65,4,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,4
 "Central African Republic","IEA PAMS only",66,1,4,0,,1,0,,0,FALSE,"Electric Grid - Refining","Electric Grid - Refining",FALSE,4
-"Chad","IEA PAMS only",66,1,38,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Chile","IEA PAMS + CAT",66,0.456808080313153,43,0,0.500925124990272,0.905466626396859,21,0.488372093023256,3,TRUE,"Solar - Deployment","Green Hydrogen - Deployment",TRUE,4
+"Chad","IEA PAMS only",66,1,36,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Chile","IEA PAMS + CAT",66,0.456808080313153,43,0,0.500925124990272,0.907127755964965,21,0.488372093023256,3,TRUE,"Solar - Deployment","Green Hydrogen - Deployment",TRUE,4
 "China","IEA PAMS + CAT",66,1,52,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Colombia","IEA PAMS + CAT",66,0.470128844630663,44,0,0.543160269626466,0.910641296687808,21,0.477272727272727,2,TRUE,"Batteries - Extraction","Green Hydrogen - Extraction",TRUE,4
-"Comoros","IEA PAMS only",66,1,16,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Congo","IEA PAMS only",66,1,37,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Costa Rica","IEA PAMS + CAT",66,0.55592904373286,27,0,0.580047081141441,0.91025641025641,11,0.407407407407407,0,TRUE,"Nuclear - Extraction","Green Hydrogen - Deployment",TRUE,4
-"Cote d'Ivoire","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
-"Croatia","IEA PAMS + CAT",66,0.288948408017455,51,0,0.354376100969137,0.869411764705882,27,0.529411764705882,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Colombia","IEA PAMS + CAT",66,0.470128844630663,44,0,0.543160269626466,0.913319238900634,21,0.477272727272727,2,TRUE,"Batteries - Extraction","Green Hydrogen - Extraction",TRUE,4
+"Comoros","IEA PAMS only",66,1,19,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Congo","IEA PAMS only",66,1,38,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Costa Rica","IEA PAMS + CAT",66,0.55592904373286,27,0,0.580047081141441,0.912087912087912,11,0.407407407407407,0,TRUE,"Nuclear - Extraction","Green Hydrogen - Deployment",TRUE,4
+"Cote d'Ivoire","IEA PAMS only",66,1,26,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
+"Croatia","IEA PAMS + CAT",66,0.288948408017455,50,0,0.370773194123485,0.862376950780312,29,0.58,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
 "Cuba","IEA PAMS only",66,1,3,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,3
-"Cyprus","IEA PAMS + CAT",66,0.341342687441791,49,0,0.390382711155483,0.919489795918367,31,0.63265306122449,3,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
-"Czech Republic","IEA PAMS + CAT",66,0.519973407058658,52,0,0.490160573740132,0.901306240928882,29,0.557692307692308,4,TRUE,"Solar - Deployment","Green Hydrogen - Extraction",TRUE,3
+"Cyprus","IEA PAMS + CAT",66,0.341342687441791,49,0,0.390382711155483,0.915408163265306,31,0.63265306122449,3,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Czech Republic","IEA PAMS + CAT",66,0.519973407058658,52,0,0.490160573740132,0.896012977034065,29,0.557692307692308,4,TRUE,"Solar - Deployment","Green Hydrogen - Extraction",TRUE,3
 "Democratic Republic of Congo","IEA PAMS only",66,1,39,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Denmark","IEA PAMS + CAT",66,0.392951100346599,52,0,0.410940769526412,0.891061214035687,34,0.653846153846154,2,TRUE,"Batteries - Extraction","Green Hydrogen - Extraction",TRUE,3
+"Denmark","IEA PAMS + CAT",66,0.392951100346599,50,0,0.445522674865488,0.909051620648259,32,0.64,2,TRUE,"Batteries - Extraction","Green Hydrogen - Extraction",TRUE,3
 "Dominican Republic","IEA PAMS only",66,1,30,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
 "Ecuador","IEA PAMS only",66,1,43,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Egypt","IEA PAMS + CAT",66,1,45,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
-"El Salvador","IEA PAMS only",66,1,4,0,,1,0,,0,FALSE,"Electric Grid - Refining","Electric Grid - Refining",FALSE,4
-"Equatorial Guinea","IEA PAMS only",66,1,37,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Estonia","IEA PAMS + CAT",66,0.346081736865208,49,0,0.366535985337608,0.882142857142857,31,0.63265306122449,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
-"Eswatini","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
+"Egypt","IEA PAMS + CAT",66,1,45,0,1,1,0,0,0,FALSE,"Green Hydrogen - Extraction","Green Hydrogen - Extraction",FALSE,5
+"El Salvador","IEA PAMS only",66,1,5,0,,1,0,,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Equatorial Guinea","IEA PAMS only",66,1,39,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Estonia","IEA PAMS + CAT",66,0.346081736865208,48,0,0.38304392985511,0.890468953538862,30,0.625,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Eswatini","IEA PAMS only",66,1,24,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
+"Ethiopia","IEA PAMS + CAT",66,0.597981154678926,1,0,,,0,,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,1
 "Fiji","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Finland","IEA PAMS + CAT",66,0.312967242655672,50,0,0.349992801683947,0.889555822328931,32,0.64,4,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
-"France","IEA PAMS + CAT",66,0.572696239387968,51,0,0.609569510442585,0.911221719457013,24,0.470588235294118,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
+"Finland","IEA PAMS + CAT",66,0.312967242655672,49,0,0.360999779756106,0.887959183673469,33,0.673469387755102,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"France","IEA PAMS + CAT",66,0.572696239387968,51,0,0.609569510442585,0.913212669683258,24,0.470588235294118,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
 "Gabon","IEA PAMS only",66,1,10,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Gambia","IEA PAMS + CAT",66,0.494004125124903,25,0,0.490081545733458,0.956153846153846,15,0.6,2,FALSE,"Batteries - Recovery","Batteries - Recovery",FALSE,3
+"Gambia","IEA PAMS + CAT",66,0.494004125124903,24,0,0.522614882862585,0.931304347826087,14,0.583333333333333,2,FALSE,"Batteries - Recovery","Batteries - Recovery",FALSE,3
 "Georgia","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
-"Germany","IEA PAMS + CAT",66,0.668650237325672,52,0,0.640478223740393,0.941176470588235,24,0.461538461538462,2,TRUE,"Green Hydrogen - Extraction","Green Hydrogen - Extraction",FALSE,5
+"Germany","IEA PAMS + CAT",66,0.668650237325672,52,0,0.640478223740393,0.940322718347136,24,0.461538461538462,2,TRUE,"Green Hydrogen - Extraction","Green Hydrogen - Extraction",FALSE,5
 "Ghana","IEA PAMS only",66,1,29,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Greece","IEA PAMS + CAT",66,0.452339245814872,51,0,0.499886795518474,0.919819004524887,23,0.450980392156863,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
+"Greece","IEA PAMS + CAT",66,0.452339245814872,51,0,0.499886795518474,0.924343891402715,23,0.450980392156863,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
 "Grenada","IEA PAMS only",66,1,4,0,,1,0,,0,FALSE,"Electric Grid - Components","Electric Grid - Components",FALSE,4
 "Guatemala","IEA PAMS only",66,1,28,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
 "Guinea","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Batteries - Recovery","Batteries - Recovery",FALSE,5
-"Guinea-Bissau","IEA PAMS only",66,1,22,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
-"Guyana","IEA PAMS only",66,1,42,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Guinea-Bissau","IEA PAMS only",66,1,21,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
+"Guyana","IEA PAMS only",66,1,40,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
 "Honduras","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Hungary","IEA PAMS + CAT",66,0.31552449651114,51,0,0.388970643056566,0.906696832579185,29,0.568627450980392,8,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
-"Iceland","IEA PAMS only",66,1,44,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"India","IEA PAMS + CAT",66,1,49,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Indonesia","IEA PAMS + CAT",66,0.331951607064268,45,0,0.334705980880209,0.745454545454545,30,0.666666666666667,4,TRUE,"Oil - Deployment","Solar - Deployment",TRUE,3
+"Hungary","IEA PAMS + CAT",66,0.31552449651114,51,0,0.388970643056566,0.905610859728507,29,0.568627450980392,8,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
+"Iceland","IEA PAMS only",66,1,43,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"India","IEA PAMS + CAT",66,1,47,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"Indonesia","IEA PAMS + CAT",66,0.331951607064268,45,0,0.334705980880209,0.717786561264822,30,0.666666666666667,4,TRUE,"Oil - Deployment","Solar - Deployment",TRUE,3
 "Iran","IEA PAMS + CAT",66,0.566418368983352,12,0,0.252633134096101,0.608391608391608,8,0.666666666666667,2,TRUE,"Green Hydrogen - Deployment","Solar - Deployment",TRUE,3
-"Iraq","IEA PAMS only",66,1,28,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Ireland","IEA PAMS + CAT",66,0.455011380761785,52,0,0.493398900892786,0.895671476137625,25,0.480769230769231,3,TRUE,"Solar - Extraction","Solar - Deployment",TRUE,3
-"Israel","IEA PAMS only",66,1,44,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Italy","IEA PAMS + CAT",66,0.500422815325517,52,0,0.504270591573386,0.904806625117391,30,0.576923076923077,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Iraq","IEA PAMS only",66,1,30,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Ireland","IEA PAMS + CAT",66,0.455011380761785,51,0,0.510257739931284,0.897466063348416,23,0.450980392156863,3,TRUE,"Solar - Extraction","Solar - Deployment",TRUE,3
+"Israel","IEA PAMS only",66,1,43,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Italy","IEA PAMS + CAT",66,0.500422815325517,51,0,0.518877328561065,0.910226244343891,29,0.568627450980392,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
 "Jamaica","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Japan","IEA PAMS + CAT",66,0.520990334634574,47,0,0.382827406764961,0.876965772432932,29,0.617021276595745,7,TRUE,"Batteries - Extraction","Green Hydrogen - Extraction",TRUE,4
+"Japan","IEA PAMS + CAT",66,0.520990334634574,47,0,0.382827406764961,0.87754394079556,29,0.617021276595745,7,TRUE,"Batteries - Extraction","Green Hydrogen - Extraction",TRUE,4
 "Jordan","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
 "Kazakhstan","IEA PAMS + CAT",66,0.289477212512245,44,0,0.21259044200593,0.871317829457364,31,0.704545454545455,6,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Kenya","IEA PAMS + CAT",66,0.615113696905566,28,0,0.519582823079626,0.905309250136836,15,0.535714285714286,1,FALSE,"Nuclear - Extraction","Green Hydrogen - Deployment",TRUE,4
-"Kuwait","IEA PAMS only",66,1,30,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Kyrgyz Republic","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Lao PDR","IEA PAMS only",66,1,12,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
-"Latvia","IEA PAMS + CAT",66,0.390247712114602,49,0,0.418254096571983,0.910510204081633,26,0.530612244897959,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
-"Lebanon","IEA PAMS only",66,1,6,0,1,1,0,0,0,FALSE,"Electric Grid - Components","Electric Grid - Components",FALSE,5
-"Lesotho","IEA PAMS only",66,1,26,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
+"Kenya","IEA PAMS + CAT",66,0.615113696905566,29,0,0.495478213043996,0.91231527093596,15,0.517241379310345,3,FALSE,"Nuclear - Extraction","Green Hydrogen - Deployment",TRUE,3
+"Kuwait","IEA PAMS only",66,1,30,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Kyrgyz Republic","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
+"Lao PDR","IEA PAMS only",66,1,10,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Latvia","IEA PAMS + CAT",66,0.390247712114602,49,0,0.418254096571983,0.907857142857143,26,0.530612244897959,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Lebanon","IEA PAMS only",66,1,7,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Lesotho","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
 "Liberia","IEA PAMS only",66,1,24,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
 "Libya","IEA PAMS only",66,1,10,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Lithuania","IEA PAMS + CAT",66,0.39886893058036,50,0,0.41484949270797,0.890996398559424,30,0.6,5,TRUE,"Batteries - Extraction","Green Hydrogen - Extraction",TRUE,4
-"Luxembourg","IEA PAMS + CAT",66,0.201657923373524,52,0,0.192836272951616,0.863911892768718,34,0.653846153846154,6,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,3
-"Madagascar","IEA PAMS only",66,1,39,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Lithuania","IEA PAMS + CAT",66,0.39886893058036,50,0,0.41484949270797,0.890804321728691,30,0.6,5,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Luxembourg","IEA PAMS + CAT",66,0.201657923373524,50,0,0.237772882310111,0.877454981992797,31,0.62,9,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,3
+"Madagascar","IEA PAMS only",66,1,38,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
 "Malawi","IEA PAMS only",66,1,26,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
 "Malaysia","IEA PAMS only",66,1,47,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
-"Maldives","IEA PAMS only",66,1,21,0,1,1,0,0,0,FALSE,"Batteries - Refining","Batteries - Refining",FALSE,5
+"Maldives","IEA PAMS only",66,1,22,0,1,1,0,0,0,FALSE,"Batteries - Refining","Batteries - Refining",FALSE,5
 "Mali","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Malta","IEA PAMS + CAT",66,0.299621953823475,27,0,0.2212815942048,0.856532356532356,18,0.666666666666667,7,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Mauritania","IEA PAMS only",66,1,4,0,1,1,0,0,0,FALSE,"Gas - Refining","Gas - Refining",FALSE,4
-"Mauritius","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Mexico","IEA PAMS + CAT",66,0.476589082559232,46,0,0.496022201665125,0.858896083872957,27,0.58695652173913,3,TRUE,"Green Hydrogen - Extraction","Solar - Deployment",TRUE,2
+"Malta","IEA PAMS + CAT",66,0.299621953823475,27,0,0.2212815942048,0.84981684981685,18,0.666666666666667,7,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"Mauritania","IEA PAMS only",66,1,5,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Mauritius","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"Mexico","IEA PAMS + CAT",66,0.476589082559232,44,0,0.424101479915433,0.840873854827343,26,0.590909090909091,6,TRUE,"Green Hydrogen - Extraction","Solar - Deployment",TRUE,2
 "Moldova","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
 "Mongolia","IEA PAMS only",66,1,41,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
 "Montenegro","IEA PAMS only",66,1,26,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Morocco","IEA PAMS + CAT",66,0.396922762668689,31,0,0.332558981776571,0.873387096774194,18,0.580645161290323,4,FALSE,"Nuclear - Extraction","Solar - Deployment",TRUE,3
+"Morocco","IEA PAMS + CAT",66,0.396922762668689,32,0,0.367275857660157,0.876099706744868,16,0.5,4,FALSE,"Nuclear - Extraction","Solar - Deployment",TRUE,3
 "Mozambique","IEA PAMS only",66,1,38,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
-"Myanmar","IEA PAMS only",66,1,42,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Namibia","IEA PAMS only",66,1,29,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
-"Nepal","IEA PAMS + CAT",66,0.655898786235684,22,0,0.743114830728744,0.922077922077922,11,0.5,0,TRUE,"Nuclear - Extraction","Solar - Refining",TRUE,4
-"Netherlands","IEA PAMS + CAT",66,0.455330392119618,52,0,0.432914851823384,0.887304704174848,31,0.596153846153846,3,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
+"Myanmar","IEA PAMS only",66,1,41,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Namibia","IEA PAMS only",66,1,28,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
+"Nepal","IEA PAMS + CAT",66,0.655898786235684,22,0,0.743114830728744,0.907396950875212,11,0.5,0,TRUE,"Nuclear - Extraction","Solar - Refining",TRUE,2
+"Netherlands","IEA PAMS + CAT",66,0.455330392119618,52,0,0.432914851823384,0.889780585674037,31,0.596153846153846,3,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
 "New Zealand","IEA PAMS + CAT",66,1,43,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Nicaragua","IEA PAMS only",66,1,26,0,1,1,0,0,0,FALSE,"Batteries - Refining","Batteries - Refining",FALSE,5
+"Nicaragua","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Batteries - Refining","Batteries - Refining",FALSE,5
 "Niger","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Batteries - Recovery","Batteries - Recovery",FALSE,5
-"Nigeria","IEA PAMS + CAT",66,0.0662775799757624,44,0,-0.0469460416782775,0.811557434813249,30,0.681818181818182,12,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Nigeria","IEA PAMS + CAT",66,0.0662775799757624,43,0,-0.0395000202615116,0.841437632135307,30,0.697674418604651,10,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
 "North Macedonia","IEA PAMS only",66,1,41,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Norway","IEA PAMS + CAT",66,0.235914467684223,46,0,0.24426209325859,0.861732963305581,29,0.630434782608696,4,TRUE,"Solar - Extraction","Solar - Extraction",FALSE,3
-"Oman","IEA PAMS only",66,1,31,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
+"Norway","IEA PAMS + CAT",66,0.235914467684223,45,0,0.266969817371619,0.855994729907773,29,0.644444444444444,4,TRUE,"Nuclear - Extraction","Solar - Extraction",TRUE,3
+"Oman","IEA PAMS only",66,1,30,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
 "Pakistan","IEA PAMS only",66,1,38,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Panama","IEA PAMS only",66,1,30,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Papua New Guinea","IEA PAMS only",66,1,36,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Panama","IEA PAMS only",66,1,28,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"Papua New Guinea","IEA PAMS only",66,1,35,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
 "Paraguay","IEA PAMS only",66,1,28,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
-"Peru","IEA PAMS + CAT",66,0.315566306852343,43,0,0.404768390434896,0.884929024463908,25,0.581395348837209,3,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
-"Philippines","IEA PAMS + CAT",66,0.481980621264794,46,0,0.441846116716933,0.859266111625038,28,0.608695652173913,4,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Poland","IEA PAMS + CAT",66,0.461400305868447,51,0,0.496604191790282,0.905882352941176,27,0.529411764705882,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
-"Portugal","IEA PAMS + CAT",66,0.301318394055662,52,0,0.351194932058377,0.845385469136856,29,0.557692307692308,4,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,3
-"Qatar","IEA PAMS only",66,1,44,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
-"Romania","IEA PAMS + CAT",66,0.269929679396212,51,0,0.348991053600544,0.910316742081448,32,0.627450980392157,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
-"Russia","IEA PAMS + CAT",66,0.541953065152684,45,0,0.643271407614605,0.88102766798419,22,0.488888888888889,2,TRUE,"Solar - Deployment","Solar - Deployment",FALSE,4
+"Peru","IEA PAMS + CAT",66,0.315566306852343,44,0,0.38290118611205,0.872445384073291,27,0.613636363636364,4,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Philippines","IEA PAMS + CAT",66,0.481980621264794,45,0,0.456600541425327,0.876021080368906,29,0.644444444444444,4,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Poland","IEA PAMS + CAT",66,0.461400305868447,50,0,0.514583643160452,0.912412965186074,26,0.52,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Portugal","IEA PAMS + CAT",66,0.301318394055662,51,0,0.366287106056419,0.863710407239819,29,0.568627450980392,4,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,3
+"Qatar","IEA PAMS only",66,1,43,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
+"Romania","IEA PAMS + CAT",66,0.269929679396212,50,0,0.365382631231075,0.897430972388956,31,0.62,2,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,3
+"Russia","IEA PAMS + CAT",66,0.541953065152684,45,0,0.643271407614605,0.87167325428195,22,0.488888888888889,2,TRUE,"Solar - Deployment","Solar - Deployment",FALSE,4
 "Rwanda","IEA PAMS only",66,1,26,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
 "Samoa","IEA PAMS only",66,1,23,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
-"San Marino","IEA PAMS only",66,1,16,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Saudi Arabia","IEA PAMS + CAT",66,0.412538420056607,32,0,0.352985712435919,0.729838709677419,20,0.625,6,TRUE,"Electric Grid - Extraction","Solar - Deployment",TRUE,3
-"Senegal","IEA PAMS only",66,1,29,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
-"Serbia","IEA PAMS only",66,1,43,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Seychelles","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Singapore","IEA PAMS + CAT",66,1,31,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Slovak Republic","IEA PAMS + CAT",66,0.548392668062035,51,0,0.570936276176464,0.918461538461538,27,0.529411764705882,2,TRUE,"Solar - Extraction","Solar - Extraction",FALSE,4
-"Slovenia","IEA PAMS + CAT",66,0.360465517283082,51,0,0.365408671570868,0.907239819004525,32,0.627450980392157,3,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
-"Solomon Islands","IEA PAMS only",66,1,23,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"South Africa","IEA PAMS + CAT",66,0.453119292131919,45,0,0.304084321475626,0.859815546772068,29,0.644444444444444,7,FALSE,"Solar - Extraction","Green Hydrogen - Deployment",TRUE,4
-"South Korea","IEA PAMS + CAT",66,1,47,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
+"San Marino","IEA PAMS only",66,1,18,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Saudi Arabia","IEA PAMS + CAT",66,0.412538420056607,32,0,0.265282328319604,0.728739002932551,23,0.71875,6,TRUE,"Solar - Extraction","Solar - Extraction",FALSE,4
+"Senegal","IEA PAMS only",66,1,30,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
+"Serbia","IEA PAMS only",66,1,42,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Seychelles","IEA PAMS only",66,1,26,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Singapore","IEA PAMS + CAT",66,1,31,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Slovak Republic","IEA PAMS + CAT",66,0.548392668062035,51,0,0.57811899070347,0.919909502262443,27,0.529411764705882,2,TRUE,"Solar - Extraction","Solar - Extraction",FALSE,4
+"Slovenia","IEA PAMS + CAT",66,0.360465517283082,51,0,0.365408671570868,0.900995475113122,32,0.627450980392157,3,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
+"Solomon Islands","IEA PAMS only",66,1,19,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"South Africa","IEA PAMS + CAT",66,0.453119292131919,45,0,0.304084321475626,0.864031620553359,29,0.644444444444444,7,FALSE,"Solar - Extraction","Green Hydrogen - Deployment",TRUE,4
+"South Korea","IEA PAMS + CAT",66,1,48,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
 "South Sudan","IEA PAMS only",66,1,10,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Spain","IEA PAMS + CAT",66,0.466819801877804,52,0,0.446935246370994,0.88354819431401,32,0.615384615384615,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
+"Spain","IEA PAMS + CAT",66,0.466819801877804,52,0,0.446935246370994,0.889524460001707,32,0.615384615384615,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
 "Sri Lanka","IEA PAMS only",66,1,36,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
 "St. Lucia","IEA PAMS only",66,1,20,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
 "Sudan","IEA PAMS only",66,1,10,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
-"Suriname","IEA PAMS only",66,1,4,0,,1,0,,0,FALSE,"Electric Grid - Components","Electric Grid - Components",FALSE,4
-"Sweden","IEA PAMS + CAT",66,0.437981502068441,52,0,0.459692570452605,0.904806625117391,29,0.557692307692308,4,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
-"Switzerland","IEA PAMS + CAT",66,0.265071434980235,33,0,0.0357919389518544,0.770387700534759,22,0.666666666666667,11,TRUE,"Nuclear - Extraction","Solar - Deployment",TRUE,5
+"Suriname","IEA PAMS only",66,1,5,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Sweden","IEA PAMS + CAT",66,0.437981502068441,52,0,0.459692570452605,0.904977375565611,29,0.557692307692308,4,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,4
+"Switzerland","IEA PAMS + CAT",66,0.265071434980235,34,0,0.117278288832757,0.794041252864782,22,0.647058823529412,8,TRUE,"Solar - Extraction","Solar - Extraction",FALSE,4
 "Syrian Arab Republic","IEA PAMS only",66,1,10,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Taiwan","IEA PAMS only",66,1,16,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Tajikistan","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Tanzania","IEA PAMS only",66,1,38,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
-"Thailand","IEA PAMS + CAT",66,0.504244323274212,47,0,0.496947712958606,0.806313598519889,29,0.617021276595745,3,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,2
-"Timor-Leste","IEA PAMS only",66,1,23,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Togo","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Tonga","IEA PAMS only",66,1,17,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
-"Trinidad and Tobago","IEA PAMS only",66,1,44,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
-"Tunisia","IEA PAMS only",66,1,43,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
-"Turkiye","IEA PAMS + CAT",66,0.329553059640111,47,0,0.360381724142376,0.829671600370028,31,0.659574468085106,5,TRUE,"Solar - Extraction","Solar - Extraction",FALSE,2
+"Taiwan","IEA PAMS only",66,1,17,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"Tajikistan","IEA PAMS only",66,1,24,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Tanzania","IEA PAMS only",66,1,39,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Thailand","IEA PAMS + CAT",66,0.504244323274212,48,0,0.519311316806698,0.847155883630048,28,0.583333333333333,2,TRUE,"Batteries - Extraction","Batteries - Extraction",FALSE,2
+"Timor-Leste","IEA PAMS only",66,1,21,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Togo","IEA PAMS only",66,1,24,0,1,1,0,0,0,FALSE,"Batteries - Recovery","Batteries - Recovery",FALSE,5
+"Tonga","IEA PAMS only",66,1,19,0,1,1,0,0,0,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
+"Trinidad and Tobago","IEA PAMS only",66,1,42,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Tunisia","IEA PAMS only",66,1,42,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Turkiye","IEA PAMS + CAT",66,0.329553059640111,45,0,0.318109925562282,0.833596837944664,32,0.711111111111111,6,TRUE,"Solar - Extraction","Solar - Deployment",TRUE,2
 "Turkmenistan","IEA PAMS only",66,1,12,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
-"Uganda","IEA PAMS only",66,1,29,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Ukraine","IEA PAMS only",66,1,44,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
-"United Arab Emirates","IEA PAMS + CAT",66,0.417761284597459,15,0,0.571173013135937,0.946428571428571,6,0.4,2,FALSE,"Nuclear - Extraction","Solar - Deployment",TRUE,5
-"United Kingdom","IEA PAMS + CAT",66,0.390367633243565,38,0,0.339901477832512,0.852937958201116,24,0.631578947368421,5,TRUE,"Solar - Extraction","Batteries - Deployment",TRUE,4
-"United States","IEA PAMS + CAT",66,0.57578540862123,52,0,0.55681721164518,0.912063519166738,30,0.576923076923077,2,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
-"Uruguay","IEA PAMS only",66,1,28,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
-"Uzbekistan","IEA PAMS only",66,1,44,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
-"Vanuatu","IEA PAMS only",66,1,19,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
+"Uganda","IEA PAMS only",66,1,27,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"Ukraine","IEA PAMS only",66,1,43,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"United Arab Emirates","IEA PAMS + CAT",66,0.417761284597459,15,0,0.571173013135937,0.95,6,0.4,2,FALSE,"Nuclear - Extraction","Solar - Deployment",TRUE,5
+"United Kingdom","IEA PAMS + CAT",66,0.390367633243565,39,0,0.334143377885784,0.864574898785425,25,0.641025641025641,4,TRUE,"Nuclear - Extraction","Batteries - Deployment",TRUE,4
+"United States","IEA PAMS + CAT",66,0.57578540862123,52,0,0.55681721164518,0.911892768718518,30,0.576923076923077,2,FALSE,"Batteries - Deployment","Batteries - Deployment",FALSE,5
+"Uruguay","IEA PAMS only",66,1,29,0,1,1,0,0,0,FALSE,"Solar - Deployment","Solar - Deployment",FALSE,5
+"Uzbekistan","IEA PAMS only",66,1,43,0,1,1,0,0,0,FALSE,"Batteries - Extraction","Batteries - Extraction",FALSE,5
+"Vanuatu","IEA PAMS only",66,1,21,0,1,1,0,0,0,FALSE,"Nuclear - Extraction","Nuclear - Extraction",FALSE,5
 "Venezuela","IEA PAMS only",66,1,13,0,1,1,0,0,0,FALSE,"Green Hydrogen - Deployment","Green Hydrogen - Deployment",FALSE,5
-"Viet Nam","IEA PAMS + CAT",66,0.684687006848649,42,0,0.608656903786295,0.917834859411717,22,0.523809523809524,2,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,4
+"Viet Nam","IEA PAMS + CAT",66,0.684687006848649,42,0,0.608656903786295,0.918969289360668,22,0.523809523809524,2,FALSE,"Batteries - Components","Batteries - Components",FALSE,5
 "Yemen","IEA PAMS only",66,1,25,0,1,1,0,0,0,FALSE,"Nuclear - Assembly","Nuclear - Assembly",FALSE,5
-"Zambia","IEA PAMS only",66,1,38,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
-"Zimbabwe","IEA PAMS only",66,1,37,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Zambia","IEA PAMS only",66,1,39,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5
+"Zimbabwe","IEA PAMS only",66,1,38,0,1,1,0,0,0,FALSE,"Solar - Extraction","Solar - Extraction",FALSE,5

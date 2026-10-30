@@ -1,161 +1,171 @@
 "variant","scenario","tech_prior","from","to","n_members"
-"none","none",TRUE,"Batteries - Assembly","Batteries - Refining",2
-"none","none",TRUE,"Batteries - Assembly","Nuclear - Extraction",2
-"none","none",TRUE,"Solar - Components","Batteries - Recovery",2
-"none","none",TRUE,"Solar - Components","Batteries - Refining",2
-"none","none",TRUE,"Nuclear - Components","Wind - Refining",1
+"none","none",TRUE,"Batteries - Assembly","Batteries - Refining",3
+"none","none",TRUE,"Batteries - Assembly","Nuclear - Extraction",1
+"none","none",TRUE,"Batteries - Components","Batteries - Refining",1
+"none","none",TRUE,"Batteries - Components","Nuclear - Extraction",1
+"none","none",TRUE,"Nuclear - Assembly","Wind - Refining",1
 "none","none",TRUE,"Solar - Components","Batteries - Extraction",1
+"none","none",TRUE,"Solar - Components","Batteries - Recovery",1
+"none","none",TRUE,"Solar - Components","Batteries - Refining",1
 "none","none",TRUE,"Solar - Components","Nuclear - Extraction",1
+"none","none",TRUE,"Solar - Components","Wind - Refining",1
+"none_no_tech","none",FALSE,"Batteries - Assembly","Batteries - Refining",3
 "none_no_tech","none",FALSE,"Solar - Components","Batteries - Refining",3
-"none_no_tech","none",FALSE,"Batteries - Assembly","Batteries - Refining",2
-"none_no_tech","none",FALSE,"Batteries - Assembly","Nuclear - Extraction",2
-"none_no_tech","none",FALSE,"Nuclear - Components","Oil - Assembly",2
+"none_no_tech","none",FALSE,"Nuclear - Assembly","Oil - Assembly",2
 "none_no_tech","none",FALSE,"Nuclear - Extraction","Oil - Components",2
-"none_no_tech","none",FALSE,"Nuclear - Extraction","Oil - Extraction",2
-"none_no_tech","none",FALSE,"Solar - Components","Batteries - Recovery",2
+"none_no_tech","none",FALSE,"Batteries - Assembly","Nuclear - Extraction",1
+"none_no_tech","none",FALSE,"Batteries - Components","Batteries - Refining",1
+"none_no_tech","none",FALSE,"Batteries - Components","Oil - Extraction",1
 "none_no_tech","none",FALSE,"Batteries - Extraction","Oil - Components",1
 "none_no_tech","none",FALSE,"Batteries - Extraction","Oil - Extraction",1
 "none_no_tech","none",FALSE,"Batteries - Refining","Oil - Components",1
 "none_no_tech","none",FALSE,"Electric Vehicles - Extraction","Oil - Extraction",1
-"none_no_tech","none",FALSE,"Nuclear - Assembly","Oil - Assembly",1
-"none_no_tech","none",FALSE,"Nuclear - Components","Batteries - Refining",1
+"none_no_tech","none",FALSE,"Nuclear - Assembly","Wind - Refining",1
+"none_no_tech","none",FALSE,"Nuclear - Components","Oil - Assembly",1
 "none_no_tech","none",FALSE,"Nuclear - Extraction","Batteries - Extraction",1
+"none_no_tech","none",FALSE,"Nuclear - Extraction","Oil - Extraction",1
 "none_no_tech","none",FALSE,"Solar - Components","Batteries - Extraction",1
+"none_no_tech","none",FALSE,"Solar - Components","Batteries - Recovery",1
+"none_no_tech","none",FALSE,"Solar - Components","Electric Vehicles - Extraction",1
 "none_no_tech","none",FALSE,"Solar - Extraction","Oil - Extraction",1
 "equal_share_no_tech","equal_share",FALSE,"Batteries - Extraction","Oil - Components",2
-"equal_share_no_tech","equal_share",FALSE,"Nuclear - Components","Oil - Assembly",2
+"equal_share_no_tech","equal_share",FALSE,"Nuclear - Assembly","Oil - Assembly",2
 "equal_share_no_tech","equal_share",FALSE,"Nuclear - Extraction","Oil - Components",2
-"equal_share_no_tech","equal_share",FALSE,"Nuclear - Extraction","Oil - Extraction",2
+"equal_share_no_tech","equal_share",FALSE,"Batteries - Components","Oil - Components",1
 "equal_share_no_tech","equal_share",FALSE,"Batteries - Refining","Oil - Components",1
-"equal_share_no_tech","equal_share",FALSE,"Electric Vehicles - Extraction","Oil - Components",1
-"equal_share_no_tech","equal_share",FALSE,"Nuclear - Assembly","Oil - Assembly",1
-"equal_share_no_tech","equal_share",FALSE,"Nuclear - Components","Solar - Components",1
+"equal_share_no_tech","equal_share",FALSE,"Electric Vehicles - Extraction","Oil - Extraction",1
+"equal_share_no_tech","equal_share",FALSE,"Nuclear - Components","Oil - Assembly",1
 "equal_share_no_tech","equal_share",FALSE,"Nuclear - Extraction","Batteries - Assembly",1
 "equal_share_no_tech","equal_share",FALSE,"Nuclear - Extraction","Batteries - Extraction",1
+"equal_share_no_tech","equal_share",FALSE,"Nuclear - Extraction","Oil - Extraction",1
 "equal_share_no_tech","equal_share",FALSE,"Solar - Extraction","Oil - Components",1
 "parent","parent",TRUE,"Batteries - Extraction","Batteries - Assembly",1
-"parent","parent",TRUE,"Batteries - Refining","Batteries - Assembly",1
+"parent","parent",TRUE,"Batteries - Extraction","Nuclear - Components",1
 "parent","parent",TRUE,"Batteries - Refining","Batteries - Components",1
 "parent","parent",TRUE,"Electric Vehicles - Extraction","Solar - Components",1
 "parent","parent",TRUE,"Nuclear - Extraction","Batteries - Assembly",1
-"parent","parent",TRUE,"Wind - Refining","Nuclear - Assembly",1
 "parent_no_tech","parent",FALSE,"Batteries - Extraction","Oil - Components",2
-"parent_no_tech","parent",FALSE,"Nuclear - Components","Oil - Assembly",2
+"parent_no_tech","parent",FALSE,"Nuclear - Assembly","Oil - Assembly",2
+"parent_no_tech","parent",FALSE,"Nuclear - Extraction","Batteries - Assembly",2
 "parent_no_tech","parent",FALSE,"Nuclear - Extraction","Oil - Components",2
-"parent_no_tech","parent",FALSE,"Nuclear - Extraction","Oil - Extraction",2
+"parent_no_tech","parent",FALSE,"Batteries - Components","Oil - Components",1
 "parent_no_tech","parent",FALSE,"Batteries - Extraction","Batteries - Assembly",1
-"parent_no_tech","parent",FALSE,"Batteries - Refining","Batteries - Assembly",1
 "parent_no_tech","parent",FALSE,"Batteries - Refining","Batteries - Components",1
 "parent_no_tech","parent",FALSE,"Batteries - Refining","Oil - Components",1
-"parent_no_tech","parent",FALSE,"Electric Vehicles - Extraction","Oil - Components",1
-"parent_no_tech","parent",FALSE,"Nuclear - Assembly","Oil - Assembly",1
-"parent_no_tech","parent",FALSE,"Nuclear - Components","Solar - Components",1
-"parent_no_tech","parent",FALSE,"Nuclear - Extraction","Batteries - Assembly",1
+"parent_no_tech","parent",FALSE,"Electric Vehicles - Extraction","Oil - Extraction",1
+"parent_no_tech","parent",FALSE,"Nuclear - Components","Oil - Assembly",1
 "parent_no_tech","parent",FALSE,"Nuclear - Extraction","Batteries - Extraction",1
+"parent_no_tech","parent",FALSE,"Nuclear - Extraction","Oil - Extraction",1
 "parent_no_tech","parent",FALSE,"Solar - Extraction","Oil - Components",1
-"parent_no_tech","parent",FALSE,"Wind - Refining","Nuclear - Assembly",1
-"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear - Extraction","Batteries - Components",4
-"manufacturing_focused","manufacturing_focused",TRUE,"Solar - Extraction","Solar - Components",3
-"manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Extraction","Batteries - Assembly",2
-"manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Extraction","Batteries - Components",2
+"manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Extraction","Batteries - Components",3
+"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear - Extraction","Batteries - Assembly",3
+"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear - Extraction","Batteries - Components",3
 "manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Extraction","Solar - Components",2
 "manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Refining","Nuclear - Assembly",2
 "manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Refining","Nuclear - Components",2
-"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear - Extraction","Batteries - Assembly",2
 "manufacturing_focused","manufacturing_focused",TRUE,"Nuclear - Extraction","Oil - Components",2
+"manufacturing_focused","manufacturing_focused",TRUE,"Solar - Extraction","Solar - Components",2
+"manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Extraction","Batteries - Assembly",1
 "manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Extraction","Electric Vehicles - Components",1
 "manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Extraction","Nuclear - Components",1
 "manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Recovery","Batteries - Assembly",1
-"manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Refining","Batteries - Assembly",1
 "manufacturing_focused","manufacturing_focused",TRUE,"Batteries - Refining","Batteries - Components",1
 "manufacturing_focused","manufacturing_focused",TRUE,"Electric Vehicles - Extraction","Solar - Components",1
-"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear - Extraction","Nuclear - Assembly",1
 "manufacturing_focused","manufacturing_focused",TRUE,"Nuclear - Extraction","Nuclear - Components",1
-"manufacturing_focused","manufacturing_focused",TRUE,"Solar - Extraction","Batteries - Assembly",1
+"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear - Extraction","Solar - Components",1
+"manufacturing_focused","manufacturing_focused",TRUE,"Solar - Extraction","Nuclear - Components",1
 "manufacturing_focused","manufacturing_focused",TRUE,"Wind - Extraction","Nuclear - Assembly",1
-"manufacturing_focused","manufacturing_focused",TRUE,"Wind - Refining","Electric Grid - Components",1
 "manufacturing_focused","manufacturing_focused",TRUE,"Wind - Refining","Nuclear - Assembly",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Extraction","Oil - Components",3
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Refining","Electric Vehicles - Components",3
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Batteries - Assembly",3
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Batteries - Components",3
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Oil - Components",3
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Extraction","Batteries - Assembly",2
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Extraction","Batteries - Components",2
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Extraction","Solar - Components",2
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Refining","Electric Vehicles - Components",2
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Refining","Oil - Components",2
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Components","Oil - Assembly",2
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Batteries - Assembly",2
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar - Extraction","Solar - Components",2
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Extraction","Batteries - Components",1
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Assembly","Oil - Assembly",2
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Oil - Components",2
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Components","Oil - Components",1
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Extraction","Batteries - Assembly",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Extraction","Nuclear - Components",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Recovery","Batteries - Assembly",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Recovery","Electric Vehicles - Components",1
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Recovery","Oil - Components",1
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Refining","Batteries - Assembly",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Refining","Batteries - Components",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Refining","Nuclear - Assembly",1
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries - Refining","Oil - Components",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Vehicles - Extraction","Oil - Components",1
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Assembly","Oil - Assembly",1
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Components","Solar - Components",1
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Components","Oil - Assembly",1
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Batteries - Extraction",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Electric Vehicles - Components",1
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Nuclear - Assembly",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Oil - Extraction",1
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear - Extraction","Solar - Components",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar - Extraction","Batteries - Assembly",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar - Extraction","Oil - Components",1
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar - Extraction","Solar - Components",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Wind - Extraction","Electric Vehicles - Components",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Wind - Refining","Nuclear - Assembly",1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Wind - Refining","Oil - Components",1
-"resource_security_focused","resource_security_focused",TRUE,"Solar - Components","Batteries - Refining",5
-"resource_security_focused","resource_security_focused",TRUE,"Batteries - Assembly","Batteries - Refining",2
-"resource_security_focused","resource_security_focused",TRUE,"Batteries - Assembly","Nuclear - Extraction",2
-"resource_security_focused","resource_security_focused",TRUE,"Batteries - Recovery","Batteries - Refining",2
+"resource_security_focused","resource_security_focused",TRUE,"Batteries - Assembly","Batteries - Refining",3
+"resource_security_focused","resource_security_focused",TRUE,"Solar - Components","Batteries - Refining",3
+"resource_security_focused","resource_security_focused",TRUE,"Nuclear - Assembly","Wind - Refining",2
+"resource_security_focused","resource_security_focused",TRUE,"Batteries - Assembly","Nuclear - Extraction",1
 "resource_security_focused","resource_security_focused",TRUE,"Batteries - Assembly","Solar - Extraction",1
-"resource_security_focused","resource_security_focused",TRUE,"Batteries - Components","Wind - Refining",1
-"resource_security_focused","resource_security_focused",TRUE,"Nuclear - Assembly","Wind - Refining",1
-"resource_security_focused","resource_security_focused",TRUE,"Nuclear - Components","Batteries - Refining",1
+"resource_security_focused","resource_security_focused",TRUE,"Batteries - Components","Batteries - Refining",1
+"resource_security_focused","resource_security_focused",TRUE,"Batteries - Components","Nuclear - Extraction",1
+"resource_security_focused","resource_security_focused",TRUE,"Batteries - Recovery","Batteries - Refining",1
+"resource_security_focused","resource_security_focused",TRUE,"Nuclear - Assembly","Batteries - Refining",1
 "resource_security_focused","resource_security_focused",TRUE,"Nuclear - Components","Electric Grid - Refining",1
-"resource_security_focused","resource_security_focused",TRUE,"Nuclear - Components","Wind - Refining",1
 "resource_security_focused","resource_security_focused",TRUE,"Solar - Components","Batteries - Extraction",1
 "resource_security_focused","resource_security_focused",TRUE,"Solar - Components","Nuclear - Extraction",1
+"resource_security_focused","resource_security_focused",TRUE,"Solar - Components","Nuclear - Refining",1
 "resource_security_focused","resource_security_focused",TRUE,"Solar - Components","Wind - Extraction",1
+"resource_security_focused","resource_security_focused",TRUE,"Solar - Components","Wind - Refining",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar - Components","Batteries - Refining",6
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Assembly","Batteries - Refining",2
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Assembly","Nuclear - Extraction",2
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Recovery","Batteries - Refining",2
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Extraction","Oil - Extraction",2
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Assembly","Batteries - Refining",3
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Assembly","Nuclear - Extraction",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Assembly","Solar - Extraction",1
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Components","Wind - Refining",1
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Components","Batteries - Refining",1
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Components","Oil - Extraction",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Extraction","Electric Vehicles - Refining",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Extraction","Oil - Extraction",1
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries - Recovery","Batteries - Refining",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Vehicles - Extraction","Oil - Extraction",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Assembly","Gas - Extraction",1
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Components","Batteries - Refining",1
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Assembly","Oil - Extraction",1
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Assembly","Wind - Refining",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Components","Electric Vehicles - Refining",1
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Components","Oil - Extraction",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Extraction","Batteries - Extraction",1
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Extraction","Electric Vehicles - Refining",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Extraction","Gas - Extraction",1
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear - Extraction","Oil - Extraction",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar - Components","Batteries - Extraction",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar - Components","Electric Vehicles - Extraction",1
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar - Extraction","Oil - Extraction",1
-"deployment_focused","deployment_focused",TRUE,"Batteries - Assembly","Batteries - Refining",2
-"deployment_focused","deployment_focused",TRUE,"Batteries - Assembly","Nuclear - Extraction",2
-"deployment_focused","deployment_focused",TRUE,"Solar - Components","Batteries - Recovery",2
-"deployment_focused","deployment_focused",TRUE,"Solar - Components","Batteries - Refining",2
-"deployment_focused","deployment_focused",TRUE,"Nuclear - Components","Wind - Refining",1
+"deployment_focused","deployment_focused",TRUE,"Batteries - Assembly","Batteries - Refining",3
+"deployment_focused","deployment_focused",TRUE,"Batteries - Assembly","Nuclear - Extraction",1
+"deployment_focused","deployment_focused",TRUE,"Batteries - Components","Batteries - Refining",1
+"deployment_focused","deployment_focused",TRUE,"Batteries - Components","Nuclear - Extraction",1
+"deployment_focused","deployment_focused",TRUE,"Nuclear - Assembly","Wind - Refining",1
 "deployment_focused","deployment_focused",TRUE,"Solar - Components","Batteries - Extraction",1
+"deployment_focused","deployment_focused",TRUE,"Solar - Components","Batteries - Recovery",1
+"deployment_focused","deployment_focused",TRUE,"Solar - Components","Batteries - Refining",1
 "deployment_focused","deployment_focused",TRUE,"Solar - Components","Nuclear - Extraction",1
+"deployment_focused","deployment_focused",TRUE,"Solar - Components","Wind - Refining",1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries - Assembly","Batteries - Refining",3
 "deployment_focused_no_tech","deployment_focused",FALSE,"Solar - Components","Batteries - Refining",3
-"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries - Assembly","Batteries - Refining",2
-"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries - Assembly","Nuclear - Extraction",2
-"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Components","Oil - Assembly",2
+"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Assembly","Oil - Assembly",2
 "deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Extraction","Oil - Components",2
-"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Extraction","Oil - Extraction",2
-"deployment_focused_no_tech","deployment_focused",FALSE,"Solar - Components","Batteries - Recovery",2
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries - Assembly","Nuclear - Extraction",1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries - Components","Batteries - Refining",1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries - Components","Oil - Extraction",1
 "deployment_focused_no_tech","deployment_focused",FALSE,"Batteries - Extraction","Oil - Components",1
 "deployment_focused_no_tech","deployment_focused",FALSE,"Batteries - Extraction","Oil - Extraction",1
 "deployment_focused_no_tech","deployment_focused",FALSE,"Batteries - Refining","Oil - Components",1
 "deployment_focused_no_tech","deployment_focused",FALSE,"Electric Vehicles - Extraction","Oil - Extraction",1
-"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Assembly","Oil - Assembly",1
-"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Components","Batteries - Refining",1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Assembly","Wind - Refining",1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Components","Oil - Assembly",1
 "deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Extraction","Batteries - Extraction",1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear - Extraction","Oil - Extraction",1
 "deployment_focused_no_tech","deployment_focused",FALSE,"Solar - Components","Batteries - Extraction",1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Solar - Components","Batteries - Recovery",1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Solar - Components","Electric Vehicles - Extraction",1
 "deployment_focused_no_tech","deployment_focused",FALSE,"Solar - Extraction","Oil - Extraction",1

@@ -1,7 +1,8 @@
 "driver","n_cells"
-"industrial_opportunity",1822
-"not_assessed",1368
+"not_assessed",1119
+"strategic_industrial_value",1072
 "deployment_need",1053
-"supply_chain_need",612
-"competitive_position",223
-"secure_override",143
+"large_yard_case",1031
+"supply_chain_need",449
+"competitive_position",374
+"secure_override",165

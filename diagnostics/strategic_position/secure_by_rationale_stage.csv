@@ -1,8 +1,8 @@
 "security_rationale","supply_chain","n_cells"
-"coercive_chokepoint","Extraction",3
+"coercive_chokepoint","Extraction",12
 "coercive_chokepoint","Refining",15
-"operational_control","Refining",5
-"systemic_resilience","Assembly",23
+"operational_control","Refining",4
+"systemic_resilience","Assembly",24
 "systemic_resilience","Components",3
-"systemic_resilience","Extraction",68
-"systemic_resilience","Refining",57
+"systemic_resilience","Extraction",86
+"systemic_resilience","Refining",62

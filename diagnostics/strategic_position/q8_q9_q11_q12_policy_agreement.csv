@@ -1,336 +1,338 @@
 "Country","comparison","n_cells","spearman","high_low_disagreement"
-"Argentina","q8 NIPO support vs protection",38,0.659578716174725,0.157894736842105
-"Australia","q8 NIPO support vs protection",38,0.170566872334673,0.447368421052632
-"Bangladesh","q8 NIPO support vs protection",38,0.33706832353108,0.184210526315789
-"Brazil","q8 NIPO support vs protection",38,0.402137456090466,0.368421052631579
-"Canada","q8 NIPO support vs protection",38,-0.15229663652596,0.526315789473684
-"China","q8 NIPO support vs protection",38,0.247894744448048,0.368421052631579
-"France","q8 NIPO support vs protection",38,0.372067081663637,0.368421052631579
-"Germany","q8 NIPO support vs protection",38,0.123925918303528,0.473684210526316
-"India","q8 NIPO support vs protection",38,0.428405056890857,0.315789473684211
-"Indonesia","q8 NIPO support vs protection",38,0.321132450221303,0.342105263157895
-"Italy","q8 NIPO support vs protection",38,0.608222921576505,0.236842105263158
-"Japan","q8 NIPO support vs protection",38,0.485644493515097,0.394736842105263
-"Malaysia","q8 NIPO support vs protection",38,-0.00264023125683599,0.236842105263158
-"Mexico","q8 NIPO support vs protection",38,0.378368536845093,0.289473684210526
-"Morocco","q8 NIPO support vs protection",38,0.387940368465177,0.184210526315789
-"Nigeria","q8 NIPO support vs protection",38,0.0724596800487211,0.236842105263158
-"Pakistan","q8 NIPO support vs protection",38,0.182306974135034,0.473684210526316
-"Philippines","q8 NIPO support vs protection",38,0.763336508356045,0.0526315789473684
-"Russia","q8 NIPO support vs protection",38,0.0136416710885122,0.473684210526316
-"Saudi Arabia","q8 NIPO support vs protection",38,-0.0776910236528161,0.473684210526316
-"South Africa","q8 NIPO support vs protection",38,-0.247052922019137,0.578947368421053
-"South Korea","q8 NIPO support vs protection",38,-0.0210550433335214,0.473684210526316
-"Thailand","q8 NIPO support vs protection",38,0.658570609754769,0.131578947368421
-"Turkiye","q8 NIPO support vs protection",38,0.212789559425394,0.315789473684211
-"United Kingdom","q8 NIPO support vs protection",38,-0.205204560220462,0.631578947368421
-"United States","q8 NIPO support vs protection",38,0.373884971929884,0.421052631578947
-"Viet Nam","q8 NIPO support vs protection",38,-0.147529543086477,0.263157894736842
-"Argentina","q9 NIPO vs PAMS",38,0.231755311152961,0.394736842105263
-"Australia","q9 NIPO vs PAMS",38,-0.100245507858116,0.605263157894737
-"Austria","q9 NIPO vs PAMS",38,-0.138673525443613,0.315789473684211
-"Bangladesh","q9 NIPO vs PAMS",38,0.586584389851894,0.131578947368421
-"Belgium","q9 NIPO vs PAMS",38,0.26725007499751,0.184210526315789
-"Brazil","q9 NIPO vs PAMS",38,-0.00450503518845035,0.552631578947368
-"Bulgaria","q9 NIPO vs PAMS",38,,0.131578947368421
-"Canada","q9 NIPO vs PAMS",38,0.111603027502953,0.5
-"China","q9 NIPO vs PAMS",38,0.0269885618786167,0.552631578947368
-"Colombia","q9 NIPO vs PAMS",38,-0.247530360673537,0.552631578947368
-"Czech Republic","q9 NIPO vs PAMS",38,-0.0237320260885545,0.315789473684211
-"Denmark","q9 NIPO vs PAMS",38,0.345947198395225,0.263157894736842
-"Ecuador","q9 NIPO vs PAMS",38,0.627360672710768,0.157894736842105
-"Egypt","q9 NIPO vs PAMS",38,0.113824353589823,0.368421052631579
-"Finland","q9 NIPO vs PAMS",38,-0.159343451181023,0.447368421052632
-"France","q9 NIPO vs PAMS",38,0.0648714810281518,0.421052631578947
-"Germany","q9 NIPO vs PAMS",38,-0.336414215580286,0.684210526315789
-"Greece","q9 NIPO vs PAMS",38,0.0365522021720857,0.342105263157895
-"Hong Kong","q9 NIPO vs PAMS",38,0.381546899772354,0.236842105263158
-"Hungary","q9 NIPO vs PAMS",38,-0.100125215555305,0.184210526315789
-"India","q9 NIPO vs PAMS",38,0.255486025007664,0.315789473684211
-"Indonesia","q9 NIPO vs PAMS",38,0.237941823756931,0.368421052631579
-"Ireland","q9 NIPO vs PAMS",38,0.387739310403091,0.342105263157895
-"Israel","q9 NIPO vs PAMS",38,-0.201483873005102,0.368421052631579
-"Italy","q9 NIPO vs PAMS",38,0.313205271137226,0.342105263157895
-"Japan","q9 NIPO vs PAMS",38,-0.413495429789532,0.710526315789474
-"Kenya","q9 NIPO vs PAMS",38,0.0750239921735111,0.368421052631579
-"Lithuania","q9 NIPO vs PAMS",38,,0.131578947368421
-"Malaysia","q9 NIPO vs PAMS",38,0.351611705056006,0.342105263157895
-"Mexico","q9 NIPO vs PAMS",38,0.161406119392882,0.342105263157895
-"Morocco","q9 NIPO vs PAMS",38,0.202080491263633,0.263157894736842
-"Netherlands","q9 NIPO vs PAMS",38,-0.123562798294348,0.5
-"Nigeria","q9 NIPO vs PAMS",38,0.234373584811347,0.421052631578947
-"Norway","q9 NIPO vs PAMS",38,0.170205784284912,0.447368421052632
-"Pakistan","q9 NIPO vs PAMS",38,0.244190400939697,0.421052631578947
-"Peru","q9 NIPO vs PAMS",38,0.321637702769788,0.315789473684211
-"Philippines","q9 NIPO vs PAMS",38,-0.0502410015416037,0.342105263157895
-"Poland","q9 NIPO vs PAMS",38,0.254886762723682,0.289473684210526
-"Portugal","q9 NIPO vs PAMS",38,-0.100125215555305,0.184210526315789
-"Qatar","q9 NIPO vs PAMS",38,-0.147529543086477,0.263157894736842
-"Romania","q9 NIPO vs PAMS",38,0.0910252921537955,0.289473684210526
-"Russia","q9 NIPO vs PAMS",38,0.197606891040147,0.447368421052632
-"Saudi Arabia","q9 NIPO vs PAMS",38,0.00967579394171739,0.447368421052632
-"Singapore","q9 NIPO vs PAMS",38,-0.215824226163248,0.447368421052632
-"Slovak Republic","q9 NIPO vs PAMS",38,-0.259817774481814,0.421052631578947
-"Slovenia","q9 NIPO vs PAMS",38,,0.0789473684210526
-"South Africa","q9 NIPO vs PAMS",38,0.0265620963258174,0.473684210526316
-"South Korea","q9 NIPO vs PAMS",38,0.213145741705899,0.526315789473684
-"Spain","q9 NIPO vs PAMS",38,0.205663042091529,0.342105263157895
-"Sweden","q9 NIPO vs PAMS",38,-0.00375528772960517,0.421052631578947
-"Switzerland","q9 NIPO vs PAMS",38,-0.0592238899722675,0.421052631578947
-"Thailand","q9 NIPO vs PAMS",38,0.34456803541916,0.368421052631579
-"Turkiye","q9 NIPO vs PAMS",38,-0.0537575836341242,0.447368421052632
-"Ukraine","q9 NIPO vs PAMS",38,0.388516366525695,0.263157894736842
-"United Arab Emirates","q9 NIPO vs PAMS",38,-0.189121764529348,0.421052631578947
-"United Kingdom","q9 NIPO vs PAMS",38,-0.0201394667507514,0.447368421052632
-"United States","q9 NIPO vs PAMS",38,-0.250902724586935,0.605263157894737
-"Viet Nam","q9 NIPO vs PAMS",38,-0.0966462300833665,0.631578947368421
-"Argentina","q11 NIPO count vs instrument-weighted",38,0.999156711173577,0
-"Australia","q11 NIPO count vs instrument-weighted",38,0.988787980715327,0.0526315789473684
-"Austria","q11 NIPO count vs instrument-weighted",38,0.999635369188697,0
-"Bangladesh","q11 NIPO count vs instrument-weighted",38,0.999606221697185,0
-"Belgium","q11 NIPO count vs instrument-weighted",38,1,0
-"Brazil","q11 NIPO count vs instrument-weighted",38,0.997514966677962,0.0526315789473684
-"Bulgaria","q11 NIPO count vs instrument-weighted",38,1,0
-"Canada","q11 NIPO count vs instrument-weighted",38,0.995786672580109,0
-"China","q11 NIPO count vs instrument-weighted",38,0.991464215364413,0
-"Colombia","q11 NIPO count vs instrument-weighted",38,1,0
-"Czech Republic","q11 NIPO count vs instrument-weighted",38,0.999606221697185,0
-"Denmark","q11 NIPO count vs instrument-weighted",38,0.999635369188697,0
-"Ecuador","q11 NIPO count vs instrument-weighted",38,1,0
-"Egypt","q11 NIPO count vs instrument-weighted",38,1,0
-"Finland","q11 NIPO count vs instrument-weighted",38,0.999678146121661,0
-"France","q11 NIPO count vs instrument-weighted",38,0.996328029375765,0.0526315789473684
-"Germany","q11 NIPO count vs instrument-weighted",38,0.974472934472934,0.157894736842105
-"Greece","q11 NIPO count vs instrument-weighted",38,0.999635369188697,0
-"Hong Kong","q11 NIPO count vs instrument-weighted",38,0.997284822155851,0
-"Hungary","q11 NIPO count vs instrument-weighted",38,0.998999499749875,0
-"India","q11 NIPO count vs instrument-weighted",38,0.989650996366839,0
-"Indonesia","q11 NIPO count vs instrument-weighted",38,0.992706552706553,0.0526315789473684
-"Ireland","q11 NIPO count vs instrument-weighted",38,0.998564249820531,0
-"Israel","q11 NIPO count vs instrument-weighted",38,1,0
-"Italy","q11 NIPO count vs instrument-weighted",38,0.998642779587405,0
-"Japan","q11 NIPO count vs instrument-weighted",38,0.991753955872521,0.0526315789473684
-"Kenya","q11 NIPO count vs instrument-weighted",38,0.996781461216608,0
-"Lithuania","q11 NIPO count vs instrument-weighted",38,1,0
-"Malaysia","q11 NIPO count vs instrument-weighted",38,0.999635369188697,0
-"Mexico","q11 NIPO count vs instrument-weighted",38,1,0
-"Morocco","q11 NIPO count vs instrument-weighted",38,1,0
-"Netherlands","q11 NIPO count vs instrument-weighted",38,0.997553142682367,0
-"Nigeria","q11 NIPO count vs instrument-weighted",38,0.997812215132179,0
-"Norway","q11 NIPO count vs instrument-weighted",38,0.999658877707658,0
-"Pakistan","q11 NIPO count vs instrument-weighted",38,0.996572827417381,0
-"Peru","q11 NIPO count vs instrument-weighted",38,1,0
-"Philippines","q11 NIPO count vs instrument-weighted",38,1,0
-"Poland","q11 NIPO count vs instrument-weighted",38,0.998830238338939,0
-"Portugal","q11 NIPO count vs instrument-weighted",38,1,0
-"Qatar","q11 NIPO count vs instrument-weighted",38,1,0
-"Romania","q11 NIPO count vs instrument-weighted",38,0.999569336778639,0
-"Russia","q11 NIPO count vs instrument-weighted",38,0.994899656281184,0.0526315789473684
-"Saudi Arabia","q11 NIPO count vs instrument-weighted",38,0.999519404061036,0
-"Serbia","q11 NIPO count vs instrument-weighted",38,1,0
-"Singapore","q11 NIPO count vs instrument-weighted",38,1,0
-"Slovak Republic","q11 NIPO count vs instrument-weighted",38,1,0
-"Slovenia","q11 NIPO count vs instrument-weighted",38,1,0
-"South Africa","q11 NIPO count vs instrument-weighted",38,0.997492877492877,0.0526315789473684
-"South Korea","q11 NIPO count vs instrument-weighted",38,0.993222636394443,0.0526315789473684
-"Spain","q11 NIPO count vs instrument-weighted",38,0.99290696299799,0
-"Sweden","q11 NIPO count vs instrument-weighted",38,0.994736072525223,0
-"Switzerland","q11 NIPO count vs instrument-weighted",38,0.999366085578447,0
-"Thailand","q11 NIPO count vs instrument-weighted",38,0.998068876729965,0
-"Turkiye","q11 NIPO count vs instrument-weighted",38,0.989405803777061,0
-"Ukraine","q11 NIPO count vs instrument-weighted",38,1,0
-"United Arab Emirates","q11 NIPO count vs instrument-weighted",38,0.999569336778639,0
-"United Kingdom","q11 NIPO count vs instrument-weighted",38,0.980042133274199,0.0526315789473684
-"United States","q11 NIPO count vs instrument-weighted",38,0.978334609913557,0.105263157894737
-"Viet Nam","q11 NIPO count vs instrument-weighted",38,1,0
-"Argentina","q12 momentum 1y vs 3y",38,0.594388993592331,0.236842105263158
-"Australia","q12 momentum 1y vs 3y",66,0.670195208240757,0.166666666666667
-"Austria","q12 momentum 1y vs 3y",38,0.684274936799558,0.157894736842105
-"Bangladesh","q12 momentum 1y vs 3y",38,0.746120546335066,0.0789473684210526
-"Brazil","q12 momentum 1y vs 3y",66,0.528044620023316,0.318181818181818
-"Canada","q12 momentum 1y vs 3y",66,0.514629493445987,0.318181818181818
-"China","q12 momentum 1y vs 3y",66,0.0705851456487643,0.560606060606061
-"Czech Republic","q12 momentum 1y vs 3y",38,0.628311551344857,0.157894736842105
-"Denmark","q12 momentum 1y vs 3y",66,0.950763753380029,0
+"Argentina","q8 NIPO support vs protection",39,0.663961974152077,0.153846153846154
+"Australia","q8 NIPO support vs protection",39,0.192716592242627,0.41025641025641
+"Bangladesh","q8 NIPO support vs protection",39,0.339231664190934,0.179487179487179
+"Brazil","q8 NIPO support vs protection",39,0.416067831238354,0.333333333333333
+"Canada","q8 NIPO support vs protection",39,-0.12010005823336,0.538461538461538
+"China","q8 NIPO support vs protection",39,0.198431853849458,0.41025641025641
+"France","q8 NIPO support vs protection",39,0.375818722194364,0.384615384615385
+"Germany","q8 NIPO support vs protection",39,0.132534399448105,0.487179487179487
+"India","q8 NIPO support vs protection",39,0.438424236378423,0.333333333333333
+"Indonesia","q8 NIPO support vs protection",39,0.336582384216817,0.358974358974359
+"Italy","q8 NIPO support vs protection",39,0.608447456753298,0.230769230769231
+"Japan","q8 NIPO support vs protection",39,0.457831386505756,0.41025641025641
+"Malaysia","q8 NIPO support vs protection",39,0.0027742309132855,0.230769230769231
+"Mexico","q8 NIPO support vs protection",39,0.381191914477112,0.282051282051282
+"Morocco","q8 NIPO support vs protection",39,0.388580094754849,0.179487179487179
+"Nigeria","q8 NIPO support vs protection",39,0.0757365039326943,0.230769230769231
+"Pakistan","q8 NIPO support vs protection",39,0.185407064310219,0.461538461538462
+"Philippines","q8 NIPO support vs protection",39,0.763748366260336,0.0512820512820513
+"Russia","q8 NIPO support vs protection",39,-0.0364688213084812,0.461538461538462
+"Saudi Arabia","q8 NIPO support vs protection",39,-0.0657431460841605,0.461538461538462
+"South Africa","q8 NIPO support vs protection",39,-0.244068522197149,0.564102564102564
+"South Korea","q8 NIPO support vs protection",39,-0.011165180769032,0.487179487179487
+"Thailand","q8 NIPO support vs protection",39,0.661453571726783,0.128205128205128
+"Turkiye","q8 NIPO support vs protection",39,0.233289031368799,0.307692307692308
+"United Kingdom","q8 NIPO support vs protection",39,-0.194881825199202,0.58974358974359
+"United States","q8 NIPO support vs protection",39,0.366995701523569,0.41025641025641
+"Viet Nam","q8 NIPO support vs protection",39,-0.162292508427202,0.282051282051282
+"Argentina","q9 NIPO vs PAMS",39,0.231184924168089,0.384615384615385
+"Australia","q9 NIPO vs PAMS",39,-0.0299934554050166,0.564102564102564
+"Austria","q9 NIPO vs PAMS",39,-0.134530116438355,0.307692307692308
+"Bangladesh","q9 NIPO vs PAMS",39,0.58968795408044,0.128205128205128
+"Belgium","q9 NIPO vs PAMS",39,0.270210090954008,0.179487179487179
+"Bolivia","q9 NIPO vs PAMS",39,0.228669308971461,0.358974358974359
+"Brazil","q9 NIPO vs PAMS",39,0.111232825157967,0.512820512820513
+"Bulgaria","q9 NIPO vs PAMS",39,,0.128205128205128
+"Canada","q9 NIPO vs PAMS",39,0.153238802379656,0.461538461538462
+"China","q9 NIPO vs PAMS",39,0.0497746773039022,0.512820512820513
+"Colombia","q9 NIPO vs PAMS",39,-0.245252474095415,0.564102564102564
+"Czech Republic","q9 NIPO vs PAMS",39,-0.0184057631767665,0.307692307692308
+"Denmark","q9 NIPO vs PAMS",39,0.349086318534307,0.256410256410256
+"Ecuador","q9 NIPO vs PAMS",39,0.602115400339885,0.179487179487179
+"Egypt","q9 NIPO vs PAMS",39,0.10390976250221,0.384615384615385
+"Finland","q9 NIPO vs PAMS",39,-0.150410949953714,0.435897435897436
+"France","q9 NIPO vs PAMS",39,0.101830663615561,0.384615384615385
+"Germany","q9 NIPO vs PAMS",39,-0.322848067335702,0.641025641025641
+"Greece","q9 NIPO vs PAMS",39,0.0429622919602447,0.333333333333333
+"Hong Kong","q9 NIPO vs PAMS",39,0.367085026815867,0.256410256410256
+"Hungary","q9 NIPO vs PAMS",39,-0.0973193833336183,0.179487179487179
+"India","q9 NIPO vs PAMS",39,0.294610044916292,0.333333333333333
+"Indonesia","q9 NIPO vs PAMS",39,0.241359894477536,0.384615384615385
+"Ireland","q9 NIPO vs PAMS",39,0.379742543637116,0.358974358974359
+"Israel","q9 NIPO vs PAMS",39,-0.207733935218654,0.384615384615385
+"Italy","q9 NIPO vs PAMS",39,0.316702950306235,0.333333333333333
+"Japan","q9 NIPO vs PAMS",39,-0.41950591868245,0.717948717948718
+"Kenya","q9 NIPO vs PAMS",39,0.0505285597866666,0.384615384615385
+"Lithuania","q9 NIPO vs PAMS",39,,0.128205128205128
+"Malaysia","q9 NIPO vs PAMS",39,0.352210603429623,0.358974358974359
+"Mexico","q9 NIPO vs PAMS",39,0.162024839599125,0.333333333333333
+"Morocco","q9 NIPO vs PAMS",39,0.164942390715391,0.282051282051282
+"Netherlands","q9 NIPO vs PAMS",39,-0.113324863658623,0.487179487179487
+"Nigeria","q9 NIPO vs PAMS",39,0.232196157820288,0.41025641025641
+"Norway","q9 NIPO vs PAMS",39,0.16593984907042,0.461538461538462
+"Pakistan","q9 NIPO vs PAMS",39,0.255087676832955,0.384615384615385
+"Peru","q9 NIPO vs PAMS",39,0.351758123339174,0.307692307692308
+"Philippines","q9 NIPO vs PAMS",39,-0.059911496773929,0.358974358974359
+"Poland","q9 NIPO vs PAMS",39,0.266472373883038,0.282051282051282
+"Portugal","q9 NIPO vs PAMS",39,-0.110264756728109,0.205128205128205
+"Qatar","q9 NIPO vs PAMS",39,-0.143238939698083,0.256410256410256
+"Romania","q9 NIPO vs PAMS",39,0.059349593495935,0.307692307692308
+"Russia","q9 NIPO vs PAMS",39,0.128647251780739,0.461538461538462
+"Saudi Arabia","q9 NIPO vs PAMS",39,-0.00170345321802482,0.487179487179487
+"Singapore","q9 NIPO vs PAMS",39,-0.219417516262938,0.461538461538462
+"Slovak Republic","q9 NIPO vs PAMS",39,-0.27276692174842,0.435897435897436
+"Slovenia","q9 NIPO vs PAMS",39,,0.0769230769230769
+"South Africa","q9 NIPO vs PAMS",39,0.0295367032113427,0.435897435897436
+"South Korea","q9 NIPO vs PAMS",39,0.220490155161744,0.487179487179487
+"Spain","q9 NIPO vs PAMS",39,0.174085727852431,0.358974358974359
+"Sweden","q9 NIPO vs PAMS",39,0.00860321636059971,0.41025641025641
+"Switzerland","q9 NIPO vs PAMS",39,-0.0675819353774141,0.435897435897436
+"Thailand","q9 NIPO vs PAMS",39,0.341217549613412,0.384615384615385
+"Turkiye","q9 NIPO vs PAMS",39,-0.0448497854077253,0.41025641025641
+"Ukraine","q9 NIPO vs PAMS",39,0.394208424342157,0.256410256410256
+"United Arab Emirates","q9 NIPO vs PAMS",39,-0.205253807358516,0.435897435897436
+"United Kingdom","q9 NIPO vs PAMS",39,-0.00645795119769699,0.461538461538462
+"United States","q9 NIPO vs PAMS",39,-0.205668016194332,0.615384615384615
+"Viet Nam","q9 NIPO vs PAMS",39,-0.131503302722068,0.641025641025641
+"Argentina","q11 NIPO count vs instrument-weighted",39,0.998680738786279,0
+"Australia","q11 NIPO count vs instrument-weighted",39,0.988951427975818,0
+"Austria","q11 NIPO count vs instrument-weighted",39,0.999656357388316,0
+"Bangladesh","q11 NIPO count vs instrument-weighted",39,0.999628597957289,0
+"Belgium","q11 NIPO count vs instrument-weighted",39,1,0
+"Bolivia","q11 NIPO count vs instrument-weighted",39,1,0
+"Brazil","q11 NIPO count vs instrument-weighted",39,0.996637242538882,0
+"Bulgaria","q11 NIPO count vs instrument-weighted",39,1,0
+"Canada","q11 NIPO count vs instrument-weighted",39,0.995676788471436,0.0512820512820513
+"China","q11 NIPO count vs instrument-weighted",39,0.992711812936532,0.0512820512820513
+"Colombia","q11 NIPO count vs instrument-weighted",39,1,0
+"Czech Republic","q11 NIPO count vs instrument-weighted",39,0.999628597957289,0
+"Denmark","q11 NIPO count vs instrument-weighted",39,0.999656357388316,0
+"Ecuador","q11 NIPO count vs instrument-weighted",39,1,0
+"Egypt","q11 NIPO count vs instrument-weighted",39,1,0
+"Finland","q11 NIPO count vs instrument-weighted",39,0.99969715324046,0
+"France","q11 NIPO count vs instrument-weighted",39,0.996338672768879,0
+"Germany","q11 NIPO count vs instrument-weighted",39,0.977294429708223,0.102564102564103
+"Greece","q11 NIPO count vs instrument-weighted",39,0.999656357388316,0
+"Hong Kong","q11 NIPO count vs instrument-weighted",39,0.995893223819302,0
+"Hungary","q11 NIPO count vs instrument-weighted",39,0.999052132701422,0
+"India","q11 NIPO count vs instrument-weighted",39,0.99060841159657,0
+"Indonesia","q11 NIPO count vs instrument-weighted",39,0.995755968169761,0
+"Ireland","q11 NIPO count vs instrument-weighted",39,0.998643761301989,0
+"Israel","q11 NIPO count vs instrument-weighted",39,1,0
+"Italy","q11 NIPO count vs instrument-weighted",39,0.998727087576375,0
+"Japan","q11 NIPO count vs instrument-weighted",39,0.990735975295934,0.0512820512820513
+"Kenya","q11 NIPO count vs instrument-weighted",39,0.997577225923683,0
+"Lithuania","q11 NIPO count vs instrument-weighted",39,1,0
+"Malaysia","q11 NIPO count vs instrument-weighted",39,0.999656357388316,0
+"Mexico","q11 NIPO count vs instrument-weighted",39,1,0
+"Morocco","q11 NIPO count vs instrument-weighted",39,1,0
+"Netherlands","q11 NIPO count vs instrument-weighted",39,0.997699496764917,0
+"Nigeria","q11 NIPO count vs instrument-weighted",39,0.997250859106529,0
+"Norway","q11 NIPO count vs instrument-weighted",39,0.999678766463219,0
+"Pakistan","q11 NIPO count vs instrument-weighted",39,0.995194508009153,0
+"Peru","q11 NIPO count vs instrument-weighted",39,1,0
+"Philippines","q11 NIPO count vs instrument-weighted",39,1,0
+"Poland","q11 NIPO count vs instrument-weighted",39,0.999175824175824,0
+"Portugal","q11 NIPO count vs instrument-weighted",39,1,0
+"Qatar","q11 NIPO count vs instrument-weighted",39,1,0
+"Romania","q11 NIPO count vs instrument-weighted",39,0.99959349593496,0
+"Russia","q11 NIPO count vs instrument-weighted",39,0.993032786885246,0.0512820512820513
+"Saudi Arabia","q11 NIPO count vs instrument-weighted",39,0.999775558298732,0
+"Serbia","q11 NIPO count vs instrument-weighted",39,1,0
+"Singapore","q11 NIPO count vs instrument-weighted",39,1,0
+"Slovak Republic","q11 NIPO count vs instrument-weighted",39,1,0
+"Slovenia","q11 NIPO count vs instrument-weighted",39,1,0
+"South Africa","q11 NIPO count vs instrument-weighted",39,0.997665782493369,0
+"South Korea","q11 NIPO count vs instrument-weighted",39,0.990332072299286,0
+"Spain","q11 NIPO count vs instrument-weighted",39,0.987608695652174,0
+"Sweden","q11 NIPO count vs instrument-weighted",39,0.995054945054945,0
+"Switzerland","q11 NIPO count vs instrument-weighted",39,0.999400299850075,0
+"Thailand","q11 NIPO count vs instrument-weighted",39,0.99939430648092,0
+"Turkiye","q11 NIPO count vs instrument-weighted",39,0.988412017167382,0.0512820512820513
+"Ukraine","q11 NIPO count vs instrument-weighted",39,1,0
+"United Arab Emirates","q11 NIPO count vs instrument-weighted",39,1,0
+"United Kingdom","q11 NIPO count vs instrument-weighted",39,0.983324755532681,0.0512820512820513
+"United States","q11 NIPO count vs instrument-weighted",39,0.976720647773279,0.102564102564103
+"Viet Nam","q11 NIPO count vs instrument-weighted",39,0.999357532926437,0
+"Argentina","q12 momentum 1y vs 3y",39,0.593302140951412,0.230769230769231
+"Australia","q12 momentum 1y vs 3y",66,0.681202366772362,0.166666666666667
+"Austria","q12 momentum 1y vs 3y",39,0.684044452177058,0.153846153846154
+"Bangladesh","q12 momentum 1y vs 3y",39,0.748408110547112,0.0769230769230769
+"Brazil","q12 momentum 1y vs 3y",66,0.522273403451445,0.318181818181818
+"Canada","q12 momentum 1y vs 3y",66,0.528220096416298,0.318181818181818
+"China","q12 momentum 1y vs 3y",66,0.0689119331759178,0.545454545454545
+"Czech Republic","q12 momentum 1y vs 3y",39,0.62854582750619,0.153846153846154
+"Denmark","q12 momentum 1y vs 3y",66,0.95259732906826,0
 "Estonia","q12 momentum 1y vs 3y",66,0.503638216214127,0.136363636363636
-"Finland","q12 momentum 1y vs 3y",66,0.377269559139939,0.5
-"France","q12 momentum 1y vs 3y",66,0.633549440202607,0.424242424242424
-"Germany","q12 momentum 1y vs 3y",38,0.619121493668514,0.236842105263158
-"Greece","q12 momentum 1y vs 3y",66,0.464484404717451,0.454545454545455
-"Hong Kong","q12 momentum 1y vs 3y",38,0.747677136124667,0.0526315789473684
-"India","q12 momentum 1y vs 3y",66,0.782516022290737,0.106060606060606
-"Indonesia","q12 momentum 1y vs 3y",66,0.437501890464952,0.227272727272727
-"Italy","q12 momentum 1y vs 3y",38,0.643737784015761,0.184210526315789
-"Japan","q12 momentum 1y vs 3y",38,0.331459432865263,0.421052631578947
-"Kenya","q12 momentum 1y vs 3y",38,0.990088264387749,0
+"Finland","q12 momentum 1y vs 3y",66,0.378139794522402,0.484848484848485
+"France","q12 momentum 1y vs 3y",66,0.644402876622463,0.409090909090909
+"Germany","q12 momentum 1y vs 3y",39,0.627276269220474,0.205128205128205
+"Greece","q12 momentum 1y vs 3y",66,0.465986392972586,0.439393939393939
+"Hong Kong","q12 momentum 1y vs 3y",39,0.749861970641673,0.0512820512820513
+"India","q12 momentum 1y vs 3y",66,0.789091431446354,0.106060606060606
+"Indonesia","q12 momentum 1y vs 3y",66,0.445732809890668,0.227272727272727
+"Italy","q12 momentum 1y vs 3y",39,0.648634492739363,0.179487179487179
+"Japan","q12 momentum 1y vs 3y",39,0.299299066000392,0.461538461538462
+"Kenya","q12 momentum 1y vs 3y",39,0.991400341884831,0
 "Luxembourg","q12 momentum 1y vs 3y",66,0.872658483542786,0.0151515151515152
 "Malta","q12 momentum 1y vs 3y",66,0.999267756895289,0
 "Namibia","q12 momentum 1y vs 3y",66,1,0
-"Netherlands","q12 momentum 1y vs 3y",66,0.851062343518715,0.0454545454545455
-"Nigeria","q12 momentum 1y vs 3y",38,0.785052478432957,0.868421052631579
-"Pakistan","q12 momentum 1y vs 3y",38,0.864186710064931,0.0526315789473684
-"Peru","q12 momentum 1y vs 3y",38,1,0
-"Russia","q12 momentum 1y vs 3y",38,0.681961785159219,0.289473684210526
-"Serbia","q12 momentum 1y vs 3y",38,1,0
-"Slovenia","q12 momentum 1y vs 3y",66,-0.167711817205197,0.848484848484849
-"South Africa","q12 momentum 1y vs 3y",38,0.369727872907082,0.342105263157895
-"South Korea","q12 momentum 1y vs 3y",66,0.440498992645373,0.303030303030303
-"Spain","q12 momentum 1y vs 3y",66,0.78246094903675,0.0757575757575758
-"Sweden","q12 momentum 1y vs 3y",66,0.375289247315955,0.515151515151515
+"Netherlands","q12 momentum 1y vs 3y",66,0.854015929119343,0.0454545454545455
+"Nigeria","q12 momentum 1y vs 3y",39,0.785295662354354,0.871794871794872
+"Pakistan","q12 momentum 1y vs 3y",39,0.864289231987537,0.0512820512820513
+"Peru","q12 momentum 1y vs 3y",39,1,0
+"Russia","q12 momentum 1y vs 3y",39,0.688813163306814,0.256410256410256
+"Serbia","q12 momentum 1y vs 3y",39,1,0
+"Slovenia","q12 momentum 1y vs 3y",66,-0.154005028554353,0.848484848484849
+"South Africa","q12 momentum 1y vs 3y",39,0.381453623080924,0.333333333333333
+"South Korea","q12 momentum 1y vs 3y",66,0.456578857457321,0.303030303030303
+"Spain","q12 momentum 1y vs 3y",66,0.789566842793438,0.0757575757575758
+"Sweden","q12 momentum 1y vs 3y",66,0.376009464152243,0.5
 "Tanzania","q12 momentum 1y vs 3y",66,0.999679538535491,0
-"Thailand","q12 momentum 1y vs 3y",38,0.542332260052002,0.184210526315789
-"Turkiye","q12 momentum 1y vs 3y",38,0.573742546281054,0.342105263157895
-"United Kingdom","q12 momentum 1y vs 3y",38,0.725531396127526,0.236842105263158
-"United States","q12 momentum 1y vs 3y",66,0.250437965865711,0.409090909090909
+"Thailand","q12 momentum 1y vs 3y",39,0.544272594838617,0.179487179487179
+"Turkiye","q12 momentum 1y vs 3y",39,0.560352460626111,0.358974358974359
+"United Kingdom","q12 momentum 1y vs 3y",39,0.730020267909815,0.230769230769231
+"United States","q12 momentum 1y vs 3y",66,0.254364897566213,0.393939393939394
 "Uzbekistan","q12 momentum 1y vs 3y",66,1,0
-"Viet Nam","q12 momentum 1y vs 3y",38,0.497603234083611,0.315789473684211
-"Argentina","q12 momentum 3y vs 5y",66,0.931057510671153,0.0303030303030303
-"Australia","q12 momentum 3y vs 5y",66,0.722820369720114,0.242424242424242
-"Austria","q12 momentum 3y vs 5y",66,0.913998795550999,0
-"Bangladesh","q12 momentum 3y vs 5y",38,0.998818665091553,0
-"Belgium","q12 momentum 3y vs 5y",66,0.658430961236416,0.53030303030303
+"Viet Nam","q12 momentum 1y vs 3y",39,0.497983813183738,0.307692307692308
+"Argentina","q12 momentum 3y vs 5y",66,0.932636585062774,0.0303030303030303
+"Australia","q12 momentum 3y vs 5y",66,0.728512665292317,0.242424242424242
+"Austria","q12 momentum 3y vs 5y",66,0.91717353998629,0
+"Bangladesh","q12 momentum 3y vs 5y",39,0.998885793871866,0
+"Belgium","q12 momentum 3y vs 5y",66,0.647711041738284,0.545454545454545
 "Bolivia","q12 momentum 3y vs 5y",66,0.836149225640446,0.0303030303030303
-"Brazil","q12 momentum 3y vs 5y",66,0.853760924930981,0.151515151515152
-"Canada","q12 momentum 3y vs 5y",66,0.797889925785337,0.121212121212121
+"Brazil","q12 momentum 3y vs 5y",66,0.856257363764877,0.151515151515152
+"Canada","q12 momentum 3y vs 5y",66,0.805951004694262,0.121212121212121
 "Chile","q12 momentum 3y vs 5y",66,0.648076023289461,0.151515151515152
-"China","q12 momentum 3y vs 5y",66,0.775981955653167,0.272727272727273
+"China","q12 momentum 3y vs 5y",66,0.790690220660243,0.212121212121212
 "Colombia","q12 momentum 3y vs 5y",66,0.389671617771655,0.363636363636364
 "Costa Rica","q12 momentum 3y vs 5y",66,0.850184078746139,0.0303030303030303
 "Cote d'Ivoire","q12 momentum 3y vs 5y",66,1,0
 "Croatia","q12 momentum 3y vs 5y",66,0.789606914644046,0.0303030303030303
-"Czech Republic","q12 momentum 3y vs 5y",66,0.901876611336048,0.0151515151515152
-"Denmark","q12 momentum 3y vs 5y",66,0.96012257002637,0
+"Czech Republic","q12 momentum 3y vs 5y",66,0.905111403496657,0.0151515151515152
+"Denmark","q12 momentum 3y vs 5y",66,0.96151085744417,0
 "Ecuador","q12 momentum 3y vs 5y",66,0.655444797670865,0.0757575757575758
-"Egypt","q12 momentum 3y vs 5y",66,0.637522589339728,0.53030303030303
+"Egypt","q12 momentum 3y vs 5y",66,0.63986276577771,0.545454545454545
 "Estonia","q12 momentum 3y vs 5y",66,0.802198270826034,0.0909090909090909
-"Finland","q12 momentum 3y vs 5y",66,0.729470617925696,0.333333333333333
-"France","q12 momentum 3y vs 5y",66,0.779627284488388,0.166666666666667
-"Germany","q12 momentum 3y vs 5y",66,0.773326097142026,0.151515151515152
+"Finland","q12 momentum 3y vs 5y",66,0.736956830013588,0.318181818181818
+"France","q12 momentum 3y vs 5y",66,0.787296692733081,0.166666666666667
+"Germany","q12 momentum 3y vs 5y",66,0.790339663922534,0.121212121212121
 "Ghana","q12 momentum 3y vs 5y",66,0.999328577423416,0
-"Greece","q12 momentum 3y vs 5y",66,0.87065581541768,0.0454545454545455
-"Hong Kong","q12 momentum 3y vs 5y",38,0.998913928862341,0
-"Hungary","q12 momentum 3y vs 5y",66,0.661969278715603,0.181818181818182
+"Greece","q12 momentum 3y vs 5y",66,0.873859133385338,0.0454545454545455
+"Hong Kong","q12 momentum 3y vs 5y",39,0.998973305954826,0
+"Hungary","q12 momentum 3y vs 5y",66,0.665158927422033,0.454545454545455
 "Iceland","q12 momentum 3y vs 5y",66,1,0
-"India","q12 momentum 3y vs 5y",66,0.704492725075569,0.242424242424242
-"Indonesia","q12 momentum 3y vs 5y",66,0.969950963139456,0.0757575757575758
+"India","q12 momentum 3y vs 5y",66,0.714218602634219,0.242424242424242
+"Indonesia","q12 momentum 3y vs 5y",66,0.967422893508853,0.0757575757575758
 "Israel","q12 momentum 3y vs 5y",66,0.861753438639755,0.0303030303030303
-"Italy","q12 momentum 3y vs 5y",66,0.832825393704758,0.166666666666667
-"Japan","q12 momentum 3y vs 5y",66,0.749380698824279,0.212121212121212
+"Italy","q12 momentum 3y vs 5y",66,0.837724469689049,0.166666666666667
+"Japan","q12 momentum 3y vs 5y",66,0.741509556764038,0.212121212121212
 "Jordan","q12 momentum 3y vs 5y",66,0.85454947681227,0.0151515151515152
 "Kazakhstan","q12 momentum 3y vs 5y",66,0.47457389709506,0.136363636363636
-"Kenya","q12 momentum 3y vs 5y",38,0.998370893293511,0
+"Kenya","q12 momentum 3y vs 5y",39,0.999486652977413,0
 "Latvia","q12 momentum 3y vs 5y",66,0.611038106984732,0.0606060606060606
-"Lithuania","q12 momentum 3y vs 5y",66,0.976852732982106,0
+"Lithuania","q12 momentum 3y vs 5y",66,0.977915265325639,0
 "Luxembourg","q12 momentum 3y vs 5y",66,0.632093466296507,0.0757575757575758
-"Malaysia","q12 momentum 3y vs 5y",66,0.999218005425087,0
+"Malaysia","q12 momentum 3y vs 5y",66,0.999213333988888,0
 "Malta","q12 momentum 3y vs 5y",66,0.802966067775681,0.0303030303030303
-"Mexico","q12 momentum 3y vs 5y",66,0.752790619982284,0.484848484848485
-"Morocco","q12 momentum 3y vs 5y",66,0.77209154634519,0.0454545454545455
+"Mexico","q12 momentum 3y vs 5y",66,0.794287302820366,0.46969696969697
+"Morocco","q12 momentum 3y vs 5y",66,0.764679084921622,0.0454545454545455
 "Namibia","q12 momentum 3y vs 5y",66,0.412184157632457,0.227272727272727
-"Netherlands","q12 momentum 3y vs 5y",66,0.764721681235973,0.106060606060606
+"Netherlands","q12 momentum 3y vs 5y",66,0.771330507334873,0.106060606060606
 "New Zealand","q12 momentum 3y vs 5y",66,0.851347598936367,0.0606060606060606
-"Nigeria","q12 momentum 3y vs 5y",66,0.93180369972368,0.0151515151515152
-"Norway","q12 momentum 3y vs 5y",66,0.388328218458225,0.560606060606061
+"Nigeria","q12 momentum 3y vs 5y",66,0.929564588151863,0.0151515151515152
+"Norway","q12 momentum 3y vs 5y",66,0.385303468953106,0.545454545454545
 "Oman","q12 momentum 3y vs 5y",66,0.701470593955985,0.0454545454545455
-"Pakistan","q12 momentum 3y vs 5y",38,0.691692103930712,0.184210526315789
-"Peru","q12 momentum 3y vs 5y",38,0.60028417787999,0.921052631578947
-"Philippines","q12 momentum 3y vs 5y",66,-0.172378256769071,0.863636363636364
-"Poland","q12 momentum 3y vs 5y",66,0.289218830114255,0.393939393939394
-"Portugal","q12 momentum 3y vs 5y",66,0.490247317654848,0.166666666666667
-"Romania","q12 momentum 3y vs 5y",66,0.765950235964921,0.378787878787879
-"Russia","q12 momentum 3y vs 5y",38,0.784435124922224,0.210526315789474
-"Saudi Arabia","q12 momentum 3y vs 5y",66,0.791846019131507,0.106060606060606
-"Serbia","q12 momentum 3y vs 5y",38,0.749797937002834,0.0526315789473684
-"Slovak Republic","q12 momentum 3y vs 5y",66,0.70680865307006,0.106060606060606
-"Slovenia","q12 momentum 3y vs 5y",66,0.99974506054812,0
-"South Africa","q12 momentum 3y vs 5y",66,0.613242541556372,0.212121212121212
-"South Korea","q12 momentum 3y vs 5y",66,0.792555393717201,0.151515151515152
-"Spain","q12 momentum 3y vs 5y",66,0.724329718175642,0.333333333333333
-"Sweden","q12 momentum 3y vs 5y",66,0.691215674484524,0.393939393939394
-"Switzerland","q12 momentum 3y vs 5y",66,0.999950525664811,0
+"Pakistan","q12 momentum 3y vs 5y",39,0.693319953923655,0.179487179487179
+"Peru","q12 momentum 3y vs 5y",39,0.553286278182863,0.923076923076923
+"Philippines","q12 momentum 3y vs 5y",66,-0.163754137910363,0.863636363636364
+"Poland","q12 momentum 3y vs 5y",66,0.283819055140407,0.409090909090909
+"Portugal","q12 momentum 3y vs 5y",66,0.500954877873229,0.166666666666667
+"Romania","q12 momentum 3y vs 5y",66,0.80967633267777,0.363636363636364
+"Russia","q12 momentum 3y vs 5y",39,0.795753423819081,0.153846153846154
+"Saudi Arabia","q12 momentum 3y vs 5y",66,0.787241586650988,0.106060606060606
+"Serbia","q12 momentum 3y vs 5y",39,0.750554292805691,0.0512820512820513
+"Slovak Republic","q12 momentum 3y vs 5y",66,0.712758472944054,0.106060606060606
+"Slovenia","q12 momentum 3y vs 5y",66,0.999742301249839,0
+"South Africa","q12 momentum 3y vs 5y",66,0.627692090944519,0.212121212121212
+"South Korea","q12 momentum 3y vs 5y",66,0.807646880746536,0.151515151515152
+"Spain","q12 momentum 3y vs 5y",66,0.71258376405389,0.318181818181818
+"Sweden","q12 momentum 3y vs 5y",66,0.700988772998482,0.378787878787879
+"Switzerland","q12 momentum 3y vs 5y",66,0.999950186799502,0
 "Tanzania","q12 momentum 3y vs 5y",66,0.863778778967336,0.0151515151515152
-"Thailand","q12 momentum 3y vs 5y",66,0.989885778841564,0
+"Thailand","q12 momentum 3y vs 5y",66,0.990308347737396,0
 "Tunisia","q12 momentum 3y vs 5y",66,0.999561563755937,0
-"Turkiye","q12 momentum 3y vs 5y",66,0.695997680340247,0.0757575757575758
-"Ukraine","q12 momentum 3y vs 5y",66,0.408330281700337,0.545454545454545
-"United Arab Emirates","q12 momentum 3y vs 5y",66,0.498710869290291,0.181818181818182
-"United Kingdom","q12 momentum 3y vs 5y",66,0.729918276828569,0.212121212121212
-"United States","q12 momentum 3y vs 5y",66,0.545345383834878,0.363636363636364
+"Turkiye","q12 momentum 3y vs 5y",66,0.69297576511438,0.0757575757575758
+"Ukraine","q12 momentum 3y vs 5y",66,0.408880221722884,0.560606060606061
+"United Arab Emirates","q12 momentum 3y vs 5y",66,0.478882521694261,0.181818181818182
+"United Kingdom","q12 momentum 3y vs 5y",66,0.734395346104648,0.212121212121212
+"United States","q12 momentum 3y vs 5y",66,0.538730031112432,0.333333333333333
 "Uzbekistan","q12 momentum 3y vs 5y",66,0.999679538535491,0
-"Viet Nam","q12 momentum 3y vs 5y",66,0.471093952538879,0.0757575757575758
+"Viet Nam","q12 momentum 3y vs 5y",66,0.474439257400946,0.348484848484849
 "Zimbabwe","q12 momentum 3y vs 5y",66,0.999511837930193,0
-"Argentina","stock vs 3y flow",66,0.400423446071818,0.393939393939394
-"Australia","stock vs 3y flow",66,0.65060202979888,0.242424242424242
-"Austria","stock vs 3y flow",66,0.866885685830555,0.0151515151515152
-"Bangladesh","stock vs 3y flow",38,0.928933170203577,0.0263157894736842
-"Belgium","stock vs 3y flow",66,0.466481566289012,0.560606060606061
-"Bolivia","stock vs 3y flow",66,0.45167877819229,0.303030303030303
-"Brazil","stock vs 3y flow",66,0.555146362229514,0.303030303030303
-"Canada","stock vs 3y flow",66,0.507465515878576,0.272727272727273
+"Argentina","stock vs 3y flow",66,0.41248535933374,0.378787878787879
+"Australia","stock vs 3y flow",66,0.642126639749462,0.242424242424242
+"Austria","stock vs 3y flow",66,0.871432434067252,0.0151515151515152
+"Bangladesh","stock vs 3y flow",39,0.929929056011243,0.0256410256410256
+"Belgium","stock vs 3y flow",66,0.44977568902218,0.575757575757576
+"Bolivia","stock vs 3y flow",66,0.354386222708609,0.318181818181818
+"Brazil","stock vs 3y flow",66,0.545586148716265,0.333333333333333
+"Canada","stock vs 3y flow",66,0.509737380551274,0.272727272727273
 "Chile","stock vs 3y flow",66,0.646409392713528,0.257575757575758
-"China","stock vs 3y flow",66,0.72824063921663,0.272727272727273
-"Colombia","stock vs 3y flow",66,0.210920596309868,0.439393939393939
+"China","stock vs 3y flow",66,0.704364372508236,0.272727272727273
+"Colombia","stock vs 3y flow",66,0.217507819713613,0.439393939393939
 "Costa Rica","stock vs 3y flow",66,0.255282119071805,0.333333333333333
 "Cote d'Ivoire","stock vs 3y flow",66,0.474410743345505,0.257575757575758
 "Croatia","stock vs 3y flow",66,0.698815288928613,0.0606060606060606
-"Czech Republic","stock vs 3y flow",66,0.838954468860331,0.0454545454545455
-"Denmark","stock vs 3y flow",66,0.459994482252501,0.272727272727273
-"Ecuador","stock vs 3y flow",66,0.266975750265566,0.636363636363636
-"Egypt","stock vs 3y flow",66,0.504483017246202,0.257575757575758
+"Czech Republic","stock vs 3y flow",66,0.844576450283126,0.0454545454545455
+"Denmark","stock vs 3y flow",66,0.47646857163274,0.257575757575758
+"Ecuador","stock vs 3y flow",66,0.270565430231008,0.636363636363636
+"Egypt","stock vs 3y flow",66,0.514213027579546,0.257575757575758
 "Estonia","stock vs 3y flow",66,0.703189758748861,0.151515151515152
-"Finland","stock vs 3y flow",66,0.338939571515265,0.348484848484849
-"France","stock vs 3y flow",66,0.610371811495429,0.196969696969697
-"Germany","stock vs 3y flow",66,0.572936849715761,0.303030303030303
+"Finland","stock vs 3y flow",66,0.361071922439222,0.333333333333333
+"France","stock vs 3y flow",66,0.618038885578891,0.196969696969697
+"Germany","stock vs 3y flow",66,0.581336481432298,0.303030303030303
 "Ghana","stock vs 3y flow",66,0.350078953017552,0.409090909090909
-"Greece","stock vs 3y flow",66,0.734540341689667,0.393939393939394
-"Hong Kong","stock vs 3y flow",38,0.691804289497541,0.184210526315789
-"Hungary","stock vs 3y flow",66,0.584201097288359,0.136363636363636
+"Greece","stock vs 3y flow",66,0.237471922495127,0.378787878787879
+"Hong Kong","stock vs 3y flow",39,0.675969867570584,0.205128205128205
+"Hungary","stock vs 3y flow",66,0.585638883569241,0.136363636363636
 "Iceland","stock vs 3y flow",66,0.335555286496626,0.287878787878788
-"India","stock vs 3y flow",66,0.423040257340072,0.363636363636364
-"Indonesia","stock vs 3y flow",66,0.599181498567392,0.287878787878788
+"India","stock vs 3y flow",66,0.433266900424346,0.363636363636364
+"Indonesia","stock vs 3y flow",66,0.604573803255432,0.287878787878788
 "Israel","stock vs 3y flow",66,0.501485680500017,0.303030303030303
-"Italy","stock vs 3y flow",66,0.667275753127843,0.166666666666667
-"Japan","stock vs 3y flow",66,0.610489416256716,0.272727272727273
+"Italy","stock vs 3y flow",66,0.679060839507843,0.166666666666667
+"Japan","stock vs 3y flow",66,0.591168079842684,0.303030303030303
 "Jordan","stock vs 3y flow",66,0.224971285332063,0.212121212121212
 "Kazakhstan","stock vs 3y flow",66,0.32303867921086,0.257575757575758
-"Kenya","stock vs 3y flow",38,0.489475250029109,0.315789473684211
+"Kenya","stock vs 3y flow",39,0.491375722098458,0.333333333333333
 "Latvia","stock vs 3y flow",66,0.54813280914628,0.0757575757575758
-"Lithuania","stock vs 3y flow",66,0.968006364969549,0
+"Lithuania","stock vs 3y flow",66,0.969219232393755,0
 "Luxembourg","stock vs 3y flow",66,0.544977797138413,0.121212121212121
-"Malaysia","stock vs 3y flow",66,0.266162167202018,0.454545454545455
+"Malaysia","stock vs 3y flow",66,0.24829046196057,0.46969696969697
 "Malta","stock vs 3y flow",66,0.681757348603567,0.0757575757575758
-"Mexico","stock vs 3y flow",66,0.447039265031763,0.454545454545455
-"Morocco","stock vs 3y flow",66,0.63074776811321,0.46969696969697
+"Mexico","stock vs 3y flow",66,0.448260087305578,0.46969696969697
+"Morocco","stock vs 3y flow",66,0.623469365680355,0.46969696969697
 "Namibia","stock vs 3y flow",66,0.406247100357528,0.303030303030303
-"Netherlands","stock vs 3y flow",66,0.585280027742301,0.46969696969697
+"Netherlands","stock vs 3y flow",66,0.457762593289186,0.454545454545455
 "New Zealand","stock vs 3y flow",66,0.514563773557881,0.257575757575758
-"Nigeria","stock vs 3y flow",66,0.549801949169562,0.363636363636364
-"Norway","stock vs 3y flow",66,0.329724099458285,0.439393939393939
+"Nigeria","stock vs 3y flow",66,0.553503705648409,0.378787878787879
+"Norway","stock vs 3y flow",66,0.329720583507577,0.439393939393939
 "Oman","stock vs 3y flow",66,0.204248660095143,0.272727272727273
-"Pakistan","stock vs 3y flow",38,0.456789097765608,0.368421052631579
-"Peru","stock vs 3y flow",38,0.529522252622643,0.315789473684211
-"Philippines","stock vs 3y flow",66,-0.105267029191239,0.439393939393939
-"Poland","stock vs 3y flow",66,0.569847187780944,0.393939393939394
+"Pakistan","stock vs 3y flow",39,0.456727687041592,0.358974358974359
+"Peru","stock vs 3y flow",39,0.508672353057288,0.333333333333333
+"Philippines","stock vs 3y flow",66,-0.134515727932323,0.454545454545455
+"Poland","stock vs 3y flow",66,0.55480279989604,0.409090909090909
 "Portugal","stock vs 3y flow",66,0.51418676468207,0.212121212121212
-"Romania","stock vs 3y flow",66,0.844626354813805,0.409090909090909
-"Russia","stock vs 3y flow",38,0.75732500866447,0.263157894736842
-"Saudi Arabia","stock vs 3y flow",66,0.606449419654038,0.181818181818182
-"Serbia","stock vs 3y flow",38,1,0
-"Slovak Republic","stock vs 3y flow",66,0.137485740166837,0.424242424242424
-"Slovenia","stock vs 3y flow",66,0.934480828305043,0.0151515151515152
-"South Africa","stock vs 3y flow",66,0.518424912226262,0.303030303030303
-"South Korea","stock vs 3y flow",66,0.638583423015986,0.272727272727273
-"Spain","stock vs 3y flow",66,0.342236848846196,0.393939393939394
-"Sweden","stock vs 3y flow",66,0.60941544889046,0.363636363636364
-"Switzerland","stock vs 3y flow",66,0.295378669776418,0.378787878787879
+"Romania","stock vs 3y flow",66,0.88603054391676,0.393939393939394
+"Russia","stock vs 3y flow",39,0.714413941382022,0.282051282051282
+"Saudi Arabia","stock vs 3y flow",66,0.605442600709473,0.181818181818182
+"Serbia","stock vs 3y flow",39,1,0
+"Slovak Republic","stock vs 3y flow",66,0.114775844077938,0.439393939393939
+"Slovenia","stock vs 3y flow",66,0.932444940004405,0.0151515151515152
+"South Africa","stock vs 3y flow",66,0.520431446452362,0.303030303030303
+"South Korea","stock vs 3y flow",66,0.643964482113066,0.272727272727273
+"Spain","stock vs 3y flow",66,0.328864075362586,0.378787878787879
+"Sweden","stock vs 3y flow",66,0.324861004235409,0.348484848484849
+"Switzerland","stock vs 3y flow",66,0.277498841627284,0.393939393939394
 "Tanzania","stock vs 3y flow",66,0.462372831249974,0.166666666666667
-"Thailand","stock vs 3y flow",66,0.419975071369965,0.333333333333333
+"Thailand","stock vs 3y flow",66,0.411591640099636,0.348484848484849
 "Tunisia","stock vs 3y flow",66,0.886893096805649,0.0303030303030303
-"Turkiye","stock vs 3y flow",66,0.413142860876759,0.318181818181818
-"Ukraine","stock vs 3y flow",66,0.333998580716902,0.606060606060606
-"United Arab Emirates","stock vs 3y flow",66,0.440320509873917,0.287878787878788
-"United Kingdom","stock vs 3y flow",66,0.645976399576548,0.212121212121212
-"United States","stock vs 3y flow",66,0.462814373687134,0.393939393939394
+"Turkiye","stock vs 3y flow",66,0.419845359368895,0.318181818181818
+"Ukraine","stock vs 3y flow",66,0.334081427941472,0.590909090909091
+"United Arab Emirates","stock vs 3y flow",66,0.412087368473551,0.287878787878788
+"United Kingdom","stock vs 3y flow",66,0.642243399635341,0.242424242424242
+"United States","stock vs 3y flow",66,0.464136994122941,0.333333333333333
 "Uzbekistan","stock vs 3y flow",66,0.418992215246545,0.196969696969697
-"Viet Nam","stock vs 3y flow",66,0.286952628873321,0.333333333333333
+"Viet Nam","stock vs 3y flow",66,0.293781246684292,0.424242424242424
 "Zimbabwe","stock vs 3y flow",66,0.692079313921218,0.0757575757575758

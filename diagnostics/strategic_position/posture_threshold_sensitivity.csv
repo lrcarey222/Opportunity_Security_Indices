@@ -8,10 +8,10 @@
 "position_moderate_0.05",14124,0,0,0,0
 "allied_alternative_0.4",14124,0,0,0,0
 "allied_alternative_0.6",14124,0,0,0,0
-"acute_includes_moderate",14124,0.002690455961484,38,0,0
-"acute_severe_only",14124,0.00771736052109884,0,100,9
+"acute_includes_moderate",14124,0.00283205890682526,40,0,0
+"acute_severe_only",14124,0.00644293401302747,0,47,44
 "dual_use_imports_0.15",14124,0.000354007363353158,5,0,0
 "dual_use_imports_0.35",14124,0,0,0,0
-"resilience_alternatives_0.4",14124,0.0011328235627301,0,15,1
-"resilience_alternatives_0.6",14124,0.0051685075049561,73,0,0
+"resilience_alternatives_0.4",14124,0.00488530161427358,0,0,69
+"resilience_alternatives_0.6",14124,0.00254885301614274,36,0,0
 "coercive_powers_only (world shares; import shares unchanged)",14124,0,0,0,0

@@ -1,103 +1,104 @@
 "tech","deployment_choice","manufacturing_choice","n_countries"
-"Batteries","accelerate","compete_at_home",30
+"Batteries","accelerate","compete_at_home",12
 "Batteries","accelerate","not_assessed",1
-"Batteries","accelerate","partner",13
-"Batteries","accelerate","watch",14
+"Batteries","accelerate","partner",22
+"Batteries","accelerate","watch",23
 "Batteries","not_assessed","not_assessed",5
 "Batteries","not_assessed","partner",1
 "Batteries","not_assessed","watch",10
-"Batteries","watch","compete_at_home",51
-"Batteries","watch","not_assessed",3
-"Batteries","watch","partner",36
-"Batteries","watch","watch",50
-"Coal","accelerate","compete_at_home",1
+"Batteries","watch","compete_at_home",16
+"Batteries","watch","not_assessed",4
+"Batteries","watch","partner",59
+"Batteries","watch","watch",61
+"Coal","accelerate","compete_at_home",4
 "Coal","accelerate","not_assessed",1
 "Coal","accelerate","partner",27
-"Coal","accelerate","watch",12
+"Coal","accelerate","watch",9
 "Coal","not_assessed","not_assessed",6
-"Coal","not_assessed","partner",5
-"Coal","not_assessed","watch",42
-"Coal","watch","compete_at_home",1
+"Coal","not_assessed","partner",6
+"Coal","not_assessed","watch",41
+"Coal","watch","compete_at_home",2
 "Coal","watch","not_assessed",2
-"Coal","watch","partner",54
-"Coal","watch","watch",63
-"Electric Grid","accelerate","compete_at_home",1
-"Electric Grid","accelerate","partner",23
-"Electric Grid","accelerate","secure",8
-"Electric Grid","accelerate","watch",24
+"Coal","watch","partner",55
+"Coal","watch","watch",61
+"Electric Grid","accelerate","compete_at_home",9
+"Electric Grid","accelerate","partner",20
+"Electric Grid","accelerate","secure",7
+"Electric Grid","accelerate","watch",20
 "Electric Grid","not_assessed","not_assessed",5
 "Electric Grid","not_assessed","partner",2
 "Electric Grid","not_assessed","watch",9
+"Electric Grid","watch","compete_at_home",24
 "Electric Grid","watch","not_assessed",4
-"Electric Grid","watch","partner",39
-"Electric Grid","watch","secure",15
-"Electric Grid","watch","watch",84
-"Electric Vehicles","accelerate","compete_at_home",26
-"Electric Vehicles","accelerate","partner",3
-"Electric Vehicles","accelerate","watch",4
-"Electric Vehicles","not_assessed","compete_at_home",25
+"Electric Grid","watch","partner",36
+"Electric Grid","watch","secure",17
+"Electric Grid","watch","watch",61
+"Electric Vehicles","accelerate","compete_at_home",16
+"Electric Vehicles","accelerate","partner",6
+"Electric Vehicles","accelerate","watch",11
+"Electric Vehicles","not_assessed","compete_at_home",1
 "Electric Vehicles","not_assessed","not_assessed",9
-"Electric Vehicles","not_assessed","partner",36
-"Electric Vehicles","not_assessed","watch",42
-"Electric Vehicles","watch","compete_at_home",31
-"Electric Vehicles","watch","partner",21
-"Electric Vehicles","watch","watch",17
-"Gas","accelerate","compete_at_home",6
-"Gas","accelerate","partner",28
-"Gas","accelerate","watch",28
+"Electric Vehicles","not_assessed","partner",46
+"Electric Vehicles","not_assessed","watch",56
+"Electric Vehicles","watch","compete_at_home",20
+"Electric Vehicles","watch","partner",29
+"Electric Vehicles","watch","watch",20
+"Gas","accelerate","compete_at_home",9
+"Gas","accelerate","partner",26
+"Gas","accelerate","watch",27
 "Gas","not_assessed","not_assessed",5
-"Gas","not_assessed","partner",3
-"Gas","not_assessed","watch",8
-"Gas","watch","compete_at_home",3
+"Gas","not_assessed","partner",4
+"Gas","not_assessed","watch",7
+"Gas","watch","compete_at_home",10
 "Gas","watch","not_assessed",4
 "Gas","watch","partner",52
-"Gas","watch","watch",77
+"Gas","watch","watch",70
 "Geothermal","accelerate","not_assessed",50
 "Geothermal","not_assessed","not_assessed",49
 "Geothermal","watch","not_assessed",115
 "Green Hydrogen","accelerate","not_assessed",35
 "Green Hydrogen","not_assessed","not_assessed",124
 "Green Hydrogen","watch","not_assessed",55
-"Nuclear","accelerate","compete_at_home",7
+"Nuclear","accelerate","compete_at_home",11
 "Nuclear","accelerate","not_assessed",1
-"Nuclear","accelerate","partner",26
-"Nuclear","accelerate","secure",1
-"Nuclear","accelerate","watch",14
+"Nuclear","accelerate","partner",25
+"Nuclear","accelerate","secure",2
+"Nuclear","accelerate","watch",10
 "Nuclear","not_assessed","not_assessed",6
-"Nuclear","not_assessed","watch",43
-"Nuclear","watch","compete_at_home",4
+"Nuclear","not_assessed","partner",3
+"Nuclear","not_assessed","watch",40
+"Nuclear","watch","compete_at_home",19
 "Nuclear","watch","not_assessed",2
-"Nuclear","watch","partner",54
+"Nuclear","watch","partner",47
 "Nuclear","watch","secure",1
-"Nuclear","watch","watch",55
-"Oil","accelerate","compete_at_home",1
-"Oil","accelerate","partner",17
-"Oil","accelerate","watch",14
+"Nuclear","watch","watch",47
+"Oil","accelerate","compete_at_home",10
+"Oil","accelerate","partner",12
+"Oil","accelerate","watch",10
 "Oil","not_assessed","not_assessed",9
 "Oil","not_assessed","partner",63
 "Oil","not_assessed","watch",64
-"Oil","watch","partner",14
-"Oil","watch","watch",32
-"Solar","accelerate","compete_at_home",28
-"Solar","accelerate","partner",14
-"Solar","accelerate","watch",6
-"Solar","not_assessed","compete_at_home",3
+"Oil","watch","compete_at_home",4
+"Oil","watch","partner",11
+"Oil","watch","watch",31
+"Solar","accelerate","compete_at_home",15
+"Solar","accelerate","partner",19
+"Solar","accelerate","watch",14
 "Solar","not_assessed","not_assessed",6
-"Solar","not_assessed","partner",17
+"Solar","not_assessed","partner",20
 "Solar","not_assessed","watch",24
-"Solar","watch","compete_at_home",40
+"Solar","watch","compete_at_home",18
 "Solar","watch","not_assessed",3
-"Solar","watch","partner",38
-"Solar","watch","watch",35
-"Wind","accelerate","compete_at_home",29
+"Solar","watch","partner",41
+"Solar","watch","watch",54
+"Wind","accelerate","compete_at_home",18
 "Wind","accelerate","not_assessed",1
-"Wind","accelerate","partner",14
-"Wind","accelerate","watch",6
-"Wind","not_assessed","compete_at_home",4
+"Wind","accelerate","partner",20
+"Wind","accelerate","watch",11
 "Wind","not_assessed","not_assessed",6
 "Wind","not_assessed","partner",18
-"Wind","not_assessed","watch",22
-"Wind","watch","compete_at_home",43
+"Wind","not_assessed","watch",26
+"Wind","watch","compete_at_home",21
 "Wind","watch","not_assessed",2
-"Wind","watch","partner",34
-"Wind","watch","watch",35
+"Wind","watch","partner",39
+"Wind","watch","watch",52

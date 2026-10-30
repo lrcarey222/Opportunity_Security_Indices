@@ -1,0 +1,90 @@
+"tech","supply_chain","layer_id","n_rows","siv_market_median","siv_commons","siv_option","siv_score_median","strategic_industrial_value_median","industrial_opportunity_median","n_market_only","families_observed"
+"Batteries","Extraction","stage",219,0.727,0.333,0,0.354,0.571,0.727,219,3
+"Batteries","Refining","stage",219,0.633,0.667,0,0.433,0.767,0.633,0,3
+"Batteries","Refining","bess-anode",219,0.633,0.5,0,0.378,0.622,0.633,0,3
+"Batteries","Refining","bess-cathode",219,0.633,1,0,0.544,0.891,0.633,0,3
+"Batteries","Refining","li-chemicals",219,0.633,0.833,0,0.489,0.834,0.633,0,3
+"Batteries","Components","stage",219,0.845,0.5,0,0.448,0.787,0.845,0,3
+"Batteries","Assembly","stage",219,0.845,1,0.5,0.782,0.973,0.845,0,3
+"Batteries","Assembly","bess-cells",219,0.845,1,0.5,0.782,0.973,0.845,0,3
+"Batteries","Assembly","bess-comms",219,0.845,0.167,0,0.337,0.535,0.845,219,3
+"Batteries","Assembly","bess-control",219,0.845,0.333,0,0.393,0.59,0.845,219,3
+"Batteries","Assembly","bess-enclosure",219,0.845,0,0,0.282,0.419,0.845,219,3
+"Batteries","Recovery","stage",219,0.936,0.5,0,0.479,0.824,0.936,0,3
+"Coal","Extraction","stage",219,0.036,0.167,0,0.068,0.041,0.036,219,3
+"Coal","Refining","stage",219,0.036,0.333,0,0.123,0.092,0.036,219,3
+"Coal","Components","stage",219,0.351,0.667,0,0.339,0.546,0.351,0,3
+"Coal","Assembly","stage",219,0.351,0.667,0,0.339,0.546,0.351,0,3
+"Coal","Recovery","stage",219,0.009,0,0,0.003,0.009,0.009,219,2
+"Electric Grid","Extraction","stage",219,0.509,0.333,0,0.281,0.409,0.509,219,3
+"Electric Grid","Refining","stage",219,0.509,0.5,0,0.336,0.525,0.509,0,3
+"Electric Grid","Refining","goes",219,0.509,0.833,0,0.447,0.777,0.509,0,3
+"Electric Grid","Components","stage",219,0.464,0.5,0,0.321,0.467,0.464,0,3
+"Electric Grid","Assembly","stage",219,0.464,0.667,0,0.377,0.613,0.464,0,3
+"Electric Grid","Assembly","bess-pcs",219,0.464,0.833,0,0.432,0.758,0.464,0,3
+"Electric Grid","Assembly","grid-ami",219,0.464,0.167,0,0.21,0.251,0.464,219,3
+"Electric Grid","Assembly","grid-cables",219,0.464,0.167,0,0.21,0.251,0.464,219,3
+"Electric Grid","Assembly","grid-inverter-firmware",219,0.464,0.333,0,0.266,0.337,0.464,219,3
+"Electric Grid","Assembly","grid-scada",219,0.464,0.333,0,0.266,0.337,0.464,219,3
+"Electric Grid","Assembly","grid-transformers",219,0.464,0.667,0,0.377,0.613,0.464,0,3
+"Electric Grid","Assembly","hvdc-control",219,0.464,0.667,0,0.377,0.613,0.464,0,3
+"Electric Grid","Recovery","stage",219,0.464,0,0,0.155,0.136,0.464,219,2
+"Electric Vehicles","Extraction","stage",219,0.764,0.333,0,0.366,0.59,0.764,219,3
+"Electric Vehicles","Refining","stage",219,0.635,0.833,0,0.49,0.842,0.635,0,3
+"Electric Vehicles","Components","stage",219,0.645,1,0,0.548,0.926,0.645,0,3
+"Electric Vehicles","Components","ev-motors",219,0.645,1,0,0.548,0.926,0.645,0,3
+"Electric Vehicles","Components","ree-magnets",219,0.645,0.833,0,0.493,0.879,0.645,0,3
+"Electric Vehicles","Assembly","stage",219,0.645,1,0,0.548,0.926,0.645,0,3
+"Electric Vehicles","Assembly","ev-connected-vehicle",219,0.645,0.333,0,0.326,0.512,0.645,219,3
+"Electric Vehicles","Recovery","stage",219,0.827,0,0,0.276,0.374,0.827,219,2
+"Gas","Extraction","stage",219,0.307,0.167,0,0.158,0.155,0.307,219,3
+"Gas","Refining","stage",219,0.307,0.167,0,0.158,0.155,0.307,219,3
+"Gas","Components","stage",219,0.307,0.667,0,0.325,0.503,0.307,0,3
+"Gas","Assembly","stage",219,0.307,0.667,0,0.325,0.503,0.307,0,3
+"Gas","Assembly","gas-ot-control",219,0.307,0,0,0.102,0.067,0.307,219,2
+"Gas","Recovery","stage",219,0.33,0,0,0.11,0.072,0.33,219,2
+"Geothermal","Extraction","stage",219,0.573,0,0,0.191,0.204,0.573,219,2
+"Geothermal","Refining","stage",219,0.573,0,0,0.191,0.204,0.573,219,2
+"Geothermal","Components","stage",219,0.573,0.667,0,0.413,0.689,0.573,0,3
+"Geothermal","Assembly","stage",219,0.573,0.667,0,0.413,0.689,0.573,0,3
+"Geothermal","Recovery","stage",219,0.573,0,0,0.191,0.204,0.573,219,2
+"Green Hydrogen","Extraction","stage",219,0.636,0.167,0,0.268,0.347,0.636,219,3
+"Green Hydrogen","Extraction","h2-pgm",219,0.636,0.167,0,0.268,0.347,0.636,219,3
+"Green Hydrogen","Refining","stage",219,0.636,0.5,0,0.379,0.632,0.636,0,3
+"Green Hydrogen","Components","stage",219,0.973,1,0.375,0.783,0.991,0.973,0,3
+"Green Hydrogen","Assembly","stage",219,0.973,0.667,0,0.546,0.9,0.973,0,3
+"Green Hydrogen","Recovery","stage",219,0.973,0,0,0.324,0.486,0.973,219,2
+"Nuclear","Extraction","stage",219,0.446,0.333,0,0.26,0.327,0.446,219,3
+"Nuclear","Refining","stage",219,0.446,0.833,0,0.426,0.743,0.446,0,3
+"Nuclear","Refining","nuc-haleu",219,0.446,1,0,0.482,0.834,0.446,0,3
+"Nuclear","Refining","nuc-leu",219,0.446,0.833,0,0.426,0.743,0.446,0,3
+"Nuclear","Components","stage",219,0.423,0.833,0,0.419,0.72,0.423,0,3
+"Nuclear","Components","nuc-fuel-fab",219,0.423,0.833,0,0.419,0.72,0.423,0,3
+"Nuclear","Assembly","stage",219,0.423,1,0.375,0.599,0.955,0.423,0,3
+"Nuclear","Assembly","nuc-reactor-controls",219,0.423,0.5,0,0.308,0.452,0.423,0,3
+"Nuclear","Recovery","stage",219,0.446,0.833,0,0.426,0.743,0.446,0,3
+"Oil","Extraction","stage",219,0.091,0.167,0,0.086,0.057,0.091,219,3
+"Oil","Refining","stage",219,0.091,0.5,0,0.197,0.239,0.091,0,3
+"Oil","Components","stage",219,0.091,0.333,0,0.141,0.117,0.091,219,3
+"Oil","Assembly","stage",219,0.091,0.667,0,0.253,0.31,0.091,0,3
+"Oil","Assembly","oil-ot-control",219,0.091,0,0,0.03,0.018,0.091,219,2
+"Oil","Recovery","stage",219,0.136,0,0,0.045,0.024,0.136,219,3
+"Solar","Extraction","stage",219,0.302,0.167,0,0.156,0.146,0.302,219,3
+"Solar","Refining","stage",219,0.302,0.5,0,0.267,0.338,0.302,0,3
+"Solar","Refining","polysilicon",219,0.302,0.667,0,0.323,0.476,0.302,0,3
+"Solar","Components","stage",219,0.85,0,0.375,0.408,0.59,0.85,219,2
+"Solar","Components","pv-cells-wafers",219,0.85,0.667,0.5,0.672,0.963,0.85,0,3
+"Solar","Components","pv-nextgen",219,0.85,0.833,0.5,0.728,0.964,0.85,0,3
+"Solar","Assembly","stage",219,0.85,0.5,0,0.45,0.804,0.85,0,3
+"Solar","Assembly","pv-inverter-firmware-dist",219,0.85,0.167,0,0.339,0.535,0.85,219,3
+"Solar","Assembly","pv-modules",219,0.85,0.5,0,0.45,0.804,0.85,0,3
+"Solar","Assembly","pv-racking",219,0.85,0,0,0.283,0.419,0.85,219,3
+"Solar","Recovery","stage",219,0.9,0,0,0.3,0.435,0.9,219,2
+"Wind","Extraction","stage",219,0.327,0.333,0,0.22,0.261,0.327,219,3
+"Wind","Refining","stage",219,0.327,0.5,0,0.276,0.374,0.327,0,3
+"Wind","Refining","ree-separation",219,0.327,0.833,0,0.387,0.644,0.327,0,3
+"Wind","Components","stage",219,0.636,0.833,0,0.49,0.864,0.636,0,3
+"Wind","Components","ree-magnets",219,0.636,0.833,0,0.49,0.864,0.636,0,3
+"Wind","Assembly","stage",219,0.636,0.833,0,0.49,0.864,0.636,0,3
+"Wind","Assembly","wind-turbine-control",219,0.636,0.333,0,0.323,0.476,0.636,219,3
+"Wind","Recovery","stage",219,0.682,0,0,0.227,0.276,0.682,219,2

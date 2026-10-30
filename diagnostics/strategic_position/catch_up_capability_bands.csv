@@ -1,0 +1,7 @@
+"rule","measure","catch_up","eq_0","lt_0.10","lt_0.25","na","without_anchor"
+"legs_1","cp_contender_pct",1952,1175,1369,1503,161,1595
+"legs_1","competitive_position_percentile",1952,0,70,273,161,1595
+"legs_2","cp_contender_pct",928,372,485,605,56,591
+"legs_2","competitive_position_percentile",928,0,6,36,56,591
+"anchor","cp_contender_pct",355,41,75,132,21,0
+"anchor","competitive_position_percentile",355,0,0,0,21,0

@@ -22,9 +22,9 @@
 "Gas","Refining",13473299.1345,16,35
 "Nuclear","Assembly",1030656.545,14,37
 "Nuclear","Components",2279619.617,14,37
-"Nuclear","Extraction",1e+06,50,0
+"Nuclear","Extraction",1e+06,45,6
 "Nuclear","Recovery",1e+06,51,0
-"Nuclear","Refining",1e+06,43,8
+"Nuclear","Refining",1e+06,45,6
 "Oil","Assembly",126503049.1755,13,38
 "Oil","Components",5809461.457,13,38
 "Oil","Extraction",8821130.795,19,32
@@ -35,6 +35,7 @@
 "Semiconductors","Refining",1e+06,26,25
 "Solar","Assembly",853811062.859,13,38
 "Solar","Components",75685457.83,13,38
+"Solar","Extraction",1e+06,27,24
 "Solar","Refining",5472437.463,14,37
 "Wind","Assembly",725201168.087,13,38
 "Wind","Components",85965245.624,13,38

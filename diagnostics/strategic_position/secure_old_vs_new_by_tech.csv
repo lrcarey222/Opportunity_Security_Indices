@@ -1,12 +1,12 @@
 "tech","secure_old","secure_new","added","removed","operational_control","coercive_chokepoint","systemic_resilience"
 "Batteries",0,0,0,0,0,0,0
-"Coal",24,24,0,0,0,0,24
-"Electric Grid",23,23,0,0,0,0,23
+"Coal",24,25,1,0,0,0,25
+"Electric Grid",23,24,6,5,0,0,24
 "Electric Vehicles",17,17,0,0,2,15,0
-"Gas",51,51,0,0,0,3,48
+"Gas",51,60,31,22,0,12,48
 "Geothermal",0,0,0,0,0,0,0
 "Green Hydrogen",0,0,0,0,0,0,0
-"Nuclear",6,6,0,0,3,0,3
-"Oil",53,53,0,0,0,0,53
+"Nuclear",6,6,1,1,2,0,4
+"Oil",53,74,28,7,0,0,74
 "Solar",0,0,0,0,0,0,0
 "Wind",0,0,0,0,0,0,0

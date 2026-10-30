@@ -1,6 +1,6 @@
-"supply_chain","n_cells","yes","no","unknown","feasibility","pipeline","adjacent_stage","learning","input_cost","decided_catch_up"
-"Extraction",2409,105,2303,1,106,0,173,61,100,32
-"Refining",2409,653,1754,2,442,45,1399,458,396,153
-"Components",2409,670,1737,2,475,48,1317,472,396,269
-"Assembly",2409,583,1824,2,475,60,785,507,396,243
-"Recovery",2409,232,2171,6,139,0,823,88,396,51
+"supply_chain","n_cells","yes","no","unknown","anchor","direct_supply_share","direct_export_share","operating_capacity","committed_pipeline","adjacent_stage_share","resource_base","feasibility","input_cost","adjacent_stage_relative","learning","announced_pipeline","decided_catch_up"
+"Extraction",2409,286,1904,219,411,136,166,0,0,36,345,361,396,804,195,0,0
+"Refining",2409,260,1930,219,269,122,219,37,27,81,0,435,396,1358,448,21,71
+"Components",2409,273,1917,219,282,250,254,25,18,64,0,474,396,1323,470,7,109
+"Assembly",2409,272,1918,219,281,272,259,36,17,45,0,475,396,758,500,9,154
+"Recovery",2409,61,2128,220,88,0,58,0,0,36,0,135,396,804,84,0,21

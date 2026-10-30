@@ -1,0 +1,67 @@
+"tech","supply_chain","small","medium","large","mixed_high_medium","mixed_medium_low","mixed_high_low","mixed_high_medium_low","not_assessed","n_cells","n_layers_per_cell"
+"Batteries","Extraction",0,57,147,0,0,0,0,10,214,0
+"Batteries","Refining",0,90,114,0,0,0,0,10,214,3
+"Batteries","Components",0,76,127,0,0,0,0,11,214,0
+"Batteries","Assembly",0,1,115,2,25,13,48,10,214,4
+"Batteries","Deployment",0,58,140,0,0,0,0,16,214,0
+"Batteries","Recovery",0,67,137,0,0,0,0,10,214,0
+"Coal","Extraction",25,0,178,0,0,0,0,11,214,0
+"Coal","Refining",0,0,203,0,0,0,0,11,214,0
+"Coal","Components",0,71,134,0,0,0,0,9,214,0
+"Coal","Assembly",0,70,134,0,0,0,0,10,214,0
+"Coal","Deployment",0,41,120,0,0,0,0,53,214,0
+"Coal","Recovery",0,0,0,0,0,0,0,214,214,0
+"Electric Grid","Extraction",0,0,203,0,0,0,0,11,214,0
+"Electric Grid","Refining",0,0,109,0,59,37,0,9,214,1
+"Electric Grid","Components",0,68,137,0,0,0,0,9,214,0
+"Electric Grid","Assembly",0,1,64,0,33,42,65,9,214,7
+"Electric Grid","Deployment",0,56,142,0,0,0,0,16,214,0
+"Electric Grid","Recovery",0,0,0,0,0,0,0,214,214,0
+"Electric Vehicles","Extraction",0,58,146,0,0,0,0,10,214,0
+"Electric Vehicles","Refining",17,59,127,0,0,0,0,11,214,0
+"Electric Vehicles","Components",0,33,69,59,0,44,0,9,214,2
+"Electric Vehicles","Assembly",0,23,71,51,20,40,0,9,214,1
+"Electric Vehicles","Deployment",0,33,69,0,0,0,0,112,214,1
+"Electric Vehicles","Recovery",0,0,0,0,0,0,0,214,214,0
+"Gas","Extraction",41,0,162,0,0,0,0,11,214,0
+"Gas","Refining",19,1,185,0,0,0,0,9,214,0
+"Gas","Components",0,79,126,0,0,0,0,9,214,0
+"Gas","Assembly",0,31,101,41,12,20,0,9,214,1
+"Gas","Deployment",0,62,136,0,0,0,0,16,214,0
+"Gas","Recovery",0,0,0,0,0,0,0,214,214,0
+"Geothermal","Extraction",0,0,0,0,0,0,0,214,214,0
+"Geothermal","Refining",0,0,0,0,0,0,0,214,214,0
+"Geothermal","Components",0,0,0,0,0,0,0,214,214,0
+"Geothermal","Assembly",0,0,0,0,0,0,0,214,214,0
+"Geothermal","Deployment",0,50,115,0,0,0,0,49,214,0
+"Geothermal","Recovery",0,0,0,0,0,0,0,214,214,0
+"Green Hydrogen","Extraction",0,0,0,0,0,0,0,214,214,1
+"Green Hydrogen","Refining",0,0,0,0,0,0,0,214,214,0
+"Green Hydrogen","Components",0,0,0,0,0,0,0,214,214,0
+"Green Hydrogen","Assembly",0,0,0,0,0,0,0,214,214,0
+"Green Hydrogen","Deployment",0,35,55,0,0,0,0,124,214,0
+"Green Hydrogen","Recovery",0,0,0,0,0,0,0,214,214,0
+"Nuclear","Extraction",0,0,203,0,0,0,0,11,214,0
+"Nuclear","Refining",2,33,167,1,0,0,0,11,214,2
+"Nuclear","Components",3,73,121,8,0,0,0,9,214,1
+"Nuclear","Assembly",0,57,116,17,14,1,0,9,214,1
+"Nuclear","Deployment",0,49,116,0,0,0,0,49,214,0
+"Nuclear","Recovery",0,0,0,0,0,0,0,214,214,0
+"Oil","Extraction",32,2,169,0,0,0,0,11,214,0
+"Oil","Refining",42,0,163,0,0,0,0,9,214,0
+"Oil","Components",0,68,137,0,0,0,0,9,214,0
+"Oil","Assembly",0,30,89,41,6,39,0,9,214,1
+"Oil","Deployment",0,32,46,0,0,0,0,136,214,0
+"Oil","Recovery",0,30,173,0,0,0,0,11,214,0
+"Solar","Extraction",0,1,203,0,0,0,0,10,214,0
+"Solar","Refining",0,1,120,0,82,0,0,11,214,1
+"Solar","Components",0,68,116,0,21,0,0,9,214,2
+"Solar","Assembly",0,2,48,0,46,58,51,9,214,3
+"Solar","Deployment",0,48,116,0,0,0,0,50,214,0
+"Solar","Recovery",0,0,0,0,0,0,0,214,214,0
+"Wind","Extraction",0,0,0,0,0,0,0,214,214,0
+"Wind","Refining",0,60,116,12,10,5,0,11,214,1
+"Wind","Components",0,51,88,44,0,22,0,9,214,1
+"Wind","Assembly",0,34,64,44,22,41,0,9,214,1
+"Wind","Deployment",0,50,114,0,0,0,0,50,214,0
+"Wind","Recovery",0,0,0,0,0,0,0,214,214,0

@@ -1,9 +1,9 @@
 {
   "schema": "osi-dashboard",
   "schema_version": 1,
-  "bundle_id": "ee66f2557165b93093fdcc041939da95",
-  "created": "2026-10-29T19:27:35Z",
-  "git_commit": "88a19c8",
+  "bundle_id": "c1736c4a25c7a33e73d56466eac415e6",
+  "created": "2026-10-30T21:17:20Z",
+  "git_commit": "a54a9d3",
   "osi_branch": "feat/supply-chain-stages",
   "generator": "scripts/85_export_dashboard_data.R",
   "r": {
@@ -102,7 +102,7 @@
       "check": "component constant over its key: econ_opp_index",
       "layer": "opportunity",
       "status": "PASS",
-      "n": 2542273,
+      "n": 2537397,
       "max_abs_diff": null,
       "note": "shape rc; conflicts 0"
     },
@@ -110,7 +110,7 @@
       "check": "component constant over its key: partner_es_need",
       "layer": "opportunity",
       "status": "PASS",
-      "n": 2542273,
+      "n": 2537397,
       "max_abs_diff": null,
       "note": "shape pc; conflicts 0"
     },
@@ -118,15 +118,15 @@
       "check": "ES cells present",
       "layer": "pillars",
       "status": "PASS",
-      "n": 11860,
+      "n": 11837,
       "max_abs_diff": null,
-      "note": "0 stored cells missing; engine 11860"
+      "note": "0 stored cells missing; engine 11837"
     },
     {
       "check": "ES value",
       "layer": "pillars",
       "status": "PASS",
-      "n": 11860,
+      "n": 11837,
       "max_abs_diff": 0,
       "note": null
     },
@@ -134,7 +134,7 @@
       "check": "ES imputed_weight_share",
       "layer": "pillars",
       "status": "PASS",
-      "n": 11860,
+      "n": 11837,
       "max_abs_diff": 1.1102230246251565e-16,
       "note": null
     },
@@ -142,7 +142,7 @@
       "check": "ES rankable / rank_exclusion",
       "layer": "pillars",
       "status": "PASS",
-      "n": 11860,
+      "n": 11837,
       "max_abs_diff": null,
       "note": null
     },
@@ -150,7 +150,7 @@
       "check": "ES category_weight",
       "layer": "pillars",
       "status": "PASS",
-      "n": 31138,
+      "n": 31333,
       "max_abs_diff": 0,
       "note": null
     },
@@ -158,7 +158,7 @@
       "check": "ES weighted_category_contribution",
       "layer": "pillars",
       "status": "PASS",
-      "n": 31138,
+      "n": 31333,
       "max_abs_diff": 0,
       "note": null
     },
@@ -198,7 +198,7 @@
       "check": "EO category_weight",
       "layer": "pillars",
       "status": "PASS",
-      "n": 65066,
+      "n": 65284,
       "max_abs_diff": 0,
       "note": null
     },
@@ -206,7 +206,7 @@
       "check": "EO weighted_category_contribution",
       "layer": "pillars",
       "status": "PASS",
-      "n": 65066,
+      "n": 65284,
       "max_abs_diff": 0,
       "note": null
     },
@@ -376,7 +376,7 @@
       "status": "PASS",
       "n": 11419,
       "max_abs_diff": null,
-      "note": "0 differ; 2997 scored cells on IEA PAMS only"
+      "note": "0 differ; 2991 scored cells on IEA PAMS only"
     },
     {
       "check": "SI resource_base (endowment screen)",
@@ -384,7 +384,7 @@
       "status": "PASS",
       "n": 11419,
       "max_abs_diff": null,
-      "note": "0 differ; 637 of 967 scored screened cells without a resource base"
+      "note": "0 differ; 651 of 982 scored screened cells without a resource base"
     },
     {
       "check": "SI resource_evidence",
@@ -422,15 +422,15 @@
       "check": "Allied selection == charts/allied_strategic.csv",
       "layer": "si",
       "status": "PASS",
-      "n": 60,
+      "n": 59,
       "max_abs_diff": null,
-      "note": "60 members picked; 0 stored picks missing, 0 extra; endowment screen on"
+      "note": "59 members picked; 0 stored picks missing, 0 extra; endowment screen on"
     },
     {
       "check": "Allied strategic_index == charts/allied_strategic.csv",
       "layer": "si",
       "status": "PASS",
-      "n": 60,
+      "n": 59,
       "max_abs_diff": 4.4408920985006262e-16,
       "note": null
     },
@@ -438,7 +438,7 @@
       "check": "Allied policy_basis == charts/allied_strategic.csv",
       "layer": "si",
       "status": "PASS",
-      "n": 60,
+      "n": 59,
       "max_abs_diff": null,
       "note": "0 differ"
     },
@@ -446,7 +446,7 @@
       "check": "Allied resource_base == charts/allied_strategic.csv",
       "layer": "si",
       "status": "PASS",
-      "n": 60,
+      "n": 59,
       "max_abs_diff": null,
       "note": "0 differ"
     },
@@ -454,9 +454,9 @@
       "check": "Allied selection with the endowment screen off",
       "layer": "si",
       "status": "INFO",
-      "n": 60,
+      "n": 59,
       "max_abs_diff": null,
-      "note": "42 members change pick (to Batteries - Extraction 21, Solar - Extraction 13, Nuclear - Extraction 7, Electric Grid - Extraction 1)"
+      "note": "41 members change pick (to Batteries - Extraction 23, Solar - Extraction 11, Nuclear - Extraction 7)"
     },
     {
       "check": "Friendshore index array",
@@ -503,7 +503,7 @@
       "layer": "partner",
       "status": "PASS",
       "n": 219,
-      "max_abs_diff": 1.1102230246251565e-16,
+      "max_abs_diff": 2.2204460492503131e-16,
       "note": "reporters: psi_dyad_tbl"
     },
     {
@@ -594,15 +594,15 @@
     },
     {
       "path": "data/processed/outputs/index_outputs.rds",
-      "mtime": "2026-10-27T17:13:14Z",
-      "size": 33050646,
-      "md5": "aeb11db317ded428a8d9a1c8d54c1a98"
+      "mtime": "2026-10-30T17:29:15Z",
+      "size": 33109024,
+      "md5": "25c5e2a9b8a4e364d67fdd45a23acb12"
     },
     {
       "path": "data/processed/coalition_tbl.rds",
-      "mtime": "2026-10-27T15:57:10Z",
-      "size": 13363,
-      "md5": "e078ee23a73e6307eb8de905db096258"
+      "mtime": "2026-10-30T17:28:02Z",
+      "size": 13472,
+      "md5": "1a946f7c008892647358d190a8afb0d3"
     },
     {
       "path": "data/processed/geo_coalition_tbl.rds",
@@ -612,21 +612,21 @@
     },
     {
       "path": "data/processed/reserves_tbl.rds",
-      "mtime": "2026-10-27T17:07:52Z",
+      "mtime": "2026-10-30T17:24:08Z",
       "size": 20432,
       "md5": "b51e08272e937b9aac43d659d5d0ffca"
     },
     {
       "path": "data/processed/critical_minerals_production_tbl.rds",
-      "mtime": "2026-10-27T17:08:07Z",
+      "mtime": "2026-10-30T17:24:17Z",
       "size": 14946,
       "md5": "f5065d1f0f01c97d95df447522f77b56"
     },
     {
       "path": "data/processed/partner_friendshore_tbl.rds",
-      "mtime": "2026-10-27T16:02:32Z",
-      "size": 69566341,
-      "md5": "f0619e0dd3087b36d23bca92ad1a3920"
+      "mtime": "2026-10-30T17:34:05Z",
+      "size": 69548057,
+      "md5": "bab496ab17ee0743c8ce20442f2f8e83"
     },
     {
       "path": "config/partnership.yml",
@@ -636,13 +636,13 @@
     },
     {
       "path": "data/processed/partner_opportunity_tbl.rds",
-      "mtime": "2026-10-27T16:07:52Z",
-      "size": 46846882,
-      "md5": "1881b97533f856cb85ed2c11a080ef05"
+      "mtime": "2026-10-30T17:39:23Z",
+      "size": 46770575,
+      "md5": "d81cb005726aac9aea684e136c6c9775"
     },
     {
       "path": "data/processed/partner_cm_fdi_exposure_tbl.rds",
-      "mtime": "2026-10-27T16:06:14Z",
+      "mtime": "2026-10-30T17:37:55Z",
       "size": 3406,
       "md5": "677d5d73428548b0005506b814c1e12c"
     },
@@ -654,7 +654,7 @@
     },
     {
       "path": "data/processed/tech_ghg_tbl.rds",
-      "mtime": "2026-10-27T17:11:37Z",
+      "mtime": "2026-10-30T17:27:27Z",
       "size": 336,
       "md5": "d42bb1592457f1825246a7e8497c908e"
     },
@@ -666,33 +666,33 @@
     },
     {
       "path": "data/processed/partner_friendshore_top5_tbl.rds",
-      "mtime": "2026-10-27T16:06:14Z",
-      "size": 1657548,
-      "md5": "54a46ec360822414cd2deebcaadaefcf"
+      "mtime": "2026-10-30T17:37:54Z",
+      "size": 1656910,
+      "md5": "49b031ea95b165831efafcbfcd07fda6"
     },
     {
       "path": "data/processed/partner_opportunity_top5_tbl.rds",
-      "mtime": "2026-10-27T16:09:43Z",
-      "size": 1148192,
-      "md5": "414489c400bcfeb9208c459eecdbd8bc"
+      "mtime": "2026-10-30T17:41:22Z",
+      "size": 1143728,
+      "md5": "d96b3c7e75dfee59d6bf47828b2a19dc"
     },
     {
       "path": "data/processed/partner_development_top5_tbl.rds",
-      "mtime": "2026-10-27T16:09:48Z",
-      "size": 13199,
-      "md5": "38877501b7c068cf2a78d105b1b83f39"
+      "mtime": "2026-10-30T17:41:31Z",
+      "size": 13224,
+      "md5": "7dc283fc893433ef371ccbe9e0760fa9"
     },
     {
       "path": "data/processed/psi_tbl.rds",
-      "mtime": "2026-10-27T16:13:20Z",
-      "size": 12585,
-      "md5": "0c89cbdeb1ec9e368f8d5a4371fe4d4d"
+      "mtime": "2026-10-30T17:46:35Z",
+      "size": 12602,
+      "md5": "e77d3064cae2d467f117cb98b6340496"
     },
     {
       "path": "data/processed/psi_dyad_tbl.rds",
-      "mtime": "2026-10-27T16:13:20Z",
-      "size": 1541112,
-      "md5": "503214d629588b5ce06d7c1b675d111b"
+      "mtime": "2026-10-30T17:46:35Z",
+      "size": 1540639,
+      "md5": "1373780073520996cb5430425cd0879c"
     },
     {
       "path": "data/processed/geo_alignment_tbl.rds",
@@ -714,21 +714,21 @@
     },
     {
       "path": "data/processed/charts/allied_strategic.csv",
-      "mtime": "2026-10-27T17:12:56Z",
-      "size": 20721,
-      "md5": "ce84075e789b82475f21973fe4df3945"
+      "mtime": "2026-10-30T17:29:00Z",
+      "size": 20445,
+      "md5": "1d167beaba3cac43cb120ffb363336a3"
     },
     {
       "path": "data/processed/partner_cm_fdi_ties_tbl.rds",
-      "mtime": "2026-10-27T16:06:14Z",
+      "mtime": "2026-10-30T17:37:55Z",
       "size": 3625,
       "md5": "682f6c7db2d1b9b36bbee13c9a53f45a"
     },
     {
       "path": "data/processed/partner_development_tbl.rds",
-      "mtime": "2026-10-27T16:09:47Z",
-      "size": 293211,
-      "md5": "0c2b7f6ef43b237ce458baa76c23d64e"
+      "mtime": "2026-10-30T17:41:31Z",
+      "size": 293057,
+      "md5": "ca08aac5011736853c3dfd3cae9ae385"
     },
     {
       "path": "data/reference/economic_security_agreements.csv",
@@ -738,9 +738,9 @@
     },
     {
       "path": "config/sector_dictionary.yml",
-      "mtime": "2026-10-29T14:21:24Z",
-      "size": 174870,
-      "md5": "76a03916b3209ee58b7ae700093aa7d6"
+      "mtime": "2026-10-30T17:00:30Z",
+      "size": 175613,
+      "md5": "68428d7e2abc7054810a55e2f570756f"
     }
   ],
   "sources_params": {
@@ -977,571 +977,571 @@
   "chunks": [
     {
       "name": "core",
-      "file": "core.343bfc25.osb",
-      "bytes": 6819904,
-      "bytes_gz": 1244035,
-      "md5": "343bfc259ce49da1a96316e3b7f0fbab",
+      "file": "core.0dbc8572.osb",
+      "bytes": 6820464,
+      "bytes_gz": 1221132,
+      "md5": "0dbc8572565f6e0d3b2c18a450565ca6",
       "initial": true
     },
     {
       "name": "vars",
-      "file": "vars.2c13ee31.osb",
-      "bytes": 8019448,
-      "bytes_gz": 1069716,
-      "md5": "2c13ee313d02c1bf9087ca2d562739db",
+      "file": "vars.3c1eaadc.osb",
+      "bytes": 8074528,
+      "bytes_gz": 1077820,
+      "md5": "3c1eaadc260cf1fcfdecf3ad624e5a16",
       "initial": false
     },
     {
       "name": "partner",
-      "file": "partner.33ee0d18.osb",
-      "bytes": 56660072,
-      "bytes_gz": 12731909,
-      "md5": "33ee0d184493010ac890d171178a4665",
+      "file": "partner.f3d1c9b5.osb",
+      "bytes": 56659488,
+      "bytes_gz": 12485547,
+      "md5": "f3d1c9b56d84a283b5b05c0a08ccfce9",
       "initial": false
     },
     {
       "name": "ties",
-      "file": "ties.318b79da.osb",
-      "bytes": 1667032,
-      "bytes_gz": 326729,
-      "md5": "318b79da68a6ded87aff7566fec6b31b",
+      "file": "ties.a7e97a64.osb",
+      "bytes": 1667048,
+      "bytes_gz": 326658,
+      "md5": "a7e97a6419a5e5306c489d5c7cbc460d",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-extraction",
-      "file": "pcell-electric-vehicles-extraction.40dcc9ac.osb",
+      "file": "pcell-electric-vehicles-extraction.033a7d16.osb",
       "bytes": 158448,
-      "bytes_gz": 41131,
-      "md5": "40dcc9acbe2d391ed9cbc9077dfc358b",
+      "bytes_gz": 41208,
+      "md5": "033a7d169cb584dbf4ec18ad88226ca8",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-refining",
-      "file": "pcell-electric-vehicles-refining.d0f370ae.osb",
+      "file": "pcell-electric-vehicles-refining.248f36fa.osb",
       "bytes": 160728,
-      "bytes_gz": 39048,
-      "md5": "d0f370ae44890f3328386af3a5a22cf7",
+      "bytes_gz": 38296,
+      "md5": "248f36fa04de686c2ec71c253f7d70ab",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-components",
-      "file": "pcell-electric-vehicles-components.768c9e3b.osb",
-      "bytes": 158920,
-      "bytes_gz": 45607,
-      "md5": "768c9e3b5ab28bd84e7c007770c00968",
+      "file": "pcell-electric-vehicles-components.5e27e40c.osb",
+      "bytes": 158928,
+      "bytes_gz": 45823,
+      "md5": "5e27e40c01a9b6467348bbfaab5b3107",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-assembly",
-      "file": "pcell-electric-vehicles-assembly.911eeba1.osb",
-      "bytes": 158912,
-      "bytes_gz": 45868,
-      "md5": "911eeba11f9f8501b1a55dcf048644b0",
+      "file": "pcell-electric-vehicles-assembly.79e6b88f.osb",
+      "bytes": 158920,
+      "bytes_gz": 45848,
+      "md5": "79e6b88f8058d1b06117e91254b8e0d6",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-deployment",
-      "file": "pcell-electric-vehicles-deployment.b490b9c3.osb",
+      "file": "pcell-electric-vehicles-deployment.d185c062.osb",
       "bytes": 158640,
-      "bytes_gz": 44013,
-      "md5": "b490b9c3ff8b18ae3d421bbbafee014e",
+      "bytes_gz": 44027,
+      "md5": "d185c06243e0f808c49a52859505825e",
       "initial": false
     },
     {
       "name": "pcell-electric-vehicles-recovery",
-      "file": "pcell-electric-vehicles-recovery.d069b5ef.osb",
+      "file": "pcell-electric-vehicles-recovery.9642a1e0.osb",
       "bytes": 158616,
-      "bytes_gz": 44351,
-      "md5": "d069b5ef04c6832a12b2d2546e3882c1",
+      "bytes_gz": 44388,
+      "md5": "9642a1e03c7ebb4db07fd054b423c019",
       "initial": false
     },
     {
       "name": "pcell-nuclear-extraction",
-      "file": "pcell-nuclear-extraction.64053edc.osb",
-      "bytes": 152192,
-      "bytes_gz": 32345,
-      "md5": "64053edc67392b181d0b24f1faf29c67",
+      "file": "pcell-nuclear-extraction.d55e575a.osb",
+      "bytes": 159856,
+      "bytes_gz": 36839,
+      "md5": "d55e575a8393f0826aa2300536ee9532",
       "initial": false
     },
     {
       "name": "pcell-nuclear-refining",
-      "file": "pcell-nuclear-refining.c02a1530.osb",
-      "bytes": 156248,
-      "bytes_gz": 36663,
-      "md5": "c02a1530b26465313bdf915dcabb2894",
+      "file": "pcell-nuclear-refining.5fbcf1e2.osb",
+      "bytes": 155968,
+      "bytes_gz": 38979,
+      "md5": "5fbcf1e22e5c29c1a8509f5efd25f3d4",
       "initial": false
     },
     {
       "name": "pcell-nuclear-components",
-      "file": "pcell-nuclear-components.7e357fb6.osb",
+      "file": "pcell-nuclear-components.5920927d.osb",
       "bytes": 156600,
-      "bytes_gz": 43557,
-      "md5": "7e357fb6f141d57cde0894d4f8763c3d",
+      "bytes_gz": 43904,
+      "md5": "5920927dba179c4dafca1e0a88919321",
       "initial": false
     },
     {
       "name": "pcell-nuclear-assembly",
-      "file": "pcell-nuclear-assembly.de43b743.osb",
-      "bytes": 156624,
-      "bytes_gz": 44187,
-      "md5": "de43b743ab4b084135c75a51b3e5e612",
+      "file": "pcell-nuclear-assembly.42ea4b17.osb",
+      "bytes": 156648,
+      "bytes_gz": 43974,
+      "md5": "42ea4b17582875e1750ec004f445da3b",
       "initial": false
     },
     {
       "name": "pcell-nuclear-deployment",
-      "file": "pcell-nuclear-deployment.027c79ae.osb",
+      "file": "pcell-nuclear-deployment.50b74b4a.osb",
       "bytes": 160296,
-      "bytes_gz": 41174,
-      "md5": "027c79aeadf44b65d5dd479813791652",
+      "bytes_gz": 41122,
+      "md5": "50b74b4a2eb454e527e115b3f5bc1070",
       "initial": false
     },
     {
       "name": "pcell-nuclear-recovery",
-      "file": "pcell-nuclear-recovery.2f42cb01.osb",
-      "bytes": 156240,
-      "bytes_gz": 35466,
-      "md5": "2f42cb011ea3f62a8d133dd6db8d426d",
+      "file": "pcell-nuclear-recovery.2c4940bd.osb",
+      "bytes": 155896,
+      "bytes_gz": 38995,
+      "md5": "2c4940bda937853fb58ded774430b6f9",
       "initial": false
     },
     {
       "name": "pcell-coal-extraction",
-      "file": "pcell-coal-extraction.a6adca6e.osb",
+      "file": "pcell-coal-extraction.14b86cc9.osb",
       "bytes": 160168,
-      "bytes_gz": 40344,
-      "md5": "a6adca6ec13bd70bcbac874a17889afc",
+      "bytes_gz": 40145,
+      "md5": "14b86cc98f78e163ef491e4246c7f7f8",
       "initial": false
     },
     {
       "name": "pcell-coal-refining",
-      "file": "pcell-coal-refining.9949d822.osb",
+      "file": "pcell-coal-refining.330178d8.osb",
       "bytes": 156448,
-      "bytes_gz": 40105,
-      "md5": "9949d8220efad7591b9a7fac18224bae",
+      "bytes_gz": 39865,
+      "md5": "330178d83d4d7717dc5aa14bc3d21269",
       "initial": false
     },
     {
       "name": "pcell-coal-components",
-      "file": "pcell-coal-components.eab05ec9.osb",
-      "bytes": 156616,
-      "bytes_gz": 44161,
-      "md5": "eab05ec9d1ed10366617f05f3f01c662",
+      "file": "pcell-coal-components.66ee3ae7.osb",
+      "bytes": 156600,
+      "bytes_gz": 43949,
+      "md5": "66ee3ae72f552cf5443c1e1f1cb7e7f6",
       "initial": false
     },
     {
       "name": "pcell-coal-assembly",
-      "file": "pcell-coal-assembly.e63cf253.osb",
-      "bytes": 156656,
-      "bytes_gz": 44001,
-      "md5": "e63cf2535c11370dc295d5cc817d4d18",
+      "file": "pcell-coal-assembly.512196d8.osb",
+      "bytes": 156640,
+      "bytes_gz": 43720,
+      "md5": "512196d81c5548a2e6c69520b1b6722a",
       "initial": false
     },
     {
       "name": "pcell-coal-deployment",
-      "file": "pcell-coal-deployment.ea4ab82c.osb",
-      "bytes": 160256,
-      "bytes_gz": 43260,
-      "md5": "ea4ab82ca29818622c95adb9566998f7",
+      "file": "pcell-coal-deployment.afa4a4ae.osb",
+      "bytes": 160264,
+      "bytes_gz": 43324,
+      "md5": "afa4a4aedd1c83898e38d9568e954c19",
       "initial": false
     },
     {
       "name": "pcell-coal-recovery",
-      "file": "pcell-coal-recovery.0fa67bf4.osb",
+      "file": "pcell-coal-recovery.6b3c5fe2.osb",
       "bytes": 70952,
-      "bytes_gz": 21199,
-      "md5": "0fa67bf4e8ae70fd93f5a8c1e41afa38",
+      "bytes_gz": 21186,
+      "md5": "6b3c5fe247aab1bd3b6898f3586e2635",
       "initial": false
     },
     {
       "name": "pcell-batteries-extraction",
-      "file": "pcell-batteries-extraction.bc3db1e6.osb",
-      "bytes": 160224,
-      "bytes_gz": 41230,
-      "md5": "bc3db1e611110a287339a38e136e45d3",
+      "file": "pcell-batteries-extraction.08eb5d50.osb",
+      "bytes": 160208,
+      "bytes_gz": 41308,
+      "md5": "08eb5d50e30530d61229e3e68c4d518d",
       "initial": false
     },
     {
       "name": "pcell-batteries-refining",
-      "file": "pcell-batteries-refining.d9d00ebf.osb",
-      "bytes": 160328,
-      "bytes_gz": 42364,
-      "md5": "d9d00ebff37e5137e02d5d5a56cb0d66",
+      "file": "pcell-batteries-refining.ac7cd6d0.osb",
+      "bytes": 160336,
+      "bytes_gz": 42469,
+      "md5": "ac7cd6d0fead1728712edd84f77d6bdf",
       "initial": false
     },
     {
       "name": "pcell-batteries-components",
-      "file": "pcell-batteries-components.490b0540.osb",
-      "bytes": 156624,
-      "bytes_gz": 43345,
-      "md5": "490b0540ceb1ecd82a4a7bcfd86a6f1f",
+      "file": "pcell-batteries-components.d40379a5.osb",
+      "bytes": 156632,
+      "bytes_gz": 43411,
+      "md5": "d40379a5dbbd1e4d1978bc36bf12e2db",
       "initial": false
     },
     {
       "name": "pcell-batteries-assembly",
-      "file": "pcell-batteries-assembly.8ea78337.osb",
+      "file": "pcell-batteries-assembly.0192dbf1.osb",
       "bytes": 156688,
-      "bytes_gz": 44350,
-      "md5": "8ea78337a88ab3dc06b7f7191dfe90fa",
+      "bytes_gz": 44233,
+      "md5": "0192dbf1210f9f5f7bedd8118099254d",
       "initial": false
     },
     {
       "name": "pcell-batteries-deployment",
-      "file": "pcell-batteries-deployment.e3c4285a.osb",
+      "file": "pcell-batteries-deployment.9f92c66b.osb",
       "bytes": 160296,
-      "bytes_gz": 41471,
-      "md5": "e3c4285a083dd2c95d8d2de26805bc9f",
+      "bytes_gz": 41428,
+      "md5": "9f92c66bab2010791fb06a4d0a5abd1a",
       "initial": false
     },
     {
       "name": "pcell-batteries-recovery",
-      "file": "pcell-batteries-recovery.bf415ba7.osb",
-      "bytes": 158272,
-      "bytes_gz": 39605,
-      "md5": "bf415ba779d98d8e917f8c2d072a4326",
+      "file": "pcell-batteries-recovery.791fb14d.osb",
+      "bytes": 158232,
+      "bytes_gz": 39678,
+      "md5": "791fb14d528801057d28a8802b40295c",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-extraction",
-      "file": "pcell-green-hydrogen-extraction.15a33f66.osb",
+      "file": "pcell-green-hydrogen-extraction.01773a5f.osb",
       "bytes": 158592,
-      "bytes_gz": 41729,
-      "md5": "15a33f66865897bd39bed71d285c9836",
+      "bytes_gz": 41765,
+      "md5": "01773a5f03283985d66e27aed4dd4eac",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-refining",
-      "file": "pcell-green-hydrogen-refining.b90d2597.osb",
-      "bytes": 160400,
-      "bytes_gz": 40200,
-      "md5": "b90d25971edb0e6847500fd12c4935bf",
+      "file": "pcell-green-hydrogen-refining.185c3ddd.osb",
+      "bytes": 160392,
+      "bytes_gz": 40172,
+      "md5": "185c3ddd04d1610a878c08ef8ef4e300",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-components",
-      "file": "pcell-green-hydrogen-components.f0e41c55.osb",
-      "bytes": 156088,
-      "bytes_gz": 43073,
-      "md5": "f0e41c55d26ec3c0bb42969fc7a0ccd9",
+      "file": "pcell-green-hydrogen-components.8ceb5cf0.osb",
+      "bytes": 156072,
+      "bytes_gz": 43138,
+      "md5": "8ceb5cf08ba3f0b68840a28507e11ad7",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-assembly",
-      "file": "pcell-green-hydrogen-assembly.cd17c70b.osb",
-      "bytes": 156080,
-      "bytes_gz": 43073,
-      "md5": "cd17c70b231c574cba402dd172948113",
+      "file": "pcell-green-hydrogen-assembly.5be0b1a1.osb",
+      "bytes": 156064,
+      "bytes_gz": 43138,
+      "md5": "5be0b1a1a4d54a636229d7027328cb42",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-deployment",
-      "file": "pcell-green-hydrogen-deployment.8755d155.osb",
+      "file": "pcell-green-hydrogen-deployment.2f756d6b.osb",
       "bytes": 160352,
-      "bytes_gz": 43643,
-      "md5": "8755d1552a5298b7da39efddeb59f480",
+      "bytes_gz": 43566,
+      "md5": "2f756d6beb1d68265921c817dcd4d003",
       "initial": false
     },
     {
       "name": "pcell-green-hydrogen-recovery",
-      "file": "pcell-green-hydrogen-recovery.dfb3c70f.osb",
+      "file": "pcell-green-hydrogen-recovery.78ee349e.osb",
       "bytes": 158608,
-      "bytes_gz": 41862,
-      "md5": "dfb3c70f5472b3e31dbcf8aefdd0370d",
+      "bytes_gz": 41784,
+      "md5": "78ee349e7d34930b268cfeb957eace87",
       "initial": false
     },
     {
       "name": "pcell-wind-extraction",
-      "file": "pcell-wind-extraction.3448f507.osb",
-      "bytes": 147912,
-      "bytes_gz": 27498,
-      "md5": "3448f5070f228945ddda646c0f2ea3cf",
+      "file": "pcell-wind-extraction.eca010e6.osb",
+      "bytes": 146912,
+      "bytes_gz": 26304,
+      "md5": "eca010e612a0293b1ec584ebab1ad31a",
       "initial": false
     },
     {
       "name": "pcell-wind-refining",
-      "file": "pcell-wind-refining.9e22def2.osb",
-      "bytes": 160264,
-      "bytes_gz": 41829,
-      "md5": "9e22def20e726ddb66dea87b2ecc3144",
+      "file": "pcell-wind-refining.8f5b251e.osb",
+      "bytes": 160256,
+      "bytes_gz": 41862,
+      "md5": "8f5b251ec3ed9c9ed112e116b63ee6b5",
       "initial": false
     },
     {
       "name": "pcell-wind-components",
-      "file": "pcell-wind-components.957d8a2d.osb",
+      "file": "pcell-wind-components.fc576728.osb",
       "bytes": 156720,
-      "bytes_gz": 45202,
-      "md5": "957d8a2d719f1a3162a8de7c789d5449",
+      "bytes_gz": 45206,
+      "md5": "fc576728feb0874da1f230440618e5a9",
       "initial": false
     },
     {
       "name": "pcell-wind-assembly",
-      "file": "pcell-wind-assembly.c0220577.osb",
-      "bytes": 156720,
-      "bytes_gz": 45449,
-      "md5": "c02205770b9b539c050f0e19b3949ad4",
+      "file": "pcell-wind-assembly.65c0b087.osb",
+      "bytes": 156728,
+      "bytes_gz": 45636,
+      "md5": "65c0b087488602f6657959312b8f4a35",
       "initial": false
     },
     {
       "name": "pcell-wind-deployment",
-      "file": "pcell-wind-deployment.cd01bb72.osb",
+      "file": "pcell-wind-deployment.c41c4020.osb",
       "bytes": 160336,
-      "bytes_gz": 43071,
-      "md5": "cd01bb722d9dbfa76b92af1c6543c53d",
+      "bytes_gz": 43318,
+      "md5": "c41c40203cc13e990e1bfffce558fba8",
       "initial": false
     },
     {
       "name": "pcell-wind-recovery",
-      "file": "pcell-wind-recovery.8d5e271e.osb",
+      "file": "pcell-wind-recovery.45dc67f2.osb",
       "bytes": 158568,
-      "bytes_gz": 43792,
-      "md5": "8d5e271ed6980cb134fd3c00b993917e",
+      "bytes_gz": 43984,
+      "md5": "45dc67f23fae2af824a88ece94598d6c",
       "initial": false
     },
     {
       "name": "pcell-oil-extraction",
-      "file": "pcell-oil-extraction.f2c676e5.osb",
+      "file": "pcell-oil-extraction.72d26a47.osb",
       "bytes": 160128,
-      "bytes_gz": 40288,
-      "md5": "f2c676e5a6dc50a24bfa3fb3b8e1b2e0",
+      "bytes_gz": 39358,
+      "md5": "72d26a478a904d009980e2c4e8c6778a",
       "initial": false
     },
     {
       "name": "pcell-oil-refining",
-      "file": "pcell-oil-refining.4f41fb28.osb",
+      "file": "pcell-oil-refining.924d8ca7.osb",
       "bytes": 156736,
-      "bytes_gz": 45549,
-      "md5": "4f41fb284cc0433e5ba86e42f717cbc3",
+      "bytes_gz": 45410,
+      "md5": "924d8ca72388e6557fb322a89794df5f",
       "initial": false
     },
     {
       "name": "pcell-oil-components",
-      "file": "pcell-oil-components.0871f1a2.osb",
-      "bytes": 156608,
-      "bytes_gz": 44872,
-      "md5": "0871f1a29f8c119548b2d59f8c1b5a3c",
+      "file": "pcell-oil-components.a2880c78.osb",
+      "bytes": 156600,
+      "bytes_gz": 44903,
+      "md5": "a2880c78b6327245de2943a65928c4b9",
       "initial": false
     },
     {
       "name": "pcell-oil-assembly",
-      "file": "pcell-oil-assembly.e44734f6.osb",
+      "file": "pcell-oil-assembly.a8428620.osb",
       "bytes": 156704,
-      "bytes_gz": 45383,
-      "md5": "e44734f64d5640b1f951f0efb2d50ed5",
+      "bytes_gz": 45441,
+      "md5": "a8428620ba637162a5694fc2030dce0d",
       "initial": false
     },
     {
       "name": "pcell-oil-deployment",
-      "file": "pcell-oil-deployment.a909b610.osb",
+      "file": "pcell-oil-deployment.866b34c2.osb",
       "bytes": 160272,
-      "bytes_gz": 45277,
-      "md5": "a909b61074ce46f39cf1888d0750f6cb",
+      "bytes_gz": 45208,
+      "md5": "866b34c2d9652023c738dc5a80f2ed60",
       "initial": false
     },
     {
       "name": "pcell-oil-recovery",
-      "file": "pcell-oil-recovery.4df87fb0.osb",
+      "file": "pcell-oil-recovery.255ae957.osb",
       "bytes": 156584,
-      "bytes_gz": 38444,
-      "md5": "4df87fb030cc2e629869415af81a7332",
+      "bytes_gz": 38450,
+      "md5": "255ae9576acf3c13c9dff975e70ac7ca",
       "initial": false
     },
     {
       "name": "pcell-solar-extraction",
-      "file": "pcell-solar-extraction.c0030f54.osb",
-      "bytes": 160344,
-      "bytes_gz": 42462,
-      "md5": "c0030f54f0eaeca0fa413d4fef6132f0",
+      "file": "pcell-solar-extraction.ae995ebd.osb",
+      "bytes": 160152,
+      "bytes_gz": 39764,
+      "md5": "ae995ebda34a9aabf2b8c7ab9b4c0674",
       "initial": false
     },
     {
       "name": "pcell-solar-refining",
-      "file": "pcell-solar-refining.ac45281e.osb",
-      "bytes": 160256,
-      "bytes_gz": 41794,
-      "md5": "ac45281e3217d7dc49639e6809841de8",
+      "file": "pcell-solar-refining.628415e7.osb",
+      "bytes": 160248,
+      "bytes_gz": 41866,
+      "md5": "628415e722dc2f5b1963d178044a2fe9",
       "initial": false
     },
     {
       "name": "pcell-solar-components",
-      "file": "pcell-solar-components.49e9c310.osb",
-      "bytes": 156712,
-      "bytes_gz": 45170,
-      "md5": "49e9c3100b41a15a95428c3906528036",
+      "file": "pcell-solar-components.f89ca9d5.osb",
+      "bytes": 156704,
+      "bytes_gz": 45442,
+      "md5": "f89ca9d5a54d313bb7da8a192f1e107d",
       "initial": false
     },
     {
       "name": "pcell-solar-assembly",
-      "file": "pcell-solar-assembly.6fcbdbab.osb",
-      "bytes": 156736,
-      "bytes_gz": 45375,
-      "md5": "6fcbdbab8fff60867aea702618519d5d",
+      "file": "pcell-solar-assembly.1e5dc4a7.osb",
+      "bytes": 156720,
+      "bytes_gz": 45422,
+      "md5": "1e5dc4a7bf3871a1922ee358a96d9df5",
       "initial": false
     },
     {
       "name": "pcell-solar-deployment",
-      "file": "pcell-solar-deployment.da7fe421.osb",
-      "bytes": 160344,
-      "bytes_gz": 43303,
-      "md5": "da7fe421c2ae415ac32e5650b3ff2e6b",
+      "file": "pcell-solar-deployment.ce56eedf.osb",
+      "bytes": 160360,
+      "bytes_gz": 43143,
+      "md5": "ce56eedf4b7ff549338d0d10fe0861a3",
       "initial": false
     },
     {
       "name": "pcell-solar-recovery",
-      "file": "pcell-solar-recovery.ca67df17.osb",
-      "bytes": 158576,
-      "bytes_gz": 44895,
-      "md5": "ca67df1795552f51370c9d5750172ccc",
+      "file": "pcell-solar-recovery.b95958c8.osb",
+      "bytes": 158584,
+      "bytes_gz": 43587,
+      "md5": "b95958c8dcd605af148cf80d125687de",
       "initial": false
     },
     {
       "name": "pcell-gas-extraction",
-      "file": "pcell-gas-extraction.0fa33d07.osb",
+      "file": "pcell-gas-extraction.fbabd6ec.osb",
       "bytes": 160104,
-      "bytes_gz": 40723,
-      "md5": "0fa33d07ef24391a2fa6394c7d23cb5f",
+      "bytes_gz": 40595,
+      "md5": "fbabd6ecb4d818f838db365f4bda9216",
       "initial": false
     },
     {
       "name": "pcell-gas-refining",
-      "file": "pcell-gas-refining.b01c52f1.osb",
-      "bytes": 160296,
-      "bytes_gz": 41898,
-      "md5": "b01c52f1fcfb8ac5fdb5dfdb84a7e33f",
+      "file": "pcell-gas-refining.b7d854dd.osb",
+      "bytes": 160288,
+      "bytes_gz": 41713,
+      "md5": "b7d854dd6e3c92d9ed62aa1adb2d1b54",
       "initial": false
     },
     {
       "name": "pcell-gas-components",
-      "file": "pcell-gas-components.d9a2529e.osb",
-      "bytes": 156648,
-      "bytes_gz": 45092,
-      "md5": "d9a2529e0e1a33919d12b8c2e5d91af1",
+      "file": "pcell-gas-components.a77399b2.osb",
+      "bytes": 156624,
+      "bytes_gz": 45067,
+      "md5": "a77399b24de25e650a9f2f56931e3880",
       "initial": false
     },
     {
       "name": "pcell-gas-assembly",
-      "file": "pcell-gas-assembly.e1340913.osb",
+      "file": "pcell-gas-assembly.ed715bb0.osb",
       "bytes": 156696,
-      "bytes_gz": 45399,
-      "md5": "e1340913a3feaba55c5fc2253c68fe74",
+      "bytes_gz": 45417,
+      "md5": "ed715bb0649e0d35ad9e45fe55c2963a",
       "initial": false
     },
     {
       "name": "pcell-gas-deployment",
-      "file": "pcell-gas-deployment.5670b598.osb",
+      "file": "pcell-gas-deployment.8c03f77e.osb",
       "bytes": 160304,
-      "bytes_gz": 45572,
-      "md5": "5670b5983c004eff10fa2959a6d2d582",
+      "bytes_gz": 45553,
+      "md5": "8c03f77e2f6e7387f0170d9dc85f1a35",
       "initial": false
     },
     {
       "name": "pcell-gas-recovery",
-      "file": "pcell-gas-recovery.112bde1e.osb",
+      "file": "pcell-gas-recovery.0891a5b6.osb",
       "bytes": 70864,
-      "bytes_gz": 22036,
-      "md5": "112bde1e8b31971d16f456e45c6e59ad",
+      "bytes_gz": 22042,
+      "md5": "0891a5b639e0ebe33d83da011eb4bc57",
       "initial": false
     },
     {
       "name": "pcell-geothermal-extraction",
-      "file": "pcell-geothermal-extraction.88b754c4.osb",
-      "bytes": 70856,
-      "bytes_gz": 22249,
-      "md5": "88b754c4e4a3c5284931ba330f27399c",
+      "file": "pcell-geothermal-extraction.ef1c448d.osb",
+      "bytes": 70848,
+      "bytes_gz": 22227,
+      "md5": "ef1c448d937b17bdfc80fe5d70a49a6a",
       "initial": false
     },
     {
       "name": "pcell-geothermal-refining",
-      "file": "pcell-geothermal-refining.149d02fa.osb",
+      "file": "pcell-geothermal-refining.a012f7d4.osb",
       "bytes": 70832,
-      "bytes_gz": 22371,
-      "md5": "149d02fa2bb67e9f972fc27df2fd4de3",
+      "bytes_gz": 22370,
+      "md5": "a012f7d48c7084d3583616f827ad37d3",
       "initial": false
     },
     {
       "name": "pcell-geothermal-components",
-      "file": "pcell-geothermal-components.6f26c7c8.osb",
+      "file": "pcell-geothermal-components.08cf7b00.osb",
       "bytes": 70840,
-      "bytes_gz": 22372,
-      "md5": "6f26c7c84bfd36ecf7102fe7982bbe95",
+      "bytes_gz": 22370,
+      "md5": "08cf7b003a58f36882fd8ed635f92b17",
       "initial": false
     },
     {
       "name": "pcell-geothermal-assembly",
-      "file": "pcell-geothermal-assembly.792d2bc9.osb",
+      "file": "pcell-geothermal-assembly.1b54ad37.osb",
       "bytes": 70832,
-      "bytes_gz": 22371,
-      "md5": "792d2bc924f26358651693b3df362d6e",
+      "bytes_gz": 22369,
+      "md5": "1b54ad37455c9a65655d9c9d8eeac509",
       "initial": false
     },
     {
       "name": "pcell-geothermal-deployment",
-      "file": "pcell-geothermal-deployment.77526863.osb",
-      "bytes": 160328,
-      "bytes_gz": 44537,
-      "md5": "775268630e47103afa55fa5ca68748cf",
+      "file": "pcell-geothermal-deployment.4d1d2658.osb",
+      "bytes": 160320,
+      "bytes_gz": 44554,
+      "md5": "4d1d2658a33d3a06e82c99d10e1448c5",
       "initial": false
     },
     {
       "name": "pcell-geothermal-recovery",
-      "file": "pcell-geothermal-recovery.23abc122.osb",
-      "bytes": 70848,
-      "bytes_gz": 22246,
-      "md5": "23abc12215c417a74a3fddc11f93590e",
+      "file": "pcell-geothermal-recovery.741bd3b5.osb",
+      "bytes": 70840,
+      "bytes_gz": 22224,
+      "md5": "741bd3b58a4db3900b1a6d4d9e103ff9",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-extraction",
-      "file": "pcell-electric-grid-extraction.ed6731bf.osb",
-      "bytes": 159544,
-      "bytes_gz": 41810,
-      "md5": "ed6731bfa53c61c86a0fb50f7c6d6000",
+      "file": "pcell-electric-grid-extraction.6e3811af.osb",
+      "bytes": 159712,
+      "bytes_gz": 41904,
+      "md5": "6e3811af1c43526d2fc60cdf06a3ff4b",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-refining",
-      "file": "pcell-electric-grid-refining.6ee218d3.osb",
-      "bytes": 160264,
-      "bytes_gz": 42157,
-      "md5": "6ee218d3b2a1cf19bd1a50cdafc84cbd",
+      "file": "pcell-electric-grid-refining.cb70d32a.osb",
+      "bytes": 160248,
+      "bytes_gz": 41950,
+      "md5": "cb70d32aec1f8f8f18b7679075c9b74a",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-components",
-      "file": "pcell-electric-grid-components.a822b65f.osb",
-      "bytes": 156720,
-      "bytes_gz": 45358,
-      "md5": "a822b65fc6f270a8c270e737b1e3955f",
+      "file": "pcell-electric-grid-components.d92439ba.osb",
+      "bytes": 156728,
+      "bytes_gz": 45238,
+      "md5": "d92439bac204cc3b1b896e7d2092ea84",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-assembly",
-      "file": "pcell-electric-grid-assembly.aa186901.osb",
+      "file": "pcell-electric-grid-assembly.3217da64.osb",
       "bytes": 156744,
-      "bytes_gz": 45710,
-      "md5": "aa1869018090b40ec0bd162fbd3da939",
+      "bytes_gz": 45653,
+      "md5": "3217da646ea962a012af7999630e94a4",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-deployment",
-      "file": "pcell-electric-grid-deployment.6b725e44.osb",
+      "file": "pcell-electric-grid-deployment.93cc4dd6.osb",
       "bytes": 70984,
-      "bytes_gz": 22166,
-      "md5": "6b725e44cb4340013907a6323fe6ef18",
+      "bytes_gz": 22145,
+      "md5": "93cc4dd6dec600b6c8c0a799720f4afb",
       "initial": false
     },
     {
       "name": "pcell-electric-grid-recovery",
-      "file": "pcell-electric-grid-recovery.4a6a0902.osb",
+      "file": "pcell-electric-grid-recovery.1303b4a1.osb",
       "bytes": 158576,
-      "bytes_gz": 42852,
-      "md5": "4a6a09021bd49391d05274544b125859",
+      "bytes_gz": 42842,
+      "md5": "1303b4a1545a23f3e3761eccf0d5bd92",
       "initial": false
     }
   ],
   "budget": {
-    "initial_gz": 1254614,
-    "all_gz": 18011386,
+    "initial_gz": 1231686,
+    "all_gz": 17753376,
     "limit_initial_gz": 3145728,
     "limit_all_gz": 26214400,
-    "initial_files": ["manifest.json", "core.343bfc25.osb"],
+    "initial_files": ["manifest.json", "core.0dbc8572.osb"],
     "note": "initial = manifest.json + the initial chunks; npm run budget adds the app's JS, CSS and fonts"
   },
   "encoding": {

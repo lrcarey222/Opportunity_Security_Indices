@@ -1,7 +1,7 @@
 "supply_chain","secure_old","secure_new","added","removed","operational_control","coercive_chokepoint","systemic_resilience"
-"Assembly",23,23,0,0,0,0,23
+"Assembly",23,24,6,5,0,0,24
 "Components",3,3,0,0,0,0,3
 "Deployment",0,0,0,0,0,0,0
-"Extraction",71,71,0,0,0,3,68
+"Extraction",71,98,30,3,0,12,86
 "Recovery",0,0,0,0,0,0,0
-"Refining",77,77,0,0,5,15,57
+"Refining",77,81,31,27,4,15,62

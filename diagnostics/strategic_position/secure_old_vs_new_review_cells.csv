@@ -8,17 +8,21 @@
 "France","Oil","Extraction",1,1,0,0,0,0,1
 "Germany","Coal","Extraction",1,1,0,0,0,0,1
 "Germany","Electric Vehicles","Refining",1,1,0,0,0,1,0
+"Germany","Gas","Extraction",0,1,1,0,0,0,1
 "Germany","Oil","Extraction",1,1,0,0,0,0,1
 "India","Electric Vehicles","Refining",1,1,0,0,0,1,0
 "Japan","Coal","Extraction",1,1,0,0,0,0,1
 "Japan","Electric Vehicles","Refining",1,1,0,0,0,1,0
-"Japan","Gas","Refining",1,1,0,0,0,0,1
+"Japan","Gas","Extraction",0,1,1,0,0,0,1
+"Japan","Gas","Refining",1,0,0,1,0,0,0
 "Japan","Oil","Extraction",1,1,0,0,0,0,1
 "South Korea","Coal","Extraction",1,1,0,0,0,0,1
 "South Korea","Electric Vehicles","Refining",1,1,0,0,0,1,0
-"South Korea","Gas","Refining",1,1,0,0,0,0,1
+"South Korea","Gas","Extraction",0,1,1,0,0,0,1
+"South Korea","Gas","Refining",1,0,0,1,0,0,0
 "South Korea","Nuclear","Refining",1,1,0,0,1,0,0
 "South Korea","Oil","Extraction",1,1,0,0,0,0,1
 "United Kingdom","Electric Vehicles","Refining",1,1,0,0,0,1,0
+"United Kingdom","Gas","Extraction",0,1,1,0,0,0,1
 "United Kingdom","Oil","Extraction",1,1,0,0,0,0,1
 "United States","Electric Vehicles","Refining",1,1,0,0,0,1,0

@@ -1,9 +1,9 @@
 "measure","value"
 "producing cells",11770
-"assessed producing cells (need measured)",7146
-"high-need producing cells",2326
-"Secure cells",174
-"Secure cells with high need",163
-"share of high-need cells that are Secure",0.07
-"Secure cells with need below the threshold",11
+"assessed producing cells (need measured)",7554
+"high-need producing cells",2386
+"Secure cells",206
+"Secure cells with high need",191
+"share of high-need cells that are Secure",0.08
+"Secure cells with need below the threshold",15
 "Secure cells with need not measured",0

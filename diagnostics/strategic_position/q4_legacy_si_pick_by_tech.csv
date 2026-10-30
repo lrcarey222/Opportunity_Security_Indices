@@ -1,97 +1,97 @@
 "variant","scenario","tech_prior","tech","n_picks","n_baseline","change"
-"none","none",TRUE,"Batteries",31,28,3
-"none","none",TRUE,"Nuclear",17,15,2
-"none","none",TRUE,"Solar",7,13,-6
-"none","none",TRUE,"Wind",4,3,1
+"none","none",TRUE,"Batteries",28,27,1
+"none","none",TRUE,"Nuclear",18,16,2
+"none","none",TRUE,"Solar",7,12,-5
+"none","none",TRUE,"Wind",5,3,2
 "none","none",TRUE,"Electric Vehicles",1,1,0
 "none","none",TRUE,"Electric Grid",0,0,0
 "none","none",TRUE,"Gas",0,0,0
 "none","none",TRUE,"Oil",0,0,0
-"none_no_tech","none",FALSE,"Batteries",31,28,3
-"none_no_tech","none",FALSE,"Nuclear",8,15,-7
-"none_no_tech","none",FALSE,"Solar",6,13,-7
-"none_no_tech","none",FALSE,"Wind",3,3,0
-"none_no_tech","none",FALSE,"Electric Vehicles",0,1,-1
+"none_no_tech","none",FALSE,"Batteries",28,27,1
+"none_no_tech","none",FALSE,"Nuclear",9,16,-7
+"none_no_tech","none",FALSE,"Solar",5,12,-7
+"none_no_tech","none",FALSE,"Wind",4,3,1
+"none_no_tech","none",FALSE,"Electric Vehicles",1,1,0
 "none_no_tech","none",FALSE,"Electric Grid",0,0,0
 "none_no_tech","none",FALSE,"Gas",0,0,0
 "none_no_tech","none",FALSE,"Oil",12,0,12
-"equal_share","equal_share",TRUE,"Batteries",28,28,0
-"equal_share","equal_share",TRUE,"Nuclear",15,15,0
-"equal_share","equal_share",TRUE,"Solar",13,13,0
+"equal_share","equal_share",TRUE,"Batteries",27,27,0
+"equal_share","equal_share",TRUE,"Nuclear",16,16,0
+"equal_share","equal_share",TRUE,"Solar",12,12,0
 "equal_share","equal_share",TRUE,"Wind",3,3,0
 "equal_share","equal_share",TRUE,"Electric Vehicles",1,1,0
 "equal_share","equal_share",TRUE,"Electric Grid",0,0,0
 "equal_share","equal_share",TRUE,"Gas",0,0,0
 "equal_share","equal_share",TRUE,"Oil",0,0,0
-"equal_share_no_tech","equal_share",FALSE,"Batteries",27,28,-1
-"equal_share_no_tech","equal_share",FALSE,"Nuclear",5,15,-10
-"equal_share_no_tech","equal_share",FALSE,"Solar",13,13,0
+"equal_share_no_tech","equal_share",FALSE,"Batteries",25,27,-2
+"equal_share_no_tech","equal_share",FALSE,"Nuclear",8,16,-8
+"equal_share_no_tech","equal_share",FALSE,"Solar",11,12,-1
 "equal_share_no_tech","equal_share",FALSE,"Wind",3,3,0
 "equal_share_no_tech","equal_share",FALSE,"Electric Vehicles",0,1,-1
 "equal_share_no_tech","equal_share",FALSE,"Electric Grid",0,0,0
 "equal_share_no_tech","equal_share",FALSE,"Gas",0,0,0
 "equal_share_no_tech","equal_share",FALSE,"Oil",12,0,12
-"parent","parent",TRUE,"Batteries",29,28,1
-"parent","parent",TRUE,"Nuclear",15,15,0
-"parent","parent",TRUE,"Solar",14,13,1
-"parent","parent",TRUE,"Wind",2,3,-1
+"parent","parent",TRUE,"Batteries",27,27,0
+"parent","parent",TRUE,"Nuclear",16,16,0
+"parent","parent",TRUE,"Solar",13,12,1
+"parent","parent",TRUE,"Wind",3,3,0
 "parent","parent",TRUE,"Electric Vehicles",0,1,-1
 "parent","parent",TRUE,"Electric Grid",0,0,0
 "parent","parent",TRUE,"Gas",0,0,0
 "parent","parent",TRUE,"Oil",0,0,0
-"parent_no_tech","parent",FALSE,"Batteries",27,28,-1
-"parent_no_tech","parent",FALSE,"Nuclear",6,15,-9
-"parent_no_tech","parent",FALSE,"Solar",13,13,0
-"parent_no_tech","parent",FALSE,"Wind",2,3,-1
+"parent_no_tech","parent",FALSE,"Batteries",26,27,-1
+"parent_no_tech","parent",FALSE,"Nuclear",7,16,-9
+"parent_no_tech","parent",FALSE,"Solar",11,12,-1
+"parent_no_tech","parent",FALSE,"Wind",3,3,0
 "parent_no_tech","parent",FALSE,"Electric Vehicles",0,1,-1
 "parent_no_tech","parent",FALSE,"Electric Grid",0,0,0
 "parent_no_tech","parent",FALSE,"Gas",0,0,0
 "parent_no_tech","parent",FALSE,"Oil",12,0,12
-"manufacturing_focused","manufacturing_focused",TRUE,"Batteries",27,28,-1
-"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear",14,15,-1
-"manufacturing_focused","manufacturing_focused",TRUE,"Solar",15,13,2
-"manufacturing_focused","manufacturing_focused",TRUE,"Wind",0,3,-3
+"manufacturing_focused","manufacturing_focused",TRUE,"Batteries",25,27,-2
+"manufacturing_focused","manufacturing_focused",TRUE,"Nuclear",15,16,-1
+"manufacturing_focused","manufacturing_focused",TRUE,"Solar",15,12,3
+"manufacturing_focused","manufacturing_focused",TRUE,"Wind",1,3,-2
 "manufacturing_focused","manufacturing_focused",TRUE,"Electric Vehicles",1,1,0
-"manufacturing_focused","manufacturing_focused",TRUE,"Electric Grid",1,0,1
+"manufacturing_focused","manufacturing_focused",TRUE,"Electric Grid",0,0,0
 "manufacturing_focused","manufacturing_focused",TRUE,"Gas",0,0,0
 "manufacturing_focused","manufacturing_focused",TRUE,"Oil",2,0,2
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries",21,28,-7
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear",4,15,-11
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar",14,13,1
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Batteries",22,27,-5
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Nuclear",4,16,-12
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Solar",13,12,1
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Wind",0,3,-3
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Vehicles",5,1,4
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Vehicles",6,1,5
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Electric Grid",0,0,0
 "manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Gas",0,0,0
-"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Oil",16,0,16
-"resource_security_focused","resource_security_focused",TRUE,"Batteries",31,28,3
-"resource_security_focused","resource_security_focused",TRUE,"Nuclear",14,15,-1
-"resource_security_focused","resource_security_focused",TRUE,"Solar",6,13,-7
+"manufacturing_focused_no_tech","manufacturing_focused",FALSE,"Oil",14,0,14
+"resource_security_focused","resource_security_focused",TRUE,"Batteries",29,27,2
+"resource_security_focused","resource_security_focused",TRUE,"Nuclear",16,16,0
+"resource_security_focused","resource_security_focused",TRUE,"Solar",5,12,-7
 "resource_security_focused","resource_security_focused",TRUE,"Wind",7,3,4
 "resource_security_focused","resource_security_focused",TRUE,"Electric Vehicles",1,1,0
 "resource_security_focused","resource_security_focused",TRUE,"Electric Grid",1,0,1
 "resource_security_focused","resource_security_focused",TRUE,"Gas",0,0,0
 "resource_security_focused","resource_security_focused",TRUE,"Oil",0,0,0
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries",31,28,3
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear",9,15,-6
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar",5,13,-8
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Batteries",30,27,3
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Nuclear",9,16,-7
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Solar",4,12,-8
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Wind",4,3,1
-"resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Vehicles",3,1,2
+"resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Vehicles",4,1,3
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Electric Grid",0,0,0
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Gas",2,0,2
 "resource_security_focused_no_tech","resource_security_focused",FALSE,"Oil",6,0,6
-"deployment_focused","deployment_focused",TRUE,"Batteries",31,28,3
-"deployment_focused","deployment_focused",TRUE,"Nuclear",17,15,2
-"deployment_focused","deployment_focused",TRUE,"Solar",7,13,-6
-"deployment_focused","deployment_focused",TRUE,"Wind",4,3,1
+"deployment_focused","deployment_focused",TRUE,"Batteries",28,27,1
+"deployment_focused","deployment_focused",TRUE,"Nuclear",18,16,2
+"deployment_focused","deployment_focused",TRUE,"Solar",7,12,-5
+"deployment_focused","deployment_focused",TRUE,"Wind",5,3,2
 "deployment_focused","deployment_focused",TRUE,"Electric Vehicles",1,1,0
 "deployment_focused","deployment_focused",TRUE,"Electric Grid",0,0,0
 "deployment_focused","deployment_focused",TRUE,"Gas",0,0,0
 "deployment_focused","deployment_focused",TRUE,"Oil",0,0,0
-"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries",31,28,3
-"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear",8,15,-7
-"deployment_focused_no_tech","deployment_focused",FALSE,"Solar",6,13,-7
-"deployment_focused_no_tech","deployment_focused",FALSE,"Wind",3,3,0
-"deployment_focused_no_tech","deployment_focused",FALSE,"Electric Vehicles",0,1,-1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Batteries",28,27,1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Nuclear",9,16,-7
+"deployment_focused_no_tech","deployment_focused",FALSE,"Solar",5,12,-7
+"deployment_focused_no_tech","deployment_focused",FALSE,"Wind",4,3,1
+"deployment_focused_no_tech","deployment_focused",FALSE,"Electric Vehicles",1,1,0
 "deployment_focused_no_tech","deployment_focused",FALSE,"Electric Grid",0,0,0
 "deployment_focused_no_tech","deployment_focused",FALSE,"Gas",0,0,0
 "deployment_focused_no_tech","deployment_focused",FALSE,"Oil",12,0,12
