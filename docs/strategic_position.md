@@ -1,7 +1,10 @@
 # Strategic Position: the canonical decision framework
 
-Branch `feat/supply-chain-stages`, 2026-10-29 (two-leg Catch Up pathway and rerun 2026-10-30, commit
-7d847ba). The framework is **Need -> Prize -> Position -> Choice -> Policy alignment**, per country x
+Branch `feat/supply-chain-stages`, 2026-10-29; updated 2026-10-30 for the capability-anchor Catch Up rule
+(ea6089a, d65ae03), the Atlas 2024 data and basket change (56e9271, 42dd358), the need floor (26d0131), fences by
+yard (37f8f13) and the Yards & Fences tightening (315cff0), all rerun together (scripts 26 and 27 on a54a9d3; bundles
+and diagnostics e41cb5b). Counts are from that run unless labelled "two-leg run" (the 2026-10-30 rerun of 7d847ba on
+the old data). The framework is **Need -> Prize -> Position -> Choice -> Policy alignment**, per country x
 technology x six-stage node. Results and validation are in
 [strategic_position_readout.md](strategic_position_readout.md) and
 `diagnostics/strategic_position/decision_review.md` (spec Part XXI); the per-country choice cards are in
@@ -10,11 +13,12 @@ technology x six-stage node. Results and validation are in
 framework (Grow / Upgrade / Exposed / Stable, the Strategic Index) is kept only for replication and
 comparison: see [Legacy OSI framework](#legacy-osi-framework) at the end.
 
-**Yards & Fences tightening (branch `feat/yf-method`, 2026-10-30).** The Prize is now **Strategic Industrial
-Value** (market, industrial-commons and future-option value, with a market-only cap); a **large-yard case**
-(mature, passive, commodity nodes) is tested before the prize; and **sensitive layers are yard units of their
-own**, rolled up to technology x stage (mixed where they differ). See sections 2 and 4. Not yet rerun: the
-counts quoted in sections 2 and 4 are from the 2026-10-30 run under the market prize.
+**Yards & Fences tightening (merged 315cff0, 2026-10-30).** The Prize is now **Strategic Industrial Value**
+(market, industrial-commons and future-option value, with a market-only cap); a **large-yard case** (mature,
+passive, commodity nodes) is tested before the prize; **sensitive layers are yard units of their own**, rolled up
+to technology x stage (mixed where they differ); and the policy-design fence height follows the yard. See sections
+2, 4 and 7. Current run: Secure 206, Preserve 103, Catch Up 355, Partner 1,474, Accelerate 514, Watch 6,585, not
+assessed 4,887; yards by cell small 181, medium 1,809, large 6,051, mixed 1,196.
 
 The unifying question:
 
@@ -126,6 +130,17 @@ importers) and entrepots are NA. Substitutability, qualification / reconstitutio
 systemic essentiality and operational-control risk stay Secure-engine inputs (curated node attributes) and
 are shown in the drawer as subcomponents; they do not enter the percentile.
 
+**Need floor** (user decision 2026-10-30, `decision_framework.supply_chain_need.score_floor`, 0.10). In a thinly
+traded node most economies import too little to register and score 0, so a tiny positive score ranks above most of
+the field (after yellowcake moved to Nuclear Extraction, Australia and Canada read 0.77 and 0.75 need on uranium for
+need scores of 0.03 and 0.02). A percentile at or above the need threshold less its borderline band (0.62) stands
+only where `supply_chain_need_score` reaches the floor; below it the percentile is capped at threshold - band - 0.01
+(0.61), so the node reads plainly as low need and is never borderline on need. `supply_chain_need_cap` says
+"score_below_floor" and `supply_chain_need_uncapped` keeps the percentile; the choice reason names it ("a need score
+of 0.03, below the 0.10 floor, though it ranks at 0.77 in a thinly traded node"). Current run: 40 cells capped (Nuclear
+Extraction 21, Nuclear Refining 18, EV-minerals Refining 1), 39 of which would otherwise be high need; measured need
+for 7,554 of 11,770 producing cells, high need 2,386.
+
 At Deployment & Use, `supply_chain_need` is NA: the Assembly-equipment proxy that `strategic_need.R`
 writes on the Deployment row (`strategic_need_percentile`) is kept only for the legacy comparison and is
 never read by the choice.
@@ -198,11 +213,13 @@ sensitive layer:
   the prize high. The cap is a rule, not a measurement: a capped prize is never high at any prize threshold
   (the rule reads `siv_cap`, so `choice_threshold_sensitivity.csv` at 0.50 or 0.55 does not lift it) and never
   borderline. **Calibration choice to report** (the gate: 0.5 on commons is 1.5 learning points of 3, between
-  the paper's moderate, 1, and strong, 2). On the curated attributes the cap now covers the control layers
-  (process knowledge is not assessed for software, so their commons is at most two thirds), the Recovery rows
-  and other rows whose learning attributes are Unknown, and Solar Components (its stage row's learning
-  attributes are Unknown; its option family is 0.375): 39 producing nodes or layers against 18 under the
-  mean-of-observed reading.
+  the paper's moderate, 1, and strong, 2). On the curated attributes the cap now covers 10 of the 12
+  producing-stage control layers (process knowledge is not assessed for software, so their commons is at most
+  two thirds; HVDC control and reactor controls escape it), the Recovery rows other than Batteries and Nuclear and
+  other rows whose learning attributes are Unknown or low (every Extraction stage row; Coal, Gas and Geothermal
+  Refining; Oil Components), battery enclosures, grid cables, PV racking and hydrogen PGMs, and Solar Components
+  (its stage row's learning attributes are Unknown; its option family is 0.375): 39 producing nodes or layers
+  against 18 under the mean-of-observed reading (`strategic_value_families.csv`, current run).
 - Without the market prize (no demand series) the node stays not assessed (`require_market: true`): the
   curated attributes alone never decide a prize.
 - `siv_families_observed` counts the families with at least one observed input; `siv_commons_n` and
@@ -214,6 +231,12 @@ sensitive layer:
 - `decision_framework.strategic_value.prize_measure: market` restores the market prize as the prize (the rule
   until 2026-10-30); `strategic_value_vs_market.csv` compares the four combinations of prize measure and
   large-yard case on the stored inputs.
+
+Current run: `strategic_industrial_value` over the 11,770 producing cells has quartiles 0.25 / 0.50 / 0.74; 3,044 of
+the 7,554 assessed producing cells (40%) have a high prize. All 219 economies share each node's market-only state
+(`strategic_value_families.csv`: a node is market-only in every economy or in none). On the stored inputs, against
+the market prize without the large-yard case, the strategic value alone changes 231 producing-cell choices, the
+large-yard case alone 595 and both 798 (`strategic_value_vs_market.csv`; the moves are listed under Choice).
 
 The attributes behind the commons and option families, and the three product-market attributes of the
 large-yard case, are curated in `posture_node_attributes.csv` with a reason and source for every value
@@ -254,11 +277,11 @@ Before 2026-10-30 the rule read this market prize directly: high prize `industri
 EO-based column is `legacy_eo_opportunity` (and `legacy_eo_opportunity_pct`); it is never read by the
 choice.
 
-Validation (spec XXI.2, `opportunity_validation_*.csv`): Spearman with Competitive Position 0.09 pooled and
-0.36 median within the 37 nodes where the home market varies the prize; with supply-chain need 0.04 /
-0.13; world demand growth carries 82% of the prize, the capex trend 4%, the home market 14%. The prize is
-not a disguised capability score: within a node only the home market moves it, and large home markets
-are partly large producers (hence 0.36).
+Validation (spec XXI.2, `opportunity_validation_*.csv`, current run): Spearman with Competitive Position 0.095
+pooled and 0.38 median within the 37 nodes where the home market varies the prize; with supply-chain need 0.04 /
+0.10; with the legacy EO 0.26; world demand growth carries 82% of the prize, the capex trend 4%, the home market 14%
+(two-leg run: 0.09 / 0.36, 0.04 / 0.13). The market prize is not a disguised capability score: within a node only
+the home market moves it, and large home markets are partly large producers (hence 0.38).
 
 Known limitation: the manufacturing nodes use WEO capacity (a stock), the mineral nodes annual mineral
 demand (a flow). Where annual additions plateau while the installed base keeps growing (solar), the
@@ -320,14 +343,24 @@ inside the Large yard; and three of the eight signals (standardized, low differe
 facets of one product-market property. Grouping the signals into product-market, learning and supply
 families and requiring one from each is an alternative not adopted.
 
-On the curated attributes (pinned in `tests/testthat/test-strategic-value.R`), passive racking, battery
-enclosures and grid cables are large yards (7 or 8 of 8); conventional PV modules are a large yard **with a
-capability floor** (moderate learning, 1.5 of 3), on 6 of 8 signals where world supply reads diversified and
-on exactly 5 (borderline: `min_signals` 6, or differentiation "moderate", flips it) where its own module
-supply reads concentrated, as it does; next-generation PV, battery cells, polysilicon, magnets, enrichment,
-transformers and motors are not (strong industrial learning, 2 or more of 3); control layers are not
-(digitally active). Whether a node actually is one is decided by its attributes and the world supply data,
-never by the paper's placement.
+On the curated attributes (pinned in `tests/testthat/test-strategic-value.R` with world supply read as
+diversified, then concentrated), passive racking, battery enclosures and grid cables are large yards (8, 7 and 7 of 8
+when diversified; one fewer when concentrated); conventional PV modules are a large yard **with a capability floor**
+(moderate learning, 1.5 of 3), on 6 of 8 signals where world supply reads diversified and on exactly 5 (borderline:
+`min_signals` 6, or differentiation "moderate", flips it) where its own module supply reads concentrated, as it does;
+next-generation PV, battery cells, polysilicon, magnets, enrichment, transformers and motors are not (strong
+industrial learning, 2 or more of 3); control layers are not (digitally active). On the current run's world supply
+data (`yf_paper_reproduction.csv`): racking 8, grid cables 7, battery enclosures 6 (their cell's supply reads
+concentrated) and PV modules 5. Whether a node actually is one is decided by its attributes and the world supply
+data, never by the paper's placement.
+
+Current run (`large_yard_case.csv`, `large_yard_sensitivity.csv`): the case holds for 2,338 assessed producing cells,
+is undecided for 408, and decides 2,133 Watch cells (1,253 with a capability floor); the rest are Secure (159), a
+top-quarter Preserve read first (5) or Watch on the triage (41). The large-yard cells are commodity Extraction and
+Refining: Electric Grid Refining and Extraction, Solar Extraction and Refining, Nuclear Extraction, Coal, Gas and Oil
+Extraction and Refining in nearly every economy, and Batteries and EV-minerals Extraction where their world supply
+reads diversified (48 and 47 economies); among layers, battery enclosures, grid cables, PV racking and PV modules.
+`min_signals` 4 / 6 change 271 / 159 choices; `position_last` 5; `no_learning_veto` none.
 
 ## 3. Position: Competitive Position
 
@@ -409,7 +442,7 @@ USD 200bn). Pure code: `R/strategic_position/trade_benchmark.R`, `trade_momentum
 - **Structural benchmark.** For each reporter-year with a reported total: basket exports, the world
   export share (over that year's reporters; re-export hubs excluded) and the Balassa RCA; each averaged
   over the years observed (at least two). The S-curve ranks across countries within the cell replace
-  EO's single-year `market_share` (Atlas 2023) and `rca` (Comtrade 2024). An economy that does not
+  EO's single-year `market_share` (Atlas, 2024 since the V18 release) and `rca` (Comtrade 2024). An economy that does not
   report to Comtrade keeps its Atlas share (`trade_benchmark_source = atlas_fallback`) and no RCA.
 - **Common cutoff.** The latest month M at which at least 80% of the universe's monthly reporters have
   all 24 months M-23..M (`trade_momentum_cutoff.csv`). Twelve universe members publish no monthly trade
@@ -438,8 +471,9 @@ USD 200bn). Pure code: `R/strategic_position/trade_benchmark.R`, `trade_momentum
   `trade_momentum_weight_sensitivity.csv` (rank correlations, movers above 5 and 10 percentile points).
   Competitive Position now decides the response (the contenders' top quarter preserves), so the
   sensitivity file re-runs the canonical choice at each weight on the stored need, prize, pathway and
-  floor: dropping momentum (weight 0) changes 16 choices and 5 review flags; 0.10 changes 7 choices and 2
-  flags, 0.20 changes 9 and 1 (the same on the 2026-10-29 run and the 2026-10-30 two-leg rerun).
+  floor: on the current run (the re-pulled 2022-24 benchmark and momentum) dropping momentum (weight 0) changes
+  27 choices and 1 review flag; 0.10 changes 12 choices and no flag, 0.20 changes 15 and 1 (two-leg run: 16 and
+  5, 7 and 2, 9 and 1).
 
 Fields: `trade_benchmark_period`, `trade_benchmark_source`, `trade_benchmark_share`,
 `trade_benchmark_rca`, `trade_benchmark_exports`, `trade_momentum_period`,
@@ -458,9 +492,9 @@ need, the prize, the contender percentile, the pathway test and deployment need.
 three routes below), the node is **Secure** whatever its need, prize or position, with its
 `security_rationale` (operational_control / coercive_chokepoint / systemic_resilience), `delivery_mode`
 and mitigation (the policy design's build text). Secure is a rule-based override, not a high-need label:
-163 of the 2,326 high-need producing cells (7%) are Secure (174 Secure cells in all); 151 on systemic resilience, 18 on a coercive
-chokepoint, 5 on operational control. Secure does not mean reshoring: delivery follows trusted supply
-(72 allied, 42 diversified global, 60 mixed).
+191 of the 2,386 high-need producing cells (8%) are Secure (206 Secure cells in all; 174 on the two-leg run); 175 on
+systemic resilience, 27 on a coercive chokepoint, 4 on operational control. Secure does not mean reshoring: delivery
+follows trusted supply (104 allied, 42 diversified global, 60 mixed).
 
 **Step 2, Deployment & Use.** Decided on `deployment_need` alone: missing -> not assessed; at or above 0.6
 -> **Deploy . Accelerate** (the energy system needs more of it; this says nothing about where the
@@ -476,7 +510,8 @@ position worth defending is a Medium-yard rationale that comes before Large, so 
 commodity node goes on to the triage): TRUE -> **Deploy . Watch** (`decision_step` large_yard, `watch_reasons`
 beginning `large_yard_case`, variant deploy_floor where the case keeps a capability floor, else deploy, or
 deploy_diversify where supply is concentrated), whatever need and prize say; Secure has already come first, so
-a genuine chokepoint is never waved through. Otherwise, with high need = `supply_chain_need >= 0.67`, high prize
+a genuine chokepoint is never waved through. Otherwise, with high need = `supply_chain_need >= 0.67` (after the need
+floor, under Need), high prize
 = `strategic_industrial_value >= 0.6` and not capped as market-only (`prize_measure: market` reads
 `industrial_opportunity`, with no cap) and high position as defined under Position:
 
@@ -487,30 +522,65 @@ a genuine chokepoint is never waved through. Otherwise, with high need = `supply
 | **low prize, low need** | Deploy . **Watch** | | | Deploy . **Watch** |
 
 - Preserve applies whether need is high or low. A strong position with high need and a low prize is not
-  mechanically Partner (spec VIII): it is Preserve with a review flag (design D2; 16 cells), so strategic
-  redundancy, Secure or a recalibration of the prize can be considered by a reader. A top-quarter score
-  that fails the capability floor gives Catch Up or Partner with `review_top_quarter_below_floor`
-  (8 cells on 2026-10-30: 5 Catch Up, 3 Partner): a leading score in a fragmented node, for review rather
-  than silent override.
-- **Credible pathway** (design D3, `pathway.R`): `pathway_credible` yes when at least
-  `decision_framework.pathway.min_legs` of five legs fire: 2, user decision 2026-10-30 (design D3 had
-  "any of", one leg; `sp_pathway()` keeps one when the setting is absent). The legs: Atlas product-space
-  feasibility of the node basket in the top quarter of countries; Clean Investment Monitor pipeline
-  capacity in the node; an established adjacent stage (adjacent world share >= 5%, or that stage among the
-  country's stronger cells, within-country CP percentile >= 0.6); curated learning inputs on a domestic
-  base (engine Test 3 learning lower bound moderate or strong); an input-cost advantage (Input Cost Index
-  in the cheapest quarter). Extraction also needs a resource base. `no` = evidence observed and fewer than
-  two legs fire (`pathway_basis` "none_observed_fires", or "<leg>;too_few_legs" when one fired);
-  `unknown` = the evidence cannot decide (nothing observed, every observed leg fires but fewer than two
-  are observed: "<legs>;too_few_observed", or enough legs at Extraction with the resource base unknown:
-  "<legs>;resource_base_unknown"), read as not credible with lower confidence. An unobserved leg does not
-  make a pathway `unknown` once some observed leg fails (483 of the 912 cells that left Catch Up had one). `pathway_basis`
-  names the legs that fired, and the choice reason names a shortfall ("only one piece of pathway evidence
-  (adjacent stage) where two are required"). Of the 2,648 assessed high-prize producing cells without a
-  high position (not Secure), 28% have a credible pathway (Catch Up: 748), 23% go Partner (603) and 49%
-  Watch (1,297): not every prize is forced into Catch Up. Under the one-leg rule it was 63% (1,660), 13%
-  (345) and 24% (643): 912 cells with a single leg (adjacent stage 748, input cost 152, feasibility 7,
-  learning 4, pipeline 1) left Catch Up, 258 for Partner and 654 for Watch.
+  mechanically Partner (spec VIII): it is Preserve with a review flag (design D2; 8 cells on the current run, 16 on
+  the two-leg run), so strategic redundancy, Secure or a recalibration of the prize can be considered by a reader. A
+  top-quarter score that fails the capability floor gives Catch Up or Partner with `review_top_quarter_below_floor`
+  (4 cells on the current run: Brazil Wind Assembly, Catch Up; India, Thailand and Viet Nam Solar Components,
+  Partner; 8 on the two-leg run): a leading score in a fragmented node, for review rather than silent override.
+- **Credible pathway: a capability anchor plus corroboration** (user spec 2026-10-30,
+  `decision_framework.pathway.rule: anchor`, `pathway.R`). `pathway_credible` yes when the country has at
+  least one **capability anchor**, evidence of a real industrial base in or next to the node, and at least
+  one more signal from a **different evidence family** (another anchor or a supporting signal). The anchors
+  are absolute measures, never a Competitive Position score:
+  - direct supply share: the node's **measured** world supply share (`home_share_exposure`, never a
+    listing's residual) >= `direct_share_min` (0.5%, the contender floor) [family direct];
+  - direct export share: the node basket's 2022-24 benchmark world export share
+    (`trade_benchmark_share`) >= 0.5% [family direct];
+  - operating capacity: GCIM operating capacity >= 0.5% of world operating capacity of the node's most
+    material product (`investment_capacity_shares()`) [family capacity];
+  - committed pipeline: GCIM capacity under construction or built and not yet online >= 1% of world
+    operating capacity [family pipeline];
+  - adjacent stage share: an adjacent stage of the same technology with measured world share >= 5%
+    (absolute adjacency) [family adjacency];
+  - resource base: at Extraction, recorded reserves or resource above the cell floor [family resource].
+
+  Supporting signals corroborate an anchor and never qualify on their own: Atlas product-space
+  feasibility in the top quarter (`feasibility_pct` 0.75); an input-cost advantage (Input Cost Index in the
+  cheapest quarter); relative adjacency (an adjacent stage among the country's own stronger cells,
+  within-country CP percentile >= 0.6) [family adjacency]; curated learning inputs (engine Test 3 learning
+  lower bound moderate or strong, whose "base" can be feasibility or relative adjacency alone, so context
+  rather than capability); announced or paused GCIM capacity >= 2% of world operating capacity [family
+  pipeline]. A signal in the anchor's own family does not corroborate it (the two direct shares are one
+  family; relative adjacency does not corroborate absolute adjacency). Extraction also needs a resource
+  base. `no` = an anchor family is observed and none fires (`pathway_basis` "...;no_anchor"), or the
+  anchor is not corroborated though other evidence is observed ("...;anchor_uncorroborated"), or no
+  resource base at Extraction ("no_resource_base"); `unknown` = the evidence cannot decide (no anchor family
+  observed: "anchor_unobserved"; an anchor with nothing else observed: "corroboration_unobserved"; nothing
+  observed: "no_evidence"; a corroborated anchor at Extraction with the resource base unknown:
+  "...;resource_base_unknown"), read as not credible with lower confidence. `catch_up_anchor` (TRUE / FALSE
+  / NA where no anchor family is observed), `catch_up_anchor_type` and `pathway_support` name what fired,
+  and the choice reason names the anchor and its corroboration, or what is missing. A high prize without a
+  high position or an anchor, decided Partner or Watch, carries `greenfield_option` (2,529 cells on the
+  current run: Partner 792, Watch 1,737): an attractive but unsupported opportunity, never Catch Up.
+
+  The **legs rule** (`rule: legs`; design D3 at `min_legs` 1, the two-leg rule of the morning of 2026-10-30
+  at 2) is kept for the sensitivity: yes when `min_legs` of feasibility, pipeline (raw GCIM pipeline > 0),
+  adjacent stage (absolute, on `home_share` as before, or relative), learning and input cost fire, with the
+  `too_few_legs` / `too_few_observed` bases. It reads `home_share`, residuals included, so its counts
+  reproduce; the anchors read the measured share because the residual gave every economy that a partial
+  listing omits 0.87% of battery refining, which made Afghanistan, Andorra, Bermuda and 150 other small
+  economies Catch Up there on a direct-supply anchor until d65ae03.
+
+  Current run (`catch_up_rule_comparison.csv`, `catch_up_capability_bands.csv`, `catch_up_anchor_types.csv`,
+  `pathway_by_stage.csv`): Catch Up 1,952 under one leg, 928 under two, 355 under the anchor rule. Every Catch
+  Up cell has an anchor; none has a cross-country Competitive Position below 0.25 (36 under two legs, 273
+  under one). Anchors among them: direct export share 303, direct supply share 256, adjacent stage share 54,
+  operating capacity 43, committed pipeline 31 (no Extraction cell is Catch Up: every Extraction
+  stage row is capped as market-only, and most are large yards). Of the 2,902 assessed high-prize producing cells without a high position, not Secure and not a
+  large yard, 12% have a credible pathway (Catch Up 355), 28% go Partner (800) and 60% Watch (1,747): not
+  every prize is forced into Catch Up. On the old data the anchor rule took Catch Up from 748 (two legs) to
+  357: 456 cells left it (164 for Partner, 292 for Watch), 65 joined it (one-leg cells with an anchor, e.g.
+  Chilean and Argentine battery-minerals Extraction).
 - **Watch reasons** (`watch_reasons`): large_yard_case (a mature, passive commodity node), low_need,
   low_prize, ample_diversified_supply (no concentration watch), weak_domestic_case (a prize without a
   top-quarter position or a pathway), option_value (an emerging node), low_deployment_need. Watch is a
@@ -526,11 +596,21 @@ a genuine chokepoint is never waved through. Otherwise, with high need = `supply
   review and is now true (the paper's order); `large_yard_sensitivity.csv` run `position_last` gives the other
   order. The legacy-vs-choice diagnostics attribute a large-yard Watch to `large_yard_case` and a prize change
   to the prize column the rule read (`strategic_industrial_value`).
+- **What the strategic value and the large yard moved** (current run against the market prize without the
+  large-yard case, need floor applied in both; `strategic_value_vs_market_transitions.csv`): 798 producing
+  cells. Partner -> Watch 567, all by the large-yard case (commodity Extraction and Refining: Electric Grid,
+  Coal, Solar, Gas, Oil, Nuclear and Batteries); Watch -> Catch Up 73, Partner -> Catch Up 24 and Watch ->
+  Preserve 26 on equipment nodes with high industrial commons (Electric Grid, Nuclear, Gas and Oil Assembly,
+  Nuclear Components and Refining, Coal and Gas Components); Catch Up -> Watch 69, Catch Up -> Partner 30 and
+  Preserve -> Watch 9 on market-only or large-yard nodes (Batteries and EV-minerals Extraction, Solar
+  Components, Gas Extraction and Refining, Nuclear Extraction).
 
 **Outputs** (`strategic_position_tbl`): `strategic_choice` (the six verbs or not_assessed),
 `strategic_posture` (secure / compete / deploy / not_assessed), `compete_mode`, `deploy_mode`,
-`posture_variant` (secure_* from the engine; compete_preserve / compete_catch_up / compete_partner; deploy,
-deploy_diversify, deploy_floor: a large yard with a capability floor, or the engine's own), `security_rationale`, `delivery_mode` (domestic / allied /
+`posture_variant` (secure_* from the engine; compete_preserve / compete_catch_up / compete_partner;
+deploy_accelerate for Accelerate since 2026-10-30; deploy, deploy_diversify, deploy_floor: a large yard with a
+capability floor, or the engine's own), `prize_measure` and `choice_prize` (the prize the rule read),
+`greenfield_option`, `security_rationale`, `delivery_mode` (domestic / allied /
 diversified_global / mixed: Preserve domestic, Catch Up domestic or mixed, Partner allied where trusted
 partners hold 30% of world supply else diversified global, Deploy diversified global or allied), `need_type`,
 `need_high`, `prize_high`, `cp_high`, `decision_step` (secure_override / deployment_need / large_yard /
@@ -542,7 +622,11 @@ capability evidence, a consistency flag, fewer than two observed need families; 
 Secure keeps the engine's confidence), `decision_borderline` (the
 inputs within 0.05 of their threshold), `choice_possible` and `posture_possible` (the choices and
 postures the borderline inputs and an unknown pathway allow), `pivotal_inputs`, `consistency_flag`,
-`watch_reasons`, `choice_reason` (one plain sentence from the stored inputs). The engine's own Compete
+`watch_reasons`, `choice_reason` (one plain sentence from the stored inputs); with the pathway's
+`catch_up_anchor`, `catch_up_anchor_type`, `pathway_support`, `pathway_rule` and `pathway_credible_legs_1`,
+`_legs_2`, `_anchor` (each rule's verdict, for the comparison), the strategic-value columns (`siv_*`,
+`strategic_industrial_value`), the large-yard columns (`large_yard_*`) and the yard columns (`yard`,
+`yard_rollup`, `yard_children`, `yard_units`, `yard_mixed`, `yard_fence_scope`). The engine's own Compete
 reading is kept as `engine_posture`, `engine_variant` and the `t3`-`t5` columns; the 2026-10-28 quadrant as
 `legacy_quadrant`, `legacy_quadrant_posture`, `legacy_quadrant_mode`, `legacy_quadrant_flag`,
 `legacy_quadrant_borderline`.
@@ -576,21 +660,40 @@ reason}]`, a single child still an array; `variant` carries a Secure child's fen
 from its hardware, `secure_integrated` or `secure_whole`, the paper's small-integrated and small-whole, so the
 high fence covers hardware the stage row's own yard does not show; `unclear` where separability is not
 established; `layer` otherwise; NA without a Secure child); every layer carries its own `yard` and its cell's
-`yard_rollup`. Units not assessed do not enter the roll-up. The posture bundle carries them (`cells.yd` in the
-core; `yard`, `yard_rollup`, `yard_fence_scope`, `yard_children`, the strategic-value families and the
-large-yard case in the detail). **The Explorer drawer does not show them yet**: the dashboard decoders
-(`dashboard/src/posture/contract.ts`, `detail.ts`) ignore these fields and the drawer still labels the prize
-"Industrial Opportunity", so the dashboard changes must land before the posture bundle is rebuilt.
+`yard_rollup`. Units not assessed do not enter the roll-up. The posture bundle carries them: in the core
+`cells.yd` (the roll-up, coded), `cells.io` (the market prize beside `cells.prize`, the value the choice read,
+named in `meta.prize_measure`) and `meta.yf_nodes` (since a54a9d3: one row per producing-stage node and layer with
+its label, large-yard case and signals, and the strategic-value families that do not vary by country); in the detail
+the prize the choice read and the market prize, the large-yard case only where the country's differs from its
+node's, the fence scope where it reaches beyond the layer, and the child layers as `{layer_id, yard, choice,
+variant}` (the drawer composes their reasons). At e41cb5b the dashboard decoders (`dashboard/src/posture/`) do not
+read these fields yet and the drawer still labels the prize "Industrial Opportunity" though `cells.prize` now holds
+the strategic industrial value; the dashboard copy-refresh work is bringing the page up to the bundle.
 
-**Departure from the paper, by the user's fence mapping.** Partner is a Medium-yard choice, so high import
-need alone (no prize, no position) gives a Medium yard; in the paper's tool dependence and concentration only
-add a diversification posture inside the Large yard (`gates.ts` `evaluateLargeYard`, `large-diversify`), and
-strong learning alone is a Medium rationale, while here it raises the prize and still needs a position, a
-pathway or high need to leave Watch. So next-generation PV and battery cells are a Medium yard in seven of the
-eight combinations of need, position and pathway, and Watch (Large) for a country with low need, no position
-and no pathway. The reproduction diagnostic shows the choice behind each agreement (below) so an agreement by
-Partner (need) is not read as an agreement on capability. Whether need-only Partner should map to Large with
-diversification is an open decision for the user.
+Current run (`yard_rollup_by_cell.csv`, `yard_layers.csv`): cells by roll-up small 181, medium 1,809, large 6,051,
+mixed 1,196 (mixed_high_medium 320, mixed_medium_low 350, mixed_high_low 362, mixed_high_medium_low 164), not
+assessed 4,887; `yard_fence_scope` `extends_to_hardware` on 439 cells and `layer` on 412. Layers (35 per economy,
+7,665 rows): small 1,106, medium 1,724, large 4,022, not assessed 813. Small layers are control layers and magnets,
+rare-earth separation, enrichment, fuel fabrication, grain-oriented steel and transformers where the engine finds an
+acute vulnerability for the country.
+
+**Departure from the paper, by the user's fence mapping (decided 2026-10-30).** Partner is a Medium-yard
+choice, so high import need alone (no prize, no position) gives a Medium yard; in the paper's tool dependence and
+concentration only add a diversification posture inside the Large yard (`gates.ts` `evaluateLargeYard`,
+`large-diversify`), and strong learning alone is a Medium rationale, while here it raises the prize and still needs
+a position, a pathway or high need to leave Watch. So next-generation PV and battery cells are a Medium yard in
+seven of the eight combinations of need, position and pathway, and Watch (Large) for a country with low need, no
+position and no pathway. The reproduction diagnostic shows the choice behind each agreement (below) so an agreement
+by Partner (need) is not read as an agreement on capability. The user kept need-alone Partner in the Medium fence:
+a documented departure.
+
+**Control layers are Small only where coercive control is measured for the country (decided 2026-10-30).** A
+control layer is Secure (Small) only when the engine's digital path holds for that country: remote command, update
+or data access, harm within months, and at least 25% of the carrying hardware from coercive suppliers. Otherwise it
+is classified like any other unit, its prize is usually market-only (process knowledge is not assessed for
+software) and it is kept out of the large-yard case (digitally active), so with low need it is Watch (Large). Grid
+SCADA, utility inverter firmware and reactor controls are therefore Small for Japan but Large for the United States
+and Germany: a documented departure from the paper, which places them Small.
 
 **Validation against the paper** (`yf_paper_reproduction.csv`, `sp_yf_reproduction()`): for each of the 21
 curated Yards & Fences components, the unit the tool classifies (the layer linked by `yf_component_id`;
@@ -603,6 +706,15 @@ beside it with agree / differ. This is the only place the
 placement is read; it is never an input to a classification (tests check that no classification function
 reads it). Diagnostics: `yard_rollup_by_cell.csv` (roll-ups by technology x stage), `yard_layers.csv`
 (layer x choice and yard counts), `large_yard_case.csv` and `strategic_value_families.csv` (by node).
+
+Current run: of the 19 components the paper places, the model's yard agrees for Japan on 17, Germany on 12 and the
+United States on 10, and the modal yard over all economies on 7 (most small economies have low need and no position,
+so most of their units are Watch). Battery-management and communications layers are small, and cells, cathode,
+anode, power conversion and next-generation PV medium, in all three; cables and racking large; magnets mostly small;
+PV modules large only on the threshold (5 of 8 signals) and Preserve (medium) where the cell holds a top-quarter
+position (the United States, Germany); grid SCADA, inverter firmware and reactor controls small for Japan only (the
+control-layer decision above); LEU and HALEU enrichment medium (Catch Up) where the paper has small. The full table is
+in [decision_framework_report.md](decision_framework_report.md) section 28.
 
 ### The Secure override in detail (the posture engine)
 
@@ -728,10 +840,13 @@ is no quota.
 chokepoint, else the dual-use reading, else resilience); `security_routes_met` lists all. Variants:
 the digital path keeps secure_control / integrated / whole / unclear, the chokepoint secure_input
 (secure_both with the digital path), the dual-use reading secure_dual_use and resilience
-secure_resilience. The fence differs by rationale: high around the control layer or the dual-use
-end uses, targeted on a chokepoint input, none for resilience (restricting imports would deepen the
-shortfall it guards against; the build is reserves, long-lead procurement, spares and trusted
-capacity agreements). Secure does not mean reshoring: delivery follows where trusted supply is.
+secure_resilience. Every Secure variant is a high fence since 2026-10-30 (the fence follows the yard;
+Policy design below), but its scope and instruments differ by rationale: around the control layer or the
+dual-use end uses; around the chokepoint input, phased in as trusted supply qualifies; and for resilience
+a fence that guards the essential supply itself (screening of foreign control of essential assets,
+trusted long-term supply, stockholding), never import protection, since restricting imports would
+deepen the shortfall it guards against (the build is reserves, long-lead procurement, spares and
+trusted capacity agreements). Secure does not mean reshoring: delivery follows where trusted supply is.
 
 ### Allied strategy: partner recommendations and the allied division of labour
 
@@ -761,8 +876,8 @@ single_credible_supplier, weak_evidence, insufficient_allied_capacity (credible 
 below 30% of world supply, `partner_trusted_capacity`), excessive_concentration (a coercive supplier with
 50% or more of world supply). A gap is no trusted supplier, a single credible one, or insufficient allied
 capacity; weak evidence and excessive concentration are reported reasons, not gaps by themselves. A
-genuine "no credible allied solution yet" is reported, never forced (2026-10-30: Partner 1,003 covered /
-847 gap; Secure 56 / 118). The division matrix adds `allied_world_share`, `coercive_world_share` and the
+genuine "no credible allied solution yet" is reported, never forced (current run: Partner 692 covered /
+782 gap; Secure 110 / 96; two-leg run: Partner 1,003 / 847, Secure 56 / 118). The division matrix adds `allied_world_share`, `coercive_world_share` and the
 same two capacity reasons after the original four in `aib_gaps` (the primary `aib_gap` is unchanged where
 one of those applies), with `secure_foreign_demand` and `partner_aib_gaps` per node.
 
@@ -792,15 +907,15 @@ lower where the rule needed the NIPO support / protection split and it is not ra
 protection stock is a measurement, not a gap); at most medium at Deployment (PAMS only, by construction);
 low whenever the total-attention fallback decides the alignment (design D5), whatever the number of
 sources; insufficient_data is low. No overall policy score is computed.
-2026-10-30 (`choice_policy_alignment.csv`): aligned 5,486; under_prioritized 516 (Catch Up 397, Secure 92,
-Preserve 27); deployment_gap 182; over_prioritized 503 (all Watch: 122 producing cells on NIPO protection,
-65 Deployment cells on the equipment's local-content protection, and 316 producing cells on total attention
-because NIPO does not observe them, all low confidence); misaligned 76 (Partner); mixed 220;
-insufficient_data 7,141 (5,295 of them not assessed). Alignment confidence: high 1,928, medium 1,295, low
-10,901. 1,157 Watch cells carry top-third policy intensity (`watch_high_policy_intensity.csv`). Under the
-one-leg pathway rule (2026-10-29) over_prioritized was 375 (103 / 65 / 207) and under_prioritized 947: the
-cells that left Catch Up keep their observed policy attention, so 126 of the 654 new Watch cells are
-over-prioritized and 431 under-prioritized Catch Up cells are gone.
+Current run (`choice_policy_alignment.csv`): aligned 5,826; under_prioritized 310 (Catch Up 176, Secure 104,
+Preserve 30); deployment_gap 182; over_prioritized 679 (all Watch: 151 producing cells on NIPO protection, 64
+Deployment cells on the equipment's local-content protection, and 464 producing cells on total attention because
+NIPO does not observe them, all low confidence); misaligned 59 (Partner); mixed 233; insufficient_data 6,835 (4,887
+of them not assessed). Alignment confidence: high 2,096, medium 1,350, low 10,678. 1,412 Watch cells carry top-third
+policy intensity (`watch_high_policy_intensity.csv`). The rise in over_prioritized follows the Watch count: the
+large-yard case sends commodity cells to Watch and they keep their observed policy attention. Two-leg run: aligned
+5,486, under_prioritized 516, over_prioritized 503 (122 / 65 / 316), misaligned 76, mixed 220, insufficient_data
+7,141; under the one-leg rule (2026-10-29) over_prioritized was 375 and under_prioritized 947.
 
 ### Revealed Policy Priority
 
@@ -865,34 +980,34 @@ behind them (`choice_by_country.csv`, `choice_threshold_sensitivity.csv`, `consi
 `io_node_prize.csv`, `pathway_by_stage.csv`, `secure_selectivity.csv`, `deployment_review.csv`,
 `manufacturing_vs_deployment.csv`, `watch_high_policy_intensity.csv`, `choice_policy_alignment.csv`).
 
-2026-10-30 (two-leg pathway), 14,124 classified cells (`choice_overall.csv`): Secure 174, Preserve 86,
-Catch Up 748, Partner 1,850, Accelerate 514, Watch 5,457 (1,169 of them at Deployment), not assessed 5,295
-(4,624 producing cells without a measured supply-chain need, mostly Recovery and Extraction thin cells; 671
-Deployment cells without deployment need). Under the one-leg rule (2026-10-29): Catch Up 1,660, Partner 1,592,
-Watch 4,803, everything else the same.
+Current run, 14,124 classified cells (`choice_overall.csv`): Secure 206, Preserve 103, Catch Up 355, Partner
+1,474, Accelerate 514, Watch 6,585 (1,169 of them at Deployment, 2,133 decided by the large-yard case), not assessed
+4,887 (4,216 producing cells without a measured supply-chain need, the same 18 nodes in every economy plus thin
+cells; 671 Deployment cells without deployment need). Two-leg run (old data): Secure 174, Preserve 86, Catch Up 748,
+Partner 1,850, Accelerate 514, Watch 5,457, not assessed 5,295; under the one-leg rule (2026-10-29): Catch Up 1,660,
+Partner 1,592, Watch 4,803.
 
-Position-choice consistency, before (the 2026-10-28 need x EO quadrant) -> after, both counted on the same
-2026-10-29 Competitive Position and measured supply shares (`consistency_before_after.csv`):
+Position-choice consistency, before (the 2026-10-28 need x EO quadrant, recomputed on the current data) -> after,
+both counted on the same Competitive Position and measured supply shares (`consistency_before_after.csv`; the
+file's "after" label still reads 2026-10-29 but its counts are the current run's):
 
-| contradiction | before | after |
-|---|---|---|
-| Partner with Competitive Position in the contenders' top quarter (contenders only) | 8 | 3 (all below the capability floor, flagged) |
-| Partner with cross-country CP >= 0.75 | 363 of 1,456 (25%) | 396 of 1,850 (21%) |
-| Catch Up with 10% or more of world supply | 8 | 6 (contenders just below the top quarter, 0.59-0.74) |
-| Catch Up with CP in the contenders' top decile (contenders only) | 10 | 2 (both below the capability floor, flagged) |
-| Catch Up with cross-country CP >= 0.9 | 49 of 117 (42%) | 173 of 748 (23%) |
-| Preserve without capability (cross-country CP < 0.25 or < 0.5% of world supply) | 66 | 0 |
-| Preserve below the contenders' median | 43 | 0 |
+| contradiction | before | after | after, two-leg run |
+|---|---|---|---|
+| Partner with Competitive Position in the contenders' top quarter (contenders only) | 10 | 3 (all below the capability floor, flagged) | 3 |
+| Partner with cross-country CP >= 0.75 | 415 of 1,521 (27%) | 275 of 1,474 (19%) | 396 of 1,850 (21%) |
+| Catch Up with 10% or more of world supply | 11 | 5 | 6 |
+| Catch Up with CP in the contenders' top decile (contenders only) | 10 | 0 | 2 |
+| Catch Up with cross-country CP >= 0.9 | 50 of 115 (43%) | 152 of 355 (43%) | 173 of 748 (23%) |
+| Preserve without capability (cross-country CP < 0.25 or < 0.5% of world supply) | 63 | 0 | 0 |
+| Preserve below the contenders' median | 42 | 0 | 0 |
 
-By construction Preserve now needs a top-quarter position among contenders, so Preserve without capability
-is gone and Partner despite a top-quarter position falls from 8 to 3 (2 under the one-leg pathway rule;
-Australia EV Extraction moved from Catch Up to Partner with the two-leg rule). The cross-country counts did
-not fall in number because far more cells are now assessed and decided (Catch Up 117 -> 748): as rates they
-fall from 25% to 21% (Partner) and from 42% to 23% (Catch Up). Under the one-leg rule (2026-10-29) the
-after column read 2, 361 of 1,592 (23%), 6, 3 and 207 of 1,660 (12%); the second leg removed mostly
-lower-ranked Catch Up positions, so the Catch Up rate rose. A cross-country top-decile CP is not a leading
-position in a node with 30 or more contenders. The remaining contender-level cases fail the capability floor (a 1-3% world
-share without a specialised foothold or learning base) and carry `review_top_quarter_below_floor`.
+By construction Preserve needs a top-quarter position among contenders, so Preserve without capability is gone and
+Partner despite a top-quarter position falls from 10 to 3. The anchor rule keeps only Catch Up cells with a real
+base, so the Catch Up set sits higher in the cross-country ranking: 43% have a cross-country CP of 0.9 or more,
+against 23% on the two-leg run. A cross-country top-decile CP is not a leading position in a node with 30 or more
+contenders: these are contenders below the top quarter of crowded nodes, Catch Up by design, but they read as
+"Catch Up despite a strong position". The remaining contender-level Partner cases fail the capability floor and carry
+`review_top_quarter_below_floor`.
 
 ## 7. Policy design
 
@@ -902,19 +1017,31 @@ condition and review interval. `config/posture_delivery_modes.csv` adds a build 
 mode and posture (allied Secure: build trusted capacity with partners through compacts, offtake,
 co-investment and shared stockpiles, not at home).
 
-- **Secure**: a fence targeted at the vulnerable node (trusted-source and cybersecurity requirements,
-  export and investment controls, adversary-source restrictions); a selective gate open to allied
-  technology, investment, equipment and alternative inputs; a build that repairs the vulnerability
-  (domestic or allied capacity, stockpiles, redundancy, surge, supplier qualification, trusted control
-  architecture). The goal is mitigation, not maximum localization. The Explorer shows the first sentence
+**The fence height follows the yard** (user decision 2026-10-30, as in the Yards & Fences paper):
+small yard (Secure) high, medium yard (Preserve, Catch Up, Partner, Accelerate) medium, large yard (Watch) low.
+`policy_design.R::ppd_read_check()` refuses a `fence_level` that does not follow the yard (secure_* high;
+compete_* and deploy_accelerate moderate; deploy, deploy_floor and deploy_diversify low). Current run: high 206,
+medium 2,446 (compete 1,932, deploy_accelerate 514), low 6,585.
+
+- **Secure** (high fence): a fence targeted at the vulnerable node (trusted-source and cybersecurity
+  requirements, export and investment controls, adversary-source restrictions; for an input, phased in as
+  trusted supply qualifies; for resilience, a guard on the essential supply itself, never import protection); a
+  selective gate open to allied technology, investment, equipment and alternative inputs; a build that repairs the
+  vulnerability (domestic or allied capacity, stockpiles, redundancy, surge, supplier qualification, trusted
+  control architecture). The goal is mitigation, not maximum localization. The Explorer shows the first sentence
   of the build text as the node's mitigation.
-- **Compete** (Preserve, Catch Up, Partner): a calibrated, temporary fence; an open gate that keeps
-  competitive pressure and learning; a build of production support, finance, infrastructure, workforce,
-  R&D, clusters and supplier development, with benchmarks, review dates and sunset conditions; Partner
-  builds with trusted partners.
-- **Deploy** (Accelerate, Watch): open unless a specific problem justifies intervention: a low fence, a
-  wide-open gate, and a build that enables deployment (infrastructure, permitting, interoperability,
-  procurement, transparency).
+- **Compete** (Preserve, Catch Up, Partner; medium fence): a calibrated, temporary, permeable fence (leap-ahead,
+  costly and partner variants included, which had low fences until 2026-10-30); an open gate that keeps
+  competitive pressure and learning; a build of production support, finance, infrastructure, workforce, R&D,
+  clusters and supplier development, with benchmarks, review dates and sunset conditions; Partner builds with
+  trusted partners.
+- **Accelerate** (`deploy_accelerate`, medium fence, since 2026-10-30): open to every trusted supplier the
+  build-out needs, with trusted-supplier and security conditions on public deployment support and connected
+  equipment; a build that enables deployment.
+- **Watch** (deploy, deploy_floor, deploy_diversify; low fence): open unless a specific problem justifies
+  intervention: a low fence, a wide-open gate, and a build that enables deployment (infrastructure, permitting,
+  interoperability, procurement, transparency); `deploy_floor` keeps a specified capability floor (a large yard
+  with moderate learning), `deploy_diversify` adds supplier diversification.
 
 Benchmarks and exit conditions say when to reclassify: a Secure node moves to Compete or Deploy when a
 prolonged cutoff could be survived; Compete support sunsets unless benchmarks are met; Deploy is judged
@@ -960,12 +1087,13 @@ cheap (input cost) or already exports a lot (capability), and high on ES because
 reserves; the canonical framework separates those questions: need is only dependence on external supply
 (or, at Deployment, the system's need for more deployment), the prize is only the market, and position is
 only demonstrated capability. The corners are also relative to the country's own median sector, while the
-choice compares countries within a node. Against the 6,351 country x six-stage cells with a corner
-(2026-10-30): Grow -> Preserve 3%, Upgrade -> Catch Up 6%, Exposed -> Partner 26%, Stable -> Watch 44%
-(`legacy_osi_corners_vs_choice_pairs.csv`). The disagreements come mostly from the cleaned prize (1,822
-cells: a legacy EO high on input cost or capability, or low where world demand is growing), cells not
-assessed now (1,368), Deployment decided on its own need (1,053), the cleaned need (612), Competitive
-Position (223) and Secure (143) (`legacy_osi_corners_vs_choice_drivers.csv`).
+choice compares countries within a node. Against the 6,351 country x six-stage cells with a corner (current
+run): Grow -> Preserve 4%, Upgrade -> Catch Up 4%, Exposed -> Partner 18%, Stable -> Watch 55%
+(`legacy_osi_corners_vs_choice_pairs.csv`; two-leg run 3%, 6%, 26%, 44%). The disagreements come from cells not
+assessed now (1,119), the strategic industrial value (1,072 cells: a legacy EO high on input cost or capability, or
+low where world demand or industrial commons are high), Deployment decided on its own need (1,053), the large-yard
+case (1,031), the cleaned need (449), Competitive Position (374) and Secure (165)
+(`legacy_osi_corners_vs_choice_drivers.csv`).
 
 ### The need x EO quadrant (the posture rule of 2026-10-28)
 
