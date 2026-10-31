@@ -237,7 +237,7 @@ export function paramsToRJson(x: unknown): unknown {
   return x;
 }
 
-/** dash_is_baseline(): params equal to the NEIS baseline's (manifest.baseline_params). */
+/** dash_is_baseline(): params equal to the baseline's (manifest.baseline_params). */
 export function isBaseline(params: Params, bundle: Pick<Bundle, 'manifest'>): boolean {
   return deepEqual(paramsToRJson(params), bundle.manifest.baseline_params);
 }
@@ -375,7 +375,7 @@ export function dialReadout(params: Params, bundle: Pick<Bundle, 'baselineInputs
 export function presets(): Record<string, Dials> {
   const base = defaultDials();
   return {
-    'NEIS baseline': base,
+    Baseline: base,
     Hawk: { ...base, hawkishness: 90 },
     Bull: { ...base, bullishness: 90 },
     Populist: { ...base, populism: 90 },

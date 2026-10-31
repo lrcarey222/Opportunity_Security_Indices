@@ -17,7 +17,7 @@ import { Link, useNavigate } from 'react-router';
 import { CountrySelect } from '../../components/CountrySelect.tsx';
 import { InfoTip } from '../../components/InfoTip.tsx';
 import { Loading, PageHead } from '../../components/ui.tsx';
-import { FRAMING, LEGACY_OSI_NOTE, MODULE_QUESTION, PARTNER_LONG_NAME, STATE, YARD_AND_FENCE, YARD_CHOICES, YARD_DEFINITION } from '../../content/vocabulary.ts';
+import { FRAMING, LEGACY_OSI_NOTE, MODULE_QUESTION, PARTNER_LONG_NAME, SCORES_VIEW_NAME, STATE, YARD_AND_FENCE, YARD_CHOICES, YARD_DEFINITION } from '../../content/vocabulary.ts';
 import { countPostures, countryCells, strategyCountsText, usePostureCore, VERB_LABEL, VERB_ORDER, VERB_SUBTITLE, YARD_ORDER, type PostureCore } from '../../posture/index.ts';
 import { useMediaQuery } from '../../shell/useMediaQuery.ts';
 import { useTitle } from '../../shell/title.ts';
@@ -196,10 +196,11 @@ export default function CountryHomeView() {
           {STATE.dataLimitation} A step without enough evidence is {STATE.notAssessedShort.toLowerCase()}: hatched on the map.
         </p>
         <details className="disclosure mt-4">
-          <summary className="cursor-pointer py-2 text-sm text-paper-dim hover:text-paper">The Legacy OSI framework, kept for comparison</summary>
+          <summary className="cursor-pointer py-2 text-sm text-paper-dim hover:text-paper">{SCORES_VIEW_NAME}</summary>
           <p className="mt-2 text-sm text-paper-dim">
-            {LEGACY_OSI_NOTE} It sits at the end of each profile under Evidence &amp; methodology: the same sectors in four corners of Energy Security and Economic Opportunity, split at
-            the country&apos;s own median sector (the NEIS baseline as of {manifest.as_of_label}, with a Perspective control to weigh it differently).
+            {LEGACY_OSI_NOTE} They sit at the end of each profile under Evidence &amp; methodology: the same sectors in four corners of Energy Security (how well a country
+            can rely on what it needs in a sector) and Economic Opportunity (how well placed it is to create value there), split at
+            the country&apos;s own median sector (the baseline as of {manifest.as_of_label}, with a Perspective control to weigh it differently).
           </p>
           <ul className="mt-3 space-y-2 text-sm text-paper-dim" data-testid="reading-corners">
             {LEGACY_CORNERS.map((q) => (
@@ -208,8 +209,8 @@ export default function CountryHomeView() {
               </li>
             ))}
             <li>
-              NEIS baseline <InfoTip id="paper_baseline" term="NEIS baseline" />: every legacy index value is the pipeline&apos;s six-stage baseline, as of {manifest.as_of_label}. To try other
-              weightings, open a country&apos;s Legacy OSI framework and Explore scenarios.
+              Baseline <InfoTip id="paper_baseline" term="baseline" />: every score is the pipeline&apos;s six-stage baseline, as of {manifest.as_of_label}. To try other
+              weightings, open a country&apos;s security and opportunity scores and Explore scenarios.
             </li>
             <li>
               Memos <InfoTip id="memo" term="memo" />: short AI-written briefs for the core members, built from each country&apos;s fact sheet and checked against it.

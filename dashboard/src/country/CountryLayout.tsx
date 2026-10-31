@@ -52,7 +52,7 @@ export default function CountryLayout() {
           <Notice kind="info" title="No country data">
             <p>{e.message}</p>
             <p className="mt-2 text-paper-mute">
-              Developers: run <code>Rscript scripts/88_export_country_data.R</code> from the repository root (or <code>npm run dev:fixture</code> for the synthetic data). Sector Insights and Strategic Insights are unaffected.
+              Developers: run <code>Rscript scripts/88_export_country_data.R</code> from the repository root (or <code>npm run dev:fixture</code> for the synthetic data). The Sector pages and the security and opportunity score pages are unaffected.
             </p>
           </Notice>
         ) : e.code === 'NEWER' ? (

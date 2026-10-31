@@ -38,8 +38,13 @@ shared phrase, add it there first.
 10. **Tone.** Plain English, short sentences, active voice; US spelling (division of labor, localization). Avoid
     "the model", jargon, unexplained acronyms, and `AVOID_WORDS` (optimize, leverage, unlock...). Tests can
     assert `not.toMatch(AVOID_RE)`.
-11. **Legacy OSI** stays clearly subordinate (`LEGACY_OSI_NOTE`); its corner names never appear on current
-    strategy pages.
+11. **Readers come to this tool for the first time.** Never refer to an earlier version, an earlier name or "the
+    paper" as if the reader knew it: no "Legacy", "OSI", "kept for comparison", "the old/previous framework",
+    "formerly", "renamed" or "paper baseline" in visible copy. Name a block by what it shows. The index view
+    (Energy Security, Economic Opportunity, the Strategic Index, the partner scores, the four quadrants) is the
+    **Security and opportunity scores** (`SCORES_VIEW_NAME`): a secondary, descriptive view beside the strategic
+    choices (`LEGACY_OSI_NOTE`), whose quadrant names never appear on strategy pages. NEIS appears only as the
+    organization's name. A paper may be cited as a source by its full title.
 
 ## Terms (technical -> visible copy)
 
@@ -72,6 +77,12 @@ shared phrase, add it there first.
 | Operational control / Coercive chokepoint / Systemic resilience | Control-system risk / Chokepoint risk / System resilience |
 | COORDINATE / BUILD / MANAGE SPECIALIZATION / LOW INTERVENTION / INSUFFICIENT DATA | Coordinate trade / Build capacity / Manage specialization / Low intervention / Not enough evidence |
 | Baseline / Decoupling | Today's network / Major-supplier disruption |
+| Legacy OSI framework; the paper baseline's indices | the security and opportunity scores (`SCORES_VIEW_NAME`) |
+| NEIS baseline; NEIS default weights | the baseline; the default weights |
+| OSI basket | the traded goods this Explorer covers |
+| OSI cell(s) | sector(s) (technology × stage); on the Allied Industrial Base pages "supply-chain step" already names a node |
+| OSI ranking; ranked high by OSI | partner score ranking; ranked high on the partner scores |
+| the OSI authors | the Explorer's authors |
 
 Already wired: `posture/grammar.ts` (choice names and actions, fence names, alignment and rationale labels, and
 the capability-anchor pathway codes in plain words) and `posture/yards.ts` (yard names) read the vocabulary, so the

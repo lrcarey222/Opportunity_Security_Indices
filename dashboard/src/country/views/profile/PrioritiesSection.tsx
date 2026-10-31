@@ -3,7 +3,7 @@
 // disclosure); the climate cards moved to Need. Before:
 // S3 of the Country profile (spec_country.md A4.2; IA refactor 2026-10-16: "Policy & climate", with the
 // Strategic Index table reused under "Opportunities & risks"): "Which sectors the Strategic Index puts first"
-// (the NEIS baseline ranking with its five parts as bars), "Do priorities and policy agree?" (the 3 x 3
+// (the baseline ranking with its five parts as bars), "Do priorities and policy agree?" (the 3 x 3
 // matrix of the Strategic Index without its policy term against policy activity, thirds within the
 // country, with the Climate Action Tracker and IEA record tiles), "Policy records by technology and
 // stage" (IEA Policies and Measures coverage on the three-colour scale, 11 technologies x the six stages)
@@ -49,10 +49,10 @@ export function LegacyPolicyAgreement({ id = 'legacy-policy', level = 3 }: { id?
       id={id}
       level={level}
       title="Do priorities and policy agree?"
-      basis={sheet.meta.has_si ? <BasisTag kind="prefs" note="matrix priorities, NEIS baseline" /> : undefined}
+      basis={sheet.meta.has_si ? <BasisTag kind="prefs" note="matrix priorities, baseline" /> : undefined}
       intro={
         <>
-          The Legacy OSI comparison of {poss(name)} policy activity (its <Term id="pams">International Energy Agency policy records</Term> and <Term id="cat" />) with the{' '}
+          A comparison of {poss(name)} policy activity (its <Term id="pams">International Energy Agency policy records</Term> and <Term id="cat" />) with the{' '}
           <Term id="si" />. Two Perspective dials touch it: Populism weighs policy signals and home manufacturing; Climate weighs low-emission technologies (at 90 and above coal, oil and
           gas drop out of the priorities). Neither changes the records or the rating.{' '}
           {reveal && (
@@ -118,10 +118,10 @@ export function PriorityTable() {
       all.map((c) => ({
         rank: c.si.rank.v, sector: c.tech, stage: c.stage, opportunity_part: c.si.parts?.eo.v ?? null, security_need_part: c.si.parts?.need.v ?? null,
         policy_activity_part: c.si.parts?.pol.v ?? null, stage_part: c.si.parts?.stage.v ?? null, technology_part: c.si.parts?.tech.v ?? null,
-        strategic_index: c.si.v, lead_over_next: c.si.margin_next.v, legacy_corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null, allied_pick: c.si.pick,
+        strategic_index: c.si.v, lead_over_next: c.si.margin_next.v, corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null, allied_pick: c.si.pick,
         policy_records_specific: c.policy?.records_specific.v ?? null, policy_third: c.policy?.third ?? null,
       })),
-      'Opportunity Security Indices, NEIS baseline (Strategic Index terms)',
+      "Strategic Index computed by the Explorer's authors (baseline; its terms)",
       sheet.meta.as_of,
     ),
   });
@@ -249,7 +249,7 @@ export function AgreementMatrix() {
         records_all: c.policy?.records_all.v ?? null, latest_record_year: c.policy?.latest_year.v ?? null, policy_index: c.policy?.index.v ?? null,
         policy_basis: sheet.meta.policy_basis,
       })),
-      'Opportunity Security Indices, NEIS baseline; International Energy Agency, Policies and Measures; Climate Action Tracker',
+      "Strategic Index computed by the Explorer's authors (baseline); International Energy Agency, Policies and Measures; Climate Action Tracker",
       sheet.meta.as_of,
     ),
   });

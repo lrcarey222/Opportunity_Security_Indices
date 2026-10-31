@@ -123,6 +123,8 @@ function panelRows(texts: { name: string; x: number; y: number }[]): string[][] 
 
 const SIX = [...SUPPLY_STAGES];
 const LEGACY = /\b(Upstream|Midstream|Downstream)\b|paper['’]s (three|numbers|values|value|weights|baseline)|three-stage|against the paper|Paper baseline/i;
+/** Earlier names and versions (user, 2026-10-31: readers come to the Explorer fresh). */
+const EARLIER = /\bOSI\b|\bLegacy\b|NEIS (baseline|default)|kept for comparison|the original (index model|framework)|Opportunity Security Indices/i;
 
 async function open(path: string) {
   render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />);
@@ -169,7 +171,7 @@ describe('six stage panels, wide and narrow', () => {
   }, 120_000);
 });
 
-describe('no three-stage or paper-baseline words in the Strategic views; each is labelled Legacy OSI framework', () => {
+describe('no three-stage, paper-baseline or earlier-version words in the Strategic views; each is labelled Security and opportunity scores', () => {
   for (const path of ['/overview', '/country', '/space', '/strategic', '/partners', '/overview?h=80&show=change', '/strategic?h=80', '/partners?h=80&show=change', '/data']) {
     it(path, async () => {
       width = 1200;
@@ -181,16 +183,18 @@ describe('no three-stage or paper-baseline words in the Strategic views; each is
       // the page's own text has rendered (charts' captions, tables), not just its frame
       expect((main.textContent ?? '').length).toBeGreaterThan(1500);
       expect(main.textContent ?? '').not.toMatch(LEGACY);
+      expect(main.textContent ?? '').not.toMatch(EARLIER);
       if (!path.startsWith('/data')) {
-        // labelled "Legacy OSI framework" (design D10, section 5): the band says it is not a current recommendation and links a
-        // Country profile's Legacy OSI sub-section (the default profile when none was visited) and the Methods chapter; the eyebrow says it too
+        // labelled "Security and opportunity scores" (design D10, section 5; named by what it shows, 2026-10-31): the band says it
+        // is a descriptive view, not a recommendation, and links a Country profile's scores sub-section (the default profile when none
+        // was visited) and the Methods chapter; the eyebrow says it too
         const band = screen.getByTestId('advanced-band');
-        expect(within(band).getByText('Legacy OSI framework', { selector: '.tag' })).toBeTruthy();
-        expect(band.textContent).toContain('It is not a current recommendation');
-        expect(within(band).getByRole('link', { name: /^Legacy OSI on a Country profile/ }).getAttribute('href')).toBe('/countries/USA#legacy-osi');
-        expect(within(band).getByRole('link', { name: 'Methods: the Legacy OSI framework' }).getAttribute('href')).toBe('/methods#legacy-osi');
-        expect([...main.querySelectorAll('.eyebrow')].some((e) => /^Legacy OSI framework · /.test(e.textContent ?? ''))).toBe(true);
-        // a one-economy view links that economy's Country Strategy Map and its Legacy OSI results
+        expect(within(band).getByText('Security and opportunity scores', { selector: '.tag' })).toBeTruthy();
+        expect(band.textContent).toContain('These scores describe relative security and opportunity: a descriptive view, not a recommendation.');
+        expect(within(band).getByRole('link', { name: /^These scores on a Country profile/ }).getAttribute('href')).toBe('/countries/USA#legacy-osi');
+        expect(within(band).getByRole('link', { name: 'Methods: the security and opportunity scores' }).getAttribute('href')).toBe('/methods#legacy-osi');
+        expect([...main.querySelectorAll('.eyebrow')].some((e) => /^Security and opportunity scores · /.test(e.textContent ?? ''))).toBe(true);
+        // a one-economy view links that economy's Country Strategy Map and its security and opportunity scores
         if (/^\/(country|strategic|partners)/.test(path)) {
           const link = screen.getByTestId('country-insights-link');
           const hrefs = within(link).getAllByRole('link').map((a) => a.getAttribute('href') ?? '');
@@ -207,7 +211,7 @@ describe('no three-stage or paper-baseline words in the Strategic views; each is
     await open('/strategic');
     await screen.findByRole('heading', { name: /top ten sectors|Strategic Index/i }, { timeout: 30_000 });
     // the legend has the baseline tick and no stage swatches
-    await waitFor(() => expect(screen.getAllByText(/NEIS baseline \(tick\)|Strategic Index/).length).toBeGreaterThan(0), { timeout: 30_000 });
+    await waitFor(() => expect(screen.getAllByText(/^Baseline \(tick\)$|Strategic Index/).length).toBeGreaterThan(0), { timeout: 30_000 });
     expect(screen.queryByText(/^(Extraction|Refining|Components|Assembly|Deployment|Recovery|Upstream|Midstream|Downstream) sector$/)).toBeNull();
   }, 120_000);
 });

@@ -240,8 +240,8 @@ function Compact({ c }: { c: AibCompact }) {
 function coversWords(nodes: readonly AibNode[]): string {
   const techs = [...new Set(nodes.flatMap((n) => osiTechsOfNode(n)))].sort((a, b) => a.localeCompare(b, 'en'));
   const outside = nodes.filter((n) => osiTechsOfNode(n).length === 0).length;
-  if (!techs.length) return 'goods outside the OSI technology basket';
-  return `${listWords(techs)}${outside ? ` (and ${plural(outside, 'supply-chain step')} outside the OSI basket)` : ''}`;
+  if (!techs.length) return 'goods outside the traded goods this Explorer covers';
+  return `${listWords(techs)}${outside ? ` (and ${plural(outside, 'supply-chain step')} outside the traded goods this Explorer covers)` : ''}`;
 }
 
 /**

@@ -51,8 +51,8 @@ describe('Overview: Show modes and colour domains', () => {
     expect(sideWords('median', 'eo', 'baseline', '0.42', 'economies shown')).toBe('at the median of the economies shown (0.42)');
     expect(sideWords('below', 'si_rank', 'scenario', '7', 'economies shown')).toMatch(/^nearer the top of its own list/);
     expect(sideWords('above', 'si_rank', 'change', '0', 'economies shown')).toBe('moved up its own list');
-    expect(sideWords('below', 'es', 'change', '0', 'economies shown')).toBe('fell against the NEIS baseline');
-    expect(sideWords('above', 'eo', 'change', '0', 'economies shown')).toBe('rose against the NEIS baseline');
+    expect(sideWords('below', 'es', 'change', '0', 'economies shown')).toBe('fell against the baseline');
+    expect(sideWords('above', 'eo', 'change', '0', 'economies shown')).toBe('rose against the baseline');
     expect(sideWords(null, 'es', 'scenario', '0', 'x')).toBeNull();
   });
 

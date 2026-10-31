@@ -228,7 +228,7 @@ export function parsePostureNode(
 // ---- table twins and CSVs ------------------------------------------------------------------------------
 
 /** The source named in every posture CSV. */
-export const POSTURE_SOURCE = 'Opportunity Security Indices, strategic position framework';
+export const POSTURE_SOURCE = "Strategic position framework, computed by the Explorer's authors";
 
 export interface PostureProvenance {
   source: string;

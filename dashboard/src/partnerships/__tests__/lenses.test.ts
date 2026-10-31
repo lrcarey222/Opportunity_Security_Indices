@@ -41,19 +41,19 @@ describe('kinds and lenses', () => {
 
 describe('the cross-lens summary', () => {
   it('names each reading in plain words (the spec phrases)', () => {
-    expect(readingWords({ today: true, osi: true, aib: true })).toBe('A tie today that both OSI and the AIB keep');
-    expect(readingWords({ today: false, osi: true, aib: false })).toBe('Ranked high by OSI, not a tie today and not chosen by the AIB');
-    expect(readingWords({ today: false, osi: false, aib: true })).toBe('Chosen by the AIB, not a tie today and not ranked high by OSI');
-    expect(readingWords({ today: true, osi: true, aib: false })).toBe('A tie today that OSI ranks high, not chosen by the AIB');
-    expect(readingWords({ today: true, osi: false, aib: true })).toBe('A tie today that the AIB keeps, not ranked high by OSI');
-    expect(readingWords({ today: false, osi: true, aib: true })).toBe('Ranked high by OSI and chosen by the AIB, not a tie today');
-    expect(readingWords({ today: true, osi: false, aib: false })).toBe('A tie today, not ranked high by OSI and not chosen by the AIB');
+    expect(readingWords({ today: true, osi: true, aib: true })).toBe('A tie today that ranks high on the partner scores and that the AIB keeps');
+    expect(readingWords({ today: false, osi: true, aib: false })).toBe('Ranked high on the partner scores, not a tie today and not chosen by the AIB');
+    expect(readingWords({ today: false, osi: false, aib: true })).toBe('Chosen by the AIB, not a tie today and not ranked high on the partner scores');
+    expect(readingWords({ today: true, osi: true, aib: false })).toBe('A tie today that ranks high on the partner scores, not chosen by the AIB');
+    expect(readingWords({ today: true, osi: false, aib: true })).toBe('A tie today that the AIB keeps, not ranked high on the partner scores');
+    expect(readingWords({ today: false, osi: true, aib: true })).toBe('Ranked high on the partner scores and chosen by the AIB, not a tie today');
+    expect(readingWords({ today: true, osi: false, aib: false })).toBe('A tie today, not ranked high on the partner scores and not chosen by the AIB');
   });
 
   it('a lens that is not compared never speaks: no "not a tie today" without the Today lens', () => {
-    expect(readingWords({ today: null, osi: true, aib: false })).toBe('Ranked high by OSI, not chosen by the AIB');
+    expect(readingWords({ today: null, osi: true, aib: false })).toBe('Ranked high on the partner scores, not chosen by the AIB');
     expect(readingWords({ today: true, osi: null, aib: true })).toBe('A tie today that the AIB keeps');
-    expect(readingWords({ today: null, osi: true, aib: true })).toBe('Ranked high by OSI and chosen by the AIB');
+    expect(readingWords({ today: null, osi: true, aib: true })).toBe('Ranked high on the partner scores and chosen by the AIB');
   });
 
   it('groups every named partner by which lenses name it, in a fixed order, the lenses\' best position first', () => {
@@ -67,7 +67,7 @@ describe('the cross-lens summary', () => {
       ['today', ['KOR', 'CHN']],
       ['aib', ['VNM']],
     ]);
-    expect(cl.groups[0].words).toBe('A tie today that both OSI and the AIB keep');
+    expect(cl.groups[0].words).toBe('A tie today that ranks high on the partner scores and that the AIB keeps');
     expect(summaryLine(cl, { one: 'partner', many: 'partners' })).toBe('The three lenses name 6 partners: 1 by all three, 2 by two of them and 3 by one.');
   });
 
@@ -76,15 +76,15 @@ describe('the cross-lens summary', () => {
     expect(cl.compared).toEqual(['osi']);
     expect(cl.pending).toEqual(['aib']);
     expect(cl.absent).toEqual([{ id: 'today', reason: 'no aid data for Zembla' }]);
-    expect(cl.groups.map((g) => g.words)).toEqual(['Ranked high by OSI']);
+    expect(cl.groups.map((g) => g.words)).toEqual(['Ranked high on the partner scores']);
     expect(summaryLine(cl, { one: 'partner', many: 'partners' })).toBe('');
     const two = crossLens({ today: lensNone('none'), osi: ready(['AAA', 'BBB']), aib: ready(['BBB', 'CCC']) });
     expect(two.groups.map((g) => [g.words, g.keys])).toEqual([
-      ['Ranked high by OSI and chosen by the AIB', ['BBB']],
-      ['Ranked high by OSI, not chosen by the AIB', ['AAA']],
-      ['Chosen by the AIB, not ranked high by OSI', ['CCC']],
+      ['Ranked high on the partner scores and chosen by the AIB', ['BBB']],
+      ['Ranked high on the partner scores, not chosen by the AIB', ['AAA']],
+      ['Chosen by the AIB, not ranked high on the partner scores', ['CCC']],
     ]);
-    expect(summaryLine(two, { one: 'economy', many: 'economies' })).toBe('OSI ranking and AIB analysis name 3 economies: 1 by both and 2 by one.');
+    expect(summaryLine(two, { one: 'economy', many: 'economies' })).toBe('Partner score ranking and AIB analysis name 3 economies: 1 by both and 2 by one.');
     expect(comparedWords(['today', 'aib'])).toBe('Today and AIB analysis');
   });
 });

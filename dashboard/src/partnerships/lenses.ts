@@ -4,7 +4,7 @@
 //
 //   Today            observed data as they are (2024 trade, investment positions and projects, aid, votes
 //                    and agreements): no model and no preferences
-//   OSI ranking   the Opportunity Security Indices at the NEIS defaults (preference-weighted scores)
+//   OSI ranking   the Opportunity Security Indices at the default weights (preference-weighted scores)
 //   AIB model        the Allied Industrial Base model under the toggled scenario (a counterfactual market
 //                    structure, not a forecast)
 //
@@ -34,9 +34,9 @@ export type LensId = (typeof LENS_IDS)[number];
 export const LENS_INFO: Readonly<Record<LensId, { title: string; short: string; words: string }>> = {
   today: { title: 'Today', short: 'today', words: 'Observed data as they are: no analysis and no preferences.' },
   osi: {
-    title: 'OSI ranking',
-    short: 'OSI',
-    words: 'The Opportunity Security Indices at the NEIS defaults: rankings built on preference-weighted scores (a Country profile can change the Perspective).',
+    title: 'Partner score ranking',
+    short: 'the partner scores',
+    words: 'The partner scores (Partnership Strength, Friendshore, Partnership Opportunity and Development Potential) at the default weights: rankings built on preference-weighted scores (a Country profile can change the Perspective).',
   },
   aib: {
     title: 'AIB analysis',
@@ -64,7 +64,7 @@ export const KIND_LENS_WORDS: Readonly<Record<PartnershipKind, Record<LensId, st
   },
   geopolitical: {
     today: 'UN General Assembly vote alignment, shared economic-security agreements and coalition membership today.',
-    osi: "The OSI's allied coalition (core members and partners) and the alignment part of Friendshore.",
+    osi: 'The allied coalition the partner scores use (core members and partners) and the alignment part of Friendshore.',
     aib: 'The compact coalitions under the scenario: the smallest group of partners that meets the target, critical supply partners and critical dependencies outside.',
   },
 };
@@ -120,8 +120,8 @@ export interface CrossLens {
 
 const GROUP_ORDER: readonly (readonly LensId[])[] = [['today', 'osi', 'aib'], ['today', 'osi'], ['today', 'aib'], ['osi', 'aib'], ['today'], ['osi'], ['aib']];
 
-const POSITIVE: Readonly<Record<LensId, string>> = { today: 'a tie today', osi: 'ranked high by OSI', aib: 'chosen by the AIB' };
-const NEGATIVE: Readonly<Record<LensId, string>> = { today: 'not a tie today', osi: 'not ranked high by OSI', aib: 'not chosen by the AIB' };
+const POSITIVE: Readonly<Record<LensId, string>> = { today: 'a tie today', osi: 'ranked high on the partner scores', aib: 'chosen by the AIB' };
+const NEGATIVE: Readonly<Record<LensId, string>> = { today: 'not a tie today', osi: 'not ranked high on the partner scores', aib: 'not chosen by the AIB' };
 
 const capFirst = (s: string): string => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -141,8 +141,8 @@ export function readingWords(m: Membership): string {
   const negWords = neg.length ? `, ${neg.map((k) => NEGATIVE[k]).join(' and ')}` : '';
   if (m.today === true) {
     const others = pos.filter((k) => k !== 'today');
-    if (others.length === 2) return 'A tie today that both OSI and the AIB keep';
-    if (others.length === 1) return `A tie today that ${others[0] === 'osi' ? 'OSI ranks high' : 'the AIB keeps'}${negWords}`;
+    if (others.length === 2) return 'A tie today that ranks high on the partner scores and that the AIB keeps';
+    if (others.length === 1) return `A tie today that ${others[0] === 'osi' ? 'ranks high on the partner scores' : 'the AIB keeps'}${negWords}`;
     return `A tie today${negWords}`;
   }
   return `${capFirst(pos.map((k) => POSITIVE[k]).join(' and '))}${negWords}`;

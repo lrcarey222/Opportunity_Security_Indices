@@ -96,7 +96,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     for (const f of ['Economy', 'Technology', 'Stage', 'Supply-chain step']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
     expect(screen.getAllByTestId(/^lens-(today|osi|aib)$/).map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual([
       'Today · observed',
-      'OSI ranking · NEIS defaults',
+      'Partner score ranking · default weights',
       'AIB analysis · Major-supplier disruption',
     ]);
     expect(screen.getByRole('heading', { level: 2, name: 'AIB analysis: Major-supplier disruption' })).toBeTruthy();
@@ -115,7 +115,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     expect(within(lens('osi')).getByRole('region', { name: 'Partnership Opportunity' })).toBeTruthy();
     // the summary compares the lenses with data here; the OSI rankings are not in the test build: left out, said so
     expect(within(summary()).getByRole('heading').textContent).toBe('Where the three readings agree: trade, all economies and supply-chain steps');
-    await waitFor(() => expect(within(summary()).getByTestId('cross-lens-absent-osi').textContent).toMatch(/^OSI ranking: .*; left out of the comparison\.$/));
+    await waitFor(() => expect(within(summary()).getByTestId('cross-lens-absent-osi').textContent).toMatch(/^Partner score ranking: .*; left out of the comparison\.$/));
     expect(within(summary()).getByTestId('cross-lens-line').textContent).toMatch(/^Today and AIB analysis name \d+ economies/);
     noAcronyms();
   });

@@ -167,7 +167,7 @@ const METHOD: { step: string; text: string }[] = [
     text: 'The dividend is the extra coverage the optimized solution adds over existing relationships; the frontier re-solves with a limit on any one supplier’s share and reports, at each limit, the coverage, the true N-1 coverage (the largest remaining supplier removed and the trade re-optimized), the instantaneous N-1 retained coverage (coverage × (1 − largest share)) and how specialized its suppliers are: what diversification costs and what resilience it buys.',
   },
   { step: 'Residual gaps', text: 'What even the optimized trade cannot restore: supply that does not exist outside the shocked economy.' },
-  { step: 'Marginal investment', text: 'Where a gap remains, an increment of capacity is added at each eligible host in turn (a host must show revealed capability): a fixed share of node demand, but never more than the host’s current output in the node, so a small producer is not credited with a plant many times its size. The hosts come in three types, each ranked on its own: scaling hosts (established producers that can carry the increment or hold at least 5% of world exports or production), ranked by the resilience the increment buys, then by how little it concentrates supply, then by capability at scale; specialty hosts (high-income specialists below scale), ranked by revealed specialization; and development hosts (middle-income economies below scale), ranked by OSI’s Development Potential Index. Scaling and specialty hosts can count in a compact’s coalition test, each at most at its own scale; development hosts are future capacity and never do. The new supply goes to the economies that lost it: each is shown as an investor in that host (investor-to-host flows). Each ranked host is a separate simulation, so only the best-ranked host counts and the alternatives are never added up.' },
+  { step: 'Marginal investment', text: 'Where a gap remains, an increment of capacity is added at each eligible host in turn (a host must show revealed capability): a fixed share of node demand, but never more than the host’s current output in the node, so a small producer is not credited with a plant many times its size. The hosts come in three types, each ranked on its own: scaling hosts (established producers that can carry the increment or hold at least 5% of world exports or production), ranked by the resilience the increment buys, then by how little it concentrates supply, then by capability at scale; specialty hosts (high-income specialists below scale), ranked by revealed specialization; and development hosts (middle-income economies below scale), ranked by the Development Potential Index. Scaling and specialty hosts can count in a compact’s coalition test, each at most at its own scale; development hosts are future capacity and never do. The new supply goes to the economies that lost it: each is shown as an investor in that host (investor-to-host flows). Each ranked host is a separate simulation, so only the best-ranked host counts and the alternatives are never added up.' },
   { step: 'Emergent network', text: 'The trade and investment relationships of every node together form the allied industrial base network the model finds, not one fixed in advance. Each economy’s roles in it (supplier, buyer, investment host, investor) are kept apart and measured by the share of node demand its relationships serve; the Country roles page names a role only at 1 point of node demand or more under the headline shock.' },
   {
     step: 'Compacts',
@@ -381,7 +381,7 @@ export default function AibAboutView() {
         <>
           <p className={P} data-testid="about-taxonomy">
             The nodes come from the electro-industrial HS6 dictionary (RMI&apos;s Electro-Industrial Stack): each is a group of HS6 codes, split where the chain steps differ
-            (rare-earth oxides apart from rare-earth metals, wafers apart from gallium). Each node is labelled with one of the six supply-chain stages the OSI uses (Extraction,
+            (rare-earth oxides apart from rare-earth metals, wafers apart from gallium). Each node is labelled with one of the six supply-chain stages the Explorer uses (Extraction,
             Refining, Components, Assembly, Deployment, Recovery), the one holding most of its trade, each code&apos;s stage set by its item type: a raw material is Extraction
             (Recovery when it is recycled feed such as scrap or spent batteries), a processed material Refining, a component Components, and a final product or process equipment
             Assembly. No node is at Deployment: the dictionary lists traded goods, not their installation and use. Only each code&apos;s primary row is used, so every code sits in
@@ -402,13 +402,13 @@ export default function AibAboutView() {
             The dictionary covers electro-industrial supply chains only: it has no fossil-fuel nodes.
           </p>
           <p className={P} data-testid="about-osi-cells">
-            The pages show each node by OSI technology and stage, the cells of the OSI basket the rest of the dashboard uses. A node&apos;s technologies are those of the OSI cells
-            its codes sit in (a trade-weighted crosswalk), all of them as equals: one node can sit in several cells and technologies, and several nodes in one cell; a node&apos;s
-            codes can even sit in a fossil-fuel technology&apos;s cell where the OSI basket files them there (AC generators in Oil – Assembly). The pages place, group and filter a
+            The pages show each node by technology and stage: the sectors (technology × stage) of the traded goods the rest of the Explorer covers. A node&apos;s technologies
+            are those of the sectors its codes sit in (a trade-weighted crosswalk), all of them as equals: one node can sit in several cells and technologies, and several nodes in one cell; a node&apos;s
+            codes can even sit in a fossil-fuel technology&apos;s cell where the Explorer&apos;s list of traded goods files them there (AC generators in Oil – Assembly). The pages place, group and filter a
             node by those cells, stage included: a filter on a technology and a stage lists the nodes with a cell there. The model&apos;s own stage for a node (the one holding
             most of its trade, above) can differ from the stages of its cells (electric motors: Assembly in the model, their codes in Electric Vehicles – Components); it is
-            shown only where the model uses it, as the CSVs&apos; aib_model_stage column. A node none of whose codes is in the OSI basket (heat pumps, electrolysers or hydrogen,
-            for example) is shown as {NOT_IN_BASKET} and gets neutral partner scores; it sits under no stage of the basket. The partner indices the model uses to choose among equally good solutions (Partnership Opportunity, Friendshore, policy compatibility), the
+            shown only where the model uses it, as the CSVs&apos; aib_model_stage column. A node none of whose codes is among the traded goods this Explorer covers (heat pumps, electrolysers or hydrogen,
+            for example) is shown as {NOT_IN_BASKET} and gets neutral partner scores; it sits under no stage of that list. The partner indices the model uses to choose among equally good solutions (Partnership Opportunity, Friendshore, policy compatibility), the
             Sector and Country pages and the Partnerships page all read a node through those six-stage cells.
           </p>
           <p className={P} data-testid="about-dictionary-sectors">
@@ -420,7 +420,7 @@ export default function AibAboutView() {
         </>
       ) : (
         <p className={P} data-testid="about-taxonomy">
-          The nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one stage (Extraction, Refining, Components, Assembly, Deployment, Recovery) of a
+          The nodes are the sub-sectors of the traded goods this Explorer covers: groups of HS6 goods at one stage (Extraction, Refining, Components, Assembly, Deployment, Recovery) of a
           technology&apos;s supply chain, the stage holding most of the node&apos;s trade. The partner indices are read for each node&apos;s own technology and stage.
         </p>
       )}

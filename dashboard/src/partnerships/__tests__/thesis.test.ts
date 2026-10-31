@@ -152,8 +152,8 @@ describe('pairThesis on the synthetic strategic section', () => {
 describe('where the partner sits in the cross-lens summary', () => {
   it('the reading of the group naming it, null when no compared lens names it, undefined before any lens is compared', () => {
     const cl = crossLens({ today: lensNames(['BBB', 'CCC']), osi: lensNames(['CCC']), aib: lensNone('no data here') });
-    expect(pairReading(cl, 'CCC')).toBe('A tie today that OSI ranks high');
-    expect(pairReading(cl, 'BBB')).toBe('A tie today, not ranked high by OSI');
+    expect(pairReading(cl, 'CCC')).toBe('A tie today that ranks high on the partner scores');
+    expect(pairReading(cl, 'BBB')).toBe('A tie today, not ranked high on the partner scores');
     expect(pairReading(cl, 'ZZZ')).toBeNull();
     expect(pairReading(crossLens({ today: LENS_LOADING, osi: LENS_LOADING, aib: lensNone('x') }), 'BBB')).toBeUndefined();
   });

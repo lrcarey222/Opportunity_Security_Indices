@@ -52,7 +52,7 @@ export default function MethodsView() {
       <PageHead
         eyebrow="About · Methods"
         title="Methods"
-        lede={`${MODULE_QUESTION.methods}: what the country needs, how valuable the capability is, how strong its current position is, what action follows, and whether policy matches. Then the Legacy OSI framework, kept for comparison, with its indices, dials and formulas, and a glossary.`}
+        lede={`${MODULE_QUESTION.methods}: what the country needs, how valuable the capability is, how strong its current position is, what action follows, and whether policy matches. Then the security and opportunity scores, a descriptive view beside the choices, with their indices, dials and formulas, and a glossary.`}
       />
       <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* the content is this app's own Markdown, filled with numbers from the data build */}
@@ -100,7 +100,7 @@ export default function MethodsView() {
             )}
           </section>
           <section className="card p-5">
-            <h2 className="rule-neis-sm mb-3 text-base font-medium text-paper">The paper</h2>
+            <h2 className="rule-neis-sm mb-3 text-base font-medium text-paper">Background paper</h2>
             <p className="text-sm text-paper-dim">{paper?.title ?? 'Opportunity, Security, and the Allied Industrial Base'}</p>
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-paper-mute">
               <li>The framework and the equations for Energy Security, Economic Opportunity, the Strategic Index and the Partnership Strength Index</li>
@@ -113,7 +113,7 @@ export default function MethodsView() {
               <p className="mt-3 flex flex-wrap gap-4 text-sm">
                 {paper?.url && (
                   <a className="link" href={paper.url}>
-                    Read the paper
+                    Read it online
                   </a>
                 )}
                 {paper?.pdf && (

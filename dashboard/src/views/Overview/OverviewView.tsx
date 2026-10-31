@@ -117,7 +117,7 @@ export default function OverviewView() {
 
   const updating = !core.fresh || (isPsi && !partner.fresh);
   const title = isPsi ? label : `${label}: ${sectorName}`;
-  const legendLabel = mode === 'change' ? `Change in ${noun} against the NEIS baseline${isPsi ? '' : `, ${sectorName}`}` : isPsi ? label : `${label}, ${sectorName}`;
+  const legendLabel = mode === 'change' ? `Change in ${noun} against the baseline${isPsi ? '' : `, ${sectorName}`}` : isPsi ? label : `${label}, ${sectorName}`;
   const termWords = metric === 'si_rank' || metric === 'si' ? 'Strategic Index' : isPsi ? 'Partnership Strength' : label;
   const term = <Term id={METRIC_TERM[metric]}>{termWords}</Term>;
   const mapSub = (
@@ -125,9 +125,9 @@ export default function OverviewView() {
       {showWord(mode)}{' '}
       {mode === 'change' ? (
         metric === 'si_rank' ? (
-          <>Each economy is coloured by how far this sector moved in its own {term} ranking against the NEIS baseline: blue moved up, white did not move, orange moved down.</>
+          <>Each economy is coloured by how far this sector moved in its own {term} ranking against the baseline: blue moved up, white did not move, orange moved down.</>
         ) : (
-          <>Each economy is coloured by how much its {term}{isPsi ? '' : ` in ${sectorName}`} moved against the NEIS baseline: orange fell, white no change, blue rose.</>
+          <>Each economy is coloured by how much its {term}{isPsi ? '' : ` in ${sectorName}`} moved against the baseline: orange fell, white no change, blue rose.</>
         )
       ) : metric === 'si_rank' ? (
         <>
@@ -269,12 +269,12 @@ export default function OverviewView() {
       row: r,
       ghost: false,
     }));
-    // Scenario mode: the NEIS baseline positions where they differ, as hollow gray rings in the same layout
+    // Scenario mode: the baseline positions where they differ, as hollow gray rings in the same layout
     const ghosts: SwarmP[] =
       mode === 'scenario' && !isBaseline
         ? vis
             .filter((r) => r.ok_base && r.value_base !== null && r.value !== null && Math.abs(r.value - r.value_base) > 1e-12)
-            .map((r) => ({ id: `${r.iso3c ?? r.Country}~baseline`, value: val(r.value_base as number), label: `${r.Country} (NEIS baseline)`, fill: 'none', stroke: COMPARE_COLOR.baseline, strokeWidth: 1.5, row: r, ghost: true }))
+            .map((r) => ({ id: `${r.iso3c ?? r.Country}~baseline`, value: val(r.value_base as number), label: `${r.Country} (baseline)`, fill: 'none', stroke: COMPARE_COLOR.baseline, strokeWidth: 1.5, row: r, ghost: true }))
         : [];
     return { pts: [...ghosts, ...pts], n: pts.length, nGhost: ghosts.length };
   }, [cell, visible, mapScale, mode, isBaseline, negRank]);
@@ -283,8 +283,8 @@ export default function OverviewView() {
   const swarmX =
     mode === 'change'
       ? metric === 'si_rank'
-        ? 'Change in rank against the NEIS baseline (right = moved up its own list) →'
-        : `Change in ${noun} against the NEIS baseline →`
+        ? 'Change in rank against the baseline (right = moved up its own list) →'
+        : `Change in ${noun} against the baseline →`
       : metric === 'si_rank'
         ? 'Rank of this sector in the economy’s own list (1 = its top sector) →'
         : `${label} →`;
@@ -297,7 +297,7 @@ export default function OverviewView() {
   const nSectors = app.cells.length;
   const heatWords =
     mode === 'change'
-      ? ' against the NEIS baseline: orange fell, white no change, blue rose'
+      ? ' against the baseline: orange fell, white no change, blue rose'
       : metric === 'si_rank'
         ? ': blue near the top of the member’s own list, white the middle of the cells shown, orange further down'
         : ': orange is lower than most cells shown, white the middle, blue higher';
@@ -305,7 +305,7 @@ export default function OverviewView() {
   return (
     <div>
       <PageHead
-        eyebrow="Legacy OSI framework · World map of any measure"
+        eyebrow="Security and opportunity scores · World map of any measure"
         title="Overview"
         lede={
           <>
@@ -314,7 +314,7 @@ export default function OverviewView() {
             <Term id="eo" />: how well placed is it to create value there, through exports, investment, costs, demand and know-how? Both run from 0 to 1 and
             compare an economy with all others in the same sector, so 0.8 means doing better than most. Pick a measure, a technology and a stage: the map, the
             coalition table and the dot chart show the same numbers three ways. The priority dials re-weight everything; at 50 they
-            give the NEIS baseline.
+            give the baseline.
           </>
         }
       />
@@ -393,7 +393,7 @@ export default function OverviewView() {
                 heat && (
                   <TriLegend
                     scale={heat.scale}
-                    label={mode === 'change' ? `Change in ${noun} against the NEIS baseline, all sectors` : `${label}, all sectors`}
+                    label={mode === 'change' ? `Change in ${noun} against the baseline, all sectors` : `${label}, all sectors`}
                     format={fTick}
                     noun="cells"
                     {...words}
@@ -419,13 +419,13 @@ export default function OverviewView() {
             title="Where each economy sits"
             sub={`Each dot is one economy, placed by its ${noun}${isPsi ? '' : ` in ${sectorName}`} and coloured as on the map; dots with close values are stacked so that none hides another.${
               negRank ? ' Rank 1 is the economy’s own top sector.' : ''
-            }${swarm.nGhost ? ' Hollow gray rings are the NEIS baseline values where the scenario differs.' : ''} Click a dot to highlight that economy here, on the map and in the coalition table.`}
+            }${swarm.nGhost ? ' Hollow gray rings are the baseline values where the scenario differs.' : ''} Click a dot to highlight that economy here, on the map and in the coalition table.`}
             updating={updating}
             summary={`Dot chart of ${swarm.n} economies by ${label}${isPsi ? '' : ` in ${sectorName}`}; ${focusName} is highlighted.`}
             legend={
               <Legend
                 items={[
-                  ...(swarm.nGhost ? [{ label: 'NEIS baseline (where your perspective differs)', kind: 'hollow' as const, color: COMPARE_COLOR.baseline }] : []),
+                  ...(swarm.nGhost ? [{ label: 'Baseline (where your perspective differs)', kind: 'hollow' as const, color: COMPARE_COLOR.baseline }] : []),
                   { label: `Highlighted: ${focusName}`, kind: 'outline' as const, color: '#ffffff' },
                 ]}
               />

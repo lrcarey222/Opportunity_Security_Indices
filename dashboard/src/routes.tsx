@@ -47,7 +47,7 @@ function Alias({ to }: { to: string }) {
 
 /** The notice of an old link to the retired allied network design page (/network, /network/:stage). */
 export const NETWORK_RETIRED_NOTICE =
-  'The original allied network design has been retired. The Allied Industrial Base analysis replaces it: how the coalition absorbs a supply shock, where new investment would close the gaps and which country plays which role.';
+  'This link points to a page the Explorer does not have. The Allied Industrial Base analysis shows how the coalition absorbs a supply shock, where new investment would close the gaps and which country plays which role.';
 
 /** Old Strategic deep links about one economy -> that section of its Country profile, which embeds
  *  the same views (IA refactor, plan 2). The query string (a custom perspective) is kept; the views

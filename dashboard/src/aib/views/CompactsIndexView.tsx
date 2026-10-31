@@ -435,7 +435,7 @@ function RunLine() {
       ) : (
         <>Who may supply: {m.universe}.</>
       )}{' '}
-      {nt.dictionary ? `Supply-chain steps: ${nt.label.charAt(0).toLowerCase()}${nt.label.slice(1)}, shown by OSI technology × stage. ` : ''}
+      {nt.dictionary ? `Supply-chain steps: ${nt.label.charAt(0).toLowerCase()}${nt.label.slice(1)}, shown by technology × stage. ` : ''}
       {st && st.mode !== 'all' ? `Strategic scope: ${st.label.toLowerCase()} (${nt.dictionary ? 'dictionary sectors ' : ''}${listWords(st.techs)}). ` : ''}
       Coverage is the share of {coverageBase(m)} that can be met after {mi ? 'the concentration cap' : 'the disruption'}.{' '}
       <Link className="link" to={href('/compacts/about')}>
@@ -549,13 +549,13 @@ export default function CompactsIndexView() {
   const cols: Col<AibNode>[] = [
     { id: 'node', header: 'Supply-chain step', value: (n) => n.label },
     { id: 'techs', header: tx.Many, value: (n) => nodeTechWords(n) },
-    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the step's codes sit in; none when no code is in the OSI basket." },
+    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the sectors (technology × stage) the step's codes sit in; none when no code is among the traded goods this Explorer covers." },
     {
       id: 'cells',
-      header: 'OSI cells',
+      header: 'Sectors',
       value: (n) => nodeCellWords(n),
       minWidth: 200,
-      title: "The OSI technology x stage cells the step's codes sit in; none when no code is in the OSI basket.",
+      title: "The sectors (technology × stage) the step's codes sit in; none when no code is among the traded goods this Explorer covers.",
     },
     mi ? { id: 'cls', header: 'What it needs under Managed Interdependence', value: miCls, minWidth: 160 } : { id: 'cls', header: 'What it needs', value: (n) => classInfo(n.cls).label },
     ...(mi ? [{ id: 'headlineCls', header: `What it needs under the ${scenarioInfo(m, 'decoupling').label.toLowerCase()}`, value: (n: AibNode) => classInfo(n.cls).label }] : []),

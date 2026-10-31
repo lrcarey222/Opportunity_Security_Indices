@@ -7,7 +7,7 @@
 // Facts vs preferences (plan.md 4): the corners, Energy Security, Economic Opportunity, suppliers and the
 // whole AIB document are observed / modelled facts. Only the Strategic Index rank is preference-adjusted;
 // it comes from `SiMap` (the engine's run for the reader's Perspective) when one is given, else from the
-// fact sheet (the NEIS baseline: the same numbers).
+// fact sheet (the baseline: the same numbers).
 //
 // The scenarios (2026-10-19): the AIB parts follow the scenario toggle (scn). aibTradeOf() reads any
 // compacts' trade (the main document's: Decoupling, or the Managed Interdependence file's), aibDocUnder()

@@ -123,7 +123,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const part = await section();
     const kinds = within(within(part).getByRole('radiogroup', { name: 'Kind of partnership' })).getAllByRole('radio');
     expect(kinds.map((r) => r.parentElement?.textContent)).toEqual(['Trade', 'Investment', 'Development', 'Geopolitical']);
-    expect(tags(part)).toEqual(['Today · observed', 'OSI ranking · NEIS defaults', aibTag(DEC)]);
+    expect(tags(part)).toEqual(['Today · observed', 'Partner score ranking · default weights', aibTag(DEC)]);
     expect(within(part).getByRole('heading', { level: 3, name: aibHead(DEC) })).toBeTruthy();
     // Today: its largest trade partners in the fact sheet's tie order
     const first = sheet.partners.rows.find((r) => r.iso3 === sheet.partners.tie_order.filter((x) => x !== 'USA')[0])!;

@@ -129,7 +129,7 @@ export function cmfdiSameProjectsNote(stages: readonly string[]): string | null 
 }
 
 export const CMFDI_ATTRIBUTION =
-  'Source: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: project counts and sums of disclosed capital computed by the OSI authors; no record altered.';
+  'Source: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: project counts and sums of disclosed capital computed by the Explorer\'s authors; no record altered.';
 
 // ---- loading ----------------------------------------------------------------------------------------
 

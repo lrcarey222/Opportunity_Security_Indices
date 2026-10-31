@@ -177,7 +177,7 @@ describe('every view renders', () => {
         expect(screen.queryByText(/This view failed to render/)).toBeNull();
         expect(screen.queryByText(/Recomputed values differ from the export/)).toBeNull();
         if (process.env.UI_TEST_VERBOSE) console.log(path, screen.getByRole('main').textContent?.slice(0, 1500));
-        expect(screen.getByText(q ? 'Custom perspective' : 'NEIS baseline', { selector: '.tag' })).toBeTruthy();
+        expect(screen.getByText(q ? 'Custom perspective' : 'Baseline', { selector: '.tag' })).toBeTruthy();
         // Methods and Data are About pages: the engine without the dial panel
         if (/methods|data/.test(path)) expect(screen.queryByRole('complementary', { name: 'Scenario dials' })).toBeNull();
         expect(pageAcronyms()).toEqual([]);
@@ -188,13 +188,13 @@ describe('every view renders', () => {
 });
 
 describe('dial panel and status strip', () => {
-  it('sliders write the URL; PageUp steps by 25; chips and reset return to the NEIS baseline', async () => {
+  it('sliders write the URL; PageUp steps by 25; chips and reset return to the baseline', async () => {
     const router = renderAt('/overview');
     const slider = (await screen.findByLabelText('HAWKISHNESS', {}, { timeout: 20_000 })) as HTMLInputElement;
     expect(slider.type).toBe('range');
     expect(slider.step).toBe('5');
-    expect(slider.getAttribute('aria-valuetext')).toBe('50, the NEIS baseline');
-    const reset = screen.getByRole('button', { name: /reset to neis baseline/i });
+    expect(slider.getAttribute('aria-valuetext')).toBe('50, the baseline');
+    const reset = screen.getByRole('button', { name: /^reset to baseline$/i });
     expect((reset as HTMLButtonElement).disabled).toBe(true);
 
     fireEvent.keyDown(slider, { key: 'PageUp' });
@@ -217,10 +217,10 @@ describe('dial panel and status strip', () => {
     fireEvent.click(change);
     await waitFor(() => expect(router.state.location.search).toBe('?h=80&show=change'));
 
-    await waitFor(() => expect((screen.getByRole('button', { name: /reset to neis baseline/i }) as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.click(screen.getByRole('button', { name: /reset to neis baseline/i }));
+    await waitFor(() => expect((screen.getByRole('button', { name: /^reset to baseline$/i }) as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(screen.getByRole('button', { name: /^reset to baseline$/i }));
     await waitFor(() => expect(router.state.location.search).toBe('?show=change'));
-    expect(screen.getByText('NEIS baseline', { selector: '.tag' })).toBeTruthy();
+    expect(screen.getByText('Baseline', { selector: '.tag' })).toBeTruthy();
     expect((screen.getByRole('radio', { name: 'Change' }) as HTMLInputElement).disabled).toBe(true);
     await settle(300);
   }, 60_000);
@@ -261,7 +261,7 @@ describe('dial panel and status strip', () => {
     expect(within(chips).getByText(/^Endowment screen off/)).toBeTruthy();
     fireEvent.click(within(chips).getByRole('button', { name: /reset endowment screen off/i }));
     await waitFor(() => expect(router.state.location.search).toBe(''));
-    expect(screen.getByText('NEIS baseline', { selector: '.tag' })).toBeTruthy();
+    expect(screen.getByText('Baseline', { selector: '.tag' })).toBeTruthy();
     await settle(300);
   }, 60_000);
 });
@@ -533,7 +533,7 @@ describe('home and the shell', () => {
     for (const path of ['/network', '/network/batteries-midstream?h=80']) {
       const router = renderAt(path);
       await waitFor(() => expect(router.state.location.pathname).toBe('/aib'), { timeout: 20_000 });
-      expect(await screen.findByText(/The original allied network design has been retired/, {}, { timeout: 20_000 })).toBeTruthy();
+      expect(await screen.findByText(/This link points to a page the Explorer does not have\. The Allied Industrial Base analysis shows how the coalition absorbs a supply shock/, {}, { timeout: 20_000 })).toBeTruthy();
       cleanup();
     }
     await settle(300);
@@ -630,13 +630,13 @@ describe('home and the shell', () => {
       await waitFor(() => expect(within(screen.getByRole('navigation', { name: 'Modules' })).getByRole('link', { name: 'Sectors' }).getAttribute('aria-current')).toBe('true'), { timeout: 20_000 });
       await settle(200);
       expect(screen.getByRole('main')).toBeTruthy();
-      expect(screen.queryByText(/Loading the Legacy OSI scores/)).toBeNull();
+      expect(screen.queryByText(/Loading the security and opportunity scores/)).toBeNull();
       expect(stuck.getSnapshot().status).toBe('starting');
       // the engine gate is in content: the header and the footer stay
       await act(async () => {
         await router.navigate('/overview?h=80');
       });
-      expect(await screen.findByText(/Loading the Legacy OSI scores/, {}, { timeout: 20_000 })).toBeTruthy();
+      expect(await screen.findByText(/Loading the security and opportunity scores/, {}, { timeout: 20_000 })).toBeTruthy();
       expect(within(screen.getByRole('navigation', { name: 'Modules' })).getByRole('link', { name: 'Countries' }).getAttribute('aria-current')).toBe('true');
       expect(screen.getByRole('navigation', { name: 'Country views' })).toBeTruthy();
       expect(screen.getByRole('contentinfo')).toBeTruthy();
@@ -765,7 +765,7 @@ describe('Home search and the About layout (IA refactor)', () => {
     }
   }, 60_000);
 
-  it('/data with a custom perspective: one line names it, Reset returns to the NEIS baseline; no dial panel', async () => {
+  it('/data with a custom perspective: one line names it, Reset returns to the baseline; no dial panel', async () => {
     const router = renderAt('/data?h=80&g=70');
     expect(await screen.findByRole('heading', { level: 1, name: /^Data$/ }, { timeout: 20_000 })).toBeTruthy();
     expect(screen.getByText('Custom perspective', { selector: '.tag' })).toBeTruthy();
@@ -775,10 +775,10 @@ describe('Home search and the About layout (IA refactor)', () => {
     // filed under About, with the scenario carried between the About pages
     const tabs = screen.getByRole('navigation', { name: 'Modules' });
     expect(within(tabs).getByRole('link', { name: 'About' }).getAttribute('aria-current')).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: 'Reset to NEIS baseline' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to baseline' }));
     await waitFor(() => expect(router.state.location.search).toBe(''));
-    expect(screen.getByText('NEIS baseline', { selector: '.tag' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Reset to NEIS baseline' })).toBeNull();
+    expect(screen.getByText('Baseline', { selector: '.tag' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Reset to baseline' })).toBeNull();
     await settle(300);
   }, 60_000);
 });

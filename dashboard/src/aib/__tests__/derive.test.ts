@@ -692,9 +692,11 @@ describe('run settings in words', () => {
     expect(nt).toMatchObject({ mode: 'dictionary', dictionary: true, label: 'Electro-industrial dictionary (core scope)' });
     expect(nt.words).toMatch(/^nodes are groups of HS6 codes from the electro-industrial HS6 dictionary \(RMI Electro-Industrial Stack\), each at one of the six supply-chain stages: /);
     expect(nt.words).not.toMatch(/indices|>/);
-    expect(nt.words).toContain('primary rows only, so each code sits in one node; the views show each node by OSI technology and its stage');
-    expect(nt.words).toMatch(/shown as Not in the OSI basket$/);
-    expect(nodeTaxonomy(master.meta).words).toMatch(/one of the six stages of a technology’s supply chain; the views show each node by OSI technology and its stage/);
+    expect(nt.words).toContain('primary rows only, so each code sits in one node; the views show each node by technology and its stage');
+    expect(nt.words).toMatch(/shown as Not among the traded goods this Explorer covers$/);
+    expect(nodeTaxonomy(master.meta).words).toMatch(/one of the six stages of a technology’s supply chain; the views show each node by technology and its stage/);
+    // readers come to the Explorer fresh (user, 2026-10-31): the words never name the index project
+    for (const w of [nt.words, nodeTaxonomy(master.meta).words, nodeTaxonomy(master.meta).label]) expect(w).not.toMatch(/\bOSI\b/);
     // each node at one of the six stages, from its codes' item type; none at Deployment
     expect(nt.words).toContain('raw material: Extraction, or Recovery for recycled feed; processed material: Refining; component: Components; final product or process equipment: Assembly), so no node is at Deployment');
     expect(nt.words).not.toMatch(/Upstream|Midstream|Downstream/);
@@ -707,7 +709,7 @@ describe('run settings in words', () => {
     expect(shockLabelOf({ ...master.meta, shocks }, 'largest_technology')).toBe('Largest supplier of the technology removed');
     // a scope the words do not know is still named once
     expect(nodeTaxonomy({ ...doc.meta, dictionaryScope: 'wide' }).label).toBe('Electro-industrial dictionary (wide scope)');
-    expect(nodeTaxonomy(master.meta)).toMatchObject({ mode: 'master', dictionary: false, label: 'OSI basket' });
+    expect(nodeTaxonomy(master.meta)).toMatchObject({ mode: 'master', dictionary: false, label: 'Traded goods the Explorer covers' });
     expect(nodeTaxonomy(older.meta)).toMatchObject({ mode: 'master' });
     expect(coverageBase(doc.meta)).toBe("the demand scope's baseline traded demand");
     for (const f of [demandScope, candidateUniverse, shockSemantics, supplyConstraint, strategicScope]) expect(f(older.meta)).toBeNull();
@@ -1132,7 +1134,7 @@ describe('taxonomy (2026-10-29, design A1): nodes by OSI technology x six-stage 
     expect(nodeInTech(magnets, 'Magnets')).toBe(false);
     const h2 = nodeOf('h2-down-electrolysers')!;
     expect([osiTechsOfNode(h2), techKeysOfNode(h2), nodeInTech(h2, NOT_IN_BASKET), nodeTechWords(h2)]).toEqual([[], [NOT_IN_BASKET], true, NOT_IN_BASKET]);
-    expect(NOT_IN_BASKET).toBe('Not in the OSI basket');
+    expect(NOT_IN_BASKET).toBe('Not among the traded goods this Explorer covers');
     // the technologies of a set: alphabetical, the basket-less last
     expect(technologiesOfNodes(doc.nodes)).toEqual(['Batteries', 'Electric Grid', 'Electric Vehicles', 'Solar', 'Wind', NOT_IN_BASKET]);
     expect(technologiesOfNodes(doc.nodes.filter((n) => n.yfCells.length))).not.toContain(NOT_IN_BASKET);
@@ -1145,14 +1147,14 @@ describe('taxonomy (2026-10-29, design A1): nodes by OSI technology x six-stage 
     ]);
     expect(stageOptions(doc.nodes.map((n) => n.stage)).map((o) => o.value)).toEqual(['Extraction', 'Refining', 'Components', 'Assembly']);
     expect([techStageWords('Wind', 'Components'), techStageWords(null, 'Refining'), techStageWords(NOT_IN_BASKET, null), techStageWords(null, null)]).toEqual([
-      ' in Wind at Components', ' at Refining', ' not in the OSI basket', '',
+      ' in Wind at Components', ' at Refining', ' not among the traded goods this Explorer covers', '',
     ]);
   });
 
   it('where a node sits: its cells by stage (never node.stage), the same in every bundle; the CSV place columns', () => {
     expect(nodeWhere(nodeOf('solar-down-modules')!)).toBe('Solar · Assembly');
     expect(nodeWhere(nodeOf('ev-wind-mid-magnets')!)).toBe('Electric Vehicles, Wind · Components');
-    expect(nodeWhere(nodeOf('h2-down-electrolysers')!)).toBe('Not in the OSI basket');
+    expect(nodeWhere(nodeOf('h2-down-electrolysers')!)).toBe('Not among the traded goods this Explorer covers');
     expect(nodeWhere(master.nodes.find((n) => n.id === 'ev-wind-mid-magnets')!)).toBe('Electric Vehicles, Wind · Components');
     // a node whose cells sit at other stages than the model's own (electric motors: Assembly in the model)
     expect(nodeWhere({ yfCells: ['electric-vehicles-components'] })).toBe('Electric Vehicles · Components');

@@ -1,6 +1,6 @@
 // The one-line perspective of a page that reads the engine without the dial panel (IA refactor
 // 2026-10-16, plan 4 and 5.5): "Perspective: NEIS baseline", or "Perspective: custom (Hawkishness 80, …)"
-// with "Reset to NEIS baseline". The dials themselves live in the Country profile; a link from there
+// with "Reset to baseline". The dials themselves live in the Country profile; a link from there
 // carries them here (the h / b / p / g keys). Needs a ScenarioProvider (EngineScope).
 
 import { DIAL_SPECS } from '../components/DialPanel.tsx';
@@ -22,18 +22,18 @@ export function PerspectiveLine() {
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-xs text-paper-mute sm:px-6 lg:px-8">
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1" role="status" aria-live="polite">
           <span>Perspective:</span>
-          <span className={`tag ${isBaseline ? 'border-signal text-paper' : 'tag-framework'}`}>{isBaseline ? 'NEIS baseline' : 'Custom perspective'}</span>
+          <span className={`tag ${isBaseline ? 'border-signal text-paper' : 'tag-framework'}`}>{isBaseline ? 'Baseline' : 'Custom perspective'}</span>
           {!isBaseline && summary && <span className="tabular">{summary}</span>}
         </span>
         {!isBaseline && (
           <>
             <button type="button" className="btn btn-ghost btn-sm" onClick={reset}>
-              Reset to NEIS baseline
+              Reset to baseline
             </button>
           </>
         )}
         <span className="basis-full sm:basis-auto">
-          The evidence (trade, production, concentration, compacts) and the strategic choices are the same under every perspective; only the Legacy OSI priorities
+          The evidence (trade, production, concentration, compacts) and the strategic choices are the same under every perspective; only the Strategic Index priorities
           and partner scores follow it.
         </span>
       </div>

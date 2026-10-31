@@ -199,7 +199,7 @@ describe('the shared stages and the provenance of the core', () => {
   });
   it('carries the core created and git_commit, null when absent', () => {
     const core = decodeCore(fixtureCore());
-    expect(postureProvenance(core)).toEqual({ source: 'Opportunity Security Indices, strategic position framework', as_of: '2026-10-29', git_commit: 'abc1234' });
+    expect(postureProvenance(core)).toEqual({ source: "Strategic position framework, computed by the Explorer's authors", as_of: '2026-10-29', git_commit: 'abc1234' });
     const bare = fixtureCore();
     delete bare.created;
     delete bare.git_commit;
@@ -273,7 +273,7 @@ describe('the table twins and CSVs', () => {
   // Aland's Solar Recovery node is not classified: kept as a row, never dropped
   const core = decodeCore(withoutCell(fixtureCore(), 0, 1, 5));
   const prov = postureProvenance(core);
-  const source = '"Opportunity Security Indices, strategic position framework"';
+  const source = '"Strategic position framework, computed by the Explorer\'s authors"';
 
   it("one economy's rows: the full technology x six-stage grid, in chain order, display names, unclassified nodes kept", () => {
     const rows = countryPostureRows(core, 'AAA');

@@ -338,7 +338,7 @@ export function sectorZipFiles(model: SectorModel, manifest: SectorManifest | nu
   files['dictionary.csv'] = withBom(csvOf(dictRows));
   files['sources.csv'] = withBom(csvOf(srcRows));
   files['README.txt'] = [
-    'Allied Industrial Base Explorer: Sector Insights',
+    'Allied Industrial Base Explorer: Sectors',
     `Page: ${url}`,
     `Sector data bundle: ${manifest?.bundle_id ?? 'unknown'} (export ${manifest?.created ?? 'unknown'})`,
     '',

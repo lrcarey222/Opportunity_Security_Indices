@@ -19,7 +19,7 @@ import { DIAL_SPECS } from '../../components/DialPanel.tsx';
 const TABLE_LABEL: Record<string, string> = {
   parameters: 'Parameters',
   data_vintage: 'Data vintage',
-  strategic_index: 'Strategic Index (with the NEIS baseline for comparison)',
+  strategic_index: 'Strategic Index (with the baseline for comparison)',
   strategic_excluded: 'Strategic Index: excluded sectors',
   allied_selection: 'Allied strategic selection',
   energy_security: 'Energy Security',
@@ -53,13 +53,13 @@ export default function DataView() {
       'Allied Industrial Base Explorer: scenario tables',
       '',
       `Methods paper: ${m.paper?.title ?? DASH}`,
-      `Scenario: ${isBaseline ? "the NEIS baseline (all dials at 50, advanced settings at their defaults)" : DIAL_SPECS.map((d) => `${d.label} ${scenario.dials[d.key]}`).join(', ')}`,
+      `Scenario: ${isBaseline ? "the baseline (all dials at 50, advanced settings at their defaults)" : DIAL_SPECS.map((d) => `${d.label} ${scenario.dials[d.key]}`).join(', ')}`,
       `Link: ${link}`,
       `Data build: ${m.bundle_id} (exported ${m.created}, git ${m.git_commit ?? DASH})`,
       `Engine: ${ENGINE_VERSION}`,
       '',
       'Every table is a CSV (UTF-8 with a byte-order mark) with the R pipeline\'s column names. Empty cells are NA.',
-      'Columns ending in _base hold the NEIS baseline value (every dial at 50, the pipeline\'s six-stage defaults); delta = scenario minus baseline; rank_delta = baseline rank minus scenario rank (positive = moved up).',
+      'Columns ending in _base hold the baseline value (every dial at 50, the pipeline\'s six-stage defaults); delta = scenario minus baseline; rank_delta = baseline rank minus scenario rank (positive = moved up).',
       'parameters.csv lists every parameter of the scenario; data_vintage.csv the export the numbers come from.',
       'Scenario results are model outputs for exploration, not forecasts.',
       '',
@@ -114,7 +114,7 @@ export default function DataView() {
       if (raw) delete raw.network;
       const advanced = checkAdvanced(raw, app.bundleLike);
       setScenario({ dials, advanced });
-      const retired = hadNetwork ? ' Its allied network design settings were ignored: that design is retired.' : '';
+      const retired = hadNetwork ? ' Settings this Explorer does not use were ignored.' : '';
       setLoadMsg(
         doc.bundle_id && doc.bundle_id !== m.bundle_id
           ? { kind: 'warning', text: `Scenario loaded. It was saved with another data build (${doc.bundle_id.slice(0, 8)}); the numbers may differ from when it was saved.${retired}` }
@@ -154,14 +154,14 @@ export default function DataView() {
       <PageHead
         eyebrow="About · Data & sources"
         title="Data"
-        lede="Download the numbers behind the index and partnership views, for the NEIS baseline or a custom perspective, and see how this export was checked. The sector, country and Allied Industrial Base data have their own source pages, listed under About."
+        lede="Download the numbers behind the index and partnership views, for the baseline or a custom perspective, and see how this export was checked. The sector, country and Allied Industrial Base data have their own source pages, listed under About."
       />
       <div className="flex flex-col gap-6">
         <div className="grid gap-6 xl:grid-cols-2">
           <section className="card p-5">
             <h2 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">Download the current scenario</h2>
             <p className="mt-1 text-sm text-paper-mute">
-              Every table of the scenario as CSV files in one zip: parameters and data vintage, the Strategic Index, pillars and their contributions, Policy and partnership tables, with the NEIS baseline values for comparison.
+              Every table of the scenario as CSV files in one zip: parameters and data vintage, the Strategic Index, pillars and their contributions, Policy and partnership tables, with the baseline values for comparison.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button type="button" className="btn btn-primary" onClick={downloadZip} disabled={status.kind === 'busy'}>
@@ -231,14 +231,14 @@ export default function DataView() {
                 </Notice>
               </div>
             )}
-            <p className="mt-3 text-xs text-paper-mute tabular">Scenario key: {key || '(the NEIS baseline)'}</p>
+            <p className="mt-3 text-xs text-paper-mute tabular">Scenario key: {key || '(the baseline)'}</p>
           </section>
         </div>
 
         <section className="card p-5">
           <h2 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">Validation of this export</h2>
           <p className="mt-1 text-sm text-paper-mute">
-            At the NEIS baseline (every dial at 50, the default settings) the engine must reproduce the pipeline. The export script checks every layer and records the result here
+            At the baseline (every dial at 50, the default settings) the engine must reproduce the pipeline. The export script checks every layer and records the result here
             ({Object.entries(statusCount).map(([k, v]) => `${v} ${k}`).join(', ') || 'no checks'}).
           </p>
           <div className="mt-4">

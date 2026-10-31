@@ -58,7 +58,7 @@ export function taxonomyOf(m: AibMeta): Taxonomy {
 // ---- OSI technologies of a node ---------------------------------------------------------------------------
 
 /** The group, filter option and table value of a node with no OSI basket cell (none of its codes is in the OSI basket). */
-export const NOT_IN_BASKET = 'Not in the OSI basket';
+export const NOT_IN_BASKET = 'Not among the traded goods this Explorer covers';
 
 const titleWords = (s: string) =>
   s
@@ -110,7 +110,7 @@ export function techOptions(techs: readonly string[]): { value: string; label: s
  * Batteries at Refining", " not in the OSI basket"; "" with neither.
  */
 export function techStageWords(tech: string | null | undefined, stage: string | null | undefined): string {
-  const t = !tech ? '' : tech === NOT_IN_BASKET ? ' not in the OSI basket' : ` in ${tech}`;
+  const t = !tech ? '' : tech === NOT_IN_BASKET ? ' not among the traded goods this Explorer covers' : ` in ${tech}`;
   return `${t}${stage ? ` at ${stage}` : ''}`;
 }
 

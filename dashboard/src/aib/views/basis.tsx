@@ -1,10 +1,10 @@
 // Small pieces of the Allied Industrial Base composition pages (IA refactor, 2026-10-16): the eyebrow that
 // says where a block comes from (plan.md 4: the AIB physical analysis never responds to the Perspective;
-// partnership rankings that use preference-adjusted scores are shown at the NEIS defaults and say so), a
+// partnership rankings that use preference-adjusted scores are shown at the default weights and say so), a
 // disclosure that mounts its content only once opened (for blocks that start the engine), and a link card.
 //
 // The bases (2026-10-19, the three partnership lenses): 'today' (observed: trade, investment, aid and
-// votes as they are), 'baseline' (the OSI's recommendation at the NEIS defaults; the internal key stays:
+// votes as they are), 'baseline' (the OSI's recommendation at the default weights; the internal key stays:
 // "baseline" now means the observed 2024 trade in the AIB section, so the words never say it), 'model'
 // (the AIB analysis under the toggled scenario: pass `scenario`, its label; shown as "AIB analysis") and
 // 'facts' (observed data and analysis results together, as before).
@@ -20,8 +20,8 @@ export const BASIS_WORDS: Readonly<Record<Basis, { label: string; title: string 
     title: 'Observed trade or the trade-network analysis: these do not change with the Perspective (preference) settings of a Country profile.',
   },
   baseline: {
-    label: 'OSI ranking · NEIS defaults',
-    title: 'A ranking from the OSI indices that uses preference-weighted scores; shown here at the NEIS defaults. A Country profile can change the Perspective.',
+    label: 'Partner score ranking · default weights',
+    title: 'A ranking from the partner scores, which are preference-weighted; shown here at the default weights. A Country profile can change the Perspective.',
   },
   today: {
     label: 'Today · observed',

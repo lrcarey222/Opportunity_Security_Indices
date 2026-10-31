@@ -8,7 +8,7 @@
 //                   the IMF positions and factory projects of one economy. Development: official aid
 //                   (OECD; the Sector bundle, loaded only on this tab). Geopolitical: shared economic-
 //                   security agreements, UN-vote alignment and the coalition tier.
-//   OSI ranking  Partnership Opportunity, Friendshore and Development Potential at the NEIS defaults (the
+//   OSI ranking  Partnership Opportunity, Friendshore and Development Potential at the default weights (the
 //                   ties and pcell chunks; Development Potential through the page's one EngineScope); the
 //                   allied coalition (core members and partners: the Country manifest) and Friendshore's
 //                   alignment part.
@@ -18,7 +18,7 @@
 //                   investor -> host flows; the capacity gaps (BUILD) and their hosts; the compact
 //                   coalitions (members, critical supply partners, critical dependencies outside).
 // Facts never respond to the Perspective; the rankings that use preference-weighted scores say so and are
-// at the NEIS defaults.
+// at the default weights.
 //
 // A pair (2026-10-20, strategic task spec s.19): the Partner filter (URL `partner`, read only with an
 // economy; options grouped by whether the model writes a relationship thesis for the pair) opens the
@@ -140,7 +140,7 @@ function useTies(): { ties: Ties | null; error: string | null } | null {
 }
 
 /**
- * The top partners of one OSI cell at the NEIS defaults (null while loading or when the build has none).
+ * The top partners of one OSI cell at the default weights (null while loading or when the build has none).
  * The cell comes from the crosswalk (osiCellPick), never from the AIB filter's names, and is six-stage, as
  * the pcell chunks are (pcell-batteries-refining).
  */
@@ -216,7 +216,7 @@ function cellSourceWords(pick: OsiCellPick, cell: OsiCell): string {
       : pick.nodes.length === 1
         ? pick.nodes[0].label
         : whoWords(pick);
-  return `the basket cell the codes of ${who} sit in${others.length ? `; ${itsOf(pick.nodes.length)} codes also sit in ${cellWordsOf(others)}` : ''}`;
+  return `the sector the codes of ${who} sit in${others.length ? `; ${itsOf(pick.nodes.length)} codes also sit in ${cellWordsOf(others)}` : ''}`;
 }
 
 /** After a note on the cells with partner indices: the cells without them and the matching nodes left with none. */
@@ -235,17 +235,17 @@ function pickCaveats(pick: OsiCellPick): string {
  */
 function NoCellNotice({ pick, fallback }: { pick: OsiCellPick; fallback: string }) {
   const parts = [
-    pick.unmapped.length ? `the codes of ${whoOf(pick.unmapped, pick.nodes)} sit in no OSI basket cell, so ${itsOf(pick.unmapped.length)} partner scores are neutral` : '',
+    pick.unmapped.length ? `the codes of ${whoOf(pick.unmapped, pick.nodes)} sit in no sector the partner indices cover, so ${itsOf(pick.unmapped.length)} partner scores are neutral` : '',
     pick.unscoredNodes.length
       ? `the codes of ${whoOf(pick.unscoredNodes, pick.nodes)} sit only in ${cellWordsOf(pick.unscored)}, which this data build keeps no partner indices for`
       : '',
   ].filter(Boolean);
   return (
     <div data-testid="osi-cell-notice">
-      <Notice kind="info" title={pick.unscoredNodes.length ? 'No OSI cell with partner indices for this selection' : 'No OSI cell for this selection'}>
+      <Notice kind="info" title={pick.unscoredNodes.length ? 'No sector with partner indices for this selection' : 'No sector for this selection'}>
         {pick.nodes.length
-          ? `Partner indices are kept by OSI technology × stage, and ${parts.join('; ')}. ${fallback}`
-          : `No supply-chain step matches this selection, so it reaches no OSI cell (partner indices are kept by OSI technology × stage). ${fallback}`}
+          ? `Partner indices are kept by sector (technology × stage), and ${parts.join('; ')}. ${fallback}`
+          : `No supply-chain step matches this selection, so it reaches no sector (partner indices are kept by technology × stage). ${fallback}`}
       </Notice>
     </div>
   );
@@ -260,10 +260,10 @@ function OsiCellNote({ pick, cells = false, fallback }: { pick: OsiCellPick | nu
   if (!pick) return null;
   if (!pick.cells.length) return <NoCellNotice pick={pick} fallback={fallback} />;
   const text = cells
-    ? `Partner indices for the OSI ${pick.cells.length === 1 ? 'cell' : 'cells'} ${cellWordsOf(pick.cells)}: the basket ${pick.cells.length === 1 ? 'cell' : 'cells'} the codes of ${whoWords(pick)} sit in.`
+    ? `Partner indices for the ${pick.cells.length === 1 ? 'sector' : 'sectors'} ${cellWordsOf(pick.cells)}: the ${pick.cells.length === 1 ? 'sector' : 'sectors'} (technology × stage) the codes of ${whoWords(pick)} sit in.`
     : pick.cell
-      ? `Partner indices for the OSI cell ${cellLabel(pick.cell.tech, pick.cell.stage)}, ${cellSourceWords(pick, pick.cell)}.`
-      : `This selection spans ${plural(pick.cells.length, 'OSI cell')} (${cellWordsOf(pick.cells)}): ${fallback}`;
+      ? `Partner indices for the sector ${cellLabel(pick.cell.tech, pick.cell.stage)}, ${cellSourceWords(pick, pick.cell)}.`
+      : `This selection spans ${plural(pick.cells.length, 'sector')} (${cellWordsOf(pick.cells)}): ${fallback}`;
   return (
     <p className="text-xs text-paper-mute" data-testid="osi-cell-note">
       {text}
@@ -289,14 +289,14 @@ function InvestmentCellNote({ pick, ties }: { pick: OsiCellPick | null; ties: Ti
   if (!pick) return null;
   const stages = cmfdiStages(ties);
   const same = cmfdiSameProjectsNote(stages);
-  const notShown = `${ECONOMY_WIDE}; factory projects are kept by OSI cell and are not shown.`;
+  const notShown = `${ECONOMY_WIDE}; factory projects are kept by sector and are not shown.`;
   if (!pick.cells.length) return <NoCellNotice pick={pick} fallback={notShown} />;
   const cell = pick.cell;
   const text = !cell
-    ? `This selection spans ${plural(pick.cells.length, 'OSI cell')} (${cellWordsOf(pick.cells)}): ${notShown}`
+    ? `This selection spans ${plural(pick.cells.length, 'sector')} (${cellWordsOf(pick.cells)}): ${notShown}`
     : hasCmfdi(cell.tech, cell.stage, stages)
-      ? `Factory projects are kept by OSI cell: shown for ${cellLabel(cell.tech, cell.stage)}, ${cellSourceWords(pick, cell)}.${same ? ` ${same}` : ''} ${ECONOMY_WIDE}.`
-      : `${ECONOMY_WIDE}. Factory projects are kept by OSI cell and recorded only for ${cmfdiWords(stages)}; ${cellLabel(cell.tech, cell.stage)}, ${cellSourceWords(pick, cell)}, has none, so none are shown.`;
+      ? `Factory projects are kept by sector: shown for ${cellLabel(cell.tech, cell.stage)}, ${cellSourceWords(pick, cell)}.${same ? ` ${same}` : ''} ${ECONOMY_WIDE}.`
+      : `${ECONOMY_WIDE}. Factory projects are kept by sector and recorded only for ${cmfdiWords(stages)}; ${cellLabel(cell.tech, cell.stage)}, ${cellSourceWords(pick, cell)}, has none, so none are shown.`;
   return (
     <p className="text-xs text-paper-mute" data-testid="osi-cell-investment-note">
       {text}
@@ -428,7 +428,7 @@ export default function AibPartnershipsView() {
         lede={<QuestionLede question={MODULE_QUESTION.partnerships}>{PARTNERSHIP.lede}</QuestionLede>}
       >
         <p className="mt-3 max-w-3xl text-sm text-paper-mute" data-testid="partnerships-reading">
-          Each kind of partnership (trade, investment, development, geopolitical) is read three ways: as it is today, as the OSI partner scores rank it, and as the Allied
+          Each kind of partnership (trade, investment, development, geopolitical) is read three ways: as it is today, as the partner scores rank it, and as the Allied
           Industrial Base analysis arranges it under the chosen scenario. The summary says where the three agree and where they differ. {PARTNERSHIP.psiCaveat}
         </p>
       </PageHead>
@@ -571,7 +571,7 @@ function useTopRows(side: 'po' | 'fs', f: PartnershipFilter): TopRows {
 /** What the OSI lens names: the economy's partners, else (no economy) the exporters (Partnership Opportunity) or the partners to build with (Friendshore). */
 function topNames(t: TopRows, side: 'po' | 'fs', country: string | null): LensNames {
   if (!t.ties || t.sectorLoading) return LENS_LOADING;
-  if (t.pick && !t.pick.cells.length) return lensNone('no OSI cell with partner indices for this selection');
+  if (t.pick && !t.pick.cells.length) return lensNone('no sector with partner indices for this selection');
   if (t.ties.error && !t.bySector) return lensNone('the partner rankings are not in this build');
   const keys = country ? t.rows.map((r) => r.partner_iso) : t.rows.map((r) => (side === 'po' ? r.reporter_iso : r.partner_iso));
   return lensNames(keys, 10, country);
@@ -588,7 +588,7 @@ function TopPartnersCard({ side, f, t }: { side: 'po' | 'fs'; f: PartnershipFilt
   const toCountry = useCountryHref();
   const w = SIDE_WORDS[side];
   const { rows, cell, bySector, ties, pick } = t;
-  const where = bySector && cell ? `the OSI cell ${cellLabel(cell.tech, cell.stage)}` : 'all sectors';
+  const where = bySector && cell ? `the sector ${cellLabel(cell.tech, cell.stage)}` : 'all sectors';
   const cols: Col<TopRow>[] = [
     { id: 'who', header: w.who, value: (r) => name(r.reporter_iso), cell: (r) => <Link className="link" to={toCountry(r.reporter_iso)}>{name(r.reporter_iso)}</Link> },
     { id: 'partner', header: w.partner, value: (r) => name(r.partner_iso), cell: (r) => <Link className="link" to={toCountry(r.partner_iso)}>{name(r.partner_iso)}</Link> },
@@ -619,7 +619,7 @@ function TopPartnersCard({ side, f, t }: { side: 'po' | 'fs'; f: PartnershipFilt
     <ChartCard
       headingLevel={3}
       title={w.title}
-      sub={`The strongest pairs by ${w.score} (${w.what}), ${where}${f.country ? `, ${name(f.country)}'s own ranking` : ''}. A preference-weighted score: a Country profile can change the Perspective; here it is at the NEIS defaults.${t.sectorMissing ? ' No ranking for that OSI cell in this data build: all sectors shown.' : ''}`}
+      sub={`The strongest pairs by ${w.score} (${w.what}), ${where}${f.country ? `, ${name(f.country)}'s own ranking` : ''}. A preference-weighted score: a Country profile can change the Perspective; here it is at the default weights.${t.sectorMissing ? ' No ranking for that sector in this data build: all sectors shown.' : ''}`}
       table={() => <TableView rows={rows} cols={cols} caption={`${w.title}, ${where}`} pageSize={20} />}
     >
       <div className="space-y-3">
@@ -930,7 +930,7 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
               sector={pick?.cell ? { tech: pick.cell.tech, stage: pick.cell.stage } : null}
               nameOf={name}
               headingLevel={3}
-              projectsHint="shown below when the selection's OSI cell is one of those"
+              projectsHint="shown below when the selection's sector is one of those"
             />
           </div>
         ),
@@ -1181,7 +1181,7 @@ function DevelopmentPartners({ f, scope, onNames }: { f: PartnershipFilter; scop
   // the OSI cells come from the matching nodes' crosswalk; none: no rows and a notice
   const rows = useMemo(() => (ties?.ties ? dpRows(ties.ties.dp, app.cells, doc.nodes, f) : []), [ties, app.cells, doc.nodes, f]);
   const noCell = !!pick && !pick.cells.length;
-  const names: LensNames = !ties ? LENS_LOADING : ties.error ? lensNone('the Development Potential scores are not in this build') : noCell ? lensNone('no OSI cell with partner indices for this selection') : lensNames(rows.map((r) => r.iso3));
+  const names: LensNames = !ties ? LENS_LOADING : ties.error ? lensNone('the Development Potential scores are not in this build') : noCell ? lensNone('no sector with partner indices for this selection') : lensNames(rows.map((r) => r.iso3));
   const sig = `${names.status}|${names.keys.join(',')}`;
   useEffect(() => {
     onNames(names);
@@ -1191,14 +1191,14 @@ function DevelopmentPartners({ f, scope, onNames }: { f: PartnershipFilter; scop
   const cols: Col<DpRow>[] = [
     { id: 'name', header: 'Economy', value: (r) => name(r.iso3), cell: (r) => <Link className="link" to={toCountry(r.iso3)}>{name(r.iso3)}</Link> },
     { id: 'value', header: 'Development Potential', value: (r) => r.value, cell: (r) => fmtScore(r.value), num: true },
-    { id: 'sector', header: 'Highest in OSI cell', value: (r) => cellLabel(r.tech, r.stage) },
+    { id: 'sector', header: 'Highest in sector', value: (r) => cellLabel(r.tech, r.stage) },
     { id: 'host', header: 'Capacity gaps where it is an eligible host', value: (r) => r.hostIn.map(label).join(', '), minWidth: 220 },
   ];
   return (
     <ChartCard
       headingLevel={3}
       title="Development partners"
-      sub={`The economies with the most Development Potential (where partnering builds capability in a middle- or lower-income economy), ${scope}; each with the capacity gaps where it is already an eligible host under the major-supplier disruption. A preference-weighted ranking at the NEIS defaults.`}
+      sub={`The economies with the most Development Potential (where partnering builds capability in a middle- or lower-income economy), ${scope}; each with the capacity gaps where it is already an eligible host under the major-supplier disruption. A preference-weighted ranking at the default weights.`}
       table={() => <TableView rows={rows} cols={cols} caption={`Development partners, ${scope}`} search pageSize={20} />}
     >
       <div className="mb-3">
@@ -1311,7 +1311,7 @@ function GeopoliticalTab({ f, partner, onKind }: TabProps) {
     const partner = coalition.filter((c) => c.tier === 'partner');
     const inside = !iso || coalition.some((c) => c.iso3 === iso);
     osi = {
-      names: inside ? lensNames(coalition.map((c) => c.iso3), 200, iso) : lensNone(`${name(iso as string)} is outside the OSI's allied coalition`),
+      names: inside ? lensNames(coalition.map((c) => c.iso3), 200, iso) : lensNone(`${name(iso as string)} is outside the allied coalition the partner scores use`),
       content: (
         <div className="space-y-4">
           <LensCard

@@ -85,10 +85,10 @@ export function SectorPositionSection({ id = 'sectors', level = 2 }: { id?: stri
     text: csvWithSource(
       rows.map((c) => ({
         sector: c.tech, stage: c.stage, economic_opportunity_beats_pct: c.eo?.pct.v ?? null, energy_security_beats_pct: c.es?.pct.v ?? null,
-        legacy_corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null, policy_activity_third: c.policy?.third ?? null, low_emission_term: c.si.parts?.tech.v ?? null,
+        corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null, policy_activity_third: c.policy?.third ?? null, low_emission_term: c.si.parts?.tech.v ?? null,
         strategic_priority_rank: siRankOf(c, si.map), perspective: perspectiveNote(si),
       })),
-      'Opportunity Security Indices',
+      "Security and opportunity scores computed by the Explorer's authors",
       sheet.meta.as_of,
     ),
   });
@@ -119,7 +119,7 @@ export function SectorPositionSection({ id = 'sectors', level = 2 }: { id?: stri
       >
         <TableView rows={rows} cols={cols} caption={`${cap(name)}: sector position`} rowKey={(c) => c.key} onRowClick={(c) => setCell(c.key)} selectedKey={cell} pageSize={12} />
       </ChartCard>
-      <Fold id="scores" engine summary="Explore details: the scores' categories, contributions and every measure (Country scores, Legacy OSI)">
+      <Fold id="scores" engine summary="Explore details: the scores' categories, contributions and every measure (Country scores)">
         <CountryView embedded />
       </Fold>
     </Section>

@@ -45,7 +45,7 @@ export function PolicySection() {
   const needs = mi && view ? view.policyNeeds : c.policyNeeds;
   const cols: Col<AibNode>[] = [
     { id: 'node', header: 'Supply-chain step', value: (n) => n.label },
-    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the step's codes sit in; none when no code is in the OSI basket." },
+    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the sectors (technology × stage) the step's codes sit in; none when no code is among the traded goods this Explorer covers." },
     { id: 'cls', header: mi ? `What it needs under ${miLabel}` : 'What it needs', value: clsLabel },
     { id: 'needs', header: mi ? `Actions needed under ${dLabel}` : 'Actions needed', value: (n) => policyNeedsWords(n.policyNeeds) ?? '–' },
     { id: 'treatment', header: mi ? `Recommended treatment under ${dLabel}` : 'Recommended treatment', value: (n) => n.treatment, minWidth: 260 },

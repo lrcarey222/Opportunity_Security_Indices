@@ -170,9 +170,21 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     // the hatched not-assessed node, never a colour
     expect(cell(/^Batteries Recovery & Recycling: Not assessed/).getAttribute('data-verb')).toBe('not_assessed');
     expect(cell(/^Batteries Recovery & Recycling: Not assessed/).style.background).toContain('repeating-linear-gradient');
-    // the legend above the map: the choices by fence, each with the node count
+    // under the title, how to read the map (the page header carries the strategy sentence)
+    const intro = within(strategy).getByTestId('strategy-map-intro');
+    expect(intro.textContent).toMatch(/^One map of the country's strategic choices\. Each row is a technology; the six columns are the steps of its supply chain/);
+    expect(intro.textContent).toContain('hover over it, or tap it, to see which');
+    // the one legend, above the map: each fence headed by its yard in the user's words, each choice defined, with the step count
+    expect(within(strategy).getAllByTestId('posture-legend')).toHaveLength(1);
     const legend = within(strategy).getByTestId('posture-legend');
-    expect(legend.textContent).toBe('High fence:Secure 3Medium fence:Preserve 2,Catch Up 1,Partner 1,Accelerate 1Low fence:Watch 3Not assessed 1');
+    expect([...legend.querySelectorAll('[data-fence]')].map((g) => [g.getAttribute('data-fence'), g.getAttribute('data-yard'), g.querySelector('p')?.textContent])).toEqual([
+      ['high', 'small', 'Small yard / High fence'], ['medium', 'medium', 'Medium yard / medium, permeable fence'], ['low', 'large', 'Large yard / Low fence'],
+    ]);
+    expect([...legend.querySelectorAll('li[data-verb]')].map((li) => li.textContent?.split(' — ')[0])).toEqual([
+      'Secure · 3 steps', 'Preserve · 2 steps', 'Catch Up · 1 step', 'Partner · 1 step', 'Accelerate · 1 step · Deployment & Use only', 'Watch · 3 steps', 'Not assessed · 1 step · no fence',
+    ]);
+    expect(legend.textContent).toContain('Capabilities where foreign control or concentrated dependence could create an unacceptable security or resilience risk.');
+    expect(legend.textContent).toContain('Secure · 3 steps — Protect what cannot be allowed to fail.');
     expect(legend.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // the map leads the section (spec XI.3, the dominant visual): no intro paragraph between the heading and
     // the map, the full reading of how it is built after it
@@ -185,16 +197,18 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     // the Legacy OSI's Perspective dials are not named in the strategy's own words (they live in Legacy OSI)
     expect(how.textContent).not.toMatch(/Perspective|dials/);
     expect(grid.compareDocumentPosition(how) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // under the map, before the method: the three yards in the user's words, as three policy problems, never a score scale;
-    // a technology can sit in more than one yard
+    // under the map, before the method: the three yards (defined in the legend) as three policy problems, never a score scale;
+    // a technology can sit in more than one yard; control layers are country-specific. The yards are defined once, in the legend.
     const yards = within(strategy).getByTestId('strategy-yards');
     expect(grid.compareDocumentPosition(yards) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(yards.compareDocumentPosition(how) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect([...yards.querySelectorAll('li[data-yard]')].map((li) => li.getAttribute('data-yard'))).toEqual(['small', 'medium', 'large']);
+    expect(yards.textContent).toMatch(/^Three yards, three different policy problems\./);
     expect(yards.textContent).toContain('A strong industrial strategy is as much about deciding what not to build as deciding what to build.');
-    expect(yards.textContent).toContain('Capabilities where foreign control or concentrated dependence could create an unacceptable security or resilience risk.');
+    expect(yards.textContent).not.toContain('Capabilities where foreign control or concentrated dependence could create an unacceptable security or resilience risk.');
+    expect(strategy.textContent?.split('Capabilities where foreign control or concentrated dependence could create an unacceptable security or resilience risk.')).toHaveLength(2);
     expect(yards.textContent).toContain('not low, medium and high scores on one scale');
     expect(yards.textContent).toContain('A technology can sit in more than one yard.');
+    expect(yards.textContent).toContain('A control layer is in the Small yard only where the data show coercive foreign control for this country.');
   });
 
   it('the three fence sections follow the map, each with the fence name and its one-line meaning; the old anchors land on them', async () => {
@@ -509,19 +523,20 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     for (const s of STRATEGY_SECTIONS.slice(0, 6)) {
       const t = s.id === 'medium-fence' ? without(sec(s.id), 'medium-partner') : (sec(s.id).textContent ?? '');
       expect(t, s.id).not.toMatch(
-        /Energy Security|Economic Opportunity|Strategic Index|Perspective: |Perspective dials|\bdials?\b|four corners|\bGrow\b|\bExposed\b|NEIS baseline|Legacy OSI|Friendshore|Partnership Strength/,
+        /Energy Security|Economic Opportunity|Strategic Index|Perspective: |Perspective dials|\bdials?\b|four corners|\bGrow\b|\bExposed\b|NEIS baseline|Legacy|\bOSI\b|Friendshore|Partnership Strength/,
       );
     }
-    expect(sec('medium-partner').textContent).toMatch(/the Legacy OSI partner scores/);
+    expect(sec('medium-partner').textContent).toMatch(/what the partner scores suggest \(the/);
+    expect(sec('medium-partner').textContent).not.toMatch(/Legacy|\bOSI\b/);
     expect(screen.queryByRole('button', { name: /^Perspective:/ })).toBeNull();
     expect(sec('legacy-osi').closest('section#evidence')).toBeTruthy();
     expect(document.getElementById('fold-legacy')?.hasAttribute('open')).toBe(false);
     // the dials sit in the Legacy OSI results as "Explore scenarios", apart from the strategy
-    fireEvent.click(screen.getByText(/^Show the Legacy OSI results for the United States/));
+    fireEvent.click(screen.getByText(/^Show the security and opportunity scores for the United States/));
     const explore = await screen.findByTestId('explore-scenarios', {}, { timeout: 30_000 });
     expect(within(explore).getByRole('heading', { level: 3, name: 'Explore scenarios' })).toBeTruthy();
     expect(within(explore).getByText(/never change the strategy in the sections above/)).toBeTruthy();
-    expect(within(explore).getByRole('button', { name: /^Perspective: NEIS baseline/ })).toBeTruthy();
+    expect(within(explore).getByRole('button', { name: /^Perspective: baseline/ })).toBeTruthy();
     expect(engine.getSnapshot().manifest).toBeNull();
     // Evidence & Methodology: the framework chain, the stage mapping, coverage and freshness, the downloads
     const ev = sec('evidence');
@@ -791,12 +806,19 @@ describe.skipIf(!haveFixture())('Country page: layers as yard units (Yards & Fen
     await waitFor(() => expect([nodeOf(r), layerOf(r)]).toEqual(['Batteries|Assembly', 'bess-control']), { timeout: 30_000 });
     expect(await drawerTitle()).toBe('Batteries · Final Assembly & Equipment');
     const d = screen.getByTestId('cell-drawer');
-    // the layer's row in Yards (its name is also the button of the note at the top of the drawer)
+    // the layer's row in the parts block under the header (its name is also the button of the note at the top of the block)
     const named = await within(d).findAllByText(CONTROL);
     const li = named.map((x) => x.closest('li')).find(Boolean) as HTMLElement;
-    expect(within(d).getByTestId('drawer-layer-note').textContent).toContain(`Opened from the layer ${CONTROL} (Secure`);
+    expect(within(d).getByTestId('drawer-parts').contains(li)).toBe(true);
+    expect(within(d).getByTestId('drawer-layer-note').textContent).toContain(`Showing the layer ${CONTROL} (Secure`);
     await waitFor(() => expect(document.activeElement).toBe(li));
     expect(li.getAttribute('data-focused')).toBe('true');
+    // a layer row in the drawer marks that layer through the same link (?layer=)
+    fireEvent.click(within(d.querySelector('li[data-layer="bess-enclosure"]') as HTMLElement).getByRole('button'));
+    await waitFor(() => expect([nodeOf(r), layerOf(r)]).toEqual(['Batteries|Assembly', 'bess-enclosure']), { timeout: 30_000 });
+    await waitFor(() => expect(d.querySelector('[data-focused="true"]')?.getAttribute('data-layer')).toBe('bess-enclosure'));
+    fireEvent.click(within(d.querySelector('li[data-layer="bess-control"]') as HTMLElement).getByRole('button'));
+    await waitFor(() => expect(layerOf(r)).toBe('bess-control'), { timeout: 30_000 });
     // the entry is pressed, not its step's own entry elsewhere
     expect(within(high.querySelector('li[data-layer="bess-control"]') as HTMLElement).getByRole('button').getAttribute('aria-pressed')).toBe('true');
     expect(within(within(sec('medium-fence')).getByTestId('medium-top-supply')).getAllByRole('button')[0].getAttribute('aria-pressed')).toBe('false');
@@ -814,4 +836,19 @@ describe.skipIf(!haveFixture())('Country page: layers as yard units (Yards & Fen
     await waitFor(() => expect(d2.querySelector('[data-focused="true"]')?.getAttribute('data-layer')).toBe('bess-enclosure'), { timeout: 30_000 });
     expect(layerOf(r2)).toBe('bess-enclosure');
   }, 120_000);
+
+  it("the map reads the page's detail document: a mixed step's name and tooltip say which part sits behind which fence", async () => {
+    await usa();
+    const grid = within(sec('strategy')).getByRole('grid', { name: /^Country Strategy Map/ });
+    const asm = within(grid).getByRole('button', { name: /^Batteries Final Assembly & Equipment/ });
+    await waitFor(() => expect(asm.getAttribute('aria-label')).toContain(`parts behind different fences: High fence: ${CONTROL}; Medium fence: the rest of the step`), { timeout: 30_000 });
+    fireEvent.mouseEnter(asm);
+    const parts = within(screen.getByRole('tooltip')).getByTestId('strategy-map-tip-parts');
+    expect([...parts.querySelectorAll('li')].map((l) => l.textContent)).toEqual([
+      'Rest of the step: Preserve · Medium fence',
+      `${CONTROL}: Secure · High fence`,
+      'Enclosures, racking, thermal management and balance of system: Watch · Low fence',
+      'Battery cells (LFP and NMC): Preserve · Medium fence',
+    ]);
+  });
 });

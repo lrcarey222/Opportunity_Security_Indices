@@ -97,7 +97,7 @@ export function DialSlider({
         value={value}
         style={fillStyle(value, 0, 100)}
         aria-describedby={`${id}-help`}
-        aria-valuetext={moved ? `${value}, weights times ${multiplier.toFixed(2)}` : `${value}, the NEIS baseline`}
+        aria-valuetext={moved ? `${value}, weights times ${multiplier.toFixed(2)}` : `${value}, the baseline`}
         onChange={(e) => onChange(Number(e.target.value))}
         onKeyDown={(e) => pageKeys(e, value, (v) => {
           onChange(v);
@@ -337,7 +337,7 @@ export function DialPanel({ layout = 'sidebar' }: { layout?: 'sidebar' | 'wide' 
         </div>
       )}
       <p className="mt-1 text-xs leading-snug text-paper-mute">
-        Each dial runs 0&ndash;100; 50 is the NEIS baseline (the pipeline&rsquo;s six-stage default weights). Moving a dial 25 points halves or doubles every weight it owns.
+        Each dial runs 0&ndash;100; 50 is the baseline (the pipeline&rsquo;s six-stage default weights). Moving a dial 25 points halves or doubles every weight it owns.
       </p>
       <div className={wide ? 'grid gap-x-6 sm:grid-cols-2 xl:grid-cols-4' : undefined}>
         {DIAL_SPECS.map((s) => (
@@ -376,7 +376,7 @@ export function DialPanel({ layout = 'sidebar' }: { layout?: 'sidebar' | 'wide' 
           </select>
         </div>
         <button type="button" className={wide ? 'btn btn-ghost' : 'btn btn-ghost w-full'} disabled={isBaseline} onClick={reset}>
-          Reset to NEIS baseline
+          Reset to baseline
         </button>
       </div>
       <AdvancedPanel />

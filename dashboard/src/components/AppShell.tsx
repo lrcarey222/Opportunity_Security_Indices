@@ -33,7 +33,7 @@ function useComputeStatus(): { text: string; busy: boolean; error: string | null
   }
   const fresh = [core, partner].filter((r) => r && r.key === key);
   if (!fresh.length) return { text: 'Starting', busy: true, error: null };
-  if (isBaseline) return { text: 'NEIS baseline: exact values from the export', busy: false, error: null };
+  if (isBaseline) return { text: 'Baseline: exact values from the export', busy: false, error: null };
   const ms = status.ms;
   return { text: `Updated${ms !== null ? ` in ${fmtMs(ms)}` : ''}`, busy: false, error: null };
 }
@@ -52,7 +52,7 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
     if (v !== 50) chips.push({ label: `${s.label.toUpperCase()} ${v} ${fmtMult(dialMultiplier(v, grid))}`, title: `Reset ${s.label.toLowerCase()} to 50`, reset: () => setDial(s.key, 50, { replace: false }) });
   }
   const adv = (label: string, f: (a: ReturnType<typeof cloneAdvanced>) => void) =>
-    chips.push({ label, title: `Reset ${label.toLowerCase()} to the NEIS baseline`, reset: () => setAdvanced((a) => { f(a); return a; }) });
+    chips.push({ label, title: `Reset ${label.toLowerCase()} to the baseline`, reset: () => setAdvanced((a) => { f(a); return a; }) });
   if (ch.es) adv('Energy Security weights', (a) => (a.es_weights = { ...d.es_weights }));
   if (ch.eo) adv('Economic Opportunity weights', (a) => (a.eo_weights = { ...d.eo_weights }));
   if (ch.sample) adv(scenario.advanced.tau === null ? 'Rankable rule off' : `Rankable rule ${scenario.advanced.tau}`, (a) => (a.tau = d.tau));
@@ -75,7 +75,7 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
             Dials
           </button>
         )}
-        <span className={`tag ${isBaseline ? 'border-signal text-paper' : 'tag-framework'}`}>{isBaseline ? 'NEIS baseline' : 'Custom perspective'}</span>
+        <span className={`tag ${isBaseline ? 'border-signal text-paper' : 'tag-framework'}`}>{isBaseline ? 'Baseline' : 'Custom perspective'}</span>
         {chips.length > 0 && (
           <ul className="flex flex-wrap gap-1.5" aria-label="Changed settings">
             {chips.map((c) => (
@@ -94,7 +94,7 @@ function StatusStrip({ onOpenDials, showDialButton }: { onOpenDials: () => void;
             hideLabel
             value={isBaseline ? 'scenario' : view.show}
             disabled={isBaseline}
-            title={isBaseline ? 'Move a dial to compare' : 'Show your perspective, the NEIS baseline or the change'}
+            title={isBaseline ? 'Move a dial to compare' : 'Show your perspective, the baseline or the change'}
             options={[
               { value: 'scenario', label: 'Perspective' },
               { value: 'baseline', label: 'Baseline' },

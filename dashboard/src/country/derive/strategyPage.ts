@@ -6,7 +6,7 @@
 // Legacy OSI mapping (spec Part II: Grow ~ Preserve, Upgrade ~ Catch Up, Exposed ~ Partner, Stable ~ Watch).
 // No React, no IO.
 
-import { EVIDENCE_TITLE, FENCE_TITLE, POLICY_ALIGNMENT_TITLE, TERMS } from '../../content/vocabulary.ts';
+import { EVIDENCE_TITLE, FENCE_TITLE, POLICY_ALIGNMENT_TITLE, SCORES_VIEW_NAME, TERMS } from '../../content/vocabulary.ts';
 import { cellKey, COUNTRY_STAGES, COUNTRY_TECHS, LEGACY_CORNERS, type LegacyCorner } from '../contract.ts';
 
 // ---- sections and anchors ------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ export const MEDIUM_SUBSECTIONS: readonly ProfileSection[] = [
 ];
 
 /** The Legacy OSI sub-section of Evidence & Methodology and the old anchors of its blocks (#why is the Why section itself, inside its disclosure: hashPlan opens it). */
-export const LEGACY_SECTION: ProfileSection = { id: 'legacy-osi', label: 'Legacy OSI framework', aliases: ['position', 'space', 'opportunities', 'sectors', 'si'] };
+export const LEGACY_SECTION: ProfileSection = { id: 'legacy-osi', label: SCORES_VIEW_NAME, aliases: ['position', 'space', 'opportunities', 'sectors', 'si'] };
 
 /** The disclosure of the page an old link may need open: the Legacy OSI results. */
 export const LEGACY_FOLD = 'legacy';
@@ -185,7 +185,7 @@ const DIFFERS: Record<LegacyCorner, string> = {
   legacy_upgrade: 'Catch Up needs a real prize and a credible pathway (a capability anchor to build from); low Energy Security there may be a vulnerability the Secure tests or Partner answer instead.',
   legacy_exposed: 'Partner needs a high supply-chain vulnerability with a weak domestic case; a low index can come from trade or reserves without a dependence problem.',
   legacy_stable:
-    'Watch is a positive conclusion of low need, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway; at Deployment & Use the current framework reads deployment need instead and may say Accelerate.',
+    'Watch is a positive conclusion of low need, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway; at Deployment & Use the strategic choice reads deployment need instead and may say Accelerate.',
 };
 
 /** The Legacy OSI corners with their conceptual canonical choice (Grow ~ Preserve, Upgrade ~ Catch Up, Exposed ~ Partner, Stable ~ Watch). */

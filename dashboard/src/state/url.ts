@@ -1,5 +1,5 @@
 // URL state (spec_react.md 8.2). The query string is the single source of truth for the scenario
-// (dials + advanced settings) and the view settings. Defaults are omitted, so the NEIS baseline URL
+// (dials + advanced settings) and the view settings. Defaults are omitted, so the baseline URL
 // is bare and canonical; keys are written in one fixed order. Pure functions (unit-tested).
 
 import type { Advanced, Dials, Fossil, PsiView, ScenarioSpec } from '../engine/types.ts';
@@ -170,7 +170,7 @@ export function parseSearch(search: string, ctx: UrlCtx): Parsed {
       case 'minprod':
       case 'caps':
       case 'cmp':
-        problems.push(`${k} (a setting of the original allied network design, which is retired)`);
+        problems.push(`${k} (a setting this Explorer does not use)`);
         break;
       case 'show':
         if ((SHOW_MODES as string[]).includes(v)) view.show = v as ShowMode;

@@ -98,12 +98,13 @@ describe('glossary content (C3.2)', () => {
       expect(s, id).toMatch(/not (a strategic|the Secure) choice/);
       expect(s, id).not.toMatch(/paper|three-stage|six-stage/i);
     }
-    // the corners are Legacy OSI (the paper baseline), each with its closest current choice (design 5)
-    expect(glossaryById.get('quadrant')?.more).toContain('they are Legacy OSI (the paper baseline), not the strategic posture');
+    // the corners belong to the security and opportunity scores, each with its closest strategic choice (design 5); named
+    // by what they show, never by an earlier name or version (user, 2026-10-31)
+    expect(glossaryById.get('quadrant')?.more).toContain('they belong to the security and opportunity scores, a descriptive view, not to the strategic choices');
     const closest = { grow: 'Preserve', upgrade: 'Catch Up', exposed: 'Partner', stable: 'Watch' } as const;
     for (const [id, verb] of Object.entries(closest)) {
-      expect(glossaryById.get(id)?.short, id).toContain('(Legacy OSI)');
-      expect(glossaryById.get(id)?.more, id).toContain(`Its closest current choice is ${verb}, but the results differ`);
+      expect(glossaryById.get(id)?.short, id).not.toMatch(/Legacy|\bOSI\b|RMI 2025/);
+      expect(glossaryById.get(id)?.more, id).toContain(`Its closest strategic choice is ${verb}, but the results differ (see Security and opportunity scores)`);
     }
   });
 
@@ -125,8 +126,8 @@ describe('glossary content (C3.2)', () => {
     expect(glossaryById.get('allied_pick')?.short).toContain('extraction sectors without recorded resources');
     expect(glossaryById.get('endowment_screen')?.short).toMatch(/^An extraction sector counts/);
     expect(glossaryById.get('populism')?.short).toContain('components and assembly stages');
-    // the NEIS baseline is the pipeline's six-stage defaults, not "the paper's numbers" (E3)
-    expect(glossaryById.get('paper_baseline')?.term).toBe('NEIS baseline');
+    // the baseline is the pipeline's six-stage defaults, not "the paper's numbers" (E3), and not named after the organization
+    expect(glossaryById.get('paper_baseline')?.term).toBe('Baseline');
     expect(glossaryById.get('paper_baseline')?.short).toContain("the pipeline's own six-stage weights");
   });
 
@@ -167,7 +168,7 @@ describe('glossary content (C3.2)', () => {
     expect(g('deployment_need').more).toContain('never Partner');
     expect(g('deployment_need').more).toContain('not assessed, never zero');
     expect(g('industrial_opportunity').more).toContain('no current capability');
-    expect(g('industrial_opportunity').more).toContain('Not the legacy Economic Opportunity index');
+    expect(g('industrial_opportunity').more).toContain('Not the Economic Opportunity score of the security and opportunity view');
     expect(g('competitive_position').more).toMatch(/^Demonstrated capability only/);
     expect(g('pathway').short).toContain('Unknown counts as not credible');
     // the capability-anchor rule (2026-10-30): an anchor plus corroboration, never two weak signals
@@ -180,13 +181,17 @@ describe('glossary content (C3.2)', () => {
     expect(g('policy_alignment').more).toContain('Accelerate with weak deployment policy (deployment policy lags)');
     expect(g('policy_alignment').more).toContain('not enough policy evidence or low confidence, never a guess');
     expect(g('partner_demand').short).toContain('Accelerate is a deployment priority and is not counted');
-    // the paper baseline's model is Legacy OSI, with the mapping and why the results differ
-    expect(g('legacy_osi').term).toBe('Legacy OSI framework');
-    expect(g('legacy_osi').short).toContain('not the current strategic recommendation');
+    // the index model is the security and opportunity scores, a descriptive view, with the mapping and why the results differ
+    expect(g('legacy_osi').term).toBe('Security and opportunity scores');
+    expect(g('legacy_osi').short).toContain('They describe relative security and opportunity; the strategic choices are the recommendation.');
     expect(g('legacy_osi').more).toContain('Grow to Preserve, Upgrade to Catch Up, Exposed to Partner, Stable to Watch');
     expect(g('legacy_osi').more).toContain('capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment');
-    for (const id of ['es', 'eo', 'si']) expect(g(id).more, id).toContain('Part of the Legacy OSI framework (the paper baseline)');
-    expect(g('paper_baseline').more).toContain('The dials re-weight only the Legacy OSI indices');
+    for (const id of ['es', 'eo', 'si']) expect(g(id).more, id).toContain('One of the security and opportunity scores, a descriptive view');
+    expect(g('paper_baseline').more).toContain('The dials re-weight only the security and opportunity scores');
+    // readers come to the Explorer fresh (user, 2026-10-31): no entry names an earlier version or an earlier name
+    for (const e of GLOSSARY) {
+      expect([e.term, e.short, e.more ?? ''].join(' '), e.id).not.toMatch(/\bOSI\b|\blegacy\b|paper baseline|kept for comparison|NEIS (baseline|default)|RMI 2025|before 28 October|\bthe paper\b/i);
+    }
   });
 
   it("the six choices are actions, the yards use the user's words, and the Allied Industrial Base terms are the vocabulary's (2026-10-30)", () => {

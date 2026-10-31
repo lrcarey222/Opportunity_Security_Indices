@@ -25,6 +25,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { GlossaryVarsProvider } from '../../components/glossaryVars.tsx';
 import { Loading, Notice, PageHead } from '../../components/ui.tsx';
+import { SCORES_VIEW_NAME } from '../../content/vocabulary.ts';
 import { useAibManifest, useCompactsDoc } from '../../aib/data/hooks.ts';
 import { countryCells, LAYER_KEY, NODE_KEY, PostureNodeDrawer, useNodeSelection, usePostureCore, usePostureDetail } from '../../posture/index.ts';
 import { appendSearch, scenarioPairs, splitSearch } from '../../state/url.ts';
@@ -66,7 +67,7 @@ export default function CountryProfileView() {
   if (entry.status === 'no_data' || !entry.file) {
     return (
       <div className={PAGE}>
-        <PageHead eyebrow="COUNTRIES · COUNTRY PROFILE" title={entry.name} lede={`${entry.name} is in the roster of economies but has no index data on the NEIS baseline.`} />
+        <PageHead eyebrow="COUNTRIES · COUNTRY PROFILE" title={entry.name} lede={`${entry.name} is in the roster of economies but has no index data on the baseline.`} />
         <Notice kind="info" title="No index data">
           {entry.name} has no Energy Security or Economic Opportunity scores and no partner rows in the data, so there is no profile to show.{' '}
           <Link className="link" to={sectorCountryLink(entry.iso3)}>
@@ -234,9 +235,9 @@ function Profile({ iso3 }: { iso3: string }) {
           {customInUrl && (
             <div className="mb-4">
               <Notice kind="info" title="A custom perspective in the link">
-                The link sets the Perspective dials. They re-weight only the Legacy OSI indices, so they are applied in{' '}
+                The link sets the Perspective dials. They re-weight only the security and opportunity scores, so they are applied in{' '}
                 <a className="link" href="#legacy-osi">
-                  Evidence &amp; methodology: Legacy OSI framework
+                  Evidence &amp; methodology: {SCORES_VIEW_NAME}
                 </a>
                 ; the strategy does not change with them.
               </Notice>

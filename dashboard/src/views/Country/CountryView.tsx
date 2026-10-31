@@ -158,7 +158,7 @@ export default function CountryView({ embedded = false }: { embedded?: boolean }
     return c.country;
   }, [app.baseline, iso, c.country]);
 
-  // sectors without any Energy Security score at the NEIS baseline (the lede says how many)
+  // sectors without any Energy Security score at the baseline (the lede says how many)
   const nNoEs = useMemo(() => {
     const has = new Set(rowsOf(app.baseline.pillars.es).filter((r) => numOr(r.value) !== null).map((r) => `${r.tech}|${r.supply_chain}`));
     return app.cells.filter((cl) => !has.has(`${cl.tech}|${cl.supply_chain}`)).length;
@@ -210,7 +210,7 @@ export default function CountryView({ embedded = false }: { embedded?: boolean }
     const scen = partner.fresh && partner.data ? rowsOf(partner.data.compare.psi_partner).find((r) => r.partner_iso === iso) : undefined;
     if (scen) return { rank: numOr(scen.rank), change: numOr(scen.rank_delta), src: 'scenario' };
     const base = rowsOf(app.baseline.psi_partner).find((r) => r.partner_iso === iso);
-    return base ? { rank: numOr(base.rank), change: null, src: isBaseline ? 'NEIS baseline' : 'NEIS baseline (open Partners to recompute)' } : null;
+    return base ? { rank: numOr(base.rank), change: null, src: isBaseline ? 'Baseline' : 'Baseline (open Partners to recompute)' } : null;
   }, [partner, iso, app.baseline.psi_partner, isBaseline]);
   // contributions
   const esBars = useMemo(() => contribBars(core.data?.pillars.es_contrib, countryName, tech, stage, app.urlCtx.defaults.es_weights), [core.data, countryName, tech, stage, app.urlCtx.defaults.es_weights]);
@@ -262,7 +262,7 @@ export default function CountryView({ embedded = false }: { embedded?: boolean }
         symbol: { domain: ['Energy Security', 'Economic Opportunity'], range: ['circle', 'diamond'] },
         marks: [
           ...panelAxisX({
-            label: change ? 'Change against the NEIS baseline →' : 'Score (0 to 1; right = higher) →',
+            label: change ? 'Change against the baseline →' : 'Score (0 to 1; right = higher) →',
             ticks: narrow ? (change ? [dom[0], 0, dom[1]] : [0, 0.5, 1]) : 4,
             tickFormat: (change
               ? (v: number) => (v === 0 ? '0' : narrow && v < 0 ? '' : fmtSigned(v, 2))
@@ -304,14 +304,14 @@ export default function CountryView({ embedded = false }: { embedded?: boolean }
     <div>
       {!embedded && (
       <PageHead
-        eyebrow="Legacy OSI framework · Country scores"
+        eyebrow="Security and opportunity scores · Country scores"
         title={`Country scores: ${c.country}`}
         lede={
           <>
             One economy&rsquo;s scores across the {app.cells.length} sectors ({app.techs.length} technologies at {app.stages.length} supply-chain stages;{' '}
             {nNoEs === 1 ? 'one of them has' : `${nNoEs} of them have`} no Energy Security score): <Term id="es" />, <Term id="eo" />, what drives them, and its top
-            sectors on the <Term id="si" />. Pick an economy and click a sector to see which data move its scores. For a plain-language briefing on the
-            NEIS baseline, open its Country profile.
+            sectors on the <Term id="si" />. Pick an economy and click a sector to see which data move its scores. For its strategic choices and a
+            plain-language briefing, open its Country profile.
           </>
         }
       >
@@ -368,8 +368,8 @@ export default function CountryView({ embedded = false }: { embedded?: boolean }
 
           <ChartCard
             title="Energy Security and Economic Opportunity by sector"
-            sub={`${showWord(show)} Each row is a technology and each panel one of the ${app.stages.length} supply-chain stages, named above it (on a narrow screen the panels wrap into rows). The circle is Energy Security (further right = more secure) and the diamond Economic Opportunity (further right = a bigger opening); both run from 0 to 1 and compare the economy with every other economy in the same sector. Click a dot to see what drives that sector's scores below. Hollow rings mark the NEIS baseline value where the scenario differs (only the advanced category weights move these scores).${
-              !isBaseline && !pillarsMoved ? ' In this scenario no sector moves: the four dials leave both scores at the NEIS baseline values.' : ''
+            sub={`${showWord(show)} Each row is a technology and each panel one of the ${app.stages.length} supply-chain stages, named above it (on a narrow screen the panels wrap into rows). The circle is Energy Security (further right = more secure) and the diamond Economic Opportunity (further right = a bigger opening); both run from 0 to 1 and compare the economy with every other economy in the same sector. Click a dot to see what drives that sector's scores below. Hollow rings mark the baseline value where the scenario differs (only the advanced category weights move these scores).${
+              !isBaseline && !pillarsMoved ? ' In this scenario no sector moves: the four dials leave both scores at the baseline values.' : ''
             }`}
             updating={updating}
             summary={`Dot plot of ${es.length} Energy Security and ${eo.length} Economic Opportunity scores for ${c.country}, faceted by stage.`}
@@ -378,7 +378,7 @@ export default function CountryView({ embedded = false }: { embedded?: boolean }
                 items={[
                   { label: 'Energy Security (circle)', kind: 'dot', color: PILLAR_COLOR.ES },
                   { label: 'Economic Opportunity (diamond)', kind: 'diamond', color: PILLAR_COLOR.EO },
-                  { label: 'NEIS baseline (where different)', kind: 'hollow', color: COMPARE_COLOR.baseline },
+                  { label: 'Baseline (where different)', kind: 'hollow', color: COMPARE_COLOR.baseline },
                 ]}
               />
             }
@@ -431,10 +431,10 @@ export default function CountryView({ embedded = false }: { embedded?: boolean }
               <ChartCard
                 key={name}
                 title={`${name}: what drives it in ${tech} ${DASH} ${stage}`}
-                sub={`Each bar is one category of data (for example trade, reserves or prices): its score times its share of the weight, so the bars add up to the sector's ${name}. The longest bars are the categories that lift the score most.${show === 'change' ? ' The outline is the NEIS baseline value.' : ''}`}
+                sub={`Each bar is one category of data (for example trade, reserves or prices): its score times its share of the weight, so the bars add up to the sector's ${name}. The longest bars are the categories that lift the score most.${show === 'change' ? ' The outline is the baseline value.' : ''}`}
                 updating={updating}
                 summary={`${name} category contributions for ${c.country}, ${cellLabel(tech, stage)}.`}
-                legend={show === 'change' ? <Legend items={[{ label: 'Scenario', color }, { label: 'NEIS baseline', kind: 'outline', color: COMPARE_COLOR.baseline }]} /> : undefined}
+                legend={show === 'change' ? <Legend items={[{ label: 'Scenario', color }, { label: 'Baseline', kind: 'outline', color: COMPARE_COLOR.baseline }]} /> : undefined}
                 table={() => (
                   <TableView
                     rows={bars}

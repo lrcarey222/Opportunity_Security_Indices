@@ -22,6 +22,7 @@ import { StrategicChrome } from '../components/AppShell.tsx';
 import { EngineProvider, RunProvider, ScenarioProvider } from '../state/EngineProvider.tsx';
 import { EngineReady } from './EngineScope.tsx';
 import { ViewErrorBoundary } from './ViewErrorBoundary.tsx';
+import { SCORES_VIEW_NAME } from '../content/vocabulary.ts';
 
 export { engineLoadingLabel } from './EngineScope.tsx';
 
@@ -33,7 +34,7 @@ export function advancedBack(pathname: string): { to: string; label: string } {
 }
 
 /** The label of every legacy Strategic page (design D10). */
-export const LEGACY_OSI_LABEL = 'Legacy OSI framework';
+export const LEGACY_OSI_LABEL = SCORES_VIEW_NAME;
 
 /** Where the band's links go: a Country profile's Legacy OSI sub-section (the last profile visited, else the default) and the Methods chapter. */
 export function legacyOsiLinks(countryIso: string | null): { profile: string; methods: string } {
@@ -52,17 +53,17 @@ function AdvancedBand() {
           {LEGACY_OSI_LABEL}
         </span>
         <span>
-          The original index model (Energy Security, Economic Opportunity, the Strategic Index, the security and opportunity corners and the partner indices),
-          with its four dials, kept for comparison and reproducibility. It describes relative security and opportunity. It is not a current recommendation: for
-          what a country should do, see its Country Strategy Map.
+          Energy Security, Economic Opportunity, the Strategic Index built on them, the four corners of security and opportunity and the partner scores, with
+          four dials to weigh them differently. These scores describe relative security and opportunity: a descriptive view, not a recommendation. For what a
+          country should do, see the strategic choices on its Country Strategy Map.
         </span>
       </p>
       <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <Link className="link" to={links.profile}>
-          Legacy OSI on a Country profile (Evidence &amp; Methodology)
+          These scores on a Country profile (Evidence &amp; Methodology)
         </Link>
         <Link className="link" to={links.methods}>
-          Methods: the Legacy OSI framework
+          Methods: the security and opportunity scores
         </Link>
         <Link className="link" to={back.to}>
           &larr; {back.label}

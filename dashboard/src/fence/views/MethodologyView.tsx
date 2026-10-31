@@ -26,7 +26,7 @@ const SAFEGUARDS = [
   'Raw measures are shown wherever they are interpretable, with source and year.',
   'Where data are unavailable the tool says so; nothing is imputed from unrelated indicators.',
   'Restricted (BNEF, BCG) data cannot enter: the build checks the Sector bundle for them.',
-  'Normalised OSI components are shown as relative ranks and never feed the engine.',
+  'Normalised index components are shown as relative ranks and never feed the engine.',
   'The optional coupled-pillar methodology is not used.',
   'Technology-stage evidence is labelled as such; it is never presented as component-level.',
   'Forced-labour, safety, environmental rules and legitimate trade remedies apply in every yard; they do not decide yard placement.',
@@ -208,7 +208,7 @@ export default function MethodologyView() {
 
       <section className="mt-10" aria-labelledby="yf-comp">
         <SectionHead id="yf-comp" title="Curated components">
-          The table OSI cannot provide: data/reference/yards_fences_assessments.csv. Values the public record does not support are left Unknown.
+          The table the indices cannot provide: data/reference/yards_fences_assessments.csv. Values the public record does not support are left Unknown.
         </SectionHead>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[44rem] text-sm">
@@ -217,7 +217,7 @@ export default function MethodologyView() {
                 <th className="label py-2">Component</th>
                 <th className="label py-2">Layer</th>
                 <th className="label py-2">Evidence scope</th>
-                <th className="label py-2">Paper</th>
+                <th className="label py-2">Framework placement</th>
                 <th className="label py-2">Confidence</th>
                 <th className="label py-2">Source</th>
               </tr>

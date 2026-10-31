@@ -115,8 +115,8 @@ export function InvestmentFlowsCard({ doc, meta, shockLabel, filter, scope, name
     { id: 'usd', header: 'Supply from new capacity', value: (p) => p.usd, cell: (p) => fmtUsd(p.usd), num: true },
     { id: 'share', header: "Share of the step's demand", value: (p) => p.share, cell: (p) => fmtShare(p.share), num: true },
     { id: 'lost', header: 'Investor’s lost share', value: (p) => p.lostShare, cell: (p) => fmtShare(p.lostShare), num: true },
-    { id: 'fs', header: 'Friendshore', value: (p) => p.friendshore, cell: (p) => fmtScore(p.friendshore), num: true, title: 'The investor’s Friendshore score for the host (NEIS defaults)' },
-    { id: 'eo', header: 'Partnership Opportunity', value: (p) => p.opportunity, cell: (p) => fmtScore(p.opportunity), num: true, title: 'The host’s Partnership Opportunity score for the investor (NEIS defaults)' },
+    { id: 'fs', header: 'Friendshore', value: (p) => p.friendshore, cell: (p) => fmtScore(p.friendshore), num: true, title: 'The investor’s Friendshore score for the host (default weights)' },
+    { id: 'eo', header: 'Partnership Opportunity', value: (p) => p.opportunity, cell: (p) => fmtScore(p.opportunity), num: true, title: 'The host’s Partnership Opportunity score for the investor (default weights)' },
   ];
   // the run columns name the scenario's own shock (the Diversification page's pattern)
   const runMeta = runMetaOf(meta, id);
@@ -152,7 +152,7 @@ export function InvestmentFlowsCard({ doc, meta, shockLabel, filter, scope, name
         <>
           <span>
             Each ranked host is a separate simulation of the increment of capacity (capped at the host’s current output of the step); only the best-ranked host counts, so the alternatives are listed but never added up. Friendshore and
-            Partnership Opportunity are partner scores at the NEIS defaults.{todayNote}
+            Partnership Opportunity are partner scores at the default weights.{todayNote}
           </span>
           <ModelledNote className="mt-1">{variantPhrase(fdoc, noteLabel)}</ModelledNote>
         </>

@@ -25,7 +25,7 @@ export function DataNotes() {
     const cells = sheet.cells.map((c) => ({
       sector: c.tech, stage: c.stage, energy_security: c.es?.v ?? null, energy_security_beats_pct: c.es?.pct.v ?? null, energy_security_median: c.es?.med.v ?? null,
       economic_opportunity: c.eo?.v ?? null, economic_opportunity_beats_pct: c.eo?.pct.v ?? null, economic_opportunity_median: c.eo?.med.v ?? null,
-      legacy_corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null, strategic_index: c.si.v, strategic_index_rank: c.si.rank.v, priority_third: c.priority?.third ?? null,
+      corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null, strategic_index: c.si.v, strategic_index_rank: c.si.rank.v, priority_third: c.priority?.third ?? null,
       policy_third: c.policy?.third ?? null, policy_records_specific: c.policy?.records_specific.v ?? null, imports_usd: c.trade?.imports.v ?? null, exports_usd: c.trade?.exports.v ?? null,
     }));
     const drivers = sheet.cells.flatMap((c) =>
@@ -54,11 +54,11 @@ export function DataNotes() {
     const strategy = core && posture?.cells.length ? postureCsvRows(countryPostureRows(core, sheet.iso3)) : [];
     const strategyCsv = strategy.length ? withBom(rowsToCsv(strategy.map((r) => Object.fromEntries(POSTURE_CSV_COLS.map((k) => [k, r[k] ?? null]))))) : null;
     const readme = [
-      `Country profile tables for ${name} (NEIS baseline as of ${m.as_of_label}).`,
+      `Country profile tables for ${name} (baseline as of ${m.as_of_label}).`,
       `Built ${m.created} from Strategic export ${(m.strategic_bundle_id ?? '').slice(0, 8)} and Sector export ${(m.sector_bundle_id ?? '').slice(0, 8)}.`,
       '',
       ...(strategyCsv ? ['strategy.csv    the strategy: each technology and stage with its choice, need, prize, position, alignment and evidence (strategic position framework)'] : []),
-      'sectors.csv     Legacy OSI: Energy Security, Economic Opportunity, corners, Strategic Index and policy thirds by sector (not a current recommendation)',
+      'sectors.csv     security and opportunity scores: Energy Security, Economic Opportunity, corners, Strategic Index and policy thirds by sector (descriptive, not a recommendation)',
       'drivers.csv     categories and variables behind the scores (the sectors the fact sheet carries)',
       'partners.csv    partners listed for the country: Partnership Strength, components, trade, factory projects, UN votes',
       'suppliers.csv   import shares by supplier and sector',
@@ -112,7 +112,7 @@ export function DataNotes() {
           ))}
         </ul>
         <p className="mt-5 text-xs text-paper-mute">
-          NEIS baseline as of {m.as_of_label}. Built {m.created} from Strategic export {(m.strategic_bundle_id ?? '–').slice(0, 8)} and Sector export {(m.sector_bundle_id ?? '–').slice(0, 8)}.
+          Baseline as of {m.as_of_label}. Built {m.created} from Strategic export {(m.strategic_bundle_id ?? '–').slice(0, 8)} and Sector export {(m.sector_bundle_id ?? '–').slice(0, 8)}.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           {entry.file && (

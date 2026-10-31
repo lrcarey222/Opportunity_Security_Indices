@@ -10,7 +10,7 @@
 
 import { diversifyMetaOf, isDictionary, type AibMeta } from '../contract.ts';
 import { listWords } from './format.ts';
-import { taxonomyOf } from './taxonomy.ts';
+import { NOT_IN_BASKET, taxonomyOf } from './taxonomy.ts';
 
 // ---- The diversification scenario ----------------------------------------------------------------------
 
@@ -28,9 +28,9 @@ export const DIVERSIFY_BENCHMARK_WORDS: Readonly<Record<string, { label: string;
   hs4: {
     label: 'Its customs heading',
     words:
-      "the trade-weighted mean concentration of the other HS6 lines of the node's HS4 customs heading (electric cars against the petrol, diesel and hybrid cars of heading 8703; lithium-ion cells against the other accumulators of heading 8507), falling back to the other nodes of its electro-industrial dictionary sector (the dictionary's grouping of the node, not an OSI technology) when the heading has no other line",
+      "the trade-weighted mean concentration of the other HS6 lines of the node's HS4 customs heading (electric cars against the petrol, diesel and hybrid cars of heading 8703; lithium-ion cells against the other accumulators of heading 8507), falling back to the other nodes of its electro-industrial dictionary sector (the dictionary's grouping of the node, not one of the Explorer's technologies) when the heading has no other line",
   },
-  sector: { label: 'Its dictionary sector', words: "the trade-weighted mean concentration of the other nodes of the node's electro-industrial dictionary sector (the dictionary's grouping of the node, not an OSI technology)" },
+  sector: { label: 'Its dictionary sector', words: "the trade-weighted mean concentration of the other nodes of the node's electro-industrial dictionary sector (the dictionary's grouping of the node, not one of the Explorer's technologies)" },
 };
 
 export interface DiversifySetting extends SettingWords {
@@ -90,7 +90,7 @@ export const DICTIONARY_SCOPE_WORDS: Record<string, { label: string; words: stri
 
 /** How the views show a node (2026-10-29, design A1): by the OSI technology x stage cells of its codes. */
 export const OSI_PRESENTATION_WORDS =
-  'the views show each node by OSI technology and its stage: its technologies and stages are those of the OSI basket cells its codes sit in, as equals (a node can sit in several), and a node none of whose codes is in the OSI basket is shown as Not in the OSI basket';
+  `the views show each node by technology and its stage: its technologies and stages are those of the sectors (technology × stage) its codes sit in, as equals (a node can sit in several), and a node none of whose codes is among the traded goods this Explorer covers is shown as ${NOT_IN_BASKET}`;
 
 /**
  * Where the nodes come from, in words: the electro-industrial dictionary (its scope, primary rows; the
@@ -103,8 +103,8 @@ export function nodeTaxonomy(m: AibMeta): SettingWords & { dictionary: boolean }
     return {
       mode: 'master',
       dictionary: false,
-      label: 'OSI basket',
-      words: `nodes are the sub-sectors of the OSI technology basket: groups of HS6 goods at one of the six stages of a technology’s supply chain; ${OSI_PRESENTATION_WORDS}`,
+      label: 'Traded goods the Explorer covers',
+      words: `nodes are the sub-sectors of the traded goods this Explorer covers: groups of HS6 goods at one of the six stages of a technology’s supply chain; ${OSI_PRESENTATION_WORDS}`,
     };
   }
   const sc = tx.scope ? DICTIONARY_SCOPE_WORDS[tx.scope] : null;

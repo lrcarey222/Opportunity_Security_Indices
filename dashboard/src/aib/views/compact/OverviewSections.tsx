@@ -111,8 +111,8 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
   const nodeCols: Col<AibNode>[] = [
     { id: 'node', header: 'Supply-chain step', value: (n) => n.label },
     { id: 'techs', header: tx.Many, value: (n) => nodeTechWords(n) },
-    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the step's codes sit in; none when no code is in the OSI basket." },
-    { id: 'cells', header: 'OSI cells', value: (n) => nodeCellWords(n), minWidth: 200 },
+    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the sectors (technology × stage) the step's codes sit in; none when no code is among the traded goods this Explorer covers." },
+    { id: 'cells', header: 'Sectors', value: (n) => nodeCellWords(n), minWidth: 200 },
     { id: 'cls', header: hasScenarios ? `What it needs under ${scenarioInfo(meta, 'decoupling').label}` : 'What it needs', value: (n) => classInfo(n.cls).label },
     ...(hasScenarios
       ? [

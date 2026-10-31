@@ -230,7 +230,7 @@ const h3 = (name: string | RegExp) => screen.findByRole('heading', { level: 3, n
 
 /** Open the Legacy OSI results of Evidence & Methodology (the dials, Sector position, the model's disclosures). */
 async function openLegacy(): Promise<void> {
-  fireEvent.click(await screen.findByText(/^Show the Legacy OSI results for /, undefined, { timeout: 30_000 }));
+  fireEvent.click(await screen.findByText(/^Show the security and opportunity scores for /, undefined, { timeout: 30_000 }));
   await h3('Sector position');
 }
 
@@ -319,7 +319,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       // a disclosure of the model (in the Legacy OSI results) while the model loads: a loading line, the rest of the page stays
       await openLegacy();
       fireEvent.click(screen.getByText(/^Explore details/));
-      expect(await within(document.getElementById('fold-scores')!).findByText('Loading the Legacy OSI scores')).toBeTruthy();
+      expect(await within(document.getElementById('fold-scores')!).findByText('Loading the security and opportunity scores')).toBeTruthy();
       expect(screen.getByRole('heading', { level: 1, name: 'United States' })).toBeTruthy();
       expect(within(document.getElementById('allied')!).getByTestId('allied-operational-compacts')).toBeTruthy();
       // the strategy sections stay as they were (the model wraps only the Legacy OSI results)
@@ -338,9 +338,9 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       await openLegacy();
       const eo = column('Opportunity');
       const es = column('Security');
-      const toggle = screen.getByRole('button', { name: /^Perspective: NEIS baseline/ });
+      const toggle = screen.getByRole('button', { name: /^Perspective: baseline/ });
       fireEvent.click(toggle);
-      const reset = await screen.findByRole('button', { name: 'Reset to NEIS baseline' }, { timeout: 30_000 });
+      const reset = await screen.findByRole('button', { name: 'Reset to baseline' }, { timeout: 30_000 });
       expect((reset as HTMLButtonElement).disabled).toBe(true);
       for (const d of ['Hawkishness', 'Bullishness', 'Populism', 'Climate']) expect(screen.getByRole('slider', { name: new RegExp(d, 'i') })).toBeTruthy();
       await act(async () => {
@@ -358,9 +358,9 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       fireEvent.click(within(corners).getAllByRole('button', { pressed: false })[0]);
       await waitFor(() => expect(r.state.location.search).toMatch(/^\?cell=[a-z-]+&.*h=90/));
       // reset: back to the NEIS baseline
-      fireEvent.click(screen.getAllByRole('button', { name: 'Reset to NEIS baseline' })[0]);
+      fireEvent.click(screen.getAllByRole('button', { name: 'Reset to baseline' })[0]);
       await waitFor(() => expect(r.state.location.search).not.toMatch(/h=/));
-      expect(screen.getByRole('button', { name: /^Perspective: NEIS baseline/ })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /^Perspective: baseline/ })).toBeTruthy();
     } finally {
       setEngineClient(null);
     }

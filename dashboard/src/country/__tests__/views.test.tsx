@@ -123,7 +123,7 @@ function openTwins(): number {
 
 /** Open the Legacy OSI results (Evidence & Methodology -> Legacy OSI framework). */
 async function openLegacy(name: string): Promise<HTMLElement> {
-  fireEvent.click(screen.getByText(new RegExp(`^Show the Legacy OSI results for ${name}`)));
+  fireEvent.click(screen.getByText(new RegExp(`^Show the security and opportunity scores for ${name}`)));
   return screen.findByRole('heading', { level: 3, name: 'Security and opportunity' }, { timeout: 30_000 });
 }
 
@@ -191,7 +191,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     const memo = screen.getAllByRole('link', { name: 'GENERATE MEMO' });
     expect(memo).toHaveLength(1); // the header action only: the memo is not a section any more
     expect(within(actions).getByRole('link', { name: 'GENERATE MEMO' }).getAttribute('href')).toBe('/countries/USA/memo');
-    expect(within(actions).getByText(/AI-generated from the data and checked against it; NEIS baseline as of 12 October 2026\./)).toBeTruthy();
+    expect(within(actions).getByText(/AI-generated from the data and checked against it; baseline as of 12 October 2026\. It reads the security and opportunity scores, not the strategy above\./)).toBeTruthy();
     await waitFor(() => expect((within(actions).getByRole('button', { name: 'DOWNLOAD STRATEGY (CSV)' }) as HTMLButtonElement).disabled).toBe(false));
     expect(within(actions).getByRole('link', { name: /All data and downloads/ }).getAttribute('href')).toBe('#downloads');
     expect(screen.queryByRole('heading', { name: 'Policy memo' })).toBeNull();
@@ -215,7 +215,13 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(strategy.querySelector('[data-basis="posture"]')?.textContent).toMatch(/^Country strategy/);
     expect(strategy.textContent).toMatch(/then recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or Watch/);
     const card = await within(strategy).findByRole('region', { name: 'Country Strategy Map' }, { timeout: 30_000 });
-    expect(within(card).getByTestId('posture-legend').textContent).toBe('High fence:Secure 3Medium fence:Preserve 2,Catch Up 1,Partner 1,Accelerate 1Low fence:Watch 3Not assessed 1');
+    // the one legend: by fence (each headed by its yard), every choice defined, with the step counts
+    const legend = within(card).getByTestId('posture-legend');
+    expect([...legend.querySelectorAll('[data-fence]')].map((g) => g.getAttribute('data-fence'))).toEqual(['high', 'medium', 'low']);
+    expect([...legend.querySelectorAll('li[data-verb]')].map((li) => li.textContent?.split(' — ')[0])).toEqual([
+      'Secure · 3 steps', 'Preserve · 2 steps', 'Catch Up · 1 step', 'Partner · 1 step', 'Accelerate · 1 step · Deployment & Use only', 'Watch · 3 steps', 'Not assessed · 1 step · no fence',
+    ]);
+    expect([...legend.querySelectorAll('li[data-verb]')].every((li) => /— \S.*\.$/.test(li.textContent ?? ''))).toBe(true);
     expect(within(card).getByRole('figure').getAttribute('aria-label')).toMatch(/3 Secure · 2 Preserve · 1 Catch Up · 1 Partner · 1 Accelerate · 3 Watch\.$/);
     expect(within(card).queryByTestId('posture-takeaway')).toBeNull(); // the sentence is the page head's
     expect(within(card).getByRole('button', { name: 'Table' })).toBeTruthy();
@@ -239,8 +245,11 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(screen.queryByRole('heading', { name: 'Security and opportunity' })).toBeNull();
     const legacy = document.getElementById('legacy-osi')!;
     expect(legacy.closest('section#evidence')).toBeTruthy();
-    expect(within(legacy).getByRole('heading', { level: 3, name: 'Legacy OSI framework (paper baseline)' })).toBeTruthy();
-    expect(within(legacy).getByText('Not a current recommendation')).toBeTruthy();
+    expect(within(legacy).getByRole('heading', { level: 3, name: 'Security and opportunity scores' })).toBeTruthy();
+    expect(within(legacy).getByText('Not a recommendation')).toBeTruthy();
+    // named by what it shows, never by an earlier name or version (user, 2026-10-31)
+    expect(legacy.textContent).not.toMatch(/\bOSI\b|\bLegacy\b|paper baseline|kept for comparison|NEIS baseline|current framework/);
+    expect(legacy.textContent).toContain('They are a descriptive view beside the strategic choices, which are the recommendation.');
     expect(within(within(legacy).getByTestId('legacy-mapping')).getAllByRole('row').slice(1).map((tr) => tr.querySelector('td')?.textContent)).toEqual([
       '≈ Preserve', '≈ Catch Up', '≈ Partner', '≈ Watch',
     ]);
@@ -251,7 +260,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(engine.getSnapshot().manifest).toBeNull();
     await openLegacy('the United States');
     expect(screen.getByRole('heading', { level: 3, name: 'Explore scenarios' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Perspective: NEIS baseline/ }).getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByRole('button', { name: /^Perspective: baseline/ }).getAttribute('aria-expanded')).toBe('false');
     expect(screen.getAllByText('Observed / modelled facts', { exact: false }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Preference-adjusted priorities', { exact: false }).length).toBeGreaterThan(0);
     // Sector position rows link to the six-stage Sector profiles
@@ -451,12 +460,15 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     renderAt('/countries/about');
     expect(await h1('Country profiles: data notes')).toBeTruthy();
     const heads = [
-      'What the Country profiles show', 'The strategy: need, prize, position, choice, policy alignment', 'The Legacy OSI framework', 'Legacy OSI: reading the four corners',
-      'How the strategy is compared with policy', 'Legacy OSI: how priorities are compared with policy', "How partners are compared with today's ties", 'The memos', 'Data and vintage', 'Glossary',
+      'What the Country profiles show', 'The strategy: need, prize, position, choice, policy alignment', 'The security and opportunity scores', 'Reading the four quadrants',
+      'How the strategy is compared with policy', 'How the priorities are compared with policy', "How partners are compared with today's ties", 'The memos', 'Data and vintage', 'Glossary',
     ];
     for (const h of heads) expect(screen.getAllByRole('heading', { name: new RegExp(h.replace(/[()?]/g, '.')) }).length, h).toBeGreaterThan(0);
     const order = screen.getAllByRole('heading', { level: 2 }).map((x) => x.textContent ?? '');
-    expect(order.indexOf('The strategy: need, prize, position, choice, policy alignment')).toBeLessThan(order.indexOf('Legacy OSI: reading the four corners'));
+    expect(order.indexOf('The strategy: need, prize, position, choice, policy alignment')).toBeLessThan(order.indexOf('Reading the four quadrants'));
+    // readers come to the Explorer fresh (user, 2026-10-31): no earlier names, versions or 'the paper' as if known
+    expect(order.join(' | ')).not.toMatch(/Legacy|\bOSI\b/);
+    expect(main().textContent).not.toMatch(/\bOSI\b|\bLegacy\b|paper baseline|RMI \(2025\)|Before 28 October|were called|kept for comparison/);
     expect(main().textContent).toMatch(/Grow ≈ Preserve, Upgrade ≈ Catch Up, Exposed ≈ Partner, Stable ≈ Watch/);
     // Watch has both routes: low need with a low prize, and low need with a high prize but neither a strong position nor a credible pathway
     expect(main().textContent).toContain('Watch where the need is low, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway (a deliberate conclusion');
@@ -465,7 +477,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(main().textContent).toContain('the need score itself reaches 0.10');
     expect(main().textContent).toContain('a capability anchor to build from, corroborated by a signal of another kind');
     expect(main().textContent).not.toMatch(/Watch where need and prize are both low/);
-    expect(main().textContent).toMatch(/mix capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment/);
+    expect(main().textContent).toMatch(/each index mixes capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment/);
     expect(screen.getAllByRole('link', { name: /glossary/i }).some((a) => a.getAttribute('href')?.startsWith('/glossary'))).toBe(true);
     noAcronyms();
   });

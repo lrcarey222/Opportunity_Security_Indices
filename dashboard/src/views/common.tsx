@@ -61,7 +61,7 @@ export function TechStageFilters({ techLabel = 'Technology', stageDisabled, tech
   );
 }
 
-export const showWord = (m: ShowMode): string => (m === 'baseline' ? 'NEIS baseline values.' : m === 'change' ? 'Scenario minus the NEIS baseline.' : 'Scenario values.');
+export const showWord = (m: ShowMode): string => (m === 'baseline' ? 'Baseline values.' : m === 'change' ? 'Scenario minus the baseline.' : 'Scenario values.');
 
 /** 'A', 'A and B', 'A, B and C'. */
 export function andList(xs: readonly string[]): string {
@@ -107,7 +107,7 @@ export function shownValue(value: number | null, base: number | null, mode: Show
 export function noteText(n: string): string {
   if (/fossil/i.test(n)) return 'Coal, oil and gas are excluded from the Strategic Index and the partnership best-five summaries.';
   if (/endowment screen off/i.test(n)) return 'The endowment screen is off: an extraction sector can be a member’s allied pick without recorded reserves or production of its resources.';
-  if (/baseline pillars/i.test(n)) return 'Partnerships keep the NEIS baseline Energy Security and Economic Opportunity (category weights move those two scores and the Strategic Index only).';
+  if (/baseline pillars/i.test(n)) return 'Partnerships keep the baseline Energy Security and Economic Opportunity (category weights move those two scores and the Strategic Index only).';
   return n;
 }
 
@@ -146,9 +146,9 @@ export function CountryInsightsLink({ iso3, country }: { iso3: string; country: 
       <Link className="link" to={`/countries/${iso3}#strategy`}>
         {country}&rsquo;s Country profile &rarr;
       </Link>
-      <span className="text-paper-mute"> (its Country Strategy Map: the current recommendation) · </span>
+      <span className="text-paper-mute"> (its Country Strategy Map: the recommendation) · </span>
       <Link className="link" to={`/countries/${iso3}#legacy-osi`}>
-        its Legacy OSI results under Evidence &amp; Methodology
+        its security and opportunity scores under Evidence &amp; Methodology
       </Link>
     </p>
   );

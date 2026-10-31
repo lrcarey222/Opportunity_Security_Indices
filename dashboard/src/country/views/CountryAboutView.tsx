@@ -140,20 +140,22 @@ export default function CountryAboutView() {
         on the strategy follows the Perspective dials.
       </p>
 
-      <H id="legacy">The Legacy OSI framework</H>
+      <H id="legacy">The security and opportunity scores</H>
       <p className={p}>
-        The paper baseline&apos;s indices (<Term id="es" />, <Term id="eo" />, the <Term id="si" /> and the <Term id="psi" />) stay at the end of each profile under Evidence &amp;
-        Methodology, for replication and comparison; they are not current recommendations. They are always labelled as scores from 0 to 1 that compare the country with other economies;
+        Beside the strategy, each profile shows a descriptive view built from indices, at its end under Evidence &amp; Methodology: <Term id="es" /> (how well the country
+        can rely on what it needs in a sector), <Term id="eo" /> (how well placed it is to create value there), the <Term id="si" /> built on them (how strongly the
+        data point to prioritising each of its own sectors) and the <Term id="psi" /> (how good a partner each other economy is for it). These scores describe relative
+        security and opportunity; the strategic choices are the recommendation. They are always labelled as scores from 0 to 1 that compare the country with other economies;
         raw values always carry their unit, year and source, as the Sector profiles print them. The two are never mixed on one axis. They start on the <Term id="paper_baseline" />: the
-        pipeline&apos;s default weights at the six stages. The Perspective control (Explore scenarios) re-weights the legacy priorities, sector rankings and partner scores; the strategy
+        pipeline&apos;s default weights at the six stages. The Perspective control (Explore scenarios) re-weights the Strategic Index priorities, sector rankings and partner scores; the strategy
         and observed and modelled facts (trade, concentration, production, the Allied Industrial Base results) never move.
       </p>
       <p className={p}>
-        The four corners map conceptually onto the choices: Grow &asymp; Preserve, Upgrade &asymp; Catch Up, Exposed &asymp; Partner, Stable &asymp; Watch. Results differ because the
-        legacy indices mix capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment, which the strategy measures apart.
+        The four corners map conceptually onto the choices: Grow &asymp; Preserve, Upgrade &asymp; Catch Up, Exposed &asymp; Partner, Stable &asymp; Watch. Results differ because each
+        index mixes capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment, which the strategy measures apart.
       </p>
 
-      <H id="corners">Legacy OSI: reading the four corners</H>
+      <H id="corners">Reading the four quadrants</H>
       <p className={p}>
         For each sector (one technology at one supply-chain stage), the country is compared with every economy whose two scores can both be compared in that sector. The chart plots each
         sector at its <Term id="percentile">share of economies beaten</Term>: Economic Opportunity across, Energy Security up. So the axes compare the country with other economies.
@@ -164,9 +166,8 @@ export default function CountryAboutView() {
         <Term id="upgrade">Upgrade</Term> when opportunity is high but energy security low, <Term id="exposed">Exposed</Term> when both are low, and <Term id="stable">Stable</Term> when
         opportunity is low but energy security high. So the corners show where a country is relatively strong or weak, and every country has sectors in more than one corner; the tooltips
         and the table still say whether each score is above or below the sector&apos;s <Term id="median" /> economy. The Security vs opportunity comparison, which shows every
-        economy in one sector, splits at the sector&apos;s median economy instead. The RMI (2025) framework associates the corners with export promotion, leapfrogging, friendshoring and
-        alternative value creation; the Country profile uses those as descriptions, not instructions. Before 28 October 2026 the Exposed and Stable corners were called
-        Secure and Watch, and the memos written before then use those names. No economy has an Energy Security score in {sectorsByTechText(noEsCellsOf(manifest))}, so at most{' '}
+        economy in one sector, splits at the sector&apos;s median economy instead. The corner names describe a sector&apos;s place; they are not instructions. The memos call the
+        Exposed and Stable corners Secure and Watch: in a memo those are corners, not the strategic choices of the same names. No economy has an Energy Security score in {sectorsByTechText(noEsCellsOf(manifest))}, so at most{' '}
         {COUNTRY_CELL_KEYS.length - noEsCellsOf(manifest).length} of the {COUNTRY_CELL_KEYS.length} sectors can be placed.
       </p>
 
@@ -179,7 +180,7 @@ export default function CountryAboutView() {
         and where policy data are thin the alignment says so ({ALIGNMENT_NAME.insufficient_data.toLowerCase()}).
       </p>
 
-      <H id="priorities">Legacy OSI: how priorities are compared with policy</H>
+      <H id="priorities">How the priorities are compared with policy</H>
       <p className={p}>
         The Strategic Index adds five parts: 30% economic opportunity, 30% security need (one minus Energy Security), 20% policy activity ranked among the country&apos;s own sectors, 10% the
         supply-chain stage (the two manufacturing stages, components and assembly, count most, then deployment, then extraction, refining and recovery) and 10% the technology&apos;s
@@ -229,14 +230,14 @@ export default function CountryAboutView() {
         it is a reference to a fact-sheet field that the renderer fills in, so no figure is typed by hand. A machine check then rejects stray numbers, unsupported causal words and missing
         caveats, and a separate AI checker, which did not write it, signs off every claim and every sentence against the fact sheet. Each memo is labelled verbatim: &ldquo;
         {manifest.label}&rdquo; The screen, the PDF and the Word file are rendered from the same document. The memos were written on 14 October 2026, when the corners split each
-        sector at its median economy; a memo whose corner statements may differ from today&apos;s chart says so at its top, and its other figures match the current data. The memos
-        read the Legacy OSI framework, not the strategy: they are being revised to it.
+        sector at its median economy; a memo whose corner statements may differ from the chart says so at its top, and its other figures match the data shown. The memos
+        describe the security and opportunity scores, not the strategic choices.
       </p>
       <MemoList />
 
       <H id="data">Data and vintage</H>
       <p className={p}>
-        NEIS baseline as of {manifest.as_of_label}, at the six supply-chain stages. Built {manifest.created} from Strategic export {(manifest.strategic_bundle_id ?? '–').slice(0, 8)} and Sector export{' '}
+        Baseline as of {manifest.as_of_label}, at the six supply-chain stages. Built {manifest.created} from Strategic export {(manifest.strategic_bundle_id ?? '–').slice(0, 8)} and Sector export{' '}
         {(manifest.sector_bundle_id ?? '–').slice(0, 8)}; {manifest.counts.sheets} fact sheets for {manifest.counts.economies} economies.
         {manifest.validated ? ' Every shared value was checked against the pipeline outputs and both published exports.' : ' This export was not validated against the published exports.'}
       </p>

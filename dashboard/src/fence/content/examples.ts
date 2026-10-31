@@ -69,7 +69,7 @@ export const EXAMPLES: Example[] = [
     id: 'solar-modules',
     title: 'Conventional solar modules',
     question: 'Mature, passive, globally traded crystalline-silicon modules',
-    summary: 'The paper’s hard case. With a high domestic premium the capability case does not justify protection; with a low one it might.',
+    summary: 'A hard case for the Yards & Fences framework. With a high domestic premium the capability case does not justify protection; with a low one it might.',
     shows: 'A large yard, or a large yard with a limited capability floor, depending on the premium. Try the slider.',
     view: 'scenario',
     state: () =>

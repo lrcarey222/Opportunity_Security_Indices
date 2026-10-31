@@ -57,8 +57,8 @@ function DevDataNote({ iso3, name, sector }: { iso3: string | null; name: string
       </Link>
       <span className="text-paper-mute">
         {sector && iso3
-          ? ` ${name ?? iso3}'s aid received and given, and its direct-investment positions, in Sector Insights`
-          : ` World Bank development indicators, OECD aid flows and IMF direct-investment positions${name ? ` (${name} highlighted)` : ''}, in Sector Insights`}
+          ? ` ${name ?? iso3}'s aid received and given, and its direct-investment positions, on the Sector pages`
+          : ` World Bank development indicators, OECD aid flows and IMF direct-investment positions${name ? ` (${name} highlighted)` : ''}, on the Sector pages`}
       </span>
     </p>
   );
@@ -264,7 +264,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
         height: 40 + top20.length * 22,
         marginLeft: labelMargin(top20.map((r) => r.Country), { min: 90, max: 180 }),
         marginRight: 60,
-        x: { label: change ? 'Change in Partnership Strength against the NEIS baseline →' : 'Partnership Strength (0 to 1) →', grid: true, nice: true, domain: change ? symDomain(top20.map((r) => r.shown), 0.005).map((v) => v * 1.5) : [0, 1] },
+        x: { label: change ? 'Change in Partnership Strength against the baseline →' : 'Partnership Strength (0 to 1) →', grid: true, nice: true, domain: change ? symDomain(top20.map((r) => r.shown), 0.005).map((v) => v * 1.5) : [0, 1] },
         y: { domain: top20.map((r) => r.Country), label: null, tickSize: 0 },
         marks: [
           Plot.barX(top20, { y: 'Country', x: 'shown', fill: (r: DyadRow) => TIER_COLOR[r.tier], insetTop: 4, insetBottom: 4 }),
@@ -281,7 +281,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
   );
 
   // (c) bloc vs Friendshore
-  // with a sector chosen: Friendshore in that sector (scenario, or the NEIS baseline in Baseline mode)
+  // with a sector chosen: Friendshore in that sector (scenario, or the baseline in Baseline mode)
   const secBy = useMemo(() => new Map((secRows ?? []).map((r) => [r.partner_iso, r])), [secRows]);
   const blocY = useCallback(
     (r: DyadRow): number | null => {
@@ -404,7 +404,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
   const psiSide = (v: number | null) => {
     const sd = psiScale.side(v);
     if (sd === null) return null;
-    if (show === 'change') return sd === 'above' ? 'rose against the NEIS baseline' : sd === 'below' ? 'fell against the NEIS baseline' : 'no change';
+    if (show === 'change') return sd === 'above' ? 'rose against the baseline' : sd === 'below' ? 'fell against the baseline' : 'no change';
     return sd === 'median' ? `at the median of the ${psiScale.n} ranked partners (${fmtNum(psiScale.mid, 2)})` : `${sd} the median of the ${psiScale.n} ranked partners (${fmtNum(psiScale.mid, 2)})`;
   };
   const psiCells = useMemo(() => {
@@ -495,7 +495,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
       {!embedded && <PartnersTitle />}
       {!embedded && (
       <PageHead
-        eyebrow="Legacy OSI framework · Partners"
+        eyebrow="Security and opportunity scores · Partners"
         title="Partners"
         lede={
           <>
@@ -518,7 +518,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
           Showing <strong className="text-paper">{sector.label}</strong> only: {rName}&apos;s partners ranked on <Term id="fs" /> and <Term id="po" /> in this one
           sector (the dials apply), not on the five-sector summaries. {rName}&apos;s own security need is the same for every partner in one sector: it sets how much the
           sector matters to {rName}, so the Friendshore ranking turns on the partner&apos;s Economic Opportunity, the trade and investment ties, UN-vote alignment and
-          ownership. Development Potential is shown for this sector at the NEIS baseline; the Partnership
+          ownership. Development Potential is shown for this sector at the baseline; the Partnership
           Strength rank is across all sectors. Choose &ldquo;All sectors&rdquo; for the Partnership Strength ranking.{' '}
           <Link className="link" to={devDataLink(sel, sector)} data-testid="dev-data-link">
             The development data behind this &rarr;
@@ -542,7 +542,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
             {!sector && (
             <ChartCard
               title={`${rName}: its 20 strongest partners`}
-              sub={`${showWord(show)} Each bar is one partner's Partnership Strength from ${rName}'s point of view (0 to 1; longer is a stronger partner)${!isBaseline && show !== 'change' ? '; the gray tick is the NEIS baseline value' : ''}. Colour shows the partner's place in the coalition. Click a bar to see the pair sector by sector.`}
+              sub={`${showWord(show)} Each bar is one partner's Partnership Strength from ${rName}'s point of view (0 to 1; longer is a stronger partner)${!isBaseline && show !== 'change' ? '; the gray tick is the baseline value' : ''}. Colour shows the partner's place in the coalition. Click a bar to see the pair sector by sector.`}
               updating={dyUpdating}
               summary={`The ${top20.length} strongest partners of ${rName} by Partnership Strength.`}
               legend={
@@ -551,7 +551,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
                     { label: 'Coalition core', color: TIER_COLOR.core },
                     { label: 'Coalition partner', color: TIER_COLOR.partner },
                     { label: 'Other economy', color: TIER_COLOR.other },
-                    ...(!isBaseline && show !== 'change' ? [{ label: 'NEIS baseline (tick)', kind: 'tick' as const, color: COMPARE_COLOR.baseline }] : []),
+                    ...(!isBaseline && show !== 'change' ? [{ label: 'Baseline (tick)', kind: 'tick' as const, color: COMPARE_COLOR.baseline }] : []),
                   ]}
                 />
               }
@@ -603,7 +603,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
           {sector ? (
             <ChartCard
               title={`${rName}: every partner in ${sector.label}`}
-              sub={`${rName}'s partners in ${sector.label}: Friendshore (as a friendshoring opportunity: where ${rName}'s security need meets the partner's economic opportunity, on existing trade and investment ties) and Partnership Opportunity (as an export market) in this sector under the scenario, with their ranks among sovereign economies, Development Potential in this sector (NEIS baseline) and the Partnership Strength rank across all sectors. Select a row to see the pair sector by sector.`}
+              sub={`${rName}'s partners in ${sector.label}: Friendshore (as a friendshoring opportunity: where ${rName}'s security need meets the partner's economic opportunity, on existing trade and investment ties) and Partnership Opportunity (as an export market) in this sector under the scenario, with their ranks among sovereign economies, Development Potential in this sector (baseline) and the Partnership Strength rank across all sectors. Select a row to see the pair sector by sector.`}
               updating={!partner.fresh || (!!cellTab && cellTab.key !== cpKey)}
               notes={<DevDataNote iso3={sel} name={selRow?.Country ?? null} sector={sector} />}
               csv={secRows ? () => ({ name: `partners-${reporter}-${stageSlug(sector.tech, sector.stage)}`, text: rowsToCsv(secRows.map((r) => ({ ...r, sector: sector.label })) as unknown as Record<string, unknown>[]) }) : undefined}
@@ -617,7 +617,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
           ) : (
           <ChartCard
             title={`${rName}: every partner, ranked`}
-            sub={`All of ${rName}'s partners by Partnership Strength. Select a row to see the pair sector by sector. Rank change compares with the NEIS baseline; the last column says why a partner is not ranked.`}
+            sub={`All of ${rName}'s partners by Partnership Strength. Select a row to see the pair sector by sector. Rank change compares with the baseline; the last column says why a partner is not ranked.`}
             updating={dyUpdating}
             notes={<DevDataNote iso3={sel} name={selRow?.Country ?? null} sector={null} />}
             csv={dyads?.table ? () => ({ name: `psi-dyads-${reporter}`, text: tableToCsv(dyads.table as Table) }) : undefined}
@@ -681,12 +681,12 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
 
           <ChartCard
             title={`Partnership Strength as a partner, ${partner.data?.psi.view === 'world' ? 'all reporting economies' : 'core coalition'} view`}
-            sub={`${showWord(show)} Each economy is coloured by how strongly the ${partner.data?.psi.reporters.length ?? 0} ${partner.data?.psi.view === 'world' ? 'reporting economies' : 'core coalition members'}, on average, rate it as a partner (the viewpoint is set under Advanced): ${show === 'change' ? 'orange fell against the NEIS baseline, white no change, blue rose' : 'orange weaker than most ranked partners, white the middle, blue stronger'}. Hatched: not ranked (hover for why). Click an economy to see its own partners.`}
+            sub={`${showWord(show)} Each economy is coloured by how strongly the ${partner.data?.psi.reporters.length ?? 0} ${partner.data?.psi.view === 'world' ? 'reporting economies' : 'core coalition members'}, on average, rate it as a partner (the viewpoint is set under Advanced): ${show === 'change' ? 'orange fell against the baseline, white no change, blue rose' : 'orange weaker than most ranked partners, white the middle, blue stronger'}. Hatched: not ranked (hover for why). Click an economy to see its own partners.`}
             updating={!partner.fresh}
             legend={
               <TriLegend
                 scale={psiScale}
-                label={show === 'change' ? 'Change in Partnership Strength against the NEIS baseline' : 'Partnership Strength as a partner'}
+                label={show === 'change' ? 'Change in Partnership Strength against the baseline' : 'Partnership Strength as a partner'}
                 format={(v) => (show === 'change' ? fmtSigned(v, 2) : fmtNum(v, 2))}
                 noun="ranked partners"
                 {...(show === 'change' ? { lowWord: 'fell', highWord: 'rose' } : { lowWord: 'weaker', highWord: 'stronger' })}

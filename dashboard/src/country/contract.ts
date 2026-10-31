@@ -44,7 +44,7 @@ export const COUNTRY_SCHEMA_VERSION = 3;
 export function olderSchemaWords(v: number): string {
   return Math.floor(v) < 2
     ? `is an export from before the six supply-chain stages (this app reads ${COUNTRY_SCHEMA_VERSION})`
-    : `is an export from before the Legacy OSI corner names (legacy_corner; this app reads ${COUNTRY_SCHEMA_VERSION})`;
+    : `is an export from before the corner keys this app reads (legacy_corner; this app reads ${COUNTRY_SCHEMA_VERSION})`;
 }
 /** Relative to the app's base URL. Written only by scripts/88. */
 export const COUNTRY_DATA_DIR = 'data/country/';
@@ -62,7 +62,7 @@ export const COUNTRY_BUDGET_GZ = { manifest: 21_504, sheet: 60_416, memoJson: 25
 /** Path segments under /countries that are not ISO3 codes. */
 export const COUNTRY_RESERVED = ['about'] as const;
 
-/** The verbatim memo label (also in the manifest, from config/country_insights.yml; design E3: the NEIS baseline). */
+/** The verbatim memo label (also in the manifest, from config/country_insights.yml; design E3: the baseline). */
 export const MEMO_LABEL_PREFIX = 'AI-generated from the data and checked against it; NEIS baseline as of';
 /** The label of the schema-1 memos (2026-10-14, three-stage sheets), which stay hidden as stale until rewritten (design K3);
  *  checkMemoDoc() accepts it for a schema-1 memo only. Never shown. */
@@ -636,7 +636,7 @@ export interface NipoFacts {
   vintage: string | null;
   /** e.g. "Global Trade Alert, New Industrial Policy Observatory, October 2026 extract (as of 5 October 2026)" */
   vintage_label: string | null;
-  /** the date "in force" is judged on (the NEIS baseline date) */
+  /** the date "in force" is judged on (the baseline date) */
   as_of: string;
   measure: string;
   /**

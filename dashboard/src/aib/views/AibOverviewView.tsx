@@ -506,7 +506,7 @@ export default function AibOverviewView() {
           </ul>
           <p className="max-w-3xl text-sm text-paper-mute">
             These are observed data and analysis results: they do not change with the Perspective (preference) settings of a Country profile. Where the Partnerships page ranks
-            partners by preference-weighted scores it says so and shows the NEIS defaults.
+            partners by preference-weighted scores it says so and shows the default weights.
           </p>
         </Section>
       </div>

@@ -60,10 +60,10 @@ export function SpaceSection({ id = 'position', level = 2 }: { id?: string; leve
       sheet.cells.map((c) => ({
         sector: c.tech, stage: c.stage, energy_security: c.es?.v ?? null, energy_security_beats_pct: c.es?.pct.v ?? null, energy_security_median: c.es?.med.v ?? null,
         economies_compared: c.es?.n.v ?? null, economic_opportunity: c.eo?.v ?? null, economic_opportunity_beats_pct: c.eo?.pct.v ?? null,
-        economic_opportunity_median: c.eo?.med.v ?? null, legacy_corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null,
+        economic_opportunity_median: c.eo?.med.v ?? null, corner: c.legacy_corner ? legacyCornerWord(c.legacy_corner) : null,
         strategic_index_rank: c.si.in_sample ? c.si.rank.v : null, placed: yes(c.placed), not_placed_reason: c.placed ? null : notPlacedReason(c),
       })),
-      'Opportunity Security Indices, NEIS baseline',
+      "Security and opportunity scores computed by the Explorer's authors (baseline)",
       sheet.meta.as_of,
     ),
   });

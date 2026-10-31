@@ -138,7 +138,7 @@ function MemoAction({ manifest }: { manifest: CountryManifest }) {
         <Link to={`/countries/${entry.iso3}/memo`} className="btn btn-primary">
           GENERATE MEMO
         </Link>
-        <p className="mt-1 max-w-xs text-xs text-paper-mute">AI-generated from the data and checked against it; NEIS baseline as of {manifest.as_of_label}. A Legacy OSI reading, not the strategy above.</p>
+        <p className="mt-1 max-w-xs text-xs text-paper-mute">AI-generated from the data and checked against it; baseline as of {manifest.as_of_label}. It reads the security and opportunity scores, not the strategy above.</p>
         {entry.memo?.rule_note && entry.memo.rule_note_d && (
           <p className="mt-1 max-w-md text-xs text-paper-mute" data-testid="memo-rule-note">
             {entry.memo.rule_note_d}

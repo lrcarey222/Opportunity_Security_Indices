@@ -2,12 +2,12 @@
 // Since 2026-10-29 (spec XVIII, design D10) it is "Explore scenarios" in Evidence & Methodology -> Legacy OSI
 // framework, apart from the canonical strategy, which it never changes; it no longer sits under the head:
 // a compact "Perspective: NEIS baseline ▾" control that opens the existing DialPanel (four
-// dials, presets, "Reset to NEIS baseline", the advanced settings), with a live readout of the top
+// dials, presets, "Reset to baseline", the advanced settings), with a live readout of the top
 // priorities so a reader sees what the dials do without leaving the page. The dials re-weight
 // preference-adjusted priorities only (the Strategic Index, partner rankings); facts never move.
 //
 // EngineSi sits inside the page's one EngineScope and turns the engine's compare.si rows into the
-// PerspectiveSi context (null map at the NEIS baseline: the fact sheet's identical numbers are used).
+// PerspectiveSi context (null map at the baseline: the fact sheet's identical numbers are used).
 // Before the scope is mounted (a baseline visit) nothing here touches the engine.
 
 import { useMemo, type ReactNode } from 'react';
@@ -45,14 +45,14 @@ function LiveSummary({ open }: { open: boolean }) {
       {summary && <span className="text-sm tabular text-paper-dim">{summary}</span>}
       {!open && (
         <button type="button" className="btn btn-ghost btn-sm" onClick={reset}>
-          Reset to NEIS baseline
+          Reset to baseline
         </button>
       )}
     </>
   );
 }
 
-/** The top five priorities under the Perspective, with their rank change against the NEIS baseline. */
+/** The top five priorities under the Perspective, with their rank change against the baseline. */
 function PriorityReadout() {
   const { sheet } = useProfile();
   const si = usePerspectiveSi();
@@ -103,11 +103,11 @@ export function PerspectiveControl() {
     <div id="perspective" className="card scroll-mt-16 p-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <button type="button" className="btn btn-ghost" aria-expanded={open} aria-controls="perspective-panel" onClick={toggle}>
-          Perspective: {custom ? 'custom' : 'NEIS baseline'} <span aria-hidden="true">{open ? '▴' : '▾'}</span>
+          Perspective: {custom ? 'custom' : 'baseline'} <span aria-hidden="true">{open ? '▴' : '▾'}</span>
         </button>
-        {sc ? <LiveSummary open={open} /> : custom ? <span className="text-sm text-paper-mute">Loading the Legacy OSI scores to apply the dials in the link…</span> : null}
+        {sc ? <LiveSummary open={open} /> : custom ? <span className="text-sm text-paper-mute">Loading the security and opportunity scores to apply the dials in the link…</span> : null}
         <p className="basis-full text-xs leading-snug text-paper-mute">
-          Four dials (Hawkishness, Bullishness, Populism, Climate) re-weight the Legacy OSI priorities, sector rankings and how attractive partners look. They never change the
+          Four dials (Hawkishness, Bullishness, Populism, Climate) re-weight the Strategic Index priorities, sector rankings and how attractive partners look. They never change the
           strategy (Strategy to Allied Strategy) or observed or modelled facts: trade flows, concentration, production, the share of demand met in a stress test, capacity gaps and the Allied Industrial Base
           stress-test and compact results.
         </p>
@@ -120,7 +120,7 @@ export function PerspectiveControl() {
               <PriorityReadout />
             </>
           ) : (
-            <Loading label="Loading the Legacy OSI scores" />
+            <Loading label="Loading the security and opportunity scores" />
           )}
         </div>
       )}
@@ -136,7 +136,7 @@ export function PerspectiveTag() {
   return (
     <div className="mt-5 border-t hairline pt-3 text-xs">
       <div className="eyebrow mb-1.5">Perspective</div>
-      <span className={custom ? 'tag tag-framework' : 'tag border-signal text-paper'}>{custom ? 'Custom' : 'NEIS baseline'}</span>
+      <span className={custom ? 'tag tag-framework' : 'tag border-signal text-paper'}>{custom ? 'Custom' : 'Baseline'}</span>
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
         <button type="button" className="link" onClick={() => p.reveal?.('perspective')}>
           Change

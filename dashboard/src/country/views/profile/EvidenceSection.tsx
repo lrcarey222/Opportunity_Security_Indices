@@ -102,7 +102,7 @@ function FrameworkCard() {
       </ol>
       <p className="mt-3 text-xs text-paper-mute">
         A value within {pct(t?.borderline_band)} points of its threshold is borderline. The thresholds are fixed (config/strategic_position.yml); the Perspective dials below re-weight
-        only the Legacy OSI indices.
+        only the security and opportunity scores.
       </p>
     </section>
   );
@@ -252,8 +252,8 @@ function ExploreScenarios() {
         Explore scenarios
       </h3>
       <p className="max-w-3xl text-sm text-paper-dim">
-        Preference-adjusted scenarios of the Legacy OSI indices: the four dials re-weight the Strategic Index and the partner scores below. They never change the strategy in the sections
-        above, which rests on fixed thresholds.
+        Preference-adjusted scenarios of the security and opportunity scores: the four dials re-weight the Strategic Index and the partner scores below. They never change the
+        strategy in the sections above, which rests on fixed thresholds.
       </p>
       <PerspectiveControl />
     </section>
@@ -282,7 +282,7 @@ function MappingTable() {
         <thead>
           <tr className="text-xs text-paper-mute">
             <th scope="col" className="py-1 pr-3 font-medium">
-              Legacy corner
+              Corner
             </th>
             <th scope="col" className="py-1 pr-3 font-medium">
               Maps to
@@ -321,23 +321,24 @@ export function LegacyOsiSection({ engineOn, hostKeys }: { engineOn: boolean; ho
       id={LEGACY_SECTION.id}
       level={3}
       aliases={LEGACY_SECTION.aliases}
-      title="Legacy OSI framework (paper baseline)"
+      title={LEGACY_SECTION.label}
       className="rounded-lg border border-dashed border-white/15 p-4"
-      basis={<BasisTag kind="prefs" note="Legacy OSI · not a current recommendation" />}
+      basis={<BasisTag kind="prefs" note="descriptive scores · not a recommendation" />}
       intro={
         <>
-          {LEGACY_OSI_NOTE} Its <Term id="es" />, <Term id="eo" />, their four corners and the <Term id="si" /> are the paper baseline. The strategy above is the current
-          framework.
+          {LEGACY_OSI_NOTE} <Term id="es" /> scores how well {name} can rely on what it needs in a sector; <Term id="eo" /> scores how well placed it is to create
+          value there. Both run from 0 to 1 and compare it with other economies; the four corners place its sectors on the two, and the <Term id="si" /> ranks its
+          own sectors from them. The strategy above is the recommendation.
         </>
       }
     >
-      <Notice kind="info" title="Not a current recommendation">
-        The legacy indices mix together {LEGACY_MIXES.join(', ')}, so a sector&apos;s corner can disagree with its choice in the strategy. The current framework keeps those
+      <Notice kind="info" title="Not a recommendation">
+        Each of these scores mixes together {LEGACY_MIXES.join(', ')}, so a sector&apos;s corner can disagree with its choice in the strategy. The strategy keeps those
         apart: need, prize and position are measured separately, and the choice follows fixed rules.
       </Notice>
       {m.status === 'non_rankable' && (
         <Notice kind="info" title="Scores shown but not ranked">
-          {cap(poss(name))} index scores are shown but not compared with other economies: {m.status_reason ?? 'most of its data are filled in'}. The legacy charts that compare sectors are
+          {cap(poss(name))} index scores are shown but not compared with other economies: {m.status_reason ?? 'most of its data are filled in'}. The charts below that compare sectors are
           empty; the tables list every value with its reason. The strategy above is computed separately.
         </Notice>
       )}
@@ -353,10 +354,10 @@ export function LegacyOsiSection({ engineOn, hostKeys }: { engineOn: boolean; ho
       <MappingTable />
       {customInUrl && (
         <p className="text-sm text-paper-dim" data-testid="legacy-custom-link">
-          The link carries a custom perspective: the dials apply to the Legacy OSI results below.
+          The link carries a custom perspective: the dials apply to the scores below.
         </p>
       )}
-      <Fold id={LEGACY_FOLD} summary={`Show the Legacy OSI results for ${name}: the corners scatter, the Strategic Index priorities, the sector position table, the policy agreement matrix, the partner scores and the Perspective dials (Explore scenarios)`}>
+      <Fold id={LEGACY_FOLD} summary={`Show the security and opportunity scores for ${name}: the corners scatter, the Strategic Index priorities, the sector position table, the policy agreement matrix, the partner scores and the Perspective dials (Explore scenarios)`}>
         {engineOn ? (
           <EngineScope hostKeys={hostKeys} fallback={results}>
             <EngineSi iso3={sheet.iso3}>{results}</EngineSi>

@@ -603,7 +603,7 @@ export const PARTNERSHIP = {
   ties: 'What already connects the two economies: trade, manufacturing investment, agreements and geopolitical alignment.',
 } as const;
 
-// ---- evidence, Legacy OSI and states ----------------------------------------------------------------------------
+// ---- evidence, the security and opportunity scores, and states ----------------------------------------------------------------------------
 
 /** The data freshness note (guide, Country Strategy Map): the profile header's tip and Evidence & methodology. */
 export const DATA_FRESHNESS_NOTE =
@@ -611,9 +611,12 @@ export const DATA_FRESHNESS_NOTE =
 
 export const EVIDENCE_TITLE = 'Evidence & methodology';
 export const EVIDENCE_INTRO =
-  'See the data behind each choice, where evidence is thin, and how the current strategy differs from the earlier Legacy OSI framework.';
+  'See the data behind each choice, where evidence is thin, and how the security and opportunity scores read the same sectors.';
+/** The name of the descriptive index view (Energy Security, Economic Opportunity, the Strategic Index and the partner
+ *  scores): named by what it shows, never by where it came from (user, 2026-10-31: readers come to this tool fresh). */
+export const SCORES_VIEW_NAME = 'Security and opportunity scores';
 export const LEGACY_OSI_NOTE =
-  'The Legacy OSI framework is kept for comparison and reproducibility. It describes relative security and opportunity; it is not the current strategic recommendation.';
+  'These scores describe relative security and opportunity: how one country compares with other economies in each sector. They are a descriptive view beside the strategic choices, which are the recommendation.';
 
 /** Empty, loading, warning and error states (guide section 11). Missing data is uncertainty, never a strategic call. */
 export const STATE = {

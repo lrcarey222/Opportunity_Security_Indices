@@ -51,20 +51,20 @@ describe('PartnershipLenses', () => {
     const panels = screen.getAllByTestId(/^lens-(today|osi|aib)$/);
     expect(panels.map((p) => p.getAttribute('data-lens'))).toEqual(['today', 'osi', 'aib']);
     expect(screen.getByRole('heading', { level: 2, name: 'Today' })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 2, name: 'OSI ranking' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Partner score ranking' })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'AIB analysis: Managed Interdependence' })).toBeTruthy();
-    expect(panels.map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual(['Today · observed', 'OSI ranking · NEIS defaults', 'AIB analysis · Managed Interdependence']);
+    expect(panels.map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual(['Today · observed', 'Partner score ranking · default weights', 'AIB analysis · Managed Interdependence']);
     expect(within(panels[1]).getByText('osi body')).toBeTruthy();
     // the summary: Carpania is named by all three
     const sum = screen.getByTestId('cross-lens-summary');
     expect(within(sum).getByRole('heading', { level: 2 }).textContent).toBe('Where the three readings agree: trade, Avalon');
     expect(within(sum).getByTestId('cross-lens-line').textContent).toBe('The three lenses name 4 partners: 1 by all three and 3 by one.');
     const items = within(sum).getAllByRole('listitem');
-    expect(items[0].textContent).toBe('A tie today that both OSI and the AIB keep (1): Carpania');
+    expect(items[0].textContent).toBe('A tie today that ranks high on the partner scores and that the AIB keeps (1): Carpania');
     expect(within(items[0]).getByRole('link', { name: 'Carpania' }).getAttribute('href')).toBe('/countries/CCC');
     // a name without a page is text
     const aibOnly = items.find((li) => li.getAttribute('data-reading') === 'aib')!;
-    expect(aibOnly.textContent).toBe('Chosen by the AIB, not a tie today and not ranked high by OSI (1): Elbonia');
+    expect(aibOnly.textContent).toBe('Chosen by the AIB, not a tie today and not ranked high on the partner scores (1): Elbonia');
     expect(within(aibOnly).queryByRole('link')).toBeNull();
     expect(bareAcronyms(document.body)).toEqual([]);
   });
@@ -78,7 +78,7 @@ describe('PartnershipLenses', () => {
     const today = screen.getByTestId('lens-today');
     expect(within(today).getByTestId('lens-empty').textContent).toBe('No aid data for Avalon in this build.');
     const sum = screen.getByTestId('cross-lens-summary');
-    expect(within(sum).getByTestId('cross-lens-line').textContent).toBe('Only OSI ranking has partners here, so there is nothing to compare it with yet: Borduria.');
+    expect(within(sum).getByTestId('cross-lens-line').textContent).toBe('Only Partner score ranking has partners here, so there is nothing to compare it with yet: Borduria.');
     expect(within(sum).getByText('Still loading: AIB analysis.')).toBeTruthy();
     expect(within(sum).getByTestId('cross-lens-absent-today').textContent).toBe('Today: no aid data for Avalon; left out of the comparison.');
   });

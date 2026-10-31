@@ -76,7 +76,7 @@ describe('parseSearch / writeSearch', () => {
     expect(p.scenario.dials.hawkishness).toBe(80);
     expect('network' in p.scenario.advanced).toBe(false);
     expect(p.problems).toHaveLength(5);
-    for (const k of ['lambda', 'maxshare', 'minprod', 'caps', 'cmp']) expect(p.problems.join(' | ')).toContain(`${k} (a setting of the original allied network design, which is retired)`);
+    for (const k of ['lambda', 'maxshare', 'minprod', 'caps', 'cmp']) expect(p.problems.join(' | ')).toContain(`${k} (a setting this Explorer does not use)`);
     expect(writeSearch(p.scenario, p.view, ctx)).toBe('?h=80');
   });
 

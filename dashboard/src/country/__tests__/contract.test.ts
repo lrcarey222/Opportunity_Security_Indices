@@ -209,7 +209,7 @@ describe.skipIf(!haveFixture())('Country contract on the synthetic fixture', () 
       const { legacy_corner, legacy_corner_reason, ...rest } = c;
       return { ...rest, quadrant: legacy_corner ? v2key(legacy_corner) : null, quadrant_reason: legacy_corner_reason };
     });
-    expect(checkFactSheet(v2).join(' | ')).toMatch(/schema_version 2 is an export from before the Legacy OSI corner names/);
+    expect(checkFactSheet(v2).join(' | ')).toMatch(/schema_version 2 is an export from before the corner keys this app reads/);
     const up = toSchema3(v2) as AnyObj;
     expect(checkFactSheet(up)).toEqual([]);
     expect(up.summary.legacy_corners).toEqual(v3.summary.legacy_corners);
@@ -347,7 +347,7 @@ describe.skipIf(!haveFixture())('Country contract on the synthetic fixture', () 
       mm.schema_version = 1;
       expect(checkCountryManifest(mm).join(' | ')).toMatch(/schema_version 1 is an export from before the six supply-chain stages/);
       mm.schema_version = 2;
-      expect(checkCountryManifest(mm).join(' | ')).toMatch(/schema_version 2 is an export from before the Legacy OSI corner names/);
+      expect(checkCountryManifest(mm).join(' | ')).toMatch(/schema_version 2 is an export from before the corner keys this app reads/);
       mm.schema_version = 3;
       mm.no_es_cells = ['electric-grid-downstream'];
       mm.cmfdi_stages = ['Midstream'];

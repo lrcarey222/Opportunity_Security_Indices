@@ -121,7 +121,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
       if (pts.length < 2) return null;
       const arrows = show === 'change' ? moved : [];
       const selP = pts.filter((p) => p.iso3c === sel);
-      // fitted to the economies shown (and the NEIS baseline positions when arrows are drawn)
+      // fitted to the economies shown (and the baseline positions when arrows are drawn)
       const xd = fitDomain([...pts.map((p) => p.x), ...arrows.map((p) => p.eo_base)]);
       const yd = fitDomain([...pts.map((p) => p.y), ...arrows.map((p) => p.es_base)]);
       return {
@@ -219,7 +219,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
       lines={[
         cellLabel(p.tech, p.stage),
         regionOf(p.y, p.x, med.es, med.eo),
-        !isBaseline ? `NEIS baseline: Economic Opportunity ${fmtNum(p.eo_base, 3)} · Energy Security ${fmtNum(p.es_base, 3)}` : null,
+        !isBaseline ? `Baseline: Economic Opportunity ${fmtNum(p.eo_base, 3)} · Energy Security ${fmtNum(p.es_base, 3)}` : null,
       ]}
     />
   );
@@ -230,7 +230,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
     <div>
       {!embedded && (
       <PageHead
-        eyebrow="Legacy OSI framework · Security vs opportunity"
+        eyebrow="Security and opportunity scores · Security vs opportunity"
         title="The opportunity–security space"
         lede={
           <>
@@ -238,7 +238,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
             high opportunity with low security, is where building capacity would both meet a need and create value; the Country profile calls it{' '}
             <Term id="upgrade">Upgrade</Term>. The other corners are <Term id="grow">Grow</Term> (high opportunity, high security),{' '}
             <Term id="exposed">Exposed</Term> (low opportunity, low security) and <Term id="stable">Stable</Term> (low opportunity, high security). The corners place an
-            economy; they are not its strategic posture. They are the Legacy OSI corners, closest to today&rsquo;s choices Preserve (Grow), Catch Up (Upgrade), Partner
+            economy; they are not its strategic choices. They are closest to the choices Preserve (Grow), Catch Up (Upgrade), Partner
             (Exposed) and Watch (Stable), but the results differ: each index mixes capability, vulnerability, production, trade, investment, demand, reserves,
             concentration and deployment, which the strategic posture separates into need, prize and position. Pick a technology and one of the{' '}
             {app.stages.length} supply-chain stages.
@@ -255,12 +255,12 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
       ) : (
         <div className="flex flex-col gap-6">
           {!isBaseline && !pillarsMove && (
-            <Notice kind="info">The dials do not move Energy Security or Economic Opportunity (they are measurements, not preferences); only the advanced category weights and the rankability rule do, so this view matches the NEIS baseline.</Notice>
+            <Notice kind="info">The dials do not move Energy Security or Economic Opportunity (they are measurements, not preferences); only the advanced category weights and the rankability rule do, so this view matches the baseline.</Notice>
           )}
           <div className="grid gap-6 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <ChartCard
               title={`${cellLabel(tech, stage)}: Energy Security against Economic Opportunity`}
-              sub={`${showWord(show)} Each dot is one economy: further right is a bigger economic opening in this sector, higher up is more secure. The dashed lines are the medians of the economies shown, so each corner holds the economies above or below the middle on both scores. Colour shows the economy's place in the coalition.${show === 'change' ? ' Arrows run from the NEIS baseline position to the scenario’s.' : ''} Click a dot to select the economy.`}
+              sub={`${showWord(show)} Each dot is one economy: further right is a bigger economic opening in this sector, higher up is more secure. The dashed lines are the medians of the economies shown, so each corner holds the economies above or below the middle on both scores. Colour shows the economy's place in the coalition.${show === 'change' ? ' Arrows run from the baseline position to the scenario’s.' : ''} Click a dot to select the economy.`}
               updating={updating}
               summary={`Scatter of ${pts.length} economies; median Energy Security ${fmtNum(med.es, 2)}, median Economic Opportunity ${fmtNum(med.eo, 2)}.`}
               legend={
@@ -270,7 +270,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
                     { label: 'Coalition partner', kind: 'dot', color: TIER_COLOR.partner },
                     { label: 'Other economy', kind: 'dot', color: TIER_COLOR.other },
                     { label: `Selected: ${app.byIso.get(sel)?.country ?? sel}`, kind: 'outline', color: SIGNAL },
-                    ...(show === 'change' && moved.length ? [{ label: 'NEIS baseline → scenario', kind: 'line' as const, color: COMPARE_COLOR.baseline }] : []),
+                    ...(show === 'change' && moved.length ? [{ label: 'Baseline → scenario', kind: 'line' as const, color: COMPARE_COLOR.baseline }] : []),
                   ]}
                 />
               }
@@ -301,7 +301,7 @@ export default function SpaceView({ embedded = false, iso3 }: { embedded?: boole
                 <EmptyState>Too few economies have both scores in this sector.</EmptyState>
               )}
             </ChartCard>
-            <ChartCard title="Economies in each corner" sub="How many economies fall in each corner of this sector (split at the medians), in the scenario and at the NEIS baseline, and how many of them are coalition members." updating={updating}>
+            <ChartCard title="Economies in each corner" sub="How many economies fall in each corner of this sector (split at the medians), in the scenario and at the baseline, and how many of them are coalition members." updating={updating}>
               <TableView
                 rows={counts}
                 caption="Economies in each corner"

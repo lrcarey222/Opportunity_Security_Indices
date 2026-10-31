@@ -150,7 +150,7 @@ export function FullResult({ e }: { e: Evaluation }) {
           </p>
           {comp.paperPlacement && (
             <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-paper-dim">
-              The paper’s provisional placement: <YardBadge yard={comp.paperPlacement} size="sm" />
+              Provisional placement in the Yards &amp; Fences framework: <YardBadge yard={comp.paperPlacement} size="sm" />
               {comp.paperPlacement !== r.yard && <span className="text-paper-mute">— this assessment differs; the inputs above say why.</span>}
             </p>
           )}

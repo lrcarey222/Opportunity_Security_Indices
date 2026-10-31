@@ -2,7 +2,7 @@
 // (sheet, manifest entry, URL state and its setters, the disclosures lifted to the page so they survive
 // the engine mounting, the Allied Industrial Base document, and since 2026-10-29 the strategic position
 // framework's data with the shared ?node= selection), the Perspective context (the Strategic Index under
-// the reader's dials, else null = the NEIS baseline; Legacy OSI only), the section wrapper (an h2 with its
+// the reader's dials, else null = the baseline; Legacy OSI only), the section wrapper (an h2 with its
 // anchor and its basis eyebrow), the controlled disclosure (Fold) and the CSV helper (columns in plain
 // words, last two columns `source` and `baseline_as_of`, A4.0).
 
@@ -90,7 +90,7 @@ export function useProfile(): ProfileCtx {
 
 // ---- the Perspective ---------------------------------------------------------------------------------
 
-/** The Strategic Index under the reader's Perspective. `map` null = the NEIS baseline (the fact sheet). */
+/** The Strategic Index under the reader's Perspective. `map` null = the baseline (the fact sheet). */
 export interface PerspectiveSi {
   status: 'baseline' | 'loading' | 'custom';
   map: SiMap | null;
@@ -122,9 +122,9 @@ export function BasisTag({ kind, note }: { kind: Basis; note?: string }) {
   );
 }
 
-/** "NEIS baseline" / "your perspective" / "NEIS baseline (model loading)". */
+/** "baseline" / "your perspective" / "baseline until the scores load". */
 export function perspectiveNote(si: PerspectiveSi): string {
-  return si.status === 'custom' ? 'your perspective' : si.status === 'loading' ? 'NEIS baseline until the Legacy OSI scores load' : 'NEIS baseline';
+  return si.status === 'custom' ? 'your perspective' : si.status === 'loading' ? 'baseline until the scores load' : 'baseline';
 }
 
 /** A page section: <section id> with an h2 (cards inside use h3); `basis` adds the eyebrow above the h2; `lead` a block between the heading and the intro. */
@@ -178,7 +178,7 @@ export function Fold({
         <span className="flex-1">{summary}</span>
         {badge}
       </summary>
-      {open && <div className="space-y-6 pb-4 pt-1">{engine && !engineReady ? <Loading label="Loading the Legacy OSI scores" /> : children}</div>}
+      {open && <div className="space-y-6 pb-4 pt-1">{engine && !engineReady ? <Loading label="Loading the security and opportunity scores" /> : children}</div>}
     </details>
   );
 }

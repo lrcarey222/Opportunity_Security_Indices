@@ -15,13 +15,16 @@ import { cssHex } from '../../components/testing/color.ts';
 import { AibDivisionCard, AIB_DIVISION_TITLE, indexNodesByCell } from '../AibDivisionCard.tsx';
 import { PostureBasisTag } from '../basis.tsx';
 import { DRAWER_QUESTIONS, PostureNodeDrawer } from '../CellDrawer.tsx';
-import { COUNTRY_STRATEGY_MAP_TITLE, CountryPostureCard } from '../CountryPostureCard.tsx';
+import { COUNTRY_STRATEGY_MAP_INTRO, COUNTRY_STRATEGY_MAP_TITLE, CountryPostureCard } from '../CountryPostureCard.tsx';
 import { AibDivisionStats, CountryPostureTile } from '../PostureCounts.tsx';
-import { MAP_HELPER } from '../PostureMatrix.tsx';
+import { MAP_CHOICE_DEFINITION, MIXED_DEFINITION, NOT_ASSESSED_DEFINITION } from '../PostureLegend.tsx';
+import { MAP_HELPER, MAX_TIP_PARTS, PostureMatrix } from '../PostureMatrix.tsx';
 import { SECTOR_POSTURE_TITLE, SectorPostureCard } from '../SectorPostureCard.tsx';
-import type { Verb } from '../contract.ts';
-import { VERB_COLOR, VERB_OUTLINE } from '../grammar.ts';
+import type { PostureDetail, Verb } from '../contract.ts';
+import { countryCells } from '../derive.ts';
+import { VERB_COLOR, VERB_LABEL, VERB_OUTLINE } from '../grammar.ts';
 import { setPostureStore } from '../store.ts';
+import { YARD_AND_FENCE, YARD_DEFINITION } from '../../content/vocabulary.ts';
 import { fixtureCore, fixtureStore, withCell, withoutCell } from './fixture.ts';
 
 function at(path: string, element: React.ReactNode) {
@@ -85,7 +88,7 @@ async function downloadCsv(scope: HTMLElement): Promise<string[]> {
   }
 }
 
-const SOURCE = '"Opportunity Security Indices, strategic position framework"';
+const SOURCE = '"Strategic position framework, computed by the Explorer\'s authors"';
 const noAcronyms = () => expect(bareAcronyms(document.body)).toEqual([]);
 const SENTENCE =
   'Aland should preserve its strongest positions in battery pack assembly and solar module assembly; secure battery materials refining (chokepoint risk), polysilicon refining (system resilience) and solar inverters (control-system risk); catch up in battery cell manufacturing; rely on partners for lithium and nickel mining; and accelerate deployment of battery storage.';
@@ -215,35 +218,82 @@ describe('the Country Strategy Map', () => {
     expect(screen.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
     expect(screen.getByRole('region', { name: COUNTRY_STRATEGY_MAP_TITLE })).toBeTruthy();
     expect(screen.getByRole('figure').getAttribute('aria-label')).toBe(`${SENTENCE} 3 Secure · 2 Preserve · 1 Catch Up · 1 Partner · 1 Accelerate · 3 Watch.`);
+    // one legend, grouped by fence: each fence headed by its yard in the user's words, each choice defined in one line
+    expect(screen.getAllByTestId('posture-legend')).toHaveLength(1);
     const legend = screen.getByTestId('posture-legend');
-    expect(legend.getAttribute('aria-label')).toBe('Legend: choices by fence');
-    expect([...legend.querySelectorAll('[data-fence]')].map((g) => g.getAttribute('data-fence'))).toEqual(['high', 'medium', 'low']);
-    expect([...legend.querySelectorAll('[data-fence]')].map((g) => [...g.querySelectorAll('[data-verb]')].map((v) => v.getAttribute('data-verb')))).toEqual([
+    expect(legend.getAttribute('aria-label')).toBe('Legend: what each color means, by fence');
+    const groups = [...legend.querySelectorAll('[data-fence]')] as HTMLElement[];
+    expect(groups.map((g) => [g.getAttribute('data-fence'), g.getAttribute('data-yard')])).toEqual([['high', 'small'], ['medium', 'medium'], ['low', 'large']]);
+    expect(groups.map((g) => [...g.querySelectorAll('[data-verb]')].map((v) => v.getAttribute('data-verb')))).toEqual([
       ['secure'], ['preserve', 'catch_up', 'partner', 'accelerate'], ['watch'],
     ]);
-    expect(legend.textContent).toBe('High fence:Secure 3Medium fence:Preserve 2,Catch Up 1,Partner 1,Accelerate 1Low fence:Watch 3Not assessed 1');
-    // each swatch is its choice's colour (the not-assessed one hatched), and each count is the map's own
+    expect(groups.map((g) => [...g.querySelectorAll('p')].map((p) => p.textContent))).toEqual(
+      (['small', 'medium', 'large'] as const).map((y) => [YARD_AND_FENCE[y], YARD_DEFINITION[y]]),
+    );
+    expect(groups.map((g) => g.querySelector('p')?.textContent)).toEqual(['Small yard / High fence', 'Medium yard / medium, permeable fence', 'Large yard / Low fence']);
+    // each entry: the name, the map's own step count and the one-line definition; each swatch its choice's colour (not assessed hatched)
     const m = screen.getByTestId('posture-matrix');
-    for (const it of [...legend.querySelectorAll('[data-verb]')] as HTMLElement[]) {
+    const entries = [...legend.querySelectorAll('li[data-verb]')] as HTMLElement[];
+    expect(entries.map((e) => e.getAttribute('data-verb'))).toEqual(['secure', 'preserve', 'catch_up', 'partner', 'accelerate', 'watch', 'not_assessed']);
+    const steps = (n: number) => `${n} ${n === 1 ? 'step' : 'steps'}`;
+    for (const it of entries) {
       const v = it.getAttribute('data-verb')!;
       const sw = it.querySelector('[data-swatch]') as HTMLElement;
-      if (v === 'not_assessed') expect(sw.style.background).toContain('repeating-linear-gradient');
-      else expect(cssHex(sw.style.background), v).toBe(VERB_COLOR[v as Verb]);
-      expect(it.textContent?.match(/(\d+),?$/)?.[1], v).toBe(String(m.querySelectorAll(`button[data-verb="${v}"]`).length));
+      const n = m.querySelectorAll(`button[data-verb="${v}"]`).length;
+      if (v === 'not_assessed') {
+        expect(sw.style.background).toContain('repeating-linear-gradient');
+        expect(it.textContent).toBe(`Not assessed · ${steps(n)} · no fence — ${NOT_ASSESSED_DEFINITION}`);
+      } else {
+        expect(cssHex(sw.style.background), v).toBe(VERB_COLOR[v as Verb]);
+        expect(it.textContent, v).toBe(`${VERB_LABEL[v as Verb]} · ${steps(n)}${v === 'accelerate' ? ' · Deployment & Use only' : ''} — ${MAP_CHOICE_DEFINITION[v as Verb]}`);
+      }
     }
-    // the legend leads: above the map, inside the card
+    expect(NOT_ASSESSED_DEFINITION).toBe('The available data are not strong enough to make a strategic call.');
+    expect(entries[0].textContent).toBe('Secure · 3 steps — Protect what cannot be allowed to fail.');
+    expect(entries[5].textContent).toBe(
+      'Watch · 3 steps — Keep open: buy competitively, do not force localization. At Deployment & Use, deployment need is below the bar for acceleration.',
+    );
+    // the legend leads on wide screens (above the map, inside the card); on a phone it follows the map, so the map stays near the top
     expect(legend.compareDocumentPosition(m) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(legend.className).toMatch(/\border-last\b.*\bsm:order-none\b/);
+    // three columns only from the lg breakpoint: one column (no sideways scroll) on a phone
+    expect(legend.className).toMatch(/\bgrid\b/);
+    expect(legend.className).toMatch(/\blg:grid-cols-/);
+    expect(legend.className).not.toMatch(/(^|\s)grid-cols-/);
     expect(screen.queryByTestId('strategy-counts')).toBeNull();
     expect(screen.getByTestId('trade-freshness').textContent).toBe('Structural trade benchmark: 2022–24 · Current signal through: Aug 2026');
     noAcronyms();
   });
 
-  it('the page can carry the sentence and drop the counts: the legend keeps its colours and fences without numbers', async () => {
+  it('the page can carry the sentence: the sub then says how to read the map; without counts the legend keeps every definition', async () => {
     at('/', <CountryPostureCard iso3="AAA" name="Aland" showSentence={false} showCounts={false} />);
     await screen.findByTestId('posture-matrix');
     expect(screen.queryByTestId('posture-takeaway')).toBeNull();
+    // how to read the map, under the title: rows, the six step columns with Deployment & Use set apart, color, the split, the hatch, the evidence
+    const intro = screen.getByTestId('strategy-map-intro');
+    expect(intro.textContent).toBe(COUNTRY_STRATEGY_MAP_INTRO);
+    expect(intro.closest('p')?.previousElementSibling?.textContent).toBe(COUNTRY_STRATEGY_MAP_TITLE);
+    for (const bit of [
+      'Each row is a technology',
+      'the six columns are the steps of its supply chain, from Extraction to Recovery & Recycling',
+      'Deployment & Use set apart as the energy-system column',
+      "A cell's color is the country's choice for that step",
+      'groups the colors by fence',
+      'A cell split on the diagonal has parts behind different fences: hover over it, or tap it, to see which.',
+      'Hatched cells are not assessed.',
+      'Select a cell for the evidence behind its choice.',
+    ]) {
+      expect(intro.textContent).toContain(bit);
+    }
+    expect(intro.textContent).not.toMatch(/\bnodes?\b|optimi[sz]e|leverage|unlock/i);
     const legend = screen.getByTestId('posture-legend');
-    expect(legend.textContent).toBe('High fence:SecureMedium fence:Preserve,Catch Up,Partner,AccelerateLow fence:WatchNot assessed');
+    expect(legend.textContent).not.toMatch(/\d/);
+    expect([...legend.querySelectorAll('li[data-verb]')].map((e) => e.textContent)).toEqual([
+      ...(['secure', 'preserve', 'catch_up', 'partner'] as const).map((v) => `${VERB_LABEL[v]} — ${MAP_CHOICE_DEFINITION[v]}`),
+      `Accelerate · Deployment & Use only — ${MAP_CHOICE_DEFINITION.accelerate}`,
+      `Watch — ${MAP_CHOICE_DEFINITION.watch}`,
+      `Not assessed · no fence — ${NOT_ASSESSED_DEFINITION}`,
+    ]);
   });
 
   it('opens the drawer with exactly five questions, in order', async () => {
@@ -458,7 +508,7 @@ describe('the Country Strategy Map', () => {
   it('keeps an h2 when standing alone', async () => {
     at('/', <CountryPostureCard iso3="AAA" name="Aland" headingLevel={2} />);
     expect((await screen.findByRole('heading', { level: 2 })).textContent).toBe(COUNTRY_STRATEGY_MAP_TITLE);
-    expect(screen.getByTestId('posture-legend').textContent).toContain('Secure 3');
+    expect(screen.getByTestId('posture-legend').textContent).toContain('Secure · 3 steps');
   });
 });
 
@@ -645,7 +695,7 @@ describe('the AIB division card (schema 2)', () => {
     const lines = await downloadCsv(card);
     expect(lines).toHaveLength(6);
     expect(lines[0].split(',').slice(0, 3)).toEqual(['technology', 'stage', 'primary_holder']);
-    expect(lines[1].endsWith('"Opportunity Security Indices, strategic position framework (allied division of labour)",2026-10-29,abc1234')).toBe(true);
+    expect(lines[1].endsWith('"Strategic position framework, computed by the Explorer\'s authors (allied division of labour)",2026-10-29,abc1234')).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Table' }));
     const table = screen.getByRole('table', { name: 'Allied holders and gaps by technology and stage' });
     const rows = within(table).getAllByRole('row').slice(1) as HTMLTableRowElement[];
@@ -682,8 +732,9 @@ describe('the AIB division card (schema 2)', () => {
 describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', () => {
   beforeEach(() => setPostureStore(fixtureStore({ yards: true })));
 
-  it("a mixed step is colour alone, split on the diagonal; the legend says what it means, the tooltip and the name say which yards", async () => {
-    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+  it("a mixed step is colour alone, split on the diagonal; the legend says what it means; until the detail is in, the tooltip and the name say which yards", async () => {
+    // the page's detail document not in yet (null): the roll-up words
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" detail={null} />);
     const m = await screen.findByTestId('posture-matrix');
     const asm = within(m).getByRole('button', { name: /^Batteries Final Assembly & Equipment/ });
     const sol = within(m).getByRole('button', { name: /^Solar Final Assembly & Equipment/ });
@@ -698,18 +749,131 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     const ref = within(m).getByRole('button', { name: /^Batteries Refining & Processing/ });
     expect([ref.getAttribute('data-mixed'), ref.getAttribute('data-yards'), cssHex(ref.style.background)]).toEqual([null, 'small', VERB_COLOR.secure]);
     expect(asm.getAttribute('aria-label')).toContain('Preserve · Medium fence; mixed yards: this step in the Medium yard, its layers also in the Small and Large yards;');
-    // the legend: one entry for the mixed steps, with its count and a split swatch
+    // the legend: one entry for the mixed steps, defined, with its count and a split swatch
     const mixed = within(screen.getByTestId('posture-legend')).getByTestId('legend-mixed');
-    expect(mixed.textContent).toBe("Mixed: this step's layers sit in different yards 2");
+    expect(mixed.textContent).toBe(`Mixed · 2 steps — ${MIXED_DEFINITION}`);
+    expect(MIXED_DEFINITION).toBe('A cell split on the diagonal: parts of the step sit behind different fences. Hover over it, or tap it, to see which.');
     expect(mixed.querySelector('[data-swatch="mixed"]')).toBeTruthy();
-    expect(screen.getByTestId('strategy-map-mixed-note').textContent).toMatch(/A cell split on the diagonal is a mixed step: its capability layers sit in different\s*yards/);
-    // the tooltip names the yards
+    expect(screen.getByTestId('strategy-map-mixed-note').textContent).toMatch(/A cell split on the diagonal is a mixed step: its capability layers .* sit in different\s*yards\s*, behind different fences/);
+    expect(screen.getByTestId('strategy-map-mixed-note').textContent).toContain('(orange the High fence, blue the Medium fence, gray the Low fence)');
+    // the tooltip names the yards, leading (right after the choice), and no parts list yet
     fireEvent.mouseEnter(asm);
-    expect(within(screen.getByRole('tooltip')).getByTestId('strategy-map-tip-yards').textContent).toBe('Mixed: this step in the Medium yard, its layers also in the Small and Large yards');
+    const tip = screen.getByRole('tooltip');
+    expect(within(tip).getByTestId('strategy-map-tip-yards').textContent).toBe('Mixed: this step in the Medium yard, its layers also in the Small and Large yards');
+    expect(within(tip).getByTestId('strategy-map-tip-yards').previousElementSibling).toBe(within(tip).getByTestId('strategy-map-tip-choice'));
+    expect(within(tip).queryByTestId('strategy-map-tip-parts')).toBeNull();
     fireEvent.mouseLeave(asm);
     fireEvent.focus(ref);
     expect(within(screen.getByRole('tooltip')).queryByTestId('strategy-map-tip-yards')).toBeNull();
     noAcronyms();
+  });
+
+  it("once the economy's detail is in, a layered step's tooltip lists its parts (the rest of the step and each layer, its choice and fence), a mixed step leading with them; the name names the parts' fences", async () => {
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+    const m = await screen.findByTestId('posture-matrix');
+    const asm = within(m).getByRole('button', { name: /^Batteries Final Assembly & Equipment/ });
+    // the accessible name: the parts' fences, briefly, in place of the roll-up words
+    await waitFor(() => expect(asm.getAttribute('aria-label')).toContain('parts behind different fences'));
+    expect(asm.getAttribute('aria-label')).toBe(
+      'Batteries Final Assembly & Equipment: Preserve · Medium fence; parts behind different fences: High fence: Battery-management firmware, energy-management software and remote updates; Medium fence: the rest of the step, Battery cells (LFP and NMC); Low fence: Enclosures, racking, thermal management and balance of system; supply-chain vulnerability 40; prize 90; position 95; policy broadly aligned; evidence weak; borderline',
+    );
+    expect(asm.getAttribute('aria-label')).not.toContain('mixed yards:');
+    expect(within(m).getByRole('button', { name: /^Solar Final Assembly & Equipment/ }).getAttribute('aria-label')).toContain(
+      'Preserve · Medium fence; parts behind different fences: Medium fence: the rest of the step; Low fence: Passive racking and mounting;',
+    );
+    // a step without layers keeps its name as it was
+    expect(within(m).getByRole('button', { name: /^Batteries Refining & Processing/ }).getAttribute('aria-label')).not.toMatch(/parts|mixed/);
+    // hover: the mixed step leads with its parts, right after its choice; one swatch per part in its choice colour
+    fireEvent.mouseEnter(asm);
+    const tip = screen.getByRole('tooltip');
+    expect(asm.getAttribute('aria-describedby')).toBe(tip.id);
+    const parts = within(tip).getByTestId('strategy-map-tip-parts');
+    expect(parts.previousElementSibling).toBe(within(tip).getByTestId('strategy-map-tip-choice'));
+    expect(parts.getAttribute('data-mixed')).toBe('true');
+    expect(within(tip).queryByTestId('strategy-map-tip-yards')).toBeNull();
+    // the rest of the step, then the layers behind another fence (High to Low), then those behind the step's own fence
+    const lines = [...parts.querySelectorAll('li')] as HTMLElement[];
+    expect(lines.map((l) => [l.getAttribute('data-part'), l.getAttribute('data-verb'), l.getAttribute('data-fence'), l.textContent])).toEqual([
+      ['step', 'preserve', 'medium', 'Rest of the step: Preserve · Medium fence'],
+      ['bess-control', 'secure', 'high', 'Battery-management firmware, energy-management software and remote updates: Secure · High fence'],
+      ['bess-enclosure', 'watch', 'low', 'Enclosures, racking, thermal management and balance of system: Watch · Low fence'],
+      ['bess-cells', 'preserve', 'medium', 'Battery cells (LFP and NMC): Preserve · Medium fence'],
+    ]);
+    for (const l of lines) expect(cssHex((l.querySelector('[data-swatch]') as HTMLElement).style.background)).toBe(VERB_COLOR[l.getAttribute('data-verb') as Verb]);
+    expect(parts.querySelector('p')?.textContent).toBe('Mixed: parts of this step sit behind different fences');
+    expect(within(tip).queryByTestId('strategy-map-tip-more')).toBeNull();
+    // the tooltip is fixed to the viewport (never cut off by the map's scroller) and at most the screen less its margins
+    expect(tip.className).toMatch(/\bfixed\b/);
+    expect(tip.className).toContain('max-w-[calc(100vw-16px)]');
+    fireEvent.mouseLeave(asm);
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    expect(asm.getAttribute('aria-describedby')).toBeNull();
+    noAcronyms();
+  });
+
+  it('the tooltip caps its parts (then "+N more: open the step"), puts the parts of a step that is not mixed after its numbers, and stays inside a 375 px screen', async () => {
+    const store = fixtureStore({ yards: true });
+    const core = await store.core();
+    const detail = await store.detail('AAA');
+    const cells = countryCells(core, 'AAA');
+    // seven layers on Batteries Final Assembly, and one Secure layer on Batteries Refining (all High fence: not mixed)
+    const asm = detail.cells.find((c) => c.key === 'Batteries|Assembly')!;
+    asm.yardChildren = [
+      ...asm.yardChildren,
+      ...['a', 'b', 'c', 'd'].map((x) => ({ layerId: `extra-${x}`, yard: 'medium' as const, choice: 'catch_up' as const, variant: 'compete_catch_up' })),
+    ];
+    detail.cells.find((c) => c.key === 'Batteries|Refining')!.yardChildren = [{ layerId: 'refining-control', yard: 'small', choice: 'secure', variant: 'secure_control' }];
+    const rect = (left: number, top: number) => ({ left, top, right: left + 20, bottom: top + 36, width: 20, height: 36, x: left, y: top, toJSON: () => ({}) }) as DOMRect;
+    const ow = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+    const oh = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+    const iw = window.innerWidth;
+    const ih = window.innerHeight;
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => 288 });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get: () => 150 });
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 812 });
+    try {
+      at('/', <PostureMatrix core={core} cells={cells} selected={null} onSelect={() => undefined} detail={detail} />);
+      const m = await screen.findByTestId('posture-matrix');
+      const big = within(m).getByRole('button', { name: /^Batteries Final Assembly & Equipment/ });
+      // the name caps its names too, never at the cost of a part behind another fence
+      expect(big.getAttribute('aria-label')).toContain(
+        'parts behind different fences: High fence: Battery-management firmware, energy-management software and remote updates; Medium fence: the rest of the step, Battery cells (LFP and NMC), extra a, extra b, 2 more; Low fence: Enclosures, racking, thermal management and balance of system;',
+      );
+      // at the right edge of a phone: clamped inside the screen, under the cell
+      big.getBoundingClientRect = () => rect(340, 100);
+      fireEvent.mouseEnter(big);
+      let tip = screen.getByRole('tooltip');
+      const lines = [...within(tip).getByTestId('strategy-map-tip-parts').querySelectorAll('li')];
+      expect(lines).toHaveLength(MAX_TIP_PARTS - 1);
+      // the parts behind another fence than the step's own are never the ones cut
+      expect(lines.map((l) => l.getAttribute('data-part'))).toEqual(['step', 'bess-control', 'bess-enclosure', 'bess-cells', 'extra-a']);
+      expect(within(tip).getByTestId('strategy-map-tip-more').textContent).toBe('+3 more: open the step');
+      expect([tip.style.left, tip.style.top, tip.style.visibility]).toEqual([`${375 - 288 - 8}px`, '140px', '']);
+      fireEvent.mouseLeave(big);
+      // at the left edge, low on the screen: clamped to the 8 px margin and flipped above the cell
+      const ext = within(m).getByRole('button', { name: /^Batteries Extraction/ });
+      ext.getBoundingClientRect = () => rect(0, 770);
+      fireEvent.mouseEnter(ext);
+      tip = screen.getByRole('tooltip');
+      expect([tip.style.left, tip.style.top]).toEqual(['8px', `${770 - 150 - 4}px`]);
+      fireEvent.mouseLeave(ext);
+      // a layered step that is not mixed: its parts follow its numbers, under a plain heading
+      const ref = within(m).getByRole('button', { name: /^Batteries Refining & Processing/ });
+      expect(ref.getAttribute('aria-label')).toContain('Secure · High fence; Chokepoint risk; both parts behind the High fence;');
+      fireEvent.mouseEnter(ref);
+      tip = screen.getByRole('tooltip');
+      const parts = within(tip).getByTestId('strategy-map-tip-parts');
+      expect(parts.getAttribute('data-mixed')).toBeNull();
+      expect(parts.querySelector('p')?.textContent).toBe('Parts of this step');
+      expect(parts.nextElementSibling).toBeNull();
+      expect(tip.textContent).toMatch(/Supply-chain vulnerability 95.*Parts of this stepRest of the step: Secure · High fencerefining control: Secure · High fence$/);
+    } finally {
+      if (ow) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', ow);
+      if (oh) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', oh);
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: iw });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: ih });
+    }
   });
 
   it('without mixed steps the legend has no Mixed entry', async () => {
@@ -720,7 +884,7 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     expect(screen.queryByTestId('strategy-map-mixed-note')).toBeNull();
   });
 
-  it("the drawer's Prize is the Strategic Industrial Value with its three families; its Choice has the Yards part: own yard, roll-up, each layer, the fence scope, the large-yard case", async () => {
+  it("the drawer's Prize is the Strategic Industrial Value with its three families; its Choice has the Yards part: own yard, roll-up, the fence scope, the large-yard case (the layers are listed once, at the top)", async () => {
     at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
     const m = await screen.findByTestId('posture-matrix');
     fireEvent.click(within(m).getByRole('button', { name: /^Batteries Final Assembly & Equipment/ }));
@@ -750,14 +914,10 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     expect(within(y).getByTestId('drawer-own-yard').textContent).toBe('Medium yard · Medium fence');
     const roll = within(y).getByTestId('drawer-yard-rollup');
     expect([roll.getAttribute('data-yards'), roll.textContent]).toEqual(['mixed_high_medium_low', 'Mixed: this step in the Medium yard, its layers also in the Small and Large yards']);
-    const layers = within(y).getAllByTestId('drawer-layer');
-    expect(layers.map((l) => [l.getAttribute('data-layer'), l.querySelector('[data-yard]')?.getAttribute('data-yard'), l.querySelector('[data-verb]')?.getAttribute('data-verb')])).toEqual([
-      ['bess-cells', 'medium', 'preserve'], ['bess-control', 'small', 'secure'], ['bess-enclosure', 'large', 'watch'],
-    ]);
-    expect(layers[1].textContent).toBe(
-      'Small yardSecureBattery-management firmware, energy-management software and remote updatesControl built partly into the hardware: the high fence extends to the hardware.',
-    );
-    expect(within(layers[2]).getByTestId('drawer-layer-reason').textContent).toMatch(/^Large-yard case: mature, passive, .*; kept with a capability floor\.$/);
+    // the layers are not listed twice: the Yards part points to the parts block at the top
+    expect(within(y).queryAllByTestId('drawer-layer')).toHaveLength(0);
+    expect(within(y).getByTestId('drawer-yards-parts').textContent).toBe('Each layer of this step has its own choice and fence: see Parts of this step, at the top.');
+    expect(d.querySelectorAll('[data-testid="drawer-layer"]')).toHaveLength(3);
     expect(within(y).getByTestId('drawer-fence-scope').textContent).toBe('The high fence of a Secure layer here extends to the hardware it is built into, not the layer alone.');
     expect(within(y).getByTestId('drawer-large-yard').textContent).toBe(
       'Large-yard case for the step: Does not hold: 2 commodity signals hold (5 needed).Required signals (mature, passive) that hold: passive.Commodity signals that hold: substitutable, quick to qualify.',
@@ -765,6 +925,83 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     // no market-only cap on this node
     expect(within(y).queryByTestId('drawer-yard-cap')).toBeNull();
     noAcronyms();
+  });
+
+  it('the drawer lists the parts of a step with layers right under its header, before the five questions: swatch, name, choice, fence and reason; a layer row marks that layer', async () => {
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+    const m = await screen.findByTestId('posture-matrix');
+    fireEvent.click(within(m).getByRole('button', { name: /^Batteries Final Assembly & Equipment/ }));
+    const d = await screen.findByTestId('cell-drawer');
+    const block = await within(d).findByTestId('drawer-parts');
+    await waitFor(() => expect(within(block).getAllByTestId('drawer-layer')).toHaveLength(3));
+    // placed under the header (the title, the choice chip), before the first question
+    const qs = within(d).getAllByTestId('drawer-question');
+    expect(block.compareDocumentPosition(qs[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(d).getByRole('heading', { level: 3 }).compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(qs.some((q) => q.contains(block))).toBe(false);
+    expect(within(block).getByRole('heading', { level: 4 }).textContent).toBe('Parts of this step');
+    expect([block.getAttribute('data-mixed'), within(block).getByTestId('drawer-parts-lead').textContent]).toEqual([
+      'true',
+      "Parts of this step sit behind different fences: High fence, Medium fence, Low fence. The rest of the step takes the step's own choice; each layer takes its own. A control layer is in the Small yard only where the data show coercive foreign control for this country.",
+    ]);
+    // the same parts as the map's tooltip, each with its swatch, choice, fence and one-line reason
+    const rows = [...within(block).getByRole('list').children] as HTMLElement[];
+    expect(rows.map((r) => [r.getAttribute('data-part'), r.getAttribute('data-verb'), r.getAttribute('data-fence')])).toEqual([
+      ['step', 'preserve', 'medium'], ['bess-control', 'secure', 'high'], ['bess-enclosure', 'watch', 'low'], ['bess-cells', 'preserve', 'medium'],
+    ]);
+    for (const r of rows) expect(cssHex((r.querySelector('[data-swatch]') as HTMLElement).style.background)).toBe(VERB_COLOR[r.getAttribute('data-verb') as Verb]);
+    expect(rows[0].textContent).toBe('Rest of the step · Preserve · Medium fenceA strong position worth keeping.');
+    expect(rows[1].textContent).toBe(
+      'Battery-management firmware, energy-management software and remote updates · Secure · High fenceControl built partly into the hardware: the high fence extends to the hardware.',
+    );
+    expect(within(rows[2]).getByTestId('drawer-layer-reason').textContent).toMatch(/^Large-yard case: mature, passive, .*; kept with a capability floor\.$/);
+    expect(within(rows[3]).getByTestId('drawer-layer-reason').textContent).toBe('A strong position worth keeping: industrial commons 100, future option 50.');
+    expect(rows[0].querySelector('button')).toBeNull();
+    // a layer row is a button: it marks that layer (pressed, ringed, focused) and names it at the top of the block; again, it clears
+    const ctl = within(rows[1]).getByRole('button');
+    expect(ctl.getAttribute('aria-pressed')).toBe('false');
+    expect(within(block).queryByTestId('drawer-layer-note')).toBeNull();
+    fireEvent.click(ctl);
+    await waitFor(() => expect(rows[1].getAttribute('data-focused')).toBe('true'));
+    expect(ctl.getAttribute('aria-pressed')).toBe('true');
+    expect(document.activeElement).toBe(rows[1]);
+    expect(within(block).getByTestId('drawer-layer-note').textContent).toContain('Showing the layer Battery-management firmware, energy-management software and remote updates (Secure · Small yard · High fence)');
+    fireEvent.click(within(rows[3]).getByRole('button'));
+    await waitFor(() => expect(rows[3].getAttribute('data-focused')).toBe('true'));
+    expect([rows[1].getAttribute('data-focused'), d.querySelectorAll('[data-focused="true"]').length]).toEqual([null, 1]);
+    fireEvent.click(within(rows[3]).getByRole('button'));
+    await waitFor(() => expect(d.querySelectorAll('[data-focused="true"]')).toHaveLength(0));
+    expect(within(block).queryByTestId('drawer-layer-note')).toBeNull();
+    // a step without layers has no parts block
+    fireEvent.click(within(m).getByRole('button', { name: /^Batteries Component Manufacturing/ }));
+    await waitFor(() => expect(within(screen.getByTestId('cell-drawer')).getByRole('heading', { level: 3 }).textContent).toBe('Batteries · Component Manufacturing'));
+    expect(screen.queryByTestId('drawer-parts')).toBeNull();
+    noAcronyms();
+  });
+
+  it('before the detail is in, the parts block of a mixed step says which yards it spans; a step whose URL holds the selection writes the marked layer to ?layer=', async () => {
+    // the drawer with the detail still loading: the roll-up words
+    let release: () => void = () => undefined;
+    const store = fixtureStore({ yards: true });
+    const detail = store.detail.bind(store);
+    store.detail = (iso3: string) => new Promise<PostureDetail>((res) => (release = () => res(detail(iso3))));
+    setPostureStore(store);
+    at('/', <PostureNodeDrawer iso3="AAA" selected="Batteries|Assembly" onClose={() => undefined} />);
+    const d = await screen.findByTestId('cell-drawer');
+    const block = within(d).getByTestId('drawer-parts');
+    expect(within(block).getByTestId('drawer-parts-rollup').textContent).toBe('Mixed: this step in the Medium yard, its layers also in the Small and Large yards');
+    expect(block.textContent).toContain('Loading the details');
+    release();
+    await waitFor(() => expect(within(screen.getByTestId('drawer-parts')).getAllByTestId('drawer-layer')).toHaveLength(3));
+    cleanup();
+    // on a page whose URL holds the selection (?node=), a layer row writes ?layer= beside it
+    setPostureStore(fixtureStore({ yards: true }));
+    const r = at('/?node=Batteries%7CAssembly', <PostureNodeDrawer iso3="AAA" selected="Batteries|Assembly" onClose={() => undefined} />);
+    const d2 = await screen.findByTestId('cell-drawer');
+    const enc = await within(d2).findByText('Enclosures, racking, thermal management and balance of system');
+    fireEvent.click(enc.closest('button') as HTMLElement);
+    await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('layer')).toBe('bess-enclosure'));
+    expect(new URLSearchParams(r.state.location.search).get('node')).toBe('Batteries|Assembly');
   });
 
   it("the drawer of a Watch step: the economy's own large-yard case, the signals and the market-only cap; Deployment & Use has no large-yard case", async () => {
@@ -791,17 +1028,20 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
   it('a layer link opens its step focused on the layer: the row is marked, scrolled to and focused', async () => {
     at('/', <PostureNodeDrawer iso3="AAA" selected="Batteries|Assembly" layer="bess-control" onClose={() => undefined} />);
     const d = await screen.findByTestId('cell-drawer');
-    // the layer's name is its row in Yards (and the note's button at the top)
+    // the layer's name is its row in the parts block (and the note's button at the top of the block)
     const named = await within(d).findAllByText('Battery-management firmware, energy-management software and remote updates');
     const li = named.map((x) => x.closest('li')).find(Boolean) as HTMLElement;
     await waitFor(() => expect(document.activeElement).toBe(li));
     expect([li.getAttribute('data-layer'), li.getAttribute('data-focused')]).toEqual(['bess-control', 'true']);
+    expect(within(li).getByRole('button').getAttribute('aria-pressed')).toBe('true');
+    expect(within(d).getByTestId('drawer-parts').contains(li)).toBe(true);
     expect(d.querySelectorAll('[data-focused="true"]')).toHaveLength(1);
-    // the top of the drawer says the heading is the step's and names the layer's own choice, with a way back to it
+    // the top of the block says the heading is the step's and names the layer's own choice, with a way back to it
     const note = within(d).getByTestId('drawer-layer-note');
     expect(note.textContent).toBe(
-      "Opened from the layer Battery-management firmware, energy-management software and remote updates (Secure · Small yard · High fence). The choice above and the five questions are for the whole step; the layer's own yard and choice are under Yards.",
+      'Showing the layer Battery-management firmware, energy-management software and remote updates (Secure · Small yard · High fence). The choice at the top and the five questions are for the whole step.',
     );
+    expect(note.compareDocumentPosition(li) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     li.blur();
     fireEvent.click(within(note).getByRole('button'));
     expect(document.activeElement).toBe(li);

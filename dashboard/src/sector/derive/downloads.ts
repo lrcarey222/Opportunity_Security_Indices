@@ -71,7 +71,7 @@ export function coverageRows(model: SectorModel): Record<string, unknown>[] {
 export function readmeText(model: SectorModel, manifest: SectorManifest | null, url: string, extraLines: readonly string[] = []): string {
   const cites = [...model.sources.values()].map((s) => `  - ${s.short}${s.edition ? ` (${s.edition})` : ''}: ${s.citation}${s.licence === 'attribution' && s.attribution ? ` Attribution: ${s.attribution}` : ''}`);
   return [
-    'Allied Industrial Base Explorer: Sector Insights, all sector data',
+    'Allied Industrial Base Explorer: Sectors, all sector data',
     `From: ${url}`,
     `Sector data bundle: ${manifest?.bundle_id ?? 'unknown'} (export ${manifest?.created ?? 'unknown'}${manifest?.git_commit ? `, git ${manifest.git_commit.slice(0, 10)}` : ''})`,
     '',
@@ -118,7 +118,7 @@ export function familyCsvs(model: SectorModel, facts: FactsIndex, series: FactsI
 }
 
 /** The README line of the CM-FDI projects file in the ZIP (C5.8: CC BY, changes indicated). */
-export const CMFDI_ZIP_LINE = 'cm-fdi-projects.csv: every cross-border clean-tech manufacturing project of the Cleantech Manufacturing FDI dataset (CM-FDI) as published, one row per project (CC BY 4.0; changes: project counts and sums of disclosed capital elsewhere in this explorer were computed by the OSI authors; no record altered).';
+export const CMFDI_ZIP_LINE = 'cm-fdi-projects.csv: every cross-border clean-tech manufacturing project of the Cleantech Manufacturing FDI dataset (CM-FDI) as published, one row per project (CC BY 4.0; changes: project counts and sums of disclosed capital elsewhere in this explorer were computed by the Explorer\'s authors; no record altered).';
 
 /**
  * The files of "All sector data (.zip)". `extra` adds files built from other chunks (the CM-FDI

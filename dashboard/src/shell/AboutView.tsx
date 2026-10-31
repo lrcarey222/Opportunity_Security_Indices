@@ -38,7 +38,7 @@ export const ABOUT_MAIN: readonly AboutLink[] = [
   {
     to: '/methods',
     title: 'Methods',
-    body: 'How the Explorer moves from evidence to a strategic choice: what the country needs, how valuable the capability is, how strong its current position is, what action follows, and whether policy matches. Legacy OSI methods are kept separately for comparison.',
+    body: 'How the Explorer moves from evidence to a strategic choice: what the country needs, how valuable the capability is, how strong its current position is, what action follows, and whether policy matches. The security and opportunity scores, a descriptive view beside the choices, are set out after it.',
   },
   {
     to: '/data',
@@ -169,8 +169,8 @@ export default function AboutView() {
           pages (Secure, Preserve, Catch Up, Partner, Accelerate or Watch) are set at fixed thresholds and do not move with any reader&rsquo;s preferences.
         </p>
         <p className="mt-2 text-sm leading-relaxed text-paper-mute">
-          Only the Legacy OSI framework (the paper baseline&rsquo;s indices, kept for comparison) has perspective dials: how much weight to give security,
-          opportunity, home production and climate. They re-rank its priorities and partner scores, starting from the NEIS baseline.
+          Only the security and opportunity scores (the Strategic Index and the partner scores) have perspective dials: how much weight to give security,
+          opportunity, home production and climate. They re-rank the priorities and partner scores, starting from the baseline.
         </p>
       </section>
     </div>

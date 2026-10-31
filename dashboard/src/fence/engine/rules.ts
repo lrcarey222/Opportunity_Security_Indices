@@ -44,7 +44,7 @@ export const RULES = {
   },
   timingMarginalMonths: 6,
   timingReason:
-    'Restore time is compared with the time until a cutoff becomes intolerable plus the stockpile bridge (the paper: "acute harm that markets cannot remedy in time"). Matisek (2026) suggests more than roughly six to twelve months to reconstitute, and roughly a year of assured stocks, as screening reference points.',
+    'Restore time is compared with the time until a cutoff becomes intolerable plus the stockpile bridge (the Yards & Fences framework: "acute harm that markets cannot remedy in time"). Matisek (2026) suggests more than roughly six to twelve months to reconstitute, and roughly a year of assured stocks, as screening reference points.',
 
   /** Medium yard, present position: the assessed country's share of world supply on the component's
    *  primary measure. Relative standing is the point of a competitiveness test, so a share is used;

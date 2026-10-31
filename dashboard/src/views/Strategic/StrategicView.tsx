@@ -1,5 +1,5 @@
 // View 4: Strategic Index (spec_react.md 8.6; paper section 8). A bar-table of the economy's top ten
-// in-sample sectors with the five weighted terms on one shared scale and the NEIS baseline values as
+// in-sample sectors with the five weighted terms on one shared scale and the baseline values as
 // ticks; the weights in use; the allied strategic selection; the excluded sectors. The economy's
 // policy basis (IEA PAMS + CAT, or IEA PAMS only) and the endowment screen of the allied picks
 // (Extraction sectors without recorded reserves or production are flagged and never picked while the
@@ -169,13 +169,13 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
     <div>
       {!embedded && (<>
       <PageHead
-        eyebrow="Legacy OSI framework · Where to focus"
+        eyebrow="Security and opportunity scores · Where to focus"
         title="Strategic Index"
         lede={
           <>
             The <Term id="si" /> ranks one economy&rsquo;s own sectors by how strongly the data point to prioritizing them. It adds five things: economic
             opportunity (30%), <Term id="need">security need</Term>, meaning how exposed the economy is (30%), how active its policy already is (20%), the
-            supply-chain stage (10%) and the technology&rsquo;s low-emission value (10%). Those are the NEIS baseline weights; the dials move them. Ranks compare
+            supply-chain stage (10%) and the technology&rsquo;s low-emission value (10%). Those are the baseline weights; the dials move them. Ranks compare
             sectors within an economy, not economies with each other. Because exposure counts in a sector&rsquo;s favour, an extraction sector where the economy has no
             recorded reserves or production can rank high; it is flagged and is never the economy&rsquo;s <Term id="allied_pick">allied pick</Term>.
           </>
@@ -202,14 +202,14 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
           {core.data.notes.length > 0 && <Notice kind="info">{core.data.notes.map(noteText).join(' ')}</Notice>}
           <ChartCard
             title={`${c.country}: top ten sectors`}
-            sub={`${show === 'baseline' ? 'NEIS baseline.' : 'Scenario.'} Each row is one of the economy's ten highest-ranked sectors, its supply-chain stage named after the technology. The five bars show how much each part adds to the sector's Strategic Index, all on one scale: a longer bar adds more${isBaseline ? '' : ' (gray tick = the NEIS baseline value)'}. The Strategic Index column is their total; the rank chip compares the sector's rank with its rank at the NEIS baseline. Hover a column name for what it measures.${nScreenedOut ? ` "No resource base" marks an extraction sector without recorded reserves or production: it ranks here, but the endowment screen keeps it out of the allied selection${screenOn ? '' : ' (screen off in this scenario)'}.` : ''}`}
+            sub={`${show === 'baseline' ? 'Baseline.' : 'Scenario.'} Each row is one of the economy's ten highest-ranked sectors, its supply-chain stage named after the technology. The five bars show how much each part adds to the sector's Strategic Index, all on one scale: a longer bar adds more${isBaseline ? '' : ' (gray tick = the baseline value)'}. The Strategic Index column is their total; the rank chip compares the sector's rank with its rank at the baseline. Hover a column name for what it measures.${nScreenedOut ? ` "No resource base" marks an extraction sector without recorded reserves or production: it ranks here, but the endowment screen keeps it out of the allied selection${screenOn ? '' : ' (screen off in this scenario)'}.` : ''}`}
             updating={updating}
             summary={`Bar-table of ${rows.length} sectors with the five parts of the Strategic Index each${nScreenedOut ? `; ${nScreenedOut} without a recorded resource base` : ''}.`}
             legend={
               <Legend
                 items={[
                   { label: 'Scenario term', color: COMPARE_COLOR.scenario },
-                  { label: 'NEIS baseline (tick)', kind: 'tick', color: COMPARE_COLOR.baseline },
+                  { label: 'Baseline (tick)', kind: 'tick', color: COMPARE_COLOR.baseline },
                 ]}
               />
             }
@@ -291,7 +291,7 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
             )}
           </ChartCard>
           <div className="grid gap-6 2xl:grid-cols-2">
-            <ChartCard title="Weights in use" sub="The weights of the Strategic Index's five parts, the weights of the supply-chain stages and the weights inside Policy activity, in the scenario against the NEIS baseline. The dials move them; at 50 they are the baseline weights." updating={updating}>
+            <ChartCard title="Weights in use" sub="The weights of the Strategic Index's five parts, the weights of the supply-chain stages and the weights inside Policy activity, in the scenario against the baseline. The dials move them; at 50 they are the baseline weights." updating={updating}>
               <div className="space-y-4">
                 <TableView rows={weights.si} cols={weightCols} caption="Strategic Index weights" />
                 <TableView rows={weights.stage} cols={weightCols.map((c0) => (c0.id === 'name' ? { ...c0, header: 'Stage weight' } : c0))} caption="Stage weights" />
@@ -300,7 +300,7 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
             </ChartCard>
             <ChartCard
               title="Allied strategic selection"
-              sub={`Each coalition member's top sector on the Strategic Index at ${pickWhere} (its allied pick), in the scenario against the NEIS baseline; changed rows are marked. Endowment screen ${screenOn ? 'on' : 'off'}${screenOn === screenBase ? ' (as at the NEIS baseline)' : ' (the NEIS baseline has it ' + (screenBase ? 'on' : 'off') + ')'}: ${screenOn ? 'an extraction sector qualifies only where the member has recorded reserves or production of its resources (USGS, EI, Red Book).' : 'extraction sectors without a resource base can be picked; they are marked.'} Policy basis: IEA Policies and Measures records plus the Climate Action Tracker where the Tracker rates the member, else IEA records only.`}
+              sub={`Each coalition member's top sector on the Strategic Index at ${pickWhere} (its allied pick), in the scenario against the baseline; changed rows are marked. Endowment screen ${screenOn ? 'on' : 'off'}${screenOn === screenBase ? ' (as at the baseline)' : ' (the baseline has it ' + (screenBase ? 'on' : 'off') + ')'}: ${screenOn ? 'an extraction sector qualifies only where the member has recorded reserves or production of its resources (USGS, EI, Red Book).' : 'extraction sectors without a resource base can be picked; they are marked.'} Policy basis: IEA Policies and Measures records plus the Climate Action Tracker where the Tracker rates the member, else IEA records only.`}
               updating={updating}
               csv={() => ({ name: 'allied-selection', text: rowsToCsv(allied as Record<string, unknown>[]) })}
             >

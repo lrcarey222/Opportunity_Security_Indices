@@ -8,7 +8,7 @@
 //                   aid it receives and gives (OECD; the Sector bundle, loaded only on that tab).
 //                   Geopolitical: its coalition tier, UN-vote bloc and agreements, and the economies it
 //                   shares an agreement with.
-//   OSI ranking  the partner scores of the fact sheet at the NEIS baseline (Partnership Opportunity,
+//   OSI ranking  the partner scores of the fact sheet at the baseline (Partnership Opportunity,
 //                   Friendshore, Development Potential; sector by sector in disclosures), and the allied
 //                   coalition (the Country manifest's tiers) with Friendshore's alignment part.
 //   AIB model       the toggled scenario (scn: Decoupling, or Managed Interdependence from its file; the
@@ -261,8 +261,8 @@ export function PartnershipsSection({
       <div className="space-y-2" data-testid="partner-analysis-intro">
         <H className="text-base font-medium text-paper">{PARTNERSHIP.heading}</H>
         <p className="max-w-3xl text-sm leading-relaxed text-paper-dim">
-          Who {name} could trade, invest, build and align with, read three ways: the ties it has today (observed data), what the Legacy OSI partner scores suggest (the{' '}
-          <Term id="psi" />, with <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the NEIS defaults) and how the Allied Industrial Base analysis would divide
+          Who {name} could trade, invest, build and align with, read three ways: the ties it has today (observed data), what the partner scores suggest (the{' '}
+          <Term id="psi" />, with <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the default weights) and how the Allied Industrial Base analysis would divide
           the work under the chosen scenario. The summary of each kind says where the three agree and where they differ. Select a Partner step above for its best-placed partners.
           First, the strategic case for a partnership between {name} and the partner you choose.
         </p>
@@ -275,7 +275,7 @@ export function PartnershipsSection({
         {kind === 'geopolitical' && <GeopoliticalLenses onKind={onKind} />}
       </div>
       <div>
-        <Fold id="partner-table" summary={`Every partner of ${name}: priority partners beside today's partners, partner by partner (scored at the NEIS default weights)`}>
+        <Fold id="partner-table" summary={`Every partner of ${name}: priority partners beside today's partners, partner by partner (scored at the default weights)`}>
           {rows.length ? (
             <>
               <SlopeCard />
@@ -293,7 +293,7 @@ export function PartnershipsSection({
 /** The model's partner scores under the reader's Perspective (the dials; Legacy OSI since 2026-10-29). */
 export function PartnerScoresFold() {
   return (
-    <Fold id="partners-model" engine summary="Partner scores under your perspective: Partnership Strength, Friendshore, Partnership Opportunity and Development Potential (Legacy OSI)">
+    <Fold id="partners-model" engine summary="Partner scores under your perspective: Partnership Strength, Friendshore, Partnership Opportunity and Development Potential">
       <PartnersView embedded />
     </Fold>
   );
@@ -816,7 +816,7 @@ function GeopoliticalLenses({ onKind }: { onKind: (k: PartnershipKind) => void }
   const partner = coalition.filter((c) => c.tier === 'partner');
   const fsTop = topBy(sheet.partners.rows, 'fs', 8);
   const osi: LensPanelSpec = {
-    names: inside ? lensNames(coalition.map((c) => c.iso3), 200, iso) : lensNone(`${name} is outside the OSI's allied coalition`),
+    names: inside ? lensNames(coalition.map((c) => c.iso3), 200, iso) : lensNone(`${name} is outside the allied coalition the partner scores use`),
     content: (
       <div className="space-y-4">
         <Card id="geo-osi" title="The allied coalition">
@@ -988,7 +988,7 @@ function PartnerTable() {
         top3_supplier_in: r.ties.top3_import_cells.v, import_baskets: r.ties.n_import_cells.v, trade_rank: r.ties.tie_rank.v, factory_projects_in: r.ties.fdi_in.v,
         factory_projects_out: r.ties.fdi_out.v, agreements: agreementsText(sheet, r.ties.agreements), un_votes: alignmentText(r), match: r.match,
       })),
-      'Opportunity Security Indices, NEIS baseline; UN Comtrade (reconciled); CM-FDI; agreements; UN General Assembly votes',
+      "Partner scores computed by the Explorer's authors (baseline); UN Comtrade (reconciled); CM-FDI; agreements; UN General Assembly votes",
       sheet.meta.as_of,
     ),
   });
@@ -1006,8 +1006,8 @@ function PartnerTable() {
           </Link>
           <span className="text-paper-mute">
             {pc && partner
-              ? ` the selected partner's aid received and given, and its direct-investment positions, in Sector Insights (${pc.label})`
-              : ' World Bank development indicators, OECD aid flows and IMF direct-investment positions behind Development Potential, in Sector Insights'}
+              ? ` the selected partner's aid received and given, and its direct-investment positions, on the Sector pages (${pc.label})`
+              : ' World Bank development indicators, OECD aid flows and IMF direct-investment positions behind Development Potential, on the Sector pages'}
           </span>
         </span>
       }

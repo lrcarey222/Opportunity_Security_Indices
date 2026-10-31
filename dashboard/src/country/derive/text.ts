@@ -87,7 +87,7 @@ export function ledeOf(sheet: FactSheet): string {
   const upgrade = s.legacy_corners.legacy_upgrade;
   const nUp = upgrade.v ?? 0;
   const howMany = nUp === 0 ? 'none' : dOf(upgrade);
-  let mid = `On the NEIS baseline, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the ${legacyCornerWord('legacy_upgrade')} corner, split at its own median sector)`;
+  let mid = `At the baseline weights, ${howMany} of its ${dOf(s.n_placed)} placed sectors ${nUp === 0 || nUp === 1 ? 'combines' : 'combine'} high economic opportunity with low energy security for it (the ${legacyCornerWord('legacy_upgrade')} corner, split at its own median sector)`;
   if (m.has_si && s.top_si) {
     const top = cellOf(sheet, s.top_si.cell);
     const nxt = cellOf(sheet, s.top_si.next);

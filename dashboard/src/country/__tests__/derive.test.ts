@@ -80,7 +80,7 @@ describe.skipIf(!haveFixture())('derive helpers on the synthetic sheets', () => 
   it('the lede names the tier, the Upgrade count, the top Strategic Index sector and the top partner', () => {
     const l = ledeOf(usa);
     expect(l.startsWith('The United States is a core member of the allied coalition.')).toBe(true);
-    expect(l).toMatch(/On the NEIS baseline, none of its \d+ placed sectors combines high economic opportunity with low energy security/);
+    expect(l).toMatch(/At the baseline weights, none of its \d+ placed sectors combines high economic opportunity with low energy security/);
     const top = usa.cells.find((c) => c.key === usa.summary.top_si!.cell)!;
     if (usa.summary.top_si!.near_tie) expect(l).toContain('are almost tied');
     else expect(l).toContain(`its top Strategic Index sector is ${top.label_prose}.`);

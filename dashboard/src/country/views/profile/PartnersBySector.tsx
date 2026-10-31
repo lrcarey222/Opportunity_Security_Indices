@@ -1,6 +1,6 @@
 // S5 of the Country profile, partners by sector (spec_country.md A4.2 "Partners", 2026-10-15): the top
 // friendshoring opportunities (Friendshore) and export markets (Partnership Opportunity) of one sector (or all sectors)
-// at the NEIS baseline with the ties each pair has today, then the country's bilateral direct
+// at the baseline with the ties each pair has today, then the country's bilateral direct
 // investment (IMF positions; factory projects in the four CM-FDI sectors). The data come from the
 // Strategic bundle's auxiliary chunks (views/Partners/ties.ts; one pcell-<tech>-<stage> chunk per six-stage
 // sector), not the fact sheet. The factory projects sit on the stages the sheet names (meta.cmfdi_stages:
@@ -149,7 +149,7 @@ export function PartnersBySector({ part }: { part?: 'po' | 'fs' | 'investment' }
       <ChartCard
         headingLevel={3}
         title={`${cardTitle}: ${c ? c.label : 'all sectors'}`}
-        sub={`The partners the index rates highest for ${name} in ${label}, at the NEIS baseline: as friendshoring opportunities (Friendshore, 0 to 1: partners where ${poss(name)} security need meets the partner's economic opportunity, on existing trade and investment ties) and as markets for its exports (Partnership Opportunity, 0 to 1), with the ties each pair has today where they exist. Within one sector ${poss(name)} own need is the same for every partner, so the Friendshore ranking there turns on the partner's opportunity, the ties, UN-vote alignment and ownership; the import shares show who supplies it today. The sector starts on the one selected above; choose another here. Click a partner to select it.`}
+        sub={`The partners the index rates highest for ${name} in ${label}, at the baseline: as friendshoring opportunities (Friendshore, 0 to 1: partners where ${poss(name)} security need meets the partner's economic opportunity, on existing trade and investment ties) and as markets for its exports (Partnership Opportunity, 0 to 1), with the ties each pair has today where they exist. Within one sector ${poss(name)} own need is the same for every partner, so the Friendshore ranking there turns on the partner's opportunity, the ties, UN-vote alignment and ownership; the import shares show who supplies it today. The sector starts on the one selected above; choose another here. Click a partner to select it.`}
         summary={`${cap(name)}, ${label}: top ${side('fs').length} friendshoring opportunities and top ${side('po').length} export markets.`}
         tools={<Select label="Sector" value={c ? c.key : ''} options={options} onChange={(v) => setPick(v || null)} className="min-w-[14rem]" />}
         table={() => (
@@ -177,7 +177,7 @@ export function PartnersBySector({ part }: { part?: 'po' | 'fs' | 'investment' }
               sector: c ? c.label : 'all sectors (best five)', as: asWord(r), rank: r.rank ?? r.k, partner: r.name, iso3: r.partner_iso, score: r.value, partnership_strength_rank: r.psi_rank,
               import_share: r.side === 'fs' ? r.share : null, factory_projects: r.projects, shared_agreements: agreementsText(sheet, r.agreements), un_vote_alignment: r.un,
             })),
-            'Opportunity Security Indices, NEIS baseline; UN Comtrade (reconciled); CM-FDI (CC BY 4.0); agreements; UN General Assembly votes',
+            "Partner scores computed by the Explorer's authors (baseline); UN Comtrade (reconciled); CM-FDI (CC BY 4.0); agreements; UN General Assembly votes",
             sheet.meta.as_of,
           ),
         })}

@@ -31,8 +31,8 @@ export function EngineFailure({ code, message }: { code: string; message: string
   const noData = code === 'DATA_LOAD';
   return (
     <div className="mx-auto flex max-w-3xl flex-col items-start gap-3 px-4 py-16 text-sm text-paper-dim sm:px-6" role="alert">
-      <div className="eyebrow">Legacy OSI scores</div>
-      <p className="text-base text-paper">{code === 'SCHEMA' ? 'This data build needs a newer app.' : noData ? 'No data.' : 'The Legacy OSI scores could not be loaded.'}</p>
+      <div className="eyebrow">Security and opportunity scores</div>
+      <p className="text-base text-paper">{code === 'SCHEMA' ? 'This data build needs a newer app.' : noData ? 'No data.' : 'The security and opportunity scores could not be loaded.'}</p>
       <p>{message}</p>
       {noData && (
         <p className="text-paper-mute">

@@ -108,7 +108,7 @@ export function tierMeanings(o: { mid: number; top: number; reached?: boolean; a
     'critical external dependency': `Not members, but losing one pushes a node below the ${m} target with the coalition fixed (where a node is below it already, lowers its coverage by a point or more); each supplies ${shares.criticalMin ? `at least ${shares.criticalMin}` : 'at least a set minimum share'} of the demand anchors' demand there.`,
     'critical external dependency (marginal)': `The same test, but each supplies under ${shares.criticalMin ?? 'that minimum share'} of the anchors' demand there: critical only because the coalition sits near the target.`,
     'external dependency': `Other non-members that each supply ${shares.externalMin ? `at least ${shares.externalMin}` : 'a material share'} of the demand anchors' demand in a node.`,
-    'development host': `Middle-income economies with revealed capability, below scale, that lead a node's development hosts (by OSI's Development Potential Index): where development finance could build future capacity. Their capacity never counts toward the ${m} target, so they are not members for it.`,
+    'development host': `Middle-income economies with revealed capability, below scale, that lead a node's development hosts (by the Development Potential Index): where development finance could build future capacity. Their capacity never counts toward the ${m} target, so they are not members for it.`,
   };
 }
 

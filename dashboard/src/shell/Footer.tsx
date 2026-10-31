@@ -36,7 +36,7 @@ export function Footer() {
               <>
                 {' '}
                 <a className="link" href={strategic.paper.url}>
-                  Read the paper
+                  Read it online
                 </a>
               </>
             )}
@@ -46,7 +46,7 @@ export function Footer() {
               {sector && <>Sector data: export {fmtDate(sector.created)}, build {sector.bundle_id.slice(0, 8)}. </>}
               {strategic && (
                 <>
-                  Strategic data: OSI pipeline export {fmtDate(strategic.created)}, build {strategic.bundle_id.slice(0, 8)}
+                  Strategic data: export {fmtDate(strategic.created)}, build {strategic.bundle_id.slice(0, 8)}
                   {strategic.git_commit ? `, git ${strategic.git_commit.slice(0, 10)}` : ''}.
                 </>
               )}
@@ -54,7 +54,7 @@ export function Footer() {
           )}
           <p>
             Sector pages show measured values in their sources&rsquo; own units and years. The strategic choices, partner rankings and Allied Industrial Base
-            results are analysis for exploring options, not forecasts. Legacy OSI priorities and partner scores are shown at the NEIS baseline unless you change the
+            results are analysis for exploring options, not forecasts. The Strategic Index priorities and the partner scores are shown at the baseline unless you change the
             perspective on a country&rsquo;s profile.
           </p>
         </div>

@@ -56,7 +56,7 @@ function NodeCells({ n }: { n: AibNode }) {
   const cells = osiCellsOfNode(n);
   return (
     <p className="mt-1.5 text-xs leading-relaxed text-paper-dim" data-testid="node-osi-cells">
-      <span className="text-paper-mute">{cells.length === 1 ? 'OSI cell:' : 'OSI cells:'}</span>{' '}
+      <span className="text-paper-mute">{cells.length === 1 ? 'Sector:' : 'Sectors:'}</span>{' '}
       {cells.length
         ? cells.map((c, i) => {
             const href = osiCellHref(c);
@@ -76,7 +76,7 @@ function NodeCells({ n }: { n: AibNode }) {
               </span>
             );
           })
-        : 'none: none of its codes is in the OSI technology basket.'}
+        : 'none: none of its codes is among the traded goods this Explorer covers.'}
     </p>
   );
 }
@@ -344,7 +344,7 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
       header: 'Stage',
       value: (r) => nodeStageWords(nodeById.get(r.id) ?? { yfCells: [] }),
       sortValue: (r) => nodeStageRank(nodeById.get(r.id) ?? { yfCells: [] }),
-      title: "The stages of the OSI cells the node's codes sit in; none when no code is in the OSI basket.",
+      title: "The stages of the sectors (technology × stage) the step's codes sit in; none when no code is among the traded goods this Explorer covers.",
     },
     { id: 'cls', header: hasScenarios ? 'What it needs under the major-supplier disruption' : 'What it needs', value: (r) => classInfo(r.cls).label },
     { id: 'needs', header: 'Actions needed (codes)', value: (r) => r.policyNeeds },

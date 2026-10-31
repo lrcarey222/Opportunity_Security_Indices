@@ -57,7 +57,7 @@ export function WhySection({ level = 2 }: { level?: 2 | 3 } = {}) {
       {showing ? <WhyPanel c={showing} /> : null}
       <p className="text-sm text-paper-mute">
         Bars compare {name} with the middle economy of the same sector. The figures under them are the data behind the main bars, in their own units and years; see
-        how each is measured in <Link className="link" to={`/sector?c=${sheet.iso3}`}>Sector Insights</Link>.
+        how each is measured on the <Link className="link" to={`/sector?c=${sheet.iso3}`}>Sector pages</Link>.
       </p>
     </Section>
   );
@@ -95,7 +95,7 @@ function VarList({ d, pillar }: { d: Driver; pillar: 'es' | 'eo' }) {
           )}
           {v.sector_link && (
             <Link className="link text-xs" to={v.sector_link}>
-              See the data in Sector Insights &rarr;
+              See the data on the Sector pages &rarr;
             </Link>
           )}
         </li>
@@ -169,7 +169,7 @@ function WhyPanel({ c }: { c: CellFacts }) {
           })),
         ]),
       ),
-      'Opportunity Security Indices, NEIS baseline (category and variable contributions); raw figures from their sources',
+      "Security and opportunity scores computed by the Explorer's authors (baseline; category and variable contributions); raw figures from their sources",
       sheet.meta.as_of,
     ),
   });

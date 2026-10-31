@@ -11,7 +11,7 @@
 // replaces them in the canonical page, and this block sits in Evidence & Methodology -> Legacy OSI framework
 // (id legacy-opportunities, heading level 3), with its Why and Strategic Index disclosures.
 // Behind disclosures: "Why these sectors" (the existing drivers section) and "How priorities are built"
-// (the existing Strategic Index table at the NEIS baseline; the embedded Strategic Index view under the
+// (the existing Strategic Index table at the baseline; the embedded Strategic Index view under the
 // reader's Perspective).
 
 import { useMemo, type ReactNode } from 'react';
@@ -172,7 +172,7 @@ export function OpportunitiesSection({ id = 'opportunities', level = 2, title = 
               {cap(name)} has no Policy index (no International Energy Agency Policies and Measures records), so no Strategic Index is computed for it.
             </Notice>
           )}
-          <Fold id="si-model" engine summary="The Strategic Index under your perspective: top ten, the five weighted parts and the allied picks (Legacy OSI)">
+          <Fold id="si-model" engine summary="The Strategic Index under your perspective: top ten, the five weighted parts and the allied picks">
             <StrategicView embedded />
           </Fold>
         </Fold>

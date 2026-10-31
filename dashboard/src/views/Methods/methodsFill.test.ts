@@ -80,7 +80,7 @@ describe('Methods placeholders', () => {
     for (const s of ['IEA PAMS is required', 'IEA PAMS + CAT', 'IEA PAMS only', 'endowment screen', 'Mineral Commodity Summaries 2026',
       'copper and aluminium', 'HS 851762', 'Hong Kong', '11 headline technologies', 'adds Brazil',
       // the final run (12 October 2026) and the CM-FDI parts of Friendshore (spec_country.md C4.4)
-      '## The indices in plain words', 'original allied network design', '259 six-digit basket codes', 'EIA International Energy Statistics',
+      '## The indices in plain words', 'The Allied Industrial Base section shows how the coalition absorbs a supply shock', '259 six-digit basket codes', 'EIA International Energy Statistics',
       'Chinese-parent ownership weight inside Friendshore', '{{cpe_weight}}', 'Semiconductors (gallium, germanium and indium']) {
       expect(md).toContain(s);
     }
@@ -107,7 +107,7 @@ describe('Methods placeholders', () => {
     expect(excludedSectorsText(['Oil - Recovery'])).toBe('Oil (Recovery)');
   });
 
-  it('opens with the canonical framework (need, prize, position, choice, policy alignment), then the Legacy OSI chapter before the indices (design 5)', () => {
+  it('opens with the canonical framework (need, prize, position, choice, policy alignment), then the security and opportunity scores chapter before the indices (design 5)', () => {
     const at = (x: string) => md.indexOf(x);
     expect(at('<h2 id="framework">')).toBe(0);
     const steps = ['**Need: what problem has to be solved?**', '**Prize: is productive capability here strategically valuable?**', '**Position: how much real capability does the country have today?**', '**Choice: what should', '**Policy alignment: is policy focused on the right places?**'];
@@ -132,24 +132,28 @@ describe('Methods placeholders', () => {
     for (const y of ['small', 'medium', 'large'] as const) expect(md).toContain(YARD_DEFINITION[y]);
     expect(md).toContain('A technology can sit in more than one yard.');
     expect(md).not.toMatch(AVOID_RE);
-    expect(md).toContain('It is not the legacy Economic Opportunity index');
+    expect(md).toContain('It is not the Economic Opportunity score described below');
     expect(md).toContain('Observed policy is compared afterwards and never enters the choice');
     expect(md).toContain('Partner met with heavy localization is the *wrong tool for the problem*');
     // the retired need x opportunity rule is gone
     expect(md).not.toMatch(/Competitive Position is a consistency check|high need and high opportunity, \*\*catch up\*\*|## Four steps/);
     expect(at('<h2 id="legacy-osi">')).toBeGreaterThan(at('**Policy alignment: is policy focused'));
-    expect(md).toContain('It describes relative security and opportunity; it is not the current strategic recommendation.');
+    expect(md).toContain('These scores describe relative security and opportunity; the strategic choices above are the recommendation.');
+    expect(md).toContain('<h2 id="legacy-osi">Security and opportunity scores</h2>');
     expect(at('<h2 id="legacy-osi">')).toBeLessThan(at('## The indices in plain words'));
     expect(md).toContain('Grow ≈ Preserve, Upgrade ≈ Catch Up, Exposed ≈ Partner, Stable ≈ Watch');
     expect(md).toContain('mixes capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment');
-    expect(md).toContain('## The indices in plain words (Legacy OSI)');
+    expect(md).toMatch(/^## The indices in plain words\r?$/m);
+    // readers come to the Explorer fresh (user, 2026-10-31): no earlier names, no versions, no "the paper" as if
+    // known (the anchor ids, which readers never see, are left out)
+    expect(md.replace(/id="[^"]*"/g, '')).not.toMatch(/\bOSI\b|\blegacy\b|paper baseline|kept for comparison|NEIS (baseline|default)|\bthe paper\b|original (framework|network)|is retired/i);
   });
 
   it('six stages only: no three-stage word, and no claim that the baseline is the paper exported exactly (S1, E3)', () => {
     expect(md).not.toMatch(/\b(upstream|midstream|downstream)\b/i);
     expect(md).not.toMatch(/three[- ]stage/i);
     expect(md).not.toMatch(/paper's (numbers|settings|weights|table|pillar)|reproduces the paper|the paper exactly|output for the paper/i);
-    expect(md).toContain("At 50 every dial reproduces the pipeline's six-stage baseline exactly (the NEIS baseline)");
+    expect(md).toContain("At 50 every dial reproduces the pipeline's six-stage baseline exactly (the baseline)");
     expect(md).toContain('each of 66 sectors (11 energy technologies, each at the six stages of its supply chain');
     expect(md).toContain('{{n_picked_extraction}} of them at extraction');
     expect(md).toContain('an extraction sector qualifies only where the economy has recorded reserves or production');
