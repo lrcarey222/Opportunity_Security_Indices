@@ -109,8 +109,13 @@ describe('Methods placeholders', () => {
   it('opens with the canonical framework (need, prize, position, choice, policy alignment), then the Legacy OSI chapter before the indices (design 5)', () => {
     const at = (x: string) => md.indexOf(x);
     expect(at('<h2 id="framework">')).toBe(0);
-    const steps = ['**Need: what problem', '**Prize: is there', '**Position: how strong', '**Choice: what should', '**Policy alignment: does current policy'];
+    const steps = ['**Need: what problem', '**Prize: is domestic capability here strategically valuable?', '**Position: how strong', '**Choice: what should', '**Policy alignment: does current policy'];
     expect(steps.map(at).every((v, k, a) => v > 0 && (k === 0 || v > a[k - 1]))).toBe(true);
+    // the prize is the Strategic Industrial Value (2026-10-30): its three families, the cap, the large-yard case, the yards
+    expect(md).toContain('*Strategic Industrial Value*, from three families. The market prize, *Industrial Opportunity*');
+    expect(md).toContain('so market size alone never makes a prize high');
+    expect(md).toContain('A *large-yard case* weighs against it');
+    expect(md).toContain('a Small yard behind a High fence (Secure); a Medium yard behind a medium, permeable fence (Preserve, Catch Up, Partner, and Accelerate at Deployment & Use); a Large yard behind a Low fence (Watch)');
     expect(md).toContain('Two separate measures, never combined into one score');
     expect(md).toContain('**Deploy · Accelerate**');
     expect(md).toContain('a deployment node is never Partner');

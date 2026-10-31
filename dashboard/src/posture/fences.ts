@@ -2,32 +2,55 @@
 // fence's nodes"): which of an economy's nodes sit behind each fence, the top-five rankings and the variables
 // each fence's tables show.
 //   High fence     the Secure nodes, ranked by supply-chain need (highest first).
-//   Medium fence   the producing-stage Preserve, Catch Up and Partner nodes, ranked by Industrial Opportunity
+//   Medium fence   the producing-stage Preserve, Catch Up and Partner nodes, ranked by the Strategic Industrial Value
 //                  (ties by Competitive Position); the Accelerate nodes, ranked by deployment need.
-//   Low fence      the producing-stage Watch nodes, ranked by Industrial Opportunity (the biggest prizes the
+//   Low fence      the producing-stage Watch nodes, ranked by the Strategic Industrial Value (the biggest prizes the
 //                  country is not chasing); the Deployment & Use Watch nodes, ranked by deployment need
 //                  (closest to Accelerate).
 // The fence of a node is grammar.ts nodeFence (its choice and stage). Every value is read through the
 // drawer's accessors (the core cell; detail.ts for the components): nothing is recomputed or invented, and a
 // value the data do not carry stays null (the page shows "not measured"). Pure: no React, no IO.
+//
+// Layers are yard units of their own (2026-10-30, R yard_rollup.R): a child layer whose own choice differs
+// from its node's is listed behind the fence of its own choice, beside the nodes (a Secure grid SCADA layer
+// in the High fence while its Electric Grid Assembly node is Medium). It ranks with its node's ranking value
+// (the core carries the node's need, prize and position, not the layer's), right after its node on a tie, and
+// opens its node's drawer focused on the layer. A layer that shares its node's choice is the node's own row
+// (the drawer lists every layer). Layers come from the economy's detail document, so they join once it is in.
 
 import { isProducingStage, stageRank } from '../lib/stages.ts';
-import type { PostureCell, PostureCore, PostureDetail, PostureThresholds, Verb } from './contract.ts';
+import type { PostureCell, PostureCore, PostureDetail, PostureMeta, PostureThresholds, Verb, Yard } from './contract.ts';
 import { pct, score100 } from './derive.ts';
 import { ratioVsCurrentWords, type Family, type NodeDetail } from './detail.ts';
 import { basisWords, EVIDENCE_LABEL, MOMENTUM_LABEL, nodeFence, PATHWAY_LABEL, pathwayEvidenceWords, RATIONALE_LABEL, verbOf } from './grammar.ts';
 import { postureMomentum } from './momentum.ts';
 import { cellKeyOf, detailByKey, watchReasons } from './sections.ts';
+import { layerUnits, sivFamilies } from './yards.ts';
 
-/** One assessed node behind a fence: its core cell and, once the economy's detail document is in, its detail. */
+/** A layer unit's layer: its id, name, yard, engine variant and one-line reason (yards.ts layerReason). */
+export interface FenceLayer {
+  id: string;
+  label: string;
+  yard: Yard | null;
+  variant: string | null;
+  reason: string;
+}
+
+/** One assessed node (or a layer unit of one) behind a fence: its core cell and, once the economy's detail document is in, its detail. */
 export interface FenceNode {
-  /** "Tech|Stage" */
+  /** the row's own key: "Tech|Stage", or "Tech|Stage#layer_id" for a layer unit */
   key: string;
+  /** the node the drawer opens (?node=): "Tech|Stage" (a layer unit's parent node) */
+  nodeKey: string;
   tech: string;
   stage: string;
+  /** the unit's own choice (a layer's may differ from its node's) */
   verb: Verb;
+  /** the node's core cell (a layer unit's parent's: its need, prize and position rank the layer) */
   cell: PostureCell;
   detail: NodeDetail | null;
+  /** a layer unit's layer; null for the node itself */
+  layer: FenceLayer | null;
 }
 
 export interface FenceGroups {
@@ -49,27 +72,42 @@ export const FENCE_TOP_N = 5;
 const COMPETE: ReadonlySet<Verb> = new Set<Verb>(['preserve', 'catch_up', 'partner']);
 /** a missing value sorts last (every value is 0-1) */
 const v1 = (v: number | null): number => (v === null || !Number.isFinite(v) ? -1 : v);
-const chain = (a: FenceNode, b: FenceNode) => stageRank(a.stage) - stageRank(b.stage) || a.tech.localeCompare(b.tech);
+/** chain order; within one node, the node before its layers, the layers by name */
+const chain = (a: FenceNode, b: FenceNode) =>
+  stageRank(a.stage) - stageRank(b.stage) || a.tech.localeCompare(b.tech) || (a.layer ? 1 : 0) - (b.layer ? 1 : 0) || (a.layer?.label ?? '').localeCompare(b.layer?.label ?? '');
 const byNeed = (a: FenceNode, b: FenceNode) => v1(b.cell.need) - v1(a.cell.need) || chain(a, b);
 const byPrize = (a: FenceNode, b: FenceNode) => v1(b.cell.prize) - v1(a.cell.prize) || v1(b.cell.cp) - v1(a.cell.cp) || chain(a, b);
 const byPosition = (a: FenceNode, b: FenceNode) => v1(b.cell.cp) - v1(a.cell.cp) || v1(b.cell.prize) - v1(a.cell.prize) || chain(a, b);
 
-/** Nodes in Competitive Position order (highest first, ties by Industrial Opportunity; a missing position last): the position tables. */
+/** Nodes in Competitive Position order (highest first, ties by the prize; a missing position last): the position tables. */
 export const byPositionOrder = (nodes: readonly FenceNode[]): FenceNode[] => [...nodes].sort(byPosition);
 
-/** The economy's assessed nodes behind each fence, each list in its ranking order (not assessed nodes sit behind no fence). */
-export function fenceGroups(cells: readonly PostureCell[], detail: PostureDetail | null): FenceGroups {
+/**
+ * The economy's assessed nodes behind each fence, with the layer units whose own choice differs from their
+ * node's, each list in its ranking order (not assessed nodes and layers sit behind no fence). `meta` names the
+ * layers and composes their reasons (meta.yf_nodes); without it a layer is named by its id.
+ */
+export function fenceGroups(cells: readonly PostureCell[], detail: PostureDetail | null, meta: Pick<PostureMeta, 'yf_nodes'> = { yf_nodes: {} }): FenceGroups {
   const d = detailByKey(detail);
   const g: FenceGroups = { secure: [], compete: [], accelerate: [], watchSupply: [], watchDeploy: [] };
+  const place = (n: FenceNode) => {
+    const fence = nodeFence(n.verb, n.stage);
+    if (fence === 'high') g.secure.push(n);
+    else if (fence === 'medium') (COMPETE.has(n.verb) ? g.compete : g.accelerate).push(n);
+    else if (fence === 'low') (isProducingStage(n.stage) ? g.watchSupply : g.watchDeploy).push(n);
+  };
   for (const c of cells) {
     const verb = verbOf(c);
-    const fence = nodeFence(verb, c.stage);
-    if (!verb || !fence) continue;
     const key = cellKeyOf(c);
-    const n: FenceNode = { key, tech: c.tech, stage: c.stage, verb, cell: c, detail: d.get(key) ?? null };
-    if (fence === 'high') g.secure.push(n);
-    else if (fence === 'medium') (COMPETE.has(verb) ? g.compete : g.accelerate).push(n);
-    else (isProducingStage(c.stage) ? g.watchSupply : g.watchDeploy).push(n);
+    const nd = d.get(key) ?? null;
+    if (verb && nodeFence(verb, c.stage)) place({ key, nodeKey: key, tech: c.tech, stage: c.stage, verb, cell: c, detail: nd, layer: null });
+    for (const u of layerUnits(meta, nd)) {
+      if (!u.verb || u.verb === verb) continue;
+      place({
+        key: `${key}#${u.layerId}`, nodeKey: key, tech: c.tech, stage: c.stage, verb: u.verb, cell: c, detail: nd,
+        layer: { id: u.layerId, label: u.label, yard: u.yard, variant: u.variant, reason: u.reason },
+      });
+    }
   }
   g.secure.sort(byNeed);
   g.compete.sort(byPrize);
@@ -107,9 +145,25 @@ export function pathwayWords(c: Pick<PostureCell, 'pathway'>, d: NodeDetail | nu
   return legs;
 }
 
-/** Medium and low fence, the prize: Industrial Opportunity and its components, supply-chain need as context, the Catch Up pathway. */
+/**
+ * Medium and low fence, the prize: the Strategic Industrial Value and its three families (the market prize,
+ * from the core or the detail; industrial commons, future option and the market-only cap, from the node's or
+ * the layer's evidence in meta.yf_nodes), the market prize's components, supply-chain need as context and the
+ * Catch Up pathway.
+ */
 export interface PrizeVars {
+  /** the prize the choice read: the Strategic Industrial Value (a layer unit: its node's) */
   opportunity: number | null;
+  /** the market prize (Industrial Opportunity) */
+  market: number | null;
+  /** industrial-commons value (the layer's own for a layer unit) */
+  commons: number | null;
+  /** future-option value (the layer's own for a layer unit) */
+  option: number | null;
+  /** "market_only" where neither commons nor option reaches the gate: the unit's own (a layer unit's layer) */
+  cap: string | null;
+  /** the cap of the value shown (the step's: a layer unit ranks with its step's value) */
+  valueCap: string | null;
   /** node prize: expected world demand growth */
   nodePrize: number | null;
   /** home-market growth (national data only) */
@@ -122,10 +176,16 @@ export interface PrizeVars {
   /** Catch Up only: the credible pathway and its legs */
   pathway: string | null;
 }
-export function prizeVars(n: FenceNode): PrizeVars {
+export function prizeVars(n: FenceNode, meta: Pick<PostureMeta, 'yf_nodes'> = { yf_nodes: {} }): PrizeVars {
   const p = n.detail?.prize ?? null;
+  const f = sivFamilies(meta, n.cell, n.detail, n.layer?.id ?? 'stage');
   return {
     opportunity: n.cell.prize,
+    market: f.market,
+    commons: f.commons,
+    option: f.option,
+    cap: f.cap,
+    valueCap: n.layer ? sivFamilies(meta, n.cell, n.detail).cap : f.cap,
     nodePrize: p?.nodePrize ?? null,
     homeMarket: p?.homeMarket ?? null,
     investmentMomentum: p?.investmentMomentum ?? null,
@@ -249,6 +309,8 @@ export function fenceReason(n: FenceNode, core: Pick<PostureCore, 'meta'>, names
   const c = n.cell;
   const d = n.detail;
   const t: PostureThresholds = core.meta.thresholds;
+  // a layer unit: its own choice's reason, from its variant and the layer's evidence (yards.ts layerReason)
+  if (n.layer) return n.layer.reason;
   switch (n.verb) {
     case 'secure': {
       if (!c.rationale) return null;

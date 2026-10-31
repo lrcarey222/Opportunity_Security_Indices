@@ -12,7 +12,7 @@ export function CountryPostureIntro({ name }: { name: string }) {
     <>
       For every technology at each of the six supply-chain stages, the strategic position framework asks what {name} needs (
       <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>, or <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> at Deployment &amp; Use), whether
-      there is a prize (<Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>) and how strong it already is (
+      there is a prize (<Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term>) and how strong it already is (
       <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>), then recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or Watch.
       Its thresholds are fixed, not a weighting of preferences; observed policy is compared with it afterwards, never fed into it.
     </>
@@ -24,7 +24,7 @@ export function SectorPostureIntro() {
   return (
     <>
       Unlike the measured values on the rest of these pages, this is a recommendation: for one technology at one stage, the strategic position framework places every economy
-      by <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term> and <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term> and recommends one
+      by <Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term> and <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term> and recommends one
       choice: Secure, Preserve, Catch Up, Partner or Watch (at Deployment &amp; Use, Accelerate or Watch on <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term>). Its
       thresholds are fixed.
     </>

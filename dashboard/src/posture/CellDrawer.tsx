@@ -5,12 +5,19 @@
 //   supplier exposure, trusted alternatives, reconstitution and substitutability); at Deployment & Use the
 //   deployment need families instead (demand adequacy, target / climate gap, system need, each with its
 //   basis and scenario; a climate-aligned value only as a labelled alternative), never supply-chain need.
-// - PRIZE: Industrial Opportunity and its components (at Deployment: why the prize is read upstream, and the
-//   technology's domestic manufacturing priority beside its deployment priority).
+// - PRIZE: the Strategic Industrial Value (2026-10-30: is domestic capability here strategically valuable?)
+//   and its three families: the market prize (Industrial Opportunity, with its components), industrial commons
+//   and future option value (meta.yf_nodes), capped where only the market speaks for it; a core whose prize is
+//   the market measure shows Industrial Opportunity alone (at Deployment: why the prize is read upstream, and
+//   the technology's domestic manufacturing priority beside its deployment priority).
 // - POSITION: Competitive Position, its families, world supply share and the trade evidence with momentum.
 // - CHOICE: the choice with its fence (the page's: grammar nodeFence), rationale, delivery mode, mitigation
 //   and the policy design text (its trade protection labelled as such, never as the fence), pathway, partners,
-//   the compact trace, borderline, confidence and the consistency flag.
+//   the kind of choice (the engine variant, yards.ts variantWords), the compact trace, borderline and pivotal
+//   inputs, confidence and the consistency flag; then the Yards part
+//   (yards.ts): the node's own yard and its roll-up, each child layer with its yard, choice and one-line
+//   reason, the fence scope of a Secure layer, the node's large-yard case and the market-only cap. A layer
+//   unit of the fence sections opens the drawer focused on its layer (?layer=, `focusLayer`).
 // - POLICY ALIGNMENT: observed policy intensity, support and protection, momentum (each a percentile rank
 //   within the country, never a share or a change; protection "none recorded" where the records hold none),
 //   sources, the alignment and its confidence; observed policy is a comparator, never an input.
@@ -23,22 +30,25 @@ import { Link } from 'react-router';
 import { isProducingStage, stageDisplay } from '../lib/stages.ts';
 import { Term } from '../components/Term.tsx';
 import { POSTURE_TERMS } from './basis.tsx';
-import type { PostureCell, PostureCore } from './contract.ts';
+import type { PostureCell, PostureCore, Verb, Yard } from './contract.ts';
 import { cellKey, cellKeyParts, countryCells, countryNames, pct } from './derive.ts';
 import { ratioVsCurrentWords, type Family, type NodeDetail } from './detail.ts';
 import {
   ALIGNMENT_CONFIDENCE_LABEL, ALIGNMENT_LABEL, ALIGNMENT_WORDS, alignmentFlagWords, basisWords, borderlineWords, choiceWord, deliveryWords, EVIDENCE_LABEL, flagWords, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE,
-  pathwayEvidenceWords, traceCodeWords, traceTestWords, FENCE_LABEL, nodeFence,
-  nodeFill, NOT_ASSESSED_BORDER, PATHWAY_LABEL, POLICY_SOURCE_LABEL, RATIONALE_LABEL, RATIONALE_WORDS, VERB_LABEL, VERB_OUTLINE, verbOf,
+  pathwayEvidenceWords, traceCodeWords, traceNumberWords, traceTestWords, FENCE_LABEL, MARKET_PRIZE_LABEL, nodeFence,
+  nodeFill, NOT_ASSESSED_BORDER, PATHWAY_LABEL, POLICY_SOURCE_LABEL, prizeLabel, RATIONALE_LABEL, RATIONALE_WORDS, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
 import { postureMomentum } from './momentum.ts';
 import { catchUpPositionWords, countryRankWords, manufacturingPriority, manufacturingPriorityWord, policyMomentumWords, protectionWords, watchReasons } from './sections.ts';
 import { usePostureCore, usePostureDetail } from './store.ts';
+import {
+  capWords, FENCE_SCOPE_WORDS, largeYardOf, largeYardWords, layerUnits, mixedFill, nodeYard, rollupWords, signalWords, sivFamilies, variantWords, YARD_COLOR, YARD_LABEL, yardWords,
+} from './yards.ts';
 
 /** The five questions, in order (design D14). */
 export const DRAWER_QUESTIONS = [
   { id: 'need', title: 'Need', ask: 'What problem does the country need to solve here?' },
-  { id: 'prize', title: 'Prize', ask: 'Is there an industrial prize worth pursuing?' },
+  { id: 'prize', title: 'Prize', ask: 'Is domestic capability here strategically valuable: a market prize, industrial commons, a future option?' },
   { id: 'position', title: 'Position', ask: 'How strong is the country here today?' },
   { id: 'choice', title: 'Choice', ask: 'What should it do?' },
   { id: 'policy', title: 'Policy alignment', ask: 'Does current policy match the choice?' },
@@ -48,9 +58,9 @@ const NA = 'not assessed';
 const pctOr = (v: number | null | undefined, digits = 0) => (v === null || v === undefined ? NA : pct(v, digits));
 const usd = (v: number | undefined) => (v === undefined ? '—' : v >= 1e9 ? `$${(v / 1e9).toFixed(1)}bn` : v >= 1e6 ? `$${(v / 1e6).toFixed(0)}m` : `$${Math.round(v / 1e3)}k`);
 
-function Row({ k, v }: { k: ReactNode; v: ReactNode }) {
+function Row({ k, v, indent = false }: { k: ReactNode; v: ReactNode; indent?: boolean }) {
   return (
-    <div className="flex justify-between gap-3 py-1 text-sm">
+    <div className={`flex justify-between gap-3 py-1 text-sm ${indent ? 'pl-3' : ''}`}>
       <dt className="text-paper-mute">{k}</dt>
       <dd className="text-right tabular text-paper-dim">{v}</dd>
     </div>
@@ -144,13 +154,15 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
 }
 
 function PrizeAnswer({ cell, d, core, cells, status }: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; cells: PostureCell[]; status: DrawerDetailStatus }) {
+  const label = prizeLabel(core.meta);
+  const siv = core.meta.prize_measure === 'strategic_value';
+  const term = siv ? POSTURE_TERMS.strategicValue : POSTURE_TERMS.industrialOpportunity;
   if (!isProducingStage(cell.stage)) {
     const m = manufacturingPriority(cell.tech, cells);
     return (
       <>
         <p className="text-sm text-paper-dim">
-          <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term> is a manufacturing prize, read at the producing stages: deployment priority is separate from
-          domestic manufacturing priority.
+          <Term id={term}>{label}</Term> is an industrial prize, read at the producing stages: deployment priority is separate from domestic manufacturing priority.
         </p>
         <dl>
           <Row k="Domestic manufacturing priority" v={`${manufacturingPriorityWord(m)} (${m.words})`} />
@@ -159,18 +171,28 @@ function PrizeAnswer({ cell, d, core, cells, status }: { cell: PostureCell; d: N
     );
   }
   const p = d?.prize;
+  const f = sivFamilies(core.meta, cell, d);
+  // the market prize's components: under the market family where the prize is the strategic value
+  const sub = siv;
   return (
     <>
-      <dl>
-        <Row k={<Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>} v={`${pctOr(cell.prize)} (high at ${pct(core.meta.thresholds.prize)} or more)`} />
+      <dl data-testid="drawer-prize">
+        <Row k={<Term id={term}>{label}</Term>} v={`${pctOr(cell.prize)} (high at ${pct(core.meta.thresholds.prize)} or more)${siv && f.cap ? '; capped: market only' : ''}`} />
+        {siv && <Row k={<Term id={POSTURE_TERMS.industrialOpportunity}>Market prize ({MARKET_PRIZE_LABEL})</Term>} v={pctOr(f.market)} />}
         {p && (
           <>
-            <Row k="Node prize (expected world demand growth)" v={pctOr(p.nodePrize)} />
-            <Row k="Investment momentum" v={pctOr(p.investmentMomentum)} />
-            <Row k="Home-market growth (national data only)" v={pctOr(p.homeMarket)} />
-            {p.maturity !== null && <Row k="Technology maturity (context, not scored)" v={typeof p.maturity === 'number' ? `TRL ${p.maturity}` : p.maturity} />}
-            {p.outlook && <Row k="Market outlook" v={p.outlook} />}
-            {p.basis && <Row k="Basis" v={basisWords(p.basis)} />}
+            <Row indent={sub} k="Node prize (expected world demand growth)" v={pctOr(p.nodePrize)} />
+            <Row indent={sub} k="Investment momentum" v={pctOr(p.investmentMomentum)} />
+            <Row indent={sub} k="Home-market growth (national data only)" v={pctOr(p.homeMarket)} />
+            {p.maturity !== null && <Row indent={sub} k="Technology maturity (context, not scored)" v={typeof p.maturity === 'number' ? `TRL ${p.maturity}` : p.maturity} />}
+            {p.outlook && <Row indent={sub} k="Market outlook" v={p.outlook} />}
+            {p.basis && <Row indent={sub} k="Basis" v={basisWords(p.basis)} />}
+          </>
+        )}
+        {siv && (
+          <>
+            <Row k="Industrial commons (process knowledge, workforce and suppliers, cross-sector spillover)" v={commonsWords(f.commons, f.commonsN)} />
+            <Row k="Future option (the leap tests of a leap candidate)" v={optionWords(f.option, f.optionN)} />
           </>
         )}
       </dl>
@@ -178,6 +200,18 @@ function PrizeAnswer({ cell, d, core, cells, status }: { cell: PostureCell; d: N
       <Pending status={status} />
     </>
   );
+}
+
+/** "67 (3 of 3 attributes observed)"; not assessed when the core has no value. */
+function commonsWords(v: number | null, n: number | null): string {
+  if (v === null) return NA;
+  return `${pct(v)}${n !== null ? ` (${n} of 3 attributes observed)` : ''}`;
+}
+/** "38 (3 of 4 leap tests observed)"; "none: not a leap candidate" for a 0 with no test observed. */
+function optionWords(v: number | null, n: number | null): string {
+  if (v === null) return NA;
+  if (v === 0 && n === 0) return 'none: not a leap candidate';
+  return `${pct(v)}${n !== null ? ` (${n} of 4 leap tests observed)` : ''}`;
 }
 
 function PositionAnswer({ cell, d, core, status }: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; status: DrawerDetailStatus }) {
@@ -222,7 +256,9 @@ function PositionAnswer({ cell, d, core, status }: { cell: PostureCell; d: NodeD
   );
 }
 
-function ChoiceAnswer({ cell, d, core, cells, names, status }: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; cells: PostureCell[]; names: Record<string, string>; status: DrawerDetailStatus }) {
+function ChoiceAnswer({
+  cell, d, core, cells, names, status, focusLayer,
+}: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; cells: PostureCell[]; names: Record<string, string>; status: DrawerDetailStatus; focusLayer?: string | null }) {
   const v = verbOf(cell);
   const t = core.meta.thresholds;
   const design = d?.variant || cell.variant ? core.design[`${d?.variant ?? cell.variant}|${d?.delivery ?? ''}`] : undefined;
@@ -291,9 +327,12 @@ function ChoiceAnswer({ cell, d, core, cells, names, status }: { cell: PostureCe
         {cell.needType === 'supply_chain' && cell.pathway && (
           <Row k={<Term id={POSTURE_TERMS.pathway}>Credible pathway</Term>} v={`${PATHWAY_LABEL[cell.pathway]}${d?.pathway.basis.length ? ` (${pathwayEvidenceWords(d.pathway.basis)})` : ''}`} />
         )}
+        {(d?.variant ?? cell.variant) && <Row k="Kind of choice" v={<span data-testid="drawer-variant">{cap1(variantWords(d?.variant ?? cell.variant) ?? '')}</span>} />}
         {d?.delivery && <Row k={<Term id={POSTURE_TERMS.deliveryMode}>Delivery mode</Term>} v={deliveryWords(d.delivery)} />}
         {cell.confidence && <Row k="Confidence" v={cell.confidence} />}
         {cell.borderline && <Row k="Borderline on" v={borderlineWords(cell.borderline)} />}
+        {d?.pivotal && <Row k="Pivotal inputs (would change the choice)" v={borderlineWords(d.pivotal.replace(/\|/g, ';'))} />}
+        {d?.choicePossible && <Row k="Choices the evidence allows" v={possibleWords(d.choicePossible)} />}
         {cell.flag && <Row k={<Term id={POSTURE_TERMS.consistencyFlag}>Consistency review</Term>} v={flagWords(cell.flag)} />}
       </dl>
       {d?.mitigation && (
@@ -326,8 +365,8 @@ function ChoiceAnswer({ cell, d, core, cells, names, status }: { cell: PostureCe
             {d.trace.map((s, i) => (
               <li key={i}>
                 <span className="text-paper-dim">{traceTestWords(s.test)}</span>
-                {s.value !== null ? `: ${typeof s.value === 'number' ? pct(s.value) : traceCodeWords(s.value)}` : ''}
-                {s.threshold !== null ? ` (bar ${typeof s.threshold === 'number' ? pct(s.threshold) : s.threshold})` : ''} → {traceCodeWords(s.result)}
+                {s.value !== null ? `: ${typeof s.value === 'number' ? traceNumberWords(s.test, s.value, (x) => pct(x)) : traceCodeWords(s.value)}` : ''}
+                {s.threshold !== null ? ` (bar ${typeof s.threshold === 'number' ? traceNumberWords(s.test, s.threshold, (x) => pct(x)) : s.threshold})` : ''} → {traceCodeWords(s.result)}
               </li>
             ))}
           </ol>
@@ -335,7 +374,134 @@ function ChoiceAnswer({ cell, d, core, cells, names, status }: { cell: PostureCe
       )}
       {d?.reason && <p className="mt-1 text-xs text-paper-mute">{d.reason}</p>}
       <Pending status={status} />
+      <YardsPart cell={cell} d={d} core={core} focusLayer={focusLayer} />
     </>
+  );
+}
+
+const cap1 = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** "Catch Up or Watch" from R's "catch_up|watch" (an unknown word loses its underscores). */
+function possibleWords(v: string): string {
+  const w = v.split('|').map((x) => VERB_LABEL[x.trim() as Verb] ?? x.trim().replace(/_/g, ' '));
+  return w.length > 1 ? `${w.slice(0, -1).join(', ')} or ${w[w.length - 1]}` : w[0];
+}
+
+/** A yard as a chip: its fence colour and its name ("Small yard"). */
+export function YardChip({ yard }: { yard: Yard | null }) {
+  if (!yard) return <span className="text-paper-mute">no yard (not assessed)</span>;
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-white/15 px-1 text-[11px] text-paper-dim" data-yard={yard}>
+      <span
+        aria-hidden="true"
+        className="inline-block h-2 w-2 shrink-0 rounded-[2px]"
+        style={{ background: YARD_COLOR[yard], border: yard === 'large' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }}
+      />
+      {YARD_LABEL[yard]}
+    </span>
+  );
+}
+
+/**
+ * The Yards part of the CHOICE question: the node's own yard (from its choice) and its roll-up with its
+ * layers; each child layer with its yard, choice and one-line reason (yards.ts layerUnits); the fence scope
+ * of a Secure layer; the node's large-yard case (the signals that hold, those not observed, the count against
+ * the bar) and the market-only cap. `focusLayer` (?layer=) is scrolled to and focused once its row is in.
+ */
+function YardsPart({ cell, d, core, focusLayer }: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; focusLayer?: string | null }) {
+  const id = useId();
+  const focusRef = useRef<HTMLLIElement | null>(null);
+  const own = nodeYard(cell);
+  const units = layerUnits(core.meta, d);
+  const ly = isProducingStage(cell.stage) ? largeYardOf(core.meta, cell.tech, cell.stage, d) : null;
+  const f = sivFamilies(core.meta, cell, d);
+  const hit = focusLayer ? units.some((u) => u.layerId === focusLayer) : false;
+  useEffect(() => {
+    if (!hit || !focusRef.current) return;
+    focusRef.current.scrollIntoView?.({ block: 'center' });
+    focusRef.current.focus();
+  }, [hit, focusLayer]);
+  if (!own && !cell.yards && !units.length && !ly) return null;
+  const roll = rollupWords(cell);
+  const split = mixedFill(cell);
+  return (
+    <section className="mt-3 rounded-md border border-white/10 p-2.5" aria-labelledby={id} data-testid="drawer-yards">
+      <h5 id={id} className="text-xs font-medium uppercase tracking-wide text-paper-dim">
+        Yards
+      </h5>
+      <dl>
+        <Row k="This step's own yard" v={own ? <span data-testid="drawer-own-yard">{yardWords(own)}</span> : NA} />
+        {roll && (
+          <Row
+            k="With its layers"
+            v={
+              <span className="inline-flex items-center gap-1.5" data-testid="drawer-yard-rollup" data-yards={cell.yards ?? undefined}>
+                {split && <span aria-hidden="true" className="inline-block h-3 w-3 shrink-0 rounded-sm" style={{ background: split }} />}
+                {roll}
+              </span>
+            }
+          />
+        )}
+      </dl>
+      {units.length > 0 && (
+        <>
+          <p className="mt-1 text-xs text-paper-mute">Each layer is a yard unit of its own, with its own choice:</p>
+          <ul className="mt-1 space-y-1.5" aria-label="Layers of this step">
+            {units.map((u) => {
+              const on = focusLayer === u.layerId;
+              return (
+                <li
+                  key={u.layerId}
+                  ref={on ? focusRef : undefined}
+                  tabIndex={on ? -1 : undefined}
+                  className={`rounded-md px-1.5 py-1 text-xs outline-none ${on ? 'bg-white/10 ring-1 ring-white/50' : ''}`}
+                  data-layer={u.layerId}
+                  data-focused={on ? 'true' : undefined}
+                  data-testid="drawer-layer"
+                >
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <YardChip yard={u.yard} />
+                    <span className="inline-flex items-center gap-1 text-paper-dim" data-verb={u.verb ?? 'not_assessed'}>
+                      {u.verb && (
+                        <span
+                          aria-hidden="true"
+                          className="inline-block h-2.5 w-2.5 rounded-[2px]"
+                          style={{ background: VERB_COLOR[u.verb], border: u.verb === 'watch' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }}
+                        />
+                      )}
+                      {u.verb ? VERB_LABEL[u.verb] : 'Not assessed'}
+                    </span>
+                    <span className="text-paper">{u.label}</span>
+                  </span>
+                  <span className="block text-paper-mute" data-testid="drawer-layer-reason">
+                    {u.reason}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+      {d?.yardFenceScope && (
+        <p className="mt-1.5 text-xs text-paper-dim" data-testid="drawer-fence-scope">
+          {FENCE_SCOPE_WORDS[d.yardFenceScope]}
+        </p>
+      )}
+      {ly && (
+        <div className="mt-1.5 text-xs text-paper-mute" data-testid="drawer-large-yard">
+          <p>
+            <strong className="font-medium text-paper-dim">Large-yard case{ly.own ? ' (this economy)' : ''}:</strong> {largeYardWords(ly)}
+          </p>
+          {ly.signals.length > 0 && <p>Signals that hold: {signalWords(ly.signals)}.</p>}
+          {ly.unknown.length > 0 && <p>Not observed: {signalWords(ly.unknown)}.</p>}
+        </div>
+      )}
+      {f.cap && core.meta.prize_measure === 'strategic_value' && (
+        <p className="mt-1.5 text-xs text-paper-mute" data-testid="drawer-yard-cap">
+          {capWords(f.cap)}.
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -386,15 +552,18 @@ export interface CellDrawerProps {
   onClose: () => void;
   /** the node's Sector page, or null / undefined for no link */
   sectorHref?: string | null;
+  /** a layer of the node to scroll to and focus in the Yards part (?layer=); null for the node itself */
+  focusLayer?: string | null;
 }
 
-export function CellDrawer({ cell, detail, detailStatus, detailError, country, core, cells, names, onClose, sectorHref }: CellDrawerProps) {
+export function CellDrawer({ cell, detail, detailStatus, detailError, country, core, cells, names, onClose, sectorHref, focusLayer }: CellDrawerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const key = cellKey(cell.tech, cell.stage);
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', k);
-    ref.current?.focus();
+    // the dialog takes focus unless a layer row inside it already has it (the Yards part focuses ?layer=)
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus();
     return () => window.removeEventListener('keydown', k);
   }, [onClose, key]);
   const d = detail;
@@ -449,7 +618,7 @@ export function CellDrawer({ cell, detail, detailStatus, detailError, country, c
         <PositionAnswer cell={cell} d={d} core={core} status={status} />
       </Question>
       <Question q={DRAWER_QUESTIONS[3]}>
-        <ChoiceAnswer cell={cell} d={d} core={core} cells={cells} names={names} status={status} />
+        <ChoiceAnswer cell={cell} d={d} core={core} cells={cells} names={names} status={status} focusLayer={focusLayer} />
       </Question>
       <Question q={DRAWER_QUESTIONS[4]}>
         <PolicyAnswer cell={cell} d={d} status={status} />
@@ -467,6 +636,8 @@ export interface PostureNodeDrawerProps {
   onClose: () => void;
   /** the node's Sector page (posture/ knows no Sector routes) */
   sectorHref?: (tech: string, stage: string) => string | null;
+  /** a layer of the selected node to focus (?layer=), null for none */
+  layer?: string | null;
 }
 
 /**
@@ -474,7 +645,7 @@ export interface PostureNodeDrawerProps {
  * document, and shows the selected node. Nothing while closed, while the core loads, or for a key the data
  * does not know; a node the economy has no posture for says so.
  */
-export function PostureNodeDrawer({ iso3, name, selected, onClose, sectorHref }: PostureNodeDrawerProps) {
+export function PostureNodeDrawer({ iso3, name, selected, onClose, sectorHref, layer }: PostureNodeDrawerProps) {
   const core = usePostureCore();
   const detail = usePostureDetail(selected ? iso3 : null);
   if (!selected || !core.data) return null;
@@ -511,6 +682,7 @@ export function PostureNodeDrawer({ iso3, name, selected, onClose, sectorHref }:
       names={names}
       onClose={onClose}
       sectorHref={sectorHref ? sectorHref(cell.tech, cell.stage) : null}
+      focusLayer={layer ?? null}
     />
   );
 }

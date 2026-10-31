@@ -146,7 +146,7 @@ describe('Prize & Position (spec XIII)', () => {
     expect(sec.style.left).toBe(probe.style.left);
     expect(sec.style.left).toMatch(/52px.*0\.4.*72px|52px.*72px.*0\.4/);
     expect(sec.getAttribute('aria-label')).toBe(
-      'Batteries Refining & Processing: Secure (coercive chokepoint), high fence; Industrial Opportunity 40%; Competitive Position 10%; supply-chain need 95%; trade momentum unavailable; policy under-prioritized; evidence strong',
+      'Batteries Refining & Processing: Secure (coercive chokepoint), high fence; Strategic Industrial Value 40%; Competitive Position 10%; supply-chain need 95%; trade momentum unavailable; policy under-prioritized; evidence strong',
     );
     // the corner headings sit in the margins above and below the plot: tendencies, not rules
     const q = `${screen.getByTestId('prize-position-quadrants').textContent} ${screen.getByTestId('prize-position-quadrants-low').textContent}`;
@@ -162,7 +162,7 @@ describe('Prize & Position (spec XIII)', () => {
     // the tooltip: the node, its choice and fence, need, prize, position, momentum, alignment, evidence
     fireEvent.mouseEnter(sc.querySelector('[data-key="Batteries|Extraction"]') as Element);
     const tip = screen.getByTestId('prize-position-tip').textContent;
-    for (const w of ['Partner· Medium fence', 'Batteries · Extraction', 'Supply-chain need 80%', 'Industrial Opportunity 30%', 'Competitive Position 20%', 'Trade momentum: rising', 'Policy alignment: Wrong treatment / misaligned', 'Evidence: Strong']) {
+    for (const w of ['Partner· Medium fence', 'Batteries · Extraction', 'Supply-chain need 80%', 'Strategic Industrial Value 30%', 'Competitive Position 20%', 'Trade momentum: rising', 'Policy alignment: Wrong treatment / misaligned', 'Evidence: Strong']) {
       expect(tip).toContain(w);
     }
     fireEvent.keyDown(sc.querySelector('[data-key="Batteries|Components"]') as Element, { key: 'Enter' });
@@ -224,14 +224,14 @@ describe('Prize & Position (spec XIII)', () => {
       inRouter(<PrizePositionScatter core={core} cells={cells} name="Aland" onOpen={() => undefined} />);
       const sc = screen.getByTestId('prize-position-scatter');
       const svg = sc.querySelector('svg[role="img"]') as SVGSVGElement;
-      expect(svg.getAttribute('aria-label')).toMatch(/^Aland: 9 producing-stage nodes placed by Industrial Opportunity and Competitive Position/);
+      expect(svg.getAttribute('aria-label')).toMatch(/^Aland: 9 producing-stage nodes placed by Strategic Industrial Value and Competitive Position/);
       const rx = sc.querySelector('.quad-rule-x line') as SVGLineElement;
       const ry = sc.querySelector('.quad-rule-y line') as SVGLineElement;
       expect(near(Number(rx.getAttribute('x1')), px(core.meta.thresholds.prize * 100))).toBe(true);
       expect(near(Number(ry.getAttribute('y1')), py(core.meta.thresholds.cp * 100))).toBe(true);
       for (const g of [rx.parentElement!, ry.parentElement!]) expect(g.getAttribute('stroke-dasharray')).toBe('4,3');
-      // the axes: Industrial Opportunity across, Competitive Position among contenders up, ticks 0-100
-      expect(svg.textContent).toContain('Industrial Opportunity: the prize (percentile) →');
+      // the axes: Strategic Industrial Value across, Competitive Position among contenders up, ticks 0-100
+      expect(svg.textContent).toContain('Strategic Industrial Value: the prize (percentile) →');
       expect(svg.textContent).toContain('↑ Competitive Position among contenders (percentile)');
     });
 
@@ -267,7 +267,7 @@ describe('Prize & Position (spec XIII)', () => {
   it('the table twin lists plotted and unplotted nodes with their tendency', () => {
     inRouter(<PrizePositionScatter core={core} cells={cells} name="Aland" onOpen={() => undefined} />);
     fireEvent.click(screen.getByRole('button', { name: 'Table' }));
-    const t = screen.getByRole('table', { name: 'Aland: Industrial Opportunity and Competitive Position by node' });
+    const t = screen.getByRole('table', { name: 'Aland: Strategic Industrial Value and Competitive Position by node' });
     const rows = within(t).getAllByRole('row').slice(1);
     expect(rows).toHaveLength(10);
     expect(rows.find((r) => r.textContent?.includes('Final Assembly & Equipment') && r.textContent.includes('Batteries'))?.textContent).toContain('Strong position + strong prize: typically Preserve');
@@ -284,7 +284,7 @@ describe('Prize & Position (spec XIII)', () => {
     fireEvent.mouseEnter(screen.getByTestId('prize-position-scatter').querySelector('[data-key="Batteries|Assembly"]') as Element);
     expect(screen.getByTestId('prize-position-tendency').textContent).toBe('Strong position + strong prize: typically Preserve (a tendency). Select for the five questions.');
     fireEvent.click(screen.getByRole('button', { name: 'Table' }));
-    const rows = within(screen.getByRole('table', { name: 'Aland: Industrial Opportunity and Competitive Position by node' })).getAllByRole('row');
+    const rows = within(screen.getByRole('table', { name: 'Aland: Strategic Industrial Value and Competitive Position by node' })).getAllByRole('row');
     expect(rows.find((r) => r.textContent?.includes('Component Manufacturing') && r.textContent.includes('Batteries'))?.textContent).toContain(
       'A top-quarter score that does not pass the Preserve test (not a contender, or below the capability floor)',
     );

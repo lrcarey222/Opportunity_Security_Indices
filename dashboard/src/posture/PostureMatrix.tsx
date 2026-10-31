@@ -10,6 +10,11 @@
 // means on each side. Every node is a button that opens the drawer (keyboard: Tab, Enter / Space); its focus
 // and selection rings are white (signal orange is the Secure fill). The column minimums (MAP_MIN_WIDTH in all,
 // 268 px) fit a phone's card (about 300 px at 375), so the Recovery & Recycling column is never cut off.
+// Mixed yards (2026-10-30, yards.ts): a node whose layers sit in different yards (the core's roll-up) is split
+// on the diagonal: its own choice colour on the upper left, the fence colour of each other yard on the lower
+// right (Secure orange for the Small yard, the brand blue for the Medium yard, Watch ink-600 for the Large yard,
+// with the paper-mute hairline wherever ink-600 shows). Still colour alone, no letters or arrows; the accessible
+// name and the tooltip name the yards.
 
 import { Fragment, useId, useMemo, useState } from 'react';
 import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
@@ -20,6 +25,7 @@ import {
   stageShort, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
 import { Swatch } from './PostureLegend.tsx';
+import { mixedFill, mixedYards, rollupWords, rollupYards, showsLargeYard } from './yards.ts';
 
 /** The helper text of the map (design section 4): what Need means on each side of the Deployment column. */
 export const MAP_HELPER =
@@ -35,6 +41,7 @@ export function cellLabel(c: PostureCell): string {
     return bits.join('; ');
   }
   if (c.posture === 'S' && c.rationale) bits.push(RATIONALE_LABEL[c.rationale]);
+  if (mixedYards(c)) bits.push((rollupWords(c) ?? '').replace(/^Mixed: /, 'mixed yards: '));
   if (c.need !== null) bits.push(`${NEED_TYPE_LABEL[c.needType].toLowerCase()} ${pct(c.need)}`);
   if (c.prize !== null) bits.push(`prize ${pct(c.prize)}`);
   if (c.cp !== null) bits.push(`position ${pct(c.cp)}`);
@@ -62,6 +69,11 @@ function Tip({ c, partnerName }: { c: PostureCell; partnerName: string | null })
         {fence && <span>· {FENCE_LABEL[fence]}</span>}
       </p>
       {c.posture === 'S' && c.rationale && <p>{RATIONALE_LABEL[c.rationale]}</p>}
+      {mixedYards(c) && (
+        <p className="mt-1 text-paper" data-testid="strategy-map-tip-yards">
+          {rollupWords(c)}
+        </p>
+      )}
       {c.posture === 'N' ? (
         <p className="mt-1">Not assessed: {c.needType === 'deployment' ? 'deployment need is not measured' : 'need or prize is not measured'}.</p>
       ) : (
@@ -172,6 +184,7 @@ export function PostureMatrix({ core, cells, selected, onSelect, names = {} }: P
                 const on = selected === k;
                 const na = c.posture === 'N';
                 const v = verbOf(c);
+                const split = mixedFill(c);
                 node = (
                   <span role="gridcell" className="relative" data-deployment={isDep ? 'true' : undefined}>
                     <button
@@ -185,14 +198,16 @@ export function PostureMatrix({ core, cells, selected, onSelect, names = {} }: P
                       onBlur={() => setHover((h) => (h === k ? null : h))}
                       className="block h-9 w-full rounded-[3px] outline-none transition-[filter] hover:brightness-110 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-ink-800 sm:h-10"
                       style={{
-                        background: nodeFill(c),
-                        border: na ? NOT_ASSESSED_BORDER : v === 'watch' ? `1px solid ${VERB_OUTLINE.watch}` : undefined,
+                        background: split ?? nodeFill(c),
+                        border: na ? NOT_ASSESSED_BORDER : showsLargeYard(c) ? `1px solid ${VERB_OUTLINE.watch}` : undefined,
                         boxShadow: on ? '0 0 0 2px #111827, 0 0 0 4px #ffffff' : undefined,
                       }}
                       data-posture={c.posture}
                       data-verb={v ?? 'not_assessed'}
                       data-fence={nodeFence(v, c.stage) ?? undefined}
                       data-mode={c.mode ?? c.deployMode ?? undefined}
+                      data-yards={c.yards ? rollupYards(c.yards).join(' ') : undefined}
+                      data-mixed={split ? 'true' : undefined}
                     />
                     {hover === k && <Tip c={c} partnerName={c.partner1 ? (names[c.partner1] ?? c.partner1) : null} />}
                   </span>

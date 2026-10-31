@@ -12,6 +12,14 @@
 // becomes "moderate" and alignment confidence "moderate" becomes "medium". The detail document's cells are
 // normalised by detail.ts (nodeDetail), so the drawer and the sections read one typed shape whatever the
 // exporter's spelling of a field (flat or nested, see detail.ts).
+//
+// Yards & Fences (2026-10-30, additive within schema 2; R posture_export.R): the core may carry the prize the
+// choice read under meta.prize_measure (strategic_value: cells.prize is the Strategic Industrial Value, and
+// cells.io the market prize, Industrial Opportunity; market or absent: cells.prize is the market prize), the
+// node's yard roll-up (cells.yd, coded through meta.yard_codes), the ten large-yard signal names
+// (meta.large_yard_signals) and the node-level evidence (meta.yf_nodes, columnar, one row per producing-stage
+// node and sensitive layer). Each is optional: an older core decodes with prize_measure "market", no yards and
+// no nodes. A roll-up always holds the node's own yard (the yard of its choice).
 
 import { DEPLOYMENT_STAGE, STAGE_DISPLAY, SUPPLY_STAGES, type SupplyStage } from '../lib/stages.ts';
 import { nodeDetail, type NodeDetail } from './detail.ts';
@@ -47,6 +55,12 @@ export type Momentum = 'up' | 'flat' | 'down';
 /** The allied division's gap per node (the last two only where the division data support them, design 5b). */
 export type AibGap =
   | 'none' | 'no_trusted_supplier' | 'single_point_of_failure' | 'insufficient_redundancy' | 'insufficient_allied_capacity' | 'excessive_concentration' | 'weak_evidence';
+/** The three yards of the Yards & Fences framing (R yard_rollup.R SP_YARDS): small (high fence: Secure), medium (Preserve, Catch Up, Partner; Accelerate at Deployment & Use), large (low fence: Watch). */
+export type Yard = 'small' | 'medium' | 'large';
+/** A node's yard roll-up (R SP_YARD_ROLLUPS): its own yard where its layers agree, else the yards it spans. */
+export type YardRollup = Yard | 'mixed_high_medium' | 'mixed_medium_low' | 'mixed_high_low' | 'mixed_high_medium_low';
+/** What cells.prize holds (R decision_engine.R choice_prize): the Strategic Industrial Value, or the market prize (Industrial Opportunity). */
+export type PrizeMeasure = 'strategic_value' | 'market';
 /** Where a Deployment Need family's value comes from (design D12). */
 export type DataBasis = 'national' | 'regional_proxy' | 'observed_trend' | 'global_context' | 'not_assessed';
 
@@ -72,7 +86,7 @@ export interface PostureManifest {
 export interface PostureThresholds {
   /** supply_chain_need at or above: high need */
   need: number;
-  /** industrial_opportunity at or above: high prize */
+  /** the prize the choice read (cells.prize: the Strategic Industrial Value, or the market prize) at or above: high prize */
   prize: number;
   /** Competitive Position percentile among contenders at or above: strong position (Preserve bar, top quarter) */
   cp: number;
@@ -107,6 +121,49 @@ export interface PostureMeta {
   phrases: Record<string, string>;
   core_members: number;
   partner_members: number;
+  /** what cells.prize holds (meta.prize_measure; "market" when the core does not say) */
+  prize_measure: PrizeMeasure;
+  /** the roll-up of each code of cells.yd (meta.yard_codes inverted; the R codes S, M, L, SM, ML, SL, SML by default) */
+  yard_codes: Record<string, YardRollup>;
+  /** the large-yard signals in R's fixed order (meta.large_yard_signals); the nodes' indexes point into it */
+  large_yard_signals: string[];
+  /** the node-level Yards & Fences evidence, keyed "tech|stage|layer" (layer "stage" for the whole node); empty when the core has none */
+  yf_nodes: Record<string, YfNode>;
+}
+
+/**
+ * The Yards & Fences evidence of one producing-stage node or sensitive layer (meta.yf_nodes; country-invariant,
+ * the modal value across economies: where an economy's own large-yard case differs, its detail says so).
+ */
+export interface YfNode {
+  /** "tech|stage|layer" */
+  key: string;
+  tech: string;
+  stage: string;
+  /** the layer id, "stage" for the whole node */
+  layer: string;
+  /** the layer's name (null for the whole node) */
+  label: string | null;
+  /** the large-yard case: true holds, false does not, null undecided */
+  largeYard: boolean | null;
+  /** how many of the non-required (commodity) signals hold */
+  n: number | null;
+  /** the signals that hold, by name */
+  signals: string[];
+  /** the signals not observed, by name */
+  unknown: string[];
+  /** a large yard that keeps a capability floor (moderate industrial learning) */
+  floor: boolean | null;
+  /** industrial-commons value, 0-1 */
+  commons: number | null;
+  /** future-option value, 0-1 */
+  option: number | null;
+  /** how many of the three commons attributes were observed */
+  commonsN: number | null;
+  /** how many of the four leap tests were observed */
+  optionN: number | null;
+  /** "market_only": neither commons nor option reaches the gate, so the value is capped below the prize bar */
+  cap: string | null;
 }
 
 export interface PostureCell {
@@ -126,8 +183,12 @@ export interface PostureCell {
   needType: NeedType;
   /** the relevant need (supply_chain_need or deployment_need), 0 to 1 */
   need: number | null;
-  /** industrial_opportunity, 0 to 1 (producing stages) */
+  /** the prize the choice read, 0 to 1 (producing stages): the Strategic Industrial Value, or the market prize where meta.prize_measure is "market" */
   prize: number | null;
+  /** the market prize (industrial_opportunity, cells.io), 0 to 1; where the core has no io, the prize itself when it is the market measure, else null */
+  market: number | null;
+  /** the node's yard roll-up (cells.yd); null when not assessed or not written */
+  yards: YardRollup | null;
   /** Competitive Position percentile among the node's contenders, 0 to 1 */
   cp: number | null;
   /** the economy's share of world supply */
@@ -265,6 +326,23 @@ export function checkPostureManifest(doc: unknown): PostureManifest {
   return doc as unknown as PostureManifest;
 }
 
+/** R POSTURE_YARD_CODE: the code of each roll-up in cells.yd (the default of meta.yard_codes). */
+export const YARD_CODES: Readonly<Record<YardRollup, string>> = {
+  small: 'S', medium: 'M', large: 'L', mixed_high_medium: 'SM', mixed_medium_low: 'ML', mixed_high_low: 'SL', mixed_high_medium_low: 'SML',
+};
+export const YARD_ROLLUPS = Object.keys(YARD_CODES) as YardRollup[];
+/** R POSTURE_LY_SIGNALS (strategic_value.R SP_LY_SIGNALS), in order: the default of meta.large_yard_signals. */
+export const LARGE_YARD_SIGNALS: readonly string[] = [
+  'mature', 'passive', 'standardized', 'substitutable', 'easy_qualification', 'diversified', 'low_learning', 'low_spillover', 'low_differentiation', 'commoditized',
+];
+/** The yards a roll-up spans, small to large. */
+export const ROLLUP_YARDS: Readonly<Record<YardRollup, readonly Yard[]>> = {
+  small: ['small'], medium: ['medium'], large: ['large'],
+  mixed_high_medium: ['small', 'medium'], mixed_medium_low: ['medium', 'large'], mixed_high_low: ['small', 'large'], mixed_high_medium_low: ['small', 'medium', 'large'],
+};
+/** The yard of a choice (R sp_yard_of_choice): Secure small; Preserve, Catch Up, Partner and Accelerate medium; Watch large. */
+export const yardOfVerb = (v: Verb | null): Yard | null => (v === null ? null : v === 'secure' ? 'small' : v === 'watch' ? 'large' : 'medium');
+
 const DEFAULT_THRESHOLDS: PostureThresholds = { need: 0.67, prize: 0.6, cp: 0.75, deployment: 0.67, borderline_band: 0.05 };
 const DEFAULT_SCENARIO_LABELS: Record<string, string> = {
   current_policy: 'Current policy',
@@ -305,6 +383,15 @@ function decodeMeta(meta: Record<string, unknown>, techs: string[], stages: stri
   };
   const ph = isObj(meta.phrases) ? meta.phrases : {};
   const phrases = Object.fromEntries(Object.entries(ph).filter(([, v]) => typeof v === 'string')) as Record<string, string>;
+  const pm = str(meta.prize_measure);
+  if (pm !== null && pm !== 'strategic_value' && pm !== 'market') p.push(`core: meta.prize_measure '${pm}' is not known`);
+  const yc = isObj(meta.yard_codes) ? meta.yard_codes : {};
+  const yard_codes: Record<string, YardRollup> = Object.fromEntries(YARD_ROLLUPS.map((r) => [YARD_CODES[r], r]));
+  for (const [r, code] of Object.entries(yc)) {
+    if (!(YARD_ROLLUPS as string[]).includes(r)) p.push(`core: meta.yard_codes names an unknown roll-up '${r}'`);
+    else if (typeof code === 'string' && code !== '') yard_codes[code] = r as YardRollup;
+  }
+  const lys = Array.isArray(meta.large_yard_signals) ? meta.large_yard_signals.map(String) : [...LARGE_YARD_SIGNALS];
   return {
     techs, stages, stage_display,
     benchmark_period: str(meta.benchmark_period),
@@ -318,12 +405,57 @@ function decodeMeta(meta: Record<string, unknown>, techs: string[], stages: stri
     phrases,
     core_members: num(meta.core_members) ?? 0,
     partner_members: num(meta.partner_members) ?? 0,
+    prize_measure: pm === 'strategic_value' ? 'strategic_value' : 'market',
+    yard_codes,
+    large_yard_signals: lys,
+    yf_nodes: decodeYfNodes(meta.yf_nodes, lys, techs, stages, p),
   };
+}
+
+/**
+ * meta.yf_nodes (columnar: key "tech|stage|layer", label, case, n, s, u, floor, commons, option, commons_n,
+ * option_n, cap; s and u 0-based indexes into the signal names) as nodes by key; empty when absent.
+ */
+function decodeYfNodes(raw: unknown, signals: readonly string[], techs: readonly string[], stages: readonly string[], p: string[]): Record<string, YfNode> {
+  if (!isObj(raw)) return {};
+  const keys = asArr(raw.key);
+  const col = (n: string) => asArr(raw[n]);
+  for (const n of ['label', 'case', 'n', 's', 'u', 'floor', 'commons', 'option', 'commons_n', 'option_n', 'cap']) {
+    if (Array.isArray(raw[n]) && col(n).length !== keys.length) p.push(`core: meta.yf_nodes.${n} has ${col(n).length} values, not ${keys.length}`);
+  }
+  const out: Record<string, YfNode> = {};
+  let badKey = 0;
+  let badIdx = 0;
+  const names = (v: unknown): string[] =>
+    asArr(v).map((i) => {
+      const k = num(i);
+      const s = k !== null && Number.isInteger(k) ? signals[k] : undefined;
+      if (s === undefined) badIdx++;
+      return s ?? '?';
+    });
+  keys.forEach((k, i) => {
+    const parts = typeof k === 'string' ? k.split('|') : [];
+    if (parts.length !== 3 || !techs.includes(parts[0]) || !stages.includes(parts[1]) || !parts[2]) {
+      badKey++;
+      return;
+    }
+    const cs = col('case')[i];
+    const fl = col('floor')[i];
+    out[k as string] = {
+      key: k as string, tech: parts[0], stage: parts[1], layer: parts[2], label: str(col('label')[i]),
+      largeYard: typeof cs === 'boolean' ? cs : null, n: num(col('n')[i]), signals: names(col('s')[i]), unknown: names(col('u')[i]),
+      floor: typeof fl === 'boolean' ? fl : null, commons: num(col('commons')[i]), option: num(col('option')[i]),
+      commonsN: num(col('commons_n')[i]), optionN: num(col('option_n')[i]), cap: str(col('cap')[i]),
+    };
+  });
+  if (badKey) p.push(`core: ${badKey} meta.yf_nodes ${badKey === 1 ? 'key is' : 'keys are'} not a technology|stage|layer of the core`);
+  if (badIdx) p.push(`core: ${badIdx} meta.yf_nodes signal ${badIdx === 1 ? 'index points' : 'indexes point'} outside meta.large_yard_signals`);
+  return out;
 }
 
 /** The columns every core must carry (others are optional; a column that is present has one value per cell). */
 const REQUIRED_COLUMNS = ['c', 't', 's', 'p', 'm', 'dm', 'need', 'prize', 'cp'] as const;
-const OPTIONAL_COLUMNS = ['v', 'sec', 'nt', 'share', 'pw', 'bd', 'conf', 'fl', 'ev', 'al', 'alc', 'alf', 'p1', 'gap', 'mom', 'mq'] as const;
+const OPTIONAL_COLUMNS = ['v', 'sec', 'nt', 'share', 'pw', 'bd', 'conf', 'fl', 'ev', 'al', 'alc', 'alf', 'p1', 'gap', 'mom', 'mq', 'io', 'yd'] as const;
 
 /** Check and decode the columnar core document (schema 2). */
 export function decodeCore(doc: unknown): PostureCore {
@@ -353,9 +485,11 @@ export function decodeCore(doc: unknown): PostureCore {
   const col = (name: string): unknown[] => (has(name) ? asArr(k[name]) : new Array<unknown>(n).fill(null));
   const cells: PostureCell[] = [];
   if (!p.length) {
-    const [cc, tt, ss, pp, vv, mm, dmm, secc, ntt, need, prize, cp, share, pw, bd, conf, fl, ev, al, alc, alf, p1, gap, mom, mq] = [
-      'c', 't', 's', 'p', 'v', 'm', 'dm', 'sec', 'nt', 'need', 'prize', 'cp', 'share', 'pw', 'bd', 'conf', 'fl', 'ev', 'al', 'alc', 'alf', 'p1', 'gap', 'mom', 'mq',
+    const [cc, tt, ss, pp, vv, mm, dmm, secc, ntt, need, prize, cp, share, pw, bd, conf, fl, ev, al, alc, alf, p1, gap, mom, mq, io, yd] = [
+      'c', 't', 's', 'p', 'v', 'm', 'dm', 'sec', 'nt', 'need', 'prize', 'cp', 'share', 'pw', 'bd', 'conf', 'fl', 'ev', 'al', 'alc', 'alf', 'p1', 'gap', 'mom', 'mq', 'io', 'yd',
     ].map(col);
+    // without a market column, the prize is the market prize only where the core says it is
+    const marketIsPrize = !has('io') && meta.prize_measure === 'market';
     const bad = new Map<string, number>();
     const count = (why: string) => bad.set(why, (bad.get(why) ?? 0) + 1);
     for (let i = 0; i < n; i++) {
@@ -395,13 +529,19 @@ export function decodeCore(doc: unknown): PostureCore {
       if (confidence === undefined) count('an unknown posture confidence');
       const alignmentConfidence = normalizeAlignmentConfidence(alc[i]);
       if (alignmentConfidence === undefined) count('an unknown alignment confidence');
+      const ydv = str(yd[i]);
+      const yards = ydv !== null ? (meta.yard_codes[ydv] ?? null) : null;
+      if (ydv !== null && yards === null) count('an unknown yard roll-up code');
+      // a roll-up holds the node's own yard (R yard_rollup.R: the stage row is one of its units)
+      const own = yardOfVerb(code === 'S' ? 'secure' : code === 'C' && m !== null && MODES.has(m) ? (m as Verb) : code === 'D' && dm !== null && DEPLOY_MODES.has(dm) ? (dm as Verb) : null);
+      if (yards !== null && own !== null && !ROLLUP_YARDS[yards].includes(own)) count("a yard roll-up without the node's own yard");
       cells.push({
         iso3: iso[ci], tech: techs[ti], stage, posture: code as PostureCode, variant: str(vv[i]),
         mode: m !== null && MODES.has(m) ? (m as CompeteMode) : null,
         deployMode: dm !== null && DEPLOY_MODES.has(dm) ? (dm as DeployMode) : null,
         rationale: sec !== null && RATIONALES.has(sec) ? (sec as SecurityRationale) : null,
         needType: nt !== null && NEED_TYPES.has(nt) ? (nt as NeedType) : needTypeOfStage(stage),
-        need: num(need[i]), prize: num(prize[i]), cp: num(cp[i]), share: num(share[i]),
+        need: num(need[i]), prize: num(prize[i]), market: marketIsPrize ? num(prize[i]) : num(io[i]), yards, cp: num(cp[i]), share: num(share[i]),
         pathway: pwv !== null && PATHWAYS.has(pwv) ? (pwv as Pathway) : null,
         borderline: str(bd[i]), confidence: confidence ?? null, flag: str(fl[i]),
         evidence: evidence ?? null, evidenceRaw: str(ev[i]),

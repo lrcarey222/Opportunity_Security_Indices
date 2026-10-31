@@ -25,12 +25,13 @@ export interface GlossaryEntry {
 }
 
 /** Values filled into {{placeholders}} unless a manifest supplies newer ones (the six-stage build,
- *  2026-10-28: the coalition of 31 core members and 29 partners; 11 headline technologies x 6 stages
- *  = 66 sectors; the Sector pages add Semiconductors' Refining, Components and Assembly: 69 cells). */
+ *  2026-10-28: 11 headline technologies x 6 stages = 66 sectors; the Sector pages add Semiconductors'
+ *  Refining, Components and Assembly: 69 cells; the bundles of 2026-10-30: the coalition of 31 core members
+ *  and 28 partners, a basket of 261 HS6 codes with the quartz and silver ores). */
 export const GLOSSARY_DEFAULTS = {
   n_core: '31',
-  n_partner: '29',
-  n_codes: '259',
+  n_partner: '28',
+  n_codes: '261',
   un_window: '2019-2023',
   n_tech: '11',
   n_sectors: '66',
@@ -560,13 +561,23 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     related: ['supply_chain_need', 'deployment_need'],
   },
   {
+    id: 'strategic_industrial_value',
+    term: 'Strategic Industrial Value',
+    short:
+      'The prize: is domestic capability in a node strategically valuable? It combines the market prize (Industrial Opportunity), industrial-commons value and future-option value; a large market alone never makes it high.',
+    more:
+      'Industrial commons reads process knowledge, the workforce and supplier ecosystem and cross-sector spillover; future option reads the leap tests of a leap candidate. Like the market prize it reads no current capability and no need variable, and it is a percentile across the producing nodes. Where neither commons nor option reaches the gate, the value is capped just below the prize bar (market only).',
+    modules: ALL,
+    related: ['posture', 'industrial_opportunity', 'competitive_position', 'yard', 'large_yard_case'],
+  },
+  {
     id: 'industrial_opportunity',
     term: 'Industrial Opportunity',
-    short: 'The prize: is there an industrial or economic opportunity worth pursuing in a node? Expected world demand growth to 2035 under current policy and investment momentum, lifted by national home-market growth where measured.',
+    short: 'The market prize: is there a market worth pursuing in a node? Expected world demand growth to 2035 under current policy and investment momentum, lifted by national home-market growth where measured.',
     more:
-      'It reads no current capability (exports, production, capacity, investment, reserves) and no need variable, so it stays distinct from Competitive Position and Strategic Need. A declining market is capped below the bar; technology maturity is context, not a score. Feasibility, pipeline, adjacency and cost advantage form the credible-pathway test of Catch Up instead. Not the legacy Economic Opportunity index.',
+      'One of the three families of the Strategic Industrial Value, the prize the choice reads (the prize itself where the data predate it). It reads no current capability (exports, production, capacity, investment, reserves) and no need variable, so it stays distinct from Competitive Position and Strategic Need; a declining market is capped below the bar. Feasibility, pipeline, adjacency and cost advantage form the credible-pathway test of Catch Up instead. Not the legacy Economic Opportunity index.',
     modules: ALL,
-    related: ['posture', 'competitive_position', 'pathway', 'eo'],
+    related: ['strategic_industrial_value', 'posture', 'competitive_position', 'pathway', 'eo'],
   },
   {
     id: 'competitive_position',
@@ -658,6 +669,25 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     more: 'Shown beside the allied gap, so a gap many countries rely on stands out.',
     modules: ALL,
     related: ['aib_gap', 'posture'],
+  },
+  // ---- Yards & Fences (2026-10-30): the yards, layers as yard units, the large-yard case ----------------
+  {
+    id: 'yard',
+    term: 'Yard (Yards & Fences)',
+    short: "A node's place in the Yards & Fences framing: Small yard, High fence (Secure); Medium yard, permeable fence (Preserve, Catch Up, Partner, Accelerate); Large yard, Low fence (Watch).",
+    more:
+      'Capability layers, such as grid-control software or battery-management firmware, are yard units of their own, each with its own choice. A step whose layers sit in different yards is mixed: the Strategy Map splits its cell diagonally between its own choice colour and the fence colour of the other yards.',
+    modules: ALL,
+    related: ['posture', 'strategic_industrial_value', 'large_yard_case'],
+  },
+  {
+    id: 'large_yard_case',
+    term: 'Large-yard case',
+    short: 'The test that a capability is a commodity where affordable, diversified access should dominate, whatever the size of the market: mature and passive, with most of eight commodity signals holding.',
+    more:
+      'The eight signals: standardized, substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation, commoditized. A credible leap ahead or strong industrial learning vetoes it; moderate learning keeps a capability floor. Market size is never a signal.',
+    modules: ALL,
+    related: ['yard', 'strategic_industrial_value', 'posture'],
   },
 ];
 

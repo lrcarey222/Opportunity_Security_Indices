@@ -16,11 +16,13 @@ import { Loading, Notice } from '../components/ui.tsx';
 import { POSTURE_TERMS } from './basis.tsx';
 import { PostureNodeDrawer } from './CellDrawer.tsx';
 import { countPostures, countryCells, countryNames, countryPostureRows, POSTURE_CSV_COLS, postureCsvRows, postureCsvText, postureProvenance, strategyCountsText } from './derive.ts';
+import { prizeLabel } from './grammar.ts';
 import { ChoiceLegend, TradeFreshness } from './PostureLegend.tsx';
 import { PostureMatrix } from './PostureMatrix.tsx';
+import { mixedYards } from './yards.ts';
 import { usePostureCore } from './store.ts';
 import { strategySentence } from './strategy.ts';
-import { COUNTRY_POSTURE_COLS } from './tables.tsx';
+import { countryPostureCols } from './tables.tsx';
 
 export const COUNTRY_STRATEGY_MAP_TITLE = 'Country Strategy Map';
 /** The old name of the title constant (the map was "Secure, compete or deploy, by technology and stage" until 2026-10-29). */
@@ -84,6 +86,9 @@ export function CountryPostureCard({
   const c = core.data;
   const sentence = strategySentence(name, cells, c.meta);
   const counts = countPostures(cells);
+  // the nodes the map splits on the diagonal (layers in different yards)
+  const mixed = cells.filter((x) => mixedYards(x) !== null).length;
+  const prizeTermId = c.meta.prize_measure === 'market' ? POSTURE_TERMS.industrialOpportunity : POSTURE_TERMS.strategicValue;
   const cw = strategyCountsText(counts);
   const summary = `${sentence} ${cw.verbs}.`;
   const toggle = (k: string) => setSel(sel === k ? null : k);
@@ -98,7 +103,7 @@ export function CountryPostureCard({
         table={() => (
           <TableView
             rows={rows}
-            cols={COUNTRY_POSTURE_COLS}
+            cols={countryPostureCols(c.meta)}
             caption={`${name}: choice by technology and stage`}
             rowKey={(r) => r.key}
             onRowClick={(r) => r.classified && toggle(r.key)}
@@ -111,15 +116,22 @@ export function CountryPostureCard({
           <div className="space-y-1">
             <TradeFreshness meta={c.meta} />
             <p>
-              Need and <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term> triage each node; <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>{' '}
+              Need and the prize (<Term id={prizeTermId}>{prizeLabel(c.meta)}</Term>) triage each node; <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>{' '}
               decides the industrial response; the Secure tests override both. Deployment &amp; Use reads <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> and is
               Accelerate (medium fence) or Watch (low fence), never Partner. Each cell is coloured by its choice alone; hover or focus a cell for its name, choice and fence, and
               select it, or a row of the table, for its five questions: need, prize, position, choice and policy alignment.
             </p>
+            {mixed > 0 && (
+              <p data-testid="strategy-map-mixed-note">
+                A cell split on the diagonal is a mixed step: its capability layers sit in different <Term id={POSTURE_TERMS.yard}>yards</Term>. Its own choice colour fills the
+                upper left; the fence colour of each other yard the lower right (orange the Small yard, blue the Medium yard, grey the Large yard). The drawer lists each layer
+                with its own yard and choice.
+              </p>
+            )}
           </div>
         }
       >
-        <ChoiceLegend counts={showCounts ? counts : null} className="mb-3" />
+        <ChoiceLegend counts={showCounts ? counts : null} mixed={mixed > 0 ? (showCounts ? mixed : true) : null} className="mb-3" />
         <div className="overflow-x-auto">
           <PostureMatrix core={c} cells={cells} selected={sel} onSelect={toggle} names={names} />
         </div>

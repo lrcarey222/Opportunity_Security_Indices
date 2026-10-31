@@ -11,6 +11,7 @@ import {
   ALIGNMENT_LABEL, choiceWord, DEPLOY_MODE_LABEL, deliveryWords, EVIDENCE_LABEL, flagWords, GAP_LABEL, MODE_LABEL, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE, NEED_TYPE_LABEL,
   PATHWAY_LABEL, POSTURE_LABEL, RATIONALE_LABEL, VERB_LABEL, VERB_ORDER, verbOf,
 } from './grammar.ts';
+import { rollupWords } from './yards.ts';
 
 /** The counts of one set of nodes: the three families, not assessed, and the six verbs. */
 export interface PostureCounts {
@@ -219,7 +220,7 @@ export function parsePostureNode(
     return bad(words, tech);
   }
   if (!offered.includes(stage)) {
-    return bad(stage === DEPLOYMENT_STAGE ? `${stage} is left out here: its choice reads deployment need (Accelerate or Watch) and it has no Industrial Opportunity` : `${stage || 'an empty name'} is not a supply-chain stage`, tech);
+    return bad(stage === DEPLOYMENT_STAGE ? `${stage} is left out here: its choice reads deployment need (Accelerate or Watch) and it has no prize of its own` : `${stage || 'an empty name'} is not a supply-chain stage`, tech);
   }
   return { tech, stage, problem: null };
 }
@@ -275,7 +276,14 @@ export interface PostureRow {
   need: number | null;
   supplyChainNeed: number | null;
   deploymentNeed: number | null;
+  /** the prize the choice read (the Strategic Industrial Value, or the market prize where the core's prize is the market measure) */
   prize: number | null;
+  /** the Strategic Industrial Value (null where the core's prize is the market measure) */
+  strategicValue: number | null;
+  /** the market prize (Industrial Opportunity) */
+  market: number | null;
+  /** the node's yards with its layers ("Medium yard", "Mixed: ..."; yards.ts rollupWords) */
+  yards: string | null;
   cp: number | null;
   share: number | null;
   pathway: string | null;
@@ -323,7 +331,9 @@ export function unplottedWords(cells: readonly PostureCell[], why: (c: PostureCe
     .join('; ');
 }
 
-function postureRow(key: string, iso3: string, tech: string, stage: string, c: PostureCell | null, names: Record<string, string>, tiers: Record<string, string>): PostureRow {
+function postureRow(
+  key: string, iso3: string, tech: string, stage: string, c: PostureCell | null, names: Record<string, string>, tiers: Record<string, string>, siv: boolean,
+): PostureRow {
   const tier = tiers[iso3];
   return {
     key, iso3, country: names[iso3] ?? iso3, tier: tier === 'core' || tier === 'partner' ? tier : null, tech, stage, stageName: stageDisplay(stage),
@@ -338,7 +348,8 @@ function postureRow(key: string, iso3: string, tech: string, stage: string, c: P
     need: c?.need ?? null,
     supplyChainNeed: c && c.needType === 'supply_chain' ? c.need : null,
     deploymentNeed: c && c.needType === 'deployment' ? c.need : null,
-    prize: c?.prize ?? null, cp: c?.cp ?? null, share: c?.share ?? null,
+    prize: c?.prize ?? null, strategicValue: siv ? (c?.prize ?? null) : null, market: c?.market ?? null, yards: c ? rollupWords(c) : null,
+    cp: c?.cp ?? null, share: c?.share ?? null,
     pathway: c?.pathway ? PATHWAY_LABEL[c.pathway] : null,
     alignment: c?.alignment ? ALIGNMENT_LABEL[c.alignment] : null,
     alignmentConfidence: c?.alignmentConfidence ?? null,
@@ -361,26 +372,31 @@ export function countryPostureRows(core: PostureCore, iso3: string): PostureRow[
   const names = countryNames(core);
   const tiers = tiersOf(core);
   const by = new Map(countryCells(core, iso3).map((c) => [cellKey(c.tech, c.stage), c]));
-  return core.meta.techs.flatMap((t) => core.meta.stages.map((s) => postureRow(cellKey(t, s), iso3, t, s, by.get(cellKey(t, s)) ?? null, names, tiers)));
+  const siv = core.meta.prize_measure === 'strategic_value';
+  return core.meta.techs.flatMap((t) => core.meta.stages.map((s) => postureRow(cellKey(t, s), iso3, t, s, by.get(cellKey(t, s)) ?? null, names, tiers, siv)));
 }
 
 const FAMILY_RANK: Record<string, number> = { S: 0, C: 1, D: 2, N: 3 };
 
-/** Every economy classified in one node, Secure first, then Compete, Deploy and not assessed; within each, highest Industrial Opportunity first (unmeasured last), then by name. */
+/** Every economy classified in one node, Secure first, then Compete, Deploy and not assessed; within each, highest prize first (unmeasured last), then by name. */
 export function sectorPostureRows(core: PostureCore, tech: string, stage: string): PostureRow[] {
   const names = countryNames(core);
   const tiers = tiersOf(core);
   const rank = (p: PostureCell['posture'] | null) => (p ? FAMILY_RANK[p] : 4);
   return core.cells
     .filter((c) => c.tech === tech && c.stage === stage)
-    .map((c) => postureRow(c.iso3, c.iso3, tech, stage, c, names, tiers))
+    .map((c) => postureRow(c.iso3, c.iso3, tech, stage, c, names, tiers, core.meta.prize_measure === 'strategic_value'))
     .sort((a, b) => rank(a.posture) - rank(b.posture) || (b.prize ?? -1) - (a.prize ?? -1) || a.country.localeCompare(b.country));
 }
 
-/** The CSV columns of the Country and Sector posture tables (provenance follows). Stage is the id; stage_name the display name. */
+/**
+ * The CSV columns of the Country and Sector posture tables (provenance follows). Stage is the id; stage_name the
+ * display name. The prize: strategic_industrial_value (the prize the choice read; empty where the core's prize is
+ * the market measure) and industrial_opportunity (the market prize); yards: the node's yards with its layers.
+ */
 export const POSTURE_CSV_COLS = [
   'country', 'iso3', 'coalition_tier', 'technology', 'stage', 'stage_name', 'classified', 'posture', 'compete_mode', 'deploy_mode', 'choice', 'secure_rationale',
-  'need_type', 'supply_chain_need', 'deployment_need', 'industrial_opportunity', 'competitive_position', 'world_supply_share', 'pathway_credible',
+  'need_type', 'supply_chain_need', 'deployment_need', 'strategic_industrial_value', 'industrial_opportunity', 'yards', 'competitive_position', 'world_supply_share', 'pathway_credible',
   'policy_alignment', 'alignment_confidence', 'evidence', 'posture_confidence', 'trade_momentum', 'first_partner', 'first_partner_iso3', 'partner_gap',
   'borderline', 'consistency_flag',
 ] as const;
@@ -390,7 +406,8 @@ export function postureCsvRows(rows: PostureRow[]): Record<string, unknown>[] {
   return rows.map((r) => ({
     country: r.country, iso3: r.iso3, coalition_tier: r.tier, technology: r.tech, stage: r.stage, stage_name: r.stageName, classified: r.classified,
     posture: r.postureWord, compete_mode: r.mode, deploy_mode: r.deployMode, choice: r.choice, secure_rationale: r.rationale, need_type: r.needType,
-    supply_chain_need: r.supplyChainNeed, deployment_need: r.deploymentNeed, industrial_opportunity: r.prize, competitive_position: r.cp,
+    supply_chain_need: r.supplyChainNeed, deployment_need: r.deploymentNeed, strategic_industrial_value: r.strategicValue, industrial_opportunity: r.market,
+    yards: r.yards, competitive_position: r.cp,
     world_supply_share: r.share, pathway_credible: r.pathway, policy_alignment: r.alignment, alignment_confidence: r.alignmentConfidence, evidence: r.evidence,
     posture_confidence: r.confidence, trade_momentum: r.momentum, first_partner: r.partner1Name, first_partner_iso3: r.partner1, partner_gap: r.partnerGap,
     borderline: r.borderline, consistency_flag: r.flag,

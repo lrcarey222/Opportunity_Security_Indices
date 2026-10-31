@@ -22,6 +22,7 @@ import { Term } from '../../components/Term.tsx';
 import { Loading, Notice, Select } from '../../components/ui.tsx';
 import { DEPLOYMENT_STAGE, stageDisplay } from '../../lib/stages.ts';
 import { POSTURE_TERMS } from '../../posture/basis.tsx';
+import { prizeLabel } from '../../posture/grammar.ts';
 import type { PostureCell } from '../../posture/contract.ts';
 import {
   countPostures, countryNames, parsePostureNode, POSTURE_CSV_COLS, postureCsvRows, postureCsvText, postureProvenance, sectorPostureRows, strategyCountsText,
@@ -29,7 +30,7 @@ import {
 } from '../../posture/derive.ts';
 import { TradeFreshness } from '../../posture/PostureLegend.tsx';
 import { usePostureCore } from '../../posture/store.ts';
-import { SECTOR_POSTURE_COLS } from '../../posture/tables.tsx';
+import { sectorPostureCols } from '../../posture/tables.tsx';
 import {
   decisionWords, nodePrize, notPlottedReason, prizeWords, regionLabels, sectorStrategyTakeaway, sectorStrategyTitle, strategyHref, strategyPoints, verbRank, verbsOfStage,
 } from './derive.ts';
@@ -90,6 +91,7 @@ export function SectorStrategyCard({
   }
   if (!core.data) return <Loading label="Loading the strategic posture" />;
   const c = core.data;
+  const prizeTerm = c.meta.prize_measure === 'market' ? POSTURE_TERMS.industrialOpportunity : POSTURE_TERMS.strategicValue;
   if (node && (!c.meta.techs.includes(node.tech) || !c.meta.stages.includes(node.stage))) {
     return (
       <Notice kind="info" title="No strategic choice for this node">
@@ -112,7 +114,7 @@ export function SectorStrategyCard({
   const open = (iso: string) => nav(countryHref(iso, tech, stage));
   const byIso = new Map(cells.map((x) => [x.iso3, x]));
   const plottedCol: Col<PostureRow> = { id: 'plotted', header: 'On the chart', value: (r) => (notPlottedReason(byIso.get(r.iso3) ?? null) ? `no: ${notPlottedReason(byIso.get(r.iso3) ?? null)}` : 'yes') };
-  const cols = [...SECTOR_POSTURE_COLS.filter((x) => x.id !== 'plotted'), plottedCol];
+  const cols = [...sectorPostureCols(c.meta).filter((x) => x.id !== 'plotted'), plottedCol];
   const tools = node ? undefined : (
     <>
       <Select label="Technology" value={tech} options={c.meta.techs.map((x) => ({ value: x, label: x }))} onChange={(x) => set(x, stage)} />
@@ -147,7 +149,7 @@ export function SectorStrategyCard({
             <span className="mt-1 block text-paper-dim" data-testid="posture-reading">
               Each mark is one economy. Across: <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>, among the node&apos;s contenders; up:{' '}
               {dep ? <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> : <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>}. The colour is
-              the choice, grouped by fence. The node&apos;s prize (<Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>) barely varies across economies, so the notes give it in
+              the choice, grouped by fence. The node&apos;s prize (<Term id={prizeTerm}>{prizeLabel(c.meta)}</Term>) barely varies across economies, so the notes give it in
               words.
             </span>
           </>
@@ -169,7 +171,7 @@ export function SectorStrategyCard({
         legend={<VerbMarkLegend verbs={verbsOfStage(stage)} notPlotted={notPlotted} />}
         notes={
           <div className="space-y-1" data-testid="sector-strategy-notes">
-            <p data-testid="sector-strategy-prize">{prizeWords(stage, prize, t.prize)}</p>
+            <p data-testid="sector-strategy-prize">{prizeWords(stage, prize, t.prize, prizeLabel(c.meta))}</p>
             <p data-testid="sector-strategy-rule">{decisionWords(stage, prize, t)}</p>
             <p>Region labels are tendencies, not rules: the marks give each economy&apos;s actual choice. A mark opens that economy&apos;s Country Strategy Map on this node.</p>
             <TradeFreshness meta={c.meta} />
@@ -198,7 +200,7 @@ export function SectorStrategyIntro() {
     <>
       Unlike the measured values on the rest of these pages, this is a recommendation: for one technology at one stage, the strategic position framework reads each
       economy&apos;s need (<Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>, or <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> at Deployment
-      &amp; Use), the node&apos;s prize (<Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>) and its{' '}
+      &amp; Use), the node&apos;s prize (<Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term>) and its{' '}
       <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>, and recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or Watch. Its
       thresholds are fixed; observed policy is compared with it afterwards, never fed into it.
     </>

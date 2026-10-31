@@ -8,7 +8,8 @@
 //   Need, Prize & Position and Choices), 5 Policy Alignment, 6 Allied Strategy (the compacts with a role)
 //   (views/profile/StrategySections.tsx), 7 Evidence & Methodology with the Legacy OSI framework
 //   (views/profile/EvidenceSection.tsx).
-// One drawer (posture/PostureNodeDrawer) serves every entry point through ?node=<Tech>|<Stage> (design D8);
+// One drawer (posture/PostureNodeDrawer) serves every entry point through ?node=<Tech>|<Stage> (design D8),
+// focused on a layer of the node with ?layer=<layer_id> (a fence section's layer unit, 2026-10-30);
 // a value the data do not know is reported in "Ignored in the link". Old anchors reach their new place:
 // alias spans in the sections, and the old blocks now in closed disclosures (the Legacy OSI results) open on
 // load (derive/strategyPage.ts hashPlan). States (A5): unknown ISO3 ->
@@ -25,7 +26,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { GlossaryVarsProvider } from '../../components/glossaryVars.tsx';
 import { Loading, Notice, PageHead } from '../../components/ui.tsx';
 import { useAibManifest, useCompactsDoc } from '../../aib/data/hooks.ts';
-import { countryCells, NODE_KEY, PostureNodeDrawer, useNodeSelection, usePostureCore, usePostureDetail } from '../../posture/index.ts';
+import { countryCells, LAYER_KEY, NODE_KEY, PostureNodeDrawer, useNodeSelection, usePostureCore, usePostureDetail } from '../../posture/index.ts';
 import { appendSearch, scenarioPairs, splitSearch } from '../../state/url.ts';
 import { useTitle } from '../../shell/title.ts';
 import { Redirect } from '../../shell/Redirect.tsx';
@@ -46,8 +47,8 @@ import { HighFenceSection, LowFenceSection, MediumFenceSection } from './profile
 import { AlliedSection, PolicyAlignmentSection, StrategySection } from './profile/StrategySections.tsx';
 import { ProfileProvider, type CountryPosture, type ProfileCtx } from './profile/common.tsx';
 
-/** The query keys the profile owns (the model's parser ignores them and its URL writes keep them): the country's own and the node selection. */
-const HOST_KEYS: readonly string[] = [...COUNTRY_KEY_ORDER, NODE_KEY];
+/** The query keys the profile owns (the model's parser ignores them and its URL writes keep them): the country's own and the node selection (with its layer). */
+const HOST_KEYS: readonly string[] = [...COUNTRY_KEY_ORDER, NODE_KEY, LAYER_KEY];
 
 export default function CountryProfileView() {
   const params = useParams();
@@ -254,7 +255,7 @@ function Profile({ iso3 }: { iso3: string }) {
               <EvidenceSection engineOn={engineOn} hostKeys={HOST_KEYS} />
             </div>
           </div>
-          <PostureNodeDrawer iso3={sheet.iso3} name={cap(name)} selected={node.selected} onClose={() => node.select(null)} sectorHref={(tech, stage) => postureSectorLink(tech, stage, sheet.iso3)} />
+          <PostureNodeDrawer iso3={sheet.iso3} name={cap(name)} selected={node.selected} layer={node.layer} onClose={() => node.select(null)} sectorHref={(tech, stage) => postureSectorLink(tech, stage, sheet.iso3)} />
         </div>
       </ProfileProvider>
     </GlossaryVarsProvider>

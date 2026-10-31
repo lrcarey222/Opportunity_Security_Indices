@@ -5,7 +5,7 @@
 //   (?pnode=Tech|Stage), checked against the data (parsePostureNode): a value that is not used as written
 //   (a three-stage stage such as Batteries|Midstream, an unknown technology) is reported in an "Ignored in
 //   the link" notice above the card, unless the page lists it in its own notice (reportIgnored={false}).
-//   Deployment is not offered (its choice reads deployment need, Accelerate or Watch, and it has no Industrial Opportunity to plot); it shows as a disabled choice.
+//   Deployment is not offered (its choice reads deployment need, Accelerate or Watch, and it has no prize to plot); it shows as a disabled choice.
 // - a Sector profile (/sector/:tech/:stage): `node` fixes the card to that node (no selects, no URL key);
 //   Deployment is allowed there and says that every economy deploys.
 // Takeaway as the sub and the figure's summary; legend and notes in the card's slots; a table twin of the
@@ -22,11 +22,12 @@ import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
 import { POSTURE_TERMS } from './basis.tsx';
 import type { PostureCell } from './contract.ts';
 import { countPostures, countryNames, parsePostureNode, POSTURE_CSV_COLS, postureCsvRows, postureCsvText, postureProvenance, producingStagesOf, sectorPostureRows, sectorTakeaway } from './derive.ts';
+import { prizeLabel } from './grammar.ts';
 import { PostureCountsList } from './PostureCounts.tsx';
 import { ChoiceLegend, TradeFreshness } from './PostureLegend.tsx';
 import { PostureScatter } from './PostureScatter.tsx';
 import { usePostureCore } from './store.ts';
-import { SECTOR_POSTURE_COLS } from './tables.tsx';
+import { sectorPostureCols } from './tables.tsx';
 
 /** The URL key of the Sector home's node: ?pnode=Tech|Stage (stage and technology labels, not slugs). */
 export const SECTOR_NODE_KEY = 'pnode';
@@ -125,7 +126,7 @@ export function SectorPostureCard({
             <span data-testid="posture-takeaway">{takeaway}</span>
             {/* the reading line, as the Sector pages' chart cards give it (spec_country.md C3.6) */}
             <span className="mt-1 block text-paper-dim" data-testid="posture-reading">
-              Each point is one economy. Across: <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>, among the node&apos;s contenders; up:{' '}
+              Each point is one economy. Across: <Term id={c.meta.prize_measure === 'market' ? POSTURE_TERMS.industrialOpportunity : POSTURE_TERMS.strategicValue}>{prizeLabel(c.meta)}</Term>, among the node&apos;s contenders; up:{' '}
               <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>. Outlined diamonds are Secure: they keep their true coordinates because Secure overrides the triage.
               Point size is <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>.
             </span>
@@ -136,7 +137,7 @@ export function SectorPostureCard({
         table={() => (
           <TableView
             rows={rows}
-            cols={SECTOR_POSTURE_COLS}
+            cols={sectorPostureCols(c.meta)}
             caption={`${tech} — ${stage}: strategic posture by economy`}
             rowKey={(r) => r.key}
             onRowClick={(r) => open(r.iso3)}
@@ -152,7 +153,7 @@ export function SectorPostureCard({
             <p>
               Economies without a measured need or prize, or not assessed, are not plotted ({notPlotted} here; the table lists them).
               {stage === DEPLOYMENT_STAGE
-                ? ' At Deployment & Use the choice reads deployment need (Accelerate or Watch); Industrial Opportunity is read at the stages that make or supply the technology.'
+                ? ` At Deployment & Use the choice reads deployment need (Accelerate or Watch); the prize (${prizeLabel(c.meta)}) is read at the stages that make or supply the technology.`
                 : ''}
             </p>
           </div>

@@ -15,7 +15,7 @@ export const POSTURE_BASIS_NOTE = 'fixed thresholds; the dials and the scenario 
 
 /** The tag's tooltip: the same in a sentence. */
 export const POSTURE_BASIS_TITLE =
-  'The strategic position framework decides each node at fixed thresholds of Need, Industrial Opportunity and Competitive Position, after the Secure tests; Deployment & Use reads deployment need. Neither the Perspective dials nor the scenario toggle changes it.';
+  'The strategic position framework decides each node at fixed thresholds of Need, Strategic Industrial Value (the prize) and Competitive Position, after the Secure tests; Deployment & Use reads deployment need. Neither the Perspective dials nor the scenario toggle changes it.';
 
 /** "Strategic position framework · fixed thresholds; ..." as a quiet tag (pass note={null} for the label alone). */
 export function PostureBasisTag({ note = POSTURE_BASIS_NOTE }: { note?: string | null }) {
@@ -40,7 +40,14 @@ export const POSTURE_TERMS = {
   supplyChainNeed: 'supply_chain_need',
   deploymentNeed: 'deployment_need',
   needType: 'need_type',
+  /** the prize the choice reads (2026-10-30): market prize, industrial commons and future option value */
+  strategicValue: 'strategic_industrial_value',
+  /** the market prize alone: one family of the Strategic Industrial Value, and the legacy prize measure */
   industrialOpportunity: 'industrial_opportunity',
+  /** the yards of the Yards & Fences framing (small, medium, large, mixed) */
+  yard: 'yard',
+  /** the countervailing test of a Large yard: commodity signals, whatever the size of the market */
+  largeYard: 'large_yard_case',
   competitivePosition: 'competitive_position',
   pathway: 'pathway',
   deployMode: 'deploy_mode',

@@ -53,6 +53,7 @@ import { growth } from '../derive/concentration.ts';
 import { ASSUMED_ZERO_WORDS, isAssumedZero, noteWords } from '../derive/notes.ts';
 import { countryTotals, excludedCodes, flowsOf, league, matrixTotal } from '../derive/trade.ts';
 import { summaryFromFacts, summaryParity } from '../derive/summary.ts';
+import { GLOSSARY_DEFAULTS } from '../../content/glossary.ts';
 
 const DATA_DIR = resolve(process.cwd(), 'public/data');
 /** The parity rows of the climate sources (sector_src_parity()). */
@@ -260,11 +261,11 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(pct1(usa.share!)).toBe(3.6);
       expect(usa.rank).toBe(9);
       expect(pct1(s.conc.rows.find((r) => r.geo === G('HKG'))!.share!)).toBe(0.2);
-      // every coalition member (31 core + 29 partners) exports
+      // every coalition member (31 core + 28 partners in the bundle of 2026-10-30) exports
       const coalition = model.geos.filter((g) => g.kind === 'country' && (g.tier === 'core' || g.tier === 'partner'));
-      expect(coalition.length).toBe(60);
+      expect(coalition.length).toBe(59);
       expect(coalition.filter((g) => g.tier === 'core').length).toBe(31);
-      expect(coalition.filter((g) => (s.conc.rows.find((r) => r.geo === g.idx)?.value ?? 0) > 0).length).toBe(60);
+      expect(coalition.filter((g) => (s.conc.rows.find((r) => r.geo === g.idx)?.value ?? 0) > 0).length).toBe(coalition.length);
     });
 
     it('Batteries — Assembly, matrix 2024', () => {
@@ -276,7 +277,8 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect([pct1(usa.share!), usa.rank]).toEqual([5.8, 3]);
       expect(pct1(s.conc.rows.find((r) => r.geo === G('HKG'))!.share!)).toBe(0.5);
       const coalition = model.geos.filter((g) => g.kind === 'country' && (g.tier === 'core' || g.tier === 'partner'));
-      expect(coalition.filter((g) => (s.conc.rows.find((r) => r.geo === g.idx)?.value ?? 0) > 0).length).toBe(60);
+      expect(coalition.length).toBe(59);
+      expect(coalition.filter((g) => (s.conc.rows.find((r) => r.geo === g.idx)?.value ?? 0) > 0).length).toBe(coalition.length);
     });
 
     it('top exporters 2024 from the trade chunk = facts (Batteries — Refining and — Assembly)', () => {
@@ -296,7 +298,8 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
     });
 
     it('every trade cell, matrix 2024 (W USD bn, top-1 and its share, top-3, HHI, equal holders, exporters, core, partners, growth since 2020)', () => {
-      // the 41 six-stage trade cells: Extraction 8, Refining 10, Components 10, Assembly 10, Recovery 3, Deployment none
+      // the 42 six-stage trade cells: Extraction 9, Refining 10, Components 10, Assembly 10, Recovery 3, Deployment none
+      // (2026-10-30 basket: quartz and silver ores give Solar Extraction its trade; yellowcake moved to Nuclear Extraction)
       const rows: [string, number, string, number, number, number, number, number, number, number, number][] = [
         ['batteries-extraction', 18.3, 'AUS', 22.9, 54.7, 0.124, 8.1, 170, 30.8, 50.4, 37],
         ['batteries-refining', 74.5, 'CHN', 18.7, 36.8, 0.072, 13.8, 184, 42.1, 30.5, 41],
@@ -319,8 +322,8 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
         ['gas-refining', 94.9, 'USA', 41.2, 59.9, 0.199, 5.0, 142, 54.6, 16.9, 89],
         ['gas-components', 46.2, 'USA', 23.3, 46.0, 0.098, 10.2, 194, 68.9, 9.9, 40],
         ['gas-assembly', 105.3, 'CHN', 20.0, 39.3, 0.078, 12.9, 205, 56.3, 17.4, 25],
-        ['nuclear-extraction', 0.6, 'AUS', 75.9, 98.6, 0.604, 1.7, 25, 77.3, 14.5, 118],
-        ['nuclear-refining', 20.4, 'KAZ', 22.8, 52.6, 0.13, 7.7, 43, 55.1, 5.7, 133],
+        ['nuclear-extraction', 11.4, 'KAZ', 38.6, 76.6, 0.255, 3.9, 45, 49.5, 7.9, 161],
+        ['nuclear-refining', 10.5, 'RUS', 26.5, 64.3, 0.17, 5.9, 23, 66.6, 0.9, 141],
         ['nuclear-components', 9.3, 'CHN', 16.7, 39.2, 0.084, 12.0, 139, 60.2, 5.4, 31],
         ['nuclear-assembly', 4.8, 'CHN', 24.6, 47.8, 0.105, 9.5, 131, 55.1, 10.6, -6],
         ['nuclear-recovery', 0.0, 'ZAF', 29.2, 63.9, 0.175, 5.7, 23, 53.2, 29.2, -40],
@@ -329,6 +332,7 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
         ['oil-components', 13.2, 'CHN', 28.7, 52.9, 0.126, 8.0, 178, 44.4, 17.0, 63],
         ['oil-assembly', 113.9, 'CHN', 23.0, 41.4, 0.087, 11.5, 207, 53.1, 18.0, 29],
         ['oil-recovery', 0.5, 'IND', 17.0, 40.3, 0.084, 11.9, 178, 57.8, 35.2, 114],
+        ['solar-extraction', 7.9, 'PER', 28.5, 60.0, 0.155, 6.5, 128, 18.3, 59.7, 152],
         ['solar-refining', 37.9, 'DEU', 12.2, 29.2, 0.054, 18.5, 127, 53.4, 16.4, 77],
         ['solar-components', 170.3, 'CHN', 23.0, 44.8, 0.1, 10.0, 208, 52.0, 18.5, 31],
         ['solar-assembly', 507.1, 'CHN', 26.4, 39.1, 0.094, 10.7, 208, 46.6, 21.0, 44],
@@ -340,7 +344,7 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
         ['semiconductors-components', 124.4, 'CHN', 16.2, 41.7, 0.096, 10.4, 178, 52.5, 19.2, 25],
         ['semiconductors-assembly', 1219.2, 'TWN', 27.4, 58.5, 0.143, 7.0, 205, 34.3, 22.0, 31],
       ];
-      expect(rows).toHaveLength(41);
+      expect(rows).toHaveLength(42);
       expect(model.cells.filter((c) => c.has_trade).map((c) => c.slug).sort()).toEqual(rows.map((r) => r[0]).sort());
       for (const [cell, W, top, share, top3, hhi, effn, n, core, partner, g] of rows) {
         const s = S('trade.exports', 'cell', cell, 2024);
@@ -469,22 +473,26 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(pct1(s.top1_share)).toBe(37.6);
     });
 
-    it('Atlas 2023: China share of Batteries — Refining 0.257 and — Assembly 0.529 (their own rows)', () => {
+    it('Atlas 2024: China share of Batteries — Refining 0.244 and — Assembly 0.552 (their own rows)', () => {
       const v = V('trade.atlas_share');
-      expect(r3(facts.value(v.idx, I('cell', 'batteries-refining').idx, 2023, G('CHN'))!.value)).toBe(0.257);
-      expect(r3(facts.value(v.idx, I('cell', 'batteries-assembly').idx, 2023, G('CHN'))!.value)).toBe(0.529);
+      // the Atlas of Economic Complexity 2024 release (Dataverse V18): one year, 2024
+      expect(v.years).toEqual([2024]);
+      expect(r3(facts.value(v.idx, I('cell', 'batteries-refining').idx, 2024, G('CHN'))!.value)).toBe(0.244);
+      expect(r3(facts.value(v.idx, I('cell', 'batteries-assembly').idx, 2024, G('CHN'))!.value)).toBe(0.552);
+      expect(facts.value(v.idx, I('cell', 'batteries-assembly').idx, 2023, G('CHN'))).toBeNull();
     });
 
-    it('export feasibility 2023: Batteries — Refining and — Assembly, Solar — Refining, Semiconductors — Refining', () => {
+    it('export feasibility 2024: Batteries — Refining and — Assembly, Solar — Refining, Semiconductors — Refining', () => {
       const v = V('trade.feasibility');
+      expect(v.years).toEqual([2024]);
       for (const [slug, n, top, med] of [
-        ['batteries-refining', 210, ['CHN 0.508', 'DEU 0.440', 'ITA 0.424'], 0.078],
-        ['batteries-assembly', 210, ['CHN 0.614', 'DEU 0.497', 'ITA 0.452'], 0.061],
-        ['solar-refining', 205, ['DEU 0.505', 'CHN 0.479', 'ITA 0.436'], 0.085],
-        ['semiconductors-refining', 207, ['CHN 0.519', 'DEU 0.446', 'FRA 0.420'], 0.089],
+        ['batteries-refining', 209, ['CHN 0.483', 'DEU 0.471', 'ITA 0.417'], 0.081],
+        ['batteries-assembly', 210, ['CHN 0.616', 'DEU 0.508', 'JPN 0.467'], 0.058],
+        ['solar-refining', 207, ['DEU 0.508', 'CHN 0.487', 'ITA 0.424'], 0.08],
+        ['semiconductors-refining', 205, ['CHN 0.488', 'DEU 0.463', 'FRA 0.421'], 0.083],
       ] as const) {
         const it = I('cell', slug);
-        const rows = facts.rows(v.idx, it.idx, 2023).filter((r) => Number.isFinite(r.value)).sort((a, z) => z.value - a.value);
+        const rows = facts.rows(v.idx, it.idx, 2024).filter((r) => Number.isFinite(r.value)).sort((a, z) => z.value - a.value);
         expect(rows.length, slug).toBe(n);
         expect(rows.slice(0, 3).map((r) => `${model.geos[r.geo].code} ${r.value.toFixed(3)}`), slug).toEqual([...top]);
         const xs = rows.map((r) => r.value).sort((a, z) => a - z);
@@ -493,7 +501,7 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       }
     });
 
-    it('basket: 259 codes, 105 in more than one cell (max 4); Batteries — Refining 31 codes, 0 shared, 7 sub-sectors; — Assembly 2 codes, 1 shared; 92 excluded rows, per technology', () => {
+    it('basket: 261 codes, 105 in more than one cell (max 4); Batteries — Refining 31 codes, 0 shared, 7 sub-sectors; — Assembly 2 codes, 1 shared; 92 excluded rows, per technology', () => {
       const cells = new Map<string, Set<number>>();
       let excluded = 0;
       for (const [name, t] of trades) {
@@ -508,7 +516,9 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
         const tech = TECH_LABELS[name.slice('sector-trade-'.length) as keyof typeof TECH_LABELS];
         expect(new Set(t['trade.excluded'].cols.tech).size <= 1 && (t['trade.excluded'].nrow === 0 || t['trade.excluded'].cols.tech[0] === tech), name).toBe(true);
       }
-      expect(cells.size).toBe(259);
+      // 259 until 2026-10-30; the quartz and silver ores (Solar Extraction) add two; the glossary's default says the same
+      expect(cells.size).toBe(261);
+      expect(GLOSSARY_DEFAULTS.n_codes).toBe(String(cells.size));
       expect([...cells.values()].filter((s) => s.size > 1).length).toBe(105);
       expect(Math.max(...[...cells.values()].map((s) => s.size))).toBe(4);
       const codes = (slug: string) => {
@@ -550,8 +560,9 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       // investment: the Components and Assembly copies counted once
       const inv = h('investment');
       expect([Math.round(inv.values.total_bn), pct1(inv.values.china), pct1(inv.values.coalition)]).toEqual([1875, 44.2, 52.3]);
-      // 61 summary rows of the cells' primary measures with country data; 10 have one holder at 50% or more
-      expect([h('concentration').values.n, h('concentration').values.n_total]).toEqual([8, 57]);
+      // 58 summary rows of the cells' primary measures with country data (57 before the 2026-10-30 basket gave Solar
+      // Extraction its trade); 7 have one holder at 50% or more
+      expect([h('concentration').values.n, h('concentration').values.n_total]).toEqual([7, 58]);
       const res = h('reserves');
       expect([res.labels.geo, res.labels.item, pct1(res.values.share)]).toEqual(['ZAF', 'pgms', 82.7]);
       const en = h('energy');

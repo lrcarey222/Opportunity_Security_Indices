@@ -5,8 +5,9 @@
 
 import type { Col } from '../components/TableView.tsx';
 import { stageRank } from '../lib/stages.ts';
+import type { PostureMeta } from './contract.ts';
 import { pct, type DivisionRow, type PostureRow } from './derive.ts';
-import { borderlineWords } from './grammar.ts';
+import { borderlineWords, prizeLabel } from './grammar.ts';
 
 const pctCol = <R,>(id: string, header: string, v: (r: R) => number | null, digits = 0): Col<R> => ({ id, header, value: v, cell: (r) => pct(v(r), digits), num: true });
 
@@ -21,21 +22,28 @@ const partnerCol: Col<PostureRow> = {
   value: (r) => (r.mode === 'Partner' && r.partnerGap ? 'No credible allied solution yet' : r.partner1Name),
 };
 const borderlineCol: Col<PostureRow> = { id: 'borderline', header: 'Borderline on', value: (r) => borderlineWords(r.borderline) };
-const measures: Col<PostureRow>[] = [
+type MeasureMeta = Pick<PostureMeta, 'prize_measure'> | null | undefined;
+/**
+ * Need, the prize (named as the core names it: the Strategic Industrial Value, with the market prize beside it;
+ * a core whose prize is the market measure shows Industrial Opportunity alone), position and world supply share.
+ */
+const measures = (meta: MeasureMeta): Col<PostureRow>[] => [
   { id: 'need_type', header: 'Need type', value: (r) => r.needType },
   pctCol<PostureRow>('need', 'Need', (r) => r.need),
-  pctCol<PostureRow>('prize', 'Industrial Opportunity', (r) => r.prize),
+  pctCol<PostureRow>('prize', prizeLabel(meta ?? { prize_measure: 'strategic_value' }), (r) => r.prize),
+  ...(meta?.prize_measure === 'market' ? [] : [pctCol<PostureRow>('market', 'Market prize', (r) => r.market)]),
   pctCol<PostureRow>('cp', 'Competitive Position', (r) => r.cp),
   pctCol<PostureRow>('share', 'World supply share', (r) => r.share, 1),
 ];
 
-/** One economy's nodes: technology, stage (chain order), the choice and its reasons, the three dimensions, policy, evidence, momentum, partner. */
-export const COUNTRY_POSTURE_COLS: Col<PostureRow>[] = [
+/** One economy's nodes: technology, stage (chain order), the choice and its reasons, its yards, the three dimensions, policy, evidence, momentum, partner. */
+export const countryPostureCols = (meta?: MeasureMeta): Col<PostureRow>[] => [
   { id: 'tech', header: 'Technology', value: (r) => r.tech },
   { id: 'stage', header: 'Stage', value: (r) => r.stageName, sortValue: (r) => stageRank(r.stage) },
   choiceCol,
   rationaleCol,
-  ...measures,
+  { id: 'yards', header: 'Yards (with its layers)', value: (r) => r.yards },
+  ...measures(meta),
   { id: 'pathway', header: 'Credible pathway', value: (r) => r.pathway },
   { id: 'alignment', header: 'Policy alignment', value: (r) => r.alignment },
   { id: 'evidence', header: 'Evidence', value: (r) => r.evidence },
@@ -44,20 +52,24 @@ export const COUNTRY_POSTURE_COLS: Col<PostureRow>[] = [
   borderlineCol,
   { id: 'flag', header: 'Consistency review', value: (r) => r.flag },
 ];
+/** The country table for a core whose prize is the Strategic Industrial Value (the bundles since 2026-10-30). */
+export const COUNTRY_POSTURE_COLS: Col<PostureRow>[] = countryPostureCols();
 
 const TIER_WORD: Record<string, string> = { core: 'Core member', partner: 'Partner' };
 
 /** One node's economies: country, coalition tier, the choice and its reasons, the dimensions, partner, and whether the scatter places it. */
-export const SECTOR_POSTURE_COLS: Col<PostureRow>[] = [
+export const sectorPostureCols = (meta?: MeasureMeta): Col<PostureRow>[] => [
   { id: 'country', header: 'Economy', value: (r) => r.country },
   { id: 'tier', header: 'Coalition', value: (r) => (r.tier ? TIER_WORD[r.tier] : null) },
   choiceCol,
   rationaleCol,
-  ...measures,
+  ...measures(meta),
   partnerCol,
   borderlineCol,
   { id: 'plotted', header: 'On the chart', value: (r) => (r.plotted ? 'yes' : 'no: need or prize not measured') },
 ];
+/** The sector table for a core whose prize is the Strategic Industrial Value. */
+export const SECTOR_POSTURE_COLS: Col<PostureRow>[] = sectorPostureCols();
 
 /** The allied division: one row per node. */
 export const DIVISION_COLS: Col<DivisionRow>[] = [

@@ -14,7 +14,7 @@ import { bareAcronyms } from '../../components/testing/acronyms.ts';
 import { cssHex } from '../../components/testing/color.ts';
 import { AibDivisionCard, AIB_DIVISION_TITLE, indexNodesByCell } from '../AibDivisionCard.tsx';
 import { PostureBasisTag } from '../basis.tsx';
-import { DRAWER_QUESTIONS } from '../CellDrawer.tsx';
+import { DRAWER_QUESTIONS, PostureNodeDrawer } from '../CellDrawer.tsx';
 import { COUNTRY_STRATEGY_MAP_TITLE, CountryPostureCard } from '../CountryPostureCard.tsx';
 import { AibDivisionStats, CountryPostureTile } from '../PostureCounts.tsx';
 import { MAP_HELPER } from '../PostureMatrix.tsx';
@@ -382,7 +382,7 @@ describe('the Country Strategy Map', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Table' }));
     const table = screen.getByRole('table', { name: 'Aland: choice by technology and stage' });
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent?.replace(/[▲▼]/g, ''))).toEqual([
-      'Technology', 'Stage', 'Choice', 'Secure rationale', 'Need type', 'Need', 'Industrial Opportunity', 'Competitive Position', 'World supply share', 'Credible pathway',
+      'Technology', 'Stage', 'Choice', 'Secure rationale', 'Yards (with its layers)', 'Need type', 'Need', 'Strategic Industrial Value', 'Market prize', 'Competitive Position', 'World supply share', 'Credible pathway',
       'Policy alignment', 'Evidence', 'Trade momentum', 'First trusted partner', 'Borderline on', 'Consistency review',
     ]);
     const rows = within(table).getAllByRole('row').slice(1) as HTMLTableRowElement[];
@@ -408,7 +408,7 @@ describe('the Country Strategy Map', () => {
     expect(lines[0].split(',').slice(0, 8)).toEqual(['country', 'iso3', 'coalition_tier', 'technology', 'stage', 'stage_name', 'classified', 'posture']);
     expect(lines).toHaveLength(14);
     expect(lines[2]).toBe(
-      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Coercive chokepoint,Supply-chain need,0.95,,0.4,0.1,0.002,,Under-prioritized,medium,Strong,high,,,,,,,${SOURCE},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Coercive chokepoint,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Under-prioritized,medium,Strong,high,,,,,,,${SOURCE},2026-10-29,abc1234`,
     );
     expect(lines[12].startsWith('Aland,AAA,core,Solar,Recovery,Recovery & Recycling,FALSE,,')).toBe(true);
   });
@@ -496,7 +496,7 @@ describe('the Sector posture card (schema 2)', () => {
     expect(secure.getAttribute('aria-label')).toBe('Aland: Secure · High fence, need 95%, prize 40%');
     expect(screen.getByRole('heading', { level: 3 }).textContent).toBe(SECTOR_POSTURE_TITLE);
     const reading = screen.getByTestId('posture-reading');
-    expect(reading.textContent).toMatch(/^Each point is one economy\. Across: Industrial Opportunity\s?, .*up: supply-chain need\s?\. Outlined diamonds are Secure.*Point size is Competitive Position\s?\.$/);
+    expect(reading.textContent).toMatch(/^Each point is one economy\. Across: Strategic Industrial Value\s?, .*up: supply-chain need\s?\. Outlined diamonds are Secure.*Point size is Competitive Position\s?\.$/);
     fireEvent.click(secure);
     await waitFor(() => expect(router.state.location.pathname).toBe('/countries/AAA'));
     expect(router.state.location.hash).toBe('#strategy');
@@ -674,5 +674,145 @@ describe('the AIB division card (schema 2)', () => {
     expect(within(hero).getByRole('heading', { level: 2 }).textContent).toBe(AIB_DIVISION_TITLE);
     expect(hero.textContent).toContain('Core coalition members');
     expect(hero.textContent).toContain('25%');
+  });
+});
+
+describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', () => {
+  beforeEach(() => setPostureStore(fixtureStore({ yards: true })));
+
+  it("a mixed step is colour alone, split on the diagonal; the legend says what it means, the tooltip and the name say which yards", async () => {
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+    const m = await screen.findByTestId('posture-matrix');
+    const asm = within(m).getByRole('button', { name: /^Batteries Final Assembly & Equipment/ });
+    const sol = within(m).getByRole('button', { name: /^Solar Final Assembly & Equipment/ });
+    // the node keeps its own choice; the split is marked, and the yards it spans named
+    expect([asm.getAttribute('data-verb'), asm.getAttribute('data-mixed'), asm.getAttribute('data-yards')]).toEqual(['preserve', 'true', 'small medium large']);
+    expect([sol.getAttribute('data-verb'), sol.getAttribute('data-mixed'), sol.getAttribute('data-yards')]).toEqual(['preserve', 'true', 'medium large']);
+    // still no letter, arrow or glyph in a cell
+    for (const b of [asm, sol]) expect([b.textContent, b.children.length]).toEqual(['', 0]);
+    // a Large-yard part shows the Watch grey: the light hairline makes it a mark on the card
+    expect(cssHex(sol.style.border)).toBe(VERB_OUTLINE.watch);
+    // a step whose layers agree is not split
+    const ref = within(m).getByRole('button', { name: /^Batteries Refining & Processing/ });
+    expect([ref.getAttribute('data-mixed'), ref.getAttribute('data-yards'), cssHex(ref.style.background)]).toEqual([null, 'small', VERB_COLOR.secure]);
+    expect(asm.getAttribute('aria-label')).toContain('Preserve · Medium fence; mixed yards: this step in the Medium yard, its layers also in the Small and Large yards;');
+    // the legend: one entry for the mixed steps, with its count and a split swatch
+    const mixed = within(screen.getByTestId('posture-legend')).getByTestId('legend-mixed');
+    expect(mixed.textContent).toBe("Mixed: this step's layers sit in different yards 2");
+    expect(mixed.querySelector('[data-swatch="mixed"]')).toBeTruthy();
+    expect(screen.getByTestId('strategy-map-mixed-note').textContent).toMatch(/A cell split on the diagonal is a mixed step: its capability layers sit in different\s*yards/);
+    // the tooltip names the yards
+    fireEvent.mouseEnter(asm);
+    expect(within(screen.getByRole('tooltip')).getByTestId('strategy-map-tip-yards').textContent).toBe('Mixed: this step in the Medium yard, its layers also in the Small and Large yards');
+    fireEvent.mouseLeave(asm);
+    fireEvent.focus(ref);
+    expect(within(screen.getByRole('tooltip')).queryByTestId('strategy-map-tip-yards')).toBeNull();
+    noAcronyms();
+  });
+
+  it('without mixed steps the legend has no Mixed entry', async () => {
+    setPostureStore(fixtureStore());
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+    await screen.findByTestId('posture-matrix');
+    expect(screen.queryByTestId('legend-mixed')).toBeNull();
+    expect(screen.queryByTestId('strategy-map-mixed-note')).toBeNull();
+  });
+
+  it("the drawer's Prize is the Strategic Industrial Value with its three families; its Choice has the Yards part: own yard, roll-up, each layer, the fence scope, the large-yard case", async () => {
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+    const m = await screen.findByTestId('posture-matrix');
+    fireEvent.click(within(m).getByRole('button', { name: /^Batteries Final Assembly & Equipment/ }));
+    const d = await screen.findByTestId('cell-drawer');
+    const qs = within(d).getAllByTestId('drawer-question');
+    expect(qs).toHaveLength(5);
+    expect(qs[1].querySelector('p')?.textContent).toBe('Is domestic capability here strategically valuable: a market prize, industrial commons, a future option?');
+    await waitFor(() => expect(within(qs[1]).getByTestId('drawer-prize').textContent).toContain('Node prize'));
+    const prize = [...within(qs[1]).getByTestId('drawer-prize').querySelectorAll('dt')].map((dt) => [dt.textContent?.trim(), dt.nextElementSibling?.textContent]);
+    expect(prize).toEqual([
+      ['Strategic Industrial Value', '90% (high at 60% or more)'],
+      ['Market prize (Industrial Opportunity)', '85%'],
+      ['Node prize (expected world demand growth)', '90%'],
+      ['Investment momentum', 'not assessed'],
+      ['Home-market growth (national data only)', 'not assessed'],
+      ['Basis', 'global context'],
+      ['Industrial commons (process knowledge, workforce and suppliers, cross-sector spillover)', '100% (3 of 3 attributes observed)'],
+      ['Future option (the leap tests of a leap candidate)', '50% (4 of 4 leap tests observed)'],
+    ]);
+    // Choice: the trace counts the large-yard signals, the pivotal input is named
+    expect(qs[3].textContent).toContain('Large-yard case (commodity signals): 2 signals (bar 5 signals) → no');
+    expect(qs[3].textContent).toContain('Strategic Industrial Value: 90% (bar 60%) → high');
+    expect(qs[3].textContent).toMatch(/Pivotal inputs \(would change the choice\)\s*Strategic Industrial Value/);
+    // the kind of choice (the engine variant) in words
+    expect(within(qs[3]).getByTestId('drawer-variant').textContent).toBe('A strong position worth keeping');
+    const y = within(qs[3]).getByTestId('drawer-yards');
+    expect(within(y).getByTestId('drawer-own-yard').textContent).toBe('Medium yard · Medium fence');
+    const roll = within(y).getByTestId('drawer-yard-rollup');
+    expect([roll.getAttribute('data-yards'), roll.textContent]).toEqual(['mixed_high_medium_low', 'Mixed: this step in the Medium yard, its layers also in the Small and Large yards']);
+    const layers = within(y).getAllByTestId('drawer-layer');
+    expect(layers.map((l) => [l.getAttribute('data-layer'), l.querySelector('[data-yard]')?.getAttribute('data-yard'), l.querySelector('[data-verb]')?.getAttribute('data-verb')])).toEqual([
+      ['bess-cells', 'medium', 'preserve'], ['bess-control', 'small', 'secure'], ['bess-enclosure', 'large', 'watch'],
+    ]);
+    expect(layers[1].textContent).toBe(
+      'Small yardSecureBattery-management firmware, energy-management software and remote updatesControl built partly into the hardware: the high fence extends to the hardware.',
+    );
+    expect(within(layers[2]).getByTestId('drawer-layer-reason').textContent).toMatch(/^Large-yard case: mature, passive, .*; kept with a capability floor\.$/);
+    expect(within(y).getByTestId('drawer-fence-scope').textContent).toBe('The high fence of a Secure layer here extends to the hardware it is built into, not the layer alone.');
+    expect(within(y).getByTestId('drawer-large-yard').textContent).toBe(
+      'Large-yard case: Does not hold: 2 commodity signals hold; 5 required.Signals that hold: passive, substitutable, quick to qualify.',
+    );
+    // no market-only cap on this node
+    expect(within(y).queryByTestId('drawer-yard-cap')).toBeNull();
+    noAcronyms();
+  });
+
+  it("the drawer of a Watch step: the economy's own large-yard case, the signals and the market-only cap; Deployment & Use has no large-yard case", async () => {
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+    const m = await screen.findByTestId('posture-matrix');
+    fireEvent.click(within(m).getByRole('button', { name: /^Solar Extraction/ }));
+    const d = await screen.findByTestId('cell-drawer');
+    const y = await within(d).findByTestId('drawer-yards');
+    await waitFor(() => expect(within(y).getByTestId('drawer-large-yard').textContent).toContain('(this economy)'));
+    expect(within(y).getByTestId('drawer-own-yard').textContent).toBe('Large yard · Low fence');
+    expect(within(d).getByTestId('drawer-variant').textContent).toBe('Domestic industrial priority low');
+    expect(within(y).getByTestId('drawer-large-yard').textContent).toBe(
+      'Large-yard case (this economy): Holds: affordable, diversified access should dominate, whatever the size of the market (6 commodity signals hold); kept with a capability floor (moderate industrial learning).Signals that hold: mature, passive, substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation.',
+    );
+    expect(within(y).getByTestId('drawer-yard-cap').textContent).toMatch(/^Market only: neither industrial commons nor future option reaches the gate/);
+    expect(within(d).getAllByTestId('drawer-question')[1].textContent).toContain('20% (high at 60% or more); capped: market only');
+    fireEvent.click(within(m).getByRole('button', { name: /^Batteries Deployment & Use/ }));
+    await waitFor(() => expect(within(screen.getByTestId('cell-drawer')).getByRole('heading', { level: 3 }).textContent).toBe('Batteries · Deployment & Use'));
+    const dy = within(screen.getByTestId('cell-drawer')).getByTestId('drawer-yards');
+    expect(within(dy).getByTestId('drawer-own-yard').textContent).toBe('Medium yard · Medium fence');
+    expect(within(dy).queryByTestId('drawer-large-yard')).toBeNull();
+  });
+
+  it('a layer link opens its step focused on the layer: the row is marked, scrolled to and focused', async () => {
+    at('/', <PostureNodeDrawer iso3="AAA" selected="Batteries|Assembly" layer="bess-control" onClose={() => undefined} />);
+    const d = await screen.findByTestId('cell-drawer');
+    const row = await within(d).findByText('Battery-management firmware, energy-management software and remote updates');
+    const li = row.closest('li') as HTMLElement;
+    await waitFor(() => expect(document.activeElement).toBe(li));
+    expect([li.getAttribute('data-layer'), li.getAttribute('data-focused')]).toEqual(['bess-control', 'true']);
+    expect(d.querySelectorAll('[data-focused="true"]')).toHaveLength(1);
+    cleanup();
+    // a layer the step does not have: nothing focused, the drawer itself takes focus
+    at('/', <PostureNodeDrawer iso3="AAA" selected="Batteries|Assembly" layer="no-such-layer" onClose={() => undefined} />);
+    const d2 = await screen.findByTestId('cell-drawer');
+    await within(d2).findAllByTestId('drawer-layer');
+    expect(d2.querySelectorAll('[data-focused="true"]')).toHaveLength(0);
+    expect(document.activeElement).toBe(d2);
+  });
+
+  it('an older core (its prize the market measure): the drawer shows Industrial Opportunity alone, without the families', async () => {
+    setPostureStore(fixtureStore({ core: fixtureCore(true, { legacy: true }) }));
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+    const m = await screen.findByTestId('posture-matrix');
+    fireEvent.click(within(m).getByRole('button', { name: /^Batteries Component Manufacturing/ }));
+    const d = await screen.findByTestId('cell-drawer');
+    const p = within(d).getAllByTestId('drawer-question')[1];
+    await waitFor(() => expect(p.textContent).toContain('Node prize'));
+    expect([...p.querySelectorAll('dt')][0].textContent?.trim()).toBe('Industrial Opportunity');
+    expect(p.textContent).not.toMatch(/Strategic Industrial Value|Industrial commons|Future option|Market prize/);
+    expect(screen.queryByTestId('legend-mixed')).toBeNull();
   });
 });

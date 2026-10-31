@@ -18,7 +18,7 @@ export { POSTURE_BASIS_LABEL, POSTURE_BASIS_NOTE, POSTURE_BASIS_TITLE, POSTURE_T
 export { CellDrawer, DRAWER_QUESTIONS, PostureNodeDrawer, type CellDrawerProps, type DrawerDetailStatus, type PostureNodeDrawerProps } from './CellDrawer.tsx';
 export {
   POSTURE_SCHEMA_VERSION, type Alignment, type CompeteMode, type DeployMode, type PostureCell, type PostureCode, type PostureCore, type PostureDetail, type PostureMeta,
-  type SecurityRationale, type Verb,
+  type SecurityRationale, type Verb, type Yard, type YardRollup, type YfNode,
 } from './contract.ts';
 export {
   COUNTRY_POSTURE_TITLE, COUNTRY_STRATEGY_MAP_TITLE, CountryPostureCard, CountryStrategyMap, type CountryPostureCardProps, type CountryStrategyMapProps,
@@ -34,7 +34,7 @@ export {
   tradeMomentumWords, type DeploymentVars, type FenceGroups, type FenceNode, type PositionVars, type PrizeVars, type SupplyNeedVars,
 } from './fences.ts';
 export {
-  ALIGNMENT_LABEL, choiceWord, FENCE_LABEL, FENCE_OF_VERB, FENCE_ORDER, FENCE_VERBS, fenceChoiceWord, nodeFence, nodeFill, POSTURE_COLOR, POSTURE_LABEL, RATIONALE_LABEL, STAGE_DISPLAY,
+  ALIGNMENT_LABEL, choiceWord, FENCE_LABEL, MARKET_PRIZE_LABEL, PRIZE_LABEL, prizeLabel, FENCE_OF_VERB, FENCE_ORDER, FENCE_VERBS, fenceChoiceWord, nodeFence, nodeFill, POSTURE_COLOR, POSTURE_LABEL, RATIONALE_LABEL, STAGE_DISPLAY,
   stageDisplay, VERB_COLOR, VERB_LABEL, VERB_LONG, VERB_ORDER, VERB_OUTLINE, VERB_SUBTITLE, verbOf, type Fence,
 } from './grammar.ts';
 export { AibDivisionIntro, CountryPostureIntro, SectorPostureIntro } from './intros.tsx';
@@ -46,7 +46,11 @@ export { MAP_HELPER } from './PostureMatrix.tsx';
 export { PRIZE_POSITION_TITLE, PrizePositionScatter, type PrizePositionScatterProps } from './PrizePositionScatter.tsx';
 export { postureProfileHref, SECTOR_NODE_KEY, SECTOR_POSTURE_TITLE, SectorPostureCard, type SectorPostureCardProps } from './SectorPostureCard.tsx';
 export { alliedRows, alliedSentence, choiceGroups, detailByKey, policyRows, supplyNeedRanking, deploymentNeedRanking, type AlliedRow } from './sections.ts';
-export { NODE_KEY, parseNodeParam, useNodeSelection, type NodeParse, type NodeSelection } from './selection.ts';
+export { LAYER_KEY, NODE_KEY, parseNodeParam, useNodeSelection, type NodeParse, type NodeSelection } from './selection.ts';
 export { postureStore, setPostureStore, usePostureCore, usePostureDetail } from './store.ts';
+export {
+  capWords, familyValueWords, isMixedRollup, largeYardOf, largeYardWords, layerLabel, layerReason, layerUnits, MIXED_LEGEND, mixedFill, mixedYards, rollupWords, sivFamilies,
+  signalWords, YARD_COLOR, YARD_LABEL, YARD_ORDER, yardWords, yfNode, type LargeYardCase, type LayerUnit, type SivFamilies,
+} from './yards.ts';
 export { STRATEGIC_CHOICES_TITLE, StrategicChoices, type StrategicChoicesProps } from './StrategicChoices.tsx';
 export { listPhrases, nodePhrase, strategyClauses, strategySentence, type StrategyClause } from './strategy.ts';

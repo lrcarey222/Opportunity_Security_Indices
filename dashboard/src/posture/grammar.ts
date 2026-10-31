@@ -270,6 +270,8 @@ export const WATCH_REASON_LABEL: Record<string, string> = {
   weak_domestic_case: 'Weak domestic case',
   option_value: 'Emerging technology, research and option value',
   low_deployment_need: 'Deployment need below the acceleration bar',
+  // R decision_engine.R (2026-10-30): the large-yard case holds, so affordable, diversified access should dominate
+  large_yard_case: 'Large yard: affordable, diversified access should dominate',
 };
 /** One Watch reason code in words (an unknown code loses its underscores). */
 export const watchReasonWords = (r: string): string => WATCH_REASON_LABEL[r] ?? r.replace(/_/g, ' ');
@@ -311,16 +313,34 @@ function codeList(v: string | readonly string[] | null | undefined, labels: Reco
 }
 export const pathwayEvidenceWords = (v: string | readonly string[] | null | undefined): string | null => codeList(v, PATHWAY_EVIDENCE_LABEL);
 
+// ---- the prize (2026-10-30: Strategic Industrial Value) ---------------------------------------------------
+
+/** The prize the choice reads under meta.prize_measure strategic_value: market prize, industrial commons and future option value. */
+export const PRIZE_LABEL = 'Strategic Industrial Value';
+/** The market prize alone (industrial_opportunity): the legacy prize measure, and one family of the Strategic Industrial Value. */
+export const MARKET_PRIZE_LABEL = 'Industrial Opportunity';
+/** The name of the prize a core's cells hold: "Strategic Industrial Value", or "Industrial Opportunity" for a core whose prize is the market measure. */
+export const prizeLabel = (meta: { prize_measure?: string } | null | undefined): string => (meta?.prize_measure === 'market' ? MARKET_PRIZE_LABEL : PRIZE_LABEL);
+
 /** The tests of the compact decision trace (R decision_engine.R sp_choice_trace). */
 export const TRACE_TEST_LABEL: Record<string, string> = {
   secure_override: 'Secure tests',
+  large_yard_case: 'Large-yard case (commodity signals)',
   deployment_need: 'Deployment need',
   supply_chain_need: 'Supply-chain need',
-  industrial_opportunity: 'Industrial Opportunity',
+  strategic_industrial_value: PRIZE_LABEL,
+  industrial_opportunity: 'Industrial Opportunity (market prize)',
   cp_contender_pct: 'Competitive Position among contenders',
   pathway_credible: 'Credible pathway',
   choice: 'Choice',
 };
+/**
+ * A trace value or bar in words: the large-yard step counts commodity signals ("3 signals"), every other
+ * number is a 0-1 score shown as a percentage, a code through traceCodeWords.
+ */
+export function traceNumberWords(test: string, v: number, pctOf: (x: number) => string): string {
+  return test === 'large_yard_case' ? `${v} ${v === 1 ? 'signal' : 'signals'}` : pctOf(v);
+}
 /** The coded values and results of the trace: routes, pathway evidence, levels and verbs. */
 const TRACE_CODE_LABEL: Record<string, string> = {
   ...RATIONALE_SHORT,
@@ -339,10 +359,18 @@ export const traceCodeWords = (v: string): string => codeList(v, TRACE_CODE_LABE
 export const BORDERLINE_INPUT_LABEL: Record<string, string> = {
   supply_chain_need: 'supply-chain need',
   deployment_need: 'deployment need',
+  // the legacy market prize (a core whose prize is the market measure writes this name)
   industrial_opportunity: 'Industrial Opportunity',
+  strategic_industrial_value: PRIZE_LABEL,
+  large_yard_case: 'the large-yard case',
   cp_contender_pct: 'Competitive Position',
+  // the pivotal inputs R writes beside the borderline ones (decision_engine.R pivotal_inputs)
+  coercive_import_share: 'coercive share of own imports',
+  home_share: 'world supply share',
+  stockpile: 'inventories',
+  exposed: 'exposure to a coercive supplier',
   need: 'need',
-  prize: 'Industrial Opportunity',
+  prize: 'the prize',
   cp: 'Competitive Position',
 };
 export const borderlineWords = (b: string | null | undefined): string | null =>

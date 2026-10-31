@@ -3,7 +3,7 @@
 // Strategy Map renders all six stages, each cell its choice colour alone; the Deployment & Use column is set apart and holds
 // only Accelerate and Watch; the legend groups the choices by fence. Then the three fence sections, each listing only its
 // own nodes: High fence (Secure, the top five by supply-chain need, the need variables in a closed drop-down), Medium fence
-// (Preserve, Catch Up and Partner by Industrial Opportunity with ties by position, Accelerate by deployment need, the Prize x
+// (Preserve, Catch Up and Partner by Strategic Industrial Value with ties by position, Accelerate by deployment need, the Prize x
 // Position chart, and the Prize, Competitive Position, Partner (the partnership analysis as it read before the redesign) and
 // Accelerate sub-sections with their variables), Low fence (Watch: the biggest prizes not chased and the deployments closest
 // to Accelerate, with the engine's reasons, and the drop-downs); a fence without a node says so in one line. Policy Alignment
@@ -239,12 +239,12 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect([...table.querySelectorAll('tbody tr:first-child td')].map((td) => td.className)).toEqual(['', 'num', 'num', 'num', 'num', 'num', '']);
   });
 
-  it('Medium fence: Preserve, Catch Up and Partner by Industrial Opportunity (ties by position), Accelerate by deployment need, then the Prize × Position chart', async () => {
+  it('Medium fence: Preserve, Catch Up and Partner by Strategic Industrial Value (ties by position), Accelerate by deployment need, then the Prize × Position chart', async () => {
     await usa();
     const med = sec('medium-fence');
     const supply = within(med).getByTestId('medium-top-supply');
     expect(within(supply).getByRole('heading', { level: 3 }).textContent).toBe('Top 5 supply-chain nodes');
-    // Industrial Opportunity 90, 80, then two at 30: Solar Assembly (position 90) before Batteries Extraction (position 20)
+    // Strategic Industrial Value 90, 80, then two at 30: Solar Assembly (position 90) before Batteries Extraction (position 20)
     expect(topKeys(supply)).toEqual(['Batteries|Assembly', 'Batteries|Components', 'Solar|Assembly', 'Batteries|Extraction']);
     expect(topValues(supply)).toEqual(['90', '80', '30', '30']);
     expect(new Set(topVerbs(supply))).toEqual(new Set(['preserve', 'catch_up', 'partner']));
@@ -277,7 +277,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(new Set(dots.map((d) => d.getAttribute('fill')))).toEqual(new Set(points.map((pt) => VERB_COLOR[pt.getAttribute('data-verb') as Verb])));
     expect(scatter.querySelectorAll('.quad-rule-x line, .quad-rule-y line')).toHaveLength(2);
     const preserve = points.find((pt) => /^Batteries Final Assembly & Equipment/.test(pt.getAttribute('aria-label') ?? ''))!;
-    expect(preserve.getAttribute('aria-label')).toMatch(/Industrial Opportunity 90%; Competitive Position 95%; supply-chain need 40%; trade momentum/);
+    expect(preserve.getAttribute('aria-label')).toMatch(/Strategic Industrial Value 90%; Competitive Position 95%; supply-chain need 40%; trade momentum/);
   });
 
   it('Medium fence sub-sections: Prize, Competitive Position, Partner (the partnership analysis) and Accelerate, each with its variables', async () => {
@@ -291,19 +291,26 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
 
     // Prize: what the prize measures, then the nodes x the prize variables (four rows, within the top five: no drop-down)
     const prize = sec('medium-prize');
+    expect(prize.textContent).toMatch(/Strategic Industrial Value\s*asks whether domestic capability in the node is strategically valuable; high at 60 or more\./);
     expect(prize.textContent).toMatch(
-      /Industrial Opportunity\s+is the node's market prize: expected world demand growth \(the node prize\) and investment momentum, lifted by home-market growth only where national data exist; high at 60 or more/,
+      /three families: the market prize \(Industrial Opportunity\s*: expected world demand growth, the node prize, and investment momentum, lifted by home-market growth only where national data exist\), industrial commons \(process knowledge, workforce and suppliers, cross-sector spillover\) and future option value/,
     );
+    expect(prize.textContent).toMatch(/Where only the market speaks for it, the value is capped below the bar\./);
     const pt = within(prize).getByTestId('medium-prize-table');
     // the Catch Up node names its credible pathway under its choice (no column of dashes for the others); the headers wrap to fit the card
-    expect(heads(pt)).toEqual(['Node', 'Choice', 'Industrial Opportunity', 'Node prize', 'Home-market growth', 'Investment momentum', 'Market outlook', 'Basis', 'Supply-chain need']);
+    // the Strategic Industrial Value and its three families (the market prize; industrial commons and future option from the
+    // node evidence, a market-only node capped), then the market prize's components
+    expect(heads(pt)).toEqual([
+      'Node', 'Choice', 'Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option', 'Node prize', 'Home-market growth', 'Investment momentum', 'Market outlook',
+      'Basis', 'Supply-chain need',
+    ]);
     expect((pt.querySelector('thead th') as HTMLElement).style.whiteSpace).toBe('normal');
     await waitFor(() => expect(rowOf(pt, 'Batteries · Component Manufacturing').textContent).toContain('feasibility'), { timeout: 30_000 });
     expect(rows(pt)).toEqual([
-      ['Batteries · Final Assembly & Equipment', 'Preserve', '90', '90', 'not measured', 'not measured', 'not measured', 'global context', '40'],
-      ['Batteries · Component Manufacturing', 'Catch UpCredible (feasibility, pipeline)', '80', '85', '75', '70', 'not measured', 'national data', '50'],
-      ['Solar · Final Assembly & Equipment', 'Preserve', '30', '30', 'not measured', 'not measured', 'oversupplied', 'not measured', '80'],
-      ['Batteries · Extraction', 'Partner', '30', '35', 'not measured', 'not measured', 'not measured', 'global context', '80'],
+      ['Batteries · Final Assembly & Equipment', 'Preserve', '90', '85', '100', '50', '90', 'not measured', 'not measured', 'not measured', 'global context', '40'],
+      ['Batteries · Component Manufacturing', 'Catch UpCredible (feasibility, pipeline)', '80', '70', '50', '0', '85', '75', '70', 'not measured', 'national data', '50'],
+      ['Solar · Final Assembly & Equipment', 'Preserve', '30', '30', '50', '0', '30', 'not measured', 'not measured', 'oversupplied', 'not measured', '80'],
+      ['Batteries · Extraction', 'Partner', '30capped: market only', '30', '33', '0', '35', 'not measured', 'not measured', 'not measured', 'global context', '80'],
     ]);
     expect(within(pt).getAllByTestId('fence-pathway')).toHaveLength(1);
     expect(prize.querySelector('[id^="fold-medium-prize"]')).toBeNull();
@@ -361,7 +368,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(rows(at).map((r) => r[0])).toEqual(['Batteries']);
   });
 
-  it('Low fence: producing-stage Watch by Industrial Opportunity, Deployment & Use Watch by deployment need, each with the engine reasons; the drop-downs list every Watch node with its variables', async () => {
+  it('Low fence: producing-stage Watch by Strategic Industrial Value, Deployment & Use Watch by deployment need, each with the engine reasons; the drop-downs list every Watch node with its variables', async () => {
     await usa();
     const low = sec('low-fence');
     const supply = within(low).getByTestId('low-top-supply');
@@ -379,10 +386,14 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     const sf = await openFold('low-supply-all');
     const lp = within(sf).getByTestId('low-prize-table');
     // one choice in the Low fence's tables (Watch): no Choice column
-    expect(heads(lp)).toEqual(['Node', 'Industrial Opportunity', 'Node prize', 'Home-market growth', 'Investment momentum', 'Market outlook', 'Basis', 'Supply-chain need', 'Why Watch']);
-    expect(rows(lp).map((r) => [r[0], r[1], r[7], r[8]])).toEqual([
-      ['Solar · Extraction', '20', '20', 'Low need; Low prize; Ample diversified supply'],
-      ['Solar · Recovery & Recycling', '15', '10', 'Low need; Low prize; Emerging technology, research and option value'],
+    expect(heads(lp)).toEqual([
+      'Node', 'Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option', 'Node prize', 'Home-market growth', 'Investment momentum', 'Market outlook', 'Basis',
+      'Supply-chain need', 'Why Watch',
+    ]);
+    // Solar Extraction is market only (capped); Solar Recovery has no node evidence: commons and option not measured, never zero
+    expect(rows(lp).map((r) => [r[0], r[1], r[3], r[4], r[10], r[11]])).toEqual([
+      ['Solar · Extraction', '20capped: market only', '17', '0', '20', 'Low need; Low prize; Ample diversified supply'],
+      ['Solar · Recovery & Recycling', '15', 'not measured', 'not measured', '10', 'Low need; Low prize; Emerging technology, research and option value'],
     ]);
     const lq = within(sf).getByTestId('low-position-table');
     expect(heads(lq)).toEqual(['Node', 'Competitive Position', 'World supply share', 'Export position', 'Structural trade share', 'Current investment', 'Trade momentum', 'Evidence']);
@@ -517,7 +528,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     const prize = sec('medium-prize');
     const first = within(prize).getByTestId('medium-prize-table-first');
     expect(first.querySelector('caption')?.textContent).toMatch(/: the top 5$/);
-    // by Industrial Opportunity: 90, 80, 50, 30 (position 90), 30 (position 20); the sixth (20) only in the drop-down
+    // by Strategic Industrial Value: 90, 80, 50, 30 (position 90), 30 (position 20); the sixth (20) only in the drop-down
     expect(rows(first).map((r) => r[0])).toEqual([
       'Batteries · Final Assembly & Equipment', 'Batteries · Component Manufacturing', 'Solar · Extraction', 'Solar · Final Assembly & Equipment', 'Batteries · Extraction',
     ]);
@@ -696,4 +707,89 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     fireEvent.keyDown(d, { key: 'Escape' });
     await waitFor(() => expect(nodeOf(r)).toBeNull());
   });
+});
+
+describe.skipIf(!haveFixture())('Country page: layers as yard units (Yards & Fences, 2026-10-30)', () => {
+  beforeEach(() => setPostureStore(fixtureStore({ yards: true, economies: { AAA: { iso3: 'USA', name: 'United States' } } })));
+  const layerOf = (r: ReturnType<typeof renderAt>) => new URLSearchParams(r.state.location.search).get('layer');
+  const CONTROL = 'Battery-management firmware, energy-management software and remote updates';
+
+  it("a layer whose own choice differs from its step's sits behind its own fence, named on a Layer line, ranked with its step's value", async () => {
+    await usa();
+    // High fence: the Secure control layer of a Preserve step (Medium fence), after the Secure steps (its step's need, 40)
+    const high = within(sec('high-fence')).getByTestId('high-top');
+    await waitFor(() => expect(topKeys(high)).toEqual(['Batteries|Refining', 'Solar|Refining', 'Solar|Components', 'Batteries|Assembly#bess-control']), { timeout: 30_000 });
+    expect(new Set(topVerbs(high))).toEqual(new Set(['secure']));
+    expect(topValues(high)).toEqual(['95', '90', '70', '40']);
+    const li = high.querySelector('li[data-layer="bess-control"]') as HTMLElement;
+    expect(within(li).getByTestId('fence-layer').textContent).toBe(`Layer: ${CONTROL}`);
+    expect(topWhy(high)[3]).toBe('Secure · Control built partly into the hardware: the high fence extends to the hardware.');
+    expect(high.textContent).toContain('a layer ranks with its step');
+    expect(within(li).getByRole('button').getAttribute('aria-label')).toBe(
+      `Batteries Final Assembly & Equipment, layer ${CONTROL}: Secure; supply-chain need 40 (its step’s); Control built partly into the hardware: the high fence extends to the hardware.`,
+    );
+    // the High fence's table: a Layer column, the step's need variables on the layer's row
+    const table = within(await openFold('high-all')).getByTestId('high-table');
+    expect(heads(table)).toEqual(['Node', 'Layer', 'Supply-chain need', 'Import dependence', 'Supplier concentration', 'Risky supplier exposure', 'Lack of trusted alternatives', 'Security rationale']);
+    expect(rows(table).map((r) => [r[0], r[1], r[2]])).toEqual([
+      ['Batteries · Refining & Processing', 'Whole step', '95'],
+      ['Solar · Refining & Processing', 'Whole step', '90'],
+      ['Solar · Component Manufacturing', 'Whole step', '70'],
+      ['Batteries · Final Assembly & Equipment', `${CONTROL}Small yard`, '40'],
+    ]);
+    // Low fence: the Watch layers by their steps' prize (90 and 30), before the Watch steps (20, 15)
+    const low = within(sec('low-fence')).getByTestId('low-top-supply');
+    expect(topKeys(low)).toEqual(['Batteries|Assembly#bess-enclosure', 'Solar|Assembly#pv-racking', 'Solar|Extraction', 'Solar|Recovery']);
+    expect(topValues(low)).toEqual(['90', '30', '20', '15']);
+    expect(new Set(topVerbs(low))).toEqual(new Set(['watch']));
+    expect([...low.querySelectorAll('[data-testid="fence-layer"]')].map((x) => x.textContent)).toEqual([
+      'Layer: Enclosures, racking, thermal management and balance of system', 'Layer: Passive racking and mounting',
+    ]);
+    expect(topWhy(low)[1]).toMatch(/^Watch · Large-yard case: mature, passive, .*commoditized\.$/);
+    // the Medium fence: a layer that shares its step's choice (battery cells, Preserve) is the step's own row, no unit
+    const med = within(sec('medium-fence')).getByTestId('medium-top-supply');
+    expect(topKeys(med)).toEqual(['Batteries|Assembly', 'Batteries|Components', 'Solar|Assembly', 'Batteries|Extraction']);
+    expect(med.querySelector('[data-testid="fence-layer"]')).toBeNull();
+    expect(heads(within(sec('medium-prize')).getByTestId('medium-prize-table'))).not.toContain('Layer');
+    // the Low fence prize table: a Layer column, each layer with its own commons and option and its own market-only cap,
+    // beside its step's value (whose cap is its step's: Solar Extraction's, not the layers' steps')
+    const lp = within(await openFold('low-supply-all')).getByTestId('low-prize-table');
+    expect(heads(lp).slice(0, 6)).toEqual(['Node', 'Layer', 'Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option']);
+    expect(rows(lp).map((r) => [r[0], r[1], r[2], r[4]])).toEqual([
+      ['Batteries · Final Assembly & Equipment', 'Enclosures, racking, thermal management and balance of systemLarge yard', '90', '50market only'],
+      ['Solar · Final Assembly & Equipment', 'Passive racking and mountingLarge yard', '30', '0market only'],
+      ['Solar · Extraction', 'Whole step', '20capped: market only', '17'],
+      ['Solar · Recovery & Recycling', 'Whole step', '15', 'not measured'],
+    ]);
+  });
+
+  it("a layer unit opens its step's drawer focused on the layer (?node=&layer=); a step entry clears the layer", async () => {
+    const r = await usa();
+    const high = within(sec('high-fence')).getByTestId('high-top');
+    await waitFor(() => expect(high.querySelector('li[data-layer="bess-control"]')).toBeTruthy(), { timeout: 30_000 });
+    fireEvent.click(within(high.querySelector('li[data-layer="bess-control"]') as HTMLElement).getByRole('button'));
+    await waitFor(() => expect([nodeOf(r), layerOf(r)]).toEqual(['Batteries|Assembly', 'bess-control']), { timeout: 30_000 });
+    expect(await drawerTitle()).toBe('Batteries · Final Assembly & Equipment');
+    const d = screen.getByTestId('cell-drawer');
+    const focused = await within(d).findByText(CONTROL);
+    const li = focused.closest('li') as HTMLElement;
+    await waitFor(() => expect(document.activeElement).toBe(li));
+    expect(li.getAttribute('data-focused')).toBe('true');
+    // the entry is pressed, not its step's own entry elsewhere
+    expect(within(high.querySelector('li[data-layer="bess-control"]') as HTMLElement).getByRole('button').getAttribute('aria-pressed')).toBe('true');
+    expect(within(within(sec('medium-fence')).getByTestId('medium-top-supply')).getAllByRole('button')[0].getAttribute('aria-pressed')).toBe('false');
+    // a step entry opens the step itself: no layer in the link, nothing focused (the Medium fence's entry of the same step)
+    const step = within(sec('medium-fence')).getByTestId('medium-top-supply').querySelector('li[data-key="Batteries|Assembly"]') as HTMLElement;
+    fireEvent.click(within(step).getByRole('button'));
+    await waitFor(() => expect(layerOf(r)).toBeNull(), { timeout: 30_000 });
+    expect(nodeOf(r)).toBe('Batteries|Assembly');
+    expect(screen.getByTestId('cell-drawer').querySelector('[data-focused="true"]')).toBeNull();
+    expect(within(step).getByRole('button').getAttribute('aria-pressed')).toBe('true');
+    // a shared link with a layer opens it focused
+    cleanup();
+    const r2 = await usa('/countries/USA?node=Batteries%7CAssembly&layer=bess-enclosure');
+    const d2 = await screen.findByTestId('cell-drawer', {}, { timeout: 30_000 });
+    await waitFor(() => expect(d2.querySelector('[data-focused="true"]')?.getAttribute('data-layer')).toBe('bess-enclosure'), { timeout: 30_000 });
+    expect(layerOf(r2)).toBe('bess-enclosure');
+  }, 120_000);
 });

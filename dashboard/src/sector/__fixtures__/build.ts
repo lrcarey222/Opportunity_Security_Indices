@@ -202,7 +202,7 @@ const CAVEATS = [
   { id: 'production_assumed_zero', text: "Where EI does not report an economy's production of a fuel separately and no EIA value is used, production is assumed to be 0: the net balance is then minus consumption and self-sufficiency 0%." },
   { id: 'eia_production', text: "Where EI does not report an economy's production of a fuel separately, production comes from the EIA International Energy Statistics." },
   { id: 'feasibility_reading', text: "Export feasibility is the Atlas of Economic Complexity's relatedness (also called density). 0 means none of the related capabilities are in place, 1 means all of them." },
-  { id: 'atlas_source', text: 'Harvard Atlas 2023: a different source and year from the Comtrade 2024 matrix, so it is shown in its own card.' },
+  { id: 'atlas_source', text: 'Harvard Atlas 2024 (HS92, reconciled): a different source from the Comtrade 2024 matrix, so it is shown in its own card.' },
   { id: 'sub_component_rule', text: "Sub-components are the groups of HS6 codes the sector's basket is built from; a sector's sub-components add up to its total." },
   { id: 'hhi_reading', text: "Concentration (HHI): take each holder's share of the world total, square it and add up the squares." },
   { id: 'hhi_refs_context', text: 'Competition authorities screen mergers with HHI thresholds; they were written for markets of competing firms, not for trade between whole economies, so they are a yardstick, not a verdict.' },
@@ -246,8 +246,8 @@ const VARS: VarDef[] = [
   { id: 'trade.rca', family: 'exports', label: 'Revealed comparative advantage', short: 'RCA', unit: 'ratio', data_year: '2024', years: [2024], level: 'country', axis: 'cell', agg: 'none', basis: 'none', source: 'comtrade_reported', caveats: ['exporter_reported'], section: 'trade', prov: 'P' },
   { id: 'trade.sub_exports', family: 'exports', label: 'Exports by sub-component', short: 'Exports (sub-component)', unit: 'usd', data_year: '2024', years: [2020, 2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', caveats: ['sub_component_rule', 'nominal_usd'], section: 'trade', scale: 'log', prov: 'X' },
   { id: 'trade.sub_imports', family: 'exports', label: 'Imports by sub-component', short: 'Imports (sub-component)', unit: 'usd', data_year: '2024', years: [2020, 2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', caveats: ['sub_component_rule', 'nominal_usd'], section: 'trade', scale: 'log', prov: 'X' },
-  { id: 'trade.feasibility', family: 'exports', label: 'Export feasibility (related capabilities)', short: 'Export feasibility', unit: 'feas01', data_year: '2023', years: [2023], level: 'country', axis: 'cell', agg: 'none', basis: 'none', source: 'atlas', roster: 'atlas', caveats: ['feasibility_reading', 'atlas_source'], section: 'trade', prov: 'P', feeds: ['EO: Trade'], definition: 'How close the sector’s products are to what the economy already exports well: 1 minus the average Harvard Atlas product-space distance over the basket’s HS4 headings. Higher means the needed capabilities are nearer at hand.' },
-  { id: 'trade.atlas_share', family: 'exports', label: 'Share of world exports (Atlas)', short: 'Atlas share', unit: 'share', data_year: '2023', years: [2023], level: 'country', axis: 'cell', agg: 'sum', basis: 'one', source: 'atlas', section: 'trade', prov: 'P' },
+  { id: 'trade.feasibility', family: 'exports', label: 'Export feasibility (related capabilities)', short: 'Export feasibility', unit: 'feas01', data_year: '2024', years: [2024], level: 'country', axis: 'cell', agg: 'none', basis: 'none', source: 'atlas', roster: 'atlas', caveats: ['feasibility_reading', 'atlas_source'], section: 'trade', prov: 'P', feeds: ['EO: Trade'], definition: 'How close the sector’s products are to what the economy already exports well: 1 minus the average Harvard Atlas product-space distance over the basket’s HS4 headings. Higher means the needed capabilities are nearer at hand.' },
+  { id: 'trade.atlas_share', family: 'exports', label: 'Share of world exports (Atlas)', short: 'Atlas share', unit: 'share', data_year: '2024', years: [2024], level: 'country', axis: 'cell', agg: 'sum', basis: 'one', source: 'atlas', section: 'trade', prov: 'P' },
   { id: 'trade.critmin_exports', family: 'exports', label: 'Mineral exports', short: 'Mineral exports', unit: 'usd', data_year: '2024', years: [2024], level: 'country', axis: 'mineral_stage', agg: 'sum', basis: 'sum_all', source: 'comtrade_matrix', roster: 'comtrade_matrix', prov: 'P' },
   { id: 'resources.mineral_reserves', family: 'reserves', label: 'Reserves', short: 'Reserves', unit: 'kt', data_year: 'end-2025', years: [2025], level: 'country', axis: 'mineral', agg: 'sum', basis: 'source_world', source: 'usgs', roster: 'usgs', section: 'resources', prov: 'P' },
   { id: 'resources.fuel_reserves', family: 'reserves', label: 'Proved reserves', short: 'Reserves', unit: 'kt', data_year: 'end-2020 · not updated', years: [2020], level: 'country', axis: 'fuel', agg: 'sum', basis: 'source_world', source: 'ei', roster: 'ei', section: 'resources', prov: 'P' },
@@ -417,10 +417,10 @@ function otherFacts(): Fact[] {
   const bc = cell('batteries-components');
   // RCA (exporter-reported; HKG excluded)
   add('trade.rca', bm, 2024, [['CHN', 3.1], ['KOR', 2.4], ['JPN', 1.2], ['USA', 0.4], ['DEU', 0.9], ['VNM', 1.6]]);
-  // export feasibility (Atlas relatedness, 0-1), 2023
-  add('trade.feasibility', bm, 2023, [['CHN', 0.82], ['KOR', 0.71], ['JPN', 0.69], ['DEU', 0.66], ['USA', 0.58], ['FRA', 0.55], ['VNM', 0.47], ['IDN', 0.31], ['BRA', 0.29], ['RUS', 0.22]]);
-  add('trade.feasibility', cell('solar-refining'), 2023, [['CHN', 0.74], ['BRA', 0.41], ['USA', 0.52], ['DEU', 0.5]]);
-  add('trade.atlas_share', bm, 2023, [['CHN', 0.409], ['KOR', 0.08], ['JPN', 0.07], ['USA', 0.06], ['DEU', 0.09], ['FRA', 0.02], ['VNM', 0.03]]);
+  // export feasibility (Atlas relatedness, 0-1), 2024 (the Atlas 2024 release)
+  add('trade.feasibility', bm, 2024, [['CHN', 0.82], ['KOR', 0.71], ['JPN', 0.69], ['DEU', 0.66], ['USA', 0.58], ['FRA', 0.55], ['VNM', 0.47], ['IDN', 0.31], ['BRA', 0.29], ['RUS', 0.22]]);
+  add('trade.feasibility', cell('solar-refining'), 2024, [['CHN', 0.74], ['BRA', 0.41], ['USA', 0.52], ['DEU', 0.5]]);
+  add('trade.atlas_share', bm, 2024, [['CHN', 0.552], ['KOR', 0.08], ['JPN', 0.07], ['USA', 0.06], ['DEU', 0.09], ['FRA', 0.02], ['VNM', 0.03]]);
   // investment 2018-2025 (est in 2025)
   const inv: Record<string, number[]> = {
     CHN: [10, 12, 14, 20, 30, 34, 33, 32.99],

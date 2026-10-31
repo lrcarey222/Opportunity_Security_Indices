@@ -7,6 +7,16 @@
 // scenario), the prize components, the Competitive Position families, the pathway evidence, the compact trace
 // and the policy evidence, in the field spellings detail.ts accepts (flat and nested). `economies` renames the
 // three (AAA, BBB, CCC) so a page's route test can serve a posture for a real economy of its own fixture.
+//
+// The Yards & Fences shape (2026-10-30, R posture_export.R): the core's prize is the Strategic Industrial Value
+// (meta.prize_measure strategic_value) with the market prize beside it (cells.io; Aland's Batteries Components
+// and Assembly differ from their prize), each node's yard roll-up (cells.yd: its own yard) and the node-level
+// evidence (meta.yf_nodes: the large-yard case, commons, option, the market-only cap). `yards: true` adds the
+// layers: Aland's Batteries Final Assembly (Preserve) with a Preserve cell layer, a Secure control layer whose
+// fence extends to the hardware and a Watch enclosure layer with a capability floor (roll-up Small + Medium +
+// Large); Solar Final Assembly (Preserve) with a Watch racking layer (Medium + Large); and Aland's own
+// large-yard case at Solar Extraction (a floor the node's case does not have). `legacy: true` strips every
+// Yards & Fences field (an older core: its prize the market measure).
 
 import { PostureStore } from '../store.ts';
 
@@ -19,7 +29,12 @@ interface Row {
   need: number | null; prize: number | null; cp: number | null; share?: number | null; sec?: string | null; pw?: string | null;
   bd?: string | null; conf?: string | null; fl?: string | null; ev?: string | null; al?: string | null; alc?: string | null; alf?: string | null;
   p1?: string | null; gap?: boolean | null; mom?: string | null; mq?: string | null;
+  /** the market prize (default: the prize) and the yard roll-up code (default: the node's own yard) */
+  io?: number | null; yd?: string | null;
 }
+
+/** The yard code of a fixture row's own choice (S Secure, L Watch, M the others; null not assessed). */
+const ownYard = (r: Row): string | null => (r.p === 'S' ? 'S' : r.p === 'N' ? null : r.p === 'D' && r.dm === 'watch' ? 'L' : 'M');
 
 export function fixtureRows(): Row[] {
   const rows: Row[] = [];
@@ -50,7 +65,36 @@ export function fixtureRows(): Row[] {
   set(1, 0, 4, { v: 'deploy_accelerate', dm: 'accelerate', need: 0.9 });
   set(2, 0, 2, { p: 'C', v: 'compete_partner', m: 'partner', dm: null, need: 0.85, prize: 0.1, cp: 0.2, gap: true, pw: 'no' });
   set(2, 1, 1, { p: 'N', v: null, dm: null, prize: null, pw: null, al: null });
+  // the market prize where it differs from the Strategic Industrial Value (Aland's Batteries Components and Assembly)
+  set(0, 0, 2, { io: 0.7 });
+  set(0, 0, 3, { io: 0.85 });
+  for (const r of rows) {
+    if (r.io === undefined) r.io = r.prize;
+    if (r.yd === undefined) r.yd = ownYard(r);
+  }
   return rows;
+}
+
+/** The large-yard signal names (R POSTURE_LY_SIGNALS), the order meta.yf_nodes indexes into. */
+export const LY_SIGNALS = ['mature', 'passive', 'standardized', 'substitutable', 'easy_qualification', 'diversified', 'low_learning', 'low_spillover', 'low_differentiation', 'commoditized'];
+
+/** meta.yf_nodes rows: key, label, case, n, s, u, floor, commons, option, commons_n, option_n, cap. */
+const YF_ROWS: [string, string | null, boolean | null, number, number[], number[], boolean, number, number, number, number, string | null][] = [
+  ['Batteries|Extraction|stage', null, null, 3, [0, 1, 3], [5, 6], false, 0.333, 0, 3, 0, 'market_only'],
+  ['Batteries|Components|stage', null, false, 3, [1, 3, 4, 5], [8, 9], false, 0.5, 0, 3, 0, null],
+  ['Batteries|Assembly|stage', null, false, 2, [1, 3, 4], [], false, 1, 0.5, 3, 4, null],
+  ['Solar|Extraction|stage', null, true, 6, [0, 1, 3, 4, 5, 6, 7, 8], [], false, 0.167, 0, 3, 0, 'market_only'],
+  ['Solar|Assembly|stage', null, false, 4, [0, 1, 2, 3, 4, 5], [], false, 0.5, 0, 3, 0, null],
+  ['Batteries|Assembly|bess-cells', 'Battery cells (LFP and NMC)', false, 2, [1, 3, 4], [], false, 1, 0.5, 3, 4, null],
+  ['Batteries|Assembly|bess-control', 'Battery-management firmware, energy-management software and remote updates', false, 1, [3], [4, 6], false, 0.333, 0, 1, 0, 'market_only'],
+  ['Batteries|Assembly|bess-enclosure', 'Enclosures, racking, thermal management and balance of system', true, 6, [0, 1, 2, 3, 4, 6, 7, 8], [], true, 0.5, 0, 3, 0, 'market_only'],
+  ['Solar|Assembly|pv-racking', 'Passive racking and mounting', true, 8, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [], false, 0, 0, 3, 0, 'market_only'],
+];
+
+/** The core's node-level Yards & Fences evidence, columnar (R posture_yf_nodes). */
+export function fixtureYfNodes(): Record<string, unknown[]> {
+  const col = (i: number) => YF_ROWS.map((r) => r[i]);
+  return { key: col(0), label: col(1), case: col(2), n: col(3), s: col(4), u: col(5), floor: col(6), commons: col(7), option: col(8), commons_n: col(9), option_n: col(10), cap: col(11) };
 }
 
 /** The node phrases of the strategy sentence (meta.phrases); the other nodes fall back to "<technology> <stage>". */
@@ -66,12 +110,26 @@ export const PHRASES: Record<string, string> = {
   'Solar|Deployment': 'solar power',
 };
 
-export function fixtureCore(momentum = true): Record<string, unknown> {
+export function fixtureCore(momentum = true, opts: { yards?: boolean; legacy?: boolean } = {}): Record<string, unknown> {
   const rows = fixtureRows();
+  if (opts.yards) {
+    // the layered nodes roll up across yards (their layers: fixtureDetail({ yards: true }))
+    Object.assign(rows.find((r) => r.c === 0 && r.t === 0 && r.s === 3) as Row, { yd: 'SML' });
+    Object.assign(rows.find((r) => r.c === 0 && r.t === 1 && r.s === 3) as Row, { yd: 'ML' });
+  }
   const col = <K extends keyof Row>(k: K) => rows.map((r) => (r[k] === undefined ? null : r[k]));
+  const yf = opts.legacy
+    ? {}
+    : {
+        prize_measure: 'strategic_value',
+        yard_codes: { small: 'S', medium: 'M', large: 'L', mixed_high_medium: 'SM', mixed_medium_low: 'ML', mixed_high_low: 'SL', mixed_high_medium_low: 'SML' },
+        large_yard_signals: LY_SIGNALS,
+        yf_nodes: fixtureYfNodes(),
+      };
   return {
     schema: 'osi-posture', schema_version: 2, created: '2026-10-29T00:00:00Z', git_commit: 'abc1234',
     meta: {
+      ...yf,
       techs: TECHS, stages: STAGES, benchmark_period: '2022-2024',
       momentum_period: momentum ? 'Sep 2025 - Aug 2026' : null, momentum_previous_period: momentum ? 'Sep 2024 - Aug 2025' : null,
       momentum_through: momentum ? 'Aug 2026' : null, momentum_band: 0.1,
@@ -86,6 +144,7 @@ export function fixtureCore(momentum = true): Record<string, unknown> {
       c: col('c'), t: col('t'), s: col('s'), p: col('p'), v: col('v'), m: col('m'), dm: col('dm'), sec: col('sec'), need: col('need'), prize: col('prize'), cp: col('cp'),
       share: col('share'), pw: col('pw'), bd: col('bd'), conf: col('conf'), fl: col('fl'), ev: col('ev'), al: col('al'), alc: col('alc'), alf: col('alf'),
       p1: col('p1'), gap: col('gap'), mom: col('mom'), mq: col('mq'),
+      ...(opts.legacy ? {} : { io: col('io'), yd: col('yd') }),
     },
     division: {
       t: [0, 0, 0, 1], s: [0, 1, 2, 3], primary: ['BBB', 'BBB', 'BBB', null], primary_share: [0.4, 0.3, 0.2, null], backup_1: ['CCC', 'AAA', null, null],
@@ -108,7 +167,12 @@ export function fixtureCore(momentum = true): Record<string, unknown> {
 export function withCell(core: Record<string, unknown>, c: number, t: number, s: number, patch: Record<string, unknown>): Record<string, unknown> {
   const cells = core.cells as Record<string, unknown[]>;
   const i = cells.c.findIndex((_, k) => cells.c[k] === c && cells.t[k] === t && cells.s[k] === s);
-  return { ...core, cells: Object.fromEntries(Object.entries(cells).map(([k, v]) => [k, k in patch ? v.map((x, j) => (j === i ? patch[k] : x)) : v])) };
+  // a changed choice moves the node's own yard with it (a roll-up always holds it), unless the patch sets the roll-up
+  const choice = ['p', 'm', 'dm'].some((k) => k in patch);
+  const full = choice && 'yd' in cells && !('yd' in patch)
+    ? { ...patch, yd: ownYard({ p: (patch.p ?? cells.p[i]) as Row['p'], dm: (('dm' in patch ? patch.dm : cells.dm[i]) ?? null) as string | null } as Row) }
+    : patch;
+  return { ...core, cells: Object.fromEntries(Object.entries(cells).map(([k, v]) => [k, k in full ? v.map((x, j) => (j === i ? full[k] : x)) : v])) };
 }
 
 /** The fixture core without one cell (economy, technology, stage indices), as the columnar document. */
@@ -121,8 +185,32 @@ export function withoutCell(core: Record<string, unknown>, c: number, t: number,
 const trace = (...steps: [string, string, number | string | null, number | string | null, string][]) =>
   steps.map(([step, test, value, threshold, result]) => ({ step, test, value, threshold, result }));
 
-/** Aland's detail document: all twelve nodes, in the spellings detail.ts accepts (flat and nested). */
-export function fixtureDetail(): Record<string, unknown> {
+/** Aland's detail document: all twelve nodes, in the spellings detail.ts accepts (flat and nested); `yards` adds the layers (see the header). */
+export function fixtureDetail(opts: { yards?: boolean } = {}): Record<string, unknown> {
+  const doc = fixtureDetailBase();
+  if (!opts.yards) return doc;
+  const cells = doc.cells as Record<string, unknown>[];
+  const at = (tech: string, stage: string) => cells.find((c) => c.tech === tech && c.stage === stage) as Record<string, unknown>;
+  Object.assign(at('Batteries', 'Assembly'), {
+    yard_children: [
+      { layer_id: 'bess-cells', yard: 'medium', choice: 'preserve', variant: 'compete_preserve' },
+      { layer_id: 'bess-control', yard: 'small', choice: 'secure', variant: 'secure_integrated' },
+      { layer_id: 'bess-enclosure', yard: 'large', choice: 'watch', variant: 'deploy_floor' },
+    ],
+    yard_fence_scope: 'extends_to_hardware',
+    pivotal: 'strategic_industrial_value',
+    trace: trace(
+      ['secure', 'secure_override', null, null, 'no'], ['large_yard', 'large_yard_case', 2, 5, 'no'], ['need', 'supply_chain_need', 0.4, 0.67, 'low'],
+      ['prize', 'strategic_industrial_value', 0.9, 0.6, 'high'], ['position', 'cp_contender_pct', 0.95, 0.75, 'high'], ['choice', 'choice', null, null, 'preserve'],
+    ),
+  });
+  Object.assign(at('Solar', 'Assembly'), { yard_children: [{ layer_id: 'pv-racking', yard: 'large', choice: 'watch', variant: 'deploy' }] });
+  // Aland's own large-yard case differs from the node's (a capability floor)
+  Object.assign(at('Solar', 'Extraction'), { large_yard: { case: true, n: 6, s: [0, 1, 3, 4, 5, 6, 7, 8], floor: true } });
+  return doc;
+}
+
+function fixtureDetailBase(): Record<string, unknown> {
   const trade = { benchmark_period: '2022-2024', benchmark_share: 0.05, benchmark_rca: 1.4, benchmark_exports: 2.5e9, momentum_raw: 0.3, momentum_quality: 'ok' };
   return {
     schema: 'osi-posture', schema_version: 2, created: '2026-10-29T00:00:00Z', iso3: 'AAA', country: 'Aland',
@@ -164,7 +252,8 @@ export function fixtureDetail(): Record<string, unknown> {
       {
         tech: 'Batteries', stage: 'Assembly', posture: 'compete', variant: 'compete_preserve', mode: 'preserve', delivery: 'domestic', borderline: 'need',
         need: 0.4, import_dependence: 0.3, import_hhi: 0.2, china_bloc: 0.2,
-        industrial_opportunity: 0.9, io_node_prize: 0.9, io_basis: 'global_context',
+        // the Yards & Fences spelling (R posture_export.R): the value the choice read, its measure and the market prize
+        prize: { value: 0.9, measure: 'strategic_value', market: 0.85, node_prize: 0.9, basis: 'global_context' },
         cp: 0.95, home_share: 0.12, cp_export_position: 0.9, cp_production_position: 0.95, cp_manufacturing_capacity: 0.9,
         policy: { priority: 0.7, support: 0.8, protection: 0.2, alignment: 'aligned', alignment_confidence: 'high', sources: ['NIPO', 'IEA PAMS'] },
         trade,
@@ -247,13 +336,13 @@ export function renameEconomies<T>(doc: T, economies: FixtureEconomies): T {
   return walk(doc) as T;
 }
 
-export function fixtureStore(opts: { momentum?: boolean; core?: Record<string, unknown>; economies?: FixtureEconomies } = {}): PostureStore {
+export function fixtureStore(opts: { momentum?: boolean; core?: Record<string, unknown>; economies?: FixtureEconomies; yards?: boolean } = {}): PostureStore {
   const ren = <T,>(d: T): T => (opts.economies ? renameEconomies(d, opts.economies) : d);
   const aaa = opts.economies?.AAA?.iso3 ?? 'AAA';
   const files: Record<string, unknown> = {
     'manifest.json': { schema: 'osi-posture', schema_version: 2, created: 'x', core: 'posture-core.1.json', details: { [aaa]: 'posture-detail-AAA.1.json' }, counts: {} },
-    'posture-core.1.json': ren(opts.core ?? fixtureCore(opts.momentum ?? true)),
-    'posture-detail-AAA.1.json': ren(fixtureDetail()),
+    'posture-core.1.json': ren(opts.core ?? fixtureCore(opts.momentum ?? true, { yards: opts.yards })),
+    'posture-detail-AAA.1.json': ren(fixtureDetail({ yards: opts.yards })),
   };
   return new PostureStore('/x/', async (url: string) => {
     const f = url.replace('/x/', '');

@@ -7,10 +7,16 @@
 // (import_dependence, import_hhi, china_bloc); a policy object or the v1 flat alignment fields; pathway_basis
 // and watch_reasons as a list or a ";"-separated string. A value the document does not carry is null: missing
 // evidence is shown as "not assessed", never as zero. Pure: no React, no IO.
+// Yards & Fences (2026-10-30, R posture_export.R; each field optional, an older document reads without them):
+// prize {value, measure, market, ...} (the value the choice read, its measure and the market prize; a flat
+// industrial_opportunity is both the value and the market prize), the economy's own large-yard case where it
+// differs from the node's (large_yard {case, n, s, u, floor, reason}; s and u index meta.large_yard_signals),
+// the fence scope of its Secure layers (yard_fence_scope) and its child layers (yard_children [{layer_id, yard,
+// choice, variant}]; their names and evidence are the core's meta.yf_nodes, resolved by yards.ts).
 
 import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
 import type {
-  Alignment, AlignmentConfidence, CompeteMode, DeployMode, NeedType, Pathway, PostureStage, PostureWord, SecurityRationale,
+  Alignment, AlignmentConfidence, CompeteMode, DeployMode, NeedType, Pathway, PostureStage, PostureWord, SecurityRationale, Verb, Yard,
 } from './contract.ts';
 
 /** One measured family or component of a score: a 0-1 value (null = not assessed), where it comes from and its scenario. */
@@ -78,11 +84,17 @@ export interface DeploymentNeed {
 }
 
 export interface Prize {
-  /** industrial_opportunity, 0-1 */
+  /** the prize the choice read, 0-1: the Strategic Industrial Value (measure strategic_value), else the market prize */
   value: number | null;
+  /** prize.measure: strategic_value or market (null: not written, an older document's market prize) */
+  measure: string | null;
+  /** the market prize (industrial_opportunity), 0-1: prize.market, or a flat industrial_opportunity */
+  market: number | null;
   nodePrize: number | null;
   investmentMomentum: number | null;
   homeMarket: number | null;
+  /** where the home-market growth comes from (national, not_assessed ...) */
+  homeMarketBasis: string | null;
   /** technology maturity (TRL), context only */
   maturity: string | number | null;
   basis: string | null;
@@ -152,6 +164,35 @@ export interface TradeEvidence {
   exports_previous?: number;
 }
 
+/**
+ * The economy's own large-yard case of a node, written only where it differs from the node's (the core's
+ * meta.yf_nodes): s and u are 0-based indexes into meta.large_yard_signals (yards.ts resolves them).
+ */
+export interface LargeYardException {
+  /** true holds, false does not, null undecided */
+  case: boolean | null;
+  /** how many of the non-required (commodity) signals hold */
+  n: number | null;
+  s: number[];
+  u: number[];
+  floor: boolean;
+  /** the reason, written only when undecided */
+  reason: string | null;
+}
+
+/** The fence scope of a node with Secure layers (R yard_rollup.R sp_yard_fence_scope), where it is not the layer alone. */
+export type YardFenceScope = 'extends_to_hardware' | 'unclear';
+
+/** One child layer of a node (R yard_children, compact): its own yard, choice and engine variant; its name and evidence are in the core's meta.yf_nodes. */
+export interface YardChild {
+  layerId: string;
+  /** small, medium or large; null when the layer is not assessed */
+  yard: Yard | null;
+  /** the layer's own choice; "not_assessed" when it has none */
+  choice: Verb | 'not_assessed' | null;
+  variant: string | null;
+}
+
 export interface NodeDetail {
   tech: string;
   stage: PostureStage;
@@ -205,6 +246,14 @@ export interface NodeDetail {
   watchReasons: string[];
   /** the deciding test's words */
   reason: string | null;
+  /** the other choices the evidence allows ("catch_up|watch"), where there are any */
+  choicePossible: string | null;
+  /** the economy's own large-yard case, only where it differs from the node's (else null: read meta.yf_nodes) */
+  largeYard: LargeYardException | null;
+  /** where the high fence of a Secure layer reaches beyond the layer (null: the layer alone, or no Secure layer) */
+  yardFenceScope: YardFenceScope | null;
+  /** the node's child layers (R yard_children), in the document's order; empty when it has none */
+  yardChildren: YardChild[];
 }
 
 type Raw = Record<string, unknown>;
@@ -333,10 +382,13 @@ export function nodeDetail(r: Raw): NodeDetail {
       : null;
   const pr = isObj(r.prize) ? r.prize : {};
   const prize: Prize = {
-    value: first(numOf(pr, 'value'), numOf(r, 'industrial_opportunity', 'opportunity')),
+    value: first(numOf(pr, 'value'), numOf(r, 'strategic_industrial_value', 'industrial_opportunity', 'opportunity')),
+    measure: first(strOf(pr, 'measure'), strOf(r, 'prize_measure')),
+    market: first(numOf(pr, 'market'), numOf(r, 'industrial_opportunity')),
     nodePrize: first(numOf(pr, 'node_prize'), numOf(r, 'io_node_prize')),
     investmentMomentum: first(numOf(pr, 'investment_momentum'), numOf(r, 'io_investment_momentum')),
     homeMarket: first(numOf(pr, 'home_market'), numOf(r, 'io_home_market')),
+    homeMarketBasis: first(strOf(pr, 'home_market_basis'), strOf(r, 'io_home_market_basis')),
     maturity: (() => {
       const m = pr.maturity ?? r.io_maturity;
       return typeof m === 'number' && Number.isFinite(m) ? m : str(m);
@@ -389,5 +441,41 @@ export function nodeDetail(r: Raw): NodeDetail {
     trade: isObj(r.trade) ? (r.trade as TradeEvidence) : null,
     watchReasons: listOf(r.watch_reasons),
     reason: strOf(r, 'reason'),
+    choicePossible: strOf(r, 'choice_possible'),
+    largeYard: largeYard(r.large_yard),
+    yardFenceScope: (() => {
+      const s = strOf(r, 'yard_fence_scope');
+      return s === 'extends_to_hardware' || s === 'unclear' ? s : null;
+    })(),
+    yardChildren: yardChildren(r.yard_children),
   };
+}
+
+const YARDS = new Set(['small', 'medium', 'large']);
+const VERBS = new Set(['secure', 'preserve', 'catch_up', 'partner', 'accelerate', 'watch', 'not_assessed']);
+const indexes = (v: unknown): number[] => (Array.isArray(v) ? v.filter((x): x is number => typeof x === 'number' && Number.isInteger(x) && x >= 0) : []);
+
+/** The economy's own large-yard case (detail large_yard {case, n, s, u, floor, reason}); null when the document writes none. */
+function largeYard(v: unknown): LargeYardException | null {
+  if (!isObj(v)) return null;
+  return {
+    case: typeof v.case === 'boolean' ? v.case : null,
+    n: num(v.n),
+    s: indexes(v.s),
+    u: indexes(v.u),
+    floor: v.floor === true,
+    reason: str(v.reason),
+  };
+}
+
+/** The compact child layers (detail yard_children [{layer_id, yard, choice, variant}]); a child without a layer id is dropped. */
+function yardChildren(v: unknown): YardChild[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter(isObj).flatMap((c) => {
+    const id = strOf(c, 'layer_id');
+    if (id === null) return [];
+    const y = strOf(c, 'yard');
+    const ch = strOf(c, 'choice');
+    return [{ layerId: id, yard: y !== null && YARDS.has(y) ? (y as Yard) : null, choice: ch !== null && VERBS.has(ch) ? (ch as Verb | 'not_assessed') : null, variant: strOf(c, 'variant') }];
+  });
 }

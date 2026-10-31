@@ -53,17 +53,19 @@ describe("the node's prize and the decision rule, in words", () => {
     const same = node('Batteries', 'Refining').map((c) => ({ ...c, prize: 0.85 }));
     const p = nodePrize(same, T.prize);
     expect(p).toMatchObject({ n: 3, high: 3, kind: 'high' });
-    expect(prizeWords('Refining', p, T.prize)).toBe('Prize (Industrial Opportunity) in this node: 85 for every economy, at or above the bar of 60.');
+    // the prize is the Strategic Industrial Value (2026-10-30); an older core names its market prize
+    expect(prizeWords('Refining', p, T.prize)).toBe('Prize (Strategic Industrial Value) in this node: 85 for every economy, at or above the bar of 60.');
+    expect(prizeWords('Refining', p, T.prize, 'Industrial Opportunity')).toBe('Prize (Industrial Opportunity) in this node: 85 for every economy, at or above the bar of 60.');
     const lifted = same.map((c, i) => ({ ...c, prize: i === 0 ? 0.91 : 0.85 }));
     expect(prizeWords('Refining', nodePrize(lifted, T.prize), T.prize)).toBe(
-      'Prize (Industrial Opportunity) in this node: 85 for most economies (85–91 where a national home market lifts it), at or above the bar of 60 for all.',
+      'Prize (Strategic Industrial Value) in this node: 85 for most economies (85–91 where a national home market lifts it), at or above the bar of 60 for all.',
     );
     const mixed = nodePrize(node('Batteries', 'Components'), T.prize);
     expect(mixed).toMatchObject({ n: 3, high: 2, kind: 'mixed' });
     expect(prizeWords('Components', mixed, T.prize)).toContain('2 of 3 at or above the bar of 60');
     expect(nodePrize(node('Batteries', 'Deployment'), T.prize)).toBeNull();
     expect(prizeWords('Deployment', null, T.prize)).toMatch(/^Deployment & Use has no prize of its own/);
-    expect(prizeWords('Recovery', null, T.prize)).toBe('The prize (Industrial Opportunity) is not measured in this node.');
+    expect(prizeWords('Recovery', null, T.prize)).toBe('The prize (Strategic Industrial Value) is not measured in this node.');
   });
 
   it('the rule follows the stage and the prize, at the core thresholds', () => {

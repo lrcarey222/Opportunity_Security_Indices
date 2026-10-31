@@ -16,8 +16,10 @@ const SPEC_IDS = [
   // Development & finance raw data (Sector Insights, 2026-10-15)
   'oda', 'dip_position', 'conduit_centre', 'wdi',
   // the strategic position framework (posture/basis.tsx POSTURE_TERMS; canonical since 2026-10-29)
-  'posture', 'strategic_need', 'supply_chain_need', 'deployment_need', 'need_type', 'industrial_opportunity', 'competitive_position', 'pathway',
+  'posture', 'strategic_need', 'supply_chain_need', 'deployment_need', 'need_type', 'strategic_industrial_value', 'industrial_opportunity', 'competitive_position', 'pathway',
   'deploy_mode', 'security_rationale', 'delivery_mode', 'consistency_flag', 'policy_alignment', 'partner_gap', 'trade_momentum', 'aib_gap', 'partner_demand',
+  // Yards & Fences (2026-10-30)
+  'yard', 'large_yard_case',
 ];
 
 describe('glossary content (C3.2)', () => {
@@ -126,6 +128,15 @@ describe('glossary content (C3.2)', () => {
     for (const id of Object.values(POSTURE_TERMS)) expect(glossaryById.has(id), id).toBe(true);
     expect(glossaryById.get('strategic_need')?.term).toBe('Strategic Need');
     expect(glossaryById.get('industrial_opportunity')?.term).toBe('Industrial Opportunity');
+    // the prize the choice reads (2026-10-30) and the market prize it holds as one of three families
+    expect(glossaryById.get('strategic_industrial_value')?.term).toBe('Strategic Industrial Value');
+    expect(glossaryById.get('strategic_industrial_value')?.short).toContain('the market prize (Industrial Opportunity), industrial-commons value and future-option value');
+    expect(glossaryById.get('strategic_industrial_value')?.more).toContain('capped just below the prize bar');
+    expect(glossaryById.get('industrial_opportunity')?.short).toMatch(/^The market prize/);
+    expect(glossaryById.get('industrial_opportunity')?.more).toContain('One of the three families of the Strategic Industrial Value');
+    // the yards in the user's mapping, and the large-yard case
+    expect(glossaryById.get('yard')?.short).toContain('Small yard, High fence (Secure); Medium yard, permeable fence (Preserve, Catch Up, Partner, Accelerate); Large yard, Low fence (Watch)');
+    expect(glossaryById.get('large_yard_case')?.more).toContain('Market size is never a signal');
     expect(glossaryById.get('policy_alignment')?.more).toContain('Not the same as UN-vote alignment');
     expect(glossaryById.get('strategic_need')?.more).toContain("Not the same as the Strategic Index's security need");
     for (const m of ['sector', 'strategic', 'country'] as const) expect(glossaryFor(m).some((e) => e.id === 'posture'), m).toBe(true);

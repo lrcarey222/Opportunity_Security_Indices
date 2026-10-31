@@ -2,11 +2,28 @@
 // (spec XX; the fence grouping of 2026-10-30): one colour per choice, grouped by fence ("High fence:
 // Secure", "Medium fence: Preserve, Catch Up, Partner, Accelerate", "Low fence: Watch"), then the hatched
 // "Not assessed"; each swatch can carry its node count. The legend is text (a list), not decoration, so a
-// screen reader hears the same grouping and counts.
+// screen reader hears the same grouping and counts. The Strategy Map adds "Mixed: this step's layers sit in
+// different yards" (2026-10-30, yards.ts) with a sample of its diagonal split.
 
 import type { PostureCore, Verb } from './contract.ts';
 import { freshnessLine } from './derive.ts';
 import { FENCE_LABEL, FENCE_ORDER, FENCE_VERBS, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, VERB_COLOR, VERB_LABEL, VERB_OUTLINE } from './grammar.ts';
+import { MIXED_LEGEND, mixedFill } from './yards.ts';
+
+/** The legend's sample of a mixed node: a Catch Up node with layers in the Large yard (the map's diagonal split). */
+const MIXED_SAMPLE = mixedFill({ posture: 'C', mode: 'catch_up', deployMode: null, yards: 'mixed_medium_low' }) as string;
+
+/** The swatch of a mixed node (the map's diagonal split, here a Medium-yard choice with a Large-yard layer). */
+export function MixedSwatch({ size = 18 }: { size?: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block shrink-0 rounded-[3px]"
+      style={{ width: size, height: size, background: MIXED_SAMPLE, border: `1px solid ${VERB_OUTLINE.watch}` }}
+      data-swatch="mixed"
+    />
+  );
+}
 
 /** A colour swatch: a choice colour (Watch with its outline) or the not-assessed hatch. */
 export function Swatch({ color, size = 18, hatched = false, verb }: { color?: string; size?: number; hatched?: boolean; verb?: Verb }) {
@@ -35,11 +52,16 @@ export interface ChoiceLegendProps {
   verbs?: readonly Verb[];
   /** the hatched "Not assessed" entry (default on) */
   notAssessed?: boolean;
+  /**
+   * the "Mixed" entry of the Strategy Map (a node whose layers sit in different yards, drawn as a diagonal
+   * split): its count, or true without one; off by default and when 0
+   */
+  mixed?: number | boolean | null;
   className?: string;
 }
 
-/** The choices grouped by fence, each with its colour and (optionally) its count; then "Not assessed". */
-export function ChoiceLegend({ counts, verbs, notAssessed = true, className }: ChoiceLegendProps) {
+/** The choices grouped by fence, each with its colour and (optionally) its count; then "Mixed" (where asked) and "Not assessed". */
+export function ChoiceLegend({ counts, verbs, notAssessed = true, mixed = null, className }: ChoiceLegendProps) {
   const shown = (v: Verb) => !verbs || verbs.includes(v);
   const n = (k: Verb | 'N') => (counts ? (counts[k] ?? 0) : null);
   return (
@@ -59,6 +81,15 @@ export function ChoiceLegend({ counts, verbs, notAssessed = true, className }: C
           ))}
         </li>
       ))}
+      {mixed ? (
+        <li className="inline-flex items-center gap-1.5" data-verb="mixed" data-testid="legend-mixed">
+          <MixedSwatch size={14} />
+          <span>
+            {MIXED_LEGEND}
+            {typeof mixed === 'number' && <span className="tabular text-paper-mute"> {mixed}</span>}
+          </span>
+        </li>
+      ) : null}
       {notAssessed && (
         <li className="inline-flex items-center gap-1.5" data-verb="not_assessed">
           <Swatch hatched size={14} />

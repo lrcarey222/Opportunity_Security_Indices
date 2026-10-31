@@ -5,19 +5,25 @@
 //     every Secure node x the need variables (import dependence, supplier concentration, risky supplier
 //     exposure, lack of trusted alternatives, with the supply-chain need score).
 //   Medium fence · Preserve, Catch Up, Partner, Accelerate (#medium-fence, aliases #prize-position, #choices)
-//     the top five producing-stage Preserve / Catch Up / Partner nodes by Industrial Opportunity (ties by
+//     the top five producing-stage Preserve / Catch Up / Partner nodes by Strategic Industrial Value (ties by
 //     Competitive Position) and the top five Accelerate nodes by deployment need; the Prize x Position chart;
-//     then four sub-sections (h3, each with its anchor): Prize (#medium-prize: the nodes x the prize
-//     variables), Competitive Position (#medium-position: the nodes x the position evidence, the Preserve bar
+//     then four sub-sections (h3, each with its anchor): Prize (#medium-prize: the nodes x the Strategic
+//     Industrial Value and its three families: the market prize, from the core or the detail, industrial
+//     commons, future option and the market-only cap, from the node's or layer's evidence in meta.yf_nodes;
+//     then the market prize's components), Competitive Position (#medium-position: the nodes x the position evidence, the Preserve bar
 //     named, the monthly trade card), Partner (#medium-partner, aliases #partnerships, #partners,
 //     #allied-partnerships: the economy's Partner nodes in one line above the partnership analysis as it read
 //     before the redesign, open: the one place in the strategy sections where the Legacy OSI partner scores
 //     appear, as one of its three lenses and named so) and Accelerate (#medium-accelerate: the Accelerate nodes x the deployment-need
 //     families, each with its scenario, and the energy-system context).
 //   Low fence · Watch (#low-fence)
-//     the top five producing-stage Watch nodes by Industrial Opportunity (the biggest prizes not chased) and
+//     the top five producing-stage Watch nodes by Strategic Industrial Value (the biggest prizes not chased) and
 //     the top five Deployment & Use Watch nodes by deployment need (closest to Accelerate), each with the
 //     engine's Watch reasons; closed drop-downs of every Watch node x the same variables.
+// Layers as yard units (2026-10-30, posture/fences.ts): a layer whose own choice differs from its step's sits
+// behind the fence of its own choice, beside the steps, named on a "Layer" line (top lists) or in a Layer
+// column (tables); it ranks with its step's value and opens its step's drawer focused on the layer
+// (?node=Tech|Stage&layer=id). Its explaining field is its own reason (yards.ts layerReason).
 // Each top-five entry shows the node, its choice colour (VERB_COLOR) and word, the ranking value and the one
 // field that explains the choice (posture/fences.ts fenceReason). Every entry and every table row opens the
 // one drawer through ?node= (ProfileCtx.posture.node). Values come from the drawer's accessors (fences.ts);
@@ -34,8 +40,8 @@ import { TableView, type Col } from '../../../components/TableView.tsx';
 import { Term } from '../../../components/Term.tsx';
 import { Notice } from '../../../components/ui.tsx';
 import {
-  byPositionOrder, ChoiceLegend, countryNames, deploymentVars, familyWords, FENCE_TOP_N, FENCE_VERBS, fenceGroups, fenceReason, POSTURE_TERMS, positionVars, PrizePositionScatter, prizeVars, shareWords,
-  stageDisplay, supplyNeedVars, Swatch, VERB_LABEL, verbOf, type Family, type Fence, type FenceNode, type PostureCore,
+  byPositionOrder, ChoiceLegend, countryNames, deploymentVars, familyWords, FENCE_TOP_N, FENCE_VERBS, fenceGroups, fenceReason, MARKET_PRIZE_LABEL, POSTURE_TERMS, positionVars, PrizePositionScatter,
+  prizeLabel, prizeVars, shareWords, stageDisplay, supplyNeedVars, Swatch, VERB_LABEL, verbOf, YARD_LABEL, type Family, type Fence, type FenceNode, type PostureCore,
 } from '../../../posture/index.ts';
 import { score100 } from '../../../posture/derive.ts';
 import { ratioVsCurrentWords } from '../../../posture/detail.ts';
@@ -147,6 +153,13 @@ function Choice({ n, pathway }: { n: FenceNode; pathway?: string | null }) {
 }
 
 const nodeWords = (n: FenceNode) => `${n.tech} · ${stageDisplay(n.stage)}`;
+/** A unit's words: the node, and a layer unit's layer ("Electric Grid · Final Assembly & Equipment, layer Grid-control software"). */
+const unitWords = (n: FenceNode) => (n.layer ? `${nodeWords(n)}, layer ${n.layer.label}` : nodeWords(n));
+
+/** Open a unit in the drawer: its node, focused on a layer unit's layer. */
+const openUnit = (p: CountryPosture, n: FenceNode) => p.node.select(n.nodeKey, n.layer?.id ?? null);
+/** The row key of the open unit (a node, or its layer when the drawer is focused on one). */
+const selectedUnitKey = (p: CountryPosture | null): string | null => (p?.node.selected ? (p.node.layer ? `${p.node.selected}#${p.node.layer}` : p.node.selected) : null);
 
 // ---- the columns -----------------------------------------------------------------------------------------
 
@@ -154,6 +167,28 @@ type Get = (n: FenceNode) => number | null;
 type GetText = (n: FenceNode) => string | null;
 
 const nodeCol: Col<FenceNode> = { id: 'node', header: 'Node', value: nodeWords, minWidth: 150 };
+/**
+ * The Layer column, only where the rows hold a layer unit: the layer's name with its yard, "Whole step" for a
+ * node's own row.
+ */
+function layerCols(rows: readonly FenceNode[]): Col<FenceNode>[] {
+  if (!rows.some((n) => n.layer)) return [];
+  return [
+    {
+      id: 'layer', header: 'Layer', minWidth: 140, title: 'A capability layer with its own choice, ranked with its step',
+      value: (n) => n.layer?.label ?? 'Whole step',
+      cell: (n) =>
+        n.layer ? (
+          <span data-testid="fence-layer-cell">
+            {n.layer.label}
+            {n.layer.yard && <span className="block text-[11px] text-paper-mute">{YARD_LABEL[n.layer.yard]}</span>}
+          </span>
+        ) : (
+          <span className="text-paper-mute">Whole step</span>
+        ),
+    },
+  ];
+}
 
 /**
  * The Choice column, only where the rows hold more than one choice (a table of one choice says it in its
@@ -225,10 +260,11 @@ function familyCol(id: string, header: string, get: (n: FenceNode) => Family | n
   };
 }
 
-function needCols(core: PostureCore, names: Record<string, string>, ds: DetailState): Col<FenceNode>[] {
+function needCols(rows: readonly FenceNode[], core: PostureCore, names: Record<string, string>, ds: DetailState): Col<FenceNode>[] {
   const v = supplyNeedVars;
   return [
     nodeCol,
+    ...layerCols(rows),
     scoreCol('need', 'Supply-chain need', (n) => v(n).need),
     scoreCol('import', 'Import dependence', (n) => v(n).importDependence, { detail: true, ds }),
     scoreCol('concentration', 'Supplier concentration', (n) => v(n).supplierConcentration, { detail: true, ds }),
@@ -239,11 +275,29 @@ function needCols(core: PostureCore, names: Record<string, string>, ds: DetailSt
 }
 
 function prizeCols(rows: readonly FenceNode[], core: PostureCore, names: Record<string, string>, ds: DetailState, opts: { pathway: boolean; reasons: boolean }): Col<FenceNode>[] {
-  const v = prizeVars;
+  const v = (n: FenceNode) => prizeVars(n, core.meta);
+  // the three families where the prize is the Strategic Industrial Value; a core whose prize is the market measure shows it alone
+  const siv = core.meta.prize_measure === 'strategic_value';
   return [
     nodeCol,
+    ...layerCols(rows),
     ...choiceCols(rows, ds, opts.pathway),
-    scoreCol('opportunity', 'Industrial Opportunity', (n) => v(n).opportunity),
+    scoreCol('opportunity', prizeLabel(core.meta), (n) => v(n).opportunity, {
+      title: siv ? 'Market prize, industrial commons and future option value; a layer ranks with its step' : undefined,
+      // the cap of the value shown (a layer ranks with its step's value, so its step's cap)
+      note: (n) => (siv && v(n).valueCap ? 'capped: market only' : null),
+    }),
+    ...(siv
+      ? [
+          scoreCol('market', 'Market prize', (n) => v(n).market, { detail: true, ds, title: `${MARKET_PRIZE_LABEL}: world demand growth and investment momentum, lifted by home-market growth` }),
+          scoreCol('commons', 'Industrial commons', (n) => v(n).commons, {
+            title: 'Process knowledge, workforce and suppliers, cross-sector spillover (the layer’s own for a layer)',
+            // a layer's own market-only cap (its value is its step's)
+            note: (n) => (n.layer && v(n).cap ? 'market only' : null),
+          }),
+          scoreCol('option', 'Future option', (n) => v(n).option, { title: 'The leap tests of a leap candidate; 0 for any other node' }),
+        ]
+      : []),
     scoreCol('node-prize', 'Node prize', (n) => v(n).nodePrize, { detail: true, ds, title: 'Expected world demand growth' }),
     scoreCol('home', 'Home-market growth', (n) => v(n).homeMarket, { detail: true, ds, title: 'National data only' }),
     scoreCol('investment', 'Investment momentum', (n) => v(n).investmentMomentum, { detail: true, ds }),
@@ -260,6 +314,7 @@ function positionCols(rows: readonly FenceNode[], core: PostureCore, ds: DetailS
   const bench = core.meta.benchmark_period ? `The ${core.meta.benchmark_period} benchmark trade share` : 'The benchmark trade share';
   return [
     nodeCol,
+    ...layerCols(rows),
     ...choiceCols(rows, ds),
     scoreCol('cp', 'Competitive Position', (n) => v(n).cp),
     scoreCol('share', 'World supply share', (n) => v(n).share, { fmt: (x) => shareWords(x) ?? NOT_MEASURED }),
@@ -280,6 +335,7 @@ function deployCols(rows: readonly FenceNode[], core: PostureCore, names: Record
   const v = deploymentVars;
   return [
     { id: 'node', header: 'Technology', value: (n) => n.tech, minWidth: 110 },
+    ...layerCols(rows),
     ...choiceCols(rows, ds),
     scoreCol('need', 'Deployment need', (n) => v(n).need),
     familyCol('demand', 'Demand adequacy', (n) => v(n).demand, sc, ds),
@@ -298,7 +354,7 @@ function FenceTable({ rows, cols, caption, testId }: { rows: FenceNode[]; cols: 
   const p = useReady();
   return (
     <div data-testid={testId}>
-      <TableView rows={rows} cols={cols} caption={caption} rowKey={(n) => n.key} onRowClick={(n) => p?.node.select(n.key)} selectedKey={p?.node.selected ?? null} pageSize={25} wrapHeaders />
+      <TableView rows={rows} cols={cols} caption={caption} rowKey={(n) => n.key} onRowClick={(n) => p && openUnit(p, n)} selectedKey={selectedUnitKey(p)} pageSize={25} wrapHeaders />
     </div>
   );
 }
@@ -350,22 +406,23 @@ function TopList({ title, testId, nodes, by, value, empty }: TopListProps) {
         {title}
       </h3>
       <p className="mb-2 text-xs text-paper-mute">
-        Ranked by {by} (0-100), highest first{nodes.length > FENCE_TOP_N ? `; ${FENCE_TOP_N} of ${nodes.length}` : ''}.
+        Ranked by {by} (0-100), highest first{nodes.length > FENCE_TOP_N ? `; ${FENCE_TOP_N} of ${nodes.length}` : ''}
+        {nodes.some((n) => n.layer) ? '; a layer ranks with its step' : ''}.
       </p>
       {top.length ? (
         <ol className="space-y-1">
           {top.map((n, i) => {
             const why = whyOf(n, p.core, names, ds);
             const v = value(n);
-            const label = `${n.tech} ${stageDisplay(n.stage)}: ${VERB_LABEL[n.verb]}; ${by} ${score100(v)}${why ? `; ${why}` : ''}`;
+            const label = `${n.tech} ${stageDisplay(n.stage)}${n.layer ? `, layer ${n.layer.label}` : ''}: ${VERB_LABEL[n.verb]}; ${by} ${score100(v)}${n.layer ? ' (its step’s)' : ''}${why ? `; ${why}` : ''}`;
             return (
-              <li key={n.key} data-key={n.key} data-verb={n.verb}>
+              <li key={n.key} data-key={n.key} data-verb={n.verb} data-layer={n.layer?.id}>
                 <button
                   type="button"
                   className="grid w-full grid-cols-[1.25rem_1rem_minmax(0,1fr)_2.5rem] items-start gap-x-2 rounded-md px-1.5 py-1.5 text-left outline-none hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-signal"
                   aria-label={label}
-                  aria-pressed={p.node.selected === n.key}
-                  onClick={() => p.node.select(n.key)}
+                  aria-pressed={selectedUnitKey(p) === n.key}
+                  onClick={() => openUnit(p, n)}
                 >
                   <span className="text-sm tabular text-paper-mute">{i + 1}.</span>
                   <span className="pt-0.5">
@@ -373,6 +430,11 @@ function TopList({ title, testId, nodes, by, value, empty }: TopListProps) {
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm text-paper">{nodeWords(n)}</span>
+                    {n.layer && (
+                      <span className="block text-xs text-paper" data-testid="fence-layer">
+                        <span className="text-paper-mute">Layer:</span> {n.layer.label}
+                      </span>
+                    )}
                     <span className="block text-xs text-paper-dim" data-testid="fence-why">
                       {VERB_LABEL[n.verb]} · {why ?? missingWords(n, ds)}
                     </span>
@@ -409,7 +471,7 @@ export function HighFenceSection() {
   const state = usePostureState('Secure node');
   const p = useReady();
   const names = useNames(p?.core ?? null);
-  const g = p ? fenceGroups(p.cells, p.detail) : null;
+  const g = p ? fenceGroups(p.cells, p.detail, p.core.meta) : null;
   const ds = detailStateOf(p);
   return (
     <Section
@@ -420,6 +482,8 @@ export function HighFenceSection() {
         <>
           <strong className="font-medium text-paper">{FENCE_MEANING.high}</strong> The nodes of {name} that passed the Secure tests (an operational control layer, a coercive
           chokepoint or systemic resilience), ranked by <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>: how costly or dangerous dependence on outside supply is.
+          A capability layer is a <Term id={POSTURE_TERMS.yard}>yard</Term> unit of its own: a Secure layer is listed here, with its step&apos;s need, even when its step sits behind
+          another fence.
         </>
       }
     >
@@ -442,7 +506,7 @@ export function HighFenceSection() {
                 summary={`All ${g.secure.length} Secure ${g.secure.length === 1 ? 'node' : 'nodes'} × need variables: import dependence, supplier concentration, risky supplier exposure, lack of trusted alternatives`}
               >
                 <p className="text-xs text-paper-mute">Scores are 0-100. Select a row for the node&apos;s five questions.</p>
-                <FenceTable rows={g.secure} cols={needCols(p.core, names, ds)} caption={`${cap(name)}: Secure nodes by supply-chain need`} testId="high-table" />
+                <FenceTable rows={g.secure} cols={needCols(g.secure, p.core, names, ds)} caption={`${cap(name)}: Secure nodes by supply-chain need`} testId="high-table" />
               </Fold>
             )}
           </>
@@ -474,8 +538,8 @@ function PartnerLead({ nodes, name }: { nodes: FenceNode[]; name: string }) {
             return (
               <span key={n.key} data-key={n.key}>
                 {i > 0 && '; '}
-                <button type="button" className="link" aria-pressed={p.node.selected === n.key} onClick={() => p.node.select(n.key)}>
-                  {nodeWords(n)}
+                <button type="button" className="link" aria-pressed={selectedUnitKey(p) === n.key} onClick={() => openUnit(p, n)}>
+                  {unitWords(n)}
                 </button>
                 {why ? ` (${why.charAt(0).toLowerCase()}${why.slice(1)})` : ''}
               </span>
@@ -496,7 +560,7 @@ export function MediumFenceSection() {
   const state = usePostureState('Preserve, Catch Up, Partner or Accelerate node');
   const p = useReady();
   const names = useNames(p?.core ?? null);
-  const g = p ? fenceGroups(p.cells, p.detail) : null;
+  const g = p ? fenceGroups(p.cells, p.detail, p.core.meta) : null;
   const ds = detailStateOf(p);
   const t = p?.core.meta.thresholds ?? null;
   // the position tables run in Competitive Position order (the prize tables in the fence's own, by prize)
@@ -539,7 +603,7 @@ export function MediumFenceSection() {
                 title="Top 5 supply-chain nodes"
                 testId="medium-top-supply"
                 nodes={g.compete}
-                by="Industrial Opportunity"
+                by={prizeLabel(p.core.meta)}
                 value={(n) => n.cell.prize}
                 empty="No Preserve, Catch Up or Partner nodes."
               />
@@ -562,11 +626,21 @@ export function MediumFenceSection() {
           level={3}
           title={SUB['medium-prize'].label}
           intro={
-            <>
-              <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term> is the node&apos;s market prize: expected world demand growth (the node prize) and investment
-              momentum, lifted by home-market growth only where national data exist; high at {score100(t.prize)} or more. Supply-chain need is context, and a Catch Up node shows the
-              evidence of its credible pathway. Scores are 0-100.
-            </>
+            p.core.meta.prize_measure === 'strategic_value' ? (
+              <>
+                <Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term> asks whether domestic capability in the node is strategically valuable; high at{' '}
+                {score100(t.prize)} or more. It combines three families: the market prize (<Term id={POSTURE_TERMS.industrialOpportunity}>{MARKET_PRIZE_LABEL}</Term>: expected world
+                demand growth, the node prize, and investment momentum, lifted by home-market growth only where national data exist), industrial commons (process knowledge, workforce
+                and suppliers, cross-sector spillover) and future option value (the leap tests of a leap candidate). Where only the market speaks for it, the value is capped below
+                the bar. Supply-chain need is context, and a Catch Up node shows the evidence of its credible pathway. Scores are 0-100.
+              </>
+            ) : (
+              <>
+                <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term> is the node&apos;s market prize: expected world demand growth (the node prize) and
+                investment momentum, lifted by home-market growth only where national data exist; high at {score100(t.prize)} or more. Supply-chain need is context, and a Catch Up
+                node shows the evidence of its credible pathway. Scores are 0-100.
+              </>
+            )
           }
         >
           {g.compete.length ? (
@@ -675,7 +749,7 @@ export function LowFenceSection() {
   const state = usePostureState('Watch node');
   const p = useReady();
   const names = useNames(p?.core ?? null);
-  const g = p ? fenceGroups(p.cells, p.detail) : null;
+  const g = p ? fenceGroups(p.cells, p.detail, p.core.meta) : null;
   const ds = detailStateOf(p);
   const watchByPosition = g ? byPositionOrder(g.watchSupply) : [];
   const sub = (title: string, children: ReactNode) => (
@@ -711,7 +785,7 @@ export function LowFenceSection() {
                   title="Top 5 supply-chain nodes"
                   testId="low-top-supply"
                   nodes={g.watchSupply}
-                  by="Industrial Opportunity"
+                  by={prizeLabel(p.core.meta)}
                   value={(n) => n.cell.prize}
                   empty="No producing-stage Watch nodes."
                 />

@@ -1,7 +1,7 @@
 // The Prize & Position scatter (spec XIII; design 5b; since 2026-10-30 drawn on the shared quadrant-scatter
 // core, charts/quadScatter.tsx, so it reads as the Legacy "Security and opportunity, sector by sector"
-// chart the user preferred): one economy's producing-stage nodes placed by Industrial Opportunity (across,
-// 0-100) and Competitive Position among the node's contenders (up, 0-100), with a stage filter. Each dot is
+// chart the user preferred): one economy's producing-stage nodes placed by the prize, the Strategic Industrial
+// Value (Industrial Opportunity for a core whose prize is the market measure; across, 0-100) and Competitive Position among the node's contenders (up, 0-100), with a stage filter. Each dot is
 // coloured by its choice (grammar VERB_COLOR; the legend groups the choices by fence) and shaped by its stage
 // (STAGE_SYMBOL, as on the Legacy chart); a Secure node keeps its true coordinates (Secure overrides the
 // triage; it is never moved to an artificial position) and is drawn last, on top. The dashed lines are the
@@ -32,7 +32,7 @@ import { POSTURE_TERMS, PostureBasisTag } from './basis.tsx';
 import type { PostureCell, PostureCore, Verb } from './contract.ts';
 import { namePossessive, pct, postureCsvText, postureProvenance, unplottedWords } from './derive.ts';
 import {
-  ALIGNMENT_LABEL, choiceWord, EVIDENCE_LABEL, FENCE_LABEL, MOMENTUM_LABEL, nodeFence, RATIONALE_LABEL, stageDisplay, stageShort, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, verbOf,
+  ALIGNMENT_LABEL, choiceWord, EVIDENCE_LABEL, FENCE_LABEL, MOMENTUM_LABEL, nodeFence, PRIZE_LABEL, prizeLabel, RATIONALE_LABEL, stageDisplay, stageShort, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
 import { ChoiceLegend, Swatch } from './PostureLegend.tsx';
 import { PRIZE_QUADRANT_WORDS, prizePositionPoints, prizeTendency, type PrizePoint, type PrizeQuadrant } from './sections.ts';
@@ -80,13 +80,13 @@ interface PrizeDatum {
 const momentumWords = (c: PostureCell) => (c.momentum ? MOMENTUM_LABEL[c.momentum] : 'unavailable');
 
 /** A point's (or an unplotted node's) words, for its accessible name and the tooltip. */
-export function prizePointLabel(c: PostureCell): string {
+export function prizePointLabel(c: PostureCell, prize = PRIZE_LABEL): string {
   const v = verbOf(c);
   const fence = nodeFence(v, c.stage);
   const bits = [
     `${c.tech} ${stageDisplay(c.stage)}: ${v ? VERB_LABEL[v] : choiceWord(c)}${c.posture === 'S' && c.rationale ? ` (${RATIONALE_LABEL[c.rationale].toLowerCase()})` : ''}${fence ? `, ${FENCE_LABEL[fence].toLowerCase()}` : ''}`,
   ];
-  bits.push(`Industrial Opportunity ${pct(c.prize)}`, `Competitive Position ${pct(c.cp)}`, `supply-chain need ${pct(c.need)}`, `trade momentum ${momentumWords(c)}`);
+  bits.push(`${prize} ${pct(c.prize)}`, `Competitive Position ${pct(c.cp)}`, `supply-chain need ${pct(c.need)}`, `trade momentum ${momentumWords(c)}`);
   if (c.alignment) bits.push(`policy ${ALIGNMENT_LABEL[c.alignment].toLowerCase()}`);
   if (c.evidence) bits.push(`evidence ${EVIDENCE_LABEL[c.evidence].toLowerCase()}`);
   return bits.join('; ');
@@ -98,6 +98,8 @@ interface ScatterRow {
   stage: string;
   choice: string;
   prize: number | null;
+  /** the market prize (Industrial Opportunity) beside a Strategic Industrial Value */
+  market: number | null;
   cp: number | null;
   need: number | null;
   momentum: string;
@@ -107,11 +109,12 @@ interface ScatterRow {
   plotted: boolean;
 }
 
-const COLS: Col<ScatterRow>[] = [
+/** The table twin's columns, the prize named as the core names it. */
+const colsOf = (prize: string): Col<ScatterRow>[] => [
   { id: 'tech', header: 'Technology', value: (r) => r.tech },
   { id: 'stage', header: 'Stage', value: (r) => stageDisplay(r.stage), sortValue: (r) => stageRank(r.stage) },
   { id: 'choice', header: 'Choice', value: (r) => r.choice },
-  { id: 'prize', header: 'Industrial Opportunity', value: (r) => r.prize, cell: (r) => pct(r.prize), num: true },
+  { id: 'prize', header: prize, value: (r) => r.prize, cell: (r) => pct(r.prize), num: true },
   { id: 'cp', header: 'Competitive Position', value: (r) => r.cp, cell: (r) => pct(r.cp), num: true },
   { id: 'need', header: 'Supply-chain need', value: (r) => r.need, cell: (r) => pct(r.need), num: true },
   { id: 'momentum', header: 'Trade momentum', value: (r) => r.momentum },
@@ -151,6 +154,11 @@ export function PrizePositionScatter({
   core, cells, name, selected = null, onOpen, stage: initialStage = ALL, title = PRIZE_POSITION_TITLE, headingLevel = 3, showBasis = false, className,
 }: PrizePositionScatterProps) {
   const t = core.meta.thresholds;
+  const prize = prizeLabel(core.meta);
+  const siv = core.meta.prize_measure === 'strategic_value';
+  const prizeTerm = siv ? POSTURE_TERMS.strategicValue : POSTURE_TERMS.industrialOpportunity;
+  // the CSV names the prize column by its measure, with the market prize beside a strategic value
+  const prizeKey = siv ? 'strategic_industrial_value' : 'industrial_opportunity';
   const producing = useMemo(() => core.meta.stages.filter(isProducingStage), [core.meta.stages]);
   const [stage, setStage] = useState<string>(initialStage === ALL || (producing as string[]).includes(initialStage) ? initialStage : ALL);
   const [hover, setHover] = useState<string | null>(null);
@@ -171,7 +179,7 @@ export function PrizePositionScatter({
         selected,
         // the nodes with an industrial choice are labelled first; Watch where it fits
         priority: (d) => d.verb !== 'watch',
-        xLabel: 'Industrial Opportunity: the prize (percentile) →',
+        xLabel: `${prize}: the prize (percentile) →`,
         yLabel: '↑ Competitive Position among contenders (percentile)',
         ruleX: t.prize * 100,
         ruleY: t.cp * 100,
@@ -182,7 +190,7 @@ export function PrizePositionScatter({
         // white, not signal orange: orange is Secure on this chart
         ring: SELECT_RING,
       }),
-    [data, selected, t.prize, t.cp, producing],
+    [data, selected, t.prize, t.cp, producing, prize],
   );
   const [ref, w] = useWidth<HTMLDivElement>();
   const H = scatterHeight(w || 440);
@@ -194,14 +202,14 @@ export function PrizePositionScatter({
     ...notPlotted.map((c) => ({ cell: c, plotted: false, tendency: null })),
   ]
     .map(({ cell: c, plotted: on, tendency }) => ({
-      key: `${c.tech}|${c.stage}`, tech: c.tech, stage: c.stage, choice: choiceWord(c), prize: c.prize, cp: c.cp, need: c.need, momentum: momentumWords(c),
+      key: `${c.tech}|${c.stage}`, tech: c.tech, stage: c.stage, choice: choiceWord(c), prize: c.prize, market: c.market, cp: c.cp, need: c.need, momentum: momentumWords(c),
       alignment: c.alignment ? ALIGNMENT_LABEL[c.alignment] : null, evidence: c.evidence ? EVIDENCE_LABEL[c.evidence] : null, tendency, plotted: on,
     }))
     .sort((a, b) => stageRank(a.stage) - stageRank(b.stage) || a.tech.localeCompare(b.tech));
   const verbCounts = Object.fromEntries(SCATTER_VERBS.map((v) => [v, plotted.filter((p) => p.verb === v).length])) as Record<Verb, number>;
   const counts = SCATTER_VERBS.filter((v) => verbCounts[v] > 0).map((v) => `${verbCounts[v]} ${VERB_LABEL[v]}`);
   const scope = stage === ALL ? 'producing-stage nodes' : `${stageDisplay(stage)} nodes`;
-  const summary = `${name}: ${plotted.length} ${scope} placed by Industrial Opportunity and Competitive Position${counts.length ? ` (${counts.join(', ')})` : ''}${notPlotted.length ? `; ${notPlotted.length} not plotted` : ''}.`;
+  const summary = `${name}: ${plotted.length} ${scope} placed by ${prize} and Competitive Position${counts.length ? ` (${counts.join(', ')})` : ''}${notPlotted.length ? `; ${notPlotted.length} not plotted` : ''}.`;
   const quad = (q: PrizeQuadrant, right: boolean) => (
     <QuadCorner title={PRIZE_QUADRANT_WORDS[q][0]} right={right}>
       {q === 'strong_weak_prize' ? 'mature or specialised: review' : PRIZE_QUADRANT_WORDS[q][1]}
@@ -224,7 +232,7 @@ export function PrizePositionScatter({
       sub={
         <>
           Each dot is one of {namePossessive(name)} producing-stage nodes: a technology at one stage of its supply chain. Across:{' '}
-          <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term> (the prize). Up: <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>{' '}
+          <Term id={prizeTerm}>{prize}</Term> (the prize). Up: <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>{' '}
           among the node&apos;s contenders (how strong the country is today). The colour is the choice, the shape the stage; the dashed lines are the prize threshold and the
           Preserve bar.
         </>
@@ -233,16 +241,16 @@ export function PrizePositionScatter({
       summary={summary}
       legend={<PrizeLegend counts={verbCounts} stages={stage === ALL ? producing : []} prize={t.prize} cp={t.cp} />}
       table={() => (
-        <TableView rows={rows} cols={COLS} caption={`${name}: Industrial Opportunity and Competitive Position by node`} rowKey={(r) => r.key} onRowClick={(r) => onOpen(r.key)} selectedKey={selected} pageSize={60} />
+        <TableView rows={rows} cols={colsOf(prize)} caption={`${name}: ${prize} and Competitive Position by node`} rowKey={(r) => r.key} onRowClick={(r) => onOpen(r.key)} selectedKey={selected} pageSize={60} />
       )}
       csv={() => ({
         name: `${name} prize and position${stage === ALL ? '' : ` ${stage}`}`,
         text: postureCsvText(
           rows.map((r) => ({
-            technology: r.tech, stage: r.stage, stage_name: stageDisplay(r.stage), choice: r.choice, industrial_opportunity: r.prize, competitive_position: r.cp,
+            technology: r.tech, stage: r.stage, stage_name: stageDisplay(r.stage), choice: r.choice, [prizeKey]: r.prize, ...(siv ? { industrial_opportunity: r.market } : {}), competitive_position: r.cp,
             supply_chain_need: r.need, trade_momentum: r.momentum, policy_alignment: r.alignment, evidence: r.evidence, quadrant_tendency: r.tendency, plotted: r.plotted,
           })),
-          ['technology', 'stage', 'stage_name', 'choice', 'industrial_opportunity', 'competitive_position', 'supply_chain_need', 'trade_momentum', 'policy_alignment', 'evidence', 'quadrant_tendency', 'plotted'],
+          ['technology', 'stage', 'stage_name', 'choice', prizeKey, ...(siv ? ['industrial_opportunity'] : []), 'competitive_position', 'supply_chain_need', 'trade_momentum', 'policy_alignment', 'evidence', 'quadrant_tendency', 'plotted'],
           prov,
         ),
       })}
@@ -274,7 +282,7 @@ export function PrizePositionScatter({
                   type="button"
                   className={`absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 outline-none hover:border-white focus-visible:border-white ${hover === d.key ? 'border-white' : 'border-transparent'}`}
                   style={{ left: quadLeft(d.x), top: quadTop(d.y, H) }}
-                  aria-label={prizePointLabel(d.p.cell)}
+                  aria-label={prizePointLabel(d.p.cell, prize)}
                   aria-pressed={on}
                   data-key={d.key}
                   data-verb={d.verb}
@@ -308,7 +316,7 @@ export function PrizePositionScatter({
                   lines={[
                     hov.p.cell.posture === 'S' && hov.p.cell.rationale ? `Secure: ${RATIONALE_LABEL[hov.p.cell.rationale]}` : null,
                     `Supply-chain need ${pct(hov.p.need)}`,
-                    `Industrial Opportunity ${pct(hov.p.prize)}`,
+                    `${prize} ${pct(hov.p.prize)}`,
                     `Competitive Position ${pct(hov.p.cp)}`,
                     `Trade momentum: ${momentumWords(hov.p.cell)}`,
                     `Policy alignment: ${hov.p.cell.alignment ? ALIGNMENT_LABEL[hov.p.cell.alignment] : 'not assessed'}`,

@@ -1,5 +1,5 @@
-// The Sector view's headline: every country in one technology x six-stage node, placed by Industrial
-// Opportunity (x) and need (y). Need x Prize triages (spec VIII): high need with a low prize leans Partner,
+// The Sector view's headline: every country in one technology x six-stage node, placed by the prize (the
+// Strategic Industrial Value, x) and need (y). Need x Prize triages (spec VIII): high need with a low prize leans Partner,
 // low need with a low prize is Watch, and with a high prize Competitive Position decides (Preserve or
 // Catch Up). A Secure country keeps its true coordinates and is drawn as an outlined diamond (Secure
 // overrides the triage); a node not assessed is not plotted. Colour = the choice (grammar VERB_COLOR, grouped by
@@ -10,7 +10,7 @@
 import { useMemo, useState } from 'react';
 import type { PostureCell, PostureCore } from './contract.ts';
 import { pct } from './derive.ts';
-import { choiceWord, nodeFill, RATIONALE_LABEL, VERB_COLOR, VERB_OUTLINE, verbOf } from './grammar.ts';
+import { choiceWord, nodeFill, prizeLabel, RATIONALE_LABEL, VERB_COLOR, VERB_OUTLINE, verbOf } from './grammar.ts';
 
 const W = 640;
 const H = 420;
@@ -34,7 +34,7 @@ export function PostureScatter({ core, cells, onOpen, highlight }: { core: Postu
   const order = [...pts].sort((a, b) => (a.posture === 'S' ? 1 : 0) - (b.posture === 'S' ? 1 : 0) || (b.cp ?? 0) - (a.cp ?? 0));
   return (
     <div className="relative w-full" data-testid="posture-scatter">
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Need against Industrial Opportunity for ${pts.length} countries`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Need against ${prizeLabel(core.meta)} for ${pts.length} countries`}>
         <rect x={M.l} y={M.t} width={W - M.l - M.r} height={H - M.t - M.b} fill="rgb(255 255 255 / 0.02)" />
         <line x1={x(tO)} x2={x(tO)} y1={M.t} y2={H - M.b} stroke="rgb(255 255 255 / 0.35)" strokeDasharray="4 3" />
         <line x1={M.l} x2={W - M.r} y1={y(tN)} y2={y(tN)} stroke="rgb(255 255 255 / 0.35)" strokeDasharray="4 3" />
@@ -54,7 +54,7 @@ export function PostureScatter({ core, cells, onOpen, highlight }: { core: Postu
           </g>
         ))}
         <text x={(M.l + W - M.r) / 2} y={H - 6} textAnchor="middle" className="fill-paper-dim" style={{ fontSize: 12 }}>
-          Industrial Opportunity (prize)
+          {prizeLabel(core.meta)} (prize)
         </text>
         <text transform={`translate(14 ${(M.t + H - M.b) / 2}) rotate(-90)`} textAnchor="middle" className="fill-paper-dim" style={{ fontSize: 12 }}>
           Need (percentile)

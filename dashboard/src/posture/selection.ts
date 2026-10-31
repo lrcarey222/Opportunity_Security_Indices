@@ -15,6 +15,12 @@ import type { PostureMeta } from './contract.ts';
 
 /** The URL key of the selected node. */
 export const NODE_KEY = 'node';
+/**
+ * The URL key of a layer of the selected node (?layer=<layer_id>, 2026-10-30): a fence section's layer unit
+ * opens its node's drawer focused on that layer. Read only beside a node; a layer the node does not have is
+ * left unfocused.
+ */
+export const LAYER_KEY = 'layer';
 
 export interface NodeParse {
   /** the selected cell key "Tech|Stage" (stage id), or null for none */
@@ -50,8 +56,10 @@ export interface NodeSelection {
   raw: string | null;
   /** why the URL value was not used as written (show it as "Ignored in the link"); null otherwise */
   problem: string | null;
-  /** select a node (null: none), replacing the URL entry and keeping the scroll */
-  select: (key: string | null) => void;
+  /** the layer of the selected node to focus in the drawer (?layer=), null for the node itself or with no node */
+  layer: string | null;
+  /** select a node (null: none), optionally focused on one of its layers, replacing the URL entry and keeping the scroll */
+  select: (key: string | null, layer?: string | null) => void;
   /** select a node, or clear it when it is already selected */
   toggle: (key: string) => void;
 }
@@ -66,12 +74,14 @@ export function useNodeSelection(meta: Pick<PostureMeta, 'techs' | 'stages'> | n
   const raw = sp.get(key);
   const parsed = useMemo(() => (meta ? parseNodeParam(raw, meta, key) : { key: null, problem: null }), [meta, raw, key]);
   const select = useCallback(
-    (k: string | null) => {
+    (k: string | null, layer?: string | null) => {
       setSp(
         (prev) => {
           const q = new URLSearchParams(prev);
           if (k === null) q.delete(key);
           else q.set(key, k);
+          if (k !== null && layer) q.set(LAYER_KEY, layer);
+          else q.delete(LAYER_KEY);
           return q;
         },
         { replace: true, preventScrollReset: true },
@@ -80,6 +90,8 @@ export function useNodeSelection(meta: Pick<PostureMeta, 'techs' | 'stages'> | n
     [setSp, key],
   );
   const selected = parsed.key;
+  const rawLayer = sp.get(LAYER_KEY);
+  const layer = selected && rawLayer && rawLayer.trim() ? rawLayer.trim() : null;
   const toggle = useCallback((k: string) => select(selected === k ? null : k), [select, selected]);
-  return { selected, raw, problem: parsed.problem, select, toggle };
+  return { selected, raw, problem: parsed.problem, layer, select, toggle };
 }

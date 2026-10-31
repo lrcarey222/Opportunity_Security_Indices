@@ -339,10 +339,13 @@ describe.skipIf(!have)('the real Sectoral Compacts bundle (public/data/aib)', ()
     expect(doc.meta.shocks.map((s) => s.id)).toContain(dv!.shockId);
     const counts: Record<string, number> = {};
     for (const n of doc.nodes) if (n.diversify) counts[n.diversify.status] = (counts[n.diversify.status] ?? 0) + 1;
-    expect(counts).toEqual({ 'diversified to the benchmark': 38, 'within the cap in the allied market': 1, 'already as diversified as its benchmark': 35 });
+    // the bundle of 2026-10-30 (Atlas 2024, the new basket): 37 / 3 / 34 (38 / 1 / 35 before)
+    expect(counts).toEqual({ 'diversified to the benchmark': 37, 'within the cap in the allied market': 3, 'already as diversified as its benchmark': 34 });
     expect(doc.nodes.filter((n) => n.diversify === undefined)).toHaveLength(3);
     const t = diversifyTotals(doc.nodes);
-    expect([t.above, t.withBenchmark, t.diversified]).toEqual([39, 74, 38]);
+    expect([t.above, t.withBenchmark, t.diversified]).toEqual([40, 74, 37]);
+    // above the benchmark: the nodes diversified to it and those within the cap in the allied market
+    expect(t.above).toBe(counts['diversified to the benchmark'] + counts['within the cap in the allied market']);
     const names = countryNamesOf(doc);
     const id = dv!.shockId;
     for (const n of doc.nodes) {

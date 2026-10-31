@@ -113,7 +113,11 @@ export default function CountryAboutView() {
         <Term id="supply_chain_need">supply-chain need</Term>: how costly or dangerous dependence on outside supply is (import dependence, supplier concentration, risky supplier exposure,
         trusted alternatives). At Deployment &amp; Use it is <Term id="deployment_need">deployment need</Term>: how much more of the technology the energy system needs (demand adequacy,
         the gap to national targets, system requirements), with its scenario named. <strong className="text-paper">Prize</strong> is{' '}
-        <Term id="industrial_opportunity">Industrial Opportunity</Term>, the node&apos;s market prize, kept apart from current capability and from need.{' '}
+        <Term id="strategic_industrial_value">Strategic Industrial Value</Term>: whether domestic capability in the node is strategically valuable, from three families, the
+        market prize (<Term id="industrial_opportunity">Industrial Opportunity</Term>), industrial commons and future option value, kept apart from current capability and from
+        need; a node only the market speaks for is capped below the bar. A capability layer (control software, firmware) is a{' '}
+        <Term id="yard">yard</Term> unit of its own, with its own choice; a step whose layers sit in different yards is mixed. A{' '}
+        <Term id="large_yard_case">large-yard case</Term> (a mature, passive commodity) is Watch whatever the size of the market.{' '}
         <strong className="text-paper">Position</strong> is <Term id="competitive_position">Competitive Position</Term>, demonstrated capability among the node&apos;s contenders.
       </p>
       <p className={p}>

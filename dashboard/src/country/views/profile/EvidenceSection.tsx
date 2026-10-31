@@ -67,9 +67,12 @@ function FrameworkCard() {
           never added together.
         </li>
         <li>
-          <strong className="text-paper">Prize.</strong> <Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>: the node&apos;s market prize (expected world demand
-          growth and investment momentum), lifted by national home-market growth only where national data exist; high at {pct(t?.prize)} and above. Current capability and need
-          variables are kept out of it.
+          <strong className="text-paper">Prize.</strong> <Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term>: is domestic capability in the node strategically
+          valuable? It combines the market prize (<Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>: expected world demand growth and investment
+          momentum, lifted by national home-market growth only where national data exist), industrial commons (process knowledge, workforce and suppliers, cross-sector spillover)
+          and future option value (the leap tests of a leap candidate); high at {pct(t?.prize)} and above, and capped just below where only the market speaks for it. Current
+          capability and need variables are kept out of it. A <Term id={POSTURE_TERMS.largeYard}>large-yard case</Term> (mature, passive and most commodity signals holding)
+          makes a node Watch whatever the size of its market.
         </li>
         <li>
           <strong className="text-paper">Position.</strong> <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>: demonstrated capability (exports, specialisation,

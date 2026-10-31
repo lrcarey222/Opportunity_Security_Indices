@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { STAGE_DISPLAY } from '../../lib/stages.ts';
 import { checkPostureDetail, decodeCore, normalizeAlignmentConfidence, normalizeConfidence, normalizeEvidence, PostureContractError } from '../contract.ts';
 import { ratioVsCurrentWords } from '../detail.ts';
-import { fixtureCore, fixtureDetail, fixtureStore } from './fixture.ts';
+import { fixtureCore, fixtureDetail, fixtureStore, LY_SIGNALS } from './fixture.ts';
 
 type Cols = Record<string, unknown[]>;
 const cellsOf = (doc: Record<string, unknown>) => doc.cells as Cols;
@@ -217,5 +217,93 @@ describe('the detail document, schema 2', () => {
     expect(st.peek('core')).toBe(a);
     expect((await st.detail('AAA')).country).toBe('Aland');
     await expect(st.detail('ZZZ')).rejects.toThrow(/No posture detail/);
+  });
+});
+
+describe('Yards & Fences (2026-10-30): the prize measure, the market prize, the yard roll-up and the node evidence', () => {
+  it('decodes the prize measure, the market prize beside the prize, the roll-up codes and the node-level evidence', () => {
+    const core = decodeCore(fixtureCore(true, { yards: true }));
+    const a = (tech: string, stage: string) => core.cells.find((c) => c.iso3 === 'AAA' && c.tech === tech && c.stage === stage)!;
+    expect(core.meta.prize_measure).toBe('strategic_value');
+    expect([a('Batteries', 'Components').prize, a('Batteries', 'Components').market]).toEqual([0.8, 0.7]);
+    expect([a('Batteries', 'Deployment').prize, a('Batteries', 'Deployment').market]).toEqual([null, null]);
+    // the roll-up codes through meta.yard_codes: own yard alone, or the yards the layers span; none when not assessed
+    expect([a('Batteries', 'Refining').yards, a('Batteries', 'Components').yards, a('Solar', 'Extraction').yards, a('Batteries', 'Recovery').yards]).toEqual(['small', 'medium', 'large', null]);
+    expect([a('Batteries', 'Assembly').yards, a('Solar', 'Assembly').yards]).toEqual(['mixed_high_medium_low', 'mixed_medium_low']);
+    // the node evidence by "tech|stage|layer", its signal indexes resolved to names
+    expect(core.meta.large_yard_signals).toHaveLength(10);
+    const enc = core.meta.yf_nodes['Batteries|Assembly|bess-enclosure'];
+    expect(enc).toMatchObject({
+      tech: 'Batteries', stage: 'Assembly', layer: 'bess-enclosure', label: 'Enclosures, racking, thermal management and balance of system', largeYard: true, n: 6, floor: true, cap: 'market_only',
+    });
+    expect(enc.signals).toEqual(['mature', 'passive', 'standardized', 'substitutable', 'easy_qualification', 'low_learning', 'low_spillover', 'low_differentiation']);
+    const ctl = core.meta.yf_nodes['Batteries|Assembly|bess-control'];
+    expect([ctl.signals, ctl.unknown, ctl.commons, ctl.commonsN, ctl.option, ctl.optionN]).toEqual([['substitutable'], ['easy_qualification', 'low_learning'], 0.333, 1, 0, 0]);
+    // an undecided case (null), and the whole node keyed "stage" without a label
+    expect(core.meta.yf_nodes['Batteries|Extraction|stage']).toMatchObject({ largeYard: null, label: null, layer: 'stage' });
+  });
+
+  it('an older core (no prize measure, no market prize, no yards, no node evidence) still decodes: its prize is the market prize', () => {
+    const core = decodeCore(fixtureCore(true, { legacy: true }));
+    expect(core.meta.prize_measure).toBe('market');
+    expect(core.meta.yf_nodes).toEqual({});
+    expect(core.meta.large_yard_signals).toEqual(LY_SIGNALS);
+    const c = core.cells.find((x) => x.iso3 === 'AAA' && x.tech === 'Batteries' && x.stage === 'Components')!;
+    // without a market column the market prize is the prize itself (the measure says so); no roll-up
+    expect([c.prize, c.market, c.yards]).toEqual([0.8, 0.8, null]);
+    // a strategic-value core without its market column: the market prize is not invented
+    const noIo = fixtureCore();
+    delete (noIo.cells as Record<string, unknown>).io;
+    expect(decodeCore(noIo).cells.find((x) => x.iso3 === 'AAA' && x.tech === 'Batteries' && x.stage === 'Components')?.market).toBeNull();
+  });
+
+  it("refuses what it cannot read: an unknown measure or roll-up code, a roll-up without the node's own yard, a column of the wrong length, a bad node key or signal index", () => {
+    const doc = fixtureCore();
+    expect(problemsOf(() => decodeCore({ ...doc, meta: { ...(doc.meta as object), prize_measure: 'vibes' } }))).toContain("core: meta.prize_measure 'vibes' is not known");
+    const bad = fixtureCore();
+    (cellsOf(bad).yd as unknown[])[at(bad, 0, 0, 1)] = 'X';
+    expect(problemsOf(() => decodeCore(bad))).toContain('core: 1 cell has an unknown yard roll-up code');
+    // a Secure node whose roll-up leaves out the Small yard
+    const own = fixtureCore();
+    (cellsOf(own).yd as unknown[])[at(own, 0, 0, 1)] = 'ML';
+    expect(problemsOf(() => decodeCore(own))).toContain("core: 1 cell has a yard roll-up without the node's own yard");
+    const short = fixtureCore();
+    (cellsOf(short).io as unknown[]).pop();
+    expect(problemsOf(() => decodeCore(short))).toContain('core: cells.io has 35 values, not 36');
+    const yf = fixtureCore();
+    const nodes = (yf.meta as Record<string, unknown>).yf_nodes as Record<string, unknown[]>;
+    nodes.key[0] = 'Wind|Refining|stage';
+    (nodes.s as number[][])[1] = [0, 12];
+    expect(problemsOf(() => decodeCore(yf))).toEqual(
+      expect.arrayContaining(['core: 1 meta.yf_nodes key is not a technology|stage|layer of the core', 'core: 1 meta.yf_nodes signal index points outside meta.large_yard_signals']),
+    );
+  });
+
+  it("the detail: the prize measure and market prize, the child layers, the fence scope and the economy's own large-yard case", () => {
+    const det = checkPostureDetail(fixtureDetail({ yards: true }));
+    const node = (key: string) => det.cells.find((c) => c.key === key)!;
+    const asm = node('Batteries|Assembly');
+    expect(asm.prize).toMatchObject({ value: 0.9, measure: 'strategic_value', market: 0.85, nodePrize: 0.9 });
+    expect(asm.yardChildren).toEqual([
+      { layerId: 'bess-cells', yard: 'medium', choice: 'preserve', variant: 'compete_preserve' },
+      { layerId: 'bess-control', yard: 'small', choice: 'secure', variant: 'secure_integrated' },
+      { layerId: 'bess-enclosure', yard: 'large', choice: 'watch', variant: 'deploy_floor' },
+    ]);
+    expect([asm.yardFenceScope, asm.pivotal]).toEqual(['extends_to_hardware', 'strategic_industrial_value']);
+    expect(asm.trace.find((s) => s.step === 'large_yard')).toEqual({ step: 'large_yard', test: 'large_yard_case', value: 2, threshold: 5, result: 'no' });
+    expect(node('Solar|Extraction').largeYard).toEqual({ case: true, n: 6, s: [0, 1, 3, 4, 5, 6, 7, 8], u: [], floor: true, reason: null });
+    // an older flat spelling: the market prize is industrial_opportunity; no layers, scope or exception
+    const com = node('Batteries|Components');
+    expect([com.prize.value, com.prize.market, com.prize.measure, com.yardChildren, com.yardFenceScope, com.largeYard]).toEqual([0.8, 0.8, null, [], null, null]);
+    // tolerant: a child without a layer id is dropped; an unknown yard or choice reads null; an unknown scope is ignored
+    const odd = checkPostureDetail({
+      ...fixtureDetail(),
+      cells: (fixtureDetail().cells as Record<string, unknown>[]).map((c) =>
+        c.tech === 'Solar' && c.stage === 'Assembly'
+          ? { ...c, yard_fence_scope: 'layer', yard_children: [{ yard: 'large' }, { layer_id: 'x', yard: 'huge', choice: 'grow' }], large_yard: { case: 'maybe', s: [1, -1, 2.5] } }
+          : c,
+      ),
+    }).cells.find((c) => c.key === 'Solar|Assembly')!;
+    expect([odd.yardFenceScope, odd.yardChildren, odd.largeYard]).toEqual([null, [{ layerId: 'x', yard: null, choice: null, variant: null }], { case: null, n: null, s: [1], u: [], floor: false, reason: null }]);
   });
 });

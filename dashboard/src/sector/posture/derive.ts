@@ -1,14 +1,15 @@
 // Pure derivations of the Sector strategy card (design section 5, 2026-10-29): every economy in one
 // technology x six-stage node, as the canonical framework decides it (Need -> Prize -> Position -> Choice).
-// Within one node the prize (Industrial Opportunity) barely varies across economies: it is the node's world
-// market prize, lifted only where a national home market is measured. So the card plots Competitive Position
+// Within one node the prize (the Strategic Industrial Value) barely varies across economies: its industrial
+// commons and future option describe the node, and its market prize is the node's world market, lifted only
+// where a national home market is measured. So the card plots Competitive Position
 // (across) against the relevant need (up: supply-chain need at the producing stages, deployment need at
 // Deployment & Use), marks each economy by its verb, and states the node's prize in words. No React here.
 
 import { DEPLOYMENT_STAGE, stageDisplay } from '../../lib/stages.ts';
 import type { PostureCell, PostureMeta, Verb } from '../../posture/contract.ts';
 import { listAnd, plural, score100 } from '../../posture/derive.ts';
-import { VERB_FAMILY, VERB_LABEL, verbOf } from '../../posture/grammar.ts';
+import { PRIZE_LABEL, VERB_FAMILY, VERB_LABEL, verbOf } from '../../posture/grammar.ts';
 import { nodePhrase } from '../../posture/strategy.ts';
 
 /** The verbs in the order of the counts line, the legend and the takeaway. */
@@ -74,20 +75,24 @@ export function nodePrize(cells: readonly PostureCell[], threshold: number): Nod
   return { n: v.length, min: v[0], median: v[Math.floor(v.length / 2)], max: v[v.length - 1], high, kind: high === v.length ? 'high' : high === 0 ? 'low' : 'mixed' };
 }
 
-/** "Prize (Industrial Opportunity) in this node: 85 for every economy, above the bar of 60." and its variants (0-100 scale, as the Need ranking). */
-export function prizeWords(stage: string, p: NodePrize | null, threshold: number): string {
+/**
+ * "Prize (Strategic Industrial Value) in this node: 85 for every economy, above the bar of 60." and its variants
+ * (0-100 scale, as the Need ranking). `label` names the prize as the core does (prizeLabel: Industrial
+ * Opportunity for a core whose prize is the market measure).
+ */
+export function prizeWords(stage: string, p: NodePrize | null, threshold: number, label: string = PRIZE_LABEL): string {
   if (stage === DEPLOYMENT_STAGE) {
-    return 'Deployment & Use has no prize of its own: Industrial Opportunity is read at the stages that make or supply the technology.';
+    return `Deployment & Use has no prize of its own: the prize (${label}) is read at the stages that make or supply the technology.`;
   }
-  if (!p) return 'The prize (Industrial Opportunity) is not measured in this node.';
+  if (!p) return `The prize (${label}) is not measured in this node.`;
   const bar = score100(threshold);
   const side = (x: number) => (x >= threshold ? 'at or above' : 'below');
-  if (score100(p.min) === score100(p.max)) return `Prize (Industrial Opportunity) in this node: ${score100(p.median)} for every economy, ${side(p.median)} the bar of ${bar}.`;
+  if (score100(p.min) === score100(p.max)) return `Prize (${label}) in this node: ${score100(p.median)} for every economy, ${side(p.median)} the bar of ${bar}.`;
   const range = `${score100(p.min)}–${score100(p.max)}`;
   if (p.kind === 'mixed') {
-    return `Prize (Industrial Opportunity) in this node: ${score100(p.median)} for most economies (${range} where a national home market lifts it); ${p.high} of ${p.n} at or above the bar of ${bar}.`;
+    return `Prize (${label}) in this node: ${score100(p.median)} for most economies (${range} where a national home market lifts it); ${p.high} of ${p.n} at or above the bar of ${bar}.`;
   }
-  return `Prize (Industrial Opportunity) in this node: ${score100(p.median)} for most economies (${range} where a national home market lifts it), ${p.kind === 'high' ? 'at or above' : 'below'} the bar of ${bar} for all.`;
+  return `Prize (${label}) in this node: ${score100(p.median)} for most economies (${range} where a national home market lifts it), ${p.kind === 'high' ? 'at or above' : 'below'} the bar of ${bar} for all.`;
 }
 
 /** How the framework decides this node, in words (spec VIII), at the core's thresholds. */

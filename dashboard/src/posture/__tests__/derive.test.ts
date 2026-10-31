@@ -13,9 +13,11 @@ import {
 } from '../derive.ts';
 import {
   ALIGNMENT_CLASS_LABEL, ALIGNMENT_LABEL, alignmentClass, alignmentFlagWords, borderlineWords, choiceWord, EVIDENCE_LABEL, EVIDENCE_LEVELS, FENCE_LABEL, FENCE_OF_VERB,
-  FENCE_ORDER, FENCE_VERBS, fenceChoiceWord, flagWords, nodeFence, nodeFill, NOT_ASSESSED_HATCH, pathwayEvidenceWords, POSTURE_COLOR, POSTURE_LABEL, STAGE_DISPLAY, STAGE_SHORT,
-  traceCodeWords, traceTestWords, VERB_COLOR, VERB_FAMILY, VERB_LABEL, VERB_LONG, VERB_ORDER, VERB_OUTLINE, verbOf,
+  FENCE_ORDER, FENCE_VERBS, fenceChoiceWord, flagWords, MARKET_PRIZE_LABEL, nodeFence, nodeFill, NOT_ASSESSED_HATCH, pathwayEvidenceWords, POSTURE_COLOR, POSTURE_LABEL, PRIZE_LABEL,
+  prizeLabel, STAGE_DISPLAY, STAGE_SHORT, traceCodeWords, traceNumberWords, traceTestWords, VERB_COLOR, VERB_FAMILY, VERB_LABEL, VERB_LONG, VERB_ORDER, VERB_OUTLINE, verbOf,
+  watchReasonWords,
 } from '../grammar.ts';
+import { variantWords } from '../yards.ts';
 import { postureMomentum } from '../momentum.ts';
 import { contrast as contrastRatio } from '../../charts/scale.ts';
 import { fixtureCore, renameEconomies, withoutCell } from './fixture.ts';
@@ -91,6 +93,26 @@ describe('one site-wide grammar (spec XX)', () => {
     expect(borderlineWords('supply_chain_need;industrial_opportunity;cp_contender_pct')).toBe('supply-chain need, Industrial Opportunity, Competitive Position');
     expect(borderlineWords('deployment_need')).toBe('deployment need');
     expect(borderlineWords(null)).toBeNull();
+    // the Yards & Fences inputs (2026-10-30): the borderline and pivotal inputs name the prize the choice read and the large-yard case
+    expect(borderlineWords('strategic_industrial_value;large_yard_case')).toBe('Strategic Industrial Value, the large-yard case');
+    for (const b of ['strategic_industrial_value', 'large_yard_case', 'coercive_import_share', 'home_share', 'stockpile', 'exposed']) expect(borderlineWords(b), b).not.toMatch(/_/);
+    expect(watchReasonWords('large_yard_case')).toBe('Large yard: affordable, diversified access should dominate');
+    expect(traceTestWords('large_yard_case')).toBe('Large-yard case (commodity signals)');
+    expect(traceTestWords('strategic_industrial_value')).toBe('Strategic Industrial Value');
+    // the large-yard step counts signals, every other number is a score
+    expect([traceNumberWords('large_yard_case', 3, (x) => `${x * 100}%`), traceNumberWords('large_yard_case', 1, (x) => `${x}`), traceNumberWords('supply_chain_need', 0.5, (x) => `${x * 100}%`)]).toEqual([
+      '3 signals', '1 signal', '50%',
+    ]);
+    // the variants a drawer or a layer reason names, the new ones included (deploy_accelerate, deploy_floor)
+    for (const v of ['deploy_accelerate', 'deploy_floor', 'deploy_diversify', 'deploy', 'secure_control', 'secure_integrated', 'secure_whole', 'secure_unclear', 'secure_input', 'secure_dual_use', 'secure_resilience', 'compete_preserve', 'compete_catch_up', 'compete_partner']) {
+      expect(variantWords(v), v).not.toMatch(/_/);
+    }
+    expect(variantWords('deploy_floor')).toBe('a large yard kept with a capability floor');
+    expect(variantWords('deploy_accelerate')).toBe('deployment priority high');
+    // the prize as the core names it: the Strategic Industrial Value, or the market prize for an older core
+    expect([prizeLabel({ prize_measure: 'strategic_value' }), prizeLabel({ prize_measure: 'market' }), PRIZE_LABEL, MARKET_PRIZE_LABEL]).toEqual([
+      'Strategic Industrial Value', 'Industrial Opportunity', 'Strategic Industrial Value', 'Industrial Opportunity',
+    ]);
     // the credible-pathway evidence and the compact decision trace (R pathway.R, decision_engine.R sp_choice_trace)
     expect(pathwayEvidenceWords(['feasibility', 'adjacent_stage', 'input_cost'])).toBe('feasibility, adjacent stage, input-cost advantage');
     expect(pathwayEvidenceWords('none_observed_fires')).toBe('evidence observed, none sufficient');
@@ -99,7 +121,7 @@ describe('one site-wide grammar (spec XX)', () => {
     expect(pathwayEvidenceWords('adjacent_stage;too_few_legs')).toBe('adjacent stage, too few pieces of evidence');
     expect(pathwayEvidenceWords('feasibility;too_few_observed')).toBe('feasibility, too little evidence observed to reach the bar');
     expect(['secure_override', 'deployment_need', 'supply_chain_need', 'industrial_opportunity', 'cp_contender_pct', 'pathway_credible', 'choice'].map(traceTestWords)).toEqual([
-      'Secure tests', 'Deployment need', 'Supply-chain need', 'Industrial Opportunity', 'Competitive Position among contenders', 'Credible pathway', 'Choice',
+      'Secure tests', 'Deployment need', 'Supply-chain need', 'Industrial Opportunity (market prize)', 'Competitive Position among contenders', 'Credible pathway', 'Choice',
     ]);
     expect(traceCodeWords('operational_control;coercive_chokepoint')).toBe('operational / control, chokepoint');
     expect(['capability_floor_not_met', 'not_a_contender', 'not_top_quarter', 'not_assessed', 'catch_up', 'high'].map(traceCodeWords)).toEqual([
@@ -227,7 +249,7 @@ describe('the node of the Sector card (?pnode)', () => {
   it('Deployment, an unknown technology or stage and a malformed value fall back and say why', () => {
     expect(parsePostureNode('Solar|Deployment', meta)).toEqual({
       tech: 'Solar', stage: 'Refining',
-      problem: 'pnode=Solar|Deployment (Deployment is left out here: its choice reads deployment need (Accelerate or Watch) and it has no Industrial Opportunity; showing Solar — Refining)',
+      problem: 'pnode=Solar|Deployment (Deployment is left out here: its choice reads deployment need (Accelerate or Watch) and it has no prize of its own; showing Solar — Refining)',
     });
     expect(parsePostureNode('Solar|Deployment', meta, meta.stages).problem).toBeNull();
     expect(parsePostureNode('Wind|Assembly', meta).problem).toBe('pnode=Wind|Assembly (Wind is not a technology of the posture data; showing Batteries — Refining)');
@@ -273,7 +295,7 @@ describe('the table twins and CSVs', () => {
     expect(rows[9].flag).toBe('Review: strong position with high need but a low prize (kept as Preserve, not Partner)');
   });
 
-  it("one node's rows: Secure first, then Compete, Deploy, not assessed; within each by Industrial Opportunity, then by name", () => {
+  it("one node's rows: Secure first, then Compete, Deploy, not assessed; within each by the prize, then by name", () => {
     expect(sectorPostureRows(core, 'Batteries', 'Components').map((r) => r.iso3)).toEqual(['BBB', 'AAA', 'CCC']);
     expect(sectorPostureRows(core, 'Batteries', 'Refining').map((r) => [r.iso3, r.postureWord])).toEqual([['AAA', 'Secure'], ['BBB', 'Deploy'], ['CCC', 'Deploy']]);
     const solar = sectorPostureRows(core, 'Solar', 'Refining');
@@ -287,15 +309,24 @@ describe('the table twins and CSVs', () => {
     const lines = text.split('\r\n');
     expect(lines[0]).toBe([...POSTURE_CSV_COLS, 'source', 'as_of', 'git_commit'].join(','));
     expect(lines).toHaveLength(14); // header, 12 nodes, the final line break
+    // the prize: the Strategic Industrial Value and the market prize (Industrial Opportunity) beside it; the node's yards
     expect(lines[1]).toBe(
-      `Aland,AAA,core,Batteries,Extraction,Extraction,TRUE,Compete,Partner,,Partner · Medium fence,,Supply-chain need,0.8,,0.3,0.2,0.004,Not credible,Wrong treatment / misaligned,high,Strong,high,rising,Bland,BBB,FALSE,,,${source},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Extraction,Extraction,TRUE,Compete,Partner,,Partner · Medium fence,,Supply-chain need,0.8,,0.3,0.3,Medium yard,0.2,0.004,Not credible,Wrong treatment / misaligned,high,Strong,high,rising,Bland,BBB,FALSE,,,${source},2026-10-29,abc1234`,
     );
     expect(lines[2]).toBe(
-      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Coercive chokepoint,Supply-chain need,0.95,,0.4,0.1,0.002,,Under-prioritized,medium,Strong,high,,,,,,,${source},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Coercive chokepoint,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Under-prioritized,medium,Strong,high,,,,,,,${source},2026-10-29,abc1234`,
     );
-    expect(lines[12]).toBe(['Aland', 'AAA', 'core', 'Solar', 'Recovery', 'Recovery & Recycling', 'FALSE', ...Array(22).fill(''), source, '2026-10-29', 'abc1234'].join(','));
+    // Batteries Components: a value of 0.8 on a market prize of 0.7
+    expect(lines[3]).toContain(',Supply-chain need,0.5,,0.8,0.7,Medium yard,0.4,');
+    expect(lines[12]).toBe(['Aland', 'AAA', 'core', 'Solar', 'Recovery', 'Recovery & Recycling', 'FALSE', ...Array(24).fill(''), source, '2026-10-29', 'abc1234'].join(','));
     // an empty table still names its columns
     expect(postureCsvText([], POSTURE_CSV_COLS, prov).split('\r\n')[0]).toBe(lines[0]);
+    // an older core (its prize the market measure, no yards): no strategic value, the market prize where it was, no yards
+    const legacy = postureCsvText(postureCsvRows(countryPostureRows(decodeCore(withoutCell(fixtureCore(true, { legacy: true }), 0, 1, 5)), 'AAA')), POSTURE_CSV_COLS, prov).split('\r\n');
+    expect(legacy[1]).toContain(',Supply-chain need,0.8,,,0.3,,0.2,0.004,');
+    // mixed yards in words (the layered fixture): Aland's Batteries Final Assembly spans all three
+    const mixed = postureCsvText(postureCsvRows(countryPostureRows(decodeCore(withoutCell(fixtureCore(true, { yards: true }), 0, 1, 5)), 'AAA')), POSTURE_CSV_COLS, prov).split('\r\n');
+    expect(mixed[4]).toContain(',0.9,0.85,"Mixed: this step in the Medium yard, its layers also in the Small and Large yards",0.95,');
   });
 
   it('the division rows and CSV: one row per node, names and gaps in words', () => {
