@@ -10,11 +10,15 @@
 // from the core's phrase table (meta.phrases, "battery materials refining"), else "<technology> <stage word>".
 // A list whose phrases carry their own "and" ("wafers and PV cells") writes those as "&", so the list's
 // "and" stays the only one ("battery recycling, wafers & PV cells and PV modules & inverters").
+// The NEIS copy refresh (2026-10-30, the guide's rules for generated sentences): plain verb phrases ("rely on
+// partners for", vocabulary CHOICE_PROSE), "supply-chain steps" for nodes, the Secure reasons in plain words
+// ("chokepoint risk"), deployment kept in its own clause; Watch is never a clause.
 // Pure: no React.
 
+import { CHOICE_PROSE } from '../content/vocabulary.ts';
 import type { PostureCell, PostureMeta, SecurityRationale, Verb } from './contract.ts';
 import { RATIONALE_SHORT, verbOf } from './grammar.ts';
-import { listAnd } from './derive.ts';
+import { listAnd, plural } from './derive.ts';
 
 /** The stage word of a fallback phrase ("batteries refining", "solar recycling"). */
 const STAGE_WORD: Record<string, string> = {
@@ -53,9 +57,9 @@ const RANK: Record<Exclude<Verb, 'watch'>, (a: PostureCell, b: PostureCell) => n
 
 const LEAD: Record<Exclude<Verb, 'watch'>, [whole: string, counted: (n: number) => string]> = {
   preserve: ['preserve its strongest positions in', (n) => `preserve ${n} strong positions, led by`],
-  secure: ['secure', (n) => `secure ${n} vulnerable nodes, led by`],
-  catch_up: ['catch up in', (n) => `catch up in ${n} nodes, led by`],
-  partner: ['rely on partners for', (n) => `rely on partners for ${n} nodes, led by`],
+  secure: ['secure', (n) => `secure ${n} vulnerable supply-chain steps, led by`],
+  catch_up: [CHOICE_PROSE.catch_up, (n) => `${CHOICE_PROSE.catch_up} ${n} supply-chain steps, led by`],
+  partner: [CHOICE_PROSE.partner, (n) => `${CHOICE_PROSE.partner} ${n} supply-chain steps, led by`],
   accelerate: ['accelerate deployment of', (n) => `accelerate deployment of ${n} technologies, led by`],
 };
 
@@ -97,12 +101,12 @@ export function strategyClauses(cells: readonly PostureCell[], meta: Pick<Postur
 
 /** One economy's strategy sentence ("Japan should preserve ...; secure ...; and accelerate deployment of ..."). */
 export function strategySentence(name: string, cells: readonly PostureCell[], meta: Pick<PostureMeta, 'phrases'>): string {
-  if (!cells.length) return `${name} has no classified supply-chain node.`;
+  if (!cells.length) return `There is not enough comparable evidence to produce a strategy map for ${name}.`;
   const assessed = cells.filter((c) => c.posture !== 'N');
-  if (!assessed.length) return `${name} has no assessed node yet: need or prize is not measured in any of its ${cells.length} nodes.`;
+  if (!assessed.length) return `${name} has no assessed supply-chain step yet: need or prize is not measured in ${cells.length === 1 ? 'its one step' : `any of its ${plural(cells.length, 'step')}`}.`;
   const clauses = strategyClauses(cells, meta).map((c) => c.text);
   if (!clauses.length) {
-    return `${name} has no node that calls for securing, preserving, catching up, partnering or accelerating deployment: domestic industrial priority is low in all ${assessed.length} assessed nodes.`;
+    return `${name} has no supply-chain step that calls for securing, preserving, catching up, relying on partners or faster deployment: domestic production is a low priority in all ${assessed.length} assessed steps, so the strategy is to keep them open.`;
   }
   if (clauses.length === 1) return `${name} should ${clauses[0]}.`;
   if (clauses.length === 2) return `${name} should ${clauses[0]} and ${clauses[1]}.`;

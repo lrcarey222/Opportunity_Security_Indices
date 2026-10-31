@@ -143,7 +143,7 @@ function PrizeLegend({ counts, stages, prize, cp }: { counts: Partial<Record<Ver
         </li>
         <li className="inline-flex items-center gap-1.5">
           <DashedRuleSwatch />
-          Dashed lines: a high prize at {pct(prize)} or more; a strong position at {pct(cp)} or more among contenders
+          Dashed lines: a high prize at {pct(prize)} or more; a strong position at {pct(cp)} or more among the step&apos;s main producers
         </li>
       </ul>
     </div>
@@ -180,7 +180,7 @@ export function PrizePositionScatter({
         // the nodes with an industrial choice are labelled first; Watch where it fits
         priority: (d) => d.verb !== 'watch',
         xLabel: `${prize}: the prize (percentile) →`,
-        yLabel: '↑ Competitive Position among contenders (percentile)',
+        yLabel: '↑ Competitive Position among the main producers (percentile)',
         ruleX: t.prize * 100,
         ruleY: t.cp * 100,
         fill: (d) => VERB_COLOR[d.verb],
@@ -208,11 +208,11 @@ export function PrizePositionScatter({
     .sort((a, b) => stageRank(a.stage) - stageRank(b.stage) || a.tech.localeCompare(b.tech));
   const verbCounts = Object.fromEntries(SCATTER_VERBS.map((v) => [v, plotted.filter((p) => p.verb === v).length])) as Record<Verb, number>;
   const counts = SCATTER_VERBS.filter((v) => verbCounts[v] > 0).map((v) => `${verbCounts[v]} ${VERB_LABEL[v]}`);
-  const scope = stage === ALL ? 'producing-stage nodes' : `${stageDisplay(stage)} nodes`;
+  const scope = stage === ALL ? 'producing-stage supply-chain steps' : `${stageDisplay(stage)} steps`;
   const summary = `${name}: ${plotted.length} ${scope} placed by ${prize} and Competitive Position${counts.length ? ` (${counts.join(', ')})` : ''}${notPlotted.length ? `; ${notPlotted.length} not plotted` : ''}.`;
   const quad = (q: PrizeQuadrant, right: boolean) => (
     <QuadCorner title={PRIZE_QUADRANT_WORDS[q][0]} right={right}>
-      {q === 'strong_weak_prize' ? 'mature or specialised: review' : PRIZE_QUADRANT_WORDS[q][1]}
+      {q === 'strong_weak_prize' ? 'mature or specialized: review' : PRIZE_QUADRANT_WORDS[q][1]}
     </QuadCorner>
   );
   const stageOptions = [{ value: ALL, label: 'All producing stages' }, ...producing.map((s) => ({ value: s, label: stageDisplay(s) }))];
@@ -231,9 +231,9 @@ export function PrizePositionScatter({
       badge={showBasis ? <PostureBasisTag note={null} /> : undefined}
       sub={
         <>
-          Each dot is one of {namePossessive(name)} producing-stage nodes: a technology at one stage of its supply chain. Across:{' '}
-          <Term id={prizeTerm}>{prize}</Term> (the prize). Up: <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>{' '}
-          among the node&apos;s contenders (how strong the country is today). The colour is the choice, the shape the stage; the dashed lines are the prize threshold and the
+          Each dot is one of {namePossessive(name)} producing-stage supply-chain steps: a technology at one stage of its supply chain. Across:{' '}
+          <Term id={prizeTerm}>{prize}</Term> (the prize: is capability here worth having?). Up: <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>{' '}
+          among the step&apos;s main producers (how strong the country is today). The color is the choice, the shape the stage; the dashed lines are the prize threshold and the
           Preserve bar.
         </>
       }
@@ -241,7 +241,7 @@ export function PrizePositionScatter({
       summary={summary}
       legend={<PrizeLegend counts={verbCounts} stages={stage === ALL ? producing : []} prize={t.prize} cp={t.cp} />}
       table={() => (
-        <TableView rows={rows} cols={colsOf(prize)} caption={`${name}: ${prize} and Competitive Position by node`} rowKey={(r) => r.key} onRowClick={(r) => onOpen(r.key)} selectedKey={selected} pageSize={60} />
+        <TableView rows={rows} cols={colsOf(prize)} caption={`${name}: ${prize} and Competitive Position by supply-chain step`} rowKey={(r) => r.key} onRowClick={(r) => onOpen(r.key)} selectedKey={selected} pageSize={60} />
       )}
       csv={() => ({
         name: `${name} prize and position${stage === ALL ? '' : ` ${stage}`}`,
@@ -257,8 +257,8 @@ export function PrizePositionScatter({
       notes={
         <div className="space-y-1">
           <p>
-            Dashed lines: a high prize at {pct(t.prize)} or more; a strong position at {pct(t.cp)} or more among the node&apos;s contenders (the top quarter). The corner headings
-            are tendencies, not rules: need, the credible pathway and the Secure tests also decide.
+            Dashed lines: a high prize at {pct(t.prize)} or more; a strong position at {pct(t.cp)} or more among the step&apos;s main producers (the top quarter). The corner
+            headings are tendencies, not rules: need, the credible pathway and the Secure tests also decide.
           </p>
           {notPlotted.length > 0 && (
             <p data-testid="prize-position-unplotted">
@@ -273,7 +273,7 @@ export function PrizePositionScatter({
         <div className="relative">
           <PlotFigure<PrizeDatum> build={build} height={H} ariaLabel={summary} />
           {/* the points as buttons over the figure: the same coordinates as Plot's dots */}
-          <div className="absolute inset-x-0 top-0" style={{ height: H }} role="group" aria-label={`${name}: the plotted nodes; select one for its five questions`}>
+          <div className="absolute inset-x-0 top-0" style={{ height: H }} role="group" aria-label={`${name}: the plotted supply-chain steps; select one for the five questions behind its choice`}>
             {data.map((d) => {
               const on = selected === d.key;
               return (

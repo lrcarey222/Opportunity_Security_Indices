@@ -18,7 +18,8 @@ import { EmptyState } from '../../../components/ui.tsx';
 import { CoalitionChart, CURVE_COLOR } from '../../charts/CoalitionChart.tsx';
 import { CoverageBars, REFERENCE_COLOR } from '../../charts/CoverageBars.tsx';
 import { STEP_COLOR } from '../../charts/CoverageStrip.tsx';
-import { CoverageLegend, ScenarioCoverageCompare } from '../../charts/ScenarioCompare.tsx';
+import { SCENARIO_CHART_LABEL } from '../../../content/vocabulary.ts';
+import { CoverageLegend, coverageText, COVERAGE_WORDS, ScenarioCoverageCompare } from '../../charts/ScenarioCompare.tsx';
 import type { AibCompact } from '../../contract.ts';
 import { coalitionCurve, targetLabel, targetMarks, type CurvePoint } from '../../derive/coalition.ts';
 import { coverageSteps, GLOBAL_OPTIMUM_LABEL, globalOptimum, largestGain, type CoverageStep } from '../../derive/coverage.ts';
@@ -27,10 +28,13 @@ import { useAibCtx } from '../../AibLayout.tsx';
 import { investmentPairs, partnerTotals } from '../../derive/investment.ts';
 import { NO_FILTER } from '../../derive/partnerships.ts';
 import { compactUnchangedReasonOf } from '../../derive/scenarioPages.ts';
-import { compactScenarios, runMetaOf, scenarioCsvFields, scenarioInvestmentFlows, scenarioLabel, scenarioNameOf, type CompactScenario } from '../../derive/scenarios.ts';
+import { compactScenarios, runMetaOf, scenarioCsvFields, scenarioInfo, scenarioInvestmentFlows, scenarioLabel, scenarioNameOf, type CompactScenario } from '../../derive/scenarios.ts';
 import { csvWithRun, Section } from '../common.tsx';
 import { ScenarioBadge } from './OverviewSections.tsx';
 import { ScenarioGate, useCompact } from './shared.tsx';
+
+/** The coverage section's title (the guide: say what coverage covers). */
+export const COVERAGE_SECTION_TITLE = 'How much allied demand the partners can meet';
 
 /** The compact under the three scenarios: its allied demand kept, restored by trade and left for new capacity, the toggled scenario highlighted; a table twin and a CSV. */
 function ScenarioCoverageCard() {
@@ -42,13 +46,13 @@ function ScenarioCoverageCard() {
   const label = `${displayName}: its allied demand under each scenario`;
   const cols: Col<CompactScenario>[] = [
     { id: 'scenario', header: 'Scenario', value: (r) => scenarioCsvFields(meta, r.id).aib_scenario },
-    { id: 'nodes', header: 'Nodes the scenario changes', value: (r) => (r.id === 'baseline' ? 0 : r.nodesRun), num: true },
+    { id: 'nodes', header: 'Steps the scenario changes', value: (r) => (r.id === 'baseline' ? 0 : r.nodesRun), num: true },
     { id: 'lost', header: 'Supply lost or shifted', value: (r) => r.lostUsd, cell: (r) => fmtUsd(r.lostUsd), num: true },
-    { id: 'kept', header: 'Kept', value: (r) => r.split?.kept ?? null, cell: (r) => fmtShare(r.split?.kept, 0), num: true },
-    { id: 'trade', header: 'Restored by trade', value: (r) => r.split?.trade ?? null, cell: (r) => fmtShare(r.split?.trade, 0), num: true },
-    { id: 'build', header: 'New capacity', value: (r) => r.split?.build ?? null, cell: (r) => fmtShare(r.split?.build, 0), num: true },
-    { id: 'gap', header: 'Left for new capacity', value: (r) => r.residualUsd, cell: (r) => fmtUsd(r.residualUsd), num: true },
-    { id: 'mix', header: 'Class mix of the lost supply', value: (r) => r.classMix ?? 'none', minWidth: 200 },
+    { id: 'kept', header: COVERAGE_WORDS.kept, value: (r) => r.split?.kept ?? null, cell: (r) => fmtShare(r.split?.kept, 0), num: true },
+    { id: 'trade', header: COVERAGE_WORDS.trade, value: (r) => r.split?.trade ?? null, cell: (r) => fmtShare(r.split?.trade, 0), num: true },
+    { id: 'build', header: COVERAGE_WORDS.build, value: (r) => r.split?.build ?? null, cell: (r) => fmtShare(r.split?.build, 0), num: true },
+    { id: 'gap', header: SCENARIO_CHART_LABEL.leftForNewCapacity, value: (r) => r.residualUsd, cell: (r) => fmtUsd(r.residualUsd), num: true },
+    { id: 'mix', header: 'What the affected supply needs', value: (r) => r.classMix ?? 'none', minWidth: 200 },
   ];
   const csv = () => ({
     name: `${c.id} under the three scenarios`,
@@ -75,8 +79,8 @@ function ScenarioCoverageCard() {
     <ChartCard
       headingLevel={3}
       title="Demand served under each scenario"
-      sub="The compact's allied demand split to scale: what the market keeps after the shock or the cap, what existing relationships and optimized trade among every partner restore, and what only new capacity fills. Baseline is trade as it is today."
-      summary={rows.map((r) => `${scenarioCsvFields(meta, r.id).aib_scenario}: ${r.split ? `kept ${fmtShare(r.split.kept, 0)}, restored by trade ${fmtShare(r.split.trade, 0)}, new capacity ${fmtShare(r.split.build, 0)}` : 'no figures'}`).join('; ')}
+      sub={`The compact's allied demand split to scale: what stays supplied after the disruption or the cap, what existing relationships and coordinated trade among every potential supplier recover, and what only new capacity fills. ${scenarioInfo(meta, 'baseline').label} is trade as it is today.`}
+      summary={rows.map((r) => `${scenarioInfo(meta, r.id).label}: ${r.split ? coverageText(r.split) : 'no figures'}`).join('; ')}
       legend={<CoverageLegend />}
       table={() => <TableView rows={rows} cols={cols} caption={label} rowKey={(r) => r.id} />}
       csv={csv}
@@ -91,12 +95,15 @@ export function CoverageSection() {
   return (
     <Section
       id="coverage"
-      title="Coverage comparison"
+      title={COVERAGE_SECTION_TITLE}
       intro={
         view ? (
           <CoverageIntro c={view} />
         ) : (
-          <p>How much of the compact&apos;s traded demand is served after the shock or the cap, from that alone to the full response. Values are demand-weighted over the compact&apos;s nodes.</p>
+          <p>
+            How much of the compact&apos;s traded demand stays supplied after the disruption or the cap, from that alone to the full response. Values are weighted by each supply-chain
+            step&apos;s demand.
+          </p>
         )
       }
     >
@@ -120,11 +127,11 @@ function CoverageIntro({ c }: { c: AibCompact }) {
   const optimum = globalOptimum(c.metrics);
   return (
     <p>
-      How much of the compact&apos;s traded demand is served after the {scenario === 'managed' ? 'cap' : 'shock'}, from that alone to the full response. Values are demand-weighted over the
-      compact&apos;s nodes.
-      {gain && gain.gain > 0 ? ` The largest step is from ${gain.from.label.toLowerCase()} to ${gain.to.label.toLowerCase()} (${fmtPp(gain.gain)}).` : ''} The trade compact is every
-      economy&apos;s existing-relationship response plus the new and expanded relationships of the compact&apos;s minimum-coalition members, so it never falls below existing relationships
-      {optimum !== null ? `; the dashed line is what coordination among every economy would reach (${fmtShare(optimum)}), a reference rather than a step` : ''}.
+      Coverage here is the share of the compact&apos;s traded demand that can be met after the {scenario === 'managed' ? 'concentration cap' : 'disruption'}, from that alone to the full
+      response, weighted by each supply-chain step&apos;s demand.
+      {gain && gain.gain > 0 ? ` The largest gain is from ${gain.from.label.toLowerCase()} to ${gain.to.label.toLowerCase()} (${fmtPp(gain.gain)}).` : ''} The trade compact is every
+      country&apos;s response through existing relationships plus the new and expanded relationships of the coalition&apos;s members, so it never falls below existing relationships
+      {optimum !== null ? `; the dashed line is what coordination among every country would reach (${fmtShare(optimum)}), a reference rather than a step` : ''}.
     </p>
   );
 }
@@ -136,7 +143,7 @@ function CoverageStepsCard({ c }: { c: AibCompact }) {
   const rows = [
     ...steps.map((s, i) => ({ ...s, change: i > 0 && s.value !== null && steps[i - 1].value !== null ? (s.value as number) - (steps[i - 1].value as number) : null })),
     ...(optimum !== null
-      ? [{ key: 'global', label: `${GLOBAL_OPTIMUM_LABEL} (reference)`, short: 'Every economy', meaning: 'every candidate partner coordinates its trade toward the demand scope: the global optimum, not a compact', value: optimum, change: null }]
+      ? [{ key: 'global', label: `${GLOBAL_OPTIMUM_LABEL} (reference)`, short: 'Every economy', meaning: 'every potential supplier coordinates its trade toward the countries whose supply needs replacing: the most any coordination could recover, not a compact', value: optimum, change: null }]
       : []),
   ];
   const cols: Col<(typeof rows)[number]>[] = [
@@ -158,13 +165,13 @@ function CoverageStepsCard({ c }: { c: AibCompact }) {
         headingLevel={3}
         title="Demand served at each step"
         badge={<ScenarioBadge />}
-        sub={`In % of the compact's demand. Gray: ${scenario === 'managed' ? 'the cap alone (Managed Interdependence removes no supplier)' : 'the shock alone'}; blue: the responses. The figure above each column is the change on the step before.${optimum !== null ? ' Dashed line: if every economy coordinated.' : ''}`}
+        sub={`In % of the compact's demand. Gray: ${scenario === 'managed' ? 'the concentration cap alone (Managed Interdependence removes no supplier)' : 'the disruption alone'}; blue: the responses. The figure above each column is the change on the step before.${optimum !== null ? ' Dashed line: if every country coordinated.' : ''}`}
         summary={summary}
         legend={
           <Legend
             label="Coverage steps"
             items={[
-              { label: scenario === 'managed' ? 'Cap alone' : 'Shock alone', color: STEP_COLOR.static },
+              { label: scenario === 'managed' ? 'Cap alone' : 'Disruption alone', color: STEP_COLOR.static },
               { label: 'Responses', color: STEP_COLOR.response },
               ...(optimum !== null ? [{ label: GLOBAL_OPTIMUM_LABEL, color: REFERENCE_COLOR, kind: 'line' as const, dash: '6,4' }] : []),
             ]}
@@ -193,10 +200,10 @@ function InvestmentStep() {
     .sort((a, b) => b.usd - a.usd || a.host.localeCompare(b.host));
   return (
     <p className="max-w-3xl text-sm leading-relaxed text-paper-dim" data-testid="investment-step">
-      <span className="text-paper">Trade + investment: who invests where. </span>
+      <span className="text-paper">Trade + investment: where new capacity would help most. </span>
       {hosts.length ? (
         <>
-          New capacity at the best-ranked host of each node with a remaining gap:{' '}
+          New capacity in the best-ranked country that could add it, at each supply-chain step with a remaining gap:{' '}
           {hosts.slice(0, 3).map((x, i) => (
             <span key={x.host}>
               {i > 0 && '; '}
@@ -204,14 +211,14 @@ function InvestmentStep() {
               {x.investors.length > 3 ? ` and ${x.investors.length - 3} more` : ''}
             </span>
           ))}
-          {hosts.length > 3 ? `; ${hosts.length - 3} more ${hosts.length - 3 === 1 ? 'host' : 'hosts'}` : ''}. The investor is the economy whose lost supply the capacity replaces;{' '}
+          {hosts.length > 3 ? `; ${hosts.length - 3} more ${hosts.length - 3 === 1 ? 'host' : 'hosts'}` : ''}. The investor is the country whose lost supply the capacity replaces;{' '}
           <a className="link" href="#invest">
             every flow below
           </a>
           .
         </>
       ) : (
-        'No node of this compact has a gap that passes the investment threshold, so no investment flow is simulated for it.'
+        'No supply-chain step of this compact has a remaining gap large enough to test new capacity, so no investment flow is simulated for it.'
       )}
     </p>
   );
@@ -279,8 +286,8 @@ function CoalitionSectionOf({ c }: { c: AibCompact }) {
       title="How resilience changes as countries join"
       intro={
         <p>
-          Starting from the demand anchors (the economies that lose most of the compact&apos;s supply), a greedy path adds one economy at a time, the one that most reduces the shortfall, and
-          measures the coverage of the anchors&apos; demand in every node. The weakest node sets the minimum. Fewer members means less coordination to organise.
+          Starting from the demand anchors (the countries that lose most of the compact&apos;s supply), a greedy path adds one country at a time, the one that most reduces the shortfall, and
+          measures the share of the anchors&apos; demand met at every supply-chain step. The weakest step sets the minimum. Fewer members means less coordination to organize.
           {exact
             ? " The path is a heuristic: the coalitions below are the exact minimum for each target (a binary program), and the path can need more, or other, economies to reach the same target."
             : ''}
@@ -291,13 +298,13 @@ function CoalitionSectionOf({ c }: { c: AibCompact }) {
         headingLevel={3}
         title="Coverage as members join"
         badge={<ScenarioBadge />}
-        sub="Across: members in the coalition (each tick names the economy added at that step; anchors for the start). Up: coverage of the anchors' demand, the minimum over the nodes (solid) and the mean (dashed). Dotted rules: the coverage targets; a ring marks the first step of the greedy path to reach each."
+        sub="Across: members in the coalition (each tick names the country added at that step; anchors for the start). Up: the share of the anchors' demand met, the minimum over the supply-chain steps (solid) and the mean (dashed). Dotted rules: the targets; a ring marks the first step of the greedy path to reach each."
         summary={summary}
         legend={
           <Legend
             label="Coalition path"
             items={[
-              { label: 'Minimum coverage over the nodes', color: CURVE_COLOR.min, kind: 'line' },
+              { label: 'Minimum coverage over the steps', color: CURVE_COLOR.min, kind: 'line' },
               { label: 'Mean coverage', color: CURVE_COLOR.mean, kind: 'line', dash: '5,4' },
               { label: 'Coverage target', color: CURVE_COLOR.target, kind: 'line', dash: '2,3' },
               { label: 'First step of the path to reach a target', color: '#ffffff', kind: 'hollow' },
@@ -308,7 +315,7 @@ function CoalitionSectionOf({ c }: { c: AibCompact }) {
         csv={csv}
         notes={
           nodeIds.length ? (
-            <span>Per-node coverage at each step is in the CSV ({listWords(nodeIds.map((id) => nodeLabel(id)))}).</span>
+            <span>Coverage at each supply-chain step is in the CSV ({listWords(nodeIds.map((id) => nodeLabel(id)))}).</span>
           ) : undefined
         }
       >
@@ -334,12 +341,12 @@ function CoalitionSectionOf({ c }: { c: AibCompact }) {
           <p className="mt-2 text-xs text-paper-mute">
             The demand anchors alone already reach the{' '}
             {listWords(marks.filter((m) => m.point?.step === 0).map((m) => targetLabel(m.target)))} {marks.filter((m) => m.point?.step === 0).length === 1 ? 'target' : 'targets'}: the
-            economies that lose the supply can restore it among themselves.
+            countries that lose the supply can recover it among themselves.
           </p>
         )}
         {!c.coalition.reached99 && (
           <p className="mt-2 text-xs text-paper-mute">
-            The highest target is not reached: along the greedy path, until no economy helps further, the anchors&apos; coverage in the weakest node peaks at{' '}
+            The highest target is not reached: along the greedy path, until no country helps further, the anchors&apos; coverage at the weakest step peaks at{' '}
             {fmtShare(c.coalition.maxCoverage)}.
           </p>
         )}

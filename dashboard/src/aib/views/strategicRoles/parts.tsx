@@ -135,7 +135,7 @@ export function CompactRoleList({ roles, s, scenario, limit, detail = false }: {
             {core && <span className="text-xs text-paper-mute"> · core country</span>}
             <span className="block text-paper-dim">{compactRoleWords(r)}</span>
             {detail && others.length > 0 && <span className="block text-xs text-paper-mute">Also: {others.map((f) => f.toLowerCase()).join(', ')}</span>}
-            {detail && r.keyNodes.length > 0 && <span className="block text-xs text-paper-mute">Key nodes: {r.keyNodes.join('; ')}</span>}
+            {detail && r.keyNodes.length > 0 && <span className="block text-xs text-paper-mute">Key supply-chain steps: {r.keyNodes.join('; ')}</span>}
             {r.criticality && <span className="block text-xs text-paper-mute">{cap(r.criticality)}</span>}
           </li>
         );
@@ -237,7 +237,7 @@ export function RoleEvidence({ sum, s }: { sum: StrategicSummary; s: AibStrategi
           <li key={r.code} data-role={r.code} data-status={r.status ?? 'none'}>
             <span className={r.status ? 'font-medium text-paper' : 'text-paper-dim'}>{r.name}</span>
             <span className="text-xs text-paper-mute"> · {roleStatusWords(r.status)}</span>
-            <span className="block text-xs text-paper-mute">An economy that {ROLE_MEANING[r.code] ?? 'holds this role'}.</span>
+            <span className="block text-xs text-paper-mute">A country that {ROLE_MEANING[r.code] ?? 'holds this role'}.</span>
             <ul className="mt-0.5 list-disc space-y-0.5 pl-5 text-xs text-paper-dim">
               {r.gates.map((g) => (
                 <li key={g.metric || g.label}>{gateWords(g)}</li>
@@ -267,7 +267,7 @@ export const Quiet = ({ children }: { children: ReactNode }) => <p className="te
 export function emptyWords(sum: StrategicSummary, what: 'needs' | 'partners' | 'capacity' | 'contributes'): string {
   if (!sum.allied && what !== 'contributes') return 'Not read for a non-allied supplier.';
   if (what === 'contributes') return 'No anchor or specialist position in the mapped supply chains.';
-  if (what === 'needs') return 'No supply-chain node where its net imports reach 5% of allied demand.';
+  if (what === 'needs') return 'No supply-chain step where its net imports reach 5% of allied demand.';
   if (what === 'partners') return `No relationship in the ${sum.partnersScenario} network.`;
-  return 'It is not a top host with capability at scale for any node.';
+  return 'It is not a top host with capability at scale for any supply-chain step.';
 }

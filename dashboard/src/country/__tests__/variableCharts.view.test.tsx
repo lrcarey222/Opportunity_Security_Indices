@@ -106,8 +106,8 @@ async function openFold(id: string): Promise<HTMLElement> {
   await waitFor(() => expect(document.getElementById(`fold-${id}`)?.hasAttribute('open')).toBe(true));
   return document.getElementById(`fold-${id}`) as HTMLElement;
 }
-/** Columns of a fence table that are not variables: the node, the layer, the choice and the explaining texts. */
-const NOT_VARIABLES = new Set(['Node', 'Technology', 'Layer', 'Choice', 'Basis', 'Evidence', 'Security rationale', 'Why Watch']);
+/** Columns of a fence table that are not variables: the step, the layer, the choice and the explaining texts. */
+const NOT_VARIABLES = new Set(['Supply-chain step', 'Technology', 'Layer', 'Choice', 'Basis', 'Evidence', 'Security rationale', 'Why Watch']);
 
 describe.skipIf(!haveFixture())('Country page: Show a variable (the Sector chart of a fence variable)', () => {
   it('each picker lists its analysis’ variables, the table’s columns first; no Sector data load before a pick', async () => {
@@ -116,7 +116,7 @@ describe.skipIf(!haveFixture())('Country page: Show a variable (the Sector chart
     const prize = picker('medium-prize');
     const pt = within(sec('medium-prize')).getByTestId('medium-prize-table');
     expect(prize.group('In the table')).toEqual(heads(pt).filter((h) => !NOT_VARIABLES.has(h ?? '')));
-    expect(prize.group('In the table')).toEqual(['Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option', 'Node prize', 'Home-market growth', 'Investment momentum', 'Market outlook', 'Supply-chain need']);
+    expect(prize.group('In the table')).toEqual(['Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option', 'World demand growth', 'Home-market growth', 'Investment momentum', 'Market outlook', 'Supply-chain vulnerability']);
     const pos = picker('medium-position');
     expect(pos.group('In the table')).toEqual(heads(within(sec('medium-position')).getByTestId('medium-position-table')).filter((h) => !NOT_VARIABLES.has(h ?? '')));
     expect(pos.group('Behind the analysis')).toEqual(['Export feasibility (pathway)', 'Operating capacity', 'Committed and announced pipeline', 'Input cost', 'Resource base']);
@@ -126,7 +126,7 @@ describe.skipIf(!haveFixture())('Country page: Show a variable (the Sector chart
     const high = await openFold('high-all');
     expect(within(high).getByTestId('high-variables')).toBeTruthy();
     expect(picker('high').group('In the table')).toEqual(heads(within(high).getByTestId('high-table')).filter((h) => !NOT_VARIABLES.has(h ?? '')));
-    expect(picker('high').group('In the table')).toEqual(['Supply-chain need', 'Import dependence', 'Supplier concentration', 'Risky supplier exposure', 'Lack of trusted alternatives']);
+    expect(picker('high').group('In the table')).toEqual(['Supply-chain vulnerability', 'Import dependence', 'Supplier concentration', 'Risky supplier exposure', 'Lack of trusted alternatives']);
     // the Low fence's drop-downs: the same variables
     const low = await openFold('low-supply-all');
     expect(picker('low-prize').group('In the table')).toEqual(heads(within(low).getByTestId('low-prize-table')).filter((h) => !NOT_VARIABLES.has(h ?? '')));

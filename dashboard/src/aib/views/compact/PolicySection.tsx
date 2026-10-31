@@ -12,10 +12,11 @@ import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
 import type { AibNode } from '../../contract.ts';
 import { ClassChip, ClassLegend } from '../../charts/ClassChip.tsx';
-import { classInfo, classMix, parseNodePolicyNeeds, policyNeedsText } from '../../derive/classes.ts';
+import { AIB_CLASS_HEADING } from '../../../content/vocabulary.ts';
+import { classInfo, classMix, parseNodePolicyNeeds, policyNeedsText, policyNeedsWords } from '../../derive/classes.ts';
 import { fmtShare, plural } from '../../derive/format.ts';
 import { nodeScenarioNote, UNCHANGED } from '../../derive/scenarioPages.ts';
-import { nodeScenario, runMetaOf, scenarioCsvFields, scenarioLabel } from '../../derive/scenarios.ts';
+import { nodeScenario, runMetaOf, scenarioCsvFields, scenarioInfo, scenarioLabel } from '../../derive/scenarios.ts';
 import { nodeStageRank, nodeStagesOf, nodeStageWords, nodeWhere } from '../../derive/taxonomy.ts';
 import { csvWithRun } from '../common.tsx';
 import { NodePolicyNeeds, PolicyNeeds, ScenarioBadge } from './OverviewSections.tsx';
@@ -24,6 +25,8 @@ import { useCompact } from './shared.tsx';
 export function PolicySection() {
   const { c, displayName, nodes, meta, name, scenario, hasScenarios, view } = useCompact();
   const mi = scenario === 'managed';
+  const miLabel = scenarioInfo(meta, 'managed').label;
+  const dLabel = scenarioInfo(meta, 'decoupling').label;
   // the class of each node under the toggled scenario (Managed Interdependence: UNCHANGED where it does not run)
   const clsOf = (n: AibNode): string => {
     if (!mi) return n.cls;
@@ -41,12 +44,12 @@ export function PolicySection() {
   // the compact's instruments under the toggled scenario (Managed Interdependence: its own where it has a coalition)
   const needs = mi && view ? view.policyNeeds : c.policyNeeds;
   const cols: Col<AibNode>[] = [
-    { id: 'node', header: 'Sub-sector', value: (n) => n.label },
-    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the node's codes sit in; none when no code is in the OSI basket." },
-    { id: 'cls', header: mi ? 'Class under Managed Interdependence' : 'Treatment class', value: clsLabel },
-    { id: 'needs', header: mi ? 'Policy needs under Decoupling' : 'Policy needs', value: (n) => policyNeedsText(n.policyNeeds) },
-    { id: 'treatment', header: mi ? 'Recommended treatment under Decoupling' : 'Recommended treatment', value: (n) => n.treatment, minWidth: 260 },
-    { id: 'hosts', header: mi ? 'Best investment hosts under Managed Interdependence' : 'Best investment hosts', value: (n) => hostsOf(n).slice(0, 3).map((h) => name(h)).join(', ') || null },
+    { id: 'node', header: 'Supply-chain step', value: (n) => n.label },
+    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the step's codes sit in; none when no code is in the OSI basket." },
+    { id: 'cls', header: mi ? `What it needs under ${miLabel}` : 'What it needs', value: clsLabel },
+    { id: 'needs', header: mi ? `Actions needed under ${dLabel}` : 'Actions needed', value: (n) => policyNeedsWords(n.policyNeeds) ?? '–' },
+    { id: 'treatment', header: mi ? `Recommended treatment under ${dLabel}` : 'Recommended treatment', value: (n) => n.treatment, minWidth: 260 },
+    { id: 'hosts', header: mi ? `Best-placed countries to add capacity under ${miLabel}` : 'Best-placed countries to add capacity', value: (n) => hostsOf(n).slice(0, 3).map((h) => name(h)).join(', ') || null },
   ];
   const csv = () => {
     const scn = hasScenarios ? scenarioCsvFields(meta, scenario) : null;
@@ -68,11 +71,11 @@ export function PolicySection() {
     <div id="policy" className="scroll-mt-16 space-y-6">
       <ChartCard
         headingLevel={3}
-        title="Treatment node by node"
+        title={AIB_CLASS_HEADING}
         badge={<ScenarioBadge />}
-        sub={`One treatment per node from its own results${mi ? ' under the cap' : ''}: ${mix.map((m) => `${plural(m.n, 'node')} ${m.cls === UNCHANGED ? 'unchanged' : classInfo(m.cls).label}`).join(', ')}.${mi ? ' The recommended treatments are written for Decoupling.' : ''}`}
+        sub={`One treatment per supply-chain step from its own results${mi ? ' under the cap' : ''}: ${mix.map((m) => `${m.cls === UNCHANGED ? 'unchanged' : classInfo(m.cls).label} ${plural(m.n, 'step')}`).join(', ')}.${mi ? ` The recommended treatments are written for the ${dLabel.toLowerCase()}.` : ''}`}
         legend={<ClassLegend classes={mix.map((m) => m.cls).filter((x) => x !== UNCHANGED)} />}
-        table={() => <TableView rows={nodes} cols={cols} caption={`${displayName}: node treatments`} rowKey={(n) => n.id} pageSize={50} />}
+        table={() => <TableView rows={nodes} cols={cols} caption={`${displayName}: what each supply-chain step needs`} rowKey={(n) => n.id} pageSize={50} />}
         csv={csv}
       >
         <div className="space-y-5">
@@ -81,7 +84,7 @@ export function PolicySection() {
               <p className="flex flex-wrap items-center gap-2 text-sm">
                 {m.cls === UNCHANGED ? <span className="tag text-paper-mute">Unchanged</span> : <ClassChip cls={m.cls} />}
                 <span className="text-paper-mute">
-                  {m.cls === UNCHANGED ? 'Managed Interdependence leaves these nodes as they are today: nothing has to shift.' : classInfo(m.cls).meaning}
+                  {m.cls === UNCHANGED ? 'Managed Interdependence leaves these steps as they are today: nothing has to shift.' : classInfo(m.cls).meaning}
                 </span>
               </p>
               <ul className="mt-2 space-y-1.5 pl-1 text-sm">
@@ -95,10 +98,10 @@ export function PolicySection() {
                         <span className="text-paper">{n.label}</span>{' '}
                         <span className="text-xs text-paper-mute">
                           ({nodeWhere(n)}
-                          {r && !r.ran ? `, ${nodeScenarioNote(r) ?? 'unchanged'}` : `, residual gap ${fmtShare(r ? r.residual : n.residual, 0)}`})
+                          {r && !r.ran ? `, ${nodeScenarioNote(r) ?? 'unchanged'}` : `, remaining gap ${fmtShare(r ? r.residual : n.residual, 0)}`})
                         </span>
                         {!mi && n.treatment && <span className="text-paper-dim">: {n.treatment}</span>}
-                        {m.cls === 'BUILD' && hosts.length > 0 && <span className="text-paper-dim"> Best hosts: {hosts.slice(0, 3).map((h) => name(h)).join(', ')}.</span>}
+                        {m.cls === 'BUILD' && hosts.length > 0 && <span className="text-paper-dim"> Best-placed to add capacity: {hosts.slice(0, 3).map((h) => name(h)).join(', ')}.</span>}
                       </li>
                     );
                   })}
@@ -109,25 +112,26 @@ export function PolicySection() {
       </ChartCard>
       <section aria-labelledby="needs-h" className="card p-5">
         <h3 id="needs-h" className="text-base font-medium text-paper">
-          Policy instruments the compact needs
+          Policy tools the compact needs
         </h3>
         <p className="mb-3 mt-1 text-sm text-paper-mute">
-          The instruments of each class that holds a material share of the {mi ? 'shifted' : 'lost'} supply
-          {mi ? (view ? ', under Managed Interdependence' : ', as the compact is formed under Decoupling (Managed Interdependence forms no coalition for it)') : ''}.
+          The tools for each treatment that covers a material share of the {mi ? 'shifted' : 'lost'} supply: trade rules where capacity exists, investment and finance where it is
+          missing, safeguards where specialization is too concentrated
+          {mi ? (view ? `, under ${miLabel}` : `, as the compact is formed under the ${dLabel.toLowerCase()} (${miLabel} forms no coalition for it)`) : ''}.
         </p>
         <div className="text-sm">
           <PolicyNeeds needs={needs} />
         </div>
         {byNode.length > 0 && (
           <>
-            <h4 className="mt-4 text-sm font-medium text-paper">Policy needs by node</h4>
+            <h4 className="mt-4 text-sm font-medium text-paper">Actions needed at each step</h4>
             <div className="mt-1 text-sm">
               <NodePolicyNeeds byNode={byNode} />
             </div>
           </>
         )}
         <p className="mt-4 text-xs text-paper-mute">
-          Gates and fences (which partners to open trade to and where to screen or restrict it) are not part of this export, so no node-level trade-defence treatment is shown.
+          Gates and fences (which partners to open trade to and where to screen or restrict it) are not part of these results, so no step-level trade-defense treatment is shown.
         </p>
       </section>
     </div>

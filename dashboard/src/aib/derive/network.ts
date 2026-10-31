@@ -29,32 +29,32 @@ export type MatrixRole = (typeof MATRIX_ROLES)[number];
 export const ROLE_READING: Record<MatrixRole, { short: string; meaning: string; named: string }> = {
   supplier: {
     short: 'Resource / Supplier',
-    meaning: 'exports to the economies that lose supply in the coordinated solution (resource partners: raw materials, mined or recycled)',
-    named: 'named when its trade serves at least 1 point of node demand under the headline shock, or a compact names it a resource supplier',
+    meaning: 'exports to the countries that lose supply in the coordinated response (resource partners: raw materials, mined or recycled)',
+    named: 'named when its trade serves at least 1 point of step demand under the headline disruption, or a compact names it a resource supplier',
   },
   specialized: {
     short: 'Specialized supplier',
-    meaning: 'is the largest supplier of a node after coordination, or carries a material share of a compact’s supply with revealed specialization',
-    named: 'named when it is the largest optimized supplier of at least one node, or a compact names it a specialized supplier',
+    meaning: 'is the largest supplier of a supply-chain step after coordination, or carries a material share of a compact’s supply from a proven specialization',
+    named: 'named when it is the largest supplier after coordinated trade at one step or more, or a compact names it a specialized supplier',
   },
   host: {
     short: 'Investment host',
-    meaning: 'is the best-ranked host for new capacity that serves other economies’ gaps',
-    named: 'named when the new capacity it hosts serves at least 1 point of node demand under the headline shock, or a compact names it a scaling host',
+    meaning: 'is the best-placed country to add new capacity that closes other countries’ gaps',
+    named: 'named when the new capacity it hosts serves at least 1 point of step demand under the headline disruption, or a compact names it a scaling host',
   },
   investor: {
     short: 'Investor',
-    meaning: 'has a gap that new capacity at a host serves: the economy that would invest',
-    named: 'named when the new capacity that serves it is at least 1 point of node demand under the headline shock',
+    meaning: 'has a gap that new capacity in another country closes: the country that would invest',
+    named: 'named when the new capacity that serves it is at least 1 point of step demand under the headline disruption',
   },
   buyer: {
     short: 'Demand anchor / Buyer',
-    meaning: 'imports the supply that coordination restores (a demand anchor imports most of a compact’s lost supply)',
-    named: 'named when the trade it receives is at least 1 point of node demand under the headline shock, or a compact names it a demand anchor',
+    meaning: 'imports the supply that coordination recovers (a demand anchor imports most of a compact’s lost supply, and gives suppliers a reason to invest)',
+    named: 'named when the trade it receives is at least 1 point of step demand under the headline disruption, or a compact names it a demand anchor',
   },
   bridge: {
     short: 'Bridge',
-    meaning: 'supplies one node of a compact and depends on another, spans its stages or sits in several compacts',
+    meaning: 'supplies one step of a compact and depends on another, spans its stages or sits in several compacts',
     named: 'named when a compact names it a bridge partner',
   },
 };
@@ -406,7 +406,7 @@ export function everyShockLabel(doc: Pick<AibDoc, 'meta' | 'network'>): EverySho
 export const underScenario = (meta: AibMeta | null | undefined, id: 'decoupling' | 'managed'): string => `under ${scenarioInfo(meta, id).label}`;
 
 /** When a role is named, in the words of a scenario ("... under Managed Interdependence"). */
-export const roleNamedWords = (k: MatrixRole, under: string): string => ROLE_READING[k].named.replace(/under the headline shock/g, under);
+export const roleNamedWords = (k: MatrixRole, under: string): string => ROLE_READING[k].named.replace(/under the headline disruption/g, under);
 
 /**
  * The economy whose supply Decoupling removes: the "<economy> supply removed" label of its shock, matched

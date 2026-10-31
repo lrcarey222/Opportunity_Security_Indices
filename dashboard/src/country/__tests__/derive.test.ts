@@ -206,16 +206,27 @@ describe.skipIf(!haveFixture())('derive helpers on the synthetic sheets', () => 
 describe.skipIf(!haveFixture())('Country page helpers (derive/strategyPage.ts, design 2026-10-29)', () => {
   const usa = readSheet('USA');
   it('seven sections in the spec order (the three fences in place of Need, Prize & Position and Choices), each with its anchor; the old anchors are aliases or open their disclosure', () => {
+    // the h2s state each section's strategic question or its plain fence title (the NEIS copy refresh, 2026-10-30)
     expect(STRATEGY_SECTIONS.map((s) => s.label)).toEqual([
-      'Strategy', 'High fence · Secure', 'Medium fence · Preserve, Catch Up, Partner, Accelerate', 'Low fence · Watch', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology',
+      'What should this country do?',
+      'High fence · Secure',
+      'Medium fence · Build, preserve, partner and deploy',
+      'Low fence · Keep open',
+      'Is policy focused on the right places?',
+      'Where this country fits in the Allied Industrial Base',
+      'Evidence & methodology',
     ]);
+    // the section nav keeps short words
     expect(STRATEGY_SECTIONS.map((s) => s.nav ?? s.label)).toEqual([
-      'Strategy', 'High fence · Secure', 'Medium fence · Preserve, Catch Up, Partner, Accelerate', 'Low fence · Watch', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology',
+      'Strategy map', 'High fence · Secure', 'Medium fence · Build, partner, deploy', 'Low fence · Keep open', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
     ]);
     expect(STRATEGY_SECTIONS.map((s) => s.id)).toEqual(['strategy', 'high-fence', 'medium-fence', 'low-fence', 'policy-alignment', 'allied', 'evidence']);
-    // the Medium fence's sub-sections, in order, with their anchors
+    // the Medium fence's sub-sections, in order, with their anchors: each named by its step and the question it answers
     expect(MEDIUM_SUBSECTIONS.map((s) => [s.id, s.label])).toEqual([
-      ['medium-prize', 'Prize'], ['medium-position', 'Competitive Position'], ['medium-partner', 'Partner'], ['medium-accelerate', 'Accelerate'],
+      ['medium-prize', 'Prize: is productive capability here worth having?'],
+      ['medium-position', 'Position: how strong is the country today?'],
+      ['medium-partner', 'Partner: where should this country rely on allies?'],
+      ['medium-accelerate', 'Accelerate: where should deployment speed up?'],
     ]);
     const alias = (id: string) =>
       [...STRATEGY_SECTIONS, ...MEDIUM_SUBSECTIONS].find((s) => s.aliases.includes(id))?.id ?? (LEGACY_SECTION.aliases.includes(id) ? LEGACY_SECTION.id : null);

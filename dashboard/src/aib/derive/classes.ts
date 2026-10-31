@@ -4,55 +4,63 @@
 // non-intervention classes never depend on a fourth hue. Every chip also prints the class name, so
 // colour is never the only carrier. Pure.
 
+import { AIB_CLASS_DEFINITION, AIB_CLASS_NAME } from '../../content/vocabulary.ts';
 import { AIB_CLASSES, type AibClass } from '../contract.ts';
 
 export type ClassMark = 'fill' | 'hollow' | 'hatch';
 
 export interface ClassInfo {
   cls: AibClass;
-  /** the class name as printed (the model's own words) */
+  /** the class name as printed: what the step needs, in plain words (content/vocabulary.ts AIB_CLASS_NAME; the data's code is `cls`) */
   label: string;
   color: string;
   mark: ClassMark;
-  /** what the class means, in one line */
+  /** what the class means, in one plain line (AIB_CLASS_DEFINITION) */
   meaning: string;
+  /** the rule behind the class in the method's words (About's method detail, chip tooltips) */
+  method: string;
 }
 
 export const CLASS_INFO: Readonly<Record<AibClass, ClassInfo>> = {
   COORDINATE: {
     cls: 'COORDINATE',
-    label: 'COORDINATE',
+    label: AIB_CLASS_NAME.COORDINATE,
     color: '#1889b0',
     mark: 'fill',
-    meaning: 'New trade relationships add materially to the coverage existing ones restore: the coordination dividend is large.',
+    meaning: AIB_CLASS_DEFINITION.COORDINATE,
+    method: 'New trade relationships add materially to the coverage existing ones recover: the coordination dividend is large.',
   },
   BUILD: {
     cls: 'BUILD',
-    label: 'BUILD',
+    label: AIB_CLASS_NAME.BUILD,
     color: '#8b9d17',
     mark: 'fill',
-    meaning: 'Even optimized trade leaves a large residual gap: new capacity is needed.',
+    meaning: AIB_CLASS_DEFINITION.BUILD,
+    method: 'Even coordinated trade with every potential supplier leaves a large remaining gap: new capacity is needed.',
   },
   'MANAGE SPECIALIZATION': {
     cls: 'MANAGE SPECIALIZATION',
-    label: 'MANAGE SPECIALIZATION',
+    label: AIB_CLASS_NAME['MANAGE SPECIALIZATION'],
     color: '#c96f7a',
     mark: 'fill',
-    meaning: 'Supply can be restored, but the efficient solution leans on one dominant supplier, or diversifying away from it costs coverage.',
+    meaning: AIB_CLASS_DEFINITION['MANAGE SPECIALIZATION'],
+    method: 'Supply can be recovered, but the cheapest solution leans on one dominant supplier, or diversifying away from it costs coverage.',
   },
   'LOW INTERVENTION': {
     cls: 'LOW INTERVENTION',
-    label: 'LOW INTERVENTION',
+    label: AIB_CLASS_NAME['LOW INTERVENTION'],
     color: '#9ca3af',
     mark: 'hollow',
-    meaning: 'The shock removes little, existing relationships already restore most of the demand, or optimization adds little.',
+    meaning: AIB_CLASS_DEFINITION['LOW INTERVENTION'],
+    method: 'The disruption removes little, existing relationships already recover most of the demand, or coordinated trade adds little.',
   },
   'INSUFFICIENT DATA': {
     cls: 'INSUFFICIENT DATA',
-    label: 'INSUFFICIENT DATA',
+    label: AIB_CLASS_NAME['INSUFFICIENT DATA'],
     color: '#9ca3af',
     mark: 'hatch',
-    meaning: 'Too little trade, or too few exporters and importers, to optimize with confidence.',
+    meaning: AIB_CLASS_DEFINITION['INSUFFICIENT DATA'],
+    method: 'Too little trade, or too few exporters and importers, to test a coordinated response with confidence.',
   },
 };
 
@@ -87,6 +95,19 @@ export function policyNeedsText(needs: readonly string[] | null | undefined): st
   if (!needs) return null;
   if (!needs.length) return 'none';
   return [...new Set(needs)].sort((a, b) => classOrder(a) - classOrder(b) || a.localeCompare(b)).join(' + ');
+}
+
+/**
+ * policyNeedsText in plain words for the page ("Build capacity + Manage specialization"; "none"; null when
+ * the export has none). The CSVs keep the data's codes (policyNeedsText).
+ */
+export function policyNeedsWords(needs: readonly string[] | null | undefined): string | null {
+  if (!needs) return null;
+  if (!needs.length) return 'none';
+  return [...new Set(needs)]
+    .sort((a, b) => classOrder(a) - classOrder(b) || a.localeCompare(b))
+    .map((c) => classInfo(c).label)
+    .join(' + ');
 }
 
 /** True when the needs say more than the class: several needs, or one that is not the class itself. */

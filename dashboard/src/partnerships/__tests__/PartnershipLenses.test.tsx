@@ -52,8 +52,8 @@ describe('PartnershipLenses', () => {
     expect(panels.map((p) => p.getAttribute('data-lens'))).toEqual(['today', 'osi', 'aib']);
     expect(screen.getByRole('heading', { level: 2, name: 'Today' })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'OSI recommends' })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 2, name: 'AIB model: Managed Interdependence' })).toBeTruthy();
-    expect(panels.map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual(['Today · observed', 'OSI recommends · NEIS defaults', 'AIB model · Managed Interdependence']);
+    expect(screen.getByRole('heading', { level: 2, name: 'AIB analysis: Managed Interdependence' })).toBeTruthy();
+    expect(panels.map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual(['Today · observed', 'OSI recommends · NEIS defaults', 'AIB analysis · Managed Interdependence']);
     expect(within(panels[1]).getByText('osi body')).toBeTruthy();
     // the summary: Carpania is named by all three
     const sum = screen.getByTestId('cross-lens-summary');
@@ -79,13 +79,13 @@ describe('PartnershipLenses', () => {
     expect(within(today).getByTestId('lens-empty').textContent).toBe('No aid data for Avalon in this build.');
     const sum = screen.getByTestId('cross-lens-summary');
     expect(within(sum).getByTestId('cross-lens-line').textContent).toBe('Only OSI recommends has partners here, so there is nothing to compare it with yet: Borduria.');
-    expect(within(sum).getByText('Still loading: AIB model.')).toBeTruthy();
+    expect(within(sum).getByText('Still loading: AIB analysis.')).toBeTruthy();
     expect(within(sum).getByTestId('cross-lens-absent-today').textContent).toBe('Today: no aid data for Avalon; left out of the comparison.');
   });
 
   it('a panel without content or an empty line still says so', () => {
     renderLenses({ today: { names: lensNames([]) }, osi: { names: lensNames([]) }, aib: { names: lensNames([]) } });
-    expect(within(screen.getByTestId('lens-aib')).getByTestId('lens-empty').textContent).toBe('No AIB model data for this selection.');
+    expect(within(screen.getByTestId('lens-aib')).getByTestId('lens-empty').textContent).toBe('No AIB analysis data for this selection.');
     expect(screen.getByTestId('cross-lens-line').textContent).toBe('The three lenses name 0 partners.');
   });
 

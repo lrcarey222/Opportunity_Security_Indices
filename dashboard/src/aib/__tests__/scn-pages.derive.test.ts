@@ -179,9 +179,9 @@ describe("the Overview's three scenarios", () => {
     const d = doc();
     const rows = overviewRows(d.nodes, d.meta);
     expect(rows.map((r) => [r.id, r.label])).toEqual([
-      ['baseline', 'Baseline'],
+      ['baseline', "Today's network"],
       ['managed', 'Managed Interdependence'],
-      ['decoupling', 'Decoupling'],
+      ['decoupling', 'Major-supplier disruption'],
     ]);
     expect(new Set(rows.map((r) => r.nodes)).size).toBe(1);
     expect(rows[0]).toMatchObject({ lostUsd: 0, residualUsd: 0, restoredUsd: 0, affectedNodes: 0, affectedDemandUsd: 0, classMix: '' });
@@ -190,10 +190,10 @@ describe("the Overview's three scenarios", () => {
     expect(rows[2].lostUsd).toBe(comparable.reduce((s, n) => s + (n.lostUsd ?? 0), 0));
     expect(rows[2].affectedNodes).toBe(comparable.filter((n) => (n.lostUsd ?? 0) > 0).length);
     expect(rows[2].classMix).toBe(classMixText(scenarioTotals(d.nodes, 'decoupling').byClass.map((g) => ({ cls: g.cls, usd: g.lostUsd }))));
-    expect(classMixText([{ cls: 'BUILD', usd: 2 }, { cls: 'COORDINATE', usd: 1 }])).toBe('BUILD 67% · COORDINATE 33%');
+    expect(classMixText([{ cls: 'BUILD', usd: 2 }, { cls: 'COORDINATE', usd: 1 }])).toBe('Build capacity 67% · Coordinate trade 33%');
     expect(classMixText([])).toBe('');
     // a share above 0 that rounds to 0% reads "<1%"
-    expect(classMixText([{ cls: 'BUILD', usd: 999 }, { cls: 'COORDINATE', usd: 1 }])).toBe('BUILD 100% · COORDINATE <1%');
+    expect(classMixText([{ cls: 'BUILD', usd: 999 }, { cls: 'COORDINATE', usd: 1 }])).toBe('Build capacity 100% · Coordinate trade <1%');
   });
 
   it("the Managed Interdependence row equals the explainer's totals: supply to shift, restored by trade, left for new capacity, nodes", () => {
@@ -263,9 +263,9 @@ describe('CSV columns and steps that name the scenario', () => {
 
   it('the first coverage step is the cap under Managed Interdependence', () => {
     const d = doc();
-    expect(coverageSteps(d.compacts[0].metrics).map((s) => s.label)[0]).toBe('Shock (static)');
+    expect(coverageSteps(d.compacts[0].metrics).map((s) => s.label)[0]).toBe('Disruption alone');
     const s = coverageSteps(d.compacts[0].metrics, true);
-    expect(s.map((x) => x.label)).toEqual(['Cap (static)', 'Existing relationships', 'Trade compact', 'Trade + investment response']);
+    expect(s.map((x) => x.label)).toEqual(['Concentration cap alone', 'Existing relationships', 'Trade compact', 'Trade + investment response']);
     expect(s[0].value).toBe(d.compacts[0].metrics.static);
   });
 });

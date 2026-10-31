@@ -18,6 +18,7 @@
 //   AIB_DATA_DIR (the real export)  the summary of the five validation economies (Japan, Korea, the United
 //               States, Australia, India) and China renders its export's words, without a bare acronym.
 
+import { ROLES_PAGE_TITLE } from '../views/AibRolesView.tsx';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -33,6 +34,10 @@ import { AibStore, setAibStoreForTests } from '../data/store.ts';
 import { resetLastCompact } from '../nav.ts';
 import { FIXTURE_DIR, fixtureSource, haveFixture, readDoc, stripStrategic, SYNTHETIC_DIR, type FixtureSourceOpts } from './fixture.ts';
 import { strategicSummaryOf } from '../views/strategicRoles/derive.ts';
+import { STRATEGY_SECTIONS } from '../../country/derive/strategyPage.ts';
+
+/** The Country profile's Allied Industrial Base section title (the Country module's own words). */
+const ALLIED_SECTION = STRATEGY_SECTIONS.find((x) => x.id === 'allied')!.label;
 
 const restore: (() => void)[] = [];
 
@@ -105,7 +110,7 @@ const search = (r: ReturnType<typeof renderAt>) => new URLSearchParams(r.state.l
 describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/roles: the strategic summary above the operational table', () => {
   it('opens on the first allied economy by name with a primary role: its roles, contributions, needs, compacts, partners and capacity; the operational part follows', async () => {
     renderAt('/aib/roles');
-    expect(await h1('Country roles')).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     const sec = await screen.findByTestId('strategic-roles', {}, T);
     expect(within(sec).getByRole('heading', { level: 2, name: 'Strategic roles' })).toBeTruthy();
     expect((within(sec).getByRole('combobox', { name: 'Strategic summary of' }) as HTMLSelectElement).value).toBe('AAA');
@@ -140,7 +145,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/roles: the strategic summary 
     // each partner opens the pair on the Partnerships page (its relationship thesis)
     expect(within(partners).getByRole('link', { name: 'The relationship between Avalon and Carpania in Partnerships' }).getAttribute('href')).toBe('/aib/partnerships?country=AAA&partner=CCC');
     expect(slot('partners').textContent).toContain('in the Managed Interdependence network');
-    expect(slot('capacity').textContent).toContain('It is not a top host with capability at scale for any node.');
+    expect(slot('capacity').textContent).toContain('It is not a top host with capability at scale for any supply-chain step.');
     // "How the model derives this": every role with both gates (held first, then the export's order), the rule, then the operational roles once the scenario file is in
     const ev = within(summary()).getByTestId('strategic-role-evidence');
     expect([...ev.querySelectorAll('[data-role]')].map((li) => `${li.getAttribute('data-role')}:${li.getAttribute('data-status')}`)).toEqual([
@@ -160,7 +165,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/roles: the strategic summary 
 
   it('the selector and the role holders choose the economy (written to the URL, the toggle kept); a holder moves focus to its summary', async () => {
     const r = renderAt('/aib/roles?scn=decoupling');
-    expect(await h1('Country roles')).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     await screen.findByTestId('strategic-summary', {}, T);
     fireEvent.change(screen.getByRole('combobox', { name: 'Strategic summary of' }), { target: { value: 'CCC' } });
     await waitFor(() => expect(search(r).get('economy')).toBe('CCC'));
@@ -172,7 +177,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/roles: the strategic summary 
       '/compacts/s/SC-GRID?scn=decoupling', '/compacts/s/SC-MAGNETS?scn=decoupling', '/compacts/s/SC-MAGNETS?scn=decoupling', '/compacts/s/SC-GRID?scn=decoupling',
     ]);
     expect(slot('roles').textContent).toContain('Also meets the bar, beyond the cap: Development & Scale-Up Platform.');
-    expect(within(summary()).getByTestId('operational-evidence').textContent).toMatch(/^Operational network roles under Decoupling/);
+    expect(within(summary()).getByTestId('operational-evidence').textContent).toMatch(/^Operational network roles under Major-supplier disruption/);
     // who holds each role: one card per role; Dorvalia holds Development & Scale-Up Platform as primary
     const holders = screen.getByTestId('role-holders');
     expect(within(holders).getAllByRole('heading', { level: 4 }).map((h) => h.textContent)).toEqual([
@@ -193,12 +198,12 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/roles: the strategic summary 
 
   it('a #role-ISO3 link opens on its economy (the matrix row still marked); a non-allied supplier is read on the supply roles only', async () => {
     renderAt('/aib/roles?scn=decoupling#role-EEE');
-    expect(await h1('Country roles')).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     await waitFor(() => expect(summary().getAttribute('data-iso3')).toBe('EEE'), T);
     await waitFor(() => expect((document.getElementById('role-EEE') as HTMLElement).className).toContain('bg-signal/10'), T);
     cleanup();
     renderAt('/aib/roles?economy=ZZZ');
-    expect(await h1('Country roles')).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     await waitFor(() => expect(summary().getAttribute('data-iso3')).toBe('ZZZ'), T);
     expect(summary().textContent).toContain('A major non-allied supplier: assessed on the supply roles only');
     expect(slot('needs').textContent).toContain('Not read for a non-allied supplier.');
@@ -208,14 +213,14 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/roles: the strategic summary 
     // an economy the layer does not assess: the default instead
     cleanup();
     renderAt('/aib/roles?economy=QQQ');
-    expect(await h1('Country roles')).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     await waitFor(() => expect(summary().getAttribute('data-iso3')).toBe('AAA'), T);
   }, 60_000);
 
   it('a bundle without the strategic layer: the operational part only, as before', async () => {
     useSource((d) => void stripStrategic(d));
     renderAt('/aib/roles?scn=decoupling');
-    expect(await h1('Country roles')).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     expect(await screen.findByRole('heading', { level: 2, name: 'How roles are read' }, T)).toBeTruthy();
     expect(screen.queryByTestId('strategic-roles')).toBeNull();
     expect(screen.queryByRole('heading', { level: 2, name: 'Operational network roles' })).toBeNull();
@@ -238,7 +243,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR) || !haveCountry())('the Country prof
   it('the strategic compacts with its role in each (linking to their pages), then the Sectoral Compacts it sits in under the scenario; nothing else of the role summary', async () => {
     // the old #aib-role link lands on Allied Strategy
     renderAt('/countries/USA?scn=decoupling#aib-role');
-    await screen.findByRole('heading', { level: 2, name: 'Allied Strategy' }, T);
+    await screen.findByRole('heading', { level: 2, name: ALLIED_SECTION }, T);
     const allied = document.getElementById('allied')!;
     expect(document.getElementById('aib-role')?.closest('section')).toBe(allied);
     expect(document.getElementById('allied-aib-role')?.closest('section')).toBe(allied);
@@ -250,11 +255,11 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR) || !haveCountry())('the Country prof
     expect(items.map((li) => li.getAttribute('data-compact'))).toEqual(['SC-WIND', 'SC-MAGNETS', 'SC-BATTERIES', 'SC-GRID', 'SC-SOLAR']);
     expect(within(items[1]).getByRole('link', { name: 'Permanent Magnets & Drive Systems' }).getAttribute('href')).toBe('/compacts/s/SC-MAGNETS?scn=decoupling');
     expect(items[1].textContent).toContain('Demand anchor in magnets (36% of world imports)');
-    expect(items[1].textContent).toContain('Key nodes: Magnets, magnet parts & assemblies; Rare-earth oxides & compounds');
+    expect(items[1].textContent).toContain('Key supply-chain steps: Magnets, magnet parts & assemblies; Rare-earth oxides & compounds');
     expect(within(compacts).getByRole('link', { name: /Every Strategic Sectoral Compact/ }).getAttribute('href')).toBe('/compacts?scn=decoupling');
     // 2. the Sectoral Compacts whose coalition it sits in, with its roles there, under the scenario
     const ops = within(allied).getByTestId('allied-operational-compacts');
-    expect(within(ops).getByTestId('allied-scenario').textContent).toMatch(/^Shown under Decoupling/);
+    expect(within(ops).getByTestId('allied-scenario').textContent).toMatch(/^Results below use Major-supplier disruption. /);
     const opItems = [...ops.querySelectorAll('li[data-compact]')];
     expect(opItems.map((li) => li.getAttribute('data-compact'))).toEqual(['AIB-C01', 'AIB-C02', 'AIB-C03']);
     expect(within(opItems[0] as HTMLElement).getByRole('link', { name: 'AIB-C01' }).getAttribute('href')).toBe('/compacts/AIB-C01?scn=decoupling');
@@ -269,16 +274,16 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR) || !haveCountry())('the Country prof
 
   it('Managed Interdependence (no scn): the compact links carry no scenario; an economy with no role says so in one line with a link to /aib/roles', async () => {
     renderAt('/countries/USA#aib-role');
-    await screen.findByRole('heading', { level: 2, name: 'Allied Strategy' }, T);
+    await screen.findByRole('heading', { level: 2, name: ALLIED_SECTION }, T);
     const compacts = await within(document.getElementById('allied')!).findByTestId('allied-strategic-compacts', {}, T);
     expect(within(compacts).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/compacts/s/SC-WIND');
-    expect(within(document.getElementById('allied')!).getByTestId('allied-scenario').textContent).toMatch(/^Shown under Managed Interdependence/);
+    expect(within(document.getElementById('allied')!).getByTestId('allied-scenario').textContent).toMatch(/^Results below use Managed Interdependence/);
     cleanup();
     // Germany: not assessed by the strategic layer and in no compact of the fixture
     renderAt('/countries/DEU#aib-role');
-    await screen.findByRole('heading', { level: 2, name: 'Allied Strategy' }, T);
+    await screen.findByRole('heading', { level: 2, name: ALLIED_SECTION }, T);
     const none = await within(document.getElementById('allied')!).findByTestId('allied-no-role', {}, T);
-    expect(none.textContent).toMatch(/^Germany holds no role in a Strategic Sectoral Compact or in a Sectoral Compact's coalition under Managed Interdependence\./);
+    expect(none.textContent).toMatch(/^Germany has no role in a Strategic Sectoral Compact and is not needed in a Sectoral Compact under Managed Interdependence\./);
     expect(within(none).getByRole('link').getAttribute('href')).toBe('/aib/roles');
   }, 90_000);
 });
@@ -294,7 +299,7 @@ describe.skipIf(!haveFixture(FIXTURE_DIR) || !readDoc(FIXTURE_DIR).strategic)("t
     for (const iso of isos) {
       const sum = strategicSummaryOf(st, fx.nodes, fx.countries, iso)!;
       renderAt(`/aib/roles?economy=${iso}&scn=decoupling`);
-      expect(await h1('Country roles')).toBeTruthy();
+      expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
       await waitFor(() => expect(summary().getAttribute('data-iso3')).toBe(iso), T);
       expect(within(summary()).getByTestId('strategic-headline').textContent).toBe(`${sum.headline}${sum.secondaryLine ? `; ${sum.secondaryLine}` : ''}.`);
       const chips = within(slot('roles')).queryByRole('list', { name: 'Primary strategic roles' });

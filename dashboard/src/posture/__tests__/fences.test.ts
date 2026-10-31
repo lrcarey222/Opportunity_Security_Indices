@@ -138,7 +138,7 @@ describe('the variables: the drawer accessors, never invented', () => {
     expect(fenceReason(by('Batteries|Refining'), core, names)).toBe('Chokepoint risk');
     expect(fenceReason(by('Batteries|Assembly'), core, names)).toBe('Competitive Position 95');
     expect(fenceReason(by('Batteries|Components'), core, names)).toBe('Pathway: Credible (feasibility, pipeline)');
-    expect(fenceReason(by('Batteries|Extraction'), core, names)).toBe('Leading partner: Bland');
+    expect(fenceReason(by('Batteries|Extraction'), core, names)).toBe('Best-placed partner: Bland');
     expect(fenceReason(by('Batteries|Deployment'), core, names)).toBe('Top need: Demand adequacy 90 · Current policy · national data');
     expect(fenceReason(by('Solar|Extraction'), core, names)).toBe('Low need; Low prize; Ample diversified supply');
     expect(fenceReason(by('Solar|Deployment'), core, names)).toBe('Deployment need below the acceleration bar');

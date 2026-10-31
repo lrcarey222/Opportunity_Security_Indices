@@ -29,7 +29,7 @@ import { mixedFill, mixedYards, rollupWords, rollupYards, showsLargeYard } from 
 
 /** The helper text of the map (design section 4): what Need means on each side of the Deployment column. */
 export const MAP_HELPER =
-  'Extraction to Final Assembly & Equipment, and Recovery & Recycling: Need is supply-chain vulnerability and resilience. Deployment & Use: Need is expected energy demand, policy and climate gaps, and system requirements.';
+  'From Extraction to Final Assembly & Equipment, and at Recovery & Recycling, Need means supply-chain vulnerability. At Deployment & Use, it means how urgently the energy system needs more of the technology: expected demand, policy and climate gaps, and system requirements.';
 
 /** The map's narrowest width in px: the column minimums (64 + 5 x 28 + 2 x 8 + 32) and the eight 2 px gaps. */
 export const MAP_MIN_WIDTH = 64 + 5 * 28 + 2 * 8 + 32 + 8 * 2;
@@ -84,7 +84,7 @@ function Tip({ c, partnerName }: { c: PostureCell; partnerName: string | null })
       )}
       {c.alignment && <p>Policy: {ALIGNMENT_LABEL[c.alignment]}</p>}
       {c.evidence && <p>Evidence: {EVIDENCE_LABEL[c.evidence]}</p>}
-      {c.mode === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `First partner: ${partnerName ?? '—'}`}</p>}
+      {c.mode === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `Best-placed partner: ${partnerName ?? '—'}`}</p>}
       {c.borderline && <p className="text-signal">Borderline on {borderlineWords(c.borderline)}</p>}
       {c.flag && <p className="text-signal">{flagWords(c.flag)}</p>}
     </div>

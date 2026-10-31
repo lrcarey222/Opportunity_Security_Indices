@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { Term } from '../../components/Term.tsx';
+import { HHI_PLAIN } from '../copy.ts';
 import type { SectorModel } from '../data/model.ts';
 import { groupColor, HATCH_URL } from '../charts/color.ts';
 import type { GroupKey } from '../charts/types.ts';
@@ -179,6 +180,9 @@ export function HhiExplainer({ model, hhi = null, lowerBound = false, holders = 
       <summary className="cursor-pointer text-sm font-medium text-paper">What the concentration index (HHI) means</summary>
       <div className="mt-3 grid gap-4 md:grid-cols-5">
         <div className="space-y-2 text-sm text-paper-dim md:col-span-3">
+          <p className="text-paper" data-testid="hhi-plain">
+            {HHI_PLAIN}
+          </p>
           <p>
             The <Term id="hhi">concentration index</Term> summarises how much of a market a few holders control. Take each {singular}&apos;s share of {of}, square it, and add the squares. If one economy held everything, the index would be 1. Ten equal {noun} give 0.10; four give 0.25.
           </p>

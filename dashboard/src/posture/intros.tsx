@@ -6,15 +6,18 @@
 import { Term } from '../components/Term.tsx';
 import { POSTURE_TERMS } from './basis.tsx';
 
-/** The Country Strategy section intro (spec I, VIII); `name` as it reads mid-sentence ("the United States"). */
+/**
+ * The Country Strategy section intro (spec I, VIII; the NEIS copy refresh of 2026-10-30: the three questions in
+ * plain words first, the measures' names as glossary terms); `name` as it reads mid-sentence ("the United States").
+ */
 export function CountryPostureIntro({ name }: { name: string }) {
   return (
     <>
-      For every technology at each of the six supply-chain stages, the strategic position framework asks what {name} needs (
-      <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>, or <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> at Deployment &amp; Use), whether
-      there is a prize (<Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term>) and how strong it already is (
+      For every technology at each of the six supply-chain stages, the analysis asks three questions: what problem {name} has to solve (
+      <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain vulnerability</Term>, or <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> at Deployment &amp; Use),
+      whether productive capability there is worth having (<Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term>) and how strong {name} already is (
       <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>), then recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or Watch.
-      Its thresholds are fixed, not a weighting of preferences; observed policy is compared with it afterwards, never fed into it.
+      Its thresholds are fixed, not a weighting of preferences; current policy is compared with the result afterwards and never feeds it.
     </>
   );
 }

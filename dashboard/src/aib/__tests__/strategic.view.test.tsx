@@ -117,8 +117,9 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('ValueChainSpine', () => {
     expect(steps.map((x) => x.querySelector('p')!.textContent)).toEqual(['Step 1: Separated oxides', 'Step 2: Magnets']);
     const chips = within(group).getAllByRole('button');
     expect(chips.map((b) => b.getAttribute('data-node'))).toEqual([REE, MAG]);
-    expect(chips[0].textContent).toBe('Rare-earth oxides & compoundsNOT STRESSED');
-    expect(chips[1].getAttribute('aria-label')).toBe('Magnets, magnet parts & assemblies: BUILD; coordinated coverage 78%; best-ranked new-capacity host Carpania');
+    // each chip prints its status in plain words (never the data's code)
+    expect(chips[0].textContent).toBe('Rare-earth oxides & compoundsUnaffected');
+    expect(chips[1].getAttribute('aria-label')).toBe('Magnets, magnet parts & assemblies: Build capacity; coordinated coverage 78%; best-ranked new-capacity host Carpania');
     expect(chips.every((b) => b.getAttribute('aria-pressed') === 'false')).toBe(true);
     // a click selects (pressed); Enter on a focused chip too (a native button)
     fireEvent.click(chips[1]);
@@ -134,7 +135,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('ValueChainSpine', () => {
     fireEvent.keyDown(chips[0], { key: 'End' });
     expect(document.activeElement).toBe(chips[1]);
     // the legend: the statuses on the spine, in legend order
-    expect(within(screen.getByTestId('spine-legend')).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['BUILD', 'NOT STRESSED']);
+    expect(within(screen.getByTestId('spine-legend')).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Build capacity', 'Unaffected']);
     expect(bareAcronyms(document.body)).toEqual([]);
   });
 
@@ -142,13 +143,13 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('ValueChainSpine', () => {
     const { rerender } = render(<ValueChainSpine steps={spineOf(mags, 'baseline', nodeOf)} label="x" />);
     const statuses = () => screen.getAllByRole('button').map((b) => [b.getAttribute('data-node'), b.textContent!.replace(nodeOf(b.getAttribute('data-node')!)!.label, '')]);
     expect(statuses()).toEqual([
-      [REE, 'NO SHOCK'],
-      [MAG, 'NO SHOCK'],
+      [REE, 'No disruption'],
+      [MAG, 'No disruption'],
     ]);
     rerender(<ValueChainSpine steps={spineOf(mags, 'decoupling', nodeOf)} label="x" />);
     expect(statuses()).toEqual([
-      [REE, 'MANAGE SPECIALIZATION'],
-      [MAG, 'BUILD'],
+      [REE, 'Manage specialization'],
+      [MAG, 'Build capacity'],
     ]);
   });
 });
@@ -162,7 +163,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('DivisionOfLabour', () => {
     }
     render(<Card />);
     const card = screen.getByRole('region', { name: 'Who does what' });
-    const table = within(card).getByRole('table', { name: /^Division of labour in Permanent Magnets & Drive Systems: physical capability by economy and node$/ });
+    const table = within(card).getByRole('table', { name: /^Division of labor in Permanent Magnets & Drive Systems: physical capability by economy and supply-chain step$/ });
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Economy', 'Separated oxidesRare-earth oxides & compounds', 'MagnetsMagnets, magnet parts & assemblies']);
     const rows = within(table).getAllByRole('rowheader');
     expect(rows.map((r) => r.textContent)).toEqual([
@@ -191,7 +192,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('DivisionOfLabour', () => {
     expect(onSelectNode).toHaveBeenCalledWith(MAG);
     // another measure: the dots and the legend follow
     fireEvent.click(within(card).getByRole('radio', { name: 'Investment host' }));
-    const t2 = within(card).getByRole('table', { name: /investment host by economy and node$/ });
+    const t2 = within(card).getByRole('table', { name: /investment host by economy and supply-chain step$/ });
     expect(within(t2).getAllByRole('rowheader').map((r) => r.textContent!.replace(/(Processing anchor|Capacity-building host|Bridge \/ coordination partner)$/, ''))).toEqual(['Carpania', 'Dorvalia', 'Elbonia']);
     expect(within(card).getByTestId('division-legend').textContent).toMatch(/the best-ranked host/);
     // the table twin: the values as numbers
@@ -233,14 +234,14 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('the strategic routes', () => {
     fireEvent.click(first.getByRole('link', { name: 'View compact: Permanent Magnets & Drive Systems' }));
     expect(await h1('Permanent Magnets & Drive Systems')).toBeTruthy();
     expect(r.state.location.pathname + r.state.location.search).toBe('/compacts/s/SC-MAGNETS?scn=decoupling');
-    const spine = screen.getByRole('group', { name: 'Permanent Magnets & Drive Systems under Decoupling' });
-    expect(within(spine).getAllByRole('button').map((b) => b.textContent)).toEqual(['Rare-earth oxides & compoundsMANAGE SPECIALIZATION', 'Magnets, magnet parts & assembliesBUILD']);
+    const spine = screen.getByRole('group', { name: 'Permanent Magnets & Drive Systems under Major-supplier disruption' });
+    expect(within(spine).getAllByRole('button').map((b) => b.textContent)).toEqual(['Rare-earth oxides & compoundsManage specialization', 'Magnets, magnet parts & assembliesBuild capacity']);
     await waitFor(() => expect(within(screen.getByRole('navigation', { name: 'Allied Industrial Base views' })).getByRole('link', { name: 'Sectoral Compacts' }).getAttribute('aria-current')).toBe('page'));
     // the toggle: Managed Interdependence (the default): the same spine, other statuses
     fireEvent.click(screen.getByRole('radio', { name: 'Managed Interdependence' }));
     await waitFor(() => expect(r.state.location.search).toBe(''));
     const spine2 = await screen.findByRole('group', { name: 'Permanent Magnets & Drive Systems under Managed Interdependence' });
-    expect(within(spine2).getAllByRole('button').map((b) => b.textContent)).toEqual(['Rare-earth oxides & compoundsNOT STRESSED', 'Magnets, magnet parts & assembliesBUILD']);
+    expect(within(spine2).getAllByRole('button').map((b) => b.textContent)).toEqual(['Rare-earth oxides & compoundsUnaffected', 'Magnets, magnet parts & assembliesBuild capacity']);
     // a workstream link opens the compact candidate's page (/compacts/:id kept)
     fireEvent.click(screen.getByRole('link', { name: 'AIB-C01' }));
     await waitFor(() => expect(r.state.location.pathname).toBe('/compacts/AIB-C01'), { timeout: 30_000 });
@@ -276,8 +277,8 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('the strategic routes', () => {
     const r = renderAt('/compacts');
     await waitFor(() => expect(r.state.location.pathname).toBe('/compacts/workstreams'), { timeout: 30_000 });
     expect(await h1('Sectoral Compacts')).toBeTruthy();
-    // the toggle keeps the generic framing
-    expect(screen.getByTestId('scenario-framing').textContent).toMatch(/^Strategic compact = persistent architecture; scenario = the stress applied to it\./);
+    // the toggle keeps the generic framing, in plain words
+    expect(screen.getByTestId('scenario-framing').textContent).toMatch(/^A strategic compact is the lasting division of labor; the scenario is the stress applied to it\./);
   });
 });
 

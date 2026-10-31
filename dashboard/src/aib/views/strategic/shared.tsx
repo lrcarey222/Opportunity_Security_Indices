@@ -6,6 +6,7 @@
 
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import { COMPACT, SCENARIO_NAME } from '../../../content/vocabulary.ts';
 import { SpineStatusSwatch } from '../../charts/ValueChainSpine.tsx';
 import type { AibStrategic, AibStrategicCompact, AibStrategicCompactScenario, AibStrategicCoreEntry } from '../../contract.ts';
 import { listWords, plural } from '../../derive/format.ts';
@@ -34,36 +35,62 @@ export const upperFirst = (s: string): string => (s ? s.charAt(0).toUpperCase() 
  */
 export const lowerFirst = (s: string): string => (/^[A-Z][a-z]{2,}(?:[-\s,&/]|$)/.test(s) ? s.charAt(0).toLowerCase() + s.slice(1) : s);
 
-/** The scenario's label ("Managed Interdependence"; the id when the section does not list it). */
-export const scenarioLabelOf = (s: AibStrategic, id: string): string => strategicScenarioDef(s, id)?.label ?? id;
+/**
+ * The seven sections of a Strategic Sectoral Compact page as questions (the guide, rule 15: why this
+ * bottleneck, why these partners, what changes if they coordinate, what action follows).
+ */
+export const STRATEGIC_SECTION_TITLE = {
+  why: COMPACT.sectionTitles.why,
+  chain: COMPACT.sectionTitles.what,
+  vulnerabilities: 'Where is it vulnerable?',
+  policy: COMPACT.sectionTitles.next,
+  who: 'Why these partners, and who does what?',
+  workstreams: 'Where does the work happen?',
+  scenarios: 'What changes under each scenario?',
+} as const;
+
+/** The display name of the shared scenarios (content/vocabulary.ts SCENARIO_NAME). */
+const DISPLAY_NAME: Readonly<Record<string, string>> = SCENARIO_NAME;
 
 /**
- * The headline without its scenario prefix ("Managed Interdependence: 3% of ..." -> "3% of ..."), for a
- * place that already names the scenario.
+ * The scenario's display name ("Today's network", "Managed Interdependence", "Major-supplier disruption";
+ * a scenario only the strategic layer has, such as the partial disruption, keeps the data's label; the id
+ * when the section does not list it).
  */
-export function headlineBody(headline: string | null | undefined, label: string): string {
+export const scenarioLabelOf = (s: AibStrategic, id: string): string => DISPLAY_NAME[id] ?? strategicScenarioDef(s, id)?.label ?? id;
+
+/** The scenario's label as the data write it ("Baseline", "Decoupling"): the prefix of its headlines. */
+export const scenarioDataLabelOf = (s: AibStrategic, id: string): string => strategicScenarioDef(s, id)?.label ?? id;
+
+/**
+ * The headline without its scenario prefix ("Managed Interdependence: 3% of ..." -> "3% of ..."; the data
+ * write the method's name, "Decoupling: ..."), for a place that already names the scenario. The data's
+ * "No shock:" (Today's network) reads "No disruption:".
+ */
+export function headlineBody(headline: string | null | undefined, ...labels: string[]): string {
   if (!headline) return '–';
-  const p = `${label}: `;
-  return headline.startsWith(p) ? upperFirst(headline.slice(p.length)) : headline;
+  const p = labels.map((l) => `${l}: `).find((x) => headline.startsWith(x));
+  const body = p ? upperFirst(headline.slice(p.length)) : headline;
+  return body.replace(/^No shock: /, 'No disruption: ');
 }
 
 /** How many of the compact's nodes need an intervention (BUILD, COORDINATE or MANAGE SPECIALIZATION) under a scenario. */
 export const interventionCount = (sc: AibStrategicCompactScenario | null): number => (sc ? sc.counts.build + sc.counts.coordinate + sc.counts.manage : 0);
 
-/** "1 of 9 nodes needs intervention" (none: "no node needs intervention"; Baseline: "no shock applied"). */
+/** "1 of 9 supply-chain steps needs action" (none: "no step of 9 needs action"; Today's network: "no disruption applied"). */
 export function interventionWords(c: AibStrategicCompact, sc: AibStrategicCompactScenario | null): string {
   if (!sc) return '–';
   const total = compactNodeIds(c).length;
-  if (sc.counts.noShock > 0 && sc.counts.noShock === total) return 'no shock applied';
+  if (sc.counts.noShock > 0 && sc.counts.noShock === total) return 'no disruption applied';
   const n = interventionCount(sc);
-  if (n === 0) return `no node of ${total} needs intervention`;
-  return `${n} of ${plural(total, 'node')} ${n === 1 ? 'needs' : 'need'} intervention`;
+  if (n === 0) return `no step of ${total} needs action`;
+  return `${n} of ${plural(total, 'supply-chain step')} ${n === 1 ? 'needs' : 'need'} action`;
 }
 
 /** The active-workstream line ("1 of 5 workstreams active"; "No workstream: ..."). */
 export function activeWords(c: AibStrategicCompact, active: readonly string[]): string {
   const n = c.workstreams.length;
-  if (n === 0) return 'No workstream: none of the model’s clusters falls mainly in this compact';
+  if (n === 0) return 'No workstream: none of the analysis’s clusters falls mainly in this compact';
   return `${active.length} of ${plural(n, 'workstream')} active`;
 }
 

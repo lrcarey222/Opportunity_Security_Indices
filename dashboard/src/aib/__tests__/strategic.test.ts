@@ -170,8 +170,9 @@ describe('the strategic layer: scenarios and compacts', () => {
       { status: 'BUILD', n: 1 },
       { status: 'NOT TESTED', n: 1 },
     ]);
-    expect(spineStatusInfo('NOT TESTED')).toMatchObject({ label: 'NOT TESTED', mark: 'hatch', intervention: false });
-    expect(spineStatusInfo('NOT TESTED').meaning).toMatch(/benchmark/);
+    // the statuses print in plain words; the data's code stays the status
+    expect(spineStatusInfo('NOT TESTED')).toMatchObject({ status: 'NOT TESTED', label: 'Not tested', mark: 'hatch', intervention: false });
+    expect(spineStatusInfo('NOT TESTED').meaning).toMatch(/comparable goods/);
     const nm = (iso: string) => `name:${iso}`;
     expect(hostTieWords('CCC', 1, nm)).toBe('name:CCC');
     expect(hostTieWords(null, 4, nm)).toBe('4 hosts tie');
@@ -181,8 +182,10 @@ describe('the strategic layer: scenarios and compacts', () => {
   it('status marks and words: the classes as their chips, NOT STRESSED and NO SHOCK dashed; an unknown status reads as no data', () => {
     expect(spineStatusInfo('BUILD')).toMatchObject({ color: '#8b9d17', mark: 'fill', intervention: true });
     expect(spineStatusInfo('LOW INTERVENTION')).toMatchObject({ mark: 'hollow', intervention: false });
-    expect(spineStatusInfo('NOT STRESSED')).toMatchObject({ mark: 'dashed', intervention: false });
-    expect(spineStatusInfo('NO SHOCK').meaning).toMatch(/^Baseline/);
+    expect(spineStatusInfo('NOT STRESSED')).toMatchObject({ label: 'Unaffected', mark: 'dashed', intervention: false });
+    expect(spineStatusInfo('NO SHOCK')).toMatchObject({ label: 'No disruption' });
+    expect(spineStatusInfo('NO SHOCK').meaning).toMatch(/^Today's network/);
+    expect(spineStatusInfo('BUILD').label).toBe('Build capacity');
     expect(spineStatusInfo('PANIC')).toMatchObject({ label: 'PANIC', mark: 'hatch', intervention: false });
     expect(spineStatusInfo(null).status).toBe('NO SHOCK');
   });
@@ -196,9 +199,9 @@ describe('the strategic layer: scenarios and compacts', () => {
       ['supporting', 'COORDINATE'],
     ]);
     expect(missionsOf(dec)[0].text).toBe('build missing capacity in magnets');
-    expect(policyMixWords(dec)).toBe('BUILD + MANAGE SPECIALIZATION + COORDINATE');
-    expect(policyMixWords(compactScenarioOf(c, 'baseline'))).toBe('no shock');
-    expect(policyMixWords(compactScenarioOf(strategicCompactOf(s, 'SC-SOLAR')!, 'managed'))).toBe('LOW INTERVENTION');
+    expect(policyMixWords(dec)).toBe('Build capacity + Manage specialization + Coordinate trade');
+    expect(policyMixWords(compactScenarioOf(c, 'baseline'))).toBe('no disruption');
+    expect(policyMixWords(compactScenarioOf(strategicCompactOf(s, 'SC-SOLAR')!, 'managed'))).toBe('Low intervention');
     expect(policyMixWords(null)).toBe('–');
     expect(missionsOf(compactScenarioOf(strategicCompactOf(s, 'SC-BATTERIES')!, 'partial'))).toEqual([]);
   });

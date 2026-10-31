@@ -104,7 +104,7 @@ describe('variable charts: every mapped measure exists in the Sector catalogue',
     const io = fenceVariables('prize', { siv: false, prizeLabel: 'Industrial Opportunity' });
     expect(io.map((v) => v.id)).toEqual(['opportunity', 'node-prize', 'home', 'investment', 'outlook', 'need']);
     expect(io[0]).toMatchObject({ label: 'Industrial Opportunity' });
-    expect(io[0].none).toMatch(/node prize.*investment momentum/);
+    expect(io[0].none).toMatch(/world demand growth and investment momentum/);
   });
 
   it('a variable’s charts follow the node’s stage and technology', () => {

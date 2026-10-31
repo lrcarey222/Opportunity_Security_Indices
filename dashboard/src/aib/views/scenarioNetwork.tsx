@@ -88,7 +88,7 @@ export function SuppliersCompare({ today, added, scenario, meta, name, scope, re
   const flag = (iso: string): string | null => {
     if (scenario === 'decoupling' && removed === iso) return `its supply is removed under ${label}`;
     const c = scenario === 'managed' ? capped?.get(iso) : undefined;
-    if (c && c.length) return `held to its cap under ${label} in ${plural(c.length, 'node')}`;
+    if (c && c.length) return `held to its cap under ${label} in ${plural(c.length, 'step')}`;
     return null;
   };
   return (
@@ -183,10 +183,10 @@ function PairList({ pairs, side, meta, scenario, name }: { pairs: readonly PairC
               </span>
               <span className="tabular text-xs text-paper-dim">{fmtUsd(e.tradeUsd)}</span>
               <span className="col-span-2">
-                <ListBar value={e.tradeUsd} max={max} id="baseline" label={`${pair}: ${fmtUsd(e.tradeUsd)} a year today, ${fmtPts(e.trade)} of node demand`} meta={meta} />
+                <ListBar value={e.tradeUsd} max={max} id="baseline" label={`${pair}: ${fmtUsd(e.tradeUsd)} a year today, ${fmtPts(e.trade)} of step demand`} meta={meta} />
               </span>
               <span className="col-span-2 text-xs text-paper-mute">
-                {fmtPts(e.trade)} of node demand · {plural(e.nTrade, 'node')}
+                {fmtPts(e.trade)} of step demand · {plural(e.nTrade, 'step')}
                 {p.scenario ? ` · ${label} adds ${fmtPts(edgeTotal(p.scenario))}` : ''}
               </span>
             </li>
@@ -202,7 +202,7 @@ function PairList({ pairs, side, meta, scenario, name }: { pairs: readonly PairC
             </span>
             <span className="tabular text-xs text-paper-dim">{fmtPts(tot)}</span>
             <span className="col-span-2">
-              <span className="flex h-2 w-full bg-white/5" role="img" aria-label={`${pair}: trade ${fmtPts(e.trade)}, new capacity ${fmtPts(e.investment)} of node demand under ${label}`}>
+              <span className="flex h-2 w-full bg-white/5" role="img" aria-label={`${pair}: trade ${fmtPts(e.trade)}, new capacity ${fmtPts(e.investment)} of step demand under ${label}`}>
                 <span style={{ width: w(e.trade), background: TRADE_COLOR }} />
                 <span style={{ width: w(e.investment), background: INVEST_COLOR }} />
               </span>
@@ -251,7 +251,7 @@ export function WhoSuppliesWhomCard({ today, network, scenario, meta, name, head
     { id: 'from', header: 'Supplier', value: (r) => name(r.from) },
     { id: 'to', header: 'Buyer', value: (r) => name(r.to) },
     { id: 't-usd', header: 'Today: supply (USD a year)', value: (r) => r.today?.tradeUsd ?? null, cell: (r) => (r.today ? fmtUsd(r.today.tradeUsd) : 'not a tie today'), num: true },
-    { id: 't-pts', header: 'Today: share of node demand (pts)', value: (r) => r.today?.trade ?? null, cell: (r) => fmtPts(r.today?.trade), num: true },
+    { id: 't-pts', header: 'Today: share of step demand (pts)', value: (r) => r.today?.trade ?? null, cell: (r) => fmtPts(r.today?.trade), num: true },
     { id: 's-trade', header: `${label}: added trade (pts)`, value: (r) => r.scenario?.trade ?? null, cell: (r) => fmtPts(r.scenario?.trade), num: true },
     { id: 's-usd', header: `${label}: added trade (USD a year)`, value: (r) => r.scenario?.tradeUsd ?? null, cell: (r) => (r.scenario ? fmtUsd(r.scenario.tradeUsd) : '–'), num: true },
     { id: 's-inv', header: `${label}: new capacity (pts)`, value: (r) => r.scenario?.investment ?? null, cell: (r) => fmtPts(r.scenario?.investment), num: true },
@@ -273,13 +273,13 @@ export function WhoSuppliesWhomCard({ today, network, scenario, meta, name, head
       headingLevel={headingLevel}
       title={`Who supplies whom: today and under ${label}`}
       badge={<ScenarioTag id={scenario} meta={meta} />}
-      sub={`Supplier to buyer, ${scope}. Today: the observed supply (${meta.tradeYear}, USD a year), largest first. Under ${label}: the trade and new capacity the solution adds or redirects, largest first. Points are shares of a node's demand summed over the nodes (1 point is 1% of one node's demand); each list has its own scale.`}
+      sub={`Supplier to buyer, ${scope}. Today: the observed supply (${meta.tradeYear}, USD a year), largest first. Under ${label}: the trade and new capacity the response adds or redirects, largest first. Points are shares of a supply-chain step's demand summed over the steps (1 point is 1% of one step's demand); each list has its own scale.`}
       summary={`Largest supply relationships today, ${scope}: ${p.today.slice(0, 3).map((x) => `${name(x.from)} to ${name(x.to)}`).join('; ') || 'none'}. Under ${label}: ${p.scenario.slice(0, 3).map((x) => `${name(x.from)} to ${name(x.to)}`).join('; ') || 'none'}.`}
       table={() => <TableView rows={p.all} cols={cols} caption={`Who supplies whom today and under ${label}, ${scope}`} search pageSize={20} initialSort={{ id: 't-usd', desc: true }} rowKey={(r) => `${r.from}|${r.to}`} />}
       csv={csv}
       notes={
         <span>
-          Today&apos;s network keeps the supplier to buyer pairs that carry at least half a point of node demand. &ldquo;Not a tie today&rdquo;: the pair is not among them. Trade
+          Today&apos;s network keeps the supplier to buyer pairs that carry at least half a point of a step's demand. &ldquo;Not a tie today&rdquo;: the pair is not among them. Trade
           <span aria-hidden="true" className="mx-1 inline-block h-2 w-3 align-middle" style={{ background: TRADE_COLOR }} />
           and new capacity
           <span aria-hidden="true" className="mx-1 inline-block h-2 w-3 align-middle" style={{ background: INVEST_COLOR }} />
@@ -313,13 +313,13 @@ export function WhoSuppliesWhomCard({ today, network, scenario, meta, name, head
 /** The words of each role gained or lost, and the line under an economy. */
 const GAIN_GROUPS: { k: ChangeRole; title: string; line: (r: RoleChange) => string }[] = [
   { k: 'supplier', title: 'New suppliers', line: (r) => `adds ${fmtPts(r.scenario.supplier)}; ${r.today.supplier !== null ? `${fmtPts(r.today.supplier)} today` : 'not a supplier in today’s network'}` },
-  { k: 'specialized', title: 'Become the largest supplier of a node', line: (r) => `${plural(r.scenario.largestOf.length, 'node')}; none today` },
-  { k: 'host', title: 'Host new capacity', line: (r) => `serves ${fmtPts(r.scenario.host)} of node demand` },
+  { k: 'specialized', title: 'Become the largest supplier of a supply-chain step', line: (r) => `${plural(r.scenario.largestOf.length, 'step')}; none today` },
+  { k: 'host', title: 'Host new capacity', line: (r) => `serves ${fmtPts(r.scenario.host)} of step demand` },
   { k: 'investor', title: 'Invest in new capacity', line: (r) => `new capacity serves ${fmtPts(r.scenario.investor)} of its demand` },
 ];
 const LOSS_GROUPS: { k: ChangeRole; title: string; line: (r: RoleChange) => string }[] = [
-  { k: 'supplier', title: 'Stop supplying the allied market', line: (r) => `${fmtPts(r.today.supplier)} of node demand today` },
-  { k: 'specialized', title: 'No longer the largest supplier of any node', line: (r) => `the largest of ${plural(r.today.largestOf.length, 'node')} today` },
+  { k: 'supplier', title: 'Stop supplying the allied market', line: (r) => `${fmtPts(r.today.supplier)} of step demand today` },
+  { k: 'specialized', title: 'No longer the largest supplier of any supply-chain step', line: (r) => `the largest of ${plural(r.today.largestOf.length, 'step')} today` },
 ];
 
 const SHOW = 6;
@@ -372,11 +372,11 @@ export function RoleChangesCard({ cmp, scenario, meta, href, headingLevel = 3 }:
     { id: 'lost', header: `Lost under ${label}`, value: (r) => roleWords(r, 'lost') || null, minWidth: 160 },
     { id: 't-sup', header: 'Supplier today (pts)', value: (r) => r.today.supplier, cell: (r) => fmtPts(r.today.supplier), num: true },
     { id: 's-sup', header: `Added supply under ${label} (pts)`, value: (r) => r.scenario.supplier, cell: (r) => fmtPts(r.scenario.supplier), num: true },
-    { id: 't-lg', header: 'Largest supplier today (nodes)', value: (r) => r.today.largestOf.length, num: true },
-    { id: 's-lg', header: `Largest supplier under ${label} (nodes)`, value: (r) => r.scenario.largestOf.length, num: true },
+    { id: 't-lg', header: 'Largest supplier today (steps)', value: (r) => r.today.largestOf.length, num: true },
+    { id: 's-lg', header: `Largest supplier under ${label} (steps)`, value: (r) => r.scenario.largestOf.length, num: true },
     { id: 'host', header: 'Hosts new capacity (pts)', value: (r) => r.scenario.host, cell: (r) => fmtPts(r.scenario.host), num: true },
     { id: 'inv', header: 'New capacity serving it (pts)', value: (r) => r.scenario.investor, cell: (r) => fmtPts(r.scenario.investor), num: true },
-    ...(scenario === 'managed' ? [{ id: 'cap', header: 'Held to its cap (nodes)', value: (r: RoleChange) => r.capped.length, num: true } as Col<RoleChange>] : []),
+    ...(scenario === 'managed' ? [{ id: 'cap', header: 'Held to its cap (steps)', value: (r: RoleChange) => r.capped.length, num: true } as Col<RoleChange>] : []),
   ];
   const csv = () => ({
     name: `Allied Industrial Base roles gained or lost under ${label}`,
@@ -419,7 +419,7 @@ export function RoleChangesCard({ cmp, scenario, meta, href, headingLevel = 3 }:
             <p className="eyebrow">{scenario === 'managed' ? 'Lost or reduced' : 'Lost'}</p>
             {LOSS_GROUPS.map((g) => group('lost', g))}
             {scenario === 'managed' && (
-              <ChangeGroup title="Supply less: held to the cap" rows={capped} line={(r) => `in ${plural(r.capped.length, 'node')}`} href={href} />
+              <ChangeGroup title="Supply less: held to the cap" rows={capped} line={(r) => `in ${plural(r.capped.length, 'step')}`} href={href} />
             )}
             {!lost.length && !(scenario === 'managed' && capped.length) && <p className="text-sm text-paper-mute">No economy loses a role.</p>}
           </section>

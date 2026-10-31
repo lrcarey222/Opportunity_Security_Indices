@@ -11,6 +11,7 @@
 
 import { Link, Navigate, useLocation } from 'react-router';
 import { PageHead } from '../../components/ui.tsx';
+import { MODULE_QUESTION, NEIS_NARRATIVE } from '../../content/vocabulary.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import type { AibStrategic, AibStrategicCompact, AibStrategicScenarioId } from '../contract.ts';
@@ -19,6 +20,7 @@ import { strategicCompacts } from '../derive/strategic.ts';
 import { workstreamsHref } from '../nav.ts';
 import { StrategicCompactCard } from './strategic/CompactCard.tsx';
 import { ScenarioMatrix } from './strategic/ScenarioMatrix.tsx';
+import { QuestionLede } from './common.tsx';
 import { scenarioLabelOf, STRATEGIC_EYEBROW } from './strategic/shared.tsx';
 
 /** The compacts grouped by family, in the export's order of first appearance (a compact without one under "Other compacts"). */
@@ -50,27 +52,31 @@ function Landing({ s, sid }: { s: AibStrategic; sid: AibStrategicScenarioId }) {
   const label = scenarioLabelOf(s, sid);
   const nWs = doc.compacts.length;
   const lens = !hasScenarios
-    ? 'the only scenario in this data build'
+    ? 'the only scenario in this build'
     : scenario === 'managed'
-      ? 'the default institutional lens; choose Decoupling above for the stress test'
-      : 'the stress test; Managed Interdependence above is the default institutional lens';
+      ? `the default view; choose ${scenarioLabelOf(s, 'decoupling')} above for the stress test`
+      : `the stress test; ${scenarioLabelOf(s, 'managed')} above is the default view`;
   return (
     <div className={PAGE}>
       <PageHead
         eyebrow={STRATEGIC_EYEBROW}
         title="Sectoral Compacts"
-        lede={`A Strategic Sectoral Compact is a lasting framework for allied cooperation around one coherent supply chain, from raw materials to finished equipment. Different parts of the chain can need different partners and different policies, so one compact can build new capacity at one step, coordinate trade at another and protect a specialized supplier at a third. The ${plural(compacts.length, 'compact')} below are grouped from how the goods are made (which steps feed which), not discovered by the model; the model’s results then fill each one in.`}
+        lede={
+          <QuestionLede question={MODULE_QUESTION.compacts}>
+            {`${NEIS_NARRATIVE.compacts} A Strategic Sectoral Compact describes the long-run division of labor around one coherent supply chain, from raw materials to finished equipment. Different steps can need different partners and tools: one compact can build new capacity at one step, coordinate trade at another and protect a specialized supplier at a third. The ${plural(compacts.length, 'compact')} below are grouped from how the goods are made (which steps feed which); the analysis then fills each one in.`}
+          </QuestionLede>
+        }
       >
         <p className="mt-3 max-w-3xl text-sm text-paper-mute" data-testid="strategic-reading">
-          Shown under <span className="text-paper-dim">{label}</span> ({lens}). A compact’s supply chain and core countries stay the same in every scenario; its mission, policy
-          mix, active workstreams and result show the stress the scenario applies.
+          Results below use <span className="text-paper-dim">{label}</span> ({lens}). A compact’s supply chain and core partners stay the same in every scenario; its mission,
+          actions needed, active workstreams and result change with the stress the scenario applies.
         </p>
         <p className="mt-2 max-w-3xl text-sm text-paper-mute">
           Under each compact sit its{' '}
           <Link className="link" to={href(workstreamsHref())}>
             workstreams
           </Link>{' '}
-          (the model’s {nWs} clusters of related nodes, partners and policy needs), then the nodes and the model evidence behind them.{' '}
+          (the analysis’s {nWs} clusters of related supply-chain steps, partners and actions), then the steps and the evidence behind them.{' '}
           <Link className="link" to={href('/compacts/about')}>
             How compacts are derived &rarr;
           </Link>

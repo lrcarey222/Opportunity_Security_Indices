@@ -9,11 +9,16 @@
 // ~ Watch), why the results differ, and the Perspective dials as "Explore scenarios". The Legacy OSI results
 // sit in a closed disclosure; the in-browser engine mounts only around them, so nothing above them follows
 // the dials.
+// The NEIS copy refresh (2026-10-30): the section and the framework card open with the shared vocabulary's
+// words (EVIDENCE_INTRO, STRATEGY_EXPLAINER, LEGACY_OSI_NOTE); the framework card describes the current rules
+// (the 0.10 need floor, the capability-anchor Catch Up test, the large-yard case); visible copy says
+// "supply-chain step" for a node.
 
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Term } from '../../../components/Term.tsx';
 import { Notice } from '../../../components/ui.tsx';
+import { EVIDENCE_INTRO, LEGACY_OSI_NOTE, MEASURE_PLAIN, STATE, STRATEGY_EXPLAINER } from '../../../content/vocabulary.ts';
 import { STAGE_DISPLAY, SUPPLY_STAGES } from '../../../lib/stages.ts';
 import { POSTURE_TERMS, PostureBasisTag } from '../../../posture/index.ts';
 import { EngineScope } from '../../../shell/EngineScope.tsx';
@@ -22,6 +27,7 @@ import { legacyCornerLine } from '../../derive/model.ts';
 import { coverageCounts, LEGACY_FOLD, LEGACY_MAPPING_ROWS, LEGACY_MIXES, LEGACY_SECTION, STRATEGY_SECTIONS } from '../../derive/strategyPage.ts';
 import { dateLabel } from '../../derive/strategyPage.ts';
 import { cap, ledeOf, poss, proseName } from '../../derive/text.ts';
+import { FRESHNESS_NOTE } from './Header.tsx';
 import { DataNotes } from './MemoNotes.tsx';
 import { OpportunitiesSection } from './OpportunitiesSection.tsx';
 import { PartnerScoresFold } from './PartnersSection.tsx';
@@ -59,35 +65,39 @@ function FrameworkCard() {
       <h3 id="framework-h" className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
         How the strategy is decided: Need &rarr; Prize &rarr; Position &rarr; Choice &rarr; Policy Alignment
       </h3>
+      <p className="mt-2 max-w-3xl text-sm text-paper-dim">{STRATEGY_EXPLAINER}</p>
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-paper-dim">
         <li>
-          <strong className="text-paper">Need.</strong> At the five producing stages, <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>: import dependence, supplier
-          concentration, risky supplier exposure and trusted alternatives (high at {pct(t?.need)} and above, as a percentile). At Deployment &amp; Use,{' '}
-          <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term>: demand adequacy, the gap to national targets and system requirements, each with its scenario named. The two are
-          never added together.
+          <strong className="text-paper">Need: what problem has to be solved?</strong> At the five producing stages,{' '}
+          <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain vulnerability</Term>: import dependence, supplier concentration, risky supplier exposure and the lack of trusted
+          alternatives (high at {pct(t?.need)} and above, as a percentile, and only where the need score itself reaches 0.10, so a tiny exposure in a thinly traded step does not read
+          as high). At Deployment &amp; Use, <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term>: whether expected demand is enough, the gap to national targets and system
+          requirements, each with its scenario named. The two are never added together.
         </li>
         <li>
-          <strong className="text-paper">Prize.</strong> <Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term>: is domestic capability in the node strategically
-          valuable? It combines the market prize (<Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>: expected world demand growth and investment
-          momentum, lifted by national home-market growth only where national data exist), industrial commons (process knowledge, workforce and suppliers, cross-sector spillover)
-          and future option value (the leap tests of a leap candidate); high at {pct(t?.prize)} and above, and capped just below where only the market speaks for it. Current
-          capability and need variables are kept out of it. A <Term id={POSTURE_TERMS.largeYard}>large-yard case</Term> (mature, passive and most commodity signals holding)
-          makes a node Watch whatever the size of its market.
+          <strong className="text-paper">Prize: is productive capability here worth having?</strong> <Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term>{' '}
+          combines the market prize (<Term id={POSTURE_TERMS.industrialOpportunity}>Industrial Opportunity</Term>: expected world demand growth and investment momentum, lifted by
+          national home-market growth only where national data exist), industrial commons (process knowledge, workforce and suppliers, spillovers to other sectors) and future option
+          value (whether a credible leap ahead is in reach); high at {pct(t?.prize)} and above, and capped just below where only the market speaks for it. Current capability and
+          need are kept out of it. A <Term id={POSTURE_TERMS.largeYard}>large-yard case</Term> (a mature, passive technology with most commodity signals holding) makes a step Watch
+          whatever the size of its market.
         </li>
         <li>
-          <strong className="text-paper">Position.</strong> <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>: demonstrated capability (exports, specialisation,
-          trade momentum, production, capacity, investment, cost, resources, deployment scale where they apply), as a percentile among the node&apos;s contenders; the Preserve bar is{' '}
-          {pct(t?.cp)} and above (the top quarter).
+          <strong className="text-paper">Position: how strong is the country today?</strong> <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>: demonstrated
+          capability (exports and specialization, trade momentum, production, capacity, investment, cost, resources, deployment scale where they apply), as a percentile among the
+          step&apos;s main producers; the Preserve bar is {pct(t?.cp)} and above (the top quarter), for a producer above the capability floor.
         </li>
         <li>
-          <strong className="text-paper">Choice.</strong> The Secure tests come first (operational control, coercive chokepoint, systemic resilience). At Deployment &amp; Use, deployment
-          need decides Accelerate ({pct(t?.deployment)} and above) or Watch, never Partner. At the producing stages need and prize triage the node and Competitive Position decides the
-          response: a strong position with a prize is Preserve; a weaker one is Catch Up only with a <Term id={POSTURE_TERMS.pathway}>credible pathway</Term>; a high need without a
-          domestic case is Partner; low need is Watch, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway. A node missing
-          need or prize is not assessed, never Watch.
+          <strong className="text-paper">Choice: what should the country do?</strong> The Secure tests come first (control-system risk, chokepoint risk, system resilience). At
+          Deployment &amp; Use, deployment need decides Accelerate ({pct(t?.deployment)} and above) or Watch, never Partner. At the producing stages need and the prize decide whether
+          a step matters and Competitive Position decides the response: a strong position with a prize is Preserve; a weaker one is Catch Up only with a{' '}
+          <Term id={POSTURE_TERMS.pathway}>credible pathway</Term> (a capability anchor to build from, corroborated by a signal of another kind); a high need without a domestic case
+          is Partner; low need is Watch, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway. A step missing need or prize is
+          not assessed, never Watch.
         </li>
         <li>
-          <strong className="text-paper">Policy Alignment.</strong> Observed policy (support, protection, momentum) is compared with the choice afterwards and never feeds it.
+          <strong className="text-paper">Policy alignment: is policy focused on the right places?</strong> Observed policy (support, protection, momentum) is compared with the
+          choice afterwards and never feeds it.
         </li>
       </ol>
       <p className="mt-3 text-xs text-paper-mute">
@@ -103,7 +113,7 @@ function StageMappingCard() {
   return (
     <section className="card p-5" aria-labelledby="stages-h" data-testid="stage-mapping">
       <h3 id="stages-h" className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
-        Stage mapping
+        The six stages and the need each reads
       </h3>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[28rem] text-left text-sm">
@@ -128,7 +138,7 @@ function StageMappingCard() {
                   {i + 1}. {STAGE_DISPLAY[s]}
                 </th>
                 <td className="py-1.5 pr-3">{STAGE_GROUP[s]}</td>
-                <td className="py-1.5">{s === 'Deployment' ? 'Deployment need' : 'Supply-chain need'}</td>
+                <td className="py-1.5">{s === 'Deployment' ? MEASURE_PLAIN.deploymentNeed : MEASURE_PLAIN.supplyChainNeed}</td>
               </tr>
             ))}
           </tbody>
@@ -154,19 +164,19 @@ function CoverageCard() {
       <dl className="mt-3">
         <Row term="Data coverage">
           {n.nodes
-            ? `${n.assessed} of ${n.nodes} technology and stage nodes assessed; ${n.notAssessed} not assessed (need or prize not measured: shown hatched on the map, never as Watch).`
+            ? `${n.assessed} of ${n.nodes} supply-chain steps assessed; ${n.notAssessed} not assessed (need or prize not measured: shown hatched on the map as uncertainty, never as Watch).`
             : posture?.status === 'loading'
               ? 'Loading…'
-              : `The strategic position framework classifies none of ${poss(name)} nodes.`}
+              : STATE.noStrategyMap}
         </Row>
         <Row term="Evidence specificity">
           {n.assessed
-            ? `${n.strong} strong · ${n.moderate} moderate · ${n.weak} weak${n.ungraded ? ` · ${n.ungraded} without a grade` : ''} (how specific the data behind each node are; a node's evidence is in its tooltip, the map's table and its drawer, not drawn in the cell).`
+            ? `${n.strong} strong · ${n.moderate} moderate · ${n.weak} weak${n.ungraded ? ` · ${n.ungraded} without a grade` : ''} (how specific the data behind each step are; a step's evidence is in its tooltip, the map's table and its drawer, not drawn in the cell).`
             : '–'}
         </Row>
         <Row term="Sensitivity">
           {n.nodes
-            ? `${n.borderline} ${n.borderline === 1 ? 'node sits' : 'nodes sit'} within ${pct(meta?.thresholds.borderline_band)} points of a threshold (borderline: a small change in the data could change the choice); ${n.flagged} ${n.flagged === 1 ? 'is' : 'are'} flagged for consistency review.`
+            ? `${n.borderline} ${n.borderline === 1 ? 'step sits' : 'steps sit'} within ${pct(meta?.thresholds.borderline_band)} points of a threshold (borderline: a small change in the data could change the choice); ${n.flagged} ${n.flagged === 1 ? 'is' : 'are'} flagged for consistency review.`
             : '–'}
         </Row>
         <Row term="Trade benchmark">{meta?.benchmark_period ? `Structural trade position over ${meta.benchmark_period}.` : 'Not stated in the data.'}</Row>
@@ -179,12 +189,13 @@ function CoverageCard() {
           {[built ? `Strategy built ${built}${core?.gitCommit ? ` (export ${core.gitCommit.slice(0, 7)})` : ''}` : null, `index baseline as of ${sheet.meta.as_of_label}`, manifest.nipo?.vintage_label ? `Global Trade Alert measures: ${manifest.nipo.vintage_label}` : null]
             .filter(Boolean)
             .join('; ')}
-          .
+          . {FRESHNESS_NOTE}
         </Row>
         <Row term="Score components">
-          Need: import dependence, supplier concentration, risky supplier exposure, trusted alternatives; at Deployment &amp; Use, demand adequacy, policy or climate gap, system need.
-          Prize: node market prize, investment momentum, home market (national data only); technology maturity as context. Position: export position, structural trade share and
-          momentum, production, manufacturing capacity, investment, cost, resources, deployment scale. Each node&apos;s components are in its drawer.
+          Need: import dependence, supplier concentration, risky supplier exposure, lack of trusted alternatives; at Deployment &amp; Use, demand adequacy, policy or climate gap,
+          system need. Prize: the market prize (expected world demand growth, investment momentum, home market where national data exist), industrial commons and future option
+          value; technology maturity as context. Position: export position, structural trade share and momentum, production, manufacturing capacity, investment, cost, resources,
+          deployment scale. Each step&apos;s components are in its drawer.
         </Row>
         <Row term="Methodology and raw data">
           <span className="flex flex-wrap gap-x-4 gap-y-1">
@@ -218,8 +229,7 @@ export function EvidenceSection({ engineOn, hostKeys }: { engineOn: boolean; hos
       basis={<PostureBasisTag />}
       intro={
         <>
-          How {poss(name)} strategy is decided and how far to trust it: the framework, the stages, the data behind each node, the notes, sources and downloads, and the Legacy OSI
-          framework the strategy replaced.
+          {EVIDENCE_INTRO} For {name}: how the strategy is decided, the data behind each step and how far to trust it, the notes, sources and downloads.
         </>
       }
     >
@@ -278,7 +288,7 @@ function MappingTable() {
               Maps to
             </th>
             <th scope="col" className="py-1 font-medium">
-              Why a node can differ
+              Why a step can differ
             </th>
           </tr>
         </thead>
@@ -316,14 +326,14 @@ export function LegacyOsiSection({ engineOn, hostKeys }: { engineOn: boolean; ho
       basis={<BasisTag kind="prefs" note="Legacy OSI · not a current recommendation" />}
       intro={
         <>
-          The <Term id="es" />, the <Term id="eo" />, their four corners and the <Term id="si" /> are the paper baseline. They stay for replication and comparison; they are not current
-          strategic recommendations. The strategy above is the current framework.
+          {LEGACY_OSI_NOTE} Its <Term id="es" />, <Term id="eo" />, their four corners and the <Term id="si" /> are the paper baseline. The strategy above is the current
+          framework.
         </>
       }
     >
       <Notice kind="info" title="Not a current recommendation">
-        The legacy indices mix together {LEGACY_MIXES.join(', ')}, so a sector&apos;s corner can disagree with its choice in the strategy. The current framework separates those
-        concepts: need, prize and position are measured apart, and the choice follows fixed rules.
+        The legacy indices mix together {LEGACY_MIXES.join(', ')}, so a sector&apos;s corner can disagree with its choice in the strategy. The current framework keeps those
+        apart: need, prize and position are measured separately, and the choice follows fixed rules.
       </Notice>
       {m.status === 'non_rankable' && (
         <Notice kind="info" title="Scores shown but not ranked">

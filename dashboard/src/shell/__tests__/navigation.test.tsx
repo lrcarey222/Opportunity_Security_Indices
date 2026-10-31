@@ -277,13 +277,14 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
   it('Sector: Home -> Sectors -> Solar -> a sub-component -> one profile with the four lenses', async () => {
     const router = renderAt('/');
     await follow(router, linkIn('main article a[href="/sector"]', /^Explore sectors$/), path('/sector'));
-    expect(await screen.findByRole('heading', { name: 'Pick a technology' }, { timeout: 30_000 })).toBeTruthy();
-    // "Pick a technology" opens the technology's chain (the six stages, Extraction -> Recovery); silicon
+    expect(await screen.findByRole('heading', { name: 'Follow a technology' }, { timeout: 30_000 })).toBeTruthy();
+    // "Follow a technology" opens the technology's chain (the six stages, Extraction -> Recovery); silicon
     // metal is a refined material, so its sub-component opens Solar — Refining
     await follow(router, linkIn('main a[href^="/sector/solar"]', /^Solar$/), path('/sector/solar'));
     await follow(router, linkIn('nav[aria-label="Solar supply chain"] a', /^Silicon metal$/), path('/sector/solar/refining'));
     expect(new URLSearchParams(router.state.location.search).get('sub')).toBe('Silicon metal');
-    for (const lens of ['Economic Opportunity', 'Energy Security', 'Policy', 'Climate']) {
+    // the four lenses, titled by the profile's questions (copy refresh 2026-10-30)
+    for (const lens of ['Where the capability sits', 'Where the risk sits', 'What policy is doing', 'Climate']) {
       expect(await screen.findByRole('article', { name: lens }, { timeout: 30_000 })).toBeTruthy();
     }
     expect(currentTabs()).toEqual(['Sectors']);

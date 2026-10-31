@@ -24,11 +24,15 @@
 // The core cell gives the headline values at once; the detail document (fetched on first open) the rest.
 // A side panel on wide screens, a bottom sheet on phones; Escape or the close button dismisses it.
 // PostureNodeDrawer is the connected one the pages mount once, for every entry point (spec XIX).
+// The NEIS copy refresh (2026-10-30): the questions are the strategy steps' own (vocabulary STRATEGY_STEP); each
+// choice is explained as an action (CHOICE_DEFINITION; Watch as "Low domestic priority", a deployment Watch
+// below the bar for acceleration); a Partner step lists its best-placed partners; "step", never "node".
 
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { isProducingStage, stageDisplay } from '../lib/stages.ts';
 import { Term } from '../components/Term.tsx';
+import { CHOICE_DEFINITION, STRATEGY_STEP, WATCH_DEPLOYMENT_DEFINITION, WATCH_PROSE_LABEL } from '../content/vocabulary.ts';
 import { POSTURE_TERMS } from './basis.tsx';
 import type { PostureCell, PostureCore, Verb, Yard } from './contract.ts';
 import { cellKey, cellKeyParts, countryCells, countryNames, pct } from './derive.ts';
@@ -47,11 +51,11 @@ import {
 
 /** The five questions, in order (design D14). */
 export const DRAWER_QUESTIONS = [
-  { id: 'need', title: 'Need', ask: 'What problem does the country need to solve here?' },
-  { id: 'prize', title: 'Prize', ask: 'Is domestic capability here strategically valuable: a market prize, industrial commons, a future option?' },
-  { id: 'position', title: 'Position', ask: 'How strong is the country here today?' },
-  { id: 'choice', title: 'Choice', ask: 'What should it do?' },
-  { id: 'policy', title: 'Policy alignment', ask: 'Does current policy match the choice?' },
+  { id: 'need', title: STRATEGY_STEP.need.name, ask: STRATEGY_STEP.need.question },
+  { id: 'prize', title: STRATEGY_STEP.prize.name, ask: STRATEGY_STEP.prize.question },
+  { id: 'position', title: STRATEGY_STEP.position.name, ask: STRATEGY_STEP.position.question },
+  { id: 'choice', title: STRATEGY_STEP.choice.name, ask: STRATEGY_STEP.choice.question },
+  { id: 'policy', title: STRATEGY_STEP.policy.name, ask: 'Does current policy match the choice?' },
 ] as const;
 
 const NA = 'not assessed';
@@ -81,8 +85,8 @@ function Question({ q, children }: { q: (typeof DRAWER_QUESTIONS)[number]; child
 }
 
 function Pending({ status, error }: { status: DrawerDetailStatus; error?: string | null }) {
-  if (status === 'loading') return <p className="text-xs text-paper-mute" role="status">Loading the components…</p>;
-  if (status === 'error') return <p className="text-xs text-paper-mute" role="status">The components could not be loaded{error ? `: ${error}` : ''}.</p>;
+  if (status === 'loading') return <p className="text-xs text-paper-mute" role="status">Loading the details…</p>;
+  if (status === 'error') return <p className="text-xs text-paper-mute" role="status">The details could not be loaded{error ? `: ${error}` : ''}.</p>;
   return null;
 }
 
@@ -117,8 +121,8 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
         </dl>
         <Pending status={status} />
         <p className="mt-1 text-xs text-paper-mute">
-          At Deployment &amp; Use, Need is how much more of the technology the energy system needs (expected demand, policy and climate gaps, system requirements), not supply-chain
-          vulnerability. The scenarios are not interchangeable.
+          At Deployment &amp; Use, Need means how urgently the domestic energy system needs more of the technology (expected demand, policy and climate gaps, system
+          requirements), not supply-chain vulnerability. The scenarios are not interchangeable.
         </p>
       </>
     );
@@ -127,7 +131,7 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
   return (
     <>
       <dl>
-        <Row k={<Term id={POSTURE_TERMS.supplyChainNeed}>Supply-chain need</Term>} v={pctOr(cell.need)} />
+        <Row k={<Term id={POSTURE_TERMS.supplyChainNeed}>Supply-chain vulnerability</Term>} v={pctOr(cell.need)} />
         {s && (
           <>
             <Row k="Import dependence" v={pctOr(s.importDependence)} />
@@ -148,7 +152,7 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
         )}
       </dl>
       <Pending status={status} />
-      {cell.posture === 'N' && cell.need === null && <p className="mt-1 text-xs text-paper-mute">{d?.notAssessedReason ?? 'Supply-chain need is not measured for this node.'}</p>}
+      {cell.posture === 'N' && cell.need === null && <p className="mt-1 text-xs text-paper-mute">{d?.notAssessedReason ?? 'Supply-chain vulnerability is not measured for this step.'}</p>}
     </>
   );
 }
@@ -181,7 +185,7 @@ function PrizeAnswer({ cell, d, core, cells, status }: { cell: PostureCell; d: N
         {siv && <Row k={<Term id={POSTURE_TERMS.industrialOpportunity}>Market prize ({MARKET_PRIZE_LABEL})</Term>} v={pctOr(f.market)} />}
         {p && (
           <>
-            <Row indent={sub} k="Node prize (expected world demand growth)" v={pctOr(p.nodePrize)} />
+            <Row indent={sub} k="Expected world demand growth" v={pctOr(p.nodePrize)} />
             <Row indent={sub} k="Investment momentum" v={pctOr(p.investmentMomentum)} />
             <Row indent={sub} k="Home-market growth (national data only)" v={pctOr(p.homeMarket)} />
             {p.maturity !== null && <Row indent={sub} k="Technology maturity (context, not scored)" v={typeof p.maturity === 'number' ? `TRL ${p.maturity}` : p.maturity} />}
@@ -192,7 +196,7 @@ function PrizeAnswer({ cell, d, core, cells, status }: { cell: PostureCell; d: N
         {siv && (
           <>
             <Row k="Industrial commons (process knowledge, workforce and suppliers, cross-sector spillover)" v={commonsWords(f.commons, f.commonsN)} />
-            <Row k="Future option (the leap tests of a leap candidate)" v={optionWords(f.option, f.optionN)} />
+            <Row k="Future option value (the leap tests: is a credible leap ahead in reach?)" v={optionWords(f.option, f.optionN)} />
           </>
         )}
       </dl>
@@ -225,8 +229,8 @@ function PositionAnswer({ cell, d, core, status }: { cell: PostureCell; d: NodeD
           k={<Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>}
           v={
             cell.cp !== null && cell.cp >= meta.thresholds.cp && isProducingStage(cell.stage) && verbOf(cell) !== 'preserve' && verbOf(cell) !== 'secure'
-              ? `${pctOr(cell.cp)}: a top-quarter score, but not a contender or below the capability floor, so not a strong position`
-              : `${pctOr(cell.cp)} (strong at ${pct(meta.thresholds.cp)} or more among the node's contenders)`
+              ? `${pctOr(cell.cp)}: a top-quarter score, but not a main producer or below the capability floor, so not a strong position`
+              : `${pctOr(cell.cp)} (strong at ${pct(meta.thresholds.cp)} or more among the step's main producers)`
           }
         />
         <Row k="World supply share" v={pctOr(cell.share ?? d?.homeShare ?? null, 1)} />
@@ -273,26 +277,33 @@ function ChoiceAnswer({
       </p>
       {cell.posture === 'N' && (
         <p className="mt-1 text-sm text-paper-dim">
-          Not assessed: {d?.notAssessedReason ?? (cell.needType === 'deployment' ? 'deployment need is not measured.' : 'need or prize is not measured.')} It is counted apart, never as
-          Watch.
+          Not assessed: {d?.notAssessedReason ?? (cell.needType === 'deployment' ? 'deployment need is not measured.' : 'need or prize is not measured.')} Missing data are shown as
+          uncertainty, never as Watch.
         </p>
       )}
       {cell.posture === 'S' && cell.rationale && (
         <p className="mt-1 text-sm text-paper-dim">
-          {RATIONALE_WORDS[cell.rationale]}. Secure means an acute vulnerability needs deliberate mitigation, not reshoring everything
-          {d?.delivery ? `: delivery is ${deliveryWords(d.delivery)}` : ''}.
+          {RATIONALE_WORDS[cell.rationale]}. {CHOICE_DEFINITION.secure}
+          {d?.delivery ? ` Delivery here: ${deliveryWords(d.delivery)}.` : ''}
           {d && d.routes.length > 1 ? ` Routes met: ${d.routes.map((r) => RATIONALE_LABEL[r as keyof typeof RATIONALE_LABEL] ?? r).join(', ')}.` : ''}
         </p>
       )}
-      {v === 'preserve' && <p className="mt-1 text-sm text-paper-dim">A strong position (top quarter of the node&apos;s contenders) worth maintaining and extending.</p>}
-      {v === 'catch_up' && <p className="mt-1 text-sm text-paper-dim">A large prize, {catchUpPositionWords(cell, t, 'sentence')} and a credible route to build capability.</p>}
+      {v === 'preserve' && (
+        <p className="mt-1 text-sm text-paper-dim">{CHOICE_DEFINITION.preserve} Its position is in the top quarter of the step&apos;s main producers.</p>
+      )}
+      {v === 'catch_up' && (
+        <p className="mt-1 text-sm text-paper-dim">
+          A large prize, {catchUpPositionWords(cell, t, 'sentence')}, and a credible pathway: a real capability to build from (an anchor, corroborated by a signal of another
+          kind). Catch Up is never a greenfield ambition.
+        </p>
+      )}
       {v === 'partner' && (
         <div className="mt-1 text-sm text-paper-dim">
-          <p>The capability matters, but allies and diversification are the better answer than a domestic build.</p>
+          <p>{CHOICE_DEFINITION.partner}</p>
           {cell.partnerGap || d?.partnerGap ? (
             <p className="mt-1 text-signal">No credible allied solution yet: no trusted supplier can cover it.</p>
           ) : d?.partners.length ? (
-            <ol className="mt-1 space-y-1">
+            <ol className="mt-1 space-y-1" aria-label="Best-placed partners">
               {d.partners.map((p, i) => (
                 <li key={p.iso3} className="flex justify-between gap-2">
                   <span className="text-paper">
@@ -305,21 +316,22 @@ function ChoiceAnswer({
               ))}
             </ol>
           ) : cell.partner1 ? (
-            <p className="mt-1">First trusted partner: {names[cell.partner1] ?? cell.partner1}</p>
+            <p className="mt-1">Best-placed partner: {names[cell.partner1] ?? cell.partner1}</p>
           ) : null}
           {d?.partnerReason && <p className="mt-1 text-xs text-paper-mute">{d.partnerReason}</p>}
         </div>
       )}
       {v === 'accelerate' && (
         <p className="mt-1 text-sm text-paper-dim">
-          Deployment priority: high. This says nothing about domestic manufacturing: domestic manufacturing priority is {manufacturingPriorityWord(manufacturingPriority(cell.tech, cells))} (
-          {manufacturingPriority(cell.tech, cells).words}).
+          {CHOICE_DEFINITION.accelerate} Domestic manufacturing priority, read at the producing stages, is{' '}
+          {manufacturingPriorityWord(manufacturingPriority(cell.tech, cells))} ({manufacturingPriority(cell.tech, cells).words}).
         </p>
       )}
       {v === 'watch' && (
         <p className="mt-1 text-sm text-paper-dim">
-          Domestic industrial priority: low{watchReasons(cell, t, d).length ? ` (${watchReasons(cell, t, d).join('; ').toLowerCase()})` : ''}. This is a deliberate choice, not a
-          failure.
+          {WATCH_PROSE_LABEL}
+          {watchReasons(cell, t, d).length ? ` (${watchReasons(cell, t, d).join('; ').toLowerCase()})` : ''}: a deliberate choice, not a failure.{' '}
+          {cell.needType === 'deployment' ? WATCH_DEPLOYMENT_DEFINITION : CHOICE_DEFINITION.watch}
         </p>
       )}
       <dl className="mt-1">
@@ -342,7 +354,7 @@ function ChoiceAnswer({
       )}
       {design?.fence && (
         <p className="mt-1 text-xs text-paper-mute" data-testid="drawer-trade-protection">
-          <strong className="text-paper-dim" title="The trade protection the policy design pairs with this kind of choice: not the node's fence above">
+          <strong className="text-paper-dim" title="The trade protection the policy design pairs with this kind of choice: not the step's fence above">
             Fence (policy design):
           </strong>{' '}
           {design.fence}
@@ -445,7 +457,7 @@ function YardsPart({ cell, d, core, focusLayer }: { cell: PostureCell; d: NodeDe
       </dl>
       {units.length > 0 && (
         <>
-          <p className="mt-1 text-xs text-paper-mute">Each layer is a yard unit of its own, with its own choice:</p>
+          <p className="mt-1 text-xs text-paper-mute">The layers of a step can each need a different fence, so each has its own yard and choice:</p>
           <ul className="mt-1 space-y-1.5" aria-label="Layers of this step">
             {units.map((u) => {
               const on = focusLayer === u.layerId;
@@ -506,7 +518,7 @@ function YardsPart({ cell, d, core, focusLayer }: { cell: PostureCell; d: NodeDe
 }
 
 function PolicyAnswer({ cell, d, status }: { cell: PostureCell; d: NodeDetail | null; status: DrawerDetailStatus }) {
-  if (cell.posture === 'N') return <p className="text-sm text-paper-dim">No recommendation, so no alignment to judge.</p>;
+  if (cell.posture === 'N') return <p className="text-sm text-paper-dim">Not assessed, so there is no recommendation to compare policy with.</p>;
   const p = d?.policy;
   const al = cell.alignment ?? p?.alignment ?? null;
   const alc = cell.alignmentConfidence ?? p?.alignmentConfidence ?? null;
@@ -520,7 +532,7 @@ function PolicyAnswer({ cell, d, status }: { cell: PostureCell; d: NodeDetail | 
             {/* within-country percentile ranks, never shares or changes */}
             <Row k="Observed policy intensity" v={countryRankWords(p.priority)} />
             <Row k="Support" v={countryRankWords(p.support)} />
-            <Row k="Protection or localisation" v={protectionWords(p.protection, p.protectionRecorded)} />
+            <Row k="Protection or localization" v={protectionWords(p.protection, p.protectionRecorded)} />
             <Row k="Policy momentum (recent activity)" v={policyMomentumWords(p.momentum)} />
             {p.sources.length > 0 && <Row k="Sources" v={p.sources.map((s) => POLICY_SOURCE_LABEL[s] ?? s).join(', ')} />}
             {(p.flag ?? cell.alignmentFlag) && <Row k="Note" v={alignmentFlagWords(p.flag ?? cell.alignmentFlag)} />}
@@ -528,7 +540,7 @@ function PolicyAnswer({ cell, d, status }: { cell: PostureCell; d: NodeDetail | 
         )}
       </dl>
       {al && <p className="mt-1 text-xs text-paper-mute">{ALIGNMENT_WORDS[al][0].toUpperCase() + ALIGNMENT_WORDS[al].slice(1)}.</p>}
-      <p className="mt-1 text-xs text-paper-mute">Observed policy is compared with the choice afterwards; it never enters the recommendation.</p>
+      <p className="mt-1 text-xs text-paper-mute">Policy is compared with the choice afterwards; it never feeds the recommendation.</p>
       <Pending status={status} />
     </>
   );
@@ -660,7 +672,7 @@ export function PostureNodeDrawer({ iso3, name, selected, onClose, sectorHref, l
       <div role="dialog" aria-label={`${parts.tech} ${stageDisplay(parts.stage)}: not classified`} className="fixed inset-x-0 bottom-0 z-40 rounded-t-xl border border-white/10 bg-ink-850 p-5 sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-20 sm:w-[27rem] sm:rounded-xl" data-testid="cell-drawer">
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm text-paper-dim">
-            {parts.tech} · {stageDisplay(parts.stage)} is not classified for {name ?? names[iso3] ?? iso3}.
+            {parts.tech} · {stageDisplay(parts.stage)} is not on the strategy map of {name ?? names[iso3] ?? iso3}: there is not enough comparable evidence to make a strategic call.
           </p>
           <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close the detail">
             ✕

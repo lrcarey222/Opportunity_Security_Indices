@@ -16,6 +16,10 @@ import { splitSearch } from '../../state/url.ts';
 import { AibStore, setAibStoreForTests, type AibSource } from '../data/store.ts';
 import { useAibScenario, useAibScenarioDoc } from '../data/hooks.ts';
 import { nodeScenarios, scenarioTotalsAll, STRATEGIC_FRAMING } from '../derive/scenarios.ts';
+import { SCENARIO_NAME } from '../../content/vocabulary.ts';
+
+/** The toggle's second choice in its plain display name (content/vocabulary.ts SCENARIO_NAME). */
+const DEC = SCENARIO_NAME.decoupling;
 import { fmtUsd } from '../derive/format.ts';
 import { ScenarioBars, ScenarioClassBars, ScenarioCoverageCompare, scenarioValues } from '../charts/ScenarioCompare.tsx';
 import { resetLastCompact } from '../nav.ts';
@@ -96,22 +100,24 @@ describe.skipIf(!haveFixture())('the scenario toggle', () => {
     const router = renderAt('/aib');
     const t = await toggle();
     const radios = within(t).getAllByRole('radio') as HTMLInputElement[];
-    expect(radios.map((r) => r.closest('label')!.textContent)).toEqual(['Managed Interdependence', 'Decoupling']);
+    expect(radios.map((r) => r.closest('label')!.textContent)).toEqual(['Managed Interdependence', DEC]);
+    expect(DEC).toBe('Major-supplier disruption');
     expect(radio('Managed Interdependence').checked).toBe(true);
     expect(router.state.location.search).toBe('');
     expect(within(t).getByRole('radiogroup', { name: 'Scenario' })).toBeTruthy();
-    expect(t.textContent).toMatch(/Managed Interdependence: No supplier is removed/);
+    expect(t.textContent).toMatch(/Managed Interdependence: No supplier is banned\. /);
     expect(t.textContent).toMatch(/not forecasts/);
-    // the strategic compact is the persistent architecture, the scenario the stress applied to it
-    const framing = readDoc().strategic?.framing ?? STRATEGIC_FRAMING;
-    expect(within(t).getByTestId('scenario-framing').textContent).toBe(`${framing} Managed Interdependence is the default institutional lens; Decoupling is the stress test.`);
+    // the strategic compact is the lasting division of labor, the scenario the stress applied to it (plain words, not the export's shorthand)
+    expect(within(t).getByTestId('scenario-framing').textContent).toBe(`${STRATEGIC_FRAMING} Managed Interdependence is the default view; ${DEC} is the stress test.`);
+    expect(within(t).getByTestId('scenario-framing').textContent).not.toMatch(/=|institutional lens/);
     expect(within(t).getByRole('link', { name: /How the scenarios work/ }).getAttribute('href')).toBe('/compacts/about#scenarios');
     expect(bareAcronyms(t)).toEqual([]);
     // the choice: scn=decoupling in the URL, the words, the nav and the About link carry it
-    fireEvent.click(radio('Decoupling'));
+    fireEvent.click(radio(DEC));
     await waitFor(() => expect(router.state.location.search).toBe('?scn=decoupling'));
-    expect(radio('Decoupling').checked).toBe(true);
-    expect(t.textContent).toMatch(/Decoupling: .*stops supplying the allied market \(it keeps buying\)/);
+    expect(radio(DEC).checked).toBe(true);
+    // the plain words name the economy the data remove
+    expect(t.textContent).toMatch(new RegExp(`${DEC}: A major supplier \\(Zembla, in this analysis\\) stops supplying allied markets\\. `));
     await waitFor(() => expect(within(views()).getAllByRole('link').every((a) => a.getAttribute('href')!.endsWith('?scn=decoupling'))).toBe(true));
     expect(within(t).getByRole('link', { name: /How the scenarios work/ }).getAttribute('href')).toBe('/compacts/about?scn=decoupling#scenarios');
     // and back: the default is never written
@@ -123,7 +129,7 @@ describe.skipIf(!haveFixture())('the scenario toggle', () => {
     if (!files.managed) return;
     renderAt('/aib?scn=decoupling');
     const t = await toggle();
-    expect(radio('Decoupling').checked).toBe(true);
+    expect(radio(DEC).checked).toBe(true);
     expect(scenarioFetched()).toEqual([]);
     fireEvent.pointerEnter(t);
     await waitFor(() => expect(scenarioFetched()).toEqual([files.managed]));
@@ -133,17 +139,17 @@ describe.skipIf(!haveFixture())('the scenario toggle', () => {
     if (!files.managed) return;
     const router = renderAt('/aib?scn=decoupling');
     await toggle();
-    expect(radio('Decoupling').checked).toBe(true);
+    expect(radio(DEC).checked).toBe(true);
     await waitFor(() => expect(within(views()).getByRole('link', { name: 'Sectoral Compacts' }).getAttribute('href')).toBe('/compacts?scn=decoupling'));
     fireEvent.click(within(views()).getByRole('link', { name: 'Sectoral Compacts' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/compacts'));
     expect(router.state.location.search).toBe('?scn=decoupling');
-    await waitFor(() => expect(radio('Decoupling').checked).toBe(true));
+    await waitFor(() => expect(radio(DEC).checked).toBe(true));
     // a workstream's page, the Workstreams index and About have it too
     await router.navigate(`/compacts/${readDoc().compacts[0].id}?scn=decoupling`);
-    await waitFor(() => expect(radio('Decoupling').checked).toBe(true));
+    await waitFor(() => expect(radio(DEC).checked).toBe(true));
     await router.navigate('/compacts/workstreams?scn=decoupling');
-    await waitFor(() => expect(radio('Decoupling').checked).toBe(true));
+    await waitFor(() => expect(radio(DEC).checked).toBe(true));
   });
 
   it("a stray scn is dropped (other keys and the hash kept), an older link's scn=managed too; an older bundle has no toggle and drops any scn", async () => {
@@ -172,10 +178,12 @@ describe.skipIf(!haveFixture())('the scenario toggle', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'How the scenarios work' }, { timeout: 30_000 })).toBeTruthy();
     const s = screen.getByTestId('about-scenarios');
     const text = s.textContent ?? '';
-    expect(within(s).getAllByRole('term').map((t) => t.textContent)).toEqual(['Baseline', 'Managed Interdependence', 'Decoupling']);
+    // the display names, each with the method's name where it differs
+    expect(within(s).getAllByRole('term').map((t) => t.textContent)).toEqual(["Today's network(Baseline in the data)", 'Managed Interdependence', `${DEC}(Decoupling in the data)`]);
+    expect(within(s).getAllByRole('listitem').map((li) => li.querySelector('h3')?.textContent)).toEqual(["Today's network", 'Managed Interdependence', DEC]);
     expect(text).toContain('You are reading Managed Interdependence.');
-    expect(text).toMatch(/In this export it runs on 3 nodes of 7 and touches 3 compacts of 3\./);
-    expect(text).toMatch(/counterfactual market structures, not forecasts/);
+    expect(text).toMatch(/In this build it applies to 3 steps of 7 and touches 3 compacts of 3\./);
+    expect(text).toMatch(/stress tests of how the market could be organized, not forecasts/);
     expect(within(s).getByRole('link', { name: /How Managed Interdependence sets its caps/ }).getAttribute('href')).toBe('/aib/diversification');
     expect(bareAcronyms(s)).toEqual([]);
   });
@@ -259,10 +267,10 @@ describe.skipIf(!haveFixture())('the shared comparison charts', () => {
     const kept = rows[0].querySelectorAll('[data-part]');
     expect([...kept].map((x) => x.getAttribute('data-part'))).toEqual(['kept']);
     expect((kept[0] as HTMLElement).style.width).toBe('100%');
-    expect(rows[0].textContent).toContain('kept 100% · restored by trade 0% · new capacity 0%');
-    expect(rows[0].textContent).toContain('trade as it is today, before any shock');
-    expect(within(rows[1]).getByRole('img').getAttribute('aria-label')).toMatch(/^Managed Interdependence: kept 66% · restored by trade 12% · new capacity 22%/);
-    expect(within(fig).getByRole('list', { name: 'Coverage parts' }).textContent).toBe('KeptRestored by tradeNew capacity');
+    expect(rows[0].textContent).toContain('still supplied 100% · recovered through trade 0% · requires new capacity 0%');
+    expect(rows[0].textContent).toContain('trade as it is today, before any disruption');
+    expect(within(rows[1]).getByRole('img').getAttribute('aria-label')).toMatch(/^Managed Interdependence: still supplied 66% · recovered through trade 12% · requires new capacity 22%/);
+    expect(within(fig).getByRole('list', { name: 'Coverage parts' }).textContent).toBe('Still suppliedRecovered through tradeRequires new capacity');
     expect(bareAcronyms(fig)).toEqual([]);
     cleanup();
     // a node the scenario does not run on: unchanged, said so
@@ -293,7 +301,7 @@ describe.skipIf(!haveFixture())('the shared comparison charts', () => {
     );
     const cls = screen.getByRole('figure', { name: 'Where the lost supply sits' });
     const rows = within(cls).getAllByRole('listitem').filter((li) => li.hasAttribute('data-scenario'));
-    expect(rows[0].textContent).toContain('nothing is lost before any shock');
+    expect(rows[0].textContent).toContain('nothing is lost before any disruption');
     expect(rows[1].getAttribute('aria-current')).toBe('true');
     expect(rows[1].querySelectorAll('[data-cls]').length).toBe(totals[1].byClass.length);
     expect(within(cls).getByRole('list', { name: 'Classes' })).toBeTruthy();

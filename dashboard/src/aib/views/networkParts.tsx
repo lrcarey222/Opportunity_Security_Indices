@@ -27,7 +27,7 @@ export const INVEST_COLOR = '#fba36b';
 export function ModelledNote({ children, className = '' }: { children?: ReactNode; className?: string }) {
   return (
     <p className={`text-xs leading-relaxed text-paper-mute ${className}`} data-testid="modelled-note">
-      Modelled result of the Allied Industrial Base run{children ? <> ({children})</> : null}. It does not move with the Perspective dials.
+      A result of the Allied Industrial Base analysis{children ? <> ({children})</> : null}. It does not move with the Perspective dials.
     </p>
   );
 }
@@ -54,7 +54,7 @@ export function stageCountWords(side: AibNetworkSide): string {
  * (everyShock(doc).phrase, everyShockLabel(doc).phrase; "every shock" by default; null leaves it out, for a
  * network without one); `under`: the scenario ("under the headline shock" by default, "under Decoupling").
  */
-export function cellWords(k: MatrixRole, c: RoleCell, every: string | null = 'every shock', under = 'under the headline shock'): string {
+export function cellWords(k: MatrixRole, c: RoleCell, every: string | null = 'every shock', under = 'under the headline disruption'): string {
   const parts: string[] = [];
   if (c.side && c.side.selected === 0 && c.side.cumulative === 0) {
     parts.push('no relationship of this kind in the network');
@@ -75,7 +75,7 @@ export function cellWords(k: MatrixRole, c: RoleCell, every: string | null = 'ev
       parts.push(`${plural(c.side.selected, 'selected relationship')}`);
     }
   }
-  if (k === 'specialized' && c.nodes.length) parts.push(`largest optimized supplier of ${plural(c.nodes.length, 'node')}`);
+  if (k === 'specialized' && c.nodes.length) parts.push(`largest supplier after coordinated trade at ${plural(c.nodes.length, 'step')}`);
   if (c.compacts.length) parts.push(`the compact role in ${c.compacts.join(', ')}`);
   return parts.join('; ') || 'none';
 }
@@ -98,7 +98,7 @@ export function RoleCellView({ k, cell, every, under }: { k: MatrixRole; cell: R
   const main = cell.side && !byCompact
     ? fmtPts(cell.side.headline)
     : k === 'specialized' && cell.nodes.length
-      ? plural(cell.nodes.length, 'node')
+      ? plural(cell.nodes.length, 'step')
       : plural(cell.compacts.length, 'compact');
   const sub = byCompact
     ? `network: ${fmtPts(cell.side?.headline)}`
@@ -219,7 +219,7 @@ export function ScenarioFileState({ load, what, label }: { load: FileLoad; what:
     return (
       <Notice
         kind="error"
-        title={`The ${label} data could not be loaded`}
+        title={`The ${label} results could not be loaded`}
         action={
           <button type="button" className="btn btn-ghost btn-sm" onClick={load.retry}>
             Retry
@@ -230,7 +230,7 @@ export function ScenarioFileState({ load, what, label }: { load: FileLoad; what:
       </Notice>
     );
   }
-  if (load.missing) return <EmptyState>This data build has no {label} file, so {what} cannot be shown.</EmptyState>;
+  if (load.missing) return <EmptyState>This build has no {label} results, so {what} cannot be shown.</EmptyState>;
   return <Loading label={`Loading ${what} under ${label}`} />;
 }
 

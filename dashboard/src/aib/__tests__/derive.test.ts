@@ -170,10 +170,11 @@ describe('coverage steps', () => {
   });
 
   it('compact types in words: the unnecessary one is muted and says by how much', () => {
-    expect(compactTypeInfo('candidate compact')).toMatchObject({ short: 'Candidate compact', tone: 'compact' });
-    expect(compactTypeInfo('bilateral arrangement sufficient')).toMatchObject({ short: 'Bilateral arrangement sufficient', tone: 'bilateral' });
+    // plain words (the NEIS copy refresh): "Potential Sectoral Compact", "No compact needed"; the data's type strings are the keys
+    expect(compactTypeInfo('candidate compact')).toMatchObject({ short: 'Potential Sectoral Compact', tone: 'compact' });
+    expect(compactTypeInfo('bilateral arrangement sufficient')).toMatchObject({ short: 'Bilateral arrangement enough', tone: 'bilateral' });
     const u = compactTypeInfo('compact unnecessary: existing relationships do nearly as well', 0.025);
-    expect(u).toMatchObject({ short: 'Compact unnecessary', tone: 'unnecessary' });
+    expect(u).toMatchObject({ short: 'No compact needed', tone: 'unnecessary' });
     expect(u.explanation).toMatch(/^Existing relationships do nearly as well: .*\(\+2\.5 pp\)\.$/);
     expect(compactTypeInfo('compact unnecessary: existing relationships do nearly as well', null).explanation).not.toMatch(/pp/);
     expect(compactTypeInfo('something new')).toMatchObject({ short: 'something new', tone: 'compact' });
@@ -1383,17 +1384,17 @@ describe('the diversification scenario (2026-10-19)', () => {
     // the fixture is consistent (what trade restores plus the gap is the supply to shift); the words never rely on it
     expect((t.tradeUsd + t.gapUsd) / 1e9).toBeCloseTo(t.shiftUsd / 1e9, 9);
     expect(t.capped).toEqual([{ iso3: 'ZZZ', nodes: 2 }, { iso3: 'AAA', nodes: 1 }, { iso3: 'BBB', nodes: 1 }]);
-    expect(cappedWords(t.capped, names)).toBe('Zembla (2 nodes), Avalon (1) and Borduria (1)');
+    expect(cappedWords(t.capped, names)).toBe('Zembla (2 steps), Avalon (1) and Borduria (1)');
     expect(totalsWords(t)).toBe(
-      '4 of the 6 nodes with a benchmark are more concentrated than their benchmark by more than a small tolerance (in 1 of them no supplier to the allied market is above the cap, so nothing shifts). ' +
-        '1 other node sits above its benchmark by less than that and is left as it is. ' +
-        'Capping their suppliers in the allied market at the share that would bring each down to its benchmark shifts $3.8 bn of supply (20% of the allied demand in those nodes) away from the capped suppliers. ' +
-        'Existing relationships and optimized trade restore $1.6 bn with the cap holding; $2.2 bn is left for new capacity, and in 1 node trade replaces everything.',
+      '4 of the 6 supply-chain steps with a benchmark are more concentrated than their benchmark by more than a small tolerance (in 1 of them no supplier to the allied market is above the cap, so nothing shifts). ' +
+        '1 other step sits above its benchmark by less than that and is left as it is. ' +
+        'Capping their suppliers in the allied market at the share that would bring each down to its benchmark shifts $3.8 bn of supply (20% of the allied demand at those steps) away from the capped suppliers. ' +
+        'Existing relationships and coordinated trade recover $1.6 bn with the cap holding; $2.2 bn still needs new capacity, and at 1 step trade replaces everything.',
     );
     // the most-capped suppliers follow the tiles, not the lede
     expect(totalsWords(t)).not.toContain('Most often capped');
-    expect(aboveWords({ above: 1, withBenchmark: 6 })).toBe('1 of the 6 nodes with a benchmark is more concentrated than its benchmark by more than a small tolerance');
-    expect(totalsWords({ ...t, nearBenchmark: 2 })).toContain(' 2 other nodes sit above their benchmark by less than that and are left as they are. ');
+    expect(aboveWords({ above: 1, withBenchmark: 6 })).toBe('1 of the 6 supply-chain steps with a benchmark is more concentrated than its benchmark by more than a small tolerance');
+    expect(totalsWords({ ...t, nearBenchmark: 2 })).toContain(' 2 other steps sit above their benchmark by less than that and are left as they are. ');
     expect(totalsWords({ ...t, nearBenchmark: 0 })).not.toContain('other node');
     const none = diversifyTotals(older.nodes);
     expect([none.assessed, none.above, none.shiftUsd, none.shiftShare]).toEqual([0, 0, 0, null]);
@@ -1440,15 +1441,15 @@ describe('the diversification scenario (2026-10-19)', () => {
     expect(diversifyWords(rowOf('ev-wind-mid-magnets'), names)).toEqual([
       'More concentrated than its benchmark: concentration (HHI) 0.46 against 0.15 for the other HS6 lines of heading 8505.',
       'The supplier-share cap that would bring it down to the benchmark is 22%, applied to the allied market. Zembla and Avalon are above it and lose the excess: 34.0% of allied demand ($3.3 bn) has to shift.',
-      'With the cap holding, existing relationships restore coverage to 71.0% and optimized trade to 78.0%; new capacity has to fill the remaining 22.0% ($2.1 bn).',
-      'Class under the scenario: BUILD. Leading hosts for the new capacity: Carpania and Dorvalia. Largest new or expanded relationships: Borduria → Carpania; Dorvalia → Avalon.',
+      'With the cap holding, existing relationships bring coverage to 71.0% and coordinated trade to 78.0%; new capacity has to fill the remaining 22.0% ($2.1 bn).',
+      'What it needs under the scenario: Build capacity. Best-placed countries to add the new capacity: Carpania and Dorvalia. Largest new or expanded relationships: Borduria → Carpania; Dorvalia → Avalon.',
     ]);
     const anode = diversifyWords(rowOf('bat-mid-anode'), names);
     expect(anode[1]).toContain('Zembla is above it and loses the excess: 12.0% of allied demand ($372 m) has to shift');
-    expect(anode[2]).toBe('With the cap holding, existing relationships restore coverage to 95.0% and optimized trade to 100.0%; trade under the cap replaces all of it, so no new capacity is needed.');
-    expect(anode[3]).not.toContain('Leading hosts');
+    expect(anode[2]).toBe('With the cap holding, existing relationships bring coverage to 95.0% and coordinated trade to 100.0%; trade under the cap replaces all of it, so no new capacity is needed.');
+    expect(anode[3]).not.toContain('Best-placed countries');
     // the class under the scenario with its physical-capability flag
-    expect(diversifyWords(rowOf('wind-down-towers'), names)[3]).toMatch(/^Class under the scenario: COORDINATE \(PHYSICAL CAPABILITY NOT VALIDATED\)\. /);
+    expect(diversifyWords(rowOf('wind-down-towers'), names)[3]).toMatch(/^What it needs under the scenario: Coordinate trade \(PHYSICAL CAPABILITY NOT VALIDATED\)\. /);
     expect(diversifyWords(rowOf('ev-wind-mid-magnets'), names)[3]).not.toContain('PHYSICAL CAPABILITY');
     // no capped supplier named (an export that lists none): the supply to shift as its own sentence
     expect(diversifyWords({ ...rowOf('bat-mid-anode'), d: { ...rowOf('bat-mid-anode').d, capped: [], cap: null } }, names)[1]).toBe(
@@ -1467,11 +1468,11 @@ describe('the diversification scenario (2026-10-19)', () => {
     // no block sentence compares a node with "its sector" (the benchmark is mostly the other lines of its heading)
     for (const r of rows) for (const w of diversifyWords(r, names)) expect(w, r.node.id).not.toMatch(/than its sector|diversified as its sector/);
     expect(diversifyWords(rowOf('h2-down-electrolysers'), names)).toEqual([
-      'No benchmark: its customs heading has no other line and its dictionary sector no other node to compare it with, so the scenario leaves it as it is. Its concentration (HHI) is 0.20.',
+      'No benchmark: its customs heading has no other line and its dictionary sector no other supply-chain step to compare it with, so the scenario leaves it as it is. Its concentration (HHI) is 0.20.',
     ]);
     expect(diversifyClassText(null)).toBe('not run');
-    expect(diversifyClassText('BUILD')).toBe('BUILD');
-    expect(diversifyClassText('LOW INTERVENTION', true)).toBe('LOW INTERVENTION (PHYSICAL CAPABILITY NOT VALIDATED)');
+    expect(diversifyClassText('BUILD')).toBe('Build capacity');
+    expect(diversifyClassText('LOW INTERVENTION', true)).toBe('Low intervention (PHYSICAL CAPABILITY NOT VALIDATED)');
     expect(diversifyClassText(null, true)).toBe('not run');
   });
 
@@ -1479,7 +1480,7 @@ describe('the diversification scenario (2026-10-19)', () => {
     expect(basisWords('other HS6 lines of heading 8507')).toBe('the other HS6 lines of heading 8507');
     expect(basisWords('other HS6 lines of heading 2826; 7410')).toBe('the other HS6 lines of headings 2826 and 7410');
     // the export's "other nodes of the sector" is the electro-industrial dictionary's sector, said so (design A1)
-    expect(basisWords('other nodes of the sector')).toBe('the other nodes of its dictionary sector');
+    expect(basisWords('other nodes of the sector')).toBe('the other supply-chain steps of its dictionary sector');
     expect(basisWords(null)).toBe('its benchmark');
     expect(benchmarkWords({ currentHhi: 0.3839, benchmarkHhi: 0.0858, basis: 'other HS6 lines of heading 8507' })).toBe('0.38 against 0.09 for the other HS6 lines of heading 8507');
     expect(relationshipsOf('DEU->FRA; DEU->ESP;  ;bad')).toEqual([{ from: 'DEU', to: 'FRA' }, { from: 'DEU', to: 'ESP' }]);
@@ -1545,7 +1546,7 @@ describe('the diversification scenario (2026-10-19)', () => {
     expect(diversifyRules({ ...doc.meta, diversify: { ...doc.meta.diversify!, minExcess: 0.005 } })[2]).toContain('by more than a small tolerance (0.005 of HHI), gets');
     expect(rules[3]).toContain('with the cap holding for every supplier in both');
     expect(rules[4]).toBe('The scenario removes no supplier. It runs under the headline settings: hold semantics, production-constrained supply, the reallocation supply assumption, allied demand, and any economy may supply.');
-    expect(rules[5]).toBe(`It is a counterfactual market structure, not a forecast. Dollar values are ${doc.meta.tradeYear} trade values.`);
+    expect(rules[5]).toBe(`It is a stress test of how the market could be organized, not a forecast. Dollar values are ${doc.meta.tradeYear} trade values.`);
     const mag = nodeOf('ev-wind-mid-magnets')!;
     expect(classVariants(mag, doc.meta).filter((v) => v.group === 'Diversification').map((v) => [v.key, v.cls, v.notRun])).toEqual([['diversify_benchmark', 'BUILD', false]]);
     expect(classVariants(nodeOf('solar-down-modules')!, doc.meta).find((v) => v.group === 'Diversification')!.notRun).toBe(true);

@@ -8,6 +8,9 @@
 //                                     with the observed-policy evidence beneath it (climate rating, IEA records,
 //                                     Global Trade Alert measures)
 //   6 Allied Strategy (#allied)       the compacts in which the economy holds a role (AlliedCompacts.tsx)
+// The NEIS copy refresh (2026-10-30): the h2s are the strategic questions of the shared vocabulary
+// (derive/strategyPage.ts); under the map, the three yards in the user's words (vocabulary YARD_DEFINITION),
+// so a first-time reader meets the three policy problems before the method.
 // Every entry point (map cell, fence entry or row, scatter point, policy row) selects through the page's one
 // ?node= selection (ProfileCtx.posture.node), which opens the one drawer the page mounts. None of these
 // sections reads the Perspective dials or the in-browser engine: the framework's thresholds are fixed, and the
@@ -15,7 +18,10 @@
 
 import type { ReactNode } from 'react';
 import { Notice } from '../../../components/ui.tsx';
-import { CountryPostureIntro, CountryStrategyMap, PolicyAlignmentTable, PostureBasisTag } from '../../../posture/index.ts';
+import {
+  ALIGNMENT_NAME, FRAMING, MIXED_YARD_NOTE, POLICY_ALIGNMENT_INTRO, YARD_AND_FENCE, YARD_CHOICES, YARD_DEFINITION, YARDS_NOT_A_SCALE,
+} from '../../../content/vocabulary.ts';
+import { CountryPostureIntro, CountryStrategyMap, PolicyAlignmentTable, PostureBasisTag, VERB_OUTLINE, YARD_COLOR, YARD_ORDER } from '../../../posture/index.ts';
 import { postureSectorLink } from '../../derive/links.ts';
 import { STRATEGY_SECTIONS } from '../../derive/strategyPage.ts';
 import { policyBehaviour } from '../../derive/framing.ts';
@@ -41,7 +47,7 @@ export const Basis = () => <PostureBasisTag note={BASIS_NOTE} />;
 export function usePostureState(what: string): ReactNode {
   const { sheet, posture: p } = useProfile();
   const name = proseName(sheet.meta.country);
-  if (!p || p.status === 'loading') return <p className="text-sm text-paper-mute">Loading the strategic position framework…</p>;
+  if (!p || p.status === 'loading') return <p className="text-sm text-paper-mute">Loading the strategy…</p>;
   if (p.status === 'error' || !p.core) {
     return (
       <Notice kind="warning" title="The strategy data could not be loaded" action={<button type="button" className="btn btn-ghost btn-sm" onClick={p.retry}>Retry</button>}>
@@ -52,7 +58,7 @@ export function usePostureState(what: string): ReactNode {
   if (!p.cells.length) {
     return (
       <Notice kind="info" title="No strategy map">
-        The strategic position framework classifies none of {poss(name)} technology and stage nodes, so there is no {what} to show.
+        There is not enough comparable evidence to produce a strategy map for {name}, so there is no {what} to show.
       </Notice>
     );
   }
@@ -60,6 +66,36 @@ export function usePostureState(what: string): ReactNode {
 }
 
 // ---- 1 Strategy ----------------------------------------------------------------------------------------
+
+/** The three yards in the user's words (vocabulary): what each fence of the map's legend means, as a policy problem. */
+export function YardsExplainer() {
+  return (
+    <div className="max-w-4xl" data-testid="strategy-yards">
+      <p className="text-sm text-paper-dim">
+        <strong className="font-medium text-paper">Three yards, three different policy problems.</strong> {FRAMING.noCountryMakesEverything} {FRAMING.whatNotToBuild}
+      </p>
+      <ul className="mt-3 grid gap-3 md:grid-cols-3" aria-label="The three yards">
+        {YARD_ORDER.map((y) => (
+          <li key={y} className="card p-3 text-sm" data-yard={y}>
+            <span className="flex items-center gap-2">
+              <span
+                aria-hidden="true"
+                className="inline-block h-3 w-3 shrink-0 rounded-[3px]"
+                style={{ background: YARD_COLOR[y], border: y === 'large' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }}
+              />
+              <span className="font-medium text-paper">{YARD_AND_FENCE[y]}</span>
+            </span>
+            <span className="mt-0.5 block text-xs text-paper-mute">{YARD_CHOICES[y]}</span>
+            <span className="mt-1.5 block text-paper-dim">{YARD_DEFINITION[y]}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs text-paper-mute">
+        {YARDS_NOT_A_SCALE} {MIXED_YARD_NOTE}
+      </p>
+    </div>
+  );
+}
 
 export function StrategySection() {
   const { sheet, posture } = useProfile();
@@ -78,6 +114,7 @@ export function StrategySection() {
         showSentence={false}
         sectorHref={(tech, stage) => postureSectorLink(tech, stage, iso)}
       />
+      <YardsExplainer />
       <p className="max-w-3xl text-sm leading-relaxed text-paper-dim" data-testid="strategy-how">
         <strong className="font-medium text-paper">How the map is built.</strong> <CountryPostureIntro name={name} />
       </p>
@@ -95,13 +132,13 @@ function PolicyEvidence() {
   return (
     <div className="space-y-4">
       <div className="card p-5" data-testid="policy-behaviour">
-        <h4 className="text-base font-medium text-paper">Observed policy in brief</h4>
+        <h4 className="text-base font-medium text-paper">What government is doing, in brief</h4>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-paper-dim">
           {lines.map((t) => (
             <li key={t}>{t}</li>
           ))}
         </ul>
-        <p className="mt-3 text-xs text-paper-mute">Observed policy is a comparator of the strategy, never an input to it.</p>
+        <p className="mt-3 text-xs text-paper-mute">Policy is compared with the strategy afterwards; it never feeds it.</p>
       </div>
       <Fold
         id="policy-records"
@@ -135,9 +172,11 @@ export function PolicyAlignmentSection() {
       }
       intro={
         <>
-          Does {poss(name)} current policy match the strategy? Each assessed node&apos;s choice beside its observed policy: under-prioritized (a Secure, Preserve or Catch Up node with
-          weak support, or an Accelerate node with weak deployment policy), over-prioritized (heavy protection where the choice is Watch), wrong treatment (localisation where the
-          choice is Partner). No overall score; where policy data are thin, the alignment says so.
+          {POLICY_ALIGNMENT_INTRO} Each assessed step&apos;s choice sits beside the policy observed for it in {name}.{' '}
+          <strong className="font-medium text-paper">{ALIGNMENT_NAME.under_prioritized}</strong>: a Secure, Preserve or Catch Up step with weak support, or a technology the energy
+          system needs deployed faster with weak deployment policy. <strong className="font-medium text-paper">{ALIGNMENT_NAME.over_prioritized}</strong>: heavy protection or
+          localization where the choice is Watch. <strong className="font-medium text-paper">{ALIGNMENT_NAME.misaligned}</strong>: localization where the choice is Partner. There is
+          no overall score; where policy records are thin, the section says so.
         </>
       }
     >

@@ -18,6 +18,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { Loading, Notice } from '../components/ui.tsx';
+import { STATE } from '../content/vocabulary.ts';
 import { useRegisterModuleNav } from '../shell/ModuleNav.tsx';
 import { useTitle } from '../shell/title.ts';
 import { countryNamesOf, strategicOf, type AibCompact, type AibDoc, type AibManifest, type AibNode, type AibStrategic, type AibStrategicScenarioId } from './contract.ts';
@@ -99,7 +100,7 @@ function ScenarioHeader({ ctx }: { ctx: AibCtx }) {
   );
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 lg:px-8" data-testid="aib-scenario-header">
-      <ScenarioToggle value={ctx.scenario} onChange={choose} meta={ctx.doc.meta} onIntent={prefetch} framing={ctx.strategic?.framing} />
+      <ScenarioToggle value={ctx.scenario} onChange={choose} meta={ctx.doc.meta} onIntent={prefetch} />
     </div>
   );
 }
@@ -107,7 +108,7 @@ function ScenarioHeader({ ctx }: { ctx: AibCtx }) {
 function LoadProblem({ error, retry }: { error: AibLoadError; retry: () => void }) {
   if (error.code === 'NO_DATA') {
     return (
-      <Notice kind="info" title="No compacts data">
+      <Notice kind="info" title={STATE.aibUnavailable}>
         <p>{error.message}</p>
         <p className="mt-2 text-paper-mute">
           Developers: run <code>Rscript scripts/31_build_aib_trade_network.R</code>, <code>scripts/32_build_aib_partnerships.R</code> and{' '}
@@ -124,7 +125,7 @@ function LoadProblem({ error, retry }: { error: AibLoadError; retry: () => void 
     );
   }
   return (
-    <Notice kind="error" title="The compacts data could not be loaded" action={<button type="button" className="btn btn-ghost btn-sm" onClick={retry}>Retry</button>}>
+    <Notice kind="error" title="The Allied Industrial Base results could not be loaded" action={<button type="button" className="btn btn-ghost btn-sm" onClick={retry}>Retry</button>}>
       {error.message}
     </Notice>
   );
@@ -207,7 +208,7 @@ export default function AibLayout() {
       <div className={PAGE}>
         <ModuleTitle />
         <Nav firstId={null} />
-        <Loading label={m.data ? 'Loading the compacts' : 'Loading the compacts data'} />
+        <Loading label={STATE.aibLoading} />
       </div>
     );
   }

@@ -50,7 +50,22 @@ export function csvWithRun(rows: Record<string, unknown>[], meta: AibMeta): stri
   return rowsToCsv(rows.map((r) => ({ ...r, ...run })));
 }
 
-/** How to read the model's results (the compact page and About). */
+/**
+ * A page lede that states the page's strategic question first (content/vocabulary.ts MODULE_QUESTION), then
+ * what it means: the question in the paper colour, the rest as the lede.
+ */
+export function QuestionLede({ question, children }: { question: string; children: ReactNode }) {
+  return (
+    <>
+      <strong className="font-medium text-paper" data-testid="page-question">
+        {question}
+      </strong>{' '}
+      {children}
+    </>
+  );
+}
+
+/** How to read the results (the compact page and About). */
 export function ReadingNotes() {
   return (
     <section aria-labelledby="reading-h" className="panel p-5">
@@ -58,16 +73,16 @@ export function ReadingNotes() {
         Reading these results
       </h2>
       <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-paper-dim">
-        <li>Observed exports are revealed tradable capability, not spare capacity: a country that exported a good can redirect those exports, but the model does not assume it can produce more.</li>
+        <li>Exports show what a country can sell, not spare capacity: a country that exported a good can redirect those exports, but the analysis does not assume it can produce more.</li>
         <li>
           Where credible production or capacity data exist they decide who can supply (an exporter they do not list keeps its current shipments but cannot expand or redirect supply);
-          elsewhere a result rests on trade alone. A LOW INTERVENTION or COORDINATE class that physical data do not back carries the warning PHYSICAL CAPABILITY NOT VALIDATED, under the
-          headline and under every variant shown.
+          elsewhere a result rests on trade alone. A Low intervention or Coordinate trade result that production data do not back carries the warning PHYSICAL CAPABILITY NOT VALIDATED
+          (production evidence is weak), under the headline and under every variant shown.
         </li>
-        <li>Each node has one headline class, but its policy needs can name several instruments, and its class can change under the sensitivities shown beside it (trade-only supply, release semantics, other shocks, other growth bounds).</li>
-        <li>The investment increment is a synthetic simulation (a fixed share of the node&apos;s demand added at one eligible host, capped at that host&apos;s current output in the node), not a project, a cost estimate or a forecast.</li>
-        <li>Friendshore never makes an incapable host eligible: a host must show revealed capability in the node or a linked one; partnership scores only order eligible hosts.</li>
-        <li>The labels (COORDINATE, BUILD, MANAGE SPECIALIZATION, LOW INTERVENTION, INSUFFICIENT DATA), the archetypes and the roles are policy interpretations of continuous results under set thresholds; the numbers behind them are in every table.</li>
+        <li>Each supply-chain step has one headline treatment, but it can need several actions, and its treatment can change under the sensitivities shown beside it (trade-only supply, release semantics, other disruptions, other growth bounds).</li>
+        <li>The investment increment is a simulation (a fixed share of the step&apos;s demand added at one eligible host, capped at that host&apos;s current output), not a project, a cost estimate or a forecast.</li>
+        <li>Friendshore never makes an incapable host eligible: a host must already show capability in the step or a linked one; partnership scores only order eligible hosts.</li>
+        <li>The treatments (Coordinate trade, Build capacity, Manage specialization, Low intervention, Not enough evidence), the archetypes and the roles are policy readings of continuous results under set thresholds; the numbers behind them are in every table.</li>
       </ul>
     </section>
   );

@@ -26,13 +26,13 @@ export const DIVERSIFY_MARK = {
 } as const;
 
 /** The parts of the split in words (legend, text, table). */
-export const SPLIT_WORDS = { kept: 'Kept under the cap', trade: 'Restored by trade', build: 'New capacity' } as const;
+export const SPLIT_WORDS = { kept: 'Still supplied under the cap', trade: 'Recovered through trade', build: 'Requires new capacity' } as const;
 
 const pct = (x: number, max = 1) => `${Math.max(0, Math.min(1, x / max)) * 100}%`;
 
-/** "kept 51% · restored by trade 1% · new capacity 48%". */
+/** "still supplied 51% · recovered through trade 1% · requires new capacity 48%". */
 export function splitText(s: DemandSplit): string {
-  return `kept ${fmtShare(s.kept, 0)} · restored by trade ${fmtShare(s.trade, 0)} · new capacity ${fmtShare(s.build, 0)}`;
+  return `still supplied ${fmtShare(s.kept, 0)} · recovered through trade ${fmtShare(s.trade, 0)} · requires new capacity ${fmtShare(s.build, 0)}`;
 }
 
 /** A node's allied demand split to scale: three segments of one 0-100% bar. */

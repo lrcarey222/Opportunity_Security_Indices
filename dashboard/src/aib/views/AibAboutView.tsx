@@ -14,10 +14,18 @@
 // the data, the run settings and the classification thresholds from the data, and where the full method is.
 // "How the scenarios work" (#scenarios, 2026-10-19; the toggle links to it): Baseline, Managed
 // Interdependence and Decoupling in plain words, what each page shows under each, with this export's counts.
+//
+// The NEIS copy refresh (2026-10-30, the editorial guide's section 9): the page reads first as plain
+// narrative (what a compact is, the three scenarios as short cards, the analysis in eleven plain steps, why
+// production data, the resilience test and the smallest coalition matter, what each supply-chain step needs,
+// Managed Interdependence), then keeps every technical section (the method step by step, the taxonomy,
+// scope, semantics, constraint, warnings, coalitions, N-1, growth bound, strategic scope, diversification
+// rules, data and thresholds) in one "Technical method" disclosure. A link to an anchor inside it opens it.
 
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { PageHead } from '../../components/ui.tsx';
+import { AIB_CLASS_HEADING, COMPACT, MANAGED_INTERDEPENDENCE } from '../../content/vocabulary.ts';
 import { useTitle } from '../../shell/title.ts';
 import { EYEBROW, PAGE, useAibCtx } from '../AibLayout.tsx';
 import { CLASS_INFO } from '../derive/classes.ts';
@@ -31,7 +39,7 @@ import {
 import { NOT_IN_BASKET } from '../derive/taxonomy.ts';
 import { coalitionTargets, isGreedySetMethod, TIER_LABEL, tierMeanings, tierShares } from '../derive/tiers.ts';
 import { aboveWords, DIVERSIFY_HREF, diversifyTotals, hasDiversify } from '../derive/diversify.ts';
-import { ReadingNotes } from './common.tsx';
+import { QuestionLede, ReadingNotes } from './common.tsx';
 import { AIB_CLASSES, AIB_TIERS, diversifyShockIdOf, inStrategicScope, supplyScenariosOf, type AibDoc } from '../contract.ts';
 import { comparableNodes, nodeScenario, scenarioInfo, SCENARIO_CAVEAT, SCENARIO_ORDER } from '../derive/scenarios.ts';
 import { ScenarioSwatch } from '../charts/ScenarioCompare.tsx';
@@ -40,18 +48,84 @@ import { ScenarioSwatch } from '../charts/ScenarioCompare.tsx';
 function scenarioMeaning(doc: AibDoc, id: (typeof SCENARIO_ORDER)[number], shockLabel: string, hasScenarios: boolean): string {
   const nodes = comparableNodes(doc.nodes);
   if (id === 'baseline') {
-    return 'Coverage is 100% by definition and nothing is lost, so it has no class. The pages use it as the reference: today\u2019s suppliers, today\u2019s concentration and today\u2019s trade network (observed supplier-to-buyer pairs serving at least half a percent of a node\u2019s allied demand).';
+    return 'Coverage is 100% by definition and nothing is lost, so it has no treatment. The pages use it as the reference: today\u2019s suppliers, today\u2019s concentration and today\u2019s trade network (observed supplier-to-buyer pairs serving at least half a percent of a step\u2019s allied demand).';
   }
   if (id === 'managed') {
     const ran = nodes.filter((n) => nodeScenario(n, 'managed').ran).length;
     const compacts = doc.compacts.filter((c) => (c.managed ? c.managed.nodesRun > 0 : c.nodes.some((x) => doc.nodes.find((n) => n.id === x)?.diversify?.status === 'diversified to the benchmark'))).length;
-    const counts = hasScenarios ? ` In this export it runs on ${plural(ran, 'node')} of ${nodes.length} and touches ${plural(compacts, 'compact')} of ${doc.compacts.length}.` : '';
-    return `It changes only the steps more concentrated than their benchmark; every other node stays as it is today. The compacts keep the groups formed under Decoupling (the same compacts and nodes) and are solved again under this scenario, with their own coalition, tiers and roles; a compact none of whose nodes it changes has no coalition under it. Its network is built from this scenario alone.${counts}`;
+    const counts = hasScenarios ? ` In this build it applies to ${plural(ran, 'step')} of ${nodes.length} and touches ${plural(compacts, 'compact')} of ${doc.compacts.length}.` : '';
+    return `It changes only the steps more concentrated than their benchmark; every other step stays as it is today. The compacts keep the groups formed under the major-supplier disruption (the same compacts and steps) and are solved again under this scenario, with their own coalition, tiers and roles; a compact none of whose steps it changes has no coalition under it. Its network is built from this scenario alone.${counts}`;
   }
-  return `The headline stress test (${shockLabel}, under hold semantics). The compacts are formed under it. In the three-way comparisons only this shock counts; the Country roles page also keeps its totals over every supply shock, labelled as such.`;
+  return `The headline stress test (${shockLabel}, under hold semantics: the removed supplier keeps buying). The compacts are formed under it. In the three-way comparisons only this disruption counts; the Country roles page also keeps its totals over every supply disruption, labelled as such.`;
 }
 
 const P = 'mb-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim';
+
+/** The page's question (its lede leads with it). */
+export const ABOUT_QUESTION = 'What is a Sectoral Compact, and how does the analysis find one?';
+
+/**
+ * The three scenarios as short cards (the guide, section 9). Managed Interdependence shifts the excess toward
+ * "alternative suppliers", not the guide's "trusted alternatives": any economy may supply in this analysis.
+ */
+export const ABOUT_SCENARIO_CARDS: Readonly<Record<(typeof SCENARIO_ORDER)[number], string>> = {
+  baseline: 'No disruption. This is the reference point for suppliers, trade relationships and concentration.',
+  managed:
+    'Keep trade open, but reduce exceptional concentration. Where one supplier’s share is above the benchmark, shift the excess toward alternative suppliers and test whether the network can absorb it.',
+  decoupling: 'Remove a major supplier and test how much of the lost supply can be replaced through existing relationships, coordinated trade and new capacity.',
+};
+
+/** The analysis in plain steps (the guide's eleven; "trusted partners" read as "partners": any economy may supply). */
+export const PLAIN_METHOD: readonly { step: string; text: string }[] = [
+  { step: 'Start with today’s supply', text: 'Map who already sells each supply-chain step to whom, using the observed trade network.' },
+  { step: 'Define who needs supply and who could provide it', text: 'Separate the countries whose demand is at risk from the suppliers that could replace or expand supply.' },
+  { step: 'Stress the network', text: 'Test either a major-supplier disruption or a concentration cap under Managed Interdependence.' },
+  {
+    step: 'See what today’s relationships can absorb',
+    text: 'Allow existing suppliers to expand along trade relationships that already exist. This is the benchmark for countries acting without new coordination.',
+  },
+  { step: 'Test a coordinated response', text: 'Ask how much more supply partners could provide if trade were deliberately reallocated toward capable suppliers.' },
+  {
+    step: 'Measure what coordination buys',
+    text: 'The coordination dividend is the extra demand allies can cover by acting together rather than relying only on today’s bilateral relationships.',
+  },
+  { step: 'Find what trade cannot solve', text: 'Any remaining gap is supply that cannot be replaced through trade alone.' },
+  {
+    step: 'Identify where new capacity should go',
+    text: 'Where a gap remains, test which countries have enough real capability to add production without simply creating a new concentration risk.',
+  },
+  {
+    step: 'Build the allied division of labor',
+    text: 'Across all supply-chain steps, identify which countries emerge as suppliers, demand anchors, investors, capacity hosts and specialist partners.',
+  },
+  {
+    step: 'Group related bottlenecks into a compact',
+    text: 'Create a compact only where related supply-chain steps need similar partners and similar policy tools, and where coordination clearly improves resilience.',
+  },
+  {
+    step: 'Match the tool to the bottleneck',
+    text: 'Some steps need trade coordination, some need new capacity, some need managed specialization, and some need little intervention. A compact can combine these responses.',
+  },
+];
+
+/** The three "why" paragraphs (the guide, section 9). */
+export const ABOUT_WHY: readonly { id: string; title: string; text: string }[] = [
+  {
+    id: 'why-production',
+    title: 'Why production data matter',
+    text: 'Trade can show who sells a product, but not always who can make more of it. Where credible production or capacity data exist, the analysis uses them to stop a trading hub from being treated as if it could suddenly become a large producer.',
+  },
+  {
+    id: 'why-resilience',
+    title: 'Why specialization needs a resilience test',
+    text: 'Specialization is valuable until it creates a new single point of failure. The analysis therefore tests how much allied demand can still be met if the largest remaining supplier is lost, and how that resilience changes as supplier concentration is reduced.',
+  },
+  {
+    id: 'why-smallest',
+    title: 'Why the smallest useful coalition matters',
+    text: 'A compact should not become a generic alliance forum. The analysis looks for the smallest group of countries that can meet the resilience target, while keeping the major demand markets inside the bargain.',
+  },
+];
 
 function H({ id, children }: { id: string; children: string }) {
   return (
@@ -69,6 +143,7 @@ const tradeNetworkStep = (dictionary: boolean): { step: string; text: string } =
     : 'Bilateral trade in every sub-sector node (a group of HS6 goods at one stage of an energy supply chain), importer declarations first, mirrored where missing.',
 });
 
+/** The method step by step in its technical words (the Technical method disclosure). */
 const METHOD: { step: string; text: string }[] = [
   tradeNetworkStep(false),
   {
@@ -125,9 +200,14 @@ export default function AibAboutView() {
   useTitle('About Sectoral Compacts', 'aib');
   const { doc, manifest, shockLabel, tx, hasScenarios, scenario, href } = useAibCtx();
   const loc = useLocation();
-  // follow a link's #anchor (#scenarios from the toggle, #diversification, #semantics)
+  // follow a link's #anchor (#scenarios from the toggle, #diversification, #semantics); an anchor inside the
+  // Technical method disclosure opens it first
   useEffect(() => {
-    if (loc.hash) document.getElementById(loc.hash.slice(1))?.scrollIntoView?.({ block: 'start' });
+    if (!loc.hash) return;
+    const el = document.getElementById(loc.hash.slice(1));
+    const fold = el?.closest('details');
+    if (fold && !fold.open) fold.open = true;
+    el?.scrollIntoView?.({ block: 'start' });
   }, [loc.hash]);
   const m = doc.meta;
   const thresholds = Object.entries(m.thresholds);
@@ -161,52 +241,128 @@ export default function AibAboutView() {
       <PageHead
         eyebrow={EYEBROW}
         title="About Sectoral Compacts"
-        lede="How the compacts are derived from the observed trade network, what the classes, policy needs, warnings, coalition tiers and roles mean, and which data and settings produced the results on these pages."
+        lede={<QuestionLede question={ABOUT_QUESTION}>{COMPACT.definition}</QuestionLede>}
       />
 
       <H id="what">What a Sectoral Compact is</H>
+      <p className={P}>{COMPACT.notAClub}</p>
+      <p className={P}>{COMPACT.reciprocity}</p>
       <p className={P}>
-        A Sectoral Compact is a variable-geometry coalition that coordinates trade, investment, demand and risk-management policy across a coherent supply chain, where joint action improves
-        resilience more than fragmented national or bilateral action would. The module builds no composite score and fixes no alliance in advance: the demand scope and the candidate partners
-        are settings, and the compacts, their members and their roles come out of the model.
+        The analysis fixes no alliance in advance and builds no composite score: whose demand is protected and who may supply are settings, and the compacts, their members and their
+        roles come out of the results.
       </p>
 
       <H id="scenarios">How the scenarios work</H>
       <div data-testid="about-scenarios">
         <p className={P}>
           {hasScenarios
-            ? `Every Allied Industrial Base page can be read under two scenarios, chosen at the top of the page: Managed Interdependence (the default institutional lens) or Decoupling (the stress test). A strategic compact is the persistent architecture; the scenario is the stress applied to it. Every comparison also shows Baseline beside them, in the same order. The detail views (networks, relationships, coalitions, roles and investment flows) follow the choice and show Baseline as the reference where it means something. You are reading ${scenarioInfo(m, scenario).label}.`
-            : 'This export carries the Decoupling scenario only: the pages show it without a choice.'}{' '}
+            ? `Every Allied Industrial Base page can be read under two scenarios, chosen at the top of the page: ${scenarioInfo(m, 'managed').label} (the default view) or ${scenarioInfo(m, 'decoupling').label} (the stress test). A strategic compact is the lasting division of labor; the scenario is the stress applied to it. Every comparison also shows ${scenarioInfo(m, 'baseline').label} beside them, as the reference. You are reading ${scenarioInfo(m, scenario).label}.`
+            : `This build carries the ${scenarioInfo(m, 'decoupling').label.toLowerCase()} scenario only: the pages show it without a choice.`}{' '}
           {SCENARIO_CAVEAT}
         </p>
-        <dl className="grid max-w-3xl gap-x-6 gap-y-3 text-[0.9375rem] leading-relaxed sm:grid-cols-[14rem_minmax(0,1fr)]">
-          {SCENARIO_ORDER.map((id) => {
-            const s = scenarioInfo(m, id);
-            return (
-              <div key={id} className="contents">
-                <dt className="flex items-start gap-2 font-medium text-paper">
-                  <span className="mt-1.5 inline-flex">
-                    <ScenarioSwatch id={id} />
-                  </span>
-                  {s.label}
-                </dt>
-                <dd className="text-paper-dim">
-                  {s.words} {scenarioMeaning(doc, id, shockLabel, hasScenarios)}
-                </dd>
-              </div>
-            );
-          })}
-        </dl>
-        <p className={`${P} mt-3`}>
-          Coverage is read the same way in all three: the share of the allied (demand-scope) demand that is kept, the share trade restores (existing relationships, then optimized trade
-          with every candidate partner coordinating), and the new capacity still needed. Each scenario has its own classes and policy needs. The Sector pages keep the Decoupling figures.{' '}
-          <Link className="link" to={href(DIVERSIFY_HREF)}>
-            How Managed Interdependence sets its caps &rarr;
-          </Link>
-        </p>
+        <ul className="mb-4 grid max-w-4xl gap-3 md:grid-cols-3" aria-label="The three scenarios">
+          {SCENARIO_ORDER.map((id) => (
+            <li key={id} className="card p-4" data-testid={`about-scenario-card-${id}`}>
+              <h3 className="flex items-center gap-2 text-base font-medium text-paper">
+                <ScenarioSwatch id={id} />
+                {scenarioInfo(m, id).label}
+              </h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-paper-dim">
+                {ABOUT_SCENARIO_CARDS[id]}
+                {id === 'decoupling' ? ` In this analysis: ${shockLabel}.` : ''}
+              </p>
+            </li>
+          ))}
+        </ul>
+        <details className="disclosure mb-3 max-w-3xl border-t hairline">
+          <summary className="flex items-center gap-2 py-2.5 text-sm font-medium text-paper-dim hover:text-paper">
+            <span className="disclosure-chevron text-paper-mute" aria-hidden="true">
+              ›
+            </span>
+            What each scenario does on these pages, with this build’s counts
+          </summary>
+          <dl className="grid max-w-3xl gap-x-6 gap-y-3 pb-3 text-[0.9375rem] leading-relaxed sm:grid-cols-[14rem_minmax(0,1fr)]">
+            {SCENARIO_ORDER.map((id) => {
+              const s = scenarioInfo(m, id);
+              return (
+                <div key={id} className="contents">
+                  <dt className="flex items-start gap-2 font-medium text-paper">
+                    <span className="mt-1.5 inline-flex">
+                      <ScenarioSwatch id={id} />
+                    </span>
+                    {s.label}
+                    {s.methodLabel !== s.label ? <span className="text-xs font-normal text-paper-mute">({s.methodLabel} in the data)</span> : null}
+                  </dt>
+                  <dd className="text-paper-dim">
+                    {s.methodWords} {scenarioMeaning(doc, id, shockLabel, hasScenarios)}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+          <p className={P}>
+            Coverage, the share of allied demand that can be met, is read the same way in all three: the share that stays supplied, the share trade recovers (existing relationships,
+            then coordinated trade with every potential supplier taking part), and the new capacity still needed. Each scenario has its own treatments and actions. The Sector pages keep
+            the {scenarioInfo(m, 'decoupling').label.toLowerCase()} figures.{' '}
+            <Link className="link" to={href(DIVERSIFY_HREF)}>
+              How Managed Interdependence sets its caps &rarr;
+            </Link>
+          </p>
+        </details>
       </div>
 
-      <H id="method">The method in brief</H>
+      <H id="analysis">How the analysis works</H>
+      <ol className="max-w-3xl space-y-3" data-testid="about-plain-method">
+        {PLAIN_METHOD.map((s, i) => (
+          <li key={s.step} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-2 text-[0.9375rem] leading-relaxed">
+            <span className="tabular text-paper-mute" aria-hidden="true">
+              {i + 1}.
+            </span>
+            <span className="text-paper-dim">
+              <strong className="font-medium text-paper">{s.step}.</strong> {s.text}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      {ABOUT_WHY.map((w) => (
+        <div key={w.id}>
+          <H id={w.id}>{w.title}</H>
+          <p className={P}>{w.text}</p>
+        </div>
+      ))}
+
+      <H id="classes">{AIB_CLASS_HEADING}</H>
+      <ul className="max-w-3xl space-y-2 text-[0.9375rem] leading-relaxed">
+        {AIB_CLASSES.map((c) => (
+          <li key={c} className="grid grid-cols-[1.25rem_minmax(0,1fr)] items-start gap-1">
+            <span className="mt-1.5 inline-flex">
+              <ClassSwatch cls={c} />
+            </span>
+            <span className="text-paper-dim">
+              <strong className="font-medium text-paper">{CLASS_INFO[c].label}</strong>: {CLASS_INFO[c].meaning}{' '}
+              <span className="text-sm text-paper-mute">
+                The rule: {CLASS_INFO[c].method.charAt(0).toLowerCase()}
+                {CLASS_INFO[c].method.slice(1)} <span className="font-mono text-xs">{c}</span> in the data.
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <H id="managed-interdependence">Managed Interdependence</H>
+      <p className={P}>{MANAGED_INTERDEPENDENCE.explainer}</p>
+      <p className={P}>{MANAGED_INTERDEPENDENCE.question}</p>
+
+      <details className="disclosure mt-10 border-t hairline" id="technical" data-testid="about-technical">
+        <summary className="flex items-center gap-2 py-3 text-base font-medium text-paper-dim hover:text-paper">
+          <span className="disclosure-chevron text-paper-mute" aria-hidden="true">
+            ›
+          </span>
+          Technical method: the steps in full, data, settings, coalitions, resilience tests and thresholds
+        </summary>
+
+      <H id="method">The method step by step</H>
       <ol className="max-w-3xl space-y-3">
         {[tradeNetworkStep(nt.dictionary), ...METHOD.slice(1)].map((s, i) => (
           <li key={s.step} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-2 text-[0.9375rem] leading-relaxed">
@@ -220,21 +376,7 @@ export default function AibAboutView() {
         ))}
       </ol>
 
-      <H id="classes">The node classes</H>
-      <ul className="max-w-3xl space-y-2 text-[0.9375rem] leading-relaxed">
-        {AIB_CLASSES.map((c) => (
-          <li key={c} className="grid grid-cols-[1.25rem_minmax(0,1fr)] items-start gap-1">
-            <span className="mt-1.5 inline-flex">
-              <ClassSwatch cls={c} />
-            </span>
-            <span className="text-paper-dim">
-              <strong className="font-medium text-paper">{CLASS_INFO[c].label}</strong>: {CLASS_INFO[c].meaning}
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      <H id="taxonomy">Where the nodes come from</H>
+      <H id="taxonomy">Where the supply-chain steps (nodes) come from</H>
       {nt.dictionary ? (
         <>
           <p className={P} data-testid="about-taxonomy">
@@ -283,7 +425,7 @@ export default function AibAboutView() {
         </p>
       )}
 
-      <H id="scope">Demand scope and candidate partners</H>
+      <H id="scope">Whose demand is protected, and who may supply</H>
       <p className={P}>
         Two sets define a run. The <strong className="font-medium text-paper">demand scope</strong> is the importers whose lost supply the module restores: demand, the shock exposure and every
         coverage share are measured on the demand scope&apos;s traded demand. The <strong className="font-medium text-paper">candidate partners</strong> are the exporters that may add or redirect
@@ -301,7 +443,7 @@ export default function AibAboutView() {
         )}
       </p>
 
-      <H id="semantics">Shock semantics: hold and release</H>
+      <H id="semantics">Does the removed supplier keep buying? Hold and release</H>
       <dl className="grid max-w-3xl gap-x-6 gap-y-2 text-[0.9375rem] leading-relaxed sm:grid-cols-[8rem_minmax(0,1fr)]">
         {(['hold', 'release'] as const).map((k) => (
           <div key={k} className="contents">
@@ -318,7 +460,7 @@ export default function AibAboutView() {
       </dl>
       <p className={`${P} mt-3`}>Each node&apos;s class under the other semantics is in its sensitivity table on the compact pages.{sem ? '' : ' This export does not state its semantics.'}</p>
 
-      <H id="constraint">Supply constraint: production-constrained and trade-only</H>
+      <H id="constraint">Who can supply more: production-constrained and trade-only</H>
       <dl className="grid max-w-3xl gap-x-6 gap-y-2 text-[0.9375rem] leading-relaxed sm:grid-cols-[12rem_minmax(0,1fr)]">
         {(['production_constrained', 'trade_only'] as const).map((k) => (
           <div key={k} className="contents">
@@ -342,7 +484,7 @@ export default function AibAboutView() {
           : 'This export carries no physical data.'}
       </p>
 
-      <H id="needs">Policy needs and the physical-capability warning</H>
+      <H id="needs">Actions needed and the weak-production-evidence warning</H>
       <p className={P}>
         The headline class is one label per node. Beside it each node carries the policy needs its results show, in any combination: COORDINATE (the coordination dividend reaches its
         threshold), BUILD (the residual gap after optimized trade reaches its threshold) and MANAGE SPECIALIZATION (the optimized supply is concentrated, or diversifying it costs coverage),
@@ -356,7 +498,7 @@ export default function AibAboutView() {
         {nodes.some((n) => n.warning !== undefined) ? ` In this export it marks ${plural(nWarned, 'node')}.` : ''}
       </p>
 
-      <H id="coalitions">Coalitions: exact, greedy and the tiers</H>
+      <H id="coalitions">The smallest coalition: exact, greedy and the tiers</H>
       <p className={P}>
         For each coverage target ({listWords(m.targets.map((t) => targetLabel(t)))} of the demand anchors&apos; demand in every node of the compact) the minimum coalition is found exactly: a
         binary program chooses the fewest economies whose coordination reaches the target in every node, the demand anchors always among them. Among coalitions of that minimum size it keeps
@@ -379,7 +521,7 @@ export default function AibAboutView() {
         ))}
       </dl>
 
-      <H id="n1">Resilience: true and instantaneous N-1</H>
+      <H id="n1">Losing the largest supplier: true and instantaneous N-1</H>
       <p className={P}>
         Two readings say how much coverage survives if the solution then loses its largest supplier. <strong className="font-medium text-paper">N-1 re-optimized</strong> is the true test: the
         largest remaining supplier is removed with all its shipments and the trade is re-optimized at the same supplier-share limit. <strong className="font-medium text-paper">Instantaneous N-1
@@ -388,7 +530,7 @@ export default function AibAboutView() {
         supplier-share limit that keeps coverage at 80% or more) is read on the re-optimized test.
       </p>
 
-      <H id="growth">The existing-relationship growth bound</H>
+      <H id="growth">How far existing trade can grow</H>
       <p className={P}>
         Existing relationships cannot grow without limit: in the headline each may grow to at most twice its observed size (2x). Without a bound a small relationship could carry any volume,
         existing relationships would be as flexible as new ones and no coordination dividend could appear. Because the COORDINATE class rests on the gap between existing and optimized coverage,
@@ -413,10 +555,10 @@ export default function AibAboutView() {
         </>
       )}
 
-      <H id="diversification">Managed Interdependence</H>
+      <H id="diversification">Managed Interdependence: the concentration cap</H>
       <div data-testid="about-diversify">
         <p className={P}>
-          A counterfactual beside the shocks: what would trade and investment look like if each step of the supply chain were as diversified as its wider sector?
+          A scenario beside the disruptions: what would trade and investment look like if each step of the supply chain were as diversified as its wider sector?
         </p>
         <ul className="mb-3 max-w-3xl list-disc space-y-2 pl-5 text-[0.9375rem] leading-relaxed text-paper-dim">
           {diversifyRules(m).map((s) => (
@@ -538,6 +680,7 @@ export default function AibAboutView() {
         The full method, every setting and its rationale are in <code>docs/aib_methodology.md</code> in the repository, and the settings in <code>config/aib.yml</code>. The data behind these
         pages are written by <code>scripts/84_export_aib_data.R</code> after <code>scripts/31_build_aib_trade_network.R</code> and <code>scripts/32_build_aib_partnerships.R</code>.
       </p>
+      </details>
       <p className={P}>
         <Link className="link" to={href('/compacts')}>
           &larr; All compacts

@@ -55,8 +55,8 @@ export function NetworkSection() {
   const invFilter = useMemo(() => ({ ...NO_FILTER, node: sel, nodes: c.nodes }), [sel, c.nodes]);
   const flowsAll = scenarioInvestmentFlows(doc, scenario, mi.doc);
   const nFlows = flowsAll ? flowsAll.pairs.filter((p) => p.rank === 1 && c.nodes.includes(p.node) && (!sel || p.node === sel)).length : invEdges.length;
-  const scope = sel ? nodeLabel(sel) : 'all nodes';
-  const options = [{ value: '', label: 'All nodes' }, ...c.nodes.map((id) => ({ value: id, label: nodeLabel(id) }))];
+  const scope = sel ? nodeLabel(sel) : 'all supply-chain steps';
+  const options = [{ value: '', label: 'All supply-chain steps' }, ...c.nodes.map((id) => ({ value: id, label: nodeLabel(id) }))];
   const info = scenarioInfo(meta, scenario);
   const under = hasScenarios ? ` under ${info.label}` : '';
   // today's suppliers (the Baseline file's ten, else the main document's five) and the scenario's added ones
@@ -83,18 +83,18 @@ export function NetworkSection() {
   const tradeCols: Col<AibTradeEdge>[] = [
     { id: 'from', header: 'Exporter', value: (e) => name(e.from) },
     { id: 'to', header: 'Importer', value: (e) => name(e.to) },
-    { id: 'node', header: 'Node', value: (e) => nodeLabel(e.node) },
+    { id: 'node', header: 'Supply-chain step', value: (e) => nodeLabel(e.node) },
     { id: 'usd', header: 'Added trade', value: (e) => e.usd, cell: (e) => fmtUsd(e.usd), num: true },
-    { id: 'share', header: 'Share of node demand', value: (e) => e.share, cell: (e) => fmtShare(e.share), num: true },
+    { id: 'share', header: "Share of the step's demand", value: (e) => e.share, cell: (e) => fmtShare(e.share), num: true },
     { id: 'rel', header: 'Relationship', value: (e) => REL_WORDS[e.relationship] },
     { id: 'opp', header: 'Partnership Opportunity score', value: (e) => e.opportunity, cell: (e) => fmtScore(e.opportunity), num: true },
   ];
   const invCols: Col<AibInvestmentEdge>[] = [
     { id: 'investor', header: 'Investor', value: (e) => name(e.investor) },
     { id: 'host', header: 'Host', value: (e) => name(e.host) },
-    { id: 'node', header: 'Node', value: (e) => nodeLabel(e.node) },
+    { id: 'node', header: 'Supply-chain step', value: (e) => nodeLabel(e.node) },
     { id: 'usd', header: 'Supply from new capacity', value: (e) => e.usd, cell: (e) => fmtUsd(e.usd), num: true },
-    { id: 'share', header: 'Share of node demand', value: (e) => e.share, cell: (e) => fmtShare(e.share), num: true },
+    { id: 'share', header: "Share of the step's demand", value: (e) => e.share, cell: (e) => fmtShare(e.share), num: true },
     { id: 'fs', header: 'Friendshore score', value: (e) => e.friendshore, cell: (e) => fmtScore(e.friendshore), num: true },
   ];
   const tradeCsv = () => ({
@@ -121,9 +121,9 @@ export function NetworkSection() {
   const badge = hasScenarios ? <ScenarioTag id={scenario} meta={meta} /> : undefined;
   const intro = (
     <p>
-      The trade and investment relationships the model&apos;s solution relies on{under}. Trade flows are the added shipments of the optimized solution (the export keeps the largest relationships of
-      each compact); investment flows are the supply from the simulated new capacity, by the economy investing and the host.
-      {hasScenarios ? ' Under the trade relationships, who supplies these nodes today (Baseline) stands beside who adds supply under the scenario.' : ''}
+      The trade and investment relationships the coordinated response relies on{under}. Trade flows are the shipments that coordinated trade adds (the data keep the largest
+      relationships of each compact); investment flows are the supply from simulated new capacity, by the country investing and the country hosting it.
+      {hasScenarios ? ` Under the trade relationships, who supplies these steps today (${scenarioInfo(meta, 'baseline').label}) stands beside who adds supply under the scenario.` : ''}
     </p>
   );
   // Managed Interdependence without its file: the loading, failed or missing state in place of the cards
@@ -138,7 +138,7 @@ export function NetworkSection() {
   return (
     <Section id="network" title="Partnership network" intro={intro}>
       <FilterRow result={`${plural(tradeEdges.length, 'trade relationship')}, ${plural(nFlows, 'investment flow')}`}>
-        <Select label="Node" value={node} options={options} onChange={setNode} className="min-w-[16rem]" />
+        <Select label="Supply-chain step" value={node} options={options} onChange={setNode} className="min-w-[16rem]" />
       </FilterRow>
       {why && (
         <p className="max-w-3xl text-sm text-paper-dim" data-testid="network-reason">
@@ -180,7 +180,7 @@ export function NetworkSection() {
               linkColor={(f: SankeyFlow) => REL_LINK[(f as TradeFlow).relationship] ?? REL_LINK.expanded}
               nodeColor={(_, side) => (side === 'producer' ? '#1889b0' : '#6b7280')}
               sideLabels={{ left: 'EXPORTERS', right: 'IMPORTERS' }}
-              tipNote="added trade a year, optimized solution"
+              tipNote="added trade a year, coordinated response"
             />
           ) : (
             <EmptyState>
@@ -195,7 +195,7 @@ export function NetworkSection() {
               scenario={scenario}
               meta={meta}
               name={(iso) => name(iso)}
-              scope={sel ? nodeLabel(sel) : 'the compact’s nodes'}
+              scope={sel ? nodeLabel(sel) : 'the compact’s supply-chain steps'}
               removed={removed}
               capped={capped}
               todayPartial={today.loading || (!today.doc && !today.missing && !today.error)}
@@ -210,7 +210,7 @@ export function NetworkSection() {
             meta={meta}
             shockLabel={shockLabel}
             filter={invFilter}
-            scope={sel ? scope : 'the compact’s nodes'}
+            scope={sel ? scope : 'the compact’s supply-chain steps'}
             name={(iso) => name(iso)}
             nodeLabel={nodeLabel}
             headingLevel={3}
@@ -224,7 +224,7 @@ export function NetworkSection() {
           headingLevel={3}
           title="Investment relationships"
           badge={badge}
-          sub={`Investor to host, ${scope}${under}: supply from the standardized new capacity at each eligible host (USD a year). A host must show revealed capability; the Friendshore score only orders eligible hosts.`}
+          sub={`Investor to host, ${scope}${under}: supply from the standardized new capacity in each country that could add it (USD a year). A host must already show capability; the Friendshore score only orders eligible hosts.`}
           summary={`Investment relationships of ${displayName}, ${scope}${under}: ${invest
             .slice(0, 5)
             .map((f) => `${name(f.producer)} in ${name(f.consumer)} ${fmtUsd(f.value)}`)
@@ -244,7 +244,7 @@ export function NetworkSection() {
           ) : (
             <EmptyState>
               No investment relationships for {scope}
-              {under}: {why ?? 'only nodes whose residual gap after optimized trade passes the investment threshold enter the investment simulation.'}
+              {under}: {why ?? 'only supply-chain steps whose remaining gap after coordinated trade passes the investment threshold enter the investment simulation.'}
             </EmptyState>
           )}
         </ChartCard>

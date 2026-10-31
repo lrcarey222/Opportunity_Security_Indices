@@ -11,6 +11,7 @@ import { TriLegend } from '../../charts/legends.tsx';
 import { triScale } from '../../charts/scale.ts';
 import { TableView } from '../../components/TableView.tsx';
 import { Notice, PageHead, Segmented, Select } from '../../components/ui.tsx';
+import { CONCENTRATION_PAGE } from '../copy.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { useTitle } from '../../shell/title.ts';
 import { STAGE_LABELS, STAGE_SLUGS, type StageSlug } from '../contract.ts';
@@ -373,10 +374,10 @@ export default function ConcentrationView() {
     <div className="space-y-8">
       <PageHead
         eyebrow="SECTORS · CONCENTRATION"
-        title="Concentration across sectors"
+        title={CONCENTRATION_PAGE.title}
         lede={
           <>
-            How concentrated each supply chain is, from reserves to deployment, one measure at a time: the share of the largest holder, of the top three, and the <Term id="hhi">concentration index (HHI)</Term>, which is 1 when one economy holds everything and falls as supply spreads out. The shares held by China and by the allied coalition are shown beside them. Pick a lens: the board colours every sector by it.
+            {CONCENTRATION_PAGE.lead} This view shows where supply is concentrated in every sector, from reserves to deployment, one measure at a time: the share of the largest holder and of the top three, the <Term id="hhi">concentration index (HHI)</Term>, and the shares held by China and by the allied coalition. {CONCENTRATION_PAGE.limits} Pick a lens to colour the board.
           </>
         }
       >

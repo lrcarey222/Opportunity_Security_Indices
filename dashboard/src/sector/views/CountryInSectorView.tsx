@@ -14,7 +14,9 @@ import { TableView } from '../../components/TableView.tsx';
 import { PageHead, StatTile } from '../../components/ui.tsx';
 import { Term } from '../../components/Term.tsx';
 import { useTitle } from '../../shell/title.ts';
-import { isStageSlug, isTechSlug, TECH_LABELS, type SectorTradeChunk } from '../contract.ts';
+import { isStageSlug, isTechSlug, STAGE_LABELS, TECH_LABELS, type SectorTradeChunk } from '../contract.ts';
+import { countryInSectorQuestion } from '../copy.ts';
+import { strategyHref } from '../posture/derive.ts';
 import { isLegacyStageSlug, legacyStageNote, legacyStageOfSlug, legacyStageTarget } from '../../lib/stages.ts';
 import { useModel } from '../data/SectorDataProvider.tsx';
 import type { FactsIndex } from '../data/facts.ts';
@@ -352,7 +354,14 @@ export default function CountryInSectorView() {
   if (!geo) return <Redirect to={link(`/sector/${tech}/${stage}`)} notice={`No economy '${rawC}' in the sector data; showing the sector.`} />;
 
   const top10 = pos.filter((p) => !p.signed && p.rank !== null && p.rank <= 10).map((p) => `${ordinal(p.rank as number)} in ${leadLabel(p.v, p.year)}`);
-  const lede = top10.length ? `${geo.name} ranks ${listText(top10)} in ${model.cellLabel(cell)}.` : `${geo.name} does not rank in the top 10 on any country-level measure of ${model.cellLabel(cell)}.`;
+  const rank = top10.length ? `${geo.name} ranks ${listText(top10)} in ${model.cellLabel(cell)}.` : `${geo.name} does not rank in the top 10 on any country-level measure of ${model.cellLabel(cell)}.`;
+  // the page's question first (copy refresh 2026-10-30), then the ranking; measured values only, so no strategic call here
+  const lede = (
+    <>
+      <span className="block font-medium text-paper">{countryInSectorQuestion(geo.name, model.cellLabel(cell))}</span>
+      {rank}
+    </>
+  );
   return (
     <ProfileProvider value={{ model, cell, tech, stage, facts, highlight: geo, eu: state.eu }}>
       <CsvRegistryProvider>
@@ -361,7 +370,7 @@ export default function CountryInSectorView() {
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="tag">{geo.tier === 'core' ? 'Coalition core' : geo.tier === 'partner' ? 'Coalition partner' : 'Outside the coalition'}</span>
               {geo.eu_member && <span className="tag">EU member</span>}
-              {geo.kind === 'eu' && <span className="tag">EU-27 node</span>}
+              {geo.kind === 'eu' && <span className="tag">EU-27 as one</span>}
               {geo.bloc && <span className="tag">UN vote: {geo.bloc}</span>}
               {geo.re_export_hub && <span className="tag">re-export hub</span>}
               <Link className="link ml-2 text-sm" to={link(`/sector/${tech}/${stage}`, { c: geo.code })}>
@@ -370,6 +379,12 @@ export default function CountryInSectorView() {
               {geo.kind === 'country' && (
                 <Link className="link ml-2 text-sm" to={`/countries/${geo.code}`}>
                   {geo.name}: Country profile →
+                </Link>
+              )}
+              {/* the strategic call lives on the Country Strategy Map, opened on this step */}
+              {geo.kind === 'country' && cell.headline && (
+                <Link className="link ml-2 text-sm" to={strategyHref(geo.code, TECH_LABELS[tech], STAGE_LABELS[stage])}>
+                  What should {geo.name} do here? →
                 </Link>
               )}
             </div>

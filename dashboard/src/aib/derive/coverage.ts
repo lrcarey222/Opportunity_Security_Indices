@@ -19,7 +19,7 @@ export interface CoverageStep {
 }
 
 export const COVERAGE_STEPS: readonly Omit<CoverageStep, 'value'>[] = [
-  { key: 'static', label: 'Shock (static)', short: 'Shock', meaning: 'the shock alone: surviving shipments stay where they were and nothing is rerouted' },
+  { key: 'static', label: 'Disruption alone', short: 'Disruption', meaning: 'the disruption alone: surviving shipments stay where they were and nothing is rerouted' },
   { key: 'existing', label: 'Existing relationships', short: 'Existing', meaning: 'surviving suppliers ship more along the trade relationships that already exist' },
   {
     key: 'trade',
@@ -31,14 +31,14 @@ export const COVERAGE_STEPS: readonly Omit<CoverageStep, 'value'>[] = [
     key: 'investment',
     label: 'Trade + investment response',
     short: '+ Investment',
-    meaning: 'the trade compact plus the synthetic capacity increment (capped at each host’s current output) at up to two member hosts in each BUILD node',
+    meaning: 'the trade compact plus a simulated capacity increment (capped at each host’s current output) at up to two member hosts at each step that needs new capacity',
   },
 ];
 
 /** The first step under Managed Interdependence (2026-10-19): it removes no supplier; the cap takes the excess away. */
 export const MANAGED_STATIC_STEP: Omit<CoverageStep, 'value'> = {
   key: 'static',
-  label: 'Cap (static)',
+  label: 'Concentration cap alone',
   short: 'Cap',
   meaning: 'the cap alone: suppliers above it in the allied market lose the excess and nothing is rerouted',
 };

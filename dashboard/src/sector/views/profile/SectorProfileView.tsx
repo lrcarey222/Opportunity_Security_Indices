@@ -22,6 +22,7 @@ import { ACTIVITY_OF_STAGE, FAMILY_SECTION, isStageSlug, isTechSlug, STAGE_LABEL
 import { isLegacyStageSlug, legacyStageNote, legacyStageOfSlug, legacyStageTarget } from '../../../lib/stages.ts';
 import { PostureBasisTag } from '../../../posture/index.ts';
 import { SectorStrategyCard, SectorStrategyIntro } from '../../posture/SectorStrategyCard.tsx';
+import { PROFILE_QUESTION, SECTOR_SECTION } from '../../copy.ts';
 import { useModel, useSectorManifest } from '../../data/SectorDataProvider.tsx';
 import type { FactsIndex } from '../../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
@@ -432,9 +433,16 @@ function Header({ cell, tech, stage, sub }: { cell: ItemInfo; tech: TechSlug; st
   const model = useModel();
   const { link, state } = useSectorUrl();
   const label = model.cellLabel(cell);
-  const lede = sub
-    ? `${sub}, one component of ${label}: who makes, trades, invests in and regulates it, each number in its source's own unit and year (nothing here is a score).`
-    : `${label}: who produces, holds, trades, invests in and regulates it, each number in its source's own unit and year (nothing here is a score).`;
+  // the strategic question first (guide: Technology x stage page), then what the page shows; the choice section only on the headline cells
+  const what = sub ? `${sub}, one component of ${label}` : label;
+  const lede = (
+    <>
+      <span className="block font-medium text-paper">{PROFILE_QUESTION}</span>
+      {cell.headline
+        ? `${what}: who has the capability today, where supply is concentrated, what each country should do here, and what policy and allies are doing. Every number is in its source's own unit and year; the strategic choices are the page's one recommendation.`
+        : `${what}: who makes, trades, invests in and regulates it, and where supply is concentrated. Every number is in its source's own unit and year (nothing here is a score).`}
+    </>
+  );
   const eyebrow = sub ? `SECTORS · ${TECH_LABELS[tech].toUpperCase()} · ${STAGE_LABELS[stage].toUpperCase()}` : `SECTORS · ${STAGE_LABELS[stage].toUpperCase()}`;
   return (
     <PageHead eyebrow={eyebrow} title={sub ?? label} lede={lede}>
@@ -474,9 +482,24 @@ function SectorData({ cell }: { cell: ItemInfo }) {
 
 /** The profile's groups (brief s.8), in order; a group shows when it holds a section with data (Climate and Advanced & evidence always do). */
 export const PROFILE_GROUPS: readonly { id: string; title: string; lede: string; sections: readonly SectionId[]; always?: boolean }[] = [
-  { id: 'markets', title: 'Competitiveness & markets', lede: 'How large the market is, who sells and who invests, demand and prices.', sections: ['snapshot', 'leaders', 'trade', 'investment', 'demand', 'prices'] },
-  { id: 'security', title: 'Security & concentration', lede: 'How concentrated supply is, measure by measure, and where production and resources sit.', sections: ['who', 'production', 'resources'] },
-  { id: 'policy-technology', title: 'Policy', lede: 'Recorded policy activity and how mature the technology is.', sections: ['policy', 'technology'] },
+  {
+    id: 'markets',
+    title: SECTOR_SECTION.capability.title,
+    lede: `${SECTOR_SECTION.capability.question} Who sells and who invests, how large the market is, and where demand and prices are heading.`,
+    sections: ['snapshot', 'leaders', 'trade', 'investment', 'demand', 'prices'],
+  },
+  {
+    id: 'security',
+    title: SECTOR_SECTION.risk.title,
+    lede: `${SECTOR_SECTION.risk.question} How concentrated supply is, measure by measure; what allies can replace; and where production and resources sit.`,
+    sections: ['who', 'production', 'resources'],
+  },
+  {
+    id: 'policy-technology',
+    title: SECTOR_SECTION.policy.title,
+    lede: `${SECTOR_SECTION.policy.question} Recorded policies by jurisdiction and instrument, and how mature the technology is. A count shows how active policy is, not whether it fits the problem: whether each economy's policy matches its strategic choice is on that economy's Country Strategy Map.`,
+    sections: ['policy', 'technology'],
+  },
   { id: 'climate', title: 'Climate', lede: 'Sector emissions from Climate TRACE and how well they match this sector, the technology’s lifecycle intensity, the IEA’s World pathways to 2050 (scenario projections), and climate-policy ratings.', sections: [], always: true },
   { id: 'evidence', title: 'Advanced & evidence', lede: 'Every economy’s numbers, the stage’s costs, the explorer and the sources.', sections: ['countries', 'context'], always: true },
 ];
@@ -519,7 +542,7 @@ function Deeper({ tech, stage }: { tech: TechSlug; stage: StageSlug }) {
   const minerals = model.itemsOfCell(cell.idx, 'mineral');
   const items: { to: string; label: string; text: string }[] = [
     { to: link('/sector/explore', { tech: TECH_LABELS[tech], stage: STAGE_LABELS[stage] }), label: 'Advanced explorer', text: 'Any measure for every economy and every sector: a map, a ranking, the spread and the trend.' },
-    { to: link('/sector/concentration'), label: 'Compare concentration across sectors', text: `The same concentration measures for all ${model.cells.length} sectors side by side.` },
+    { to: link('/sector/concentration'), label: 'Compare concentration across sectors', text: `Where are the chokepoints? The same concentration measures for all ${model.cells.length} sectors side by side.` },
     ...(minerals.length ? [{ to: link('/sector/minerals'), label: 'Minerals', text: 'Mining, refining, reserves and trade of the minerals this technology uses.' }] : []),
     { to: link('/sector/sources'), label: 'Sources & data', text: 'The variable dictionary, every source, coverage, and the full data as downloads.' },
   ];
@@ -540,7 +563,7 @@ function Deeper({ tech, stage }: { tech: TechSlug; stage: StageSlug }) {
 }
 
 /**
- * The profile's "Strategic posture" section (design L3; design section 5): every economy's choice in this
+ * The profile's strategic-choice section ("What each country should do"; it was "Strategic posture") (design L3; design section 5): every economy's choice in this
  * node, Competitive Position against the relevant need (a recommendation at fixed thresholds, unlike the
  * measured values around it; Deployment & Use reads deployment need). The 66 headline cells only: the
  * posture data has no Semiconductors node.
@@ -549,9 +572,10 @@ export function PostureSection({ tech, stage }: { tech: TechSlug; stage: StageSl
   return (
     <Section
       id="posture"
-      title="Strategic posture"
+      title={SECTOR_SECTION.choice.title}
       sub={
         <>
+          <span className="block text-paper">{SECTOR_SECTION.choice.question}</span>
           <PostureBasisTag /> <SectorStrategyIntro />
         </>
       }
@@ -659,7 +683,7 @@ function Body({ cell, tech, stage, facts }: { cell: ItemInfo; tech: TechSlug; st
         style={{ top: 'var(--sector-bar-h, 3.5rem)' }}
         data-testid="section-nav-band"
       >
-        <SectionRail sections={[{ id: 'overview', label: 'What to know' }, ...(cell.headline ? [{ id: 'posture', label: 'Strategic posture' }] : []), ...groups.map((g) => ({ id: g.id, label: g.title }))]} onNavigate={openGroup} />
+        <SectionRail sections={[{ id: 'overview', label: 'What to know' }, ...(cell.headline ? [{ id: 'posture', label: SECTOR_SECTION.choice.title }] : []), ...groups.map((g) => ({ id: g.id, label: g.title }))]} onNavigate={openGroup} />
       </div>
       <div className="min-w-0">
         {thin && (

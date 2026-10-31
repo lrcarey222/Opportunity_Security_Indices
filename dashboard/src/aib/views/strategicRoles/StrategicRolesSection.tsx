@@ -68,14 +68,14 @@ export function StrategicRolesSection({
 
   return (
     <section aria-labelledby="strategic-roles-h" data-testid="strategic-roles">
-      <span className="eyebrow block">Strategic layer · the same in every scenario</span>
+      <span className="eyebrow block">The long-run division of labor · the same in every scenario</span>
       <h2 id="strategic-roles-h" className="rule-neis-sm mb-2 mt-1 text-xl font-medium text-paper lg:text-2xl">
         Strategic roles
       </h2>
       <p className="mb-4 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
-        The two or three major functions an economy performs in the allied industrial system: anchoring resources and processing, specialized technology, scale manufacturing, demand,
-        capital, new capacity, or coordination. Each role is read from the model&apos;s evidence by a stated rule, never from a score, and it is structural: switching the scenario changes
-        the stress on the system, not who plays which role. {plural(nHolding, 'allied economy', 'allied economies')} of {nAllied} hold at least one role at these bars; the others
+        The two or three main things a country does in the allied industrial system: anchoring resources and processing, specialized technology, scale manufacturing, demand,
+        capital, new capacity, or coordination. Each role is read from the evidence by a stated rule, never from a score, and it is structural: switching the scenario changes the
+        stress on the system, not who plays which role. {plural(nHolding, 'allied country', 'allied countries')} of {nAllied} hold at least one role at these bars; the others
         contribute through their roles in particular compacts.
       </p>
       <FilterRow result={sum && !sum.allied ? 'A major non-allied supplier' : undefined}>
@@ -84,7 +84,7 @@ export function StrategicRolesSection({
       {sum ? (
         <StrategicSummaryCard sum={sum} s={s} scenario={scenario} name={name} renderName={renderName} headingRef={heading} evidence={iso ? evidenceFor?.(iso) : null} />
       ) : (
-        <EmptyState>The strategic layer of this data build assesses no economy.</EmptyState>
+        <EmptyState>The strategic roles of this build assess no country.</EmptyState>
       )}
       <RoleHolders s={s} name={name} selected={iso} onSelect={(x) => choose(x, true)} />
     </section>

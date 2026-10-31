@@ -11,6 +11,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { Redirect } from '../../shell/Redirect.tsx';
 import { TableView } from '../../components/TableView.tsx';
 import { PageHead } from '../../components/ui.tsx';
+import { CHAIN_QUESTION } from '../copy.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { useTitle } from '../../shell/title.ts';
 import { GROUP_COLOR } from '../../theme/palette.ts';
@@ -284,7 +285,16 @@ export default function TechChainView() {
     .map((r) => `${fmtShare(r.china)} of ${r.words}`);
   return (
     <div className="space-y-8">
-      <PageHead eyebrow="SECTORS · TECHNOLOGY" title={`${TECH_LABELS[tech]}: the supply chain`} lede={blurb} />
+      <PageHead
+        eyebrow="SECTORS · TECHNOLOGY"
+        title={`${TECH_LABELS[tech]}: the supply chain`}
+        lede={
+          <>
+            <span className="block font-medium text-paper">{CHAIN_QUESTION}</span>
+            {blurb} Follow it stage by stage: where supply is concentrated along the chain, then each stage’s profile, with who is best placed and what each country should do.
+          </>
+        }
+      />
       <ChainNav tech={tech} />
       <SectorChartCard
         headingLevel={2}

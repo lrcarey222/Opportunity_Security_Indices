@@ -26,6 +26,12 @@
 // model writes a thesis with first), from the strategic layer of the AIB document (src/partnerships/
 // RelationshipThesis.tsx; shown only when the bundle has the layer). The cross-lens summary says where
 // that partner sits in the three lenses.
+//
+// The NEIS copy refresh (2026-10-30): as the Partner sub-section it opens with what Partner means for the
+// economy (the guide's "Where should this country rely on allies?" intro), then the economy's Partner steps,
+// then "Which partners are best placed to help?" over the thesis and the lenses; each partner score card
+// says what the score is for (Friendshore, Partnership Opportunity, Development Potential); the AIB cards say
+// "remaining gap", "Build capacity" and "country that could add capacity" (vocabulary TERMS, AIB_CLASS_NAME).
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -33,6 +39,7 @@ import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { Term } from '../../../components/Term.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
 import { Loading, Select } from '../../../components/ui.tsx';
+import { AIB_CLASS_NAME, PARTNERSHIP } from '../../../content/vocabulary.ts';
 import { cellOf, type PartnerRow } from '../../contract.ts';
 import { PartnerSlope } from '../../charts/PartnerSlope.tsx';
 import { SupplierMatrix } from '../../charts/SupplierMatrix.tsx';
@@ -64,6 +71,20 @@ import { PartnersBySector } from './PartnersBySector.tsx';
 const OdaToday = lazy(() => import('../../../partnerships/OdaToday.tsx'));
 
 type Row = PartnerRow & { extra: boolean };
+
+/**
+ * What each Legacy OSI partner score is for, seen from the country (the guide's Country-page definitions;
+ * candidates for the shared vocabulary beside PARTNERSHIP.friendshore / opportunity / development).
+ */
+export const COUNTRY_PARTNER_SCORE_WORDS = {
+  fs: 'Where the country could shift sourcing or investment to reduce a strategic dependency.',
+  po: "Where the partner is an attractive market for the country's competitive sectors.",
+  dp: 'Where joint investment could help build a new supply base and create value in a developing partner economy.',
+} as const;
+
+/** The Partner sub-section's opening (guide: "Where should this country rely on allies?"). */
+export const PARTNER_SUBSECTION_INTRO =
+  'These are capabilities the country needs but should not necessarily reproduce at home. The question is which partners have the right capability, how concentrated the alternative supply is, and what trade, investment or agreements would make that reliance durable.';
 
 /** The partners worth showing as a short list: ranked rows by one score, best first. */
 function topBy(rows: readonly PartnerRow[], k: 'po' | 'fs' | 'dp', n = 5): PartnerRow[] {
@@ -222,8 +243,8 @@ function ScenarioNote({ sc }: { sc: CountryScenario }) {
 
 /**
  * "Partnerships": the kind of partnership (URL `ptab`), the cross-lens summary and the three lenses, then
- * the partner-by-partner table in a disclosure. `title`, `aliases` and `lead` (a line above the intro) let
- * a page mount it as a sub-section of its own.
+ * the partner-by-partner table in a disclosure. `title`, `aliases` and `lead` (the economy's Partner steps,
+ * shown after the intro and before the analysis) let a page mount it as a sub-section of its own.
  */
 export function PartnershipsSection({
   id = 'partnerships', level = 2, title = 'Partnerships', aliases, lead,
@@ -233,22 +254,19 @@ export function PartnershipsSection({
   const kind = kindOf(state.ptab);
   const rows = sheet.partners.rows;
   const onKind = (k: PartnershipKind) => setPtab?.(k);
+  const H = level === 3 ? 'h4' : 'h3';
   return (
-    <Section
-      id={id}
-      level={level}
-      title={title}
-      aliases={aliases}
-      lead={lead}
-      intro={
-        <>
-          Who {name} could trade, invest, build and align with, read three ways: as it is today (observed data), as the partner scores recommend (the Legacy OSI partner scores of the{' '}
-          <Term id="psi" />, such as <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the NEIS defaults) and as the Allied Industrial Base model arranges it under the
-          chosen scenario. The summary of each kind says where the three agree and where they differ. The nodes the strategy puts in Partner are named above; select one for its
-          recommended partners. First, the relationship thesis of {name} and the partner you choose.
-        </>
-      }
-    >
+    <Section id={id} level={level} title={title} aliases={aliases} intro={PARTNER_SUBSECTION_INTRO}>
+      {lead}
+      <div className="space-y-2" data-testid="partner-analysis-intro">
+        <H className="text-base font-medium text-paper">{PARTNERSHIP.heading}</H>
+        <p className="max-w-3xl text-sm leading-relaxed text-paper-dim">
+          Who {name} could trade, invest, build and align with, read three ways: the ties it has today (observed data), what the Legacy OSI partner scores suggest (the{' '}
+          <Term id="psi" />, with <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the NEIS defaults) and how the Allied Industrial Base analysis would divide
+          the work under the chosen scenario. The summary of each kind says where the three agree and where they differ. Select a Partner step above for its best-placed partners.
+          First, the strategic case for a partnership between {name} and the partner you choose.
+        </p>
+      </div>
       <PairThesisCard />
       <div data-testid={`ptab-${kind}`}>
         {kind === 'trade' && <TradeLenses onKind={onKind} />}
@@ -421,6 +439,7 @@ function TradeLenses({ onKind }: { onKind: (k: PartnershipKind) => void }) {
     content: (
       <div className="space-y-4">
         <Card id="po-top" title="Export markets (Partnership Opportunity)">
+          <p className="text-xs text-paper-mute">{COUNTRY_PARTNER_SCORE_WORDS.po}</p>
           <ScoreList rows={topBy(rows, 'po')} k="po" label="Partnership Opportunity" />
         </Card>
         <Fold id="po-sector" summary="Top export markets sector by sector">
@@ -481,6 +500,7 @@ function InvestmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void }) 
     content: (
       <div className="space-y-4">
         <Card id="fs-top" title="Friendshoring opportunities (Friendshore)">
+          <p className="text-xs text-paper-mute">{COUNTRY_PARTNER_SCORE_WORDS.fs}</p>
           <ScoreList rows={topBy(rows, 'fs')} k="fs" label="Friendshore" />
         </Card>
         <Fold id="fs-sector" summary="Friendshoring opportunities sector by sector">
@@ -552,16 +572,19 @@ function AibInvestmentLens({ sc, pairs }: { sc: CountryScenario; pairs: ReturnTy
         {!sc.flows ? (
           hostNodes.length ? (
             <p>
-              {cap(name)} is a listed host for new capacity in {plural(hostNodes.length, 'supply-chain node')} under {sc.label}: {listWords(hostNodes.slice(0, 4).map((r) => r.node.label))}.
+              {cap(name)} is a country that could add capacity in {plural(hostNodes.length, 'supply-chain step')} under {sc.label}: {listWords(hostNodes.slice(0, 4).map((r) => r.node.label))}.
             </p>
           ) : (
             <p>
-              {cap(name)} is not a listed host for new capacity in any supply-chain node under {sc.label}.
+              {cap(name)} is not listed as a country that could add capacity in any supply-chain step under {sc.label}.
             </p>
           )
         ) : (
           <>
-            <p>Where a gap remains after coordinated trade, the model adds new capacity at the best-ranked host of each node; the economies whose lost supply it replaces are its investors.</p>
+            <p>
+              Where a gap remains after coordinated trade, the analysis adds new capacity in the best-placed country that could add capacity for each supply-chain step; the countries
+              whose lost supply it replaces are its investors.
+            </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div data-testid="aib-as-investor">
                 <div className="text-paper">As investor</div>
@@ -586,16 +609,16 @@ function AibInvestmentLens({ sc, pairs }: { sc: CountryScenario; pairs: ReturnTy
                     <Bars rows={asHost} label={`Investors served by new capacity in ${name}`} name={sc.name} nodeName={nodeName} />
                   </>
                 ) : (
-                  <p className="text-xs text-paper-mute">{cap(name)} is not the best-ranked host of any node.</p>
+                  <p className="text-xs text-paper-mute">{cap(name)} is not the best-placed country to add capacity in any supply-chain step.</p>
                 )}
               </div>
             </div>
             {ranks.length > 0 && (
               <div>
-                <div className="text-paper">Ranked host</div>
+                <div className="text-paper">Where it could add capacity</div>
                 <p className="text-xs text-paper-mute">
-                  {cap(name)} is a ranked host in {plural(new Set(ranks.map((h) => h.node)).size, 'node')}
-                  {best.length ? `, the best-ranked in ${best.length}` : ''}. Lower ranks are alternatives to the best host, not added supply.
+                  {cap(name)} is ranked as a country that could add capacity in {plural(new Set(ranks.map((h) => h.node)).size, 'supply-chain step')}
+                  {best.length ? `, the best placed in ${best.length}` : ''}. Lower ranks are alternatives to the best-placed country, not added supply.
                 </p>
                 <ul className="mt-1 space-y-1">
                   {ranks.slice(0, 5).map((h) => {
@@ -674,7 +697,7 @@ function DevelopmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void })
     names: lensNames(topBy(rows, 'dp', 10).map((r) => r.iso3), 10, iso),
     content: (
       <Card id="dp-top" title="Development partners (Development Potential)">
-        <p className="text-xs text-paper-mute">Middle- and lower-income partners where {name} could build supply chains together.</p>
+        <p className="text-xs text-paper-mute">{COUNTRY_PARTNER_SCORE_WORDS.dp} Scored for middle- and lower-income partners only.</p>
         <ScoreList rows={topBy(rows, 'dp')} k="dp" label="Development Potential" />
       </Card>
     ),
@@ -689,12 +712,13 @@ function DevelopmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void })
         {nodes.length ? (
           <>
             <p>
-              Supply-chain nodes that need new capacity (BUILD) under {sc.label}, in {poss(name)} compacts or where it is a listed host, largest remaining gap first, with the hosts the model lists:
+              Supply-chain steps that need new capacity ({AIB_CLASS_NAME.BUILD}) under {sc.label}, in {poss(name)} compacts or where it could add capacity, largest remaining gap first,
+              with the countries that could add it:
             </p>
             <ul className="space-y-1.5">
               {nodes.slice(0, 6).map((nd) => (
                 <li key={nd.node.id}>
-                  <span className="text-paper">{nd.node.label}</span> <span className="tabular text-xs text-paper-mute">residual gap {fmtShare(nd.residual, 0)}</span>
+                  <span className="text-paper">{nd.node.label}</span> <span className="tabular text-xs text-paper-mute">remaining gap {fmtShare(nd.residual, 0)}</span>
                   {nd.node.compact && (
                     <>
                       {' '}
@@ -703,14 +727,14 @@ function DevelopmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void })
                       </Link>
                     </>
                   )}
-                  <span className="block text-xs text-paper-mute">{nd.hosts.length ? `Hosts: ${listWords(nd.hosts.slice(0, 4).map(sc.name))}` : 'No host listed'}</span>
+                  <span className="block text-xs text-paper-mute">{nd.hosts.length ? `Could add capacity: ${listWords(nd.hosts.slice(0, 4).map(sc.name))}` : 'No country listed to add capacity'}</span>
                 </li>
               ))}
             </ul>
           </>
         ) : (
           <p>
-            No node of {poss(name)} compacts is classed BUILD (new capacity needed) under {sc.label}, and it is not a listed host of one.
+            No supply-chain step of {poss(name)} compacts needs new capacity ({AIB_CLASS_NAME.BUILD}) under {sc.label}, and it is not listed to add capacity in one.
           </p>
         )}
         <ScenarioNote sc={sc} />
@@ -881,7 +905,7 @@ function AibCoalitionCard({ sc, co }: { sc: CountryScenario; co: ReturnType<type
       )}
       {co.dependency.length > 0 && (
         <p className="text-xs text-paper-mute">
-          A critical dependency outside the coalition of {listWords(co.dependency)}: losing its supply would push a node below the target.
+          A critical dependency outside the coalition of {listWords(co.dependency)}: losing its supply would push a supply-chain step below the target.
         </p>
       )}
       {co.criticalExternal.length > 0 && co.seats.length > 0 && (

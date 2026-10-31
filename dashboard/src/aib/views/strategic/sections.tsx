@@ -40,7 +40,7 @@ import { compactHref, strategicCompactHref, workstreamsHref } from '../../nav.ts
 import { BasisTag, LazyDisclosure } from '../basis.tsx';
 import { csvWithRun, Section } from '../common.tsx';
 import { strategicCsvRows } from './ScenarioMatrix.tsx';
-import { activeWords, countryRoleHref, Fact, interventionCount, interventionWords, lowerFirst, namesWords, ROW_TH_STYLE, scenarioLabelOf, upperFirst } from './shared.tsx';
+import { activeWords, countryRoleHref, Fact, interventionCount, interventionWords, lowerFirst, namesWords, ROW_TH_STYLE, scenarioLabelOf, STRATEGIC_SECTION_TITLE, upperFirst } from './shared.tsx';
 
 const SLOT_WORDS: Readonly<Record<string, string>> = { primary: 'Primary mission', secondary: 'Secondary mission', supporting: 'Supporting mission' };
 
@@ -63,12 +63,12 @@ export function WhySection({ s, c, sid }: { s: AibStrategic; c: AibStrategicComp
   return (
     <Section
       id="why"
-      title="Why this compact exists"
+      title={STRATEGIC_SECTION_TITLE.why}
       intro={
         <p>
           {c.steps.length > 1
-            ? `It ties ${plural(c.steps.length, 'step')} of one supply chain together, from ${lowerFirst(first)} to ${lowerFirst(last)} (${plural(compactNodeIds(c).length, 'node')}), so that the countries along it can plan supply as one system rather than node by node.`
-            : `It brings the ${plural(compactNodeIds(c).length, 'node')} of ${lowerFirst(first)} together, so that the countries that make and buy them can plan supply as one system.`}{' '}
+            ? `It ties ${plural(c.steps.length, 'stage')} of one supply chain together, from ${lowerFirst(first)} to ${lowerFirst(last)} (${plural(compactNodeIds(c).length, 'supply-chain step')}), so that the countries along it can plan supply as one system rather than step by step.`
+            : `It brings the ${plural(compactNodeIds(c).length, 'supply-chain step')} of ${lowerFirst(first)} together, so that the countries that make and buy them can plan supply as one system.`}{' '}
           The compact is the same in every scenario; the scenario sets how hard it is stressed.
         </p>
       }
@@ -82,16 +82,16 @@ export function WhySection({ s, c, sid }: { s: AibStrategic; c: AibStrategicComp
           </p>
         )}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatTile label="Allied demand" value={fmtUsd(sc?.demandUsd)} sub="imports of the compact’s nodes into the allied market" />
+          <StatTile label="Allied demand" value={fmtUsd(sc?.demandUsd)} sub="imports of the compact’s goods into the allied market" />
           <StatTile label={mi ? 'Supply to shift' : 'Supply lost'} value={fmtUsd(sc?.lostUsd)} sub={`${fmtShare(sc?.exposure, 0)} of allied demand`} />
-          <StatTile label="Served with coordinated trade" value={fmtShare(cov?.coordinated, 0)} sub={`existing relationships alone ${fmtShare(cov?.existing, 0)}`} />
+          <StatTile label="Met with coordinated trade" value={fmtShare(cov?.coordinated, 0)} sub={`share of allied demand; existing relationships alone ${fmtShare(cov?.existing, 0)}`} />
           <StatTile
             label="After simulated new capacity"
             value={fmtShare(cov?.postInvestment, 0)}
             sub={
               cov?.postInvestment === null || cov?.postInvestment === undefined
                 ? 'not simulated under this scenario'
-                : 'coordinated trade plus a standard capacity increment on each node (by construction: + the increment or the gap, the smaller)'
+                : 'coordinated trade plus a standard capacity addition at each step (by construction: + the addition or the gap, the smaller)'
             }
           />
         </div>
@@ -124,25 +124,25 @@ export function VulnerabilitySection({ s, c, sid }: { s: AibStrategic; c: AibStr
   const untested = rows.filter((x) => x.status === 'NOT TESTED');
   const lost = mi ? 'has to shift' : 'is lost';
   const summary = hit.length
-    ? `Under ${label}, ${plural(hit.length, 'node')} of ${rows.length} ${hit.length === 1 ? 'loses' : 'lose'} supply; ${fmtUsd(sc?.lostUsd)} of the compact’s allied demand ${lost}, most of it in ${listWords(top.slice(0, 2).map((x) => x.label))}.`
-    : `Under ${label} no node of the compact loses supply.`;
+    ? `Under ${label}, ${plural(hit.length, 'supply-chain step')} of ${rows.length} ${hit.length === 1 ? 'loses' : 'lose'} supply; ${fmtUsd(sc?.lostUsd)} of the compact’s allied demand ${lost}, most of it in ${listWords(top.slice(0, 2).map((x) => x.label))}.`
+    : `Under ${label} no supply-chain step of the compact loses supply.`;
   const cols: Col<(typeof rows)[number]>[] = [
-    { id: 'node', header: 'Node', value: (x) => x.label, minWidth: 180 },
+    { id: 'node', header: 'Supply-chain step', value: (x) => x.label, minWidth: 180 },
     { id: 'status', header: `Status: ${label}`, value: (x) => (x.status ? spineStatusInfo(x.status).label : null) },
     { id: 'lost', header: mi ? 'Supply to shift' : 'Supply lost', value: (x) => x.r?.lostUsd ?? null, cell: (x) => fmtUsd(x.r?.lostUsd), num: true },
     { id: 'share', header: 'Share of its allied demand', value: (x) => x.r?.exposure ?? null, cell: (x) => fmtShare(x.r?.exposure, 0), num: true },
-    { id: 'static', header: mi ? 'Served by the cap alone' : 'Served after the shock alone', value: (x) => x.r?.static ?? null, cell: (x) => fmtShare(x.r?.static, 0), num: true },
-    { id: 'existing', header: 'Served by existing relationships', value: (x) => x.r?.existing ?? null, cell: (x) => fmtShare(x.r?.existing, 0), num: true },
-    { id: 'optimized', header: 'Served with coordinated trade', value: (x) => x.r?.optimized ?? null, cell: (x) => fmtShare(x.r?.optimized, 0), num: true },
+    { id: 'static', header: mi ? 'Met under the cap alone' : 'Met after the disruption alone', value: (x) => x.r?.static ?? null, cell: (x) => fmtShare(x.r?.static, 0), num: true },
+    { id: 'existing', header: 'Met by existing relationships', value: (x) => x.r?.existing ?? null, cell: (x) => fmtShare(x.r?.existing, 0), num: true },
+    { id: 'optimized', header: 'Met with coordinated trade', value: (x) => x.r?.optimized ?? null, cell: (x) => fmtShare(x.r?.optimized, 0), num: true },
   ];
   const nonAllied = c.nonAllied.map((x) => ({ x, role: compactRoleOf(s, c.id, x.iso3) }));
   return (
-    <Section id="vulnerabilities" title="Where it is vulnerable" intro={<p>{summary}</p>}>
+    <Section id="vulnerabilities" title={STRATEGIC_SECTION_TITLE.vulnerabilities} intro={<p>{summary}</p>}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <ChartCard
           headingLevel={3}
           title={mi ? 'Where supply has to shift' : 'Where supply is lost'}
-          sub={`The nodes with the largest gap under ${label}, largest first. The empty track to the right of the filled dot is what new capacity would have to fill.`}
+          sub={`The supply-chain steps with the largest gap under ${label}, largest first. The empty track to the right of the filled dot is what new capacity would have to fill.`}
           summary={summary}
           legend={
             <Legend
@@ -154,7 +154,7 @@ export function VulnerabilitySection({ s, c, sid }: { s: AibStrategic; c: AibStr
               ]}
             />
           }
-          table={() => <TableView rows={rows} cols={cols} caption={`${c.name}: every node under ${label}`} rowKey={(x) => x.id} initialSort={{ id: 'lost', desc: true }} />}
+          table={() => <TableView rows={rows} cols={cols} caption={`${c.name}: every supply-chain step under ${label}`} rowKey={(x) => x.id} initialSort={{ id: 'lost', desc: true }} />}
           csv={() => ({
             name: `${c.id} nodes ${label.toLowerCase()}`,
             text: csvWithRun(
@@ -175,7 +175,7 @@ export function VulnerabilitySection({ s, c, sid }: { s: AibStrategic; c: AibStr
           })}
         >
           {top.length ? (
-            <ol className="space-y-3" aria-label={`Nodes with the largest gap under ${label}`}>
+            <ol className="space-y-3" aria-label={`Supply-chain steps with the largest gap under ${label}`}>
               {top.map((x) => (
                 <li key={x.id} className="text-sm" data-node={x.id}>
                   <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -198,7 +198,7 @@ export function VulnerabilitySection({ s, c, sid }: { s: AibStrategic; c: AibStr
               ))}
             </ol>
           ) : (
-            <EmptyState>No node of this compact loses supply under {label}.</EmptyState>
+            <EmptyState>No supply-chain step of this compact loses supply under {label}.</EmptyState>
           )}
         </ChartCard>
         <div className="card p-5" data-testid="concentration">
@@ -232,17 +232,17 @@ export function VulnerabilitySection({ s, c, sid }: { s: AibStrategic; c: AibStr
             {sc?.nonAlliedReliedOn && sc.nonAlliedReliedOn.length > 0 && (
               <Fact term={`Non-allied suppliers the coalition relies on (${label})`}>{namesWords(sc.nonAlliedReliedOn, name)}</Fact>
             )}
-            <Fact term="Nodes with too little data to test">{thin.length ? listWords(thin.map((x) => x.label)) : 'none'}</Fact>
+            <Fact term="Steps with too little data to test">{thin.length ? listWords(thin.map((x) => x.label)) : 'none'}</Fact>
             {untested.length > 0 && (
-              <Fact term={`Concentrated nodes not tested under ${label}`}>
-                {listWords(untested.map((x) => x.label))} (their benchmark heading is as concentrated; see Decoupling)
+              <Fact term={`Concentrated steps not tested under ${label}`}>
+                {listWords(untested.map((x) => x.label))} (comparable goods are as concentrated; see {scenarioLabelOf(s, 'decoupling')})
               </Fact>
             )}
           </dl>
           <p className="mt-3 text-xs text-paper-mute">
-            Who supplies each node is in the{' '}
+            Who supplies each step is in the{' '}
             <a className="link" href="#division">
-              division of labour
+              division of labor
             </a>{' '}
             below; the economies’ full positions are on their{' '}
             <Link className="link" to={href('/aib/roles')}>
@@ -275,10 +275,12 @@ export function PolicySection({ s, c, sid }: { s: AibStrategic; c: AibStrategicC
   return (
     <Section
       id="policy"
-      title="What the nodes need"
+      title={STRATEGIC_SECTION_TITLE.policy}
       intro={
         <p>
-          Each node gets the treatment its own results call for, so one compact can combine building capacity, coordinating trade and managing specialization. Under {label},{' '}
+          Different bottlenecks need different tools: trade rules where capacity already exists, investment and finance where capacity is missing, and safeguards where
+          specialization has become too concentrated. Each supply-chain step gets the treatment its own results call for, so one compact can combine building capacity,
+          coordinating trade and managing specialization. Under {label},{' '}
           {interventionWords(c, sc)}.
         </p>
       }
@@ -300,7 +302,7 @@ export function PolicySection({ s, c, sid }: { s: AibStrategic; c: AibStrategicC
             <p className="mt-3 text-sm text-paper-dim">{sc?.statement ?? '–'}</p>
           )}
           <h4 className="mt-5 text-sm font-medium text-paper">Policy portfolio</h4>
-          <ul className="mt-2 grid grid-cols-2 gap-2 text-sm" aria-label={`Nodes by treatment under ${label}`}>
+          <ul className="mt-2 grid grid-cols-2 gap-2 text-sm" aria-label={`Supply-chain steps by treatment under ${label}`}>
             {portfolio.map(([cls, n]) => (
               <li key={cls} className="panel min-w-0 px-3 py-2" title={spineStatusInfo(cls).meaning}>
                 <span className="block text-xl font-medium tabular text-paper">{n}</span>
@@ -313,12 +315,12 @@ export function PolicySection({ s, c, sid }: { s: AibStrategic; c: AibStrategicC
           </ul>
           {k && k.insufficient + k.notStressed + (k.notTested ?? 0) + k.noShock > 0 && (
             <p className="mt-2 text-xs text-paper-mute" data-testid="portfolio-rest">
-              The other {plural(k.insufficient + k.notStressed + (k.notTested ?? 0) + k.noShock, 'node')}:{' '}
+              The other {plural(k.insufficient + k.notStressed + (k.notTested ?? 0) + k.noShock, 'supply-chain step')}:{' '}
               {[
                 k.insufficient ? `${k.insufficient} with too little data to test` : null,
-                k.notStressed ? `${k.notStressed} not stressed under ${label}` : null,
+                k.notStressed ? `${k.notStressed} unaffected under ${label}` : null,
                 k.notTested ? `${k.notTested} concentrated, not tested under ${label}` : null,
-                k.noShock ? `${k.noShock} with no shock applied` : null,
+                k.noShock ? `${k.noShock} with no disruption applied` : null,
               ]
                 .filter(Boolean)
                 .join(', ')}
@@ -348,7 +350,7 @@ export function PolicySection({ s, c, sid }: { s: AibStrategic; c: AibStrategicC
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-paper-dim">No node needs an intervention under {label}, so the menu is empty.</p>
+            <p className="mt-3 text-sm text-paper-dim">No supply-chain step needs action under {label}, so the menu is empty.</p>
           )}
         </div>
       </div>
@@ -390,13 +392,13 @@ function roleCols(name: (iso3: string) => string, href: (to: string) => string, 
     { id: 'allied', header: 'Allied', value: (r) => r.allied },
     { id: 'role', header: 'Role in the compact', value: (r) => r.role, minWidth: 180 },
     { id: 'functions', header: 'Every function', value: (r) => r.functions.join('; '), minWidth: 220 },
-    { id: 'lead', header: 'Strongest node', value: (r) => (r.leadNode ? nodeLabel(r.leadNode) : null), minWidth: 160 },
-    share('leadShare', 'Its share there', (r) => r.leadShare, 'Its share of world supply or imports of that node (see the CSV of the division of labour)'),
+    { id: 'lead', header: 'Strongest step', value: (r) => (r.leadNode ? nodeLabel(r.leadNode) : null), minWidth: 160 },
+    share('leadShare', 'Its share there', (r) => r.leadShare, 'Its share of world supply or imports of that supply-chain step (see the CSV of the division of labor)'),
     share('supplier', 'Supplier contribution', (r) => r.supplier, "Its share of the world supply of the compact's nodes"),
     share('demand', 'Demand contribution', (r) => r.demand, "Its share of the allied market's imports of the compact's nodes"),
     share('investment', 'Investment contribution', (r) => r.investment, "Its share of outward clean-tech manufacturing capital in the compact's sectors, where the data cover them"),
-    share('resM', 'Resilience added: Managed Interdependence', (r) => r.resilienceManaged, "Share of the compact's allied demand its new and expanded relationships serve under Managed Interdependence (US$ restored over the compact's allied demand)"),
-    share('resD', 'Resilience added: Decoupling', (r) => r.resilienceDecoupling, "Share of the compact's allied demand its new and expanded relationships serve under Decoupling (US$ restored over the compact's allied demand)"),
+    share('resM', 'Resilience added: Managed Interdependence', (r) => r.resilienceManaged, "Share of the compact's allied demand its new and expanded relationships serve under Managed Interdependence (US$ recovered over the compact's allied demand)"),
+    share('resD', 'Resilience added: major-supplier disruption', (r) => r.resilienceDecoupling, "Share of the compact's allied demand its new and expanded relationships serve under the major-supplier disruption (US$ recovered over the compact's allied demand)"),
     { id: 'crit', header: 'Criticality', value: (r) => r.criticality, minWidth: 160 },
   ];
 }
@@ -417,11 +419,11 @@ export function WhoSection({
   return (
     <Section
       id="who"
-      title="Who does what"
+      title={STRATEGIC_SECTION_TITLE.who}
       intro={
         <p>
-          The compact’s core countries and what each contributes, then every economy’s position at each node. The same country can do different things in different compacts, and
-          no country is expected to make every part.
+          The compact’s core partners and what each contributes, then every country’s position at each supply-chain step. Who has the strongest capability, and which countries
+          need a partner? The same country can do different things in different compacts, and no country is expected to make every part.
         </p>
       }
     >
@@ -446,7 +448,7 @@ export function WhoSection({
                     {r.leadShare !== null ? ` (${fmtShare(r.leadShare, 0)} ${r.leadBasis ?? ''})`.replace(/ \)$/, ')') : ''}
                   </Fact>
                 )}
-                {r && r.keyNodes.length > 0 && <Fact term="Key nodes">{r.keyNodes.join('; ')}</Fact>}
+                {r && r.keyNodes.length > 0 && <Fact term="Key supply-chain steps">{r.keyNodes.join('; ')}</Fact>}
                 {strategic && strategic.primary.length > 0 && <Fact term="Its overall role">{strategic.primary.map((p) => p.name).join('; ')}</Fact>}
               </dl>
             </li>
@@ -458,9 +460,9 @@ export function WhoSection({
         <DivisionOfLabour
           matrix={matrix}
           name={name}
-          title="Division of labour"
+          title="Division of labor"
           headingLevel={3}
-          sub="Who holds which position at each node today, from the model’s evidence. Choose what the dots show; select a node’s name to see its evidence in the supply chain above."
+          sub="Who holds which position at each supply-chain step today, from the evidence. Choose what the dots show; select a step’s name to see its evidence in the supply chain above."
           onMeasure={setMeasure}
           selectedNode={node}
           onSelectNode={(id) => {
@@ -579,10 +581,10 @@ export function WorkstreamsSection({ s, c, sid }: { s: AibStrategic; c: AibStrat
   return (
     <Section
       id="workstreams"
-      title="Workstreams under this compact"
+      title={STRATEGIC_SECTION_TITLE.workstreams}
       intro={
         <p>
-          Workstreams are the model’s own clusters of related nodes that share partners and policy needs: where the compact’s work happens in practice.{' '}
+          Workstreams are groups of related supply-chain steps that need similar partners and similar policy tools: where the compact’s work happens in practice.{' '}
           {rows.length ? `${activeWords(c, active)} under ${label}.` : ''}
         </p>
       }
@@ -595,13 +597,13 @@ export function WorkstreamsSection({ s, c, sid }: { s: AibStrategic; c: AibStrat
         </ul>
       ) : (
         <EmptyState>
-          No workstream: none of the model’s clusters falls mainly in this compact. Its nodes are on the supply chain above, and their evidence is under each node.
+          No workstream: none of the analysis’s clusters falls mainly in this compact. Its supply-chain steps are on the supply chain above, and their evidence is under each step.
         </EmptyState>
       )}
       {also.length > 0 && (
         <div>
           <h3 className="mb-2 text-lg font-medium text-paper">Also touching this compact</h3>
-          <p className="mb-3 max-w-3xl text-sm text-paper-dim">Workstreams filed under another compact that hold some of this compact’s nodes.</p>
+          <p className="mb-3 max-w-3xl text-sm text-paper-dim">Workstreams filed under another compact that hold some of this compact’s supply-chain steps.</p>
           <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label={`Workstreams filed elsewhere that touch ${c.name}`}>
             {also.map((r) => (
               <WorkstreamCard key={r.id} s={s} c={c} row={r} label={label} also />
@@ -625,7 +627,7 @@ function hostWords(sc: AibStrategicCompactScenario | null, name: (iso3: string) 
   if (!sc) return '–';
   const named = sc.buildHosts.map(name);
   const ties = sc.buildHostTies ?? 0;
-  const parts = [named.length ? listWords(named) : null, ties > 0 ? `${plural(ties, 'BUILD node')} where hosts tie` : null].filter(Boolean);
+  const parts = [named.length ? listWords(named) : null, ties > 0 ? `${plural(ties, 'step needing new capacity', 'steps needing new capacity')} where hosts tie` : null].filter(Boolean);
   return parts.length ? parts.join('; ') : 'none';
 }
 
@@ -634,14 +636,14 @@ function compareRows(c: AibStrategicCompact, name: (iso3: string) => string): { 
   return [
     { key: 'does', label: 'What the scenario does', value: (d) => d.words ?? '–' },
     { key: 'lost', label: 'Supply lost or shifted', value: (_d, sc) => (sc ? `${fmtUsd(sc.lostUsd)} (${fmtShare(sc.exposure, 0)} of allied demand)` : '–') },
-    { key: 'nodes', label: 'Nodes needing intervention', value: (_d, sc) => (sc ? `${interventionCount(sc)} of ${compactNodeIds(c).length}` : '–') },
-    { key: 'mix', label: 'Policy mix', value: (_d, sc) => policyMixWords(sc) },
+    { key: 'nodes', label: 'Supply-chain steps needing action', value: (_d, sc) => (sc ? `${interventionCount(sc)} of ${compactNodeIds(c).length}` : '–') },
+    { key: 'mix', label: 'Actions needed', value: (_d, sc) => policyMixWords(sc) },
     { key: 'mission', label: 'Mission', value: (_d, sc) => sc?.statement ?? '–' },
-    { key: 'existing', label: 'Served by existing relationships', value: (_d, sc) => fmtShare(sc?.coverage.existing, 0) },
-    { key: 'coordinated', label: 'Served with coordinated trade', value: (_d, sc) => fmtShare(sc?.coverage.coordinated, 0) },
+    { key: 'existing', label: 'Met by existing relationships', value: (_d, sc) => fmtShare(sc?.coverage.existing, 0) },
+    { key: 'coordinated', label: 'Met with coordinated trade', value: (_d, sc) => fmtShare(sc?.coverage.coordinated, 0) },
     {
       key: 'post',
-      label: 'Served after simulated new capacity',
+      label: 'Met after simulated new capacity',
       value: (d, sc) => (sc?.coverage.postInvestment === null || sc?.coverage.postInvestment === undefined ? (d.investment ? '–' : 'not simulated') : fmtShare(sc.coverage.postInvestment, 0)),
     },
     { key: 'ws', label: 'Active workstreams', value: (_d, sc) => (sc ? `${sc.activeWorkstreams.length} of ${c.workstreams.length}` : '–') },
@@ -666,8 +668,8 @@ export function ScenarioChangeSection({ s, c, sid }: { s: AibStrategic; c: AibSt
   const changed = ids.filter((id) => statusOf(id, mi) !== statusOf(id, dec));
   const intro =
     mi && dec
-      ? `Under ${miLabel}, ${interventionWords(c, mi)} and ${fmtUsd(mi.lostUsd)} (${fmtShare(mi.exposure, 0)}) of the compact’s allied demand has to shift; under ${decLabel}, ${interventionWords(c, dec)} and ${fmtUsd(dec.lostUsd)} (${fmtShare(dec.exposure, 0)}) is lost. ${plural(changed.length, 'node')} of ${ids.length} ${changed.length === 1 ? 'changes' : 'change'} status between the two. Baseline, trade as it is today, is the reference.`
-      : 'The compact under each scenario the data carry; Baseline, trade as it is today, is the reference.';
+      ? `Under ${miLabel}, ${interventionWords(c, mi)} and ${fmtUsd(mi.lostUsd)} (${fmtShare(mi.exposure, 0)}) of the compact’s allied demand has to shift; under ${decLabel}, ${interventionWords(c, dec)} and ${fmtUsd(dec.lostUsd)} (${fmtShare(dec.exposure, 0)}) is lost. ${plural(changed.length, 'supply-chain step')} of ${ids.length} ${changed.length === 1 ? 'changes' : 'change'} what it needs between the two. ${scenarioLabelOf(s, 'baseline')}, trade as it is today, is the reference.`
+      : `The compact under each scenario the data carry; ${scenarioLabelOf(s, 'baseline')}, trade as it is today, is the reference.`;
   const rows = compareRows(c, name);
   const coverageRows = compared
     .filter((d): d is AibStrategicScenarioDef & { id: AibScenarioId } => d.id === 'baseline' || d.id === 'managed' || d.id === 'decoupling')
@@ -696,13 +698,13 @@ export function ScenarioChangeSection({ s, c, sid }: { s: AibStrategic; c: AibSt
       });
     });
   return (
-    <Section id="scenarios" title="What changes between scenarios" intro={<p>{intro}</p>}>
+    <Section id="scenarios" title={STRATEGIC_SECTION_TITLE.scenarios} intro={<p>{intro}</p>}>
       <div className="card p-5" data-testid="scenario-compare">
         <h3 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">The compact under each scenario</h3>
         <p className="mt-1 text-sm text-paper-mute">The same supply chain and core countries in every column; only the stress and the response differ.</p>
         <div className="mt-3 overflow-x-auto">
           <table className="data-table w-full text-sm">
-            <caption className="sr-only">{c.name} under {compared.map((d) => d.label).join(', ')}</caption>
+            <caption className="sr-only">{c.name} under {compared.map((d) => scenarioLabelOf(s, d.id)).join(', ')}</caption>
             <thead>
               <tr>
                 <th scope="col" className="text-left">
@@ -710,7 +712,7 @@ export function ScenarioChangeSection({ s, c, sid }: { s: AibStrategic; c: AibSt
                 </th>
                 {compared.map((d) => (
                   <th key={d.id} scope="col" className="min-w-36 text-left align-bottom" aria-current={d.id === sid ? 'true' : undefined} data-scenario={d.id}>
-                    {d.label}
+                    {scenarioLabelOf(s, d.id)}
                     {d.id === 'baseline' && <span className="block text-xs font-normal text-paper-mute">reference</span>}
                     {d.id === sid && <span className="block text-xs font-normal text-paper-mute">shown above</span>}
                   </th>
@@ -736,7 +738,7 @@ export function ScenarioChangeSection({ s, c, sid }: { s: AibStrategic; c: AibSt
         {all.some((d) => d.id === 'partial') && (
           <p className="mt-2 text-xs text-paper-mute" data-testid="partial-note">
             {scenarioLabelOf(s, 'partial')} sits between them
-            {strategicScenarioDef(s, 'partial')?.words ? `: ${strategicScenarioDef(s, 'partial')?.words?.replace(/\.?$/, '.')}` : '.'} Its node statuses are below, and every figure is in
+            {strategicScenarioDef(s, 'partial')?.words ? `: ${strategicScenarioDef(s, 'partial')?.words?.replace(/\.?$/, '.')}` : '.'} What each step needs under it is below, and every figure is in
             the CSV.
           </p>
         )}
@@ -744,19 +746,19 @@ export function ScenarioChangeSection({ s, c, sid }: { s: AibStrategic; c: AibSt
       {coverageRows.length > 0 && (
         <ChartCard
           headingLevel={3}
-          title="Allied demand served under each scenario"
-          sub="What is kept, what coordinated trade restores and what is left for new capacity: the compact’s allied demand, to scale."
-          summary={coverageRows.map((r) => `${scenarioLabelOf(s, r.id)}: ${r.split ? `kept ${fmtShare(r.split.kept, 0)}, restored by trade ${fmtShare(r.split.trade, 0)}, left for new capacity ${fmtShare(r.split.build, 0)}` : 'no figures'}`).join('; ')}
+          title="Allied demand met under each scenario"
+          sub="What stays supplied, what coordinated trade recovers and the gap that still needs new capacity: the compact’s allied demand, to scale."
+          summary={coverageRows.map((r) => `${scenarioLabelOf(s, r.id)}: ${r.split ? `still supplied ${fmtShare(r.split.kept, 0)}, recovered through trade ${fmtShare(r.split.trade, 0)}, gap that still needs new capacity ${fmtShare(r.split.build, 0)}` : 'no figures'}`).join('; ')}
           csv={() => ({ name: `${c.id} under every scenario`, text: csvWithRun(strategicCsvRows(s, name).filter((r) => r.strategic_compact_id === c.id), doc.meta) })}
         >
-          <ScenarioCoverageCompare rows={coverageRows} highlight={scenario} label={`${c.name}: allied demand served under each scenario`} meta={doc.meta} />
+          <ScenarioCoverageCompare rows={coverageRows} highlight={scenario} label={`${c.name}: allied demand met under each scenario`} meta={doc.meta} />
         </ChartCard>
       )}
       <ChartCard
         headingLevel={3}
-        title="Each node under each scenario"
-        sub={`The same nodes in every column. A node marked “changed” has a different status under ${miLabel} and ${decLabel}.`}
-        summary={`${plural(changed.length, 'node')} of ${ids.length} ${changed.length === 1 ? 'changes' : 'change'} status between ${miLabel} and ${decLabel}${changed.length ? `: ${listWords(changed.map(nodeLabel))}` : ''}.`}
+        title="Each supply-chain step under each scenario"
+        sub={`The same steps in every column. A step marked “changed” needs something different under ${miLabel} and ${decLabel}.`}
+        summary={`${plural(changed.length, 'supply-chain step')} of ${ids.length} ${changed.length === 1 ? 'changes' : 'change'} what it needs between ${miLabel} and ${decLabel}${changed.length ? `: ${listWords(changed.map(nodeLabel))}` : ''}.`}
         legend={<SpineLegend />}
         csv={() => ({ name: `${c.id} node status by scenario`, text: csvWithRun(nodeCsv(), doc.meta) })}
       >
@@ -766,11 +768,11 @@ export function ScenarioChangeSection({ s, c, sid }: { s: AibStrategic; c: AibSt
             <thead>
               <tr>
                 <th scope="col" className="text-left">
-                  Node
+                  Supply-chain step
                 </th>
                 {all.map((d) => (
                   <th key={d.id} scope="col" className="min-w-32 text-left align-bottom" aria-current={d.id === sid ? 'true' : undefined}>
-                    {d.label}
+                    {scenarioLabelOf(s, d.id)}
                   </th>
                 ))}
               </tr>

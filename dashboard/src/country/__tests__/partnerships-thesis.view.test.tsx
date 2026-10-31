@@ -88,7 +88,7 @@ const T = { timeout: 30_000 };
 // since 2026-10-30 (the fences) the section is back on the page, open, as the Medium fence's Partner sub-section (id
 // medium-partner, an h3); the #partnerships links land on it (an alias span), no disclosure to open
 const section = async () => {
-  await screen.findByRole('heading', { level: 3, name: 'Partner' }, T);
+  await screen.findByRole('heading', { level: 3, name: 'Partner: where should this country rely on allies?' }, T);
   const part = document.getElementById('medium-partner')!;
   expect(part.closest('section#medium-fence')).toBeTruthy();
   expect(document.getElementById('partnerships')?.closest('section')).toBe(part);

@@ -23,8 +23,10 @@ import {
   ALIGNMENT_LABEL, borderlineWords, EVIDENCE_LABEL, MOMENTUM_LABEL, NEED_TYPE_LABEL, PATHWAY_LABEL, RATIONALE_LABEL, VERB_COLOR, VERB_LONG, VERB_ORDER, VERB_OUTLINE,
 } from '../../posture/grammar.ts';
 import { ChoiceLegend } from '../../posture/PostureLegend.tsx';
+import { mixedYards, rollupWords } from '../../posture/yards.ts';
 import { PAPER_MUTE } from '../../theme/palette.ts';
 import { DEPLOYMENT_STAGE } from '../../lib/stages.ts';
+import { MEASURE_PLAIN } from '../../content/vocabulary.ts';
 import type { RegionLabel, StrategyPoint } from './derive.ts';
 
 const W = 640;
@@ -84,7 +86,8 @@ export function SectorStrategyScatter({ points, stage, thresholds, regions, onOp
   const x = (v: number) => x0 + v * (W - x0 - M.r);
   const y = (v: number) => H - M.b - v * (H - M.t - M.b);
   const tNeed = dep ? thresholds.deployment : thresholds.need;
-  const needName = dep ? 'Deployment need' : 'Supply-chain need';
+  // the measure's plain name (vocabulary MEASURE_PLAIN: "Supply-chain vulnerability"; the formal name is in the glossary)
+  const needName = dep ? MEASURE_PLAIN.deploymentNeed : MEASURE_PLAIN.supplyChainNeed;
   // economies without a measured position: spread across the strip, deterministically
   const stripX = (i: number) => M.l + 8 + ((i * 7) % (STRIP - 14));
   let k = 0;
@@ -113,7 +116,7 @@ export function SectorStrategyScatter({ points, stage, thresholds, regions, onOp
           <g data-testid="cp-missing-strip">
             <rect x={M.l} y={M.t} width={STRIP} height={H - M.t - M.b} fill="rgb(255 255 255 / 0.04)" />
             <text x={M.l + STRIP / 2} y={H - M.b + 16} textAnchor="middle" className="fill-paper-mute" style={{ fontSize: 10 }}>
-              no CP
+              no data
             </text>
           </g>
         )}
@@ -140,11 +143,11 @@ export function SectorStrategyScatter({ points, stage, thresholds, regions, onOp
           {noCp
             ? 'Competitive Position not measured at this stage: economies spread out by choice'
             : dep
-              ? 'Competitive Position (context: the choice reads deployment need) →'
-              : 'Competitive Position (percentile among contenders) →'}
+              ? 'Competitive Position (context only: the choice reads deployment need) →'
+              : 'Competitive Position (higher = stronger, ranked among the main producers) →'}
         </text>
         <text x={4} y={M.t - 12} textAnchor="start" className="fill-paper-mute" style={{ fontSize: 12 }}>
-          ↑ {needName} (percentile)
+          ↑ {needName} ({dep ? 'higher = more urgent' : 'higher = more vulnerable'})
         </text>
         {placed.map(({ p, cx, cy }) => {
           const on = hover === p.iso3;
@@ -183,19 +186,20 @@ export function SectorStrategyScatter({ points, stage, thresholds, regions, onOp
           </p>
           <p>
             {VERB_LONG[hov.p.verb]}
-            {hov.p.verb === 'secure' && c.rationale ? ` · ${RATIONALE_LABEL[c.rationale]} (overrides the triage)` : ''}
+            {hov.p.verb === 'secure' && c.rationale ? ` · ${RATIONALE_LABEL[c.rationale]} (overrides the other choices)` : ''}
           </p>
           <p className="tabular">
             {NEED_TYPE_LABEL[c.needType]} {pct(c.need)} · Prize {c.prize === null ? 'not read here' : pct(c.prize)} · Position {c.cp === null ? 'not measured' : pct(c.cp)}
           </p>
           <p className="tabular">World supply share {pct(c.share, 1)}</p>
           {(hov.p.verb === 'catch_up' || hov.p.verb === 'partner') && c.pathway && <p>Credible pathway: {PATHWAY_LABEL[c.pathway].toLowerCase()}</p>}
-          {hov.p.verb === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `First trusted partner: ${c.partner1 ? (nameOf?.(c.partner1) ?? c.partner1) : '—'}`}</p>}
+          {hov.p.verb === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `Best-placed trusted partner: ${c.partner1 ? (nameOf?.(c.partner1) ?? c.partner1) : '—'}`}</p>}
+          {mixedYards(c) && <p data-testid="scatter-tip-mixed">{rollupWords(c)}</p>}
           {c.momentum && <p>Trade momentum: {MOMENTUM_LABEL[c.momentum]}</p>}
           {c.alignment && <p>Policy: {ALIGNMENT_LABEL[c.alignment].toLowerCase()}</p>}
           {c.evidence && <p>Evidence: {EVIDENCE_LABEL[c.evidence].toLowerCase()}</p>}
           {c.borderline && <p className="text-signal">Borderline on {borderlineWords(c.borderline)}</p>}
-          <p className="mt-1 text-paper-mute">Click to open this node on its Country Strategy Map.</p>
+          <p className="mt-1 text-paper-mute">Click to open this step on its Country Strategy Map.</p>
         </div>
       )}
     </div>

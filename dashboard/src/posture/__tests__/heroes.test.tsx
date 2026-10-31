@@ -88,7 +88,7 @@ async function downloadCsv(scope: HTMLElement): Promise<string[]> {
 const SOURCE = '"Opportunity Security Indices, strategic position framework"';
 const noAcronyms = () => expect(bareAcronyms(document.body)).toEqual([]);
 const SENTENCE =
-  'Aland should preserve its strongest positions in battery pack assembly and solar module assembly; secure battery materials refining (chokepoint), polysilicon refining (systemic resilience) and solar inverters (operational / control); catch up in battery cell manufacturing; rely on partners for lithium and nickel mining; and accelerate deployment of battery storage.';
+  'Aland should preserve its strongest positions in battery pack assembly and solar module assembly; secure battery materials refining (chokepoint risk), polysilicon refining (system resilience) and solar inverters (control-system risk); catch up in battery cell manufacturing; rely on partners for lithium and nickel mining; and accelerate deployment of battery storage.';
 
 describe('the Country Strategy Map', () => {
   it('renders all six stages under their display names, every node a button filled with its choice colour alone: no letter, arrow or dot', async () => {
@@ -161,7 +161,7 @@ describe('the Country Strategy Map', () => {
     tip = screen.getByRole('tooltip');
     expect(tip.textContent).toMatch(/^Batteries · Extraction/);
     expect(within(tip).getByTestId('strategy-map-tip-choice').textContent).toBe('Partner· Medium fence');
-    expect(tip.textContent).toContain('First partner: Bland');
+    expect(tip.textContent).toContain('Best-placed partner: Bland');
     expect(tip.textContent).toContain('Policy: Wrong tool for the problem');
     fireEvent.blur(ext);
     fireEvent.focus(sec);
@@ -256,9 +256,9 @@ describe('the Country Strategy Map', () => {
     expect(qs.map((q) => within(q).getByRole('heading', { level: 4 }).textContent)).toEqual(DRAWER_QUESTIONS.map((q) => q.title));
     expect(DRAWER_QUESTIONS.map((q) => q.title)).toEqual(['Need', 'Prize', 'Position', 'Choice', 'Policy alignment']);
     await waitFor(() => expect(qs[0].textContent).toContain('Import dependence'));
-    expect(qs[0].textContent).toContain('Supply-chain need');
+    expect(qs[0].textContent).toContain('Supply-chain vulnerability');
     expect(qs[0].textContent).toContain('Lack of trusted alternatives');
-    expect(qs[1].textContent).toContain('Node prize');
+    expect(qs[1].textContent).toContain('Expected world demand growth');
     expect(qs[2].textContent).toContain('Competitive Position');
     expect(qs[2].textContent).toMatch(/Trade momentum.*rising/);
     // the choice with the page's fence (never the R family words); the policy design's trade protection is labelled as such, never "Fence:"
@@ -269,8 +269,8 @@ describe('the Country Strategy Map', () => {
     expect(qs[3].textContent).toContain('Bland');
     expect(qs[3].textContent).toContain('How the choice was made');
     expect(qs[4].textContent).toContain('Wrong tool for the problem');
-    expect(qs[4].textContent).toContain('Protection or localisation');
-    expect(qs[4].textContent).toContain('it never enters the recommendation');
+    expect(qs[4].textContent).toContain('Protection or localization');
+    expect(qs[4].textContent).toContain('it never feeds the recommendation');
     expect(screen.queryByTestId('cell-drawer-sector-link')).toBeNull();
     fireEvent.keyDown(window, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByTestId('cell-drawer')).toBeNull());
@@ -307,10 +307,10 @@ describe('the Country Strategy Map', () => {
     expect(need.textContent).toContain('Target / climate gap80% · national data · National commitments');
     expect(need.textContent).toContain('System neednot assessed');
     expect(need.textContent).toContain('Climate-aligned (alternative scenario, not used in the choice)+104% vs current policies · World 2035, Net Zero vs Current Policies · global context · Climate-aligned');
-    expect(need.textContent).not.toContain('Supply-chain need');
+    expect(need.textContent).not.toContain('Supply-chain vulnerability');
     expect(need.textContent).not.toContain('Import dependence');
     expect((d.querySelector('[data-question="prize"]') as HTMLElement).textContent).toContain('Domestic manufacturing priority');
-    expect((d.querySelector('[data-question="choice"]') as HTMLElement).textContent).toContain('Deployment priority: high');
+    expect((d.querySelector('[data-question="choice"]') as HTMLElement).textContent).toContain('Deploy a technology faster because the domestic energy system needs more of it. It says nothing about making the equipment at home. Domestic manufacturing priority, read at the producing stages, is');
     expect((d.querySelector('[data-question="policy"]') as HTMLElement).textContent).toContain('Needs more attention: deployment policy lags');
   });
 
@@ -319,18 +319,18 @@ describe('the Country Strategy Map', () => {
     const d = await screen.findByTestId('cell-drawer');
     await waitFor(() => expect(d.textContent).toContain('Mitigation:'));
     expect(d.textContent).toContain('Chokepoint risk');
-    expect(d.textContent).toContain('not reshoring everything');
+    expect(d.textContent).toContain('not necessarily self-sufficiency');
     cleanup();
     at('/', <CountryPostureCard iso3="AAA" name="Aland" selected="Solar|Extraction" />);
     const w = await screen.findByTestId('cell-drawer');
-    await waitFor(() => expect(w.textContent).toContain('Domestic industrial priority: low (low need; low prize; ample diversified supply)'));
+    await waitFor(() => expect(w.textContent).toContain('Low domestic priority (low need; low prize; ample diversified supply): a deliberate choice, not a failure.'));
     expect(w.textContent).toContain('not a failure');
     cleanup();
     at('/', <CountryPostureCard iso3="AAA" name="Aland" selected="Batteries|Recovery" />);
     const n = await screen.findByTestId('cell-drawer');
     await waitFor(() => expect(n.textContent).toContain('Supply-chain need is not measured for this node.'));
     expect(n.textContent).toContain('never as Watch');
-    expect((n.querySelector('[data-question="policy"]') as HTMLElement).textContent).toContain('No recommendation, so no alignment to judge.');
+    expect((n.querySelector('[data-question="policy"]') as HTMLElement).textContent).toContain('Not assessed, so there is no recommendation to compare policy with.');
   });
 
   it('Catch Up says its position from the cell: a top-quarter score that did not pass the Preserve test, or not measured', async () => {
@@ -340,19 +340,19 @@ describe('the Country Strategy Map', () => {
     at('/', <CountryPostureCard iso3="AAA" name="Aland" selected="Batteries|Components" />);
     let choice = await choiceOf();
     expect(choice.textContent).toContain(
-      'A large prize, a top-quarter score that does not pass the Preserve test (not a contender, or below the capability floor) and a credible route to build capability.',
+      'A large prize, a top-quarter score that does not pass the Preserve test (not a main producer, or below the capability floor), and a credible pathway: a real capability to build from (an anchor, corroborated by a signal of another kind).',
     );
     expect(choice.textContent).not.toContain('a position below the top quarter');
     cleanup();
     setPostureStore(fixtureStore({ core: withCell(fixtureCore(), 0, 0, 2, { cp: null }) }));
     at('/', <CountryPostureCard iso3="AAA" name="Aland" selected="Batteries|Components" />);
     choice = await choiceOf();
-    expect(choice.textContent).toContain('A large prize, position not measured and a credible route to build capability.');
+    expect(choice.textContent).toContain('A large prize, position not measured, and a credible pathway: a real capability to build from');
     cleanup();
     setPostureStore(fixtureStore());
     at('/', <CountryPostureCard iso3="AAA" name="Aland" selected="Batteries|Components" />);
     choice = await choiceOf();
-    expect(choice.textContent).toContain('A large prize, a position below the top quarter and a credible route to build capability.');
+    expect(choice.textContent).toContain('A large prize, a position below the top quarter, and a credible pathway: a real capability to build from');
   });
 
   it('Policy alignment gives support, protection and momentum as ranks within the country: never shares or a signed change', async () => {
@@ -362,13 +362,13 @@ describe('the Country Strategy Map', () => {
     await waitFor(() => expect(policy.textContent).toContain('Supportmoderate, 60th percentile in the country'));
     expect(policy.textContent).toContain('Observed policy intensitymoderate, 60th percentile in the country');
     // no protection measure recorded: not its tied rank
-    expect(policy.textContent).toContain('Protection or localisationnone recorded');
+    expect(policy.textContent).toContain('Protection or localizationnone recorded');
     expect(policy.textContent).toContain('Policy momentum (recent activity)low, 12th percentile in the country');
     expect(policy.textContent).not.toMatch(/\+12%|30%|within the country\)/);
     cleanup();
     at('/', <CountryPostureCard iso3="AAA" name="Aland" selected="Batteries|Extraction" />);
     const e = (await screen.findByTestId('cell-drawer')).querySelector('[data-question="policy"]') as HTMLElement;
-    await waitFor(() => expect(e.textContent).toContain('Protection or localisationhigh, 90th percentile in the country'));
+    await waitFor(() => expect(e.textContent).toContain('Protection or localizationhigh, 90th percentile in the country'));
     expect(e.textContent).toContain('Supportlow, 20th percentile in the country');
     expect(e.textContent).toContain('Policy momentum (recent activity)rising');
   });
@@ -439,7 +439,7 @@ describe('the Country Strategy Map', () => {
 
   it('an economy without a posture: a notice, no card', async () => {
     at('/', <CountryPostureCard iso3="ZZZ" name="Zland" />);
-    expect((await screen.findByText('No posture')).closest('[role="status"]')?.textContent).toContain('Zland has no classified supply-chain nodes');
+    expect((await screen.findByText('No strategy map')).closest('[role="status"]')?.textContent).toContain('There is not enough comparable evidence to produce a strategy map for Zland.');
     expect(screen.queryByRole('heading')).toBeNull();
   });
 
@@ -450,7 +450,7 @@ describe('the Country Strategy Map', () => {
     cleanup();
     setPostureStore(fixtureStore({ core: { ...fixtureCore(), schema_version: 1 } }));
     at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
-    expect((await screen.findByText('The posture data could not be loaded')).closest('[role="status"], [role="alert"]')?.textContent).toMatch(/retired Need x Opportunity/);
+    expect((await screen.findByText('The strategy data could not be loaded')).closest('[role="status"], [role="alert"]')?.textContent).toMatch(/retired Need x Opportunity/);
   });
 
   it('keeps an h2 when standing alone', async () => {
@@ -725,18 +725,18 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     const d = await screen.findByTestId('cell-drawer');
     const qs = within(d).getAllByTestId('drawer-question');
     expect(qs).toHaveLength(5);
-    expect(qs[1].querySelector('p')?.textContent).toBe('Is domestic capability here strategically valuable: a market prize, industrial commons, a future option?');
-    await waitFor(() => expect(within(qs[1]).getByTestId('drawer-prize').textContent).toContain('Node prize'));
+    expect(qs[1].querySelector('p')?.textContent).toBe('Is productive capability here strategically valuable?');
+    await waitFor(() => expect(within(qs[1]).getByTestId('drawer-prize').textContent).toContain('Expected world demand growth'));
     const prize = [...within(qs[1]).getByTestId('drawer-prize').querySelectorAll('dt')].map((dt) => [dt.textContent?.trim(), dt.nextElementSibling?.textContent]);
     expect(prize).toEqual([
       ['Strategic Industrial Value', '90% (high at 60% or more)'],
       ['Market prize (Industrial Opportunity)', '85%'],
-      ['Node prize (expected world demand growth)', '90%'],
+      ['Expected world demand growth', '90%'],
       ['Investment momentum', 'not assessed'],
       ['Home-market growth (national data only)', 'not assessed'],
       ['Basis', 'global context'],
       ['Industrial commons (process knowledge, workforce and suppliers, cross-sector spillover)', '100% (3 of 3 attributes observed)'],
-      ['Future option (the leap tests of a leap candidate)', '50% (4 of 4 leap tests observed)'],
+      ['Future option value (the leap tests: is a credible leap ahead in reach?)', '50% (4 of 4 leap tests observed)'],
     ]);
     // Choice: the trace counts the large-yard signals, the pivotal input is named
     expect(qs[3].textContent).toContain('Large-yard case (commodity signals): 2 signals (bar 5 signals) → no');
@@ -773,7 +773,7 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     const y = await within(d).findByTestId('drawer-yards');
     await waitFor(() => expect(within(y).getByTestId('drawer-large-yard').textContent).toContain('(this economy)'));
     expect(within(y).getByTestId('drawer-own-yard').textContent).toBe('Large yard · Low fence');
-    expect(within(d).getByTestId('drawer-variant').textContent).toBe('Domestic industrial priority low');
+    expect(within(d).getByTestId('drawer-variant').textContent).toBe('Low domestic priority');
     expect(within(y).getByTestId('drawer-large-yard').textContent).toBe(
       'Large-yard case (this economy): Holds: affordable, diversified access should dominate, whatever the size of the market (6 commodity signals hold); kept with a capability floor (moderate industrial learning).Signals that hold: mature, passive, substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation.',
     );
@@ -810,7 +810,7 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     fireEvent.click(within(m).getByRole('button', { name: /^Batteries Component Manufacturing/ }));
     const d = await screen.findByTestId('cell-drawer');
     const p = within(d).getAllByTestId('drawer-question')[1];
-    await waitFor(() => expect(p.textContent).toContain('Node prize'));
+    await waitFor(() => expect(p.textContent).toContain('Expected world demand growth'));
     expect([...p.querySelectorAll('dt')][0].textContent?.trim()).toBe('Industrial Opportunity');
     expect(p.textContent).not.toMatch(/Strategic Industrial Value|Industrial commons|Future option|Market prize/);
     expect(screen.queryByTestId('legend-mixed')).toBeNull();

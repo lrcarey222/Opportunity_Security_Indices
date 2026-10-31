@@ -44,7 +44,7 @@ export const DIVERSIFY_STATUS_WORDS: Readonly<Record<string, { label: string; me
     label: 'Already as diversified as its benchmark',
     meaning: 'as diversified as its benchmark, or above it by less than a small tolerance: the scenario leaves it as it is',
   },
-  [NO_BENCHMARK]: { label: 'No benchmark', meaning: 'no other line of its heading and no other node of its dictionary sector to compare it with' },
+  [NO_BENCHMARK]: { label: 'No benchmark', meaning: 'no other line of its heading and no other supply-chain step of its dictionary sector to compare it with' },
 };
 
 /** A status in words (an unknown status as written). */
@@ -275,7 +275,7 @@ export function diversifyTotals(nodes: readonly AibNode[]): DiversifyTotals {
 
 /** "China (26 nodes), Germany (6) and the United States (5)": the most-capped suppliers, at most `max`. */
 export function cappedWords(capped: DiversifyTotals['capped'], names: Readonly<Record<string, string>>, max = 3): string {
-  return listWords(capped.slice(0, max).map((c, i) => `${nameOf(names, c.iso3)} (${i === 0 ? plural(c.nodes, 'node') : c.nodes})`));
+  return listWords(capped.slice(0, max).map((c, i) => `${nameOf(names, c.iso3)} (${i === 0 ? plural(c.nodes, 'step') : c.nodes})`));
 }
 
 /**
@@ -284,7 +284,7 @@ export function cappedWords(capped: DiversifyTotals['capped'], names: Readonly<R
  */
 export function aboveWords(t: Pick<DiversifyTotals, 'above' | 'withBenchmark'>): string {
   const one = t.above === 1;
-  return `${t.above} of the ${plural(t.withBenchmark, 'node')} with a benchmark ${one ? 'is' : 'are'} more concentrated than ${one ? 'its' : 'their'} benchmark by more than a small tolerance`;
+  return `${t.above} of the ${plural(t.withBenchmark, 'supply-chain step')} with a benchmark ${one ? 'is' : 'are'} more concentrated than ${one ? 'its' : 'their'} benchmark by more than a small tolerance`;
 }
 
 /**
@@ -298,12 +298,12 @@ export function totalsWords(t: DiversifyTotals): string {
   if (!t.assessed) return '';
   const within = t.withinCap ? ` (in ${plural(t.withinCap, 'of them', 'of them')} no supplier to the allied market is above the cap, so nothing shifts)` : '';
   const near = t.nearBenchmark
-    ? ` ${plural(t.nearBenchmark, 'other node')} ${t.nearBenchmark === 1 ? 'sits above its benchmark by less than that and is' : 'sit above their benchmark by less than that and are'} left as ${t.nearBenchmark === 1 ? 'it is' : 'they are'}.`
+    ? ` ${plural(t.nearBenchmark, 'other step')} ${t.nearBenchmark === 1 ? 'sits above its benchmark by less than that and is' : 'sit above their benchmark by less than that and are'} left as ${t.nearBenchmark === 1 ? 'it is' : 'they are'}.`
     : '';
   const head = `${aboveWords(t)}${within}.${near}`;
   if (!t.diversified) return head;
-  const shift = `Capping their suppliers in the allied market at the share that would bring each down to its benchmark shifts ${fmtUsd(t.shiftUsd)} of supply${t.shiftShare !== null ? ` (${fmtShare(t.shiftShare, 0)} of the allied demand in those nodes)` : ''} away from the capped suppliers.`;
-  const trade = `Existing relationships and optimized trade restore ${fmtUsd(t.tradeUsd)} with the cap holding; ${fmtUsd(t.gapUsd)} is left for new capacity${t.closedByTrade ? `, and in ${plural(t.closedByTrade, 'node')} trade replaces everything` : ''}.`;
+  const shift = `Capping their suppliers in the allied market at the share that would bring each down to its benchmark shifts ${fmtUsd(t.shiftUsd)} of supply${t.shiftShare !== null ? ` (${fmtShare(t.shiftShare, 0)} of the allied demand at those steps)` : ''} away from the capped suppliers.`;
+  const trade = `Existing relationships and coordinated trade recover ${fmtUsd(t.tradeUsd)} with the cap holding; ${fmtUsd(t.gapUsd)} still needs new capacity${t.closedByTrade ? `, and at ${plural(t.closedByTrade, 'step')} trade replaces everything` : ''}.`;
   return `${head} ${shift} ${trade}`;
 }
 
@@ -343,7 +343,7 @@ export function basisWords(basis: string | null | undefined): string {
     const codes = hs[1].split(/\s*[;,]\s*/).filter(Boolean);
     return `the other HS6 lines of heading${codes.length > 1 ? 's' : ''} ${listWords(codes)}`;
   }
-  if (/^other nodes of the sector$/i.test(b)) return 'the other nodes of its dictionary sector';
+  if (/^other nodes of the sector$/i.test(b)) return 'the other supply-chain steps of its dictionary sector';
   return /^other\b/i.test(b) ? `the ${b}` : b;
 }
 
@@ -373,7 +373,7 @@ export function diversifyWords(r: DiversifyRow, names: Readonly<Record<string, s
       ];
     case NO_BENCHMARK:
       return [
-        `No benchmark: its customs heading has no other line and its dictionary sector no other node to compare it with, so the scenario leaves it as it is.${isNum(d.currentHhi) ? ` Its concentration (HHI) is ${fmtScore(d.currentHhi)}.` : ''}`,
+        `No benchmark: its customs heading has no other line and its dictionary sector no other supply-chain step to compare it with, so the scenario leaves it as it is.${isNum(d.currentHhi) ? ` Its concentration (HHI) is ${fmtScore(d.currentHhi)}.` : ''}`,
       ];
     case WITHIN_CAP:
       return [
@@ -400,10 +400,10 @@ export function diversifyWords(r: DiversifyRow, names: Readonly<Record<string, s
     isNum(d.residual) && d.residual > 1e-9
       ? `new capacity has to fill the remaining ${fmtShare(d.residual)}${isNum(r.gapUsd) ? ` (${fmtUsd(r.gapUsd)})` : ''}`
       : 'trade under the cap replaces all of it, so no new capacity is needed';
-  if (opts.coverage !== false) out.push(`With the cap holding, existing relationships restore coverage to ${fmtShare(d.existing)} and optimized trade to ${fmtShare(d.optimized)}; ${gap}.`);
+  if (opts.coverage !== false) out.push(`With the cap holding, existing relationships bring coverage to ${fmtShare(d.existing)} and coordinated trade to ${fmtShare(d.optimized)}; ${gap}.`);
   const extra = [
-    d.cls ? `Class under the scenario: ${diversifyClassText(d.cls, r.clsWarning)}.` : null,
-    d.hosts.length ? `Leading hosts for the new capacity: ${namesOf(d.hosts, names)}.` : null,
+    d.cls ? `What it needs under the scenario: ${diversifyClassText(d.cls, r.clsWarning)}.` : null,
+    d.hosts.length ? `Best-placed countries to add the new capacity: ${namesOf(d.hosts, names)}.` : null,
     relationshipsOf(d.partners).length ? `Largest new or expanded relationships: ${relationshipWords(d.partners, names)}.` : null,
   ].filter((x): x is string => x !== null);
   if (extra.length) out.push(extra.join(' '));

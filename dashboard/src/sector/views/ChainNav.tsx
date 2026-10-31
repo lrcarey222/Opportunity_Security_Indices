@@ -24,6 +24,7 @@ import { fmtShare } from '../format.ts';
 import { useAibDoc } from './aibData.ts';
 import { useTrade } from './data.ts';
 import { useSectorUrl } from './state.tsx';
+import { SECTOR_SECTION } from '../copy.ts';
 
 interface StageCol {
   stage: StageSlug;
@@ -47,7 +48,7 @@ function NodeMarks({ nodes, sub }: { nodes: AibNode[]; sub: string }) {
           </span>
         ))}
       </span>
-      {apart.length > 0 && <span className="block text-xs text-paper-mute">Allied Industrial Base nodes: {joinLabels(apart.map((n) => n.label))}</span>}
+      {apart.length > 0 && <span className="block text-xs text-paper-mute">Allied Industrial Base steps: {joinLabels(apart.map((n) => n.label))}</span>}
     </>
   );
 }
@@ -158,7 +159,7 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
                   {c.exists && !c.subs.length && (
                     <li className="text-xs text-paper-mute">{c.hasTrade ? (trade ? 'One trade basket, no components' : 'Loading the components…') : c.stage === 'deployment' ? 'No traded components (deployment and use)' : 'No trade basket'}</li>
                   )}
-                  {c.unmatched.length > 0 && <li className="text-xs text-paper-mute">Also modelled: {joinLabels(c.unmatched.map((n) => n.label))}</li>}
+                  {c.unmatched.length > 0 && <li className="text-xs text-paper-mute">Also in the Allied Industrial Base analysis: {joinLabels(c.unmatched.map((n) => n.label))}</li>}
                 </ul>
               </li>
             );
@@ -170,8 +171,8 @@ export function ChainNav({ tech, stage = null, sub = null, collapsible = false }
           Percentages: each component’s share of the stage’s world exports.
           {anyNodes && (
             <>
-              {' '}Marks: the class the <Link className="link" to="/aib">Allied Industrial Base</Link> model gives the matching supply-chain node (shown under Energy Security)
-              {dictionary ? ': a node of the electro-industrial dictionary whose codes sit in the component; one node can sit under several components and stages.' : '.'}
+              {' '}Marks: what the matching <Link className="link" to="/aib">Allied Industrial Base</Link> supply-chain step needs (shown under {SECTOR_SECTION.allies.title})
+              {dictionary ? ': a step of the electro-industrial dictionary whose codes sit in the component; one step can sit under several components and stages.' : '.'}
             </>
           )}
         </p>

@@ -1,5 +1,6 @@
-// The four lenses at the top of the Sector profile (IA refactor 2026-10-16, brief s.6): Economic
-// Opportunity, Energy Security, Policy, Climate. Each card: one sentence, one to three key figures, one
+// The four lenses at the top of the Sector profile (IA refactor 2026-10-16, brief s.6; titled by the page's
+// questions since the NEIS copy refresh 2026-10-30, ../../copy.ts): where the capability sits, where the risk
+// sits, what policy is doing, climate. Each card: one sentence, one to three key figures, one
 // small existing chart or list where it helps, and a link down to the section that holds the detail.
 // Everything is read from data the profile already loads (sector facts, the technology's trade chunk,
 // the sector-policy chunk) plus the Allied Industrial Base document (read-only); no new measure. When
@@ -33,6 +34,7 @@ import { hasSubTrade, subComponents, subLatestYear, subSlice, validSub } from '.
 import { concentrationSummary, theName } from '../../derive/text.ts';
 import { fmtHhi, fmtShare, lc, listText } from '../../format.ts';
 import { useAibDoc } from '../aibData.ts';
+import { AIB_COLUMN, SECTOR_SECTION } from '../../copy.ts';
 import { climateLensFigures, ClimateEmissions } from './Climate.tsx';
 import { NzeLensLine, NzePathways } from './Nze.tsx';
 import { ClimateSources } from './ClimateSources.tsx';
@@ -178,8 +180,8 @@ function EconomicLens({ basis }: { basis: LensBasis | null }) {
   const inv = model.varById.get('investment.annual');
   const invYear = inv && model.availOf(inv, cell.idx).length ? baseYear(model, facts, inv, cell, eu) : null;
   const invM = inv && invYear !== null ? measureConc(model, facts, inv, cell, invYear, eu) : null;
-  const more = { href: '#markets', label: 'Competitiveness & markets' };
-  if (!basis) return <LensCard id="lens-eo" title="Economic Opportunity" headline="No country-level measure of market size for this sector." metrics={null} more={more} />;
+  const more = { href: '#markets', label: SECTOR_SECTION.capability.title };
+  if (!basis) return <LensCard id="lens-eo" title={SECTOR_SECTION.capability.title} headline="No country-level measure of market size for this sector." metrics={null} more={more} />;
   const { v, item, year, conc } = basis;
   const share = v.unit.unit_kind === 'share' || v.unit.unit_kind === 'pct';
   const gw = basis.growth ? growthWords(basis.growth) : null;
@@ -192,7 +194,7 @@ function EconomicLens({ basis }: { basis: LensBasis | null }) {
   return (
     <LensCard
       id="lens-eo"
-      title="Economic Opportunity"
+      title={SECTOR_SECTION.capability.title}
       headline={headline}
       metrics={
         <>
@@ -210,7 +212,7 @@ function EconomicLens({ basis }: { basis: LensBasis | null }) {
 
 function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: AibNode[]; doc: AibDoc | null }) {
   const { model, highlight } = useProfile();
-  const more = { href: '#security', label: 'Security & concentration' };
+  const more = { href: '#security', label: SECTOR_SECTION.risk.title };
   const shock = doc ? (doc.meta.shocks.find((s) => s.id === doc.meta.headlineShock)?.label ?? null) : null;
   const c = basis?.conc ?? null;
   const top = c?.top1 ? model.geos[c.top1.geo] : null;
@@ -224,9 +226,9 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
   return (
     <LensCard
       id="lens-es"
-      title="Energy Security"
+      title={SECTOR_SECTION.risk.title}
       headline={headline}
-      note={byExports && c && c.W !== null ? 'These shares are of export value, not production. Production and capacity, where the data hold them, are under Security & concentration.' : undefined}
+      note={byExports && c && c.W !== null ? `These shares are of export value, not production. Production and capacity, where the data hold them, are under ${SECTOR_SECTION.risk.title}.` : undefined}
       metrics={
         basis && c && c.W !== null ? (
           <>
@@ -252,7 +254,7 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
                       <ClassChip cls={n.cls} />
                     </div>
                     <div className="text-xs text-paper-mute">
-                      Shock exposure {fmtShare(n.exposure)} · residual gap {fmtShare(n.residual)}
+                      {AIB_COLUMN.exposure} {fmtShare(n.exposure)} · {lc(AIB_COLUMN.residual)} {fmtShare(n.residual)}
                       {compact ? (
                         <>
                           {' · '}
@@ -261,7 +263,7 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
                           </Link>
                         </>
                       ) : (
-                        ' · no compact'
+                        ' · no Sectoral Compact'
                       )}
                     </div>
                   </li>
@@ -270,13 +272,14 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
             </ul>
           ) : (
             <p className="mt-1 text-xs text-paper-mute">
-              The Allied Industrial Base model has no {taxonomyOf(doc.meta).dictionary ? 'node with codes in' : 'supply-chain node for'} this {basis?.sub ? 'component' : 'sector'}.
+              The Allied Industrial Base analysis has no {taxonomyOf(doc.meta).dictionary ? 'supply-chain step with codes in' : 'supply-chain step for'} this {basis?.sub ? 'component' : 'sector'}.
             </p>
           )}
           {nodes.length > 0 && (
             <p className="mt-2 text-xs text-paper-mute">
-              Allied Industrial Base model{shock ? `, ${lc(shock)}` : ''}: shock exposure is the share of demand lost; the residual gap is what even coordinated trade cannot restore.
-              {taxonomyOf(doc.meta).dictionary ? ' The nodes are electro-industrial dictionary nodes whose codes sit here; each result is for the whole node.' : ''}
+              {SECTOR_SECTION.allies.question} Allied Industrial Base{shock ? ` stress test (${lc(shock)})` : ''}: supply exposed is the share of allied demand the stress test cuts off; the
+              remaining gap is what even coordinated allied trade cannot recover, which needs new capacity.
+              {taxonomyOf(doc.meta).dictionary ? ' The steps are those of the electro-industrial dictionary whose codes sit here; each result is for the whole step.' : ''}
             </p>
           )}
         </div>
@@ -308,7 +311,7 @@ function PolicyLens({ p }: { p: ReturnType<typeof usePolicyFacts> }) {
   const { model, cell, tech } = useProfile();
   const { link } = useSectorUrl();
   const label = model.cellLabel(cell);
-  const more = { href: '#policy-technology', label: 'Policy' };
+  const more = { href: '#policy-technology', label: SECTOR_SECTION.policy.title };
   const top = p.byC[0] ? model.geos[p.byC[0].geo] : null;
   const headline = p.loading
     ? 'Loading the policy records…'
@@ -322,7 +325,7 @@ function PolicyLens({ p }: { p: ReturnType<typeof usePolicyFacts> }) {
   return (
     <LensCard
       id="lens-policy"
-      title="Policy"
+      title={SECTOR_SECTION.policy.title}
       headline={headline}
       metrics={
         p.n > 0 ? (
@@ -517,37 +520,37 @@ export function AibNodesBlock() {
   return (
     <Section
       id="aib-nodes"
-      title="Allied Industrial Base nodes"
+      title={SECTOR_SECTION.allies.title}
       sub={
         tx.dictionary
-          ? `What the Allied Industrial Base model finds for the nodes of the electro-industrial dictionary whose traded codes sit in this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows. The nodes are not this sector's sub-sectors: each has its own supply-chain stage and reaches this sector through the codes it shares with it (a node can sit in several sectors, and its results are for the whole node).`
-          : `What the Allied Industrial Base model finds for the supply-chain nodes of this sector${shock ? ` under its headline shock (${lc(shock)})` : ''}: how much demand the shock cuts off, how much coordinated trade among allies restores, what is left, and the policy class that follows.`
+          ? `${SECTOR_SECTION.allies.question} For each Allied Industrial Base supply-chain step whose traded codes sit in this sector${shock ? `, under its main stress test (${lc(shock)})` : ''}: how much allied demand is exposed, how much more allies recover by coordinating trade, the gap that remains for new capacity, and what the step needs. These steps come from the electro-industrial dictionary, not this sector's own components: each has its own supply-chain stage and reaches this sector through the codes it shares (a step can sit in several sectors, and its results are for the whole step).`
+          : `${SECTOR_SECTION.allies.question} For each Allied Industrial Base supply-chain step of this sector${shock ? `, under its main stress test (${lc(shock)})` : ''}: how much allied demand is exposed, how much more allies recover by coordinating trade, the gap that remains for new capacity, and what the step needs.`
       }
       aside={<span className="eyebrow">Observed / modelled facts</span>}
     >
       <TableView
         rows={rows}
-        caption={tx.dictionary ? 'Allied Industrial Base nodes with codes in this sector' : 'Allied Industrial Base nodes of this sector'}
+        caption={tx.dictionary ? 'Allied Industrial Base supply-chain steps with codes in this sector' : 'Allied Industrial Base supply-chain steps of this sector'}
         rowKey={(n) => n.id}
         cols={[
-          { id: 'n', header: 'Node', value: (n) => n.label, cell: (n) => (apart(n).length ? <span>{n.label} <span className="text-xs text-paper-mute">(in {apart(n).join(', ')})</span></span> : n.label), minWidth: 150 },
+          { id: 'n', header: AIB_COLUMN.node, value: (n) => n.label, cell: (n) => (apart(n).length ? <span>{n.label} <span className="text-xs text-paper-mute">(in {apart(n).join(', ')})</span></span> : n.label), minWidth: 150 },
           { id: 's', header: 'Supply-chain stage', value: (n) => (n.stage ? stageLabel(n.stage) : '–') },
           { id: 't', header: 'Technologies', value: (n) => nodeTechLabels(n).join(', ') || '–', minWidth: 160 },
-          { id: 'c', header: 'Class', value: (n) => n.cls, cell: (n) => <ClassChip cls={n.cls} /> },
-          { id: 'e', header: 'Shock exposure', value: (n) => n.exposure, cell: (n) => fmtShare(n.exposure), num: true },
-          { id: 'd', header: 'Coordination dividend', value: (n) => dividendOf(n), cell: (n) => fmtPp(dividendOf(n)), num: true },
-          { id: 'r', header: 'Residual gap', value: (n) => n.residual, cell: (n) => fmtShare(n.residual), num: true },
-          { id: 'l', header: 'Supply lost', value: (n) => n.lostUsd, cell: (n) => fmtUsd(n.lostUsd), num: true },
-          { id: 'k', header: 'Compact', value: (n) => n.compact ?? '', cell: (n) => { const k = n.compact ? doc.compacts.find((x) => x.id === n.compact) : null; return k ? <Link className="link" to={compactHref(k.id)}>{compactTitle(k, doc.nodes)}</Link> : <span className="text-paper-mute">none</span>; } },
+          { id: 'c', header: AIB_COLUMN.cls, value: (n) => n.cls, cell: (n) => <ClassChip cls={n.cls} /> },
+          { id: 'e', header: AIB_COLUMN.exposure, value: (n) => n.exposure, cell: (n) => fmtShare(n.exposure), num: true },
+          { id: 'd', header: AIB_COLUMN.dividend, value: (n) => dividendOf(n), cell: (n) => fmtPp(dividendOf(n)), num: true },
+          { id: 'r', header: AIB_COLUMN.residual, value: (n) => n.residual, cell: (n) => fmtShare(n.residual), num: true },
+          { id: 'l', header: AIB_COLUMN.lost, value: (n) => n.lostUsd, cell: (n) => fmtUsd(n.lostUsd), num: true },
+          { id: 'k', header: AIB_COLUMN.compact, value: (n) => n.compact ?? '', cell: (n) => { const k = n.compact ? doc.compacts.find((x) => x.id === n.compact) : null; return k ? <Link className="link" to={compactHref(k.id)}>{compactTitle(k, doc.nodes)}</Link> : <span className="text-paper-mute">none</span>; } },
         ]}
       />
       {otherStage.length > 0 && (
         <p className="text-xs text-paper-mute" data-testid="aib-nodes-stages">
-          A node sits here because some of its traded codes are filed under {TECH_LABELS[tech]} — {here}; its own stage is where the dictionary files the node as a whole, so {listText(otherStage.map((n) => `${n.label} (${stageLabel(n.stage)})`))} {otherStage.length === 1 ? 'reads' : 'read'} another stage here.
+          A step sits here because some of its traded codes are filed under {TECH_LABELS[tech]} — {here}; its own stage is where the dictionary files the step as a whole, so {listText(otherStage.map((n) => `${n.label} (${stageLabel(n.stage)})`))} {otherStage.length === 1 ? 'reads' : 'read'} another stage here.
         </p>
       )}
       <p className="text-xs text-paper-mute">
-        Shock exposure: the share of demand the shock cuts off. Coordination dividend: the extra share restored when allies coordinate trade rather than keep today’s relationships. Residual gap: what even coordinated trade cannot restore, which needs new capacity. These do not change with any preference setting.{' '}
+        {AIB_COLUMN.exposure} (shock exposure): the share of allied demand the stress test cuts off. {AIB_COLUMN.dividend} (the coordination dividend): the extra share allies recover when they coordinate trade rather than keep today’s relationships. {AIB_COLUMN.residual} (residual gap): what even coordinated trade cannot recover, which needs new capacity. {AIB_COLUMN.cls}: the Allied Industrial Base treatment. None of these changes with any preference setting.{' '}
         <Link className="link" to="/aib">
           The Allied Industrial Base
         </Link>

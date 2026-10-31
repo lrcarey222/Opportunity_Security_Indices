@@ -21,13 +21,15 @@ import { PAGE } from './views/common.tsx';
 import { useLoadingStatus } from './views/data.ts';
 import { CaptionProvider, PageNotesProvider, SectorBar, SvgDefs, type SectorBarPicker } from './views/kit.tsx';
 import { SectorUrlProvider, useSectorUrl } from './views/state.tsx';
+import { SECTOR_SECTION } from './copy.ts';
 
 /**
- * Notes always in "Data notes" (spec 9: the dials apply to Strategic Insights only). The Strategic posture
- * sections (design L3) are the one recommendation on these pages, at fixed thresholds: the note says so.
+ * Notes always in "Data notes" (spec 9: the dials apply to Strategic Insights only). The strategic-choice
+ * sections ("What each country should do"; design L3) are the one recommendation on these pages, at fixed
+ * thresholds: the note says so.
  */
 const ALWAYS_NOTES = [
-  'The Perspective dials of the Country profile never change these pages. They show measured values, with no weights and no scores, except the Strategic posture sections: a recommendation of the strategic position framework at fixed thresholds, which the dials do not change either.',
+  `The Perspective dials of the Country profile never change these pages. They show measured values, with no weights and no scores, except the “${SECTOR_SECTION.choice.title}” sections: a recommendation at fixed thresholds, which the dials do not change either.`,
 ];
 
 /** The module title while no view is mounted (loading, no data, errors); views set their own. */

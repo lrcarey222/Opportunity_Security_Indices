@@ -36,7 +36,7 @@ export { STAGE_DISPLAY, STAGE_SHORT, stageDisplay, stageShort } from '../lib/sta
 import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
 // The user-facing words (choice names and actions, fence names, alignment and Secure-rationale labels) come from
 // the shared vocabulary (content/vocabulary.ts, the NEIS copy refresh of 2026-10-30), so every page says them alike.
-import { ALIGNMENT_DEPLOYMENT_GAP, ALIGNMENT_NAME, CHOICE_ACTION, CHOICE_NAME, FENCE_NAME, RATIONALE_NAME } from '../content/vocabulary.ts';
+import { ALIGNMENT_DEPLOYMENT_GAP, ALIGNMENT_EXAMPLE, ALIGNMENT_NAME, CHOICE_ACTION, CHOICE_NAME, FENCE_NAME, RATIONALE_NAME } from '../content/vocabulary.ts';
 
 // ---- the three families -----------------------------------------------------------------------------
 
@@ -147,11 +147,11 @@ export function nodeFill(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode'>
 
 /** Why a node is Secure, in plain words: "Control-system risk", "Chokepoint risk", "System resilience" (vocabulary RATIONALE_NAME). */
 export const RATIONALE_LABEL: Record<SecurityRationale, string> = RATIONALE_NAME;
-/** The short words of the legend and the sentence: "operational / control", "chokepoint", "systemic resilience". */
+/** The short words of the strategy sentence and the decision trace: the plain rationale names in lower case ("control-system risk", "chokepoint risk", "system resilience"). */
 export const RATIONALE_SHORT: Record<SecurityRationale, string> = {
-  operational_control: 'operational / control',
-  coercive_chokepoint: 'chokepoint',
-  systemic_resilience: 'systemic resilience',
+  operational_control: RATIONALE_NAME.operational_control.toLowerCase(),
+  coercive_chokepoint: RATIONALE_NAME.coercive_chokepoint.toLowerCase(),
+  systemic_resilience: RATIONALE_NAME.systemic_resilience.toLowerCase(),
 };
 export const RATIONALE_ORDER: SecurityRationale[] = ['operational_control', 'coercive_chokepoint', 'systemic_resilience'];
 export const RATIONALE_WORDS: Record<SecurityRationale, string> = {
@@ -182,13 +182,15 @@ export const ALIGNMENT_LABEL: Record<Alignment, string> = {
   ...ALIGNMENT_CLASS_LABEL,
   deployment_gap: ALIGNMENT_DEPLOYMENT_GAP,
 };
-/** What each alignment means, for the drawer and the Policy Alignment section (spec X). */
+/** A vocabulary sentence as a clause: no final full stop (the drawer adds its own). */
+const clause = (s: string): string => s.replace(/\.$/, '');
+/** What each alignment means, for the drawer and the Policy Alignment section (spec X; the guide's examples, vocabulary ALIGNMENT_EXAMPLE). */
 export const ALIGNMENT_WORDS: Record<Alignment, string> = {
   aligned: 'observed policy matches the recommended choice',
-  under_prioritized: 'the recommended choice calls for more policy effort than observed',
-  over_prioritized: 'heavy protection or localisation where no domestic industrial priority is recommended',
-  misaligned: 'the policy treatment is the wrong one for the choice (e.g. localisation where allies are the answer)',
-  deployment_gap: 'deployment needs to accelerate but deployment policy is weak: an under-response',
+  under_prioritized: 'the recommended choice calls for more policy attention than this step receives',
+  over_prioritized: clause(ALIGNMENT_EXAMPLE.watchHeavyProtection),
+  misaligned: clause(ALIGNMENT_EXAMPLE.partnerLocalization),
+  deployment_gap: clause(ALIGNMENT_EXAMPLE.accelerateWeakPolicy),
   mixed: 'the policy signals disagree',
   insufficient_data: 'too few policy records to judge',
 };
@@ -231,7 +233,7 @@ export const BASIS_LABEL: Record<string, string> = {
   global_context: 'global context',
   not_assessed: 'not assessed',
   peers: 'among peers',
-  contenders: 'among contenders',
+  contenders: 'among the main producers',
 };
 export const basisWords = (b: string | null | undefined): string | null => (b ? (BASIS_LABEL[b] ?? b.replace(/_/g, ' ')) : null);
 export const DELIVERY_LABEL: Record<string, string> = { domestic: 'domestic', allied: 'allied', diversified_global: 'diversified global', mixed: 'mixed' };
@@ -240,7 +242,7 @@ export const deliveryWords = (d: string | null | undefined): string | null => (d
 export const FLAG_LABEL: Record<string, string> = {
   review_strong_position_low_prize: 'Review: strong position with high need but a low prize (kept as Preserve, not Partner)',
   // R decision_engine.R SP_CHOICE_FLAGS
-  review_top_quarter_below_floor: 'Review: position in the top quarter of contenders but below the capability floor (so not Preserve)',
+  review_top_quarter_below_floor: 'Review: position in the top quarter of the main producers but below the capability floor (so not Preserve)',
 };
 export const flagWords = (f: string | null | undefined): string | null => (f ? (FLAG_LABEL[f] ?? f.replace(/_/g, ' ')) : null);
 
@@ -254,7 +256,7 @@ export const WATCH_REASON_LABEL: Record<string, string> = {
   low_need: 'Low need',
   low_prize: 'Low prize',
   ample_diversified_supply: 'Ample diversified supply',
-  weak_domestic_case: 'Weak domestic case',
+  weak_domestic_case: 'Weak domestic case (no strong position or credible pathway)',
   option_value: 'Emerging technology, research and option value',
   low_deployment_need: 'Deployment need below the acceleration bar',
   // R decision_engine.R (2026-10-30): the large-yard case holds, so affordable, diversified access should dominate
@@ -265,9 +267,9 @@ export const watchReasonWords = (r: string): string => WATCH_REASON_LABEL[r] ?? 
 
 /** The policy-alignment notes R writes (posture_engine.R sp_policy_alignment flags; docs/strategic_position.md). */
 export const ALIGNMENT_FLAG_LABEL: Record<string, string> = {
-  partner_autarkic: 'protection or localisation in the top third where the choice is Partner',
+  partner_autarkic: 'protection or localization in the top third where the choice is Partner',
   fence_without_build: 'heavy protection with little support (a fence without a build)',
-  watch_protection: 'heavy protection or localisation where the choice is Watch',
+  watch_protection: 'heavy protection or localization where the choice is Watch',
   watch_localisation_deployment: 'heavy local-content protection on the equipment of a Watch deployment',
   watch_attention: 'heavy total policy attention where the choice is Watch (protection not measured)',
   weak_deployment_policy: 'deployment policy below the middle where the choice is Accelerate',
@@ -329,10 +331,10 @@ export const TRACE_TEST_LABEL: Record<string, string> = {
   secure_override: 'Secure tests',
   large_yard_case: 'Large-yard case (commodity signals)',
   deployment_need: 'Deployment need',
-  supply_chain_need: 'Supply-chain need',
+  supply_chain_need: 'Supply-chain vulnerability',
   strategic_industrial_value: PRIZE_LABEL,
   industrial_opportunity: 'Industrial Opportunity (market prize)',
-  cp_contender_pct: 'Competitive Position among contenders',
+  cp_contender_pct: 'Competitive Position among the main producers',
   pathway_credible: 'Credible pathway',
   choice: 'Choice',
 };
@@ -352,7 +354,7 @@ const TRACE_CODE_LABEL: Record<string, string> = {
   not_classified: 'not classified',
   not_top_quarter: 'not in the top quarter',
   capability_floor_not_met: 'top quarter, capability floor not met',
-  not_a_contender: 'top quarter, not a contender',
+  not_a_contender: 'top quarter, not a main producer',
 };
 export const traceTestWords = (t: string): string => TRACE_TEST_LABEL[t] ?? t.replace(/_/g, ' ');
 export const traceCodeWords = (v: string): string => codeList(v, TRACE_CODE_LABEL) ?? v;

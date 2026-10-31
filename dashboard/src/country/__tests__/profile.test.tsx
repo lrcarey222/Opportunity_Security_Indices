@@ -277,7 +277,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       });
       await waitFor(() => expect(r.state.location.pathname).toBe('/countries'), { timeout: 30_000 });
       expect(await screen.findByText("No country with the code 'QQQ'; showing all countries.", {}, { timeout: 30_000 })).toBeTruthy();
-      expect(screen.getByRole('heading', { level: 1, name: 'Countries' })).toBeTruthy();
+      expect(screen.getByRole('heading', { level: 1, name: 'What should this country secure, build, partner for or deploy?' })).toBeTruthy();
     } finally {
       setEngineClient(null);
     }
@@ -290,11 +290,11 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       // an old #aib-role link lands on Allied Strategy: the compacts in which the economy holds a role, under the scenario
       const r = renderAt('/countries/usa?scn=decoupling#aib-role');
       await waitFor(() => expect(r.state.location.pathname).toBe('/countries/USA'), { timeout: 30_000 });
-      await h2('Allied Strategy');
+      await h2('Where this country fits in the Allied Industrial Base');
       const role = document.getElementById('allied')!;
       expect(document.getElementById('aib-role')?.closest('section')).toBe(role);
       const ops = await within(role).findByTestId('allied-operational-compacts', {}, { timeout: 20_000 });
-      expect(within(ops).getByTestId('allied-scenario').textContent).toMatch(/^Shown under Decoupling/);
+      expect(within(ops).getByTestId('allied-scenario').textContent).toMatch(/^Results below use \S.*\. Change the scenario to see whether the United States' role changes when the supply risk changes\./);
       expect(within(ops).getAllByRole('link', { name: 'AIB-C01' })[0].getAttribute('href')).toBe('/compacts/AIB-C01?scn=decoupling');
       expect(within(ops).getAllByTestId('allied-compact-role').some((x) => /Demand anchor/.test(x.textContent ?? ''))).toBe(true);
       // only the compacts: no operational role matrix, no network relationships
@@ -302,7 +302,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       expect(within(role).queryByTestId('aib-relationships')).toBeNull();
       expect(within(role).getByRole('link', { name: /See all country roles/ }).getAttribute('href')).toBe('/aib/roles?economy=USA&scn=decoupling#role-USA');
       // Partnerships (the Medium fence's Partner sub-section): Trade first, then Investment and Development through the URL
-      await h3('Partner');
+      await h3('Partner: where should this country rely on allies?');
       const part = document.getElementById('medium-partner')!;
       expect(part.closest('section#medium-fence')).toBeTruthy();
       expect(within(part).getByTestId('ptab-trade')).toBeTruthy();
@@ -311,7 +311,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       await waitFor(() => expect(r.state.location.search).toBe('?ptab=investment&scn=decoupling'));
       expect(within(part).getByRole('heading', { name: 'Investment flows in the Allied Industrial Base' })).toBeTruthy();
       expect(within(part).getByTestId('aib-as-investor').textContent).toMatch(/New capacity at 2 hosts serves [$]570 m a year/);
-      expect(within(part).getByTestId('aib-as-host').textContent).toMatch(/is not the best-ranked host/);
+      expect(within(part).getByTestId('aib-as-host').textContent).toMatch(/is not the best-placed country to add capacity in any supply-chain step/);
       fireEvent.click(within(part).getByRole('radio', { name: 'Development' }));
       await waitFor(() => expect(r.state.location.search).toBe('?ptab=development&scn=decoupling'));
       expect(within(part).getByRole('heading', { name: 'Capacity to build in its compacts' })).toBeTruthy();
@@ -334,7 +334,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
     setEngineClient(client);
     try {
       const r = renderAt('/countries/USA');
-      await h2('Evidence & Methodology');
+      await h2('Evidence & methodology');
       await openLegacy();
       const eo = column('Opportunity');
       const es = column('Security');
@@ -403,7 +403,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by
       expect(none.closest('section#medium-position')).toBeTruthy();
       cleanup();
       renderAt('/countries/BRA#prize-position');
-      await h2('Medium fence · Preserve, Catch Up, Partner, Accelerate');
+      await h2('Medium fence · Build, preserve, partner and deploy');
       expect(screen.queryByTestId('trade-monthly')).toBeNull();
       expect(screen.queryByTestId('trade-monthly-none')).toBeNull();
     } finally {

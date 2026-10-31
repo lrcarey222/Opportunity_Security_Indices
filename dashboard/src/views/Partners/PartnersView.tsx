@@ -20,6 +20,7 @@ import { WorldMap, type MapCell } from '../../charts/WorldMap.tsx';
 import { CountrySelect } from '../../components/CountrySelect.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { Term } from '../../components/Term.tsx';
+import { PARTNERSHIP } from '../../content/vocabulary.ts';
 import { EmptyState, FilterRow, Loading, Notice, PageHead, RankChip, Select } from '../../components/ui.tsx';
 import type { Table } from '../../engine/types.ts';
 import { rowsToCsv, tableToCsv } from '../../lib/csv.ts';
@@ -501,7 +502,7 @@ export default function PartnersView({ embedded = false }: { embedded?: boolean 
             How strong a partner each economy is for the one you pick, across energy supply chains. The <Term id="psi" /> combines{' '}
             <Term id="fs" /> (a friendshoring opportunity: a partner where it could invest and source to meet its own security need in a sector, because the partner has an economic opportunity there, the two already trade and invest with each other and they are aligned in UN votes),{' '}
             <Term id="po" /> (a market for its exports) and, for middle- and lower-income partners, <Term id="dp" />. Each pair is summarised by its{' '}
-            <Term id="best_five">five strongest sectors</Term>.
+            <Term id="best_five">five strongest sectors</Term>. {PARTNERSHIP.psiCaveat}
           </>
         }
       >

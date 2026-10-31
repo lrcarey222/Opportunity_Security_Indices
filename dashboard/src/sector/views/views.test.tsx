@@ -71,7 +71,7 @@ const openGroups = async () => {
 describe('Sector routes render on the fixture', () => {
   it('home: questions, the Atlas, minerals and themes', async () => {
     renderAt('/sector');
-    expect(await h1('Energy supply chains, measured')).toBeTruthy();
+    expect(await h1('Where are the real bottlenecks and opportunities?')).toBeTruthy();
     expect(document.title).toMatch(/^Sectors \| Allied Industrial Base Explorer/);
     expect(screen.getByRole('link', { name: 'Who controls supply?' })).toBeTruthy();
     expect(screen.getByRole('group', { name: /Supply-chain cells/ })).toBeTruthy();
@@ -84,7 +84,7 @@ describe('Sector routes render on the fixture', () => {
 
   it('home: arrow keys move across Atlas tiles', async () => {
     renderAt('/sector');
-    await h1('Energy supply chains, measured');
+    await h1('Where are the real bottlenecks and opportunities?');
     const first = screen.getByRole('link', { name: /^Batteries — Extraction/ });
     first.focus();
     // six columns in chain order: right from Extraction is Refining, down is the next technology's Refining
@@ -98,7 +98,7 @@ describe('Sector routes render on the fixture', () => {
 
   it('home with c: facts load and tiles show the position', async () => {
     renderAt('/sector?c=USA');
-    await h1('Energy supply chains, measured');
+    await h1('Where are the real bottlenecks and opportunities?');
     await waitFor(() => expect(screen.getByRole('link', { name: /^Batteries — Assembly: .*USA/ })).toBeTruthy(), { timeout: 10_000 });
   });
 
@@ -120,14 +120,14 @@ describe('Sector routes render on the fixture', () => {
 
   it('invalid link values are listed in the "Ignored in the link" notice', async () => {
     renderAt('/sector?lens=red&c=XXX');
-    await h1('Energy supply chains, measured');
+    await h1('Where are the real bottlenecks and opportunities?');
     expect(screen.getByText('Ignored in the link')).toBeTruthy();
     expect(screen.getByText(/lens=red/)).toBeTruthy();
   });
 
   it('CSV of the Atlas', async () => {
     renderAt('/sector');
-    await h1('Energy supply chains, measured');
+    await h1('Where are the real bottlenecks and opportunities?');
     expect(SECTOR_CSV_HEADER.split(',')).toHaveLength(18);
     expect(SECTOR_CSV_HEADER.endsWith(',note')).toBe(true);
   });
@@ -135,7 +135,7 @@ describe('Sector routes render on the fixture', () => {
   it('the phone SectorBar opens a dialog that traps focus and closes on Escape', async () => {
     wide = false;
     renderAt('/sector');
-    await h1('Energy supply chains, measured');
+    await h1('Where are the real bottlenecks and opportunities?');
     const bar = screen.getByTestId('sector-bar');
     fireEvent.click(within(bar).getByRole('button', { name: /Filters/ }));
     const dlg = await screen.findByRole('dialog', { name: /Filters/ });
@@ -289,7 +289,7 @@ describe('Minerals', () => {
 describe('Concentration', () => {
   it('the board, the lens in the URL, a tile opens its section; the note is always there', async () => {
     const r = renderAt('/sector/concentration');
-    expect(await h1('Concentration across sectors')).toBeTruthy();
+    expect(await h1('Where are the chokepoints?')).toBeTruthy();
     expect(document.title).toMatch(/^Concentration \| Sectors \| /);
     expect(screen.getByText(/Compared within one measure family; values come from different sources and years and are never added\./)).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Concentration board' })).toBeTruthy();
@@ -310,7 +310,7 @@ describe('Concentration', () => {
 
   it('mineral sub-rows open behind the chevron and link to the mineral page; EU bloc shows the note', async () => {
     const r = renderAt('/sector/concentration?eu=bloc');
-    expect(await h1('Concentration across sectors')).toBeTruthy();
+    expect(await h1('Where are the chokepoints?')).toBeTruthy();
     expect(screen.getByText('EU-27 as one raises measured concentration where members are large.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Show Batteries sub-rows' }));
     fireEvent.click(screen.getByRole('button', { name: /^Lithium \(Batteries\), Refining:/ }));
@@ -451,16 +451,18 @@ describe('Country in sector', () => {
   });
 });
 
-describe('Sources & data', () => {
+describe('Sources & data (Data behind the sector analysis)', () => {
   it('about, dictionary, sources, coverage, the trade basis, downloads and the build', async () => {
     renderAt('/sector/sources');
-    expect(await h1('Sources & data')).toBeTruthy();
+    expect(await h1('Data behind the sector analysis')).toBeTruthy();
+    // the tab keeps its short name
     expect(document.title).toMatch(/^Sources & data \| Sectors \| /);
+    expect(document.querySelector('main')?.textContent).toContain('What each measure means, where it comes from and where coverage is strong or weak');
     expect(screen.getByRole('heading', { level: 2, name: 'What the Sector pages show' })).toBeTruthy();
     expect(screen.getByText(/The Country profiles rank and weigh; the Sector pages show the measured data those rankings start from\./)).toBeTruthy();
     expect(screen.queryByText(/\{members_n\}|\{core_n\}/)).toBeNull();
     // the cards inside the Dictionary and Sources sections have their own names (unique landmarks, C5.8)
-    for (const name of ['Every measure: unit, years, source and caveats', 'Every source: edition, licence and attribution', 'Coverage by sector and measure family', 'Coalition coverage', "Trade basis: the matrix and the exporters' reports"]) {
+    for (const name of ['Every measure: unit, years, source and caveats', 'Every source: edition, licence and attribution', 'Coverage by sector and measure family', 'Which sources cover the coalition members', "Trade basis: the matrix and the exporters' reports"]) {
       expect(screen.getByRole('heading', { level: 3, name })).toBeTruthy();
     }
     expect(screen.getByRole('heading', { level: 3, name: 'All sector data (.zip)' })).toBeTruthy();
@@ -492,7 +494,7 @@ describe('Profile ZIP and keyboard', () => {
 
   it('Enter on an Atlas tile opens the profile', async () => {
     const r = renderAt('/sector');
-    await h1('Energy supply chains, measured');
+    await h1('Where are the real bottlenecks and opportunities?');
     const tile = screen.getByRole('link', { name: /^Batteries — Assembly/ });
     tile.focus();
     fireEvent.click(tile);
@@ -507,20 +509,26 @@ describe('Sector profile: lenses, supply-chain navigator and groups (IA refactor
     await openGroups();
     // the four lenses
     expect(await screen.findByRole('heading', { level: 2, name: 'What to know about Batteries — Assembly' }, { timeout: 10_000 })).toBeTruthy();
-    for (const name of ['Economic Opportunity', 'Energy Security', 'Policy', 'Climate']) expect(screen.getByRole('heading', { level: 3, name })).toBeTruthy();
+    // the lenses are titled by the page's questions (copy refresh 2026-10-30): capability, risk, policy, climate
+    for (const name of ['Where the capability sits', 'Where the risk sits', 'What policy is doing', 'Climate']) expect(screen.getByRole('heading', { level: 3, name })).toBeTruthy();
     const eo = screen.getByTestId('lens-eo');
-    expect(within(eo).getByRole('link', { name: /Competitiveness & markets/ }).getAttribute('href')).toBe('#markets');
+    expect(within(eo).getByRole('link', { name: /Where the capability sits/ }).getAttribute('href')).toBe('#markets');
+    expect(within(screen.getByTestId('lens-es')).getByRole('link', { name: /Where the risk sits/ }).getAttribute('href')).toBe('#security');
     // Sector -> Country: the lens's largest exporters link to their Country profiles
     expect(within(eo).getAllByRole('link').some((a) => /^\/countries\/[A-Z]{3}$/.test(a.getAttribute('href') ?? ''))).toBe(true);
     expect(within(screen.getByTestId('lens-climate')).getByText(/Sector-level climate data are limited/)).toBeTruthy();
     // the groups, in order, and the rail lists them
-    for (const name of ['Competitiveness & markets', 'Security & concentration', 'Policy', 'Climate', 'Advanced & evidence']) {
+    for (const name of ['Where the capability sits', 'Where the risk sits', 'What policy is doing', 'Climate', 'Advanced & evidence']) {
       expect(screen.getByRole('heading', { level: 2, name })).toBeTruthy();
     }
     const rail = screen.getByRole('navigation', { name: 'Sections' });
     expect(within(rail).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['#overview', '#posture', '#markets', '#security', '#policy-technology', '#climate', '#evidence']);
-    // the Strategic posture section between the lenses and the groups (design L3), never folded
-    expect(screen.getByRole('heading', { level: 2, name: 'Strategic posture' })).toBeTruthy();
+    // the strategic-choice section between the lenses and the groups (design L3), never folded
+    expect(screen.getByRole('heading', { level: 2, name: 'What each country should do' })).toBeTruthy();
+    // each group opens on the question it answers
+    expect(document.getElementById('markets')?.textContent).toContain("Who produces, exports or controls this supply-chain step today, and how strong is each country's position?");
+    expect(document.getElementById('security')?.textContent).toContain('How dependent are countries on concentrated or hard-to-replace supply?');
+    expect(document.getElementById('policy-technology')?.textContent).toContain('Is government action concentrated where the strategic case is strongest?');
     expect(document.getElementById('posture')?.textContent).toMatch(/Strategic position framework · fixed thresholds/);
     expect(document.getElementById('markets')?.contains(document.getElementById('snapshot'))).toBe(true);
     expect(document.getElementById('security')?.contains(document.getElementById('who'))).toBe(true);
@@ -548,7 +556,7 @@ describe('Sector profile: lenses, supply-chain navigator and groups (IA refactor
     renderAt('/sector/batteries/assembly#trade');
     expect(await h1('Batteries — Assembly')).toBeTruthy();
     expect(await screen.findByTestId('lens-eo', {}, { timeout: 10_000 })).toBeTruthy();
-    // the link opened Competitiveness & markets; the others are folded
+    // the link opened "Where the capability sits"; the others are folded
     expect(await screen.findByRole('heading', { level: 2, name: 'Trade' }, { timeout: 10_000 })).toBeTruthy();
     expect(screen.queryByRole('heading', { level: 2, name: 'Who holds the market' })).toBeNull();
     const security = document.getElementById('security') as HTMLElement;
@@ -563,8 +571,8 @@ describe('Sector profile: lenses, supply-chain navigator and groups (IA refactor
 
   it('the landing picks a technology; its chain shows the navigator open', async () => {
     const r = renderAt('/sector');
-    expect(await h1('Energy supply chains, measured')).toBeTruthy();
-    fireEvent.click(within(screen.getByRole('heading', { name: 'Pick a technology' }).closest('section') as HTMLElement).getByRole('link', { name: 'Batteries' }));
+    expect(await h1('Where are the real bottlenecks and opportunities?')).toBeTruthy();
+    fireEvent.click(within(screen.getByRole('heading', { name: 'Follow a technology' }).closest('section') as HTMLElement).getByRole('link', { name: 'Batteries' }));
     await waitFor(() => expect(r.state.location.pathname).toBe('/sector/batteries'));
     expect(await h1('Batteries: the supply chain')).toBeTruthy();
     const nav = screen.getByRole('navigation', { name: 'Batteries supply chain' });

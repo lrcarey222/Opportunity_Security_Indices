@@ -33,12 +33,12 @@ import { NODE_MARK, NodeCoverageBar } from '../../charts/NodeCoverageBar.tsx';
 import { CoverageLegend, ScenarioTag } from '../../charts/ScenarioCompare.tsx';
 import { ACCEPTABLE_COVERAGE, COSTLESS_COLOR, FrontierChart, REQUIRED_COLOR } from '../../charts/FrontierChart.tsx';
 import { capLabel, FRONTIER_SERIES, frontierReadings, frontierRows, hasReoptimizedN1, INSTANTANEOUS_N1_LABEL, N1_REOPTIMIZED_LABEL, nodesWithFrontier, type FrontierRow } from '../../derive/frontier.ts';
-import { classInfo, classMix, policyNeedsText } from '../../derive/classes.ts';
+import { classInfo, classMix, policyNeedsWords } from '../../derive/classes.ts';
 import { fmtPp, fmtScore, fmtShare, fmtUsd, listWords, plural } from '../../derive/format.ts';
 import { screenedHostNote } from '../../derive/investment.ts';
 import { nodeCsvRow, nodeRow } from '../../derive/nodes.ts';
 import { nodeScenarioCsv, nodeScenarioNote } from '../../derive/scenarioPages.ts';
-import { nodeScenario, nodeSuppliersToday, scenarioCsvFields } from '../../derive/scenarios.ts';
+import { nodeScenario, nodeSuppliersToday, scenarioCsvFields, scenarioInfo } from '../../derive/scenarios.ts';
 import { classVariants, constraintClasses, growthFlag, growthRows, robustnessSummary, variantWarning } from '../../derive/sensitivity.ts';
 import { nodeStageRank, nodeStageWords, nodeTechWords, nodeWhere, osiCellHref, osiCellsOfNode, subcomponentsOfCell } from '../../derive/taxonomy.ts';
 import { cellLabel } from '../../../lib/format.ts';
@@ -82,6 +82,9 @@ function NodeCells({ n }: { n: AibNode }) {
 }
 
 /** A class with the warning named after it in a plain-text cell ("COORDINATE (PHYSICAL CAPABILITY NOT VALIDATED)"). */
+/** The step-by-step section's title (the guide: "Supply-chain step by step"; a node in the data). */
+export const NODE_SECTION_TITLE = 'Supply-chain step by step';
+
 const clsText = (cls: string | null, warning: boolean | null) => (cls ? `${classInfo(cls).label}${warning ? ` (${AIB_PHYSICAL_WARNING})` : ''}` : null);
 
 function NodeItem({ n }: { n: AibNode }) {
@@ -93,7 +96,7 @@ function NodeItem({ n }: { n: AibNode }) {
   const modes = constraintClasses(n);
   const flag = growthFlag(n);
   const today = hasScenarios ? nodeSuppliersToday(n) : [];
-  const coverageWords = `${n.label}: shock alone ${fmtShare(n.static)}, existing relationships ${fmtShare(n.existing)}, optimized trade ${fmtShare(n.optimized)} of demand served`;
+  const coverageWords = `${n.label}: disruption alone ${fmtShare(n.static)}, existing relationships ${fmtShare(n.existing)}, coordinated trade ${fmtShare(n.optimized)} of demand met`;
   // the host types (2026-10-20): an older bundle has the one ranked list only
   const typed = n.specialtyHosts !== undefined || n.developmentHosts !== undefined;
   const typedHosts = (xs: readonly string[] | undefined) => (xs?.length ? listWords(xs.map((h) => name(h))) : 'none');
@@ -120,7 +123,7 @@ function NodeItem({ n }: { n: AibNode }) {
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
           {n.policyNeeds !== undefined && (
             <span className="text-xs text-paper-dim" data-testid="policy-needs">
-              <span className="text-paper-mute">Policy needs:</span> {policyNeedsText(n.policyNeeds)}
+              <span className="text-paper-mute">Actions needed:</span> {policyNeedsWords(n.policyNeeds)}
             </span>
           )}
           {n.warning && (
@@ -175,7 +178,7 @@ function NodeItem({ n }: { n: AibNode }) {
           )}
         </div>
         <dl className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs">
-          <dt className="text-paper-mute">Largest optimized supplier</dt>
+          <dt className="text-paper-mute">Largest supplier after coordinated trade</dt>
           <dd className="text-paper-dim">
             {mi && r.ran ? (
               r.largest ? (
@@ -238,13 +241,13 @@ function NodeItem({ n }: { n: AibNode }) {
             <>
               <dt className="text-paper-mute">Recommended treatment</dt>
               <dd className="text-paper-dim">{n.treatment ?? '–'}</dd>
-              <dt className="text-paper-mute">Why this class</dt>
+              <dt className="text-paper-mute">Why this treatment</dt>
               <dd className="text-paper-dim">{n.reason ?? '–'}</dd>
             </>
           )}
           {(n.physicalValidation !== undefined || n.physicalData !== undefined) && (
             <>
-              <dt className="text-paper-mute">Physical validation</dt>
+              <dt className="text-paper-mute">Production check</dt>
               <dd className="text-paper-dim" data-testid="physical-validation">
                 {n.physicalValidation ?? '–'}
                 {n.physicalData && !/physical data/.test(n.physicalValidation ?? '') ? `; physical data ${n.physicalData}` : ''}
@@ -254,7 +257,7 @@ function NodeItem({ n }: { n: AibNode }) {
           )}
           {!mi && modes && (
             <>
-              <dt className="text-paper-mute">Class by supply constraint</dt>
+              <dt className="text-paper-mute">Treatment by supply constraint</dt>
               <dd className="text-paper-dim" data-testid="constraint-classes">
                 production-constrained <FlaggedClass cls={modes.productionConstrained} warning={modes.productionConstrainedWarning} />; trade-only{' '}
                 <FlaggedClass cls={modes.tradeOnly} warning={modes.tradeOnlyWarning} />
@@ -291,7 +294,7 @@ function NodeItem({ n }: { n: AibNode }) {
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-paper-mute">No data-quality flags for this node.</p>
+            <p className="text-xs text-paper-mute">No data-quality flags for this step.</p>
           )}
         </Disclosure>
       </div>
@@ -302,7 +305,6 @@ function NodeItem({ n }: { n: AibNode }) {
 /** `frontier`: also show the specialization frontier card (false when the page puts it under method details). */
 export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
   const { c, displayName, nodes, meta, names, tx, scenario, hasScenarios } = useCompact();
-  const mi = scenario === 'managed';
   const mix = classMix(nodes.map((n) => n.cls));
   const rows = nodes.map((n) => nodeRow(n, names, tx));
   const mixed = mix.length > 1;
@@ -322,7 +324,7 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
   const scenarioCols: Col<(typeof rows)[number]>[] = [
     { id: 'miCls', header: 'Class under Managed Interdependence', value: (r) => { const f = mf(r.id); return f?.ran && f.cls ? classInfo(f.cls).label : 'unchanged'; }, minWidth: 160 },
     { id: 'miShift', header: 'Share shifted (Managed Interdependence)', value: (r) => (mf(r.id)?.ran ? mf(r.id)!.exposure : null), cell: (r) => (mf(r.id)?.ran ? fmtShare(mf(r.id)!.exposure) : '–'), num: true },
-    { id: 'miOpt', header: 'Optimized coverage (Managed Interdependence)', value: (r) => mf(r.id)?.optimized ?? null, cell: (r) => fmtShare(mf(r.id)?.optimized), num: true },
+    { id: 'miOpt', header: 'Coverage, coordinated trade (Managed Interdependence)', value: (r) => mf(r.id)?.optimized ?? null, cell: (r) => fmtShare(mf(r.id)?.optimized), num: true },
     { id: 'miGap', header: 'Gap left (Managed Interdependence, USD)', value: (r) => mf(r.id)?.residualUsd ?? null, cell: (r) => fmtUsd(mf(r.id)?.residualUsd), num: true },
     {
       id: 'todayHhi',
@@ -335,7 +337,7 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
     },
   ];
   const cols: Col<(typeof rows)[number]>[] = [
-    { id: 'node', header: 'Node', value: (r) => r.node },
+    { id: 'node', header: 'Supply-chain step', value: (r) => r.node },
     { id: 'techs', header: tx.Many, value: (r) => nodeTechWords(nodeById.get(r.id) ?? { yfCells: [] }) },
     {
       id: 'stage',
@@ -344,23 +346,23 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
       sortValue: (r) => nodeStageRank(nodeById.get(r.id) ?? { yfCells: [] }),
       title: "The stages of the OSI cells the node's codes sit in; none when no code is in the OSI basket.",
     },
-    { id: 'cls', header: hasScenarios ? 'Class under Decoupling' : 'Class', value: (r) => classInfo(r.cls).label },
-    { id: 'needs', header: 'Policy needs', value: (r) => r.policyNeeds },
+    { id: 'cls', header: hasScenarios ? 'What it needs under the major-supplier disruption' : 'What it needs', value: (r) => classInfo(r.cls).label },
+    { id: 'needs', header: 'Actions needed (codes)', value: (r) => r.policyNeeds },
     { id: 'warning', header: 'Warning', value: (r) => r.warning ?? 'none', minWidth: 200 },
-    { id: 'exposure', header: 'Shock exposure', value: (r) => r.exposure, cell: (r) => fmtShare(r.exposure), num: true },
-    { id: 'existing', header: 'Existing coverage', value: (r) => r.existing, cell: (r) => fmtShare(r.existing), num: true },
-    { id: 'optimized', header: 'Optimized coverage', value: (r) => r.optimized, cell: (r) => fmtShare(r.optimized), num: true },
+    { id: 'exposure', header: 'Supply exposed to the disruption', value: (r) => r.exposure, cell: (r) => fmtShare(r.exposure), num: true },
+    { id: 'existing', header: 'Coverage, existing relationships', value: (r) => r.existing, cell: (r) => fmtShare(r.existing), num: true },
+    { id: 'optimized', header: 'Coverage, coordinated trade', value: (r) => r.optimized, cell: (r) => fmtShare(r.optimized), num: true },
     { id: 'dividend', header: 'Coordination dividend', value: (r) => r.dividend, cell: (r) => fmtPp(r.dividend), num: true },
-    { id: 'residual', header: 'Residual gap', value: (r) => r.residual, cell: (r) => fmtShare(r.residual), num: true },
-    { id: 'largest', header: 'Largest optimized supplier', value: (r) => r.optimizedLargest },
+    { id: 'residual', header: 'Remaining gap', value: (r) => r.residual, cell: (r) => fmtShare(r.residual), num: true },
+    { id: 'largest', header: 'Largest supplier after coordinated trade', value: (r) => r.optimizedLargest },
     { id: 'largestShare', header: 'Its share', value: (r) => r.optimizedLargestShare, cell: (r) => fmtShare(r.optimizedLargestShare), num: true },
-    { id: 'hhi', header: 'Concentration (HHI)', value: (r) => r.hhi, cell: (r) => fmtScore(r.hhi), num: true, title: 'Herfindahl-Hirschman Index of the optimized supply: 1 = one supplier' },
+    { id: 'hhi', header: 'Concentration (HHI)', value: (r) => r.hhi, cell: (r) => fmtScore(r.hhi), num: true, title: 'Herfindahl-Hirschman Index of the supply after coordinated trade: 1 = one supplier' },
     { id: 'n1', header: 'N-1 re-optimized', value: (r) => r.n1Reoptimized, cell: (r) => fmtShare(r.n1Reoptimized), num: true, title: N1_REOPTIMIZED_LABEL },
     { id: 'n1i', header: 'Instantaneous N-1', value: (r) => r.instantaneousN1, cell: (r) => fmtShare(r.instantaneousN1), num: true, title: INSTANTANEOUS_N1_LABEL },
-    { id: 'tradeOnly', header: 'Class, trade-only', value: (r) => clsText(r.tradeOnlyCls, r.tradeOnlyWarning), minWidth: 160 },
+    { id: 'tradeOnly', header: 'Treatment, trade-only', value: (r) => clsText(r.tradeOnlyCls, r.tradeOnlyWarning), minWidth: 160 },
     { id: 'warnedVariants', header: 'Warning under other settings', value: (r) => warnedElsewhere.get(r.id) ?? null, minWidth: 200 },
-    { id: 'growth', header: 'Class depends on the growth bound', value: (r) => r.growthFlag ?? (r.coordinateSensitiveToGrowth === null ? null : 'no'), minWidth: 220 },
-    { id: 'physical', header: 'Physical validation', value: (r) => r.physicalValidation, minWidth: 220 },
+    { id: 'growth', header: 'Treatment depends on the growth bound', value: (r) => r.growthFlag ?? (r.coordinateSensitiveToGrowth === null ? null : 'no'), minWidth: 220 },
+    { id: 'physical', header: 'Production check', value: (r) => r.physicalValidation, minWidth: 220 },
     { id: 'hosts', header: 'Scaling hosts', value: (r) => r.hosts || 'none ranked' },
     { id: 'specialtyHosts', header: 'Specialty hosts', value: (r) => r.specialtyHosts || 'none' },
     { id: 'developmentHosts', header: 'Development hosts', value: (r) => r.developmentHosts || 'none' },
@@ -384,25 +386,25 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
   return (
     <Section
       id="nodes"
-      title="Node-by-node structure"
+      title={NODE_SECTION_TITLE}
       intro={
         <p>
           {mixed
-            ? `The nodes of this compact get ${mix.length} different treatments (${listWords(mix.map((m) => `${m.n} ${classInfo(m.cls).label}`))}): one compact combines different instruments node by node.`
-            : `All ${plural(nodes.length, 'node')} of this compact ${nodes.length === 1 ? 'is' : 'are'} classified ${classInfo(mix[0]?.cls ?? '').label}; in other compacts nodes can get different treatments.`}{' '}
-          Each node has one headline class; its policy needs can name several instruments at once.
-          {warned.length ? ` The class of ${listWords(warned.map((n) => n.label))} carries a physical-capability warning.` : ''}
+            ? `The supply-chain steps of this compact get ${mix.length} different treatments (${listWords(mix.map((m) => `${classInfo(m.cls).label} ${m.n}`))}): one compact combines different tools step by step.`
+            : `All ${plural(nodes.length, 'supply-chain step')} of this compact ${nodes.length === 1 ? 'gets' : 'get'} the treatment ${classInfo(mix[0]?.cls ?? '').label}; in other compacts steps can get different treatments.`}{' '}
+          Each step has one headline treatment; it can need several actions at once. In the data each step is a node: a group of traded goods at one stage.
+          {warned.length ? ` The treatment of ${listWords(warned.map((n) => n.label))} carries a warning: production evidence is weak.` : ''}
         </p>
       }
     >
       <ChartCard
         headingLevel={3}
-        title="Each node's coverage and treatment"
+        title="Each step's coverage and treatment"
         badge={hasScenarios ? <ScenarioTag id={scenario} meta={meta} /> : undefined}
         sub={
           hasScenarios
-            ? `Each node's allied demand under the three scenarios (Baseline is trade as it is today): what the market keeps, what existing relationships and optimized trade restore, and what only new capacity fills; the scenario chosen above is highlighted and the figures below each node are ${mi ? 'Managed Interdependence' : 'Decoupling'}'s.`
-            : 'On each track: the gray tick is the shock alone, the hollow dot existing relationships, the blue dot the optimized trade solution; the line between them is the coordination dividend and the empty track to 100% the residual gap.'
+            ? `Each step's allied demand under the three scenarios (${scenarioInfo(meta, 'baseline').label} is trade as it is today): what stays supplied, what existing relationships and coordinated trade recover, and what only new capacity fills; the scenario chosen above is highlighted and the figures below each step are ${scenarioInfo(meta, scenario).label}'s.`
+            : 'On each track: the gray tick is the disruption alone, the hollow dot existing relationships, the blue dot coordinated trade; the line between them is the coordination dividend and the empty track to 100% the remaining gap.'
         }
         legend={
           hasScenarios ? (
@@ -411,9 +413,9 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
             <Legend
               label="Coverage marks"
               items={[
-                { label: 'Shock alone (static)', color: NODE_MARK.static, kind: 'tick' },
+                { label: 'Disruption alone', color: NODE_MARK.static, kind: 'tick' },
                 { label: 'Existing relationships', color: NODE_MARK.existing, kind: 'hollow' },
-                { label: 'Optimized trade', color: NODE_MARK.optimized, kind: 'dot' },
+                { label: 'Coordinated trade', color: NODE_MARK.optimized, kind: 'dot' },
               ]}
             />
           )
@@ -451,7 +453,7 @@ export function FrontierCard() {
     { id: 'n1Removed', header: 'Supplier removed', value: (r) => r.n1RemovedName },
     { id: 'instantaneousN1', header: INSTANTANEOUS_N1_LABEL, value: (r) => r.instantaneousN1, cell: (r) => fmtShare(r.instantaneousN1), num: true },
     { id: 'specialization', header: 'Specialization score', value: (r) => r.specialization, cell: (r) => fmtScore(r.specialization), num: true },
-    { id: 'largest', header: 'Largest optimized supplier', value: (r) => r.largestName },
+    { id: 'largest', header: 'Largest supplier after coordinated trade', value: (r) => r.largestName },
     { id: 'largestShare', header: 'Its share', value: (r) => r.largestShare, cell: (r) => fmtShare(r.largestShare), num: true },
   ];
   const csv = () => ({
@@ -506,7 +508,7 @@ export function FrontierCard() {
       notes={
         node ? (
           <span>
-            {hasScenarios && scenario === 'managed' ? 'Computed under Decoupling only. ' : ''}
+            {hasScenarios && scenario === 'managed' ? 'Computed under the major-supplier disruption only. ' : ''}
             {node.label}: the tightest limit that costs at most 2 points of coverage is {readings.costless ?? 'not in this export'}; the loosest limit that keeps coverage at {acceptable} or
             more after {n1Words} is {readings.required ?? 'not in this export'}.
           </span>
@@ -518,7 +520,7 @@ export function FrontierCard() {
       {node && rows.length ? (
         <FrontierChart rows={rows} required={required} costless={costless} ariaLabel={summary} />
       ) : (
-        <EmptyState>None of this compact&apos;s nodes has a supplier-limit frontier in this export.</EmptyState>
+        <EmptyState>None of this compact&apos;s supply-chain steps has a resilience/concentration trade-off curve in these results.</EmptyState>
       )}
     </ChartCard>
   );

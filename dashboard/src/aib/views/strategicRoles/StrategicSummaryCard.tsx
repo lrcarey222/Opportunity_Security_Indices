@@ -45,7 +45,7 @@ export function StrategicSummaryCard({
       <p className="mt-2 text-[0.9375rem] leading-relaxed text-paper" data-testid="strategic-headline">
         {headlineSentence(sum)}
       </p>
-      {sum.firstOnList.length > 0 && <p className="mt-1 text-sm text-paper-dim">First among allied economies in {listWords(sum.firstOnList)}.</p>}
+      {sum.firstOnList.length > 0 && <p className="mt-1 text-sm text-paper-dim">First among allied countries in {listWords(sum.firstOnList)}.</p>}
       <dl className="mt-4 grid gap-x-8 gap-y-5 md:grid-cols-2">
         <SummaryItem term="Primary strategic roles" testId="slot-roles">
           <HeldRoles sum={sum} />
@@ -60,13 +60,13 @@ export function StrategicSummaryCard({
         </SummaryItem>
         <SummaryItem term="Most important strategic compacts" testId="slot-compacts">
           {sum.compacts.length ? <CompactRoleList roles={sum.compacts} s={s} scenario={scenario} limit={TOP_COMPACTS} /> : <Quiet>No role in a strategic compact.</Quiet>}
-          {rest.length > 0 && <p className="mt-1 text-xs text-paper-mute">A role in {rest.length} more: see How the model derives this.</p>}
+          {rest.length > 0 && <p className="mt-1 text-xs text-paper-mute">A role in {rest.length} more: see How the analysis derives this.</p>}
         </SummaryItem>
         <SummaryItem term="Highest-value partners" testId="slot-partners">
           {sum.partners.length ? (
             <>
               <PartnerList partners={sum.partners} scenario={scenario} self={sum.iso3} name={name} renderName={renderName} />
-              <p className="mt-1 text-xs text-paper-mute">The largest relationships in the {sum.partnersScenario} network, the institutional lens; with each pair&apos;s relationship logic.</p>
+              <p className="mt-1 text-xs text-paper-mute">The largest relationships in the {sum.partnersScenario} network, the default view; with each pair&apos;s relationship logic.</p>
             </>
           ) : (
             <Quiet>{emptyWords(sum, 'partners')}</Quiet>
@@ -77,7 +77,7 @@ export function StrategicSummaryCard({
         </SummaryItem>
       </dl>
       <div className="mt-4">
-        <Disclosure summary="How the model derives this">
+        <Disclosure summary="How the analysis derives this">
           <div className="space-y-5">
             <RoleEvidence sum={sum} s={s} />
             {rest.length > 0 && (
@@ -122,7 +122,7 @@ export function RoleHolders({ s, name, selected, onSelect }: { s: AibStrategic; 
           return (
             <li key={d.code} className="card p-4" data-role={d.code}>
               <h4 className="text-base font-medium text-paper">{d.name}</h4>
-              <p className="mt-0.5 text-xs leading-relaxed text-paper-mute">An economy that {ROLE_MEANING[d.code] ?? 'holds this role'}.</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-paper-mute">A country that {ROLE_MEANING[d.code] ?? 'holds this role'}.</p>
               <p className="mt-2 text-sm text-paper-dim">
                 <span className="text-paper">Primary: </span>
                 {primary.length ? who(primary) : 'none'}

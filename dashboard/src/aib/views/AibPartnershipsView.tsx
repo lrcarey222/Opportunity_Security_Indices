@@ -106,7 +106,9 @@ import {
 import { runMetaOf, scenarioCsvFields, scenarioLabel, scenarioNameOf, scenarioShockLabel } from '../derive/scenarios.ts';
 import { nodeWhere, osiFields, techOptions, type OsiCell } from '../derive/taxonomy.ts';
 import { compactHref, strategicCompactHref } from '../nav.ts';
-import { csvWithRun } from './common.tsx';
+import { MODULE_QUESTION, PARTNERSHIP } from '../../content/vocabulary.ts';
+import { classInfo } from '../derive/classes.ts';
+import { csvWithRun, QuestionLede } from './common.tsx';
 import { REL_COLOR, REL_LINK, REL_WORDS } from './compact/NetworkSection.tsx';
 import { AIB_EYEBROW } from './AibOverviewView.tsx';
 import { InvestmentFlowsCard } from './InvestmentFlowsCard.tsx';
@@ -362,7 +364,7 @@ function pendingSpec(load: ScenarioLoad<unknown>): LensPanelSpec {
       ),
     };
   }
-  if (load.missing) return { names: lensNone('this build has no Managed Interdependence detail'), empty: 'This data build has no Managed Interdependence detail for the partnerships: choose Decoupling.' };
+  if (load.missing) return { names: lensNone('this build has no Managed Interdependence detail'), empty: 'This build has no Managed Interdependence detail for the partnerships: choose the major-supplier disruption.' };
   return { names: LENS_LOADING, content: <Loading label="Loading the Managed Interdependence results" /> };
 }
 
@@ -370,7 +372,7 @@ function pendingSpec(load: ScenarioLoad<unknown>): LensPanelSpec {
 function ManagedNote() {
   return (
     <p className="text-xs leading-relaxed text-paper-mute" data-testid="managed-note">
-      Managed Interdependence changes only the sub-sectors more concentrated than comparable goods; elsewhere trade stays as it is today, so those sub-sectors add no relationship here.
+      Managed Interdependence changes only the supply-chain steps more concentrated than comparable goods; elsewhere trade stays as it is today, so those steps add no relationship here.
     </p>
   );
 }
@@ -423,8 +425,13 @@ export default function AibPartnershipsView() {
       <PageHead
         eyebrow={AIB_EYEBROW}
         title="Partnerships"
-        lede="Who should work with whom? Each kind of partnership (trade, investment, development, geopolitical) is read three ways: as it is today, as the Opportunity Security Indices recommend, and as the Allied Industrial Base model arranges it under the chosen scenario. The summary says where the three agree and where they differ."
-      />
+        lede={<QuestionLede question={MODULE_QUESTION.partnerships}>{PARTNERSHIP.lede}</QuestionLede>}
+      >
+        <p className="mt-3 max-w-3xl text-sm text-paper-mute" data-testid="partnerships-reading">
+          Each kind of partnership (trade, investment, development, geopolitical) is read three ways: as it is today, as the Opportunity Security Indices recommend, and as the Allied
+          Industrial Base analysis arranges it under the chosen scenario. The summary says where the three agree and where they differ. {PARTNERSHIP.psiCaveat}
+        </p>
+      </PageHead>
       <FilterRow>
         <Select
           label="Economy"
@@ -443,9 +450,9 @@ export default function AibPartnershipsView() {
         <Select label={tx.One} value={tech ?? ''} options={[{ value: '', label: tx.all }, ...techOptions(all.techs)]} onChange={(v) => set('tech', v)} />
         <Select label="Stage" value={stage ?? ''} options={[{ value: '', label: 'All stages' }, ...stages.map((s) => ({ value: s, label: s }))]} onChange={(v) => set('stage', v)} className="min-w-[9rem]" />
         <Select
-          label="Node"
+          label="Supply-chain step"
           value={node ?? ''}
-          options={[{ value: '', label: 'All nodes' }, ...scopedNodes.map((n) => ({ value: n.id, label: n.label }))]}
+          options={[{ value: '', label: 'All supply-chain steps' }, ...scopedNodes.map((n) => ({ value: n.id, label: n.label }))]}
           onChange={(v) => set('node', v)}
           className="min-w-[14rem]"
         />
@@ -669,7 +676,7 @@ function TradeTab({ f, partner, onKind }: TabProps) {
       { id: 'from', header: 'Exporter', value: (p) => name(p.producer), cell: (p) => <Link className="link" to={toCountry(p.producer)}>{name(p.producer)}</Link> },
       { id: 'to', header: 'Importer', value: (p) => name(p.consumer), cell: (p) => <Link className="link" to={toCountry(p.consumer)}>{name(p.consumer)}</Link> },
       { id: 'usd', header: 'Added trade', value: (p) => p.value, cell: (p) => fmtUsd(p.value), num: true },
-      { id: 'contribution', header: 'Share of node demand served', value: (p) => p.share, cell: (p) => fmtShare(p.share), num: true, title: 'The largest share of one node’s demand the relationship serves in the coordinated solution' },
+      { id: 'contribution', header: "Share of the step's demand served", value: (p) => p.share, cell: (p) => fmtShare(p.share), num: true, title: 'The largest share of one supply-chain step’s demand the relationship serves in the coordinated solution' },
       { id: 'rel', header: 'Relationship', value: (p) => REL_WORDS[p.relationship] },
       { id: 'opp', header: 'Partnership Opportunity score', value: (p) => p.opportunity, cell: (p) => fmtScore(p.opportunity), num: true },
       { id: 'nodes', header: 'Sub-sectors', value: (p) => p.nodes.map(label).join(', '), minWidth: 200 },
@@ -700,7 +707,7 @@ function TradeTab({ f, partner, onKind }: TabProps) {
           <ChartCard
             headingLevel={3}
             title="Coordinated trade relationships"
-            sub={`Exporter to importer, ${scope}, under ${sc.label}: the ${Math.min(TOP, pairs.length)} largest of ${plural(pairs.length, 'relationship')} the model adds or expands to restore supply (${fmtUsd(total)} a year${nNew ? `; ${nNew} new` : ''}). Band width is the added trade.`}
+            sub={`Exporter to importer, ${scope}, under ${sc.label}: the ${Math.min(TOP, pairs.length)} largest of ${plural(pairs.length, 'relationship')} that coordinated trade adds or expands to recover supply (${fmtUsd(total)} a year${nNew ? `; ${nNew} new` : ''}). Band width is the added trade.`}
             legend={<Legend label="Relationship" items={[{ label: REL_WORDS.new, color: REL_COLOR.new }, { label: REL_WORDS.expanded, color: REL_COLOR.expanded }]} />}
             summary={`Trade relationships, ${scope}, ${sc.label}: ${pairs.slice(0, 5).map((p) => `${name(p.producer)} to ${name(p.consumer)} ${fmtUsd(p.value)}`).join('; ') || 'none'}.`}
             table={() => <TableView rows={pairs} cols={cols} caption={`Coordinated trade relationships, ${scope}, ${sc.label}`} search pageSize={20} initialSort={{ id: 'usd', desc: true }} />}
@@ -725,7 +732,7 @@ function TradeTab({ f, partner, onKind }: TabProps) {
           <ChartCard
             headingLevel={3}
             title="Specialized suppliers"
-            sub={`Who the coordinated solution leans on, ${scope}, under ${sc.label}: the economies that are the largest supplier of a sub-sector after coordination, with their largest share.`}
+            sub={`Who the coordinated response leans on, ${scope}, under ${sc.label}: the countries that are the largest supplier of a supply-chain step after coordination, with their largest share.`}
             table={() => <TableView rows={suppliers} cols={supCols} caption={`Specialized suppliers, ${scope}`} search pageSize={20} />}
           >
             {suppliers.length ? (
@@ -745,7 +752,7 @@ function TradeTab({ f, partner, onKind }: TabProps) {
                 )}
               />
             ) : (
-              <EmptyState>No optimized supplier shares for {scope} under {sc.label}.</EmptyState>
+              <EmptyState>No supplier shares after coordinated trade for {scope} under {sc.label}.</EmptyState>
             )}
           </ChartCard>
         </div>
@@ -939,10 +946,10 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
   if (!sc.ready) aib = pendingSpec(sc.load);
   else {
     const nodeCols: Col<LensNode>[] = [
-      { id: 'node', header: 'Node', value: (n) => n.node.label },
+      { id: 'node', header: 'Supply-chain step', value: (n) => n.node.label },
       { id: 'stage', header: `${tx.Many} and stage`, value: (n) => nodeWhere(n.node) },
       { id: 'cls', header: 'Treatment', value: (n) => n.cls, cell: (n) => (n.cls ? <ClassChip cls={n.cls} /> : '–') },
-      { id: 'residual', header: 'Residual gap after trade', value: (n) => n.residual, cell: (n) => fmtShare(n.residual), num: true },
+      { id: 'residual', header: 'Remaining gap after trade', value: (n) => n.residual, cell: (n) => fmtShare(n.residual), num: true },
       { id: 'gain', header: 'Resilience gain of the best host', value: (n) => n.bestGain, cell: (n) => fmtPp(n.bestGain), num: true },
       { id: 'hosts', header: 'Eligible hosts, best first', value: (n) => n.hosts.map((h) => name(h)).join(', '), minWidth: 220 },
       { id: 'compact', header: 'Compact', value: (n) => n.node.compact, cell: (n) => (n.node.compact ? <CompactLinks ids={[n.node.compact]} /> : 'none') },
@@ -977,7 +984,7 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
           <ChartCard
             headingLevel={3}
             title="Where new capacity buys most resilience"
-            sub={`Where a gap remains after coordinated trade, the model adds an increment of capacity at each eligible host in turn (a fixed share of node demand, capped at the host’s current output in the node) and ranks the hosts by the resilience it buys. ${scope.charAt(0).toUpperCase()}${scope.slice(1)}, ${sc.label}: ${plural(nodes.length, 'sub-sector')}, largest gain first. A host must already show the capability (revealed by its exports).`}
+            sub={`Where a gap remains after coordinated trade, the analysis adds a standard amount of capacity in each country that could add it, in turn (a fixed share of the step’s demand, capped at that country’s current output of the step), and ranks them by the resilience it buys. ${scope.charAt(0).toUpperCase()}${scope.slice(1)}, ${sc.label}: ${plural(nodes.length, 'supply-chain step')}, largest gain first. A host must already show the capability (revealed by its exports).`}
             table={() => <TableView rows={nodes} cols={nodeCols} caption={`Investment hosts by sub-sector, ${scope}`} search pageSize={20} initialSort={{ id: 'gain', desc: true }} />}
             csv={csv}
             notes={<span>The increment is a synthetic simulation, not a project or a cost estimate.</span>}
@@ -997,13 +1004,13 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
                 )}
               />
             ) : (
-              <EmptyState>No simulated investment for {scope} under {sc.label}: only sub-sectors whose gap after coordinated trade passes the investment threshold are simulated.</EmptyState>
+              <EmptyState>No simulated investment for {scope} under {sc.label}: only supply-chain steps whose remaining gap after coordinated trade passes the investment threshold are simulated.</EmptyState>
             )}
           </ChartCard>
           <ChartCard
             headingLevel={3}
             title="Investment hosts"
-            sub={`Host capability, ${scope}, ${sc.label}: how often each economy is the best-ranked or an eligible host for new capacity.`}
+            sub={`Countries that could add capacity, ${scope}, ${sc.label}: how often each is the best-ranked or an eligible host for new capacity.`}
             table={() => <TableView rows={hosts} cols={hostCols} caption={`Investment hosts, ${scope}`} search pageSize={20} />}
           >
             {hosts.length ? (
@@ -1104,9 +1111,9 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
   if (!sc.ready) aib = pendingSpec(sc.load);
   else {
     const cols: Col<LensNode>[] = [
-      { id: 'node', header: 'Node', value: (n) => n.node.label },
+      { id: 'node', header: 'Supply-chain step', value: (n) => n.node.label },
       { id: 'stage', header: `${tx.Many} and stage`, value: (n) => nodeWhere(n.node) },
-      { id: 'residual', header: 'Residual gap after trade', value: (n) => n.residual, cell: (n) => fmtShare(n.residual), num: true },
+      { id: 'residual', header: 'Remaining gap after trade', value: (n) => n.residual, cell: (n) => fmtShare(n.residual), num: true },
       { id: 'lost', header: sc.id === 'managed' ? 'Supply to shift' : 'Lost supply', value: (n) => n.lostUsd, cell: (n) => fmtUsd(n.lostUsd), num: true },
       { id: 'hosts', header: 'Eligible hosts, best first', value: (n) => n.hosts.map((h) => name(h)).join(', '), minWidth: 220 },
       { id: 'compact', header: 'Compact', value: (n) => n.node.compact, cell: (n) => (n.node.compact ? <CompactLinks ids={[n.node.compact]} /> : 'none') },
@@ -1132,7 +1139,7 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
           <ChartCard
             headingLevel={3}
             title="Capacity gaps"
-            sub={`The BUILD sub-sectors, ${scope}, under ${sc.label}: even coordinated trade leaves a large share of demand unserved, so new capacity is needed. Largest residual gap first, with the hosts able to provide it.`}
+            sub={`The supply-chain steps that need new capacity (${classInfo('BUILD').label}), ${scope}, under ${sc.label}: even coordinated trade leaves a large share of demand unmet. Largest remaining gap first, with the countries best placed to add it.`}
             table={() => <TableView rows={gaps} cols={cols} caption={`Capacity gaps, ${scope}`} search pageSize={20} initialSort={{ id: 'residual', desc: true }} />}
             csv={csv}
           >
@@ -1151,7 +1158,7 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
                 )}
               />
             ) : (
-              <EmptyState>No BUILD sub-sector for {scope} under {sc.label}.</EmptyState>
+              <EmptyState>No supply-chain step needs new capacity for {scope} under {sc.label}.</EmptyState>
             )}
           </ChartCard>
         </div>
@@ -1191,7 +1198,7 @@ function DevelopmentPartners({ f, scope, onNames }: { f: PartnershipFilter; scop
     <ChartCard
       headingLevel={3}
       title="Development partners"
-      sub={`The economies with the most Development Potential (where partnering builds capability in a middle- or lower-income economy), ${scope}; each with the capacity gaps where it is already an eligible host under Decoupling. A preference-weighted ranking at the NEIS defaults.`}
+      sub={`The economies with the most Development Potential (where partnering builds capability in a middle- or lower-income economy), ${scope}; each with the capacity gaps where it is already an eligible host under the major-supplier disruption. A preference-weighted ranking at the NEIS defaults.`}
       table={() => <TableView rows={rows} cols={cols} caption={`Development partners, ${scope}`} search pageSize={20} />}
     >
       <div className="mb-3">
@@ -1391,7 +1398,7 @@ function AibCoalitions({
       <ChartCard
         headingLevel={3}
         title="Compact coalitions"
-        sub={`The economies the model says must coordinate in each compact (the minimum coalition), the members no other candidate can replace (critical supply partners) and the economies outside on which a compact still depends, ${scope}.`}
+        sub={`The countries that must coordinate in each compact (the smallest group of partners that meets the target), the members no other potential partner can replace (critical supply partners) and the countries outside on which a compact still depends, ${scope}.`}
         table={() => <TableView rows={co.compacts} cols={cols} caption={`Compact coalitions, ${scope}, ${scenario}`} search pageSize={20} />}
       >
         <div className="space-y-3 text-sm text-paper-dim">

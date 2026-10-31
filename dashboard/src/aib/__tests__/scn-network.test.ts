@@ -68,8 +68,9 @@ describe('the roles under the toggle', () => {
     const w = cellWords('supplier', cell, null, under);
     expect(w).toContain(`${fmtPts(0.0769)} under Managed Interdependence`);
     expect(w).not.toContain('across');
-    expect(cellWords('supplier', cell)).toContain('under the headline shock, ');
-    expect(roleNamedWords('host', under)).toContain('1 point of node demand under Managed Interdependence');
+    expect(cellWords('supplier', cell)).toContain('under the headline disruption, ');
+    expect(roleNamedWords('host', under)).toContain('1 point of step demand under Managed Interdependence');
+    expect(roleNamedWords('host', under)).not.toContain('headline disruption');
     expect(fmtPts(18.16683)).toBe('1,817 pts');
   });
 
@@ -97,13 +98,13 @@ describe('the roles under the toggle', () => {
 
   it('"every shock" is labelled as Decoupling\'s supply shocks, with their labels', () => {
     const l = everyShockLabel(doc);
-    expect(l.phrase).toBe("Decoupling's three supply shocks and the diversification scenario");
-    expect(l.header).toBe("Decoupling's 3 supply shocks and the diversification scenario");
+    expect(l.phrase).toBe("Major-supplier disruption's three supply shocks and the diversification scenario");
+    expect(l.header).toBe("Major-supplier disruption's 3 supply shocks and the diversification scenario");
     expect(l.note).toBe(
-      "The every-shock totals sum Decoupling's three supply shocks (Zembla supply removed; Zembla supply halved; Largest supplier of the sub-sector removed), and the diversification scenario, which removes no supplier.",
+      "The every-shock totals sum Major-supplier disruption's three supply shocks (Zembla supply removed; Zembla supply halved; Largest supplier of the sub-sector removed), and the diversification scenario, which removes no supplier.",
     );
     const plain = everyShockLabel({ ...doc, network: { ...doc.network!, variant: { ...doc.network!.variant, shocks: ['zzz_100', 'zzz_50'] } } });
-    expect(plain.phrase).toBe("Decoupling's two supply shocks");
+    expect(plain.phrase).toBe("Major-supplier disruption's two supply shocks");
   });
 
   it('the economy Decoupling removes, from its shock label', () => {

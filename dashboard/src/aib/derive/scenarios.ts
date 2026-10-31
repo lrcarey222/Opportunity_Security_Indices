@@ -21,6 +21,7 @@
 // Labels, words and colours; uniform figures per node, compact and node set; per-scenario accessors for
 // the detail sections. Pure (no React, no IO).
 
+import { SCENARIO_DEFINITION, SCENARIO_METHOD_NAME, SCENARIO_NAME, STATE } from '../../content/vocabulary.ts';
 import { NEUTRAL_SERIES } from '../../theme/palette.ts';
 import { isNum } from '../../lib/format.ts';
 import {
@@ -41,7 +42,11 @@ export type { AibScenarioId } from '../contract.ts';
 /** The display order of every comparison: Baseline, Managed Interdependence, Decoupling. */
 export const SCENARIO_ORDER: readonly AibScenarioId[] = AIB_SCENARIO_IDS;
 
-/** The words the dashboard falls back to when meta.scenarios does not carry them (an older bundle). */
+/**
+ * The words the dashboard falls back to when meta.scenarios does not carry them (an older bundle). The
+ * labels are the method's names (Baseline, Decoupling); the pages print the plain display names
+ * (content/vocabulary.ts SCENARIO_NAME: Today's network, Major-supplier disruption).
+ */
 export const SCENARIO_DEFAULTS: Readonly<Record<AibScenarioId, { label: string; words: string }>> = {
   baseline: { label: 'Baseline', words: 'Trade as it is today (2024), before any shock.' },
   managed: {
@@ -54,6 +59,21 @@ export const SCENARIO_DEFAULTS: Readonly<Record<AibScenarioId, { label: string; 
     words: 'China stops supplying the allied market (it keeps buying); trade and new capacity replace what it supplied.',
   },
 };
+
+/**
+ * Managed Interdependence in plain words for the pages. The vocabulary's SCENARIO_DEFINITION.managed says
+ * "trusted suppliers" take the excess; in this analysis any economy may supply (the candidate universe is
+ * global), so the pages say "other suppliers" (proposed for the shared vocabulary).
+ */
+export const MANAGED_PLAIN_WORDS =
+  'No supplier is banned. Where a supply-chain step is unusually concentrated, the analysis caps how much of allied demand any one supplier can serve and asks which other suppliers would need to take the excess.';
+
+/** What the disruption scenario asks, after naming who stops supplying. */
+const DISRUPTION_ASKS = 'The analysis asks what existing partners can replace, what coordinated trade adds, and what still requires new capacity.';
+
+/** The disruption scenario in plain words, naming the economy the data remove (SCENARIO_DEFINITION.decoupling for China). */
+export const disruptionWords = (who: string): string =>
+  who === 'China' ? SCENARIO_DEFINITION.decoupling : `A major supplier (${who}, in this analysis) stops supplying allied markets. ${DISRUPTION_ASKS}`;
 
 /**
  * One fixed colour per scenario, the same in every chart, apart from the class and coverage colours drawn in
@@ -77,10 +97,14 @@ export const SCENARIO_MARK: Readonly<Record<AibScenarioId, 'fill' | 'hollow'>> =
 
 export interface ScenarioInfo {
   id: AibScenarioId;
-  /** "Baseline", "Managed Interdependence", "Decoupling" */
+  /** the display name: "Today's network", "Managed Interdependence", "Major-supplier disruption" (SCENARIO_NAME) */
   label: string;
-  /** the short words (the toggle's tooltip and line, chart legends) */
+  /** the method's name, as the data write it ("Baseline", "Managed Interdependence", "Decoupling"): CSV columns, file names, methods text */
+  methodLabel: string;
+  /** the short words in plain language (the toggle's line, chart legends) */
   words: string;
+  /** the data's own words for the scenario (meta.scenarios; else the defaults) */
+  methodWords: string;
   /** the shock id (null for Baseline) */
   shockId: string | null;
   color: string;
@@ -94,22 +118,25 @@ const shockedEconomy = (label: string | undefined): string | null => {
 };
 
 /**
- * A scenario's label, words, shock and colour: meta.scenarios where the bundle carries it, else the
- * defaults (Decoupling's words then name the headline shock's economy when its label says "<X> supply
- * removed"; the shock ids from meta.diversify and meta.headlineShock).
+ * A scenario's display name and plain words (content/vocabulary.ts), its method name and words
+ * (meta.scenarios where the bundle carries it, else the defaults: Decoupling's words then name the headline
+ * shock's economy when its label says "<X> supply removed"), shock and colour (the shock ids from
+ * meta.diversify and meta.headlineShock). The disruption's plain words name the economy the data remove
+ * (its shock's "<X> supply removed"); without one they are the data's words.
  */
 export function scenarioInfo(meta: AibMeta | null | undefined, id: AibScenarioId): ScenarioInfo {
   const def = meta ? scenarioDefsOf(meta).find((d) => d.id === id) : undefined;
   const fallbackShock = !meta ? null : id === 'managed' ? diversifyShockIdOf(meta) : id === 'decoupling' ? meta.headlineShock : null;
-  let words = def?.words || SCENARIO_DEFAULTS[id].words;
-  if (!def?.words && id === 'decoupling' && meta) {
-    const who = shockedEconomy(meta.shocks.find((s) => s.id === meta.headlineShock)?.label);
-    if (who && who !== 'China') words = `${who} stops supplying the allied market (it keeps buying); trade and new capacity replace what it supplied.`;
-  }
+  const who = id === 'decoupling' && meta ? shockedEconomy(meta.shocks.find((s) => s.id === (def?.shockId ?? meta.headlineShock))?.label) : null;
+  let methodWords = def?.words || SCENARIO_DEFAULTS[id].words;
+  if (!def?.words && who && who !== 'China') methodWords = `${who} stops supplying the allied market (it keeps buying); trade and new capacity replace what it supplied.`;
+  const words = id === 'baseline' ? SCENARIO_DEFINITION.baseline : id === 'managed' ? MANAGED_PLAIN_WORDS : who ? disruptionWords(who) : methodWords;
   return {
     id,
-    label: def?.label || SCENARIO_DEFAULTS[id].label,
+    label: SCENARIO_NAME[id],
+    methodLabel: def?.label || SCENARIO_METHOD_NAME[id],
     words,
+    methodWords,
     shockId: def ? def.shockId : fallbackShock,
     color: SCENARIO_COLOR[id],
     mark: SCENARIO_MARK[id],
@@ -128,12 +155,15 @@ export const scenarioWords = (id: AibScenarioId, meta?: AibMeta | null): string 
 /** The About section the toggle links to ("How the scenarios work"). */
 export const SCENARIOS_ABOUT_HREF = '/compacts/about#scenarios';
 
-/** What the scenarios are to a strategic compact (strategic.framing carries the export's words; this is the fallback). */
-export const STRATEGIC_FRAMING = 'Strategic compact = persistent architecture; scenario = the stress applied to it.';
+/**
+ * What the scenarios are to a strategic compact, in plain words (strategic.framing carries the export's
+ * shorthand, "Strategic compact = persistent architecture; scenario = the stress applied to it").
+ */
+export const STRATEGIC_FRAMING = 'A strategic compact is the lasting division of labor; the scenario is the stress applied to it.';
 
-/** What each toggle choice is for: Managed Interdependence the default institutional lens, Decoupling the stress test. */
+/** What each toggle choice is for: Managed Interdependence the default view, the disruption the stress test. */
 export const SCENARIO_LENS: Readonly<Record<AibToggle, string>> = {
-  managed: 'the default institutional lens',
+  managed: 'the default view',
   decoupling: 'the stress test',
 };
 
@@ -141,14 +171,14 @@ export const SCENARIO_LENS: Readonly<Record<AibToggle, string>> = {
  * The scenario part of an export's file name (" Managed Interdependence", " Decoupling"): every toggle
  * choice is named, the default included, when the bundle has scenarios; '' without them (Decoupling alone).
  */
-export const scenarioFileTag = (id: AibScenarioId, meta: AibMeta | null | undefined, available = true): string => (available ? ` ${scenarioInfo(meta, id).label}` : '');
+export const scenarioFileTag = (id: AibScenarioId, meta: AibMeta | null | undefined, available = true): string => (available ? ` ${scenarioInfo(meta, id).methodLabel}` : '');
 
 /** The plain-language caveat every scenario view may carry. */
-export const SCENARIO_CAVEAT = 'Scenarios are counterfactual market structures, not forecasts; dollar values are 2024 trade values.';
+export const SCENARIO_CAVEAT = 'Scenarios are stress tests of how the market could be organized, not forecasts; dollar values are 2024 trade values.';
 
 /** SCENARIO_CAVEAT with the bundle's trade year. */
 export const scenarioCaveat = (meta?: Pick<AibMeta, 'tradeYear'> | null): string =>
-  `Scenarios are counterfactual market structures, not forecasts; dollar values are ${meta?.tradeYear ?? 2024} trade values.`;
+  `Scenarios are stress tests of how the market could be organized, not forecasts; dollar values are ${meta?.tradeYear ?? 2024} trade values.`;
 
 /**
  * The bundle carries Managed Interdependence as a scenario (the toggle is shown): meta.scenarios lists it,
@@ -172,7 +202,7 @@ export const scenarioFiles = (manifest: Pick<AibManifest, 'files'>) => scenarioF
 export const effectiveScenario = (toggle: AibToggle, available: boolean): AibToggle => (available ? toggle : 'decoupling');
 
 /** What Managed Interdependence does to supply, in the words every run line uses (it removes no supplier). */
-export const MANAGED_SHOCK_WORDS = 'no supplier removed; caps above the benchmark';
+export const MANAGED_SHOCK_WORDS = 'no supplier removed; supply above the concentration cap shifts';
 
 /**
  * The label of what a scenario does to supply ("No shock: trade as it is today", MANAGED_SHOCK_WORDS, the
@@ -180,7 +210,7 @@ export const MANAGED_SHOCK_WORDS = 'no supplier removed; caps above the benchmar
  * scenario's), so the pages call it by one name.
  */
 export function scenarioShockLabel(meta: AibMeta, id: AibScenarioId): string {
-  if (id === 'baseline') return `No shock: trade as it is today (${meta.tradeYear})`;
+  if (id === 'baseline') return `No disruption: trade as it is today (${meta.tradeYear})`;
   if (id === 'managed') return MANAGED_SHOCK_WORDS;
   const sid = scenarioInfo(meta, id).shockId;
   return meta.shocks.find((s) => s.id === sid)?.label ?? sid ?? scenarioLabel(id, meta);
@@ -193,7 +223,7 @@ export function scenarioShockLabel(meta: AibMeta, id: AibScenarioId): string {
  */
 export function scenarioCsvFields(meta: AibMeta | null | undefined, id: AibScenarioId): { aib_scenario: string; aib_scenario_shock: string } {
   const s = scenarioInfo(meta, id);
-  return { aib_scenario: s.label, aib_scenario_shock: s.shockId ?? 'none (observed trade)' };
+  return { aib_scenario: s.methodLabel, aib_scenario_shock: s.shockId ?? 'none (observed trade)' };
 }
 
 /** The run of a CSV of one scenario's figures for csvWithRun(): the meta with that scenario's shock as the run's shock (Decoupling: as it is). */
@@ -631,7 +661,7 @@ const emptyDetail = (): Omit<CompactDetail, 'id' | 'status' | 'reason'> => ({
 });
 
 /** Why Baseline has no coalition. */
-export const BASELINE_NO_COALITION = 'Baseline is trade as it is today: no supply is removed, so there is no coalition to form.';
+export const BASELINE_NO_COALITION = "Today's network imposes no disruption: no supply is removed, so there is no coalition to form.";
 
 /** The detail of a compact under one scenario (`managed`: the scenario-managed file, null or undefined while it is not loaded). */
 export function compactDetail(c: AibCompact, id: AibScenarioId, managed?: AibManagedScenarioDoc | null): CompactDetail {
@@ -642,11 +672,11 @@ export function compactDetail(c: AibCompact, id: AibScenarioId, managed?: AibMan
   if (id === 'baseline') return { ...emptyDetail(), id, status: 'none', reason: BASELINE_NO_COALITION, nodesRun: c.nodes.length };
   if (!managed) return { ...emptyDetail(), id, status: 'pending', reason: null };
   const m = managed.compacts.find((x) => x.id === c.id);
-  if (!m) return { ...emptyDetail(), id, status: 'none', reason: 'The Managed Interdependence data have no entry for this compact.' };
+  if (!m) return { ...emptyDetail(), id, status: 'none', reason: 'The Managed Interdependence results have no entry for this compact.' };
   return {
     id,
     status: 'ready',
-    reason: m.coalition ? null : (m.coalitionReason ?? 'No coalition under this scenario.'),
+    reason: m.coalition ? null : (m.coalitionReason ?? STATE.noCoalition),
     coalition: m.coalition,
     nodesRun: m.nodesRun,
     anchors: m.anchors,

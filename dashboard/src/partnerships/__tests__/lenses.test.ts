@@ -84,8 +84,8 @@ describe('the cross-lens summary', () => {
       ['Recommended by OSI, not chosen by the AIB', ['AAA']],
       ['Chosen by the AIB, not recommended by OSI', ['CCC']],
     ]);
-    expect(summaryLine(two, { one: 'economy', many: 'economies' })).toBe('OSI recommends and AIB model name 3 economies: 1 by both and 2 by one.');
-    expect(comparedWords(['today', 'aib'])).toBe('Today and AIB model');
+    expect(summaryLine(two, { one: 'economy', many: 'economies' })).toBe('OSI recommends and AIB analysis name 3 economies: 1 by both and 2 by one.');
+    expect(comparedWords(['today', 'aib'])).toBe('Today and AIB analysis');
   });
 });
 

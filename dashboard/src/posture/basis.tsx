@@ -15,7 +15,7 @@ export const POSTURE_BASIS_NOTE = 'fixed thresholds; the dials and the scenario 
 
 /** The tag's tooltip: the same in a sentence. */
 export const POSTURE_BASIS_TITLE =
-  'The strategic position framework decides each node at fixed thresholds of Need, Strategic Industrial Value (the prize) and Competitive Position, after the Secure tests; Deployment & Use reads deployment need. Neither the Perspective dials nor the scenario toggle changes it.';
+  'The strategic position framework makes one choice for each supply-chain step at fixed thresholds of Need, Strategic Industrial Value (the prize) and Competitive Position, after the Secure tests; Deployment & Use reads deployment need. Neither the Perspective dials nor the scenario toggle changes it.';
 
 /** "Strategic position framework · fixed thresholds; ..." as a quiet tag (pass note={null} for the label alone). */
 export function PostureBasisTag({ note = POSTURE_BASIS_NOTE }: { note?: string | null }) {

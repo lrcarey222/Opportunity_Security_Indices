@@ -185,6 +185,16 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     // the Legacy OSI's Perspective dials are not named in the strategy's own words (they live in Legacy OSI)
     expect(how.textContent).not.toMatch(/Perspective|dials/);
     expect(grid.compareDocumentPosition(how) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // under the map, before the method: the three yards in the user's words, as three policy problems, never a score scale;
+    // a technology can sit in more than one yard
+    const yards = within(strategy).getByTestId('strategy-yards');
+    expect(grid.compareDocumentPosition(yards) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(yards.compareDocumentPosition(how) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect([...yards.querySelectorAll('li[data-yard]')].map((li) => li.getAttribute('data-yard'))).toEqual(['small', 'medium', 'large']);
+    expect(yards.textContent).toContain('A strong industrial strategy is as much about deciding what not to build as deciding what to build.');
+    expect(yards.textContent).toContain('Capabilities where foreign control or concentrated dependence could create an unacceptable security or resilience risk.');
+    expect(yards.textContent).toContain('not low, medium and high scores on one scale');
+    expect(yards.textContent).toContain('A technology can sit in more than one yard.');
   });
 
   it('the three fence sections follow the map, each with the fence name and its one-line meaning; the old anchors land on them', async () => {
@@ -192,11 +202,16 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     const ids = STRATEGY_SECTIONS.map((x) => x.id);
     expect(ids.slice(0, 4)).toEqual(['strategy', 'high-fence', 'medium-fence', 'low-fence']);
     expect(['high-fence', 'medium-fence', 'low-fence'].map((id) => sec(id).querySelector('h2')?.textContent)).toEqual([
-      'High fence · Secure', 'Medium fence · Preserve, Catch Up, Partner, Accelerate', 'Low fence · Watch',
+      'High fence · Secure', 'Medium fence · Build, preserve, partner and deploy', 'Low fence · Keep open',
     ]);
-    expect(sec('high-fence').textContent).toContain('An acute vulnerability, secured whatever the prize.');
-    expect(sec('medium-fence').textContent).toContain('Compete for the capability, at home or with partners, or accelerate deployment.');
-    expect(sec('low-fence').textContent).toContain('Watch: domestic priority is low.');
+    // each fence's one-line definition, then its opening paragraph (the shared vocabulary's FENCE_DEFINITION, FENCE_INTRO)
+    expect(sec('high-fence').textContent).toContain('Protect the capabilities where dependence could create an unacceptable security or resilience risk.');
+    expect(sec('high-fence').textContent).toContain('The answer is not always reshoring');
+    expect(sec('medium-fence').textContent).toContain('Focus industrial policy where productive capability has strategic value, and use allies where specialization is the better answer.');
+    expect(sec('medium-fence').textContent).toContain('a legitimate strategic choice, not a failure to build at home');
+    expect(sec('low-fence').textContent).toContain('Do not spend scarce industrial-policy effort where domestic production adds little strategic value.');
+    expect(sec('low-fence').textContent).toContain('buy competitively, keep suppliers diversified and focus policy elsewhere');
+    expect(sec('low-fence').textContent).toContain('Missing data never puts a step here: it is not assessed.');
     // each fence's legend: only its own choices, with the economy's counts
     expect(within(sec('high-fence')).getByTestId('posture-legend').textContent).toBe('High fence:Secure 3');
     expect(within(sec('medium-fence')).getAllByTestId('posture-legend')[0].textContent).toBe('Medium fence:Preserve 2,Catch Up 1,Partner 1,Accelerate 1');
@@ -214,7 +229,8 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     await usa();
     const high = sec('high-fence');
     const top = within(high).getByTestId('high-top');
-    expect(within(top).getByRole('heading', { level: 3 }).textContent).toBe('Top 5 supply-chain nodes by need');
+    expect(within(top).getByRole('heading', { level: 3 }).textContent).toBe('Most important vulnerabilities');
+    expect(top.textContent).toContain('Ranked by supply-chain vulnerability (0-100), highest first.');
     expect(topKeys(top)).toEqual(['Batteries|Refining', 'Solar|Refining', 'Solar|Components']);
     expect(new Set(topVerbs(top))).toEqual(new Set(['secure']));
     expect(topValues(top)).toEqual(['95', '90', '70']);
@@ -226,9 +242,9 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     // the drop-down: closed, then every Secure node x the need variables, missing values "not measured"
     expect(high.querySelector('[data-testid="high-table"]')).toBeNull();
     const fold = await openFold('high-all');
-    expect(fold.querySelector('summary')?.textContent).toMatch(/All 3 Secure nodes × need variables: import dependence, supplier concentration, risky supplier exposure, lack of trusted alternatives/);
+    expect(fold.querySelector('summary')?.textContent).toMatch(/All 3 Secure steps and what makes them vulnerable: import dependence, supplier concentration, risky supplier exposure, lack of trusted alternatives/);
     const table = within(fold).getByTestId('high-table');
-    expect(heads(table)).toEqual(['Node', 'Supply-chain need', 'Import dependence', 'Supplier concentration', 'Risky supplier exposure', 'Lack of trusted alternatives', 'Security rationale']);
+    expect(heads(table)).toEqual(['Supply-chain step', 'Supply-chain vulnerability', 'Import dependence', 'Supplier concentration', 'Risky supplier exposure', 'Lack of trusted alternatives', 'Security rationale']);
     await waitFor(() => expect(rowOf(table, 'Batteries · Refining & Processing').textContent).toContain('92'), { timeout: 30_000 });
     expect(rows(table)).toEqual([
       ['Batteries · Refining & Processing', '95', '95', '90', '92', 'not measured', 'Chokepoint risk'],
@@ -243,18 +259,18 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     await usa();
     const med = sec('medium-fence');
     const supply = within(med).getByTestId('medium-top-supply');
-    expect(within(supply).getByRole('heading', { level: 3 }).textContent).toBe('Top 5 supply-chain nodes');
+    expect(within(supply).getByRole('heading', { level: 3 }).textContent).toBe('Highest-value capabilities to build, keep or source from partners');
     // Strategic Industrial Value 90, 80, then two at 30: Solar Assembly (position 90) before Batteries Extraction (position 20)
     expect(topKeys(supply)).toEqual(['Batteries|Assembly', 'Batteries|Components', 'Solar|Assembly', 'Batteries|Extraction']);
     expect(topValues(supply)).toEqual(['90', '80', '30', '30']);
     expect(new Set(topVerbs(supply))).toEqual(new Set(['preserve', 'catch_up', 'partner']));
     await waitFor(() => expect(topWhy(supply)[1]).toBe('Catch Up · Pathway: Credible (feasibility, pipeline)'), { timeout: 30_000 });
-    expect(topWhy(supply)).toEqual(['Preserve · Competitive Position 95', 'Catch Up · Pathway: Credible (feasibility, pipeline)', 'Preserve · Competitive Position 90', 'Partner · Leading partner: Bland']);
+    expect(topWhy(supply)).toEqual(['Preserve · Competitive Position 95', 'Catch Up · Pathway: Credible (feasibility, pipeline)', 'Preserve · Competitive Position 90', 'Partner · Best-placed partner: Bland']);
     expect([...supply.querySelectorAll('li')].map((li) => cssHex((li.querySelector('[data-swatch]') as HTMLElement).style.background))).toEqual(
       (['preserve', 'catch_up', 'preserve', 'partner'] as Verb[]).map((v) => VERB_COLOR[v]),
     );
     const deploy = within(med).getByTestId('medium-top-deploy');
-    expect(within(deploy).getByRole('heading', { level: 3 }).textContent).toBe('Top 5 deployment (Accelerate)');
+    expect(within(deploy).getByRole('heading', { level: 3 }).textContent).toBe('Where deployment should speed up (Accelerate)');
     expect(topKeys(deploy)).toEqual(['Batteries|Deployment']);
     expect(topVerbs(deploy)).toEqual(['accelerate']);
     expect(topValues(deploy)).toEqual(['85']);
@@ -270,7 +286,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(points.every((pt) => !/Deployment & Use/.test(pt.getAttribute('aria-label') ?? ''))).toBe(true);
     expect(within(med).getByRole('region', { name: 'Where is the prize, and where is the country already strong?' })).toBeTruthy();
     // the economy's name mid-sentence: lower-case "the", and the possessive of a name in -s
-    expect(med.textContent).toContain("Each dot is one of the United States' producing-stage nodes");
+    expect(med.textContent).toContain("Each dot is one of the United States' producing-stage supply-chain steps");
     expect(med.textContent).not.toMatch(/The United States's|one of The United States/);
     const dots = [...scatter.querySelectorAll('.quad-dots path')];
     expect(dots).toHaveLength(points.length);
@@ -286,23 +302,25 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     // four level-3 sub-sections in order, each with its anchor, after the chart
     const subs = [...med.querySelectorAll('section[id^="medium-"]')].filter((x) => MEDIUM_SUBSECTIONS.some((m) => m.id === x.id));
     expect(subs.map((x) => x.id)).toEqual(['medium-prize', 'medium-position', 'medium-partner', 'medium-accelerate']);
-    expect(subs.map((x) => x.querySelector('h3')?.textContent)).toEqual(['Prize', 'Competitive Position', 'Partner', 'Accelerate']);
+    expect(subs.map((x) => x.querySelector('h3')?.textContent)).toEqual([
+      'Prize: is productive capability here worth having?', 'Position: how strong is the country today?', 'Partner: where should this country rely on allies?', 'Accelerate: where should deployment speed up?',
+    ]);
     expect(within(med).getByTestId('prize-position-scatter').compareDocumentPosition(subs[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     // Prize: what the prize measures, then the nodes x the prize variables (four rows, within the top five: no drop-down)
     const prize = sec('medium-prize');
-    expect(prize.textContent).toMatch(/Strategic Industrial Value\s*asks whether domestic capability in the node is strategically valuable; high at 60 or more\./);
+    expect(prize.textContent).toMatch(/Strategic Industrial Value\s*: how much strategic value there is in building or keeping productive capability here\..* It is high at 60 or more\./);
     expect(prize.textContent).toMatch(
-      /three families: the market prize \(Industrial Opportunity\s*: expected world demand growth, the node prize, and investment momentum, lifted by home-market growth only where national data exist\), industrial commons \(process knowledge, workforce and suppliers, cross-sector spillover\) and future option value/,
+      /three families: the market prize \(Industrial Opportunity\s*: expected world demand growth and investment momentum, lifted by home-market growth only where national data exist\), industrial commons \(process knowledge, workforce and suppliers, spillovers to other sectors\) and future option value/,
     );
-    expect(prize.textContent).toMatch(/Where only the market speaks for it, the value is capped below the bar\./);
+    expect(prize.textContent).toMatch(/A large market alone never makes the prize high: where only the market speaks for it, the value is capped below the bar\./);
     const pt = within(prize).getByTestId('medium-prize-table');
     // the Catch Up node names its credible pathway under its choice (no column of dashes for the others); the headers wrap to fit the card
     // the Strategic Industrial Value and its three families (the market prize; industrial commons and future option from the
     // node evidence, a market-only node capped), then the market prize's components
     expect(heads(pt)).toEqual([
-      'Node', 'Choice', 'Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option', 'Node prize', 'Home-market growth', 'Investment momentum', 'Market outlook',
-      'Basis', 'Supply-chain need',
+      'Supply-chain step', 'Choice', 'Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option', 'World demand growth', 'Home-market growth', 'Investment momentum',
+      'Market outlook', 'Basis', 'Supply-chain vulnerability',
     ]);
     expect((pt.querySelector('thead th') as HTMLElement).style.whiteSpace).toBe('normal');
     await waitFor(() => expect(rowOf(pt, 'Batteries · Component Manufacturing').textContent).toContain('feasibility'), { timeout: 30_000 });
@@ -317,10 +335,10 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
 
     // Competitive Position: the Preserve bar named, the nodes x the position evidence in Competitive Position order, the monthly trade card
     const pos = sec('medium-position');
-    expect(pos.textContent).toMatch(/The Preserve bar is 75: the top quarter of the node's contenders/);
+    expect(pos.textContent).toMatch(/A strong position, the bar for Preserve, is 75 or more: the top quarter of the main producers/);
     expect(pos.textContent).toMatch(/listed by Competitive Position, strongest first/);
     const qt = within(pos).getByTestId('medium-position-table');
-    expect(heads(qt)).toEqual(['Node', 'Choice', 'Competitive Position', 'World supply share', 'Export position', 'Structural trade share', 'Current investment', 'Trade momentum', 'Evidence']);
+    expect(heads(qt)).toEqual(['Supply-chain step', 'Choice', 'Competitive Position', 'World supply share', 'Export position', 'Structural trade share', 'Current investment', 'Trade momentum', 'Evidence']);
     await waitFor(() => expect(rowOf(qt, 'Batteries · Component Manufacturing').textContent).toContain('60'), { timeout: 30_000 });
     // the structural share where R wrote one (Solar Assembly: momentum moved it); where R dropped an identical
     // one, the export position's value, said to be the same (never "not measured" beside a measured export position)
@@ -338,7 +356,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     const partner = sec('medium-partner');
     for (const id of ['partnerships', 'partners', 'allied-partnerships']) expect(document.getElementById(id)?.closest('section')?.id, id).toBe('medium-partner');
     const lead = within(partner).getByTestId('partner-lead');
-    expect(lead.textContent).toMatch(/^The United States' Partner node: Batteries · Extraction \(leading partner: Bland\)\./);
+    expect(lead.textContent).toMatch(/^The United States' Partner step: Batteries · Extraction \(best-placed partner: Bland\)\. The capability matters, but duplicating it at home is not the best answer\./);
     const intro = within(partner).getByText(/^Who the United States could trade, invest, build and align with, read three ways/);
     expect(lead.compareDocumentPosition(intro) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(partner).getByTestId('ptab-trade')).toBeTruthy();
@@ -350,7 +368,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     const at = within(acc).getByTestId('medium-accelerate-table');
     // one choice in the table (Accelerate): no Choice column; the caption names it
     expect(heads(at)).toEqual(['Technology', 'Deployment need', 'Demand adequacy', 'Target / climate gap', 'System need', 'Climate-aligned (alternative)', 'Deployment trend']);
-    expect(at.querySelector('caption')?.textContent).toMatch(/the deployment need of the Accelerate nodes$/);
+    expect(at.querySelector('caption')?.textContent).toMatch(/the deployment need of the Accelerate technologies$/);
     await waitFor(
       () =>
         expect(rows(at)[0]).toEqual([
@@ -387,8 +405,8 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     const lp = within(sf).getByTestId('low-prize-table');
     // one choice in the Low fence's tables (Watch): no Choice column
     expect(heads(lp)).toEqual([
-      'Node', 'Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option', 'Node prize', 'Home-market growth', 'Investment momentum', 'Market outlook', 'Basis',
-      'Supply-chain need', 'Why Watch',
+      'Supply-chain step', 'Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option', 'World demand growth', 'Home-market growth', 'Investment momentum',
+      'Market outlook', 'Basis', 'Supply-chain vulnerability', 'Why Watch',
     ]);
     // Solar Extraction is market only (capped); Solar Recovery has no node evidence: commons and option not measured, never zero
     expect(rows(lp).map((r) => [r[0], r[1], r[3], r[4], r[10], r[11]])).toEqual([
@@ -396,7 +414,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
       ['Solar · Recovery & Recycling', '15', 'not measured', 'not measured', '10', 'Low need; Low prize; Emerging technology, research and option value'],
     ]);
     const lq = within(sf).getByTestId('low-position-table');
-    expect(heads(lq)).toEqual(['Node', 'Competitive Position', 'World supply share', 'Export position', 'Structural trade share', 'Current investment', 'Trade momentum', 'Evidence']);
+    expect(heads(lq)).toEqual(['Supply-chain step', 'Competitive Position', 'World supply share', 'Export position', 'Structural trade share', 'Current investment', 'Trade momentum', 'Evidence']);
     expect(rows(lq).map((r) => r.slice(0, 2))).toEqual([['Solar · Extraction', '30'], ['Solar · Recovery & Recycling', '5']]);
     const df = await openFold('low-deploy-all');
     const ld = within(df).getByTestId('low-deploy-table');
@@ -413,10 +431,10 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     setPostureStore(fixtureStore({ core, economies: { AAA: { iso3: 'USA', name: 'United States' } } }));
     await usa();
     const high = sec('high-fence');
-    expect(within(high).getByTestId('fence-empty').textContent).toBe('No Secure nodes: no acute vulnerability passed the Secure tests.');
+    expect(within(high).getByTestId('fence-empty').textContent).toBe('No Secure steps: no vulnerability is acute enough to pass the Secure tests.');
     expect(document.getElementById('fold-high-all')).toBeNull();
-    expect(within(sec('medium-fence')).getByTestId('medium-top-deploy').textContent).toMatch(/No Accelerate nodes: no technology's deployment need reached the acceleration bar \(67\)\./);
-    expect(sec('medium-accelerate').textContent).toMatch(/No Accelerate nodes/);
+    expect(within(sec('medium-fence')).getByTestId('medium-top-deploy').textContent).toMatch(/No Accelerate choice: no technology's deployment need reaches the bar for acceleration \(67\)\./);
+    expect(sec('medium-accelerate').textContent).toMatch(/No Accelerate choice/);
     expect(within(sec('low-fence')).getByTestId('posture-legend').textContent).toBe('Low fence:Watch 7');
   });
 
@@ -424,10 +442,10 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     await usa();
     const pol = sec('policy-alignment');
     const table = within(within(pol).getByTestId('policy-alignment')).getByRole('table');
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Node', 'Recommendation', 'Observed policy intensity', 'Support', 'Protection', 'Policy momentum', 'Alignment']);
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Supply-chain step', 'Recommended choice', 'Observed policy intensity', 'Support', 'Protection', 'Policy momentum', 'Alignment']);
     await waitFor(() => expect(table.querySelector('[data-key="Batteries|Extraction"]')?.textContent).toMatch(/Partner · Medium fence.*wrong tool for the problem/i), { timeout: 30_000 });
     expect(table.querySelector('[data-key="Batteries|Deployment"]')?.getAttribute('data-alignment')).toBe('deployment_gap');
-    expect(pol.textContent).toContain("percentile ranks among the United States' own nodes");
+    expect(pol.textContent).toContain("percentile ranks among the United States' own supply-chain steps");
     expect(pol.textContent).not.toMatch(/among The United States/);
     // no overall score; the evidence beneath carries no Strategic Index comparison (a Legacy OSI reading)
     const ev = within(pol).getByTestId('policy-behaviour');
@@ -448,7 +466,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(items[1].textContent).toContain('Demand anchor in magnets (36% of world imports)');
     // the Sectoral Compacts whose coalition it sits in, with the roles the model names there, under the scenario
     const ops = within(allied).getByTestId('allied-operational-compacts');
-    expect(within(ops).getByTestId('allied-scenario').textContent).toMatch(/^Shown under Decoupling/);
+    expect(within(ops).getByTestId('allied-scenario').textContent).toMatch(/^Results below use \S.*\. Change the scenario to see whether the United States' role changes when the supply risk changes\./);
     const opItems = within(within(ops).getByRole('list', { name: "The United States' roles in the Sectoral Compacts" })).getAllByRole('listitem');
     expect(opItems.map((li) => li.getAttribute('data-compact'))).toEqual(['AIB-C01', 'AIB-C02', 'AIB-C03']);
     expect(within(opItems[0]).getByRole('link', { name: 'AIB-C01' }).getAttribute('href')).toBe('/compacts/AIB-C01?scn=decoupling');
@@ -462,7 +480,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     // the toggle: Managed Interdependence, its own compacts' coalitions, the links without a scenario
     fireEvent.click(within(ops).getByRole('button', { name: /^Show Managed Interdependence instead/ }));
     await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('scn')).not.toBe('decoupling'));
-    await waitFor(() => expect(within(sec('allied')).getByTestId('allied-scenario').textContent).toMatch(/^Shown under Managed Interdependence/), { timeout: 30_000 });
+    await waitFor(() => expect(within(sec('allied')).getByTestId('allied-scenario').textContent).toMatch(/^Results below use Managed Interdependence\./), { timeout: 30_000 });
     await waitFor(() => expect(within(sec('allied')).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/compacts/s/SC-WIND'), { timeout: 30_000 });
     expect(bareAcronyms(sec('allied'))).toEqual([]);
   }, 90_000);
@@ -471,7 +489,9 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     setAibStoreForTests(new AibStore(aibSource(SYNTHETIC_DIR)));
     await usa();
     const none = await within(sec('allied')).findByTestId('allied-no-role', {}, { timeout: 30_000 });
-    expect(none.textContent).toMatch(/^The United States holds no role in a Strategic Sectoral Compact or in a Sectoral Compact's coalition under Managed Interdependence\./);
+    expect(none.textContent).toMatch(
+      /^The United States has no role in a Strategic Sectoral Compact and is not needed in a Sectoral Compact under Managed Interdependence\. That does not mean it is unimportant; it means the current stress test does not require its capability to close the identified gaps\./,
+    );
     expect(within(none).getByRole('link').getAttribute('href')).toBe('/aib/roles');
     expect(within(sec('allied')).queryByTestId('allied-strategic-compacts')).toBeNull();
     expect(within(sec('allied')).queryByTestId('allied-operational-compacts')).toBeNull();
@@ -511,7 +531,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(within(ev).getByTestId('framework-chain').textContent).not.toMatch(/low need and low prize is Watch/);
     expect(within(within(ev).getByTestId('stage-mapping')).getAllByRole('rowheader').map((h) => h.textContent)).toEqual(SUPPLY_STAGES.map((s, i) => `${i + 1}. ${STAGE_DISPLAY[s]}`));
     const cov = within(ev).getByTestId('evidence-coverage');
-    expect(cov.textContent).toMatch(/11 of 12 technology and stage nodes assessed; 1 not assessed/);
+    expect(cov.textContent).toMatch(/11 of 12 supply-chain steps assessed; 1 not assessed/);
     expect(cov.textContent).toMatch(/Structural trade position over 2022-2024/);
     expect(cov.textContent).toMatch(/Sep 2025 - Aug 2026 against Sep 2024 - Aug 2025 \(through Aug 2026\)/);
     expect(sec('downloads').closest('section#evidence')).toBeTruthy();
@@ -534,7 +554,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     ]);
     expect(within(prize).queryByTestId('medium-prize-table')).toBeNull();
     const all = await openFold('medium-prize-all');
-    expect(all.querySelector('summary')?.textContent).toMatch(/All 6 Preserve, Catch Up and Partner nodes × the prize variables$/);
+    expect(all.querySelector('summary')?.textContent).toMatch(/All 6 Preserve, Catch Up and Partner steps and what makes them valuable$/);
     expect(rows(within(all).getByTestId('medium-prize-table')).map((r) => r[0])).toEqual([
       'Batteries · Final Assembly & Equipment', 'Batteries · Component Manufacturing', 'Solar · Extraction', 'Solar · Final Assembly & Equipment', 'Batteries · Extraction',
       'Solar · Recovery & Recycling',
@@ -570,7 +590,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     );
     await usa();
     const note = await within(sec('high-fence')).findByTestId('fence-detail-error', {}, { timeout: 30_000 });
-    expect(note.textContent).toMatch(/The node details could not be loaded/);
+    expect(note.textContent).toMatch(/The step details could not be loaded/);
     expect(note.textContent).toMatch(/could not be fetched \(HTTP 500\)/);
     for (const id of ['high-fence', 'medium-fence', 'low-fence']) expect(within(within(sec(id)).getByTestId('fence-detail-error')).getByRole('button', { name: 'Retry' }), id).toBeTruthy();
     // the Watch reasons are the engine's (the detail's): not recomputed from the thresholds while it is missing
@@ -671,7 +691,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(nav.className).toMatch(/sticky/);
     expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(STRATEGY_SECTIONS.map((s) => s.nav ?? s.label));
     expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual([
-      'Strategy', 'High fence · Secure', 'Medium fence · Preserve, Catch Up, Partner, Accelerate', 'Low fence · Watch', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology',
+      'Strategy map', 'High fence · Secure', 'Medium fence · Build, partner, deploy', 'Low fence · Keep open', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
     ]);
     // the matrix scrolls inside its card, never the page; the short stage names are there for phones
     expect(nav.className).toMatch(/\bbg-ink-900\b/);
@@ -726,11 +746,11 @@ describe.skipIf(!haveFixture())('Country page: layers as yard units (Yards & Fen
     expect(topWhy(high)[3]).toBe('Secure · Control built partly into the hardware: the high fence extends to the hardware.');
     expect(high.textContent).toContain('a layer ranks with its step');
     expect(within(li).getByRole('button').getAttribute('aria-label')).toBe(
-      `Batteries Final Assembly & Equipment, layer ${CONTROL}: Secure; supply-chain need 40 (its step’s); Control built partly into the hardware: the high fence extends to the hardware.`,
+      `Batteries Final Assembly & Equipment, layer ${CONTROL}: Secure; supply-chain vulnerability 40 (its step’s); Control built partly into the hardware: the high fence extends to the hardware.`,
     );
     // the High fence's table: a Layer column, the step's need variables on the layer's row
     const table = within(await openFold('high-all')).getByTestId('high-table');
-    expect(heads(table)).toEqual(['Node', 'Layer', 'Supply-chain need', 'Import dependence', 'Supplier concentration', 'Risky supplier exposure', 'Lack of trusted alternatives', 'Security rationale']);
+    expect(heads(table)).toEqual(['Supply-chain step', 'Layer', 'Supply-chain vulnerability', 'Import dependence', 'Supplier concentration', 'Risky supplier exposure', 'Lack of trusted alternatives', 'Security rationale']);
     expect(rows(table).map((r) => [r[0], r[1], r[2]])).toEqual([
       ['Batteries · Refining & Processing', 'Whole step', '95'],
       ['Solar · Refining & Processing', 'Whole step', '90'],
@@ -754,7 +774,7 @@ describe.skipIf(!haveFixture())('Country page: layers as yard units (Yards & Fen
     // the Low fence prize table: a Layer column, each layer with its own commons and option and its own market-only cap,
     // beside its step's value (whose cap is its step's: Solar Extraction's, not the layers' steps')
     const lp = within(await openFold('low-supply-all')).getByTestId('low-prize-table');
-    expect(heads(lp).slice(0, 6)).toEqual(['Node', 'Layer', 'Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option']);
+    expect(heads(lp).slice(0, 6)).toEqual(['Supply-chain step', 'Layer', 'Strategic Industrial Value', 'Market prize', 'Industrial commons', 'Future option']);
     expect(rows(lp).map((r) => [r[0], r[1], r[2], r[4]])).toEqual([
       ['Batteries · Final Assembly & Equipment', 'Enclosures, racking, thermal management and balance of systemLarge yard', '90', '50market only'],
       ['Solar · Final Assembly & Equipment', 'Passive racking and mountingLarge yard', '30', '0market only'],

@@ -7,7 +7,7 @@
 
 import { HATCH_STYLE, SIGNAL } from '../../theme/palette.ts';
 import { AIB_CLASSES, AIB_PHYSICAL_WARNING, type AibNode } from '../contract.ts';
-import { classInfo, needsAddToClass, policyNeedsText } from '../derive/classes.ts';
+import { classInfo, needsAddToClass, policyNeedsWords } from '../derive/classes.ts';
 
 export function ClassSwatch({ cls, size = 10 }: { cls: string; size?: number }) {
   const info = classInfo(cls);
@@ -20,10 +20,10 @@ export function ClassSwatch({ cls, size = 10 }: { cls: string; size?: number }) 
   return <span aria-hidden="true" className="inline-block shrink-0" style={{ width: size + 4, height: size, boxSizing: 'border-box', ...style }} />;
 }
 
-/** The chip's tooltip: what the class means, then the needs and the warning when there are any. */
+/** The chip's tooltip: what the class means, then the actions needed and the warning when there are any. */
 export function classTitle(cls: string, needs?: readonly string[] | null, warning?: string | null): string {
-  const t = policyNeedsText(needs);
-  return [classInfo(cls).meaning, t !== null ? `Policy needs: ${t}.` : null, warning ? `${warning}.` : null].filter(Boolean).join(' ');
+  const t = policyNeedsWords(needs);
+  return [classInfo(cls).meaning, t !== null ? `Actions needed: ${t}.` : null, warning ? `${warning}.` : null].filter(Boolean).join(' ');
 }
 
 /** The class as a tag: swatch and name. */
@@ -69,13 +69,13 @@ export function FlaggedClass({ cls, warning }: { cls: string | null; warning: bo
   );
 }
 
-/** "needs BUILD + MANAGE SPECIALIZATION" (`always`: also when the needs only repeat the class, or are none). */
+/** "Actions needed: Build capacity + Manage specialization" (`always`: also when the needs only repeat the class, or are none). */
 export function PolicyNeeds({ cls, needs, always = false }: { cls: string; needs?: readonly string[] | null; always?: boolean }) {
-  const t = policyNeedsText(needs);
+  const t = policyNeedsWords(needs);
   if (t === null || (!always && !needsAddToClass(cls, needs))) return null;
   return (
     <span className="text-xs text-paper-dim" data-testid="policy-needs">
-      <span className="text-paper-mute">Policy needs:</span> {t}
+      <span className="text-paper-mute">Actions needed:</span> {t}
     </span>
   );
 }
@@ -94,7 +94,7 @@ export function NodeClass({ n, always = false }: { n: AibNode; always?: boolean 
 /** The five classes with their marks (the legend of every class-coloured view). */
 export function ClassLegend({ classes = AIB_CLASSES }: { classes?: readonly string[] }) {
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-paper-dim" aria-label="Node classes">
+    <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-paper-dim" aria-label="What each supply-chain step needs">
       {classes.map((c) => (
         <li key={c} className="inline-flex items-center gap-1.5">
           <ClassSwatch cls={c} />

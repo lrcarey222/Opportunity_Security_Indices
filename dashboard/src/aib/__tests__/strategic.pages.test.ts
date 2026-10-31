@@ -68,11 +68,12 @@ function checks(label: string, dir: string) {
         for (const d of strategicScenarios(s)) {
           const sc = compactScenarioOf(c, d.id);
           const words = interventionWords(c, sc);
-          if (d.id === 'baseline') expect(words).toBe('no shock applied');
-          else expect(words).toMatch(/^(no node of \d+ needs intervention|\d+ of \d+ nodes? (needs|need) intervention)$/);
-          expect(countsWords(sc)).toMatch(/^\d+ [A-Z ]+(, \d+ [A-Z ]+)*$/);
+          if (d.id === 'baseline') expect(words).toBe('no disruption applied');
+          else expect(words).toMatch(/^(no step of \d+ needs action|\d+ of \d+ supply-chain steps? (needs|need) action)$/);
+          // the statuses in plain words (Build capacity, Unaffected, ...), never the data's upper-case codes
+          expect(countsWords(sc)).toMatch(/^\d+ [A-Z][a-z]+( [a-z]+)*(, \d+ [A-Z][a-z]+( [a-z]+)*)*$/);
         }
-        expect(activeWords(c, [])).toBe(c.workstreams.length ? `0 of ${c.workstreams.length} workstream${c.workstreams.length === 1 ? '' : 's'} active` : 'No workstream: none of the model’s clusters falls mainly in this compact');
+        expect(activeWords(c, [])).toBe(c.workstreams.length ? `0 of ${c.workstreams.length} workstream${c.workstreams.length === 1 ? '' : 's'} active` : 'No workstream: none of the analysis’s clusters falls mainly in this compact');
       }
     });
   });

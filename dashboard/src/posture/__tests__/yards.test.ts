@@ -74,13 +74,13 @@ describe('the child layers', () => {
 
   it('the other reasons: the commons and option of a Medium-yard layer (with its cap and how much was observed), a Secure scope that is not established, a layer not assessed', () => {
     const r = (layerId: string, choice: Parameters<typeof layerReason>[3]['choice'], variant: string | null) => layerReason(core.meta, 'Batteries', 'Assembly', { layerId, choice, variant });
-    expect(r('bess-control', 'partner', 'compete_partner')).toBe('Allies are the better answer than a domestic build: industrial commons 33 (1 of 3 observed), no future option; market-only value, capped below the prize bar.');
+    expect(r('bess-control', 'partner', 'compete_partner')).toBe('Rely on trusted partners rather than duplicate at home: industrial commons 33 (1 of 3 observed), no future option; market-only value, capped below the prize bar.');
     expect(r('bess-control', 'secure', 'secure_unclear')).toBe('A control layer whose separability from the hardware is not established.');
     expect(r('bess-cells', 'catch_up', null)).toBe('Catch Up: industrial commons 100, future option 50.');
     expect(r('bess-cells', 'not_assessed', null)).toBe('Not assessed: the layer has no choice of its own.');
     // a Watch layer without a large-yard case: its commons and option
     expect(layerReason(core.meta, 'Batteries', 'Assembly', { layerId: 'bess-control', choice: 'watch', variant: 'deploy' })).toBe(
-      'Domestic industrial priority low: industrial commons 33 (1 of 3 observed), no future option; market-only value, capped below the prize bar.',
+      'Low domestic priority: industrial commons 33 (1 of 3 observed), no future option; market-only value, capped below the prize bar.',
     );
     // a layer the core has no evidence for (a Deployment & Use layer): its id in words
     expect(layerLabel(core.meta, 'Electric Vehicles', 'Deployment', 'ev-charging-mgmt')).toBe('ev charging mgmt');

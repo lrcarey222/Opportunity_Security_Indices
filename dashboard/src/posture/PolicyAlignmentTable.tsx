@@ -27,7 +27,11 @@ import { countryRankWords, intensityWord, policyMomentumWords, policyRows, prote
 
 export { policyMomentumWords };
 
-export const POLICY_ALIGNMENT_TITLE = 'Does current policy match the strategy?';
+/**
+ * The card's title (the NEIS copy refresh, 2026-10-30): the page's Section asks the question ("Is policy focused
+ * on the right places?", vocabulary POLICY_ALIGNMENT_TITLE); the card shows it step by step.
+ */
+export const POLICY_ALIGNMENT_TITLE = 'Choice and policy, step by step';
 
 export interface PolicyAlignmentTableProps {
   core: PostureCore;
@@ -66,11 +70,11 @@ function AlignmentChip({ a }: { a: Alignment | null }) {
 }
 
 const COLS: Col<PolicyRow & { node: string }>[] = [
-  { id: 'node', header: 'Node', value: (r) => r.node, sortValue: (r) => stageRank(r.stage) },
-  { id: 'recommendation', header: 'Recommendation', value: (r) => VERB_LONG[r.verb] },
+  { id: 'node', header: 'Supply-chain step', value: (r) => r.node, sortValue: (r) => stageRank(r.stage) },
+  { id: 'recommendation', header: 'Recommended choice', value: (r) => VERB_LONG[r.verb] },
   { id: 'intensity', header: 'Observed policy intensity (rank in the country)', value: (r) => r.intensity, cell: (r) => rank(r.intensity) },
   { id: 'support', header: 'Support (rank in the country)', value: (r) => r.support, cell: (r) => rank(r.support) },
-  { id: 'protection', header: 'Protection or localisation (rank in the country)', value: (r) => (r.protectionRecorded === false ? 0 : r.protection), cell: protectionCell },
+  { id: 'protection', header: 'Protection or localization (rank in the country)', value: (r) => (r.protectionRecorded === false ? 0 : r.protection), cell: protectionCell },
   { id: 'momentum', header: 'Policy momentum (rank of recent activity in the country)', value: (r) => r.momentum, cell: (r) => policyMomentumWords(r.momentum, true) },
   { id: 'alignment', header: 'Alignment', value: (r) => (r.alignment ? ALIGNMENT_LABEL[r.alignment] : null) },
   { id: 'confidence', header: 'Alignment confidence', value: (r) => (r.alignmentConfidence ? ALIGNMENT_CONFIDENCE_LABEL[r.alignmentConfidence] : null) },
@@ -92,10 +96,10 @@ export function PolicyAlignmentTable({
   const depGap = rows.filter((r) => r.alignment === 'deployment_gap').length;
   const coverage = (['misaligned', 'under_prioritized', 'over_prioritized', 'mixed', 'aligned', 'insufficient_data'] as const)
     .filter((k) => by.get(k))
-    .map((k) => `${by.get(k)} ${ALIGNMENT_CLASS_LABEL[k].toLowerCase()}${k === 'under_prioritized' && depGap ? ` (${depGap} deployment under-response)` : ''}`);
+    .map((k) => `${by.get(k)} ${ALIGNMENT_CLASS_LABEL[k].toLowerCase()}${k === 'under_prioritized' && depGap ? ` (${depGap} where deployment policy lags)` : ''}`);
   const conf = (['high', 'medium', 'low'] as const).map((k) => [k, rows.filter((r) => r.alignmentConfidence === k).length] as const).filter(([, n]) => n > 0);
   const notJudged = by.get('none') ?? 0;
-  const summary = `${name}: policy alignment of ${rows.length} assessed nodes: ${coverage.join(', ') || 'none judged'}${notJudged ? `; ${notJudged} not judged` : ''}.`;
+  const summary = `${name}: policy alignment of ${rows.length} assessed supply-chain steps: ${coverage.join(', ') || 'none judged'}${notJudged ? `; ${notJudged} not judged` : ''}.`;
   const prov = postureProvenance(core);
   return (
     <ChartCard
@@ -105,12 +109,12 @@ export function PolicyAlignmentTable({
       badge={showBasis ? <PostureBasisTag note={null} /> : undefined}
       sub={
         <>
-          Observed policy compared with each node&apos;s recommended choice, node by node: <Term id={POSTURE_TERMS.policyAlignment}>policy alignment</Term>. Policy is a comparator, never
-          an input to the choice, and there is no overall score.
+          Each step&apos;s recommended choice beside the policy observed for it (<Term id={POSTURE_TERMS.policyAlignment}>policy alignment</Term>), the steps that need attention
+          first. Policy never feeds the choice, and there is no overall score.
         </>
       }
       summary={summary}
-      table={() => <TableView rows={rows} cols={COLS} caption={`${name}: policy alignment by node`} rowKey={(r) => r.key} onRowClick={(r) => onOpen(r.key)} selectedKey={selected} pageSize={70} />}
+      table={() => <TableView rows={rows} cols={COLS} caption={`${name}: policy alignment by supply-chain step`} rowKey={(r) => r.key} onRowClick={(r) => onOpen(r.key)} selectedKey={selected} pageSize={70} />}
       csv={() => ({
         name: `${name} policy alignment`,
         text: postureCsvText(
@@ -134,14 +138,14 @@ export function PolicyAlignmentTable({
       notes={
         <div className="space-y-1">
           <p data-testid="policy-coverage">
-            {coverage.length ? `${coverage.join(' · ')}.` : 'No node has a judged alignment.'}
+            {coverage.length ? `${coverage.join(' · ')}.` : 'No step has a judged alignment.'}
             {conf.length ? ` Alignment confidence: ${conf.map(([k, n]) => `${n} ${k}`).join(', ')} (from how complete the policy records are).` : ''}
           </p>
           <p data-testid="policy-ranks-note">
-            Intensity, support, protection and momentum are percentile ranks among {namePossessive(name)} own nodes (high: the top third; low: the bottom third), not shares of policy
-            attention or changes. Intensity ranks the node&apos;s revealed policy priority; support and protection rank the support and the protection or localisation measures
-            recorded for it, and protection reads &ldquo;none recorded&rdquo; where there are none; momentum ranks recent policy activity and is shown only where the time series
-            supports it.
+            Intensity, support, protection and momentum are percentile ranks among {namePossessive(name)} own supply-chain steps (high: the top third; low: the bottom third), not
+            shares of policy attention or changes. Intensity ranks the step&apos;s revealed policy priority; support and protection rank the support and the protection or
+            localization measures recorded for it, and protection reads &ldquo;none recorded&rdquo; where there are none; momentum ranks recent policy activity and is shown only where
+            the time series supports it.
           </p>
         </div>
       }
@@ -150,8 +154,8 @@ export function PolicyAlignmentTable({
         <table className="w-full min-w-[40rem] text-left text-xs">
           <thead className="text-paper-mute">
             <tr>
-              <th scope="col" className="py-1 pr-2 font-medium">Node</th>
-              <th scope="col" className="py-1 pr-2 font-medium">Recommendation</th>
+              <th scope="col" className="py-1 pr-2 font-medium">Supply-chain step</th>
+              <th scope="col" className="py-1 pr-2 font-medium">Recommended choice</th>
               <th scope="col" className="py-1 pr-2 font-medium">Observed policy intensity</th>
               <th scope="col" className="py-1 pr-2 font-medium">Support</th>
               <th scope="col" className="py-1 pr-2 font-medium">Protection</th>

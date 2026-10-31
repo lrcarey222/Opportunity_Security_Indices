@@ -109,9 +109,9 @@ export function prizeQuadrant(p: { prize: number; cp: number }, t: Pick<PostureT
 }
 export const PRIZE_QUADRANT_WORDS: Record<PrizeQuadrant, [string, string]> = {
   strong_strong: ['Strong position + strong prize', 'typically Preserve'],
-  weak_strong_prize: ['Weak position + strong prize', 'Catch Up candidate'],
-  weak_weak: ['Weak position + weak prize', 'Watch unless Need implies Partner'],
-  strong_weak_prize: ['Strong position + weak prize', 'mature or specialised capability: review whether preserving is still justified'],
+  weak_strong_prize: ['Weak position + strong prize', 'Catch Up, given a real base to build from'],
+  weak_weak: ['Weak position + weak prize', 'Watch, unless high vulnerability makes it Partner'],
+  strong_weak_prize: ['Strong position + weak prize', 'mature or specialized capability: review whether preserving is still justified'],
 };
 
 /**
@@ -119,7 +119,7 @@ export const PRIZE_QUADRANT_WORDS: Record<PrizeQuadrant, [string, string]> = {
  * test also asks the node to be a contender above the capability floor (R decision_engine.R cp_high), and this
  * one is not. With a high prize it then takes Catch Up, Partner or Watch.
  */
-export const TOP_QUARTER_NOT_PRESERVE = 'a top-quarter score that does not pass the Preserve test (not a contender, or below the capability floor)';
+export const TOP_QUARTER_NOT_PRESERVE = 'a top-quarter score that does not pass the Preserve test (not a main producer, or below the capability floor)';
 
 /**
  * The words of a point's place on the Prize & Position chart: its quadrant's tendency (spec XIII.1), except a
@@ -247,7 +247,7 @@ export function catchUpPositionWords(c: Pick<PostureCell, 'cp'>, t: Pick<Posture
 export function domesticCase(c: Pick<PostureCell, 'cp' | 'prize' | 'pathway'>, t: Pick<PostureThresholds, 'cp' | 'prize'>): string {
   const bits: string[] = [];
   // a Partner node at or above the bar failed the Preserve test (not a contender, or below the capability floor)
-  if (c.cp !== null) bits.push(c.cp >= t.cp ? `position ${Math.round(c.cp * 100)} (top-quarter score, but not a contender or below the capability floor)` : `position ${Math.round(c.cp * 100)} (below the Preserve bar of ${Math.round(t.cp * 100)})`);
+  if (c.cp !== null) bits.push(c.cp >= t.cp ? `position ${Math.round(c.cp * 100)} (top-quarter score, but not a main producer or below the capability floor)` : `position ${Math.round(c.cp * 100)} (below the Preserve bar of ${Math.round(t.cp * 100)})`);
   else bits.push('position not measured');
   if (c.prize !== null) bits.push(c.prize >= t.prize ? `prize ${Math.round(c.prize * 100)} (high)` : `prize ${Math.round(c.prize * 100)} (below ${Math.round(t.prize * 100)})`);
   if (c.pathway === 'no' || c.pathway === 'unknown') bits.push('no credible pathway');

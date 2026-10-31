@@ -26,7 +26,7 @@ export interface ScenarioToggleProps {
   framing?: string | null;
 }
 
-/** The framing line: the sentence, then which choice is the institutional lens and which the stress test. */
+/** The framing line: the sentence, then which choice is the default view and which the stress test. */
 export function scenarioFramingText(meta: AibMeta | null | undefined, framing?: string | null): string {
   const [lens, stress] = SCENARIO_TOGGLES.map((id) => scenarioInfo(meta, id).label);
   return `${framing || STRATEGIC_FRAMING} ${lens} is ${SCENARIO_LENS.managed}; ${stress} is ${SCENARIO_LENS.decoupling}.`;

@@ -16,7 +16,7 @@ import { fmtUsd, fmtShare } from '../../derive/format.ts';
 import { compactNodeIds, compactScenarioOf, policyMixWords, strategicCompacts, strategicScenarios } from '../../derive/strategic.ts';
 import { strategicCompactHref } from '../../nav.ts';
 import { csvWithRun } from '../common.tsx';
-import { countsWords, interventionCount, interventionWords, MiniSpine } from './shared.tsx';
+import { countsWords, interventionCount, interventionWords, MiniSpine, scenarioLabelOf } from './shared.tsx';
 
 /** Every compact under every listed scenario, one CSV row each (the counts, missions, coverage and partners). */
 export function strategicCsvRows(s: AibStrategic, name: (iso3: string) => string): Record<string, unknown>[] {
@@ -73,14 +73,14 @@ export function ScenarioMatrix({ s, sid }: { s: AibStrategic; sid: AibStrategicS
   const compacts = strategicCompacts(s);
   const cols: Col<AibStrategicCompact>[] = [
     { id: 'compact', header: 'Strategic compact', value: (c) => c.name, minWidth: 180 },
-    { id: 'nodes', header: 'Nodes', value: (c) => compactNodeIds(c).length, num: true },
+    { id: 'nodes', header: 'Supply-chain steps', value: (c) => compactNodeIds(c).length, num: true },
     ...scenarios.flatMap((d): Col<AibStrategicCompact>[] => [
-      { id: `${d.id}-n`, header: `${d.label}: nodes needing intervention`, value: (c) => interventionCount(compactScenarioOf(c, d.id)), num: true },
-      { id: `${d.id}-mix`, header: `${d.label}: policy mix`, value: (c) => policyMixWords(compactScenarioOf(c, d.id)), minWidth: 160 },
-      { id: `${d.id}-lost`, header: `${d.label}: supply lost`, value: (c) => compactScenarioOf(c, d.id)?.lostUsd ?? null, cell: (c) => fmtUsd(compactScenarioOf(c, d.id)?.lostUsd), num: true },
+      { id: `${d.id}-n`, header: `${scenarioLabelOf(s, d.id)}: steps needing action`, value: (c) => interventionCount(compactScenarioOf(c, d.id)), num: true },
+      { id: `${d.id}-mix`, header: `${scenarioLabelOf(s, d.id)}: actions needed`, value: (c) => policyMixWords(compactScenarioOf(c, d.id)), minWidth: 160 },
+      { id: `${d.id}-lost`, header: `${scenarioLabelOf(s, d.id)}: supply lost`, value: (c) => compactScenarioOf(c, d.id)?.lostUsd ?? null, cell: (c) => fmtUsd(compactScenarioOf(c, d.id)?.lostUsd), num: true },
       {
         id: `${d.id}-cov`,
-        header: `${d.label}: served with coordinated trade`,
+        header: `${scenarioLabelOf(s, d.id)}: met with coordinated trade`,
         value: (c) => compactScenarioOf(c, d.id)?.coverage.coordinated ?? null,
         cell: (c) => fmtShare(compactScenarioOf(c, d.id)?.coverage.coordinated, 0),
         num: true,
@@ -91,8 +91,8 @@ export function ScenarioMatrix({ s, sid }: { s: AibStrategic; sid: AibStrategicS
   return (
     <ChartCard
       title="The same compacts under every scenario"
-      sub="Each square is one node of the compact, in value-chain order; its colour is the node’s status under the scenario. The compacts and their nodes do not change from one scenario to the next: only how many nodes need intervention, and which."
-      summary={compacts.map((c) => `${c.name}: ${scenarios.map((d) => `${d.label} ${policyMixWords(compactScenarioOf(c, d.id))}`).join(', ')}`).join('; ')}
+      sub="Each square is one supply-chain step of the compact, in value-chain order; its colour is what the step needs under the scenario. The compacts and their steps do not change from one scenario to the next: only how many steps need action, and which."
+      summary={compacts.map((c) => `${c.name}: ${scenarios.map((d) => `${scenarioLabelOf(s, d.id)} ${policyMixWords(compactScenarioOf(c, d.id))}`).join(', ')}`).join('; ')}
       legend={<SpineLegend />}
       table={() => <TableView rows={compacts} cols={cols} caption="Every strategic compact under every scenario" rowKey={(c) => c.id} pageSize={25} />}
       csv={() => ({ name: 'Strategic sectoral compacts under every scenario', text: csvWithRun(strategicCsvRows(s, name), doc.meta) })}
@@ -113,7 +113,7 @@ export function ScenarioMatrix({ s, sid }: { s: AibStrategic; sid: AibStrategicS
                 return (
                   <div key={d.id} className={`min-w-0 px-2 py-1.5 ${current ? 'bg-white/[0.04] ring-1 ring-inset ring-white/25' : ''}`} data-scenario={d.id} aria-current={current ? 'true' : undefined}>
                     <dt className={`text-xs ${current ? 'text-paper' : 'text-paper-mute'}`} title={d.words ?? undefined}>
-                      {d.label}
+                      {scenarioLabelOf(s, d.id)}
                       {current && <span className="sr-only"> (shown above)</span>}
                     </dt>
                     <dd className="mt-1 flex flex-col gap-1 text-xs text-paper-dim" title={counts}>

@@ -11,6 +11,7 @@ import {
 } from '../contract.ts';
 import { AibStore, scenarioKey } from '../data/store.ts';
 import { CLASS_INFO } from '../derive/classes.ts';
+import { SCENARIO_DEFINITION, SCENARIO_NAME } from '../../content/vocabulary.ts';
 import { diversifyTotals } from '../derive/diversify.ts';
 import {
   BASELINE_NO_COALITION, comparableNodes, compactDetail, compactScenario, compactScenarios, compactSuppliersToday, effectiveScenario, hasBaseline, hasScenarios, headlineNetwork,
@@ -319,19 +320,28 @@ describe('derive/scenarios', () => {
   const nodeOf = (id: string) => d.nodes.find((n) => n.id === id) ?? null;
 
   it('labels, words, shocks and colours: the bundle first, the defaults after; one colour each, none a class colour', () => {
-    expect(scenarioList(d.meta).map((s) => s.label)).toEqual(['Baseline', 'Managed Interdependence', 'Decoupling']);
-    expect(scenarioInfo(d.meta, 'decoupling').words).toMatch(/^Zembla stops supplying/);
+    // the pages print the plain display names (content/vocabulary.ts SCENARIO_NAME); the method's names stay for CSVs and file names
+    expect(scenarioList(d.meta).map((s) => s.label)).toEqual([SCENARIO_NAME.baseline, SCENARIO_NAME.managed, SCENARIO_NAME.decoupling]);
+    expect(scenarioList(d.meta).map((s) => s.label)).toEqual(["Today's network", 'Managed Interdependence', 'Major-supplier disruption']);
+    expect(scenarioList(d.meta).map((s) => s.methodLabel)).toEqual(['Baseline', 'Managed Interdependence', 'Decoupling']);
+    expect(scenarioInfo(d.meta, 'decoupling').methodWords).toMatch(/^Zembla stops supplying/);
+    // the plain words name the economy the data remove (never "a major supplier" alone where the data say who)
+    expect(scenarioInfo(d.meta, 'decoupling').words).toMatch(/^A major supplier \(Zembla, in this analysis\) stops supplying allied markets\. /);
+    expect(scenarioInfo(d.meta, 'baseline').words).toBe(SCENARIO_DEFINITION.baseline);
+    expect(scenarioInfo(d.meta, 'managed').words).toMatch(/^No supplier is banned\. .*which other suppliers would need to take the excess\.$/);
     expect(scenarioInfo(d.meta, 'managed').shockId).toBe('diversify_benchmark');
     // an older bundle: the defaults, the shocked economy named from the headline shock's label
     const older = stripScenarios(doc()).meta;
-    expect(scenarioInfo(older, 'managed').words).toBe(SCENARIO_DEFAULTS.managed.words);
-    expect(scenarioInfo(older, 'decoupling').words).toMatch(/^Zembla stops supplying the allied market \(it keeps buying\)/);
+    expect(scenarioInfo(older, 'managed').methodWords).toBe(SCENARIO_DEFAULTS.managed.words);
+    expect(scenarioInfo(older, 'decoupling').methodWords).toMatch(/^Zembla stops supplying the allied market \(it keeps buying\)/);
+    expect(scenarioInfo(older, 'decoupling').words).toMatch(/^A major supplier \(Zembla, in this analysis\)/);
     expect(scenarioInfo(older, 'decoupling').shockId).toBe('zzz_100');
-    expect(scenarioInfo(null, 'decoupling').words).toBe(SCENARIO_DEFAULTS.decoupling.words);
+    expect(scenarioInfo(null, 'decoupling').methodWords).toBe(SCENARIO_DEFAULTS.decoupling.words);
+    expect(scenarioInfo(null, 'decoupling').label).toBe(SCENARIO_NAME.decoupling);
     expect(scenarioLabel('managed')).toBe('Managed Interdependence');
-    expect(scenarioShockLabel(d.meta, 'baseline')).toBe('No shock: trade as it is today (2024)');
+    expect(scenarioShockLabel(d.meta, 'baseline')).toBe('No disruption: trade as it is today (2024)');
     expect(scenarioShockLabel(d.meta, 'decoupling')).toBe('Zembla supply removed');
-    expect(scenarioShockLabel(d.meta, 'managed')).toBe('no supplier removed; caps above the benchmark');
+    expect(scenarioShockLabel(d.meta, 'managed')).toBe('no supplier removed; supply above the concentration cap shifts');
     expect(scenarioCaveat(d.meta)).toMatch(/not forecasts; dollar values are 2024 trade values/);
     const colours = Object.values(SCENARIO_COLOR);
     expect(new Set(colours).size).toBe(3);

@@ -6,6 +6,7 @@
 // Legacy OSI mapping (spec Part II: Grow ~ Preserve, Upgrade ~ Catch Up, Exposed ~ Partner, Stable ~ Watch).
 // No React, no IO.
 
+import { EVIDENCE_TITLE, FENCE_TITLE, POLICY_ALIGNMENT_TITLE, TERMS } from '../../content/vocabulary.ts';
 import { cellKey, COUNTRY_STAGES, COUNTRY_TECHS, LEGACY_CORNERS, type LegacyCorner } from '../contract.ts';
 
 // ---- sections and anchors ------------------------------------------------------------------------------
@@ -25,23 +26,28 @@ export interface ProfileSection {
  * the anchors. The three fence sections replace Need, Prize & Position and Choices (their old anchors are
  * aliases: #need the High fence, #prize-position and #choices the Medium fence). Allied Strategy keeps the old
  * #aib-role anchors; the partnership analysis moved to the Medium fence's Partner sub-section.
+ * The NEIS copy refresh (2026-10-30): each h2 states the strategic question or the plain fence title of the
+ * shared vocabulary (content/vocabulary.ts); the nav keeps short words.
  */
 export const STRATEGY_SECTIONS: readonly ProfileSection[] = [
-  { id: 'strategy', label: 'Strategy', aliases: ['posture', 'glance'] },
-  { id: 'high-fence', label: 'High fence · Secure', aliases: ['need'] },
-  { id: 'medium-fence', label: 'Medium fence · Preserve, Catch Up, Partner, Accelerate', aliases: ['prize-position', 'choices'] },
-  { id: 'low-fence', label: 'Low fence · Watch', aliases: [] },
-  { id: 'policy-alignment', label: 'Policy Alignment', aliases: ['policy', 'priorities'] },
-  { id: 'allied', label: 'Allied Strategy', aliases: ['aib-role', 'allied-aib-role', 'allies'] },
-  { id: 'evidence', label: 'Evidence & Methodology', aliases: ['notes', 'methods'] },
+  { id: 'strategy', label: TERMS.postureClassification, nav: 'Strategy map', aliases: ['posture', 'glance'] },
+  { id: 'high-fence', label: FENCE_TITLE.high, nav: 'High fence · Secure', aliases: ['need'] },
+  { id: 'medium-fence', label: FENCE_TITLE.medium, nav: 'Medium fence · Build, partner, deploy', aliases: ['prize-position', 'choices'] },
+  { id: 'low-fence', label: FENCE_TITLE.low, nav: 'Low fence · Keep open', aliases: [] },
+  { id: 'policy-alignment', label: POLICY_ALIGNMENT_TITLE, nav: 'Policy alignment', aliases: ['policy', 'priorities'] },
+  { id: 'allied', label: 'Where this country fits in the Allied Industrial Base', nav: 'Allied strategy', aliases: ['aib-role', 'allied-aib-role', 'allies'] },
+  { id: 'evidence', label: EVIDENCE_TITLE, aliases: ['notes', 'methods'] },
 ];
 
-/** The Medium fence's sub-sections (h3s with their own anchors), in order; the partnership analysis's old anchors land on Partner. */
+/**
+ * The Medium fence's sub-sections (h3s with their own anchors), in order, each named by its step and the
+ * question it answers; the partnership analysis's old anchors land on Partner.
+ */
 export const MEDIUM_SUBSECTIONS: readonly ProfileSection[] = [
-  { id: 'medium-prize', label: 'Prize', aliases: [] },
-  { id: 'medium-position', label: 'Competitive Position', aliases: [] },
-  { id: 'medium-partner', label: 'Partner', aliases: ['partnerships', 'partners', 'allied-partnerships'] },
-  { id: 'medium-accelerate', label: 'Accelerate', aliases: [] },
+  { id: 'medium-prize', label: 'Prize: is productive capability here worth having?', aliases: [] },
+  { id: 'medium-position', label: 'Position: how strong is the country today?', aliases: [] },
+  { id: 'medium-partner', label: 'Partner: where should this country rely on allies?', aliases: ['partnerships', 'partners', 'allied-partnerships'] },
+  { id: 'medium-accelerate', label: 'Accelerate: where should deployment speed up?', aliases: [] },
 ];
 
 /** The Legacy OSI sub-section of Evidence & Methodology and the old anchors of its blocks (#why is the Why section itself, inside its disclosure: hashPlan opens it). */
@@ -175,11 +181,11 @@ export interface LegacyMappingRow {
 }
 
 const DIFFERS: Record<LegacyCorner, string> = {
-  legacy_grow: 'Preserve needs a demonstrated Competitive Position in the top quarter of the node’s contenders; a high Economic Opportunity index alone does not give it.',
-  legacy_upgrade: 'Catch Up needs a real prize and a credible pathway; low Energy Security there may be a supply-chain need the Secure tests or Partner answer instead.',
-  legacy_exposed: 'Partner needs a high supply-chain need with a weak domestic case; a low index can come from trade or reserves without a dependence problem.',
+  legacy_grow: 'Preserve needs a strong Competitive Position, in the top quarter of the step’s main producers; a high Economic Opportunity index alone does not give it.',
+  legacy_upgrade: 'Catch Up needs a real prize and a credible pathway (a capability anchor to build from); low Energy Security there may be a vulnerability the Secure tests or Partner answer instead.',
+  legacy_exposed: 'Partner needs a high supply-chain vulnerability with a weak domestic case; a low index can come from trade or reserves without a dependence problem.',
   legacy_stable:
-    'Watch is a positive conclusion of low need, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway; at Deployment & Use the canonical framework reads deployment need instead and may say Accelerate.',
+    'Watch is a positive conclusion of low need, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway; at Deployment & Use the current framework reads deployment need instead and may say Accelerate.',
 };
 
 /** The Legacy OSI corners with their conceptual canonical choice (Grow ~ Preserve, Upgrade ~ Catch Up, Exposed ~ Partner, Stable ~ Watch). */

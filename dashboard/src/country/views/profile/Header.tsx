@@ -7,11 +7,15 @@
 // Index sector, the strongest partner, the climate rating) are gone: the counts line under the Country
 // Strategy Map replaces them, the corners and the Strategic Index live in Legacy OSI, the partner and the
 // climate rating in Allied Strategy and Policy Alignment. The head never reads the Perspective dials.
+// The NEIS copy refresh (2026-10-30): the lede opens with the page's strategic question for this economy
+// (vocabulary MODULE_QUESTION.country), then answers it with the strategy sentence; the data freshness line
+// carries the guide's note on the trade benchmark and momentum signal as its tooltip.
 
 import { Link, useNavigate } from 'react-router';
 import { CountrySelect } from '../../../components/CountrySelect.tsx';
 import { InfoTip } from '../../../components/InfoTip.tsx';
 import { PageHead, Tag } from '../../../components/ui.tsx';
+import { MODULE_QUESTION } from '../../../content/vocabulary.ts';
 import { downloadText, fileSlug } from '../../../lib/download.ts';
 import { countryPostureRows, postureCsvText, postureProvenance, strategySentence } from '../../../posture/index.ts';
 import { POSTURE_CSV_COLS, postureCsvRows } from '../../../posture/derive.ts';
@@ -37,13 +41,20 @@ export function memoRevised(e: { tier: string; memo: { stale: boolean } | null }
 export const MEMO_REVISED_TEXT = 'This memo is being revised. It will be available again once it has been rewritten.';
 export const memoRevisedLine = (name: string) => `The memo for ${name} is being revised. It will be available again once it has been rewritten.`;
 
+/** The page's strategic question for one economy: "What should Japan secure, build, partner for or deploy?" */
+export const profileQuestion = (name: string): string => MODULE_QUESTION.country.replace('this country', name);
+
+/** What the freshness line dates, in a sentence (the guide's data-freshness note). */
+export const FRESHNESS_NOTE =
+  'The strategy is built from the latest common data available. Trade uses a structural benchmark plus a more recent momentum signal where reporting is complete enough to compare countries fairly.';
+
 /** The head's strategy sentence: the framework's (loading and error states in words). */
 function useStrategyLede(): string {
   const { sheet, posture } = useProfile();
   const name = cap(proseName(sheet.meta.country));
   if (!posture || posture.status === 'loading') return `Loading the strategy of ${proseName(sheet.meta.country)}…`;
   if (posture.status === 'error' || !posture.core) return `The strategy of ${proseName(sheet.meta.country)} could not be loaded; the sections below say why.`;
-  if (!posture.cells.length) return `${name} has no strategy map: the strategic position framework classifies none of its technology and stage nodes.`;
+  if (!posture.cells.length) return `There is not enough comparable evidence to produce a strategy map for ${proseName(sheet.meta.country)}.`;
   return strategySentence(name, posture.cells, posture.core.meta);
 }
 
@@ -63,9 +74,21 @@ export function ProfileHead({ manifest }: { manifest: CountryManifest }) {
   return (
     <>
       {/* the strategy sentence runs wide so the head stays short and the Country Strategy Map sits near the fold (spec XI.3) */}
-      <PageHead eyebrow="COUNTRIES · COUNTRY PROFILE" title={m.country} wideLede lede={<span data-testid="strategy-sentence">{lede}</span>}>
+      <PageHead
+        eyebrow="COUNTRIES · COUNTRY PROFILE"
+        title={m.country}
+        wideLede
+        lede={
+          <>
+            <span className="mb-1 block font-medium text-paper" data-testid="profile-question">
+              {profileQuestion(name)}
+            </span>
+            <span data-testid="strategy-sentence">{lede}</span>
+          </>
+        }
+      >
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <p className="max-w-3xl text-xs text-paper-mute" data-testid="data-freshness">
+          <p className="max-w-3xl text-xs text-paper-mute" data-testid="data-freshness" title={FRESHNESS_NOTE}>
             Data: {fresh.join(' · ')}.
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -90,7 +113,7 @@ export function ProfileHead({ manifest }: { manifest: CountryManifest }) {
             <button type="button" className="btn btn-ghost" onClick={csv} disabled={!core || !posture?.cells.length}>
               DOWNLOAD STRATEGY (CSV)
             </button>
-            <p className="mt-1 max-w-xs text-xs text-paper-mute">Every technology and stage with its choice, need, prize and position</p>
+            <p className="mt-1 max-w-xs text-xs text-paper-mute">Every technology and stage with its choice and the need, prize and position behind it</p>
           </div>
           <div className="flex flex-col gap-1 self-center text-sm">
             <a className="link" href="#downloads">

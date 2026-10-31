@@ -4,7 +4,7 @@
 // the bridge link to Country Insights, and no bare acronym on any Sector route (C3.4).
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { routes } from '../../routes.tsx';
 import { bareAcronyms } from '../../components/testing/acronyms.ts';
@@ -168,8 +168,14 @@ describe('Sector edits 2026-10 (C5)', () => {
 
   it('Concentration: the general explainer at the top, lens labels spelled out', async () => {
     renderAt('/sector/concentration');
-    expect(await h1('Concentration across sectors')).toBeTruthy();
+    // the page's question first, then why concentration matters before how it is measured
+    expect(await h1('Where are the chokepoints?')).toBeTruthy();
+    expect(main().textContent).toContain('High concentration is a warning sign, not a strategy by itself.');
+    expect(main().textContent).toContain('Whether a concentration is dangerous depends on how hard the supply is to replace, which the Allied Industrial Base stress tests ask.');
     const explainer = await screen.findByTestId('hhi-explainer', {}, { timeout: 20_000 });
+    expect(within(explainer).getByTestId('hhi-plain').textContent).toBe(
+      'Concentration measures how much of a market is controlled by a small number of suppliers. A high score matters most when alternatives are scarce, qualification takes time, or disruption would have serious consequences.',
+    );
     expect(explainer.textContent).toMatch(/A sector with an index of 0\.25 behaves like four equal holders/);
     expect(screen.getByRole('radio', { name: 'Concentration (HHI)' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'Largest holder' })).toBeTruthy();
@@ -182,11 +188,17 @@ describe('Sector edits 2026-10 (C5)', () => {
     const links = screen.getAllByRole('link', { name: 'United States: Country profile →' });
     expect(links.length).toBeGreaterThan(0);
     for (const a of links) expect(a.getAttribute('href')).toBe('/countries/USA');
+    // the page opens on its question; the strategic call is one link away, on the Country Strategy Map at this step
+    expect(main().textContent).toContain('How strong is United States in Batteries — Assembly today, and who does it trade with?');
+    const strategy = screen.getByRole('link', { name: 'What should United States do here? →' });
+    const u = new URL(strategy.getAttribute('href') ?? '', 'http://x');
+    expect([u.pathname, u.searchParams.get('node'), u.hash]).toEqual(['/countries/USA', 'Batteries|Assembly', '#strategy']);
+    expect(main().textContent).not.toMatch(/EU-27 node/);
   });
 
   it('Sources: unique card names inside the sections, the glossary link, the CM-FDI line in the ZIP description', async () => {
     renderAt('/sector/sources');
-    expect(await h1('Sources & data')).toBeTruthy();
+    expect(await h1('Data behind the sector analysis')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Variable dictionary' })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3, name: 'Every measure: unit, years, source and caveats' })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Glossary: every term/ }).getAttribute('href')).toBe('/glossary');

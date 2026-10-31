@@ -86,7 +86,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the relationshi
   it('a pair: the Partner filter beside the others, the thesis above the lenses, and where the partner sits in the summary', async () => {
     renderAt('/aib/partnerships?country=AAA&partner=CCC');
     await h1();
-    for (const f of ['Economy', 'Partner', 'Technology', 'Stage', 'Node']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
+    for (const f of ['Economy', 'Partner', 'Technology', 'Stage', 'Supply-chain step']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
     // the Partner filter: the economies with a thesis first, in their own group
     const box = partnerBox();
     expect(box.value).toBe('CCC');
@@ -117,7 +117,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the relationshi
     await h1();
     // no partner yet: the suggestions
     const prompt = screen.getByTestId('thesis-prompt');
-    expect(prompt.textContent).toMatch(/^Choose a partner to read the relationship thesis of the pair\. The model has 4 for Avalon/);
+    expect(prompt.textContent).toMatch(/^Choose a partner to read the strategic case for the pair\. The analysis has 4 for Avalon/);
     expect(within(prompt).getByRole('link', { name: 'Carpania' }).getAttribute('href')).toBe('/aib/partnerships?country=AAA&mode=investment&scn=decoupling&partner=CCC');
     fireEvent.change(partnerBox(), { target: { value: 'BBB' } });
     await waitFor(() => expect(search(r).get('partner')).toBe('BBB'));

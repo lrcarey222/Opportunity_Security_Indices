@@ -11,6 +11,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { AibStrategic } from '../aib/contract.ts';
+import { PARTNERSHIP } from '../content/vocabulary.ts';
 import { proseName } from '../country/derive/text.ts';
 import { contributionWords, pairThesis, strategicRoleWords, thesisPartners, type ContributionRow, type ThesisSide } from './thesis.ts';
 
@@ -114,14 +115,14 @@ function Suggestions({ strategic, a, name, pairHref }: { strategic: AibStrategic
   if (!keys.length) {
     return (
       <p className="text-sm text-paper-dim" data-testid="thesis-prompt">
-        The model writes relationship theses for pairs of allied economies it links by trade or investment; it has none for {prose(a)}.
+        The analysis writes relationship theses for pairs of allied economies it links by trade or investment; it has none for {prose(a)}.
       </p>
     );
   }
   const shown = keys.slice(0, THESIS_SUGGESTIONS);
   return (
     <p className="text-sm text-paper-dim" data-testid="thesis-prompt">
-      Choose a partner to read the relationship thesis of the pair. The model has {keys.length === 1 ? 'one' : keys.length} for {prose(a)}; those with the most priority compacts:{' '}
+      Choose a partner to read the strategic case for the pair. The analysis has {keys.length === 1 ? 'one' : keys.length} for {prose(a)}; those with the most priority compacts:{' '}
       {shown.map((k, i) => (
         <span key={k}>
           {i > 0 && (i === shown.length - 1 && keys.length <= shown.length ? ' and ' : ', ')}
@@ -141,12 +142,15 @@ export function RelationshipThesis({ id, strategic, a, b, name, compactHref, cou
   const title = t ? `Relationship thesis: ${prose(a)} and ${prose(t.b.iso3)}` : 'Relationship thesis';
   return (
     <section className="card p-4 sm:p-5" aria-labelledby={`${id}-h`} data-testid="relationship-thesis" data-state={t?.state ?? 'choose'}>
-      <span className="eyebrow block" title="Read from the strategic layer of the Allied Industrial Base model: the same under every scenario.">
-        AIB model · every scenario
+      <span className="eyebrow block" title="Read from the long-run division of labor in the Allied Industrial Base analysis: the same under every scenario.">
+        AIB analysis · every scenario
       </span>
       <H id={`${id}-h`} className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
         {title}
       </H>
+      <p className="mt-1 text-sm text-paper-dim" data-testid="thesis-question">
+        <span className="text-paper">{PARTNERSHIP.thesisHeading}</span> {PARTNERSHIP.thesisPrompt}
+      </p>
       {tools && <div className="mt-3">{tools}</div>}
       <div className="mt-3 space-y-4">
         {!t ? (
@@ -201,7 +205,7 @@ export function RelationshipThesis({ id, strategic, a, b, name, compactHref, cou
                     ))}
                   </ul>
                 ) : (
-                  <p>The model links them, but none of the six logics holds.</p>
+                  <p>The analysis links them, but none of the six logics holds.</p>
                 )}
               </Part>
             )}
@@ -209,8 +213,8 @@ export function RelationshipThesis({ id, strategic, a, b, name, compactHref, cou
         )}
         {t && (
           <p className="text-xs text-paper-mute" data-testid="thesis-basis">
-            Written from the strategic layer by fixed templates: each economy&apos;s Strategic AIB Roles and compact roles, and the model&apos;s trade and investment relationships under Managed
-            Interdependence and Decoupling. The same under every scenario: the compacts are a persistent architecture. Priority compacts are those both take part in that matter most to both (at
+            Written from the strategic layer by fixed templates: each economy&apos;s Strategic AIB Roles and compact roles, and the analysis&apos;s trade and investment relationships under
+            Managed Interdependence and the major-supplier disruption. The same under every scenario: the compacts are the lasting division of labor. Priority compacts are those both take part in that matter most to both (at
             most three). Every logic whose evidence holds is listed, in a fixed order; there is no bilateral score.
           </p>
         )}

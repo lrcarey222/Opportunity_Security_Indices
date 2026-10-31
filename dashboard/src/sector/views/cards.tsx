@@ -92,7 +92,7 @@ export function LeagueCard(p: LeagueCardProps) {
       : `Ranked: ${nRecorded} economies with recorded ${year ?? ''} ${lc(v.short)}`.replace('  ', ' ') +
         (nNone ? ` · ${nNone} with none recorded` : '') +
         (notCovered ? ` · ${notCovered} not covered by ${v.source.short}` : '') +
-        (coal.length ? ` · coalition coverage ${coalHave}/${coal.length}` : '');
+        (coal.length ? ` · coalition members with data ${coalHave}/${coal.length}` : '');
   const cols: Col<(typeof conc.rows)[number]>[] = [
     { id: 'rank', header: 'Rank', value: (r) => r.rank, num: true },
     { id: 'country', header: 'Economy', value: (r) => model.geos[r.geo]?.name ?? '', cell: (r) => (model.geos[r.geo] ? <EconomyLink g={model.geos[r.geo]} /> : ''), minWidth: 150 },

@@ -17,7 +17,7 @@ const cellsOf = (iso3: string) => countryCells(core, iso3);
 describe('the strategy sentence', () => {
   it("names Aland's pattern from its choices, in the order preserve, secure, catch up, partner, accelerate", () => {
     expect(strategySentence('Aland', cellsOf('AAA'), meta)).toBe(
-      'Aland should preserve its strongest positions in battery pack assembly and solar module assembly; secure battery materials refining (chokepoint), polysilicon refining (systemic resilience) and solar inverters (operational / control); catch up in battery cell manufacturing; rely on partners for lithium and nickel mining; and accelerate deployment of battery storage.',
+      'Aland should preserve its strongest positions in battery pack assembly and solar module assembly; secure battery materials refining (chokepoint risk), polysilicon refining (system resilience) and solar inverters (control-system risk); catch up in battery cell manufacturing; rely on partners for lithium and nickel mining; and accelerate deployment of battery storage.',
     );
   });
 
@@ -26,11 +26,11 @@ describe('the strategy sentence', () => {
     expect(strategySentence('Cland', cellsOf('CCC'), meta)).toBe('Cland should rely on partners for battery cell manufacturing.');
     const watchOnly = cellsOf('BBB').filter((c) => c.deployMode === 'watch');
     expect(strategySentence('Bland', watchOnly, meta)).toBe(
-      `Bland has no node that calls for securing, preserving, catching up, partnering or accelerating deployment: domestic industrial priority is low in all ${watchOnly.length} assessed nodes.`,
+      `Bland has no supply-chain step that calls for securing, preserving, catching up, relying on partners or faster deployment: domestic production is a low priority in all ${watchOnly.length} assessed steps, so the strategy is to keep them open.`,
     );
     const notAssessed = cellsOf('CCC').filter((c) => c.posture === 'N');
-    expect(strategySentence('Cland', notAssessed, meta)).toBe('Cland has no assessed node yet: need or prize is not measured in any of its 1 nodes.');
-    expect(strategySentence('Zland', [], meta)).toBe('Zland has no classified supply-chain node.');
+    expect(strategySentence('Cland', notAssessed, meta)).toBe('Cland has no assessed supply-chain step yet: need or prize is not measured in its one step.');
+    expect(strategySentence('Zland', [], meta)).toBe('There is not enough comparable evidence to produce a strategy map for Zland.');
   });
 
   it('every clause is backed by the nodes it names, each of its verb', () => {
@@ -63,7 +63,7 @@ describe('the strategy sentence', () => {
     const meta2 = { phrases: { 'Solar|Refining': 'wafers and PV cells', 'Solar|Assembly': 'PV modules and inverters', 'Batteries|Recovery': 'battery recycling' } };
     const cu = (tech: string, stage: PostureCell['stage'], prize: number): PostureCell => ({ ...base, tech, stage, prize });
     const [cl] = strategyClauses([cu('Batteries', 'Recovery', 0.9), cu('Solar', 'Refining', 0.8), cu('Solar', 'Assembly', 0.7), cu('Wind', 'Components', 0.6)], meta2);
-    expect(cl.text).toBe('catch up in 4 nodes, led by battery recycling, wafers & PV cells and PV modules & inverters');
+    expect(cl.text).toBe('catch up in 4 supply-chain steps, led by battery recycling, wafers & PV cells and PV modules & inverters');
   });
 
   it('the node phrase: the table, else the technology and stage word; Deployment names the technology', () => {

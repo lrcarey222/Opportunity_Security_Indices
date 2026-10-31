@@ -30,6 +30,7 @@ import { Link, useLocation } from 'react-router';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { EmptyState, FilterRow, PageHead, Select } from '../../components/ui.tsx';
+import { MODULE_QUESTION, ROLES_FRAMING } from '../../content/vocabulary.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import { ScenarioTag } from '../charts/ScenarioCompare.tsx';
@@ -44,10 +45,13 @@ import { runMetaOf, scenarioCaveat, scenarioCsvFields, scenarioFileTag, scenario
 import { compactHref } from '../nav.ts';
 import { AIB_EYEBROW } from './AibOverviewView.tsx';
 import { BasisTag } from './basis.tsx';
-import { csvWithRun } from './common.tsx';
+import { csvWithRun, QuestionLede } from './common.tsx';
 import { cellWords, ModelledNote, OperationalRoleList, RoleCellView, ScenarioFileState, useBaselineDoc, useManagedDoc } from './networkParts.tsx';
 import { StrategicRolesSection } from './strategicRoles/StrategicRolesSection.tsx';
 import { RoleChangesCard, WhoSuppliesWhomCard } from './scenarioNetwork.tsx';
+
+/** The page's title (the guide, Country roles). */
+export const ROLES_PAGE_TITLE = 'Country roles in the Allied Industrial Base';
 
 /** The matrix columns in the brief's order. */
 export const ROLE_COLUMNS = MATRIX_ROLES.map((role) => ({ role, ...ROLE_READING[role] }));
@@ -77,8 +81,8 @@ export default function AibRolesView() {
   const net = src?.network ?? null;
   const v = net?.variant;
   const info = scenarioInfo(meta, scenario);
-  // the words of the scenario: "under Decoupling"; a bundle without the scenarios keeps "the headline shock"
-  const under = hasScenarios ? `under ${info.label}` : 'under the headline shock';
+  // the words of the scenario: "under Major-supplier disruption"; a bundle without the scenarios keeps "the headline disruption"
+  const under = hasScenarios ? `under ${info.label}` : 'under the headline disruption';
   const shockWords = scenario === 'managed' ? scenarioShockLabel(meta, 'managed') : shockLabel;
   // what the Decoupling network's "every shock" figures sum (Managed Interdependence has none: cum = headline)
   const label = useMemo(() => everyShockLabel(doc), [doc]);
@@ -109,13 +113,13 @@ export default function AibRolesView() {
       })
       .join('; ');
   const leaders = ROLE_COLUMNS.map((col) => ({ ...col, top: roleHolders(rows, col.role, 'named') })).filter((c) => c.top.length > 0);
-  const hHead = hasScenarios ? info.label : 'headline shock';
+  const hHead = hasScenarios ? info.label : 'headline disruption';
   const sideCols = (k: MatrixRole): Col<CountryRoles>[] =>
     SIDE_ROLES.includes(k)
       ? [
-          { id: `${k}-h`, header: `${ROLE_READING[k].short}: ${hHead} (pts)`, value: (r) => r.cells[k].side?.headline ?? null, cell: (r) => fmtPts(r.cells[k].side?.headline), num: true, title: `Share of node demand served ${under}, summed over nodes, in points` },
+          { id: `${k}-h`, header: `${ROLE_READING[k].short}: ${hHead} (pts)`, value: (r) => r.cells[k].side?.headline ?? null, cell: (r) => fmtPts(r.cells[k].side?.headline), num: true, title: `Share of a supply-chain step's demand served ${under}, summed over steps, in points` },
           ...(every !== null
-            ? [{ id: `${k}-c`, header: `${ROLE_READING[k].short}: ${everyHeader} (pts)`, value: (r: CountryRoles) => r.cells[k].side?.cumulative ?? null, cell: (r: CountryRoles) => fmtPts(r.cells[k].side?.cumulative), num: true, title: `Share of node demand served across ${every}, summed over nodes, in points` } as Col<CountryRoles>]
+            ? [{ id: `${k}-c`, header: `${ROLE_READING[k].short}: ${everyHeader} (pts)`, value: (r: CountryRoles) => r.cells[k].side?.cumulative ?? null, cell: (r: CountryRoles) => fmtPts(r.cells[k].side?.cumulative), num: true, title: `Share of a supply-chain step's demand served across ${every}, summed over steps, in points` } as Col<CountryRoles>]
             : []),
           { id: `${k}-p`, header: `${ROLE_READING[k].short}: partners`, value: (r) => partnersOf(r.cells[k]), num: true, title: `Distinct partners of the relationships ${under}` },
           { id: `${k}-l`, header: `${ROLE_READING[k].short}: read as`, value: (r) => r.cells[k].level },
@@ -183,8 +187,8 @@ export default function AibRolesView() {
       <div className="text-sm" data-testid="operational-evidence">
         <p className="mb-1 font-medium text-paper">Operational network roles {under}</p>
         <p className="mb-2 text-xs leading-relaxed text-paper-mute">
-          The evidence beneath the strategic roles: what the economy does in the network of trade and investment relationships the model selects. Unlike the strategic roles, these
-          follow the scenario. The table below sets every economy side by side.
+          The evidence beneath the strategic roles: what the country does in the network of trade and investment relationships the analysis selects. Unlike the strategic roles,
+          these follow the scenario. The table below sets every country side by side.
         </p>
         {pending ? (
           <p className="text-paper-mute">{mi.error || mi.missing ? `Not available for ${info.label} in this view: see the note below.` : `Loading the roles ${under}…`}</p>
@@ -216,13 +220,20 @@ export default function AibRolesView() {
     <div className={PAGE}>
       <PageHead
         eyebrow={AIB_EYEBROW}
-        title="Country roles"
+        title={ROLES_PAGE_TITLE}
         lede={
-          strategic
-            ? `What does each economy contribute to the allied industrial system? First its strategic roles: the two or three major functions it performs, what it contributes and needs, its most important compacts and partners, the same in every scenario. Then the operational roles beneath them: the roles it plays in the network of trade and investment relationships the model selects ${hasScenarios ? under : 'after the shock'}${hasScenarios ? ', set against trade as it is today' : ''}. Roles are read from the model's own results: they are not a ranking or a score.`
-            : `What division of labour emerges across countries? For each economy, the roles it plays in the network of trade and investment relationships the model selects ${hasScenarios ? `${under}` : 'after the shock'}, and the Sectoral Compacts it joins${hasScenarios ? ', set against trade as it is today' : ''}. Roles are read from the model's own results: they are not a ranking or a score.`
+          <QuestionLede question={MODULE_QUESTION.roles}>
+            {`${ROLES_FRAMING.lede} ${ROLES_FRAMING.key}`}
+          </QuestionLede>
         }
-      />
+      >
+        <p className="mt-3 max-w-3xl text-sm text-paper-mute" data-testid="roles-reading">
+          {strategic
+            ? `Strategic roles come first: the two or three main functions each country performs, what it contributes and needs, its most important compacts and partners, the same in every scenario. The operational roles beneath them are what it does in the network of trade and investment relationships the analysis selects ${hasScenarios ? under : 'after the disruption'}${hasScenarios ? ', set against trade as it is today' : ''}. `
+            : `For each country, the roles it plays in the network of trade and investment relationships the analysis selects ${hasScenarios ? under : 'after the disruption'}, and the Sectoral Compacts it joins${hasScenarios ? ', set against trade as it is today' : ''}. `}
+          {ROLES_FRAMING.derived} They are not a ranking or a score.
+        </p>
+      </PageHead>
       <div className="space-y-10">
         {strategic && (
           <StrategicRolesSection s={strategic} nodes={doc.nodes} names={names} name={docName} scenario={scenario} renderName={renderName} evidenceFor={evidenceFor} />
@@ -234,8 +245,8 @@ export default function AibRolesView() {
               Operational network roles
             </h2>
             <p className="text-[0.9375rem] leading-relaxed text-paper-dim">
-              The evidence beneath the strategic roles: the supplier, buyer, investor, host and bridge roles each economy plays in the network of trade and investment relationships the
-              model selects {under}, and the workstreams whose coalitions it joins. Unlike the strategic roles, they follow the scenario.
+              The evidence beneath the strategic roles: the supplier, buyer, investor, host and bridge roles each country plays in the network of trade and investment relationships the
+              analysis selects {under}, and the workstreams whose coalitions it joins. Unlike the strategic roles, they follow the scenario.
             </p>
           </div>
         )}
@@ -247,15 +258,15 @@ export default function AibRolesView() {
           </h2>
           <p className="mb-3 text-[0.9375rem] leading-relaxed text-paper-dim">
             {v || pending
-              ? `An economy can hold several roles. A trade or investment role is measured by the share of a supply-chain node's demand its relationships serve ${hasScenarios ? under : 'after the shock'}, summed over the nodes: 1 point is 1% of one node's demand, so 100 points is the whole demand of one node. A role is named at ${fmtPts(ROLE_FLOOR)} or more ${under} (${shockWords}); below that it is shown as minor. Specialized supplier and bridge come from the nodes' and compacts' own results.${scenario === 'managed' ? ` ${info.label} removes no supplier: its network is the trade and new capacity that replace the supply held above each node's cap.` : ''}`
-              : 'This data build has no economy-level network summary, so the roles are the compacts’ own labels only.'}
+              ? `A country can hold several roles. A trade or investment role is measured by the share of a supply-chain step's demand its relationships serve ${hasScenarios ? under : 'after the disruption'}, summed over the steps: 1 point is 1% of one step's demand, so 100 points is the whole demand of one step. A role is named at ${fmtPts(ROLE_FLOOR)} or more ${under} (${shockWords}); below that it is shown as minor. Specialized supplier and bridge come from the steps' and compacts' own results.${scenario === 'managed' ? ` ${info.label} removes no supplier: its network is the trade and new capacity that replace the supply held above each step's cap.` : ''}`
+              : 'This build has no country-level network summary, so the roles are the compacts’ own labels only.'}
           </p>
           <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
             {ROLE_COLUMNS.map((c) => (
               <div key={c.role}>
                 <dt className="font-medium text-paper">{c.short}</dt>
                 <dd className="text-paper-dim">
-                  An economy that {c.meaning}; {roleNamedWords(c.role, under)}.
+                  A country that {c.meaning}; {roleNamedWords(c.role, under)}.
                 </dd>
               </div>
             ))}
@@ -280,7 +291,7 @@ export default function AibRolesView() {
               Who does what
             </h2>
             <p className="mb-4 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
-              {plural(rows.length, 'economy', 'economies')} hold a role or a compact seat{hasScenarios ? ` ${under}` : ''}. For each role, the named economies with the largest value:
+              {plural(rows.length, 'country', 'countries')} hold a role or a compact seat{hasScenarios ? ` ${under}` : ''}. For each role, the named countries with the largest value:
             </p>
             {leaders.length ? (
               <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -288,12 +299,12 @@ export default function AibRolesView() {
                   <li key={l.role} className="card p-4">
                     <h3 className="text-base font-medium text-paper">{l.short}</h3>
                     <p className="mt-0.5 text-xs leading-relaxed text-paper-mute">
-                      {plural(l.top.length, 'economy', 'economies')} named. An economy that {l.meaning}.
+                      {plural(l.top.length, 'country', 'countries')} named. A country that {l.meaning}.
                     </p>
                     <p className="mt-2 text-sm text-paper-dim">
                       {l.top.slice(0, 4).map((r, i) => {
                         const c = r.cells[l.role];
-                        const val = c.side && c.side.headline >= ROLE_FLOOR ? fmtPts(c.side.headline) : l.role === 'specialized' && c.nodes.length ? plural(c.nodes.length, 'node') : plural(c.compacts.length, 'compact');
+                        const val = c.side && c.side.headline >= ROLE_FLOOR ? fmtPts(c.side.headline) : l.role === 'specialized' && c.nodes.length ? plural(c.nodes.length, 'step') : plural(c.compacts.length, 'compact');
                         return (
                           <span key={r.iso3}>
                             {i > 0 && ', '}
@@ -310,7 +321,7 @@ export default function AibRolesView() {
                 ))}
               </ul>
             ) : (
-              <EmptyState>The model assigned no roles in this run.</EmptyState>
+              <EmptyState>No country holds a named role under this scenario.</EmptyState>
             )}
           </section>
         )}
@@ -323,8 +334,8 @@ export default function AibRolesView() {
                 What changes from today
               </h2>
               <p className="text-[0.9375rem] leading-relaxed text-paper-dim">
-                Today&apos;s network is the trade as it is ({meta.tradeYear}): who supplies whom, before any shock. {info.label}&apos;s network is the trade and new capacity it adds or
-                redirects to replace the supply {scenario === 'managed' ? 'held above each node’s cap' : 'it removes'}. The two measure different things, so they stand side by side, each on its own
+                Today&apos;s network is the trade as it is ({meta.tradeYear}): who supplies whom, before any disruption. {info.label}&apos;s network is the trade and new capacity it adds or
+                redirects to replace the supply {scenario === 'managed' ? 'held above each step’s cap' : 'it removes'}. The two measure different things, so they stand side by side, each on its own
                 scale. {scenarioCaveat(meta)}
               </p>
             </div>
@@ -335,7 +346,7 @@ export default function AibRolesView() {
                   {changes && <RoleChangesCard cmp={changes} scenario={scenario} meta={meta} href={href} />}
                 </>
               ) : (
-                <EmptyState>{today.doc.network ? `This data build has no network ${under}.` : 'The Baseline data of this build have no network of today’s trade.'}</EmptyState>
+                <EmptyState>{today.doc.network ? `This build has no network ${under}.` : 'This build has no network of today’s trade.'}</EmptyState>
               )
             ) : (
               <ScenarioFileState load={today} what="today's network" label={scenarioInfo(meta, 'baseline').label} />
@@ -347,15 +358,15 @@ export default function AibRolesView() {
           <ChartCard
             title="Roles by economy"
             badge={hasScenarios ? <ScenarioTag id={scenario} meta={meta} /> : undefined}
-            sub={`Trade and investment roles: points of node demand served ${under}, with the number of partners; specialized supplier: the nodes where the economy is the largest supplier after coordination; bridge: compacts. Faint cells are minor. Compact participation counts the compacts the economy belongs to, as a member of the coalition or as an associate. Hover a cell for every metric; economy names open the Country profile.`}
+            sub={`Trade and investment roles: points of supply-chain-step demand served ${under}, with the number of partners; specialized supplier: the steps where the country is the largest supplier after coordination; bridge: compacts. Faint cells are minor. Compact participation counts the compacts the country belongs to, as a member of the coalition or as an associate. Hover a cell for every metric; country names open the Country profile.`}
             table={() => <TableView rows={shown} cols={cols} caption={`Economies by role in the Allied Industrial Base${hasScenarios ? `, ${under}` : ''}`} search rowKey={(r) => r.iso3} pageSize={25} />}
             csv={csv}
           >
-            <FilterRow result={show ? `${plural(shown.length, 'economy', 'economies')} with this role, named first, largest value first` : `${plural(rows.length, 'economy', 'economies')}, by compact participation`}>
+            <FilterRow result={show ? `${plural(shown.length, 'country', 'countries')} with this role, named first, largest value first` : `${plural(rows.length, 'country', 'countries')}, by compact participation`}>
               <Select
                 label="Show"
                 value={show}
-                options={[{ value: '', label: 'Every economy' }, ...ROLE_COLUMNS.map((c) => ({ value: c.role, label: c.short }))]}
+                options={[{ value: '', label: 'Every country' }, ...ROLE_COLUMNS.map((c) => ({ value: c.role, label: c.short }))]}
                 onChange={(x) => setShow(x as MatrixRole | '')}
                 className="min-w-[14rem]"
               />
@@ -368,7 +379,7 @@ export default function AibRolesView() {
                     <tr>
                       <th scope="col">Economy</th>
                       {ROLE_COLUMNS.map((c) => (
-                        <th key={c.role} scope="col" title={`An economy that ${c.meaning}; ${roleNamedWords(c.role, under)}`} className="align-bottom" style={{ minWidth: 84, maxWidth: 120, whiteSpace: 'normal', textAlign: 'center' }}>
+                        <th key={c.role} scope="col" title={`A country that ${c.meaning}; ${roleNamedWords(c.role, under)}`} className="align-bottom" style={{ minWidth: 84, maxWidth: 120, whiteSpace: 'normal', textAlign: 'center' }}>
                           {c.short}
                         </th>
                       ))}
@@ -410,7 +421,7 @@ export default function AibRolesView() {
                 </table>
               </div>
             ) : (
-              <EmptyState>No economy holds this role in this run.</EmptyState>
+              <EmptyState>No country holds this role under this scenario.</EmptyState>
             )}
           </ChartCard>
         )}

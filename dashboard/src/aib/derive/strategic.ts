@@ -159,8 +159,8 @@ export const spanWords = (c: AibStrategicCompact, sep = ' → '): string => c.st
 /** The policy mix in words ("BUILD + COORDINATE"; "none" when the scenario needs no intervention, "no shock" under Baseline). */
 export function policyMixWords(sc: AibStrategicCompactScenario | null): string {
   if (!sc) return '–';
-  if (sc.policyMix.length) return sc.policyMix.join(' + ');
-  return sc.counts.noShock > 0 ? 'no shock' : 'none';
+  if (sc.policyMix.length) return sc.policyMix.map((c) => classInfo(c).label).join(' + ');
+  return sc.counts.noShock > 0 ? 'no disruption' : 'none';
 }
 
 /** The missions of a compact under a scenario, in slot order ([] when none). */
@@ -181,25 +181,25 @@ export interface SpineStatusInfo {
 
 const NON_CLASS_STATUS: Readonly<Record<string, Omit<SpineStatusInfo, 'status'>>> = {
   'NOT STRESSED': {
-    label: 'NOT STRESSED',
+    label: 'Unaffected',
     color: NEUTRAL_SERIES,
     mark: 'dashed',
-    meaning: 'The scenario removes or shifts no supply in this node: it keeps its suppliers as they are today.',
+    meaning: 'The scenario removes or shifts no supply at this step: it keeps its suppliers as they are today.',
     intervention: false,
   },
   'NOT TESTED': {
-    label: 'NOT TESTED',
+    label: 'Not tested',
     color: NEUTRAL_SERIES,
     mark: 'hatch',
     meaning:
-      'Concentrated, but the scenario does not test it: Managed Interdependence brings a node to the concentration of its benchmark heading, and this node’s benchmark is as concentrated, so no supply shifts. See its Decoupling status.',
+      'Concentrated, but the scenario does not test it: Managed Interdependence brings a step down to the concentration of comparable goods, and those are as concentrated, so no supply shifts. See its status under the major-supplier disruption.',
     intervention: false,
   },
   'NO SHOCK': {
-    label: 'NO SHOCK',
+    label: 'No disruption',
     color: NEUTRAL_SERIES,
     mark: 'dashed',
-    meaning: 'Baseline: trade as it is today, before any shock, so the node has no class.',
+    meaning: "Today's network: trade as it is today, with no disruption, so the step has no treatment.",
     intervention: false,
   },
 };

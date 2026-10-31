@@ -49,7 +49,11 @@ describe('the Sector strategy chart', () => {
     expect(Number(cp.getAttribute('x1'))).toBeCloseTo(48 + T.cp * (640 - 48 - 20), 5);
     expect(Number(need.getAttribute('y1'))).toBeCloseTo(420 - 40 - T.need * (420 - 30 - 40), 5);
     expect(chart.querySelector('[data-testid="scatter-grid"]')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Cland: Partner · Medium fence, supply-chain need 85%, Competitive Position 20%' })).toBeTruthy();
+    // the need in plain words (vocabulary MEASURE_PLAIN), both axes say which way is stronger or more exposed
+    expect(screen.getByRole('button', { name: 'Cland: Partner · Medium fence, supply-chain vulnerability 85%, Competitive Position 20%' })).toBeTruthy();
+    expect(chart.textContent).toContain('↑ Supply-chain vulnerability (higher = more vulnerable)');
+    expect(chart.textContent).toContain('Competitive Position (higher = stronger, ranked among the main producers) →');
+    expect(chart.textContent).not.toMatch(/percentile|contenders/);
     fireEvent.click(chart.querySelector('[data-iso3="CCC"]') as Element);
     fireEvent.keyDown(chart.querySelector('[data-iso3="BBB"]') as Element, { key: 'Enter' });
     expect(onOpen.mock.calls).toEqual([['CCC'], ['BBB']]);
@@ -59,6 +63,18 @@ describe('the Sector strategy chart', () => {
     const ring = chart.querySelector('[data-iso3="CCC"] circle[data-mark="ring"]')?.getAttribute('stroke');
     expect(ring).toBe('#ffffff');
     expect(Object.values(VERB_COLOR)).not.toContain(ring);
+  });
+
+  it('the detail names the best-placed trusted partner and, for a mixed step, the yards its layers reach', () => {
+    const { chart } = draw('Batteries', 'Components', (c) => (c.iso3 === 'CCC' ? { ...c, partnerGap: false, partner1: 'AAA', yards: 'mixed_high_medium' } : c));
+    fireEvent.focus(chart.querySelector('[data-iso3="CCC"]') as Element);
+    const tip = screen.getByRole('status');
+    expect(tip.textContent).toContain('Best-placed trusted partner: AAA');
+    expect(tip.textContent).not.toContain('First trusted partner');
+    expect(screen.getByTestId('scatter-tip-mixed').textContent).toBe('Mixed: this step in the Medium yard, its layers also in the Small yard');
+    // a step whose layers agree says nothing about yards
+    fireEvent.focus(chart.querySelector('[data-iso3="BBB"]') as Element);
+    expect(screen.queryByTestId('scatter-tip-mixed')).toBeNull();
   });
 
   it('Deployment & Use: Accelerate (green) and Watch (ink) dots on deployment need, no Preserve bar', () => {
@@ -74,7 +90,7 @@ describe('the Sector strategy chart', () => {
   it('a missing position goes to the left strip; with none measured the economies are spread out, without the Preserve bar or region labels', () => {
     const partial = draw('Batteries', 'Components', (c) => (c.iso3 === 'CCC' ? { ...c, cp: null } : c)).chart;
     expect(partial.getAttribute('data-cp')).toBe('partial');
-    expect(partial.querySelector('[data-testid="cp-missing-strip"]')).toBeTruthy();
+    expect(partial.querySelector('[data-testid="cp-missing-strip"]')?.textContent).toBe('no data');
     cleanup();
     const none = draw('Batteries', 'Components', (c) => ({ ...c, cp: null })).chart;
     expect(none.getAttribute('data-cp')).toBe('none');

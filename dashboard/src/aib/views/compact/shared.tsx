@@ -68,7 +68,7 @@ export function WorkstreamParent({ s, id, scenario, href }: { s: AibStrategic | 
         ) : (
           'A workstream filed under no strategic compact.'
         )}
-        {label !== null && <> {active ? `Active under ${label}.` : `Not active under ${label}: none of its nodes needs intervention there.`}</>}
+        {label !== null && <> {active ? `Active under ${label}.` : `Not active under ${label}: none of its supply-chain steps needs action there.`}</>}
       </p>
       {ws.overrideReason && (
         <div className="mt-1">

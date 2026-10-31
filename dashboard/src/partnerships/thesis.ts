@@ -23,8 +23,8 @@ import { compactRolesOfCountry, countryStrategicOf, roleName, thesesOf, thesisOf
 
 /** What each logic label is called and means, in plain words (the fallback when no evidence is found). */
 export const LOGIC_INFO: Readonly<Record<string, { title: string; meaning: string }>> = {
-  trade: { title: 'Trade', meaning: 'The model’s coordinated trade moves goods between them under Managed Interdependence or Decoupling.' },
-  investment: { title: 'Investment', meaning: 'In the model’s investment simulation, new capacity in one of them serves the other’s demand.' },
+  trade: { title: 'Trade', meaning: 'Coordinated trade moves goods between them under Managed Interdependence or the major-supplier disruption.' },
+  investment: { title: 'Investment', meaning: 'In the investment simulation, new capacity in one of them serves the other’s demand.' },
   technology: { title: 'Technology', meaning: 'In a priority compact, one of them is the specialized technology supplier and the other is not.' },
   'development / capacity building': {
     title: 'Development / capacity building',
@@ -162,7 +162,7 @@ function logicRows(s: AibStrategic, labels: readonly string[], rows: readonly Co
     return (i < 0 ? 99 : i) - (j < 0 ? 99 : j);
   });
   return ordered.map((label): LogicRow => {
-    const info = LOGIC_INFO[label] ?? { title: cap(label), meaning: `The model’s evidence supports ${label}.` };
+    const info = LOGIC_INFO[label] ?? { title: cap(label), meaning: `The evidence supports ${label}.` };
     const out = (evidence: string, compact: AibStrategicCompact | null = null): LogicRow => ({ label, title: info.title, evidence, compact });
     if (label === 'technology') {
       const e = findEvidence(rows, (x, y) => leadRole(x) === TECH && leadRole(y) !== TECH);

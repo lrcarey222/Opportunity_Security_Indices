@@ -61,8 +61,8 @@ afterEach(() => {
 });
 
 const ROUTES: [string, RegExp][] = [
-  ['/sector', /Energy supply chains, measured/],
-  ['/sector?c=USA&eu=bloc', /Energy supply chains, measured/],
+  ['/sector', /Where are the real bottlenecks and opportunities\?/],
+  ['/sector?c=USA&eu=bloc', /Where are the real bottlenecks and opportunities\?/],
   ['/sector/batteries', /Batteries: the supply chain/],
   ['/sector/batteries/assembly?c=USA', /Batteries — Assembly/],
   ['/sector/batteries/extraction', /Batteries — Extraction/],
@@ -75,8 +75,8 @@ const ROUTES: [string, RegExp][] = [
   ['/sector/minerals', /^Minerals$/],
   ['/sector/minerals/lithium?c=USA', /^Lithium$/],
   ['/sector/minerals/graphite?eu=bloc', /^Graphite/],
-  ['/sector/concentration?lens=hhi', /Concentration across sectors/],
-  ['/sector/concentration?eu=bloc&fam=exports', /Concentration across sectors/],
+  ['/sector/concentration?lens=hhi', /Where are the chokepoints\?/],
+  ['/sector/concentration?eu=bloc&fam=exports', /Where are the chokepoints\?/],
   ['/sector/explore', /^Trade$/],
   ['/sector/explore/trade?m=trade.flow&tech=Batteries&stage=Assembly&c=USA', /^Trade$/],
   ['/sector/explore/resources', /Reserves/],
@@ -93,7 +93,7 @@ const ROUTES: [string, RegExp][] = [
   ['/sector/explore/policy', /Policy/],
   ['/sector/explore/policy?m=policy.cat', /Policy/],
   ['/sector/explore/development', /Development/],
-  ['/sector/sources', /Sources & data/],
+  ['/sector/sources', /Data behind the sector analysis/],
 ];
 
 describe.skipIf(!haveSynthetic())('every Sector route on the R synthetic bundle', () => {

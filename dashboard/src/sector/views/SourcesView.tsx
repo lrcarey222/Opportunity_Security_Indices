@@ -13,6 +13,7 @@ import { marked } from 'marked';
 import sectorMd from '../../content/sector.md?raw';
 import { TableView } from '../../components/TableView.tsx';
 import { KeyValue, Notice, PageHead, Select } from '../../components/ui.tsx';
+import { SOURCES_PAGE } from '../copy.ts';
 import { Term } from '../../components/Term.tsx';
 import { withBom } from '../../lib/csv.ts';
 import { downloadBlob } from '../../lib/download.ts';
@@ -168,7 +169,7 @@ function Coverage() {
         />
       </SectorChartCard>
       <SectorChartCard
-        title="Coalition coverage"
+        title="Which sources cover the coalition members"
         vars={model.vars.slice(0, 1).map((v) => ({ var: v.id }))}
         caption={{ sub: `The coalition's ${members.length} members against each source's coverage (✓ covered, — not covered).`, badge: null, caveats: [], coverage: null, spanNote: null }}
         csv={() => ({ name: 'coalition-coverage', text: rowsToCsv(members.map((g) => ({ iso3c: g.code, economy: g.name, tier: g.tier, ...Object.fromEntries(rosterCols.map((c) => [c.roster, model.rosters.get(c.roster)?.has(g.idx) ? 1 : 0])) }))) })}
@@ -434,7 +435,7 @@ export default function SourcesView() {
   useScrollToHash(loc.hash, true);
   return (
     <div className="space-y-10">
-      <PageHead eyebrow="SECTORS · SOURCES" title="Sources & data" lede="Where every number comes from, how the trade figures are reconciled, and the full data as downloads." />
+      <PageHead eyebrow="SECTORS · SOURCES" title={SOURCES_PAGE.title} lede={SOURCES_PAGE.lede} />
       <Section id="about" title="About the Sector pages">
         {/* the content is this app's own Markdown, filled with counts from the data build */}
         <article className="prose-neis max-w-4xl" dangerouslySetInnerHTML={{ __html: html }} />

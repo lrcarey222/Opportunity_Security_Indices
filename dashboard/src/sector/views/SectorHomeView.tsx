@@ -1,6 +1,7 @@
-// Sector home /sector (spec_sector.md 4.1): questions, the Atlas of every supply-chain cell (the 11
+// Sector home /sector (spec_sector.md 4.1; the NEIS copy refresh 2026-10-30: the Home card's question as the
+// title, ../copy.ts): questions, the Atlas of every supply-chain cell (the 11
 // technologies x the six stages, plus Semiconductors; lens and measure family from the URL), the
-// "Strategic posture" section (design L3, 2026-10-28; the canonical framework's strategy card since
+// "What each country should do" section (it was "Strategic posture"; design L3, 2026-10-28; the canonical framework's strategy card since
 // 2026-10-29, design section 5: every economy's choice in one node, Competitive Position against the
 // relevant need, its node in ?pnode, with its own basis line; the one recommendation on these pages), the
 // minerals strip and the ten theme cards. Renders from sector-meta (meta.summary); facts load only when a
@@ -36,6 +37,7 @@ import { useSectorUrl } from './state.tsx';
 import { Section } from './common.tsx';
 import { PostureBasisTag } from '../../posture/index.ts';
 import { SectorStrategyCard, SectorStrategyIntro } from '../posture/SectorStrategyCard.tsx';
+import { SECTOR_LANDING, SECTOR_SECTION } from '../copy.ts';
 
 const FAM_LABEL: Record<FamKey, string> = {
   primary: 'Primary',
@@ -151,7 +153,7 @@ function Atlas() {
     <ChartCard
       headingLevel={3}
       title={`All ${model.cells.length} sectors`}
-      sub={`Each tile is one sector (a technology at one stage of its supply chain), coloured by the ${lc(LENS_LABEL[lens])} of its ${fam === 'primary' ? 'main measure' : `${lc(FAM_LABEL[fam])} measure`} in the source's latest year: orange lower than most sectors, white the middle one, blue higher. The tile names the largest holder. Shares are within one measure and never added across sectors.${model.cells.some((c) => !c.headline) ? ` The ${model.cells.filter((c) => c.headline).length} energy sectors come first; semiconductors, a technology the energy sectors depend on, are shown for context.` : ''}`}
+      sub={`Where is supply concentrated, and who holds it? Each tile is one sector (a technology at one stage of its supply chain), coloured by the ${lc(LENS_LABEL[lens])} of its ${fam === 'primary' ? 'main measure' : `${lc(FAM_LABEL[fam])} measure`} in the source's latest year: orange lower than most sectors, white the middle one, blue higher. The tile names the largest holder. Shares are within one measure and never added across sectors.${model.cells.some((c) => !c.headline) ? ` The ${model.cells.filter((c) => c.headline).length} energy sectors come first; semiconductors, a technology the energy sectors depend on, are shown for context.` : ''}`}
       tools={
         <>
           <Segmented<Lens> label="Colour by" value={lens} options={LENSES.filter((l) => l !== 'top1').map((l) => ({ value: l, label: l === 'china' ? 'China share' : l === 'top3' ? 'Top-3 share' : l === 'hhi' ? 'Concentration (HHI)' : 'Coalition share' }))} onChange={(l) => set({ lens: l })} />
@@ -355,9 +357,9 @@ function TechPicker() {
   return (
     <section aria-labelledby="techs-h" className="mb-10">
       <h2 id="techs-h" className="eyebrow rule-neis-sm mb-2">
-        Pick a technology
+        Follow a technology
       </h2>
-      <p className="mb-3 max-w-3xl text-sm text-paper-mute">Each opens its supply chain at six stages ({STAGE_SLUGS.map((s) => STAGE_LABELS[s]).join(', ')}): pick a stage or one of its components for the sector profile.</p>
+      <p className="mb-3 max-w-3xl text-sm text-paper-mute">Each opens its supply chain at six stages ({STAGE_SLUGS.map((s) => STAGE_LABELS[s]).join(', ')}): pick a stage, or one of its components, to see who is best placed and what makes the step strategic.</p>
       <ul className="flex flex-wrap gap-2">
         {TECH_SLUGS.map((t) => (
           <li key={t}>
@@ -377,22 +379,22 @@ export default function SectorHomeView() {
   return (
     <div>
       <PageHead
-        eyebrow="SECTORS · MEASURED DATA"
-        title="Energy supply chains, measured"
+        eyebrow={SECTOR_LANDING.eyebrow}
+        title={SECTOR_LANDING.title}
         lede={
           <>
-            Eleven energy technologies, each at six supply-chain stages, from extraction and refining through components and assembly to deployment and recovery: 66 sectors. Each tile of the sector grid shows who holds the most of that sector’s main measure; pick one for the full picture: trade, production, reserves, investment, prices and policy, in each source’s own units and year. The tiles carry no indices and no weights: they are the measured numbers the country rankings start from. One section is a recommendation instead:{' '}
+            {SECTOR_LANDING.lede} {SECTOR_LANDING.measured} One section is a recommendation instead:{' '}
             <a className="link" href="#posture">
-              Strategic posture
+              {SECTOR_SECTION.choice.title}
             </a>
-            , which says, at fixed thresholds, which economies should secure, preserve, catch up in, partner for, accelerate or watch each sector.
+            , each economy’s strategic choice at a step: secure it, preserve a strength, catch up, rely on partners, deploy faster or keep it open.
           </>
         }
       />
       <TechPicker />
       <section aria-labelledby="questions-h" className="mb-10">
         <h2 id="questions-h" className="eyebrow rule-neis-sm mb-4">
-          Start with a question
+          Start with a strategic question
         </h2>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {QUESTIONS.map((q) => (
@@ -411,9 +413,10 @@ export default function SectorHomeView() {
       <div className="mt-10">
         <Section
           id="posture"
-          title="Strategic posture"
+          title={SECTOR_SECTION.choice.title}
           sub={
             <>
+              <span className="block text-paper">{SECTOR_SECTION.choice.question}</span>
               <PostureBasisTag /> <SectorStrategyIntro />
             </>
           }

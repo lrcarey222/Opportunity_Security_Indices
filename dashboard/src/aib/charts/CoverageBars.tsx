@@ -35,7 +35,7 @@ export function CoverageBars({ steps, ariaLabel, reference = null, referenceLabe
         marginLeft: 48,
         marginBottom: narrow ? 56 : 40,
         x: { domain, label: null, tickFormat: (d: string) => (narrow ? (steps.find((s) => s.label === d)?.short ?? d) : d), padding: 0.35 },
-        y: { domain: [0, 1], label: '↑ Demand served after the shock (%)', tickFormat: (v: number) => `${Math.round(v * 100)}`, grid: true },
+        y: { domain: [0, 1], label: '↑ Demand met after the disruption (%)', tickFormat: (v: number) => `${Math.round(v * 100)}`, grid: true },
         marks: [
           Plot.ruleY([0], { stroke: 'rgb(255 255 255 / 0.22)' }),
           ...(isNum(reference)

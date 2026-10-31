@@ -22,6 +22,16 @@ import { fixtureSource as aibSource, haveFixture as haveAib, readDoc, readScenar
 import { CountryStore, setCountryStoreForTests } from '../data/store.ts';
 import { aibTradeOf } from '../derive/framing.ts';
 import { fixtureSource, haveFixture, readSheet } from './fixture.ts';
+import { BASIS_WORDS } from '../../aib/views/basis.tsx';
+import { LENS_INFO } from '../../partnerships/lenses.ts';
+import { SCENARIO_NAME } from '../../content/vocabulary.ts';
+
+// the scenarios' display names and the AIB lens's words are the AIB module's own (the NEIS copy refresh renames them),
+// so the expectations read them from there rather than retyping them
+const DEC = SCENARIO_NAME.decoupling;
+const MI = SCENARIO_NAME.managed;
+const aibTag = (s: string) => `${BASIS_WORDS.model.label} · ${s}`;
+const aibHead = (s: string) => `${LENS_INFO.aib.title}: ${s}`;
 
 /** The AIB economy AAA renamed USA (a fact-sheet economy), in place. */
 function renamed<T extends AibDoc | AibScenarioDoc>(d: T): void {
@@ -88,7 +98,7 @@ const T = { timeout: 30_000 };
 // since 2026-10-30 (the fences) the section is back on the page, open, as the Medium fence's Partner sub-section (id
 // medium-partner, an h3); the #partnerships links land on it (an alias span), no disclosure to open
 const section = async () => {
-  await screen.findByRole('heading', { level: 3, name: 'Partner' }, T);
+  await screen.findByRole('heading', { level: 3, name: 'Partner: where should this country rely on allies?' }, T);
   const part = document.getElementById('medium-partner')!;
   expect(part.closest('section#medium-fence')).toBeTruthy();
   expect(document.getElementById('partnerships')?.closest('section')).toBe(part);
@@ -113,8 +123,8 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const part = await section();
     const kinds = within(within(part).getByRole('radiogroup', { name: 'Kind of partnership' })).getAllByRole('radio');
     expect(kinds.map((r) => r.parentElement?.textContent)).toEqual(['Trade', 'Investment', 'Development', 'Geopolitical']);
-    expect(tags(part)).toEqual(['Today · observed', 'OSI recommends · NEIS defaults', 'AIB model · Decoupling']);
-    expect(within(part).getByRole('heading', { level: 3, name: 'AIB model: Decoupling' })).toBeTruthy();
+    expect(tags(part)).toEqual(['Today · observed', 'OSI recommends · NEIS defaults', aibTag(DEC)]);
+    expect(within(part).getByRole('heading', { level: 3, name: aibHead(DEC) })).toBeTruthy();
     // Today: its largest trade partners in the fact sheet's tie order
     const first = sheet.partners.rows.find((r) => r.iso3 === sheet.partners.tie_order.filter((x) => x !== 'USA')[0])!;
     const today = within(lens(part, 'today')).getByTestId('trade-today');
@@ -125,7 +135,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const aib = await within(lens(part, 'aib')).findByTestId('aib-trade', {}, T);
     expect(aib.textContent).toContain(`In the compacts' coordinated trade the United States has ${t.trade.n} relationships worth ${fmtUsd(t.trade.usd)}`);
     const toggle = within(lens(part, 'aib')).getByRole('radiogroup', { name: 'Scenario' });
-    expect((within(toggle).getByRole('radio', { name: 'Decoupling' }) as HTMLInputElement).checked).toBe(true);
+    expect((within(toggle).getByRole('radio', { name: DEC }) as HTMLInputElement).checked).toBe(true);
     // the summary compares the three lenses
     const sum = within(part).getByTestId('cross-lens-summary');
     expect(within(sum).getByRole('heading', { level: 3 }).textContent).toBe('Where the lenses agree: trade, the United States');
@@ -136,14 +146,14 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
   it('Managed Interdependence by default (no scn): the AIB lens and Allied Strategy read its file; the toggle in the panel writes scn and keeps the place', async () => {
     const r = renderAt('/countries/USA#partnerships');
     const part = await section();
-    expect(await within(part).findByRole('heading', { level: 3, name: 'AIB model: Managed Interdependence' }, T)).toBeTruthy();
-    expect(tags(part)[2]).toBe('AIB model · Managed Interdependence');
+    expect(await within(part).findByRole('heading', { level: 3, name: aibHead(MI) }, T)).toBeTruthy();
+    expect(tags(part)[2]).toBe(aibTag(MI));
     const t = aibTradeOf(managed.compacts, 'USA');
     const aib = await within(lens(part, 'aib')).findByTestId('aib-trade', {}, T);
     expect(aib.textContent).toContain(`Under Managed Interdependence, in the compacts' coordinated trade the United States has ${t.trade.n} relationship`);
     // Allied Strategy: the compacts in which the economy holds a role, under the toggled scenario
     const role = document.getElementById('allied')!;
-    expect((await within(role).findByTestId('allied-scenario', {}, T)).textContent).toMatch(/^Shown under Managed Interdependence/);
+    expect((await within(role).findByTestId('allied-scenario', {}, T)).textContent).toMatch(/^Results below use Managed Interdependence\./);
     // the compacts read the scenario as /aib/roles does: under its own name, no every-shock total
     const cells = await within(role).findByTestId('allied-operational-compacts', {}, T);
     expect(cells.textContent).not.toMatch(/under the headline shock|diversification scenario|after the shock/);
@@ -152,11 +162,11 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     expect(c01[0].getAttribute('href')).toBe(`/compacts/${managed.compacts[0].id}`);
     expect(within(role).getByRole('link', { name: /See all country roles/ }).getAttribute('href')).toBe('/aib/roles?economy=USA#role-USA');
     // to Decoupling from the panel's toggle: scn=decoupling written, the section kept
-    fireEvent.click(within(within(lens(part, 'aib')).getByRole('radiogroup', { name: 'Scenario' })).getByRole('radio', { name: 'Decoupling' }));
+    fireEvent.click(within(within(lens(part, 'aib')).getByRole('radiogroup', { name: 'Scenario' })).getByRole('radio', { name: DEC }));
     await waitFor(() => expect(search(r).get('scn')).toBe('decoupling'));
     expect(r.state.location.hash).toBe('#partnerships');
-    expect(await within(part).findByRole('heading', { level: 3, name: 'AIB model: Decoupling' }, T)).toBeTruthy();
-    expect(within(role).getByTestId('allied-scenario').textContent).toMatch(/^Shown under Decoupling/);
+    expect(await within(part).findByRole('heading', { level: 3, name: aibHead(DEC) }, T)).toBeTruthy();
+    expect(within(role).getByTestId('allied-scenario').textContent).toMatch(/^Results below use \S.*\. Change the scenario to see whether the United States' role changes/);
     await waitFor(() => expect(within(role).getByTestId('allied-operational-compacts').textContent).not.toMatch(/under the headline shock/));
   }, 90_000);
 
@@ -192,7 +202,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     expect(within(lens(part, 'today')).getByTestId('geo-today').textContent).toMatch(/In the UN General Assembly it votes/);
     expect(within(lens(part, 'osi')).getByTestId('geo-osi').textContent).toMatch(/The indices treat \d+ core members? and \d+ partners? as the allied coalition/);
     const co = await within(lens(part, 'aib')).findByTestId('aib-coalitions', {}, T);
-    expect(co.textContent).toContain(`The United States sits in the coalition of ${decSeats} compact${decSeats === 1 ? '' : 's'} under Decoupling`);
+    expect(co.textContent).toContain(`The United States sits in the coalition of ${decSeats} compact${decSeats === 1 ? '' : 's'} under ${DEC}`);
     fireEvent.click(within(within(lens(part, 'aib')).getByRole('radiogroup', { name: 'Scenario' })).getByRole('radio', { name: 'Managed Interdependence' }));
     await waitFor(() => expect(search(r).get('scn')).toBeNull());
     expect(search(r).get('ptab')).toBe('geopolitical');

@@ -14,6 +14,7 @@ import { readDoc, SYNTHETIC_DIR } from '../../aib/__tests__/fixture.ts';
 import { lensNames, lensNone } from '../lenses.ts';
 import { PartnershipLenses } from '../PartnershipLenses.tsx';
 import { RelationshipThesis, type RelationshipThesisProps } from '../RelationshipThesis.tsx';
+import { PARTNERSHIP } from '../../content/vocabulary.ts';
 
 afterEach(cleanup);
 
@@ -44,6 +45,8 @@ describe('RelationshipThesis', () => {
     const card = renderCard({ a: 'AAA', b: 'CCC' });
     expect(card.getAttribute('data-state')).toBe('thesis');
     expect(within(card).getByRole('heading', { level: 2 }).textContent).toBe('Relationship thesis: Avalon and Carpania');
+    // the guide's question for the pair, then what decides the tools
+    expect(within(card).getByTestId('thesis-question').textContent).toBe(`${PARTNERSHIP.thesisHeading} ${PARTNERSHIP.thesisPrompt}`);
     expect(within(card).getByTestId('thesis-headline').textContent).toMatch(/^Avalon and Carpania: a trade, technology and resilience \/ second sourcing relationship/);
     // the three parts, one heading level down
     expect(within(card).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
@@ -87,13 +90,13 @@ describe('RelationshipThesis', () => {
     expect(card.getAttribute('data-state')).toBe('choose');
     expect(within(card).getByRole('heading', { level: 2 }).textContent).toBe('Relationship thesis');
     const prompt = within(card).getByTestId('thesis-prompt');
-    expect(prompt.textContent).toBe('Choose a partner to read the relationship thesis of the pair. The model has 4 for Avalon; those with the most priority compacts: Carpania, Borduria, Elbonia and Dorvalia.');
+    expect(prompt.textContent).toBe('Choose a partner to read the strategic case for the pair. The analysis has 4 for Avalon; those with the most priority compacts: Carpania, Borduria, Elbonia and Dorvalia.');
     expect(within(prompt).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/?country=AAA&partner=CCC', '/?country=AAA&partner=BBB', '/?country=AAA&partner=EEE', '/?country=AAA&partner=DDD']);
     expect(within(card).queryByTestId('thesis-basis')).toBeNull();
     cleanup();
     // an economy without a thesis says so
     const none = renderCard({ a: 'FFF', b: null });
-    expect(within(none).getByTestId('thesis-prompt').textContent).toBe('The model writes relationship theses for pairs of allied economies it links by trade or investment; it has none for Freedonia.');
+    expect(within(none).getByTestId('thesis-prompt').textContent).toBe('The analysis writes relationship theses for pairs of allied economies it links by trade or investment; it has none for Freedonia.');
   });
 
   it('the tools slot sits under the heading', () => {
@@ -120,7 +123,7 @@ describe('the cross-lens summary names where the pair’s partner sits', () => {
     expect(screen.getByTestId('cross-lens-pair').textContent).toBe('Where Carpania sits: A tie today that the AIB keeps.');
     cleanup();
     renderLenses('DDD');
-    expect(screen.getByTestId('cross-lens-pair').textContent).toBe('Where Dorvalia sits: not among the partners Today and AIB model name here (each names only its leading partners).');
+    expect(screen.getByTestId('cross-lens-pair').textContent).toBe('Where Dorvalia sits: not among the partners Today and AIB analysis name here (each names only its leading partners).');
     cleanup();
     renderLenses(null);
     expect(screen.queryByTestId('cross-lens-pair')).toBeNull();

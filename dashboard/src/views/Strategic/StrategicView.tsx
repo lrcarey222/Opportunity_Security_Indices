@@ -173,7 +173,7 @@ export default function StrategicView({ embedded = false }: { embedded?: boolean
         title="Strategic Index"
         lede={
           <>
-            The <Term id="si" /> ranks one economy&rsquo;s own sectors by how strongly the data point to prioritising them. It adds five things: economic
+            The <Term id="si" /> ranks one economy&rsquo;s own sectors by how strongly the data point to prioritizing them. It adds five things: economic
             opportunity (30%), <Term id="need">security need</Term>, meaning how exposed the economy is (30%), how active its policy already is (20%), the
             supply-chain stage (10%) and the technology&rsquo;s low-emission value (10%). Those are the NEIS baseline weights; the dials move them. Ranks compare
             sectors within an economy, not economies with each other. Because exposure counts in a sector&rsquo;s favour, an extraction sector where the economy has no

@@ -24,6 +24,9 @@ import { resetLastCompact } from '../nav.ts';
 import { fixtureSource, readDoc, readScenarioDoc, stripScenarios, SYNTHETIC_DIR, type FixtureSourceOpts } from './fixture.ts';
 import { setPostureStore } from '../../posture/store.ts';
 import { fixtureStore } from '../../posture/__tests__/fixture.ts';
+import { AIB_CLASS_HEADING, AIB_SIDES, MANAGED_INTERDEPENDENCE, MODULE_QUESTION, SCENARIO_DEFINITION, SCENARIO_SECTION_TITLE } from '../../content/vocabulary.ts';
+import { MAP_CARD_TITLE } from '../views/CompactsIndexView.tsx';
+import { COALITION_TITLE, ROLES_TITLE } from '../views/compact/OverviewSections.tsx';
 
 const restore: (() => void)[] = [];
 let source: AibSource & { calls: string[] };
@@ -100,24 +103,28 @@ describe('the Overview leads with the three scenarios', () => {
   it('Decoupling: the three side by side in order, Decoupling current, values in text and a table twin; the rest as before', async () => {
     renderAt('/aib?scn=decoupling');
     expect(await h1('Allied Industrial Base')).toBeTruthy();
-    const region = screen.getByRole('region', { name: 'Three scenarios compared' });
-    // it comes first after "Allied coverage by technology and stage" (2026-10-29, design L4: the division Section opens the page)
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent).slice(0, 2)).toEqual(['Allied coverage by technology and stage', 'Three scenarios compared']);
-    expect(within(region).getByTestId('overview-scenario-words').textContent).toMatch(/^BaselineTrade as it is today \(2024\), before any shock\.Managed Interdependence/);
-    const cov = within(region).getByRole('figure', { name: 'Coverage of the allied demand under each scenario' });
+    const region = screen.getByRole('region', { name: SCENARIO_SECTION_TITLE });
+    // it comes first after "Who can cover each supply-chain step?" (2026-10-29, design L4: the division Section opens the page)
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent).slice(0, 2)).toEqual([MODULE_QUESTION.coverage, SCENARIO_SECTION_TITLE]);
+    expect(within(region).getByTestId('overview-scenario-words').textContent).toMatch(new RegExp(`^Today's network${SCENARIO_DEFINITION.baseline.replace(/\./g, '\\.')}Managed Interdependence`));
+    expect(within(region).getByTestId('overview-mi-question').textContent).toBe(MANAGED_INTERDEPENDENCE.question);
+    const cov = within(region).getByRole('figure', { name: 'How much allied demand can be met under each scenario' });
     expect(order(cov)).toEqual(['baseline', 'managed', 'decoupling']);
     expect(current(cov)).toEqual(['decoupling']);
-    for (const name of ['Allied demand affected under each scenario', 'Left for new capacity under each scenario', 'Lost or shifted supply by class under each scenario']) {
+    for (const name of ['Demand that must find a new supplier under each scenario', 'Gap that still needs new capacity under each scenario', 'Lost or shifted supply by treatment under each scenario']) {
       expect(current(within(region).getByRole('figure', { name }))).toEqual(['decoupling']);
     }
-    const gap = within(region).getByRole('figure', { name: 'Left for new capacity under each scenario' });
+    const gap = within(region).getByRole('figure', { name: 'Gap that still needs new capacity under each scenario' });
     expect(gap.querySelector('[data-scenario="managed"]')!.textContent).toContain(fmtUsd(three[1].residualUsd));
     expect(gap.querySelector('[data-scenario="decoupling"]')!.textContent).toContain(fmtUsd(three[2].residualUsd));
     fireEvent.click(within(region).getByRole('button', { name: 'Table' }));
     const table = within(region).getByRole('table');
     expect(within(table).getAllByRole('row')).toHaveLength(4);
     expect(within(region).getByRole('button', { name: 'Download CSV' })).toBeTruthy();
-    expect(screen.getByTestId('overview-run').textContent).toMatch(/^Shown: Decoupling \(/);
+    expect(screen.getByTestId('overview-run').textContent).toMatch(/^Results below use Major-supplier disruption \(/);
+    // the page's question first, then the plain lede and the goal
+    expect(screen.getByTestId('page-question').textContent).toBe(MODULE_QUESTION.aib);
+    expect(screen.getByTestId('overview-goal').textContent).toMatch(/does not change the basic goal/);
     expect(screen.queryByTestId('overview-unchanged')).toBeNull();
     noAcronyms();
   });
@@ -127,14 +134,17 @@ describe('the Overview leads with the three scenarios', () => {
     try {
       renderAt('/aib?scn=decoupling');
       expect(await h1('Allied Industrial Base')).toBeTruthy();
-      const division = screen.getByRole('region', { name: 'Allied coverage by technology and stage' });
+      const division = screen.getByRole('region', { name: MODULE_QUESTION.coverage });
       expect(division.id).toBe('division');
-      // the basis tag and the intro: the strategic position framework, not the scenario toggle
+      // the basis tag and the intro: the country strategies, not the scenario toggle; both sides of the division of labor named
       expect(within(division).getByText(/^Strategic position framework/)).toBeTruthy();
-      expect(within(division).getByTestId('division-intro').textContent).toMatch(/It follows the strategic position framework, not the scenario toggle: switching scenarios does not change it\./);
-      // partner demand is the canonical Compete · Partner choice; Deploy · Accelerate is never counted (design section 5)
+      const intro = within(division).getByTestId('division-intro').textContent ?? '';
+      expect(intro).toMatch(/It reads the country strategies, not the scenario chosen above: switching scenarios does not change it\./);
+      expect(intro).toContain(AIB_SIDES.supply.question.toLowerCase());
+      expect(intro).toContain(AIB_SIDES.demand.question.toLowerCase());
+      // partner demand is the canonical Partner choice; Accelerate is never counted (design section 5)
       expect(within(division).getByTestId('division-demand').textContent).toBe(
-        'Partner demand counts the economies whose choice for a node is Compete · Partner, Secure demand those that must Secure it; a Deploy · Accelerate choice is a deployment priority, not a call on allied supply, so it is not counted.',
+        'Partner demand counts the countries whose strategy relies on partners for a step (Partner); Secure demand, those that must secure it. Accelerate is a deployment priority, not a call on allied supply, so it is not counted.',
       );
       // the three metrics as tiles, then the card (its heading an h3 inside the Section)
       expect(within(await within(division).findByTestId('aib-division-stats')).getAllByRole('listitem')).toHaveLength(3);
@@ -155,11 +165,11 @@ describe('the Overview leads with the three scenarios', () => {
       fireEvent.click(within(m).getByRole('button', { name: /^Batteries Components/ }));
       expect(within(division).getByTestId('aib-node-detail-nodes').textContent).toBe('No Allied Industrial Base node is mapped to this cell.');
       // the run line and the class Section name the division Section, never "the chart above / below"
-      expect(screen.getByTestId('overview-run').textContent).toContain('finer than the technology × stage cells of allied coverage by technology and stage');
-      expect(within(screen.getByTestId('overview-run')).getByRole('link', { name: 'allied coverage by technology and stage' }).getAttribute('href')).toBe('#division');
+      expect(screen.getByTestId('overview-run').textContent).toContain('finer than the technology × stage cells of who can cover each supply-chain step');
+      expect(within(screen.getByTestId('overview-run')).getByRole('link', { name: 'who can cover each supply-chain step' }).getAttribute('href')).toBe('#division');
       expect(document.body.textContent).not.toMatch(/chart (above|below)|Upstream|Midstream|Downstream|three-stage/);
       // the partnerships card names the partner scores without three stages
-      expect(document.body.textContent).toContain('the partner scores by technology and stage (Friendshore, Partnership Opportunity, Development Potential)');
+      expect(document.body.textContent).toContain('the best-placed partners by technology and stage (Friendshore, Partnership Opportunity, Development Potential)');
       noAcronyms();
     } finally {
       setPostureStore(null);
@@ -174,7 +184,7 @@ describe('the Overview leads with the three scenarios', () => {
     try {
       renderAt('/aib?scn=decoupling');
       expect(await h1('Allied Industrial Base')).toBeTruthy();
-      const division = screen.getByRole('region', { name: 'Allied coverage by technology and stage' });
+      const division = screen.getByRole('region', { name: MODULE_QUESTION.coverage });
       const m = await within(division).findByTestId('aib-matrix');
       fireEvent.click(within(m).getByRole('button', { name: /^Solar Assembly/ }));
       const u = new URL(within(within(division).getByTestId('aib-node-detail-nodes')).getByRole('link', { name: modules.label }).getAttribute('href') ?? '', 'http://x');
@@ -188,8 +198,8 @@ describe('the Overview leads with the three scenarios', () => {
     expect(await h1('Workstreams')).toBeTruthy();
     const stageSel = screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement;
     expect([stageSel.value, Array.from(stageSel.options).map((o) => o.value)]).toEqual(['Assembly', ['', 'Assembly']]);
-    expect(screen.getByText(`1 node of ${doc.nodes.length}`)).toBeTruthy();
-    const listed = screen.getByRole('region', { name: 'How every sub-sector is classified' });
+    expect(screen.getByText(`1 supply-chain step of ${doc.nodes.length}`)).toBeTruthy();
+    const listed = screen.getByRole('region', { name: AIB_CLASS_HEADING });
     expect((within(listed).getByText(modules.label).closest('li') as HTMLElement).textContent).toContain('Solar · Assembly');
     expect((within(listed).getByText(modules.label).closest('li') as HTMLElement).textContent).not.toContain('Components');
     cleanup();
@@ -200,34 +210,34 @@ describe('the Overview leads with the three scenarios', () => {
     // with only the model's stage: not listed under Components
     renderAt('/compacts/workstreams?scn=decoupling&stage=Components#nodes');
     expect(await h1('Workstreams')).toBeTruthy();
-    expect(within(screen.getByRole('region', { name: 'How every sub-sector is classified' })).queryByText(modules.label)).toBeNull();
+    expect(within(screen.getByRole('region', { name: AIB_CLASS_HEADING })).queryByText(modules.label)).toBeNull();
   });
 
   it('Managed Interdependence: current in every comparison; the class tiles, the lists and the question cards follow it', async () => {
     renderAt('/aib');
     expect(await h1('Allied Industrial Base')).toBeTruthy();
-    const region = screen.getByRole('region', { name: 'Three scenarios compared' });
-    expect(current(within(region).getByRole('figure', { name: 'Coverage of the allied demand under each scenario' }))).toEqual(['managed']);
-    expect(screen.getByTestId('overview-run').textContent).toMatch(/^Shown: Managed Interdependence \(/);
+    const region = screen.getByRole('region', { name: SCENARIO_SECTION_TITLE });
+    expect(current(within(region).getByRole('figure', { name: 'How much allied demand can be met under each scenario' }))).toEqual(['managed']);
+    expect(screen.getByTestId('overview-run').textContent).toMatch(/^Results below use Managed Interdependence \(/);
     // the tiles count the nodes by their class under the scenario
     const rows = doc.nodes.map((n) => nodeScenario(n, 'managed'));
-    const tiles = within(screen.getByRole('list', { name: 'Nodes by treatment' })).getAllByRole('listitem');
+    const tiles = within(screen.getByRole('list', { name: 'Supply-chain steps by treatment' })).getAllByRole('listitem');
     ['COORDINATE', 'BUILD', 'MANAGE SPECIALIZATION', 'LOW INTERVENTION'].forEach((cls, i) => {
       const n = rows.filter((r) => r.ran && r.cls === cls).length;
-      expect(tiles[i].textContent, cls).toContain(`${n} ${n === 1 ? 'node' : 'nodes'}`);
+      expect(tiles[i].textContent, cls).toContain(`${n} ${n === 1 ? 'step' : 'steps'}`);
     });
     const unchanged = rows.filter((r) => !r.ran).length;
-    expect(screen.getByTestId('overview-unchanged').textContent).toMatch(new RegExp(`^${unchanged} nodes are unchanged under Managed Interdependence`));
-    const shift = screen.getByRole('list', { name: 'Nodes with the largest share of supply to shift' });
+    expect(screen.getByTestId('overview-unchanged').textContent).toMatch(new RegExp(`^${unchanged} steps are unchanged under Managed Interdependence`));
+    const shift = screen.getByRole('list', { name: 'Steps with the largest share of supply to shift' });
     expect(within(shift).getAllByRole('listitem')).toHaveLength(rows.filter((r) => r.ran).length);
     // every link carries the choice
-    const hrefs = within(screen.getByRole('region', { name: 'Who coordinates, and how' })).getAllByRole('link').map((a) => a.getAttribute('href'));
+    const hrefs = within(screen.getByRole('region', { name: 'Who does what in the allied network' })).getAllByRole('link').map((a) => a.getAttribute('href'));
     expect(hrefs).toEqual(['/aib/partnerships', '/compacts', '/aib/roles']);
     expect(within(screen.getByTestId('diversify-pointer')).getByRole('link').getAttribute('href')).toBe('/aib/diversification');
     // the question cards count the scenario's relationships once its file is loaded
     await waitFor(() => expect(source.calls.some((f) => f.startsWith('scenario-managed'))).toBe(true));
     const nTrade = new Set(md.compacts.flatMap((c) => c.trade.filter((e) => (e.usd ?? 0) > 0 && e.from !== e.to).map((e) => `${e.from}|${e.to}|${e.relationship}`))).size;
-    await waitFor(() => expect(screen.getByRole('region', { name: 'Who coordinates, and how' }).textContent).toContain(`${nTrade} coordinated trade relationship`));
+    await waitFor(() => expect(screen.getByRole('region', { name: 'Who does what in the allied network' }).textContent).toContain(`${nTrade} coordinated trade relationship`));
     noAcronyms();
   });
 
@@ -262,9 +272,12 @@ describe('the Sectoral Compacts landing follows the toggle', () => {
     });
     renderAt('/compacts/workstreams');
     expect(await h1('Workstreams')).toBeTruthy();
-    expect(screen.getByTestId('run-settings').textContent).toMatch(/^Shown: Managed Interdependence \(no supplier removed; caps above the benchmark\); supply assumption: reallocation, production-constrained supply; trade in 2024\./);
-    // no shock semantics under Managed Interdependence: it removes no supplier; coverage is served after the cap
-    expect(screen.getByTestId('run-settings').textContent).not.toMatch(/semantics|after the shock/);
+    expect(screen.getByTestId('run-settings').textContent).toMatch(
+      /^Results below use Managed Interdependence \(no supplier removed; supply above the concentration cap shifts\); assumption about how much suppliers can expand: reallocation, production-constrained supply; trade in 2024\./,
+    );
+    // no shock semantics under Managed Interdependence: it removes no supplier; coverage is met after the cap
+    expect(screen.getByTestId('run-settings').textContent).not.toMatch(/semantics|after the disruption/);
+    expect(screen.getByTestId('run-settings').textContent).toMatch(/that can be met after the concentration cap\./);
     const region = screen.getByRole('region', { name: `The workstreams (${doc.compacts.length})` });
     const cards = within(region).getAllByRole('article');
     expect(cards[0].getAttribute('data-compact')).toBe(last.id);
@@ -291,13 +304,13 @@ describe('the Sectoral Compacts landing follows the toggle', () => {
   it('the nodes by their class under the scenario, the unchanged ones apart; the map places only the nodes it runs on', async () => {
     renderAt('/compacts/workstreams#nodes');
     expect(await h1('Workstreams')).toBeTruthy();
-    const nodes = screen.getByRole('region', { name: 'How every sub-sector is classified' });
+    const nodes = screen.getByRole('region', { name: AIB_CLASS_HEADING });
     const group = nodes.querySelector('[data-group="UNCHANGED"]') as HTMLElement;
     expect(within(group).getByRole('heading', { level: 4 }).textContent).toMatch(/^Unchanged under Managed Interdependence \(\d+\)$/);
     const unchanged = doc.nodes.filter((n) => n.inStrategicScope !== false && !nodeScenario(n, 'managed').ran);
     expect(within(group).getAllByRole('listitem').filter((li) => li.className.includes('hairline'))).toHaveLength(unchanged.length);
-    const map = screen.getByRole('region', { name: 'Strategic map of every node' });
-    expect(map.textContent).toContain(`${unchanged.length} nodes unchanged under Managed Interdependence are not placed`);
+    const map = screen.getByRole('region', { name: MAP_CARD_TITLE });
+    expect(map.textContent).toContain(`${unchanged.length} steps unchanged under Managed Interdependence are not placed`);
     noAcronyms();
   });
 
@@ -322,15 +335,15 @@ describe("a compact's page follows the toggle", () => {
     renderAt(`/compacts/${c.id}`);
     expect(await h1(titleOf(c))).toBeTruthy();
     // (the card is drawn anew once the scenario's file is loaded: query it again)
-    const coalitionCard = () => screen.getByRole('region', { name: 'The coalition and its tiers' });
-    await waitFor(() => expect(within(coalitionCard()).getByText(new RegExp(`^Exact minimum coalition: ${m.coalition!.members.length} economies\\.`))).toBeTruthy(), { timeout: 10_000 });
+    const coalitionCard = () => screen.getByRole('region', { name: COALITION_TITLE });
+    await waitFor(() => expect(within(coalitionCard()).getByText(new RegExp(`^Exact minimum coalition: ${m.coalition!.members.length} countries\\.`))).toBeTruthy(), { timeout: 10_000 });
     expect(coalitionCard().querySelector('[data-scenario-tag="managed"]')).toBeTruthy();
     // the roles of the scenario's coalition; the Country profile links carry the choice
-    const roles = screen.getByRole('region', { name: 'Economies and their roles' });
+    const roles = screen.getByRole('region', { name: ROLES_TITLE });
     expect(within(roles).getAllByRole('rowheader')).toHaveLength(new Set(m.roles.map((r) => r.iso3)).size);
     expect(within(roles).getAllByRole('link').every((a) => /^\/countries\/[A-Z]{3}#aib-role$/.test(a.getAttribute('href') ?? ''))).toBe(true);
     // the lede and the case for coordination under the scenario
-    expect(screen.getByText(/Under Managed Interdependence \(no supplier is removed; suppliers above a cap in the allied market lose the excess\), .* has to shift\.$/)).toBeTruthy();
+    expect(screen.getByText(/Under Managed Interdependence this compact manages concentration without cutting a supplier out of the market: .* has to shift to other suppliers, keeping the specialization while adding redundancy\.$/)).toBeTruthy();
     expect(screen.getByTestId('why-answer').textContent).toMatch(/^Managed Interdependence shifts \d+% of the compact's demand away from capped suppliers/);
     expect(within(screen.getByRole('region', { name: 'The case for coordination' })).getByText('Share shifted')).toBeTruthy();
     // the compact under the three scenarios
@@ -345,9 +358,9 @@ describe("a compact's page follows the toggle", () => {
     // the steps start from the cap
     const steps = screen.getByRole('region', { name: 'Demand served at each step' });
     fireEvent.click(within(steps).getByRole('button', { name: 'Table' }));
-    expect(within(within(steps).getByRole('table')).getAllByRole('row')[1].textContent).toMatch(/^Cap \(static\)/);
+    expect(within(within(steps).getByRole('table')).getAllByRole('row')[1].textContent).toMatch(/^Concentration cap alone/);
     // each node: its three scenarios, the toggled one current; a node the scenario leaves unchanged says why
-    const card = screen.getByRole('region', { name: "Each node's coverage and treatment" });
+    const card = screen.getByRole('region', { name: "Each step's coverage and treatment" });
     for (const n of nodesOf(c)) {
       const li = card.querySelector(`li[data-node="${n.id}"]`) as HTMLElement;
       const rows = within(li).getByTestId('node-scenarios');
@@ -370,7 +383,7 @@ describe("a compact's page follows the toggle", () => {
     expect(current(screen.getByRole('region', { name: 'Demand served under each scenario' }))).toEqual(['decoupling']);
     expect(screen.getAllByTestId('node-scenarios')).toHaveLength(c.nodes.length);
     for (const b of screen.getAllByTestId('diversify-block')) expect(b.textContent).not.toMatch(/With the cap holding/);
-    expect(screen.getByTestId('external-dependency').textContent).toMatch(/^The supplier the headline shock removes: /);
+    expect(screen.getByTestId('external-dependency').textContent).toMatch(/^The supplier the disruption removes: /);
     // the scenario's file is never fetched under Decoupling
     expect(source.calls.filter((f) => f.startsWith('scenario-managed'))).toEqual([]);
   });
@@ -410,8 +423,8 @@ describe('an older bundle without the scenarios keeps the Decoupling pages', () 
     useSource((d) => void stripScenarios(d), { noScenarioFiles: true });
     renderAt('/aib');
     expect(await h1('Allied Industrial Base')).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'Three scenarios compared' })).toBeNull();
-    expect(screen.getByTestId('overview-run').textContent).toMatch(/^Headline: /);
+    expect(screen.queryByRole('region', { name: SCENARIO_SECTION_TITLE })).toBeNull();
+    expect(screen.getByTestId('overview-run').textContent).toMatch(/^Results below use /);
     cleanup();
     renderAt('/compacts');
     expect(await h1('Sectoral Compacts')).toBeTruthy();

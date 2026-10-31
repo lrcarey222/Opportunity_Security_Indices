@@ -9,7 +9,7 @@ import { useAibCtx } from '../../AibLayout.tsx';
 import type { AibStrategic, AibStrategicCompact, AibStrategicScenarioId } from '../../contract.ts';
 import { activeWorkstreamsOf, compactScenarioOf, policyMixWords } from '../../derive/strategic.ts';
 import { strategicCompactHref, workstreamsHref } from '../../nav.ts';
-import { activeWords, CoreCountries, countsWords, Fact, headlineBody, interventionWords, MiniSpine, scenarioLabelOf, SpanList } from './shared.tsx';
+import { activeWords, CoreCountries, countsWords, Fact, headlineBody, interventionWords, MiniSpine, scenarioDataLabelOf, scenarioLabelOf, SpanList } from './shared.tsx';
 
 export function StrategicCompactCard({ s, c, sid }: { s: AibStrategic; c: AibStrategicCompact; sid: AibStrategicScenarioId }) {
   const { name, href } = useAibCtx();
@@ -30,7 +30,7 @@ export function StrategicCompactCard({ s, c, sid }: { s: AibStrategic; c: AibStr
           <Fact term="Supply chain">
             <SpanList c={c} />
           </Fact>
-          <Fact term="Core countries">
+          <Fact term="Core partners">
             <CoreCountries core={c.core} name={name} href={null} label={`Core countries of ${c.name} and their roles`} />
           </Fact>
         </dl>
@@ -38,7 +38,7 @@ export function StrategicCompactCard({ s, c, sid }: { s: AibStrategic; c: AibStr
           <p className="eyebrow text-paper-mute">Under {label}</p>
           <dl className="mt-2 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
             <Fact term="Mission">{sc?.statement ?? '–'}</Fact>
-            <Fact term="Policy mix">
+            <Fact term="Actions needed">
               <span className="block text-paper">{policyMixWords(sc)}</span>
               <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-paper-mute" title={counts}>
                 <MiniSpine c={c} sc={sc} />
@@ -48,7 +48,7 @@ export function StrategicCompactCard({ s, c, sid }: { s: AibStrategic; c: AibStr
             </Fact>
             <Fact term="Workstreams">{activeWords(c, active)}</Fact>
             <Fact term="Result">
-              {headlineBody(sc?.headline, label)}
+              {headlineBody(sc?.headline, label, scenarioDataLabelOf(s, sid))}
               {sc?.stressNote && <span className="mt-1 block text-xs text-paper-mute">{sc.stressNote}</span>}
             </Fact>
           </dl>

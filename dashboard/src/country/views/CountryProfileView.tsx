@@ -236,7 +236,7 @@ function Profile({ iso3 }: { iso3: string }) {
               <Notice kind="info" title="A custom perspective in the link">
                 The link sets the Perspective dials. They re-weight only the Legacy OSI indices, so they are applied in{' '}
                 <a className="link" href="#legacy-osi">
-                  Evidence &amp; Methodology: Legacy OSI framework
+                  Evidence &amp; methodology: Legacy OSI framework
                 </a>
                 ; the strategy does not change with them.
               </Notice>

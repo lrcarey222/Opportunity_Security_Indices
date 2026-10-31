@@ -21,17 +21,12 @@ import { plural } from '../derive/format.ts';
 import { compactNodeIds, strategicCompactOf } from '../derive/strategic.ts';
 import { ChainSection } from './strategic/ChainSection.tsx';
 import { PolicySection, ScenarioChangeSection, VulnerabilitySection, WhoSection, WhySection, WorkstreamsSection } from './strategic/sections.tsx';
+import { STRATEGIC_SECTION_TITLE } from './strategic/shared.tsx';
 
 /** The page's sections, in order: [anchor, title]. */
-export const STRATEGIC_SECTIONS = [
-  ['why', 'Why this compact exists'],
-  ['chain', 'Which nodes it covers'],
-  ['vulnerabilities', 'Where it is vulnerable'],
-  ['policy', 'What the nodes need'],
-  ['who', 'Who does what'],
-  ['workstreams', 'Workstreams under this compact'],
-  ['scenarios', 'What changes between scenarios'],
-] as const;
+export const STRATEGIC_SECTIONS = (['why', 'chain', 'vulnerabilities', 'policy', 'who', 'workstreams', 'scenarios'] as const).map(
+  (id) => [id, STRATEGIC_SECTION_TITLE[id]] as const,
+);
 
 export default function StrategicCompactView() {
   const { sid = '' } = useParams();
@@ -53,8 +48,8 @@ function Compact({ s, c, sid }: { s: AibStrategic; c: AibStrategicCompact; sid: 
   }, [c.id]);
   const facts = [
     c.family,
-    plural(c.steps.length, 'step'),
-    plural(compactNodeIds(c).length, 'node'),
+    plural(c.steps.length, 'stage'),
+    plural(compactNodeIds(c).length, 'supply-chain step'),
     c.workstreams.length ? plural(c.workstreams.length, 'workstream') : 'no workstream',
   ].filter(Boolean);
   return (

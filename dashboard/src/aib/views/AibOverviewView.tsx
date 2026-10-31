@@ -22,7 +22,10 @@ import { Link } from 'react-router';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { PageHead, StatTile } from '../../components/ui.tsx';
-import { AibDivisionCard, AibDivisionIntro, AibDivisionStats, indexNodesByCell, PostureBasisTag } from '../../posture/index.ts';
+import { AibDivisionCard, AibDivisionStats, indexNodesByCell, PostureBasisTag } from '../../posture/index.ts';
+import { Term } from '../../components/Term.tsx';
+import { AIB_SIDES, MANAGED_INTERDEPENDENCE, MODULE_QUESTION, SCENARIO_CHART_LABEL, SCENARIO_SECTION_TITLE } from '../../content/vocabulary.ts';
+import { POSTURE_TERMS } from '../../posture/index.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import { AIB_CLASSES, inStrategicScope, type AibCompact } from '../contract.ts';
@@ -39,7 +42,8 @@ import { managedCompacts, managedOf, overviewRows, scenarioClassGroups, topScena
 import { nodeScenario, scenarioCaveat, scenarioCsvFields, scenarioInfo, scenarioList, scenarioShockLabel, type NodeScenario } from '../derive/scenarios.ts';
 import { cellsInFilter, nodeWhere } from '../derive/taxonomy.ts';
 import { compactHref, workstreamsHref } from '../nav.ts';
-import { csvWithRun, Section } from './common.tsx';
+import { COVERAGE_WORDS } from '../charts/ScenarioCompare.tsx';
+import { csvWithRun, QuestionLede, Section } from './common.tsx';
 import { BasisTag, QuestionCard } from './basis.tsx';
 
 export const AIB_EYEBROW = 'ALLIED INDUSTRIAL BASE';
@@ -77,15 +81,23 @@ function NodeList({ rows, value, label }: { rows: NodeScenario[]; value: (r: Nod
 
 /**
  * What the division's demand counts (design section 5, the canonical framework): Partner demand is the
- * economies whose choice for the node is Compete · Partner, Secure demand those that must Secure it. A Deploy ·
- * Accelerate choice is a deployment priority, not a call on allied supply, so it is never counted (and
- * Deployment & Use has no column in the matrix).
+ * economies whose choice for the node is Partner, Secure demand those that must Secure it. An Accelerate
+ * choice is a deployment priority, not a call on allied supply, so it is never counted (and Deployment & Use
+ * has no column in the matrix).
  */
 export const DIVISION_DEMAND_WORDS =
-  'Partner demand counts the economies whose choice for a node is Compete · Partner, Secure demand those that must Secure it; a Deploy · Accelerate choice is a deployment priority, not a call on allied supply, so it is not counted.';
+  'Partner demand counts the countries whose strategy relies on partners for a step (Partner); Secure demand, those that must secure it. Accelerate is a deployment priority, not a call on allied supply, so it is not counted.';
 
-/** The id and title of the Overview's first section (design L4; not "Division of labour", the compact pages' own). */
-export const DIVISION_SECTION = { id: 'division', title: 'Allied coverage by technology and stage' } as const;
+/** The id and title of the Overview's first section (design L4; the guide's question, MODULE_QUESTION.coverage). */
+export const DIVISION_SECTION = { id: 'division', title: MODULE_QUESTION.coverage } as const;
+
+/** The Overview's lede after its question (the guide's AIB overview lede; the suppliers that replace lost supply can be any economy, so not "trusted partners"). */
+export const OVERVIEW_LEDE =
+  'No ally should try to make everything. The Allied Industrial Base asks which capabilities must be secure, which countries are best placed to specialize in them, and where trade or new investment can close the remaining gaps. The analysis stress-tests today’s supply network, measures how much of the affected supply existing and coordinated trade can replace, and shows where acting together is worth the effort.';
+
+/** The second paragraph of the Overview (guide): what the scenario changes and what it does not. */
+export const OVERVIEW_GOAL =
+  'The selected scenario changes the supply problem; it does not change the basic goal: the smallest credible network of partners that can keep critical supply available without recreating the whole stack in every country.';
 
 /**
  * "Allied coverage by technology and stage": the posture module's division card in the page's Section,
@@ -118,7 +130,10 @@ function DivisionSection() {
         <>
           <PostureBasisTag />
           <p className="mt-2" data-testid="division-intro">
-            <AibDivisionIntro /> <span data-testid="division-demand">{DIVISION_DEMAND_WORDS}</span> Select a cell for its allied holders and the model&apos;s supply-chain nodes whose traded goods sit there.
+            Select a cell to see which allies already have capability, which countries need a partner, and where the allied network still lacks a credible backup. For each
+            technology at each producing stage it answers both sides of the division of labor: {AIB_SIDES.supply.question.toLowerCase()} (who supplies, and who backs them up) and{' '}
+            {AIB_SIDES.demand.question.toLowerCase()} (<Term id={POSTURE_TERMS.partnerDemand}>Partner demand</Term>), with any allied <Term id={POSTURE_TERMS.aibGap}>gap</Term>. It
+            reads the country strategies, not the scenario chosen above: switching scenarios does not change it. <span data-testid="division-demand">{DIVISION_DEMAND_WORDS}</span>
           </p>
         </>
       }
@@ -146,18 +161,18 @@ function ThreeWay({ rows }: { rows: OverviewRow[] }) {
   const weighed = rows[0]?.nodes ?? 0;
   const note = (r: OverviewRow) =>
     r.id === 'baseline'
-      ? 'no shock: nothing is lost'
-      : `${plural(r.affectedNodes, 'node')} of ${weighed}; ${fmtUsd(r.lostUsd)} ${r.id === 'managed' ? 'shifted' : 'lost'}`;
+      ? 'no disruption: nothing is lost'
+      : `${plural(r.affectedNodes, 'step')} of ${weighed}; ${fmtUsd(r.lostUsd)} ${r.id === 'managed' ? 'shifted' : 'lost'}`;
   const cols: Col<OverviewRow>[] = [
     { id: 'scenario', header: 'Scenario', value: (r) => r.label },
-    { id: 'nodes', header: 'Nodes that lose or shift supply', value: (r) => r.affectedNodes, num: true },
-    { id: 'affected', header: 'Allied demand affected', value: (r) => r.affectedDemandUsd, cell: (r) => fmtUsd(r.affectedDemandUsd), num: true },
+    { id: 'nodes', header: 'Supply-chain steps that lose or shift supply', value: (r) => r.affectedNodes, num: true },
+    { id: 'affected', header: SCENARIO_CHART_LABEL.alliedDemandAffected, value: (r) => r.affectedDemandUsd, cell: (r) => fmtUsd(r.affectedDemandUsd), num: true },
     { id: 'lost', header: 'Supply lost or shifted', value: (r) => r.lostUsd, cell: (r) => fmtUsd(r.lostUsd), num: true },
-    { id: 'kept', header: 'Kept', value: (r) => r.split?.kept ?? null, cell: (r) => fmtShare(r.split?.kept, 0), num: true },
-    { id: 'trade', header: 'Restored by trade', value: (r) => r.split?.trade ?? null, cell: (r) => fmtShare(r.split?.trade, 0), num: true },
-    { id: 'build', header: 'New capacity', value: (r) => r.split?.build ?? null, cell: (r) => fmtShare(r.split?.build, 0), num: true },
-    { id: 'gap', header: 'Left for new capacity', value: (r) => r.residualUsd, cell: (r) => fmtUsd(r.residualUsd), num: true },
-    { id: 'mix', header: 'Class mix of the lost supply', value: (r) => r.classMix || 'none', minWidth: 220 },
+    { id: 'kept', header: COVERAGE_WORDS.kept, value: (r) => r.split?.kept ?? null, cell: (r) => fmtShare(r.split?.kept, 0), num: true },
+    { id: 'trade', header: COVERAGE_WORDS.trade, value: (r) => r.split?.trade ?? null, cell: (r) => fmtShare(r.split?.trade, 0), num: true },
+    { id: 'build', header: COVERAGE_WORDS.build, value: (r) => r.split?.build ?? null, cell: (r) => fmtShare(r.split?.build, 0), num: true },
+    { id: 'gap', header: SCENARIO_CHART_LABEL.leftForNewCapacity, value: (r) => r.residualUsd, cell: (r) => fmtUsd(r.residualUsd), num: true },
+    { id: 'mix', header: 'What the affected supply needs', value: (r) => r.classMix || 'none', minWidth: 220 },
   ];
   const csv = () => ({
     name: 'Allied Industrial Base three scenarios',
@@ -182,13 +197,13 @@ function ThreeWay({ rows }: { rows: OverviewRow[] }) {
     ),
   });
   const summary = rows
-    .map((r) => `${r.label}: allied demand affected ${fmtUsd(r.affectedDemandUsd)}, kept ${fmtShare(r.split?.kept, 0)}, restored by trade ${fmtShare(r.split?.trade, 0)}, new capacity ${fmtShare(r.split?.build, 0)}, ${fmtUsd(r.residualUsd)} left for new capacity`)
+    .map((r) => `${r.label}: ${fmtUsd(r.affectedDemandUsd)} of demand must find a new supplier, still supplied ${fmtShare(r.split?.kept, 0)}, recovered through trade ${fmtShare(r.split?.trade, 0)}, requires new capacity ${fmtShare(r.split?.build, 0)}, ${fmtUsd(r.residualUsd)} still needs new capacity`)
     .join('; ');
   return (
     <ChartCard
       headingLevel={3}
       title="The three scenarios side by side"
-      sub={`Every supply-chain node the model optimizes (${weighed}), weighed the same in each scenario. Shares are of their allied demand; dollar values are a year at ${meta.tradeYear} trade values.`}
+      sub={`Every supply-chain step the analysis tests (${weighed}), weighed the same in each scenario. Shares are of allied demand; dollar values are a year at ${meta.tradeYear} trade values.`}
       summary={summary}
       legend={<CoverageLegend />}
       notes={<span>{scenarioCaveat(meta)}</span>}
@@ -197,29 +212,29 @@ function ThreeWay({ rows }: { rows: OverviewRow[] }) {
     >
       <div className="space-y-6" data-testid="overview-three-way">
         <div>
-          <H sub="The allied demand of the nodes that lose supply, or must shift it away from a capped supplier (USD a year).">Allied demand affected</H>
+          <H sub="The allied demand at the steps that lose supply, or must shift it away from a capped supplier (USD a year).">{SCENARIO_CHART_LABEL.alliedDemandAffected}</H>
           <ScenarioBars
             values={rows.map((r) => ({ id: r.id, value: r.affectedDemandUsd, note: note(r) }))}
             highlight={scenario}
-            label="Allied demand affected under each scenario"
+            label="Demand that must find a new supplier under each scenario"
             format={fmtUsd}
             meta={meta}
           />
         </div>
         <div>
-          <H sub="What the market keeps, what existing relationships and optimized trade restore, and what only new capacity can fill.">Coverage of the allied demand</H>
-          <ScenarioCoverageCompare rows={rows} highlight={scenario} label="Coverage of the allied demand under each scenario" meta={meta} legend={false} />
+          <H sub="Coverage: what stays supplied, what existing relationships and coordinated trade recover, and what only new capacity can fill.">How much allied demand can be met</H>
+          <ScenarioCoverageCompare rows={rows} highlight={scenario} label="How much allied demand can be met under each scenario" meta={meta} legend={false} />
         </div>
         <div>
-          <H sub="The supply trade cannot replace (USD a year): the gap new capacity would have to fill.">Left for new capacity</H>
-          <ScenarioBars values={rows.map((r) => ({ id: r.id, value: r.residualUsd }))} highlight={scenario} label="Left for new capacity under each scenario" format={fmtUsd} meta={meta} />
+          <H sub="The supply trade cannot replace (USD a year): the remaining supply gap new capacity would have to fill.">{SCENARIO_CHART_LABEL.leftForNewCapacity}</H>
+          <ScenarioBars values={rows.map((r) => ({ id: r.id, value: r.residualUsd }))} highlight={scenario} label="Gap that still needs new capacity under each scenario" format={fmtUsd} meta={meta} />
         </div>
         <div>
-          <H sub="The lost or shifted supply split by the class each node gets under the scenario.">Where the lost supply sits</H>
+          <H sub="The lost or shifted supply, split by what each step needs under the scenario.">{SCENARIO_CHART_LABEL.whereLostSupplySits}</H>
           <ScenarioClassBars
             rows={rows.map((r) => ({ id: r.id, groups: r.byClass.map((g) => ({ cls: g.cls, usd: g.lostUsd })) }))}
             highlight={scenario}
-            label="Lost or shifted supply by class under each scenario"
+            label="Lost or shifted supply by treatment under each scenario"
             format={fmtUsd}
             meta={meta}
           />
@@ -275,15 +290,15 @@ export default function AibOverviewView() {
     .filter((g) => g.nodes.length)
     .map((g) => `${g.info.label} ${plural(g.nodes.length, 'node')}${lostTotal > 0 ? `, ${fmtShare(g.lostUsd / lostTotal, 0)} of ${lostWord}` : ''}`)
     .join('; ');
-  const coordWords = `${plural(nCoord, 'node')} ${nCoord === 1 ? 'is' : 'are'} COORDINATE, where new trade relationships among partners restore most of the gap.`;
+  const coordWords = `${plural(nCoord, 'step')} ${nCoord === 1 ? 'needs' : 'need'} trade coordination: new trade relationships among partners recover most of the gap.`;
   const takeaway =
     total === 0
-      ? 'The export carries no classified node.'
-      : `${mi ? `Managed Interdependence runs on ${plural(ranNodes, 'node')} where a supplier holds more of the allied market than the cap allows, and leaves the other ${unchanged} unchanged. ` : ''}${
-          rare ? `Coordination alone is rare in this run: ${coordWords}` : coordWords
+      ? 'This build has no classified supply-chain step.'
+      : `${mi ? `Managed Interdependence applies to ${plural(ranNodes, 'step')} where one supplier holds more of the allied market than the cap allows, and leaves the other ${unchanged} unchanged. ` : ''}${
+          rare ? `Trade coordination alone is rarely enough here: ${coordWords}` : coordWords
         }${
           biggest
-            ? ` Most of the ${lostWord} (${fmtShare(biggest.lostUsd / lostTotal, 0)}) sits in ${biggest.info.label} nodes: ${biggest.info.meaning.charAt(0).toLowerCase()}${biggest.info.meaning.slice(1)}`
+            ? ` Most of the ${lostWord} (${fmtShare(biggest.lostUsd / lostTotal, 0)}) sits at steps marked ${biggest.info.label}: ${biggest.info.meaning.charAt(0).toLowerCase()}${biggest.info.meaning.slice(1)}`
             : ''
         }`;
   const shockLine = hasScenarios ? scenarioShockLabel(m, scenario) : shockLabel;
@@ -293,25 +308,24 @@ export default function AibOverviewView() {
       <PageHead
         eyebrow={AIB_EYEBROW}
         title="Allied Industrial Base"
-        lede={
-          hasScenarios
-            ? 'Where does international coordination add value, who needs to coordinate, and what form should it take? The model starts from the observed trade network and changes it in two counterfactual ways: Decoupling removes a major supplier, Managed Interdependence caps the share any one supplier may hold where a supply-chain step is more concentrated than comparable goods. It then asks how much of the supply affected existing relationships, coordinated trade and new investment can replace, node by node across the energy supply chains.'
-            : 'Where does international coordination add value, who needs to coordinate, and what form should it take? The model removes a major supplier from the observed trade network and asks how much of the lost supply existing relationships, coordinated trade and new investment can restore, node by node across the energy supply chains.'
-        }
+        lede={<QuestionLede question={MODULE_QUESTION.aib}>{OVERVIEW_LEDE}</QuestionLede>}
       >
+        <p className="mt-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim" data-testid="overview-goal">
+          {OVERVIEW_GOAL}
+        </p>
         <p className="mt-3 max-w-3xl text-sm text-paper-mute" data-testid="overview-run">
           {hasScenarios ? (
             <>
-              Shown: <span className="text-paper-dim">{sc.label}</span> ({shockLine}); supply assumption: {m.headlineScenario}
+              Results below use <span className="text-paper-dim">{sc.label}</span> ({shockLine})
             </>
           ) : (
             <>
-              Headline: <span className="text-paper-dim">{shockLabel}</span>; supply assumption: {m.headlineScenario}
+              Results below use <span className="text-paper-dim">{shockLabel}</span>
             </>
           )}
-          ; trade in {m.tradeYear}; {plural(total, 'supply-chain node')} (groups of traded goods, finer than the technology × stage cells of{' '}
+          ; trade in {m.tradeYear}; <span title={`Assumption about how much suppliers can expand: ${m.headlineScenario}`}>{plural(total, 'supply-chain step')}</span> (groups of traded goods, finer than the technology × stage cells of{' '}
           <a className="link" href={`#${DIVISION_SECTION.id}`}>
-            {DIVISION_SECTION.title.toLowerCase()}
+            who can cover each supply-chain step
           </a>
           ).{' '}
           <Link className="link" to={href('/compacts/about')}>
@@ -326,10 +340,13 @@ export default function AibOverviewView() {
         {hasScenarios && three.length > 0 && (
           <Section
             id="scenarios"
-            title="Three scenarios compared"
+            title={SCENARIO_SECTION_TITLE}
             intro={
               <>
                 <BasisTag basis="model" scenario="every scenario" />
+                <p className="mt-2" data-testid="overview-mi-question">
+                  {MANAGED_INTERDEPENDENCE.question}
+                </p>
                 <dl className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-[12rem_minmax(0,1fr)]" data-testid="overview-scenario-words">
                   {scenarioList(m).map((s) => (
                     <div key={s.id} className="contents">
@@ -351,23 +368,26 @@ export default function AibOverviewView() {
 
         <Section
           id="where"
-          title="Where does coordination matter?"
+          title={MODULE_QUESTION.coordination}
           intro={
             <>
               <span className="flex flex-wrap items-center gap-2">
                 <BasisTag basis="facts" />
                 {hasScenarios && <ScenarioTag id={scenario} meta={m} />}
               </span>
+              <p className="mt-2" data-testid="coordination-intro">
+                Coordination matters when today’s bilateral relationships cannot absorb the disruption, but a broader group of suppliers can. Where even coordinated trade is not
+                enough, the problem becomes an investment problem.
+              </p>
               <p className="mt-2">
-                Every supply-chain node of the model (a group of traded goods at one stage, finer than the technology × stage cells of {DIVISION_SECTION.title.toLowerCase()}) gets one treatment from
-                its own results{mi ? ' under the scenario' : ''}.{' '}
-                {nHigh !== null && typeof high === 'number' ? `${plural(nHigh, 'node')} lose at least ${fmtShare(high, 0)} of their supply to the shock (high severity). ` : ''}
+                Each supply-chain step (a group of traded goods at one stage) gets one recommended treatment from its own results{mi ? ' under the scenario' : ''}.{' '}
+                {nHigh !== null && typeof high === 'number' ? `${plural(nHigh, 'step')} lose at least ${fmtShare(high, 0)} of their supply to the disruption. ` : ''}
                 {takeaway}
               </p>
             </>
           }
         >
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Nodes by treatment">
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Supply-chain steps by treatment">
             {shown.map((cls) => {
               const n = byCls.get(cls)?.nodes.length ?? 0;
               const ls = lostShare(cls);
@@ -375,9 +395,9 @@ export default function AibOverviewView() {
                 <li key={cls}>
                   <StatTile
                     label={classInfo(cls).label}
-                    value={plural(n, 'node')}
+                    value={plural(n, 'step')}
                     chip={<ClassSwatch cls={cls} />}
-                    sub={`${ranNodes ? fmtShare(n / ranNodes, 0) : '–'} of ${mi ? 'the nodes it runs on' : 'nodes'}${ls !== null ? ` · ${fmtShare(ls, 0)} of ${lostWord}` : ''}`}
+                    sub={`${ranNodes ? fmtShare(n / ranNodes, 0) : '–'} of ${mi ? 'the steps it applies to' : 'steps'}${ls !== null ? ` · ${fmtShare(ls, 0)} of ${lostWord}` : ''}`}
                   />
                   <p className="mt-1.5 px-1 text-xs leading-relaxed text-paper-mute">{classInfo(cls).meaning}</p>
                 </li>
@@ -386,15 +406,19 @@ export default function AibOverviewView() {
           </ul>
           {mi && unchanged > 0 && (
             <p className="text-xs text-paper-mute" data-testid="overview-unchanged">
-              {plural(unchanged, 'node')} {unchanged === 1 ? 'is' : 'are'} unchanged under Managed Interdependence: not more concentrated than {unchanged === 1 ? 'its' : 'their'} benchmark, within the cap
-              in the allied market, without a benchmark, or not assessed.
+              {plural(unchanged, 'step')} {unchanged === 1 ? 'is' : 'are'} unchanged under Managed Interdependence: not more concentrated than comparable goods, within the cap in the
+              allied market, without a benchmark, or not assessed.
             </p>
           )}
-          {insufficient > 0 && <p className="text-xs text-paper-mute">{plural(insufficient, 'node')} with too little trade to classify (INSUFFICIENT DATA).</p>}
+          {insufficient > 0 && (
+            <p className="text-xs text-paper-mute">
+              {plural(insufficient, 'step')} with too little trade to classify ({classInfo('INSUFFICIENT DATA').label}).
+            </p>
+          )}
           <div className="panel p-4">
-            <p className="mb-2 text-sm text-paper-dim">Where the {lostWord} sits, by treatment</p>
+            <p className="mb-2 text-sm text-paper-dim">Where the {lostWord} sits, by what each step needs</p>
             {lostTotal > 0 ? (
-              <LostByClassBar groups={classed} label={`${mi ? 'Shifted' : 'Lost'} supply by class. ${shareLine}`} />
+              <LostByClassBar groups={classed} label={`${mi ? 'Shifted' : 'Lost'} supply by treatment. ${shareLine}`} />
             ) : (
               <p className="text-xs text-paper-mute">No supply is {mi ? 'shifted' : 'lost'} under this scenario.</p>
             )}
@@ -405,26 +429,26 @@ export default function AibOverviewView() {
           <div className="grid gap-6 lg:grid-cols-2">
             <section aria-labelledby="sev-h" className="card p-5">
               <h3 id="sev-h" className="rule-neis-sm text-base font-medium text-paper">
-                {mi ? 'Largest share of supply to shift' : 'Highest shock severity'}
+                {mi ? 'Largest share of supply to shift' : 'Hardest-hit supply-chain steps'}
               </h3>
               <p className="mb-2 mt-1 text-sm text-paper-mute">
-                {mi ? "Share of each node's allied demand its capped suppliers hold above the cap." : "Share of each node's demand the shock removes."}
+                {mi ? "Share of each step's allied demand its capped suppliers hold above the cap." : "Share of each step's allied demand the disruption removes."}
               </p>
-              <NodeList rows={severity} value={(r) => fmtShare(r.exposure, 0)} label={mi ? 'Nodes with the largest share of supply to shift' : 'Nodes with the highest shock exposure'} />
+              <NodeList rows={severity} value={(r) => fmtShare(r.exposure, 0)} label={mi ? 'Steps with the largest share of supply to shift' : 'Steps with the most supply exposed to the disruption'} />
             </section>
             <section aria-labelledby="div-h" className="card p-5">
               <h3 id="div-h" className="rule-neis-sm text-base font-medium text-paper">
-                Largest coordination dividends
+                Where acting together recovers most
               </h3>
               <p className="mb-2 mt-1 text-sm text-paper-mute">
-                Coverage that coordinated (optimized) trade adds over existing relationships{mi ? ', with the cap holding' : ''}.
+                The coordination dividend: the extra share of allied demand that coordinated trade recovers over existing relationships{mi ? ', with the cap holding' : ''}.
               </p>
-              <NodeList rows={dividends} value={(r) => fmtPp(r.dividend, 0)} label="Nodes with the largest coordination dividend" />
+              <NodeList rows={dividends} value={(r) => fmtPp(r.dividend, 0)} label="Steps where coordination recovers most" />
             </section>
           </div>
           <p className="text-sm">
             <Link className="link" to={href('/compacts#map')}>
-              Every node on the strategic map &rarr;
+              Every supply-chain step on the map &rarr;
             </Link>
           </p>
           {hasDiversify(doc) && (
@@ -439,50 +463,50 @@ export default function AibOverviewView() {
 
         <Section
           id="questions"
-          title="Who coordinates, and how"
+          title="Who does what in the allied network"
           intro={
             <p>
-              Each page answers one question about the emerging Allied Industrial Base{hasScenarios ? ` under the scenario chosen above (${sc.label})` : ''}.
+              Each page answers one question about the allied division of labor{hasScenarios ? ` under the scenario chosen above (${sc.label})` : ''}.
             </p>
           }
         >
           <ul className="grid gap-4 md:grid-cols-3">
             <QuestionCard
-              question="Which trade, investment and development relationships matter?"
+              question={MODULE_QUESTION.partnerships}
               answer={
                 trade
-                  ? `${plural(trade.length, 'coordinated trade relationship')} across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; the partner scores by technology and stage (Friendshore, Partnership Opportunity, Development Potential).`
-                  : `Coordinated trade relationships across the compacts; eligible investment hosts in ${plural(hostNodes, 'node')}; the partner scores by technology and stage (Friendshore, Partnership Opportunity, Development Potential).`
+                  ? `${plural(trade.length, 'coordinated trade relationship')} across the compacts; countries that could add capacity at ${plural(hostNodes, 'supply-chain step')}; the best-placed partners by technology and stage (Friendshore, Partnership Opportunity, Development Potential).`
+                  : `Coordinated trade relationships across the compacts; countries that could add capacity at ${plural(hostNodes, 'supply-chain step')}; the best-placed partners by technology and stage (Friendshore, Partnership Opportunity, Development Potential).`
               }
               to={href('/aib/partnerships')}
               cta="Partnerships"
             />
             <QuestionCard
-              question="Which supply chains justify a Sectoral Compact, and who belongs?"
+              question={MODULE_QUESTION.compacts}
               answer={
                 compacts
-                  ? `${plural(types.candidate, 'candidate compact')}${types.bilateral ? `, ${types.bilateral} where a bilateral arrangement is enough` : ''}${types.unnecessary ? `, ${types.unnecessary} where existing relationships do nearly as well` : ''}${
+                  ? `${plural(types.candidate, 'potential Sectoral Compact')}${types.bilateral ? `, ${types.bilateral} where a bilateral arrangement is enough` : ''}${types.unnecessary ? `, ${types.unnecessary} where existing relationships do nearly as well (no compact needed)` : ''}${
                       noCoalition ? `; ${noCoalition} of the ${doc.compacts.length} compacts need no coalition under Managed Interdependence` : ''
-                    }. Each compact names its nodes, members and what governments should do.`
-                  : `${plural(doc.compacts.length, 'compact')}, each solved again under Managed Interdependence. Each compact names its nodes, members and what governments should do.`
+                    }. Each names the bottleneck, the partners and what governments should do next.`
+                  : `${plural(doc.compacts.length, 'compact')}, each solved again under Managed Interdependence. Each names the bottleneck, the partners and what governments should do next.`
               }
               to={href('/compacts')}
               cta="Sectoral Compacts"
             />
             <QuestionCard
-              question="What roles do different countries play?"
+              question={MODULE_QUESTION.roles}
               answer={
                 roleRows
-                  ? `${plural(roleRows.length, 'economy', 'economies')} hold a role in at least one compact: demand anchors, specialized and resource suppliers, investment hosts, technology and bridge partners.`
-                  : 'Demand anchors, specialized and resource suppliers, investment hosts, technology and bridge partners, compact by compact.'
+                  ? `${plural(roleRows.length, 'economy', 'economies')} hold a role in at least one compact: demand anchors, specialized and resource suppliers, countries that could add capacity, technology and bridge partners.`
+                  : 'Demand anchors, specialized and resource suppliers, countries that could add capacity, technology and bridge partners, compact by compact.'
               }
               to={href('/aib/roles')}
               cta="Country roles"
             />
           </ul>
           <p className="max-w-3xl text-sm text-paper-mute">
-            These are observed and modelled facts: they do not change with the Perspective (preference) settings of a Country profile. Where the Partnerships page ranks partners by
-            preference-weighted scores it says so and shows the NEIS defaults.
+            These are observed data and analysis results: they do not change with the Perspective (preference) settings of a Country profile. Where the Partnerships page ranks
+            partners by preference-weighted scores it says so and shows the NEIS defaults.
           </p>
         </Section>
       </div>

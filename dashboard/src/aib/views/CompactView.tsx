@@ -26,6 +26,7 @@ import { useEffect, useMemo } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { Redirect } from '../../shell/Redirect.tsx';
 import { Disclosure, PageHead } from '../../components/ui.tsx';
+import { COMPACT } from '../../content/vocabulary.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import { coalitionMembersOf, type AibCompact, type AibNode } from '../contract.ts';
@@ -50,10 +51,10 @@ import { compactVsFragmented } from '../derive/coverage.ts';
 import { compactTypeInfo } from '../derive/types.ts';
 
 const SECTIONS = [
-  ['why', 'Why this compact?'],
-  ['overview', 'Who and what?'],
-  ['change', 'What does coordination change?'],
-  ['govern', 'What should governments do?'],
+  ['why', COMPACT.sectionTitles.why],
+  ['overview', COMPACT.sectionTitles.what],
+  ['change', COMPACT.sectionTitles.together],
+  ['govern', COMPACT.sectionTitles.next],
   ['method', 'Method details'],
 ] as const;
 
@@ -133,10 +134,11 @@ function Compact({ c }: { c: AibCompact }) {
   const kind = typed && type
     ? `${type.short}, ${typed.archetype.replace(/ Compact$/, '').toLowerCase()} archetype`
     : viewState.status === 'none' ? 'No coalition under Managed Interdependence' : ws ? 'Workstream' : 'Sectoral compact';
-  const head = `${title !== full ? `${full}. ` : ''}${kind}: ${coversWords(compactNodes(c, nodeOf))}${stages.length ? ` across the ${listWords(stages)} ${stages.length === 1 ? 'stage' : 'stages'}` : ''}, ${plural(c.nodes.length, 'node')}${members !== null ? ` and ${plural(members, 'member')}` : ''}.`;
+  const head = `${title !== full ? `${full}. ` : ''}${kind}: ${coversWords(compactNodes(c, nodeOf))}${stages.length ? ` across the ${listWords(stages)} ${stages.length === 1 ? 'stage' : 'stages'}` : ''}, ${plural(c.nodes.length, 'supply-chain step')}${members !== null ? ` and ${plural(members, 'partner')}` : ''}.`;
+  // the guide's compact lede: what is exposed, what existing partners cover, what coordination adds, what is left
   const lede = mi
     ? `${head} ${managedWords(compactScenario(c, 'managed', nodeOf), scenarioInfo(m, 'managed').label, viewState.reason ?? compactUnchangedReasonOf(compactNodes(c, nodeOf)))}`
-    : `${head} Under the headline shock (${shockLabel}; supply assumption: ${m.headlineScenario}) the compact's demand of ${fmtUsd(c.metrics.demandUsd)} loses ${fmtUsd(c.metrics.lostUsd)} (${fmtShare(c.metrics.exposure, 0)}).`;
+    : `${head} ${exposedWords(c, hasScenarios ? scenarioInfo(m, 'decoupling').label : 'the headline disruption', shockLabel)}`;
   return (
     <CompactProvider value={ctx}>
       <div className={PAGE}>
@@ -183,27 +185,38 @@ function Compact({ c }: { c: AibCompact }) {
         </PageHead>
         <div className="space-y-14">
           <WhySection title={whyTitle} />
-          <OverviewSection title="Who and what?" policy={false} />
+          <OverviewSection title={COMPACT.sectionTitles.what} policy={false} />
           <QuestionSection
             id="change"
-            title="What does coordination change?"
-            intro={<p>{mi ? (view ? changeWords(view, true) : managedChange(compactScenario(c, 'managed', nodeOf))) : changeWords(c)}</p>}
+            title={COMPACT.sectionTitles.together}
+            intro={
+              <p>
+                Start with the supply that survives. Then add what existing partners can replace, what a coordinated trade response adds, and what only new capacity can solve.{' '}
+                {mi ? (view ? changeWords(view, true) : managedChange(compactScenario(c, 'managed', nodeOf))) : changeWords(c)}
+              </p>
+            }
           >
             <CoverageSection />
             <NetworkSection />
           </QuestionSection>
           <QuestionSection
             id="govern"
-            title="What should governments do?"
-            intro={<p>Each node gets the treatment its own results call for, so one compact can combine coordinating trade, building capacity and managing specialization.</p>}
+            title={COMPACT.sectionTitles.next}
+            intro={
+              <p>
+                Different bottlenecks need different tools: trade rules where capacity already exists, investment and finance where capacity is missing, and safeguards where
+                specialization has become too concentrated. Each supply-chain step gets the treatment its own results call for, so one compact can combine coordinating trade,
+                building capacity and managing specialization.
+              </p>
+            }
           >
             <PolicySection />
-            <Disclosure summary="Node by node: coverage, suppliers, hosts and data quality" defaultOpen={NODE_ANCHORS.includes(hash)}>
+            <Disclosure summary="Supply-chain step by step: suppliers, gaps, investment options and evidence" defaultOpen={NODE_ANCHORS.includes(hash)}>
               <NodeSection frontier={false} />
             </Disclosure>
           </QuestionSection>
           <section id="method" aria-label="Method details" className="scroll-mt-16">
-            <Disclosure summary="Method details: specialization and resilience by supplier limit, members joining, reading these results" defaultOpen={METHOD_ANCHORS.includes(hash)}>
+            <Disclosure summary="Method details: concentration limits, resilience targets and how partners are selected" defaultOpen={METHOD_ANCHORS.includes(hash)}>
               <div className="space-y-10 pt-2">
                 <div id="frontier" className="scroll-mt-16">
                   <FrontierCard />
@@ -228,24 +241,35 @@ function coversWords(nodes: readonly AibNode[]): string {
   const techs = [...new Set(nodes.flatMap((n) => osiTechsOfNode(n)))].sort((a, b) => a.localeCompare(b, 'en'));
   const outside = nodes.filter((n) => osiTechsOfNode(n).length === 0).length;
   if (!techs.length) return 'goods outside the OSI technology basket';
-  return `${listWords(techs)}${outside ? ` (and ${plural(outside, 'node')} outside the OSI basket)` : ''}`;
+  return `${listWords(techs)}${outside ? ` (and ${plural(outside, 'supply-chain step')} outside the OSI basket)` : ''}`;
+}
+
+/**
+ * The lede's sentence under the disruption (the guide's compact lede): the share of the compact's demand
+ * exposed, what existing relationships keep supplied, what the members' coordinated trade raises it to, and
+ * the rest (1 - the trade compact's coverage), which needs new capacity or other sourcing.
+ */
+function exposedWords(c: AibCompact, label: string, shockLabel: string): string {
+  const m = c.metrics;
+  const rest = typeof m.trade === 'number' ? Math.max(0, 1 - m.trade) : null;
+  return `Under ${label} (${shockLabel}), ${fmtShare(m.exposure, 0)} of the compact's allied demand of ${fmtUsd(m.demandUsd)} (${fmtUsd(m.lostUsd)}) loses its supplier. Existing partners keep ${fmtShare(m.existing, 0)} of that demand supplied; coordinated trade among the members raises it to ${fmtShare(m.trade, 0)}${rest !== null && rest > 0.005 ? `; the remaining ${fmtShare(rest, 0)} needs new capacity or a different sourcing strategy` : ''}.`;
 }
 
 /** One plain sentence on what coordination changes (the coverage steps of the compact; `managed`: under Managed Interdependence). */
 function changeWords(c: AibCompact, managed = false): string {
   const m = c.metrics;
-  const inv = m.investment !== null && m.investment !== undefined ? `, and adding new capacity at member hosts ${fmtShare(m.investment, 0)}` : '';
-  return `Of the compact's demand, ${managed ? 'the cap alone' : 'the shock alone'} leaves ${fmtShare(m.static, 0)} served; existing relationships ${fmtShare(m.existing, 0)}; coordinated trade among the members ${fmtShare(m.trade, 0)}${inv}.`;
+  const inv = m.investment !== null && m.investment !== undefined ? `; adding new capacity in member countries, ${fmtShare(m.investment, 0)}` : '';
+  return `Of the compact's demand, ${managed ? 'the concentration cap alone' : 'the disruption alone'} leaves ${fmtShare(m.static, 0)} supplied; existing relationships raise that to ${fmtShare(m.existing, 0)}; coordinated trade among the members, ${fmtShare(m.trade, 0)}${inv}.`;
 }
 
 /** The lede's sentence under Managed Interdependence (compact.managed, or the compact's nodes aggregated; `why`: why it is unchanged). */
 function managedWords(s: CompactScenario, label: string, why: string): string {
-  if (!s.ran) return `${label} leaves this compact unchanged (${why}), so no supply has to shift.`;
-  return `Under ${label} (no supplier is removed; suppliers above a cap in the allied market lose the excess), ${s.nodesRun} of its ${plural(s.nodes, 'node')} ${s.nodesRun === 1 ? 'has' : 'have'} a supplier above the cap and ${fmtUsd(s.lostUsd)} of the compact's demand of ${fmtUsd(s.demandUsd)} (${fmtShare(s.exposure, 0)}) has to shift.`;
+  if (!s.ran) return `${label} leaves this compact unchanged (${why}): no supply needs to shift, so the compact keeps today's supplier network.`;
+  return `Under ${label} this compact manages concentration without cutting a supplier out of the market: at ${s.nodesRun} of its ${plural(s.nodes, 'supply-chain step')} a supplier holds more of the allied market than the concentration cap allows, so ${fmtUsd(s.lostUsd)} of the compact's demand of ${fmtUsd(s.demandUsd)} (${fmtShare(s.exposure, 0)}) has to shift to other suppliers, keeping the specialization while adding redundancy.`;
 }
 
 /** What changes under Managed Interdependence before its file is loaded (or without a coalition). */
 function managedChange(s: CompactScenario): string {
-  if (!s.ran) return 'Nothing changes under this scenario: the compact keeps the supply it has today.';
-  return `Of the compact's demand, the cap alone leaves ${fmtShare(s.static, 0)} served; existing relationships ${fmtShare(s.existing, 0)}; optimized trade among every partner ${fmtShare(s.optimized, 0)}.`;
+  if (!s.ran) return "Nothing changes under this scenario: no supply needs to shift, so the compact keeps today's supplier network.";
+  return `Of the compact's demand, the concentration cap alone leaves ${fmtShare(s.static, 0)} supplied; existing relationships raise that to ${fmtShare(s.existing, 0)}; coordinated trade among every potential supplier, ${fmtShare(s.optimized, 0)}.`;
 }

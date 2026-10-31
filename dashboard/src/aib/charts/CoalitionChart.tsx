@@ -82,7 +82,7 @@ export function CoalitionChart({ points, marks, ariaLabel }: { points: CurvePoin
         <Tip
           value={`${fmtShare(p.min)} minimum`}
           title={p.step === 0 ? `Step 0: the demand anchors (${p.n})` : `Step ${p.step}: ${p.addedName} joins (${p.n} members)`}
-          lines={[`${fmtShare(p.mean)} mean coverage over the nodes`, ...marks.filter((m) => m.point?.step === p.step).map((m) => `First step of the path to reach the ${targetLabel(m.target)} target`)]}
+          lines={[`${fmtShare(p.mean)} mean coverage over the supply-chain steps`, ...marks.filter((m) => m.point?.step === p.step).map((m) => `First step of the path to reach the ${targetLabel(m.target)} target`)]}
         />
       )}
     />

@@ -110,7 +110,7 @@ export function StrategicMap({
           lines={[
             `${xWords} ${fmtShare(p.x, 0)} (${fmtUsd(p.r)} ${lostWord})`,
             `Coordination dividend ${fmtPp(p.y)}`,
-            `Residual gap after trade ${fmtShare(p.residual !== undefined ? p.residual : p.node.residual, 0)}`,
+            `Remaining gap after trade ${fmtShare(p.residual !== undefined ? p.residual : p.node.residual, 0)}`,
             p.node.compact ? `Compact ${p.node.compact} (click to open)` : 'No compact',
           ]}
         />

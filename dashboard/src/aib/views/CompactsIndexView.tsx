@@ -52,7 +52,7 @@ import { ScenarioMiniBars } from '../charts/ScenarioMini.tsx';
 import { mapPoints, mapPointsFor, StrategicMap } from '../charts/StrategicMap.tsx';
 import { TypeTag } from '../charts/TypeTag.tsx';
 import { useAibScenarioDoc } from '../data/hooks.ts';
-import { classInfo, policyNeedsText } from '../derive/classes.ts';
+import { classInfo, policyNeedsWords } from '../derive/classes.ts';
 import { compactVsFragmented, coverageSteps } from '../derive/coverage.ts';
 import { fmtPp, fmtShare, fmtUsd, listWords, plural } from '../derive/format.ts';
 import { compactNodes, nodeCsvRow, nodeRow, outOfScopeCount, scopedNodes, technologiesOf } from '../derive/nodes.ts';
@@ -69,7 +69,14 @@ import { alsoTouchingOf, strategicCompactOf, workstreamHomeOf, workstreamOf, wor
 import { compactHref, strategicCompactHref, strategicCompactsHref, WORKSTREAMS_LABEL } from '../nav.ts';
 import type { AibToggle } from '../scenarioUrl.ts';
 import { BasisTag } from './basis.tsx';
-import { csvWithRun, ReadingNotes, Section } from './common.tsx';
+import { AIB_CLASS_HEADING, COMPACT, MODULE_QUESTION, SCENARIO_NAME, STATE } from '../../content/vocabulary.ts';
+import { csvWithRun, QuestionLede, ReadingNotes, Section } from './common.tsx';
+
+/** The workstreams index's question (its lede leads with it). */
+export const WORKSTREAMS_QUESTION = 'Where, step by step, do allies need to act together?';
+/** The map section's title and its chart's. */
+export const MAP_SECTION_TITLE = 'Where are compacts justified?';
+export const MAP_CARD_TITLE = 'Map of every supply-chain step';
 import { NodeRobustness } from './NodeRobustness.tsx';
 
 /** The coalition line of a card: members, associates and critical external dependencies of a compact as solved under a scenario. */
@@ -78,7 +85,7 @@ function coalitionLine(c: AibCompact, names: Readonly<Record<string, string>>): 
   const associates = tiers.filter((e) => e.tier === 'associate partner').length;
   const critExternal = tiers.filter((e) => e.tier === 'critical external dependency').length;
   const marginal = tiers.filter((e) => e.tier === 'critical external dependency (marginal)').length;
-  return `${plural(c.nodes.length, 'node')} · ${plural(coalitionMembersOf(c).length, 'member')}${associates ? ` + ${plural(associates, 'associate')}` : ''}${
+  return `${plural(c.nodes.length, 'supply-chain step')} · ${plural(coalitionMembersOf(c).length, 'member')}${associates ? ` + ${plural(associates, 'associate')}` : ''}${
     critExternal || marginal ? ` · ${plural(critExternal, 'critical external dependency', 'critical external dependencies')}` : ''
   }${marginal ? ` (+${marginal} marginal)` : ''}`;
 }
@@ -180,7 +187,7 @@ function ByStrategicCompact() {
                 </Link>
               </p>
               <p className="mt-0.5 text-xs text-paper-mute">
-                {own.length ? `${plural(own.length, 'workstream')}, ${own.filter((r) => r.active).length} active under ${label}` : 'No workstream: none of the model’s clusters falls mainly in this compact'}
+                {own.length ? `${plural(own.length, 'workstream')}, ${own.filter((r) => r.active).length} active under ${label}` : 'No workstream: none of the analysis’s clusters falls mainly in this compact'}
               </p>
               {own.length > 0 && <ul className="mt-2 space-y-1 text-xs" aria-label={`Workstreams of ${k.name}`}>{own.map(wsLink)}</ul>}
               {touching.length > 0 && (
@@ -240,9 +247,9 @@ function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: Aib
   const after = mi ? (solved ? (solved.metrics.investment ?? solved.metrics.trade) : shown.optimized) : (c.metrics.investment ?? c.metrics.trade);
   const why = mi
     ? shown.nodesRun > 0
-      ? `Managed Interdependence shifts ${fmtShare(shown.exposure, 0)} of ${fmtUsd(shown.demandUsd)} demand away from capped suppliers (${shown.nodesRun} of ${plural(c.nodes.length, 'node')} ${shown.nodesRun === 1 ? 'has' : 'have'} a supplier above the cap).`
+      ? `Managed Interdependence shifts ${fmtShare(shown.exposure, 0)} of ${fmtUsd(shown.demandUsd)} demand away from capped suppliers (${shown.nodesRun} of ${plural(c.nodes.length, 'supply-chain step')} ${shown.nodesRun === 1 ? 'has' : 'have'} a supplier above the cap).`
       : `Managed Interdependence leaves it unchanged: ${unchangedWhy}.`
-    : `The shock removes ${fmtShare(c.metrics.exposure, 0)} of ${fmtUsd(c.metrics.demandUsd)} demand.`;
+    : `The disruption removes ${fmtShare(c.metrics.exposure, 0)} of ${fmtUsd(c.metrics.demandUsd)} demand.`;
   const coalition = !mi
     ? coalitionLine(c, names)
     : solved
@@ -279,7 +286,7 @@ function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: Aib
             {why}
             {type ? ` ${type.explanation}` : ''}
           </dd>
-          <dt className="text-paper-mute">Main nodes</dt>
+          <dt className="text-paper-mute">Main steps</dt>
           <dd className="text-paper-dim">
             {listWords(main.slice(0, 3).map((n) => n.label))}
             {main.length > 3 ? ` (+${main.length - 3} more)` : ''}
@@ -299,8 +306,8 @@ function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: Aib
           <dt className="text-paper-mute">Resilience effect</dt>
           <dd className="text-paper-dim">
             {mi && shown.nodesRun === 0
-              ? 'Demand served in full, as today'
-              : `Demand served ${fmtShare(before, 0)} with existing relationships, ${fmtShare(after, 0)} ${mi && !solved ? 'with optimized trade' : 'with the compact'}`}
+              ? 'Demand met in full, as today'
+              : `Demand met ${fmtShare(before, 0)} with existing relationships, ${fmtShare(after, 0)} ${mi && !solved ? 'with coordinated trade' : 'with the compact'}`}
           </dd>
         </dl>
         {warned.length > 0 && (
@@ -410,26 +417,27 @@ function RunLine() {
     <p className="mt-3 max-w-3xl text-sm text-paper-mute" data-testid="run-settings">
       {hasScenarios ? (
         <>
-          Shown: <span className="text-paper-dim">{scenarioInfo(m, scenario).label}</span> ({scenarioShockLabel(m, scenario)}); supply assumption: {m.headlineScenario}
+          Results below use <span className="text-paper-dim">{scenarioInfo(m, scenario).label}</span> ({scenarioShockLabel(m, scenario)}); assumption about how much suppliers can
+          expand: {m.headlineScenario}
         </>
       ) : (
         <>
-          Headline: <span className="text-paper-dim">{shockLabel}</span>; supply assumption: {m.headlineScenario}
+          Results below use <span className="text-paper-dim">{shockLabel}</span>; assumption about how much suppliers can expand: {m.headlineScenario}
         </>
       )}
-      {sem && !mi ? `, ${sem.label.toLowerCase()} semantics (${sem.mode === 'hold' ? 'the shocked economy keeps buying' : sem.words})` : ''}
+      {sem && !mi ? `, ${sem.label.toLowerCase()} semantics (${sem.mode === 'hold' ? 'the removed supplier keeps buying' : sem.words})` : ''}
       {con ? `, ${con.label.toLowerCase()} supply` : ''}; trade in {m.tradeYear}.{' '}
       {ds || cu ? (
         <>
-          Demand scope: <span className="text-paper-dim">{ds ? ds.words : m.universe}</span>. Candidate partners:{' '}
+          Whose demand is protected: <span className="text-paper-dim">{ds ? ds.words : m.universe}</span>. Who may supply:{' '}
           <span className="text-paper-dim">{cu ? cu.words : m.universe}</span>.
         </>
       ) : (
-        <>Candidate universe: {m.universe}.</>
+        <>Who may supply: {m.universe}.</>
       )}{' '}
-      {nt.dictionary ? `Nodes: ${nt.label.charAt(0).toLowerCase()}${nt.label.slice(1)}, shown by OSI technology × stage. ` : ''}
+      {nt.dictionary ? `Supply-chain steps: ${nt.label.charAt(0).toLowerCase()}${nt.label.slice(1)}, shown by OSI technology × stage. ` : ''}
       {st && st.mode !== 'all' ? `Strategic scope: ${st.label.toLowerCase()} (${nt.dictionary ? 'dictionary sectors ' : ''}${listWords(st.techs)}). ` : ''}
-      Coverage is the share of {coverageBase(m)} served after {mi ? 'the cap' : 'the shock'}.{' '}
+      Coverage is the share of {coverageBase(m)} that can be met after {mi ? 'the concentration cap' : 'the disruption'}.{' '}
       <Link className="link" to={href('/compacts/about')}>
         How compacts are derived &rarr;
       </Link>
@@ -462,17 +470,17 @@ function compactCols(titleOf: (c: AibCompact) => string, href: (to: string) => s
         ]
       : []),
     { id: 'title', header: 'Supply chain', value: (r) => titleOf(r.compact), minWidth: 220 },
-    { id: 'nodes', header: 'Nodes', value: (r) => r.compact.nodes.length, num: true },
+    { id: 'nodes', header: 'Supply-chain steps', value: (r) => r.compact.nodes.length, num: true },
     { id: 'demand', header: 'Allied demand', value: (r) => r.decoupling.demandUsd, cell: (r) => fmtUsd(r.decoupling.demandUsd), num: true },
-    { id: 'dLost', header: 'Lost: Decoupling', value: (r) => r.decoupling.lostUsd, cell: (r) => fmtUsd(r.decoupling.lostUsd), num: true },
+    { id: 'dLost', header: `Lost: ${SCENARIO_NAME.decoupling}`, value: (r) => r.decoupling.lostUsd, cell: (r) => fmtUsd(r.decoupling.lostUsd), num: true },
     { id: 'mLost', header: 'Shifted: Managed Interdependence', value: (r) => r.managed.lostUsd, cell: (r) => fmtUsd(r.managed.lostUsd), num: true },
-    { id: 'mRun', header: 'Nodes with supply to shift: Managed Interdependence', value: (r) => r.managed.nodesRun, num: true },
-    { id: 'dKept', header: 'Kept: Decoupling', value: (r) => share(r.decoupling), cell: (r) => fmtShare(share(r.decoupling), 0), num: true },
-    { id: 'mKept', header: 'Kept: Managed Interdependence', value: (r) => share(r.managed), cell: (r) => fmtShare(share(r.managed), 0), num: true },
-    { id: 'dServed', header: 'Served after trade: Decoupling', value: (r) => r.decoupling.optimized, cell: (r) => fmtShare(r.decoupling.optimized, 0), num: true },
-    { id: 'mServed', header: 'Served after trade: Managed Interdependence', value: (r) => r.managed.optimized, cell: (r) => fmtShare(r.managed.optimized, 0), num: true },
-    { id: 'dGap', header: 'Left for new capacity: Decoupling', value: (r) => r.decoupling.residualUsd, cell: (r) => fmtUsd(r.decoupling.residualUsd), num: true },
-    { id: 'mGap', header: 'Left for new capacity: Managed Interdependence', value: (r) => r.managed.residualUsd, cell: (r) => fmtUsd(r.managed.residualUsd), num: true },
+    { id: 'mRun', header: 'Steps with supply to shift: Managed Interdependence', value: (r) => r.managed.nodesRun, num: true },
+    { id: 'dKept', header: `Still supplied: ${SCENARIO_NAME.decoupling}`, value: (r) => share(r.decoupling), cell: (r) => fmtShare(share(r.decoupling), 0), num: true },
+    { id: 'mKept', header: 'Still supplied: Managed Interdependence', value: (r) => share(r.managed), cell: (r) => fmtShare(share(r.managed), 0), num: true },
+    { id: 'dServed', header: `Met after trade: ${SCENARIO_NAME.decoupling}`, value: (r) => r.decoupling.optimized, cell: (r) => fmtShare(r.decoupling.optimized, 0), num: true },
+    { id: 'mServed', header: 'Met after trade: Managed Interdependence', value: (r) => r.managed.optimized, cell: (r) => fmtShare(r.managed.optimized, 0), num: true },
+    { id: 'dGap', header: `Gap that still needs new capacity: ${SCENARIO_NAME.decoupling}`, value: (r) => r.decoupling.residualUsd, cell: (r) => fmtUsd(r.decoupling.residualUsd), num: true },
+    { id: 'mGap', header: 'Gap that still needs new capacity: Managed Interdependence', value: (r) => r.managed.residualUsd, cell: (r) => fmtUsd(r.managed.residualUsd), num: true },
     {
       id: 'hhi',
       header: "Today's concentration (HHI) of supply to the allied market",
@@ -539,7 +547,7 @@ export default function CompactsIndexView() {
     return r.ran && r.cls ? classInfo(r.cls).label : 'Unchanged';
   };
   const cols: Col<AibNode>[] = [
-    { id: 'node', header: 'Node', value: (n) => n.label },
+    { id: 'node', header: 'Supply-chain step', value: (n) => n.label },
     { id: 'techs', header: tx.Many, value: (n) => nodeTechWords(n) },
     { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the node's codes sit in; none when no code is in the OSI basket." },
     {
@@ -549,21 +557,21 @@ export default function CompactsIndexView() {
       minWidth: 200,
       title: "The OSI technology x stage cells the node's codes sit in; none when no code is in the OSI basket.",
     },
-    mi ? { id: 'cls', header: 'Class under Managed Interdependence', value: miCls, minWidth: 160 } : { id: 'cls', header: 'Class', value: (n) => classInfo(n.cls).label },
-    ...(mi ? [{ id: 'headlineCls', header: 'Class under Decoupling', value: (n: AibNode) => classInfo(n.cls).label }] : []),
-    { id: 'needs', header: 'Policy needs', value: (n) => policyNeedsText(n.policyNeeds) },
+    mi ? { id: 'cls', header: 'What it needs under Managed Interdependence', value: miCls, minWidth: 160 } : { id: 'cls', header: 'What it needs', value: (n) => classInfo(n.cls).label },
+    ...(mi ? [{ id: 'headlineCls', header: `What it needs under the ${scenarioInfo(m, 'decoupling').label.toLowerCase()}`, value: (n: AibNode) => classInfo(n.cls).label }] : []),
+    { id: 'needs', header: 'Actions needed', value: (n) => policyNeedsWords(n.policyNeeds) ?? '–' },
     { id: 'warning', header: 'Warning', value: (n) => n.warning ?? 'none', minWidth: 200 },
     {
       id: 'growth',
-      header: 'Class depends on the growth bound',
+      header: 'Treatment depends on how far existing trade can grow',
       value: (n) => growthFlag(n) ?? (typeof n.coordinateSensitiveToGrowth === 'boolean' ? 'no' : null),
       minWidth: 220,
     },
-    { id: 'exposure', header: mi ? 'Share shifted' : 'Shock exposure', value: (n) => fig(n).exposure, cell: (n) => fmtShare(fig(n).exposure), num: true },
-    { id: 'existing', header: `Existing coverage${underMi}`, value: (n) => fig(n).existing, cell: (n) => fmtShare(fig(n).existing), num: true },
-    { id: 'optimized', header: `Optimized coverage${underMi}`, value: (n) => fig(n).optimized, cell: (n) => fmtShare(fig(n).optimized), num: true },
+    { id: 'exposure', header: mi ? 'Share shifted' : 'Supply exposed to the disruption', value: (n) => fig(n).exposure, cell: (n) => fmtShare(fig(n).exposure), num: true },
+    { id: 'existing', header: `Coverage, existing relationships${underMi}`, value: (n) => fig(n).existing, cell: (n) => fmtShare(fig(n).existing), num: true },
+    { id: 'optimized', header: `Coverage, coordinated trade${underMi}`, value: (n) => fig(n).optimized, cell: (n) => fmtShare(fig(n).optimized), num: true },
     { id: 'dividend', header: `Coordination dividend${underMi}`, value: (n) => fig(n).dividend, cell: (n) => fmtPp(fig(n).dividend), num: true },
-    { id: 'residual', header: `Residual gap${underMi}`, value: (n) => fig(n).residual, cell: (n) => fmtShare(fig(n).residual), num: true },
+    { id: 'residual', header: `Remaining gap${underMi}`, value: (n) => fig(n).residual, cell: (n) => fmtShare(fig(n).residual), num: true },
     { id: 'lost', header: mi ? 'Supply shifted' : 'Lost supply', value: (n) => fig(n).lostUsd, cell: (n) => fmtUsd(fig(n).lostUsd), num: true },
     {
       id: 'compact',
@@ -600,13 +608,13 @@ export default function CompactsIndexView() {
   });
   const shareLine = classed
     .filter((g) => g.nodes.length)
-    .map((g) => `${g.info.label} ${plural(g.nodes.length, 'node')}${lostTotal > 0 ? `, ${fmtShare(g.lostUsd / lostTotal, 0)} of ${lostWord}` : ''}`)
+    .map((g) => `${g.info.label} ${plural(g.nodes.length, 'step')}${lostTotal > 0 ? `, ${fmtShare(g.lostUsd / lostTotal, 0)} of ${lostWord}` : ''}`)
     .join('; ');
   const unchangedGroup = groups.find((g) => g.unchanged);
   const high = typeof m.thresholds.high_severity === 'number' ? m.thresholds.high_severity : null;
   const rule = typeof m.thresholds.coordinate_dividend === 'number' ? m.thresholds.coordinate_dividend : null;
-  const table = () => <TableView rows={shown} cols={cols} caption={`Node classification${scopeWords}${hasScenarios ? `, ${sc.label}` : ''}`} rowKey={(n) => n.id} search pageSize={25} initialSort={{ id: 'lost', desc: true }} />;
-  const xWords = mi ? 'Share shifted' : 'Shock exposure';
+  const table = () => <TableView rows={shown} cols={cols} caption={`What each supply-chain step needs${scopeWords}${hasScenarios ? `, ${sc.label}` : ''}`} rowKey={(n) => n.id} search pageSize={25} initialSort={{ id: 'lost', desc: true }} />;
+  const xWords = mi ? 'Share shifted' : 'Supply exposed to the disruption';
 
   return (
     <div className={PAGE}>
@@ -621,9 +629,15 @@ export default function CompactsIndexView() {
         eyebrow={EYEBROW}
         title={ws ? WORKSTREAMS_LABEL : 'Sectoral Compacts'}
         lede={
-          ws
-            ? `Workstreams are the model’s own clusters of supply-chain nodes that share partners and policy needs; each sits under one of the ${strategic.compacts.length} Strategic Sectoral Compacts, the lasting frameworks around whole supply chains, and is where a compact’s work happens in practice. Each workstream is a variable-geometry coalition that coordinates trade, investment, demand and risk-management policy across part of a supply chain, where joint action improves resilience more than fragmented national or bilateral action would. The workstreams are derived from the model, from a supply shock on the observed trade network, not fixed in advance: nothing forces one per ${tx.one} or one on every ${tx.one}.${hasScenarios ? ' They are formed under Decoupling; under Managed Interdependence the same workstreams are solved again, with their own coalitions.' : ''}`
-            : `A Sectoral Compact is a variable-geometry coalition that coordinates trade, investment, demand and risk-management policy across a coherent supply chain, where joint action improves resilience more than fragmented national or bilateral action would. The compacts here are derived from the model, from a supply shock on the observed trade network, not fixed in advance: nothing forces one compact per ${tx.one} or a compact on every ${tx.one}.${hasScenarios ? ' The compacts are formed under Decoupling; under Managed Interdependence the same compacts are solved again, with their own coalitions.' : ''}`
+          ws ? (
+            <QuestionLede question={WORKSTREAMS_QUESTION}>
+              {`Workstreams are where a compact’s work happens in practice: groups of related supply-chain steps that need similar partners and similar policy tools. Each sits under one of the ${strategic.compacts.length} Strategic Sectoral Compacts, the lasting division of labor around a whole supply chain. Each brings together only the countries needed to close a gap, where acting together does more for resilience than countries acting alone or in pairs. The workstreams come out of the analysis, a stress test of today’s trade network, not a fixed list: nothing forces one per ${tx.one} or one on every ${tx.one}.${hasScenarios ? ` They are formed under the ${scenarioInfo(m, 'decoupling').label.toLowerCase()}; under ${scenarioInfo(m, 'managed').label} the same workstreams are solved again, with their own coalitions.` : ''}`}
+            </QuestionLede>
+          ) : (
+            <QuestionLede question={MODULE_QUESTION.compacts}>
+              {`${COMPACT.definition} The compacts here come out of the analysis, a stress test of today’s trade network, not a fixed list: nothing forces one compact per ${tx.one} or a compact on every ${tx.one}.${hasScenarios ? ` The compacts are formed under the ${scenarioInfo(m, 'decoupling').label.toLowerCase()}; under ${scenarioInfo(m, 'managed').label} the same compacts are solved again, with their own coalitions.` : ''}`}
+            </QuestionLede>
+          )
         }
       >
         <RunLine />
@@ -633,7 +647,7 @@ export default function CompactsIndexView() {
         <ByStrategicCompact />
         <Section
           id="map"
-          title="Where compacts are justified"
+          title={MAP_SECTION_TITLE}
           intro={
             <>
               <span className="flex flex-wrap items-center gap-2">
@@ -642,21 +656,21 @@ export default function CompactsIndexView() {
               </span>
               <p className="mt-2">
                 {mi
-                  ? 'Each bubble is a supply-chain node Managed Interdependence runs on. Further right, a larger share of its supply has to shift away from capped suppliers; higher up, coordinated trade restores more than existing relationships do (the coordination dividend). Large bubbles shift the most supply. The colour is the class under the scenario; nodes it leaves unchanged are not placed.'
-                  : 'Each bubble is a supply-chain node. Further right, the shock removes more of its supply; higher up, coordinated trade restores more than existing relationships do (the coordination dividend). Large bubbles lose the most supply. High, right bubbles are where coordination pays (COORDINATE); right but low, even coordinated trade leaves a gap and new capacity is needed (BUILD); MANAGE SPECIALIZATION marks supply that leans on one country.'}
+                  ? 'Each bubble is a supply-chain step Managed Interdependence applies to. Further right, a larger share of its supply has to shift away from capped suppliers; higher up, coordinated trade recovers more than existing relationships do (the coordination dividend). Large bubbles shift the most supply. The color is what the step needs under the scenario; steps it leaves unchanged are not placed.'
+                  : `Each bubble is a supply-chain step. Further right, the disruption removes more of its supply; higher up, coordinated trade recovers more than existing relationships do (the coordination dividend). Large bubbles lose the most supply. High, right bubbles are where coordination pays (${classInfo('COORDINATE').label}); right but low, even coordinated trade leaves a gap and new capacity is needed (${classInfo('BUILD').label}); ${classInfo('MANAGE SPECIALIZATION').label} marks supply that leans on one country.`}
               </p>
             </>
           }
         >
-          <FilterRow result={`${plural(shown.length, 'node')} of ${pool.length}${!all && nOut ? ` in the strategic scope (${nOut} outside it not shown)` : ''}`}>
+          <FilterRow result={`${plural(shown.length, 'supply-chain step')} of ${pool.length}${!all && nOut ? ` in the strategic scope (${nOut} outside it not shown)` : ''}`}>
             <Select label={tx.One} value={tech ?? ''} options={[{ value: '', label: tx.all }, ...techOptions(techs)]} onChange={(v) => setParam('tech', v || null)} />
             <Select label="Stage" value={stage ?? ''} options={[{ value: '', label: 'All stages' }, ...stages]} onChange={(v) => setParam('stage', v || null)} />
-            {nOut > 0 && <Checkbox label="Include nodes outside the strategic scope" checked={all} onChange={(v) => setParam('scope', v ? 'all' : null)} />}
+            {nOut > 0 && <Checkbox label="Include steps outside the strategic scope" checked={all} onChange={(v) => setParam('scope', v ? 'all' : null)} />}
           </FilterRow>
           <ChartCard
             headingLevel={3}
-            title="Strategic map of every node"
-            sub={`Across: ${mi ? 'share of allied demand shifted' : 'shock exposure'}. Up: coordination dividend. Area: ${lostWord}. Dotted rules: the model's thresholds for high severity${high !== null ? ` (${fmtShare(high, 0)})` : ''} and for a material coordination dividend${rule !== null ? ` (${fmtPp(rule, 0)})` : ''}. Click a bubble to open its compact.${unplaced > 0 ? ` ${plural(unplaced, 'node')} unchanged under Managed Interdependence ${unplaced === 1 ? 'is' : 'are'} not placed.` : ''}`}
+            title={MAP_CARD_TITLE}
+            sub={`Across: ${mi ? 'share of allied demand shifted' : 'supply exposed to the disruption'}. Up: coordination dividend. Area: ${lostWord}. Dotted rules: the thresholds for a severe disruption${high !== null ? ` (${fmtShare(high, 0)})` : ''} and for a material coordination dividend${rule !== null ? ` (${fmtPp(rule, 0)})` : ''}. Click a bubble to open its compact.${unplaced > 0 ? ` ${plural(unplaced, 'step')} unchanged under Managed Interdependence ${unplaced === 1 ? 'is' : 'are'} not placed.` : ''}`}
             summary={shareLine}
             legend={<ClassLegend />}
             table={table}
@@ -667,7 +681,7 @@ export default function CompactsIndexView() {
                 points={points}
                 highSeverity={high}
                 dividendRule={rule}
-                ariaLabel={`Strategic map of ${plural(points.length, 'node')}${scopeWords}${hasScenarios ? `, ${sc.label}` : ''}: ${xWords.toLowerCase()} across, coordination dividend up, bubble area ${lostWord}. ${shareLine}`}
+                ariaLabel={`Map of ${plural(points.length, 'supply-chain step')}${scopeWords}${hasScenarios ? `, ${sc.label}` : ''}: ${xWords.toLowerCase()} across, coordination dividend up, bubble area ${lostWord}. ${shareLine}`}
                 onSelect={(p) => p.node.compact && navigate(href(compactHref(p.node.compact)))}
                 xWords={xWords}
                 lostWord={mi ? 'shifted' : 'lost'}
@@ -675,8 +689,8 @@ export default function CompactsIndexView() {
             ) : (
               <EmptyState>
                 {mi
-                  ? `Managed Interdependence runs on no node${scopeWords}: every one is already as diversified as its benchmark, within the cap, or without one.`
-                  : `No node with both a shock exposure and a coordination dividend${scopeWords}.`}
+                  ? `Managed Interdependence applies to no supply-chain step${scopeWords}: every one is already as diversified as its benchmark, within the cap, or without one.`
+                  : `No supply-chain step with both supply exposed to the disruption and a coordination dividend${scopeWords}.`}
               </EmptyState>
             )}
           </ChartCard>
@@ -688,8 +702,8 @@ export default function CompactsIndexView() {
           intro={
             <p>
               {hasScenarios
-                ? `Ordered by the supply ${mi ? 'Managed Interdependence shifts' : 'the shock removes'}, largest first. Each card says why the ${ws ? 'workstream' : 'compact'} exists under the scenario shown, ${ws ? 'the strategic compact it belongs to, ' : ''}its main nodes and countries, the policy it most needs and how much of its demand is served; the mini bar compares the three scenarios (kept, restored by trade, new capacity; the figure is the share served after optimized trade). A group marked “compact unnecessary” is shown too: its supply chains hang together, but a coalition would barely improve on existing relationships.`
-                : `Ordered by the supply the shock removes, largest first. Each card says why the ${ws ? 'workstream' : 'compact'} exists, ${ws ? 'the strategic compact it belongs to, ' : ''}its main nodes and countries, the policy it most needs and how much of its demand is served at each step: the shock alone, existing relationships, the trade compact and trade plus investment. A group marked “compact unnecessary” is shown too: its supply chains hang together, but a coalition would barely improve on existing relationships.`}
+                ? `Ordered by the supply ${mi ? 'Managed Interdependence shifts' : 'the disruption removes'}, largest first. Each card answers why the ${ws ? 'workstream' : 'compact'} exists under the scenario shown, ${ws ? 'which strategic compact it belongs to, ' : ''}which supply-chain steps and countries it covers, which policy it most needs and how much of its demand can be met; the mini bar compares the three scenarios (still supplied, recovered through trade, requires new capacity; the figure is the share met after coordinated trade). A group marked “no compact needed” is shown too: its supply chains hang together, but a coalition would barely improve on existing relationships.`
+                : `Ordered by the supply the disruption removes, largest first. Each card answers why the ${ws ? 'workstream' : 'compact'} exists, ${ws ? 'which strategic compact it belongs to, ' : ''}which supply-chain steps and countries it covers, which policy it most needs and how much of its demand can be met at each stage of the response: the disruption alone, existing relationships, the trade compact and trade plus investment. A group marked “no compact needed” is shown too: its supply chains hang together, but a coalition would barely improve on existing relationships.`}
             </p>
           }
         >
@@ -698,7 +712,7 @@ export default function CompactsIndexView() {
               <ChartCard
                 headingLevel={3}
                 title={`Every ${ws ? 'workstream' : 'compact'} under the three scenarios`}
-                sub={`Cards ordered by the supply ${mi ? 'Managed Interdependence shifts' : 'Decoupling removes'}; the table compares the scenarios side by side and sorts by any column.`}
+                sub={`Cards ordered by the supply ${mi ? 'Managed Interdependence shifts' : 'the disruption removes'}; the table compares the scenarios side by side and sorts by any column.`}
                 legend={<CoverageLegend />}
                 table={() => (
                   <TableView
@@ -711,7 +725,7 @@ export default function CompactsIndexView() {
                   />
                 )}
                 csv={compactsCsv}
-                summary={`The compacts in order of the supply ${mi ? 'Managed Interdependence shifts' : 'Decoupling removes'}: ${ordered
+                summary={`The compacts in order of the supply ${mi ? 'Managed Interdependence shifts' : 'the disruption removes'}: ${ordered
                   .slice(0, 5)
                   .map((c) => `${c.id} ${fmtUsd(compactScenario(c, scenario, nodeOf).lostUsd)}`)
                   .join('; ')}.`}
@@ -730,37 +744,37 @@ export default function CompactsIndexView() {
               </ul>
             )
           ) : (
-            <EmptyState>Under the headline shock no group of supply chains passed the tests for a compact: coordinated action would not do materially better than bilateral action.</EmptyState>
+            <EmptyState>{STATE.noCoalition} Under the headline disruption no group of supply chains passed the tests for a compact: acting together would not do materially better than bilateral action.</EmptyState>
           )}
         </Section>
 
         <Section
           id="nodes"
-          title="How every sub-sector is classified"
+          title={AIB_CLASS_HEADING}
           intro={
             <p>
               {mi
-                ? 'Under Managed Interdependence, every sub-sector node more concentrated than its benchmark gets a treatment from its own results under the cap; the others are unchanged. Nodes in one compact can get different treatments.'
-                : 'Every sub-sector node (a group of traded goods at one stage of a supply chain) gets a headline treatment from its own results, and a set of policy needs that can name several instruments at once. Nodes in one compact can get different treatments: a compact coordinates trade where new relationships help, builds capacity where a gap remains and manages specialization where supply leans on one country.'}
+                ? 'Under Managed Interdependence, every supply-chain step more concentrated than comparable goods gets a treatment from its own results under the cap; the others are unchanged. Steps in one compact can get different treatments.'
+                : 'Every supply-chain step (a group of traded goods at one stage of a supply chain) gets one recommended treatment from its own results, and can need several actions at once. Steps in one compact can get different treatments: a compact coordinates trade where new relationships help, builds capacity where a gap remains and manages specialization where supply leans on one country.'}
               {nOut
-                ? ` ${plural(nOut, 'node')} outside the strategic scope ${nOut === 1 ? 'is' : 'are'} modelled too but ${nOut === 1 ? 'is' : 'are'} not headline results; ${all ? 'they are included below, marked' : 'include them below to see them'}.`
+                ? ` ${plural(nOut, 'step')} outside the strategic scope ${nOut === 1 ? 'is' : 'are'} analyzed too but ${nOut === 1 ? 'is' : 'are'} not headline results; ${all ? 'they are included below, marked' : 'include them below to see them'}.`
                 : ''}
             </p>
           }
         >
-          <Disclosure summary={`Explore all nodes (${shown.length}${scopeWords})`} defaultOpen={openNodes}>
+          <Disclosure summary={`Explore every supply-chain step (${shown.length}${scopeWords})`} defaultOpen={openNodes}>
             <ChartCard
               headingLevel={3}
-              title="Nodes by class"
-              sub={`Where the ${lostWord} sits${scopeWords}${!all && nOut ? ', nodes of the strategic scope' : ''}${hasScenarios ? `, ${sc.label}` : ''}: the bar splits it by class; below, every node by class, largest ${mi ? 'shift' : 'loss'} first, with its compact${mi ? '' : ', its policy needs where they say more than its class, any physical-capability warning, and a flag where the class depends on the existing-relationship growth bound'}. A node outside every compact opens its class under other assumptions and growth bounds in place; the others show it on their compact's page.`}
+              title="Supply-chain steps by treatment"
+              sub={`Where the ${lostWord} sits${scopeWords}${!all && nOut ? ', steps of the strategic scope' : ''}${hasScenarios ? `, ${sc.label}` : ''}: the bar splits it by treatment; below, every step by treatment, largest ${mi ? 'shift' : 'loss'} first, with its compact${mi ? '' : ', the actions it needs where they say more than its treatment, any weak-production-evidence warning, and a flag where the treatment depends on how far existing trade can grow'}. A step outside every compact opens its treatment under other assumptions in place; the others show it on their compact's page.`}
               summary={shareLine}
               legend={<ClassLegend />}
               table={table}
               csv={csv}
-              notes={<span>Classes are policy interpretations of continuous results under the thresholds on the About page.</span>}
+              notes={<span>Treatments are policy readings of continuous results under the thresholds on the About page.</span>}
             >
-              {lostTotal > 0 ? <LostByClassBar groups={classed} label={`${mi ? 'Shifted' : 'Lost'} supply by class. ${shareLine}`} /> : null}
-              <p className="mt-2 text-xs text-paper-mute">{shareLine || `No node${scopeWords || ' to show'}.`}</p>
+              {lostTotal > 0 ? <LostByClassBar groups={classed} label={`${mi ? 'Shifted' : 'Lost'} supply by treatment. ${shareLine}`} /> : null}
+              <p className="mt-2 text-xs text-paper-mute">{shareLine || `No supply-chain step${scopeWords || ' to show'}.`}</p>
               <div className="mt-5 space-y-6">
                 {groups
                   .filter((g) => g.nodes.length)
@@ -781,7 +795,7 @@ export default function CompactsIndexView() {
                   ))}
               </div>
               {mi && unchangedGroup && unchangedGroup.nodes.length > 0 && (
-                <p className="mt-3 text-xs text-paper-mute">The unchanged nodes keep the supply they have today; their class under Decoupling is on their compact&apos;s page.</p>
+                <p className="mt-3 text-xs text-paper-mute">The unchanged steps keep the supply they have today; their treatment under the major-supplier disruption is on their compact&apos;s page.</p>
               )}
             </ChartCard>
           </Disclosure>

@@ -32,16 +32,16 @@ export type LensId = (typeof LENS_IDS)[number];
 
 /** Each lens's panel heading and what it is, in plain words. */
 export const LENS_INFO: Readonly<Record<LensId, { title: string; short: string; words: string }>> = {
-  today: { title: 'Today', short: 'today', words: 'Observed data as they are: no model and no preferences.' },
+  today: { title: 'Today', short: 'today', words: 'Observed data as they are: no analysis and no preferences.' },
   osi: {
     title: 'OSI recommends',
     short: 'OSI',
     words: 'The Opportunity Security Indices at the NEIS defaults: rankings built on preference-weighted scores (a Country profile can change the Perspective).',
   },
   aib: {
-    title: 'AIB model',
+    title: 'AIB analysis',
     short: 'the AIB',
-    words: 'The Allied Industrial Base model under the chosen scenario: a counterfactual market structure, not a forecast. Dollar values are 2024 trade values.',
+    words: 'The Allied Industrial Base analysis under the chosen scenario: a stress test of how the market could be organized, not a forecast. Dollar values are 2024 trade values.',
   },
 };
 
@@ -50,22 +50,22 @@ export const KIND_LENS_WORDS: Readonly<Record<PartnershipKind, Record<LensId, st
   trade: {
     today: 'Who supplies whom today: observed 2024 trade.',
     osi: 'Partnership Opportunity: the partners the index rates the most attractive export markets.',
-    aib: 'The new and expanded trade relationships the model uses to restore supply under the scenario.',
+    aib: 'The new and expanded trade relationships that recover supply under the scenario when allies coordinate.',
   },
   investment: {
     today: 'Direct-investment positions (IMF) and clean-tech factory projects as they stand.',
     osi: 'Friendshore: the partners the index rates the most attractive for friendshoring production and investment.',
-    aib: 'Where the model places new capacity under the scenario: the best-ranked hosts, their alternatives and the investors they serve.',
+    aib: 'Where new capacity would help most under the scenario: the countries best placed to add it, their alternatives and the investors they serve.',
   },
   development: {
     today: 'Official development aid by donor and recipient (OECD). Export credits are not in this build yet.',
     osi: 'Development Potential: middle- and lower-income partners where building supply chains together pays off most.',
-    aib: 'Where new capacity should go under the scenario: the hosts of the sub-sectors that need new capacity (BUILD).',
+    aib: 'Where new capacity should go under the scenario: the countries that could add capacity at the supply-chain steps that need it.',
   },
   geopolitical: {
     today: 'UN General Assembly vote alignment, shared economic-security agreements and the coalition tier today.',
     osi: "The OSI's allied coalition (core members and partners) and the alignment part of Friendshore.",
-    aib: 'The compact coalitions under the scenario: members, critical supply partners and critical dependencies outside.',
+    aib: 'The compact coalitions under the scenario: the smallest group of partners that meets the target, critical supply partners and critical dependencies outside.',
   },
 };
 

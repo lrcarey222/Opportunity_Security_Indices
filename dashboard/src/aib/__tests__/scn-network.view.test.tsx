@@ -5,6 +5,7 @@
 // Interdependence: its scenario file (roles, compacts, flows), the capped suppliers, the toggle carried on
 // every link; the loading, failed and missing states; an older bundle without the scenarios.
 
+import { ROLES_PAGE_TITLE } from '../views/AibRolesView.tsx';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -90,37 +91,37 @@ const names = countryNamesOf(doc);
 describe('the Country roles page under the toggle', () => {
   it('Decoupling: the headline network, its every-shock totals labelled; what changes from today: who supplies whom and the roles gained or lost', async () => {
     renderAt('/aib/roles?scn=decoupling');
-    expect(await h1('Country roles')).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     const note = within(main()).getAllByTestId('modelled-note')[0].textContent ?? '';
     expect(note).toContain('Zembla supply removed; supply assumption: reallocation');
     expect(note).not.toContain('every');
     expect(screen.getByTestId('every-shock-note').textContent).toBe(
-      "The every-shock totals sum Decoupling's three supply shocks (Zembla supply removed; Zembla supply halved; Largest supplier of the sub-sector removed), and the diversification scenario, which removes no supplier. They appear only in the table and in each role's details; every role is read on Decoupling alone.",
+      "The every-shock totals sum Major-supplier disruption's three supply shocks (Zembla supply removed; Zembla supply halved; Largest supplier of the sub-sector removed), and the diversification scenario, which removes no supplier. They appear only in the table and in each role's details; every role is read on Major-supplier disruption alone.",
     );
-    expect(within(main()).getByText('AIB model · Decoupling')).toBeTruthy();
+    expect(within(main()).getByText('AIB analysis · Major-supplier disruption')).toBeTruthy();
     // EEE hosts new capacity only under another shock: no host role under Decoupling
     const eee = document.getElementById('role-EEE') as HTMLElement;
     expect(eee.querySelectorAll('td')[2].textContent).toBe('·');
     // Avalon buys from three economies under Decoupling (four across every shock, in the cell's words)
     const aaaBuyer = (document.getElementById('role-AAA') as HTMLElement).querySelectorAll('td')[4];
     expect(aaaBuyer.textContent).toContain('3 suppliers');
-    expect(aaaBuyer.querySelector('[title]')!.getAttribute('title')).toMatch(/with 3 suppliers; across Decoupling's three supply shocks and the diversification scenario: .*, 4 suppliers \(/);
+    expect(aaaBuyer.querySelector('[title]')!.getAttribute('title')).toMatch(/with 3 suppliers; across Major-supplier disruption's three supply shocks and the diversification scenario: .*, 4 suppliers \(/);
     // today against the scenario
     const today = await screen.findByTestId('roles-today');
     expect(within(today).getByText('Today · observed')).toBeTruthy();
-    const pairs = await region(/^Who supplies whom: today and under Decoupling/);
+    const pairs = await region(/^Who supplies whom: today and under Major-supplier disruption/);
     expect(within(pairs).getByRole('list', { name: 'Largest supply relationships today' })).toBeTruthy();
-    const scn = within(pairs).getByRole('list', { name: 'Largest relationships under Decoupling' });
+    const scn = within(pairs).getByRole('list', { name: 'Largest relationships under Major-supplier disruption' });
     expect(within(scn).getAllByRole('listitem')[0].textContent).toMatch(/^Carpania → Avalon/);
     expect(scn.textContent).toContain('not a tie today');
     // one economy
     fireEvent.change(within(pairs).getByRole('combobox', { name: 'Economy' }), { target: { value: 'DDD' } });
-    await waitFor(() => expect(within(within(pairs).getByRole('list', { name: 'Largest relationships under Decoupling' })).getAllByRole('listitem').every((li) => li.textContent!.includes('Dorvalia'))).toBe(true));
+    await waitFor(() => expect(within(within(pairs).getByRole('list', { name: 'Largest relationships under Major-supplier disruption' })).getAllByRole('listitem').every((li) => li.textContent!.includes('Dorvalia'))).toBe(true));
     const roles = await region('Roles gained or lost');
-    const lost = within(roles).getByRole('region', { name: 'Roles lost or reduced under Decoupling' });
+    const lost = within(roles).getByRole('region', { name: 'Roles lost or reduced under Major-supplier disruption' });
     expect(within(lost).getByText(/Stop supplying the allied market/)).toBeTruthy();
     expect(within(lost).getAllByRole('link', { name: 'Zembla' })[0].getAttribute('href')).toBe('/countries/ZZZ?scn=decoupling#aib-role');
-    const gained = within(roles).getByRole('region', { name: 'Roles gained under Decoupling' });
+    const gained = within(roles).getByRole('region', { name: 'Roles gained under Major-supplier disruption' });
     expect(within(gained).getByText(/New suppliers/).parentElement!.textContent).toContain('Dorvalia');
     noAcronyms();
     // three cards with a table twin and a CSV
@@ -133,13 +134,13 @@ describe('the Country roles page under the toggle', () => {
 
   it('Managed Interdependence: the roles from its file, no every-shock totals, the capped suppliers; links carry the toggle', async () => {
     renderAt('/aib/roles');
-    expect(await h1('Country roles')).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     await waitFor(() => expect(document.getElementById('role-FFF')).toBeTruthy(), { timeout: 15_000 });
     const note = within(main()).getAllByTestId('modelled-note')[0].textContent ?? '';
-    expect(note).toContain('no supplier removed; caps above the benchmark');
+    expect(note).toContain('no supplier removed; supply above the concentration cap shifts');
     expect(note).not.toContain('every-shock');
     expect(screen.queryByTestId('every-shock-note')).toBeNull();
-    expect(within(main()).getByText('AIB model · Managed Interdependence')).toBeTruthy();
+    expect(within(main()).getByText('AIB analysis · Managed Interdependence')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'How roles are read' }).nextElementSibling!.textContent).toContain('removes no supplier');
     // the matrix: a compact link and a Country profile link carry the toggle
     const ccc = document.getElementById('role-CCC') as HTMLElement;
@@ -148,7 +149,7 @@ describe('the Country roles page under the toggle', () => {
     expect(within(fff).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/compacts/AIB-C03');
     const roles = await region('Roles gained or lost');
     const lost = within(roles).getByRole('region', { name: 'Roles lost or reduced under Managed Interdependence' });
-    expect(within(lost).getByText(/Supply less: held to the cap/).parentElement!.textContent).toMatch(/Zembla in 2 nodes/);
+    expect(within(lost).getByText(/Supply less: held to the cap/).parentElement!.textContent).toMatch(/Zembla in 2 steps/);
     expect(within(lost).queryByText(/Stop supplying/)).toBeNull();
     // the matrix's table: no every-shock columns under Managed Interdependence
     const matrix = screen.getByRole('region', { name: 'Roles by economy' });
@@ -162,8 +163,8 @@ describe('the Country roles page under the toggle', () => {
   it('a broken Managed Interdependence file: an error with Retry in place of the roles', async () => {
     useSource(undefined, { editScenario: (d, id) => void (id === 'managed' && ((d as unknown as Record<string, unknown>).schema = 'x')) });
     renderAt('/aib/roles');
-    expect(await h1('Country roles')).toBeTruthy();
-    expect(await screen.findByText('The Managed Interdependence data could not be loaded', undefined, { timeout: 15_000 })).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
+    expect(await screen.findByText('The Managed Interdependence results could not be loaded', undefined, { timeout: 15_000 })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Roles by economy' })).toBeNull();
   });
@@ -171,21 +172,21 @@ describe('the Country roles page under the toggle', () => {
   it('a bundle whose manifest names no scenario file: the missing states, never a crash', async () => {
     useSource(undefined, { noScenarioFiles: true });
     renderAt('/aib/roles');
-    expect(await h1('Country roles')).toBeTruthy();
-    expect(await screen.findByText(/This data build has no Managed Interdependence file, so the country roles cannot be shown/, undefined, { timeout: 15_000 })).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
+    expect(await screen.findByText(/This build has no Managed Interdependence results, so the country roles cannot be shown/, undefined, { timeout: 15_000 })).toBeTruthy();
     cleanup();
     renderAt('/aib/roles?scn=decoupling');
-    expect(await h1('Country roles')).toBeTruthy();
-    expect(await screen.findByText(/This data build has no Baseline file, so today's network cannot be shown/, undefined, { timeout: 15_000 })).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
+    expect(await screen.findByText(/This build has no Today's network results, so today's network cannot be shown/, undefined, { timeout: 15_000 })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Roles by economy' })).toBeTruthy();
   });
 
   it('an older bundle without the scenarios: no comparison with today, the facts tag, the headline words', async () => {
     useSource((d) => stripScenarios(d), { noScenarioFiles: true });
     renderAt('/aib/roles');
-    expect(await h1('Country roles')).toBeTruthy();
+    expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     expect(screen.queryByTestId('roles-today')).toBeNull();
-    expect(within(main()).getByText('Observed / modelled facts')).toBeTruthy();
+    expect(within(main()).getByText('Observed data and analysis')).toBeTruthy();
     expect(within(main()).getAllByTestId('modelled-note')[0].textContent).toContain('"every shock" sums');
     expect(screen.queryByTestId('every-shock-note')).toBeNull();
     expect(source.calls.filter((f) => f.startsWith('scenario-'))).toEqual([]);
@@ -200,8 +201,8 @@ describe('a compact\'s partnership network under the toggle', () => {
     const cmp = await within(trade).findByTestId('suppliers-compare');
     const todayList = within(cmp).getByRole('region', { name: /^Largest suppliers today/ });
     expect(todayList.textContent).toContain('Zembla');
-    expect(todayList.textContent).toContain('its supply is removed under Decoupling');
-    expect(within(cmp).getByRole('region', { name: /^Largest added suppliers under Decoupling/ })).toBeTruthy();
+    expect(todayList.textContent).toContain('its supply is removed under Major-supplier disruption');
+    expect(within(cmp).getByRole('region', { name: /^Largest added suppliers under Major-supplier disruption/ })).toBeTruthy();
     noAcronyms();
   });
 
@@ -213,13 +214,13 @@ describe('a compact\'s partnership network under the toggle', () => {
     await waitFor(() => expect(trade.textContent).toContain('under Managed Interdependence'), { timeout: 15_000 });
     expect(screen.getByText(`${c.trade.length} trade relationships, 2 investment flows`)).toBeTruthy();
     const cmp = within(trade).getByTestId('suppliers-compare');
-    expect(within(cmp).getByRole('region', { name: /^Largest suppliers today/ }).textContent).toContain('held to its cap under Managed Interdependence in 1 node');
+    expect(within(cmp).getByRole('region', { name: /^Largest suppliers today/ }).textContent).toContain('held to its cap under Managed Interdependence in 1 step');
     fireEvent.click(within(trade).getByRole('button', { name: 'Table' }));
     expect(within(trade).getAllByRole('row').length - 1).toBe(c.trade.length);
     const inv = screen.getByRole('region', { name: 'Who invests where' });
     expect(within(inv).getByText('Managed Interdependence')).toBeTruthy();
     expect(within(within(inv).getByTestId('flow-list')).getAllByRole('listitem')).toHaveLength(2);
-    expect(within(inv).getByTestId('modelled-note').textContent).toContain('no supplier removed; caps above the benchmark');
+    expect(within(inv).getByTestId('modelled-note').textContent).toContain('no supplier removed; supply above the concentration cap shifts');
     noAcronyms();
   });
 });
@@ -240,7 +241,7 @@ describe('the investor -> host flows card follows the toggle wherever it is embe
     const best = doc.investmentFlows!.pairs.filter((p) => p.rank === 1);
     const card = await region('Who invests where');
     expect(within(within(card).getByTestId('flow-list')).getAllByRole('listitem')).toHaveLength(Math.min(8, best.length));
-    expect(within(card).getByText('Decoupling')).toBeTruthy();
+    expect(within(card).getByText('Major-supplier disruption')).toBeTruthy();
     cleanup();
     renderCard('/x');
     const card2 = await region('Who invests where');
@@ -256,7 +257,7 @@ describe('the investor -> host flows card follows the toggle wherever it is embe
     useSource(undefined, { editScenario: (d, id) => void (id === 'managed' && ((d as unknown as Record<string, unknown>).schema = 'x')) });
     renderCard('/x');
     const card = await region('Who invests where');
-    expect(await within(card).findByText('The Managed Interdependence data could not be loaded', undefined, { timeout: 15_000 })).toBeTruthy();
+    expect(await within(card).findByText('The Managed Interdependence results could not be loaded', undefined, { timeout: 15_000 })).toBeTruthy();
     expect(within(card).getByRole('button', { name: 'Retry' })).toBeTruthy();
   });
 });

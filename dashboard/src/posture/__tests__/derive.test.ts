@@ -125,11 +125,11 @@ describe('one site-wide grammar (spec XX)', () => {
     expect(pathwayEvidenceWords(['operating_capacity', 'committed_pipeline', 'announced_pipeline', 'anchor_unobserved'])).toBe('operating capacity (anchor), committed capacity (anchor), announced capacity, too little evidence to find an anchor');
     expect(pathwayEvidenceWords('feasibility;too_few_observed')).toBe('feasibility, too little evidence observed to reach the bar');
     expect(['secure_override', 'deployment_need', 'supply_chain_need', 'industrial_opportunity', 'cp_contender_pct', 'pathway_credible', 'choice'].map(traceTestWords)).toEqual([
-      'Secure tests', 'Deployment need', 'Supply-chain need', 'Industrial Opportunity (market prize)', 'Competitive Position among contenders', 'Credible pathway', 'Choice',
+      'Secure tests', 'Deployment need', 'Supply-chain vulnerability', 'Industrial Opportunity (market prize)', 'Competitive Position among the main producers', 'Credible pathway', 'Choice',
     ]);
-    expect(traceCodeWords('operational_control;coercive_chokepoint')).toBe('operational / control, chokepoint');
+    expect(traceCodeWords('operational_control;coercive_chokepoint')).toBe('control-system risk, chokepoint risk');
     expect(['capability_floor_not_met', 'not_a_contender', 'not_top_quarter', 'not_assessed', 'catch_up', 'high'].map(traceCodeWords)).toEqual([
-      'top quarter, capability floor not met', 'top quarter, not a contender', 'not in the top quarter', 'not assessed', 'Catch Up', 'high',
+      'top quarter, capability floor not met', 'top quarter, not a main producer', 'not in the top quarter', 'not assessed', 'Catch Up', 'high',
     ]);
   });
 

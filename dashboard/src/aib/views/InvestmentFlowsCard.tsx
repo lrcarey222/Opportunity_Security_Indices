@@ -85,7 +85,7 @@ export function InvestmentFlowsCard({ doc, meta, shockLabel, filter, scope, name
   const info = scenarioInfo(meta, id);
   const badge = available ? <ScenarioTag id={id} meta={meta} /> : undefined;
   const under = available ? ` under ${info.label}` : '';
-  const todayNote = available ? ' Today (Baseline) there is no such new capacity: these flows exist only under a scenario.' : '';
+  const todayNote = available ? " Today's network has no such new capacity: these flows exist only under a scenario." : '';
   if (id === 'managed' && !mi.doc) {
     return (
       <ChartCard headingLevel={headingLevel} title={title} badge={badge} sub={`Investor to host, ${scope}${under}.`}>
@@ -109,11 +109,11 @@ export function InvestmentFlowsCard({ doc, meta, shockLabel, filter, scope, name
   const cols: Col<AibInvestmentPair>[] = [
     { id: 'investor', header: 'Investor', value: (p) => nm(p.investor), title: 'The economy whose lost supply the new capacity replaces' },
     { id: 'host', header: 'Host', value: (p) => nm(p.host) },
-    { id: 'node', header: 'Node', value: (p) => nodeLabel(p.node), minWidth: 160 },
+    { id: 'node', header: 'Supply-chain step', value: (p) => nodeLabel(p.node), minWidth: 160 },
     { id: 'ts', header: `${tx.Many} and stage`, value: (p) => techStage(p.node) },
-    { id: 'rank', header: 'Host rank', value: (p) => p.rank, num: true, title: '1 = the best-ranked host of the node; higher ranks are alternatives' },
+    { id: 'rank', header: 'Host rank', value: (p) => p.rank, num: true, title: '1 = the best-ranked host for the supply-chain step; higher ranks are alternatives' },
     { id: 'usd', header: 'Supply from new capacity', value: (p) => p.usd, cell: (p) => fmtUsd(p.usd), num: true },
-    { id: 'share', header: 'Share of node demand', value: (p) => p.share, cell: (p) => fmtShare(p.share), num: true },
+    { id: 'share', header: "Share of the step's demand", value: (p) => p.share, cell: (p) => fmtShare(p.share), num: true },
     { id: 'lost', header: 'Investor’s lost share', value: (p) => p.lostShare, cell: (p) => fmtShare(p.lostShare), num: true },
     { id: 'fs', header: 'Friendshore', value: (p) => p.friendshore, cell: (p) => fmtScore(p.friendshore), num: true, title: 'The investor’s Friendshore score for the host (NEIS defaults)' },
     { id: 'eo', header: 'Partnership Opportunity', value: (p) => p.opportunity, cell: (p) => fmtScore(p.opportunity), num: true, title: 'The host’s Partnership Opportunity score for the investor (NEIS defaults)' },
@@ -141,7 +141,7 @@ export function InvestmentFlowsCard({ doc, meta, shockLabel, filter, scope, name
       badge={badge}
       sub={
         best.length
-          ? `Investor to host, ${scope}${under}: the supply from new capacity at the best-ranked host of each sub-sector (USD a year), ${plural(best.length, 'flow')} worth ${fmtUsd(total)}. The investor is the economy whose lost supply the new capacity replaces. Band width is the supply.`
+          ? `Investor to host, ${scope}${under}: the supply from new capacity in the best-ranked country that could add it, at each supply-chain step (USD a year), ${plural(best.length, 'flow')} worth ${fmtUsd(total)}. The investor is the country whose lost supply the new capacity replaces. Band width is the supply.`
           : `Investor to host, ${scope}${under}: no simulated flow.`
       }
       legend={<Legend label="Flow" items={[{ label: 'Supply from new capacity, best-ranked host', color: INVEST_COLOR }]} />}
@@ -151,7 +151,7 @@ export function InvestmentFlowsCard({ doc, meta, shockLabel, filter, scope, name
       notes={
         <>
           <span>
-            Each ranked host is a separate simulation of the increment of capacity (capped at the host’s current output in the node); only the best-ranked host counts, so the alternatives are listed but never added up. Friendshore and
+            Each ranked host is a separate simulation of the increment of capacity (capped at the host’s current output of the step); only the best-ranked host counts, so the alternatives are listed but never added up. Friendshore and
             Partnership Opportunity are partner scores at the NEIS defaults.{todayNote}
           </span>
           <ModelledNote className="mt-1">{variantPhrase(fdoc, noteLabel)}</ModelledNote>

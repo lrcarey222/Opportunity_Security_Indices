@@ -3,11 +3,16 @@
 // manifest), and the module's glossary. Since 2026-10-29 (design 5) it leads with the canonical framework
 // (Need -> Prize -> Position -> Choice -> Policy Alignment) and puts the corners and the Strategic Index
 // under the Legacy OSI framework, with the conceptual mapping and why the results differ.
+// The NEIS copy refresh (2026-10-30): the first section opens with the module's strategic question and the
+// framing (no country makes everything; what not to build), the strategy section with the canonical explainer
+// (vocabulary STRATEGY_EXPLAINER) and the current rules (the 0.10 need floor, the capability-anchor Catch Up);
+// "supply-chain step" for a node, the plain policy-alignment names.
 
 import { Link } from 'react-router';
 import { GlossaryList } from '../../components/GlossaryList.tsx';
 import { Term } from '../../components/Term.tsx';
 import { PageHead } from '../../components/ui.tsx';
+import { ALIGNMENT_NAME, FRAMING, MODULE_QUESTION, POLICY_ALIGNMENT_INTRO, STRATEGY_EXPLAINER } from '../../content/vocabulary.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useCountryCtx } from '../CountryLayout.tsx';
 import { COUNTRY_CELL_KEYS, noEsCellsOf } from '../contract.ts';
@@ -94,39 +99,45 @@ export default function CountryAboutView() {
       />
       <H id="what">What the Country profiles show</H>
       <p className={p}>
-        Every Country profile reads the 11 technologies at the six supply-chain stages (extraction, refining and processing, component manufacturing, final assembly and equipment,
-        deployment and use, recovery and recycling): 66 technology and stage nodes. It answers, in order: what the country needs, where there is a prize worth pursuing, where it is
-        already strong, what it should secure, preserve, catch up in, rely on partners for, deploy faster and deliberately not prioritise, whether its current policy matches those
-        choices, and the roles it holds in the allied compacts (the{' '}
+        {MODULE_QUESTION.country} {FRAMING.noCountryMakesEverything} {FRAMING.whatNotToBuild} Every Country profile reads the 11 technologies at the six supply-chain stages
+        (extraction, refining and processing, component manufacturing, final assembly and equipment, deployment and use, recovery and recycling): 66 supply-chain steps. For each it
+        recommends one choice: secure it, preserve an existing strength, catch up from a credible base, rely on trusted partners, deploy faster, or leave it open. It then asks whether
+        current policy matches and where the country fits in the Allied Industrial Base (the{' '}
         <Link className="link" to="/methods">
           methods
         </Link>{' '}
-        say how each step is set). Its sections follow that order: Strategy (the Country Strategy Map, each node coloured by its choice and grouped by fence); the High fence
-        (Secure); the Medium fence (Preserve, Catch Up and Partner at the producing stages, with the prize, the competitive position and the partners behind them, and
-        Accelerate at Deployment &amp; Use); the Low fence (Watch); Policy Alignment; Allied Strategy (the compacts in which the country holds a role); and Evidence &amp;
-        Methodology. One drawer answers the same five questions for any node, from every section.
+        say how each step is set).
+      </p>
+      <p className={p}>
+        The sections follow that order: the Country Strategy Map (each step colored by its choice and grouped by fence); the High fence (Secure); the Medium fence (Preserve, Catch
+        Up and Partner at the producing stages, with the prize, the competitive position and the best-placed partners behind them, and Accelerate at Deployment &amp; Use); the Low
+        fence (Watch: keep open); policy alignment; where the country fits in the Allied Industrial Base (the compacts in which it has a role); and Evidence &amp; methodology. One
+        drawer answers the same five questions for any step, from every section.
       </p>
 
       <H id="strategy">The strategy: need, prize, position, choice, policy alignment</H>
+      <p className={p}>{STRATEGY_EXPLAINER}</p>
       <p className={p}>
         <strong className="text-paper">Need</strong> comes in two kinds that are never added together. At the five producing stages it is{' '}
-        <Term id="supply_chain_need">supply-chain need</Term>: how costly or dangerous dependence on outside supply is (import dependence, supplier concentration, risky supplier exposure,
-        trusted alternatives). At Deployment &amp; Use it is <Term id="deployment_need">deployment need</Term>: how much more of the technology the energy system needs (demand adequacy,
-        the gap to national targets, system requirements), with its scenario named. <strong className="text-paper">Prize</strong> is{' '}
-        <Term id="strategic_industrial_value">Strategic Industrial Value</Term>: whether domestic capability in the node is strategically valuable, from three families, the
+        <Term id="supply_chain_need">supply-chain vulnerability</Term>: how costly or dangerous dependence on outside supply is (import dependence, supplier concentration, risky
+        supplier exposure, the lack of trusted alternatives). It is high only where the percentile clears the bar and the need score itself reaches 0.10, so a tiny exposure in a
+        thinly traded step does not read as high. At Deployment &amp; Use it is <Term id="deployment_need">deployment need</Term>: how urgently the energy system needs more of the
+        technology (whether expected demand is enough, the gap to national targets, system requirements), with its scenario named. <strong className="text-paper">Prize</strong> is{' '}
+        <Term id="strategic_industrial_value">Strategic Industrial Value</Term>: whether productive capability in the step is strategically valuable, from three families, the
         market prize (<Term id="industrial_opportunity">Industrial Opportunity</Term>), industrial commons and future option value, kept apart from current capability and from
-        need; a node only the market speaks for is capped below the bar. A capability layer (control software, firmware) is a{' '}
-        <Term id="yard">yard</Term> unit of its own, with its own choice; a step whose layers sit in different yards is mixed. A{' '}
-        <Term id="large_yard_case">large-yard case</Term> (a mature, passive commodity) is Watch whatever the size of the market.{' '}
-        <strong className="text-paper">Position</strong> is <Term id="competitive_position">Competitive Position</Term>, demonstrated capability among the node&apos;s contenders.
+        need; a step only the market speaks for is capped below the bar. A capability layer (control software, firmware) is a <Term id="yard">yard</Term> unit of its own, with
+        its own choice; a step whose layers sit in different yards is mixed. A <Term id="large_yard_case">large-yard case</Term> (a mature, passive commodity) is Watch whatever
+        the size of the market. <strong className="text-paper">Position</strong> is <Term id="competitive_position">Competitive Position</Term>: demonstrated capability among the
+        step&apos;s main producers.
       </p>
       <p className={p}>
-        <strong className="text-paper">Choice</strong>: the Secure tests come first (operational control, coercive chokepoint, systemic resilience). At Deployment &amp; Use deployment need
-        decides Accelerate or Watch. At the producing stages need and prize triage the node and Competitive Position decides the response: Preserve a strong position with a prize, Catch
-        Up where the prize and a credible pathway justify it, Partner where the need is high and the domestic case weak, and Watch where the need is low, with a low prize and
-        also with a high prize where there is neither a strong position nor a credible pathway (a positive conclusion: domestic industrial priority is low). A node whose need or
-        prize is not measured is not assessed, never Watch. <strong className="text-paper">Policy Alignment</strong>{' '}
-        then compares observed policy with the choice; policy never feeds the choice. The thresholds are fixed, so nothing on the strategy follows the Perspective dials.
+        <strong className="text-paper">Choice</strong>: the Secure tests come first (control-system risk, chokepoint risk, system resilience). At Deployment &amp; Use deployment need
+        decides Accelerate or Watch. At the producing stages need and the prize decide whether a step matters and Competitive Position decides the response: Preserve a strong position
+        with a prize; Catch Up where the prize is high and there is a credible pathway (a capability anchor to build from, corroborated by a signal of another kind); Partner where the
+        need is high and the domestic case weak; and Watch where the need is low, with a low prize and also with a high prize where there is neither a strong position nor a credible
+        pathway (a deliberate conclusion: domestic production is a low priority). A step whose need or prize is not measured is not assessed, never Watch.{' '}
+        <strong className="text-paper">Policy alignment</strong> then compares observed policy with the choice; policy never feeds the choice. The thresholds are fixed, so nothing
+        on the strategy follows the Perspective dials.
       </p>
 
       <H id="legacy">The Legacy OSI framework</H>
@@ -161,10 +172,11 @@ export default function CountryAboutView() {
 
       <H id="alignment">How the strategy is compared with policy</H>
       <p className={p}>
-        <Term id="policy_alignment">Policy alignment</Term> sets each assessed node&apos;s choice beside its observed policy (support, protection or localisation, and its momentum
-        where the time series allows): under-prioritized when a Secure, Preserve or Catch Up node gets weak support, or an Accelerate node weak deployment policy; over-prioritized when a
-        Watch node gets heavy protection; wrong treatment when a Partner node meets localisation; mixed when the sources disagree. There is no overall score, and where policy data are
-        thin the alignment says so.
+        {POLICY_ALIGNMENT_INTRO} <Term id="policy_alignment">Policy alignment</Term> sets each assessed step&apos;s choice beside its observed policy (support, protection or
+        localization, and its momentum where the time series allows): {ALIGNMENT_NAME.under_prioritized.toLowerCase()} when a Secure, Preserve or Catch Up step gets weak support,
+        or an Accelerate step weak deployment policy; {ALIGNMENT_NAME.over_prioritized.toLowerCase()} when a Watch step gets heavy protection;{' '}
+        {ALIGNMENT_NAME.misaligned.toLowerCase()} when a Partner step meets localization; {ALIGNMENT_NAME.mixed.toLowerCase()} when the sources disagree. There is no overall score,
+        and where policy data are thin the alignment says so ({ALIGNMENT_NAME.insufficient_data.toLowerCase()}).
       </p>
 
       <H id="priorities">Legacy OSI: how priorities are compared with policy</H>

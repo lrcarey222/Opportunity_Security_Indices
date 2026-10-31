@@ -1,5 +1,5 @@
 // The Sector pages at six stages (2026-10-28, design S1-S5, C2, C3, C6, E5, L3, A2, U1) on the TS fixture:
-// the Strategic posture sections (the Sector home's, with its node in ?pnode and its own basis line; every
+// the "What each country should do" sections (they were "Strategic posture"; the Sector home's, with its node in ?pnode and its own basis line; every
 // headline profile's, fixed to its node), the old three-stage links (Downstream is Deployment exactly;
 // Upstream and Midstream go to the chain page with a notice), the copied manufacturing figures ("same
 // figure as"), the Allied Industrial Base nodes joined on their six-stage cells, and no three-stage word
@@ -69,14 +69,23 @@ const openGroups = async () => {
 };
 const LEGACY = /upstream|midstream|downstream|three stages|three-stage|paper’s three|paper's three/i;
 
-describe('the Sector home: a Strategic posture section (design L3)', () => {
+describe('the Sector home: a "What each country should do" section (design L3)', () => {
   it('sits after the sector grid with its own basis line; the lede points to it and no longer says the page has no recommendation', async () => {
     renderAt('/sector');
-    expect(await h1('Energy supply chains, measured')).toBeTruthy();
-    expect(screen.getByText('SECTORS · MEASURED DATA')).toBeTruthy();
-    expect(screen.queryByText(/DESCRIPTIVE DATA/)).toBeNull();
+    // the first screen states the strategic question (the Home card's) before any method
+    expect(await h1('Where are the real bottlenecks and opportunities?')).toBeTruthy();
+    expect(screen.queryByText(/MEASURED DATA|DESCRIPTIVE DATA/)).toBeNull();
+    const main = document.querySelector('main')?.textContent ?? '';
+    expect(main).toContain(
+      'Follow a technology from extraction through deployment and recovery. See who has capability, where supply is concentrated, which stages matter strategically, and where countries should build, partner or stay open.',
+    );
+    expect(main).toContain(
+      'One section is a recommendation instead: What each country should do, each economy’s strategic choice at a step: secure it, preserve a strength, catch up, rely on partners, deploy faster or keep it open.',
+    );
+    expect(main).not.toMatch(/Strategic posture/);
     const section = document.getElementById('posture') as HTMLElement;
-    expect(within(section).getByRole('heading', { level: 2, name: 'Strategic posture' })).toBeTruthy();
+    expect(within(section).getByRole('heading', { level: 2, name: 'What each country should do' })).toBeTruthy();
+    expect(section.textContent).toContain('Which countries should secure the step, preserve capability, catch up, partner, deploy faster or keep the market open?');
     expect(section.textContent).toMatch(/Strategic position framework · fixed thresholds; the dials and the scenario do not change it/);
     expect(section.textContent).toMatch(/Unlike the measured values on the rest of these pages, this is a recommendation/);
     // after the sector grid, before the minerals
@@ -87,23 +96,28 @@ describe('the Sector home: a Strategic posture section (design L3)', () => {
     expect((within(card).getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement).value).toBe('Refining');
     expect(within(card).getByRole('heading', { level: 3 })).toBeTruthy();
     // the lede's link lands on the section
-    expect(screen.getByRole('link', { name: 'Strategic posture' }).getAttribute('href')).toBe('#posture');
+    expect(screen.getByRole('link', { name: 'What each country should do' }).getAttribute('href')).toBe('#posture');
     expect(document.querySelector('main')?.textContent ?? '').not.toMatch(LEGACY);
   });
 
   it('the card speaks the six verbs: Competitive Position against need, marks by verb, the prize in words; every stage is offered, Deployment & Use on deployment need (design 5)', async () => {
     const router = renderAt('/sector?pnode=Batteries%7CComponents');
-    await h1('Energy supply chains, measured');
+    await h1('Where are the real bottlenecks and opportunities?');
     const section = document.getElementById('posture') as HTMLElement;
     const card = await within(section).findByTestId('sector-posture-hero', {}, { timeout: 10_000 });
-    expect(within(card).getByRole('heading', { level: 3, name: "Every economy's choice in one node" })).toBeTruthy();
+    expect(within(card).getByRole('heading', { level: 3, name: "Every economy's choice at one supply-chain step" })).toBeTruthy();
     expect(section.textContent).toMatch(/recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or Watch/);
     // the takeaway names the groups ("led by" past three), the counts line gives the six verbs first
     expect(within(card).getByTestId('posture-takeaway').textContent).toBe(
-      'In battery cell manufacturing, 2 economies should catch up, with the prize and a credible pathway (Bland and Aland); and 1 economy should partner, needing it without a domestic case (Cland).',
+      'In battery cell manufacturing, 2 economies should catch up from a credible base (Bland and Aland); and 1 economy should rely on trusted partners for it (Cland).',
     );
-    expect(within(card).getByTestId('sector-strategy-counts').textContent).toMatch(/^0 Secure · 0 Preserve · 2 Catch Up · 1 Partner · 0 Accelerate · 0 Watch \(0 Secure · 3 Compete · 0 Deploy\)$/);
-    expect(within(card).getByTestId('posture-reading').textContent).toMatch(/Across: Competitive Position\s*, among the node's contenders; up: supply-chain need\s*\. The colour is the choice, grouped by fence\./);
+    expect(within(card).getByTestId('sector-strategy-counts').textContent).toMatch(/^0 Secure · 0 Preserve · 2 Catch Up · 1 Partner · 0 Accelerate · 0 Watch \(0 High fence · 3 Medium fence · 0 Low fence\)$/);
+    expect(within(card).getByTestId('posture-reading').textContent).toMatch(
+      /Across: how strong it is today \(Competitive Position\s*, ranked among the main producers of this step\); up: its supply-chain vulnerability\s*\. The colour is the choice, grouped by fence\./,
+    );
+    expect(within(card).getByTestId('posture-reading').textContent).not.toMatch(/contenders|node/);
+    // the two sides of the allied division of labor: who is strongest, who needs a partner
+    expect(within(card).getByTestId('sector-strategy-sides').textContent).toMatch(/^Who has the strongest capability\? .+\. Which countries need a partner\? Cland \(their choice is Partner\)\.$/);
     const chart = within(card).getByTestId('sector-strategy-scatter');
     expect([...chart.querySelectorAll('[data-verb]')].map((g) => [g.getAttribute('data-iso3'), g.getAttribute('data-verb')]).sort()).toEqual([['AAA', 'catch_up'], ['BBB', 'catch_up'], ['CCC', 'partner']]);
     expect(chart.querySelector('[data-testid="line-cp"]')).toBeTruthy();
@@ -118,7 +132,9 @@ describe('the Sector home: a Strategic posture section (design L3)', () => {
     fireEvent.change(stage, { target: { value: 'Deployment' } });
     await waitFor(() => expect(new URLSearchParams(router.state.location.search).get('pnode')).toBe('Batteries|Deployment'));
     await waitFor(() => expect(within(card).getByTestId('sector-strategy-scatter').getAttribute('data-stage')).toBe('Deployment'));
-    expect(within(card).getByTestId('posture-takeaway').textContent).toBe('In battery storage, 2 economies should accelerate deployment (Bland and Aland); and 1 economy should watch (no acceleration needed).');
+    expect(within(card).getByTestId('posture-takeaway').textContent).toBe('In battery storage, 2 economies should deploy faster (Bland and Aland); and 1 economy should watch rather than accelerate deployment (need below the bar for acceleration).');
+    // Deployment & Use has no Partner: no supply and demand sides
+    expect(within(card).queryByTestId('sector-strategy-sides')).toBeNull();
     expect(within(card).getByTestId('sector-strategy-scatter').querySelector('[data-testid="line-cp"]')).toBeNull();
     // a mark opens that economy's Country Strategy Map on this node (design D8)
     fireEvent.click(within(card).getByTestId('sector-strategy-scatter').querySelector('[data-iso3="BBB"]') as Element);
@@ -128,29 +144,29 @@ describe('the Sector home: a Strategic posture section (design L3)', () => {
 
   it('an old three-stage ?pnode is reported: Downstream is now Deployment and is shown', async () => {
     renderAt('/sector?pnode=Batteries%7CDownstream');
-    await h1('Energy supply chains, measured');
+    await h1('Where are the real bottlenecks and opportunities?');
     const notice = await screen.findByTestId('posture-node-ignored', {}, { timeout: 10_000 });
     expect(notice.textContent).toContain('pnode=Batteries|Downstream (Downstream is now Deployment; showing Batteries — Deployment)');
     expect(within(document.getElementById('posture') as HTMLElement).getByTestId('sector-strategy-scatter').getAttribute('data-stage')).toBe('Deployment');
   });
 
-  it('the Data notes say the posture is the one recommendation, at fixed thresholds', async () => {
+  it('the Data notes say the strategic choices are the one recommendation, at fixed thresholds', async () => {
     renderAt('/sector');
-    await h1('Energy supply chains, measured');
+    await h1('Where are the real bottlenecks and opportunities?');
     const bar = screen.getByTestId('sector-bar');
     fireEvent.click(within(bar).getAllByText(/^Data notes \(/)[0]);
-    expect(within(bar).getAllByText(/except the Strategic posture sections: a recommendation of the strategic position framework at fixed thresholds/).length).toBeGreaterThan(0);
+    expect(within(bar).getAllByText(/except the “What each country should do” sections: a recommendation at fixed thresholds/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/they show measured values with no weights and no scores\.$/)).toBeNull();
   });
 });
 
-describe('a sector profile: the Strategic posture section fixed to its node (design L3)', () => {
+describe('a sector profile: the "What each country should do" section fixed to its node (design L3)', () => {
   it('Batteries — Refining: the section after the lenses, in the rail, the card on this node with no selects', async () => {
     renderAt('/sector/batteries/refining');
     expect(await h1('Batteries — Refining')).toBeTruthy();
-    const section = await screen.findByRole('region', { name: 'Strategic posture' }, { timeout: 20_000 });
+    const section = await screen.findByRole('region', { name: 'What each country should do' }, { timeout: 20_000 });
     expect(section.id).toBe('posture');
-    expect(within(section).getByRole('heading', { level: 2, name: 'Strategic posture' })).toBeTruthy();
+    expect(within(section).getByRole('heading', { level: 2, name: 'What each country should do' })).toBeTruthy();
     expect(section.textContent).toMatch(/Strategic position framework · fixed thresholds/);
     expect(await within(section).findByRole('heading', { level: 3, name: "Every economy's choice in Batteries — Refining & Processing" }, { timeout: 10_000 })).toBeTruthy();
     expect(within(section).queryByRole('combobox')).toBeNull();
@@ -159,13 +175,13 @@ describe('a sector profile: the Strategic posture section fixed to its node (des
     expect(overview.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(section.compareDocumentPosition(document.getElementById('evidence') as HTMLElement) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const rail = screen.getByRole('navigation', { name: 'Sections' });
-    expect(within(rail).getByRole('link', { name: 'Strategic posture' }).getAttribute('href')).toBe('#posture');
+    expect(within(rail).getByRole('link', { name: 'What each country should do' }).getAttribute('href')).toBe('#posture');
   });
 
   it('a link to #posture lands there; Deployment is allowed on its profile; a non-headline sector has no posture section', async () => {
     renderAt('/sector/solar/deployment#posture');
     expect(await h1('Solar — Deployment')).toBeTruthy();
-    const section = await screen.findByRole('region', { name: 'Strategic posture' }, { timeout: 20_000 });
+    const section = await screen.findByRole('region', { name: 'What each country should do' }, { timeout: 20_000 });
     expect(await within(section).findByRole('heading', { level: 3, name: "Every economy's choice in Solar — Deployment & Use" }, { timeout: 10_000 })).toBeTruthy();
     // Deployment & Use is plotted on deployment need: Accelerate or Watch, never Partner
     const chart = await within(section).findByTestId('sector-strategy-scatter', {}, { timeout: 10_000 });
@@ -178,7 +194,7 @@ describe('a sector profile: the Strategic posture section fixed to its node (des
     expect(await h1('Semiconductors — Components')).toBeTruthy();
     await screen.findByRole('navigation', { name: 'Sections' }, { timeout: 20_000 });
     expect(document.getElementById('posture')).toBeNull();
-    expect(within(screen.getByRole('navigation', { name: 'Sections' })).queryByRole('link', { name: 'Strategic posture' })).toBeNull();
+    expect(within(screen.getByRole('navigation', { name: 'Sections' })).queryByRole('link', { name: 'What each country should do' })).toBeNull();
   });
 });
 
@@ -247,7 +263,7 @@ describe('copied figures, the AIB nodes and the words on screen', () => {
     for (const [path, title] of [
       ['/sector/batteries', 'Batteries: the supply chain'],
       ['/sector/batteries/refining', 'Batteries — Refining'],
-      ['/sector/concentration', 'Concentration across sectors'],
+      ['/sector/concentration', 'Where are the chokepoints?'],
       ['/sector/explore/trade?tech=Batteries&stage=Assembly', 'Trade'],
     ] as const) {
       cleanup();

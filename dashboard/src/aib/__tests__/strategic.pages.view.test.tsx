@@ -20,6 +20,7 @@ import { AibStore, setAibStoreForTests, type AibSource } from '../data/store.ts'
 import { resetLastCompact } from '../nav.ts';
 import { compactFamilies } from '../views/StrategicCompactsView.tsx';
 import { STRATEGIC_SECTIONS } from '../views/StrategicCompactView.tsx';
+import { STRATEGIC_SECTION_TITLE } from '../views/strategic/shared.tsx';
 import { fixtureSource, haveFixture, readDoc, stripStrategic, SYNTHETIC_DIR } from './fixture.ts';
 import type { AibDoc } from '../contract.ts';
 
@@ -107,31 +108,33 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('the Strategic Sectoral Compacts la
     const families = compactFamilies(s.compacts).map((f) => f.family);
     expect(families).toEqual(['Electrotechnology supply chains', 'Generation', 'Grid']);
     expect(within(main()).getAllByRole('heading', { level: 2 }).map((h) => h.textContent).slice(0, 3)).toEqual(families);
-    expect(screen.getByTestId('strategic-reading').textContent).toMatch(/^Shown under Managed Interdependence \(the default institutional lens; choose Decoupling above for the stress test\)/);
+    expect(screen.getByTestId('strategic-reading').textContent).toMatch(/^Results below use Managed Interdependence \(the default view; choose Major-supplier disruption above for the stress test\)/);
+    // the page's question first
+    expect(screen.getByTestId('page-question').textContent).toBe('Which bottlenecks justify a Sectoral Compact?');
     const cards = await screen.findAllByTestId('strategic-compact-card');
     expect(cards.map((c) => c.getAttribute('data-compact'))).toEqual(s.compacts.map((c) => c.id));
     // only: name, supply chain, core countries, and under the scenario mission, policy mix, workstreams, result
     const mag = cards[0];
     expect(within(mag).getAllByRole('heading').map((h) => h.textContent)).toEqual(['Permanent Magnets & Drive Systems']);
-    expect(within(mag).getAllByRole('term').map((t) => t.textContent)).toEqual(['Supply chain', 'Core countries', 'Mission', 'Policy mix', 'Workstreams', 'Result']);
+    expect(within(mag).getAllByRole('term').map((t) => t.textContent)).toEqual(['Supply chain', 'Core partners', 'Mission', 'Actions needed', 'Workstreams', 'Result']);
     expect(within(mag).getByRole('list', { name: 'Supply chain of Permanent Magnets & Drive Systems, in order' }).textContent).toBe('Separated oxides→Magnets');
     expect(within(within(mag).getByRole('list', { name: /^Core countries of Permanent Magnets/ })).getAllByRole('listitem').map(text)).toEqual([
       'Avalon — demand anchor', 'Carpania — processing anchor', 'Dorvalia — capacity-building host', 'Elbonia — bridge / coordination partner',
     ]);
     const under = within(mag).getByTestId('compact-under-scenario');
     expect(text(under)).toBe(
-      "Under Managed Interdependence Mission Build missing capacity in magnets. Policy mix BUILD 1 of 2 nodes needs intervention: 1 BUILD, 1 NOT STRESSED Workstreams 1 of 1 workstream active Result 24% of the compact's allied demand (US$3.3bn) is lost; coverage 80% with existing relationships, 85% with coordinated trade, 89% after simulated new capacity.",
+      "Under Managed Interdependence Mission Build missing capacity in magnets. Actions needed Build capacity 1 of 2 supply-chain steps needs action: 1 Build capacity, 1 Unaffected Workstreams 1 of 1 workstream active Result 24% of the compact's allied demand (US$3.3bn) is lost; coverage 80% with existing relationships, 85% with coordinated trade, 89% after simulated new capacity.",
     );
     expect(within(mag).getByRole('link', { name: 'View compact: Permanent Magnets & Drive Systems' }).getAttribute('href')).toBe('/compacts/s/SC-MAGNETS');
     expect(within(mag).getByRole('link', { name: 'View workstreams: Permanent Magnets & Drive Systems' }).getAttribute('href')).toBe('/compacts/workstreams#sc-SC-MAGNETS');
     // a compact without a workstream says so
     const solar = cards.find((c) => c.getAttribute('data-compact') === 'SC-SOLAR')!;
-    expect(text(within(solar).getByTestId('compact-under-scenario'))).toMatch(/Workstreams No workstream: none of the model’s clusters falls mainly in this compact/);
+    expect(text(within(solar).getByTestId('compact-under-scenario'))).toMatch(/Workstreams No workstream: none of the analysis’s clusters falls mainly in this compact/);
     // the toggle: the persistent parts are the same, the scenario's part follows it
     const persistent = cards.map((c) => text(within(c).getByTestId('compact-persistent')));
-    fireEvent.click(screen.getByRole('radio', { name: 'Decoupling' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Major-supplier disruption' }));
     await waitFor(() => expect(r.state.location.search).toBe('?scn=decoupling'));
-    await waitFor(() => expect(text(within(screen.getAllByTestId('strategic-compact-card')[0]).getByTestId('compact-under-scenario'))).toMatch(/^Under Decoupling Mission Build missing capacity in magnets; preserve/));
+    await waitFor(() => expect(text(within(screen.getAllByTestId('strategic-compact-card')[0]).getByTestId('compact-under-scenario'))).toMatch(/^Under Major-supplier disruption Mission Build missing capacity in magnets; preserve/));
     expect(screen.getAllByTestId('strategic-compact-card').map((c) => text(within(c).getByTestId('compact-persistent')))).toEqual(persistent);
     expect(within(screen.getAllByTestId('strategic-compact-card')[0]).getByRole('link', { name: 'View compact: Permanent Magnets & Drive Systems' }).getAttribute('href')).toBe('/compacts/s/SC-MAGNETS?scn=decoupling');
     noAcronyms();
@@ -149,7 +152,10 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('the Strategic Sectoral Compacts la
     // the same nodes in every cell: one square per node
     for (const c of cells) expect(c.querySelectorAll('[data-testid="mini-spine"] > span > span')).toHaveLength(2);
     expect(cells.map((c) => text(c.querySelector('dd > span:not(.sr-only):not([data-testid])')))).toEqual([
-      'no shock', 'BUILD · 1 of 2 nodes needs intervention', 'COORDINATE + MANAGE SPECIALIZATION · 2 of 2 nodes need intervention', 'BUILD + MANAGE SPECIALIZATION + COORDINATE · 2 of 2 nodes need intervention',
+      'no disruption',
+      'Build capacity · 1 of 2 supply-chain steps needs action',
+      'Coordinate trade + Manage specialization · 2 of 2 supply-chain steps need action',
+      'Build capacity + Manage specialization + Coordinate trade · 2 of 2 supply-chain steps need action',
     ]);
     fireEvent.click(within(card).getByRole('button', { name: 'Table' }));
     expect(within(within(card).getByRole('table')).getAllByRole('row')).toHaveLength(s.compacts.length + 1);
@@ -164,7 +170,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('one Strategic Sectoral Compact', (
     expect(await h1('Permanent Magnets & Drive Systems')).toBeTruthy();
     expect(within(main()).getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(STRATEGIC_SECTIONS.map(([, t]) => t));
     expect(within(screen.getByRole('navigation', { name: 'Sections of this compact' })).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(STRATEGIC_SECTIONS.map(([id]) => `#${id}`));
-    expect(screen.getByTestId('compact-facts').textContent).toBe('Electrotechnology supply chains · 2 steps · 2 nodes · 1 workstream');
+    expect(screen.getByTestId('compact-facts').textContent).toBe('Electrotechnology supply chains · 2 stages · 2 supply-chain steps · 1 workstream');
     // why: the mission and the figures under the toggled scenario
     const why = screen.getByTestId('compact-mission');
     expect(within(why).getByText('Build missing capacity in magnets.')).toBeTruthy();
@@ -178,7 +184,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('one Strategic Sectoral Compact', (
     expect(within(ev).getByRole('heading', { level: 3 }).textContent).toBe('Magnets, magnet parts & assemblies');
     const across = within(ev).getByRole('list', { name: 'Magnets, magnet parts & assemblies: status in each scenario' });
     expect(within(across).getAllByRole('listitem').map((li) => text(li).split(' served')[0])).toEqual([
-      'Baseline: NO SHOCK', 'Managed Interdependence: BUILD shown', 'Partial supplier disruption: COORDINATE', 'Decoupling: BUILD',
+      "Today's network: No disruption", 'Managed Interdependence: Build capacity shown', 'Partial supplier disruption: Coordinate trade', 'Major-supplier disruption: Build capacity',
     ]);
     expect(within(ev).getByRole('link', { name: /^Full node evidence in workstream AIB-C01/ }).getAttribute('href')).toBe('/compacts/AIB-C01#nodes');
     expect(text(within(ev).getByRole('list', { name: /status in each scenario/ }).querySelector('[aria-current="true"]'))).toMatch(/best-ranked host for new capacity Carpania/);
@@ -202,15 +208,15 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('one Strategic Sectoral Compact', (
     expect(text(conc)).toMatch(/Leading suppliers outside the alliance Zembla — processing anchor: 70% share of world exports or production of rare-earth oxides & compounds/);
     expect(text(conc)).toMatch(/Critical dependencies outside the alliance \(Managed Interdependence\) Zembla/);
     expect(text(conc)).toMatch(/Allied partners the compact cannot do without \(Managed Interdependence\) Carpania/);
-    expect(within(screen.getByRole('list', { name: 'Nodes with the largest gap under Managed Interdependence' })).getAllByRole('listitem').map((li) => li.getAttribute('data-node'))).toEqual([MAG]);
-    // missions, the four-class portfolio and the menu from the nodes' classes
+    expect(within(screen.getByRole('list', { name: 'Supply-chain steps with the largest gap under Managed Interdependence' })).getAllByRole('listitem').map((li) => li.getAttribute('data-node'))).toEqual([MAG]);
+    // missions (each with the export's own basis), the four-treatment portfolio in plain words and the menu from the steps' treatments
     expect(text(screen.getByTestId('missions'))).toMatch(/^Missions Primary mission Build missing capacity in magnets BUILD/);
-    expect(within(screen.getByRole('list', { name: 'Nodes by treatment under Managed Interdependence' })).getAllByRole('listitem').map(text)).toEqual([
-      '1 BUILD', '0 COORDINATE', '0 MANAGE SPECIALIZATION', '0 LOW INTERVENTION',
+    expect(within(screen.getByRole('list', { name: 'Supply-chain steps by treatment under Managed Interdependence' })).getAllByRole('listitem').map(text)).toEqual([
+      '1 Build capacity', '0 Coordinate trade', '0 Manage specialization', '0 Low intervention',
     ]);
-    expect(screen.getByTestId('portfolio-rest').textContent).toBe('The other 1 node: 1 not stressed under Managed Interdependence.');
+    expect(screen.getByTestId('portfolio-rest').textContent).toBe('The other 1 supply-chain step: 1 unaffected under Managed Interdependence.');
     const menu = screen.getByTestId('policy-menu');
-    expect(within(within(menu).getByRole('list', { name: 'Instruments for BUILD' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+    expect(within(within(menu).getByRole('list', { name: 'Instruments for Build capacity' })).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       'coordinated investment', 'DFI / ECA financing', 'guarantees', 'price stabilization', 'long-term offtake', 'demand aggregation',
     ]);
     expect(within(menu).getByText('For magnets, magnet parts & assemblies')).toBeTruthy();
@@ -236,29 +242,31 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('one Strategic Sectoral Compact', (
   it('what changes: Managed Interdependence against Decoupling with Baseline as the reference, every node in every scenario; a compact without a workstream says so', async () => {
     renderAt('/compacts/s/SC-MAGNETS?scn=decoupling');
     expect(await h1('Permanent Magnets & Drive Systems')).toBeTruthy();
-    const section = screen.getByRole('region', { name: 'What changes between scenarios' });
-    expect(text(section)).toMatch(/^What changes between scenarios Under Managed Interdependence, 1 of 2 nodes needs intervention and \$3\.3 bn \(24%\) of the compact’s allied demand has to shift; under Decoupling, 2 of 2 nodes need intervention and \$9\.1 bn \(66%\) is lost\. 1 node of 2 changes status between the two\./);
+    const section = screen.getByRole('region', { name: STRATEGIC_SECTION_TITLE.scenarios });
+    expect(text(section)).toMatch(
+      /^What changes under each scenario\? Under Managed Interdependence, 1 of 2 supply-chain steps needs action and \$3\.3 bn \(24%\) of the compact’s allied demand has to shift; under Major-supplier disruption, 2 of 2 supply-chain steps need action and \$9\.1 bn \(66%\) is lost\. 1 supply-chain step of 2 changes what it needs between the two\./,
+    );
     const table = within(screen.getByTestId('scenario-compare')).getByRole('table');
     const heads = within(table).getAllByRole('columnheader');
     expect(heads.slice(1).map((h) => h.getAttribute('data-scenario'))).toEqual(['baseline', 'managed', 'decoupling']);
     expect(heads.filter((h) => h.getAttribute('aria-current') === 'true').map((h) => h.getAttribute('data-scenario'))).toEqual(['decoupling']);
     const row = (key: string) => [...table.querySelectorAll(`tr[data-row="${key}"] td`)].map(text);
-    expect(row('mix')).toEqual(['no shock', 'BUILD', 'BUILD + MANAGE SPECIALIZATION + COORDINATE']);
+    expect(row('mix')).toEqual(['no disruption', 'Build capacity', 'Build capacity + Manage specialization + Coordinate trade']);
     expect(row('nodes')).toEqual(['0 of 2', '1 of 2', '2 of 2']);
     expect(row('hosts')).toEqual(['not simulated', 'Carpania', 'Dorvalia']);
     // every node in every scenario, the changed one marked
     const grid = screen.getByTestId('node-status-grid');
-    expect(within(grid).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Node', 'Baseline', 'Managed Interdependence', 'Partial supplier disruption', 'Decoupling']);
+    expect(within(grid).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Supply-chain step', "Today's network", 'Managed Interdependence', 'Partial supplier disruption', 'Major-supplier disruption']);
     const nodeRow = (id: string) => grid.querySelector(`tr[data-node="${id}"]`) as HTMLElement;
-    expect([...nodeRow(REE).querySelectorAll('td')].map(text)).toEqual(['NO SHOCK', 'NOT STRESSED', 'MANAGE SPECIALIZATION', 'MANAGE SPECIALIZATION']);
+    expect([...nodeRow(REE).querySelectorAll('td')].map(text)).toEqual(['No disruption', 'Unaffected', 'Manage specialization', 'Manage specialization']);
     expect(text(nodeRow(REE).querySelector('th'))).toMatch(/changed$/);
     expect(text(nodeRow(MAG).querySelector('th'))).not.toMatch(/changed$/);
-    expect(screen.getByRole('region', { name: 'Allied demand served under each scenario' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Allied demand met under each scenario' })).toBeTruthy();
     noAcronyms();
     cleanup();
     renderAt('/compacts/s/sc-solar');
     expect(await h1('Solar Manufacturing')).toBeTruthy();
-    expect(text(screen.getByRole('region', { name: 'Workstreams under this compact' }))).toMatch(/No workstream: none of the model’s clusters falls mainly in this compact/);
+    expect(text(screen.getByRole('region', { name: STRATEGIC_SECTION_TITLE.workstreams }))).toMatch(/No workstream: none of the analysis’s clusters falls mainly in this compact/);
   });
 });
 

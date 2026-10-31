@@ -121,7 +121,7 @@ export default function ExploreView() {
 
   return (
     <div className="space-y-6">
-      <PageHead eyebrow="SECTORS · EXPLORE" title={themeInfo?.label ?? 'Explore'} lede={`One measure across every economy and every sector: a map, a ranking, the spread of values and the trend. Pick a theme and a measure.${themeInfo?.description ? ` This theme: ${themeInfo.description.charAt(0).toLowerCase()}${themeInfo.description.slice(1)}` : ''}`}>
+      <PageHead eyebrow="SECTORS · EXPLORE" title={themeInfo?.label ?? 'Explore'} lede={`How does one measure compare across every economy and every sector? A map, a ranking, the spread of values and the trend, in the source's own units. Pick a theme and a measure.${themeInfo?.description ? ` This theme: ${themeInfo.description.charAt(0).toLowerCase()}${themeInfo.description.slice(1)}` : ''}`}>
         <div className="mt-4">
           <ThemeChips themes={model.themes.map((t) => ({ slug: t.slug, label: t.label, href: link(`/sector/explore/${t.slug}`) }))} active={theme} />
         </div>

@@ -150,7 +150,7 @@ describe('Prize & Position (spec XIII)', () => {
     );
     // the corner headings sit in the margins above and below the plot: tendencies, not rules
     const q = `${screen.getByTestId('prize-position-quadrants').textContent} ${screen.getByTestId('prize-position-quadrants-low').textContent}`;
-    for (const w of ['typically Preserve', 'Catch Up candidate', 'Watch unless Need implies Partner', 'mature or specialised: review']) expect(q).toContain(w);
+    for (const w of ['typically Preserve', 'Catch Up, given a real base to build from', 'Watch, unless high vulnerability makes it Partner', 'mature or specialized: review']) expect(q).toContain(w);
     expect(screen.getByTestId('prize-position-quadrants').textContent).toMatch(/^Strong position \+ weak prize.*Strong position \+ strong prize/);
     // the nodes not plotted, grouped by why and by technology (not one sentence per node)
     expect(screen.getByTestId('prize-position-unplotted').textContent).toBe('Not plotted (1): 1 not assessed: Batteries (Recovery & Recycling).');
@@ -158,7 +158,7 @@ describe('Prize & Position (spec XIII)', () => {
     const legend = screen.getByTestId('prize-position-legend');
     expect(within(legend).getByTestId('posture-legend').textContent).toBe('High fence:Secure 3Medium fence:Preserve 2,Catch Up 1,Partner 1Low fence:Watch 2');
     expect([...legend.querySelectorAll('[data-stage]')].map((e) => e.textContent)).toEqual(['Extraction', 'Refining & Processing', 'Component Manufacturing', 'Final Assembly & Equipment', 'Recovery & Recycling']);
-    expect(legend.textContent).toContain('Dashed lines: a high prize at 60% or more; a strong position at 75% or more among contenders');
+    expect(legend.textContent).toContain("Dashed lines: a high prize at 60% or more; a strong position at 75% or more among the step's main producers");
     // the tooltip: the node, its choice and fence, need, prize, position, momentum, alignment, evidence
     fireEvent.mouseEnter(sc.querySelector('[data-key="Batteries|Extraction"]') as Element);
     const tip = screen.getByTestId('prize-position-tip').textContent;
@@ -224,7 +224,7 @@ describe('Prize & Position (spec XIII)', () => {
       inRouter(<PrizePositionScatter core={core} cells={cells} name="Aland" onOpen={() => undefined} />);
       const sc = screen.getByTestId('prize-position-scatter');
       const svg = sc.querySelector('svg[role="img"]') as SVGSVGElement;
-      expect(svg.getAttribute('aria-label')).toMatch(/^Aland: 9 producing-stage nodes placed by Strategic Industrial Value and Competitive Position/);
+      expect(svg.getAttribute('aria-label')).toMatch(/^Aland: 9 producing-stage supply-chain steps placed by Strategic Industrial Value and Competitive Position/);
       const rx = sc.querySelector('.quad-rule-x line') as SVGLineElement;
       const ry = sc.querySelector('.quad-rule-y line') as SVGLineElement;
       expect(near(Number(rx.getAttribute('x1')), px(core.meta.thresholds.prize * 100))).toBe(true);
@@ -232,7 +232,7 @@ describe('Prize & Position (spec XIII)', () => {
       for (const g of [rx.parentElement!, ry.parentElement!]) expect(g.getAttribute('stroke-dasharray')).toBe('4,3');
       // the axes: Strategic Industrial Value across, Competitive Position among contenders up, ticks 0-100
       expect(svg.textContent).toContain('Strategic Industrial Value: the prize (percentile) →');
-      expect(svg.textContent).toContain('↑ Competitive Position among contenders (percentile)');
+      expect(svg.textContent).toContain('↑ Competitive Position among the main producers (percentile)');
     });
 
     it('each dot is drawn at its node, in its choice colour with its outline; the overlay buttons sit on the same spots', () => {
@@ -267,7 +267,7 @@ describe('Prize & Position (spec XIII)', () => {
   it('the table twin lists plotted and unplotted nodes with their tendency', () => {
     inRouter(<PrizePositionScatter core={core} cells={cells} name="Aland" onOpen={() => undefined} />);
     fireEvent.click(screen.getByRole('button', { name: 'Table' }));
-    const t = screen.getByRole('table', { name: 'Aland: Strategic Industrial Value and Competitive Position by node' });
+    const t = screen.getByRole('table', { name: 'Aland: Strategic Industrial Value and Competitive Position by supply-chain step' });
     const rows = within(t).getAllByRole('row').slice(1);
     expect(rows).toHaveLength(10);
     expect(rows.find((r) => r.textContent?.includes('Final Assembly & Equipment') && r.textContent.includes('Batteries'))?.textContent).toContain('Strong position + strong prize: typically Preserve');
@@ -278,15 +278,15 @@ describe('Prize & Position (spec XIII)', () => {
     inRouter(<PrizePositionScatter core={core} cells={top} name="Aland" onOpen={() => undefined} />);
     fireEvent.mouseEnter(screen.getByTestId('prize-position-scatter').querySelector('[data-key="Batteries|Components"]') as Element);
     const tip = screen.getByTestId('prize-position-tendency').textContent;
-    expect(tip).toBe('A top-quarter score that does not pass the Preserve test (not a contender, or below the capability floor). Select for the five questions.');
+    expect(tip).toBe('A top-quarter score that does not pass the Preserve test (not a main producer, or below the capability floor). Select for the five questions.');
     expect(tip).not.toContain('typically Preserve');
     // a Preserve node in the same quadrant keeps the tendency
     fireEvent.mouseEnter(screen.getByTestId('prize-position-scatter').querySelector('[data-key="Batteries|Assembly"]') as Element);
     expect(screen.getByTestId('prize-position-tendency').textContent).toBe('Strong position + strong prize: typically Preserve (a tendency). Select for the five questions.');
     fireEvent.click(screen.getByRole('button', { name: 'Table' }));
-    const rows = within(screen.getByRole('table', { name: 'Aland: Strategic Industrial Value and Competitive Position by node' })).getAllByRole('row');
+    const rows = within(screen.getByRole('table', { name: 'Aland: Strategic Industrial Value and Competitive Position by supply-chain step' })).getAllByRole('row');
     expect(rows.find((r) => r.textContent?.includes('Component Manufacturing') && r.textContent.includes('Batteries'))?.textContent).toContain(
-      'A top-quarter score that does not pass the Preserve test (not a contender, or below the capability floor)',
+      'A top-quarter score that does not pass the Preserve test (not a main producer, or below the capability floor)',
     );
   });
 });
@@ -340,7 +340,7 @@ describe('Strategic Choices (spec XIV)', () => {
     const at = (cp: number | null) => cells.map((c) => (c.tech === 'Batteries' && c.stage === 'Components' ? { ...c, cp } : c));
     inRouter(<StrategicChoices core={core} cells={at(0.875)} detail={detail} name="Aland" onOpen={() => undefined} />);
     let catchUp = screen.getAllByTestId('choice-group')[2];
-    expect(catchUp.textContent).toContain('Position gapa top-quarter score that does not pass the Preserve test (not a contender, or below the capability floor)');
+    expect(catchUp.textContent).toContain('Position gapa top-quarter score that does not pass the Preserve test (not a main producer, or below the capability floor)');
     expect(catchUp.textContent).not.toContain('at the Preserve bar');
     cleanup();
     inRouter(<StrategicChoices core={core} cells={at(null)} detail={detail} name="Aland" onOpen={() => undefined} />);
@@ -368,7 +368,7 @@ describe('Policy Alignment (spec XV)', () => {
     expect(screen.getByRole('heading', { name: POLICY_ALIGNMENT_TITLE })).toBeTruthy();
     const t = within(screen.getByTestId('policy-alignment')).getByRole('table');
     expect(within(t).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
-      'Node', 'Recommendation', 'Observed policy intensity', 'Support', 'Protection', 'Policy momentum', 'Alignment',
+      'Supply-chain step', 'Recommended choice', 'Observed policy intensity', 'Support', 'Protection', 'Policy momentum', 'Alignment',
     ]);
     const rows = within(t).getAllByRole('row').slice(1);
     expect(rows.map((r) => r.getAttribute('data-alignment'))).toEqual([
@@ -379,14 +379,14 @@ describe('Policy Alignment (spec XV)', () => {
     const com = rows.find((r) => r.getAttribute('data-key') === 'Batteries|Components')!;
     expect(com.textContent).toContain('moderate, 60th percentilemoderate, 60th percentilenone recordedlow, 12th percentile');
     expect(com.textContent).not.toContain('+12%');
-    expect(screen.getByTestId('policy-ranks-note').textContent).toContain("percentile ranks among Aland's own nodes");
+    expect(screen.getByTestId('policy-ranks-note').textContent).toContain("percentile ranks among Aland's own supply-chain steps");
     expect(screen.getByTestId('policy-ranks-note').textContent).not.toMatch(/shares of that attention/);
     expect(rows[2].textContent).toContain('Needs more attention: deployment policy lags');
     expect(rows[5].textContent).toContain('not available');
     // judged node by node: no score column, no total
     expect(document.body.textContent).toContain('there is no overall score');
     expect(within(t).queryByRole('columnheader', { name: /score/i })).toBeNull();
-    expect(screen.getByTestId('policy-coverage').textContent).toContain('1 wrong tool for the problem · 2 needs more attention (1 deployment under-response) · 1 too much intervention · 1 mixed signals · 5 broadly aligned · 1 not enough policy evidence.');
+    expect(screen.getByTestId('policy-coverage').textContent).toContain('1 wrong tool for the problem · 2 needs more attention (1 where deployment policy lags) · 1 too much intervention · 1 mixed signals · 5 broadly aligned · 1 not enough policy evidence.');
     expect(screen.getByText('PAMS and NIPO detail')).toBeTruthy();
     fireEvent.click(within(rows[3]).getByRole('button'));
     expect(onOpen).toHaveBeenLastCalledWith('Solar|Deployment');

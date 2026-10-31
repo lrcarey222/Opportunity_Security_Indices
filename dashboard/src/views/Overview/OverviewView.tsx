@@ -132,7 +132,7 @@ export default function OverviewView() {
       ) : metric === 'si_rank' ? (
         <>
           Each economy is coloured by where {sectorName} sits in its own list of sectors on the {term}, which ranks an economy&rsquo;s sectors by how strongly the
-          data point to prioritising them: blue near the top (rank 1 is its top sector), white the middle of the economies shown, orange further down. Ranks compare
+          data point to prioritizing them: blue near the top (rank 1 is its top sector), white the middle of the economies shown, orange further down. Ranks compare
           sectors within an economy, not economies with each other.
         </>
       ) : metric === 'si' ? (

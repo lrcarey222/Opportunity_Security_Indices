@@ -93,13 +93,13 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     const kinds = within(screen.getByRole('radiogroup', { name: 'Partnership type' })).getAllByRole('radio');
     expect(kinds.map((r) => r.parentElement?.textContent)).toEqual(['Trade', 'Investment', 'Development', 'Geopolitical']);
     // the filters stay
-    for (const f of ['Economy', 'Technology', 'Stage', 'Node']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
+    for (const f of ['Economy', 'Technology', 'Stage', 'Supply-chain step']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
     expect(screen.getAllByTestId(/^lens-(today|osi|aib)$/).map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual([
       'Today · observed',
       'OSI recommends · NEIS defaults',
-      'AIB model · Decoupling',
+      'AIB analysis · Major-supplier disruption',
     ]);
-    expect(screen.getByRole('heading', { level: 2, name: 'AIB model: Decoupling' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'AIB analysis: Major-supplier disruption' })).toBeTruthy();
     // Today: who supplies whom, from the Baseline file (lazily loaded)
     const top = [...baseline.network!.edges].sort((a, b) => b.tradeUsd - a.tradeUsd)[0];
     const pairs = await within(lens('today')).findByRole('list', { name: 'Who supplies whom today, the largest pairs' }, { timeout: 15_000 });
@@ -116,20 +116,20 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     // the summary compares the lenses with data here; the OSI rankings are not in the test build: left out, said so
     expect(within(summary()).getByRole('heading').textContent).toBe('Where the lenses agree: trade, all economies and sub-sectors');
     await waitFor(() => expect(within(summary()).getByTestId('cross-lens-absent-osi').textContent).toMatch(/^OSI recommends: .*; left out of the comparison\.$/));
-    expect(within(summary()).getByTestId('cross-lens-line').textContent).toMatch(/^Today and AIB model name \d+ economies/);
+    expect(within(summary()).getByTestId('cross-lens-line').textContent).toMatch(/^Today and AIB analysis name \d+ economies/);
     noAcronyms();
   });
 
   it('Trade under Managed Interdependence: the AIB lens reads the scenario file (its relationships), says what it changes, and links to a Country profile carry the scenario', async () => {
     renderAt('/aib/partnerships');
     expect(await h1('Partnerships')).toBeTruthy();
-    expect(await screen.findByRole('heading', { level: 2, name: 'AIB model: Managed Interdependence' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 2, name: 'AIB analysis: Managed Interdependence' })).toBeTruthy();
     const aib = await waitFor(() => {
       const el = lens('aib');
       expect(within(el).getByRole('region', { name: 'Coordinated trade relationships' })).toBeTruthy();
       return el;
     });
-    expect(within(aib).getByTestId('managed-note').textContent).toMatch(/changes only the sub-sectors more concentrated than comparable goods/);
+    expect(within(aib).getByTestId('managed-note').textContent).toMatch(/changes only the supply-chain steps more concentrated than comparable goods/);
     const mi = managed.compacts.flatMap((c) => c.trade).sort((a, b) => (b.usd ?? 0) - (a.usd ?? 0))[0];
     const fig = within(aib).getByRole('region', { name: 'Coordinated trade relationships' }).querySelector('figcaption')!;
     expect(fig.textContent).toContain(`${name(mi.from)} to ${name(mi.to)} ${fmtUsd(mi.usd)}`);

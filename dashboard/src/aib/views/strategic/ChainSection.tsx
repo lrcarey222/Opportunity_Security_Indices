@@ -22,7 +22,8 @@ import { nodeWhere } from '../../derive/taxonomy.ts';
 import { compactHref } from '../../nav.ts';
 import { Section } from '../common.tsx';
 import { NodeRobustness } from '../NodeRobustness.tsx';
-import { Fact, scenarioLabelOf } from './shared.tsx';
+import { classInfo } from '../../derive/classes.ts';
+import { Fact, scenarioLabelOf, STRATEGIC_SECTION_TITLE } from './shared.tsx';
 
 const FN_WORDS: Readonly<Record<string, string>> = {
   resource: 'resource step',
@@ -81,7 +82,7 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
       </div>
       <div className="mt-3 grid gap-6 lg:grid-cols-2">
         <div className="min-w-0">
-          <h4 className="text-sm font-medium text-paper">Its status in each scenario</h4>
+          <h4 className="text-sm font-medium text-paper">What it needs in each scenario</h4>
           <ul className="mt-2 space-y-1.5 text-sm" aria-label={`${label}: status in each scenario`}>
             {across.map((x) => {
               const info = spineStatusInfo(x.status);
@@ -90,7 +91,7 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
                 <li key={x.scenario.id} className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 ${current ? 'text-paper' : 'text-paper-dim'}`} aria-current={current ? 'true' : undefined}>
                   <SpineStatusSwatch status={x.status} size={8} />
                   <span className="min-w-0">
-                    {x.scenario.label}: <span className={current ? 'font-medium' : ''}>{x.status ? info.label : 'no status'}</span>
+                    {scenarioLabelOf(s, x.scenario.id)}: <span className={current ? 'font-medium' : ''}>{x.status ? info.label : 'no status'}</span>
                     {current && <span className="eyebrow ml-1.5 text-paper-mute">shown</span>}
                   </span>
                   <span className="w-full pl-5 text-xs text-paper-mute">
@@ -109,7 +110,7 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
         <div className="min-w-0">
           <h4 className="text-sm font-medium text-paper">Under {shown}</h4>
           {!n ? (
-            <p className="mt-2 text-sm text-paper-dim">The main data have no figures for this node.</p>
+            <p className="mt-2 text-sm text-paper-dim">The main data have no figures for this step.</p>
           ) : r && r.ran ? (
             <div className="mt-2 space-y-2 text-sm text-paper-dim">
               <p>
@@ -133,10 +134,10 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
           ) : (
             <p className="mt-2 text-sm text-paper-dim">
               {untested
-                ? 'Not tested: the node is concentrated, but its benchmark heading is as concentrated, so Managed Interdependence shifts no supply here. Its Decoupling status above is the test.'
+                ? 'Not tested: the step is concentrated, but comparable goods are as concentrated, so Managed Interdependence shifts no supply here. Its status under the major-supplier disruption above is the test.'
                 : mi
                   ? 'No supplier is above the cap here, so no supply has to shift.'
-                  : 'The model has too little data to test this node under the shock.'}
+                  : 'There are too few data to test this step under the disruption.'}
             </p>
           )}
         </div>
@@ -144,7 +145,7 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
       <dl className="mt-4 grid grid-cols-1 gap-x-3 gap-y-1.5 text-sm sm:grid-cols-[13rem_minmax(0,1fr)]" aria-label={`Who does what in ${label}`}>
         <Fact term="Largest suppliers (world supply)">{suppliers ?? 'no economy above 2%'}</Fact>
         <Fact term="Largest allied buyers (imports)">{buyers ?? 'no economy above 2%'}</Fact>
-        <Fact term="Hosts for new capacity (Managed Interdependence or Decoupling, the better rank)">
+        <Fact term="Countries that could add capacity (Managed Interdependence or the major-supplier disruption, the better rank)">
           {hosts.length ? `${listWords(hosts)}; they tie with the model’s best on simulated gain, so the rank is its capability tie-break` : 'none on a node that needs new capacity'}
         </Fact>
       </dl>
@@ -154,7 +155,7 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
             Full node evidence in workstream {n.compact} &rarr;
           </Link>
         ) : (
-          <span className="text-paper-mute">This node is in no workstream: the model found no cluster of partners around it.</span>
+          <span className="text-paper-mute">This step is in no workstream: the analysis found no cluster of partners around it.</span>
         )}
       </p>
       {n && (n.variants !== undefined || n.growth !== undefined) && (
@@ -183,12 +184,12 @@ export function ChainSection({
   return (
     <Section
       id="chain"
-      title="Which nodes it covers"
+      title={STRATEGIC_SECTION_TITLE.chain}
       intro={
         <p>
-          The supply chain in order, step by step, with the nodes (groups of traded goods) at each step. A node’s colour and label give its policy status under {label}: BUILD
-          (new capacity is needed), COORDINATE (trade among partners can redirect supply), MANAGE SPECIALIZATION (keep and back up a specialized supplier) or LOW INTERVENTION.
-          Select a node to see the model’s evidence for it.
+          The supply chain in order, stage by stage, with the supply-chain steps (groups of traded goods) at each stage. A step’s color and label say what it needs under {label}:{' '}
+          {classInfo('BUILD').label} (new capacity is needed), {classInfo('COORDINATE').label} (trade among partners can redirect supply), {classInfo('MANAGE SPECIALIZATION').label}{' '}
+          (keep and back up a specialized supplier) or {classInfo('LOW INTERVENTION').label}. Select a step to see the evidence for it.
         </p>
       }
     >
@@ -199,7 +200,7 @@ export function ChainSection({
             <NodeEvidence s={s} c={c} nodeId={node} sid={sid} onClose={() => onNode(null)} />
           ) : (
             <p className="mt-4 text-xs text-paper-mute" data-testid="spine-hint">
-              Select a node above, or a node’s name in the division of labour, for its evidence.
+              Select a supply-chain step above, or a step’s name in the division of labor, for its evidence.
             </p>
           )}
         </div>

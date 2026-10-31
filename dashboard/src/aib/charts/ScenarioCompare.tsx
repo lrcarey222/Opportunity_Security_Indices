@@ -17,6 +17,7 @@
 
 import type { ReactNode } from 'react';
 import { HATCH_STYLE } from '../../theme/palette.ts';
+import { SCENARIO_CHART_LABEL } from '../../content/vocabulary.ts';
 import { isNum } from '../../lib/format.ts';
 import type { AibMeta } from '../contract.ts';
 import { classInfo } from '../derive/classes.ts';
@@ -25,11 +26,16 @@ import { fmtShare } from '../derive/format.ts';
 import { classMixText, scenarioInfo, SCENARIO_ORDER, type AibScenarioId, type ScenarioFigures } from '../derive/scenarios.ts';
 import { DemandSplitBar, DIVERSIFY_MARK } from './DiversifyChart.tsx';
 
-/** The parts of the coverage split in words (legend, text). */
-export const COVERAGE_WORDS = { kept: 'Kept', trade: 'Restored by trade', build: 'New capacity' } as const;
+/**
+ * The parts of the coverage split in words (legend, text): content/vocabulary.ts SCENARIO_CHART_LABEL, except
+ * "Recovered through trade" (the vocabulary's "allied trade": the suppliers that recover it can be any
+ * economy but the one removed, so the pages do not call that trade allied).
+ */
+export const COVERAGE_WORDS = { kept: SCENARIO_CHART_LABEL.kept, trade: 'Recovered through trade', build: SCENARIO_CHART_LABEL.newCapacity } as const;
 
-/** "kept 51% · restored by trade 1% · new capacity 48%". */
-export const coverageText = (s: DemandSplit): string => `kept ${fmtShare(s.kept, 0)} · restored by trade ${fmtShare(s.trade, 0)} · new capacity ${fmtShare(s.build, 0)}`;
+/** "still supplied 51% · recovered through trade 1% · requires new capacity 48%". */
+export const coverageText = (s: DemandSplit): string =>
+  `still supplied ${fmtShare(s.kept, 0)} · recovered through trade ${fmtShare(s.trade, 0)} · requires new capacity ${fmtShare(s.build, 0)}`;
 
 const pct = (x: number, max = 1) => `${max > 0 ? Math.max(0, Math.min(1, x / max)) * 100 : 0}%`;
 
@@ -61,7 +67,7 @@ const ordered = <T extends { id: AibScenarioId }>(rows: readonly T[]): T[] => SC
 /** The default note of a coverage row: Baseline before any shock; a scenario that did not run, unchanged; no figures. */
 function coverageNote(r: Pick<ScenarioFigures, 'id' | 'ran' | 'split'>): string | null {
   if (!r.split) return 'no coverage figures';
-  if (r.id === 'baseline') return 'trade as it is today, before any shock';
+  if (r.id === 'baseline') return 'trade as it is today, before any disruption';
   if (r.id === 'managed' && !r.ran) return 'unchanged: nothing is above its benchmark here';
   return null;
 }
@@ -230,7 +236,7 @@ export function ScenarioClassBars({ rows, highlight, label, format, meta }: Scen
           const shown = r.id === highlight;
           const total = totals[i];
           const mix = classMixText(r.groups);
-          const note = r.note ?? (r.id === 'baseline' && total <= 0 ? 'nothing is lost before any shock' : total <= 0 ? 'nothing lost' : null);
+          const note = r.note ?? (r.id === 'baseline' && total <= 0 ? 'nothing is lost before any disruption' : total <= 0 ? 'nothing lost' : null);
           const text = total > 0 ? `${format(total)}${mix ? `: ${mix}` : ''}` : '';
           const parts = r.groups.filter((g) => g.usd > 0);
           return (

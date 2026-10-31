@@ -6,8 +6,8 @@
 // The bases (2026-10-19, the three partnership lenses): 'today' (observed: trade, investment, aid and
 // votes as they are), 'baseline' (the OSI's recommendation at the NEIS defaults; the internal key stays:
 // "baseline" now means the observed 2024 trade in the AIB section, so the words never say it), 'model'
-// (the AIB model under the toggled scenario: pass `scenario`, its label) and 'facts' (observed or modelled
-// facts together, as before).
+// (the AIB analysis under the toggled scenario: pass `scenario`, its label; shown as "AIB analysis") and
+// 'facts' (observed data and analysis results together, as before).
 
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -16,8 +16,8 @@ export type Basis = 'facts' | 'baseline' | 'today' | 'model';
 
 export const BASIS_WORDS: Readonly<Record<Basis, { label: string; title: string }>> = {
   facts: {
-    label: 'Observed / modelled facts',
-    title: 'Observed trade or the trade-network model: these do not change with the Perspective (preference) settings of a Country profile.',
+    label: 'Observed data and analysis',
+    title: 'Observed trade or the trade-network analysis: these do not change with the Perspective (preference) settings of a Country profile.',
   },
   baseline: {
     label: 'OSI recommends · NEIS defaults',
@@ -28,8 +28,8 @@ export const BASIS_WORDS: Readonly<Record<Basis, { label: string; title: string 
     title: 'Observed data as they are (2024 trade, investment positions and projects, aid, votes and agreements): no model and no preferences.',
   },
   model: {
-    label: 'AIB model',
-    title: 'The trade-network model under the chosen scenario: a counterfactual market structure, not a forecast. It does not change with the Perspective settings.',
+    label: 'AIB analysis',
+    title: 'The trade-network analysis under the chosen scenario: a stress test of how the market could be organized, not a forecast. It does not change with the Perspective settings.',
   },
 };
 

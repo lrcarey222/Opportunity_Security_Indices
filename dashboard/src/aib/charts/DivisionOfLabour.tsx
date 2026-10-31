@@ -110,7 +110,7 @@ export function DivisionDots({ matrix, name, selectedNode = null, onSelectNode, 
     <div className="overflow-x-auto" data-testid="division-of-labour">
       <table className="data-table w-full text-sm">
         <caption className="sr-only">
-          {caption ?? `Division of labour in ${matrix.compact.name}: ${divisionMeasureLabel(measure).toLowerCase()} by economy and node`}
+          {caption ?? `Division of labor in ${matrix.compact.name}: ${divisionMeasureLabel(measure).toLowerCase()} by economy and supply-chain step`}
         </caption>
         <thead>
           <tr>
@@ -180,7 +180,7 @@ export function DivisionTable({ matrix, name }: { matrix: DivisionMatrix; name: 
       }),
     ),
   ];
-  return <TableView rows={matrix.rows} cols={cols} caption={`${matrix.compact.name}: ${divisionMeasureLabel(measure).toLowerCase()} by economy and node`} rowKey={(r) => r.iso3} />;
+  return <TableView rows={matrix.rows} cols={cols} caption={`${matrix.compact.name}: ${divisionMeasureLabel(measure).toLowerCase()} by economy and supply-chain step`} rowKey={(r) => r.iso3} />;
 }
 
 /** Every cell of the compact's division of labour as CSV rows (every measure, the flags spelt out). */
@@ -221,7 +221,7 @@ export interface DivisionOfLabourProps extends Omit<DivisionDotsProps, 'caption'
 export function DivisionOfLabour({ matrix, name, title = 'Who does what', sub, headingLevel = 2, badge, onMeasure, nodeLabel, csvName, ...dots }: DivisionOfLabourProps) {
   const label = (id: string) => nodeLabel?.(id) ?? matrix.nodes.find((n) => n.id === id)?.label ?? id;
   const measures = DIVISION_MEASURES.map((m) => ({ value: m, label: divisionMeasureLabel(m) }));
-  const summary = `${matrix.compact.name}: ${divisionMeasureLabel(matrix.measure).toLowerCase()} of ${matrix.rows.length} economies across ${matrix.nodes.length} nodes.`;
+  const summary = `${matrix.compact.name}: ${divisionMeasureLabel(matrix.measure).toLowerCase()} of ${matrix.rows.length} economies across ${matrix.nodes.length} supply-chain steps.`;
   return (
     <ChartCard
       title={title}
@@ -233,7 +233,7 @@ export function DivisionOfLabour({ matrix, name, title = 'Who does what', sub, h
       legend={<DivisionLegendView measure={matrix.measure} />}
       table={() => <DivisionTable matrix={matrix} name={name} />}
       notes={matrix.hidden > 0 ? `${matrix.hidden} more ${matrix.hidden === 1 ? 'economy has' : 'economies have'} a smaller position; the CSV lists every one.` : undefined}
-      csv={() => ({ name: csvName ?? `${matrix.compact.id} division of labour ${matrix.measure}`, text: rowsToCsv(divisionCsvRows(matrix, name, label)) })}
+      csv={() => ({ name: csvName ?? `${matrix.compact.id} division of labor ${matrix.measure}`, text: rowsToCsv(divisionCsvRows(matrix, name, label)) })}
     >
       <DivisionDots matrix={matrix} name={name} {...dots} />
     </ChartCard>

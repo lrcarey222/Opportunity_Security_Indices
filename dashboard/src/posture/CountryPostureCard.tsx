@@ -25,6 +25,9 @@ import { strategySentence } from './strategy.ts';
 import { countryPostureCols } from './tables.tsx';
 
 export const COUNTRY_STRATEGY_MAP_TITLE = 'Country Strategy Map';
+/** The map's sub where the page header carries the strategy sentence (the NEIS copy refresh, 2026-10-30). */
+export const COUNTRY_STRATEGY_MAP_INTRO =
+  "One map of the country's strategic choices across each technology and supply-chain stage. Color shows what the country should do; select a cell to see the evidence behind the choice.";
 /** The old name of the title constant (the map was "Secure, compete or deploy, by technology and stage" until 2026-10-29). */
 export const COUNTRY_POSTURE_TITLE = COUNTRY_STRATEGY_MAP_TITLE;
 
@@ -70,7 +73,7 @@ export function CountryPostureCard({
   const close = useCallback(() => setSel(null), [setSel]);
   if (core.status === 'error') {
     return (
-      <Notice kind="warning" title="The posture data could not be loaded">
+      <Notice kind="warning" title="The strategy data could not be loaded">
         {core.error}
       </Notice>
     );
@@ -78,8 +81,8 @@ export function CountryPostureCard({
   if (!core.data) return <Loading label="Loading the Country Strategy Map" />;
   if (!cells.length) {
     return (
-      <Notice kind="info" title="No posture">
-        {name} has no classified supply-chain nodes in the strategic position framework.
+      <Notice kind="info" title="No strategy map">
+        There is not enough comparable evidence to produce a strategy map for {name}.
       </Notice>
     );
   }
@@ -98,7 +101,7 @@ export function CountryPostureCard({
       <ChartCard
         headingLevel={headingLevel}
         title={title}
-        sub={showSentence ? <span data-testid="posture-takeaway">{sentence}</span> : undefined}
+        sub={showSentence ? <span data-testid="posture-takeaway">{sentence}</span> : <span data-testid="strategy-map-intro">{COUNTRY_STRATEGY_MAP_INTRO}</span>}
         summary={summary}
         table={() => (
           <TableView
@@ -116,15 +119,16 @@ export function CountryPostureCard({
           <div className="space-y-1">
             <TradeFreshness meta={c.meta} />
             <p>
-              Need and the prize (<Term id={prizeTermId}>{prizeLabel(c.meta)}</Term>) triage each node; <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>{' '}
-              decides the industrial response; the Secure tests override both. Deployment &amp; Use reads <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> and is
-              Accelerate (medium fence) or Watch (low fence), never Partner. Each cell is coloured by its choice alone; hover or focus a cell for its name, choice and fence, and
-              select it, or a row of the table, for its five questions: need, prize, position, choice and policy alignment.
+              Need and the prize (<Term id={prizeTermId}>{prizeLabel(c.meta)}</Term>) decide whether a supply-chain step matters;{' '}
+              <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term> decides the response; the Secure tests come first. At Deployment &amp; Use the question is{' '}
+              <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term>: Accelerate (medium fence) or Watch (low fence), never Partner. Color alone shows the choice; hover or
+              focus a cell for its name, choice and fence, and select it, or a row of the table, for the five questions behind the choice: need, prize, position, choice and policy
+              alignment.
             </p>
             {mixed > 0 && (
               <p data-testid="strategy-map-mixed-note">
-                A cell split on the diagonal is a mixed step: its capability layers sit in different <Term id={POSTURE_TERMS.yard}>yards</Term>. Its own choice colour fills the
-                upper left; the fence colour of each other yard the lower right (orange the Small yard, blue the Medium yard, grey the Large yard). The drawer lists each layer
+                A cell split on the diagonal is a mixed step: its capability layers sit in different <Term id={POSTURE_TERMS.yard}>yards</Term>. Its own choice color fills the
+                upper left; the fence color of each other yard the lower right (orange the Small yard, blue the Medium yard, gray the Large yard). The drawer lists each layer
                 with its own yard and choice.
               </p>
             )}

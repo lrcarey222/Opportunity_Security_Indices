@@ -65,11 +65,11 @@ describe('Prize & Position (spec XIII)', () => {
   it('a high-prize node with a top-quarter score that is not Preserve did not pass the Preserve test: never "typically Preserve"', () => {
     expect(prizeTendency({ prize: 0.9, cp: 0.95, verb: 'preserve' }, t)).toEqual({ words: 'Strong position + strong prize: typically Preserve', tendency: true });
     expect(prizeTendency({ prize: 0.9, cp: 0.95, verb: 'secure' }, t).tendency).toBe(true);
-    const failed = { words: 'A top-quarter score that does not pass the Preserve test (not a contender, or below the capability floor)', tendency: false };
+    const failed = { words: 'A top-quarter score that does not pass the Preserve test (not a main producer, or below the capability floor)', tendency: false };
     for (const verb of ['catch_up', 'partner', 'watch'] as const) expect(prizeTendency({ prize: 0.9, cp: 0.875, verb }, t), verb).toEqual(failed);
     // below the bar, or with a low prize, the quadrant's tendency stays
-    expect(prizeTendency({ prize: 0.8, cp: 0.4, verb: 'catch_up' }, t)).toEqual({ words: 'Weak position + strong prize: Catch Up candidate', tendency: true });
-    expect(prizeTendency({ prize: 0.3, cp: 0.9, verb: 'watch' }, t).words).toMatch(/^Strong position \+ weak prize: mature or specialised/);
+    expect(prizeTendency({ prize: 0.8, cp: 0.4, verb: 'catch_up' }, t)).toEqual({ words: 'Weak position + strong prize: Catch Up, given a real base to build from', tendency: true });
+    expect(prizeTendency({ prize: 0.3, cp: 0.9, verb: 'watch' }, t).words).toMatch(/^Strong position \+ weak prize: mature or specialized/);
   });
 });
 
@@ -94,7 +94,7 @@ describe('Strategic Choices (spec XIV)', () => {
     expect(watchReasons(cell('Solar|Deployment'), t, dk.get('Solar|Deployment')!)).toEqual(['Deployment need below the acceleration bar']);
     // a high-prize Watch: the engine's weak domestic case (no top-quarter position, no credible pathway)
     const highPrize = { ...cell('Solar|Extraction'), prize: 0.8 };
-    expect(watchReasons(highPrize, t, { ...dk.get('Solar|Extraction')!, watchReasons: ['low_need', 'weak_domestic_case'] })).toEqual(['Low need', 'Weak domestic case']);
+    expect(watchReasons(highPrize, t, { ...dk.get('Solar|Extraction')!, watchReasons: ['low_need', 'weak_domestic_case'] })).toEqual(['Low need', 'Weak domestic case (no strong position or credible pathway)']);
     // the detail's lack of trusted alternatives is a need score (high = few alternatives): it never turns into "ample diversified supply"
     const scarce = { ...dk.get('Solar|Extraction')!, watchReasons: ['low_need', 'low_prize'], supplyChain: { ...dk.get('Solar|Extraction')!.supplyChain!, trustedAlternatives: 0.74, supplierConcentration: 0.1 } };
     expect(watchReasons(cell('Solar|Extraction'), t, scarce)).toEqual(['Low need', 'Low prize']);
@@ -147,11 +147,11 @@ describe('Strategic Choices (spec XIV)', () => {
       expect(catchUpPositionWords({ cp: 0.75 }, t, style)).toBe(TOP_QUARTER_NOT_PRESERVE);
       expect(catchUpPositionWords({ cp: null }, t, style)).toBe('position not measured');
     }
-    expect(TOP_QUARTER_NOT_PRESERVE).toBe('a top-quarter score that does not pass the Preserve test (not a contender, or below the capability floor)');
+    expect(TOP_QUARTER_NOT_PRESERVE).toBe('a top-quarter score that does not pass the Preserve test (not a main producer, or below the capability floor)');
     expect(domesticCase(cell('Batteries|Extraction'), t)).toBe('position 20 (below the Preserve bar of 75); prize 30 (below 60); no credible pathway');
     // a Partner node with a top-quarter score failed the Preserve test; it is never called strong
     expect(domesticCase({ ...cell('Batteries|Extraction'), cp: 0.88 }, t)).toBe(
-      'position 88 (top-quarter score, but not a contender or below the capability floor); prize 30 (below 60); no credible pathway',
+      'position 88 (top-quarter score, but not a main producer or below the capability floor); prize 30 (below 60); no credible pathway',
     );
     expect(diversificationWords(dk.get('Batteries|Extraction')!.partners)).toBe('moving 10% of imports to BBB would cut import concentration (HHI) by 0.050');
     expect(diversificationWords([])).toBeNull();

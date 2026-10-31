@@ -326,7 +326,7 @@ export function fenceReason(n: FenceNode, core: Pick<PostureCore, 'meta'>, names
     case 'partner': {
       if (c.partnerGap || d?.partnerGap) return 'No credible allied solution yet';
       const lead = d?.partners[0]?.iso3 ?? c.partner1;
-      return lead ? `Leading partner: ${names[lead] ?? lead}` : null;
+      return lead ? `Best-placed partner: ${names[lead] ?? lead}` : null;
     }
     case 'accelerate': {
       const top = topDeploymentFamily(n);

@@ -184,7 +184,7 @@ const NODE_ATTRIBUTE = 'A node attribute of the Yards & Fences evidence, assesse
 const NODE_PRIZE_CHARTS = [MINERAL_DEMAND, WEO_OUTLOOK, EV_SALES] as const;
 
 const NEED: readonly FenceVariable[] = [
-  { id: 'need', label: 'Supply-chain need', group: 'table', charts: [], none: composite('the within-node percentile of import dependence, supplier concentration, risky supplier exposure and lack of trusted alternatives') },
+  { id: 'need', label: 'Supply-chain vulnerability', group: 'table', charts: [], none: composite('the within-step percentile of import dependence, supplier concentration, risky supplier exposure and lack of trusted alternatives') },
   {
     id: 'import', label: 'Import dependence', group: 'table',
     charts: [
@@ -208,18 +208,18 @@ const NEED: readonly FenceVariable[] = [
 
 const PRIZE: readonly FenceVariable[] = [
   { id: 'opportunity', label: 'Strategic Industrial Value', group: 'table', charts: [], none: composite('the market prize, industrial commons and future option value') },
-  { id: 'market', label: 'Market prize', group: 'table', charts: [], none: composite('world demand growth (node prize) and investment momentum, lifted by home-market growth') },
+  { id: 'market', label: 'Market prize', group: 'table', charts: [], none: composite('world demand growth and investment momentum, lifted by home-market growth') },
   { id: 'commons', label: 'Industrial commons', group: 'table', charts: [], none: NODE_ATTRIBUTE },
   { id: 'option', label: 'Future option', group: 'table', charts: [], none: NODE_ATTRIBUTE },
-  { id: 'node-prize', label: 'Node prize', group: 'table', charts: NODE_PRIZE_CHARTS },
+  { id: 'node-prize', label: 'World demand growth', group: 'table', charts: NODE_PRIZE_CHARTS },
   { id: 'home', label: 'Home-market growth', group: 'table', charts: [GENERATION, POWER_ADDITIONS, EV_SALES, EV_STOCK, OIL_USE_CHANGE, DEPLOYMENT_INVESTMENT] },
   { id: 'investment', label: 'Investment momentum', group: 'table', charts: [ANNUAL_INVESTMENT] },
   { id: 'outlook', label: 'Market outlook', group: 'table', charts: NODE_PRIZE_CHARTS },
-  { id: 'need', label: 'Supply-chain need', group: 'table', charts: [], none: composite('the within-node percentile of the four need families (High fence)') },
+  { id: 'need', label: 'Supply-chain vulnerability', group: 'table', charts: [], none: composite('the within-step percentile of the four need families (High fence)') },
 ];
 
 const POSITION: readonly FenceVariable[] = [
-  { id: 'cp', label: 'Competitive Position', group: 'table', charts: [], none: composite('the node’s demonstrated capability (export position, production, operating capacity, investment, resources, deployment scale where they apply) placed among its contenders') },
+  { id: 'cp', label: 'Competitive Position', group: 'table', charts: [], none: composite('the step’s demonstrated capability (export position, production, operating capacity, investment, resources, deployment scale where they apply) placed among its main producers') },
   { id: 'share', label: 'World supply share', group: 'table', charts: [MINE_PRODUCTION, REFINED_PRODUCTION, MFG_SHARE, { theme: 'production', m: 'production.fuels', item: FOSSIL_FUEL, chart: 'map', as: 'share', stages: ['Extraction'], basis: 'related', note: 'Fuel production (Energy Institute), share of world.' }, { theme: 'production', m: 'production.uranium', item: CELL, techs: ['Nuclear'], chart: 'map', as: 'share', stages: ['Extraction'], basis: 'related', note: 'Uranium mine production, share of world.' }, EXPORTS_SHARE] },
   {
     id: 'export', label: 'Export position', group: 'table',
@@ -294,7 +294,7 @@ export function fenceVariables(analysis: VariableAnalysis, opts: { siv?: boolean
     .filter((v) => siv || !['market', 'commons', 'option'].includes(v.id))
     .map((v) =>
       v.id === 'opportunity'
-        ? { ...v, label: opts.prizeLabel ?? v.label, none: siv ? v.none : composite('world demand growth (node prize) and investment momentum, lifted by home-market growth') }
+        ? { ...v, label: opts.prizeLabel ?? v.label, none: siv ? v.none : composite('world demand growth and investment momentum, lifted by home-market growth') }
         : v,
     );
 }

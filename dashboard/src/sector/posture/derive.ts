@@ -9,8 +9,11 @@
 import { DEPLOYMENT_STAGE, stageDisplay } from '../../lib/stages.ts';
 import type { PostureCell, PostureMeta, Verb } from '../../posture/contract.ts';
 import { listAnd, plural, score100 } from '../../posture/derive.ts';
-import { PRIZE_LABEL, VERB_FAMILY, VERB_LABEL, verbOf } from '../../posture/grammar.ts';
+import { FENCE_LABEL, FENCE_OF_VERB, FENCE_ORDER, PRIZE_LABEL, VERB_FAMILY, VERB_LABEL, verbOf, type Fence } from '../../posture/grammar.ts';
 import { nodePhrase } from '../../posture/strategy.ts';
+import { mixedYards } from '../../posture/yards.ts';
+import { AIB_SIDES } from '../../content/vocabulary.ts';
+import { CONTROL_LAYER_ECONOMY_NOTE } from '../copy.ts';
 
 /** The verbs in the order of the counts line, the legend and the takeaway. */
 export const SECTOR_VERB_ORDER: readonly Verb[] = ['secure', 'preserve', 'catch_up', 'partner', 'accelerate', 'watch'];
@@ -47,7 +50,7 @@ export function strategyPoints(cells: readonly PostureCell[], names: Record<stri
 
 /** Why an economy of the node is not on the scatter (null: it is). */
 export function notPlottedReason(c: PostureCell | null): string | null {
-  if (!c) return 'not classified';
+  if (!c) return 'no strategic choice in the data';
   if (c.posture === 'N') return 'not assessed (need or prize not measured)';
   if (c.need === null) return 'need not measured';
   if (verbOf(c) === null) return 'no choice recorded';
@@ -84,15 +87,15 @@ export function prizeWords(stage: string, p: NodePrize | null, threshold: number
   if (stage === DEPLOYMENT_STAGE) {
     return `Deployment & Use has no prize of its own: the prize (${label}) is read at the stages that make or supply the technology.`;
   }
-  if (!p) return `The prize (${label}) is not measured in this node.`;
+  if (!p) return `The prize (${label}) is not measured at this step.`;
   const bar = score100(threshold);
   const side = (x: number) => (x >= threshold ? 'at or above' : 'below');
-  if (score100(p.min) === score100(p.max)) return `Prize (${label}) in this node: ${score100(p.median)} for every economy, ${side(p.median)} the bar of ${bar}.`;
+  if (score100(p.min) === score100(p.max)) return `Prize (${label}) at this step: ${score100(p.median)} for every economy, ${side(p.median)} the bar of ${bar}.`;
   const range = `${score100(p.min)}–${score100(p.max)}`;
   if (p.kind === 'mixed') {
-    return `Prize (${label}) in this node: ${score100(p.median)} for most economies (${range} where a national home market lifts it); ${p.high} of ${p.n} at or above the bar of ${bar}.`;
+    return `Prize (${label}) at this step: ${score100(p.median)} for most economies (${range} where a national home market lifts it); ${p.high} of ${p.n} at or above the bar of ${bar}.`;
   }
-  return `Prize (${label}) in this node: ${score100(p.median)} for most economies (${range} where a national home market lifts it), ${p.kind === 'high' ? 'at or above' : 'below'} the bar of ${bar} for all.`;
+  return `Prize (${label}) at this step: ${score100(p.median)} for most economies (${range} where a national home market lifts it), ${p.kind === 'high' ? 'at or above' : 'below'} the bar of ${bar} for all.`;
 }
 
 /** How the framework decides this node, in words (spec VIII), at the core's thresholds. */
@@ -100,10 +103,10 @@ export function decisionWords(stage: string, p: NodePrize | null, t: PostureMeta
   if (stage === DEPLOYMENT_STAGE) {
     return `At Deployment & Use the choice reads deployment need only: at or above ${score100(t.deployment)}, Accelerate; below it, Watch. Accelerate is a deployment priority, not a call to manufacture the equipment at home; Competitive Position is context here.`;
   }
-  const high = `where the prize is high, Competitive Position decides: the top quarter of the node's contenders (at or above ${score100(t.cp)}) Preserve; below it, a credible pathway means Catch Up, otherwise high need (at or above ${score100(t.need)}) means Partner and low need Watch`;
+  const high = `where the prize is high, Competitive Position decides: the top quarter of this step's main producers (at or above ${score100(t.cp)}) Preserve; below it, a credible pathway (a capability anchor and a corroborating signal) means Catch Up, otherwise high need (at or above ${score100(t.need)}) means Partner and low need Watch`;
   const low = `where the prize is low, need decides: high need means Partner (a strong position is kept as Preserve and flagged for review), low need Watch`;
   const lead = !p ? `${cap(high)}; ${low}.` : p.kind === 'high' ? `${cap(high)}.` : p.kind === 'low' ? `${cap(low)}.` : `${cap(high)}; ${low}.`;
-  return `${lead} Secure overrides the triage: a Secure economy keeps its true place on the chart.`;
+  return `${lead} Secure overrides all of these: a Secure economy keeps its true place on the chart.`;
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -160,13 +163,15 @@ const RANK: Record<Verb, (a: PostureCell, b: PostureCell) => number> = {
 };
 
 /** What each group of economies should do, as the takeaway says it ("should" agrees with one or many). */
+// plain actions (vocabulary CHOICE_PROSE: "rely on partners for", "deploy faster", "leave open"), never the bare name in prose
 const CLAUSE: Record<Verb, (stage: string) => string> = {
-  secure: () => 'must secure it',
+  secure: () => 'should secure it',
   preserve: () => 'should preserve a strong position',
-  catch_up: () => 'should catch up, with the prize and a credible pathway',
-  partner: () => 'should partner, needing it without a domestic case',
-  accelerate: () => 'should accelerate deployment',
-  watch: (stage) => (stage === DEPLOYMENT_STAGE ? 'should watch (no acceleration needed)' : 'should watch (domestic industrial priority low)'),
+  catch_up: () => 'should catch up from a credible base',
+  partner: () => 'should rely on trusted partners for it',
+  accelerate: () => 'should deploy faster',
+  // Watch at Deployment & Use: the need is below the bar for acceleration (vocabulary WATCH_DEPLOYMENT_DEFINITION), never "on track"
+  watch: (stage) => (stage === DEPLOYMENT_STAGE ? 'should watch rather than accelerate deployment (need below the bar for acceleration)' : 'should leave it open (low domestic priority)'),
 };
 
 const MAX_NAMED = 3;
@@ -185,7 +190,7 @@ export function ledBy(names: readonly string[], total: number): string {
 export function sectorStrategyTakeaway(tech: string, stage: string, cells: readonly PostureCell[], names: Record<string, string>, meta: Pick<PostureMeta, 'phrases'>): string {
   const phrase = nodePhrase(meta, tech, stage);
   const where = stage === DEPLOYMENT_STAGE && !meta.phrases[`${tech}|${stage}`] ? `${phrase} deployment` : phrase;
-  if (!cells.length) return `No economy is classified in ${where}.`;
+  if (!cells.length) return `No economy has a strategic choice in ${where}.`;
   const clauses: string[] = [];
   for (const verb of SECTOR_VERB_ORDER) {
     const group = cells.filter((c) => verbOf(c) === verb).sort(RANK[verb]);
@@ -198,6 +203,51 @@ export function sectorStrategyTakeaway(tech: string, stage: string, cells: reado
   if (!clauses.length) return `No economy has a recorded choice in ${where}.`;
   const body = clauses.length === 1 ? clauses[0] : `${clauses.slice(0, -1).join('; ')}; and ${clauses[clauses.length - 1]}`;
   return `In ${where}, ${body}.`;
+}
+
+/**
+ * The two sides of the allied division of labor at one producing step (vocabulary AIB_SIDES), from the
+ * node's own cells: "Who has the strongest capability?" names the three highest Competitive Positions;
+ * "Which countries need a partner?" names the economies whose choice is Partner ("led by" past three).
+ * null at Deployment & Use (Competitive Position is context there and Partner is not a choice) or when no
+ * economy has a measured position.
+ */
+export function alliedSides(stage: string, cells: readonly PostureCell[], names: Record<string, string>): string | null {
+  if (stage === DEPLOYMENT_STAGE) return null;
+  const nm = (c: PostureCell) => names[c.iso3] ?? c.iso3;
+  const strong = cells.filter((c) => c.posture !== 'N' && c.cp !== null).sort((a, b) => desc(b.cp) - desc(a.cp) || nm(a).localeCompare(nm(b)));
+  if (!strong.length) return null;
+  const partners = cells.filter((c) => verbOf(c) === 'partner').sort(RANK.partner);
+  const demand = partners.length ? `${ledBy(partners.map(nm), partners.length)} (their choice is Partner)` : 'none here: no economy has Partner as its choice';
+  return `${AIB_SIDES.supply.question} ${listAnd(strong.slice(0, MAX_NAMED).map(nm))} (the highest Competitive Positions). ${AIB_SIDES.demand.question} ${cap(demand)}.`;
+}
+
+/**
+ * The counts line's grouping: the economies of one step by fence (FENCE_OF_VERB; the legend's grouping), then
+ * the economies not assessed: "1 High fence · 3 Medium fence · 2 Low fence". It replaces the engine's
+ * Secure / Compete / Deploy families on the Sector card (copy refresh 2026-10-30): the Sector pages explain
+ * the choices by fence, and the Deploy family put a producing-stage Watch beside Accelerate.
+ */
+export function fenceCountsText(cells: readonly PostureCell[]): string {
+  const n: Record<Fence, number> = { high: 0, medium: 0, low: 0 };
+  for (const c of cells) {
+    const v = verbOf(c);
+    if (v) n[FENCE_OF_VERB[v]]++;
+  }
+  return FENCE_ORDER.map((f) => `${n[f]} ${FENCE_LABEL[f]}`).join(' · ');
+}
+
+/**
+ * The note for the economies whose step is mixed (their layers sit in a yard other than the step's own,
+ * posture/yards.ts mixedYards): the mark's colour is the step's choice, not every layer's (vocabulary
+ * MIXED_YARD_NOTE, CONTROL_LAYER_NOTE). Null when no economy of the step is mixed.
+ */
+export function mixedLayersNote(cells: readonly PostureCell[], names: Record<string, string>): string | null {
+  const mixed = cells.filter((c) => mixedYards(c) !== null);
+  if (!mixed.length) return null;
+  const all = mixed.map((c) => names[c.iso3] ?? c.iso3).sort((a, b) => a.localeCompare(b));
+  const who = all.length > MAX_NAMED ? `${all.slice(0, MAX_NAMED).join(', ')} and ${all.length - MAX_NAMED} more` : listAnd(all);
+  return `Layers in another yard: for ${plural(mixed.length, 'economy', 'economies')} (${who}), a layer of this step, such as control software or a critical input, sits in a different yard from the step as a whole. A mark's colour is the step's own choice; the economy's Country Strategy Map shows each layer. ${CONTROL_LAYER_ECONOMY_NOTE}`;
 }
 
 /** The card's title: "Every economy's choice in Batteries — Refining & Processing" (the stage's display name). */

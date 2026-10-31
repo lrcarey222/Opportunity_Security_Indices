@@ -129,7 +129,7 @@ async function openLegacy(name: string): Promise<HTMLElement> {
 
 /** The partnership analysis: open on the page as the Medium fence's Partner sub-section (2026-10-30), never behind a disclosure. */
 async function openExplore(): Promise<void> {
-  const h = await screen.findByRole('heading', { level: 3, name: 'Partner' }, { timeout: 30_000 });
+  const h = await screen.findByRole('heading', { level: 3, name: 'Partner: where should this country rely on allies?' }, { timeout: 30_000 });
   expect(h.closest('section')?.id).toBe('medium-partner');
   expect(h.closest('section#medium-fence')).toBeTruthy();
   expect(screen.queryByText('Explore all partnership analysis')).toBeNull();
@@ -138,8 +138,11 @@ async function openExplore(): Promise<void> {
 describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixture', () => {
   it('landing: the lists, memo tags, the six-verb roster line and the reading guide; no fact sheet is fetched', async () => {
     renderAt('/countries');
-    expect(await h1('Countries')).toBeTruthy();
+    // the landing opens with the module's strategic question, then the NEIS framing (no country should own the whole stack)
+    expect(await h1('What should this country secure, build, partner for or deploy?')).toBeTruthy();
     expect(document.title).toMatch(/^Countries \| Allied Industrial Base Explorer/);
+    expect(document.body.textContent).toContain('No country should try to own the whole stack.');
+    expect(document.body.textContent).toContain('A strong industrial strategy is as much about deciding what not to build as deciding what to build.');
     const core = screen.getByRole('region', { name: /Core coalition members/ });
     const usa = within(core).getByRole('link', { name: /United States/ });
     expect(usa.getAttribute('href')).toBe('/countries/USA');
@@ -149,10 +152,15 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(screen.getByRole('combobox', { name: /Choose a country/ })).toBeTruthy();
     // the roster line is the strategy's six verbs (the posture fixture's United States), not the legacy corners
     await waitFor(() => expect(within(usa).getByTestId('roster-line').textContent).toBe('3 Secure · 2 Preserve · 1 Catch Up · 1 Partner · 1 Accelerate · 3 Watch'), { timeout: 30_000 });
-    expect(within(within(core).getByRole('link', { name: /Germany/ })).getByTestId('roster-line').textContent).toBe('No strategy map');
+    expect(within(within(core).getByRole('link', { name: /Germany/ })).getByTestId('roster-line').textContent).toBe('Not enough evidence for a strategy map');
     expect(core.textContent).not.toMatch(/Grow \d+ · Upgrade/);
     // the reading guide leads with the six choices; the corners are the Legacy OSI framework with their mapping
-    expect(within(screen.getByTestId('reading-verbs')).getAllByRole('listitem').map((li) => li.textContent?.split(':')[0])).toEqual(['Secure', 'Preserve', 'Catch Up', 'Partner', 'Accelerate', 'Watch']);
+    expect(within(screen.getByTestId('reading-verbs')).getAllByRole('listitem').map((li) => li.textContent?.split(':')[0])).toEqual(['Secure', 'Preserve', 'Catch Up', 'Partner / Diversify', 'Accelerate', 'Watch']);
+    // then the three yards in the user's words, each with its fence and choices
+    expect(within(screen.getByTestId('reading-yards')).getAllByRole('listitem').map((li) => li.textContent?.split(' (')[0])).toEqual([
+      'Small yard / High fence', 'Medium yard / medium, permeable fence', 'Large yard / Low fence',
+    ]);
+    expect(screen.getByTestId('reading-yards').textContent).toContain('Capabilities where affordable and diversified access generally matters more than domestic production.');
     const corners = within(screen.getByTestId('reading-corners')).getAllByRole('listitem').slice(0, 4).map((li) => li.textContent ?? '');
     expect(corners.map((t) => /conceptually close to (\w[\w ]*)\./.exec(t)?.[1])).toEqual(['Preserve', 'Catch Up', 'Partner', 'Watch']);
     expect(source.calls.every((c) => c === 'manifest.json')).toBe(true);
@@ -166,6 +174,10 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     await waitFor(() => expect(document.title).toMatch(/United States \| Countries \| /));
     // the head: one generated strategy sentence (spec XI.2, XI.7), the data freshness, the memo and export actions
     const sentence = screen.getByTestId('strategy-sentence');
+    // the head states the page's strategic question for this economy first, then answers it with the sentence
+    const question = screen.getByTestId('profile-question');
+    expect(question.textContent).toBe('What should the United States secure, build, partner for or deploy?');
+    expect(question.compareDocumentPosition(sentence) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await waitFor(() => expect(sentence.textContent).toMatch(/^The United States should preserve its strongest positions in battery pack assembly and solar module assembly; secure /), { timeout: 30_000 });
     expect(sentence.textContent).toMatch(/; catch up in battery cell manufacturing; rely on partners for lithium and nickel mining; and accelerate deployment of battery storage\.$/);
     expect(screen.getByTestId('data-freshness').textContent).toBe(
@@ -188,7 +200,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     const links = within(nav).getAllByRole('link');
     expect(links.map((a) => a.getAttribute('href'))).toEqual(['#strategy', '#high-fence', '#medium-fence', '#low-fence', '#policy-alignment', '#allied', '#evidence']);
     expect(links.map((a) => a.textContent)).toEqual([
-      'Strategy', 'High fence · Secure', 'Medium fence · Preserve, Catch Up, Partner, Accelerate', 'Low fence · Watch', 'Policy Alignment', 'Allied Strategy', 'Evidence & Methodology',
+      'Strategy map', 'High fence · Secure', 'Medium fence · Build, partner, deploy', 'Low fence · Keep open', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
     ]);
     for (const s of STRATEGY_SECTIONS) {
       const el = document.getElementById(s.id)!;
@@ -313,7 +325,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
   it('no Strategic Index (Nigeria): the Legacy OSI notice replaces the priorities; the policy evidence says so in words', async () => {
     renderAt('/countries/NGA');
     expect(await h1('Nigeria')).toBeTruthy();
-    await screen.findByRole('heading', { level: 2, name: 'Policy Alignment' }, { timeout: 30_000 });
+    await screen.findByRole('heading', { level: 2, name: 'Is policy focused on the right places?' }, { timeout: 30_000 });
     expect(within(screen.getByTestId('legacy-reading')).getByText(/so no Strategic Index is computed for it/)).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Which sectors the Strategic Index puts first' })).toBeNull();
     expect(screen.getByText('POLICY: RECORDS ONLY, NO CLIMATE RATING')).toBeTruthy();
@@ -355,7 +367,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
 
   it('unknown ISO3: the landing with a route notice', async () => {
     renderAt('/countries/XYZ');
-    expect(await h1('Countries')).toBeTruthy();
+    expect(await h1('What should this country secure, build, partner for or deploy?')).toBeTruthy();
     expect(screen.getByText("No country with the code 'XYZ'; showing all countries.")).toBeTruthy();
   });
 
@@ -447,7 +459,11 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(order.indexOf('The strategy: need, prize, position, choice, policy alignment')).toBeLessThan(order.indexOf('Legacy OSI: reading the four corners'));
     expect(main().textContent).toMatch(/Grow ≈ Preserve, Upgrade ≈ Catch Up, Exposed ≈ Partner, Stable ≈ Watch/);
     // Watch has both routes: low need with a low prize, and low need with a high prize but neither a strong position nor a credible pathway
-    expect(main().textContent).toContain('Watch where the need is low, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway (a positive conclusion');
+    expect(main().textContent).toContain('Watch where the need is low, with a low prize and also with a high prize where there is neither a strong position nor a credible pathway (a deliberate conclusion');
+    // the strategic question and the framing come first; the strategy section states the current rules (the 0.10 need floor, the capability anchor)
+    expect(main().textContent).toContain('What should this country secure, build, partner for or deploy? No country needs to make everything.');
+    expect(main().textContent).toContain('the need score itself reaches 0.10');
+    expect(main().textContent).toContain('a capability anchor to build from, corroborated by a signal of another kind');
     expect(main().textContent).not.toMatch(/Watch where need and prize are both low/);
     expect(main().textContent).toMatch(/mix capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment/);
     expect(screen.getAllByRole('link', { name: /glossary/i }).some((a) => a.getAttribute('href')?.startsWith('/glossary'))).toBe(true);
@@ -497,10 +513,11 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
   it('an economy without a posture keeps every section, each with its notice; the head says there is no strategy map', async () => {
     renderAt('/countries/DEU');
     expect(await h1('Germany')).toBeTruthy();
-    const strategy = (await screen.findByRole('heading', { level: 2, name: 'Strategy' }, { timeout: 30_000 })).closest('section')!;
+    const strategy = (await screen.findByRole('heading', { level: 2, name: 'What should this country do?' }, { timeout: 30_000 })).closest('section')!;
     expect(strategy.id).toBe('strategy');
-    expect(await within(strategy).findByText('No posture', undefined, { timeout: 30_000 })).toBeTruthy();
-    await waitFor(() => expect(screen.getByTestId('strategy-sentence').textContent).toBe('Germany has no strategy map: the strategic position framework classifies none of its technology and stage nodes.'));
+    expect(await within(strategy).findByText('No strategy map', undefined, { timeout: 30_000 })).toBeTruthy();
+    // missing evidence reads as uncertainty, never as a strategic call
+    await waitFor(() => expect(screen.getByTestId('strategy-sentence').textContent).toBe('There is not enough comparable evidence to produce a strategy map for Germany.'));
     for (const id of ['high-fence', 'medium-fence', 'low-fence', 'policy-alignment']) expect(within(document.getElementById(id)!).getByText('No strategy map'), id).toBeTruthy();
     // each fence says so once, and lists no node
     for (const id of ['high-fence', 'medium-fence', 'low-fence']) {
@@ -511,7 +528,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     // Partner sub-section, without its lead of Partner nodes) and the energy-system context; Allied Strategy reads the AIB results only
     expect(within(document.getElementById('policy-alignment')!).getByTestId('policy-behaviour')).toBeTruthy();
     expect(document.getElementById('medium-prize')).toBeNull();
-    expect(within(document.getElementById('medium-partner')!).getByRole('heading', { level: 3, name: 'Partner' })).toBeTruthy();
+    expect(within(document.getElementById('medium-partner')!).getByRole('heading', { level: 3, name: 'Partner: where should this country rely on allies?' })).toBeTruthy();
     expect(within(document.getElementById('medium-partner')!).queryByTestId('partner-lead')).toBeNull();
     expect(within(document.getElementById('medium-accelerate')!).getByText(/^Energy-system context:/)).toBeTruthy();
     expect(document.getElementById('medium-position')).toBeTruthy();

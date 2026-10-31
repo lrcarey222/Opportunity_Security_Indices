@@ -1,6 +1,7 @@
-// The Sector strategy card (design section 5, 2026-10-29; it replaces the posture module's need x prize card
+// The Sector strategy card (design section 5, 2026-10-29; the NEIS copy refresh 2026-10-30: plain words, "step" for node,
+// and the two sides of the allied division of labor under the takeaway; it replaces the posture module's need x prize card
 // on the Sector pages): every economy of one technology x six-stage node as the canonical framework decides
-// it (Need -> Prize -> Position -> Choice), as a ChartCard for the page's "Strategic posture" Section
+// it (Need -> Prize -> Position -> Choice), as a ChartCard for the page's "What each country should do" Section
 // (heading level 3 by default). Within one node the prize barely varies across economies, so the chart plots
 // Competitive Position against the relevant need, marks each economy by its verb, and says the node's prize
 // and the decision rule in words. Two uses:
@@ -32,7 +33,8 @@ import { TradeFreshness } from '../../posture/PostureLegend.tsx';
 import { usePostureCore } from '../../posture/store.ts';
 import { sectorPostureCols } from '../../posture/tables.tsx';
 import {
-  decisionWords, nodePrize, notPlottedReason, prizeWords, regionLabels, sectorStrategyTakeaway, sectorStrategyTitle, strategyHref, strategyPoints, verbRank, verbsOfStage,
+  alliedSides, decisionWords, fenceCountsText, mixedLayersNote, nodePrize, notPlottedReason, prizeWords, regionLabels, sectorStrategyTakeaway, sectorStrategyTitle, strategyHref, strategyPoints,
+  verbRank, verbsOfStage,
 } from './derive.ts';
 import { SectorStrategyScatter, VerbMarkLegend } from './SectorStrategyScatter.tsx';
 
@@ -40,7 +42,7 @@ import { SectorStrategyScatter, VerbMarkLegend } from './SectorStrategyScatter.t
 export const SECTOR_NODE_KEY = 'pnode';
 
 /** The card's title on the Sector home (a profile names its node: sectorStrategyTitle). */
-export const SECTOR_STRATEGY_TITLE = "Every economy's choice in one node";
+export const SECTOR_STRATEGY_TITLE = "Every economy's choice at one supply-chain step";
 
 const TIER_WORD: Record<string, string> = { core: 'Core member', partner: 'Coalition partner' };
 
@@ -84,18 +86,18 @@ export function SectorStrategyCard({
   const points = useMemo(() => strategyPoints(cells, names), [cells, names]);
   if (core.status === 'error') {
     return (
-      <Notice kind="warning" title="The posture data could not be loaded">
+      <Notice kind="warning" title="The strategic choices could not be loaded">
         {core.error}
       </Notice>
     );
   }
-  if (!core.data) return <Loading label="Loading the strategic posture" />;
+  if (!core.data) return <Loading label="Loading the strategic choices" />;
   const c = core.data;
   const prizeTerm = c.meta.prize_measure === 'market' ? POSTURE_TERMS.industrialOpportunity : POSTURE_TERMS.strategicValue;
   if (node && (!c.meta.techs.includes(node.tech) || !c.meta.stages.includes(node.stage))) {
     return (
-      <Notice kind="info" title="No strategic choice for this node">
-        The strategic position framework classifies {c.meta.techs.length} technologies at the six stages; {node.tech} — {stageDisplay(node.stage)} is not one of its nodes.
+      <Notice kind="info" title="No strategic choice for this step">
+        Strategic choices cover {c.meta.techs.length} technologies at six stages; {node.tech} — {stageDisplay(node.stage)} is not one of them.
       </Notice>
     );
   }
@@ -108,7 +110,11 @@ export function SectorStrategyCard({
   const dep = stage === DEPLOYMENT_STAGE;
   const prize = nodePrize(cells, t.prize);
   const takeaway = sectorStrategyTakeaway(tech, stage, cells, names, c.meta);
+  const sides = alliedSides(stage, cells, names);
   const counts = strategyCountsText(countPostures(cells));
+  // grouped by fence, as the legend is (the engine's Secure / Compete / Deploy families stay in the CSV)
+  const fences = fenceCountsText(cells);
+  const mixedNote = mixedLayersNote(cells, names);
   const notPlotted = cells.length - points.length;
   const problem = parsed?.problem ?? null;
   const open = (iso: string) => nav(countryHref(iso, tech, stage));
@@ -141,16 +147,31 @@ export function SectorStrategyCard({
               {counts.verbs}
               <span className="text-paper-mute">
                 {' '}
-                ({counts.families}
+                ({fences}
                 {counts.notAssessed ? ` · ${counts.notAssessed}` : ''})
               </span>
             </span>
+            {/* the two sides of the allied division of labor (AIB_SIDES): who is strongest, who needs a partner */}
+            {sides && (
+              <span className="mt-1 block text-paper-dim" data-testid="sector-strategy-sides">
+                {sides}
+              </span>
+            )}
             {/* the reading line, as the Sector pages' chart cards give it */}
             <span className="mt-1 block text-paper-dim" data-testid="posture-reading">
-              Each mark is one economy. Across: <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>, among the node&apos;s contenders; up:{' '}
-              {dep ? <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> : <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>}. The colour is
-              the choice, grouped by fence. The node&apos;s prize (<Term id={prizeTerm}>{prizeLabel(c.meta)}</Term>) barely varies across economies, so the notes give it in
-              words.
+              Each mark is one economy. Across: how strong it is today (<Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>, ranked among the main
+              producers of this step); up:{' '}
+              {dep ? (
+                <>
+                  how urgently it needs more deployment (<Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term>)
+                </>
+              ) : (
+                <>
+                  its <Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain vulnerability</Term>
+                </>
+              )}
+              . The colour is the choice, grouped by fence. The prize (<Term id={prizeTerm}>{prizeLabel(c.meta)}</Term>) is nearly the same for every economy at one step,
+              so the notes give it in words.
             </span>
           </>
         }
@@ -173,7 +194,8 @@ export function SectorStrategyCard({
           <div className="space-y-1" data-testid="sector-strategy-notes">
             <p data-testid="sector-strategy-prize">{prizeWords(stage, prize, t.prize, prizeLabel(c.meta))}</p>
             <p data-testid="sector-strategy-rule">{decisionWords(stage, prize, t)}</p>
-            <p>Region labels are tendencies, not rules: the marks give each economy&apos;s actual choice. A mark opens that economy&apos;s Country Strategy Map on this node.</p>
+            <p>Region labels are tendencies, not rules: the marks give each economy&apos;s actual choice. A mark opens that economy&apos;s Country Strategy Map at this step.</p>
+            {mixedNote && <p data-testid="sector-strategy-mixed">{mixedNote}</p>}
             <TradeFreshness meta={c.meta} />
           </div>
         }
@@ -194,15 +216,15 @@ export function SectorStrategyCard({
   );
 }
 
-/** The Sector posture Section intro: the one prescriptive block of the Sector pages (phrasing content only). */
+/** The Sector strategic-choice Section intro: the one prescriptive block of the Sector pages (phrasing content only). */
 export function SectorStrategyIntro() {
   return (
     <>
-      Unlike the measured values on the rest of these pages, this is a recommendation: for one technology at one stage, the strategic position framework reads each
-      economy&apos;s need (<Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain need</Term>, or <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> at Deployment
-      &amp; Use), the node&apos;s prize (<Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term>) and its{' '}
-      <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>, and recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or Watch. Its
-      thresholds are fixed; observed policy is compared with it afterwards, never fed into it.
+      Unlike the measured values on the rest of these pages, this is a recommendation. For each economy at one technology and stage it asks what problem needs solving
+      (<Term id={POSTURE_TERMS.supplyChainNeed}>supply-chain vulnerability</Term>, or <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term> at Deployment &amp;
+      Use), how valuable productive capability is here (the prize, <Term id={POSTURE_TERMS.strategicValue}>Strategic Industrial Value</Term>) and how strong the economy
+      already is (<Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term>), and recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or
+      Watch. The thresholds are fixed. Current policy is compared with the choice afterwards, never used to make it.
     </>
   );
 }

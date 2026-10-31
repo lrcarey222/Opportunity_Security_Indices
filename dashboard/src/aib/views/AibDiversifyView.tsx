@@ -45,7 +45,8 @@ import { nodeWhere, profiledCellsOfNode, techStageWords } from '../derive/taxono
 import { compactHref } from '../nav.ts';
 import { AIB_EYEBROW } from './AibOverviewView.tsx';
 import { BasisTag } from './basis.tsx';
-import { csvWithRun, Section } from './common.tsx';
+import { MANAGED_INTERDEPENDENCE, SCENARIO_CHART_LABEL } from '../../content/vocabulary.ts';
+import { csvWithRun, QuestionLede, Section } from './common.tsx';
 import { ModelledNote } from './networkParts.tsx';
 
 /** The chart shows this many nodes until "Show all". */
@@ -86,6 +87,10 @@ function NodePlace({ n }: { n: AibNode }) {
 
 /** The explainer's title: the scenario's label (Managed Interdependence). */
 export const MI_PAGE_TITLE = 'Managed Interdependence';
+/** The page's question (the core AIB question, content/vocabulary.ts MANAGED_INTERDEPENDENCE). */
+export const MI_QUESTION = 'How much specialization can allies keep while reducing the dependencies that create coercive or systemic risk?';
+/** The table card's title. */
+export const MI_TABLE_TITLE = 'Every supply-chain step against its benchmark';
 
 export default function AibDiversifyView() {
   useTitle(MI_PAGE_TITLE, 'aib');
@@ -137,7 +142,7 @@ export default function AibDiversifyView() {
   // a run column: its figure where the scenario ran, a dash elsewhere
   const run = (r: DiversifyRow, s: string) => (r.ran ? s : DASH);
   const chartCols: Col<DiversifyRow>[] = [
-    { id: 'node', header: 'Node', value: (r) => r.node.label, minWidth: 180 },
+    { id: 'node', header: 'Supply-chain step', value: (r) => r.node.label, minWidth: 180 },
     { id: 'current', header: 'Current concentration (HHI)', value: (r) => r.d.currentHhi, cell: (r) => fmtScore(r.d.currentHhi), num: true },
     { id: 'benchmark', header: 'Benchmark concentration (HHI)', value: (r) => r.d.benchmarkHhi, cell: (r) => fmtScore(r.d.benchmarkHhi), num: true },
     { id: 'cap', header: 'Supplier cap', value: (r) => r.d.cap, cell: (r) => fmtShare(r.d.cap, 0), num: true },
@@ -147,7 +152,7 @@ export default function AibDiversifyView() {
     { id: 'gapUsd', header: 'Capacity gap (USD)', value: (r) => r.gapUsd, cell: (r) => fmtUsd(r.gapUsd), num: true },
   ];
   const tableCols: Col<DiversifyRow>[] = [
-    { id: 'node', header: 'Node', value: (r) => r.node.label, cell: (r) => <span className="text-paper">{r.node.label}</span>, minWidth: 180 },
+    { id: 'node', header: 'Supply-chain step', value: (r) => r.node.label, cell: (r) => <span className="text-paper">{r.node.label}</span>, minWidth: 180 },
     {
       id: 'where',
       header: `${tx.Many} · stage`,
@@ -168,17 +173,17 @@ export default function AibDiversifyView() {
     { id: 'shift', header: 'Supply to shift (share of allied demand)', value: (r) => (r.ran ? r.d.excess : null), cell: (r) => run(r, pct(r.d.excess)), num: true },
     { id: 'shiftUsd', header: 'Supply to shift (USD)', value: (r) => (r.ran ? r.shiftUsd : null), cell: (r) => run(r, fmtUsd(r.shiftUsd)), num: true },
     { id: 'existing', header: 'Coverage after existing relationships', value: (r) => (r.ran ? r.d.existing : null), cell: (r) => run(r, pct(r.d.existing)), num: true },
-    { id: 'optimized', header: 'Coverage after optimized trade', value: (r) => (r.ran ? r.d.optimized : null), cell: (r) => run(r, pct(r.d.optimized)), num: true },
+    { id: 'optimized', header: 'Coverage after coordinated trade', value: (r) => (r.ran ? r.d.optimized : null), cell: (r) => run(r, pct(r.d.optimized)), num: true },
     { id: 'gap', header: 'Capacity gap (share of allied demand)', value: (r) => (r.ran ? r.d.residual : null), cell: (r) => run(r, pct(r.d.residual)), num: true },
     { id: 'gapUsd', header: 'Capacity gap (USD)', value: (r) => (r.ran ? r.gapUsd : null), cell: (r) => run(r, fmtUsd(r.gapUsd)), num: true },
     {
       id: 'cls',
-      header: 'Class under the scenario',
+      header: 'What it needs under the scenario',
       value: (r) => (r.d.cls ? diversifyClassText(r.d.cls, r.clsWarning) : null),
       cell: (r) => <FlaggedClass cls={r.d.cls ?? null} warning={r.clsWarning} />,
       minWidth: 160,
     },
-    { id: 'hosts', header: 'Leading hosts', value: (r) => (r.ran ? r.d.hosts.map(name).join(', ') || 'none ranked' : null), minWidth: 160 },
+    { id: 'hosts', header: 'Best-placed countries to add capacity', value: (r) => (r.ran ? r.d.hosts.map(name).join(', ') || 'none ranked' : null), minWidth: 160 },
     { id: 'partners', header: 'Largest new or expanded relationships', value: (r) => (r.ran ? relationshipWords(r.d.partners, names) || 'none' : null), minWidth: 220 },
   ];
 
@@ -186,14 +191,18 @@ export default function AibDiversifyView() {
     <PageHead
       eyebrow={AIB_EYEBROW}
       title={MI_PAGE_TITLE}
-      lede={`How ${miLabel} works. What would trade and investment look like if each step of the supply chain were as diversified as its wider sector? This counterfactual removes no supplier: it caps the share any one supplier may hold of the allied market where a node is more concentrated than comparable goods, and asks how much supply has to shift, how much trade can replace, and how much new capacity diversification needs.`}
+      lede={
+        <QuestionLede question={MI_QUESTION}>
+          {`${MANAGED_INTERDEPENDENCE.explainer} The scenario removes no supplier: where a supply-chain step is more concentrated than comparable goods, it caps the share any one supplier may hold of the allied market, and asks how much supply has to shift, how much trade can replace, and how much new capacity is needed.`}
+        </QuestionLede>
+      }
     >
       <p className="mt-3 max-w-3xl text-sm text-paper-mute" data-testid="diversify-rule">
         {present ? (
           <>
-            {label}: each node&apos;s concentration of world exporters (HHI: {HHI_SHORT}) is compared with {setting ? setting.words : DIVERSIFY_BENCHMARK_WORDS.hs4.words}. A
-            node more concentrated than its benchmark, by more than a small tolerance, gets the supplier-share cap that would bring its concentration down to the benchmark, applied to
-            the allied market. A counterfactual market structure, not a forecast; dollar values are {m.tradeYear} trade values.{' '}
+            {label}: each supply-chain step&apos;s concentration of world exporters (HHI: {HHI_SHORT}) is compared with {setting ? setting.words : DIVERSIFY_BENCHMARK_WORDS.hs4.words}. A
+            step more concentrated than its benchmark, by more than a small tolerance, gets the supplier-share cap that would bring its concentration down to the benchmark, applied to
+            the allied market. A stress test of how the market could be organized, not a forecast; dollar values are {m.tradeYear} trade values.{' '}
           </>
         ) : null}
         <Link className="link" to={href('/compacts/about#diversification')}>
@@ -212,7 +221,7 @@ export default function AibDiversifyView() {
     return (
       <div className={PAGE}>
         {head}
-        <EmptyState>This data build has no diversification scenario. It appears once the model has run the scenario &ldquo;{label}&rdquo; and the data are exported again.</EmptyState>
+        <EmptyState>This build has no Managed Interdependence results. They appear once the scenario &ldquo;{label}&rdquo; has been run and the data are exported again.</EmptyState>
       </div>
     );
   }
@@ -250,7 +259,7 @@ export default function AibDiversifyView() {
               <p className="mt-2" data-testid="diversify-totals">
                 {totalsWords(totals)}
                 {notAssessed > 0
-                  ? ` ${plural(notAssessed, 'node')} ${notAssessed === 1 ? 'has' : 'have'} no result in the scenario: the trade model was not run for ${notAssessed === 1 ? 'it' : 'them'}, so ${notAssessed === 1 ? 'it is' : 'they are'} left out.`
+                  ? ` ${plural(notAssessed, 'supply-chain step')} ${notAssessed === 1 ? 'has' : 'have'} no result in the scenario: the trade analysis was not run for ${notAssessed === 1 ? 'it' : 'them'}, so ${notAssessed === 1 ? 'it is' : 'they are'} left out.`
                   : ''}
               </p>
             </>
@@ -261,20 +270,20 @@ export default function AibDiversifyView() {
               <StatTile
                 label="Above their benchmark"
                 value={`${totals.above} of ${totals.withBenchmark}`}
-                sub={`nodes with a benchmark, by more than a small tolerance${totals.withinCap ? `; ${totals.withinCap} within the cap in the allied market` : ''}`}
+                sub={`supply-chain steps with a benchmark, by more than a small tolerance${totals.withinCap ? `; ${totals.withinCap} within the cap in the allied market` : ''}`}
               />
             </li>
             <li>
-              <StatTile label="Supply to shift" value={fmtUsd(totals.shiftUsd)} sub={`${fmtShare(totals.shiftShare, 0)} of the allied demand in those nodes`} />
+              <StatTile label="Supply to shift" value={fmtUsd(totals.shiftUsd)} sub={`${fmtShare(totals.shiftShare, 0)} of the allied demand at those steps`} />
             </li>
             <li>
-              <StatTile label="Restored by trade" value={fmtUsd(totals.tradeUsd)} sub="existing relationships and optimized trade, with the cap holding" />
+              <StatTile label="Recovered through trade" value={fmtUsd(totals.tradeUsd)} sub="existing relationships and coordinated trade, with the cap holding" />
             </li>
             <li>
               <StatTile
-                label="Left for new capacity"
+                label={SCENARIO_CHART_LABEL.leftForNewCapacity}
                 value={fmtUsd(totals.gapUsd)}
-                sub={totals.closedByTrade ? `${plural(totals.closedByTrade, 'node')} need${totals.closedByTrade === 1 ? 's' : ''} none: trade replaces everything` : 'the gap only new capacity fills'}
+                sub={totals.closedByTrade ? `${plural(totals.closedByTrade, 'step')} need${totals.closedByTrade === 1 ? 's' : ''} none: trade replaces everything` : 'the gap only new capacity fills'}
               />
             </li>
           </ul>
@@ -287,23 +296,23 @@ export default function AibDiversifyView() {
             <div className="card space-y-3 p-5" data-testid="explainer-three-way">
               <h3 className="rule-neis-sm text-base font-medium text-paper">Beside the other scenarios</h3>
               <p className="max-w-3xl text-sm text-paper-dim" data-testid="explainer-toggle-numbers">
-                These are the figures the scenario choice shows for {miLabel} across the dashboard: {fmtUsd(managedRow.lostUsd)} of supply shifts in{' '}
-                {plural(managedRow.affectedNodes, 'node')} with {fmtUsd(managedRow.affectedDemandUsd)} of allied demand; trade restores {fmtUsd(managedRow.restoredUsd)} and{' '}
-                {fmtUsd(managedRow.residualUsd)} is left for new capacity. {scenarioCaveat(m)}
+                These are the figures the scenario choice shows for {miLabel} across the dashboard: {fmtUsd(managedRow.lostUsd)} of supply shifts at{' '}
+                {plural(managedRow.affectedNodes, 'supply-chain step')} with {fmtUsd(managedRow.affectedDemandUsd)} of allied demand; trade recovers {fmtUsd(managedRow.restoredUsd)} and{' '}
+                {fmtUsd(managedRow.residualUsd)} still needs new capacity. {scenarioCaveat(m)}
               </p>
-              <ScenarioCoverageCompare rows={three} highlight="managed" label={`Coverage of the allied demand: ${miLabel} beside Baseline and Decoupling`} meta={m} />
+              <ScenarioCoverageCompare rows={three} highlight="managed" label={`How much allied demand can be met: ${miLabel} beside ${scenarioInfo(m, 'baseline').label} and ${scenarioInfo(m, 'decoupling').label}`} meta={m} />
             </div>
           )}
         </Section>
 
         <Section
           id="nodes"
-          title="Node by node"
+          title="Supply-chain step by step"
           intro={
             <p>
-              Where the scenario ran, each node&apos;s suppliers to the allied market are capped at the share that would bring its concentration down to its benchmark; the node&apos;s allied
-              demand is then split into what the capped market keeps, what existing relationships and optimized trade restore under the cap, and the new capacity diversification still
-              needs. The filters apply to the chart and the table.
+              Where the scenario ran, each step&apos;s suppliers to the allied market are capped at the share that would bring its concentration down to its benchmark; the step&apos;s allied
+              demand is then split into what stays supplied under the cap, what existing relationships and coordinated trade recover under the cap, and the new capacity still needed.
+              The filters apply to the chart and the table.
             </p>
           }
         >
@@ -311,11 +320,11 @@ export default function AibDiversifyView() {
           <ChartCard
             headingLevel={3}
             title="Concentration and where the allied demand goes"
-            sub="Nodes where the scenario ran, largest capacity gap first. Concentration: the node's concentration of world exporters (HHI, the dot) against its benchmark (the ring); the gap between them is what the cap is set to close, and the cap applies to the allied market. Allied demand: the node's allied demand to scale, kept under the cap, restored by trade and left for new capacity."
+            sub="Supply-chain steps where the scenario ran, largest capacity gap first. Concentration: the step's concentration of world exporters (HHI, the dot) against its benchmark (the ring); the gap between them is what the cap is set to close, and the cap applies to the allied market. Allied demand: the step's allied demand to scale, still supplied under the cap, recovered through trade and requiring new capacity."
             legend={legend}
             table={() => <TableView rows={ran} cols={chartCols} caption={`${label}: concentration and the allied demand split${scope}`} rowKey={(r) => r.node.id} pageSize={25} />}
             csv={csvOf(ran, 'nodes diversified')}
-            summary={`${plural(ran.length, 'node')} diversified${scope}: ${ran
+            summary={`${plural(ran.length, 'supply-chain step')} diversified${scope}: ${ran
               .slice(0, 5)
               .map((r) => `${r.node.label}, concentration ${fmtScore(r.d.currentHhi)} against ${fmtScore(r.d.benchmarkHhi)}, new capacity ${fmtShare(r.split?.build, 0)}`)
               .join('; ')}${ran.length > 5 ? '; and more' : ''}.`}
@@ -327,25 +336,25 @@ export default function AibDiversifyView() {
           >
             {ran.length ? (
               <>
-                <DiversifyChart rows={shown} max={max} name={name} where={(r) => <NodePlace n={r.node} />} label={`Nodes diversified to their benchmark${scope}, largest capacity gap first`} />
+                <DiversifyChart rows={shown} max={max} name={name} where={(r) => <NodePlace n={r.node} />} label={`Supply-chain steps diversified to their benchmark${scope}, largest capacity gap first`} />
                 {ran.length > CHART_ROWS && (
                   <button type="button" className="btn-quiet mt-3" aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
-                    {showAll ? `Show the first ${CHART_ROWS}` : `Show all ${ran.length} nodes`}
+                    {showAll ? `Show the first ${CHART_ROWS}` : `Show all ${ran.length} steps`}
                   </button>
                 )}
               </>
             ) : (
-              <EmptyState>No node{scope} is diversified in the scenario: every one is already as diversified as its benchmark, within the cap, or without one.</EmptyState>
+              <EmptyState>No supply-chain step{scope} is diversified in the scenario: every one is already as diversified as its benchmark, within the cap, or without one.</EmptyState>
             )}
           </ChartCard>
           <ChartCard
             headingLevel={3}
-            title="Every node against its benchmark"
-            sub="Concentration, benchmark and cap of each node, the supply to shift, coverage after existing relationships and after optimized trade under the cap, the capacity gap, the class under the scenario, the leading investment hosts and the largest new or expanded relationships. Nodes the scenario did not diversify show their status, without the run's figures."
-            tools={<Switch label="Include nodes not diversified" checked={all} onChange={(v) => setParam('all', v ? '1' : null)} />}
+            title={MI_TABLE_TITLE}
+            sub="Concentration, benchmark and cap of each step, the supply to shift, coverage after existing relationships and after coordinated trade under the cap, the capacity gap, what the step needs under the scenario, the best-placed countries to add capacity and the largest new or expanded relationships. Steps the scenario did not diversify show their status, without the run's figures."
+            tools={<Switch label="Include steps not diversified" checked={all} onChange={(v) => setParam('all', v ? '1' : null)} />}
             csv={csvOf(table, all ? 'every node' : 'nodes diversified')}
           >
-            <TableView rows={table} cols={tableCols} caption={`${label}: every node against its benchmark${scope}`} rowKey={(r) => r.node.id} search pageSize={25} />
+            <TableView rows={table} cols={tableCols} caption={`${label}: every supply-chain step against its benchmark${scope}`} rowKey={(r) => r.node.id} search pageSize={25} />
           </ChartCard>
         </Section>
       </div>
