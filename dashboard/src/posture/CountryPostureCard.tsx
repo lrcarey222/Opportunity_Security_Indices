@@ -1,10 +1,13 @@
 // The Country Strategy Map card (spec XI.3-6; design section 4): one economy's choice in every technology x
 // six-stage node, as a ChartCard for the page's Strategy Section (heading level 3 by default; the Section
-// gives the h2 and the basis tag). The generated strategy sentence as the sub (off when the page header
-// carries it); above the map, the legend: one colour per choice grouped by fence, each with the economy's
-// node count (the counts line since 2026-10-30; showCounts=false keeps the colours without the counts); the
-// trade freshness line and how the choice is made in the notes; a table twin of all 66 nodes (unclassified ones kept) and a CSV with the
-// posture provenance. The selection can be lifted to the page (`selected` / `onSelect`, e.g. the shared
+// gives the h2 and the basis tag). The generated strategy sentence as the sub, or, where the page header carries
+// it, how to read the map (COUNTRY_STRATEGY_MAP_INTRO, 2026-10-31). Above the map (below it on a phone, so the
+// map stays near the top), the one legend (StrategyMapLegend): the colours grouped by fence, each fence headed by
+// its yard in the user's words, each choice, Not assessed and Mixed defined in one plain line with the economy's
+// step count (showCounts=false keeps the definitions without the counts); the trade freshness line and how the
+// choice is made in the notes; a table twin of all 66 nodes (unclassified ones kept) and a CSV with the
+// posture provenance. The economy's detail document (the page's, or the card's own load of the same store
+// entry) names the parts of each step in the map's tooltips and accessible names. The selection can be lifted to the page (`selected` / `onSelect`, e.g. the shared
 // ?node= of selection.ts); the page then mounts one PostureNodeDrawer for every entry point (`drawer={false}`),
 // or the card renders its own. Imports nothing from country/.
 
@@ -17,17 +20,22 @@ import { POSTURE_TERMS } from './basis.tsx';
 import { PostureNodeDrawer } from './CellDrawer.tsx';
 import { countPostures, countryCells, countryNames, countryPostureRows, POSTURE_CSV_COLS, postureCsvRows, postureCsvText, postureProvenance, strategyCountsText } from './derive.ts';
 import { prizeLabel } from './grammar.ts';
-import { ChoiceLegend, TradeFreshness } from './PostureLegend.tsx';
+import { StrategyMapLegend, TradeFreshness } from './PostureLegend.tsx';
 import { PostureMatrix } from './PostureMatrix.tsx';
 import { mixedYards } from './yards.ts';
-import { usePostureCore } from './store.ts';
+import { usePostureCore, usePostureDetail } from './store.ts';
+import type { PostureDetail } from './contract.ts';
 import { strategySentence } from './strategy.ts';
 import { countryPostureCols } from './tables.tsx';
 
 export const COUNTRY_STRATEGY_MAP_TITLE = 'Country Strategy Map';
-/** The map's sub where the page header carries the strategy sentence (the NEIS copy refresh, 2026-10-30). */
+/**
+ * The map's sub where the page header carries the strategy sentence: how to read the map (the user's request,
+ * 2026-10-31); the legend defines each term. A first-time reader meets the rows, the six columns, what a color,
+ * a split and a hatch mean, and where the evidence is.
+ */
 export const COUNTRY_STRATEGY_MAP_INTRO =
-  "One map of the country's strategic choices across each technology and supply-chain stage. Color shows what the country should do; select a cell to see the evidence behind the choice.";
+  "One map of the country's strategic choices. Each row is a technology; the six columns are the steps of its supply chain, from Extraction to Recovery & Recycling, with Deployment & Use set apart as the energy-system column. A cell's color is the country's choice for that step, and the legend defines each choice and groups the colors by fence. A cell split on the diagonal has parts behind different fences: hover over it, or tap it, to see which. Hatched cells are not assessed. Select a cell for the evidence behind its choice.";
 /** The old name of the title constant (the map was "Secure, compete or deploy, by technology and stage" until 2026-10-29). */
 export const COUNTRY_POSTURE_TITLE = COUNTRY_STRATEGY_MAP_TITLE;
 
@@ -50,13 +58,21 @@ export interface CountryPostureCardProps {
   drawer?: boolean;
   /** the node's Sector page, for a link in the drawer (posture/ knows no Sector routes) */
   sectorHref?: (tech: string, stage: string) => string | null;
+  /**
+   * the economy's detail document where the page has loaded it (null while it loads or after an error): the
+   * parts of each step in the tooltips and names; omit and the card loads the same store entry itself
+   */
+  detail?: PostureDetail | null;
   className?: string;
 }
 
 export function CountryPostureCard({
-  iso3, name, title = COUNTRY_STRATEGY_MAP_TITLE, headingLevel = 3, selected, onSelect, showCounts = true, showSentence = true, drawer = true, sectorHref, className,
+  iso3, name, title = COUNTRY_STRATEGY_MAP_TITLE, headingLevel = 3, selected, onSelect, showCounts = true, showSentence = true, drawer = true, sectorHref, detail, className,
 }: CountryPostureCardProps) {
   const core = usePostureCore();
+  // the page's detail document, else the card's own load of the same store entry (fetched once, shared)
+  const ownDetail = usePostureDetail(detail === undefined ? iso3 : null);
+  const doc = detail === undefined ? ownDetail.data : detail;
   const [own, setOwn] = useState<string | null>(null);
   const controlled = selected !== undefined;
   const sel = controlled ? selected : own;
@@ -122,22 +138,25 @@ export function CountryPostureCard({
               Need and the prize (<Term id={prizeTermId}>{prizeLabel(c.meta)}</Term>) decide whether a supply-chain step matters;{' '}
               <Term id={POSTURE_TERMS.competitivePosition}>Competitive Position</Term> decides the response; the Secure tests come first. At Deployment &amp; Use the question is{' '}
               <Term id={POSTURE_TERMS.deploymentNeed}>deployment need</Term>: Accelerate (medium fence) or Watch (low fence), never Partner. Color alone shows the choice; hover or
-              focus a cell for its name, choice and fence, and select it, or a row of the table, for the five questions behind the choice: need, prize, position, choice and policy
-              alignment.
+              focus a cell for its name, choice and fence and, where the step has layers, the choice and fence of each part; select it, or a row of the table, for the five
+              questions behind the choice: need, prize, position, choice and policy alignment.
             </p>
             {mixed > 0 && (
               <p data-testid="strategy-map-mixed-note">
-                A cell split on the diagonal is a mixed step: its capability layers sit in different <Term id={POSTURE_TERMS.yard}>yards</Term>. Its own choice color fills the
-                upper left; the fence color of each other yard the lower right (orange the Small yard, blue the Medium yard, gray the Large yard). The drawer lists each layer
-                with its own yard and choice.
+                A cell split on the diagonal is a mixed step: its capability layers (control software, firmware, a critical input) sit in different{' '}
+                <Term id={POSTURE_TERMS.yard}>yards</Term>, behind different fences. The step&apos;s own choice color fills the upper left; the fence color of each other part
+                the lower right (orange the High fence, blue the Medium fence, gray the Low fence). Hover over the cell, or open it, to see which part sits behind which fence.
               </p>
             )}
           </div>
         }
       >
-        <ChoiceLegend counts={showCounts ? counts : null} mixed={mixed > 0 ? (showCounts ? mixed : true) : null} className="mb-3" />
-        <div className="overflow-x-auto">
-          <PostureMatrix core={c} cells={cells} selected={sel} onSelect={toggle} names={names} />
+        {/* the legend leads on wide screens; on a phone it follows the map, so the map stays near the top */}
+        <div className="flex flex-col">
+          <StrategyMapLegend counts={showCounts ? counts : null} mixed={mixed > 0 ? (showCounts ? mixed : true) : null} className="order-last mt-4 sm:order-none sm:mt-0 sm:mb-4" />
+          <div className="overflow-x-auto">
+            <PostureMatrix core={c} cells={cells} selected={sel} onSelect={toggle} names={names} detail={doc} />
+          </div>
         </div>
       </ChartCard>
       {drawer && sel && <PostureNodeDrawer iso3={iso3} name={name} selected={sel} onClose={close} sectorHref={sectorHref} />}

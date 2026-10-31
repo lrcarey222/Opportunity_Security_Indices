@@ -17,8 +17,8 @@ import {
   ROLLUP_YARDS, yardOfVerb, type PostureCell, type PostureMeta, type Verb, type Yard, type YardRollup, type YfNode,
 } from './contract.ts';
 import type { LargeYardException, NodeDetail, YardChild, YardFenceScope } from './detail.ts';
-import { YARD_NAME } from '../content/vocabulary.ts';
-import { FENCE_LABEL, POSTURE_COLOR, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, verbOf, type Fence } from './grammar.ts';
+import { STATE, YARD_NAME } from '../content/vocabulary.ts';
+import { FENCE_LABEL, nodeFence, POSTURE_COLOR, RATIONALE_LABEL, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, VERB_SUBTITLE, verbOf, type Fence } from './grammar.ts';
 
 // ---- the yards ------------------------------------------------------------------------------------------
 
@@ -312,4 +312,103 @@ export function layerUnits(meta: Pick<PostureMeta, 'yf_nodes'>, d: Pick<NodeDeta
     variant: ch.variant,
     reason: layerReason(meta, d.tech, d.stage, ch),
   }));
+}
+
+// ---- the parts of a step (the map's tooltip and name, the drawer; 2026-10-31) ----------------------------------
+// A step with capability layers has parts: the rest of the step, which takes the step's own choice, and each
+// layer, which takes its own. The map's tooltip, the cell's accessible name and the drawer's parts block list
+// them, so a reader sees which part of a mixed step sits behind which fence (the diagonal split shows only
+// that the fences differ).
+
+/** The part of a step that its layers leave: it takes the step's own choice. */
+export const REST_OF_STEP = 'Rest of the step';
+
+/** One part of a step: the rest of the step (the step's own choice) or one of its layers (its own choice). */
+export interface StepPart {
+  /** the layer's id; null for the rest of the step */
+  layerId: string | null;
+  /** REST_OF_STEP or the layer's name (meta.yf_nodes) */
+  label: string;
+  /** null: not assessed */
+  verb: Verb | null;
+  yard: Yard | null;
+  /** the page's fence of the part's choice at this stage (grammar nodeFence); null: not assessed */
+  fence: Fence | null;
+  /** one line: a layer's reason (layerReason); for the rest of the step, the kind of choice */
+  reason: string;
+}
+
+const FENCE_RANK: Record<Fence, number> = { high: 0, medium: 1, low: 2 };
+const fenceRank = (f: Fence | null): number => (f ? FENCE_RANK[f] : 3);
+
+/** The rest of the step's one line: its kind of choice (the engine variant), the Secure rationale, or the choice as an action. */
+function stepReason(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode' | 'rationale' | 'variant'>, d: Pick<NodeDetail, 'variant'> | null): string {
+  const v = verbOf(c);
+  if (!v) return STATE.notAssessed;
+  const vw = variantWords(d?.variant ?? c.variant);
+  if (vw) return `${cap1(vw)}.`;
+  if (v === 'secure' && c.rationale) return `${RATIONALE_LABEL[c.rationale]}.`;
+  return `${VERB_SUBTITLE[v]}.`;
+}
+
+/**
+ * The parts of a step, from the economy's detail: the rest of the step first, then the layers behind another
+ * fence than the step's own (what makes a step mixed, so a capped list never hides them), then the layers behind
+ * the same fence, each group from the High fence to the Low (the detail's order within a fence), a layer not
+ * assessed last. Empty when the step has no layers or the detail is not in yet.
+ */
+export function stepParts(
+  meta: Pick<PostureMeta, 'yf_nodes'>,
+  c: Pick<PostureCell, 'stage' | 'posture' | 'mode' | 'deployMode' | 'rationale' | 'variant'>,
+  d: Pick<NodeDetail, 'tech' | 'stage' | 'yardChildren' | 'variant'> | null,
+): StepPart[] {
+  const units = layerUnits(meta, d);
+  if (!units.length) return [];
+  const v = verbOf(c);
+  const rest: StepPart = { layerId: null, label: REST_OF_STEP, verb: v, yard: nodeYard(c), fence: nodeFence(v, c.stage), reason: stepReason(c, d) };
+  const group = (p: StepPart) => (!p.fence ? 2 : p.fence === rest.fence ? 1 : 0);
+  const layers = units
+    .map((u, i) => ({ i, p: { layerId: u.layerId, label: u.label, verb: u.verb, yard: u.yard, fence: nodeFence(u.verb, c.stage), reason: u.reason } as StepPart }))
+    .sort((a, b) => group(a.p) - group(b.p) || fenceRank(a.p.fence) - fenceRank(b.p.fence) || a.i - b.i)
+    .map((x) => x.p);
+  return [rest, ...layers];
+}
+
+/** The fences the assessed parts sit behind, High to Low. */
+export const partFences = (parts: readonly StepPart[]): Fence[] =>
+  (['high', 'medium', 'low'] as const).filter((f) => parts.some((p) => p.fence === f));
+/** Whether the parts sit behind more than one fence (a mixed step, split on the map's diagonal). */
+export const partsMixed = (parts: readonly StepPart[]): boolean => partFences(parts).length > 1;
+
+/** "Secure · High fence", "Not assessed": a part's choice and fence. */
+export const partChoiceWords = (p: Pick<StepPart, 'verb' | 'fence'>): string => (p.verb ? `${VERB_LABEL[p.verb]}${p.fence ? ` · ${FENCE_LABEL[p.fence]}` : ''}` : 'Not assessed');
+
+/**
+ * The parts' fences in brief, for a cell's accessible name: "parts behind different fences: High fence:
+ * Battery-management firmware; Medium fence: the rest of the step, Battery cells; Low fence: Enclosures",
+ * or "both parts behind the Medium fence"; at most `max` names (the first in stepParts' order), the rest counted
+ * ("2 more"). Empty without parts.
+ */
+export function partsFenceWords(parts: readonly StepPart[], max = 6): string {
+  if (!parts.length) return '';
+  const name = (p: StepPart) => (p.layerId === null ? 'the rest of the step' : p.label);
+  const all = parts.length === 2 ? 'both parts' : `all ${parts.length} parts`;
+  if (!partsMixed(parts)) {
+    const f = partFences(parts)[0];
+    const na = parts.filter((p) => !p.fence);
+    if (!f) return `${all} not assessed`;
+    return na.length ? `parts behind the ${FENCE_LABEL[f]}, ${na.map(name).join(', ')} not assessed` : `${all} behind the ${FENCE_LABEL[f]}`;
+  }
+  // the first `max` parts in stepParts' order (the layers behind another fence first), named fence by fence
+  const named = new Set(parts.slice(0, max));
+  const groups: string[] = [];
+  for (const f of [...partFences(parts), null] as (Fence | null)[]) {
+    const ps = parts.filter((p) => p.fence === f);
+    if (!ps.length) continue;
+    const shown = ps.filter((p) => named.has(p));
+    const more = ps.length - shown.length;
+    const names = [...shown.map(name), ...(more ? [`${shown.length ? `${more} more` : `${more} ${more === 1 ? 'part' : 'parts'}`}`] : [])];
+    groups.push(`${f ? FENCE_LABEL[f] : 'not assessed'}: ${names.join(', ')}`);
+  }
+  return `parts behind different fences: ${groups.join('; ')}`;
 }

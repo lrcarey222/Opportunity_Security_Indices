@@ -4,11 +4,17 @@
 // "Not assessed"; each swatch can carry its node count. The legend is text (a list), not decoration, so a
 // screen reader hears the same grouping and counts. The Strategy Map adds "Mixed: this step's layers sit in
 // different yards" (2026-10-30, yards.ts) with a sample of its diagonal split.
+// The Country Strategy Map's own legend (StrategyMapLegend, 2026-10-31) defines every term: each fence headed by
+// its yard in the user's words, each choice with one plain line, Not assessed and Mixed (the split cell).
 
-import type { PostureCore, Verb } from './contract.ts';
+import type { ReactNode } from 'react';
+import { CHOICE_ACTION, STATE, WATCH_DEPLOYMENT_DEFINITION, YARD_AND_FENCE, YARD_DEFINITION } from '../content/vocabulary.ts';
+import type { PostureCore, Verb, Yard } from './contract.ts';
 import { freshnessLine } from './derive.ts';
-import { FENCE_LABEL, FENCE_ORDER, FENCE_VERBS, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, VERB_COLOR, VERB_LABEL, VERB_OUTLINE } from './grammar.ts';
+import { FENCE_LABEL, FENCE_ORDER, FENCE_VERBS, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, type Fence } from './grammar.ts';
 import { MIXED_LEGEND, mixedFill } from './yards.ts';
+
+const cap1 = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** The legend's sample of a mixed node: a Catch Up node with layers in the Large yard (the map's diagonal split). */
 const MIXED_SAMPLE = mixedFill({ posture: 'C', mode: 'catch_up', deployMode: null, yards: 'mixed_medium_low' }) as string;
@@ -100,6 +106,99 @@ export function ChoiceLegend({ counts, verbs, notAssessed = true, mixed = null, 
         </li>
       )}
     </ul>
+  );
+}
+
+// ---- the Country Strategy Map's legend: every term defined (2026-10-31) ------------------------------------------
+
+/** The not-assessed entry's one line (vocabulary STATE.notAssessed, without its lead). */
+export const NOT_ASSESSED_DEFINITION = cap1(STATE.notAssessed.replace(/^Not assessed:\s*/, ''));
+/** The mixed entry's name and one line: a split cell, whose parts sit behind different fences. */
+export const MIXED_NAME = 'Mixed';
+export const MIXED_DEFINITION = 'A cell split on the diagonal: parts of the step sit behind different fences. Hover over it, or tap it, to see which.';
+/** The Medium-fence choice that belongs to the Deployment & Use column only. */
+const DEPLOYMENT_ONLY: Partial<Record<Verb, string>> = { accelerate: 'Deployment & Use only' };
+/** Each choice's one line: its action (vocabulary CHOICE_ACTION); Watch adds what it means in the Deployment & Use column. */
+export const MAP_CHOICE_DEFINITION: Record<Verb, string> = {
+  ...(Object.fromEntries(Object.entries(CHOICE_ACTION).map(([v, a]) => [v, `${a}.`])) as Record<Verb, string>),
+  watch: `${CHOICE_ACTION.watch}. At Deployment & Use, ${WATCH_DEPLOYMENT_DEFINITION.split(':')[0].replace(/^D/, 'd')}.`,
+};
+
+/** The fence group of each yard: High fence, medium (permeable) fence, Low fence. */
+const YARD_OF_FENCE: Record<Fence, Yard> = { high: 'small', medium: 'medium', low: 'large' };
+
+const stepsWord = (n: number) => `${n} ${n === 1 ? 'step' : 'steps'}`;
+
+function DefinitionEntry({ swatch, name, count, definition, note, ...data }: { swatch: ReactNode; name: string; count: number | null; definition: string; note?: string } & Record<`data-${string}`, string>) {
+  return (
+    <li className="flex items-start gap-2" {...data}>
+      <span className="mt-px inline-flex shrink-0">{swatch}</span>
+      <span className="min-w-0">
+        <span className="font-medium text-paper">{name}</span>
+        {count !== null && <span className="tabular text-paper-mute"> · {stepsWord(count)}</span>}
+        {note && <span className="text-paper-mute"> · {note}</span>}
+        <span className="text-paper-dim"> — {definition}</span>
+      </span>
+    </li>
+  );
+}
+
+export interface StrategyMapLegendProps {
+  /** the economy's step count of each choice (and N, not assessed); omit for a legend without counts */
+  counts?: ChoiceLegendCounts | null;
+  /** the Mixed entry (a split cell): its count, or true without one; off when 0 or null */
+  mixed?: number | boolean | null;
+  className?: string;
+}
+
+/**
+ * The Country Strategy Map's one legend: the colours grouped by fence, each fence headed by its yard in the
+ * user's words (vocabulary YARD_AND_FENCE, YARD_DEFINITION) and each choice with its swatch, its step count
+ * and one plain line (CHOICE_ACTION); then Not assessed and Mixed (the split cell). Three columns on wide
+ * screens (the Medium fence the widest), one on a phone.
+ */
+export function StrategyMapLegend({ counts, mixed = null, className }: StrategyMapLegendProps) {
+  const n = (k: Verb | 'N') => (counts ? (counts[k] ?? 0) : null);
+  const group = (f: Fence) => {
+    const y = YARD_OF_FENCE[f];
+    return (
+      <div className="min-w-0" data-fence={f} data-yard={y} data-testid="legend-fence">
+        <p className="font-medium text-paper">{YARD_AND_FENCE[y]}</p>
+        <p className="mt-0.5 text-paper-mute">{YARD_DEFINITION[y]}</p>
+        <ul className="mt-1.5 space-y-1" aria-label={`${FENCE_LABEL[f]}: ${FENCE_VERBS[f].map((v) => VERB_LABEL[v]).join(', ')}`}>
+          {FENCE_VERBS[f].map((v) => (
+            <DefinitionEntry key={v} data-verb={v} swatch={<Swatch verb={v} size={14} />} name={VERB_LABEL[v]} count={n(v)} note={DEPLOYMENT_ONLY[v]} definition={MAP_CHOICE_DEFINITION[v]} />
+          ))}
+        </ul>
+      </div>
+    );
+  };
+  return (
+    <div
+      role="group"
+      aria-label="Legend: what each color means, by fence"
+      className={`grid gap-x-6 gap-y-3 text-xs lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)_minmax(0,1fr)] ${className ?? ''}`}
+      data-testid="posture-legend"
+    >
+      {group('high')}
+      {group('medium')}
+      <div className="min-w-0 space-y-3">
+        {group('low')}
+        <ul className="space-y-1 border-t border-white/10 pt-2" aria-label="Other cells">
+          <DefinitionEntry data-verb="not_assessed" swatch={<Swatch hatched size={14} />} name="Not assessed" count={n('N')} note="no fence" definition={NOT_ASSESSED_DEFINITION} />
+          {mixed ? (
+            <DefinitionEntry
+              data-verb="mixed"
+              data-testid="legend-mixed"
+              swatch={<MixedSwatch size={14} />}
+              name={MIXED_NAME}
+              count={typeof mixed === 'number' ? mixed : null}
+              definition={MIXED_DEFINITION}
+            />
+          ) : null}
+        </ul>
+      </div>
+    </div>
   );
 }
 

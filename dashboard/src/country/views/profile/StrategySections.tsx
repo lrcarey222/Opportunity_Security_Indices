@@ -9,8 +9,9 @@
 //                                     Global Trade Alert measures)
 //   6 Allied Strategy (#allied)       the compacts in which the economy holds a role (AlliedCompacts.tsx)
 // The NEIS copy refresh (2026-10-30): the h2s are the strategic questions of the shared vocabulary
-// (derive/strategyPage.ts); under the map, the three yards in the user's words (vocabulary YARD_DEFINITION),
-// so a first-time reader meets the three policy problems before the method.
+// (derive/strategyPage.ts). The map's own legend defines each choice and each yard in the user's words
+// (vocabulary YARD_DEFINITION; 2026-10-31), and the map reads the page's detail document for the parts of each
+// step; under the map, why the yards are three policy problems, so a first-time reader meets them before the method.
 // Every entry point (map cell, fence entry or row, scatter point, policy row) selects through the page's one
 // ?node= selection (ProfileCtx.posture.node), which opens the one drawer the page mounts. None of these
 // sections reads the Perspective dials or the in-browser engine: the framework's thresholds are fixed, and the
@@ -18,10 +19,8 @@
 
 import type { ReactNode } from 'react';
 import { Notice } from '../../../components/ui.tsx';
-import {
-  ALIGNMENT_NAME, FRAMING, MIXED_YARD_NOTE, POLICY_ALIGNMENT_INTRO, YARD_AND_FENCE, YARD_CHOICES, YARD_DEFINITION, YARDS_NOT_A_SCALE,
-} from '../../../content/vocabulary.ts';
-import { CountryPostureIntro, CountryStrategyMap, PolicyAlignmentTable, PostureBasisTag, VERB_OUTLINE, YARD_COLOR, YARD_ORDER } from '../../../posture/index.ts';
+import { ALIGNMENT_NAME, CONTROL_LAYER_NOTE, FRAMING, MIXED_YARD_NOTE, POLICY_ALIGNMENT_INTRO, YARDS_NOT_A_SCALE } from '../../../content/vocabulary.ts';
+import { CountryPostureIntro, CountryStrategyMap, PolicyAlignmentTable, PostureBasisTag } from '../../../posture/index.ts';
 import { postureSectorLink } from '../../derive/links.ts';
 import { STRATEGY_SECTIONS } from '../../derive/strategyPage.ts';
 import { policyBehaviour } from '../../derive/framing.ts';
@@ -67,33 +66,17 @@ export function usePostureState(what: string): ReactNode {
 
 // ---- 1 Strategy ----------------------------------------------------------------------------------------
 
-/** The three yards in the user's words (vocabulary): what each fence of the map's legend means, as a policy problem. */
+/**
+ * Why the map's three yards are three policy problems (vocabulary): the legend above the map defines each yard
+ * in the user's words, so this says only what they are not (a score scale) and that a technology, and a step,
+ * can sit in more than one.
+ */
 export function YardsExplainer() {
   return (
-    <div className="max-w-4xl" data-testid="strategy-yards">
-      <p className="text-sm text-paper-dim">
-        <strong className="font-medium text-paper">Three yards, three different policy problems.</strong> {FRAMING.noCountryMakesEverything} {FRAMING.whatNotToBuild}
-      </p>
-      <ul className="mt-3 grid gap-3 md:grid-cols-3" aria-label="The three yards">
-        {YARD_ORDER.map((y) => (
-          <li key={y} className="card p-3 text-sm" data-yard={y}>
-            <span className="flex items-center gap-2">
-              <span
-                aria-hidden="true"
-                className="inline-block h-3 w-3 shrink-0 rounded-[3px]"
-                style={{ background: YARD_COLOR[y], border: y === 'large' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }}
-              />
-              <span className="font-medium text-paper">{YARD_AND_FENCE[y]}</span>
-            </span>
-            <span className="mt-0.5 block text-xs text-paper-mute">{YARD_CHOICES[y]}</span>
-            <span className="mt-1.5 block text-paper-dim">{YARD_DEFINITION[y]}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-2 text-xs text-paper-mute">
-        {YARDS_NOT_A_SCALE} {MIXED_YARD_NOTE}
-      </p>
-    </div>
+    <p className="max-w-3xl text-sm leading-relaxed text-paper-dim" data-testid="strategy-yards">
+      <strong className="font-medium text-paper">Three yards, three different policy problems.</strong> {FRAMING.noCountryMakesEverything} {FRAMING.whatNotToBuild}{' '}
+      {YARDS_NOT_A_SCALE} {MIXED_YARD_NOTE} {CONTROL_LAYER_NOTE}
+    </p>
   );
 }
 
@@ -113,6 +96,7 @@ export function StrategySection() {
         drawer={!node}
         showSentence={false}
         sectorHref={(tech, stage) => postureSectorLink(tech, stage, iso)}
+        {...(posture ? { detail: posture.detail } : {})}
       />
       <YardsExplainer />
       <p className="max-w-3xl text-sm leading-relaxed text-paper-dim" data-testid="strategy-how">

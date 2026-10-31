@@ -15,9 +15,13 @@
 //   and the policy design text (its trade protection labelled as such, never as the fence), pathway, partners,
 //   the kind of choice (the engine variant, yards.ts variantWords), the compact trace, borderline and pivotal
 //   inputs, confidence and the consistency flag; then the Yards part
-//   (yards.ts): the node's own yard and its roll-up, each child layer with its yard, choice and one-line
-//   reason, the fence scope of a Secure layer, the node's large-yard case and the market-only cap. A layer
-//   unit of the fence sections opens the drawer focused on its layer (?layer=, `focusLayer`).
+//   (yards.ts): the node's own yard and its roll-up, the fence scope of a Secure layer, the node's large-yard
+//   case and the market-only cap.
+// The parts of the step (2026-10-31, yards.ts stepParts), right under the header and before the five
+// questions, for every step with layers: the rest of the step (its own choice) and each layer, each with its
+// swatch, name, choice, fence and one-line reason (the one place the layers are listed). A layer row marks
+// that layer, as a layer unit of the fence sections does when it opens the drawer (?layer=, `focusLayer`): on
+// the Country page the row writes ?layer= (PostureNodeDrawer), elsewhere the drawer keeps it.
 // - POLICY ALIGNMENT: observed policy intensity, support and protection, momentum (each a percentile rank
 //   within the country, never a share or a change; protection "none recorded" where the records hold none),
 //   sources, the alignment and its confidence; observed policy is a comparator, never an input.
@@ -28,25 +32,28 @@
 // choice is explained as an action (CHOICE_DEFINITION; Watch as "Low domestic priority", a deployment Watch
 // below the bar for acceleration); a Partner step lists its best-placed partners; "step", never "node".
 
-import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Link, useSearchParams } from 'react-router';
 import { isProducingStage, stageDisplay } from '../lib/stages.ts';
 import { Term } from '../components/Term.tsx';
-import { CHOICE_DEFINITION, STRATEGY_STEP, TERMS, WATCH_DEPLOYMENT_DEFINITION, WATCH_PROSE_LABEL } from '../content/vocabulary.ts';
+import { CHOICE_DEFINITION, CONTROL_LAYER_NOTE, STRATEGY_STEP, TERMS, WATCH_DEPLOYMENT_DEFINITION, WATCH_PROSE_LABEL } from '../content/vocabulary.ts';
 import { POSTURE_TERMS } from './basis.tsx';
-import type { PostureCell, PostureCore, Verb, Yard } from './contract.ts';
+import type { PostureCell, PostureCore, Verb } from './contract.ts';
 import { cellKey, cellKeyParts, countryCells, countryNames, pct } from './derive.ts';
 import { plainReason, ratioVsCurrentWords, type Family, type NodeDetail } from './detail.ts';
 import {
   ALIGNMENT_CONFIDENCE_LABEL, ALIGNMENT_LABEL, ALIGNMENT_WORDS, alignmentFlagWords, basisWords, borderlineWords, choiceWord, deliveryWords, EVIDENCE_LABEL, flagWords, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE,
   pathwayEvidenceWords, traceCodeWords, traceNumberWords, traceTestWords, FENCE_LABEL, MARKET_PRIZE_LABEL, nodeFence,
-  nodeFill, NOT_ASSESSED_BORDER, PATHWAY_LABEL, POLICY_SOURCE_LABEL, prizeLabel, RATIONALE_LABEL, RATIONALE_WORDS, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, verbOf,
+  nodeFill, NOT_ASSESSED_BORDER, PATHWAY_LABEL, POLICY_SOURCE_LABEL, prizeLabel, RATIONALE_LABEL, RATIONALE_WORDS, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
 import { postureMomentum } from './momentum.ts';
 import { catchUpPositionWords, countryRankWords, manufacturingPriority, manufacturingPriorityWord, policyMomentumWords, protectionWords, watchReasons } from './sections.ts';
+import { Swatch } from './PostureLegend.tsx';
+import { LAYER_KEY, NODE_KEY } from './selection.ts';
 import { usePostureCore, usePostureDetail } from './store.ts';
 import {
-  capWords, FENCE_SCOPE_WORDS, largeYardOf, largeYardWords, layerUnits, mixedFill, nodeYard, REQUIRED_LARGE_YARD_SIGNALS, rollupWords, signalWords, sivFamilies, splitSignals, variantWords, YARD_COLOR, YARD_LABEL, yardWords,
+  capWords, FENCE_SCOPE_WORDS, largeYardOf, largeYardWords, layerUnits, mixedFill, mixedYards, nodeYard, partChoiceWords, partFences, partsMixed, REQUIRED_LARGE_YARD_SIGNALS, rollupWords, signalWords,
+  sivFamilies, splitSignals, stepParts, variantWords, yardWords, type StepPart,
 } from './yards.ts';
 
 /** The five questions, in order (design D14). */
@@ -261,8 +268,8 @@ function PositionAnswer({ cell, d, core, status }: { cell: PostureCell; d: NodeD
 }
 
 function ChoiceAnswer({
-  cell, d, core, cells, names, status, focusLayer,
-}: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; cells: PostureCell[]; names: Record<string, string>; status: DrawerDetailStatus; focusLayer?: string | null }) {
+  cell, d, core, cells, names, status,
+}: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; cells: PostureCell[]; names: Record<string, string>; status: DrawerDetailStatus }) {
   const v = verbOf(cell);
   const t = core.meta.thresholds;
   const design = d?.variant || cell.variant ? core.design[`${d?.variant ?? cell.variant}|${d?.delivery ?? ''}`] : undefined;
@@ -386,7 +393,7 @@ function ChoiceAnswer({
       )}
       {d?.reason && <p className="mt-1 text-xs text-paper-mute">{d.reason}</p>}
       <Pending status={status} />
-      <YardsPart cell={cell} d={d} core={core} focusLayer={focusLayer} />
+      <YardsPart cell={cell} d={d} core={core} />
     </>
   );
 }
@@ -399,40 +406,18 @@ function possibleWords(v: string): string {
   return w.length > 1 ? `${w.slice(0, -1).join(', ')} or ${w[w.length - 1]}` : w[0];
 }
 
-/** A yard as a chip: its fence colour and its name ("Small yard"). */
-export function YardChip({ yard }: { yard: Yard | null }) {
-  if (!yard) return <span className="text-paper-mute">no yard (not assessed)</span>;
-  return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-sm border border-white/15 px-1 text-[11px] text-paper-dim" data-yard={yard}>
-      <span
-        aria-hidden="true"
-        className="inline-block h-2 w-2 shrink-0 rounded-[2px]"
-        style={{ background: YARD_COLOR[yard], border: yard === 'large' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }}
-      />
-      {YARD_LABEL[yard]}
-    </span>
-  );
-}
-
 /**
  * The Yards part of the CHOICE question: the node's own yard (from its choice) and its roll-up with its
- * layers; each child layer with its yard, choice and one-line reason (yards.ts layerUnits); the fence scope
- * of a Secure layer; the node's large-yard case (the signals that hold, those not observed, the count against
- * the bar) and the market-only cap. `focusLayer` (?layer=) is scrolled to and focused once its row is in.
+ * layers (the layers themselves are listed once, in the parts block at the top); the fence scope of a Secure
+ * layer; the node's large-yard case (the signals that hold, those not observed, the count against the bar)
+ * and the market-only cap.
  */
-function YardsPart({ cell, d, core, focusLayer }: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; focusLayer?: string | null }) {
+function YardsPart({ cell, d, core }: { cell: PostureCell; d: NodeDetail | null; core: PostureCore }) {
   const id = useId();
-  const focusRef = useRef<HTMLLIElement | null>(null);
   const own = nodeYard(cell);
   const units = layerUnits(core.meta, d);
   const ly = isProducingStage(cell.stage) ? largeYardOf(core.meta, cell.tech, cell.stage, d) : null;
   const f = sivFamilies(core.meta, cell, d);
-  const hit = focusLayer ? units.some((u) => u.layerId === focusLayer) : false;
-  useEffect(() => {
-    if (!hit || !focusRef.current) return;
-    focusRef.current.scrollIntoView?.({ block: 'center' });
-    focusRef.current.focus();
-  }, [hit, focusLayer]);
   if (!own && !cell.yards && !units.length && !ly) return null;
   const roll = rollupWords(cell);
   const split = mixedFill(cell);
@@ -456,43 +441,9 @@ function YardsPart({ cell, d, core, focusLayer }: { cell: PostureCell; d: NodeDe
         )}
       </dl>
       {units.length > 0 && (
-        <>
-          <p className="mt-1 text-xs text-paper-mute">The layers of a step can each need a different fence, so each has its own yard and choice:</p>
-          <ul className="mt-1 space-y-1.5" aria-label="Layers of this step">
-            {units.map((u) => {
-              const on = focusLayer === u.layerId;
-              return (
-                <li
-                  key={u.layerId}
-                  ref={on ? focusRef : undefined}
-                  tabIndex={on ? -1 : undefined}
-                  className={`rounded-md px-1.5 py-1 text-xs outline-none ${on ? 'bg-white/10 ring-1 ring-white/50' : ''}`}
-                  data-layer={u.layerId}
-                  data-focused={on ? 'true' : undefined}
-                  data-testid="drawer-layer"
-                >
-                  <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <YardChip yard={u.yard} />
-                    <span className="inline-flex items-center gap-1 text-paper-dim" data-verb={u.verb ?? 'not_assessed'}>
-                      {u.verb && (
-                        <span
-                          aria-hidden="true"
-                          className="inline-block h-2.5 w-2.5 rounded-[2px]"
-                          style={{ background: VERB_COLOR[u.verb], border: u.verb === 'watch' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }}
-                        />
-                      )}
-                      {u.verb ? VERB_LABEL[u.verb] : 'Not assessed'}
-                    </span>
-                    <span className="text-paper">{u.label}</span>
-                  </span>
-                  <span className="block text-paper-mute" data-testid="drawer-layer-reason">
-                    {u.reason}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </>
+        <p className="mt-1 text-xs text-paper-mute" data-testid="drawer-yards-parts">
+          Each layer of this step has its own choice and fence: see Parts of this step, at the top.
+        </p>
       )}
       {d?.yardFenceScope && (
         <p className="mt-1.5 text-xs text-paper-dim" data-testid="drawer-fence-scope">
@@ -565,37 +516,145 @@ export interface CellDrawerProps {
   onClose: () => void;
   /** the node's Sector page, or null / undefined for no link */
   sectorHref?: string | null;
-  /** a layer of the node to scroll to and focus in the Yards part (?layer=); null for the node itself */
+  /** a layer of the node to mark, scroll to and focus in the parts block (?layer=); null for the node itself */
   focusLayer?: string | null;
+  /**
+   * called when a layer row is selected (null: the step itself); the parent then holds the marked layer and
+   * passes it back as `focusLayer` (?layer=). Omit and the drawer keeps it.
+   */
+  onFocusLayer?: (layer: string | null) => void;
 }
 
+/** A part's swatch: its choice colour, or the not-assessed hatch. */
+const PartSwatch = ({ p, size = 12 }: { p: Pick<StepPart, 'verb'>; size?: number }) => (p.verb ? <Swatch verb={p.verb} size={size} /> : <Swatch hatched size={size} />);
+
 /**
- * A drawer opened from a layer row says so at the top: the heading and the five questions are the step's,
- * the layer's own yard and choice are under Yards (one click scrolls there). Render review, 2026-10-31.
+ * The parts of the step, right under the header (2026-10-31): the rest of the step (its own choice) and each
+ * layer, with its swatch, name, choice, fence and one-line reason; a layer row marks that layer (`onLayer`). The
+ * marked layer (`layer`, ?layer=) is scrolled to and focused once its row is in, and named at the top of the
+ * block with a way back to its row. Until the detail is in, a mixed step shows its roll-up words. Nothing for a
+ * step without layers.
  */
-function OpenedLayerNote({ focusLayer, d, core, drawer }: { focusLayer: string | null; d: NodeDetail | null; core: PostureCore; drawer: RefObject<HTMLDivElement | null> }) {
-  if (!focusLayer || !d) return null;
-  const u = layerUnits(core.meta, d).find((x) => x.layerId === focusLayer);
-  if (!u) return null;
+function PartsBlock({
+  cell, d, core, status, layer, onLayer,
+}: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; status: DrawerDetailStatus; layer: string | null; onLayer: (layer: string | null) => void }) {
+  const id = useId();
+  const focusRef = useRef<HTMLLIElement | null>(null);
+  const parts = stepParts(core.meta, cell, d);
+  const marked = layer ? (parts.find((p) => p.layerId === layer) ?? null) : null;
+  useEffect(() => {
+    if (!marked || !focusRef.current) return;
+    focusRef.current.scrollIntoView?.({ block: 'center' });
+    focusRef.current.focus();
+  }, [marked, layer]);
+  const fallback = !parts.length && mixedYards(cell) ? rollupWords(cell) : null;
+  if (!parts.length && !fallback) return null;
+  const fences = partFences(parts);
+  const mixed = partsMixed(parts);
+  const layers = parts.filter((p) => p.layerId !== null);
   const go = () => {
-    const el = [...(drawer.current?.querySelectorAll<HTMLElement>('[data-layer]') ?? [])].find((x) => x.getAttribute('data-layer') === focusLayer);
-    el?.scrollIntoView?.({ block: 'center' });
-    el?.focus();
+    focusRef.current?.scrollIntoView?.({ block: 'center' });
+    focusRef.current?.focus();
   };
   return (
-    <p className="mt-2 rounded-md bg-white/5 px-2 py-1.5 text-xs text-paper-dim" data-testid="drawer-layer-note">
-      Opened from the layer{' '}
-      <button type="button" className="link text-left" onClick={go}>
-        {u.label}
-      </button>{' '}
-      ({u.verb ? `${VERB_LABEL[u.verb]}${u.yard ? ` · ${yardWords(u.yard)}` : ''}` : 'not assessed'}). The choice above and the five questions are for the whole step; the layer&apos;s own yard and choice are under Yards.
-    </p>
+    <section className="mt-3 rounded-md border border-white/10 p-2.5" aria-labelledby={id} data-testid="drawer-parts" data-mixed={mixed || (!parts.length && fallback) ? 'true' : undefined}>
+      <h4 id={id} className="eyebrow">
+        Parts of this step
+      </h4>
+      {fallback ? (
+        <>
+          <p className="mt-1 text-xs text-paper-dim" data-testid="drawer-parts-rollup">
+            {fallback}
+          </p>
+          <Pending status={status} />
+        </>
+      ) : (
+        <>
+          <p className="mb-1.5 mt-0.5 text-xs text-paper-mute" data-testid="drawer-parts-lead">
+            {mixed
+              ? `Parts of this step sit behind different fences: ${fences.map((f) => FENCE_LABEL[f]).join(', ')}.`
+              : fences.length
+                ? `Every assessed part of this step sits behind the ${FENCE_LABEL[fences[0]]}.`
+                : 'No part of this step is assessed.'}{' '}
+            The rest of the step takes the step&apos;s own choice; each layer takes its own. {CONTROL_LAYER_NOTE}
+          </p>
+          {marked && (
+            <p className="mb-1.5 rounded-md bg-white/5 px-2 py-1.5 text-xs text-paper-dim" data-testid="drawer-layer-note">
+              Showing the layer{' '}
+              <button type="button" className="link text-left" onClick={go}>
+                {marked.label}
+              </button>{' '}
+              ({marked.verb ? `${VERB_LABEL[marked.verb]}${marked.yard ? ` · ${yardWords(marked.yard)}` : ''}` : 'not assessed'}). The choice at the top and the five questions are
+              for the whole step.
+            </p>
+          )}
+          <ul className="space-y-1" aria-label={`Parts of this step: the rest of the step and ${layers.length} ${layers.length === 1 ? 'layer' : 'layers'}`}>
+            {parts.map((p) => {
+              if (p.layerId === null) {
+                return (
+                  <li key="step" className="px-1.5 py-1 text-xs" data-part="step" data-verb={p.verb ?? 'not_assessed'} data-fence={p.fence ?? undefined} data-testid="drawer-part">
+                    <span className="flex items-start gap-1.5">
+                      <span className="mt-[2px] inline-flex shrink-0">
+                        <PartSwatch p={p} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="text-paper">{p.label}</span> <span className="text-paper-dim">· {partChoiceWords(p)}</span>
+                        <span className="block text-paper-mute" data-testid="drawer-part-reason">
+                          {p.reason}
+                        </span>
+                      </span>
+                    </span>
+                  </li>
+                );
+              }
+              const lid = p.layerId;
+              const on = layer === lid;
+              return (
+                <li
+                  key={lid}
+                  ref={on ? focusRef : undefined}
+                  tabIndex={on ? -1 : undefined}
+                  className={`rounded-md text-xs outline-none ${on ? 'bg-white/10 ring-1 ring-white/50' : ''}`}
+                  data-part={lid}
+                  data-layer={lid}
+                  data-verb={p.verb ?? 'not_assessed'}
+                  data-fence={p.fence ?? undefined}
+                  data-focused={on ? 'true' : undefined}
+                  data-testid="drawer-layer"
+                >
+                  <button
+                    type="button"
+                    className="flex w-full items-start gap-1.5 rounded-md px-1.5 py-1 text-left hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+                    aria-pressed={on}
+                    onClick={() => onLayer(on ? null : lid)}
+                  >
+                    <span className="mt-[2px] inline-flex shrink-0">
+                      <PartSwatch p={p} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="text-paper">{p.label}</span> <span className="text-paper-dim">· {partChoiceWords(p)}</span>
+                      <span className="block text-paper-mute" data-testid="drawer-layer-reason">
+                        {p.reason}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+    </section>
   );
 }
 
-export function CellDrawer({ cell, detail, detailStatus, detailError, country, core, cells, names, onClose, sectorHref, focusLayer }: CellDrawerProps) {
+export function CellDrawer({ cell, detail, detailStatus, detailError, country, core, cells, names, onClose, sectorHref, focusLayer, onFocusLayer }: CellDrawerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const key = cellKey(cell.tech, cell.stage);
+  // the marked layer: the parent's (?layer=) when it holds it, else the drawer's own, seeded from focusLayer per step
+  const [ownLayer, setOwnLayer] = useState<{ key: string; layer: string | null } | null>(null);
+  const layer = onFocusLayer ? (focusLayer ?? null) : ownLayer && ownLayer.key === key ? ownLayer.layer : (focusLayer ?? null);
+  const markLayer = (l: string | null) => (onFocusLayer ? onFocusLayer(l) : setOwnLayer({ key, layer: l }));
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', k);
@@ -623,14 +682,17 @@ export function CellDrawer({ cell, detail, detailStatus, detailError, country, c
           </h3>
           <p className="mt-1 inline-flex items-center gap-2 text-sm text-paper-dim">
             <span
-              className="inline-block h-3 w-3 rounded-sm"
+              className="inline-block h-3 w-3 shrink-0 rounded-sm"
               style={{ background: nodeFill(cell), border: na ? NOT_ASSESSED_BORDER : verbOf(cell) === 'watch' ? `1px solid ${VERB_OUTLINE.watch}` : undefined }}
               data-testid="cell-drawer-chip"
               data-verb={verbOf(cell) ?? 'not_assessed'}
               aria-hidden="true"
             />
-            {choiceWord(cell)}
-            {cell.confidence ? <span className="text-paper-mute"> · {cell.confidence} confidence</span> : null}
+            {/* one text run, so a phone wraps it as a line, not as two columns */}
+            <span>
+              {choiceWord(cell)}
+              {cell.confidence ? <span className="text-paper-mute"> · {cell.confidence} confidence</span> : null}
+            </span>
           </p>
           {sectorHref && (
             <p className="mt-1 text-sm">
@@ -645,7 +707,7 @@ export function CellDrawer({ cell, detail, detailStatus, detailError, country, c
         </button>
       </div>
       {detailStatus === 'error' && <p className="mt-2 text-xs text-paper-mute">The detail could not be loaded{detailError ? `: ${detailError}` : ''}.</p>}
-      <OpenedLayerNote focusLayer={focusLayer ?? null} d={d} core={core} drawer={ref} />
+      <PartsBlock cell={cell} d={d} core={core} status={status} layer={layer} onLayer={markLayer} />
       <Question q={DRAWER_QUESTIONS[0]}>
         <NeedAnswer cell={cell} d={d} core={core} names={names} status={status} />
       </Question>
@@ -656,7 +718,7 @@ export function CellDrawer({ cell, detail, detailStatus, detailError, country, c
         <PositionAnswer cell={cell} d={d} core={core} status={status} />
       </Question>
       <Question q={DRAWER_QUESTIONS[3]}>
-        <ChoiceAnswer cell={cell} d={d} core={core} cells={cells} names={names} status={status} focusLayer={focusLayer} />
+        <ChoiceAnswer cell={cell} d={d} core={core} cells={cells} names={names} status={status} />
       </Question>
       <Question q={DRAWER_QUESTIONS[4]}>
         <PolicyAnswer cell={cell} d={d} status={status} />
@@ -676,6 +738,12 @@ export interface PostureNodeDrawerProps {
   sectorHref?: (tech: string, stage: string) => string | null;
   /** a layer of the selected node to focus (?layer=), null for none */
   layer?: string | null;
+  /**
+   * called when a layer row of the drawer is selected (null: the step itself). Omitted on a page whose URL
+   * holds the selection (?node=), the drawer writes ?layer= itself, as a fence section's layer unit does;
+   * elsewhere it keeps the marked layer.
+   */
+  onLayer?: (layer: string | null) => void;
 }
 
 /**
@@ -683,9 +751,25 @@ export interface PostureNodeDrawerProps {
  * document, and shows the selected node. Nothing while closed, while the core loads, or for a key the data
  * does not know; a node the economy has no posture for says so.
  */
-export function PostureNodeDrawer({ iso3, name, selected, onClose, sectorHref, layer }: PostureNodeDrawerProps) {
+export function PostureNodeDrawer({ iso3, name, selected, onClose, sectorHref, layer, onLayer }: PostureNodeDrawerProps) {
   const core = usePostureCore();
   const detail = usePostureDetail(selected ? iso3 : null);
+  const [sp, setSp] = useSearchParams();
+  // the page's ?node= selection: a layer row writes ?layer= beside it (replacing the entry, keeping the scroll)
+  const urlLayer =
+    onLayer ??
+    (sp.has(NODE_KEY)
+      ? (l: string | null) =>
+          setSp(
+            (prev) => {
+              const q = new URLSearchParams(prev);
+              if (l) q.set(LAYER_KEY, l);
+              else q.delete(LAYER_KEY);
+              return q;
+            },
+            { replace: true, preventScrollReset: true },
+          )
+      : undefined);
   if (!selected || !core.data) return null;
   const c = core.data;
   const parts = cellKeyParts(selected, c.meta);
@@ -721,6 +805,7 @@ export function PostureNodeDrawer({ iso3, name, selected, onClose, sectorHref, l
       onClose={onClose}
       sectorHref={sectorHref ? sectorHref(cell.tech, cell.stage) : null}
       focusLayer={layer ?? null}
+      onFocusLayer={urlLayer}
     />
   );
 }

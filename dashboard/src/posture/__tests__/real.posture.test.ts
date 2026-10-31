@@ -151,11 +151,14 @@ describe.skipIf(!existsSync(join(DIR, 'manifest.json')))('real posture bundle: Y
     expect(new Set(core.cells.map((c) => c.yards).filter((y) => y !== null))).toEqual(new Set(['small', 'medium', 'large', 'mixed_high_medium', 'mixed_medium_low', 'mixed_high_low', 'mixed_high_medium_low']));
   });
 
-  it('the node evidence: one row per producing-stage node and sensitive layer, every layer named, values 0-1, the counts within their bounds', () => {
+  it('the node evidence: one row per producing-stage node and sensitive layer (a Deployment & Use layer named, never its whole node), every layer named, values 0-1, the counts within their bounds', () => {
     const nodes = Object.values(core.meta.yf_nodes);
     expect(nodes.length).toBeGreaterThan(0);
+    // since 4bb2adc the core names the Deployment & Use layers too (the map and the drawer list them); Deployment &
+    // Use has no whole-node row (no prize there)
+    expect(nodes.some((n) => n.stage === DEPLOYMENT_STAGE)).toBe(true);
     for (const n of nodes) {
-      expect(n.stage, n.key).not.toBe(DEPLOYMENT_STAGE);
+      if (n.stage === DEPLOYMENT_STAGE) expect(n.layer, n.key).not.toBe('stage');
       if (n.layer === 'stage') expect(n.label, n.key).toBeNull();
       else expect(n.label, n.key).toBeTruthy();
       for (const v of [n.commons, n.option]) if (v !== null) expect(v >= 0 && v <= 1, n.key).toBe(true);

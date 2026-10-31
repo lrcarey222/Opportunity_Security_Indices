@@ -10,8 +10,8 @@ import { checkPostureDetail, decodeCore, type PostureCell } from '../contract.ts
 import { countryCells } from '../derive.ts';
 import { POSTURE_COLOR, VERB_COLOR } from '../grammar.ts';
 import {
-  capWords, countWords, isMixedRollup, largeYardOf, largeYardWords, layerLabel, layerReason, layerUnits, MIXED_LEGEND, mixedFill, mixedYards, nodeYard, rollupWords, showsLargeYard,
-  signalWords, sivFamilies, splitSignals, YARD_COLOR, yardWords,
+  capWords, countWords, isMixedRollup, largeYardOf, largeYardWords, layerLabel, layerReason, layerUnits, MIXED_LEGEND, mixedFill, mixedYards, nodeYard, partChoiceWords, partFences, partsFenceWords,
+  partsMixed, REST_OF_STEP, rollupWords, showsLargeYard, signalWords, sivFamilies, splitSignals, stepParts, YARD_COLOR, yardWords,
 } from '../yards.ts';
 import { fixtureCore, fixtureDetail } from './fixture.ts';
 
@@ -84,6 +84,53 @@ describe('the child layers', () => {
     );
     // a layer the core has no evidence for (a Deployment & Use layer): its id in words
     expect(layerLabel(core.meta, 'Electric Vehicles', 'Deployment', 'ev-charging-mgmt')).toBe('ev charging mgmt');
+  });
+});
+
+describe('the parts of a step (the map tooltip and name, the drawer; 2026-10-31)', () => {
+  it("the rest of the step (its own choice) first, then the layers behind another fence (High to Low), then those behind the step's own, each with its choice, fence and one line", () => {
+    const parts = stepParts(core.meta, cell('Batteries', 'Assembly'), node('Batteries|Assembly'));
+    expect(parts.map((p) => [p.layerId, p.label, p.verb, p.yard, p.fence])).toEqual([
+      [null, REST_OF_STEP, 'preserve', 'medium', 'medium'],
+      ['bess-control', 'Battery-management firmware, energy-management software and remote updates', 'secure', 'small', 'high'],
+      ['bess-enclosure', 'Enclosures, racking, thermal management and balance of system', 'watch', 'large', 'low'],
+      ['bess-cells', 'Battery cells (LFP and NMC)', 'preserve', 'medium', 'medium'],
+    ]);
+    expect(REST_OF_STEP).toBe('Rest of the step');
+    // the rest of the step's line is its kind of choice; a layer's is its own reason (layerReason)
+    expect(parts[0].reason).toBe('A strong position worth keeping.');
+    expect(parts.slice(1).map((p) => p.reason)).toEqual(['bess-control', 'bess-enclosure', 'bess-cells'].map((id) => layerUnits(core.meta, node('Batteries|Assembly')).find((u) => u.layerId === id)?.reason));
+    expect(parts.map(partChoiceWords)).toEqual(['Preserve · Medium fence', 'Secure · High fence', 'Watch · Low fence', 'Preserve · Medium fence']);
+    expect([partFences(parts), partsMixed(parts)]).toEqual([['high', 'medium', 'low'], true]);
+    // no layers, or the detail not in yet: no parts
+    expect(stepParts(core.meta, cell('Batteries', 'Components'), node('Batteries|Components'))).toEqual([]);
+    expect(stepParts(core.meta, cell('Batteries', 'Assembly'), null)).toEqual([]);
+  });
+
+  it("the parts' fences in brief for the accessible name: grouped by fence, capped, or one line when they agree; a part not assessed says so", () => {
+    const asm = stepParts(core.meta, cell('Batteries', 'Assembly'), node('Batteries|Assembly'));
+    expect(partsFenceWords(asm)).toBe(
+      'parts behind different fences: High fence: Battery-management firmware, energy-management software and remote updates; Medium fence: the rest of the step, Battery cells (LFP and NMC); Low fence: Enclosures, racking, thermal management and balance of system',
+    );
+    expect(partsFenceWords(asm, 2)).toBe('parts behind different fences: High fence: Battery-management firmware, energy-management software and remote updates; Medium fence: the rest of the step, 1 more; Low fence: 1 part');
+    // the cap names the parts behind another fence before those behind the step's own
+    expect(partsFenceWords(asm, 3)).toBe(
+      'parts behind different fences: High fence: Battery-management firmware, energy-management software and remote updates; Medium fence: the rest of the step, 1 more; Low fence: Enclosures, racking, thermal management and balance of system',
+    );
+    const d = node('Batteries|Refining');
+    const one = { ...d!, yardChildren: [{ layerId: 'x-control', yard: 'small' as const, choice: 'secure' as const, variant: 'secure_control' }] };
+    const agree = stepParts(core.meta, cell('Batteries', 'Refining'), one);
+    expect([partsMixed(agree), partsFenceWords(agree)]).toEqual([false, 'both parts behind the High fence']);
+    // the rest of the step's line: its kind of choice, else (no variant) its Secure rationale
+    expect(agree[0].reason).toBe('A physical input a coercive supplier could withhold.');
+    expect(stepParts(core.meta, { ...cell('Batteries', 'Refining'), variant: null }, { ...one, variant: null })[0].reason).toBe('Chokepoint risk.');
+    const three = { ...one, yardChildren: [...one.yardChildren, { layerId: 'x-input', yard: null, choice: 'not_assessed' as const, variant: null }] };
+    const withNa = stepParts(core.meta, cell('Batteries', 'Refining'), three);
+    expect(withNa.map((p) => [p.layerId, p.fence])).toEqual([[null, 'high'], ['x-control', 'high'], ['x-input', null]]);
+    expect([partChoiceWords(withNa[2]), partsFenceWords(withNa)]).toEqual(['Not assessed', 'parts behind the High fence, x input not assessed']);
+    // a step not assessed, with a layer not assessed
+    const na = stepParts(core.meta, cell('Batteries', 'Recovery'), { ...node('Batteries|Recovery')!, yardChildren: [{ layerId: 'x', yard: null, choice: 'not_assessed', variant: null }] });
+    expect([na[0].verb, na[0].fence, na[0].reason, partsFenceWords(na)]).toEqual([null, null, 'Not assessed: the available data are not strong enough to make a strategic call.', 'both parts not assessed']);
   });
 });
 
