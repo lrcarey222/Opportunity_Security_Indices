@@ -54,6 +54,8 @@ import { ASSUMED_ZERO_WORDS, isAssumedZero, noteWords } from '../derive/notes.ts
 import { countryTotals, excludedCodes, flowsOf, league, matrixTotal } from '../derive/trade.ts';
 import { summaryFromFacts, summaryParity } from '../derive/summary.ts';
 import { GLOSSARY_DEFAULTS } from '../../content/glossary.ts';
+import { VARIABLE_CHARTS } from '../../posture/variableCharts.ts';
+import { themeVars } from '../derive/explore.ts';
 
 const DATA_DIR = resolve(process.cwd(), 'public/data');
 /** The parity rows of the climate sources (sector_src_parity()). */
@@ -775,6 +777,35 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(coal.fuel).toBe('coal');
       expect(coal.share! > 0.35 && coal.share! < 0.45).toBe(true);
       expect(fuelRows(d, I('cell', 'solar-deployment').idx)).toEqual([]);
+    });
+
+    it('the Country profile’s variable charts (posture/variableCharts.ts): every mapped measure is in the bundle with data, in its theme; every fixed item exists', () => {
+      const themes = new Map(model.themes.map((t) => [t.slug, new Set(themeVars(model, t.slug).map((v) => v.id))]));
+      const problems: string[] = [];
+      for (const [a, vs] of Object.entries(VARIABLE_CHARTS)) {
+        for (const fv of vs) {
+          for (const c of fv.charts) {
+            const v = model.varById.get(c.m);
+            if (!v) {
+              problems.push(`${a}.${fv.id}: ${c.m} is not in sector-meta`);
+              continue;
+            }
+            if (v.theme !== c.theme) problems.push(`${a}.${fv.id}: ${c.m} is in theme ${v.theme}, not ${c.theme}`);
+            if (!themes.get(c.theme)?.has(c.m)) problems.push(`${a}.${fv.id}: ${c.m} has no data in this build (the explore page would show another measure)`);
+            if (c.item.kind === 'tech') for (const slug of Object.values(c.item.items)) if (!model.item(v.item_axis, slug)) problems.push(`${a}.${fv.id}: ${c.m} has no ${v.item_axis} item ${slug}`);
+          }
+        }
+      }
+      expect(problems).toEqual([]);
+      // the linked rule: Batteries Extraction -> graphite (its heaviest mineral with mine data), Electric Grid Refining -> copper, a manufacturing stage -> its ILO activity
+      const linked = (cell: string, m: string) => {
+        const v = V(m);
+        const has = new Set(model.itemsWithData(v).map((x) => x.idx));
+        return model.itemsOfCell(I('cell', cell).idx, v.item_axis).find((l) => has.has(l.item.idx))?.item.slug ?? null;
+      };
+      expect(linked('batteries-extraction', 'production.mining')).toBe('graphite');
+      expect(linked('electric-grid-refining', 'production.refining')).toBe('copper');
+      expect(linked('solar-components', 'prices.wages')).toBe('manufacturing');
     });
 
     it('every cell with a dictionary primary measure resolves it (the Snapshot is never empty); fuel Deployment: consumption per person', () => {

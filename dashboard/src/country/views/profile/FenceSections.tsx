@@ -34,6 +34,10 @@
 // Position order; the headers wrap so a table fits its card. A fence with no node says so in one line. The
 // sections carry no basis badge of their own (the Strategy section's says the framework and its fixed
 // thresholds once). None of these sections reads the Perspective dials or the engine.
+// Show a variable (2026-10-30, VariableChart.tsx): under each variable table (High: need; Medium: Prize,
+// Competitive Position, Accelerate; Low: the same), a picker of the analysis' variables; a pick shows that
+// variable's Sector explore chart for the selected row's node (else the table's first), the economy highlighted,
+// with "Open in Sectors"; a lazy chunk, the Sector data loaded only on a pick.
 
 import type { ReactNode } from 'react';
 import { TableView, type Col } from '../../../components/TableView.tsx';
@@ -53,6 +57,7 @@ import { Fold, Section, useProfile, type CountryPosture } from './common.tsx';
 import { PartnershipsSection } from './PartnersSection.tsx';
 import { usePostureState } from './StrategySections.tsx';
 import { TradeMonthlyCard } from './TradeMonthlyCard.tsx';
+import { VariableChart } from './VariableChart.tsx';
 
 const SEC = Object.fromEntries(STRATEGY_SECTIONS.map((s) => [s.id, s])) as Record<string, (typeof STRATEGY_SECTIONS)[number]>;
 const SUB = Object.fromEntries(MEDIUM_SUBSECTIONS.map((s) => [s.id, s])) as Record<string, (typeof MEDIUM_SUBSECTIONS)[number]>;
@@ -507,6 +512,7 @@ export function HighFenceSection() {
               >
                 <p className="text-xs text-paper-mute">Scores are 0-100. Select a row for the node&apos;s five questions.</p>
                 <FenceTable rows={g.secure} cols={needCols(g.secure, p.core, names, ds)} caption={`${cap(name)}: Secure nodes by supply-chain need`} testId="high-table" />
+                <VariableChart id="high" analysis="need" rows={g.secure} selected={p.node.selected} iso3={sheet.iso3} />
               </Fold>
             )}
           </>
@@ -644,14 +650,17 @@ export function MediumFenceSection() {
           }
         >
           {g.compete.length ? (
-            <LongTable
-              id="medium-prize"
-              rows={g.compete}
-              cols={prizeCols(g.compete, p.core, names, ds, { pathway: true, reasons: false })}
-              caption={`${cap(name)}: the prize of the Preserve, Catch Up and Partner nodes`}
-              testId="medium-prize-table"
-              what="Preserve, Catch Up and Partner nodes × the prize variables"
-            />
+            <>
+              <LongTable
+                id="medium-prize"
+                rows={g.compete}
+                cols={prizeCols(g.compete, p.core, names, ds, { pathway: true, reasons: false })}
+                caption={`${cap(name)}: the prize of the Preserve, Catch Up and Partner nodes`}
+                testId="medium-prize-table"
+                what="Preserve, Catch Up and Partner nodes × the prize variables"
+              />
+              <VariableChart id="medium-prize" analysis="prize" rows={g.compete} selected={p.node.selected} iso3={sheet.iso3} siv={p.core.meta.prize_measure === 'strategic_value'} prizeLabel={prizeLabel(p.core.meta)} />
+            </>
           ) : (
             <p className="text-sm text-paper-mute">No Preserve, Catch Up or Partner nodes.</p>
           )}
@@ -675,14 +684,17 @@ export function MediumFenceSection() {
         {p &&
           g &&
           (g.compete.length ? (
-            <LongTable
-              id="medium-position"
-              rows={competeByPosition}
-              cols={positionCols(competeByPosition, p.core, ds)}
-              caption={`${cap(name)}: the position of the Preserve, Catch Up and Partner nodes, by Competitive Position`}
-              testId="medium-position-table"
-              what="Preserve, Catch Up and Partner nodes × the position variables"
-            />
+            <>
+              <LongTable
+                id="medium-position"
+                rows={competeByPosition}
+                cols={positionCols(competeByPosition, p.core, ds)}
+                caption={`${cap(name)}: the position of the Preserve, Catch Up and Partner nodes, by Competitive Position`}
+                testId="medium-position-table"
+                what="Preserve, Catch Up and Partner nodes × the position variables"
+              />
+              <VariableChart id="medium-position" analysis="position" rows={competeByPosition} selected={p.node.selected} iso3={sheet.iso3} />
+            </>
           ) : (
             <p className="text-sm text-paper-mute">No Preserve, Catch Up or Partner nodes.</p>
           ))}
@@ -723,6 +735,7 @@ export function MediumFenceSection() {
                 testId="medium-accelerate-table"
                 what="Accelerate nodes × the deployment variables"
               />
+              <VariableChart id="medium-accelerate" analysis="deployment" rows={g.accelerate} selected={p.node.selected} iso3={sheet.iso3} />
               {scenarioNote.length > 0 && (
                 <p className="text-xs text-paper-mute" data-testid="deployment-scenarios">
                   Scenarios: {scenarioNote.join('; ')}.
@@ -804,16 +817,22 @@ export function LowFenceSection() {
                 <p className="text-xs text-paper-mute">Scores are 0-100; world supply share in %. Select a row for the node&apos;s five questions.</p>
                 {sub(
                   'Prize and need',
-                  <FenceTable rows={g.watchSupply} cols={prizeCols(g.watchSupply, p.core, names, ds, { pathway: false, reasons: true })} caption={`${cap(name)}: the prize of the producing-stage Watch nodes`} testId="low-prize-table" />,
+                  <>
+                    <FenceTable rows={g.watchSupply} cols={prizeCols(g.watchSupply, p.core, names, ds, { pathway: false, reasons: true })} caption={`${cap(name)}: the prize of the producing-stage Watch nodes`} testId="low-prize-table" />
+                    <VariableChart id="low-prize" analysis="prize" rows={g.watchSupply} selected={p.node.selected} iso3={sheet.iso3} siv={p.core.meta.prize_measure === 'strategic_value'} prizeLabel={prizeLabel(p.core.meta)} />
+                  </>,
                 )}
                 {sub(
                   'Competitive Position',
-                  <FenceTable
-                    rows={watchByPosition}
-                    cols={positionCols(watchByPosition, p.core, ds)}
-                    caption={`${cap(name)}: the position of the producing-stage Watch nodes, by Competitive Position`}
-                    testId="low-position-table"
-                  />,
+                  <>
+                    <FenceTable
+                      rows={watchByPosition}
+                      cols={positionCols(watchByPosition, p.core, ds)}
+                      caption={`${cap(name)}: the position of the producing-stage Watch nodes, by Competitive Position`}
+                      testId="low-position-table"
+                    />
+                    <VariableChart id="low-position" analysis="position" rows={watchByPosition} selected={p.node.selected} iso3={sheet.iso3} />
+                  </>,
                 )}
               </Fold>
             )}
@@ -821,6 +840,7 @@ export function LowFenceSection() {
               <Fold id="low-deploy-all" summary={`All ${g.watchDeploy.length} Deployment & Use Watch ${g.watchDeploy.length === 1 ? 'node' : 'nodes'} × deployment variables`}>
                 <p className="text-xs text-paper-mute">Scores are 0-100. Select a row for the node&apos;s five questions.</p>
                 <FenceTable rows={g.watchDeploy} cols={deployCols(g.watchDeploy, p.core, names, ds, true)} caption={`${cap(name)}: the deployment need of the Deployment & Use Watch nodes`} testId="low-deploy-table" />
+                <VariableChart id="low-deploy" analysis="deployment" rows={g.watchDeploy} selected={p.node.selected} iso3={sheet.iso3} />
               </Fold>
             )}
           </>

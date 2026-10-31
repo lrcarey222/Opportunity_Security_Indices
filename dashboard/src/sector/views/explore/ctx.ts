@@ -5,6 +5,7 @@
 
 import type { FactsIndex } from '../../data/facts.ts';
 import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../../data/model.ts';
+import type { ExplorePart } from '../../derive/explore.ts';
 import type { GeoScope, ScaleParam, ShowAs } from '../../url.ts';
 
 export interface ExploreCtx {
@@ -27,7 +28,12 @@ export interface ExploreCtx {
   /** select an item (cell items by tech + stage) */
   setItem: (it: ItemInfo) => void;
   setHighlight: (g: GeoInfo | null) => void;
+  /** one chart of the layout (an embedded explorer); absent or `all`: the whole layout, as the Sector page shows it */
+  part?: ExplorePart;
 }
+
+/** Does the context show this chart of its layout (the whole layout when no part is set)? */
+export const showsPart = (c: Pick<ExploreCtx, 'part'>, p: ExplorePart): boolean => !c.part || c.part === 'all' || c.part === p;
 
 /** The index holding (v, item, year): facts first, else series. */
 export function indexFor(c: Pick<ExploreCtx, 'facts' | 'series' | 'v' | 'item'>, year: number | null): FactsIndex | null {

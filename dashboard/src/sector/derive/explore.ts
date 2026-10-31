@@ -98,6 +98,44 @@ export function layoutBanner(v: VarInfo): string | null {
 }
 
 /**
+ * One chart of a layout, for an embedded explorer that shows one at a time (the Country profile's variable
+ * charts, 2026-10-30): the country layout's key figures, map, ranking, distribution, over time, across
+ * sectors and table; the flows layout's import partners of the highlighted economy, who supplies whom and
+ * origin-destination; `all` is the layout as the Sector page shows it. The Sector page itself shows `all`.
+ */
+export type ExplorePart = 'all' | 'key' | 'map' | 'bars' | 'distribution' | 'over-time' | 'across' | 'table' | 'partners' | 'flows' | 'od';
+
+export const EXPLORE_PART_LABEL: Readonly<Record<ExplorePart, string>> = {
+  all: 'Everything, as on the Sectors page',
+  key: 'Key figures',
+  map: 'Map',
+  bars: 'Ranking (bars)',
+  distribution: 'Distribution',
+  'over-time': 'Over time',
+  across: 'Across sectors',
+  table: 'Table',
+  partners: 'Import partners',
+  flows: 'Who supplies whom',
+  od: 'Origin and destination',
+};
+
+const LAYOUT_PARTS: Partial<Record<ExploreLayout, readonly ExplorePart[]>> = {
+  country: ['map', 'bars', 'key', 'distribution', 'over-time', 'across', 'table', 'all'],
+  dyad: ['partners', 'flows', 'od', 'all'],
+};
+
+/** The charts a layout can show one at a time; a layout drawn as one piece has `all` only. */
+export function partsOf(layout: ExploreLayout): readonly ExplorePart[] {
+  return LAYOUT_PARTS[layout] ?? ['all'];
+}
+
+/** The chart to show: `want` where the layout has it, else the layout's first. */
+export function pickPart(layout: ExploreLayout, want: ExplorePart | null | undefined): ExplorePart {
+  const parts = partsOf(layout);
+  return want && parts.includes(want) ? want : parts[0];
+}
+
+/**
  * Trade by sub-component (spec_country C5.4) is a view of exports / imports ("View by: Sub-component"),
  * not a measure of its own: these vars are never offered in the measure select, and a link naming one
  * opens its whole-basket measure.

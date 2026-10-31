@@ -16,6 +16,9 @@
 //   Country landing         entry + CountryLayout + landing view + world atlas + manifest      <= 700 kB
 //   Country profile         entry + CountryLayout + profile view + the largest fact sheet      <= 900 kB
 //   Country memo view       entry + CountryLayout + memo view + the largest memo JSON          <= 450 kB
+//   Country variable chart  lazy (2026-10-30): a pick in a fence section's "Show a variable" loads the
+//                           embedded explorer's code beyond the profile + the sector manifest, meta
+//                           and facts (a country measure's map); never in the profile's first view <= 900 kB
 //   each Country file       fact sheet 59 kB, manifest 21 kB, memo JSON 25 kB / PDF 400 kB / DOCX 100 kB
 //   Country data            public/data/country/** (every file)                                <= 16 MB
 //   Compacts landing        entry + AibLayout + the strategic compacts view (2026-10-20; the
@@ -61,6 +64,8 @@ const LIMITS = {
   countryLanding: 700 * KB,
   countryProfile: 900 * KB,
   countryMemo: 450 * KB,
+  // the lazy Sector chart of a fence variable (2026-10-30: 776.7 kB measured, 67.3 kB of it code; + ~15%, design E4)
+  countryVariableChart: 900 * KB,
   // 10 MB until 2026-10-14; 11 MB once the 31 memos (PDF, Word, Markdown, JSON) were published (10.23 MB);
   // 16 MB once the six-stage Country export (2026-10-28: 66 sectors a sheet, 219 sheets) measured 13.58 MB
   // (2026-10-29 build): the measured size + ~15% (design E4)
@@ -187,6 +192,8 @@ const keys = {
   countryHome: routeKey('the Country landing view', /src\/country\/views\/CountryHomeView\.tsx$/, 'CountryHomeView'),
   countryProfile: routeKey('the Country profile view', /src\/country\/views\/CountryProfileView\.tsx$/, 'CountryProfileView'),
   countryMemo: routeKey('the Country memo view', /src\/country\/views\/MemoView\.tsx$/, 'MemoView'),
+  // the embedded Sector explorer of the Country profile's variable charts (lazy; optional in a build without it)
+  countryVariableChart: routeKey('the embedded Sector explorer', /src\/sector\/views\/explore\/EmbeddedExplore\.tsx$/, 'EmbeddedExplore', false),
   // Sectoral Compacts (src/aib/); optional, so a build without the module still checks the others
   aibLayout: routeKey('AibLayout', /src\/aib\/AibLayout\.tsx$/, 'AibLayout', false),
   aibIndex: routeKey('the compacts index view', /src\/aib\/views\/CompactsIndexView\.tsx$/, 'CompactsIndexView', false),
@@ -354,6 +361,17 @@ figure(
   LIMITS.countryMemo,
   countryManifest ? `${countryMemos.length} memos` : 'Country data absent: code only',
 );
+if (keys.countryVariableChart) {
+  // what a pick adds to the open profile: the explorer's chunks the profile has not loaded, and the Sector data of a country measure
+  const profileFiles = closure([entryKey, keys.countryLayout, keys.countryProfile].filter(Boolean));
+  const lazyCode = new Set([...closure([keys.countryVariableChart])].filter((f) => !profileFiles.has(f)));
+  figure(
+    'Country variable chart (lazy)',
+    [['explorer code beyond the profile', codeSize(lazyCode)], ['sector manifest + meta + facts', sectorManifestSize + sectorChunk('sector-meta') + sectorChunk('sector-facts')]],
+    LIMITS.countryVariableChart,
+    `lazy: on a pick, never in the first view${sectorManifest ? '' : '; Sector data absent: code only'}`,
+  );
+}
 if (countryManifest && countryManifestSize > COUNTRY_FILE_LIMIT.manifest) fail(`Country manifest ${size(countryManifestSize)} > ${size(COUNTRY_FILE_LIMIT.manifest)}`);
 for (const [f, n] of countrySheets) if (n > COUNTRY_FILE_LIMIT.sheet) fail(`${f} ${size(n)} > ${size(COUNTRY_FILE_LIMIT.sheet)} (fact sheet)`);
 for (const [f, n] of countryTrades) if (n > COUNTRY_FILE_LIMIT.tradeMonthly) fail(`${f} ${size(n)} > ${size(COUNTRY_FILE_LIMIT.tradeMonthly)} (monthly trade)`);

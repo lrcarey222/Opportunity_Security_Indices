@@ -4,7 +4,9 @@
 // holders' bloc bar and a table); across sectors (share split per item under stage headings, the
 // current item outlined; for cell measures the 11 x 3 grid of each cell's top 5 on one share scale);
 // over time (group area with Value | Share, the highlight's lines with index = 100, a dumbbell for
-// two-point measures; a click sets the year); the table with economies without data on request.
+// two-point measures; a click sets the year); the table with economies without data on request. An embedded
+// explorer (ctx.part, the Country profile's variable charts) shows one of them: key, map, bars (the map or
+// the ranking full width), distribution, across, over-time or table.
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { WorldMap } from '../../../charts/WorldMap.tsx';
@@ -35,7 +37,7 @@ import {
   Beeswarm, BlocBar, CellGrid, Dumbbell, GroupArea, GroupLegend, LabelledLines, LeagueBars, SectorChartCard, ShareSplitChart, StateLegend,
   type BeeswarmPoint, type CellGridTech, type DumbbellRow, type LeagueRow, type ShareSplitRow,
 } from '../kit.tsx';
-import { indexFor, timeIndex, type ExploreCtx } from './ctx.ts';
+import { indexFor, showsPart, timeIndex, type ExploreCtx } from './ctx.ts';
 import { useSectorUrl } from '../state.tsx';
 import { factYearText, periodText, titleYear } from '../caption.ts';
 
@@ -96,7 +98,8 @@ function KpiStrip({ c, rows, world }: { c: ExploreCtx; rows: FactRow[]; world: {
   );
 }
 
-function MapRanking({ c, rows, mapRows, world, conc, mode, inherited, sub }: { c: ExploreCtx; rows: FactRow[]; mapRows: FactRow[]; world: { value: number } | null; conc: Concentration; mode: string; inherited: number; sub?: string | null }) {
+/** The map and the ranking side by side (the Sector page), or one of them full width (an embedded explorer's Map or Ranking chart). */
+function MapRanking({ c, rows, mapRows, world, conc, mode, inherited, sub, show = 'both' }: { c: ExploreCtx; rows: FactRow[]; mapRows: FactRow[]; world: { value: number } | null; conc: Concentration; mode: string; inherited: number; sub?: string | null; show?: 'both' | 'map' | 'bars' }) {
   const { model, v, item, year, highlight, scope, eu } = c;
   const wide = useMediaQuery('(min-width: 1024px)');
   const { share, unit, shown, fmt } = useFormat(c, conc);
@@ -152,17 +155,21 @@ function MapRanking({ c, rows, mapRows, world, conc, mode, inherited, sub }: { c
       }
       summary={concentrationSummary(sconc, model, v, highlight)}
     >
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <WorldMap cells={map.cells} ringStyle="double" ariaLabel={`Map of ${v.label}${year ? `, ${year}` : ''}`} selected={highlight?.code ?? null} onSelect={pick} />
-        </div>
-        <div className="lg:col-span-2">
-          {league.length ? (
-            <LeagueBars rows={league} axisLabel={`${share ? 'Share of world' : unit.long || unit.short}${year ? `, ${year}` : ''}`} selected={highlight?.code ?? null} onSelect={(r) => pick(r.id)} top={top} diverging={diverging ? poles(v) : undefined} ariaLabel={`${v.label}, ranked`} tickFormat={tickFormat} log={log && !share} />
-          ) : (
-            <p className="text-sm text-paper-mute">No values for the selected economies.</p>
-          )}
-        </div>
+      <div className={show === 'both' ? 'grid gap-6 lg:grid-cols-5' : ''}>
+        {show !== 'bars' && (
+          <div className={show === 'both' ? 'lg:col-span-3' : ''}>
+            <WorldMap cells={map.cells} ringStyle="double" ariaLabel={`Map of ${v.label}${year ? `, ${year}` : ''}`} selected={highlight?.code ?? null} onSelect={pick} />
+          </div>
+        )}
+        {show !== 'map' && (
+          <div className={show === 'both' ? 'lg:col-span-2' : ''}>
+            {league.length ? (
+              <LeagueBars rows={league} axisLabel={`${share ? 'Share of world' : unit.long || unit.short}${year ? `, ${year}` : ''}`} selected={highlight?.code ?? null} onSelect={(r) => pick(r.id)} top={top} diverging={diverging ? poles(v) : undefined} ariaLabel={`${v.label}, ranked`} tickFormat={tickFormat} log={log && !share} />
+            ) : (
+              <p className="text-sm text-paper-mute">No values for the selected economies.</p>
+            )}
+          </div>
+        )}
       </div>
     </SectorChartCard>
   );
@@ -572,12 +579,14 @@ export function CountryLayout({ c }: { c: ExploreCtx }) {
           {() => null}
         </ChunkGate>
       )}
-      <KpiStrip c={c} rows={ranked} world={sl.world} />
-      <MapRanking c={c} rows={ranked} mapRows={sl.rows} world={sl.world} conc={conc} mode={sl.mode} inherited={inherited} sub={sub} />
-      <Distribution c={c} rows={ranked} conc={conc} />
-      <AcrossSectors c={c} />
-      <OverTime c={c} />
-      <ExploreTable c={c} rows={sl.rows} world={sl.world} />
+      {showsPart(c, 'key') && <KpiStrip c={c} rows={ranked} world={sl.world} />}
+      {(showsPart(c, 'map') || showsPart(c, 'bars')) && (
+        <MapRanking c={c} rows={ranked} mapRows={sl.rows} world={sl.world} conc={conc} mode={sl.mode} inherited={inherited} sub={sub} show={c.part === 'map' ? 'map' : c.part === 'bars' ? 'bars' : 'both'} />
+      )}
+      {showsPart(c, 'distribution') && <Distribution c={c} rows={ranked} conc={conc} />}
+      {showsPart(c, 'across') && <AcrossSectors c={c} />}
+      {showsPart(c, 'over-time') && <OverTime c={c} />}
+      {showsPart(c, 'table') && <ExploreTable c={c} rows={sl.rows} world={sl.world} />}
     </div>
   );
 }

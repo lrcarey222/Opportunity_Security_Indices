@@ -1,12 +1,14 @@
 // Sector URL state in React (spec_sector.md 2.7): one parsed state per location, shared by the
 // layout and the views; setters push or replace history by the 2.7 rule; links between views keep
 // `c` and `eu` only. The "Ignored in the link" problems are shown once by the layout.
+// SectorStateProvider (2026-10-30) gives an embedded explorer (the Country profile's variable charts) the same
+// API over state held in memory: its setters never touch the page's URL, and its links go to the Sector pages.
 
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { STAGE_LABELS, TECH_LABELS } from '../contract.ts';
 import type { SectorModel } from '../data/model.ts';
-import { parseSectorSearch, patchReplaces, sectorHref, writeSectorSearch, type SectorUrlCtx, type SectorUrlState } from '../url.ts';
+import { parseSectorSearch, patchReplaces, SECTOR_DEFAULTS, sectorHref, writeSectorSearch, type SectorUrlCtx, type SectorUrlState } from '../url.ts';
 
 export interface SectorUrlApi {
   state: SectorUrlState;
@@ -45,6 +47,18 @@ export function SectorUrlProvider({ model, children }: { model: SectorModel | nu
   );
   const link = useCallback((path: string, view: Partial<SectorUrlState> = {}, hash?: string) => sectorHref(path, parsed.state, view, hash), [parsed.state]);
   const value = useMemo<SectorUrlApi>(() => ({ state: parsed.state, problems: parsed.problems, set, link }), [parsed, set, link]);
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+/**
+ * The Sector state in memory, for an explorer embedded in another page: `initial` over the defaults, `set`
+ * merges a patch, `link` builds a Sector page link from it (c and eu kept, as SectorUrlProvider's).
+ */
+export function SectorStateProvider({ initial, children }: { initial: Partial<SectorUrlState>; children: ReactNode }) {
+  const [state, setState] = useState<SectorUrlState>(() => ({ ...SECTOR_DEFAULTS, ...initial }));
+  const set = useCallback((patch: Partial<SectorUrlState>) => setState((s) => ({ ...s, ...patch })), []);
+  const link = useCallback((path: string, view: Partial<SectorUrlState> = {}, hash?: string) => sectorHref(path, state, view, hash), [state]);
+  const value = useMemo<SectorUrlApi>(() => ({ state, problems: [], set, link }), [state, set, link]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

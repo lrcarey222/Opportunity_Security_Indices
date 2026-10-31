@@ -2,7 +2,8 @@
 // exporters to the top importers (the top flows list on phones), the highlighted economy's partner mix
 // as a bloc bar, the origin-destination heat table of the top 15 x 15 on a log ramp (an observed zero
 // prints "0"; a pair nobody reported is hatched), and the table of every flow. Sums over the
-// reconciled matrix; EU bloc mode removes intra-EU flows first.
+// reconciled matrix; EU bloc mode removes intra-EU flows first. An embedded explorer (ctx.part, the Country
+// profile's variable charts) shows one of the three cards: flows, partners or od.
 
 import { useMemo } from 'react';
 import { SankeyChart, type SankeyFlow } from '../../../charts/Sankey.tsx';
@@ -18,7 +19,7 @@ import { fmtShare, fmtUsd } from '../../format.ts';
 import { ChunkGate, HowToRead, markGroup } from '../common.tsx';
 import { useTrade } from '../data.ts';
 import { BlocBar, GroupLegend, HeatTable, SectorChartCard, TopFlowsList } from '../kit.tsx';
-import type { ExploreCtx } from './ctx.ts';
+import { showsPart, type ExploreCtx } from './ctx.ts';
 
 const usd = (x: number) => fmtUsd(x);
 
@@ -57,49 +58,52 @@ function FlowsBody({ c, trade }: { c: ExploreCtx; trade: SectorTradeChunk }) {
   const yearTool = <Segmented<string> label="Year" hideLabel value={String(year)} options={(v.years.length ? v.years : [2020, 2024]).map((y) => ({ value: String(y), label: String(y) }))} onChange={(y) => c.setYear(Number(y))} />;
   return (
     <div className="space-y-6">
-      <SectorChartCard
-        title={`Who supplies whom: ${cellName}, ${year}`}
-        vars={[{ var: v.id, item: item.slug, year }]}
-        subExtra={<HowToRead>Bands run from the exporters (left) to the importers (right); the wider the band, the larger the trade between the two. Colours show the exporter&apos;s group. Small flows fold into &quot;Other&quot;; the table lists every flow.</HowToRead>}
-        tools={yearTool}
-        table={() => (
-          <TableView rows={[...flows].sort((a, z) => z.v - a.v)} caption="Bilateral flows" search pageSize={25} cols={[
-            { id: 'e', header: 'Exporter', value: (f) => geos[f.e].name },
-            { id: 'i', header: 'Importer', value: (f) => geos[f.i].name },
-            { id: 'v', header: 'Value (USD)', value: (f) => f.v, cell: (f) => usd(f.v), num: true },
-            { id: 's', header: 'Share of world trade', value: (f) => (W > 0 ? f.v / W : null), cell: (f) => fmtShare(W > 0 ? f.v / W : NaN), num: true },
-            { id: 'src', header: 'Source', value: (f) => (f.s === 'mirror' ? 'partner mirror ×1.06' : 'importer reported') },
-          ]} />
-        )}
-        csv={csv}
-        legend={<GroupLegend groups={['china', 'core', 'partner', 'rest']} euBloc={eu === 'bloc'} />}
-        notes={
-          <>
-            <p>World trade in this basket: {usd(W)}. Flows under 0.5% of it fold into "Other importers"; every flow is in the table.</p>
-            {eu === 'bloc' && <p>{blocNote(model)} Intra-EU flows are removed.</p>}
-          </>
-        }
-        summary={sank.links[0] ? `The largest flow is ${nameOf(code(sank.links[0].e))} to ${nameOf(code(sank.links[0].i))}, ${usd(sank.links[0].v)} (${fmtShare(sank.links[0].share)} of world trade in this basket).` : 'No flows.'}
-      >
-        {!flows.length ? (
-          <p className="text-sm text-paper-mute">No flows recorded.</p>
-        ) : wide ? (
-          <SankeyChart
-            flows={sankeyFlows}
-            label={nameOf}
-            ariaLabel={`Flows from the top exporters to the top importers, ${year}`}
-            valueFormat={(x) => `${usd(x)} · ${fmtShare(W > 0 ? x / W : NaN)}`}
-            nodeColor={(cd, side) => (cd.startsWith('__') ? '#6b7280' : side === 'producer' ? GROUP_COLOR[markGroup(model.geoByCode.get(cd))] : '#6b7280')}
-            linkColor={(f) => `${f.producer.startsWith('__') ? '#6b7280' : GROUP_COLOR[markGroup(model.geoByCode.get(f.producer))]}8c`}
-            sideLabels={{ left: 'EXPORTERS', right: 'IMPORTERS' }}
-            tipNote="of world trade in this basket"
-          />
-        ) : (
-          <TopFlowsList flows={sank.links.slice(0, 12).map((l, i) => ({ id: String(i), from: nameOf(code(l.e)), to: nameOf(code(l.i)), fromGroup: l.e >= 0 ? markGroup(geos[l.e]) : 'rest', value: usd(l.v), share: `${fmtShare(l.share)} of world trade`, flag: l.mirror ? 'includes partner mirrors' : undefined }))} ariaLabel={`Largest flows, ${year}`} />
-        )}
-      </SectorChartCard>
+      {showsPart(c, 'flows') && (
+        <SectorChartCard
+          title={`Who supplies whom: ${cellName}, ${year}`}
+          vars={[{ var: v.id, item: item.slug, year }]}
+          subExtra={<HowToRead>Bands run from the exporters (left) to the importers (right); the wider the band, the larger the trade between the two. Colours show the exporter&apos;s group. Small flows fold into &quot;Other&quot;; the table lists every flow.</HowToRead>}
+          tools={yearTool}
+          table={() => (
+            <TableView rows={[...flows].sort((a, z) => z.v - a.v)} caption="Bilateral flows" search pageSize={25} cols={[
+              { id: 'e', header: 'Exporter', value: (f) => geos[f.e].name },
+              { id: 'i', header: 'Importer', value: (f) => geos[f.i].name },
+              { id: 'v', header: 'Value (USD)', value: (f) => f.v, cell: (f) => usd(f.v), num: true },
+              { id: 's', header: 'Share of world trade', value: (f) => (W > 0 ? f.v / W : null), cell: (f) => fmtShare(W > 0 ? f.v / W : NaN), num: true },
+              { id: 'src', header: 'Source', value: (f) => (f.s === 'mirror' ? 'partner mirror ×1.06' : 'importer reported') },
+            ]} />
+          )}
+          csv={csv}
+          legend={<GroupLegend groups={['china', 'core', 'partner', 'rest']} euBloc={eu === 'bloc'} />}
+          notes={
+            <>
+              <p>World trade in this basket: {usd(W)}. Flows under 0.5% of it fold into "Other importers"; every flow is in the table.</p>
+              {eu === 'bloc' && <p>{blocNote(model)} Intra-EU flows are removed.</p>}
+            </>
+          }
+          summary={sank.links[0] ? `The largest flow is ${nameOf(code(sank.links[0].e))} to ${nameOf(code(sank.links[0].i))}, ${usd(sank.links[0].v)} (${fmtShare(sank.links[0].share)} of world trade in this basket).` : 'No flows.'}
+        >
+          {!flows.length ? (
+            <p className="text-sm text-paper-mute">No flows recorded.</p>
+          ) : wide ? (
+            <SankeyChart
+              flows={sankeyFlows}
+              label={nameOf}
+              ariaLabel={`Flows from the top exporters to the top importers, ${year}`}
+              valueFormat={(x) => `${usd(x)} · ${fmtShare(W > 0 ? x / W : NaN)}`}
+              nodeColor={(cd, side) => (cd.startsWith('__') ? '#6b7280' : side === 'producer' ? GROUP_COLOR[markGroup(model.geoByCode.get(cd))] : '#6b7280')}
+              linkColor={(f) => `${f.producer.startsWith('__') ? '#6b7280' : GROUP_COLOR[markGroup(model.geoByCode.get(f.producer))]}8c`}
+              sideLabels={{ left: 'EXPORTERS', right: 'IMPORTERS' }}
+              tipNote="of world trade in this basket"
+            />
+          ) : (
+            <TopFlowsList flows={sank.links.slice(0, 12).map((l, i) => ({ id: String(i), from: nameOf(code(l.e)), to: nameOf(code(l.i)), fromGroup: l.e >= 0 ? markGroup(geos[l.e]) : 'rest', value: usd(l.v), share: `${fmtShare(l.share)} of world trade`, flag: l.mirror ? 'includes partner mirrors' : undefined }))} ariaLabel={`Largest flows, ${year}`} />
+          )}
+        </SectorChartCard>
+      )}
 
-      {highlight && (
+      {c.part === 'partners' && !highlight && <p className="text-sm text-paper-mute">Pick an economy to see where its imports come from.</p>}
+      {showsPart(c, 'partners') && highlight && (
         <SectorChartCard
           title={`${highlight.name}: where its imports come from, ${year}`}
           vars={[{ var: v.id, item: item.slug, year }]}
@@ -113,7 +117,7 @@ function FlowsBody({ c, trade }: { c: ExploreCtx; trade: SectorTradeChunk }) {
         </SectorChartCard>
       )}
 
-      {topE.length > 1 && topI.length > 1 && (
+      {showsPart(c, 'od') && topE.length > 1 && topI.length > 1 && (
         <SectorChartCard
           title={`Origin and destination: the top ${topE.length} exporters and ${topI.length} importers`}
           vars={[{ var: v.id, item: item.slug, year }]}
