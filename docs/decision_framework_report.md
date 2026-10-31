@@ -592,13 +592,15 @@ India, Germany and the UK, at 1600 x 1000 (large desktop), 1366 x 800 (laptop), 
   New test files since the two-leg build: `test-strategic-value.R` (the strategic industrial value, the large-yard
   case, the pinned outcome on the curated attributes) and `test-yard-rollup.R`; the anchor rule, the need floor and
   the fence-follows-yard check have their own tests in the existing files (sections 20, 22, 24).
-- **Dashboard**: being refreshed by the copy-refresh work on the Country page and drawer; results:
-  {{DASHBOARD_TESTS}}. At 4c804b6 (the fence-based Country page) the commit records 1,725 tests passing over 114
-  files, typecheck, build and budget OK, Country profile first view 804.9 kB of 900 kB.
-- **Posture bundle** (e41cb5b, measured on disk): core 2,543,531 bytes (2,484 KiB, schema 2, `git_commit` a54a9d3),
+- **Dashboard**: at 75b8f9d (after the copy refresh, the indicator picker, the Strategy Map's per-part fences and
+  the plain-terms pass) typecheck, build and budget pass, and the full vitest run passes 1,789 tests over 118 files:
+  unit 832, ui 533, parity-synthetic 240, parity-real 125 (fixtures regenerated with `scripts/86 --set real` for the
+  9321a80 bundles), aib-real 17, sector-real 33, country-real 9. Posture data is 2.28 MB of its 2.40 MB limit. At
+  4c804b6 (the fence-based Country page) the commit records 1,725 tests passing over 114 files, typecheck, build and
+  budget OK, Country profile first view 804.9 kB of 900 kB.
+- **Posture bundle** (9321a80, measured on disk; `git_commit` 4bb2adc): core 2,543,689 bytes (2,484 KiB, schema 2),
   214 drawer documents, the largest GBR at 139,452 bytes (136 KiB), inside the R export's 160 KiB detail budget. The
-  dashboard's own check (`dashboard/src/posture/__tests__/budget.test.ts` at e41cb5b) still caps a drawer document at
-  128 KiB, which 42 of the 214 exceed: that limit has to follow the export's in the dashboard refresh.
+  dashboard's own check (`dashboard/src/posture/__tests__/budget.test.ts`) has followed it to 160 KiB since 3609d3f.
 
 The rest of this section is the **two-leg build** of 2026-10-30 (posture bundle schema 2 from commit 7d847ba; 214
 economies, 14,124 nodes; Country bundle schema 3, 219 fact sheets), after the integration and review fixes. Totals then:
