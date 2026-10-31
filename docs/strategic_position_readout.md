@@ -224,8 +224,8 @@ Mixed cells are where the layers carry the decision: Electric Grid Assembly (140
 transformers and power conversion Medium, cables Large), Batteries Assembly (88), Solar Assembly (155), EV Components
 and Assembly (103 and 111), Wind Components and Assembly (66 and 107), Gas and Oil Assembly (73 and 86), Solar
 Refining (82: polysilicon Medium, the rest Large). The high fence reaches hardware the stage row does not show
-(`yard_fence_scope` `extends_to_hardware`) on 439 cells. Layers (35 per economy, 7,665 rows): small 1,106, medium
-1,724, large 4,022, not assessed 813. The Small layers are the control layers (solar inverter firmware 109; grid
+(`yard_fence_scope` `extends_to_hardware`) on 439 cells. Layers (35 per economy, 7,490 rows for the 214 economies):
+small 1,106, medium 1,724, large 4,022, not assessed 638. The Small layers are the control layers (solar inverter firmware 109; grid
 control, metering and utility inverter firmware 91 each; connected vehicles 91; wind-turbine control 85; oil and gas
 OT control 80 and 61; battery control and communications 63 each; reactor controls 18), NdFeB magnets (EVs 103, wind
 66), grain-oriented steel (37), transformers (24), rare-earth separation (17), fuel fabrication (11) and enrichment
@@ -289,8 +289,9 @@ agreement 3% / 6% / 26% / 44%). The corners agree poorly with the choice, and th
 
 ## 6. Prize validation (spec XXI.2)
 
-**The market prize** `industrial_opportunity` over the 12,045 producing cells: min 0.01, quartiles 0.35 / 0.54 /
-0.67, max 0.97; 4,734 at or above 0.6 (unchanged: the demand series did not change).
+**The market prize** `industrial_opportunity` over the 11,770 producing cells: min 0.01, quartiles 0.35 / 0.54 /
+0.67, max 0.97; 4,629 at or above 0.6 (unchanged: the demand series did not change; the 4,734 of 12,045 in
+`decision_review.md` includes the five aggregates).
 
 | Spearman with | pooled | median within node | cells |
 |---|---|---|---|

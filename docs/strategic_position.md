@@ -138,7 +138,7 @@ only where `supply_chain_need_score` reaches the floor; below it the percentile 
 (0.61), so the node reads plainly as low need and is never borderline on need. `supply_chain_need_cap` says
 "score_below_floor" and `supply_chain_need_uncapped` keeps the percentile; the choice reason names it ("a need score
 of 0.03, below the 0.10 floor, though it ranks at 0.77 in a thinly traded node"). Current run: 40 cells capped (Nuclear
-Extraction 21, Nuclear Refining 18, EV-minerals Refining 1), 39 of which would otherwise be high need; measured need
+Extraction 21, Nuclear Refining 18, EV-minerals Refining 1), 39 of which (the nuclear ones) would otherwise be high need; measured need
 for 7,554 of 11,770 producing cells, high need 2,386.
 
 At Deployment & Use, `supply_chain_need` is NA: the Assembly-equipment proxy that `strategic_need.R`
@@ -273,7 +273,8 @@ of the technology's deployment series, with documented overrides in
 diagnostic still reads it.
 
 Before 2026-10-30 the rule read this market prize directly: high prize `industrial_opportunity >= prize_threshold` (0.6). Distribution and sensitivity:
-`decision_review.md` (2026-10-29: median 0.54, 4,734 of 12,045 producing cells at or above 0.6). The legacy
+`decision_review.md` (2026-10-29: median 0.54, 4,734 of 12,045 producing cells at or above 0.6; those counts
+include the five aggregates, and for the 214 economies it is 4,629 of 11,770). The legacy
 EO-based column is `legacy_eo_opportunity` (and `legacy_eo_opportunity_pct`); it is never read by the
 choice.
 
@@ -359,7 +360,7 @@ is undecided for 408, and decides 2,133 Watch cells (1,253 with a capability flo
 top-quarter Preserve read first (5) or Watch on the triage (41). The large-yard cells are commodity Extraction and
 Refining: Electric Grid Refining and Extraction, Solar Extraction and Refining, Nuclear Extraction, Coal, Gas and Oil
 Extraction and Refining in nearly every economy, and Batteries and EV-minerals Extraction where their world supply
-reads diversified (48 and 47 economies); among layers, battery enclosures, grid cables, PV racking and PV modules.
+reads diversified (49 economies each; Watch by the case in 48 and 47); among layers, battery enclosures, grid cables, PV racking and PV modules.
 `min_signals` 4 / 6 change 271 / 159 choices; `position_last` 5; `no_learning_veto` none.
 
 ## 3. Position: Competitive Position
@@ -599,8 +600,8 @@ floor, under Need), high prize
 - **What the strategic value and the large yard moved** (current run against the market prize without the
   large-yard case, need floor applied in both; `strategic_value_vs_market_transitions.csv`): 798 producing
   cells. Partner -> Watch 567, all by the large-yard case (commodity Extraction and Refining: Electric Grid,
-  Coal, Solar, Gas, Oil, Nuclear and Batteries); Watch -> Catch Up 73, Partner -> Catch Up 24 and Watch ->
-  Preserve 26 on equipment nodes with high industrial commons (Electric Grid, Nuclear, Gas and Oil Assembly,
+  Coal, Solar, Gas, Oil, Nuclear, Batteries and EV-minerals); Watch -> Catch Up 73, Partner -> Catch Up 24 and Watch ->
+  Preserve 26 on equipment nodes with high industrial commons (Electric Grid, Nuclear, Gas, Oil and Coal Assembly,
   Nuclear Components and Refining, Coal and Gas Components); Catch Up -> Watch 69, Catch Up -> Partner 30 and
   Preserve -> Watch 9 on market-only or large-yard nodes (Batteries and EV-minerals Extraction, Solar
   Components, Gas Extraction and Refining, Nuclear Extraction).
@@ -673,7 +674,8 @@ the strategic industrial value; the dashboard copy-refresh work is bringing the 
 Current run (`yard_rollup_by_cell.csv`, `yard_layers.csv`): cells by roll-up small 181, medium 1,809, large 6,051,
 mixed 1,196 (mixed_high_medium 320, mixed_medium_low 350, mixed_high_low 362, mixed_high_medium_low 164), not
 assessed 4,887; `yard_fence_scope` `extends_to_hardware` on 439 cells and `layer` on 412. Layers (35 per economy,
-7,665 rows): small 1,106, medium 1,724, large 4,022, not assessed 813. Small layers are control layers and magnets,
+7,490 rows for the 214 economies; `strategic_posture_layers_tbl` adds 175 for the five aggregates, which take no
+choice): small 1,106, medium 1,724, large 4,022, not assessed 638. Small layers are control layers and magnets,
 rare-earth separation, enrichment, fuel fabrication, grain-oriented steel and transformers where the engine finds an
 acute vulnerability for the country.
 

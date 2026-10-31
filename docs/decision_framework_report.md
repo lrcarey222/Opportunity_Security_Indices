@@ -1,6 +1,7 @@
 # Canonical decision framework: final report (2026-10-29, updated 2026-10-30)
 
-Status: final. Current numbers are from the 2026-10-30 pipeline rerun committed as e41cb5b: the Atlas of Economic
+Status: final for the method and the R pipeline; the dashboard test results in section 17 are still to be filled in
+when the copy refresh lands. Current numbers are from the 2026-10-30 pipeline rerun committed as e41cb5b: the Atlas of Economic
 Complexity 2024 release, the basket change (quartz and silver ores at Solar Extraction, yellowcake at Nuclear
 Extraction), the dyads and energy trade combined with the electro-industrial dictionary pull, the re-pulled 2022-24
 trade benchmark and monthly momentum, then scripts 26 and 27 on commit a54a9d3 (capability-anchor Catch Up, the 0.10
@@ -102,8 +103,9 @@ Validation (current run, `opportunity_validation_*.csv`): Spearman with Competit
 within the 37 nodes where the home market varies the prize), with supply-chain need 0.04 / 0.10, with legacy EO 0.26
 (two-leg run: 0.09 / 0.36, 0.04 / 0.13, 0.24). Component weights: world demand growth 82%, capex 4%, home market 14%.
 Not a disguised capability score; but mostly node context, so countries differ mainly through need, position and
-pathway. Market prize >= 0.6: 4,734 of 12,045 producing nodes (median 0.54), the same on both runs (the demand
-series did not change).
+pathway. Market prize >= 0.6: 4,629 of the 11,770 producing nodes of the 214 economies (median 0.54), the same on
+both runs (the demand series did not change); the 4,734 of 12,045 in `decision_review.md` includes the five
+aggregates.
 
 Since 2026-10-30 this is the **market family** of the prize the choice reads, `strategic_industrial_value`
 (section 25): on the current run 3,044 of the 7,554 assessed producing nodes (40%) have a high strategic industrial
@@ -298,8 +300,8 @@ At Deployment & Use: deployment need missing -> not assessed; >= 0.6 -> Deploy Â
 more of it; says nothing about where the equipment is made); below -> Deploy Â· Watch (no major acceleration needed).
 At producing stages Watch means "domestic industrial priority low", with reasons (the large-yard case, low need, low
 prize, ample diversified supply, weak domestic case, option value). On the current run 2,133 of the 5,416
-producing-stage Watch nodes are decided by the large-yard case (1,253 of them with a capability floor, variant
-`deploy_floor`), the other 3,283 by the triage. Policy-design variants: Accelerate `deploy_accelerate` (a medium,
+producing-stage Watch nodes are decided by the large-yard case (1,264 of them with variant `deploy_floor`: 1,253
+from the large-yard capability floor, 11 from the engine's own `deploy_floor`), the other 3,283 by the triage. Policy-design variants: Accelerate `deploy_accelerate` (a medium,
 permeable fence, section 24); Watch `deploy`, `deploy_floor` or `deploy_diversify` (low fences).
 
 ## 9. Policy Alignment logic
@@ -579,11 +581,13 @@ India, Germany and the UK, at 1600 x 1000 (large desktop), 1366 x 800 (laptop), 
 
 ## 17. Tests and results
 
-**Current state (after the two-leg pathway).**
+**Current state (the Yards & Fences merge 315cff0 and the e41cb5b rerun).**
 
 - **R**: the last full suite ran at 315cff0 (the Yards & Fences merge): **7,027 expectations pass over 47 files; the
   one failure is the known stale `electro_industrial_hs6_dictionary` manifest entry** (below), which predates this
-  work. Earlier counts on the way: 6,635 over 44 files at ea6089a (the anchor rule). a54a9d3 added checks to
+  work. Earlier counts on the way: 6,635 over 44 files at ea6089a (the anchor rule). Both counts are as recorded in
+  those commits' messages and were not rerun for this report; the file counts are those the runs reported, and are
+  not reconciled with the two test files added in between (44 + 2 would give 46). a54a9d3 added checks to
   `test-posture-export.R` after that run; the suite has not been rerun since, so the count at e41cb5b is not stated.
   New test files since the two-leg build: `test-strategic-value.R` (the strategic industrial value, the large-yard
   case, the pinned outcome on the curated attributes) and `test-yard-rollup.R`; the anchor rule, the need floor and
@@ -738,8 +742,10 @@ Current run unless stated.
 3. Measure supply-chain need for the 18 structurally unassessed nodes (hydrogen, geothermal, recovery flows; Wind
    Extraction).
 4. Add national grid, storage, EV and nuclear targets and a committed pipeline to deployment need.
-5. Settle the open calibration choices of the Yards & Fences method (section 29): `min_signals` is now the largest
-   single lever (4 / 6 change 271 / 159 nodes) and PV modules sit exactly on it. The prize threshold is no longer a
+5. Settle the open calibration choices of the Yards & Fences method (section 29): `min_signals` is a material lever
+   (4 / 6 change 271 / 159 nodes, of the order of the need threshold at 0.60 / 0.75, 306 / 354, and the deployment
+   threshold at 0.75, 269; the pathway rule stays the largest, one leg -> anchor 1,597) and PV modules sit exactly on
+   it. The prize threshold is no longer a
    knife-edge (0.65 changes 69 nodes).
 6. Revisit the engine's 10% "strong position" line for large fossil producers and the resilience route for
    equipment nodes (transformers, power electronics), which today only reaches Grid Assembly.
@@ -792,8 +798,8 @@ Extraction (resource base and direct supply), Australia EV-minerals Extraction, 
 capacity). Economies with any Catch Up node: 112 -> 70; Batteries Refining 75 -> 35. Catch Up with a cross-country
 Competitive Position below 0.25: none; without an anchor: none. Of the nine review economies only India Nuclear
 Refining, the UK's Batteries Assembly and Wind Refining and Australia's Batteries Components left Catch Up (all to
-Partner); Australia gained EV-minerals Extraction and the UK one node from Watch. Confidence was unchanged (high 6,437
--> 6,436).
+Partner); Australia gained EV-minerals Extraction and the UK one node from Watch. Confidence barely moved (one cell from
+high to moderate: high 6,437 -> 6,436, moderate 2,179 -> 2,180).
 
 **Bug found and fixed (d65ae03).** `home_share` gives an economy that a partial listing omits the listing's residual
 as an upper bound: every unlisted economy held 0.87% of battery refining, which made Afghanistan, Andorra, Bermuda and
@@ -877,8 +883,9 @@ in a thinly traded node".
 ranks above most of the field: after yellowcake moved, Australia and Canada read 0.77 and 0.75 need on uranium for
 need scores of 0.03 and 0.02, and Germany, the UK, Australia and Canada flipped to high need in Nuclear Refining.
 
-**What moved** (re-running the choice on the stored current table with and without the floor): 40 nodes are capped,
-39 of which would otherwise be high need: Nuclear Extraction 21, Nuclear Refining 18, EV-minerals Refining 1. Under
+**What moved** (re-running the choice on the stored current table with and without the floor): 40 nodes are capped
+(Nuclear Extraction 21, Nuclear Refining 18, EV-minerals Refining 1); the 39 nuclear ones would otherwise be high
+need, while Colombia's EV-minerals Refining reads 0.62 uncapped, below the 0.67 line. Under
 the market prize without the large-yard case 36 change choice (Partner -> Watch 32, Preserve -> Watch 4; Nuclear
 Extraction 19, Refining 17). Under the current method only 13 change (Partner -> Watch 10, Preserve -> Watch 3),
 because the large-yard case already sends Nuclear Extraction to Watch.
@@ -944,10 +951,11 @@ learning (2 of 3 learning points) vetoes it; moderate learning (1 point or more)
 gate order), before the prize: TRUE -> Watch. A case on exactly `min_signals`, or one signal short, is borderline.
 Current run: the case holds for 2,338 assessed producing nodes and decides 2,133 Watch nodes (1,253 with a capability
 floor); the rest are Secure (159), a top-quarter Preserve (5) or Watch on the triage (41); 408 nodes are undecided.
-Large-yard nodes: Electric Grid Refining (203 economies) and Extraction (201), Solar Extraction (202) and Refining
-(201), Nuclear Extraction (200), Coal Refining (198) and Extraction (175), Gas Refining (181) and Extraction (157), Oil
-Extraction (165) and Refining (155), Batteries and EV-minerals Extraction (48 and 47, where world supply reads
-diversified); among layers battery enclosures, grid cables, PV racking and conventional PV modules (with a capability
+Large-yard nodes, by the economies where the case holds (in brackets the Watch it decides): Electric Grid Refining
+205 (203) and Extraction 203 (201), Solar Extraction 204 (202) and Refining 203 (201), Nuclear Extraction 203 (200),
+Coal Refining 203 (198) and Extraction 203 (175), Gas Refining 205 (181) and Extraction 203 (157), Oil Extraction 203
+(165) and Refining 205 (155), Batteries and EV-minerals Extraction 49 each (48 and 47, where world supply reads
+diversified); the large gaps are the fossil-fuel Secure nodes (159); among layers battery enclosures, grid cables, PV racking and conventional PV modules (with a capability
 floor).
 
 **Layer-first yards.** `yard_rollup.R`: each sensitive layer takes its own choice (engine Secure kept; else its own
@@ -955,8 +963,9 @@ value and large-yard case with its cell's need, position and pathway) and its ow
 cell its `yard_rollup` (small, medium, large, or mixed_high_medium / mixed_medium_low / mixed_high_low /
 mixed_high_medium_low) and `yard_children`. Yards follow the user's fence mapping (section 23). Current run, by cell:
 small 181, medium 1,809, large 6,051, mixed 1,196 (high/medium 320, medium/low 350, high/low 362, all three 164);
-fence scope `extends_to_hardware` on 439 cells, `layer` on 412. Layers (35 per economy, 7,665 rows): small 1,106,
-medium 1,724, large 4,022, not assessed 813.
+fence scope `extends_to_hardware` on 439 cells, `layer` on 412. Layers (35 per economy, 7,490 rows for the 214
+economies; the table's 7,665 adds the five aggregates, which take no choice): small 1,106, medium 1,724, large 4,022,
+not assessed 638.
 
 **Review fixes (99528e6).** A cell without need or prize is not assessed before the large-yard case is read; the
 market-only cap is a rule passed to the choice (no threshold lifts it); commons and option are scored on the strict
@@ -976,9 +985,9 @@ throughout):
 
 The 798 moves: Partner -> Watch 567, all by the large-yard case (Electric Grid Refining 68, Coal Refining 67, Electric
 Grid Extraction 67, Solar Extraction 66, Solar Refining 66, Gas Refining 46, Coal Extraction 43, Oil Refining 40, Oil
-Extraction 33, Nuclear Extraction 30, Gas Extraction 23, Batteries Extraction 9); Watch -> Catch Up 73, Partner ->
+Extraction 33, Nuclear Extraction 30, Gas Extraction 23, Batteries Extraction 9, EV-minerals Extraction 9); Watch -> Catch Up 73, Partner ->
 Catch Up 24 and Watch -> Preserve 26, all equipment nodes with high industrial commons (Electric Grid Assembly, Nuclear
-Assembly, Components and Refining, Gas and Oil Assembly, Coal and Gas Components); Catch Up -> Watch 69, Catch Up ->
+Assembly, Components and Refining, Gas, Oil and Coal Assembly, Coal and Gas Components); Catch Up -> Watch 69, Catch Up ->
 Partner 30 and Preserve -> Watch 9 (Batteries and EV-minerals Extraction, Solar Components, Gas Extraction and
 Refining, Nuclear Extraction). So Catch Up shifts from mineral extraction and solar components toward grid and nuclear
 equipment: the United States goes from 4 to 8 Catch Up nodes (Electric Grid, Gas, Oil and Nuclear Assembly, Nuclear
@@ -1093,7 +1102,9 @@ so most units are Watch there (the paper describes a large advanced economy). Wh
 
 - **Control layers** (grid SCADA, inverter firmware, reactor controls) are Small only where the engine measures
   coercive control of the carrying hardware for the country: Japan, not the United States or Germany. For those two
-  the layer misses Secure, its prize is market-only and need is low, so it is Watch. This is the user's decision
+  the layer misses Secure, its prize is low (market-only for grid SCADA and inverter firmware; reactor controls are
+  not capped, but their strategic industrial value, 0.45 in the United States and 0.42 in Germany, is below the 0.6
+  line) and need is below the high-need line, so it is Watch. This is the user's decision
   (section 29), a documented departure from the paper.
 - **Enrichment** (LEU, HALEU) is Catch Up (medium) in all three: a high strategic industrial value, a position below
   the top quarter and an anchor. The paper places it Small; the engine finds no acute vulnerability (no Secure route
