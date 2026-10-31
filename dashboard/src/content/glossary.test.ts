@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fillGlossaryText, GLOSSARY, GLOSSARY_DEFAULTS, GLOSSARY_TEMPLATES, glossaryById, glossaryFor, glossaryWith, wordCount } from './glossary.ts';
 import { ACRONYM_NAMES, bareAcronymsInText } from '../components/testing/acronyms.ts';
 import { POSTURE_TERMS } from '../posture/basis.tsx';
+import { AIB_EXPLAINER, AVOID_RE, CHOICE_DEFINITION, YARD_DEFINITION } from './vocabulary.ts';
 
 /** The ids of spec_country.md C3.2, in its order (the interface every module codes against). */
 const SPEC_IDS = [
@@ -18,8 +19,13 @@ const SPEC_IDS = [
   // the strategic position framework (posture/basis.tsx POSTURE_TERMS; canonical since 2026-10-29)
   'posture', 'strategic_need', 'supply_chain_need', 'deployment_need', 'need_type', 'strategic_industrial_value', 'industrial_opportunity', 'competitive_position', 'pathway',
   'deploy_mode', 'security_rationale', 'delivery_mode', 'consistency_flag', 'policy_alignment', 'partner_gap', 'trade_momentum', 'aib_gap', 'partner_demand',
-  // Yards & Fences (2026-10-30)
-  'yard', 'large_yard_case',
+  // the six choices as actions, then Yards & Fences (2026-10-30)
+  'choice_secure', 'choice_preserve', 'choice_catch_up', 'choice_partner', 'choice_accelerate', 'choice_watch',
+  'yard', 'high_fence', 'medium_fence', 'low_fence', 'large_yard_case',
+  // the Allied Industrial Base (the NEIS copy refresh, 2026-10-30)
+  'allied_industrial_base', 'managed_interdependence', 'aib_scenario', 'aib_treatment', 'sectoral_compact', 'strategic_compact', 'allied_coverage',
+  'coordination_dividend', 'remaining_gap', 'minimum_coalition', 'n1_resilience', 'concentration_cap', 'demand_anchor', 'scaling_host', 'specialty_host',
+  'development_host',
 ];
 
 describe('glossary content (C3.2)', () => {
@@ -131,6 +137,7 @@ describe('glossary content (C3.2)', () => {
     // the prize the choice reads (2026-10-30) and the market prize it holds as one of three families
     expect(glossaryById.get('strategic_industrial_value')?.term).toBe('Strategic Industrial Value');
     expect(glossaryById.get('strategic_industrial_value')?.short).toContain('the market prize (Industrial Opportunity), industrial-commons value and future-option value');
+    expect(glossaryById.get('strategic_industrial_value')?.short).toMatch(/^The prize: how valuable it would be to build or keep productive capability/);
     expect(glossaryById.get('strategic_industrial_value')?.more).toContain('capped just below the prize bar');
     expect(glossaryById.get('industrial_opportunity')?.short).toMatch(/^The market prize/);
     expect(glossaryById.get('industrial_opportunity')?.more).toContain('One of the three families of the Strategic Industrial Value');
@@ -144,7 +151,11 @@ describe('glossary content (C3.2)', () => {
 
   it('the canonical framework: Need (two kinds, never combined) -> Prize -> Position -> Choice (six verbs) -> Policy alignment; the legacy indices say so (design 5)', () => {
     const g = (id: string) => glossaryById.get(id) as { term: string; short: string; more?: string };
-    expect(g('posture').short).toContain('Secure, Compete (Preserve, Catch Up or Partner) or Deploy (Accelerate or Watch)');
+    // the choice in plain words first (the six names as actions); the R families only in `more`
+    expect(g('posture').term).toBe('Strategic choice');
+    expect(g('posture').short).toContain('Secure, Preserve, Catch Up, Partner, Accelerate or Watch');
+    expect(g('posture').short).not.toMatch(/Compete|Deploy \(/);
+    expect(g('posture').more).toContain('Secure, Compete (Preserve, Catch Up or Partner) and Deploy (Accelerate or Watch)');
     // the retired need x opportunity rule is gone
     for (const id of ['posture', 'strategic_need', 'industrial_opportunity', 'competitive_position']) {
       const text = `${g(id).short} ${g(id).more ?? ''}`;
@@ -159,15 +170,50 @@ describe('glossary content (C3.2)', () => {
     expect(g('industrial_opportunity').more).toContain('Not the legacy Economic Opportunity index');
     expect(g('competitive_position').more).toMatch(/^Demonstrated capability only/);
     expect(g('pathway').short).toContain('Unknown counts as not credible');
-    for (const v of ['aligned', 'under-prioritized', 'over-prioritized', 'wrong treatment (misaligned)', 'deployment under-response', 'mixed']) expect(g('policy_alignment').short).toContain(v);
-    expect(g('policy_alignment').more).toContain('insufficient data or low confidence, never a guess');
-    expect(g('partner_demand').short).toContain('Deploy · Accelerate is a deployment priority and is not counted');
+    // the capability-anchor rule (2026-10-30): an anchor plus corroboration, never two weak signals
+    expect(g('pathway').short).toContain('a capability anchor) and a corroborating signal');
+    expect(g('pathway').more).toContain('corroborate an anchor of another kind but never qualify alone');
+    expect(`${g('pathway').short} ${g('pathway').more}`).not.toMatch(/two or more of|at least two of the five/);
+    // the need floor (2026-10-30)
+    expect(g('supply_chain_need').more).toContain('only where the need score itself reaches 0.10');
+    for (const v of ['broadly aligned', 'needs more attention', 'too much intervention', 'wrong tool for the problem', 'mixed signals']) expect(g('policy_alignment').short).toContain(v);
+    expect(g('policy_alignment').more).toContain('Accelerate with weak deployment policy (deployment policy lags)');
+    expect(g('policy_alignment').more).toContain('not enough policy evidence or low confidence, never a guess');
+    expect(g('partner_demand').short).toContain('Accelerate is a deployment priority and is not counted');
     // the paper baseline's model is Legacy OSI, with the mapping and why the results differ
     expect(g('legacy_osi').term).toBe('Legacy OSI framework');
+    expect(g('legacy_osi').short).toContain('not the current strategic recommendation');
     expect(g('legacy_osi').more).toContain('Grow to Preserve, Upgrade to Catch Up, Exposed to Partner, Stable to Watch');
     expect(g('legacy_osi').more).toContain('capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment');
     for (const id of ['es', 'eo', 'si']) expect(g(id).more, id).toContain('Part of the Legacy OSI framework (the paper baseline)');
     expect(g('paper_baseline').more).toContain('The dials re-weight only the Legacy OSI indices');
+  });
+
+  it("the six choices are actions, the yards use the user's words, and the Allied Industrial Base terms are the vocabulary's (2026-10-30)", () => {
+    const g = (id: string) => glossaryById.get(id) as { term: string; short: string; more?: string; modules: string[] };
+    for (const v of ['secure', 'preserve', 'catch_up', 'partner', 'accelerate', 'watch'] as const) {
+      expect(g(`choice_${v}`).short, v).toBe(CHOICE_DEFINITION[v]);
+      expect(g(`choice_${v}`).modules, v).toContain('aib');
+    }
+    expect(g('choice_secure').short).toContain('not necessarily self-sufficiency');
+    expect(g('choice_watch').more).toContain('Missing data is never Watch');
+    expect(g('choice_catch_up').short).toContain('not a greenfield ambition');
+    const yards = { high_fence: 'small', medium_fence: 'medium', low_fence: 'large' } as const;
+    for (const [id, y] of Object.entries(yards)) {
+      const d = YARD_DEFINITION[y];
+      expect(g(id).short, id).toContain(d.charAt(0).toLowerCase() + d.slice(1));
+    }
+    expect(g('yard').more).toContain('A technology can sit in more than one yard');
+    expect(g('yard').more).toContain('only where the data show coercive foreign control for that country');
+    expect(g('allied_industrial_base').more).toBe(AIB_EXPLAINER);
+    expect(g('aib_scenario').short).toContain('China stops supplying allied markets');
+    for (const id of ['allied_industrial_base', 'managed_interdependence', 'sectoral_compact', 'minimum_coalition', 'n1_resilience']) expect(g(id).modules, id).toContain('aib');
+    // the Allied Industrial Base filter lists its own terms and the partnership measures, not the Legacy OSI indices
+    const aib = glossaryFor('aib').map((e) => e.id);
+    for (const id of ['allied_industrial_base', 'psi', 'fs', 'coalition', 'aib_gap', 'posture']) expect(aib, id).toContain(id);
+    for (const id of ['es', 'eo', 'si', 'hawkishness']) expect(aib, id).not.toContain(id);
+    // plain words: no consulting language anywhere in the glossary
+    for (const e of GLOSSARY) expect(`${e.term} ${e.short} ${e.more ?? ''}`, e.id).not.toMatch(AVOID_RE);
   });
 
   it('the renamed corners (2026-10-28) keep no old id and carry their new names', () => {

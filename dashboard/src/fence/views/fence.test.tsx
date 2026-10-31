@@ -5,6 +5,7 @@ import { fenceRoutes } from '../routes.tsx';
 import { resetYFCache } from '../data/store.ts';
 import { SYN_BUNDLE, SYN_MANIFEST, SYN_REFERENCE } from '../__fixtures__/synthetic.ts';
 import { decodeState, stateSearch, type AssessState } from '../state/assessment.ts';
+import { YARD_DEFINITION } from '../../content/vocabulary.ts';
 
 const restore: (() => void)[] = [];
 
@@ -51,14 +52,18 @@ describe('Draw the Fence', () => {
   it('the landing page frames three different problems and links into the tool', async () => {
     renderAt('/');
     expect(await screen.findByRole('heading', { level: 1, name: 'Draw the Fence' }, { timeout: 20_000 })).toBeTruthy();
-    for (const verb of ['Secure it', 'Compete in it', 'Deploy it']) expect(screen.getByRole('heading', { name: verb })).toBeTruthy();
+    for (const verb of ['Secure it', 'Build or preserve it', 'Keep it open']) expect(screen.getByRole('heading', { name: verb })).toBeTruthy();
+    // the yards in the Explorer's words (content/vocabulary.ts), and a technology is never placed in one yard whole
+    for (const y of ['small', 'medium', 'large'] as const) expect(screen.getByText(YARD_DEFINITION[y])).toBeTruthy();
+    expect(screen.getAllByText(/A technology can sit in more than one yard\./).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('heading', { name: 'Deploy it' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Start an assessment' })).toBeTruthy();
     // its own site: its own header and views, nothing of the Explorer's shell
     expect(screen.getAllByRole('link', { name: /Draw the Fence/ }).some((a) => a.getAttribute('aria-current') === 'page')).toBe(true);
     expect(screen.queryByText(/Allied Industrial Base Explorer/)).toBeNull();
     expect(document.title).toBe('Draw the Fence | NEIS Center');
     // the framework leads: the four gates are explained on the first screen
-    expect(screen.getByRole('heading', { name: 'How the engine decides' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'How a capability is placed' })).toBeTruthy();
   });
 
   it('a system result shows every layer in its own yard and explains the focused one', async () => {
@@ -204,7 +209,7 @@ describe('Draw the Fence', () => {
     resetYFCache();
     renderAt('/methodology');
     expect(await screen.findByText('Thresholds and why they exist', {}, { timeout: 20_000 })).toBeTruthy();
-    expect(screen.getAllByText(/OSI metrics describe observed economic/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/The Opportunity & Security Indices describe observed economic, technological and supply-chain conditions; they do not decide which yard/).length).toBeGreaterThan(0);
     // the glossary explains every assumption
     expect(screen.getByRole('heading', { name: 'Glossary of assumptions' })).toBeTruthy();
     expect(screen.getByText(/Hard substitution is one of the three conditions for a physical chokepoint/)).toBeTruthy();

@@ -1,6 +1,9 @@
 // The shared glossary (spec_country.md C3.2; the content there is normative): a plain-language
 // definition of every index, category and acronym, for a reader who knows energy and economics but has
-// not read the paper. Since 2026-10-28 every entry reads the six supply-chain stages (Extraction,
+// not read the paper. Since the NEIS copy refresh (2026-10-30) each `short` says first what a term means for a
+// decision, in the shared vocabulary's words (content/vocabulary.ts: the six choices, the yards, the Allied
+// Industrial Base), and `more` keeps the technical definition; the Allied Industrial Base terms are a module of
+// their own ('aib'). Since 2026-10-28 every entry reads the six supply-chain stages (Extraction,
 // Refining, Components, Assembly, Deployment, Recovery; lib/stages.ts), and the strategic position
 // framework's terms (the posture cards' Term ids, posture/basis.tsx POSTURE_TERMS) are here too. Since
 // 2026-10-29 the framework is canonical (Need -> Prize -> Position -> Choice -> Policy alignment); the
@@ -10,7 +13,10 @@
 // Numbers that change with the data are written as {{placeholders}} and filled from GLOSSARY_DEFAULTS,
 // or from the values a module's manifest provides (GlossaryVarsProvider in components/glossaryVars.tsx).
 
-export type GlossaryModule = 'sector' | 'strategic' | 'country';
+import { AIB_CLASS_DEFINITION, AIB_EXPLAINER, AIB_MEASURE_DEFINITION, CHOICE_DEFINITION, COMPACT, MANAGED_INTERDEPENDENCE, YARD_DEFINITION } from './vocabulary.ts';
+
+/** Where a term is used: the Sector, Country and Allied Industrial Base pages, and 'strategic' (the Methods page and the Legacy OSI views). */
+export type GlossaryModule = 'sector' | 'strategic' | 'country' | 'aib';
 
 export interface GlossaryEntry {
   id: string;
@@ -42,6 +48,15 @@ export type GlossaryVars = Partial<Record<keyof typeof GLOSSARY_DEFAULTS, string
 
 const ALL: GlossaryModule[] = ['sector', 'strategic', 'country'];
 const SC: GlossaryModule[] = ['strategic', 'country'];
+/** the strategy's terms: every page, the Allied Industrial Base included */
+const EVERY: GlossaryModule[] = [...ALL, 'aib'];
+/** the Allied Industrial Base's own terms (the Country profile's Allied Strategy uses them too) */
+const AIB: GlossaryModule[] = ['aib', 'country'];
+/** the partnership measures: the Country and Allied Industrial Base pages and the Legacy OSI views */
+const SCA: GlossaryModule[] = [...SC, 'aib'];
+
+/** A sentence with its first letter lower-cased, to follow a colon ("Small yard: capabilities where ..."). */
+const lc = (t: string): string => t.charAt(0).toLowerCase() + t.slice(1);
 
 /** The entries as written, with {{placeholders}}. */
 export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
@@ -85,35 +100,35 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     id: 'psi',
     term: 'Partnership Strength Index',
     abbr: 'PSI',
-    short: 'How strong a partner one economy is for another in energy supply chains: as a friendshoring opportunity (Friendshore), an export market (Partnership Opportunity) and a development partner.',
+    short: 'Where two economies have the strongest case to deepen an energy-industrial relationship, across sourcing (Friendshore), markets (Partnership Opportunity) and investment (Development Potential). Not a call to cooperate on everything.',
     more: "Weights 40%, 40% and 20% (Development Potential only for middle- and lower-income partners). Each pair is summarised by its five strongest sectors. A country's profile shows it from that country's viewpoint; the coalition headline averages the viewpoints of the {{n_core}} core coalition members.",
-    modules: SC,
+    modules: SCA,
     related: ['fs', 'po', 'dp', 'best_five'],
   },
   {
     id: 'fs',
     term: 'Friendshore',
     abbr: 'FS',
-    short: 'A friendshoring opportunity: a partner B where country A could invest and source to meet its security need in a sector. B has an economic opportunity there; the two already trade and invest.',
+    short: 'Where country A could source from or invest in country B to reduce a strategic dependency in a sector: B has room to build there, and the two already trade and invest.',
     more: "Components: A's security need in the sector (1 minus its Energy Security), B's Economic Opportunity there (its room to build production and value, not its standing as a supplier today), A's imports from B, A's direct investment in B, UN-vote alignment and 1 minus the Chinese-parent share of B's foreign-owned factories, less a climate penalty for emission-intensive technologies. A's need is the same for every partner in one sector: it sets how much the sector matters to A, while the ranking of partners within the sector turns on B's opportunity, the trade and investment ties, alignment and ownership. It shows where investment and sourcing could go, not today's largest suppliers (the import shares show those).",
-    modules: SC,
+    modules: SCA,
     related: ['psi', 'alignment', 'investment_ties', 'chinese_parent'],
   },
   {
     id: 'po',
     term: 'Partnership Opportunity',
     abbr: 'PO',
-    short: "How good a market partner B is for country A's exports in a sector: A already sells there, A is competitive, and B needs the goods.",
+    short: "Where country B offers an attractive market for what country A is well placed to supply in a sector: A already sells there, A is competitive, and B needs the goods.",
     more: "Components: A's exports to B, A's economic opportunity and B's security need (weights 3, 3, 1), less a climate penalty.",
-    modules: SC,
+    modules: SCA,
     related: ['psi', 'fs'],
   },
   {
     id: 'dp',
     term: 'Development Potential',
     abbr: 'DP',
-    short: 'For middle- and lower-income partners: how much room there is to build supply chains together, from development, investment-climate, aid and energy-use data. Not scored for high-income partners.',
-    modules: SC,
+    short: 'Where joint investment could create a new supply base while building productive capacity in a middle- or lower-income partner, from development, investment-climate, aid and energy-use data. Not scored for high-income partners.',
+    modules: SCA,
     related: ['psi'],
   },
   {
@@ -213,7 +228,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     term: 'Allied coalition',
     short: 'The group of economies the analysis studies: {{n_core}} core members (U.S.-leaning in UN votes) and {{n_partner}} partners (in U.S. trade or security agreements, or major suppliers not leaning towards China).',
     more: 'Core members: U.S.-leaning in UN votes, with economies of at least $100 billion. Partners: members of U.S. trade or security agreements with economies of at least $100 billion, or major suppliers that do not lean towards China (at least 5% of world supply at a stage other than deployment, or 10% of the reserves of a headline mineral or fuel).',
-    modules: ALL,
+    modules: EVERY,
     related: ['alignment'],
   },
   {
@@ -456,10 +471,10 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'legacy_osi',
     term: 'Legacy OSI framework',
-    short: "The paper baseline's index model: Energy Security, Economic Opportunity, the Strategic Index and the four corners (Grow, Upgrade, Exposed, Stable). Kept for replication and comparison; not a current recommendation.",
+    short: "The paper baseline's index model: Energy Security, Economic Opportunity, the Strategic Index and the four corners (Grow, Upgrade, Exposed, Stable). Kept for comparison and reproducibility; not the current strategic recommendation.",
     more:
       'The corners map loosely onto the current choices: Grow to Preserve, Upgrade to Catch Up, Exposed to Partner, Stable to Watch. Results differ because the legacy indices mix capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment, which the strategic position framework separates into need, prize and position. On a Country profile they sit under Evidence & Methodology, with the dials as scenarios to explore.',
-    modules: ALL,
+    modules: EVERY,
     related: ['es', 'eo', 'si', 'quadrant', 'posture', 'dials'],
   },
   {
@@ -514,171 +529,249 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     modules: ['sector'],
     related: ['dp'],
   },
-  // ---- the strategic position framework (canonical since 2026-10-29) ------------------------------
+  // ---- the strategy (canonical since 2026-10-29; plain words first since the NEIS copy refresh, 2026-10-30) -------
   // Need -> Prize -> Position -> Choice -> Policy alignment. The ids of posture/basis.tsx POSTURE_TERMS.
   // 'policy_alignment' is not UN-vote 'alignment', and 'strategic_need' is not the Strategic Index's
-  // security 'need'.
+  // security 'need'. Each `short` says what the term means for a decision; `more` says how it is measured.
   {
     id: 'posture',
-    term: 'Strategic posture',
-    short: "The framework's choice for a country at one technology and stage: Secure, Compete (Preserve, Catch Up or Partner) or Deploy (Accelerate or Watch), from need, prize and position, at fixed thresholds.",
+    term: 'Strategic choice',
+    short: 'What a country should do at one technology and supply-chain stage: Secure, Preserve, Catch Up, Partner, Accelerate or Watch. Set from need, prize and position at fixed thresholds; current policy is compared afterwards.',
     more:
-      'Secure comes first and overrides the rest (see Secure rationale). At Deployment & Use, high deployment need means Accelerate, otherwise Watch. At the producing stages, need and prize triage and Competitive Position decides: a high prize with a top-quarter position is Preserve; below it a credible pathway is Catch Up, else high need is Partner and low need Watch. Observed policy is compared afterwards (policy alignment), never fed in, and the dials do not change it.',
-    modules: ALL,
-    related: ['strategic_need', 'industrial_opportunity', 'competitive_position', 'security_rationale', 'deploy_mode', 'policy_alignment', 'legacy_osi'],
+      'Secure comes first and overrides the rest. At Deployment & Use, high deployment need means Accelerate, otherwise Watch; at the producing stages need and prize triage the step and Competitive Position decides the response (see each choice). In the data the six choices sit in three families: Secure, Compete (Preserve, Catch Up or Partner) and Deploy (Accelerate or Watch). Observed policy never feeds the choice, and the Legacy OSI dials do not change it.',
+    modules: EVERY,
+    related: ['choice_secure', 'choice_preserve', 'choice_catch_up', 'choice_partner', 'choice_accelerate', 'choice_watch', 'strategic_need', 'strategic_industrial_value', 'competitive_position', 'policy_alignment', 'yard', 'legacy_osi'],
   },
   {
     id: 'strategic_need',
     term: 'Strategic Need',
-    short: "The umbrella name for a node's Need, measured two separate ways: supply-chain need at the producing stages and deployment need at Deployment & Use. They are never combined into one score.",
-    more: "Only the relevant one appears for each node. Not the same as the Strategic Index's security need (1 minus Energy Security).",
-    modules: ALL,
+    short: 'The problem a country has to solve at a supply-chain step, measured two separate ways: supply-chain vulnerability at the producing stages and deployment need at Deployment & Use. They are never combined into one score.',
+    more: "Only the relevant one appears for each step. Not the same as the Strategic Index's security need (1 minus Energy Security).",
+    modules: EVERY,
     related: ['supply_chain_need', 'deployment_need', 'need_type', 'posture', 'need'],
   },
   {
     id: 'supply_chain_need',
-    term: 'Supply-chain need',
-    short: 'How costly or dangerous dependence on outside supply is for a node: import dependence, supplier concentration, exposure to China and opposite-bloc suppliers and trusted alternatives, ranked against other countries. Producing stages only.',
+    term: 'Supply-chain need (vulnerability)',
+    short: 'How vulnerable a country is at a producing-stage capability: import dependence, supplier concentration, exposure to risky suppliers and the lack of trusted alternatives, compared with other countries. Producing stages only.',
     more:
-      'Each part is a percentile among the countries in the same technology and stage; higher is more need. Substitutability, reconstitution time, inventories, essentiality and operational control feed the Secure tests and are shown beside it. A country holding at least 10% of world supply scores no need from the make-up of its imports.',
-    modules: ALL,
+      'Each part is a percentile among the countries at the same technology and stage; higher is more vulnerable. Risky suppliers are China and suppliers in the opposite UN-vote bloc. A percentile counts as high only where the need score itself reaches 0.10, so a tiny exposure in a thinly traded step does not read as high need; a country holding at least 10% of world supply scores no need from the make-up of its imports. Substitutability, rebuild time, inventories, essentiality and operational control feed the Secure tests and are shown beside it.',
+    modules: EVERY,
     related: ['strategic_need', 'deployment_need', 'security_rationale', 'posture'],
   },
   {
     id: 'deployment_need',
     term: 'Deployment need',
-    short: "How much more deployment a country's energy system needs in a technology: demand adequacy, the gap to its national targets and system requirements. Deployment & Use only; each part names its scenario.",
+    short: 'How urgently a country needs more of a technology in use: expected demand, the gap to its national targets and energy-system requirements. Deployment & Use only; each part names its scenario.',
     more:
       "Demand adequacy reads current policy and the target gap national commitments (Ember's 2030 targets); a climate-aligned value is shown only as a labelled alternative. Each part says whether it rests on national data, a regional proxy, an observed trend or global context; a missing part is not assessed, never zero. It is not supply-chain vulnerability: high deployment need means Accelerate, never Partner.",
-    modules: ALL,
-    related: ['strategic_need', 'supply_chain_need', 'deploy_mode', 'posture'],
+    modules: EVERY,
+    related: ['strategic_need', 'supply_chain_need', 'deploy_mode', 'choice_accelerate', 'posture'],
   },
   {
     id: 'need_type',
     term: 'Need type',
-    short: 'Which need a node reads: supply-chain need at Extraction, Refining & Processing, Component Manufacturing, Final Assembly & Equipment and Recovery & Recycling; deployment need at Deployment & Use.',
-    modules: ALL,
+    short: 'Which need a step reads: supply-chain vulnerability at Extraction, Refining & Processing, Component Manufacturing, Final Assembly & Equipment and Recovery & Recycling; deployment need at Deployment & Use.',
+    modules: EVERY,
     related: ['supply_chain_need', 'deployment_need'],
   },
   {
     id: 'strategic_industrial_value',
     term: 'Strategic Industrial Value',
     short:
-      'The prize: is domestic capability in a node strategically valuable? It combines the market prize (Industrial Opportunity), industrial-commons value and future-option value; a large market alone never makes it high.',
+      'The prize: how valuable it would be to build or keep productive capability in a supply-chain step. It combines the market prize (Industrial Opportunity), industrial-commons value and future-option value.',
     more:
-      'Industrial commons reads process knowledge, the workforce and supplier ecosystem and cross-sector spillover; future option reads the leap tests of a leap candidate. Like the market prize it reads no current capability and no need variable, and it is a percentile across the producing nodes. Where neither commons nor option reaches the gate, the value is capped just below the prize bar (market only).',
-    modules: ALL,
+      'Industrial commons reads process learning, the workforce and supplier ecosystem and spillovers to other sectors; future option reads whether a credible leap ahead is in reach. A large market alone never makes the prize high: where neither commons nor option reaches the gate, the value is capped just below the prize bar (market only). It reads no current capability and no need variable, and it is a percentile across the producing supply-chain steps.',
+    modules: EVERY,
     related: ['posture', 'industrial_opportunity', 'competitive_position', 'yard', 'large_yard_case'],
   },
   {
     id: 'industrial_opportunity',
     term: 'Industrial Opportunity',
-    short: 'The market prize: is there a market worth pursuing in a node? Expected world demand growth to 2035 under current policy and investment momentum, lifted by national home-market growth where measured.',
+    short: 'The market prize: is there a market worth pursuing at a supply-chain step? Expected world demand growth to 2035 under current policy and investment momentum, lifted by national home-market growth where measured.',
     more:
-      'One of the three families of the Strategic Industrial Value, the prize the choice reads (the prize itself where the data predate it). It reads no current capability (exports, production, capacity, investment, reserves) and no need variable, so it stays distinct from Competitive Position and Strategic Need; a declining market is capped below the bar. Feasibility, pipeline, adjacency and cost advantage form the credible-pathway test of Catch Up instead. Not the legacy Economic Opportunity index.',
-    modules: ALL,
+      'One of the three families of the Strategic Industrial Value, the prize the choice reads (the prize itself where the data predate it). It reads no current capability (exports, production, capacity, investment, reserves) and no need variable, so it stays distinct from Competitive Position and Strategic Need; a declining market is capped below the bar. Not the legacy Economic Opportunity index.',
+    modules: EVERY,
     related: ['strategic_industrial_value', 'posture', 'competitive_position', 'pathway', 'eo'],
   },
   {
     id: 'competitive_position',
     term: 'Competitive Position',
-    short: "How strong a country already is in a node: export share and specialization, production share, manufacturing capacity, investment, cost, resources and deployment scale where relevant, with trade momentum. Placed among the node's contenders.",
+    short: "How strong a country already is at a supply-chain step: exports and specialization, production, operating capacity, investment, costs and resources where relevant, with trade momentum. Compared with the step's main producers.",
     more:
-      'Demonstrated capability only: no market growth, need, policy or climate goal. Its trade evidence is a 2022-24 benchmark of exports, world share and revealed comparative advantage; current trade momentum takes 15% of the trade evidence where a matched 12-month comparison exists. With a high prize, the top quarter of contenders (economies with at least 0.5% of world supply) preserve; the others catch up, partner or watch.',
-    modules: ALL,
+      'Demonstrated capability only: no market growth, need, policy or climate goal. Its trade evidence is a 2022-24 benchmark of exports, world share and revealed comparative advantage; current trade momentum takes 15% of the trade evidence where a matched 12-month comparison exists. The main producers (contenders) are the economies with at least 0.5% of world supply; with a high prize, the top quarter of them preserve, and the others catch up, partner or watch.',
+    modules: EVERY,
     related: ['posture', 'industrial_opportunity', 'trade_momentum', 'rca'],
   },
   {
     id: 'pathway',
     term: 'Credible pathway',
-    short: 'The test that turns a high prize without a strong position into Catch Up: two or more of feasibility, pipeline, an established adjacent stage, learning inputs, input-cost advantage. Unknown counts as not credible.',
-    more: 'One piece of evidence is not enough: at least two of the five must hold; Extraction also needs a resource base. Unknown means too little evidence was observed to reach two, or, at Extraction, that the resource base is unknown. Without a credible pathway, high need means Partner and low need Watch.',
-    modules: ALL,
-    related: ['posture', 'industrial_opportunity', 'competitive_position', 'feasibility'],
+    short: 'The Catch Up test: a high prize without a strong position is Catch Up only with a real base to build on (a capability anchor) and a corroborating signal. Unknown counts as not credible.',
+    more:
+      'Anchors are absolute: at least 0.5% of world supply or exports, 0.5% of world operating capacity, 1% in committed capacity, an adjacent stage with 5% of world supply or, at Extraction, a recorded resource base (which Extraction always needs). Supporting signals (product-space feasibility, an input-cost advantage, learning inputs, a relatively strong adjacent stage, announced capacity) corroborate an anchor of another kind but never qualify alone. Without a credible pathway, high need means Partner and low need Watch.',
+    modules: EVERY,
+    related: ['choice_catch_up', 'posture', 'industrial_opportunity', 'competitive_position', 'feasibility'],
   },
   {
     id: 'deploy_mode',
     term: 'Accelerate or Watch',
-    short: 'At Deployment & Use, Accelerate where deployment need is high (deployment itself is the priority), Watch where it is not. Watch also ends the triage at the producing stages: domestic industrial priority low.',
+    short: 'At Deployment & Use, Accelerate where deployment need is high (deployment itself is the priority), Watch where it is not. Watch also ends the triage at the producing stages: low domestic priority.',
     more:
-      'Accelerate says nothing about making the equipment at home: a technology can be a low manufacturing priority and a high deployment priority. Watch is a positive conclusion, not a failure: no major domestic industrial intervention is needed (low need, low prize, ample diversified supply or a weak domestic case).',
-    modules: ALL,
-    related: ['posture', 'deployment_need'],
+      'Accelerate says nothing about making the equipment at home: a technology can be a low manufacturing priority and a high deployment priority. Watch is a positive conclusion, not a failure: no major domestic industrial intervention is needed (low need, a low prize, ample diversified supply or a weak domestic case).',
+    modules: EVERY,
+    related: ['choice_accelerate', 'choice_watch', 'deployment_need'],
   },
   {
     id: 'security_rationale',
     term: 'Secure rationale',
-    short: 'Why a node is Secure: operational control (a foreign actor could command or disable it), a coercive chokepoint (a coercive supplier could withhold it) or systemic resilience (essential, import-dependent and slow to rebuild).',
+    short: 'Why a step is Secure: control-system risk (a foreign actor could command or disable it), chokepoint risk (a coercive supplier could withhold it) or system resilience (essential, import-dependent and slow to rebuild).',
     more: 'Each route also needs an acute consequence. Concentration alone does not make a chokepoint: substitution must be hard and trusted supply too slow to restore. Secure does not mean reshoring.',
-    modules: ALL,
-    related: ['posture', 'delivery_mode'],
+    modules: EVERY,
+    related: ['choice_secure', 'delivery_mode', 'high_fence'],
   },
   {
     id: 'delivery_mode',
     term: 'Delivery mode',
-    short: 'How a Secure or Compete choice is delivered: domestic, allied, diversified global or mixed. Secure does not mean reshoring: stockpiles, trusted sourcing, substitution and long-term contracts all count.',
-    modules: ALL,
+    short: 'How a Secure, Preserve, Catch Up or Partner choice is delivered: at home, with allies, from a diversified global market or a mix. Stockpiles, trusted sourcing, substitution and long-term contracts all count.',
+    modules: EVERY,
     related: ['security_rationale', 'posture'],
   },
   {
     id: 'consistency_flag',
     term: 'Consistency review',
-    short: 'A node whose evidence pulls against its choice, flagged for review rather than silently overridden: for example a strong position with high need but a low prize, kept as Preserve rather than Partner.',
-    more: "A Catch Up or Partner node whose position is in the contenders' top quarter but below the capability floor is flagged too.",
-    modules: ALL,
+    short: 'A supply-chain step whose evidence pulls against its choice, flagged for review rather than silently overridden: for example a strong position with high need but a low prize, kept as Preserve rather than Partner.',
+    more: "A Catch Up or Partner step whose position is in the main producers' top quarter but below the capability floor is flagged too.",
+    modules: EVERY,
     related: ['posture', 'competitive_position'],
   },
   {
     id: 'policy_alignment',
     term: 'Policy alignment',
-    short: 'Observed policy against the recommended choice: aligned, under-prioritized, over-prioritized, wrong treatment (misaligned), a deployment under-response or mixed, with a confidence. Observed policy never enters the recommendation.',
+    short: 'Whether government action matches the recommended choice: broadly aligned, needs more attention, too much intervention, wrong tool for the problem or mixed signals, with a confidence. Policy never feeds the choice.',
     more:
-      "Secure, Preserve or Catch Up with weak policy is under-prioritized; Partner met with heavy localisation is the wrong treatment; Accelerate with weak deployment policy is a deployment under-response; Watch under heavy protection is over-prioritized. Where policy records are thin it says insufficient data or low confidence, never a guess. Not the same as UN-vote alignment.",
-    modules: ALL,
+      'Secure, Preserve or Catch Up with weak policy needs more attention, as does Accelerate with weak deployment policy (deployment policy lags); Partner met with heavy localization is the wrong tool for the problem; Watch under heavy protection is too much intervention. Where policy records are thin it says not enough policy evidence or low confidence, never a guess. Not the same as UN-vote alignment.',
+    modules: EVERY,
     related: ['posture', 'policy_index'],
   },
   {
     id: 'partner_gap',
     term: 'Partner gap',
-    short: "A node where a country's choice is Partner but no credible allied solution exists yet: no trusted supplier, only one, weak capability evidence, too little allied capacity or concentration that stays excessive.",
+    short: "A supply-chain step where a country's choice is Partner but no credible allied answer exists yet: no trusted supplier, only one, weak capability evidence, too little allied capacity or concentration that stays excessive.",
     more:
-      "Elsewhere a Partner node names up to three trusted partners, ranked on capability, relationship strength and how much they would diversify the country's supply. A genuine gap is reported, never forced into a solution.",
-    modules: ALL,
-    related: ['posture', 'aib_gap'],
+      "Elsewhere a Partner step names up to three best-placed trusted partners, ranked on capability, relationship strength and how much they would diversify the country's supply. A genuine gap is reported, never forced into a solution.",
+    modules: EVERY,
+    related: ['choice_partner', 'aib_gap'],
   },
   {
     id: 'trade_momentum',
     term: 'Trade momentum',
-    short: "Whether a country's exports in a node are rising, flat or falling: the latest 12 months against the 12 before, in growth and in the basket's share of its exports, where monthly reporting is complete.",
-    more: "Ranked against the node's other reporters. A reporter without the 24 matched months has no momentum (never zero).",
-    modules: ALL,
+    short: "Whether a country's exports at a step are rising, flat or falling: the latest 12 months against the 12 before, in growth and in the basket's share of its exports, where monthly reporting is complete.",
+    more: "Ranked against the step's other reporters. A reporter without the 24 matched months has no momentum (never zero).",
+    modules: EVERY,
     related: ['competitive_position'],
   },
   {
     id: 'aib_gap',
     term: 'Allied gap',
-    short: 'Where trusted allied supply of a node is thin: no trusted supplier, a single point of failure, fewer than three holders, too little allied capacity, excessive concentration or weak evidence.',
-    more: 'From the allied division of labour: per node the primary allied holder, two backups and the number of allied holders with at least 2% of supply. Deployment is left out: no allied supply node sits there.',
-    modules: ALL,
-    related: ['partner_demand', 'partner_gap'],
+    short: 'Where trusted allied supply of a step is thin: no trusted supplier, a single point of failure, too little redundancy or allied capacity, too much concentration, or weak evidence.',
+    more:
+      'From the allied division of labor: per step the primary allied holder, two backups and the number of allied holders with at least 2% of supply (fewer than three is too little redundancy). Deployment is left out: no allied supply step sits there.',
+    modules: EVERY,
+    related: ['partner_demand', 'partner_gap', 'allied_industrial_base'],
   },
   {
     id: 'partner_demand',
     term: 'Partner demand',
-    short: "How many countries' choice for a node is Compete · Partner: they ask trusted partners for it. Secure demand counts Secure choices; Deploy · Accelerate is a deployment priority and is not counted.",
+    short: "How many countries' choice for a step is Partner: they look to trusted partners for it. Secure demand counts Secure choices; Accelerate is a deployment priority and is not counted.",
     more: 'Shown beside the allied gap, so a gap many countries rely on stands out.',
-    modules: ALL,
-    related: ['aib_gap', 'posture'],
+    modules: EVERY,
+    related: ['aib_gap', 'choice_partner'],
   },
-  // ---- Yards & Fences (2026-10-30): the yards, layers as yard units, the large-yard case ----------------
+  // ---- the six choices, as actions (the NEIS copy refresh, 2026-10-30; vocabulary CHOICE_DEFINITION) ------------
+  // Ids carry a prefix: 'secure' and 'watch' were the Legacy OSI corners' ids before 2026-10-28.
+  {
+    id: 'choice_secure',
+    term: 'Secure',
+    short: CHOICE_DEFINITION.secure,
+    more: 'Secure comes first and overrides the other tests. It needs an acute consequence and one of three routes: control-system risk, chokepoint risk or system resilience (see Secure rationale). It is the one choice behind the High fence.',
+    modules: EVERY,
+    related: ['security_rationale', 'delivery_mode', 'high_fence', 'posture'],
+  },
+  {
+    id: 'choice_preserve',
+    term: 'Preserve',
+    short: CHOICE_DEFINITION.preserve,
+    more: "A high prize with a position in the top quarter of the step's main producers and above the capability floor. A strong position with high need but a low prize is also kept as Preserve, and flagged for review.",
+    modules: EVERY,
+    related: ['competitive_position', 'strategic_industrial_value', 'medium_fence', 'posture'],
+  },
+  {
+    id: 'choice_catch_up',
+    term: 'Catch Up',
+    short: CHOICE_DEFINITION.catch_up,
+    more: 'A high prize without a top-quarter position, and a credible pathway: a capability anchor plus a corroborating signal (see Credible pathway).',
+    modules: EVERY,
+    related: ['pathway', 'strategic_industrial_value', 'medium_fence', 'posture'],
+  },
+  {
+    id: 'choice_partner',
+    term: 'Partner',
+    short: CHOICE_DEFINITION.partner,
+    more:
+      'High need without a strong position or a credible pathway. The page names up to three best-placed trusted partners, ranked on capability, relationship strength and how much they would diversify supply; where none is credible it reports a partner gap.',
+    modules: EVERY,
+    related: ['partner_gap', 'partner_demand', 'medium_fence', 'posture'],
+  },
+  {
+    id: 'choice_accelerate',
+    term: 'Accelerate',
+    short: CHOICE_DEFINITION.accelerate,
+    more: 'Deployment & Use only: high deployment need. A technology can be a low manufacturing priority and a high deployment priority.',
+    modules: EVERY,
+    related: ['deployment_need', 'deploy_mode', 'medium_fence', 'posture'],
+  },
+  {
+    id: 'choice_watch',
+    term: 'Watch (keep open)',
+    short: CHOICE_DEFINITION.watch,
+    more:
+      'A positive conclusion, not a failure: low need, a low prize, ample diversified supply, a weak domestic case or the large-yard case. At Deployment & Use it means deployment need is below the bar for acceleration. Missing data is never Watch: such a step is not assessed.',
+    modules: EVERY,
+    related: ['deploy_mode', 'large_yard_case', 'low_fence', 'posture'],
+  },
+  // ---- Yards & Fences (2026-10-30): the yards in the user's words, layers as yard units, the large-yard case -----
   {
     id: 'yard',
-    term: 'Yard (Yards & Fences)',
-    short: "A node's place in the Yards & Fences framing: Small yard, High fence (Secure); Medium yard, permeable fence (Preserve, Catch Up, Partner, Accelerate); Large yard, Low fence (Watch).",
+    term: 'Yards & Fences',
+    short: 'Which of three policy problems a capability is: Small yard, High fence (Secure); Medium yard, permeable fence (Preserve, Catch Up, Partner, Accelerate); Large yard, Low fence (Watch).',
     more:
-      'Capability layers, such as grid-control software or battery-management firmware, are yard units of their own, each with its own choice. A step whose layers sit in different yards is mixed: the Strategy Map splits its cell diagonally between its own choice colour and the fence colour of the other yards.',
-    modules: ALL,
-    related: ['posture', 'strategic_industrial_value', 'large_yard_case'],
+      'The yards are different problems, not low, medium and high scores on one scale. A technology can sit in more than one yard: capability layers, such as grid-control software or battery-management firmware, take their own choice, and a step whose layers differ is mixed (the Strategy Map splits its cell diagonally). A control layer is in the Small yard only where the data show coercive foreign control for that country.',
+    modules: EVERY,
+    related: ['high_fence', 'medium_fence', 'low_fence', 'large_yard_case', 'posture'],
+  },
+  {
+    id: 'high_fence',
+    term: 'High fence (Small yard)',
+    short: `Small yard: ${lc(YARD_DEFINITION.small)} Its choice is Secure.`,
+    more: 'A narrow set of capabilities where disruption, control or coercion would have serious consequences and stronger safeguards are justified. The answer is not always reshoring: trusted allied supply, stockpiles, substitution and redundancy can also solve the problem.',
+    modules: EVERY,
+    related: ['yard', 'choice_secure', 'security_rationale'],
+  },
+  {
+    id: 'medium_fence',
+    term: 'Medium fence (Medium yard)',
+    short: `Medium yard: ${lc(YARD_DEFINITION.medium)} Its choices are Preserve, Catch Up, Partner, and Accelerate at Deployment & Use.`,
+    more: 'A medium, permeable fence: build industrial capability, learning and competitiveness without needlessly cutting off useful foreign technology or partners. Where specialization is the better answer, the choice is Partner.',
+    modules: EVERY,
+    related: ['yard', 'choice_preserve', 'choice_catch_up', 'choice_partner', 'choice_accelerate'],
+  },
+  {
+    id: 'low_fence',
+    term: 'Low fence (Large yard)',
+    short: `Large yard: ${lc(YARD_DEFINITION.large)} Its choice is Watch.`,
+    more: 'Low-fence capabilities are not unimportant. The right strategy may be to buy competitively, keep suppliers diversified and focus policy elsewhere.',
+    modules: EVERY,
+    related: ['yard', 'choice_watch', 'large_yard_case'],
   },
   {
     id: 'large_yard_case',
@@ -686,8 +779,131 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     short: 'The test that a capability is a commodity where affordable, diversified access should dominate, whatever the size of the market: mature and passive, with most of eight commodity signals holding.',
     more:
       'The eight signals: standardized, substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation, commoditized. A credible leap ahead or strong industrial learning vetoes it; moderate learning keeps a capability floor. Market size is never a signal.',
-    modules: ALL,
-    related: ['yard', 'strategic_industrial_value', 'posture'],
+    modules: EVERY,
+    related: ['yard', 'low_fence', 'strategic_industrial_value'],
+  },
+  // ---- the Allied Industrial Base (the NEIS copy refresh, 2026-10-30; vocabulary.ts) ------------------------------
+  {
+    id: 'allied_industrial_base',
+    term: 'Allied Industrial Base',
+    short: 'A network of trusted countries that deliberately divide production, investment and demand across strategic supply chains, so no country has to make everything and no single supplier can hold the system at risk.',
+    more: AIB_EXPLAINER,
+    modules: AIB,
+    related: ['managed_interdependence', 'sectoral_compact', 'coalition', 'aib_gap'],
+  },
+  {
+    id: 'managed_interdependence',
+    term: 'Managed Interdependence',
+    short: 'Deliberate specialization with safeguards: keep the economic benefits of relying on partners while limiting the dependencies that create coercive or systemic risk.',
+    more: `${MANAGED_INTERDEPENDENCE.explainer} As a stress test it caps how much of allied demand any one supplier may serve where a step is unusually concentrated, and asks which trusted suppliers would take the excess.`,
+    modules: AIB,
+    related: ['concentration_cap', 'aib_scenario', 'allied_industrial_base'],
+  },
+  {
+    id: 'aib_scenario',
+    term: 'Stress test (scenario)',
+    short: "A what-if applied to today's supply network: today's network (no disruption), Managed Interdependence (a cap on any one supplier's share) or a major-supplier disruption (China stops supplying allied markets).",
+    more: 'The scenario changes the supply problem, not the goal: the smallest credible network of partners that keeps critical supply available. Scenarios are counterfactual market structures, not forecasts.',
+    modules: AIB,
+    related: ['managed_interdependence', 'allied_coverage', 'remaining_gap'],
+  },
+  {
+    id: 'aib_treatment',
+    term: 'What a step needs from allies',
+    short: 'The response a supply-chain step needs under a stress test: coordinate trade, build capacity, manage specialization, low intervention, or not enough evidence to say.',
+    more: `Coordinate trade: ${lc(AIB_CLASS_DEFINITION.COORDINATE)} Build capacity: even the best allied trade response leaves a material gap, so new production or processing capacity is required. Manage specialization: too much supply sits with one supplier, so keep the specialization and add enough redundancy to reduce the risk.`,
+    modules: AIB,
+    related: ['coordination_dividend', 'remaining_gap', 'managed_interdependence'],
+  },
+  {
+    id: 'sectoral_compact',
+    term: 'Sectoral Compact',
+    short: 'A targeted agreement among the countries needed to solve a shared supply-chain problem, aligning trade, investment and specialization around a specific value chain.',
+    more: `${COMPACT.notAClub} ${COMPACT.reciprocity}`,
+    modules: AIB,
+    related: ['strategic_compact', 'minimum_coalition', 'demand_anchor', 'allied_industrial_base'],
+  },
+  {
+    id: 'strategic_compact',
+    term: 'Strategic Sectoral Compact',
+    short: `${COMPACT.strategic} It does not change with the stress test.`,
+    more: 'It describes where a country is structurally important to an allied supply chain: as a major supplier, demand anchor, technology specialist, investor, finance source or capacity host.',
+    modules: AIB,
+    related: ['sectoral_compact', 'allied_industrial_base'],
+  },
+  {
+    id: 'allied_coverage',
+    term: 'Allied coverage',
+    short: AIB_MEASURE_DEFINITION.coverage,
+    more: 'Read as a sequence: the supply that survives the stress test, what existing partners can replace, what coordinated trade adds, and the gap that needs new capacity.',
+    modules: AIB,
+    related: ['coordination_dividend', 'remaining_gap', 'aib_scenario'],
+  },
+  {
+    id: 'coordination_dividend',
+    term: 'Coordination dividend',
+    short: AIB_MEASURE_DEFINITION.coordinationDividend,
+    modules: AIB,
+    related: ['allied_coverage', 'aib_treatment'],
+  },
+  {
+    id: 'remaining_gap',
+    term: 'Remaining supply gap',
+    short: AIB_MEASURE_DEFINITION.remainingGap,
+    modules: AIB,
+    related: ['allied_coverage', 'scaling_host', 'development_host'],
+  },
+  {
+    id: 'minimum_coalition',
+    term: 'Minimum coalition',
+    short: AIB_MEASURE_DEFINITION.minimumCoalition,
+    more: 'Found exactly where possible (the fewest economies that bring every step to the resilience target, the demand anchors always in); a one-at-a-time search is shown beside it and can need more, or other, economies.',
+    modules: AIB,
+    related: ['sectoral_compact', 'demand_anchor', 'n1_resilience'],
+  },
+  {
+    id: 'n1_resilience',
+    term: 'N-1 resilience',
+    short: AIB_MEASURE_DEFINITION.n1Resilience,
+    more: 'Specialization is valuable until it creates a new single point of failure, so the analysis tests how much allied demand can still be met if the largest remaining supplier is lost.',
+    modules: AIB,
+    related: ['minimum_coalition', 'concentration_cap'],
+  },
+  {
+    id: 'concentration_cap',
+    term: 'Concentration cap',
+    short: AIB_MEASURE_DEFINITION.concentrationCap,
+    more: 'The cap is the share that would bring the step to the concentration of comparable goods; no supplier is banned.',
+    modules: AIB,
+    related: ['managed_interdependence', 'n1_resilience'],
+  },
+  {
+    id: 'demand_anchor',
+    term: 'Demand anchor',
+    short: 'A major buyer whose market gives a compact scale and helps make new investment bankable.',
+    modules: AIB,
+    related: ['sectoral_compact', 'minimum_coalition'],
+  },
+  {
+    id: 'scaling_host',
+    term: 'Scaling host',
+    short: 'An established producer that could add meaningful new capacity at scale.',
+    modules: AIB,
+    related: ['specialty_host', 'development_host', 'remaining_gap'],
+  },
+  {
+    id: 'specialty_host',
+    term: 'Specialty host',
+    short: 'A smaller high-income specialist with strong capability in a narrow part of the value chain.',
+    modules: AIB,
+    related: ['scaling_host', 'development_host'],
+  },
+  {
+    id: 'development_host',
+    term: 'Development host',
+    short: 'A developing-economy partner with potential to build new supply over time, but not yet counted as existing resilient capacity.',
+    modules: AIB,
+    related: ['scaling_host', 'specialty_host', 'dp'],
   },
 ];
 

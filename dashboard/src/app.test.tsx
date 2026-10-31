@@ -28,6 +28,7 @@ import { bareAcronyms } from './components/testing/acronyms.ts';
 import { cssHex } from './components/testing/color.ts';
 import type { Verb } from './posture/contract.ts';
 import { VERB_COLOR } from './posture/grammar.ts';
+import { AVOID_RE } from './content/vocabulary.ts';
 import { CountryLoadError, CountryStore, setCountryStoreForTests } from './country/data/store.ts';
 import { fixtureSource } from './country/__tests__/fixture.ts';
 import { EngineClient, type WorkerLike } from './worker/client.ts';
@@ -335,7 +336,7 @@ describe('home and the shell', () => {
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
     try {
       const router = renderAt('/');
-      expect(await screen.findByRole('heading', { level: 1, name: 'Explore the electro-industrial system' }, { timeout: 20_000 })).toBeTruthy();
+      expect(await screen.findByRole('heading', { level: 1, name: 'Where should countries build, partner and rely on allies?' }, { timeout: 20_000 })).toBeTruthy();
       expect(pathOf(router)).toBe('/');
       expect(document.title).toBe('Allied Industrial Base Explorer | NEIS Center');
       // three entry cards (a Sector, a Country, the Allied Industrial Base) with the brief's CTAs to the
@@ -345,7 +346,7 @@ describe('home and the shell', () => {
       expect(within(cards).getAllByRole('link', { name: /^Explore / }).map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
         ['Explore sectors', '/sector'],
         ['Explore countries', '/countries'],
-        ['Explore AIB', '/aib'],
+        ['Explore the Allied Industrial Base', '/aib'],
       ]);
       expect(screen.queryByText(/Strategic Insights/)).toBeNull();
       expect(screen.queryByText(/How the modules fit together/)).toBeNull();
@@ -354,7 +355,7 @@ describe('home and the shell', () => {
       expect(within(tabs).getAllByRole('link').map((a) => a.textContent)).toEqual(TABS);
       expect(within(tabs).getAllByRole('link').filter((a) => a.getAttribute('aria-current')).length).toBe(0);
       // the Country card: its question, entry links and the button
-      expect(screen.getByText("What is this country's strategic position?")).toBeTruthy();
+      expect(screen.getByText('What should this country secure, build, partner for or deploy?')).toBeTruthy();
       expect(screen.getByRole('link', { name: 'Japan' }).getAttribute('href')).toBe('/countries/JPN');
       expect(screen.getByRole('link', { name: 'Germany' }).getAttribute('href')).toBe('/countries/DEU');
       // the memos are hidden while they are revised, so no Home link leads to one (a dead end)
@@ -363,8 +364,14 @@ describe('home and the shell', () => {
       // the Country card speaks the canonical framework, its glyph a miniature Country Strategy Map (design section 5; colour
       // alone since 2026-10-30): three technology rows x six stages, all six choice colours and a node not assessed, no
       // letters or arrows, Accelerate only in the Deployment column; no legacy corner glyph
-      expect(screen.getByText(/^Understand what a country needs, where there is a prize worth pursuing and how strong it already is;/)).toBeTruthy();
-      expect(screen.getByText(/^Country Strategy Map: every technology at six stages, from need, prize and position to one choice/)).toBeTruthy();
+      expect(screen.getByText(/^See what the country needs, where it has a real industrial opportunity, how strong its current position is, and whether policy/)).toBeTruthy();
+      expect(screen.getByText(/^A six-stage strategy map: what to secure, preserve, catch up in, partner for, accelerate or leave open/)).toBeTruthy();
+      // the strategic question leads each card, and the Allied Industrial Base is told in one line (the NEIS copy refresh)
+      expect(screen.getByText('Where are the real bottlenecks and opportunities?')).toBeTruthy();
+      expect(screen.getByText('How should allies divide the work?')).toBeTruthy();
+      expect(screen.getByTestId('aib-one-line').textContent).toContain('Build what matters. Specialize where allies are strongest.');
+      expect(screen.getByText(/No country needs to make everything\./)).toBeTruthy();
+      expect(document.body.textContent).not.toMatch(AVOID_RE);
       const map = screen.getByTestId('strategy-map-glyph');
       expect(map.getAttribute('aria-hidden')).toBe('true');
       const glyphCells = [...map.querySelectorAll('[data-verb]')] as HTMLElement[];
@@ -378,7 +385,7 @@ describe('home and the shell', () => {
       }
       expect(glyphCells.filter((c) => c.getAttribute('data-verb') === 'accelerate').every((c) => [...(c.parentElement?.children ?? [])].indexOf(c) === 4)).toBe(true);
       expect(screen.queryByTestId('quadrant-glyph')).toBeNull();
-      expect(screen.getByRole('link', { name: 'Which supply chains justify a sectoral compact?' }).getAttribute('href')).toBe('/compacts');
+      expect(screen.getByRole('link', { name: 'Which bottlenecks justify a Sectoral Compact?' }).getAttribute('href')).toBe('/compacts');
       expect(screen.getByRole('link', { name: 'glossary' }).getAttribute('href')).toBe('/glossary');
       expect(bareAcronyms(document.body)).toEqual([]);
       await settle(300);
@@ -511,7 +518,7 @@ describe('home and the shell', () => {
     setEngineClient(null);
     try {
       const router = renderAt('/no-such-page?h=80');
-      expect(await screen.findByRole('heading', { level: 1, name: 'Explore the electro-industrial system' }, { timeout: 20_000 })).toBeTruthy();
+      expect(await screen.findByRole('heading', { level: 1, name: 'Where should countries build, partner and rely on allies?' }, { timeout: 20_000 })).toBeTruthy();
       expect(pathOf(router)).toBe('/');
       expect(screen.getByText('That page does not exist; showing the home page.')).toBeTruthy();
       fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
@@ -548,7 +555,15 @@ describe('home and the shell', () => {
     setEngineClient(null);
     try {
       renderAt('/about');
-      expect(await screen.findByRole('heading', { level: 1, name: 'About' }, { timeout: 20_000 })).toBeTruthy();
+      expect(await screen.findByRole('heading', { level: 1, name: 'About the Explorer' }, { timeout: 20_000 })).toBeTruthy();
+      // what the Explorer is for comes first; then the five steps, the three yards in the user's words and the AIB explainer
+      expect(screen.getByText(/^The Explorer turns a large body of trade, production, investment, policy and technology data into strategic choices\./)).toBeTruthy();
+      expect(within(screen.getByRole('list', { name: 'The five steps of the strategy' })).getAllByRole('listitem').length).toBe(5);
+      const yards = within(screen.getByRole('list', { name: 'The three yards' })).getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+      expect(yards).toEqual(['Small yard / High fence', 'Medium yard / medium, permeable fence', 'Large yard / Low fence']);
+      expect(screen.getByText('Capabilities where foreign control or concentrated dependence could create an unacceptable security or resilience risk.')).toBeTruthy();
+      expect(screen.getByText(/^The Allied Industrial Base is a strategy for managed interdependence\./)).toBeTruthy();
+      expect(document.body.textContent).not.toMatch(AVOID_RE);
       const tabs = screen.getByRole('navigation', { name: 'Modules' });
       expect(within(tabs).getByRole('link', { name: 'About' }).getAttribute('aria-current')).toBe('true');
       const pages = screen.getByRole('navigation', { name: 'About pages' });

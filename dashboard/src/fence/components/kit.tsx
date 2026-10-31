@@ -1,34 +1,41 @@
 // Draw the Fence: small shared pieces. Yard identity (glyph + name + fence, never colour alone),
 // provenance badges (DATA / ASSESSMENT / YOUR JUDGMENT / SCENARIO / UNKNOWN), and EvidenceMetric.
+// The yards' verbs and definitions follow the Explorer's shared vocabulary (content/vocabulary.ts, the NEIS copy
+// refresh of 2026-10-30): Small yard "Secure it", Medium yard "Build or preserve it", Large yard "Keep it open"
+// (the Large yard was "Deploy it": deployment priority is a Medium-yard choice in the Explorer's mapping).
 
 import { useId, useState, type ReactNode } from 'react';
 import type { Confidence, Provenance, YardOutcome } from '../engine/index.ts';
 import type { YFEvidenceRecord } from '../data/contract.ts';
+import { YARD_DEFINITION } from '../../content/vocabulary.ts';
 
-export const YARD_COPY: Record<YardOutcome, { name: string; fence: string; verb: string; question: string; objective: string }> = {
+export const YARD_COPY: Record<YardOutcome, { name: string; fence: string; verb: string; definition: string; question: string; objective: string }> = {
   small: {
     name: 'Small Yard',
     fence: 'High fence',
     verb: 'Secure it',
+    definition: YARD_DEFINITION.small,
     question: 'Could foreign control of this system or input create acute harm that markets cannot remedy in time?',
     objective: 'Identify the specific vulnerability and keep working until it is isolated, replaced, diversified, secured, stockpiled or otherwise made resilient.',
   },
   medium: {
     name: 'Medium Yard',
     fence: 'Medium, permeable fence',
-    verb: 'Compete in it',
+    verb: 'Build or preserve it',
+    definition: YARD_DEFINITION.medium,
     question: 'Is this a capability the country has a credible reason and pathway to compete in or preserve for future innovation?',
     objective: 'Build industrial capability, learning and competitiveness without needlessly cutting off useful foreign technology or expertise.',
   },
   large: {
     name: 'Large Yard',
     fence: 'Low fence',
-    verb: 'Deploy it',
+    verb: 'Keep it open',
+    definition: YARD_DEFINITION.large,
     question: 'Would insisting on domestic production cost more than the strategic benefit it creates?',
-    objective: 'Keep affordable access and deployment, and manage genuine concentration risks with the lightest effective intervention.',
+    objective: 'Keep access affordable and diversified so deployment can proceed, and manage genuine concentration risks with the lightest effective intervention.',
   },
-  mixed: { name: 'Mixed', fence: 'Different fences for different layers', verb: '', question: '', objective: '' },
-  indeterminate: { name: 'Indeterminate', fence: 'Not enough evidence to draw a fence', verb: '', question: '', objective: '' },
+  mixed: { name: 'Mixed', fence: 'Different fences for different layers', verb: '', definition: '', question: '', objective: '' },
+  indeterminate: { name: 'Indeterminate', fence: 'Not enough evidence to draw a fence', verb: '', definition: '', question: '', objective: '' },
 };
 
 /** A yard drawn as a plot and a fence: small plot / tall fence; medium plot / gated fence; large plot / low fence. */

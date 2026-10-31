@@ -1,6 +1,9 @@
-// Home (IA refactor 2026-10-16; before it spec_sector.md 2.1, spec_country.md A2.3): "Explore the
-// electro-industrial system" and three entry points (a Sector, a Country, the Allied Industrial Base),
-// a quick way straight to a sector, a mineral or a country, and the sector questions below the fold.
+// Home (IA refactor 2026-10-16; before it spec_sector.md 2.1, spec_country.md A2.3; the NEIS copy refresh
+// 2026-10-30): the Explorer's strategic question ("Where should countries build, partner and rely on allies?",
+// content/vocabulary.ts MODULE_QUESTION.home) and three entry points (a Sector, a Country, the Allied Industrial
+// Base), each led by the question it answers; the Allied Industrial Base in one line; a quick way straight to a
+// sector, a mineral or a country, and the sector questions below the fold. Every sentence another page also says
+// comes from the shared vocabulary.
 // It renders with no data request before idle and never touches the engine:
 //   * on idle (1.5 s fallback; skipped under Save-Data) it fetches data/sector/manifest.json (the
 //     question facts and the coverage glyph), prefetches sector-meta, and loads the Country manifest
@@ -16,6 +19,7 @@ import { Link, useNavigate } from 'react-router';
 import { CountrySelect, type CountryOption } from '../components/CountrySelect.tsx';
 import { Select } from '../components/ui.tsx';
 import { HOME_QUESTIONS, questionFact, type Question } from '../content/questions.ts';
+import { AIB_EXPLAINER_SHORT, FRAMING, MODULE_QUESTION, PRODUCT_EYEBROW } from '../content/vocabulary.ts';
 import {
   HEADLINE_TECH_SLUGS, MINERAL_SLUGS, TECH_LABELS, TECH_SLUGS,
   type MineralSlug, type SectorManifest, type TechSlug,
@@ -192,13 +196,13 @@ interface CardSpec {
 const SECTOR_CARD: CardSpec = {
   id: 'sector',
   title: 'Explore a Sector',
-  question: 'What matters about this sector?',
-  lede: 'Understand economic opportunity, energy security, policy intervention, and climate implications across the supply chain.',
+  question: MODULE_QUESTION.sector,
+  lede: 'Follow a technology through the supply chain. See who leads, where supply is concentrated, which capabilities matter strategically, and where policy or allied action could change the outcome.',
   glyphNote: '',
   links: [
     { to: '/sector/solar/assembly', label: 'Solar — Assembly' },
     { to: '/sector/minerals/lithium', label: 'Who mines and refines lithium?' },
-    { to: '/sector/concentration', label: 'Which supply chains are most concentrated?' },
+    { to: '/sector/concentration', label: 'Where are the chokepoints?' },
   ],
   button: 'Explore sectors',
 };
@@ -206,9 +210,9 @@ const SECTOR_CARD: CardSpec = {
 const COUNTRY_CARD: CardSpec = {
   id: 'country',
   title: 'Explore a Country',
-  question: "What is this country's strategic position?",
-  lede: 'Understand what a country needs, where there is a prize worth pursuing and how strong it already is; what it should secure, preserve, catch up in, rely on partners for, deploy faster or deliberately not prioritize; and whether current policy matches.',
-  glyphNote: 'Country Strategy Map: every technology at six stages, from need, prize and position to one choice, with its allies and policy alignment',
+  question: MODULE_QUESTION.country,
+  lede: 'See what the country needs, where it has a real industrial opportunity, how strong its current position is, and whether policy is focused on the right places.',
+  glyphNote: 'A six-stage strategy map: what to secure, preserve, catch up in, partner for, accelerate or leave open.',
   links: [
     { to: '/countries/JPN', label: 'Japan' },
     { to: '/countries/DEU', label: 'Germany' },
@@ -220,15 +224,15 @@ const COUNTRY_CARD: CardSpec = {
 const AIB_CARD: CardSpec = {
   id: 'aib',
   title: 'Explore the Allied Industrial Base',
-  question: 'Where should international coordination occur, and what should it look like?',
-  lede: 'Understand which countries should trade, invest, and develop together—and where sectoral compacts could make supply chains more resilient.',
-  glyphNote: 'Partnerships, sectoral compacts and country roles',
+  question: MODULE_QUESTION.aib,
+  lede: 'See which dependencies need trusted alternatives, which countries are best placed to specialize, where trade can solve the problem, and where partners still need to build new capacity.',
+  glyphNote: 'Allied specialization, Sectoral Compacts and country roles',
   links: [
     { to: '/aib/partnerships', label: 'Who should work with whom?' },
-    { to: '/compacts', label: 'Which supply chains justify a sectoral compact?' },
-    { to: '/aib/roles', label: 'What role does each country play?' },
+    { to: '/compacts', label: 'Which bottlenecks justify a Sectoral Compact?' },
+    { to: '/aib/roles', label: 'What should each country contribute?' },
   ],
-  button: 'Explore AIB',
+  button: 'Explore the Allied Industrial Base',
 };
 
 /** The three entry points (brief s.4): a Sector, a Country, the Allied Industrial Base. */
@@ -428,10 +432,11 @@ export default function Home() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <header className="mb-10">
-        <div className="eyebrow mb-3">NEIS Center · Allied Industrial Base Explorer</div>
-        <h1 className="rule-neis text-3xl font-medium text-paper sm:text-[2.25rem] sm:leading-tight">Explore the electro-industrial system</h1>
+        <div className="eyebrow mb-3">{PRODUCT_EYEBROW}</div>
+        <h1 className="rule-neis text-3xl font-medium text-paper sm:text-[2.25rem] sm:leading-tight">{MODULE_QUESTION.home}</h1>
         <p className="mt-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
-          The data and analysis behind <em>Opportunity, Security, and the Allied Industrial Base</em>, organised around three questions: what matters about a sector, where a country stands, and where allies should work together.
+          The Explorer maps the capabilities behind the energy system, from minerals and manufacturing to deployment. It shows where dependence creates risk,
+          where countries have a credible industrial opportunity, and where trusted partners can build a stronger system together. {FRAMING.noCountryMakesEverything}
         </p>
       </header>
 
@@ -440,6 +445,10 @@ export default function Home() {
           <ModuleCard key={c.id} spec={c} manifest={manifest} />
         ))}
       </section>
+
+      <p className="mt-6 max-w-3xl border-l-2 border-signal pl-4 text-sm leading-relaxed text-paper-dim" data-testid="aib-one-line">
+        <span className="text-paper">The Allied Industrial Base in one line:</span> {AIB_EXPLAINER_SHORT}
+      </p>
 
       <section aria-labelledby="home-jump" className="mt-12">
         <h2 id="home-jump" className="rule-neis-sm mb-5 text-xl font-medium text-paper">
@@ -453,7 +462,7 @@ export default function Home() {
 
       <section aria-labelledby="home-questions" className="mt-12">
         <h2 id="home-questions" className="rule-neis-sm mb-5 text-xl font-medium text-paper">
-          Or start with a question about supply chains
+          Or start with a strategic question
         </h2>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {HOME_QUESTIONS.map((q) => (
@@ -469,11 +478,11 @@ export default function Home() {
         <Link className="link" to="/glossary">
           glossary
         </Link>{' '}
-        explains every index, category and measure in plain words; the{' '}
+        defines the strategic choices, the Allied Industrial Base concepts and the data measures in plain words;{' '}
         <Link className="link" to="/about">
           About
         </Link>{' '}
-        pages have the methods and the data sources.
+        explains how the Explorer moves from evidence to a choice, and where the data come from.
       </p>
     </div>
   );

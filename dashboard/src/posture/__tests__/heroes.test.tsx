@@ -107,8 +107,8 @@ describe('the Country Strategy Map', () => {
     const node = (name: RegExp) => within(m).getByRole('button', { name });
     const look = (b: HTMLElement) => [b.getAttribute('data-verb'), b.getAttribute('data-fence'), cssHex(b.style.background)];
     // the name says the choice and its fence; the fill is the choice's colour
-    expect(look(node(/^Batteries Refining & Processing: Secure · High fence; Coercive chokepoint/))).toEqual(['secure', 'high', '#f58229']);
-    expect(look(node(/^Solar Refining & Processing: Secure · High fence; Systemic resilience/))).toEqual(['secure', 'high', '#f58229']);
+    expect(look(node(/^Batteries Refining & Processing: Secure · High fence; Chokepoint risk/))).toEqual(['secure', 'high', '#f58229']);
+    expect(look(node(/^Solar Refining & Processing: Secure · High fence; System resilience/))).toEqual(['secure', 'high', '#f58229']);
     expect(look(node(/^Batteries Final Assembly & Equipment: Preserve · Medium fence/))).toEqual(['preserve', 'medium', '#1889b0']);
     expect(look(node(/^Batteries Component Manufacturing: Catch Up · Medium fence/))).toEqual(['catch_up', 'medium', '#b4e7fe']);
     expect(look(node(/^Batteries Extraction: Partner · Medium fence/))).toEqual(['partner', 'medium', '#55c4c5']);
@@ -138,9 +138,9 @@ describe('the Country Strategy Map', () => {
     at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
     const m = await screen.findByTestId('posture-matrix');
     const sec = within(m).getByRole('button', { name: /^Batteries Refining & Processing/ });
-    expect(sec.getAttribute('aria-label')).toContain('policy under-prioritized');
+    expect(sec.getAttribute('aria-label')).toContain('policy needs more attention');
     const gap = within(m).getByRole('button', { name: /^Batteries Deployment & Use/ });
-    expect(gap.getAttribute('aria-label')).toContain('policy under-prioritized: under-response (deployment)');
+    expect(gap.getAttribute('aria-label')).toContain('policy needs more attention: deployment policy lags');
     const weak = within(m).getByRole('button', { name: /^Batteries Final Assembly & Equipment/ });
     expect(weak.getAttribute('aria-label')).toContain('evidence weak');
     // no border code, no fade, no alignment attribute: the colour is the choice and nothing else
@@ -162,10 +162,10 @@ describe('the Country Strategy Map', () => {
     expect(tip.textContent).toMatch(/^Batteries · Extraction/);
     expect(within(tip).getByTestId('strategy-map-tip-choice').textContent).toBe('Partner· Medium fence');
     expect(tip.textContent).toContain('First partner: Bland');
-    expect(tip.textContent).toContain('Policy: Wrong treatment / misaligned');
+    expect(tip.textContent).toContain('Policy: Wrong tool for the problem');
     fireEvent.blur(ext);
     fireEvent.focus(sec);
-    expect(screen.getByRole('tooltip').textContent).toContain('Coercive chokepoint');
+    expect(screen.getByRole('tooltip').textContent).toContain('Chokepoint risk');
     expect(within(screen.getByRole('tooltip')).getByTestId('strategy-map-tip-choice').textContent).toBe('Secure· High fence');
   });
 
@@ -268,7 +268,7 @@ describe('the Country Strategy Map', () => {
     expect(qs[3].textContent).not.toMatch(/Fence:/);
     expect(qs[3].textContent).toContain('Bland');
     expect(qs[3].textContent).toContain('How the choice was made');
-    expect(qs[4].textContent).toContain('Wrong treatment / misaligned');
+    expect(qs[4].textContent).toContain('Wrong tool for the problem');
     expect(qs[4].textContent).toContain('Protection or localisation');
     expect(qs[4].textContent).toContain('it never enters the recommendation');
     expect(screen.queryByTestId('cell-drawer-sector-link')).toBeNull();
@@ -311,14 +311,14 @@ describe('the Country Strategy Map', () => {
     expect(need.textContent).not.toContain('Import dependence');
     expect((d.querySelector('[data-question="prize"]') as HTMLElement).textContent).toContain('Domestic manufacturing priority');
     expect((d.querySelector('[data-question="choice"]') as HTMLElement).textContent).toContain('Deployment priority: high');
-    expect((d.querySelector('[data-question="policy"]') as HTMLElement).textContent).toContain('Under-prioritized: under-response (deployment)');
+    expect((d.querySelector('[data-question="policy"]') as HTMLElement).textContent).toContain('Needs more attention: deployment policy lags');
   });
 
   it('Secure says its rationale and mitigation; Watch is a deliberate low priority; not assessed is counted apart', async () => {
     at('/', <CountryPostureCard iso3="AAA" name="Aland" selected="Batteries|Refining" />);
     const d = await screen.findByTestId('cell-drawer');
     await waitFor(() => expect(d.textContent).toContain('Mitigation:'));
-    expect(d.textContent).toContain('Coercive chokepoint');
+    expect(d.textContent).toContain('Chokepoint risk');
     expect(d.textContent).toContain('not reshoring everything');
     cleanup();
     at('/', <CountryPostureCard iso3="AAA" name="Aland" selected="Solar|Extraction" />);
@@ -387,7 +387,7 @@ describe('the Country Strategy Map', () => {
     ]);
     const rows = within(table).getAllByRole('row').slice(1) as HTMLTableRowElement[];
     expect(rows).toHaveLength(12);
-    expect(rows[1].textContent).toContain('Coercive chokepoint');
+    expect(rows[1].textContent).toContain('Chokepoint risk');
     expect(rows[0].textContent).toContain('rising');
     expect(rows[11].textContent).toMatch(/^SolarRecovery & RecyclingNot classified/);
     noAcronyms();
@@ -408,7 +408,7 @@ describe('the Country Strategy Map', () => {
     expect(lines[0].split(',').slice(0, 8)).toEqual(['country', 'iso3', 'coalition_tier', 'technology', 'stage', 'stage_name', 'classified', 'posture']);
     expect(lines).toHaveLength(14);
     expect(lines[2]).toBe(
-      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Coercive chokepoint,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Under-prioritized,medium,Strong,high,,,,,,,${SOURCE},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Chokepoint risk,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Needs more attention,medium,Strong,high,,,,,,,${SOURCE},2026-10-29,abc1234`,
     );
     expect(lines[12].startsWith('Aland,AAA,core,Solar,Recovery,Recovery & Recycling,FALSE,,')).toBe(true);
   });

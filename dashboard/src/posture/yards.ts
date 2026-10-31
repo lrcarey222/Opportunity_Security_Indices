@@ -17,12 +17,14 @@ import {
   ROLLUP_YARDS, yardOfVerb, type PostureCell, type PostureMeta, type Verb, type Yard, type YardRollup, type YfNode,
 } from './contract.ts';
 import type { LargeYardException, NodeDetail, YardChild, YardFenceScope } from './detail.ts';
+import { YARD_NAME } from '../content/vocabulary.ts';
 import { FENCE_LABEL, POSTURE_COLOR, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, verbOf, type Fence } from './grammar.ts';
 
 // ---- the yards ------------------------------------------------------------------------------------------
 
 export const YARD_ORDER: readonly Yard[] = ['small', 'medium', 'large'];
-export const YARD_LABEL: Record<Yard, string> = { small: 'Small yard', medium: 'Medium yard', large: 'Large yard' };
+/** The yard names (content/vocabulary.ts YARD_NAME; the definitions are vocabulary YARD_DEFINITION). */
+export const YARD_LABEL: Record<Yard, string> = YARD_NAME;
 /** The fence of each yard (the user's mapping). */
 export const YARD_FENCE: Record<Yard, Fence> = { small: 'high', medium: 'medium', large: 'low' };
 /** "Small yard · High fence", "Medium yard · Medium fence", "Large yard · Low fence". */

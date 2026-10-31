@@ -1,5 +1,6 @@
 // View 7: Methods (spec_react.md 8.6). Since 2026-10-29 it opens with the canonical strategic decision
-// framework (need, prize, position, choice, policy alignment; #framework), then the Legacy OSI framework
+// framework (need, prize, position, choice, policy alignment; #framework; since the NEIS copy refresh of
+// 2026-10-30 it leads with what the strategy is for, and the build details sit in a disclosure), then the Legacy OSI framework
 // (the paper baseline; #legacy-osi): the indices, the dials in plain language and the exact formulas
 // (content/methods.md, Markdown + KaTeX, loaded with this route only), with the constants of this data
 // build filled in; panels for the data vintage and the paper. A link to #framework or #legacy-osi scrolls
@@ -13,7 +14,8 @@ import 'katex/dist/katex.min.css';
 import methodsMd from '../../content/methods.md?raw';
 import { useTitle } from '../../App.tsx';
 import { GlossaryList } from '../../components/GlossaryList.tsx';
-import { KeyValue, PageHead } from '../../components/ui.tsx';
+import { Disclosure, KeyValue, PageHead } from '../../components/ui.tsx';
+import { MODULE_QUESTION } from '../../content/vocabulary.ts';
 import { DASH, fmtDate, yesNo } from '../../lib/format.ts';
 import { useApp, useEngine } from '../../state/EngineProvider.tsx';
 import { buildFacts, fillPlaceholders, methodsValues, renderMath } from './methodsFill.ts';
@@ -47,7 +49,11 @@ export default function MethodsView() {
   const paper = m.paper;
   return (
     <div>
-      <PageHead eyebrow="About · How it works" title="Methods" lede="How the strategic decision framework reads need, prize and position into a choice and compares it with policy; then the Legacy OSI framework: how the indices and the dials are built, with the formulas; and a glossary of every term." />
+      <PageHead
+        eyebrow="About · Methods"
+        title="Methods"
+        lede={`${MODULE_QUESTION.methods}: what the country needs, how valuable the capability is, how strong its current position is, what action follows, and whether policy matches. Then the Legacy OSI framework, kept for comparison, with its indices, dials and formulas, and a glossary.`}
+      />
       <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* the content is this app's own Markdown, filled with numbers from the data build */}
         <div className="min-w-0">
@@ -57,7 +63,7 @@ export default function MethodsView() {
               Glossary
             </h2>
             <p className="mb-4 text-sm text-paper-dim">
-              Every term of the indices and the dials in plain words. The glossary of the whole explorer is on the{' '}
+              The strategic choices and the terms of the indices and the dials in plain words. The glossary of the whole Explorer is on the{' '}
               <Link className="link" to="/glossary">
                 Glossary page
               </Link>
@@ -69,19 +75,22 @@ export default function MethodsView() {
         <aside className="flex flex-col gap-6 self-start">
           <section className="card p-5">
             <h2 className="rule-neis-sm mb-3 text-base font-medium text-paper">Data vintage</h2>
-            <KeyValue
-              rows={[
-                ['Exported', fmtDate(m.created)],
-                ['Build', m.bundle_id.slice(0, 8)],
-                ['Git commit', m.git_commit ? m.git_commit.slice(0, 10) : DASH],
-                ['Branch', m.osi_branch ?? DASH],
-                ['Engine', state.engine ?? DASH],
-                ['Stored pillars apply the rankability rule', yesNo(fl.pillar_rule)],
-                ['Friendshore includes geopolitical alignment', yesNo(fl.geo_alignment_in_fs)],
-                ['Friendshore reads factory projects (CM-FDI) and Chinese-parent ownership', yesNo(fl.fs_cmfdi)],
-                ['Partnerships recompute with scenario pillars', yesNo(fl.partner_pillar_consistent)],
-              ]}
-            />
+            <KeyValue rows={[['Exported', fmtDate(m.created)]]} />
+            {/* build identifiers stay out of the first read (the NEIS copy refresh): one click away */}
+            <Disclosure summary="Build details">
+              <KeyValue
+                rows={[
+                  ['Build', m.bundle_id.slice(0, 8)],
+                  ['Git commit', m.git_commit ? m.git_commit.slice(0, 10) : DASH],
+                  ['Branch', m.osi_branch ?? DASH],
+                  ['Engine', state.engine ?? DASH],
+                  ['Stored pillars apply the rankability rule', yesNo(fl.pillar_rule)],
+                  ['Friendshore includes geopolitical alignment', yesNo(fl.geo_alignment_in_fs)],
+                  ['Friendshore reads factory projects (CM-FDI) and Chinese-parent ownership', yesNo(fl.fs_cmfdi)],
+                  ['Partnerships recompute with scenario pillars', yesNo(fl.partner_pillar_consistent)],
+                ]}
+              />
+            </Disclosure>
             {(m.notes ?? []).length > 0 && (
               <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs text-paper-mute">
                 {m.notes.map((n) => (

@@ -135,7 +135,7 @@ describe('the variables: the drawer accessors, never invented', () => {
   });
 
   it('the field that explains each choice', () => {
-    expect(fenceReason(by('Batteries|Refining'), core, names)).toBe('Coercive chokepoint');
+    expect(fenceReason(by('Batteries|Refining'), core, names)).toBe('Chokepoint risk');
     expect(fenceReason(by('Batteries|Assembly'), core, names)).toBe('Competitive Position 95');
     expect(fenceReason(by('Batteries|Components'), core, names)).toBe('Pathway: Credible (feasibility, pipeline)');
     expect(fenceReason(by('Batteries|Extraction'), core, names)).toBe('Leading partner: Bland');
@@ -147,7 +147,7 @@ describe('the variables: the drawer accessors, never invented', () => {
     expect(fenceReason(cland, core, names)).toBe('No credible allied solution yet');
     // the routes met, where a Secure node meets more than one
     const routes = checkPostureDetail({ ...fixtureDetail(), cells: (fixtureDetail().cells as Record<string, unknown>[]).map((c) => (c.stage === 'Refining' && c.tech === 'Batteries' ? { ...c, security_routes: 'coercive_chokepoint;systemic_resilience' } : c)) });
-    expect(fenceReason(fenceGroups(cells, routes).secure[0], core, names)).toBe('Coercive chokepoint (routes met: Coercive chokepoint, Systemic resilience)');
+    expect(fenceReason(fenceGroups(cells, routes).secure[0], core, names)).toBe('Chokepoint risk (routes met: Chokepoint risk, System resilience)');
     // Accelerate before its detail loads: not available (the page shows "…" while it loads)
     expect(fenceReason(fenceGroups(cells, null).accelerate[0], core, names)).toBeNull();
   });

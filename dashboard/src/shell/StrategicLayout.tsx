@@ -52,9 +52,9 @@ function AdvancedBand() {
           {LEGACY_OSI_LABEL}
         </span>
         <span>
-          Advanced view of the original index model (Energy Security, Economic Opportunity, the Strategic Index, the security and opportunity corners and the
-          partner indices) with its four dials, kept for replication and comparison. It is not a current recommendation: each Country profile&rsquo;s Country
-          Strategy Map is.
+          The original index model (Energy Security, Economic Opportunity, the Strategic Index, the security and opportunity corners and the partner indices),
+          with its four dials, kept for comparison and reproducibility. It describes relative security and opportunity. It is not a current recommendation: for
+          what a country should do, see its Country Strategy Map.
         </span>
       </p>
       <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">

@@ -12,11 +12,12 @@ import { decodeState } from './state/assessment.ts';
 import { useYFData } from './data/store.ts';
 import { useYards, YardsProvider } from './state/YardsContext.tsx';
 import './yards.css';
+import { YARD_DEFINITION, YARDS_NOT_A_SCALE } from '../content/vocabulary.ts';
 
 export const PAGE = 'mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8';
 
 export const METHOD_STATEMENT =
-  'OSI metrics describe observed economic, technological and supply-chain conditions. They do not themselves determine yard placement. Yards & Fences combines those data with explicit tests of security consequences, substitutability, industrial learning, competitiveness and policy cost.';
+  'The Opportunity & Security Indices describe observed economic, technological and supply-chain conditions; they do not decide which yard a capability is in. Yards & Fences combines those data with explicit tests of security consequences, substitutability, industrial learning, competitiveness and the cost of protection.';
 
 function MethodDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -40,10 +41,19 @@ function MethodDrawer({ open, onClose }: { open: boolean; onClose: () => void })
         </div>
         <p className="mt-3 text-sm leading-relaxed text-paper-dim">{METHOD_STATEMENT}</p>
         <ul className="mt-4 space-y-2 text-sm leading-relaxed text-paper-dim">
-          <li>The three yards are different policy problems, not low, medium and high scores on one scale. There is no aggregate score.</li>
-          <li>Small Yard requires an acute consequence and either a control layer an outsider could command, or a physical input where coercive concentration, poor substitutes and slow replacement reinforce one another.</li>
-          <li>Medium Yard requires a present position, an industrial-learning case or a credible leap-ahead opportunity, weighed against the cost of protection.</li>
-          <li>Large Yard is where neither case holds: openness, with the lightest tools for real concentration risk.</li>
+          <li>{YARDS_NOT_A_SCALE} There is no aggregate score.</li>
+          <li>
+            Small Yard: {YARD_DEFINITION.small.charAt(0).toLowerCase() + YARD_DEFINITION.small.slice(1)} It requires an acute consequence and either a control
+            layer an outsider could command, or a physical input where coercive concentration, poor substitutes and slow replacement reinforce one another.
+          </li>
+          <li>
+            Medium Yard: {YARD_DEFINITION.medium.charAt(0).toLowerCase() + YARD_DEFINITION.medium.slice(1)} It requires a present position, an
+            industrial-learning case or a credible leap-ahead opportunity, weighed against the cost of protection.
+          </li>
+          <li>
+            Large Yard: {YARD_DEFINITION.large.charAt(0).toLowerCase() + YARD_DEFINITION.large.slice(1)} It is where neither case holds: openness, with the
+            lightest tools for real concentration risk.
+          </li>
           <li>Unknown is always allowed. Unknown inputs are bracketed, never filled: a result that depends on them is reported as indeterminate.</li>
         </ul>
         <p className="mt-4 text-xs text-paper-mute">

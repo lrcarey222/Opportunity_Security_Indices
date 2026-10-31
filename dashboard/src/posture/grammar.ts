@@ -34,6 +34,9 @@ import type {
 // module uses one map; re-exported here for the posture views.
 export { STAGE_DISPLAY, STAGE_SHORT, stageDisplay, stageShort } from '../lib/stages.ts';
 import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
+// The user-facing words (choice names and actions, fence names, alignment and Secure-rationale labels) come from
+// the shared vocabulary (content/vocabulary.ts, the NEIS copy refresh of 2026-10-30), so every page says them alike.
+import { ALIGNMENT_DEPLOYMENT_GAP, ALIGNMENT_NAME, CHOICE_ACTION, CHOICE_NAME, FENCE_NAME, RATIONALE_NAME } from '../content/vocabulary.ts';
 
 // ---- the three families -----------------------------------------------------------------------------
 
@@ -52,7 +55,7 @@ export const NOT_ASSESSED_BORDER = '1px dashed rgb(255 255 255 / 0.3)';
 
 /** The six verbs in the order of the counts line and the Choices section. */
 export const VERB_ORDER: Verb[] = ['secure', 'preserve', 'catch_up', 'partner', 'accelerate', 'watch'];
-export const VERB_LABEL: Record<Verb, string> = { secure: 'Secure', preserve: 'Preserve', catch_up: 'Catch Up', partner: 'Partner', accelerate: 'Accelerate', watch: 'Watch' };
+export const VERB_LABEL: Record<Verb, string> = CHOICE_NAME;
 /** The family each verb belongs to (its background). */
 export const VERB_FAMILY: Record<Verb, AssessedPosture> = { secure: 'S', preserve: 'C', catch_up: 'C', partner: 'C', accelerate: 'D', watch: 'D' };
 /**
@@ -69,15 +72,8 @@ export const VERB_LONG: Record<Verb, string> = {
   accelerate: 'Accelerate · Medium fence',
   watch: 'Watch · Low fence',
 };
-/** The Choices section's subtitles (spec XIV). */
-export const VERB_SUBTITLE: Record<Verb, string> = {
-  secure: 'Repair acute vulnerabilities',
-  preserve: 'Protect and extend existing strengths',
-  catch_up: 'Build capability where the prize and pathway justify it',
-  partner: 'Important capabilities better solved through allies',
-  accelerate: 'Technologies the energy system needs more of',
-  watch: 'Do not prioritize domestic industrial intervention',
-};
+/** Each choice as an action: the Choices section's subtitles (spec XIV), the counts lines (vocabulary CHOICE_ACTION). */
+export const VERB_SUBTITLE: Record<Verb, string> = CHOICE_ACTION;
 
 export const MODE_LABEL: Record<CompeteMode, string> = { preserve: 'Preserve', catch_up: 'Catch Up', partner: 'Partner' };
 export const DEPLOY_MODE_LABEL: Record<DeployMode, string> = { accelerate: 'Accelerate', watch: 'Watch' };
@@ -115,7 +111,7 @@ export const VERB_OUTLINE: Record<Verb, string> = {
 
 export type Fence = 'high' | 'medium' | 'low';
 export const FENCE_ORDER: Fence[] = ['high', 'medium', 'low'];
-export const FENCE_LABEL: Record<Fence, 'High fence' | 'Medium fence' | 'Low fence'> = { high: 'High fence', medium: 'Medium fence', low: 'Low fence' };
+export const FENCE_LABEL: Record<Fence, 'High fence' | 'Medium fence' | 'Low fence'> = FENCE_NAME;
 /** The fence of each choice: Secure high; Preserve, Catch Up, Partner and Accelerate medium; Watch low. */
 export const FENCE_OF_VERB: Record<Verb, Fence> = { secure: 'high', preserve: 'medium', catch_up: 'medium', partner: 'medium', accelerate: 'medium', watch: 'low' };
 /** The choices of each fence, in VERB_ORDER. */
@@ -149,11 +145,8 @@ export function nodeFill(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode'>
 
 // ---- Secure rationales ---------------------------------------------------------------------------------
 
-export const RATIONALE_LABEL: Record<SecurityRationale, string> = {
-  operational_control: 'Operational control',
-  coercive_chokepoint: 'Coercive chokepoint',
-  systemic_resilience: 'Systemic resilience',
-};
+/** Why a node is Secure, in plain words: "Control-system risk", "Chokepoint risk", "System resilience" (vocabulary RATIONALE_NAME). */
+export const RATIONALE_LABEL: Record<SecurityRationale, string> = RATIONALE_NAME;
 /** The short words of the legend and the sentence: "operational / control", "chokepoint", "systemic resilience". */
 export const RATIONALE_SHORT: Record<SecurityRationale, string> = {
   operational_control: 'operational / control',
@@ -182,18 +175,12 @@ export type AlignmentClass = 'aligned' | 'under_prioritized' | 'over_prioritized
 export const ALIGNMENT_CLASS_ORDER: AlignmentClass[] = ['aligned', 'under_prioritized', 'over_prioritized', 'misaligned', 'mixed'];
 export const alignmentClass = (a: Alignment): AlignmentClass => (a === 'deployment_gap' ? 'under_prioritized' : a);
 
-export const ALIGNMENT_CLASS_LABEL: Record<AlignmentClass, string> = {
-  aligned: 'Aligned',
-  under_prioritized: 'Under-prioritized',
-  over_prioritized: 'Over-prioritized',
-  misaligned: 'Wrong treatment / misaligned',
-  mixed: 'Mixed',
-  insufficient_data: 'Insufficient data',
-};
-/** The words of one alignment value: a deployment gap is "Under-prioritized: under-response (deployment)". */
+/** The classes in plain words (vocabulary ALIGNMENT_NAME): Broadly aligned, Needs more attention, Too much intervention, Wrong tool for the problem, Mixed signals, Not enough policy evidence. */
+export const ALIGNMENT_CLASS_LABEL: Record<AlignmentClass, string> = ALIGNMENT_NAME;
+/** The words of one alignment value: a deployment gap is "Needs more attention: deployment policy lags". */
 export const ALIGNMENT_LABEL: Record<Alignment, string> = {
   ...ALIGNMENT_CLASS_LABEL,
-  deployment_gap: 'Under-prioritized: under-response (deployment)',
+  deployment_gap: ALIGNMENT_DEPLOYMENT_GAP,
 };
 /** What each alignment means, for the drawer and the Policy Alignment section (spec X). */
 export const ALIGNMENT_WORDS: Record<Alignment, string> = {
@@ -305,6 +292,21 @@ export const PATHWAY_EVIDENCE_LABEL: Record<string, string> = {
   // fewer legs fired than the pathway requires (config pathway.min_legs)
   too_few_legs: 'too few pieces of evidence',
   too_few_observed: 'too little evidence observed to reach the bar',
+  // the capability-anchor rule (2026-10-30, pathway.R rule "anchor"; docs/decision_framework_report.md section 20):
+  // an anchor, a supporting signal of another kind, or the state; in plain words (the NEIS copy refresh)
+  direct_supply_share: 'world supply share (anchor)',
+  direct_export_share: 'world export share (anchor)',
+  operating_capacity: 'operating capacity (anchor)',
+  committed_pipeline: 'committed capacity (anchor)',
+  adjacent_stage_share: 'strong adjacent stage (anchor)',
+  resource_base: 'resource base (anchor)',
+  adjacent_stage_relative: 'relatively strong adjacent stage',
+  announced_pipeline: 'announced capacity',
+  no_anchor: 'no capability anchor',
+  anchor_uncorroborated: 'anchor not corroborated',
+  anchor_unobserved: 'too little evidence to find an anchor',
+  corroboration_unobserved: 'too little evidence to corroborate the anchor',
+  greenfield_option: 'greenfield option: no base to build on yet',
 };
 /** A ";"-list or array of R codes in words through a label table (unknown codes lose their underscores). */
 function codeList(v: string | readonly string[] | null | undefined, labels: Record<string, string>): string | null {

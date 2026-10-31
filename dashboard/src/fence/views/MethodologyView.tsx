@@ -9,6 +9,7 @@ import type { InputDef } from '../engine/index.ts';
 import { useYards } from '../state/YardsContext.tsx';
 import { SectionHead, YardBadge, ProvBadge } from '../components/kit.tsx';
 import { METHOD_STATEMENT, PAGE } from '../FenceLayout.tsx';
+import { MIXED_YARD_NOTE, YARD_DEFINITION } from '../../content/vocabulary.ts';
 
 const GLOSSARY: { gate: InputDef['gate']; title: string }[] = [
   { gate: 'gate1', title: 'Gate 1 · Acute harm' },
@@ -45,23 +46,28 @@ export default function MethodologyView() {
       <section className="mt-8 grid gap-5 md:grid-cols-3" aria-label="The three tests">
         <article className="panel p-5">
           <YardBadge yard="small" />
-          <p className="mt-3 text-sm leading-relaxed text-paper-dim">
+          <p className="mt-3 text-sm leading-relaxed text-paper">{YARD_DEFINITION.small}</p>
+          <p className="mt-2 text-sm leading-relaxed text-paper-dim">
             Requires an <strong className="text-paper">acute consequence</strong> (high or severe) <strong className="text-paper">and</strong> either (A) a control layer an outsider could command, push updates to or disable, with harm within months; or (B) a physical input where a potentially coercive supplier controls at least {RULES.coercion.yes * 100}% of supply, substitution is hard, and trusted supply could not be restored before harm becomes intolerable, net of stockpiles. Separability decides how much of the product the fence covers.
           </p>
         </article>
         <article className="panel p-5">
           <YardBadge yard="medium" />
-          <p className="mt-3 text-sm leading-relaxed text-paper-dim">
+          <p className="mt-3 text-sm leading-relaxed text-paper">{YARD_DEFINITION.medium}</p>
+          <p className="mt-2 text-sm leading-relaxed text-paper-dim">
             If the small-yard test is not met: at least one of a present position (home share of at least {RULES.position.strong * 100}% of world supply, or {RULES.position.moderate * 100}% backed by complementary capabilities), an industrial-learning case, or a credible leap-ahead case. A strong case (learning strong, or two rationales) is medium; a single moderate rationale is medium unless the domestic premium exceeds {RULES.premium.high}%.
           </p>
         </article>
         <article className="panel p-5">
           <YardBadge yard="large" />
-          <p className="mt-3 text-sm leading-relaxed text-paper-dim">
+          <p className="mt-3 text-sm leading-relaxed text-paper">{YARD_DEFINITION.large}</p>
+          <p className="mt-2 text-sm leading-relaxed text-paper-dim">
             Where neither case holds. A moderate capability case with a high premium becomes a large yard with a specified capability floor; concentrated supply adds diversification to the posture, not a high fence.
           </p>
         </article>
       </section>
+
+      <p className="mt-4 max-w-3xl text-sm leading-relaxed text-paper-mute">{MIXED_YARD_NOTE}</p>
 
       <section className="mt-10" aria-labelledby="yf-unknown">
         <SectionHead id="yf-unknown" title="Unknowns, confidence and completeness" />

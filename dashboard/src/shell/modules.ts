@@ -27,9 +27,9 @@ export interface ModuleInfo {
 
 /** The top tabs, in order. */
 export const MODULES: readonly ModuleInfo[] = [
-  { id: 'sector', label: 'Sectors', tag: 'WHAT MATTERS ABOUT A SECTOR', home: '/sector' },
-  { id: 'country', label: 'Countries', tag: "A COUNTRY'S STRATEGIC POSITION", home: '/countries' },
-  { id: 'aib', label: 'Allied Industrial Base', tag: 'WHERE COORDINATION ADDS VALUE', home: '/aib' },
+  { id: 'sector', label: 'Sectors', tag: 'BOTTLENECKS AND OPPORTUNITIES', home: '/sector' },
+  { id: 'country', label: 'Countries', tag: 'WHAT A COUNTRY SHOULD DO', home: '/countries' },
+  { id: 'aib', label: 'Allied Industrial Base', tag: 'HOW ALLIES DIVIDE THE WORK', home: '/aib' },
   { id: 'about', label: 'About', tag: 'METHODS, DATA AND GLOSSARY', home: '/about', secondary: true },
 ];
 

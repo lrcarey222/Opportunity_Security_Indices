@@ -99,7 +99,7 @@ describe('Need (spec XII)', () => {
     const a = screen.getByTestId('supply-need-ranking');
     const rows = within(a).getAllByRole('button');
     expect(rows.map((b) => b.getAttribute('data-key'))).toEqual(['Batteries|Refining', 'Solar|Refining', 'Solar|Components', 'Batteries|Extraction']);
-    expect(rows[0].getAttribute('aria-label')).toBe('Batteries Refining & Processing: supply-chain need 95; Secure, coercive chokepoint; CHOKEPOINT, HIGH DEPENDENCE');
+    expect(rows[0].getAttribute('aria-label')).toBe('Batteries Refining & Processing: supply-chain need 95; Secure, chokepoint risk; CHOKEPOINT, HIGH DEPENDENCE');
     expect(within(rows[2]).getByTestId('need-tags').textContent).toBe('CONTROL LAYERHIGH DEPENDENCE');
     fireEvent.click(screen.getByRole('button', { name: 'Show all 9' }));
     expect(within(a).getAllByRole('button')).toHaveLength(9);
@@ -146,7 +146,7 @@ describe('Prize & Position (spec XIII)', () => {
     expect(sec.style.left).toBe(probe.style.left);
     expect(sec.style.left).toMatch(/52px.*0\.4.*72px|52px.*72px.*0\.4/);
     expect(sec.getAttribute('aria-label')).toBe(
-      'Batteries Refining & Processing: Secure (coercive chokepoint), high fence; Strategic Industrial Value 40%; Competitive Position 10%; supply-chain need 95%; trade momentum unavailable; policy under-prioritized; evidence strong',
+      'Batteries Refining & Processing: Secure (chokepoint risk), high fence; Strategic Industrial Value 40%; Competitive Position 10%; supply-chain need 95%; trade momentum unavailable; policy needs more attention; evidence strong',
     );
     // the corner headings sit in the margins above and below the plot: tendencies, not rules
     const q = `${screen.getByTestId('prize-position-quadrants').textContent} ${screen.getByTestId('prize-position-quadrants-low').textContent}`;
@@ -162,7 +162,7 @@ describe('Prize & Position (spec XIII)', () => {
     // the tooltip: the node, its choice and fence, need, prize, position, momentum, alignment, evidence
     fireEvent.mouseEnter(sc.querySelector('[data-key="Batteries|Extraction"]') as Element);
     const tip = screen.getByTestId('prize-position-tip').textContent;
-    for (const w of ['Partner· Medium fence', 'Batteries · Extraction', 'Supply-chain need 80%', 'Strategic Industrial Value 30%', 'Competitive Position 20%', 'Trade momentum: rising', 'Policy alignment: Wrong treatment / misaligned', 'Evidence: Strong']) {
+    for (const w of ['Partner· Medium fence', 'Batteries · Extraction', 'Supply-chain need 80%', 'Strategic Industrial Value 30%', 'Competitive Position 20%', 'Trade momentum: rising', 'Policy alignment: Wrong tool for the problem', 'Evidence: Strong']) {
       expect(tip).toContain(w);
     }
     fireEvent.keyDown(sc.querySelector('[data-key="Batteries|Components"]') as Element, { key: 'Enter' });
@@ -307,11 +307,11 @@ describe('Strategic Choices (spec XIV)', () => {
       expect(cssHex(sw.style.background), g.getAttribute('data-verb') ?? '').toBe(VERB_COLOR[g.getAttribute('data-verb') as Verb]);
     }
     const [secure, preserve, catchUp, partner, accelerate, watch] = groups;
-    expect(secure.textContent).toContain('Repair acute vulnerabilities');
+    expect(secure.textContent).toContain('Protect what cannot be allowed to fail');
     expect(secure.textContent).toContain('Main riskXXX holds 70% of world supply; 80% of imports come from potentially coercive suppliers');
     expect(secure.textContent).toContain('Recommended treatmentDiversify refining through allied offtake and hold a strategic stock.');
     expect(secure.textContent).toMatch(/Delivery mode\s?mixed/);
-    expect(preserve.textContent).toContain('Protect and extend existing strengths');
+    expect(preserve.textContent).toContain('Keep and strengthen an existing strength');
     expect(preserve.textContent).toMatch(/Competitive Position\s?95%/);
     expect(catchUp.textContent).toContain('Position gap35 points below the Preserve bar (position 40)');
     expect(catchUp.textContent).toContain('Pathway evidencefeasibility, pipeline');
@@ -319,10 +319,10 @@ describe('Strategic Choices (spec XIV)', () => {
     expect(partner.textContent).toContain('Diversification valuemoving 10% of imports to BBB would cut import concentration (HHI) by 0.050');
     expect(partner.textContent).toMatch(/AIB status\s?covered/);
     expect(within(partner).getByTestId('choice-aib-link').getAttribute('href')).toBe('/aib?node=Batteries|Extraction');
-    expect(accelerate.textContent).toContain('Technologies the energy system needs more of');
+    expect(accelerate.textContent).toContain('Deploy faster at home');
     expect(accelerate.textContent).toContain('Deployment priorityhigh');
     expect(accelerate.textContent).toContain('Domestic manufacturing priorityset at the producing stages (Partner at Extraction;');
-    expect(watch.textContent).toContain('Do not prioritize domestic industrial intervention');
+    expect(watch.textContent).toContain('Keep open: buy competitively, do not force localization');
     // the engine's reasons (detail watch_reasons), not a UI guess: no weak domestic case on a low-prize node
     expect(watch.textContent).toContain('Domestic industrial prioritylow: low need; low prize; ample diversified supply');
     expect(watch.textContent).not.toContain('weak domestic case');
@@ -375,18 +375,18 @@ describe('Policy Alignment (spec XV)', () => {
       'misaligned', 'under_prioritized', 'deployment_gap', 'over_prioritized', 'mixed', 'aligned', 'aligned', 'aligned', 'aligned', 'aligned', 'insufficient_data',
     ]);
     // intensity, support, protection and momentum are ranks within the country, never shares or signed changes
-    expect(rows[0].textContent).toBe('Batteries · ExtractionPartner · Medium fencehigh, 85th percentilelow, 20th percentilehigh, 90th percentilerising≠Wrong treatment / misaligned(high confidence)');
+    expect(rows[0].textContent).toBe('Batteries · ExtractionPartner · Medium fencehigh, 85th percentilelow, 20th percentilehigh, 90th percentilerising≠Wrong tool for the problem(high confidence)');
     const com = rows.find((r) => r.getAttribute('data-key') === 'Batteries|Components')!;
     expect(com.textContent).toContain('moderate, 60th percentilemoderate, 60th percentilenone recordedlow, 12th percentile');
     expect(com.textContent).not.toContain('+12%');
     expect(screen.getByTestId('policy-ranks-note').textContent).toContain("percentile ranks among Aland's own nodes");
     expect(screen.getByTestId('policy-ranks-note').textContent).not.toMatch(/shares of that attention/);
-    expect(rows[2].textContent).toContain('Under-prioritized: under-response (deployment)');
+    expect(rows[2].textContent).toContain('Needs more attention: deployment policy lags');
     expect(rows[5].textContent).toContain('not available');
     // judged node by node: no score column, no total
     expect(document.body.textContent).toContain('there is no overall score');
     expect(within(t).queryByRole('columnheader', { name: /score/i })).toBeNull();
-    expect(screen.getByTestId('policy-coverage').textContent).toContain('1 wrong treatment / misaligned · 2 under-prioritized (1 deployment under-response) · 1 over-prioritized · 1 mixed · 5 aligned · 1 insufficient data.');
+    expect(screen.getByTestId('policy-coverage').textContent).toContain('1 wrong tool for the problem · 2 needs more attention (1 deployment under-response) · 1 too much intervention · 1 mixed signals · 5 broadly aligned · 1 not enough policy evidence.');
     expect(screen.getByText('PAMS and NIPO detail')).toBeTruthy();
     fireEvent.click(within(rows[3]).getByRole('button'));
     expect(onOpen).toHaveBeenLastCalledWith('Solar|Deployment');

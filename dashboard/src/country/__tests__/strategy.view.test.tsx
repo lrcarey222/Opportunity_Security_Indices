@@ -218,7 +218,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(topKeys(top)).toEqual(['Batteries|Refining', 'Solar|Refining', 'Solar|Components']);
     expect(new Set(topVerbs(top))).toEqual(new Set(['secure']));
     expect(topValues(top)).toEqual(['95', '90', '70']);
-    expect(topWhy(top)).toEqual(['Secure · Coercive chokepoint', 'Secure · Systemic resilience', 'Secure · Operational control']);
+    expect(topWhy(top)).toEqual(['Secure · Chokepoint risk', 'Secure · System resilience', 'Secure · Control-system risk']);
     // the choice colour of each entry
     expect([...top.querySelectorAll('li [data-swatch]')].map((x) => cssHex((x as HTMLElement).style.background))).toEqual([VERB_COLOR.secure, VERB_COLOR.secure, VERB_COLOR.secure]);
     // nothing of another fence
@@ -231,9 +231,9 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(heads(table)).toEqual(['Node', 'Supply-chain need', 'Import dependence', 'Supplier concentration', 'Risky supplier exposure', 'Lack of trusted alternatives', 'Security rationale']);
     await waitFor(() => expect(rowOf(table, 'Batteries · Refining & Processing').textContent).toContain('92'), { timeout: 30_000 });
     expect(rows(table)).toEqual([
-      ['Batteries · Refining & Processing', '95', '95', '90', '92', 'not measured', 'Coercive chokepoint'],
-      ['Solar · Refining & Processing', '90', '90', '85', '95', 'not measured', 'Systemic resilience'],
-      ['Solar · Component Manufacturing', '70', '70', '60', '80', 'not measured', 'Operational control'],
+      ['Batteries · Refining & Processing', '95', '95', '90', '92', 'not measured', 'Chokepoint risk'],
+      ['Solar · Refining & Processing', '90', '90', '85', '95', 'not measured', 'System resilience'],
+      ['Solar · Component Manufacturing', '70', '70', '60', '80', 'not measured', 'Control-system risk'],
     ]);
     // numbers right-aligned
     expect([...table.querySelectorAll('tbody tr:first-child td')].map((td) => td.className)).toEqual(['', 'num', 'num', 'num', 'num', 'num', '']);
@@ -425,7 +425,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     const pol = sec('policy-alignment');
     const table = within(within(pol).getByTestId('policy-alignment')).getByRole('table');
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Node', 'Recommendation', 'Observed policy intensity', 'Support', 'Protection', 'Policy momentum', 'Alignment']);
-    await waitFor(() => expect(table.querySelector('[data-key="Batteries|Extraction"]')?.textContent).toMatch(/Partner · Medium fence.*misaligned/i), { timeout: 30_000 });
+    await waitFor(() => expect(table.querySelector('[data-key="Batteries|Extraction"]')?.textContent).toMatch(/Partner · Medium fence.*wrong tool for the problem/i), { timeout: 30_000 });
     expect(table.querySelector('[data-key="Batteries|Deployment"]')?.getAttribute('data-alignment')).toBe('deployment_gap');
     expect(pol.textContent).toContain("percentile ranks among the United States' own nodes");
     expect(pol.textContent).not.toMatch(/among The United States/);
@@ -579,7 +579,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     // the core's own values stay; every value of the detail says it could not be loaded
     const high = await openFold('high-all');
     expect(rows(within(high).getByTestId('high-table'))[0]).toEqual([
-      'Batteries · Refining & Processing', '95', 'could not be loaded', 'could not be loaded', 'could not be loaded', 'could not be loaded', 'Coercive chokepoint',
+      'Batteries · Refining & Processing', '95', 'could not be loaded', 'could not be loaded', 'could not be loaded', 'could not be loaded', 'Chokepoint risk',
     ]);
     for (const id of ['medium-prize-table', 'medium-position-table', 'medium-accelerate-table']) {
       const t = screen.getByTestId(id);

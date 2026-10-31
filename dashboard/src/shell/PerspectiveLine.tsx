@@ -32,7 +32,10 @@ export function PerspectiveLine() {
             </button>
           </>
         )}
-        <span className="basis-full sm:basis-auto">Facts (trade, production, concentration, compacts) are the same under every perspective; priorities and partner rankings follow it.</span>
+        <span className="basis-full sm:basis-auto">
+          The evidence (trade, production, concentration, compacts) and the strategic choices are the same under every perspective; only the Legacy OSI priorities
+          and partner scores follow it.
+        </span>
       </div>
     </div>
   );

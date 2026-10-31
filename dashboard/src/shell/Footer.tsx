@@ -52,7 +52,11 @@ export function Footer() {
               )}
             </p>
           )}
-          <p>Sector pages show measured values in their sources&rsquo; own units and years. Priorities, partner rankings and the Allied Industrial Base results are model outputs for exploration, not forecasts; priorities and partner rankings are shown at the NEIS baseline unless you change the perspective on a country&rsquo;s profile.</p>
+          <p>
+            Sector pages show measured values in their sources&rsquo; own units and years. The strategic choices, partner rankings and Allied Industrial Base
+            results are analysis for exploring options, not forecasts. Legacy OSI priorities and partner scores are shown at the NEIS baseline unless you change the
+            perspective on a country&rsquo;s profile.
+          </p>
         </div>
         <div className="flex flex-wrap items-start gap-x-5 gap-y-2 lg:justify-end">
           <Link className="link" to={`/methods${sq}`}>

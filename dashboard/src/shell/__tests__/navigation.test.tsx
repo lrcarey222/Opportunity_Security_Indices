@@ -160,7 +160,7 @@ const COMPACT_ID = readAibDoc(AIB_DIR).compacts[0].id;
 describe('the global navigation', () => {
   it('Home, Sectors, Countries, Allied Industrial Base and About (secondary); nothing else', async () => {
     renderAt('/');
-    expect(await h1('Explore the electro-industrial system')).toBeTruthy();
+    expect(await h1('Where should countries build, partner and rely on allies?')).toBeTruthy();
     expect(within(tabs()).getAllByRole('link').map((a) => a.textContent)).toEqual(['Sectors', 'Countries', 'Allied Industrial Base', 'About']);
     expect(currentTabs()).toEqual([]);
     expect(screen.getByRole('link', { name: 'Allied Industrial Base Explorer' }).getAttribute('href')).toBe('/');
@@ -169,7 +169,7 @@ describe('the global navigation', () => {
     for (const [title, cta, to] of [
       ['Explore a Sector', 'Explore sectors', '/sector'],
       ['Explore a Country', 'Explore countries', '/countries'],
-      ['Explore the Allied Industrial Base', 'Explore AIB', '/aib'],
+      ['Explore the Allied Industrial Base', 'Explore the Allied Industrial Base', '/aib'],
     ]) {
       const card = screen.getByRole('article', { name: title });
       expect(within(card).getByRole('link', { name: cta }).getAttribute('href')).toBe(to);
@@ -316,7 +316,7 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
   it('AIB: Home -> Allied Industrial Base -> overview -> Sectoral Compacts -> a strategic compact and its workstreams -> a workstream -> a country role -> its profile', async () => {
     setCountryStoreForTests(new CountryStore(countrySourceWithAib()));
     const router = renderAt('/');
-    await follow(router, linkIn('main article a[href="/aib"]', /^Explore AIB$/), path('/aib'));
+    await follow(router, linkIn('main article a[href="/aib"]', /^Explore the Allied Industrial Base$/), path('/aib'));
     expect(await screen.findByRole('list', { name: 'Nodes by treatment' }, { timeout: 30_000 })).toBeTruthy();
     await follow(router, linkIn('nav[aria-label="Allied Industrial Base views"] a', /^Sectoral Compacts$/), path('/compacts'));
     // the Strategic Sectoral Compacts: a card opens its compact, and its workstreams (the compact candidates)

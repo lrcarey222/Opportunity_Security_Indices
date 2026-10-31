@@ -151,7 +151,11 @@ export default function DataView() {
 
   return (
     <div>
-      <PageHead eyebrow="About · Downloads and provenance" title="Data" lede="Download the numbers behind every view, for the NEIS baseline or a custom perspective, and see how this export was checked." />
+      <PageHead
+        eyebrow="About · Data & sources"
+        title="Data"
+        lede="Download the numbers behind the index and partnership views, for the NEIS baseline or a custom perspective, and see how this export was checked. The sector, country and Allied Industrial Base data have their own source pages, listed under About."
+      />
       <div className="flex flex-col gap-6">
         <div className="grid gap-6 xl:grid-cols-2">
           <section className="card p-5">

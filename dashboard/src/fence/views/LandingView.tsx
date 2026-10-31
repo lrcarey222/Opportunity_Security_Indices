@@ -1,4 +1,5 @@
-// /: what the framework is, in one screen, and the fastest ways in.
+// /: what the framework is, in one screen, and the fastest ways in. The strategic question comes first, then the
+// three yards in the Explorer's words (content/vocabulary.ts YARD_DEFINITION), then how a capability is placed.
 
 import { Link } from 'react-router';
 import { useTitle } from '../title.ts';
@@ -7,6 +8,7 @@ import { stateSearch } from '../state/assessment.ts';
 import { useYards } from '../state/YardsContext.tsx';
 import { YARD_COPY, YardGlyph, yardClass } from '../components/kit.tsx';
 import { PAGE } from '../FenceLayout.tsx';
+import { MIXED_YARD_NOTE, YARDS_NOT_A_SCALE } from '../../content/vocabulary.ts';
 
 const SEQUENCE = ['Problem', 'Evidence', 'Yard', 'Fence', 'Policy', 'Metrics', 'Reassessment'];
 
@@ -27,7 +29,9 @@ export default function LandingView() {
         <h1 className="rule-neis text-4xl font-medium text-paper sm:text-5xl">Draw the Fence</h1>
         <p className="mt-4 text-xl leading-snug text-paper">What does America need to secure, where should it compete, and where is openness an advantage?</p>
         <p className="mt-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
-          An interactive tool for deciding what the United States needs to secure, where it should compete, and where openness is an advantage. It walks through the NEIS Yards &amp; Fences tests one question at a time and shows exactly why a technology lands where it does. Measured data from the Opportunity &amp; Security Indices sit beside the questions as context; they never decide the answer.
+          Draw the Fence walks through the NEIS Yards &amp; Fences tests one question at a time and shows why each component or layer of a technology lands
+          where it does. {MIXED_YARD_NOTE} Measured data from the Opportunity &amp; Security Indices sit beside the questions as context; they never decide the
+          answer.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link className="btn btn-primary" to={href('assess', { ...state, step: 0 })}>
@@ -52,21 +56,22 @@ export default function LandingView() {
             <p className="yf-yard-text mt-1 text-sm font-semibold uppercase tracking-[0.12em]">
               {YARD_COPY[y].name} / {YARD_COPY[y].fence}
             </p>
-            <p className="mt-4 text-sm leading-relaxed text-paper">{YARD_COPY[y].question}</p>
-            <p className="mt-2 text-sm leading-relaxed text-paper-dim">{YARD_COPY[y].objective}</p>
+            <p className="mt-4 text-sm leading-relaxed text-paper">{YARD_COPY[y].definition}</p>
+            <p className="mt-2 text-sm leading-relaxed text-paper-dim">{YARD_COPY[y].question}</p>
           </article>
         ))}
       </section>
 
       <section className="mt-10 max-w-3xl">
         <p className="block-interpretation text-[0.9375rem] leading-relaxed">
-          Different policy problems require different tools. This decision engine combines real-world evidence with explicit judgments to identify the problem first, and only then draw the fence. The three yards are not low, medium and high scores on one scale: each answers a different question.
+          Different policy problems need different tools. Draw the Fence combines measured evidence with explicit judgments to identify the problem first, and
+          only then draw the fence. {YARDS_NOT_A_SCALE} Each answers a different question.
         </p>
       </section>
 
       <section aria-labelledby="yf-how" className="mt-12">
         <h2 id="yf-how" className="rule-neis-sm mb-5 text-xl font-medium text-paper">
-          How the engine decides
+          How a capability is placed
         </h2>
         <ol className="grid gap-3 lg:grid-cols-4">
           {GATES.map((g, i) => (
@@ -78,7 +83,8 @@ export default function LandingView() {
           ))}
         </ol>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-paper-mute">
-          Every rule is explicit and on the Methodology page. There is no score. Unknown is always a valid answer: the engine brackets it rather than guessing, and says which missing answer would settle the yard.
+          Every rule is explicit and on the Methodology page. There is no score. Unknown is always a valid answer: the tool brackets it rather than guessing, and
+          says which missing answer would settle the yard.
         </p>
       </section>
 

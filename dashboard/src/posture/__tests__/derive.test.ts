@@ -79,8 +79,8 @@ describe('one site-wide grammar (spec XX)', () => {
 
   it('policy alignment: five classes; a deployment gap is drawn as under-prioritized and worded as an under-response', () => {
     expect(ALIGNMENTS.map(alignmentClass)).toEqual(['aligned', 'under_prioritized', 'over_prioritized', 'misaligned', 'under_prioritized', 'mixed', 'insufficient_data']);
-    expect(ALIGNMENT_CLASS_LABEL.misaligned).toBe('Wrong treatment / misaligned');
-    expect(ALIGNMENT_LABEL.deployment_gap).toBe('Under-prioritized: under-response (deployment)');
+    expect(ALIGNMENT_CLASS_LABEL.misaligned).toBe('Wrong tool for the problem');
+    expect(ALIGNMENT_LABEL.deployment_gap).toBe('Needs more attention: deployment policy lags');
   });
 
   it('the R codes a reader meets in a drawer or tooltip are worded: consistency flags, alignment notes, borderline inputs', () => {
@@ -119,6 +119,10 @@ describe('one site-wide grammar (spec XX)', () => {
     expect(pathwayEvidenceWords('feasibility;resource_base_unknown')).toBe('feasibility, resource base unknown');
     // the two-leg pathway (config pathway.min_legs): one leg fired, or the only observed leg fired
     expect(pathwayEvidenceWords('adjacent_stage;too_few_legs')).toBe('adjacent stage, too few pieces of evidence');
+    // the capability-anchor rule's codes (2026-10-30): anchors, supports and states in plain words, never raw codes
+    expect(pathwayEvidenceWords('direct_export_share;anchor_uncorroborated')).toBe('world export share (anchor), anchor not corroborated');
+    expect(pathwayEvidenceWords('adjacent_stage_relative;no_anchor')).toBe('relatively strong adjacent stage, no capability anchor');
+    expect(pathwayEvidenceWords(['operating_capacity', 'committed_pipeline', 'announced_pipeline', 'anchor_unobserved'])).toBe('operating capacity (anchor), committed capacity (anchor), announced capacity, too little evidence to find an anchor');
     expect(pathwayEvidenceWords('feasibility;too_few_observed')).toBe('feasibility, too little evidence observed to reach the bar');
     expect(['secure_override', 'deployment_need', 'supply_chain_need', 'industrial_opportunity', 'cp_contender_pct', 'pathway_credible', 'choice'].map(traceTestWords)).toEqual([
       'Secure tests', 'Deployment need', 'Supply-chain need', 'Industrial Opportunity (market prize)', 'Competitive Position among contenders', 'Credible pathway', 'Choice',
@@ -278,15 +282,15 @@ describe('the table twins and CSVs', () => {
     expect(rows.slice(0, 6).map((r) => r.stageName)).toEqual(SUPPLY_STAGES.map((s) => LIB_STAGE_DISPLAY[s]));
     const sec = rows[1];
     expect([sec.postureWord, sec.choice, sec.rationale, sec.mode, sec.alignment, sec.needType, sec.supplyChainNeed, sec.tier]).toEqual([
-      'Secure', 'Secure · High fence', 'Coercive chokepoint', null, 'Under-prioritized', 'Supply-chain need', 0.95, 'core',
+      'Secure', 'Secure · High fence', 'Chokepoint risk', null, 'Needs more attention', 'Supply-chain need', 0.95, 'core',
     ]);
     const part = rows[0];
     expect([part.choice, part.mode, part.partner1Name, part.momentum, part.pathway, part.alignment, part.plotted]).toEqual([
-      'Partner · Medium fence', 'Partner', 'Bland', 'rising', 'Not credible', 'Wrong treatment / misaligned', true,
+      'Partner · Medium fence', 'Partner', 'Bland', 'rising', 'Not credible', 'Wrong tool for the problem', true,
     ]);
     const acc = rows[4];
     expect([acc.choice, acc.deployMode, acc.needType, acc.deploymentNeed, acc.supplyChainNeed, acc.alignment]).toEqual([
-      'Accelerate · Medium fence', 'Accelerate', 'Deployment need', 0.85, null, 'Under-prioritized: under-response (deployment)',
+      'Accelerate · Medium fence', 'Accelerate', 'Deployment need', 0.85, null, 'Needs more attention: deployment policy lags',
     ]);
     const na = rows[5];
     expect([na.posture, na.postureWord, na.choice, na.classified, na.plotted]).toEqual(['N', 'Not assessed', 'Not assessed', true, false]);
@@ -311,10 +315,10 @@ describe('the table twins and CSVs', () => {
     expect(lines).toHaveLength(14); // header, 12 nodes, the final line break
     // the prize: the Strategic Industrial Value and the market prize (Industrial Opportunity) beside it; the node's yards
     expect(lines[1]).toBe(
-      `Aland,AAA,core,Batteries,Extraction,Extraction,TRUE,Compete,Partner,,Partner · Medium fence,,Supply-chain need,0.8,,0.3,0.3,Medium yard,0.2,0.004,Not credible,Wrong treatment / misaligned,high,Strong,high,rising,Bland,BBB,FALSE,,,${source},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Extraction,Extraction,TRUE,Compete,Partner,,Partner · Medium fence,,Supply-chain need,0.8,,0.3,0.3,Medium yard,0.2,0.004,Not credible,Wrong tool for the problem,high,Strong,high,rising,Bland,BBB,FALSE,,,${source},2026-10-29,abc1234`,
     );
     expect(lines[2]).toBe(
-      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Coercive chokepoint,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Under-prioritized,medium,Strong,high,,,,,,,${source},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Chokepoint risk,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Needs more attention,medium,Strong,high,,,,,,,${source},2026-10-29,abc1234`,
     );
     // Batteries Components: a value of 0.8 on a market prize of 0.7
     expect(lines[3]).toContain(',Supply-chain need,0.5,,0.8,0.7,Medium yard,0.4,');

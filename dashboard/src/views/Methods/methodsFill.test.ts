@@ -9,6 +9,7 @@ import { NA_BOOL } from '../../engine/numeric.ts';
 import { table } from '../../engine/table.ts';
 import type { BaselineInputs } from '../../engine/types.ts';
 import { buildFacts, excludedSectorsText, fillPlaceholders, methodsValues, stageWeightsText } from './methodsFill.ts';
+import { AVOID_RE, YARD_DEFINITION } from '../../content/vocabulary.ts';
 
 const md = readFileSync(fileURLToPath(new URL('../../content/methods.md', import.meta.url)), 'utf8');
 
@@ -109,7 +110,7 @@ describe('Methods placeholders', () => {
   it('opens with the canonical framework (need, prize, position, choice, policy alignment), then the Legacy OSI chapter before the indices (design 5)', () => {
     const at = (x: string) => md.indexOf(x);
     expect(at('<h2 id="framework">')).toBe(0);
-    const steps = ['**Need: what problem', '**Prize: is domestic capability here strategically valuable?', '**Position: how strong', '**Choice: what should', '**Policy alignment: does current policy'];
+    const steps = ['**Need: what problem has to be solved?**', '**Prize: is productive capability here strategically valuable?**', '**Position: how much real capability does the country have today?**', '**Choice: what should', '**Policy alignment: is policy focused on the right places?**'];
     expect(steps.map(at).every((v, k, a) => v > 0 && (k === 0 || v > a[k - 1]))).toBe(true);
     // the prize is the Strategic Industrial Value (2026-10-30): its three families, the cap, the large-yard case, the yards
     expect(md).toContain('*Strategic Industrial Value*, from three families. The market prize, *Industrial Opportunity*');
@@ -117,13 +118,27 @@ describe('Methods placeholders', () => {
     expect(md).toContain('A *large-yard case* weighs against it');
     expect(md).toContain('a Small yard behind a High fence (Secure); a Medium yard behind a medium, permeable fence (Preserve, Catch Up, Partner, and Accelerate at Deployment & Use); a Large yard behind a Low fence (Watch)');
     expect(md).toContain('Two separate measures, never combined into one score');
-    expect(md).toContain('**Deploy · Accelerate**');
-    expect(md).toContain('a deployment node is never Partner');
+    expect(md).toContain('high deployment need is **Accelerate**');
+    expect(md).toContain('a deployment step is never Partner');
+    // the strategic meaning leads (the NEIS copy refresh, 2026-10-30): the canonical explainer before any step
+    expect(md.indexOf('The strategy starts with evidence, not policy.')).toBeLessThan(at('**Need: what problem'));
+    expect(md).toContain('No country needs to make everything');
+    // the capability-anchor Catch Up and the need floor of the current method (2026-10-30)
+    expect(md).toContain('a credible pathway is **Catch Up**: a capability anchor');
+    expect(md).toContain('so Catch Up always has something real to build on');
+    expect(md).not.toMatch(/at least two of feasibility/);
+    expect(md).toContain('a high percentile counts only where the need score itself reaches 0.10');
+    // the three yards in the user's words, and a technology is never in one yard
+    for (const y of ['small', 'medium', 'large'] as const) expect(md).toContain(YARD_DEFINITION[y]);
+    expect(md).toContain('A technology can sit in more than one yard.');
+    expect(md).not.toMatch(AVOID_RE);
     expect(md).toContain('It is not the legacy Economic Opportunity index');
     expect(md).toContain('Observed policy is compared afterwards and never enters the choice');
+    expect(md).toContain('Partner met with heavy localization is the *wrong tool for the problem*');
     // the retired need x opportunity rule is gone
     expect(md).not.toMatch(/Competitive Position is a consistency check|high need and high opportunity, \*\*catch up\*\*|## Four steps/);
-    expect(at('<h2 id="legacy-osi">')).toBeGreaterThan(at('**Policy alignment: does current policy'));
+    expect(at('<h2 id="legacy-osi">')).toBeGreaterThan(at('**Policy alignment: is policy focused'));
+    expect(md).toContain('It describes relative security and opportunity; it is not the current strategic recommendation.');
     expect(at('<h2 id="legacy-osi">')).toBeLessThan(at('## The indices in plain words'));
     expect(md).toContain('Grow ≈ Preserve, Upgrade ≈ Catch Up, Exposed ≈ Partner, Stable ≈ Watch');
     expect(md).toContain('mixes capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment');

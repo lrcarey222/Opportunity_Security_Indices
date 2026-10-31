@@ -1,6 +1,7 @@
-// The shared glossary page /glossary (spec_country.md C3.3): every index, category, measure and
-// acronym of the three modules in plain words, filtered by module (All · Sector · Strategic ·
-// Country; ?module= keeps the filter in the link). Linked from the footer, every InfoTip ("More in the
+// The shared glossary page /glossary (spec_country.md C3.3; the NEIS copy refresh 2026-10-30): the strategic
+// choices, the yards and fences, the Allied Industrial Base concepts, the indices and the data measures in plain
+// words, filtered by where they are used (All · Sector · Country · Allied Industrial Base · Methods, the last the
+// Methods page and the Legacy OSI views; ?module= keeps the filter in the link). Linked from the footer, every InfoTip ("More in the
 // glossary"), Methods, Sector Sources and Country About. A shell page: no engine, no data.
 
 import { useEffect, useMemo } from 'react';
@@ -16,8 +17,9 @@ type Filter = GlossaryModule | 'all';
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'sector', label: 'Sector' },
-  { value: 'strategic', label: 'Strategic' },
   { value: 'country', label: 'Country' },
+  { value: 'aib', label: 'Allied Industrial Base' },
+  { value: 'strategic', label: 'Methods' },
 ];
 
 const isFilter = (v: string | null): v is Filter => !!v && FILTERS.some((f) => f.value === v);
@@ -46,7 +48,7 @@ export default function GlossaryView() {
       <PageHead
         eyebrow="About"
         title="Glossary"
-        lede="What every index, category and measure in the explorer means, in plain words. Each entry gives a short definition and, where it helps, how the measure is built. The info buttons beside a term anywhere in the explorer open the same short definition."
+        lede="Plain-language definitions of the strategic choices, Allied Industrial Base concepts, indices and data measures used across the Explorer. Each entry says first what a term means, then, where it helps, how it is measured. The info buttons beside a term anywhere in the Explorer open the same short definition."
       />
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4 border-b hairline pb-4">
         <Segmented<Filter>

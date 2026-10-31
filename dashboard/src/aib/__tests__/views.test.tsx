@@ -1481,7 +1481,7 @@ describe('Home', () => {
   it('has the third entry card: the Allied Industrial Base, its links and its button', async () => {
     expect(MODULE_CARDS.map((c) => c.id)).toEqual(['sector', 'country', 'aib']);
     const card = MODULE_CARDS[2];
-    expect(card).toMatchObject({ title: 'Explore the Allied Industrial Base', button: 'Explore AIB' });
+    expect(card).toMatchObject({ title: 'Explore the Allied Industrial Base', question: 'How should allies divide the work?', button: 'Explore the Allied Industrial Base' });
     expect(card.links.every((l) => l.to.startsWith('/compacts') || l.to.startsWith('/aib'))).toBe(true);
   });
 });
