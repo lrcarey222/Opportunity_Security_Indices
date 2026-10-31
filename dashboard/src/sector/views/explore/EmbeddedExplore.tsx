@@ -1,18 +1,18 @@
 // The Sector explorer embedded in the Country profile's fence sections (2026-10-30, the user's request: pick a
 // variable of a fence's analysis and see "the relevant chart ... from the Sectors section"). A lazy chunk: the
 // Country page loads it, and with it the Sector data (manifest, sector-meta, then the chunks the measure needs),
-// only when the reader picks a variable (src/country/views/profile/VariableChart.tsx).
+// only when the reader picks an indicator (src/country/views/profile/VariableChart.tsx).
 //
-// It is the Explore page (ExploreView) for one measure without the page chrome: the measures that chart the
-// variable at the node (posture/variableCharts.ts; a select when there are several, a measure without data for
-// the node marked so), preset to the node (tech + stage, the linked mineral or fuel) and the economy
+// It is the Explore page (ExploreView) for one measure without the page chrome: the one indicator the reader
+// picked (posture/variableCharts.ts; since 2026-10-31 each option of the picker is one indicator, so there is no
+// second measure select here), preset to the step (tech + stage, the linked mineral or fuel) and the economy
 // highlighted (c); the item, the year, the chart ("Chart": one of the layout's charts, sector/derive/explore.ts
 // ExplorePart) and, for country measures, Show as / Scale / Economies under "More filters". The state lives in
 // memory (SectorStateProvider): the Country page's URL never changes. "Open in Sectors" opens the same view as
-// the full /sector/explore/<theme> page. Where the node has no data for the measure, a note says so and names
+// the full /sector/explore/<theme> page. Where the step has no data for the measure, a note says so and names
 // what is shown instead; nothing is invented.
 
-import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Link } from 'react-router';
 import { Disclosure, Loading, Notice, Segmented, Select } from '../../../components/ui.tsx';
 import { chartState, type ChartNode, type SectorChart } from '../../../posture/variableCharts.ts';
@@ -33,14 +33,14 @@ import type { ExploreCtx } from './ctx.ts';
 import { Body, FACTS_LAYOUTS, ItemPicker } from './parts.tsx';
 
 export interface EmbeddedExploreProps {
-  /** the Sector measures that chart the variable at the node, in order of preference (variableCharts.ts chartsAt) */
-  charts: readonly SectorChart[];
-  /** the node: its technology and stage, and its words ("Solar · Final Assembly & Equipment") */
+  /** the indicator picked: one Sector measure that charts the family at the step (variableCharts.ts) */
+  chart: SectorChart;
+  /** the step: its technology and stage, and its words ("Solar · Final Assembly & Equipment") */
   node: ChartNode & { label: string };
   /** the economy of the profile, highlighted */
   iso3: string;
-  /** the variable's label ("Investment momentum") */
-  variable: string;
+  /** the family the indicator feeds ("Investment momentum"), named by the basis line */
+  family: string;
 }
 
 // ---- the hatch pattern, once on the page however many explorers are open ----------------------------------
@@ -136,7 +136,7 @@ function resolve(model: SectorModel, chart: SectorChart, node: ChartNode & { lab
 // ---- the explorer -----------------------------------------------------------------------------------------
 
 /** The body: the filter row, the notes on the measure, the chart, "Open in Sectors". */
-function Embedded({ cand, measureSelect }: { cand: Candidate & { v: VarInfo }; measureSelect: ReactNode }) {
+function Embedded({ cand, family }: { cand: Candidate & { v: VarInfo }; family: string }) {
   const model = useModel();
   const { state, set, link } = useSectorUrl();
   const { chart, v } = cand;
@@ -175,10 +175,9 @@ function Embedded({ cand, measureSelect }: { cand: Candidate & { v: VarInfo }; m
   return (
     <div className="space-y-4" data-testid="variable-chart-explore" data-m={v.id} data-tech={item?.tech ?? ''} data-stage={item?.stage ?? ''} data-item={item?.slug ?? ''} data-c={state.c ?? ''} data-part={part}>
       <p className="text-xs text-paper-mute" data-testid="variable-chart-basis">
-        <span className="text-paper-dim">{chart.basis === 'source' ? 'Same source as the variable.' : 'A related Sector measure, not the variable’s own input.'}</span> {chart.note}
+        <span className="text-paper-dim">{chart.basis === 'source' ? `Same source as ${family}.` : `A related Sector measure, not the data ${family} reads.`}</span> {chart.note}
       </p>
       <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-        {measureSelect}
         <MeasureTip v={v} />
         <ItemPicker v={v} item={item} onPick={ctx.setItem} grid={false} />
         {years.length > 1 && layout !== 'policy' && !v.year_field && (
@@ -227,41 +226,19 @@ function Embedded({ cand, measureSelect }: { cand: Candidate & { v: VarInfo }; m
   );
 }
 
-/** The measures of the variable, resolved; the chosen one's explorer. */
-function Picker({ model, charts, node, iso3, variable }: EmbeddedExploreProps & { model: SectorModel }) {
-  const cands = useMemo(() => charts.map((c) => resolve(model, c, node, iso3)), [model, charts, node, iso3]);
-  const first = Math.max(0, cands.findIndex((c) => c.v && c.covered));
-  const [pick, setPick] = useState<number | null>(null);
-  const i = pick !== null && pick < cands.length ? pick : first;
-  const cand = cands[i];
-  if (!cand) return null;
-  const measureSelect =
-    cands.length > 1 ? (
-      <Select
-        label="Sector measure"
-        value={String(i)}
-        options={cands.map((c, k) => ({
-          value: String(k),
-          label: c.v ? `${c.v.label}${c.covered ? '' : ' (no data for this step)'}` : `${c.chart.m} (not in this data build)`,
-          disabled: !c.v,
-        }))}
-        onChange={(k) => setPick(Number(k))}
-        className="min-w-[14rem]"
-      />
-    ) : null;
+/** The indicator, resolved for the step; its explorer. */
+function One({ model, chart, node, iso3, family }: EmbeddedExploreProps & { model: SectorModel }) {
+  const cand = useMemo(() => resolve(model, chart, node, iso3), [model, chart, node, iso3]);
   if (!cand.v) {
     return (
-      <div className="space-y-3">
-        {measureSelect}
-        <p className="text-sm text-paper-mute" data-testid="variable-chart-missing">
-          The Sector measure for {lc(variable)} ({cand.chart.m}) has no data in this Sector build.
-        </p>
-      </div>
+      <p className="text-sm text-paper-mute" data-testid="variable-chart-missing">
+        The Sector measure for {lc(chart.label)} ({chart.m}) has no data in this Sector build.
+      </p>
     );
   }
   return (
-    <SectorStateProvider key={`${i}|${cand.chart.m}|${node.tech}|${node.stage}`} initial={cand.initial}>
-      <Embedded cand={cand as Candidate & { v: VarInfo }} measureSelect={measureSelect} />
+    <SectorStateProvider key={`${chart.m}|${node.tech}|${node.stage}`} initial={cand.initial}>
+      <Embedded cand={cand as Candidate & { v: VarInfo }} family={family} />
     </SectorStateProvider>
   );
 }
@@ -292,7 +269,7 @@ export default function EmbeddedExplore(props: EmbeddedExploreProps) {
   return (
     <CaptionProvider resolve={captions}>
       {hatch && <SvgDefs />}
-      <Picker model={model} {...props} />
+      <One model={model} {...props} />
     </CaptionProvider>
   );
 }
