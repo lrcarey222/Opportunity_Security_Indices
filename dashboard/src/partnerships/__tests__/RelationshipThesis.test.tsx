@@ -79,7 +79,7 @@ describe('RelationshipThesis', () => {
     const card = renderCard({ a: 'AAA', b: 'FFF', headingLevel: 3 });
     expect(card.getAttribute('data-state')).toBe('no-relationship');
     expect(within(card).getByRole('heading', { level: 3 }).textContent).toBe('Relationship thesis: Avalon and Freedonia');
-    expect(within(card).getByTestId('thesis-headline').textContent).toMatch(/^The model links Avalon and Freedonia by no trade or investment relationship/);
+    expect(within(card).getByTestId('thesis-headline').textContent).toMatch(/^The analysis finds no trade or investment relationship between Avalon and Freedonia/);
     expect(within(card).getAllByRole('heading', { level: 4 }).map((h) => h.textContent)).toEqual(['Complementarity: what each side brings', 'Compacts both take part in']);
     expect(within(card).queryByTestId('thesis-logic')).toBeNull();
     expect(bareAcronyms(document.body)).toEqual([]);

@@ -331,7 +331,7 @@ export function PolicySection({ s, c, sid }: { s: AibStrategic; c: AibStrategicC
         <div className="card p-5" data-testid="policy-menu">
           <h3 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">Policy menu</h3>
           <p className="mt-1 text-sm text-paper-mute">
-            Instruments that fit each kind of need, generated from the classes of the compact’s nodes: a menu to choose from, not an optimized prescription.
+            Instruments that fit each kind of need, drawn from what each of the compact’s supply-chain steps needs: a menu to choose from, not a prescription.
           </p>
           {sc?.menu.length ? (
             <ul className="mt-3 space-y-4">
@@ -394,8 +394,8 @@ function roleCols(name: (iso3: string) => string, href: (to: string) => string, 
     { id: 'functions', header: 'Every function', value: (r) => r.functions.join('; '), minWidth: 220 },
     { id: 'lead', header: 'Strongest step', value: (r) => (r.leadNode ? nodeLabel(r.leadNode) : null), minWidth: 160 },
     share('leadShare', 'Its share there', (r) => r.leadShare, 'Its share of world supply or imports of that supply-chain step (see the CSV of the division of labor)'),
-    share('supplier', 'Supplier contribution', (r) => r.supplier, "Its share of the world supply of the compact's nodes"),
-    share('demand', 'Demand contribution', (r) => r.demand, "Its share of the allied market's imports of the compact's nodes"),
+    share('supplier', 'Supplier contribution', (r) => r.supplier, "Its share of the world supply of the compact's goods"),
+    share('demand', 'Demand contribution', (r) => r.demand, "Its share of the allied market's imports of the compact's goods"),
     share('investment', 'Investment contribution', (r) => r.investment, "Its share of outward clean-tech manufacturing capital in the compact's sectors, where the data cover them"),
     share('resM', 'Resilience added: Managed Interdependence', (r) => r.resilienceManaged, "Share of the compact's allied demand its new and expanded relationships serve under Managed Interdependence (US$ recovered over the compact's allied demand)"),
     share('resD', 'Resilience added: major-supplier disruption', (r) => r.resilienceDecoupling, "Share of the compact's allied demand its new and expanded relationships serve under the major-supplier disruption (US$ recovered over the compact's allied demand)"),
@@ -524,9 +524,9 @@ function WorkstreamCard({ s, c, row, label, also = false }: { s: AibStrategic; c
           </Link>
         </h3>
         <dl className="mt-3 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
-          <Fact term="Nodes here">{here.length ? listWords(here.map(nodeLabel)) : 'none'}</Fact>
+          <Fact term="Steps here">{here.length ? listWords(here.map(nodeLabel)) : 'none'}</Fact>
           {elsewhere.length > 0 && (
-            <Fact term="Nodes elsewhere">
+            <Fact term="Steps in other workstreams">
               {elsewhere
                 .map((id) => {
                   const h = nodeHomeOf(s, id);
@@ -764,7 +764,7 @@ export function ScenarioChangeSection({ s, c, sid }: { s: AibStrategic; c: AibSt
       >
         <div className="overflow-x-auto" data-testid="node-status-grid">
           <table className="data-table w-full text-sm">
-            <caption className="sr-only">Each node of {c.name} under each scenario</caption>
+            <caption className="sr-only">Each supply-chain step of {c.name} under each scenario</caption>
             <thead>
               <tr>
                 <th scope="col" className="text-left">

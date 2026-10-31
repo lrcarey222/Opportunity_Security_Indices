@@ -11,7 +11,8 @@
 // Pure.
 
 import { isNum } from '../../lib/format.ts';
-import { AIB_CONSTRAINTS, AIB_PHYSICAL_WARNING, AIB_SEMANTICS, diversifyShockIdOf, supplyScenariosOf, variantsOf, variantWarningsOf, type AibMeta, type AibNode } from '../contract.ts';
+import { AIB_CONSTRAINTS, AIB_SEMANTICS, diversifyShockIdOf, supplyScenariosOf, variantsOf, variantWarningsOf, type AibMeta, type AibNode } from '../contract.ts';
+import { classInfo, PHYSICAL_WARNING_INLINE } from './classes.ts';
 import { listWords } from './format.ts';
 import { constraintLabel, diversifySetting, DIVERSIFY_LABEL, SEMANTICS_WORDS, shockLabelOf } from './settings.ts';
 
@@ -164,10 +165,10 @@ export function robustnessSummary(n: AibNode, meta: AibMeta): string {
   const differs = variants.filter((v) => v.differs && v.group !== 'Diversification').length;
   const warned = variants.filter((v) => v.warning === true && !v.headline).length + growth.filter((g) => g.warning === true && !g.headline).length;
   return [
-    'Class under other assumptions and growth bounds',
+    'Treatment under other assumptions and growth bounds',
     differs ? `differs under ${differs} ${differs === 1 ? 'variant' : 'variants'}` : null,
     n.coordinateSensitiveToGrowth ? 'depends on the growth bound' : null,
-    warned ? `physical capability not validated under ${warned} other ${warned === 1 ? 'setting' : 'settings'}` : null,
+    warned ? `${PHYSICAL_WARNING_INLINE} under ${warned} other ${warned === 1 ? 'setting' : 'settings'}` : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -197,9 +198,9 @@ export function growthFlag(n: AibNode): string | null {
     .filter(([cls]) => cls !== n.cls)
     .map(([cls, { labels, warned }]) => {
       const all = warned.length > 0 && warned.length === labels.length;
-      const tag = all ? ` (${AIB_PHYSICAL_WARNING})` : '';
-      const some = !all && warned.length ? ` (${AIB_PHYSICAL_WARNING} at ${listWords(warned)})` : '';
-      return `${cls}${tag}${cls === 'COORDINATE' ? ' only' : ''} at ${listWords(labels)}${some}`;
+      const tag = all ? ` (${PHYSICAL_WARNING_INLINE})` : '';
+      const some = !all && warned.length ? ` (${PHYSICAL_WARNING_INLINE} at ${listWords(warned)})` : '';
+      return `${cls === 'no class' ? cls : classInfo(cls).label}${tag}${cls === 'COORDINATE' ? ' only' : ''} at ${listWords(labels)}${some}`;
     });
-  return `Headline ${n.cls}; ${parts.join('; ') || 'another class under other bounds'}: the class depends on the existing-relationship growth bound.`;
+  return `${classInfo(n.cls).label} in the main result; ${parts.join('; ') || 'another treatment under other bounds'}: the treatment depends on how far existing trade relationships can grow.`;
 }

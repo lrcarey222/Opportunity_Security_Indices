@@ -267,7 +267,9 @@ export const Quiet = ({ children }: { children: ReactNode }) => <p className="te
 export function emptyWords(sum: StrategicSummary, what: 'needs' | 'partners' | 'capacity' | 'contributes'): string {
   if (!sum.allied && what !== 'contributes') return 'Not read for a non-allied supplier.';
   if (what === 'contributes') return 'No anchor or specialist position in the mapped supply chains.';
-  if (what === 'needs') return 'No supply-chain step where its net imports reach 5% of allied demand.';
+  // the slot reads import scale in the allied market, not the country's own strategy (whose Partner steps can
+  // still rely on allies): say so, so an empty slot never reads as "needs nothing" (render review, 2026-10-31)
+  if (what === 'needs') return 'Not a major buyer in the allied market: no supply-chain step where its net imports reach 5% of allied demand. Its own strategy can still rely on partners (see its Country profile).';
   if (what === 'partners') return `No relationship in the ${sum.partnersScenario} network.`;
   return 'It is not a top host with capability at scale for any supply-chain step.';
 }

@@ -60,7 +60,7 @@ shared phrase, add it there first.
 | coalition tier | role in the compact |
 | candidate compact; compact unnecessary | potential Sectoral Compact; no compact needed |
 | fragmented action | today's uncoordinated response |
-| allied demand affected; restored by trade; left for new capacity | demand that must find a new supplier; recovered through allied trade; gap that requires new capacity |
+| allied demand affected; restored by trade; left for new capacity | demand that must find a new supplier; recovered through trade; gap that requires new capacity |
 | policy need | action needed |
 | physical-capability warning | production evidence is weak |
 | coalition coverage | where allies are strong |

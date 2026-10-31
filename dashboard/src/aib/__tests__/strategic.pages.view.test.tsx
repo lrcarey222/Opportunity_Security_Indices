@@ -186,7 +186,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('one Strategic Sectoral Compact', (
     expect(within(across).getAllByRole('listitem').map((li) => text(li).split(' served')[0])).toEqual([
       "Today's network: No disruption", 'Managed Interdependence: Build capacity shown', 'Partial supplier disruption: Coordinate trade', 'Major-supplier disruption: Build capacity',
     ]);
-    expect(within(ev).getByRole('link', { name: /^Full node evidence in workstream AIB-C01/ }).getAttribute('href')).toBe('/compacts/AIB-C01#nodes');
+    expect(within(ev).getByRole('link', { name: /^Full evidence for this step in workstream AIB-C01/ }).getAttribute('href')).toBe('/compacts/AIB-C01#nodes');
     expect(text(within(ev).getByRole('list', { name: /status in each scenario/ }).querySelector('[aria-current="true"]'))).toMatch(/best-ranked host for new capacity Carpania/);
     expect(text(ev)).toMatch(/Largest suppliers \(world supply\) Zembla 62%, Avalon 18%, Carpania 12%, Borduria 4%/);
     fireEvent.click(within(ev).getByRole('button', { name: 'Close the evidence for Magnets, magnet parts & assemblies' }));

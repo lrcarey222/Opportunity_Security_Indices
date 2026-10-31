@@ -32,10 +32,10 @@ export default function TierMap({ manifest, onSelect }: { manifest: CountryManif
   }, [manifest]);
   return (
     <>
-      <WorldMap cells={cells} ariaLabel="World map of the economies with a Country profile, coloured by coalition tier" onSelect={onSelect} />
+      <WorldMap cells={cells} ariaLabel="World map of the economies with a Country profile, coloured by coalition membership" onSelect={onSelect} />
       <div className="mt-3">
         <Legend
-          label="Coalition tier"
+          label="Coalition membership"
           items={[
             { label: 'Core coalition member', color: TIER_COLOR.core },
             { label: 'Coalition partner', color: TIER_COLOR.partner },

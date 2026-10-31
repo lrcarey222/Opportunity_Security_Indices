@@ -31,7 +31,7 @@ export function SpineLegend({ statuses }: { statuses?: readonly (string | null)[
   const want = statuses ? new Set(statuses.filter((x): x is string => !!x)) : null;
   const shown = SPINE_STATUS_ORDER.filter((s) => !want || want.has(s));
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-paper-dim" aria-label="Node statuses" data-testid="spine-legend">
+    <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-paper-dim" aria-label="Step status" data-testid="spine-legend">
       {shown.map((s) => (
         <li key={s} className="inline-flex items-center gap-1.5" title={spineStatusInfo(s).meaning}>
           <SpineStatusSwatch status={s} />
@@ -60,7 +60,7 @@ export interface ValueChainSpineProps {
 function chipWords(n: SpineNode, name?: (iso3: string) => string): string {
   const st = spineStatusInfo(n.status);
   const parts = [`${n.label}: ${n.status ? st.label : 'no status in this scenario'}`];
-  if (n.coverage !== null) parts.push(`coordinated coverage ${fmtShare(n.coverage, 0)}`);
+  if (n.coverage !== null) parts.push(`${fmtShare(n.coverage, 0)} met with coordinated trade`);
   if (n.host) parts.push(`best-ranked new-capacity host ${name ? name(n.host) : n.host}`);
   else if (n.ties !== null && n.ties > 1) parts.push(`${n.ties} hosts tie for new capacity`);
   return parts.join('; ');

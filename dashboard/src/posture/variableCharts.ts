@@ -84,15 +84,15 @@ const EXPORTS_SHARE: SectorChart = {
 };
 const MINE_PRODUCTION: SectorChart = {
   theme: 'production', m: 'production.mining', item: LINKED, techs: MINERAL_TECHS, chart: 'map', as: 'share', stages: ['Extraction'], basis: 'source',
-  note: 'Mined supply of the node’s minerals (IEA Critical Minerals), the measure a mineral Extraction node’s world supply share reads.',
+  note: 'Mined supply of the step’s minerals (IEA Critical Minerals), the measure a mineral Extraction step’s world supply share reads.',
 };
 const REFINED_PRODUCTION: SectorChart = {
   theme: 'production', m: 'production.refining', item: LINKED, techs: MINERAL_TECHS, chart: 'map', as: 'share', stages: ['Refining'], basis: 'source',
-  note: 'Refined supply of the node’s minerals (IEA Critical Minerals), the measure a mineral Refining node’s world supply share reads.',
+  note: 'Refined supply of the step’s minerals (IEA Critical Minerals), the measure a mineral Refining step’s world supply share reads.',
 };
 const MFG_SHARE: SectorChart = {
   theme: 'manufacturing', m: 'manufacturing.share_now', item: CELL, chart: 'all', stages: ['Components', 'Assembly'], basis: 'source',
-  note: 'Shares of global manufacturing capacity (IEA), the measure a manufacturing node’s world supply share reads where IEA reports it.',
+  note: 'Shares of global manufacturing capacity (IEA), the measure a manufacturing step’s world supply share reads where IEA reports it.',
 };
 const ANNUAL_INVESTMENT: SectorChart = {
   theme: 'investment', m: 'investment.annual', item: CELL, chart: 'map', basis: 'source',
@@ -101,11 +101,11 @@ const ANNUAL_INVESTMENT: SectorChart = {
 const WEO_OUTLOOK: SectorChart = {
   theme: 'consumption', m: 'consumption.weo', item: { kind: 'tech', items: { Oil: 'oil', Gas: 'gas', Coal: 'coal', Nuclear: 'nuclear', Solar: 'solar', Wind: 'wind', 'Green Hydrogen': 'hydrogen' } },
   chart: 'all', stages: PRODUCING, basis: 'source',
-  note: 'World energy supply of the technology’s fuel, 2024 and the 2035 Stated Policies projection (IEA World Energy Outlook 2025): the world demand growth the node prize reads.',
+  note: 'World energy supply of the technology’s fuel, 2024 and the 2035 Stated Policies projection (IEA World Energy Outlook 2025): the world demand growth the step’s prize reads.',
 };
 const MINERAL_DEMAND: SectorChart = {
   theme: 'consumption', m: 'consumption.mineral_demand', item: LINKED, techs: MINERAL_TECHS, chart: 'all', stages: ['Extraction', 'Refining'], basis: 'source',
-  note: 'Clean-energy demand for the node’s minerals by technology, observed and Stated Policies projections (IEA): the key-mineral demand growth a mineral stage’s node prize reads.',
+  note: 'Clean-energy demand for the step’s minerals by technology, observed and Stated Policies projections (IEA): the key-mineral demand growth a mineral stage’s prize reads.',
 };
 const EV_SALES: SectorChart = {
   theme: 'consumption', m: 'consumption.ev_sales', item: DEPLOYMENT, techs: ['Electric Vehicles'], chart: 'map', basis: 'source',
@@ -166,11 +166,11 @@ const LENDING_RATE: SectorChart = {
 };
 const MINERAL_RESERVES: SectorChart = {
   theme: 'resources', m: 'resources.mineral_reserves', item: LINKED, techs: MINERAL_TECHS, chart: 'map', stages: ['Extraction'], basis: 'source',
-  note: 'Recorded reserves of the node’s minerals: the resource base an Extraction node needs.',
+  note: 'Recorded reserves of the step’s minerals: the resource base an Extraction step needs.',
 };
 const FUEL_RESERVES: SectorChart = {
   theme: 'resources', m: 'resources.fuel_reserves', item: FOSSIL_FUEL, chart: 'map', stages: ['Extraction'], basis: 'source',
-  note: 'Proved reserves of the fuel: the resource base an Extraction node needs.',
+  note: 'Proved reserves of the fuel: the resource base an Extraction step needs.',
 };
 const URANIUM_RESOURCES: SectorChart = {
   theme: 'resources', m: 'resources.uranium_resources', item: CELL, techs: ['Nuclear'], chart: 'map', stages: ['Extraction'], basis: 'source',
@@ -180,7 +180,7 @@ const URANIUM_RESOURCES: SectorChart = {
 // ---- the variables of each analysis -----------------------------------------------------------------------
 
 const composite = (parts: string) => `A composite score: ${parts}. It has no Sector chart of its own; pick one of its variables.`;
-const NODE_ATTRIBUTE = 'A node attribute of the Yards & Fences evidence, assessed node by node; the Sector data have no measure of it.';
+const NODE_ATTRIBUTE = 'An attribute of each supply-chain step in the Yards & Fences evidence, assessed step by step; the Sector data have no measure of it.';
 const NODE_PRIZE_CHARTS = [MINERAL_DEMAND, WEO_OUTLOOK, EV_SALES] as const;
 
 const NEED: readonly FenceVariable[] = [

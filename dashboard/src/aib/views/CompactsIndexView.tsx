@@ -301,7 +301,7 @@ function CompactCard({ c, managed, managedState }: { c: AibCompact; managed: Aib
           </dd>
           <dt className="text-paper-mute">Coalition</dt>
           <dd className="text-paper-dim">{coalition}</dd>
-          <dt className="text-paper-mute">Policy need</dt>
+          <dt className="text-paper-mute">Action needed</dt>
           <dd className="text-paper-dim">{solved ? (solved.policyNeeds[0] ?? 'none listed') : pending}</dd>
           <dt className="text-paper-mute">Resilience effect</dt>
           <dd className="text-paper-dim">
@@ -363,7 +363,7 @@ function NodeChip({ n, scenario }: { n: AibNode; scenario: AibToggle }) {
         <span className="block text-paper-dim" data-testid="scenario-node-line">
           {r?.ran ? (
             <>
-              {fmtShare(r.exposure, 0)} shifted ({fmtUsd(r.lostUsd)}); {fmtShare(r.residual, 0)} left for new capacity
+              {fmtShare(r.exposure, 0)} shifted ({fmtUsd(r.lostUsd)}); {fmtShare(r.residual, 0)} still needs new capacity
               {miWarning ? (
                 <span className="mt-1 block">
                   <FlaggedClass cls={r.cls} warning={miWarning} />
@@ -549,13 +549,13 @@ export default function CompactsIndexView() {
   const cols: Col<AibNode>[] = [
     { id: 'node', header: 'Supply-chain step', value: (n) => n.label },
     { id: 'techs', header: tx.Many, value: (n) => nodeTechWords(n) },
-    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the node's codes sit in; none when no code is in the OSI basket." },
+    { id: 'stage', header: 'Stage', value: (n) => nodeStageWords(n), sortValue: (n) => nodeStageRank(n), title: "The stages of the OSI cells the step's codes sit in; none when no code is in the OSI basket." },
     {
       id: 'cells',
       header: 'OSI cells',
       value: (n) => nodeCellWords(n),
       minWidth: 200,
-      title: "The OSI technology x stage cells the node's codes sit in; none when no code is in the OSI basket.",
+      title: "The OSI technology x stage cells the step's codes sit in; none when no code is in the OSI basket.",
     },
     mi ? { id: 'cls', header: 'What it needs under Managed Interdependence', value: miCls, minWidth: 160 } : { id: 'cls', header: 'What it needs', value: (n) => classInfo(n.cls).label },
     ...(mi ? [{ id: 'headlineCls', header: `What it needs under the ${scenarioInfo(m, 'decoupling').label.toLowerCase()}`, value: (n: AibNode) => classInfo(n.cls).label }] : []),
@@ -670,7 +670,7 @@ export default function CompactsIndexView() {
           <ChartCard
             headingLevel={3}
             title={MAP_CARD_TITLE}
-            sub={`Across: ${mi ? 'share of allied demand shifted' : 'supply exposed to the disruption'}. Up: coordination dividend. Area: ${lostWord}. Dotted rules: the thresholds for a severe disruption${high !== null ? ` (${fmtShare(high, 0)})` : ''} and for a material coordination dividend${rule !== null ? ` (${fmtPp(rule, 0)})` : ''}. Click a bubble to open its compact.${unplaced > 0 ? ` ${plural(unplaced, 'step')} unchanged under Managed Interdependence ${unplaced === 1 ? 'is' : 'are'} not placed.` : ''}`}
+            sub={`Across: ${mi ? 'share of allied demand shifted' : 'supply exposed to the disruption'}. Up: extra supply recovered by acting together. Area: ${lostWord}. Dotted rules: the thresholds for a severe disruption${high !== null ? ` (${fmtShare(high, 0)})` : ''} and for a material gain from acting together${rule !== null ? ` (${fmtPp(rule, 0)})` : ''}. Click a bubble to open its compact.${unplaced > 0 ? ` ${plural(unplaced, 'step')} unchanged under Managed Interdependence ${unplaced === 1 ? 'is' : 'are'} not placed.` : ''}`}
             summary={shareLine}
             legend={<ClassLegend />}
             table={table}

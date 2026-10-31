@@ -118,7 +118,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const box = within(card).getByRole('combobox', { name: 'Partner' }) as HTMLSelectElement;
     expect(box.value).toBe('JPN');
     const groups = [...box.querySelectorAll('optgroup')];
-    expect(groups.map((g) => g.label)).toEqual(['With a relationship thesis', 'No thesis in the model']);
+    expect(groups.map((g) => g.label)).toEqual(['With a relationship thesis', 'No relationship thesis']);
     expect([...groups[0].querySelectorAll('option')].map((o) => o.value)).toEqual(['JPN']);
     // links: the strategic compact pages and the pair on the Partnerships page (Managed Interdependence: no scn)
     expect(within(card).getByRole('link', { name: 'Wind Power Equipment' }).getAttribute('href')).toBe('/compacts/s/SC-WIND');
@@ -141,7 +141,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     expect(search(r).get('scn')).toBe('decoupling');
     const now = within(part).getByTestId('relationship-thesis');
     expect(now.getAttribute('data-state')).toBe('outside');
-    expect(within(now).getByTestId('thesis-headline').textContent).toMatch(/^The model writes relationship theses for pairs of allied economies: China is a major supplier outside the allied economies\. Both take part in/);
+    expect(within(now).getByTestId('thesis-headline').textContent).toMatch(/^Relationship theses are written for pairs of allied economies: China is a major supplier outside the allied economies\. Both take part in/);
     expect(within(now).queryByTestId('thesis-logic')).toBeNull();
     expect(within(now).getByRole('link', { name: /^Every relationship thesis/ }).getAttribute('href')).toBe('/aib/partnerships?country=USA&partner=CHN&scn=decoupling');
     expect(bareAcronyms(document.body)).toEqual([]);

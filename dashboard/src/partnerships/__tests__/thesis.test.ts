@@ -91,7 +91,7 @@ describe('pairThesis on the synthetic strategic section', () => {
     expect(t.compacts.map((r) => r.compact.id)).toEqual(['SC-SOLAR', 'SC-WIND']);
     expect(t.compacts[0].b?.role).toBe('Scale manufacturer');
     expect(t.headline).toBe(
-      'The model links Avalon and Freedonia by no trade or investment relationship under Managed Interdependence or Decoupling, so it writes no relationship thesis for them. Both take part in 2 strategic compacts: Solar Manufacturing and Wind Power Equipment.',
+      'The analysis finds no trade or investment relationship between Avalon and Freedonia under Managed Interdependence or the major-supplier disruption, so there is no relationship thesis for them. Both take part in 2 strategic compacts: Solar Manufacturing and Wind Power Equipment.',
     );
   });
 
@@ -102,7 +102,7 @@ describe('pairThesis on the synthetic strategic section', () => {
     expect(z.b.allied).toBe(false);
     // four shared compacts: the three that matter most to both are shown, the fourth named after them
     expect(z.headline).toBe(
-      'The model writes relationship theses for pairs of allied economies: Zembla is a major supplier outside the allied economies. Both take part in 4 strategic compacts, among them Permanent Magnets & Drive Systems, Battery Materials & Cells and Grid & Electrolysis Equipment.',
+      'Relationship theses are written for pairs of allied economies: Zembla is a major supplier outside the allied economies. Both take part in 4 strategic compacts, among them Permanent Magnets & Drive Systems, Battery Materials & Cells and Grid & Electrolysis Equipment.',
     );
     expect(z.compacts.map((r) => r.compact.id)).toEqual(['SC-MAGNETS', 'SC-BATTERIES', 'SC-GRID']);
     expect(z.moreShared.map((c) => c.id)).toEqual(['SC-SOLAR']);
@@ -110,7 +110,7 @@ describe('pairThesis on the synthetic strategic section', () => {
     const h = pairThesis(s, 'AAA', 'HHH', name)!;
     expect(h.state).toBe('outside');
     expect(h.b.assessed).toBe(false);
-    expect(h.headline).toBe('The model writes relationship theses for pairs of allied economies: Hyperborea is not one of the allied economies. They share no strategic compact.');
+    expect(h.headline).toBe('Relationship theses are written for pairs of allied economies: Hyperborea is not one of the allied economies. They share no strategic compact.');
     expect(strategicRoleWords(h.b)).toMatch(/^not assessed by the strategic layer/);
   });
 
@@ -127,7 +127,7 @@ describe('pairThesis on the synthetic strategic section', () => {
     expect(contributionWords(null)).toBe('no role in this compact');
     expect(strategicRoleWords(t.a)).toBe('Demand & Market Anchor and Capital & Investment Anchor; secondary: Coordination / Bridge Hub');
     const f = pairThesis(s, 'AAA', 'FFF', name)!;
-    expect(strategicRoleWords(f.b)).toMatch(/^no Strategic AIB Role at the model’s bars/);
+    expect(strategicRoleWords(f.b)).toMatch(/^no Strategic AIB Role above the role thresholds/);
     // secondary roles only
     expect(strategicRoleWords({ iso3: 'X', assessed: true, allied: true, primary: [], secondary: t.b.secondary })).toBe(
       'no primary Strategic AIB Role; secondary: Scale Manufacturing & Integration Platform and Coordination / Bridge Hub',
@@ -152,8 +152,8 @@ describe('pairThesis on the synthetic strategic section', () => {
 describe('where the partner sits in the cross-lens summary', () => {
   it('the reading of the group naming it, null when no compared lens names it, undefined before any lens is compared', () => {
     const cl = crossLens({ today: lensNames(['BBB', 'CCC']), osi: lensNames(['CCC']), aib: lensNone('no data here') });
-    expect(pairReading(cl, 'CCC')).toBe('A tie today that OSI recommends');
-    expect(pairReading(cl, 'BBB')).toBe('A tie today, not recommended by OSI');
+    expect(pairReading(cl, 'CCC')).toBe('A tie today that OSI ranks high');
+    expect(pairReading(cl, 'BBB')).toBe('A tie today, not ranked high by OSI');
     expect(pairReading(cl, 'ZZZ')).toBeNull();
     expect(pairReading(crossLens({ today: LENS_LOADING, osi: LENS_LOADING, aib: lensNone('x') }), 'BBB')).toBeUndefined();
   });

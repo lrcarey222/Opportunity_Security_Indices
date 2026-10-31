@@ -134,7 +134,7 @@ describe.skipIf(!haveFixture())('Country page: Show a variable (the Sector chart
     await openFold('low-deploy-all');
     expect(picker('low-deploy').group('In the table')).toEqual(acc.group('In the table'));
     // the node line: the table's first row until a row is selected
-    expect(within(prize.box).getByTestId('variable-chart-node').textContent).toBe('For Batteries · Final Assembly & Equipment, the first row; select a row to show another node.');
+    expect(within(prize.box).getByTestId('variable-chart-node').textContent).toBe('For Batteries · Final Assembly & Equipment, the first row; select a row to show another step.');
     // nothing of the Sector data has been fetched: the first view does not grow
     expect(sectorCalls()).toEqual([]);
   }, 120_000);
@@ -229,7 +229,7 @@ describe.skipIf(!haveFixture())('Country page: Show a variable (the Sector chart
     const prize = picker('medium-prize');
     prize.pick('commons');
     expect(within(prize.box).getByTestId('variable-chart-none').textContent).toBe(
-      'No Sector chart for this variable. A node attribute of the Yards & Fences evidence, assessed node by node; the Sector data have no measure of it.',
+      'No Sector chart for this variable. An attribute of each supply-chain step in the Yards & Fences evidence, assessed step by step; the Sector data have no measure of it.',
     );
     prize.pick('opportunity');
     expect(within(prize.box).getByTestId('variable-chart-none').textContent).toMatch(/^No Sector chart for this variable\. A composite score: the market prize, industrial commons and future option value\./);

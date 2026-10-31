@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkPostureDetail, decodeCore } from '../contract.ts';
 import { countryCells } from '../derive.ts';
-import { byPositionOrder, deploymentVars, familyWords, fenceGroups, fenceReason, pathwayWords, positionVars, prizeVars, supplyNeedVars, topDeploymentFamily, tradeMomentumWords } from '../fences.ts';
+import { byPositionOrder, deploymentVars, familyWords, fenceGroups, fenceReason, pathwayWords, positionVars, prizeVars, supplyNeedVars, topDeploymentFamily, tradeMomentumWords, unitCountWords } from '../fences.ts';
 import { FENCE_VERBS, nodeFence, verbOf } from '../grammar.ts';
 import { fixtureCore, fixtureDetail, withCell } from './fixture.ts';
 
@@ -196,5 +196,16 @@ describe('layers as yard units (fenceGroups with the economy layers)', () => {
     expect(fenceReason(g.watchSupply[1], ycore, names)).toMatch(/^Large-yard case: mature, passive, .*commoditized\.$/);
     // the layer own commons and option in the prize table (bess-control: commons 0.333 of one attribute, market only)
     expect(prizeVars(g.secure[3], ycore.meta)).toMatchObject({ opportunity: 0.9, commons: 0.333, option: 0, cap: 'market_only', valueCap: null });
+  });
+});
+
+describe('unitCountWords: a fence list counted as the legend counts it', () => {
+  it('a layer unit is a layer, not a step', () => {
+    const step = { layer: null };
+    const layer = { layer: { id: 'x', label: 'x', yard: 'small' as const, variant: null, reason: 'r' } };
+    expect(unitCountWords([step, layer, step, layer, layer])).toBe('2 steps and 3 layers');
+    expect(unitCountWords([step])).toBe('1 step');
+    expect(unitCountWords([step, layer])).toBe('1 step and 1 layer');
+    expect(unitCountWords([step, step, step], 'technology', 'technologies')).toBe('3 technologies');
   });
 });

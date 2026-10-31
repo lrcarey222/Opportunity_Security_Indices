@@ -69,7 +69,7 @@ describe('the Sector strategy chart', () => {
     const { chart } = draw('Batteries', 'Components', (c) => (c.iso3 === 'CCC' ? { ...c, partnerGap: false, partner1: 'AAA', yards: 'mixed_high_medium' } : c));
     fireEvent.focus(chart.querySelector('[data-iso3="CCC"]') as Element);
     const tip = screen.getByRole('status');
-    expect(tip.textContent).toContain('Best-placed trusted partner: AAA');
+    expect(tip.textContent).toContain('Best-placed partner: AAA');
     expect(tip.textContent).not.toContain('First trusted partner');
     expect(screen.getByTestId('scatter-tip-mixed').textContent).toBe('Mixed: this step in the Medium yard, its layers also in the Small yard');
     // a step whose layers agree says nothing about yards

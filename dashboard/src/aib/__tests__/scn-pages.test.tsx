@@ -137,7 +137,7 @@ describe('the Overview leads with the three scenarios', () => {
       const division = screen.getByRole('region', { name: MODULE_QUESTION.coverage });
       expect(division.id).toBe('division');
       // the basis tag and the intro: the country strategies, not the scenario toggle; both sides of the division of labor named
-      expect(within(division).getByText(/^Strategic position framework/)).toBeTruthy();
+      expect(within(division).getByText(/^Country strategy/)).toBeTruthy();
       const intro = within(division).getByTestId('division-intro').textContent ?? '';
       expect(intro).toMatch(/It reads the country strategies, not the scenario chosen above: switching scenarios does not change it\./);
       expect(intro).toContain(AIB_SIDES.supply.question.toLowerCase());
@@ -149,7 +149,7 @@ describe('the Overview leads with the three scenarios', () => {
       // the three metrics as tiles, then the card (its heading an h3 inside the Section)
       expect(within(await within(division).findByTestId('aib-division-stats')).getAllByRole('listitem')).toHaveLength(3);
       const m = await within(division).findByTestId('aib-matrix');
-      expect(within(division).getAllByRole('heading', { level: 3 })[0].textContent).toBe('Trusted holders and gaps, node by node');
+      expect(within(division).getAllByRole('heading', { level: 3 })[0].textContent).toBe('Where allies are strong, and where gaps remain');
       // a cell's detail lists and links the nodes whose six-stage cells are there: the anode node (in a workstream) links to its compact
       fireEvent.click(within(m).getByRole('button', { name: /^Batteries Refining/ }));
       const nodes = within(division).getByTestId('aib-node-detail-nodes');
@@ -163,7 +163,7 @@ describe('the Overview leads with the three scenarios', () => {
       expect([u.pathname, u.searchParams.get('tech'), u.searchParams.get('stage'), u.searchParams.get('scn'), u.hash]).toEqual(['/compacts/workstreams', 'Solar', 'Assembly', 'decoupling', '#nodes']);
       // a cell without a model node says so
       fireEvent.click(within(m).getByRole('button', { name: /^Batteries Components/ }));
-      expect(within(division).getByTestId('aib-node-detail-nodes').textContent).toBe('No Allied Industrial Base node is mapped to this cell.');
+      expect(within(division).getByTestId('aib-node-detail-nodes').textContent).toBe('No Allied Industrial Base step is mapped to this cell.');
       // the run line and the class Section name the division Section, never "the chart above / below"
       expect(screen.getByTestId('overview-run').textContent).toContain('finer than the technology × stage cells of who can cover each supply-chain step');
       expect(within(screen.getByTestId('overview-run')).getByRole('link', { name: 'who can cover each supply-chain step' }).getAttribute('href')).toBe('#division');
@@ -360,7 +360,7 @@ describe("a compact's page follows the toggle", () => {
     fireEvent.click(within(steps).getByRole('button', { name: 'Table' }));
     expect(within(within(steps).getByRole('table')).getAllByRole('row')[1].textContent).toMatch(/^Concentration cap alone/);
     // each node: its three scenarios, the toggled one current; a node the scenario leaves unchanged says why
-    const card = screen.getByRole('region', { name: "Each step's coverage and treatment" });
+    const card = screen.getByRole('region', { name: "What each step needs and how much demand can be met" });
     for (const n of nodesOf(c)) {
       const li = card.querySelector(`li[data-node="${n.id}"]`) as HTMLElement;
       const rows = within(li).getByTestId('node-scenarios');

@@ -1,6 +1,6 @@
 // InfoTip (spec_country.md C3.3): an "i" button beside a term that opens a small non-modal popover with
 // the glossary's plain-language definition and a link to the glossary page. 20 x 20 px icon with a
-// 24 px hit area, aria-label "What is {term}?", aria-expanded; click, Enter, Space or a tap toggles;
+// 24 px hit area, aria-label "What is “{term}”?", aria-expanded; click, Enter, Space or a tap toggles;
 // Escape closes and returns focus to the button; an outside click or focus leaving the popover closes
 // it. The popover is position: fixed (so a scrolling table or a card never clips it), below the button,
 // flipped above near the bottom of the viewport. Never the only way to reach the text: the glossary
@@ -40,8 +40,14 @@ export function InfoTip({ id, term, className }: InfoTipProps) {
     const b = btnRef.current?.getBoundingClientRect();
     const p = popRef.current;
     if (!b || !p) return;
-    const vw = window.innerWidth || document.documentElement.clientWidth || 1024;
-    const vh = window.innerHeight || document.documentElement.clientHeight || 768;
+    // the narrower of the layout width and the window: on a phone, content wider than the screen widens
+    // innerWidth, and a popover placed against it ran off the right edge (render review, 2026-10-31)
+    const narrowest = (xs: number[], fallback: number) => {
+      const ok = xs.filter((x) => x > 0);
+      return ok.length ? Math.min(...ok) : fallback;
+    };
+    const vw = narrowest([document.documentElement.clientWidth, window.innerWidth], 1024);
+    const vh = narrowest([document.documentElement.clientHeight, window.innerHeight], 768);
     const w = Math.min(MAX_W, vw - 2 * MARGIN);
     const h = p.offsetHeight || 0;
     const left = Math.max(MARGIN, Math.min(b.left - 12, vw - w - MARGIN));
@@ -96,7 +102,8 @@ export function InfoTip({ id, term, className }: InfoTipProps) {
         ref={btnRef}
         type="button"
         className="infotip-btn"
-        aria-label={`What is ${name}?`}
+        // the term quoted, so a plural or a phrase still reads as a question ("What is “yards”?")
+        aria-label={`What is “${name}”?`}
         aria-expanded={open}
         aria-controls={open ? `${uid}-pop` : undefined}
         onClick={() => setOpen((o) => !o)}

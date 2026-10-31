@@ -45,7 +45,7 @@ import { nodeWhere, profiledCellsOfNode, techStageWords } from '../derive/taxono
 import { compactHref } from '../nav.ts';
 import { AIB_EYEBROW } from './AibOverviewView.tsx';
 import { BasisTag } from './basis.tsx';
-import { MANAGED_INTERDEPENDENCE, SCENARIO_CHART_LABEL } from '../../content/vocabulary.ts';
+import { MANAGED_INTERDEPENDENCE, SCENARIO_CHART_LABEL, TERMS } from '../../content/vocabulary.ts';
 import { csvWithRun, QuestionLede, Section } from './common.tsx';
 import { ModelledNote } from './networkParts.tsx';
 
@@ -240,7 +240,7 @@ export default function AibDiversifyView() {
     />
   );
   const filters: ReactNode = (
-    <FilterRow result={`${plural(ran.length, 'node')} diversified${scope}`}>
+    <FilterRow result={`${plural(ran.length, 'supply-chain step')} diversified${scope}`}>
       <Select label={tx.One} value={tech ?? ''} options={[{ value: '', label: tx.all }, ...techOpts]} onChange={(v) => setParam('tech', v || null)} className="min-w-[14rem]" />
       <Select label="Stage" value={stage ?? ''} options={[{ value: '', label: 'All stages' }, ...stageOpts]} onChange={(v) => setParam('stage', v || null)} />
     </FilterRow>
@@ -330,7 +330,7 @@ export default function AibDiversifyView() {
               .join('; ')}${ran.length > 5 ? '; and more' : ''}.`}
             notes={
               <ModelledNote>
-                Managed Interdependence; supply assumption: {m.headlineScenario}; {strategicScopeShort(m)}
+                Managed Interdependence; {TERMS.supplyAssumption}: {m.headlineScenario}; {strategicScopeShort(m)}
               </ModelledNote>
             }
           >

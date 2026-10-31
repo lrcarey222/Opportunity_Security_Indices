@@ -11,7 +11,7 @@ import { PageHead } from '../components/ui.tsx';
 import {
   AIB_EXPLAINER,
   AIB_OUTCOME,
-  CONTROL_LAYER_NOTE,
+  CONTROL_LAYER_NOTE_GENERAL,
   FRAMING,
   MIXED_YARD_NOTE,
   STRATEGY_EXPLAINER,
@@ -127,7 +127,7 @@ export default function AboutView() {
           ))}
         </ul>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-paper-mute">
-          {MIXED_YARD_NOTE} {CONTROL_LAYER_NOTE}
+          {MIXED_YARD_NOTE} {CONTROL_LAYER_NOTE_GENERAL}
         </p>
       </section>
 

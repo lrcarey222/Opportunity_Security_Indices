@@ -19,7 +19,7 @@ export function ResultHeadline({ title, result, context }: { title: string; resu
         <YardBadge yard={y} size="lg" sub={result.scopeLabels?.[0] ? `${YARD_COPY[y].fence}: ${result.scopeLabels[0]}` : undefined} />
         <dl className="flex flex-wrap gap-x-8 gap-y-3">
           <div>
-            <dt className="label mb-1">Classification confidence</dt>
+            <dt className="label mb-1">Confidence in this call</dt>
             <dd>
               <ConfidencePill c={result.confidence} />
             </dd>
@@ -43,7 +43,7 @@ export function ResultHeadline({ title, result, context }: { title: string; resu
         </p>
       )}
       <div className="mt-5 border-t hairline pt-4">
-        <div className="label">Recommended posture</div>
+        <div className="label">What to do</div>
         <p className="text-lg font-medium text-paper">{result.recommendedPosture}</p>
         <p className="mt-1 max-w-3xl text-sm leading-relaxed text-paper-dim">{result.postureDetail}</p>
       </div>

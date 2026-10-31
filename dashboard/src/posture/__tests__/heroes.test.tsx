@@ -328,7 +328,9 @@ describe('the Country Strategy Map', () => {
     cleanup();
     at('/', <CountryPostureCard iso3="AAA" name="Aland" selected="Batteries|Recovery" />);
     const n = await screen.findByTestId('cell-drawer');
-    await waitFor(() => expect(n.textContent).toContain('Supply-chain need is not measured for this node.'));
+    // the export's reason in the page's words (Supply-chain need -> vulnerability, node -> step)
+    await waitFor(() => expect(n.textContent).toContain('Supply-chain vulnerability is not measured for this step.'));
+    expect(n.textContent).not.toContain('this node')
     expect(n.textContent).toContain('never as Watch');
     expect((n.querySelector('[data-question="policy"]') as HTMLElement).textContent).toContain('Not assessed, so there is no recommendation to compare policy with.');
   });
@@ -378,7 +380,7 @@ describe('the Country Strategy Map', () => {
     setPostureStore(fixtureStore({ core: withoutCell(fixtureCore(), 0, 1, 5) }));
     at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
     await screen.findByTestId('posture-matrix');
-    expect(screen.getByRole('gridcell', { name: 'Solar Recovery & Recycling: not classified' })).toBeTruthy();
+    expect(screen.getByRole('gridcell', { name: 'Solar Recovery & Recycling: no data' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Table' }));
     const table = screen.getByRole('table', { name: 'Aland: choice by technology and stage' });
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent?.replace(/[▲▼]/g, ''))).toEqual([
@@ -389,7 +391,7 @@ describe('the Country Strategy Map', () => {
     expect(rows).toHaveLength(12);
     expect(rows[1].textContent).toContain('Chokepoint risk');
     expect(rows[0].textContent).toContain('rising');
-    expect(rows[11].textContent).toMatch(/^SolarRecovery & RecyclingNot classified/);
+    expect(rows[11].textContent).toMatch(/^SolarRecovery & RecyclingNo data/);
     noAcronyms();
     fireEvent.click(rows[0]);
     await waitFor(() => expect(screen.getByTestId('cell-drawer').textContent).toContain('Bland'));
@@ -480,10 +482,10 @@ describe("the page's posture pieces", () => {
   it('the basis tag names the strategic position framework', () => {
     render(<PostureBasisTag />);
     const tag = document.querySelector('[data-basis="posture"]') as HTMLElement;
-    expect(tag.textContent).toBe('Strategic position framework · fixed thresholds; the dials and the scenario do not change it');
+    expect(tag.textContent).toBe('Country strategy · fixed thresholds; the dials and the scenario do not change it');
     cleanup();
     render(<PostureBasisTag note={null} />);
-    expect(document.querySelector('[data-basis="posture"]')?.textContent).toBe('Strategic position framework');
+    expect(document.querySelector('[data-basis="posture"]')?.textContent).toBe('Country strategy');
   });
 });
 
@@ -606,8 +608,8 @@ describe('the AIB division card (schema 2)', () => {
     const stats = screen.getByRole('list', { name: 'The allied base at a glance' });
     expect(within(stats).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       'Core coalition members23 members in all',
-      'Priority nodes with credible trusted coverage25%of 4 nodes members ask partners to supply or secure',
-      'Unresolved gaps3priority nodes with a gap',
+      'Priority steps with a credible trusted supplier and backup25%of 4 supply-chain steps coalition members rely on partners to supply or secure',
+      'Remaining allied gaps3priority steps that still have a gap',
     ]);
     const card = screen.getByTestId('aib-division-hero');
     expect(card.textContent).not.toContain('Core coalition members');
@@ -631,9 +633,9 @@ describe('the AIB division card (schema 2)', () => {
     fireEvent.click(within(m).getByRole('button', { name: /^Batteries Components/ }));
     const list = screen.getByTestId('aib-node-detail-nodes');
     expect(within(list).getByRole('link', { name: 'Cell makers' }).getAttribute('href')).toBe('/aib/compacts/batteries');
-    expect(list.textContent).toBe('Allied Industrial Base nodes in this cell: Cell makers, Separators');
+    expect(list.textContent).toBe('Allied Industrial Base steps in this cell: Cell makers, Separators');
     fireEvent.click(within(m).getByRole('button', { name: /^Batteries Refining/ }));
-    expect(screen.getByTestId('aib-node-detail-nodes').textContent).toBe('No Allied Industrial Base node is mapped to this cell.');
+    expect(screen.getByTestId('aib-node-detail-nodes').textContent).toBe('No Allied Industrial Base step is mapped to this cell.');
   });
 
   it('the table twin and the CSV, with the posture provenance (not the scenario run)', async () => {
@@ -758,7 +760,7 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     expect(within(layers[2]).getByTestId('drawer-layer-reason').textContent).toMatch(/^Large-yard case: mature, passive, .*; kept with a capability floor\.$/);
     expect(within(y).getByTestId('drawer-fence-scope').textContent).toBe('The high fence of a Secure layer here extends to the hardware it is built into, not the layer alone.');
     expect(within(y).getByTestId('drawer-large-yard').textContent).toBe(
-      'Large-yard case: Does not hold: 2 commodity signals hold; 5 required.Signals that hold: passive, substitutable, quick to qualify.',
+      'Large-yard case for the step: Does not hold: 2 commodity signals hold (5 needed).Required signals (mature, passive) that hold: passive.Commodity signals that hold: substitutable, quick to qualify.',
     );
     // no market-only cap on this node
     expect(within(y).queryByTestId('drawer-yard-cap')).toBeNull();
@@ -775,7 +777,7 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     expect(within(y).getByTestId('drawer-own-yard').textContent).toBe('Large yard · Low fence');
     expect(within(d).getByTestId('drawer-variant').textContent).toBe('Low domestic priority');
     expect(within(y).getByTestId('drawer-large-yard').textContent).toBe(
-      'Large-yard case (this economy): Holds: affordable, diversified access should dominate, whatever the size of the market (6 commodity signals hold); kept with a capability floor (moderate industrial learning).Signals that hold: mature, passive, substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation.',
+      'Large-yard case for the step (this economy): Holds: affordable, diversified access should dominate, whatever the size of the market (6 commodity signals hold); kept with a capability floor (moderate industrial learning).Required signals (mature, passive) that hold: mature, passive.Commodity signals that hold: substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation.',
     );
     expect(within(y).getByTestId('drawer-yard-cap').textContent).toMatch(/^Market only: neither industrial commons nor future option reaches the gate/);
     expect(within(d).getAllByTestId('drawer-question')[1].textContent).toContain('20% (high at 60% or more); capped: market only');
@@ -789,17 +791,27 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
   it('a layer link opens its step focused on the layer: the row is marked, scrolled to and focused', async () => {
     at('/', <PostureNodeDrawer iso3="AAA" selected="Batteries|Assembly" layer="bess-control" onClose={() => undefined} />);
     const d = await screen.findByTestId('cell-drawer');
-    const row = await within(d).findByText('Battery-management firmware, energy-management software and remote updates');
-    const li = row.closest('li') as HTMLElement;
+    // the layer's name is its row in Yards (and the note's button at the top)
+    const named = await within(d).findAllByText('Battery-management firmware, energy-management software and remote updates');
+    const li = named.map((x) => x.closest('li')).find(Boolean) as HTMLElement;
     await waitFor(() => expect(document.activeElement).toBe(li));
     expect([li.getAttribute('data-layer'), li.getAttribute('data-focused')]).toEqual(['bess-control', 'true']);
     expect(d.querySelectorAll('[data-focused="true"]')).toHaveLength(1);
+    // the top of the drawer says the heading is the step's and names the layer's own choice, with a way back to it
+    const note = within(d).getByTestId('drawer-layer-note');
+    expect(note.textContent).toBe(
+      "Opened from the layer Battery-management firmware, energy-management software and remote updates (Secure · Small yard · High fence). The choice above and the five questions are for the whole step; the layer's own yard and choice are under Yards.",
+    );
+    li.blur();
+    fireEvent.click(within(note).getByRole('button'));
+    expect(document.activeElement).toBe(li);
     cleanup();
     // a layer the step does not have: nothing focused, the drawer itself takes focus
     at('/', <PostureNodeDrawer iso3="AAA" selected="Batteries|Assembly" layer="no-such-layer" onClose={() => undefined} />);
     const d2 = await screen.findByTestId('cell-drawer');
     await within(d2).findAllByTestId('drawer-layer');
     expect(d2.querySelectorAll('[data-focused="true"]')).toHaveLength(0);
+    expect(within(d2).queryByTestId('drawer-layer-note')).toBeNull();
     expect(document.activeElement).toBe(d2);
   });
 

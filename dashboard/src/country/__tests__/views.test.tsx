@@ -151,7 +151,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(screen.getByRole('region', { name: /Coalition partners/ })).toBeTruthy();
     expect(screen.getByRole('combobox', { name: /Choose a country/ })).toBeTruthy();
     // the roster line is the strategy's six verbs (the posture fixture's United States), not the legacy corners
-    await waitFor(() => expect(within(usa).getByTestId('roster-line').textContent).toBe('3 Secure · 2 Preserve · 1 Catch Up · 1 Partner · 1 Accelerate · 3 Watch'), { timeout: 30_000 });
+    await waitFor(() => expect(within(usa).getByTestId('roster-line').textContent).toBe('3 Secure · 2 Preserve · 1 Catch Up · 1 Partner · 1 Accelerate · 3 Watch · 1 not assessed'), { timeout: 30_000 });
     expect(within(within(core).getByRole('link', { name: /Germany/ })).getByTestId('roster-line').textContent).toBe('Not enough evidence for a strategy map');
     expect(core.textContent).not.toMatch(/Grow \d+ · Upgrade/);
     // the reading guide leads with the six choices; the corners are the Legacy OSI framework with their mapping
@@ -212,7 +212,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect([...column.children].map((c) => c.id)).toEqual(STRATEGY_SECTIONS.map((s) => s.id));
     // the Country Strategy Map: the dominant visual of the Strategy section, with its legend by fence (the counts), table twin and CSV
     const strategy = document.getElementById('strategy')!;
-    expect(strategy.querySelector('[data-basis="posture"]')?.textContent).toMatch(/^Strategic position framework/);
+    expect(strategy.querySelector('[data-basis="posture"]')?.textContent).toMatch(/^Country strategy/);
     expect(strategy.textContent).toMatch(/then recommends one choice: Secure, Preserve, Catch Up, Partner, Accelerate or Watch/);
     const card = await within(strategy).findByRole('region', { name: 'Country Strategy Map' }, { timeout: 30_000 });
     expect(within(card).getByTestId('posture-legend').textContent).toBe('High fence:Secure 3Medium fence:Preserve 2,Catch Up 1,Partner 1,Accelerate 1Low fence:Watch 3Not assessed 1');

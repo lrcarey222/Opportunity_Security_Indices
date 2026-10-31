@@ -164,13 +164,24 @@ export function largeYardOf(meta: Pick<PostureMeta, 'yf_nodes' | 'large_yard_sig
   return { holds: nd.largeYard, n: nd.n, bar, signals: nd.signals, unknown: nd.unknown, floor: nd.floor === true, own: false, reason: null };
 }
 
-/** "3 commodity signals hold; 5 required" ("1 commodity signal holds" without a bar); null without a count. */
+/** "3 commodity signals hold (5 needed)" ("1 commodity signal holds" without a bar); null without a count. */
 export const countWords = (n: number | null, bar: number | null): string | null =>
-  n === null ? null : `${n} commodity ${n === 1 ? 'signal holds' : 'signals hold'}${bar !== null ? `; ${bar} required` : ''}`;
+  n === null ? null : `${n} commodity ${n === 1 ? 'signal holds' : 'signals hold'}${bar !== null ? ` (${bar} needed)` : ''}`;
+
+/**
+ * The signals the large-yard case requires before any commodity signal counts (R strategic_value.R
+ * sp_large_yard_case: the config default, mature AND passive). The count (`n`) leaves them out, so the drawer
+ * lists them apart from the commodity signals and the two lines agree (render review, 2026-10-31).
+ */
+export const REQUIRED_LARGE_YARD_SIGNALS: readonly string[] = ['mature', 'passive'];
+/** The signals that hold, split into the required ones and the commodity ones the count reads. */
+export function splitSignals(signals: readonly string[]): { required: string[]; commodity: string[] } {
+  return { required: signals.filter((s) => REQUIRED_LARGE_YARD_SIGNALS.includes(s)), commodity: signals.filter((s) => !REQUIRED_LARGE_YARD_SIGNALS.includes(s)) };
+}
 
 /**
  * The large-yard case in one line: "Holds: affordable, diversified access should dominate, whatever the size of
- * the market (6 commodity signals hold; 5 required)." / "Does not hold: 3 commodity signals hold; 5 required." /
+ * the market (6 commodity signals hold (5 needed))." / "Does not hold: 3 commodity signals hold (5 needed)." /
  * the undecided reason.
  */
 export function largeYardWords(ly: LargeYardCase): string {

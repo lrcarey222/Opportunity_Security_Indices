@@ -1,7 +1,7 @@
 // The Country profile's Partnerships section on the three lenses (2026-10-19; aib_scenarios_spec.md s.5 C
 // and s.6), in the app, on the synthetic Country and AIB fixtures (the AIB economy AAA renamed USA in the
 // main document and both scenario files): the four kinds (URL ptab), each with the cross-lens summary and
-// three tagged panels; Today from the fact sheet (trade ties) and the ties chunk, OSI recommends from the
+// three tagged panels; Today from the fact sheet (trade ties) and the ties chunk, OSI ranking from the
 // fact sheet's partner scores, the AIB model under the scenario toggle (URL scn, the toggle in the panel):
 // its coordinated trade, investment flows, BUILD nodes and compact coalitions follow Managed
 // Interdependence from its file; Allied Strategy's compacts with a role follow the same key; a lens with
@@ -118,12 +118,12 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
   const decSeats = seats(doc.compacts.map((c) => ({ members: coalitionMembersOf(c) })));
   const miSeats = seats(managed.compacts.map((c) => ({ members: c.coalition?.members ?? null })));
 
-  it('Trade under Decoupling: four kinds, the summary, then Today (fact sheet ties), OSI recommends (Partnership Opportunity) and the AIB model with its toggle', async () => {
+  it('Trade under Decoupling: four kinds, the summary, then Today (fact sheet ties), OSI ranking (Partnership Opportunity) and the AIB model with its toggle', async () => {
     renderAt('/countries/USA?scn=decoupling#partnerships');
     const part = await section();
     const kinds = within(within(part).getByRole('radiogroup', { name: 'Kind of partnership' })).getAllByRole('radio');
     expect(kinds.map((r) => r.parentElement?.textContent)).toEqual(['Trade', 'Investment', 'Development', 'Geopolitical']);
-    expect(tags(part)).toEqual(['Today · observed', 'OSI recommends · NEIS defaults', aibTag(DEC)]);
+    expect(tags(part)).toEqual(['Today · observed', 'OSI ranking · NEIS defaults', aibTag(DEC)]);
     expect(within(part).getByRole('heading', { level: 3, name: aibHead(DEC) })).toBeTruthy();
     // Today: its largest trade partners in the fact sheet's tie order
     const first = sheet.partners.rows.find((r) => r.iso3 === sheet.partners.tie_order.filter((x) => x !== 'USA')[0])!;
@@ -138,7 +138,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     expect((within(toggle).getByRole('radio', { name: DEC }) as HTMLInputElement).checked).toBe(true);
     // the summary compares the three lenses
     const sum = within(part).getByTestId('cross-lens-summary');
-    expect(within(sum).getByRole('heading', { level: 3 }).textContent).toBe('Where the lenses agree: trade, the United States');
+    expect(within(sum).getByRole('heading', { level: 3 }).textContent).toBe('Where the three readings agree: trade, the United States');
     expect(within(sum).getByTestId('cross-lens-line').textContent).toMatch(/^The three lenses name \d+ partners: /);
     expect(bareAcronyms(part)).toEqual([]);
   }, 90_000);

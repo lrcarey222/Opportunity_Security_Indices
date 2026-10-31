@@ -4,8 +4,8 @@
 // non-intervention classes never depend on a fourth hue. Every chip also prints the class name, so
 // colour is never the only carrier. Pure.
 
-import { AIB_CLASS_DEFINITION, AIB_CLASS_NAME } from '../../content/vocabulary.ts';
-import { AIB_CLASSES, type AibClass } from '../contract.ts';
+import { AIB_CLASS_DEFINITION, AIB_CLASS_NAME, STATE } from '../../content/vocabulary.ts';
+import { AIB_CLASSES, AIB_PHYSICAL_WARNING, type AibClass } from '../contract.ts';
 
 export type ClassMark = 'fill' | 'hollow' | 'hatch';
 
@@ -67,6 +67,15 @@ export const CLASS_INFO: Readonly<Record<AibClass, ClassInfo>> = {
 const isClass = (c: string): c is AibClass => (AIB_CLASSES as readonly string[]).includes(c);
 
 /** The class info of a class name (unknown names read as INSUFFICIENT DATA, never a new colour). */
+/**
+ * The export's physical-capability warning in plain words ("Production evidence is weak"); the code itself
+ * (PHYSICAL CAPABILITY NOT VALIDATED) stays in tooltips, CSVs and the AIB About page. Another warning text passes
+ * through unchanged.
+ */
+export const physicalWarningWords = (warning: string): string => (warning === AIB_PHYSICAL_WARNING ? STATE.weakProductionEvidence : warning);
+/** The same warning inside a sentence or after a treatment name, lower case: "Coordinate trade (production evidence is weak)". */
+export const PHYSICAL_WARNING_INLINE = STATE.weakProductionEvidence.toLowerCase();
+
 export function classInfo(cls: string): ClassInfo {
   return isClass(cls) ? CLASS_INFO[cls] : { ...CLASS_INFO['INSUFFICIENT DATA'], label: cls };
 }

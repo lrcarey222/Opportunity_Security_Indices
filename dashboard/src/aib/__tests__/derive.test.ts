@@ -292,7 +292,7 @@ describe('nodes', () => {
     const towers = nodeRow(nodeOf('wind-down-towers')!, names);
     expect(towers.warnedGrowthBounds).toBe('1.25x; 2x; 4x; unlimited');
     expect(nodeCsvRow(towers).growth_bound_flag).toBe(
-      'Headline COORDINATE; LOW INTERVENTION (PHYSICAL CAPABILITY NOT VALIDATED) at 4x and unlimited: the class depends on the existing-relationship growth bound.',
+      'Coordinate trade in the main result; Low intervention (production evidence is weak) at 4x and unlimited: the treatment depends on how far existing trade relationships can grow.',
     );
     // an older bundle does not say
     expect(nodeRow(older.nodes[0], names)).toMatchObject({ tradeOnlyWarning: null, productionConstrainedWarning: null, warnedVariants: null, warnedGrowthBounds: null, growthFlag: null });
@@ -478,7 +478,7 @@ describe('coalition: exact, greedy and tiers', () => {
     expect(gp[2].economies.map((e) => e.iso3)).toEqual(['DDD']);
     expect(gp[0].economies.map((e) => e.iso3)).not.toContain('DDD');
     const g3 = coalitionTiers(c03, names, doc.meta.targets);
-    expect(g3[0].meaning).toMatch(/^No coalition reaches the 95% target: the members are the widest coalition the greedy path found/);
+    expect(g3[0].meaning).toMatch(/^No coalition reaches the 95% target: the members are the widest coalition found by adding partners one at a time: /);
     expect(g3[1]).toMatchObject({ economies: [] });
     expect(g3[1].meaning).toMatch(/^Not tested/);
     expect(tierEconomies(c02, names).map((e) => [e.iso3, e.tier])).toEqual([
@@ -617,7 +617,7 @@ describe('class variants and the growth-bound sensitivity', () => {
     expect(warnedGrowthBounds({ ...nodeOf('bat-mid-anode')!, growth: nodeOf('bat-mid-anode')!.growth!.map(({ warning: _w, ...g }) => (void _w, g)) })).toBeNull();
     // the disclosure summary
     expect(robustnessSummary(nodeOf('ev-wind-mid-ree-compounds')!, doc.meta)).toBe(
-      'Class under other assumptions and growth bounds · differs under 3 variants · physical capability not validated under 1 other setting',
+      'Treatment under other assumptions and growth bounds · differs under 3 variants · production evidence is weak under 1 other setting',
     );
   });
 
@@ -633,19 +633,19 @@ describe('class variants and the growth-bound sensitivity', () => {
     expect(growthRows(towers)[1]).toMatchObject({ existing: towers.existing, dividend: towers.dividend });
     // every class named under other bounds carries its own physical-capability flag
     expect(growthFlag(towers)).toBe(
-      'Headline COORDINATE; LOW INTERVENTION (PHYSICAL CAPABILITY NOT VALIDATED) at 4x and unlimited: the class depends on the existing-relationship growth bound.',
+      'Coordinate trade in the main result; Low intervention (production evidence is weak) at 4x and unlimited: the treatment depends on how far existing trade relationships can grow.',
     );
     // a LOW INTERVENTION node that is COORDINATE only under the tightest bound is flagged too, worded from its headline class
     expect(growthFlag(nodeOf('solar-down-modules')!)).toBe(
-      'Headline LOW INTERVENTION; COORDINATE (PHYSICAL CAPABILITY NOT VALIDATED) only at 1.25x: the class depends on the existing-relationship growth bound.',
+      'Low intervention in the main result; Coordinate trade (production evidence is weak) only at 1.25x: the treatment depends on how far existing trade relationships can grow.',
     );
     // warned at some of its bounds only: the warning names those bounds; unwarned: no tag
     const partly = { ...towers, growth: towers.growth!.map((g) => (g.label === 'unlimited' ? { ...g, warning: false } : g)) };
     expect(growthFlag(partly)).toBe(
-      'Headline COORDINATE; LOW INTERVENTION at 4x and unlimited (PHYSICAL CAPABILITY NOT VALIDATED at 4x): the class depends on the existing-relationship growth bound.',
+      'Coordinate trade in the main result; Low intervention at 4x and unlimited (production evidence is weak at 4x): the treatment depends on how far existing trade relationships can grow.',
     );
     const unwarned = { ...towers, growth: towers.growth!.map((g) => ({ ...g, warning: false })) };
-    expect(growthFlag(unwarned)).toBe('Headline COORDINATE; LOW INTERVENTION at 4x and unlimited: the class depends on the existing-relationship growth bound.');
+    expect(growthFlag(unwarned)).toBe('Coordinate trade in the main result; Low intervention at 4x and unlimited: the treatment depends on how far existing trade relationships can grow.');
     expect(growthFlag(nodeOf('bat-mid-anode')!)).toBeNull();
     expect(growthRows(nodeOf('grid-mid-transformers')!)).toEqual([]);
     expect(growthRows(older.nodes[0])).toEqual([]);
@@ -1272,15 +1272,15 @@ describe('emergent network roles and investment flows (2026-10-17)', () => {
     expect(e).toEqual({
       supplyShocks: 3,
       diversify: true,
-      phrase: 'every shock and the diversification scenario',
-      note: '"every shock" sums the 3 supply shocks and the diversification scenario, which removes no supplier',
+      phrase: 'every stress test and the diversification scenario',
+      note: '"every stress test" sums the 3 supply disruptions and the diversification scenario, which removes no supplier',
     });
     const cell = countryRolesOf(doc, names, 'AAA').cells.buyer;
-    expect(cellWords('buyer', cell, e.phrase)).toContain(' across every shock and the diversification scenario');
-    expect(cellWords('buyer', cell)).toContain(' across every shock;');
+    expect(cellWords('buyer', cell, e.phrase)).toContain(' across every stress test and the diversification scenario');
+    expect(cellWords('buyer', cell)).toContain(' across every stress test;');
     // an export written before the scenario: the configured shocks alone
     const old = everyShock(stripDiversify(structuredClone(doc)));
-    expect(old).toEqual({ supplyShocks: 3, diversify: false, phrase: 'every shock', note: '"every shock" sums the 3 configured shocks' });
+    expect(old).toEqual({ supplyShocks: 3, diversify: false, phrase: 'every stress test', note: '"every stress test" sums the 3 configured disruptions' });
   });
 
   it("an economy's edges: headline contributions only, largest first, each direction its own relationship", () => {
@@ -1449,8 +1449,8 @@ describe('the diversification scenario (2026-10-19)', () => {
     expect(anode[2]).toBe('With the cap holding, existing relationships bring coverage to 95.0% and coordinated trade to 100.0%; trade under the cap replaces all of it, so no new capacity is needed.');
     expect(anode[3]).not.toContain('Best-placed countries');
     // the class under the scenario with its physical-capability flag
-    expect(diversifyWords(rowOf('wind-down-towers'), names)[3]).toMatch(/^What it needs under the scenario: Coordinate trade \(PHYSICAL CAPABILITY NOT VALIDATED\)\. /);
-    expect(diversifyWords(rowOf('ev-wind-mid-magnets'), names)[3]).not.toContain('PHYSICAL CAPABILITY');
+    expect(diversifyWords(rowOf('wind-down-towers'), names)[3]).toMatch(/^What it needs under the scenario: Coordinate trade \(production evidence is weak\)\. /);
+    expect(diversifyWords(rowOf('ev-wind-mid-magnets'), names)[3]).not.toContain('production evidence is weak');
     // no capped supplier named (an export that lists none): the supply to shift as its own sentence
     expect(diversifyWords({ ...rowOf('bat-mid-anode'), d: { ...rowOf('bat-mid-anode').d, capped: [], cap: null } }, names)[1]).toBe(
       'A supplier-share cap that would bring it down to the benchmark applies to the allied market. 12.0% of allied demand ($372 m) has to shift.',
@@ -1472,7 +1472,7 @@ describe('the diversification scenario (2026-10-19)', () => {
     ]);
     expect(diversifyClassText(null)).toBe('not run');
     expect(diversifyClassText('BUILD')).toBe('Build capacity');
-    expect(diversifyClassText('LOW INTERVENTION', true)).toBe('Low intervention (PHYSICAL CAPABILITY NOT VALIDATED)');
+    expect(diversifyClassText('LOW INTERVENTION', true)).toBe('Low intervention (production evidence is weak)');
     expect(diversifyClassText(null, true)).toBe('not run');
   });
 

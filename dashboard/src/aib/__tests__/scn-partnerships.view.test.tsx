@@ -1,5 +1,5 @@
 // /aib/partnerships on the three lenses (2026-10-19) with the synthetic fixture: the four kinds; each kind's
-// cross-lens summary and its three tagged panels (Today, OSI recommends, AIB model with the toggled
+// cross-lens summary and its three tagged panels (Today, OSI ranking, AIB model with the toggled
 // scenario); Today's trade from the Baseline scenario file; the AIB lens under Managed Interdependence from
 // its file (trade relationships, investment flows, coalitions); a lens with no data at the focus says so in
 // one line; the filters (economy, OSI technology, stage, node) stay; no bare acronym.
@@ -87,7 +87,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
   const baseline = readScenarioDoc('baseline', SYNTHETIC_DIR)!;
   const name = (x: string) => doc.countries[x] ?? managed.countries[x] ?? x;
 
-  it("Trade under Decoupling: four kinds, the summary, then Today (the Baseline file's pairs and suppliers), OSI recommends and AIB model", async () => {
+  it("Trade under Decoupling: four kinds, the summary, then Today (the Baseline file's pairs and suppliers), OSI ranking and AIB model", async () => {
     renderAt('/aib/partnerships?scn=decoupling');
     expect(await h1('Partnerships')).toBeTruthy();
     const kinds = within(screen.getByRole('radiogroup', { name: 'Partnership type' })).getAllByRole('radio');
@@ -96,7 +96,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     for (const f of ['Economy', 'Technology', 'Stage', 'Supply-chain step']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
     expect(screen.getAllByTestId(/^lens-(today|osi|aib)$/).map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual([
       'Today · observed',
-      'OSI recommends · NEIS defaults',
+      'OSI ranking · NEIS defaults',
       'AIB analysis · Major-supplier disruption',
     ]);
     expect(screen.getByRole('heading', { level: 2, name: 'AIB analysis: Major-supplier disruption' })).toBeTruthy();
@@ -114,8 +114,8 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     expect(within(lens('aib')).getByRole('region', { name: 'Specialized suppliers' })).toBeTruthy();
     expect(within(lens('osi')).getByRole('region', { name: 'Partnership Opportunity' })).toBeTruthy();
     // the summary compares the lenses with data here; the OSI rankings are not in the test build: left out, said so
-    expect(within(summary()).getByRole('heading').textContent).toBe('Where the lenses agree: trade, all economies and sub-sectors');
-    await waitFor(() => expect(within(summary()).getByTestId('cross-lens-absent-osi').textContent).toMatch(/^OSI recommends: .*; left out of the comparison\.$/));
+    expect(within(summary()).getByRole('heading').textContent).toBe('Where the three readings agree: trade, all economies and supply-chain steps');
+    await waitFor(() => expect(within(summary()).getByTestId('cross-lens-absent-osi').textContent).toMatch(/^OSI ranking: .*; left out of the comparison\.$/));
     expect(within(summary()).getByTestId('cross-lens-line').textContent).toMatch(/^Today and AIB analysis name \d+ economies/);
     noAcronyms();
   });

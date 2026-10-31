@@ -106,13 +106,13 @@ export function aibHeader(core: PostureCore): AibHeader {
 export function aibTakeaway(division: DivisionNode[], tech: string | null): string {
   const nodes = (tech ? division.filter((d) => d.tech === tech) : division).filter((d) => d.partnerDemand + d.secureDemand > 0);
   const scope = tech ? `in ${tech}` : 'across the allied base';
-  if (!nodes.length) return `No country's posture asks for partner or Secure supply ${scope}.`;
+  if (!nodes.length) return `No country relies on partners for, or needs to secure, a supply-chain step ${scope}.`;
   const worst = [...nodes].sort((a, b) => sev(a) - sev(b) || b.partnerDemand + b.secureDemand - (a.partnerDemand + a.secureDemand));
   const gaps = nodes.filter((d) => d.gap !== 'none');
   const w = worst[0];
   const demand = w.partnerDemand + w.secureDemand;
-  if (!gaps.length) return `Every node that countries rely on partners for ${scope} has a credible trusted holder and backups.`;
-  return `${gaps.length} of the ${plural(nodes.length, 'node')} that countries rely on partners for ${scope} ${gaps.length === 1 ? 'has' : 'have'} a gap; the most pressing is ${w.tech} ${w.stage.toLowerCase()} (${gapWord(w)}), relied on by ${plural(demand, 'country', 'countries')}.`;
+  if (!gaps.length) return `Every supply-chain step that countries rely on partners for ${scope} has a credible trusted holder and backups.`;
+  return `${gaps.length} of the ${plural(nodes.length, 'supply-chain step')} that countries rely on partners for ${scope} ${gaps.length === 1 ? 'has' : 'have'} a gap; the most pressing is ${w.tech} ${w.stage.toLowerCase()} (${gapWord(w)}), relied on by ${plural(demand, 'country', 'countries')}.`;
 }
 const SEV: Record<string, number> = {
   no_trusted_supplier: 0, single_point_of_failure: 1, excessive_concentration: 2, insufficient_allied_capacity: 3, insufficient_redundancy: 3, weak_evidence: 4, none: 5,
@@ -175,8 +175,8 @@ export function aibHeaderTiles(core: PostureCore): PostureTile[] {
   const h = aibHeader(core);
   return [
     { id: 'core', label: 'Core coalition members', value: String(h.coreMembers), sub: `${core.aibHeader.members} members in all` },
-    { id: 'covered', label: 'Priority nodes with credible trusted coverage', value: pct(h.coveredShare), sub: `of ${h.priorityNodes} nodes members ask partners to supply or secure` },
-    { id: 'gaps', label: 'Unresolved gaps', value: String(h.unresolvedGaps), sub: 'priority nodes with a gap' },
+    { id: 'covered', label: 'Priority steps with a credible trusted supplier and backup', value: pct(h.coveredShare), sub: `of ${plural(h.priorityNodes, 'supply-chain step')} coalition members rely on partners to supply or secure` },
+    { id: 'gaps', label: 'Remaining allied gaps', value: String(h.unresolvedGaps), sub: 'priority steps that still have a gap' },
   ];
 }
 

@@ -8,16 +8,17 @@
 // entry shows the words without a tip).
 
 /** The basis label of every posture block, on the Country, Sector and AIB pages alike. */
-export const POSTURE_BASIS_LABEL = 'Strategic position framework';
+// "Country strategy" since 2026-10-31 (it was "Strategic position framework": model language, render review)
+export const POSTURE_BASIS_LABEL = 'Country strategy';
 
 /** The tag's default note. */
 export const POSTURE_BASIS_NOTE = 'fixed thresholds; the dials and the scenario do not change it';
 
 /** The tag's tooltip: the same in a sentence. */
 export const POSTURE_BASIS_TITLE =
-  'The strategic position framework makes one choice for each supply-chain step at fixed thresholds of Need, Strategic Industrial Value (the prize) and Competitive Position, after the Secure tests; Deployment & Use reads deployment need. Neither the Perspective dials nor the scenario toggle changes it.';
+  'The country strategy makes one choice for each supply-chain step at fixed thresholds of Need, Strategic Industrial Value (the prize) and Competitive Position, after the Secure tests; Deployment & Use reads deployment need. Neither the Perspective dials nor the scenario toggle changes it.';
 
-/** "Strategic position framework · fixed thresholds; ..." as a quiet tag (pass note={null} for the label alone). */
+/** "Country strategy · fixed thresholds; ..." as a quiet tag (pass note={null} for the label alone). */
 export function PostureBasisTag({ note = POSTURE_BASIS_NOTE }: { note?: string | null }) {
   return (
     // `.tag` is unlayered CSS with white-space: nowrap; the inline style lets a long note wrap on a phone

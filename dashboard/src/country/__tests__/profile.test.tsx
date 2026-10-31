@@ -319,7 +319,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
       // a disclosure of the model (in the Legacy OSI results) while the model loads: a loading line, the rest of the page stays
       await openLegacy();
       fireEvent.click(screen.getByText(/^Explore details/));
-      expect(await within(document.getElementById('fold-scores')!).findByText('Loading the model')).toBeTruthy();
+      expect(await within(document.getElementById('fold-scores')!).findByText('Loading the Legacy OSI scores')).toBeTruthy();
       expect(screen.getByRole('heading', { level: 1, name: 'United States' })).toBeTruthy();
       expect(within(document.getElementById('allied')!).getByTestId('allied-operational-compacts')).toBeTruthy();
       // the strategy sections stay as they were (the model wraps only the Legacy OSI results)

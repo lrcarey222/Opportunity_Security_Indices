@@ -86,7 +86,7 @@ describe('the Sector home: a "What each country should do" section (design L3)',
     const section = document.getElementById('posture') as HTMLElement;
     expect(within(section).getByRole('heading', { level: 2, name: 'What each country should do' })).toBeTruthy();
     expect(section.textContent).toContain('Which countries should secure the step, preserve capability, catch up, partner, deploy faster or keep the market open?');
-    expect(section.textContent).toMatch(/Strategic position framework · fixed thresholds; the dials and the scenario do not change it/);
+    expect(section.textContent).toMatch(/Country strategy · fixed thresholds; the dials and the scenario do not change it/);
     expect(section.textContent).toMatch(/Unlike the measured values on the rest of these pages, this is a recommendation/);
     // after the sector grid, before the minerals
     const order = [...document.querySelectorAll('#atlas-h, #posture, #minerals-h')].map((x) => x.id);
@@ -167,7 +167,7 @@ describe('a sector profile: the "What each country should do" section fixed to i
     const section = await screen.findByRole('region', { name: 'What each country should do' }, { timeout: 20_000 });
     expect(section.id).toBe('posture');
     expect(within(section).getByRole('heading', { level: 2, name: 'What each country should do' })).toBeTruthy();
-    expect(section.textContent).toMatch(/Strategic position framework · fixed thresholds/);
+    expect(section.textContent).toMatch(/Country strategy · fixed thresholds/);
     expect(await within(section).findByRole('heading', { level: 3, name: "Every economy's choice in Batteries — Refining & Processing" }, { timeout: 10_000 })).toBeTruthy();
     expect(within(section).queryByRole('combobox')).toBeNull();
     // the section follows the lenses and comes before the groups (Advanced & evidence is always there); the rail lists it second

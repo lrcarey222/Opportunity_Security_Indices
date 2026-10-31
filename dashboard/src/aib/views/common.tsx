@@ -76,10 +76,10 @@ export function ReadingNotes() {
         <li>Exports show what a country can sell, not spare capacity: a country that exported a good can redirect those exports, but the analysis does not assume it can produce more.</li>
         <li>
           Where credible production or capacity data exist they decide who can supply (an exporter they do not list keeps its current shipments but cannot expand or redirect supply);
-          elsewhere a result rests on trade alone. A Low intervention or Coordinate trade result that production data do not back carries the warning PHYSICAL CAPABILITY NOT VALIDATED
-          (production evidence is weak), under the headline and under every variant shown.
+          elsewhere a result rests on trade alone. A Low intervention or Coordinate trade result that production data do not back carries the warning “Production evidence is weak”, under the
+          headline result and under every variant shown.
         </li>
-        <li>Each supply-chain step has one headline treatment, but it can need several actions, and its treatment can change under the sensitivities shown beside it (trade-only supply, release semantics, other disruptions, other growth bounds).</li>
+        <li>Each supply-chain step has one headline treatment, but it can need several actions, and its treatment can change under the sensitivities shown beside it (trade-only supply, whether the removed supplier keeps buying, other disruptions, other growth bounds).</li>
         <li>The investment increment is a simulation (a fixed share of the step&apos;s demand added at one eligible host, capped at that host&apos;s current output), not a project, a cost estimate or a forecast.</li>
         <li>Friendshore never makes an incapable host eligible: a host must already show capability in the step or a linked one; partnership scores only order eligible hosts.</li>
         <li>The treatments (Coordinate trade, Build capacity, Manage specialization, Low intervention, Not enough evidence), the archetypes and the roles are policy readings of continuous results under set thresholds; the numbers behind them are in every table.</li>

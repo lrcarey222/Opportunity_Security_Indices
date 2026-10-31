@@ -2,7 +2,7 @@
 // the Allied Industrial Base Partnerships page and the Country profile's Partnerships section: the kind of
 // partnership (Trade | Investment | Development | Geopolitical, a radio group), the cross-lens summary of
 // that kind (which partners each lens names and where the lenses agree or differ, in plain words), then
-// three clearly tagged panels, Today, OSI recommends and AIB model (the toggled scenario). The pages give
+// three clearly tagged panels, Today, OSI ranking and AIB model (the toggled scenario). The pages give
 // each panel its content and the partners it names; a lens with no data at the focus shows one line
 // instead (never a blank panel) and is left out of the comparison. HTML only: the panels stack at any width,
 // names are links where the page gives one, and every reading is text (no colour carries meaning). With a
@@ -136,7 +136,7 @@ export function CrossLensSummary({
     <section className="card p-4 sm:p-5" aria-labelledby={`${id}-h`} data-testid="cross-lens-summary">
       <span className="eyebrow block">Across the three lenses</span>
       <H id={`${id}-h`} className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
-        Where the lenses agree: {KIND_LABEL[kind].toLowerCase()}, {focus}
+        Where the three readings agree: {KIND_LABEL[kind].toLowerCase()}, {focus}
       </H>
       <div className="mt-2 space-y-2 text-sm leading-relaxed text-paper-dim">
         {cl.compared.length >= 2 ? (

@@ -4,7 +4,7 @@
 // landing, the technology chain, the profile, its lenses and its section rail use one set of words.
 // Candidates for promotion to the shared vocabulary are marked "promote?". Pure data: no React, no IO.
 
-import { MODULE_QUESTION, TERMS } from '../content/vocabulary.ts';
+import { AIB_MEASURE_LABEL, CONTROL_LAYER_NOTE_ECONOMY, MODULE_QUESTION, TERMS } from '../content/vocabulary.ts';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -14,7 +14,7 @@ export const SECTOR_LANDING = {
   title: MODULE_QUESTION.sector,
   lede: 'Follow a technology from extraction through deployment and recovery. See who has capability, where supply is concentrated, which stages matter strategically, and where countries should build, partner or stay open.',
   /** what the grid and the profiles show (measured values), before the one recommendation */
-  measured: 'Eleven technologies at six stages make 66 sectors. The sector grid and the profiles show measured values, in each source’s own units and year, with no indices or weights.',
+  measured: 'Eleven energy technologies at six stages make 66 sectors; semiconductors are shown as well, outside that headline set. The sector grid and the profiles show measured values, in each source’s own units and year, with no indices or weights.',
 } as const;
 
 /**
@@ -78,15 +78,12 @@ export const SOURCES_PAGE = {
 export const AIB_COLUMN = {
   node: cap(TERMS.node),
   cls: cap(TERMS.nodeClass),
-  exposure: 'Supply exposed',
-  dividend: 'Extra recovered by coordinating',
-  residual: 'Remaining gap',
+  exposure: AIB_MEASURE_LABEL.exposure,
+  dividend: AIB_MEASURE_LABEL.dividend,
+  residual: AIB_MEASURE_LABEL.residual,
   lost: 'Supply lost',
   compact: 'Sectoral Compact',
 } as const;
 
-/**
- * vocabulary CONTROL_LAYER_NOTE said of one economy among many (the Sector card shows every economy of a step;
- * the shared note says "this country"). promote?
- */
-export const CONTROL_LAYER_ECONOMY_NOTE = 'A control layer is in the Small yard only where the data show coercive foreign control for that economy.';
+/** The control-layer note said of one economy among many (the Sector card shows every economy of a step): content/vocabulary.ts. */
+export const CONTROL_LAYER_ECONOMY_NOTE = CONTROL_LAYER_NOTE_ECONOMY;

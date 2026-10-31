@@ -48,7 +48,9 @@ export function rosterStrategyLine(core: PostureCore | null, iso3: string): stri
   if (!core) return null;
   const cells = countryCells(core, iso3);
   if (!cells.length) return null;
-  return strategyCountsText(countPostures(cells)).verbs;
+  // the not-assessed cells too, so the line accounts for every combination the strategy looked at
+  const t = strategyCountsText(countPostures(cells));
+  return t.notAssessed ? `${t.verbs} · ${t.notAssessed}` : t.verbs;
 }
 
 function CountryCard({ c, memo, core }: { c: CountryEntry; memo: boolean; core: PostureCore | null }) {
@@ -117,7 +119,7 @@ export default function CountryHomeView() {
         </h2>
         <p className="mb-4 max-w-3xl text-sm text-paper-mute">
           The economies the <span className="whitespace-nowrap">allied coalition <InfoTip id="coalition" term="allied coalition" /></span> is built around. The line under each name
-          counts its strategic choices across its 66 technology-stage combinations.
+          counts its strategic choices across the 66 technology-stage combinations, and the combinations without enough evidence to assess.
         </p>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {g.core.map((c) => (

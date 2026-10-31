@@ -15,7 +15,7 @@ import { Link, useNavigate } from 'react-router';
 import { CountrySelect } from '../../../components/CountrySelect.tsx';
 import { InfoTip } from '../../../components/InfoTip.tsx';
 import { PageHead, Tag } from '../../../components/ui.tsx';
-import { MODULE_QUESTION } from '../../../content/vocabulary.ts';
+import { DATA_FRESHNESS_NOTE, MODULE_QUESTION } from '../../../content/vocabulary.ts';
 import { downloadText, fileSlug } from '../../../lib/download.ts';
 import { countryPostureRows, postureCsvText, postureProvenance, strategySentence } from '../../../posture/index.ts';
 import { POSTURE_CSV_COLS, postureCsvRows } from '../../../posture/derive.ts';
@@ -44,9 +44,8 @@ export const memoRevisedLine = (name: string) => `The memo for ${name} is being 
 /** The page's strategic question for one economy: "What should Japan secure, build, partner for or deploy?" */
 export const profileQuestion = (name: string): string => MODULE_QUESTION.country.replace('this country', name);
 
-/** What the freshness line dates, in a sentence (the guide's data-freshness note). */
-export const FRESHNESS_NOTE =
-  'The strategy is built from the latest common data available. Trade uses a structural benchmark plus a more recent momentum signal where reporting is complete enough to compare countries fairly.';
+/** What the freshness line dates, in a sentence (the guide's data-freshness note, content/vocabulary.ts). */
+export const FRESHNESS_NOTE = DATA_FRESHNESS_NOTE;
 
 /** The head's strategy sentence: the framework's (loading and error states in words). */
 function useStrategyLede(): string {

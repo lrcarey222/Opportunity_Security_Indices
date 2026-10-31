@@ -161,10 +161,10 @@ export const SCENARIOS_ABOUT_HREF = '/compacts/about#scenarios';
  */
 export const STRATEGIC_FRAMING = 'A strategic compact is the lasting division of labor; the scenario is the stress applied to it.';
 
-/** What each toggle choice is for: Managed Interdependence the default view, the disruption the stress test. */
+/** What each toggle choice is for: Managed Interdependence the default view, the disruption the severe case (both are stress tests). */
 export const SCENARIO_LENS: Readonly<Record<AibToggle, string>> = {
   managed: 'the default view',
-  decoupling: 'the stress test',
+  decoupling: 'the severe case',
 };
 
 /**

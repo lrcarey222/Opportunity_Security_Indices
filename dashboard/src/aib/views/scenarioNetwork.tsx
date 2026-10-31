@@ -399,13 +399,13 @@ export function RoleChangesCard({ cmp, scenario, meta, href, headingLevel = 3 }:
       headingLevel={headingLevel}
       title="Roles gained or lost"
       badge={<ScenarioTag id={scenario} meta={meta} />}
-      sub={`Against today, ${plural(gained.length, 'economy', 'economies')} gain a role under ${label} and ${plural(lost.length, 'economy', 'economies')} lose one${scenario === 'managed' ? `; ${plural(capped.length, 'supplier')} keep their role but supply less, held to the cap` : ''}. A supplier or a host is named at 1 point of node demand or more; the largest supplier is compared over ${plural(cmp.nodes, 'node')}.`}
+      sub={`Against today, ${plural(gained.length, 'economy', 'economies')} gain a role under ${label} and ${plural(lost.length, 'economy', 'economies')} lose one${scenario === 'managed' ? `; ${plural(capped.length, 'supplier')} keep their role but supply less, held to the cap` : ''}. A supplier or a host is named at 1 point of a step's demand or more; the largest supplier is compared over ${plural(cmp.nodes, 'supply-chain step')}.`}
       summary={`Roles gained under ${label}: ${gained.slice(0, 5).map((r) => `${r.name} (${roleWords(r, 'gained')})`).join('; ') || 'none'}. Lost: ${lost.map((r) => `${r.name} (${roleWords(r, 'lost')})`).join('; ') || 'none'}.`}
       table={() => <TableView rows={cmp.rows} cols={cols} caption={`Roles gained or lost under ${label}, against today`} search pageSize={20} rowKey={(r) => r.iso3} />}
       csv={csv}
       notes={
         <span>
-          Hosting and investing in new capacity are always gains: no new capacity exists today. {scenario === 'managed' ? `${label} removes no supplier: a capped supplier keeps supplying, up to the share that brings the node to its benchmark.` : `Under ${label} one economy's supply to the allied market is removed; every other supplier keeps what it supplies today.`}
+          Hosting and investing in new capacity are always gains: no new capacity exists today. {scenario === 'managed' ? `${label} removes no supplier: a capped supplier keeps supplying, up to the share that brings the step to its benchmark.` : `Under ${label} one economy's supply to the allied market is removed; every other supplier keeps what it supplies today.`}
         </span>
       }
     >

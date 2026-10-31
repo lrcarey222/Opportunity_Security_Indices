@@ -120,7 +120,7 @@ export function ProvBadge({ p, className = '' }: { p: Provenance; className?: st
 export function ConfidencePill({ c }: { c: Confidence }) {
   const bars = c === 'high' ? 3 : c === 'moderate' ? 2 : 1;
   return (
-    <span className="inline-flex items-center gap-2" title="Classification confidence">
+    <span className="inline-flex items-center gap-2" title="Confidence in this call">
       <span className="flex gap-0.5" aria-hidden="true">
         {[1, 2, 3].map((i) => (
           <span key={i} className={`block h-3 w-1.5 ${i <= bars ? 'bg-paper' : 'bg-ink-600'}`} />

@@ -173,9 +173,9 @@ describe('the headline derivations', () => {
   });
   it('the AIB takeaway leads with the worst gap among nodes members rely on', () => {
     expect(aibTakeaway(core.division, null)).toBe(
-      '3 of the 4 nodes that countries rely on partners for across the allied base have a gap; the most pressing is Solar assembly (no trusted supplier), relied on by 1 country.',
+      '3 of the 4 supply-chain steps that countries rely on partners for across the allied base have a gap; the most pressing is Solar assembly (no trusted supplier), relied on by 1 country.',
     );
-    expect(aibTakeaway(core.division, 'Geothermal')).toMatch(/^No country's posture asks/);
+    expect(aibTakeaway(core.division, 'Geothermal')).toMatch(/^No country relies on partners for, or needs to secure, a supply-chain step in Geothermal\.$/);
     expect(aibHeader(core)).toEqual({ coreMembers: 2, coveredShare: 0.25, unresolvedGaps: 3, priorityNodes: 4 });
   });
   it('the freshness line states the benchmark and the signal, or why there is none', () => {
@@ -227,8 +227,8 @@ describe('the counts of a page tile and the AIB header tiles', () => {
   it('the three AIB metrics as tiles', () => {
     expect(aibHeaderTiles(core)).toEqual([
       { id: 'core', label: 'Core coalition members', value: '2', sub: '3 members in all' },
-      { id: 'covered', label: 'Priority nodes with credible trusted coverage', value: '25%', sub: 'of 4 nodes members ask partners to supply or secure' },
-      { id: 'gaps', label: 'Unresolved gaps', value: '3', sub: 'priority nodes with a gap' },
+      { id: 'covered', label: 'Priority steps with a credible trusted supplier and backup', value: '25%', sub: 'of 4 supply-chain steps coalition members rely on partners to supply or secure' },
+      { id: 'gaps', label: 'Remaining allied gaps', value: '3', sub: 'priority steps that still have a gap' },
     ]);
   });
 });

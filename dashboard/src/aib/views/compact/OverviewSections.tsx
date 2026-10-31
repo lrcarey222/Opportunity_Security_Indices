@@ -26,8 +26,8 @@ import { useAibCtx } from '../../AibLayout.tsx';
 import { ClassChip, ClassLegend, ClassSwatch, NodeClass } from '../../charts/ClassChip.tsx';
 import { ScenarioTag } from '../../charts/ScenarioCompare.tsx';
 import { TypeTag } from '../../charts/TypeTag.tsx';
-import { AIB_MEASURE_DEFINITION, TERMS } from '../../../content/vocabulary.ts';
-import { classInfo, classMix, parseClassMix, parseNodePolicyNeeds, policyNeedsText, policyNeedsWords } from '../../derive/classes.ts';
+import { AIB_MEASURE_DEFINITION, AIB_MEASURE_LABEL, COMPACT_IMPORTANCE, TERMS } from '../../../content/vocabulary.ts';
+import { classInfo, classMix, parseClassMix, parseNodePolicyNeeds, physicalWarningWords, policyNeedsText, policyNeedsWords } from '../../derive/classes.ts';
 import { targetLabel } from '../../derive/coalition.ts';
 import { compactVsFragmented } from '../../derive/coverage.ts';
 import { compactTypeInfo } from '../../derive/types.ts';
@@ -43,7 +43,7 @@ import { csvWithRun, Section } from '../common.tsx';
 import { Economy, ScenarioGate, useCompact } from './shared.tsx';
 
 /** The coalition card's title: who has to take part (the minimum coalition and its tiers). */
-export const COALITION_TITLE = 'Who needs to take part: the coalition and its tiers';
+export const COALITION_TITLE = 'Who needs to take part, and how important each partner is';
 /** The roles card's title. */
 export const ROLES_TITLE = 'Countries and their roles in the compact';
 /** The compact-vs-fragmented tile ("fragmented action" in plain words, content/vocabulary.ts TERMS). */
@@ -127,7 +127,7 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
         ]
       : []),
     { id: 'needs', header: 'Actions needed', value: (n) => policyNeedsWords(n.policyNeeds) ?? '–' },
-    { id: 'warning', header: 'Warning', value: (n) => n.warning ?? 'none', minWidth: 200 },
+    { id: 'warning', header: 'Warning', value: (n) => (n.warning ? physicalWarningWords(n.warning) : 'none'), minWidth: 200 },
     { id: 'treatment', header: 'Recommended treatment', value: (n) => n.treatment, minWidth: 220 },
   ];
   const nodesCsv = () => ({
@@ -156,7 +156,7 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
       }
     >
       {warned.length > 0 && (
-        <Notice kind="warning" title={`${warning}: ${listWords(warned)}`}>
+        <Notice kind="warning" title={`${physicalWarningWords(warning)}: ${listWords(warned)}`}>
           <span data-testid="compact-physical-warnings">
             Production evidence is weak: the treatment of {warned.length === 1 ? 'this step' : 'these steps'} ({classInfo('LOW INTERVENTION').label} or {classInfo('COORDINATE').label}) rests on
             trade data that production data do not confirm. The production data are incomplete, or production and trade concentration diverge while the production rule was not applied
@@ -174,7 +174,7 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
         csv={nodesCsv}
       >
         <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[10rem_minmax(0,1fr)]">
-          <dt className="text-paper-mute">Archetype</dt>
+          <dt className="text-paper-mute">Type of compact</dt>
           <dd className="flex flex-wrap items-center gap-x-4 gap-y-2">
             {typed ? <Tag>{typed.archetype}</Tag> : <span className="text-paper-dim">{noneWords}</span>}
             {lostMix.length > 0 && (
@@ -318,7 +318,7 @@ function CoalitionCardOf({ c }: { c: AibCompact }) {
   const tieBreak = 'among coalitions of that size the exact search keeps the one with the widest margin over the target at its weakest step, then the one that adds the most supply';
   const cols: Col<TierEconomy>[] = [
     { id: 'name', header: 'Economy', value: (e) => e.name },
-    { id: 'tier', header: 'Coalition tier', value: (e) => tierName(e.tier) },
+    { id: 'tier', header: COMPACT_IMPORTANCE, value: (e) => tierName(e.tier) },
     { id: 'critical', header: 'Critical', value: (e) => (e.critical ? 'yes' : 'no') },
     { id: 'loo', header: 'Needed with the coalition fixed', value: (e) => e.looCritical, title: 'Leave one out: losing its supply pushes a supply-chain step below the target with the rest of the coalition unchanged' },
     {
@@ -344,14 +344,16 @@ function CoalitionCardOf({ c }: { c: AibCompact }) {
     ),
   });
   const lead = mt.exact
-    ? `The members are the smallest group of partners that meets the target: the fewest countries whose coordination brings every supply-chain step to the ${mid} target for the demand anchors' demand, the anchors always among them; ${tieBreak}.${
-        mt.tieBreakSolved === false ? ' Here that tie-break hit its time limit: the members are a coalition of the smallest size, not necessarily the one with the widest margin.' : ''
+    ? `The members are the smallest group of partners that meets the target: the fewest countries whose coordination brings every supply-chain step to the ${mid} target for the demand anchors' demand, the anchors always among them.${
+        mt.tieBreakSolved === false ? ' Among groups of that size the search ran out of time before finding the one with the widest margin over the target.' : ''
       }`
     : mt.reached
       ? !mt.proven
         ? `The exact search hit its time limit at the ${mid} target: the members are the best coalition it found, and that it is the smallest is not proven.`
         : `The members are the smallest coalition that meets the ${mid} target.`
       : `No coalition brings every supply-chain step to the ${mid} target; the members are the widest coalition found by adding partners one at a time (its weakest step reaches ${fmtShare(c.coalition.maxCoverage)}). With the target out of reach, no member is tested for substitutes and none is called a critical supply partner.`;
+  // the search method (exact program, tie-break, greedy heuristic) stays one click away (guide section 12)
+  const searchNote = mt.exact ? `${tieBreak[0].toUpperCase()}${tieBreak.slice(1)}.${mt.tieBreakSolved === false ? ' Here that tie-break hit its time limit: the members are a coalition of the smallest size, not necessarily the one with the widest margin.' : ''}` : null;
   const greedyLine =
     greedy === null
       ? null
@@ -387,16 +389,22 @@ function CoalitionCardOf({ c }: { c: AibCompact }) {
       title={COALITION_TITLE}
       badge={<ScenarioBadge />}
       sub={`${mt.label}: ${plural(members.length, 'country', 'countries')}. ${AIB_MEASURE_DEFINITION.minimumCoalition}${mt.method ? ` Method: ${mt.method}.` : ''}`}
-      table={() => <TableView rows={econ} cols={cols} caption={`${displayName}: coalition tiers`} pageSize={50} />}
+      table={() => <TableView rows={econ} cols={cols} caption={`${displayName}: who takes part and how important each partner is`} pageSize={50} />}
       csv={csv}
     >
       <p className="max-w-3xl text-sm leading-relaxed text-paper-dim" data-testid="coalition-method">
         {lead}
       </p>
-      {greedyLine && (
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-paper-dim" data-testid="greedy-coalition">
-          {greedyLine}
-        </p>
+      {(searchNote || greedyLine) && (
+        <details className="mt-2 max-w-3xl text-sm text-paper-dim" data-testid="coalition-search">
+          <summary className="cursor-pointer text-paper-mute">How this group was found</summary>
+          {searchNote && <p className="mt-1 leading-relaxed">{searchNote}</p>}
+          {greedyLine && (
+            <p className="mt-1 leading-relaxed" data-testid="greedy-coalition">
+              {greedyLine}
+            </p>
+          )}
+        </details>
       )}
       <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[14rem_minmax(0,1fr)]" data-testid="coalition-tiers">
         {shown.map((g) => (
@@ -460,7 +468,7 @@ function RolesCardOf({ c }: { c: AibCompact }) {
     { id: 'name', header: 'Economy', value: (r) => r.name },
     { id: 'role', header: 'Role', value: (r) => r.role },
     { id: 'basis', header: 'Why', value: (r) => r.basis, minWidth: 240 },
-    { id: 'tier', header: 'Coalition tier', value: (r) => r.tierName },
+    { id: 'tier', header: COMPACT_IMPORTANCE, value: (r) => r.tierName },
     { id: 'member', header: 'In the coalition', value: (r) => (r.member ? 'yes' : 'no') },
   ];
   const csv = () => ({
@@ -515,7 +523,7 @@ function RoleMatrix({ rows, label, href }: { rows: RoleRow[]; label: string; hre
           <tr>
             <th scope="col">Economy</th>
             <th scope="col" className="align-bottom" style={{ minWidth: 120, whiteSpace: 'normal', letterSpacing: '0.04em' }}>
-              Coalition tier
+              {COMPACT_IMPORTANCE}
             </th>
             {ROLE_ORDER.map((r) => (
               <th key={r} scope="col" className="align-bottom" style={{ minWidth: 76, maxWidth: 120, whiteSpace: 'normal', letterSpacing: '0.04em', textAlign: 'center' }}>
@@ -614,7 +622,7 @@ export function WhySection({ title = 'Why it exists' }: { title?: string } = {})
           },
         ]
       : []),
-    { key: 'dividend', label: 'Coordination dividend', value: fmtPp(m.dividend), sub: "the extra demand the members can meet by opening or expanding trade relationships, over existing relationships alone", raw: m.dividend },
+    { key: 'dividend', label: AIB_MEASURE_LABEL.dividend, value: fmtPp(m.dividend), sub: "the extra demand the members can meet by opening or expanding trade relationships, over existing relationships alone", raw: m.dividend },
     { key: 'residual', label: 'Remaining gap after trade', value: fmtShare(m.residual), sub: "demand the members' coordinated trade still cannot meet", raw: m.residual },
     { key: 'residualInv', label: 'Remaining gap after new capacity', value: fmtShare(m.residualAfterInvestment), sub: 'after a simulated capacity addition (capped at each host’s current output) in member countries, at the steps that need new capacity', raw: m.residualAfterInvestment },
     {

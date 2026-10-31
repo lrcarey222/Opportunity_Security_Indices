@@ -307,7 +307,7 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
     const nav = screen.getAllByRole('navigation', { name: 'Sections of this page' })[0];
     expect(within(nav).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(sections.map((id) => `#${id}`));
     for (const id of ['posture', 'need', 'prize-position', 'choices', 'policy', 'partnerships', 'aib-role']) expect(document.getElementById(id), id).toBeTruthy();
-    expect(screen.getAllByText(/^Strategic position framework/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^Country strategy/).length).toBeGreaterThan(0);
     // the canonical sections never need the engine: the Legacy OSI results load it only when opened
     await settle(300);
     expect(peekEngineClient()).toBeNull();
@@ -318,7 +318,7 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
     setCountryStoreForTests(new CountryStore(countrySourceWithAib()));
     const router = renderAt('/');
     await follow(router, linkIn('main article a[href="/aib"]', /^Explore the Allied Industrial Base$/), path('/aib'));
-    expect(await screen.findByRole('list', { name: 'Nodes by treatment' }, { timeout: 30_000 })).toBeTruthy();
+    expect(await screen.findByRole('list', { name: 'Supply-chain steps by treatment' }, { timeout: 30_000 })).toBeTruthy();
     await follow(router, linkIn('nav[aria-label="Allied Industrial Base views"] a', /^Sectoral Compacts$/), path('/compacts'));
     // the Strategic Sectoral Compacts: a card opens its compact, and its workstreams (the compact candidates)
     await follow(router, linkIn('main a', /^View compact/), path(/^\/compacts\/s\/SC-[^/]+$/));

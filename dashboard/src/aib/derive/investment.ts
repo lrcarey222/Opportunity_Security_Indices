@@ -8,6 +8,7 @@
 // with the main document's nodes, so every function here reads either. Baseline has none: no new capacity
 // exists today.
 
+import { TERMS } from '../../content/vocabulary.ts';
 import { isNum } from '../../lib/format.ts';
 import type { AibDoc, AibInvestmentFlows, AibInvestmentHost, AibInvestmentPair, AibNode } from '../contract.ts';
 import { fmtPp } from './format.ts';
@@ -137,7 +138,7 @@ export const hasInvestmentFlows = (doc: Pick<AibDoc, 'investmentFlows'>): boolea
 export function variantPhrase(doc: Pick<AibDoc, 'investmentFlows' | 'meta'>, shockLabel: string): string {
   const v = doc.investmentFlows?.variant;
   const inc = v && isNum(v.increment) ? `, an increment of up to ${Math.round(v.increment * 100)}% of node demand at each host (at most its current output)` : '';
-  return `${shockLabel}; supply assumption: ${v?.scenario ?? doc.meta.headlineScenario}${v?.supplyConstraint ? `, ${v.supplyConstraint.replace(/_/g, '-')} supply` : ''}${inc}`;
+  return `${shockLabel}; ${TERMS.supplyAssumption}: ${v?.scenario ?? doc.meta.headlineScenario}${v?.supplyConstraint ? `, ${v.supplyConstraint.replace(/_/g, '-')} supply` : ''}${inc}`;
 }
 
 /** Node lookup helper shared by the views: the label, else the id. */

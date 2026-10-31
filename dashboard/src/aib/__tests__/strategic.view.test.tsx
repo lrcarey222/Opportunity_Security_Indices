@@ -119,7 +119,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('ValueChainSpine', () => {
     expect(chips.map((b) => b.getAttribute('data-node'))).toEqual([REE, MAG]);
     // each chip prints its status in plain words (never the data's code)
     expect(chips[0].textContent).toBe('Rare-earth oxides & compoundsUnaffected');
-    expect(chips[1].getAttribute('aria-label')).toBe('Magnets, magnet parts & assemblies: Build capacity; coordinated coverage 78%; best-ranked new-capacity host Carpania');
+    expect(chips[1].getAttribute('aria-label')).toBe('Magnets, magnet parts & assemblies: Build capacity; 78% met with coordinated trade; best-ranked new-capacity host Carpania');
     expect(chips.every((b) => b.getAttribute('aria-pressed') === 'false')).toBe(true);
     // a click selects (pressed); Enter on a focused chip too (a native button)
     fireEvent.click(chips[1]);
@@ -186,13 +186,13 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('DivisionOfLabour', () => {
     const bo = rows[4].closest('tr')!;
     expect(bo.querySelectorAll('td')[0].querySelector('.sr-only')!.textContent).toBe('no material position');
     // the legend: what the dots mean
-    expect(within(card).getByTestId('division-legend').textContent).toMatch(/^Dots: Share of world supply of the node.*2% to 10%10% to 25%25% or more.*no economy is expected to build every node/);
+    expect(within(card).getByTestId('division-legend').textContent).toMatch(/^Dots: Share of world supply of the step.*2% to 10%10% to 25%25% or more.*No country is expected to build every step/);
     // a column header selects its node
     fireEvent.click(within(table).getByRole('button', { name: 'Magnets, magnet parts & assemblies' }));
     expect(onSelectNode).toHaveBeenCalledWith(MAG);
     // another measure: the dots and the legend follow
-    fireEvent.click(within(card).getByRole('radio', { name: 'Investment host' }));
-    const t2 = within(card).getByRole('table', { name: /investment host by economy and supply-chain step$/ });
+    fireEvent.click(within(card).getByRole('radio', { name: 'New capacity' }));
+    const t2 = within(card).getByRole('table', { name: /new capacity by economy and supply-chain step$/ });
     expect(within(t2).getAllByRole('rowheader').map((r) => r.textContent!.replace(/(Processing anchor|Capacity-building host|Bridge \/ coordination partner)$/, ''))).toEqual(['Carpania', 'Dorvalia', 'Elbonia']);
     expect(within(card).getByTestId('division-legend').textContent).toMatch(/the best-ranked host/);
     // the table twin: the values as numbers

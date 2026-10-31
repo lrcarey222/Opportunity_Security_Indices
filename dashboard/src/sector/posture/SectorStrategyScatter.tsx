@@ -26,7 +26,7 @@ import { ChoiceLegend } from '../../posture/PostureLegend.tsx';
 import { mixedYards, rollupWords } from '../../posture/yards.ts';
 import { PAPER_MUTE } from '../../theme/palette.ts';
 import { DEPLOYMENT_STAGE } from '../../lib/stages.ts';
-import { MEASURE_PLAIN } from '../../content/vocabulary.ts';
+import { MEASURE_PLAIN, TERMS } from '../../content/vocabulary.ts';
 import type { RegionLabel, StrategyPoint } from './derive.ts';
 
 const W = 640;
@@ -193,7 +193,7 @@ export function SectorStrategyScatter({ points, stage, thresholds, regions, onOp
           </p>
           <p className="tabular">World supply share {pct(c.share, 1)}</p>
           {(hov.p.verb === 'catch_up' || hov.p.verb === 'partner') && c.pathway && <p>Credible pathway: {PATHWAY_LABEL[c.pathway].toLowerCase()}</p>}
-          {hov.p.verb === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `Best-placed trusted partner: ${c.partner1 ? (nameOf?.(c.partner1) ?? c.partner1) : '—'}`}</p>}
+          {hov.p.verb === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `${TERMS.bestPlacedPartner}: ${c.partner1 ? (nameOf?.(c.partner1) ?? c.partner1) : '—'}`}</p>}
           {mixedYards(c) && <p data-testid="scatter-tip-mixed">{rollupWords(c)}</p>}
           {c.momentum && <p>Trade momentum: {MOMENTUM_LABEL[c.momentum]}</p>}
           {c.alignment && <p>Policy: {ALIGNMENT_LABEL[c.alignment].toLowerCase()}</p>}

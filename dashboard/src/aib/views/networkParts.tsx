@@ -54,7 +54,7 @@ export function stageCountWords(side: AibNetworkSide): string {
  * (everyShock(doc).phrase, everyShockLabel(doc).phrase; "every shock" by default; null leaves it out, for a
  * network without one); `under`: the scenario ("under the headline shock" by default, "under Decoupling").
  */
-export function cellWords(k: MatrixRole, c: RoleCell, every: string | null = 'every shock', under = 'under the headline disruption'): string {
+export function cellWords(k: MatrixRole, c: RoleCell, every: string | null = 'every stress test', under = 'under the headline disruption'): string {
   const parts: string[] = [];
   if (c.side && c.side.selected === 0 && c.side.cumulative === 0) {
     parts.push('no relationship of this kind in the network');

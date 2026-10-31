@@ -30,7 +30,7 @@ import { Link, useLocation } from 'react-router';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { EmptyState, FilterRow, PageHead, Select } from '../../components/ui.tsx';
-import { MODULE_QUESTION, ROLES_FRAMING } from '../../content/vocabulary.ts';
+import { MODULE_QUESTION, ROLES_FRAMING, TERMS } from '../../content/vocabulary.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import { ScenarioTag } from '../charts/ScenarioCompare.tsx';
@@ -92,7 +92,7 @@ export default function AibRolesView() {
   const everyNote = scenario === 'decoupling' && !hasScenarios ? plain.note : null;
   const everyLine =
     scenario === 'decoupling' && hasScenarios ? `${label.note} They appear only in the table and in each role's details; every role is read on ${info.label} alone.` : null;
-  const everyHeader = hasScenarios ? label.header : 'every shock';
+  const everyHeader = hasScenarios ? label.header : 'every stress test';
   const removed = useMemo(() => (scenario === 'decoupling' ? decoupledEconomy(meta, names) : null), [scenario, meta, names]);
   const changes = useMemo(
     () => (src && today.doc?.network ? roleChanges({ scenario, today: today.doc.network, network: src.network, nodes: doc.nodes, names: nm, removed }) : null),
@@ -273,7 +273,7 @@ export default function AibRolesView() {
           </dl>
           <ModelledNote className="mt-3">
             {v
-              ? `${shockWords}; supply assumption: ${v.scenario}, ${(v.supplyConstraint ?? '').replace(/_/g, '-')} supply, ${strategicScopeShort(meta, v.strategicScope)}${everyNote ? `; ${everyNote}` : ''}`
+              ? `${shockWords}; ${TERMS.supplyAssumption}: ${v.scenario}, ${(v.supplyConstraint ?? '').replace(/_/g, '-')} supply, ${strategicScopeShort(meta, v.strategicScope)}${everyNote ? `; ${everyNote}` : ''}`
               : shockWords}
           </ModelledNote>
           {everyLine && (

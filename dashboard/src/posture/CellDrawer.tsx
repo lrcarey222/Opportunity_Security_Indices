@@ -28,15 +28,15 @@
 // choice is explained as an action (CHOICE_DEFINITION; Watch as "Low domestic priority", a deployment Watch
 // below the bar for acceleration); a Partner step lists its best-placed partners; "step", never "node".
 
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { Link } from 'react-router';
 import { isProducingStage, stageDisplay } from '../lib/stages.ts';
 import { Term } from '../components/Term.tsx';
-import { CHOICE_DEFINITION, STRATEGY_STEP, WATCH_DEPLOYMENT_DEFINITION, WATCH_PROSE_LABEL } from '../content/vocabulary.ts';
+import { CHOICE_DEFINITION, STRATEGY_STEP, TERMS, WATCH_DEPLOYMENT_DEFINITION, WATCH_PROSE_LABEL } from '../content/vocabulary.ts';
 import { POSTURE_TERMS } from './basis.tsx';
 import type { PostureCell, PostureCore, Verb, Yard } from './contract.ts';
 import { cellKey, cellKeyParts, countryCells, countryNames, pct } from './derive.ts';
-import { ratioVsCurrentWords, type Family, type NodeDetail } from './detail.ts';
+import { plainReason, ratioVsCurrentWords, type Family, type NodeDetail } from './detail.ts';
 import {
   ALIGNMENT_CONFIDENCE_LABEL, ALIGNMENT_LABEL, ALIGNMENT_WORDS, alignmentFlagWords, basisWords, borderlineWords, choiceWord, deliveryWords, EVIDENCE_LABEL, flagWords, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE,
   pathwayEvidenceWords, traceCodeWords, traceNumberWords, traceTestWords, FENCE_LABEL, MARKET_PRIZE_LABEL, nodeFence,
@@ -46,7 +46,7 @@ import { postureMomentum } from './momentum.ts';
 import { catchUpPositionWords, countryRankWords, manufacturingPriority, manufacturingPriorityWord, policyMomentumWords, protectionWords, watchReasons } from './sections.ts';
 import { usePostureCore, usePostureDetail } from './store.ts';
 import {
-  capWords, FENCE_SCOPE_WORDS, largeYardOf, largeYardWords, layerUnits, mixedFill, nodeYard, rollupWords, signalWords, sivFamilies, variantWords, YARD_COLOR, YARD_LABEL, yardWords,
+  capWords, FENCE_SCOPE_WORDS, largeYardOf, largeYardWords, layerUnits, mixedFill, nodeYard, REQUIRED_LARGE_YARD_SIGNALS, rollupWords, signalWords, sivFamilies, splitSignals, variantWords, YARD_COLOR, YARD_LABEL, yardWords,
 } from './yards.ts';
 
 /** The five questions, in order (design D14). */
@@ -152,7 +152,7 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
         )}
       </dl>
       <Pending status={status} />
-      {cell.posture === 'N' && cell.need === null && <p className="mt-1 text-xs text-paper-mute">{d?.notAssessedReason ?? 'Supply-chain vulnerability is not measured for this step.'}</p>}
+      {cell.posture === 'N' && cell.need === null && <p className="mt-1 text-xs text-paper-mute">{plainReason(d?.notAssessedReason ?? null) ?? 'Supply-chain vulnerability is not measured for this step.'}</p>}
     </>
   );
 }
@@ -277,7 +277,7 @@ function ChoiceAnswer({
       </p>
       {cell.posture === 'N' && (
         <p className="mt-1 text-sm text-paper-dim">
-          Not assessed: {d?.notAssessedReason ?? (cell.needType === 'deployment' ? 'deployment need is not measured.' : 'need or prize is not measured.')} Missing data are shown as
+          Not assessed: {plainReason(d?.notAssessedReason ?? null) ?? (cell.needType === 'deployment' ? 'deployment need is not measured.' : 'need or prize is not measured.')} Missing data are shown as
           uncertainty, never as Watch.
         </p>
       )}
@@ -316,7 +316,7 @@ function ChoiceAnswer({
               ))}
             </ol>
           ) : cell.partner1 ? (
-            <p className="mt-1">Best-placed partner: {names[cell.partner1] ?? cell.partner1}</p>
+            <p className="mt-1">{TERMS.bestPlacedPartner}: {names[cell.partner1] ?? cell.partner1}</p>
           ) : null}
           {d?.partnerReason && <p className="mt-1 text-xs text-paper-mute">{d.partnerReason}</p>}
         </div>
@@ -502,9 +502,10 @@ function YardsPart({ cell, d, core, focusLayer }: { cell: PostureCell; d: NodeDe
       {ly && (
         <div className="mt-1.5 text-xs text-paper-mute" data-testid="drawer-large-yard">
           <p>
-            <strong className="font-medium text-paper-dim">Large-yard case{ly.own ? ' (this economy)' : ''}:</strong> {largeYardWords(ly)}
+            <strong className="font-medium text-paper-dim">Large-yard case for the step{ly.own ? ' (this economy)' : ''}:</strong> {largeYardWords(ly)}
           </p>
-          {ly.signals.length > 0 && <p>Signals that hold: {signalWords(ly.signals)}.</p>}
+          {splitSignals(ly.signals).required.length > 0 && <p>Required signals ({signalWords(REQUIRED_LARGE_YARD_SIGNALS)}) that hold: {signalWords(splitSignals(ly.signals).required)}.</p>}
+          {splitSignals(ly.signals).commodity.length > 0 && <p>Commodity signals that hold: {signalWords(splitSignals(ly.signals).commodity)}.</p>}
           {ly.unknown.length > 0 && <p>Not observed: {signalWords(ly.unknown)}.</p>}
         </div>
       )}
@@ -568,6 +569,30 @@ export interface CellDrawerProps {
   focusLayer?: string | null;
 }
 
+/**
+ * A drawer opened from a layer row says so at the top: the heading and the five questions are the step's,
+ * the layer's own yard and choice are under Yards (one click scrolls there). Render review, 2026-10-31.
+ */
+function OpenedLayerNote({ focusLayer, d, core, drawer }: { focusLayer: string | null; d: NodeDetail | null; core: PostureCore; drawer: RefObject<HTMLDivElement | null> }) {
+  if (!focusLayer || !d) return null;
+  const u = layerUnits(core.meta, d).find((x) => x.layerId === focusLayer);
+  if (!u) return null;
+  const go = () => {
+    const el = [...(drawer.current?.querySelectorAll<HTMLElement>('[data-layer]') ?? [])].find((x) => x.getAttribute('data-layer') === focusLayer);
+    el?.scrollIntoView?.({ block: 'center' });
+    el?.focus();
+  };
+  return (
+    <p className="mt-2 rounded-md bg-white/5 px-2 py-1.5 text-xs text-paper-dim" data-testid="drawer-layer-note">
+      Opened from the layer{' '}
+      <button type="button" className="link text-left" onClick={go}>
+        {u.label}
+      </button>{' '}
+      ({u.verb ? `${VERB_LABEL[u.verb]}${u.yard ? ` · ${yardWords(u.yard)}` : ''}` : 'not assessed'}). The choice above and the five questions are for the whole step; the layer&apos;s own yard and choice are under Yards.
+    </p>
+  );
+}
+
 export function CellDrawer({ cell, detail, detailStatus, detailError, country, core, cells, names, onClose, sectorHref, focusLayer }: CellDrawerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const key = cellKey(cell.tech, cell.stage);
@@ -620,6 +645,7 @@ export function CellDrawer({ cell, detail, detailStatus, detailError, country, c
         </button>
       </div>
       {detailStatus === 'error' && <p className="mt-2 text-xs text-paper-mute">The detail could not be loaded{detailError ? `: ${detailError}` : ''}.</p>}
+      <OpenedLayerNote focusLayer={focusLayer ?? null} d={d} core={core} drawer={ref} />
       <Question q={DRAWER_QUESTIONS[0]}>
         <NeedAnswer cell={cell} d={d} core={core} names={names} status={status} />
       </Question>
@@ -669,7 +695,7 @@ export function PostureNodeDrawer({ iso3, name, selected, onClose, sectorHref, l
   const names = countryNames(c);
   if (!cell) {
     return (
-      <div role="dialog" aria-label={`${parts.tech} ${stageDisplay(parts.stage)}: not classified`} className="fixed inset-x-0 bottom-0 z-40 rounded-t-xl border border-white/10 bg-ink-850 p-5 sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-20 sm:w-[27rem] sm:rounded-xl" data-testid="cell-drawer">
+      <div role="dialog" aria-label={`${parts.tech} ${stageDisplay(parts.stage)}: no data`} className="fixed inset-x-0 bottom-0 z-40 rounded-t-xl border border-white/10 bg-ink-850 p-5 sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-20 sm:w-[27rem] sm:rounded-xl" data-testid="cell-drawer">
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm text-paper-dim">
             {parts.tech} · {stageDisplay(parts.stage)} is not on the strategy map of {name ?? names[iso3] ?? iso3}: there is not enough comparable evidence to make a strategic call.

@@ -20,7 +20,7 @@ export const BASIS_WORDS: Readonly<Record<Basis, { label: string; title: string 
     title: 'Observed trade or the trade-network analysis: these do not change with the Perspective (preference) settings of a Country profile.',
   },
   baseline: {
-    label: 'OSI recommends · NEIS defaults',
+    label: 'OSI ranking · NEIS defaults',
     title: 'A ranking from the OSI indices that uses preference-weighted scores; shown here at the NEIS defaults. A Country profile can change the Perspective.',
   },
   today: {

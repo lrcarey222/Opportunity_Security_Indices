@@ -19,6 +19,14 @@ import type {
   Alignment, AlignmentConfidence, CompeteMode, DeployMode, NeedType, Pathway, PostureStage, PostureWord, SecurityRationale, Verb, Yard,
 } from './contract.ts';
 
+/**
+ * The export's not-assessed reason in the page's words (it is written in the method's: "Supply-chain need is not
+ * measured for this node."): the measure named as on the fence lists, a step rather than a node. Display only.
+ */
+export function plainReason(s: string | null): string | null {
+  return s === null ? null : s.replace(/\b([Ss])upply-chain need\b/g, '$1upply-chain vulnerability').replace(/\bnode(s?)\b/g, 'step$1');
+}
+
 /** One measured family or component of a score: a 0-1 value (null = not assessed), where it comes from and its scenario. */
 export interface Family {
   value: number | null;

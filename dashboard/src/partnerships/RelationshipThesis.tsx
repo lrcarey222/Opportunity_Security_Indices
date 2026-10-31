@@ -1,6 +1,6 @@
 // The relationship thesis card (2026-10-20; strategic task spec s.19), shared by the Allied Industrial Base
 // Partnerships page (the Economy and Partner filters) and the Country profile's Partnerships section (its
-// selected partner): above the Today / OSI recommends / AIB model detail, one sentence on the pair, then
+// selected partner): above the Today / OSI ranking / AIB model detail, one sentence on the pair, then
 //   Complementarity     what each side brings: its Strategic AIB Roles
 //   Priority compacts   where cooperation matters most: each compact with what each side contributes there
 //   AIB logic           what the relationship is about: the export's labels, each with its evidence

@@ -13,7 +13,7 @@ const pctCol = <R,>(id: string, header: string, v: (r: R) => number | null, digi
 
 const FAMILY_SORT: Record<string, number> = { S: 0, C: 1, D: 2, N: 3 };
 const choiceCol: Col<PostureRow> = {
-  id: 'choice', header: 'Choice', value: (r) => r.choice, cell: (r) => r.choice ?? 'Not classified', sortValue: (r) => (r.posture ? FAMILY_SORT[r.posture] : 4),
+  id: 'choice', header: 'Choice', value: (r) => r.choice, cell: (r) => r.choice ?? 'No data', sortValue: (r) => (r.posture ? FAMILY_SORT[r.posture] : 4),
 };
 const rationaleCol: Col<PostureRow> = { id: 'rationale', header: 'Secure rationale', value: (r) => r.rationale };
 const partnerCol: Col<PostureRow> = {

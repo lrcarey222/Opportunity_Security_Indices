@@ -19,14 +19,14 @@ import { TableView } from '../components/TableView.tsx';
 import { Loading, Notice, Select } from '../components/ui.tsx';
 import { cellSlug, isSupplyStage } from '../lib/stages.ts';
 import type { DivisionNode } from './contract.ts';
-import { aibTakeaway, cellKey, countryNames, DIVISION_CSV_COLS, divisionCsvRows, divisionRows, pct, postureCsvText, postureProvenance, POSTURE_SOURCE, producingStagesOf } from './derive.ts';
+import { aibTakeaway, cellKey, countryNames, DIVISION_CSV_COLS, divisionCsvRows, divisionRows, pct, plural, postureCsvText, postureProvenance, POSTURE_SOURCE, producingStagesOf } from './derive.ts';
 import { GAP_LABEL, GAP_ORDER, GAP_RING, stageShort } from './grammar.ts';
 import { AibDivisionStats } from './PostureCounts.tsx';
 import { TradeFreshness } from './PostureLegend.tsx';
 import { usePostureCore } from './store.ts';
 import { DIVISION_COLS } from './tables.tsx';
 
-export const AIB_DIVISION_TITLE = 'Trusted holders and gaps, node by node';
+export const AIB_DIVISION_TITLE = 'Where allies are strong, and where gaps remain';
 
 /** The gaps of the extended vocabulary (schema 2): in the legend only when the division data carry them. */
 const OPTIONAL_GAPS = new Set<string>(['insufficient_allied_capacity', 'excessive_concentration']);
@@ -62,8 +62,9 @@ function NodeCell({ d, names, on, onSelect }: { d: DivisionNode | undefined; nam
         style={{ boxShadow: `inset 0 0 0 2px ${GAP_RING[d.gap]}${on ? ', 0 0 0 2px #ffffff' : ''}` }}
         data-gap={d.gap}
       >
-        <span className="text-xs font-semibold text-paper">{d.primary ?? '—'}</span>
-        <span className="truncate text-[10px] text-paper-mute">{d.backups.map((b) => b.iso3).join(' · ') || 'no backup'}</span>
+        <span className="block w-full truncate text-xs font-semibold text-paper">{d.primary ?? '—'}</span>
+        {/* full width, so a narrow cell ends the backups with an ellipsis rather than mid-word */}
+        <span className="block w-full truncate text-[10px] text-paper-mute">{d.backups.map((b) => b.iso3).join(' · ') || 'no backup'}</span>
         {d.partnerDemand + d.secureDemand > 0 && (
           <span className="absolute right-1 top-0.5 text-[10px] tabular text-signal" aria-hidden="true">
             {d.partnerDemand + d.secureDemand}
@@ -88,13 +89,13 @@ function NodeDetail({ d, names, nodes }: { d: DivisionNode; names: Record<string
       </p>
       <p className="mt-1 text-xs text-paper-mute">
         Partner demand {d.partnerDemand} countries ({d.memberPartnerDemand} coalition members), {d.partnerGaps} with no credible trusted supplier; Secure in {d.secureDemand}.
-        Capability from {d.source === 'aib_position_share' ? `the Allied Industrial Base (${d.aibNodes ?? 0} nodes)` : 'world supply shares (no Allied Industrial Base node)'}.
+        Capability from {d.source === 'aib_position_share' ? `the Allied Industrial Base analysis (${plural(d.aibNodes ?? 0, 'supply-chain step')})` : 'world supply shares (no Allied Industrial Base step)'}.
       </p>
       {nodes && (
         <div className="mt-2 text-xs" data-testid="aib-node-detail-nodes">
           {nodes.length ? (
             <>
-              <span className="text-paper-mute">Allied Industrial Base nodes in this cell: </span>
+              <span className="text-paper-mute">Allied Industrial Base steps in this cell: </span>
               {nodes.map((n, i) => (
                 <span key={n.id}>
                   {i > 0 ? ', ' : ''}
@@ -109,7 +110,7 @@ function NodeDetail({ d, names, nodes }: { d: DivisionNode; names: Record<string
               ))}
             </>
           ) : (
-            <span className="text-paper-mute">No Allied Industrial Base node is mapped to this cell.</span>
+            <span className="text-paper-mute">No Allied Industrial Base step is mapped to this cell.</span>
           )}
         </div>
       )}
@@ -145,7 +146,7 @@ export function AibDivisionCard({
   const names = useMemo(() => (core.data ? countryNames(core.data) : {}), [core.data]);
   if (core.status === 'error') {
     return (
-      <Notice kind="warning" title="The posture data could not be loaded">
+      <Notice kind="warning" title="The country strategy data could not be loaded">
         {core.error}
       </Notice>
     );
@@ -208,14 +209,14 @@ export function AibDivisionCard({
               </span>
             ))}
             <span>
-              <span className="text-signal">n</span> countries asking partners to supply or secure the node
+              <span className="text-signal">n</span> countries relying on partners for the step, or securing it
             </span>
           </div>
         }
         notes={
           <div className="space-y-1">
             <TradeFreshness meta={c.meta} />
-            <p>Deployment is left out: it is where the technology is used, and no allied supply node sits there. Select a node, or a row of the table, for its holders and gaps.</p>
+            <p>Deployment is left out: it is where the technology is used, and no allied supply step sits there. Select a cell, or a row of the table, for its holders and gaps.</p>
           </div>
         }
       >

@@ -19,9 +19,10 @@
 import { Fragment, useId, useMemo, useState } from 'react';
 import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
 import type { PostureCell, PostureCore } from './contract.ts';
-import { cellKey, pct } from './derive.ts';
+import { MEASURE_PLAIN, TERMS } from '../content/vocabulary.ts';
+import { cellKey, score100 } from './derive.ts';
 import {
-  ALIGNMENT_LABEL, borderlineWords, EVIDENCE_LABEL, FENCE_LABEL, fenceChoiceWord, flagWords, NEED_TYPE_LABEL, nodeFence, nodeFill, NOT_ASSESSED_BORDER, RATIONALE_LABEL, stageDisplay,
+  ALIGNMENT_LABEL, borderlineWords, EVIDENCE_LABEL, FENCE_LABEL, fenceChoiceWord, flagWords, nodeFence, nodeFill, NOT_ASSESSED_BORDER, RATIONALE_LABEL, stageDisplay,
   stageShort, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
 import { Swatch } from './PostureLegend.tsx';
@@ -30,6 +31,12 @@ import { mixedFill, mixedYards, rollupWords, rollupYards, showsLargeYard } from 
 /** The helper text of the map (design section 4): what Need means on each side of the Deployment column. */
 export const MAP_HELPER =
   'From Extraction to Final Assembly & Equipment, and at Recovery & Recycling, Need means supply-chain vulnerability. At Deployment & Use, it means how urgently the energy system needs more of the technology: expected demand, policy and climate gaps, and system requirements.';
+
+/**
+ * The map's measure words and scale: the same as the fence lists and the drawer's questions (supply-chain
+ * vulnerability, deployment need; 0-100), so a cell's tooltip and the list beside it agree (render review, 2026-10-31).
+ */
+const NEED_WORD: Record<PostureCell['needType'], string> = { supply_chain: MEASURE_PLAIN.supplyChainNeed, deployment: MEASURE_PLAIN.deploymentNeed };
 
 /** The map's narrowest width in px: the column minimums (64 + 5 x 28 + 2 x 8 + 32) and the eight 2 px gaps. */
 export const MAP_MIN_WIDTH = 64 + 5 * 28 + 2 * 8 + 32 + 8 * 2;
@@ -42,9 +49,9 @@ export function cellLabel(c: PostureCell): string {
   }
   if (c.posture === 'S' && c.rationale) bits.push(RATIONALE_LABEL[c.rationale]);
   if (mixedYards(c)) bits.push((rollupWords(c) ?? '').replace(/^Mixed: /, 'mixed yards: '));
-  if (c.need !== null) bits.push(`${NEED_TYPE_LABEL[c.needType].toLowerCase()} ${pct(c.need)}`);
-  if (c.prize !== null) bits.push(`prize ${pct(c.prize)}`);
-  if (c.cp !== null) bits.push(`position ${pct(c.cp)}`);
+  if (c.need !== null) bits.push(`${NEED_WORD[c.needType].toLowerCase()} ${score100(c.need)}`);
+  if (c.prize !== null) bits.push(`prize ${score100(c.prize)}`);
+  if (c.cp !== null) bits.push(`position ${score100(c.cp)}`);
   if (c.alignment) bits.push(`policy ${ALIGNMENT_LABEL[c.alignment].toLowerCase()}`);
   if (c.evidence) bits.push(`evidence ${EVIDENCE_LABEL[c.evidence].toLowerCase()}`);
   if (c.borderline) bits.push('borderline');
@@ -78,13 +85,13 @@ function Tip({ c, partnerName }: { c: PostureCell; partnerName: string | null })
         <p className="mt-1">Not assessed: {c.needType === 'deployment' ? 'deployment need is not measured' : 'need or prize is not measured'}.</p>
       ) : (
         <p className="mt-1 tabular">
-          {NEED_TYPE_LABEL[c.needType]} {pct(c.need)}
-          {c.needType === 'supply_chain' ? ` · Prize ${pct(c.prize)}` : ''} · Position {pct(c.cp)}
+          {NEED_WORD[c.needType]} {score100(c.need)}
+          {c.needType === 'supply_chain' ? ` · Prize ${score100(c.prize)}` : ''} · Position {score100(c.cp)} <span className="text-paper-mute">(0-100)</span>
         </p>
       )}
       {c.alignment && <p>Policy: {ALIGNMENT_LABEL[c.alignment]}</p>}
       {c.evidence && <p>Evidence: {EVIDENCE_LABEL[c.evidence]}</p>}
-      {c.mode === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `Best-placed partner: ${partnerName ?? '—'}`}</p>}
+      {c.mode === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `${TERMS.bestPlacedPartner}: ${partnerName ?? '—'}`}</p>}
       {c.borderline && <p className="text-signal">Borderline on {borderlineWords(c.borderline)}</p>}
       {c.flag && <p className="text-signal">{flagWords(c.flag)}</p>}
     </div>
@@ -179,7 +186,7 @@ export function PostureMatrix({ core, cells, selected, onSelect, names = {} }: P
               const isDep = s === DEPLOYMENT_STAGE;
               let node: React.ReactNode;
               if (!c) {
-                node = <span role="gridcell" aria-label={`${t} ${stageDisplay(s)}: not classified`} className="h-9 rounded-[3px] bg-ink-700/40 sm:h-10" data-deployment={isDep ? 'true' : undefined} />;
+                node = <span role="gridcell" aria-label={`${t} ${stageDisplay(s)}: no data`} className="h-9 rounded-[3px] bg-ink-700/40 sm:h-10" data-deployment={isDep ? 'true' : undefined} />;
               } else {
                 const on = selected === k;
                 const na = c.posture === 'N';

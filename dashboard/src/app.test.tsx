@@ -207,7 +207,7 @@ describe('dial panel and status strip', () => {
     const chips = await screen.findByRole('list', { name: 'Changed settings' });
     expect(within(chips).getByText(/HAWKISHNESS 80/)).toBeTruthy();
     // every dial explains itself: an info button beside its name (the glossary's definition)
-    fireEvent.click(screen.getByRole('button', { name: 'What is Hawkishness?' }));
+    fireEvent.click(screen.getByRole('button', { name: 'What is “Hawkishness”?' }));
     expect(screen.getByRole('dialog', { name: 'Hawkishness' }).textContent).toMatch(/Security first/);
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Hawkishness' })).toBeNull();
@@ -630,13 +630,13 @@ describe('home and the shell', () => {
       await waitFor(() => expect(within(screen.getByRole('navigation', { name: 'Modules' })).getByRole('link', { name: 'Sectors' }).getAttribute('aria-current')).toBe('true'), { timeout: 20_000 });
       await settle(200);
       expect(screen.getByRole('main')).toBeTruthy();
-      expect(screen.queryByText(/Loading the model/)).toBeNull();
+      expect(screen.queryByText(/Loading the Legacy OSI scores/)).toBeNull();
       expect(stuck.getSnapshot().status).toBe('starting');
       // the engine gate is in content: the header and the footer stay
       await act(async () => {
         await router.navigate('/overview?h=80');
       });
-      expect(await screen.findByText(/Loading the model/, {}, { timeout: 20_000 })).toBeTruthy();
+      expect(await screen.findByText(/Loading the Legacy OSI scores/, {}, { timeout: 20_000 })).toBeTruthy();
       expect(within(screen.getByRole('navigation', { name: 'Modules' })).getByRole('link', { name: 'Countries' }).getAttribute('aria-current')).toBe('true');
       expect(screen.getByRole('navigation', { name: 'Country views' })).toBeTruthy();
       expect(screen.getByRole('contentinfo')).toBeTruthy();

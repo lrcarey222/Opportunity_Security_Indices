@@ -172,7 +172,7 @@ export function OpportunitiesSection({ id = 'opportunities', level = 2, title = 
               {cap(name)} has no Policy index (no International Energy Agency Policies and Measures records), so no Strategic Index is computed for it.
             </Notice>
           )}
-          <Fold id="si-model" engine summary="The Strategic Index under your perspective: top ten, the five weighted parts and the allied picks (the model)">
+          <Fold id="si-model" engine summary="The Strategic Index under your perspective: top ten, the five weighted parts and the allied picks (Legacy OSI)">
             <StrategicView embedded />
           </Fold>
         </Fold>

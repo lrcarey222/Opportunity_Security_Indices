@@ -123,9 +123,9 @@ export function DiversifyChart({ rows, max, name, where, label }: DiversifyChart
   return (
     <div className="text-xs">
       <div className={`hidden pb-2 ${GRID}`} aria-hidden="true" data-testid="diversify-axes">
-        <span className="self-end text-paper-mute">Node</span>
+        <span className="self-end text-paper-mute">Supply-chain step</span>
         <Axis ticks={ticks} max={max} fmt={(t) => t.toFixed(1)} title="Concentration (HHI): current → benchmark" />
-        <Axis ticks={[0, 0.25, 0.5, 0.75, 1]} max={1} fmt={(t) => `${Math.round(t * 100)}%`} title="Allied demand: kept · restored by trade · new capacity" />
+        <Axis ticks={[0, 0.25, 0.5, 0.75, 1]} max={1} fmt={(t) => `${Math.round(t * 100)}%`} title="Allied demand: still supplied · recovered through trade · requires new capacity" />
       </div>
       <ol className="divide-y divide-white/5 border-t hairline" aria-label={label}>
         {rows.map((r) => {
@@ -158,7 +158,7 @@ export function DiversifyChart({ rows, max, name, where, label }: DiversifyChart
                     </span>
                   </>
                 ) : (
-                  <span className="block text-paper-mute">no coverage in this export</span>
+                  <span className="block text-paper-mute">no figures for the share of demand met</span>
                 )}
               </div>
             </li>

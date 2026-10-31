@@ -119,7 +119,7 @@ export function SectorPositionSection({ id = 'sectors', level = 2 }: { id?: stri
       >
         <TableView rows={rows} cols={cols} caption={`${cap(name)}: sector position`} rowKey={(c) => c.key} onRowClick={(c) => setCell(c.key)} selectedKey={cell} pageSize={12} />
       </ChartCard>
-      <Fold id="scores" engine summary="Explore details: the scores' categories, contributions and every measure (Country scores, the model)">
+      <Fold id="scores" engine summary="Explore details: the scores' categories, contributions and every measure (Country scores, Legacy OSI)">
         <CountryView embedded />
       </Fold>
     </Section>

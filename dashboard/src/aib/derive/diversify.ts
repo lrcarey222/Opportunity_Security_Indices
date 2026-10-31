@@ -24,8 +24,8 @@
 // sentences per status, and the CSV row. Pure.
 
 import { isNum } from '../../lib/format.ts';
-import { AIB_DIVERSIFY_SHOCK, AIB_DIVERSIFY_STATUSES, AIB_PHYSICAL_WARNING, diversifyShockIdOf, type AibMeta, type AibNode, type AibNodeDiversify } from '../contract.ts';
-import { classInfo } from './classes.ts';
+import { AIB_DIVERSIFY_SHOCK, AIB_DIVERSIFY_STATUSES, diversifyShockIdOf, type AibMeta, type AibNode, type AibNodeDiversify } from '../contract.ts';
+import { classInfo, PHYSICAL_WARNING_INLINE } from './classes.ts';
 import { fmtScore, fmtShare, fmtUsd, listWords, nameOf, plural } from './format.ts';
 import { variantWarning } from './sensitivity.ts';
 import { diversifySetting, DIVERSIFY_LABEL } from './settings.ts';
@@ -58,7 +58,7 @@ export const rowStatusLabel = (r: Pick<DiversifyRow, 'd' | 'nearBenchmark'>): st
 
 /** A class under the scenario as plain text, with the physical-capability warning named after it ("not run" without a class). */
 export const diversifyClassText = (cls: string | null | undefined, warning: boolean | null = null): string =>
-  cls ? `${classInfo(cls).label}${warning ? ` (${AIB_PHYSICAL_WARNING})` : ''}` : 'not run';
+  cls ? `${classInfo(cls).label}${warning ? ` (${PHYSICAL_WARNING_INLINE})` : ''}` : 'not run';
 
 /** The status order of the lists: diversified first, then within the cap, already diversified, no benchmark, anything else. */
 const statusRank = (s: string): number => {

@@ -152,13 +152,16 @@ export const TERMS = {
   frontier: 'trade-off between resilience and concentration',
   coordinationDividend: 'extra supply allies can recover by acting together',
   minimumCoalition: 'smallest group of partners that meets the resilience target',
-  coalitionTier: 'role in the compact',
+  coalitionTier: 'importance to the compact',
+  /** the country roster's groups (core, partner, other): not a compact's tiers */
+  coalitionRoster: 'coalition membership',
   candidateCompact: 'potential Sectoral Compact',
   compactUnnecessary: 'no compact needed',
   fragmentedAction: "today's uncoordinated response",
   managedSpecialization: 'specialization with safeguards',
   alliedDemandAffected: 'demand that must find a new supplier',
-  restoredByTrade: 'recovered through allied trade',
+  // the AIB lets any economy replace lost supply (candidateUniverse "global"), so not "allied" trade
+  restoredByTrade: 'recovered through trade',
   leftForNewCapacity: 'gap that requires new capacity',
   policyNeed: 'action needed',
   supplyAssumption: 'assumption about how much suppliers can expand',
@@ -170,6 +173,9 @@ export const TERMS = {
   highStrategicNeed: 'supply-chain vulnerability',
   highPercentile: 'strong competitive position',
   posture: 'what this country should do',
+  // promoted from the Country and Sector pages (2026-10-31)
+  contenders: 'main producers',
+  bestPlacedPartner: 'Best-placed partner',
   postureClassification: 'What should this country do?',
 } as const satisfies Record<string, string>;
 
@@ -197,7 +203,8 @@ export const TERMINOLOGY: readonly { technical: string; plain: string }[] = [
   { technical: 'frontier', plain: TERMS.frontier },
   { technical: 'coordination dividend', plain: TERMS.coordinationDividend },
   { technical: 'minimum coalition', plain: TERMS.minimumCoalition },
-  { technical: 'coalition tier', plain: TERMS.coalitionTier },
+  { technical: 'coalition tier (of a compact)', plain: TERMS.coalitionTier },
+  { technical: 'coalition tier (of the country roster)', plain: TERMS.coalitionRoster },
   { technical: 'candidate compact', plain: TERMS.candidateCompact },
   { technical: 'compact unnecessary', plain: TERMS.compactUnnecessary },
   { technical: 'fragmented action', plain: TERMS.fragmentedAction },
@@ -333,8 +340,12 @@ export const FENCE_INTRO: Record<FenceKey, string> = {
 /** A technology is never in one yard: its steps and their layers can differ. */
 export const MIXED_YARD_NOTE =
   'A technology can sit in more than one yard. Its supply-chain steps, and the layers within a step (control software, firmware, a critical input), can each need a different fence.';
-/** Control layers are country-specific (user decision, 2026-10-30). */
+/** Control layers are country-specific (user decision, 2026-10-30): on a Country profile. */
 export const CONTROL_LAYER_NOTE = 'A control layer is in the Small yard only where the data show coercive foreign control for this country.';
+/** The same, on a page that shows many economies (the Sector strategy card). */
+export const CONTROL_LAYER_NOTE_ECONOMY = 'A control layer is in the Small yard only where the data show coercive foreign control for that economy.';
+/** The same, where no country is selected (About). */
+export const CONTROL_LAYER_NOTE_GENERAL = 'A control layer is in the Small yard only for a country where the data show coercive foreign control.';
 /** The yards are different problems, not a score scale. */
 export const YARDS_NOT_A_SCALE = 'The three yards are different policy problems, not low, medium and high scores on one scale.';
 
@@ -446,8 +457,8 @@ export const AIB_CLASS_NAME: Record<AibClass, string> = {
   'INSUFFICIENT DATA': 'Not enough evidence',
 };
 export const AIB_CLASS_DEFINITION: Record<AibClass, string> = {
-  COORDINATE: 'Existing allied capacity is enough, but countries need new or expanded trade relationships to use it.',
-  BUILD: 'Even the best allied trade response leaves a material gap. New production or processing capacity is required.',
+  COORDINATE: 'Existing supplier capacity is enough, but countries need new or expanded trade relationships to use it.',
+  BUILD: 'Even the best coordinated trade response leaves a material gap. New production or processing capacity is required.',
   'MANAGE SPECIALIZATION':
     'Specialization creates economic value, but too much supply sits with one supplier. Keep the specialization while adding enough redundancy to reduce the risk.',
   'LOW INTERVENTION': 'The existing network is already resilient enough that major coordination is unlikely to add much.',
@@ -470,7 +481,7 @@ export const SCENARIO_METHOD_NAME: Record<AibScenarioId, string> = {
 export const SCENARIO_DEFINITION: Record<AibScenarioId, string> = {
   baseline: 'The suppliers and trade relationships that exist today. No disruption is imposed.',
   managed:
-    'No supplier is banned. Where a supply-chain step is unusually concentrated, the analysis caps how much of allied demand any one supplier can serve and asks which trusted suppliers would need to take the excess.',
+    'No supplier is banned. Where a supply-chain step is unusually concentrated, the analysis caps how much of allied demand any one supplier can serve and asks which other suppliers would need to take the excess.',
   decoupling:
     'A major supplier (China, in this analysis) stops supplying allied markets. The analysis asks what existing partners can replace, what coordinated trade adds, and what still requires new capacity.',
 };
@@ -482,11 +493,19 @@ export const MANAGED_INTERDEPENDENCE = {
     "Managed Interdependence is the alternative to both laissez-faire concentration and blanket decoupling. It keeps the benefits of specialization but sets limits where one supplier's position creates unacceptable risk. The question is not whether dependence can be eliminated, but which dependencies are worth keeping, and what backup is enough.",
 } as const;
 
+/** The three AIB results of a supply-chain step as column and KPI labels (Sector tables, compact KPIs, step figures). */
+export const AIB_MEASURE_LABEL = {
+  exposure: 'Supply exposed',
+  exposureLong: 'Supply exposed to the disruption',
+  dividend: 'Gain from acting together',
+  residual: 'Remaining gap',
+} as const;
+
 /** Scenario chart labels (guide). */
 export const SCENARIO_CHART_LABEL = {
   alliedDemandAffected: 'Demand that must find a new supplier',
   kept: 'Still supplied',
-  restoredByTrade: 'Recovered through allied trade',
+  restoredByTrade: 'Recovered through trade',
   newCapacity: 'Requires new capacity',
   coverage: 'How much demand the allied network can meet',
   leftForNewCapacity: 'Gap that still needs new capacity',
@@ -506,7 +525,7 @@ export const AIB_SUMMARY_QUESTIONS = [
 export const AIB_MEASURE_DEFINITION = {
   coverage: 'The share of allied demand that the available supplier network can meet under a given scenario.',
   coordinationDividend: "The extra demand allies can meet when they coordinate trade rather than relying only on today's bilateral relationships.",
-  remainingGap: 'Demand that cannot be met even after the best available allied trade response. This is where new capacity may be needed.',
+  remainingGap: 'Demand that cannot be met even after the best available coordinated trade response. This is where new capacity may be needed.',
   minimumCoalition: "The smallest group of partners that can meet the compact's resilience target while keeping the main buyer markets inside the agreement.",
   n1Resilience: 'How much demand the network can still meet if its largest remaining supplier is lost.',
   concentrationCap:
@@ -532,6 +551,11 @@ export const COMPACT = {
     next: 'What should governments do next?',
   },
 } as const;
+
+/** A compact's tiers as a column header (a "Role" column sits beside it, so not "role in the compact"). */
+export const COMPACT_IMPORTANCE = 'Importance to the compact';
+/** The country roster's groups (core members, partners, other economies), as a label or column header. */
+export const COALITION_MEMBERSHIP = 'Coalition membership';
 
 /** The roles a country can hold in a compact (the data's role names as keys; aib/derive/roles.ts ROLE_ORDER). */
 export const COMPACT_ROLE_DEFINITION: Readonly<Record<string, string>> = {
@@ -580,6 +604,10 @@ export const PARTNERSHIP = {
 } as const;
 
 // ---- evidence, Legacy OSI and states ----------------------------------------------------------------------------
+
+/** The data freshness note (guide, Country Strategy Map): the profile header's tip and Evidence & methodology. */
+export const DATA_FRESHNESS_NOTE =
+  'The strategy is built from the latest common data available. Trade uses a structural benchmark plus a more recent momentum signal where reporting is complete enough to compare countries fairly.';
 
 export const EVIDENCE_TITLE = 'Evidence & methodology';
 export const EVIDENCE_INTRO =

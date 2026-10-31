@@ -11,7 +11,7 @@ import { countryCells } from '../derive.ts';
 import { POSTURE_COLOR, VERB_COLOR } from '../grammar.ts';
 import {
   capWords, countWords, isMixedRollup, largeYardOf, largeYardWords, layerLabel, layerReason, layerUnits, MIXED_LEGEND, mixedFill, mixedYards, nodeYard, rollupWords, showsLargeYard,
-  signalWords, sivFamilies, YARD_COLOR, yardWords,
+  signalWords, sivFamilies, splitSignals, YARD_COLOR, yardWords,
 } from '../yards.ts';
 import { fixtureCore, fixtureDetail } from './fixture.ts';
 
@@ -91,7 +91,10 @@ describe('the large-yard case and the prize families', () => {
   it("the node's case, its count against the trace's bar, its signals in plain words", () => {
     const ly = largeYardOf(core.meta, 'Batteries', 'Assembly', node('Batteries|Assembly'))!;
     expect(ly).toEqual({ holds: false, n: 2, bar: 5, signals: ['passive', 'substitutable', 'easy_qualification'], unknown: [], floor: false, own: false, reason: null });
-    expect(largeYardWords(ly)).toBe('Does not hold: 2 commodity signals hold; 5 required.');
+    expect(largeYardWords(ly)).toBe('Does not hold: 2 commodity signals hold (5 needed).');
+    // the count reads the commodity signals: the required ones are listed apart, so the two agree
+    expect(splitSignals(ly.signals)).toEqual({ required: ['passive'], commodity: ['substitutable', 'easy_qualification'] });
+    expect(splitSignals(ly.signals).commodity).toHaveLength(ly.n!);
     expect(signalWords(ly.signals)).toBe('passive, substitutable, quick to qualify');
     expect([countWords(1, null), countWords(null, 5)]).toEqual(['1 commodity signal holds', null]);
     // an undecided node; a node the core has no evidence for

@@ -97,7 +97,7 @@ describe('variable charts: every mapped measure exists in the Sector catalogue',
     const vs = fenceVariables('prize', { siv: true, prizeLabel: 'Strategic Industrial Value' });
     const by = (id: string) => vs.find((v) => v.id === id) as FenceVariable;
     expect(vs.map((v) => v.id)).toEqual(['opportunity', 'market', 'commons', 'option', 'node-prize', 'home', 'investment', 'outlook', 'need']);
-    for (const id of ['commons', 'option']) expect(by(id).none).toMatch(/node attribute .*no measure of it/);
+    for (const id of ['commons', 'option']) expect(by(id).none).toMatch(/attribute of each supply-chain step .*no measure of it/);
     for (const id of ['opportunity', 'market']) expect(by(id).none).toMatch(/^A composite score/);
     for (const id of ['node-prize', 'home', 'investment']) expect(by(id).charts.length, id).toBeGreaterThan(0);
     // a core whose prize is the market measure: Industrial Opportunity, without the three families

@@ -328,7 +328,7 @@ export default function CountryView({ embedded = false }: { embedded?: boolean }
         <div className="flex flex-col gap-6">
           {core.data.notes.length > 0 && <Notice kind="info">{core.data.notes.map(noteText).join(' ')}</Notice>}
           <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 ${updating ? 'chart-updating' : ''}`}>
-            <StatTile label="Coalition tier" value={c.tier === 'none' ? 'Not a member' : tierLabel(c.tier)} sub={c.eu_member ? 'EU member (the coalition counts the EU as one node)' : (c.region ?? undefined)} />
+            <StatTile label="Coalition membership" value={c.tier === 'none' ? 'Not a member' : tierLabel(c.tier)} sub={c.eu_member ? 'EU member (the coalition counts the EU as one member)' : (c.region ?? undefined)} />
             <StatTile label="Ranked sectors" value={`${rankableBoth} of ${cellKeys.size}`} sub="both scores ranked against other economies" />
             <StatTile label="Average Energy Security" value={fmtNum(mean(es.map((p) => p.value)), 2)} sub={`over ${es.length} scored sectors (0 to 1)${!isBaseline ? `; baseline ${fmtNum(mean(es.map((p) => p.value_base)), 2)}` : ''}`} />
             <StatTile label="Average Economic Opportunity" value={fmtNum(mean(eo.map((p) => p.value)), 2)} sub={`over ${eo.length} scored sectors (0 to 1)${!isBaseline ? `; baseline ${fmtNum(mean(eo.map((p) => p.value_base)), 2)}` : ''}`} />

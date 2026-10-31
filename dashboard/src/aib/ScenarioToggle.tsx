@@ -47,21 +47,25 @@ export function ScenarioToggle({ value, onChange, meta, onIntent, aboutHref, fra
       onFocusCapture={onIntent}
       onTouchStart={onIntent}
     >
+      {/* compact by default (render review, 2026-10-31): the page's own question comes first, so the
+          scenario's definition and the framing sit one click away; every page also says which scenario it uses */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
         <div className="shrink-0">
           <Segmented label="Scenario" value={value} options={options} onChange={onChange} hideLabel />
         </div>
-        <p className="min-w-0 text-sm leading-snug text-paper-dim" aria-live="polite">
-          <span className="font-medium text-paper">{chosen.label}:</span> {chosen.words}{' '}
-          <span className="text-paper-mute">{scenarioCaveat(meta)}</span>{' '}
-          <Link className="link whitespace-nowrap" to={aboutHref ?? withScenario(SCENARIOS_ABOUT_HREF, value)}>
-            How the scenarios work &rarr;
-          </Link>
-        </p>
+        <Link className="link whitespace-nowrap text-sm" to={aboutHref ?? withScenario(SCENARIOS_ABOUT_HREF, value)}>
+          How the scenarios work &rarr;
+        </Link>
       </div>
-      <p className="text-xs leading-snug text-paper-mute" data-testid="scenario-framing">
-        {scenarioFramingText(meta, framing)}
-      </p>
+      <details className="text-sm leading-snug text-paper-dim" data-testid="scenario-details">
+        <summary className="cursor-pointer text-xs text-paper-mute">What {chosen.label} means</summary>
+        <p className="mt-1" aria-live="polite">
+          <span className="font-medium text-paper">{chosen.label}:</span> {chosen.words} <span className="text-paper-mute">{scenarioCaveat(meta)}</span>
+        </p>
+        <p className="mt-1 text-xs text-paper-mute" data-testid="scenario-framing">
+          {scenarioFramingText(meta, framing)}
+        </p>
+      </details>
     </section>
   );
 }

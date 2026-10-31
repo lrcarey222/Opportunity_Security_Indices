@@ -6,8 +6,8 @@ extraction (mining and fuels), refining (processed materials), components (parts
 equipment), deployment (installation and use) and recovery (recycling). Eleven technologies at six
 stages make 66 sectors; Semiconductors are shown as well at their three trade stages (refining,
 components and assembly), outside the headline set. Every number is shown in its source's own unit and
-year, with the source, the coverage and the caveats beside it. Apart from the Strategic posture
-sections, which show the strategic position framework's recommendation at fixed thresholds, nothing
+year, with the source, the coverage and the caveats beside it. Apart from the "What each country should do"
+sections, which show the country strategy's recommendation at fixed thresholds, nothing
 here is an index, a weight or a score, and nothing moves with the Perspective dials of the Country
 profile.
 
@@ -257,8 +257,8 @@ note" column of every table carries the fact's own notes (an assumed-zero produc
 ## What this module does not show, and why
 
 * **Index, weight and score values.** Rankings and weights belong to the Country profiles. Each measure's
-  notes say which index it feeds, without showing the index. The one exception is the strategic
-  posture, a recommendation at fixed thresholds, shown in its own section.
+  notes say which index it feeds, without showing the index. The one exception is what each
+  country should do, a recommendation at fixed thresholds, shown in its own section.
 * **Totals across technologies.** Trade baskets overlap, so a sum would count some goods twice.
 * **The same figure twice.** Where a source reports one figure for manufacturing as a whole
   (manufacturing investment, the IEA's manufacturing shares, development aid), the components and

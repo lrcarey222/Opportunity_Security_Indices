@@ -98,13 +98,13 @@ describe('the roles under the toggle', () => {
 
   it('"every shock" is labelled as Decoupling\'s supply shocks, with their labels', () => {
     const l = everyShockLabel(doc);
-    expect(l.phrase).toBe("Major-supplier disruption's three supply shocks and the diversification scenario");
-    expect(l.header).toBe("Major-supplier disruption's 3 supply shocks and the diversification scenario");
+    expect(l.phrase).toBe('all three versions of the major-supplier disruption and the diversification scenario');
+    expect(l.header).toBe('all 3 versions of the major-supplier disruption and the diversification scenario');
     expect(l.note).toBe(
-      "The every-shock totals sum Major-supplier disruption's three supply shocks (Zembla supply removed; Zembla supply halved; Largest supplier of the sub-sector removed), and the diversification scenario, which removes no supplier.",
+      "The totals across all stress tests sum all three versions of the major-supplier disruption (Zembla supply removed; Zembla supply halved; Largest supplier of the sub-sector removed), and the diversification scenario, which removes no supplier.",
     );
     const plain = everyShockLabel({ ...doc, network: { ...doc.network!, variant: { ...doc.network!.variant, shocks: ['zzz_100', 'zzz_50'] } } });
-    expect(plain.phrase).toBe("Major-supplier disruption's two supply shocks");
+    expect(plain.phrase).toBe('both versions of the major-supplier disruption');
   });
 
   it('the economy Decoupling removes, from its shock label', () => {

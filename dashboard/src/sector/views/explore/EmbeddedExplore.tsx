@@ -242,7 +242,7 @@ function Picker({ model, charts, node, iso3, variable }: EmbeddedExploreProps & 
         value={String(i)}
         options={cands.map((c, k) => ({
           value: String(k),
-          label: c.v ? `${c.v.label}${c.covered ? '' : ' (no data for this node)'}` : `${c.chart.m} (not in this data build)`,
+          label: c.v ? `${c.v.label}${c.covered ? '' : ' (no data for this step)'}` : `${c.chart.m} (not in this data build)`,
           disabled: !c.v,
         }))}
         onChange={(k) => setPick(Number(k))}

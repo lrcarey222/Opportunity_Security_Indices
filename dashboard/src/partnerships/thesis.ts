@@ -1,5 +1,5 @@
 // The bilateral relationship thesis (2026-10-20; strategic task spec s.19): for a pair of economies, a short
-// reading of the strategic layer above the Today / OSI recommends / AIB model detail of the partnership
+// reading of the strategic layer above the Today / OSI ranking / AIB model detail of the partnership
 // pages. Template-driven from the export (doc.strategic: the theses, the compact roles and the Strategic
 // AIB Roles); no score, no ranking of partners, nothing re-derived:
 //
@@ -229,10 +229,10 @@ function headlineOf(state: ThesisState, A: ThesisSide, B: ThesisSide, compacts: 
     : more
       ? ` Both take part in ${n} strategic compacts, among them ${names}.`
       : ` Both take part in ${n === 1 ? 'one strategic compact' : `${n} strategic compacts`}: ${names}.`;
-  if (state === 'no-relationship') return `The model links ${name(A.iso3)} and ${name(B.iso3)} by no trade or investment relationship under Managed Interdependence or Decoupling, so it writes no relationship thesis for them.${both}`;
+  if (state === 'no-relationship') return `The analysis finds no trade or investment relationship between ${name(A.iso3)} and ${name(B.iso3)} under Managed Interdependence or the major-supplier disruption, so there is no relationship thesis for them.${both}`;
   const out = [A, B].filter((x) => !x.allied);
   const who = out.map((x) => `${name(x.iso3)} is ${x.assessed ? 'a major supplier outside the allied economies' : 'not one of the allied economies'}`);
-  return `The model writes relationship theses for pairs of allied economies: ${listWords(who)}.${both}`;
+  return `Relationship theses are written for pairs of allied economies: ${listWords(who)}.${both}`;
 }
 
 /**
@@ -279,7 +279,7 @@ export function contributionWords(r: AibCompactRole | null | undefined): string 
 /** A side's Strategic AIB Roles in words ("Capital & Investment Anchor and Demand & Market Anchor; secondary: Coordination / Bridge Hub"). */
 export function strategicRoleWords(side: ThesisSide): string {
   if (!side.assessed) return 'not assessed by the strategic layer (it is not an allied economy or a major supplier)';
-  if (!side.primary.length && !side.secondary.length) return 'no Strategic AIB Role at the model’s bars (described by its compact roles)';
+  if (!side.primary.length && !side.secondary.length) return 'no Strategic AIB Role above the role thresholds (described by its compact roles)';
   const p = side.primary.length ? listWords(side.primary.map((r) => r.name)) : 'no primary Strategic AIB Role';
   const sec = side.secondary.length ? `; secondary: ${listWords(side.secondary.map((r) => r.name))}` : '';
   return `${p}${sec}`;

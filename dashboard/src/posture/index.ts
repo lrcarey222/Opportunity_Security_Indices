@@ -30,7 +30,7 @@ export {
 } from './derive.ts';
 export type { Family, NodeDetail } from './detail.ts';
 export {
-  byPositionOrder, DEPLOYMENT_FAMILIES, deploymentVars, familyWords, FENCE_TOP_N, fenceGroups, fenceReason, pathwayWords, positionVars, prizeVars, shareWords, supplyNeedVars, topDeploymentFamily,
+  byPositionOrder, DEPLOYMENT_FAMILIES, deploymentVars, familyWords, FENCE_TOP_N, fenceGroups, fenceReason, pathwayWords, positionVars, prizeVars, shareWords, supplyNeedVars, topDeploymentFamily, unitCountWords,
   tradeMomentumWords, type DeploymentVars, type FenceGroups, type FenceNode, type PositionVars, type PrizeVars, type SupplyNeedVars,
 } from './fences.ts';
 export {

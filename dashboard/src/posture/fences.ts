@@ -18,6 +18,7 @@
 // opens its node's drawer focused on the layer. A layer that shares its node's choice is the node's own row
 // (the drawer lists every layer). Layers come from the economy's detail document, so they join once it is in.
 
+import { TERMS } from '../content/vocabulary.ts';
 import { isProducingStage, stageRank } from '../lib/stages.ts';
 import type { PostureCell, PostureCore, PostureDetail, PostureMeta, PostureThresholds, Verb, Yard } from './contract.ts';
 import { pct, score100 } from './derive.ts';
@@ -68,6 +69,17 @@ export interface FenceGroups {
 
 /** The number of nodes in each top list. */
 export const FENCE_TOP_N = 5;
+
+/**
+ * The size of a fence list in words, a layer unit counted as a layer and not as a step, so the count agrees
+ * with the Strategy Map's legend (which counts whole steps): "20 steps and 4 layers", "1 step", "9 technologies".
+ */
+export function unitCountWords(rows: readonly Pick<FenceNode, 'layer'>[], one = 'step', many = `${one}s`): string {
+  const layers = rows.filter((r) => r.layer).length;
+  const steps = rows.length - layers;
+  const head = `${steps} ${steps === 1 ? one : many}`;
+  return layers ? `${head} and ${layers} ${layers === 1 ? 'layer' : 'layers'}` : head;
+}
 
 const COMPETE: ReadonlySet<Verb> = new Set<Verb>(['preserve', 'catch_up', 'partner']);
 /** a missing value sorts last (every value is 0-1) */
@@ -326,7 +338,7 @@ export function fenceReason(n: FenceNode, core: Pick<PostureCore, 'meta'>, names
     case 'partner': {
       if (c.partnerGap || d?.partnerGap) return 'No credible allied solution yet';
       const lead = d?.partners[0]?.iso3 ?? c.partner1;
-      return lead ? `Best-placed partner: ${names[lead] ?? lead}` : null;
+      return lead ? `${TERMS.bestPlacedPartner}: ${names[lead] ?? lead}` : null;
     }
     case 'accelerate': {
       const top = topDeploymentFamily(n);

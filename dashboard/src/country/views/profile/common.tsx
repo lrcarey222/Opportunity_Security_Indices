@@ -124,7 +124,7 @@ export function BasisTag({ kind, note }: { kind: Basis; note?: string }) {
 
 /** "NEIS baseline" / "your perspective" / "NEIS baseline (model loading)". */
 export function perspectiveNote(si: PerspectiveSi): string {
-  return si.status === 'custom' ? 'your perspective' : si.status === 'loading' ? 'NEIS baseline until the model loads' : 'NEIS baseline';
+  return si.status === 'custom' ? 'your perspective' : si.status === 'loading' ? 'NEIS baseline until the Legacy OSI scores load' : 'NEIS baseline';
 }
 
 /** A page section: <section id> with an h2 (cards inside use h3); `basis` adds the eyebrow above the h2; `lead` a block between the heading and the intro. */
@@ -178,7 +178,7 @@ export function Fold({
         <span className="flex-1">{summary}</span>
         {badge}
       </summary>
-      {open && <div className="space-y-6 pb-4 pt-1">{engine && !engineReady ? <Loading label="Loading the model" /> : children}</div>}
+      {open && <div className="space-y-6 pb-4 pt-1">{engine && !engineReady ? <Loading label="Loading the Legacy OSI scores" /> : children}</div>}
     </details>
   );
 }

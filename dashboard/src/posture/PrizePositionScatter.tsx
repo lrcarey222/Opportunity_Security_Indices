@@ -37,7 +37,7 @@ import {
 import { ChoiceLegend, Swatch } from './PostureLegend.tsx';
 import { PRIZE_QUADRANT_WORDS, prizePositionPoints, prizeTendency, type PrizePoint, type PrizeQuadrant } from './sections.ts';
 
-export const PRIZE_POSITION_TITLE = 'Where is the prize, and where is the country already strong?';
+export const PRIZE_POSITION_TITLE = 'Where is productive capability most valuable, and where is the country already strong?';
 
 const ALL = 'all';
 /** The choices a producing-stage node can take, in the legend's order. */
@@ -86,7 +86,7 @@ export function prizePointLabel(c: PostureCell, prize = PRIZE_LABEL): string {
   const bits = [
     `${c.tech} ${stageDisplay(c.stage)}: ${v ? VERB_LABEL[v] : choiceWord(c)}${c.posture === 'S' && c.rationale ? ` (${RATIONALE_LABEL[c.rationale].toLowerCase()})` : ''}${fence ? `, ${FENCE_LABEL[fence].toLowerCase()}` : ''}`,
   ];
-  bits.push(`${prize} ${pct(c.prize)}`, `Competitive Position ${pct(c.cp)}`, `supply-chain need ${pct(c.need)}`, `trade momentum ${momentumWords(c)}`);
+  bits.push(`${prize} ${pct(c.prize)}`, `Competitive Position ${pct(c.cp)}`, `supply-chain vulnerability ${pct(c.need)}`, `trade momentum ${momentumWords(c)}`);
   if (c.alignment) bits.push(`policy ${ALIGNMENT_LABEL[c.alignment].toLowerCase()}`);
   if (c.evidence) bits.push(`evidence ${EVIDENCE_LABEL[c.evidence].toLowerCase()}`);
   return bits.join('; ');
@@ -116,7 +116,7 @@ const colsOf = (prize: string): Col<ScatterRow>[] => [
   { id: 'choice', header: 'Choice', value: (r) => r.choice },
   { id: 'prize', header: prize, value: (r) => r.prize, cell: (r) => pct(r.prize), num: true },
   { id: 'cp', header: 'Competitive Position', value: (r) => r.cp, cell: (r) => pct(r.cp), num: true },
-  { id: 'need', header: 'Supply-chain need', value: (r) => r.need, cell: (r) => pct(r.need), num: true },
+  { id: 'need', header: 'Supply-chain vulnerability', value: (r) => r.need, cell: (r) => pct(r.need), num: true },
   { id: 'momentum', header: 'Trade momentum', value: (r) => r.momentum },
   { id: 'alignment', header: 'Policy alignment', value: (r) => r.alignment },
   { id: 'evidence', header: 'Evidence', value: (r) => r.evidence },
@@ -315,7 +315,7 @@ export function PrizePositionScatter({
                   title={`${hov.p.tech} · ${stageDisplay(hov.stage)}`}
                   lines={[
                     hov.p.cell.posture === 'S' && hov.p.cell.rationale ? `Secure: ${RATIONALE_LABEL[hov.p.cell.rationale]}` : null,
-                    `Supply-chain need ${pct(hov.p.need)}`,
+                    `Supply-chain vulnerability ${pct(hov.p.need)}`,
                     `${prize} ${pct(hov.p.prize)}`,
                     `Competitive Position ${pct(hov.p.cp)}`,
                     `Trade momentum: ${momentumWords(hov.p.cell)}`,

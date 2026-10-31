@@ -29,7 +29,7 @@ export function engineLoadingLabel(state: Pick<EngineState, 'manifest'>): string
   const chunks = state.manifest?.chunks ?? [];
   const initial = chunks.filter((c) => c.initial);
   const bytes = initial.reduce((s, c) => s + (c.bytes_gz ?? 0), 0);
-  return bytes > 0 ? `Loading the model, ${fmtBytes(bytes)}` : 'Loading the model';
+  return bytes > 0 ? `Loading the Legacy OSI scores, ${fmtBytes(bytes)}` : 'Loading the Legacy OSI scores';
 }
 
 /** Under an EngineProvider: the failure, the fallback while loading, else the children. */

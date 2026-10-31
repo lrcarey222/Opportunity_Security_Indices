@@ -430,12 +430,12 @@ export interface DivisionLegend {
 }
 
 const MEASURE_WORDS: Readonly<Record<DivisionMeasure, { title: string; short: string }>> = {
-  supply: { title: 'Share of world supply of the node (exports or production, the larger)', short: 'Physical capability' },
-  demand: { title: 'Share of the allied demand scope’s imports of the node', short: 'Allied demand' },
+  supply: { title: 'Share of world supply of the step (exports or production, the larger)', short: 'Physical capability' },
+  demand: { title: 'Share of allied imports of the step', short: 'Allied demand' },
   host: {
     title:
-      'Host of simulated new capacity on a node that needs it: a capable host tied with the model’s best on simulated gain (Managed Interdependence or Decoupling, the better rank; inside a tie the rank is the model’s capability tie-break)',
-    short: 'Investment host',
+      'Could host simulated new capacity at a step that needs it: a capable country tied with the best on simulated gain (Managed Interdependence or the major-supplier disruption, the better rank; inside a tie, capability sets the order)',
+    short: 'New capacity',
   },
 };
 
@@ -462,7 +462,7 @@ export function divisionLegend(measure: DivisionMeasure): DivisionLegend {
     measure,
     title: MEASURE_WORDS[measure].title,
     levels,
-    note: 'Who does what in the compact today, from the model’s evidence: no economy is expected to build every node.',
+    note: 'Who does what in the compact today. No country is expected to build every step.',
   };
 }
 

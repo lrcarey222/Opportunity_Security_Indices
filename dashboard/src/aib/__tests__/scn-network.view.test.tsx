@@ -93,10 +93,10 @@ describe('the Country roles page under the toggle', () => {
     renderAt('/aib/roles?scn=decoupling');
     expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     const note = within(main()).getAllByTestId('modelled-note')[0].textContent ?? '';
-    expect(note).toContain('Zembla supply removed; supply assumption: reallocation');
+    expect(note).toContain('Zembla supply removed; assumption about how much suppliers can expand: reallocation');
     expect(note).not.toContain('every');
     expect(screen.getByTestId('every-shock-note').textContent).toBe(
-      "The every-shock totals sum Major-supplier disruption's three supply shocks (Zembla supply removed; Zembla supply halved; Largest supplier of the sub-sector removed), and the diversification scenario, which removes no supplier. They appear only in the table and in each role's details; every role is read on Major-supplier disruption alone.",
+      "The totals across all stress tests sum all three versions of the major-supplier disruption (Zembla supply removed; Zembla supply halved; Largest supplier of the sub-sector removed), and the diversification scenario, which removes no supplier. They appear only in the table and in each role's details; every role is read on Major-supplier disruption alone.",
     );
     expect(within(main()).getByText('AIB analysis · Major-supplier disruption')).toBeTruthy();
     // EEE hosts new capacity only under another shock: no host role under Decoupling
@@ -105,7 +105,7 @@ describe('the Country roles page under the toggle', () => {
     // Avalon buys from three economies under Decoupling (four across every shock, in the cell's words)
     const aaaBuyer = (document.getElementById('role-AAA') as HTMLElement).querySelectorAll('td')[4];
     expect(aaaBuyer.textContent).toContain('3 suppliers');
-    expect(aaaBuyer.querySelector('[title]')!.getAttribute('title')).toMatch(/with 3 suppliers; across Major-supplier disruption's three supply shocks and the diversification scenario: .*, 4 suppliers \(/);
+    expect(aaaBuyer.querySelector('[title]')!.getAttribute('title')).toMatch(/with 3 suppliers; across all three versions of the major-supplier disruption and the diversification scenario: .*, 4 suppliers \(/);
     // today against the scenario
     const today = await screen.findByTestId('roles-today');
     expect(within(today).getByText('Today · observed')).toBeTruthy();
@@ -156,7 +156,7 @@ describe('the Country roles page under the toggle', () => {
     fireEvent.click(within(matrix).getByRole('button', { name: 'Table' }));
     const heads = within(matrix).getAllByRole('columnheader').map((h) => h.textContent ?? '');
     expect(heads.some((h) => h.startsWith('Resource / Supplier: Managed Interdependence'))).toBe(true);
-    expect(heads.some((h) => /supply shocks/.test(h))).toBe(false);
+    expect(heads.some((h) => /versions of the/.test(h))).toBe(false);
     noAcronyms();
   });
 
@@ -187,7 +187,7 @@ describe('the Country roles page under the toggle', () => {
     expect(await h1(ROLES_PAGE_TITLE)).toBeTruthy();
     expect(screen.queryByTestId('roles-today')).toBeNull();
     expect(within(main()).getByText('Observed data and analysis')).toBeTruthy();
-    expect(within(main()).getAllByTestId('modelled-note')[0].textContent).toContain('"every shock" sums');
+    expect(within(main()).getAllByTestId('modelled-note')[0].textContent).toContain('"every stress test" sums');
     expect(screen.queryByTestId('every-shock-note')).toBeNull();
     expect(source.calls.filter((f) => f.startsWith('scenario-'))).toEqual([]);
   });

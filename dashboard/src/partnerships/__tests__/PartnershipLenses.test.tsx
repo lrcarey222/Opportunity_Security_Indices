@@ -1,6 +1,6 @@
 // The shared three-lens partnerships component (2026-10-19): the kind control (a radio group of the four
 // kinds), the cross-lens summary (readings in plain words, names linked where the page gives a link, "and N
-// more"), three tagged panels in the order Today, OSI recommends, AIB model (its scenario in the tag and the
+// more"), three tagged panels in the order Today, OSI ranking, AIB model (its scenario in the tag and the
 // heading), the one-line empty state of a lens with no data (never a blank panel), and no bare acronym.
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -47,24 +47,24 @@ describe('PartnershipLenses', () => {
     expect((radios[0] as HTMLInputElement).checked).toBe(true);
     fireEvent.click(radios[3]);
     expect(onKind).toHaveBeenCalledWith('geopolitical');
-    // the panels: Today, OSI recommends, AIB model (h2 here), each tagged
+    // the panels: Today, OSI ranking, AIB model (h2 here), each tagged
     const panels = screen.getAllByTestId(/^lens-(today|osi|aib)$/);
     expect(panels.map((p) => p.getAttribute('data-lens'))).toEqual(['today', 'osi', 'aib']);
     expect(screen.getByRole('heading', { level: 2, name: 'Today' })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 2, name: 'OSI recommends' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'OSI ranking' })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'AIB analysis: Managed Interdependence' })).toBeTruthy();
-    expect(panels.map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual(['Today · observed', 'OSI recommends · NEIS defaults', 'AIB analysis · Managed Interdependence']);
+    expect(panels.map((p) => p.querySelector('[data-lens-tag]')?.textContent)).toEqual(['Today · observed', 'OSI ranking · NEIS defaults', 'AIB analysis · Managed Interdependence']);
     expect(within(panels[1]).getByText('osi body')).toBeTruthy();
     // the summary: Carpania is named by all three
     const sum = screen.getByTestId('cross-lens-summary');
-    expect(within(sum).getByRole('heading', { level: 2 }).textContent).toBe('Where the lenses agree: trade, Avalon');
+    expect(within(sum).getByRole('heading', { level: 2 }).textContent).toBe('Where the three readings agree: trade, Avalon');
     expect(within(sum).getByTestId('cross-lens-line').textContent).toBe('The three lenses name 4 partners: 1 by all three and 3 by one.');
     const items = within(sum).getAllByRole('listitem');
     expect(items[0].textContent).toBe('A tie today that both OSI and the AIB keep (1): Carpania');
     expect(within(items[0]).getByRole('link', { name: 'Carpania' }).getAttribute('href')).toBe('/countries/CCC');
     // a name without a page is text
     const aibOnly = items.find((li) => li.getAttribute('data-reading') === 'aib')!;
-    expect(aibOnly.textContent).toBe('Chosen by the AIB, not a tie today and not recommended by OSI (1): Elbonia');
+    expect(aibOnly.textContent).toBe('Chosen by the AIB, not a tie today and not ranked high by OSI (1): Elbonia');
     expect(within(aibOnly).queryByRole('link')).toBeNull();
     expect(bareAcronyms(document.body)).toEqual([]);
   });
@@ -78,7 +78,7 @@ describe('PartnershipLenses', () => {
     const today = screen.getByTestId('lens-today');
     expect(within(today).getByTestId('lens-empty').textContent).toBe('No aid data for Avalon in this build.');
     const sum = screen.getByTestId('cross-lens-summary');
-    expect(within(sum).getByTestId('cross-lens-line').textContent).toBe('Only OSI recommends has partners here, so there is nothing to compare it with yet: Borduria.');
+    expect(within(sum).getByTestId('cross-lens-line').textContent).toBe('Only OSI ranking has partners here, so there is nothing to compare it with yet: Borduria.');
     expect(within(sum).getByText('Still loading: AIB analysis.')).toBeTruthy();
     expect(within(sum).getByTestId('cross-lens-absent-today').textContent).toBe('Today: no aid data for Avalon; left out of the comparison.');
   });
@@ -98,6 +98,6 @@ describe('PartnershipLenses', () => {
     );
     const li = screen.getAllByRole('listitem')[0];
     expect(li.textContent).toMatch(new RegExp(`\\(8\\): .* and ${keys.length - SUMMARY_NAMES} more$`));
-    expect(screen.getByRole('heading', { level: 3 }).textContent).toBe('Where the lenses agree: geopolitical, every economy');
+    expect(screen.getByRole('heading', { level: 3 }).textContent).toBe('Where the three readings agree: geopolitical, every economy');
   });
 });

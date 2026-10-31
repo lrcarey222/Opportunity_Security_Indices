@@ -132,7 +132,7 @@ function Compact({ c }: { c: AibCompact }) {
   const full = titleOf(c, true);
   const members = view ? coalitionMembersOf(view).length : null;
   const kind = typed && type
-    ? `${type.short}, ${typed.archetype.replace(/ Compact$/, '').toLowerCase()} archetype`
+    ? `${type.short} (${typed.archetype.replace(/ Compact$/, '').toLowerCase()} type)`
     : viewState.status === 'none' ? 'No coalition under Managed Interdependence' : ws ? 'Workstream' : 'Sectoral compact';
   const head = `${title !== full ? `${full}. ` : ''}${kind}: ${coversWords(compactNodes(c, nodeOf))}${stages.length ? ` across the ${listWords(stages)} ${stages.length === 1 ? 'stage' : 'stages'}` : ''}, ${plural(c.nodes.length, 'supply-chain step')}${members !== null ? ` and ${plural(members, 'partner')}` : ''}.`;
   // the guide's compact lede: what is exposed, what existing partners cover, what coordination adds, what is left

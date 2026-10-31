@@ -277,10 +277,10 @@ export function everyShock(doc: Pick<AibDoc, 'meta' | 'network'>): EveryShock {
     ? {
         supplyShocks,
         diversify,
-        phrase: 'every shock and the diversification scenario',
-        note: `"every shock" sums the ${plural(supplyShocks, 'supply shock')} and the diversification scenario, which removes no supplier`,
+        phrase: 'every stress test and the diversification scenario',
+        note: `"every stress test" sums the ${plural(supplyShocks, 'supply disruption')} and the diversification scenario, which removes no supplier`,
       }
-    : { supplyShocks, diversify, phrase: 'every shock', note: `"every shock" sums the ${plural(shocks.length, 'configured shock')}` };
+    : { supplyShocks, diversify, phrase: 'every stress test', note: `"every stress test" sums the ${plural(shocks.length, 'configured disruption')}` };
 }
 
 /** A contribution (share of node demand summed over nodes) as points: "24.6 pts", "<0.1 pts", "0 pts". */
@@ -393,12 +393,13 @@ export function everyShockLabel(doc: Pick<AibDoc, 'meta' | 'network'>): EverySho
   const label = scenarioInfo(doc.meta, 'decoupling').label;
   const supply = (doc.network?.variant.shocks ?? []).filter((s) => s !== dv);
   const tail = e.diversify ? ' and the diversification scenario' : '';
-  const shockWords = (n: number) => (n === 1 ? 'supply shock' : 'supply shocks');
+  // "all three versions of the major-supplier disruption" (the scenario's supply disruptions, each a stress test)
+  const versions = (n: string | number) => (e.supplyShocks === 1 ? `the one version of the ${label.toLowerCase()}` : e.supplyShocks === 2 ? `both versions of the ${label.toLowerCase()}` : `all ${n} versions of the ${label.toLowerCase()}`);
   const labels = supply.map((s) => shockLabelOf(doc.meta, s));
   return {
-    phrase: `${label}'s ${numberWord(e.supplyShocks)} ${shockWords(e.supplyShocks)}${tail}`,
-    header: `${label}'s ${e.supplyShocks} ${shockWords(e.supplyShocks)}${tail}`,
-    note: `The every-shock totals sum ${label}'s ${numberWord(e.supplyShocks)} ${shockWords(e.supplyShocks)}${labels.length ? ` (${labels.join('; ')})` : ''}${e.diversify ? ', and the diversification scenario, which removes no supplier' : ''}.`,
+    phrase: `${versions(numberWord(e.supplyShocks))}${tail}`,
+    header: `${versions(e.supplyShocks)}${tail}`,
+    note: `The totals across all stress tests sum ${versions(numberWord(e.supplyShocks))}${labels.length ? ` (${labels.join('; ')})` : ''}${e.diversify ? ', and the diversification scenario, which removes no supplier' : ''}.`,
   };
 }
 

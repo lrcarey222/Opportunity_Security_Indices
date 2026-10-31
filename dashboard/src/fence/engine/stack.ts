@@ -86,7 +86,7 @@ export function explainTransition(beforeA: Assessment, before: YardResult, after
     if (before.yard === 'medium' && after.yard === 'large')
       explanation = `The industrial-capability rationale weakens: ${because || 'the capability case changed'}.`;
     if (before.yard === after.yard)
-      explanation = `Same yard, different posture: ${after.recommendedPosture.toLowerCase()}. ${explanation}`;
+      explanation = `Same yard, different approach: ${after.recommendedPosture.toLowerCase()}. ${explanation}`;
   } else explanation = `The result changed because ${describe(changedInputs) || 'assumptions changed'}.`;
   return { changed, from: before.yard, to: after.yard, headline, explanation, pivot: pivotNode?.id, changedInputs };
 }

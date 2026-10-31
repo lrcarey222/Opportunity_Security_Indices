@@ -8,7 +8,7 @@
 //                   aid it receives and gives (OECD; the Sector bundle, loaded only on that tab).
 //                   Geopolitical: its coalition tier, UN-vote bloc and agreements, and the economies it
 //                   shares an agreement with.
-//   OSI recommends  the partner scores of the fact sheet at the NEIS baseline (Partnership Opportunity,
+//   OSI ranking  the partner scores of the fact sheet at the NEIS baseline (Partnership Opportunity,
 //                   Friendshore, Development Potential; sector by sector in disclosures), and the allied
 //                   coalition (the Country manifest's tiers) with Friendshore's alignment part.
 //   AIB model       the toggled scenario (scn: Decoupling, or Managed Interdependence from its file; the
@@ -39,7 +39,7 @@ import { ChartCard } from '../../../charts/ChartCard.tsx';
 import { Term } from '../../../components/Term.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
 import { Loading, Select } from '../../../components/ui.tsx';
-import { AIB_CLASS_NAME, PARTNERSHIP } from '../../../content/vocabulary.ts';
+import { AIB_CLASS_NAME, PARTNERSHIP, SCENARIO_NAME } from '../../../content/vocabulary.ts';
 import { cellOf, type PartnerRow } from '../../contract.ts';
 import { PartnerSlope } from '../../charts/PartnerSlope.tsx';
 import { SupplierMatrix } from '../../charts/SupplierMatrix.tsx';
@@ -231,7 +231,7 @@ function aibPending(sc: CountryScenario, status: 'loading' | 'ready' | 'error' |
       ),
     };
   }
-  if (sc.load.missing) return { names: lensNone('this build has no Managed Interdependence detail'), tools: sc.tools, empty: 'This data build has no Managed Interdependence detail for the partnerships: choose Decoupling.' };
+  if (sc.load.missing) return { names: lensNone('this build has no Managed Interdependence detail'), tools: sc.tools, empty: `This data build has no Managed Interdependence detail for the partnerships: choose ${SCENARIO_NAME.decoupling}.` };
   return { names: LENS_LOADING, tools: sc.tools, content: <Loading label="Loading the Managed Interdependence results" /> };
 }
 
@@ -275,7 +275,7 @@ export function PartnershipsSection({
         {kind === 'geopolitical' && <GeopoliticalLenses onKind={onKind} />}
       </div>
       <div>
-        <Fold id="partner-table" summary={`Every partner of ${name}: priority partners beside today's partners, partner by partner (NEIS defaults)`}>
+        <Fold id="partner-table" summary={`Every partner of ${name}: priority partners beside today's partners, partner by partner (scored at the NEIS default weights)`}>
           {rows.length ? (
             <>
               <SlopeCard />
@@ -293,7 +293,7 @@ export function PartnershipsSection({
 /** The model's partner scores under the reader's Perspective (the dials; Legacy OSI since 2026-10-29). */
 export function PartnerScoresFold() {
   return (
-    <Fold id="partners-model" engine summary="Partner scores under your perspective: Partnership Strength, Friendshore, Partnership Opportunity and Development Potential (the model)">
+    <Fold id="partners-model" engine summary="Partner scores under your perspective: Partnership Strength, Friendshore, Partnership Opportunity and Development Potential (Legacy OSI)">
       <PartnersView embedded />
     </Fold>
   );
@@ -343,7 +343,7 @@ function PairThesisCard() {
       value={b ?? ''}
       options={[
         ...(b ? [] : [{ value: '', label: 'Choose a partner' }]),
-        ...ordered.map((r) => ({ value: r.iso3, label: r.name, group: withThesis.has(r.iso3) ? 'With a relationship thesis' : 'No thesis in the model' })),
+        ...ordered.map((r) => ({ value: r.iso3, label: r.name, group: withThesis.has(r.iso3) ? 'With a relationship thesis' : 'No relationship thesis' })),
       ]}
       onChange={(v) => setPartner(v || null)}
       className="max-w-xs"
@@ -832,7 +832,7 @@ function GeopoliticalLenses({ onKind }: { onKind: (k: PartnershipKind) => void }
           </p>
         </Card>
         <Card id="geo-osi-fs" title="Friendshore partners and how they vote">
-          <p className="text-xs text-paper-mute">Friendshore weighs UN-vote alignment as one of its parts; {poss(name)} strongest Friendshore partners, with their coalition tier and alignment.</p>
+          <p className="text-xs text-paper-mute">Friendshore weighs UN-vote alignment as one of its parts; {poss(name)} strongest Friendshore partners, with their coalition membership and alignment.</p>
           {fsTop.length ? (
             <RankedNames
               rows={fsTop}

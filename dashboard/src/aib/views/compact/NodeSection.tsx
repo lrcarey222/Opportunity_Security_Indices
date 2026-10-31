@@ -33,7 +33,7 @@ import { NODE_MARK, NodeCoverageBar } from '../../charts/NodeCoverageBar.tsx';
 import { CoverageLegend, ScenarioTag } from '../../charts/ScenarioCompare.tsx';
 import { ACCEPTABLE_COVERAGE, COSTLESS_COLOR, FrontierChart, REQUIRED_COLOR } from '../../charts/FrontierChart.tsx';
 import { capLabel, FRONTIER_SERIES, frontierReadings, frontierRows, hasReoptimizedN1, INSTANTANEOUS_N1_LABEL, N1_REOPTIMIZED_LABEL, nodesWithFrontier, type FrontierRow } from '../../derive/frontier.ts';
-import { classInfo, classMix, policyNeedsWords } from '../../derive/classes.ts';
+import { classInfo, classMix, PHYSICAL_WARNING_INLINE, policyNeedsWords } from '../../derive/classes.ts';
 import { fmtPp, fmtScore, fmtShare, fmtUsd, listWords, plural } from '../../derive/format.ts';
 import { screenedHostNote } from '../../derive/investment.ts';
 import { nodeCsvRow, nodeRow } from '../../derive/nodes.ts';
@@ -85,7 +85,7 @@ function NodeCells({ n }: { n: AibNode }) {
 /** The step-by-step section's title (the guide: "Supply-chain step by step"; a node in the data). */
 export const NODE_SECTION_TITLE = 'Supply-chain step by step';
 
-const clsText = (cls: string | null, warning: boolean | null) => (cls ? `${classInfo(cls).label}${warning ? ` (${AIB_PHYSICAL_WARNING})` : ''}` : null);
+const clsText = (cls: string | null, warning: boolean | null) => (cls ? `${classInfo(cls).label}${warning ? ` (${PHYSICAL_WARNING_INLINE})` : ''}` : null);
 
 function NodeItem({ n }: { n: AibNode }) {
   const { name, names, meta, scenario, hasScenarios } = useCompact();
@@ -151,16 +151,16 @@ function NodeItem({ n }: { n: AibNode }) {
             {mi ? (
               r.ran ? (
                 <>
-                  Share shifted {fmtShare(r.exposure)} ({fmtUsd(r.lostUsd)} of {fmtUsd(r.demandUsd)}) · existing {fmtShare(r.existing)} &rarr; optimized {fmtShare(r.optimized)} (dividend{' '}
-                  {fmtPp(r.dividend)}) · residual gap {fmtShare(r.residual)}
+                  Share shifted {fmtShare(r.exposure)} ({fmtUsd(r.lostUsd)} of {fmtUsd(r.demandUsd)}) · existing relationships {fmtShare(r.existing)} &rarr; coordinated trade {fmtShare(r.optimized)} (gain from acting together{' '}
+                  {fmtPp(r.dividend)}) · remaining gap {fmtShare(r.residual)}
                 </>
               ) : (
                 <>Under Managed Interdependence: {nodeScenarioNote(r) ?? 'unchanged'}.</>
               )
             ) : (
               <>
-                Shock exposure {fmtShare(n.exposure)} ({fmtUsd(n.lostUsd)} of {fmtUsd(n.demandUsd)}) · existing {fmtShare(n.existing)} &rarr; optimized {fmtShare(n.optimized)} (dividend{' '}
-                {fmtPp(n.dividend)}) · residual gap {fmtShare(n.residual)}
+                Supply exposed to the disruption {fmtShare(n.exposure)} ({fmtUsd(n.lostUsd)} of {fmtUsd(n.demandUsd)}) · existing relationships {fmtShare(n.existing)} &rarr; coordinated trade {fmtShare(n.optimized)} (gain from acting together{' '}
+                {fmtPp(n.dividend)}) · remaining gap {fmtShare(n.residual)}
               </>
             )}
           </p>
@@ -173,7 +173,7 @@ function NodeItem({ n }: { n: AibNode }) {
                   <Economy iso3={t.iso3} /> {fmtShare(t.share, 0)}
                 </span>
               ))}{' '}
-              <span className="text-paper-mute">(shares of its allied demand, before any shock)</span>
+              <span className="text-paper-mute">(shares of its allied demand, before any disruption)</span>
             </p>
           )}
         </div>
@@ -197,7 +197,7 @@ function NodeItem({ n }: { n: AibNode }) {
               </>
             ) : n.largest ? (
               <>
-                <Economy iso3={n.largest} /> ({fmtShare(n.largestShare)}; before the shock <Economy iso3={n.baseLargest} /> {fmtShare(n.baseLargestShare)})
+                <Economy iso3={n.largest} /> ({fmtShare(n.largestShare)}; before the disruption <Economy iso3={n.baseLargest} /> {fmtShare(n.baseLargestShare)})
               </>
             ) : (
               '–'
@@ -214,10 +214,10 @@ function NodeItem({ n }: { n: AibNode }) {
           {!mi && n.diversion !== undefined && (
             <>
               <dt className="text-paper-mute">Redirected from other markets</dt>
-              <dd className="text-paper-dim">{fmtShare(n.diversion)} of demand, served by exports pulled from markets outside the demand scope</dd>
+              <dd className="text-paper-dim">{fmtShare(n.diversion)} of demand, served by exports pulled from markets outside the countries whose supply needs to be replaced</dd>
             </>
           )}
-          <dt className="text-paper-mute">{typed ? 'Scaling hosts' : 'Investment hosts'}</dt>
+          <dt className="text-paper-mute">{typed ? 'Scaling hosts' : 'Countries that could add capacity'}</dt>
           <dd className="text-paper-dim">
             {mi ? (r.ran ? ((n.diversify?.hosts.length ?? 0) ? listWords(n.diversify!.hosts.map((h) => name(h))) : 'none ranked') : 'none: nothing to replace') : n.hosts.length ? listWords(n.hosts.map((h) => name(h))) : 'none ranked'}
           </dd>
@@ -233,7 +233,7 @@ function NodeItem({ n }: { n: AibNode }) {
             <>
               <dt className="text-paper-mute">Screened out</dt>
               <dd className="text-paper-dim tabular" data-testid="node-screened-host">
-                {screenedHostNote(n, name)} (alignment screen: economies outside the demand scope that vote with the China-leaning UNGA bloc do not host)
+                {screenedHostNote(n, name)} (alignment screen: economies outside the countries whose supply needs to be replaced that vote with the China-leaning UNGA bloc do not host)
               </dd>
             </>
           )}
@@ -399,7 +399,7 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
     >
       <ChartCard
         headingLevel={3}
-        title="Each step's coverage and treatment"
+        title="What each step needs and how much demand can be met"
         badge={hasScenarios ? <ScenarioTag id={scenario} meta={meta} /> : undefined}
         sub={
           hasScenarios
@@ -481,22 +481,22 @@ export function FrontierCard() {
   });
   const summary = node
     ? `${node.label}: ${rows.map((r) => `limit ${capLabel(r.cap)}: coverage ${fmtShare(r.coverage)}, N-1 re-optimized ${fmtShare(r.n1Reoptimized)}, instantaneous N-1 ${fmtShare(r.instantaneousN1)}`).join('; ')}.`
-    : 'No node of this compact has a supplier-limit frontier.';
+    : 'No supply-chain step of this compact has a resilience/concentration trade-off curve.';
   return (
     <ChartCard
       headingLevel={3}
       title="Specialization and resilience by supplier limit"
       badge={hasScenarios && scenario === 'managed' ? <ScenarioTag id="decoupling" meta={meta} /> : undefined}
-      sub="Each limit re-solves the node with no exporter allowed more than that share of the supply. Coverage is the share of demand served. Two readings of resilience follow: N-1 re-optimized removes the largest remaining supplier and re-optimizes the trade (the true N-1 test); instantaneous N-1 retained coverage is mechanical, coverage × (1 − the largest supplier's share), with nothing re-routed. The specialization score (0 to 1) is how much of the supply comes from exporters with a revealed comparative advantage in the node. Tighter limits buy resilience at some cost in coverage and specialization."
+      sub="Each limit re-solves the step with no exporter allowed more than that share of the supply. Coverage is the share of demand served. Two readings of resilience follow: N-1 re-optimized removes the largest remaining supplier and re-optimizes the trade (the true N-1 test); instantaneous N-1 retained coverage is mechanical, coverage × (1 − the largest supplier's share), with nothing re-routed. The specialization score (0 to 1) is how much of the supply comes from exporters with a revealed comparative advantage in the step. Tighter limits buy resilience at some cost in coverage and specialization."
       tools={
         withFrontier.length > 1 ? (
-          <Select label="Sub-sector" hideLabel value={node?.id ?? ''} options={withFrontier.map((n) => ({ value: n.id, label: n.label }))} onChange={setPick} className="min-w-[14rem]" />
+          <Select label="Step for the trade-off curve" hideLabel value={node?.id ?? ''} options={withFrontier.map((n) => ({ value: n.id, label: n.label }))} onChange={setPick} className="min-w-[14rem]" />
         ) : undefined
       }
       summary={summary}
       legend={
         <Legend
-          label="Frontier lines"
+          label="Trade-off lines"
           items={[
             ...FRONTIER_SERIES.filter((s) => rows.some((r) => r[s.key] !== null)).map((s) => ({ label: s.label, color: s.color, kind: 'line' as const, dash: s.dash })),
             { label: `${acceptable} coverage after the N-1 test`, color: 'rgb(255 255 255 / 0.4)', kind: 'line' as const, dash: '2,3' },

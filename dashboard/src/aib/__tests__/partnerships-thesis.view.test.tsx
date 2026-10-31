@@ -155,7 +155,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the relationshi
     await h1();
     const card = screen.getByTestId('relationship-thesis');
     expect(card.getAttribute('data-state')).toBe('outside');
-    expect(within(card).getByTestId('thesis-headline').textContent).toMatch(/^The model writes relationship theses for pairs of allied economies: Zembla is a major supplier outside the allied economies\./);
+    expect(within(card).getByTestId('thesis-headline').textContent).toMatch(/^Relationship theses are written for pairs of allied economies: Zembla is a major supplier outside the allied economies\./);
     expect(within(card).queryByTestId('thesis-logic')).toBeNull();
   });
 

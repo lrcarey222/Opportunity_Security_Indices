@@ -82,7 +82,7 @@ function PriorityReadout() {
         <p className="mt-1 text-sm text-paper-mute">{name} has no Strategic Index (no International Energy Agency policy records), so the dials do not reorder its sectors.</p>
       )}
       <p className="mt-2 text-xs text-paper-mute">
-        Energy Security, Economic Opportunity, the four corners, the strategy (Strategy to Allied Strategy), trade and the Allied Industrial Base shock and compacts results stay as they
+        Energy Security, Economic Opportunity, the four corners, the strategy (Strategy to Allied Strategy), trade and the Allied Industrial Base stress-test and compact results stay as they
         are. The Strategic priority column in Sector position and &ldquo;Make bets&rdquo; below follow the dials.
       </p>
     </div>
@@ -105,11 +105,11 @@ export function PerspectiveControl() {
         <button type="button" className="btn btn-ghost" aria-expanded={open} aria-controls="perspective-panel" onClick={toggle}>
           Perspective: {custom ? 'custom' : 'NEIS baseline'} <span aria-hidden="true">{open ? '▴' : '▾'}</span>
         </button>
-        {sc ? <LiveSummary open={open} /> : custom ? <span className="text-sm text-paper-mute">Loading the model to apply the dials in the link…</span> : null}
+        {sc ? <LiveSummary open={open} /> : custom ? <span className="text-sm text-paper-mute">Loading the Legacy OSI scores to apply the dials in the link…</span> : null}
         <p className="basis-full text-xs leading-snug text-paper-mute">
           Four dials (Hawkishness, Bullishness, Populism, Climate) re-weight the Legacy OSI priorities, sector rankings and how attractive partners look. They never change the
-          strategy (Strategy to Allied Strategy) or observed or modelled facts: trade flows, concentration, production, shock coverage, capacity gaps and the Allied Industrial Base
-          shock and compacts results.
+          strategy (Strategy to Allied Strategy) or observed or modelled facts: trade flows, concentration, production, the share of demand met in a stress test, capacity gaps and the Allied Industrial Base
+          stress-test and compact results.
         </p>
       </div>
       {open && (
@@ -120,7 +120,7 @@ export function PerspectiveControl() {
               <PriorityReadout />
             </>
           ) : (
-            <Loading label="Loading the model" />
+            <Loading label="Loading the Legacy OSI scores" />
           )}
         </div>
       )}

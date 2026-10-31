@@ -203,7 +203,7 @@ function ThreeWay({ rows }: { rows: OverviewRow[] }) {
     <ChartCard
       headingLevel={3}
       title="The three scenarios side by side"
-      sub={`Every supply-chain step the analysis tests (${weighed}), weighed the same in each scenario. Shares are of allied demand; dollar values are a year at ${meta.tradeYear} trade values.`}
+      sub={`The ${weighed} supply-chain steps with demand and supply figures to compare${doc.nodes.length > weighed ? ` (of ${doc.nodes.length}; the others lack them)` : ''}, weighed the same in each scenario. Shares are of allied demand; dollar values are a year at ${meta.tradeYear} trade values.`}
       summary={summary}
       legend={<CoverageLegend />}
       notes={<span>{scenarioCaveat(meta)}</span>}
@@ -288,7 +288,7 @@ export default function AibOverviewView() {
   const lostWord = mi ? 'shifted supply' : 'lost supply';
   const shareLine = classed
     .filter((g) => g.nodes.length)
-    .map((g) => `${g.info.label} ${plural(g.nodes.length, 'node')}${lostTotal > 0 ? `, ${fmtShare(g.lostUsd / lostTotal, 0)} of ${lostWord}` : ''}`)
+    .map((g) => `${g.info.label} ${plural(g.nodes.length, 'step')}${lostTotal > 0 ? `, ${fmtShare(g.lostUsd / lostTotal, 0)} of ${lostWord}` : ''}`)
     .join('; ');
   const coordWords = `${plural(nCoord, 'step')} ${nCoord === 1 ? 'needs' : 'need'} trade coordination: new trade relationships among partners recover most of the gap.`;
   const takeaway =
@@ -441,7 +441,7 @@ export default function AibOverviewView() {
                 Where acting together recovers most
               </h3>
               <p className="mb-2 mt-1 text-sm text-paper-mute">
-                The coordination dividend: the extra share of allied demand that coordinated trade recovers over existing relationships{mi ? ', with the cap holding' : ''}.
+                The extra share of allied demand that coordinated trade recovers over existing relationships{mi ? ', with the cap holding' : ''} (the coordination dividend).
               </p>
               <NodeList rows={dividends} value={(r) => fmtPp(r.dividend, 0)} label="Steps where coordination recovers most" />
             </section>

@@ -107,7 +107,7 @@ export default function MethodsView() {
               <li>The opportunity&ndash;security space</li>
               <li>Policy activity and the Strategic Index</li>
               <li>The partnership indices</li>
-              <li>The Allied Industrial Base: the supply shock, the coalition&rsquo;s response, new investment and the Sectoral Compacts</li>
+              <li>The Allied Industrial Base: how it tests supply disruptions and concentration, when trade is enough, where new capacity is needed, and the Sectoral Compacts</li>
             </ul>
             {(paper?.url || paper?.pdf) && (
               <p className="mt-3 flex flex-wrap gap-4 text-sm">

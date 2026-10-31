@@ -278,7 +278,7 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
           {nodes.length > 0 && (
             <p className="mt-2 text-xs text-paper-mute">
               {SECTOR_SECTION.allies.question} Allied Industrial Base{shock ? ` stress test (${lc(shock)})` : ''}: supply exposed is the share of allied demand the stress test cuts off; the
-              remaining gap is what even coordinated allied trade cannot recover, which needs new capacity.
+              remaining gap is what even coordinated trade cannot recover, which needs new capacity.
               {taxonomyOf(doc.meta).dictionary ? ' The steps are those of the electro-industrial dictionary whose codes sit here; each result is for the whole step.' : ''}
             </p>
           )}

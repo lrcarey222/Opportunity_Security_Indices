@@ -292,7 +292,8 @@ function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManife
         ))}
       </ul>
       <div className="mt-auto pt-6">
-        <Link className="btn btn-primary" to={info.home}>
+        {/* the long AIB label wraps inside its card at tablet widths (.btn is nowrap) */}
+        <Link className="btn btn-primary" to={info.home} style={{ whiteSpace: 'normal', maxWidth: '100%', textAlign: 'center' }}>
           {spec.button}
         </Link>
       </div>

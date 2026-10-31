@@ -114,8 +114,8 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
           ) : r && r.ran ? (
             <div className="mt-2 space-y-2 text-sm text-paper-dim">
               <p>
-                {fmtShare(r.exposure, 0)} of its allied demand ({fmtUsd(r.lostUsd)}) {mi ? 'has to shift away from suppliers above the cap' : 'is lost to the shock'}. Served:{' '}
-                {mi ? 'the cap alone' : 'the shock alone'} {fmtShare(r.static, 0)}, existing relationships {fmtShare(r.existing, 0)}, coordinated trade {fmtShare(r.optimized, 0)}.
+                {fmtShare(r.exposure, 0)} of its allied demand ({fmtUsd(r.lostUsd)}) {mi ? 'has to shift away from suppliers above the cap' : 'is lost in the disruption'}. Served:{' '}
+                {mi ? 'the cap alone' : 'the disruption alone'} {fmtShare(r.static, 0)}, existing relationships {fmtShare(r.existing, 0)}, coordinated trade {fmtShare(r.optimized, 0)}.
               </p>
               <NodeCoverageBar
                 stat={r.static}
@@ -146,13 +146,13 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
         <Fact term="Largest suppliers (world supply)">{suppliers ?? 'no economy above 2%'}</Fact>
         <Fact term="Largest allied buyers (imports)">{buyers ?? 'no economy above 2%'}</Fact>
         <Fact term="Countries that could add capacity (Managed Interdependence or the major-supplier disruption, the better rank)">
-          {hosts.length ? `${listWords(hosts)}; they tie with the model’s best on simulated gain, so the rank is its capability tie-break` : 'none on a node that needs new capacity'}
+          {hosts.length ? `${listWords(hosts)}; they tie on simulated gain, so capability sets the order` : 'none: this step does not need new capacity'}
         </Fact>
       </dl>
       <p className="mt-3 text-sm">
         {n?.compact ? (
           <Link className="link" to={href(`${compactHref(n.compact)}#nodes`)}>
-            Full node evidence in workstream {n.compact} &rarr;
+            Full evidence for this step in workstream {n.compact} &rarr;
           </Link>
         ) : (
           <span className="text-paper-mute">This step is in no workstream: the analysis found no cluster of partners around it.</span>

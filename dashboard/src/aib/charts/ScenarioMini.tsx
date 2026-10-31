@@ -30,7 +30,7 @@ export function ScenarioMiniBars({ rows, highlight, label, meta }: { rows: reado
         const s = scenarioInfo(meta, r.id);
         const shown = r.id === highlight;
         const served = r.split ? r.split.kept + r.split.trade : null;
-        const text = r.split ? coverageText(r.split) : 'no coverage figures';
+        const text = r.split ? coverageText(r.split) : 'no figures for the share of demand met';
         return (
           <li
             key={r.id}

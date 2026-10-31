@@ -133,7 +133,7 @@ export function FullResult({ e }: { e: Evaluation }) {
         </section>
       </div>
       <section aria-labelledby="yf-posture">
-        <SectionHead id="yf-posture" title="Recommended policy posture" />
+        <SectionHead id="yf-posture" title="Recommended approach" />
         <PolicyPosture result={r} />
         <p className="yf-no-print mt-4 text-sm">
           <Link className="link" to={href('fence')}>

@@ -146,7 +146,7 @@ describe('Prize & Position (spec XIII)', () => {
     expect(sec.style.left).toBe(probe.style.left);
     expect(sec.style.left).toMatch(/52px.*0\.4.*72px|52px.*72px.*0\.4/);
     expect(sec.getAttribute('aria-label')).toBe(
-      'Batteries Refining & Processing: Secure (chokepoint risk), high fence; Strategic Industrial Value 40%; Competitive Position 10%; supply-chain need 95%; trade momentum unavailable; policy needs more attention; evidence strong',
+      'Batteries Refining & Processing: Secure (chokepoint risk), high fence; Strategic Industrial Value 40%; Competitive Position 10%; supply-chain vulnerability 95%; trade momentum unavailable; policy needs more attention; evidence strong',
     );
     // the corner headings sit in the margins above and below the plot: tendencies, not rules
     const q = `${screen.getByTestId('prize-position-quadrants').textContent} ${screen.getByTestId('prize-position-quadrants-low').textContent}`;
@@ -162,7 +162,7 @@ describe('Prize & Position (spec XIII)', () => {
     // the tooltip: the node, its choice and fence, need, prize, position, momentum, alignment, evidence
     fireEvent.mouseEnter(sc.querySelector('[data-key="Batteries|Extraction"]') as Element);
     const tip = screen.getByTestId('prize-position-tip').textContent;
-    for (const w of ['Partner· Medium fence', 'Batteries · Extraction', 'Supply-chain need 80%', 'Strategic Industrial Value 30%', 'Competitive Position 20%', 'Trade momentum: rising', 'Policy alignment: Wrong tool for the problem', 'Evidence: Strong']) {
+    for (const w of ['Partner· Medium fence', 'Batteries · Extraction', 'Supply-chain vulnerability 80%', 'Strategic Industrial Value 30%', 'Competitive Position 20%', 'Trade momentum: rising', 'Policy alignment: Wrong tool for the problem', 'Evidence: Strong']) {
       expect(tip).toContain(w);
     }
     fireEvent.keyDown(sc.querySelector('[data-key="Batteries|Components"]') as Element, { key: 'Enter' });

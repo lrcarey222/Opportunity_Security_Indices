@@ -529,7 +529,7 @@ describe('Sector profile: lenses, supply-chain navigator and groups (IA refactor
     expect(document.getElementById('markets')?.textContent).toContain("Who produces, exports or controls this supply-chain step today, and how strong is each country's position?");
     expect(document.getElementById('security')?.textContent).toContain('How dependent are countries on concentrated or hard-to-replace supply?');
     expect(document.getElementById('policy-technology')?.textContent).toContain('Is government action concentrated where the strategic case is strongest?');
-    expect(document.getElementById('posture')?.textContent).toMatch(/Strategic position framework · fixed thresholds/);
+    expect(document.getElementById('posture')?.textContent).toMatch(/Country strategy · fixed thresholds/);
     expect(document.getElementById('markets')?.contains(document.getElementById('snapshot'))).toBe(true);
     expect(document.getElementById('security')?.contains(document.getElementById('who'))).toBe(true);
     expect(within(document.getElementById('deeper') as HTMLElement).getByRole('link', { name: 'Advanced explorer' }).getAttribute('href')).toMatch(/^\/sector\/explore\?/);

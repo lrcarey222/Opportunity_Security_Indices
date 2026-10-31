@@ -171,7 +171,7 @@ export function roleRuleWords(s: AibStrategic): string {
   const t = s.thresholds;
   const p = (x: number) => ordinal(x * 100);
   return (
-    `Each role has two evidence measures, one of size and one of breadth or depth, taken from the model's results and the partner data. ` +
+    `Each role has two evidence measures, one of size and one of breadth or depth, taken from the Allied Industrial Base results and the partner data. ` +
     `An economy holds a role as primary when both measures are above zero and at or above the ${p(t.pPrimary)} percentile of the economies assessed for it, ` +
     `and as secondary when both are at or above the ${p(t.pSecondary)}. It keeps at most ${t.maxPrimary} primary and ${t.maxSecondary} secondary roles; ` +
     `a further role that meets the bar is listed as qualifying beyond the cap. The two measures are never averaged and there is no overall score: ` +

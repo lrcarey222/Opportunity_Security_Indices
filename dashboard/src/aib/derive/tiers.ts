@@ -97,7 +97,7 @@ export function tierMeanings(o: { mid: number; top: number; reached?: boolean; a
   return {
     'core coordinating member': reached
       ? `Members of the exact minimum coalition (the fewest economies that bring every node to the ${m} target for the demand anchors' demand, the anchors always among them) that are not critical supply partners or prospective hosts: the demand anchors, and suppliers one other candidate could replace.`
-      : `No coalition reaches the ${m} target: the members are the widest coalition the greedy path found, the demand anchors and the economies that bring the weakest node closest to the target.`,
+      : `No coalition reaches the ${m} target: the members are the widest coalition found by adding partners one at a time: the demand anchors and the economies that bring the weakest step closest to the target.`,
     'critical supply partner': reached
       ? `Members the coalition needs at the ${m} target, for the supply they have today, that no single other candidate can replace: without one, only several other economies together restore the target, or none does.`
       : `Not tested: with the ${m} target out of reach, no member is called irreplaceable for it.`,

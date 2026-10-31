@@ -76,7 +76,7 @@ export default function MethodologyView() {
             Every question accepts Unknown. The engine never fills an unknown: it evaluates the gates with every unknown at the open end and at the security end of its range (and likewise for the capability questions). If all four corners agree, the yard is settled; if not, the result is <em>indeterminate</em> and lists the yards still possible. A gap is <em>pivotal</em> when resolving it alone could change the set of possible yards.
           </p>
           <p>
-            <strong className="text-paper">Classification confidence</strong> and <strong className="text-paper">evidence completeness</strong> are separate. Completeness is the share of relevant inputs that are known. {RULES.confidence.reason}
+            <strong className="text-paper">Confidence in this call</strong> and <strong className="text-paper">evidence completeness</strong> are separate. Completeness is the share of relevant inputs that are known. {RULES.confidence.reason}
           </p>
         </div>
       </section>

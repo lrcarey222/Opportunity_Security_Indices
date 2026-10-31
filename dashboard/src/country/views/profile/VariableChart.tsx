@@ -57,7 +57,7 @@ export function VariableChart({ id, analysis, rows, selected, iso3, siv, prizeLa
         />
         <p className="pb-1 text-xs text-paper-mute" data-testid="variable-chart-node" data-node={n.nodeKey}>
           For {nodeLabel}
-          {chosen ? ', the selected row.' : ', the first row; select a row to show another node.'}
+          {chosen ? ', the selected row.' : ', the first row; select a row to show another step.'}
         </p>
       </div>
       {variable &&

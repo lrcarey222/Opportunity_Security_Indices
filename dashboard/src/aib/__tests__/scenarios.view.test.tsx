@@ -108,7 +108,7 @@ describe.skipIf(!haveFixture())('the scenario toggle', () => {
     expect(t.textContent).toMatch(/Managed Interdependence: No supplier is banned\. /);
     expect(t.textContent).toMatch(/not forecasts/);
     // the strategic compact is the lasting division of labor, the scenario the stress applied to it (plain words, not the export's shorthand)
-    expect(within(t).getByTestId('scenario-framing').textContent).toBe(`${STRATEGIC_FRAMING} Managed Interdependence is the default view; ${DEC} is the stress test.`);
+    expect(within(t).getByTestId('scenario-framing').textContent).toBe(`${STRATEGIC_FRAMING} Managed Interdependence is the default view; ${DEC} is the severe case.`);
     expect(within(t).getByTestId('scenario-framing').textContent).not.toMatch(/=|institutional lens/);
     expect(within(t).getByRole('link', { name: /How the scenarios work/ }).getAttribute('href')).toBe('/compacts/about#scenarios');
     expect(bareAcronyms(t)).toEqual([]);

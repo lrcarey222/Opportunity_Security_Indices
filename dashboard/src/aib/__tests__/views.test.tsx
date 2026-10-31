@@ -20,14 +20,14 @@ import { routes } from '../../routes.tsx';
 import { bareAcronyms } from '../../components/testing/acronyms.ts';
 import { resetLastLocations } from '../../shell/lastLocation.ts';
 import { MODULE_CARDS } from '../../shell/Home.tsx';
-import { AIB_PHYSICAL_WARNING, AIB_VERSION, countryNamesOf, diversifyShockIdOf, variantsOf, type AibCompact, type AibDoc, type AibNode } from '../contract.ts';
+import { AIB_VERSION, countryNamesOf, diversifyShockIdOf, variantsOf, type AibCompact, type AibDoc, type AibNode } from '../contract.ts';
 import { diversifyRow, diversifyRows, diversifyTotals, diversifyWords, hasDiversify, orderDiversify, rowStatusLabel, totalsWords } from '../derive/diversify.ts';
 import { countryRolesOf, everyShock, everyShockLabel, fmtPts, scenarioRoleSource } from '../derive/network.ts';
 import { hasScenarios } from '../derive/scenarios.ts';
 import { HHI_SHORT, HHI_WORDS } from '../derive/settings.ts';
 import { CHART_ROWS, MI_QUESTION, MI_TABLE_TITLE } from '../views/AibDiversifyView.tsx';
 import { BASIS_WORDS } from '../views/basis.tsx';
-import { classInfo, parseClassMix, policyNeedsWords } from '../derive/classes.ts';
+import { classInfo, parseClassMix, physicalWarningWords, PHYSICAL_WARNING_INLINE, policyNeedsWords } from '../derive/classes.ts';
 import { MAP_CARD_TITLE, MAP_SECTION_TITLE } from '../views/CompactsIndexView.tsx';
 import { COALITION_TITLE, COMPACT_VS_TODAY, NO_COMPACT_NEEDED, ROLES_TITLE } from '../views/compact/OverviewSections.tsx';
 import { COVERAGE_SECTION_TITLE } from '../views/compact/ResilienceSections.tsx';
@@ -160,7 +160,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(cards).toHaveLength(doc.compacts.length);
     expect(within(cards[0]).getByRole('link', { name: titleOf(first) }).getAttribute('href')).toBe(`/compacts/${first.id}?scn=decoupling`);
     // the slim card (IA refactor): only why it exists, main nodes, key countries, the policy need, the resilience effect, View compact
-    expect(within(cards[0]).getAllByRole('term').map((t) => t.textContent)).toEqual(['Why it exists', 'Main steps', 'Key countries', 'Coalition', 'Policy need', 'Resilience effect']);
+    expect(within(cards[0]).getAllByRole('term').map((t) => t.textContent)).toEqual(['Why it exists', 'Main steps', 'Key countries', 'Coalition', 'Action needed', 'Resilience effect']);
     expect(within(cards[0]).getByRole('link', { name: `View compact workstream: ${titleOf(first)}` }).getAttribute('href')).toBe(`/compacts/${first.id}?scn=decoupling`);
     expect(within(cards[0]).getByRole('list', { name: `${titleOf(first)}: demand served under each scenario` })).toBeTruthy();
     expect(within(cards[0]).getAllByRole('listitem')).toHaveLength(3);
@@ -282,7 +282,9 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     // the warning is a visible tag on the chip, never only a tooltip
     const warned = doc.nodes.find((x) => x.warning && x.inStrategicScope !== false)!;
     const chip = within(nodes).getByText(warned.label).closest('li') as HTMLElement;
-    expect(within(chip).getByTestId('physical-warning').textContent).toContain('PHYSICAL CAPABILITY NOT VALIDATED');
+    expect(within(chip).getByTestId('physical-warning').textContent).toContain(STATE.weakProductionEvidence);
+    // the export's code stays in the tooltip
+    expect(within(chip).getByTestId('physical-warning').getAttribute('title')).toContain('PHYSICAL CAPABILITY NOT VALIDATED');
     // policy needs where they say more than the class
     const multi = doc.nodes.find((x) => (x.policyNeeds?.length ?? 0) > 1 && x.inStrategicScope !== false)!;
     const mchip = within(nodes).getByText(multi.label).closest('li') as HTMLElement;
@@ -312,11 +314,12 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const flagged = doc.nodes.filter((n) => n.coordinateSensitiveToGrowth);
     for (const n of flagged.filter(unique)) {
       const flag = within(chipOf(n.label)).getByTestId('growth-flag').textContent ?? '';
-      expect(flag, n.id).toMatch(new RegExp(`^Headline ${n.cls}; .*: the class depends on the existing-relationship growth bound\\.$`));
-      if (n.cls !== 'COORDINATE') expect(flag, n.id).toMatch(/COORDINATE (\(PHYSICAL CAPABILITY NOT VALIDATED\) )?only at /);
+      expect(flag, n.id).toMatch(new RegExp(`^${classInfo(n.cls).label} in the main result; .*: the treatment depends on how far existing trade relationships can grow\\.$`));
+      expect(flag, n.id).not.toMatch(/[A-Z]{5,}/);
+      if (n.cls !== 'COORDINATE') expect(flag, n.id).toMatch(/Coordinate trade (\(production evidence is weak\) )?only at /);
       // a class named under other bounds carries its own physical-capability flag
       const otherWarned = (n.growth ?? []).some((g) => g.cls !== n.cls && g.warning === true);
-      expect(flag.includes('PHYSICAL CAPABILITY NOT VALIDATED'), n.id).toBe(otherWarned);
+      expect(flag.includes(PHYSICAL_WARNING_INLINE), n.id).toBe(otherWarned);
     }
     expect(within(nodes).queryAllByTestId('growth-flag')).toHaveLength(flagged.length);
     // a node outside every compact: its class under the other variants and growth bounds, each flagged class tagged
@@ -355,16 +358,16 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     // the role matrix: the tier and the ten roles as columns, an economy per row, its name (never a bare code)
     const roles = screen.getByRole('region', { name: ROLES_TITLE });
     const heads = within(roles).getAllByRole('columnheader').map((h) => h.textContent);
-    expect(heads).toEqual(['Economy', 'Coalition tier', 'Demand anchor', 'Specialized supplier', 'Resource supplier', 'Scaling host', 'Specialty host', 'Development host', 'Technology partner', 'Bridge partner', 'Associate partner', 'Supplier']);
+    expect(heads).toEqual(['Economy', 'Importance to the compact', 'Demand anchor', 'Specialized supplier', 'Resource supplier', 'Scaling host', 'Specialty host', 'Development host', 'Technology partner', 'Bridge partner', 'Associate partner', 'Supplier']);
     expect(within(roles).getAllByRole('rowheader').length).toBe(new Set(first.roles.map((x) => x.iso3)).size);
     // each economy opens its Country profile at "Role in the Allied Industrial Base"
     const iso = first.roles[0].iso3;
     expect(within(roles).getAllByRole('link').some((a) => a.getAttribute('href') === `/countries/${iso}?scn=decoupling#aib-role`)).toBe(true);
     // why it exists: the five tiles
     const why = screen.getByRole('region', { name: 'The case for coordination' });
-    for (const t of ['Supply exposed to the disruption', 'Coordination dividend', 'Remaining gap after trade', 'Remaining gap after new capacity', 'Concentration']) expect(within(why).getByText(t)).toBeTruthy();
+    for (const t of ['Supply exposed to the disruption', 'Gain from acting together', 'Remaining gap after trade', 'Remaining gap after new capacity', 'Concentration']) expect(within(why).getByText(t)).toBeTruthy();
     // node by node: one item per node, its class, the data-quality disclosure
-    const nodes = screen.getByRole('region', { name: "Each step's coverage and treatment" });
+    const nodes = screen.getByRole('region', { name: "What each step needs and how much demand can be met" });
     expect(within(nodes).getAllByRole('heading', { level: 4 }).map((h) => h.textContent)).toEqual(first.nodes.map((id) => doc.nodes.find((n) => n.id === id)!.label));
     expect(within(nodes).getAllByText(/^Data quality:/).length).toBe(first.nodes.length);
     // the charts: Sankeys, the coverage bars and the coalition curve all draw SVG
@@ -461,7 +464,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(within(card).getByRole('button', { name: 'Download CSV' })).toBeTruthy();
     const target = withFrontier[withFrontier.length - 1];
     if (withFrontier.length > 1) {
-      fireEvent.change(within(card).getByRole('combobox', { name: 'Sub-sector' }), { target: { value: target.id } });
+      fireEvent.change(within(card).getByRole('combobox', { name: 'Step for the trade-off curve' }), { target: { value: target.id } });
       await waitFor(() => expect(within(card).getByText(new RegExp(`^${target.label.replace(/[&()]/g, '.')}: the tightest limit`))).toBeTruthy());
     }
     fireEvent.click(within(card).getByRole('button', { name: 'Table' }));
@@ -483,9 +486,13 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const lead = within(card).getByTestId('coalition-method').textContent ?? '';
     expect(lead).toMatch(/^The members are the smallest group of partners that meets the target: the fewest countries/);
     // the tie-break among minimum-size coalitions, and whether it was solved
-    expect(lead).toContain('among coalitions of that size the exact search keeps the one with the widest margin over the target at its weakest step, then the one that adds the most supply');
-    if (first.coalition.robustTieBreakSolved === false) expect(lead).toMatch(/that tie-break hit its time limit/);
-    else expect(lead).not.toMatch(/time limit/);
+    // the search method sits one click away, in the card's "How this group was found"
+    const search = within(card).getByTestId('coalition-search');
+    expect(search.querySelector('summary')?.textContent).toBe('How this group was found');
+    expect(search.textContent).toContain('Among coalitions of that size the exact search keeps the one with the widest margin over the target at its weakest step, then the one that adds the most supply');
+    if (first.coalition.robustTieBreakSolved === false) expect(search.textContent).toMatch(/that tie-break hit its time limit/);
+    else expect(search.textContent).not.toMatch(/time limit/);
+    expect(lead).not.toMatch(/exact search|greedy/);
     const tiers = within(card).getByTestId('coalition-tiers');
     for (const label of ['Core coordinating members', 'Critical supply partners']) expect(within(tiers).getByText(label)).toBeTruthy();
     const names = doc.countries as Record<string, string>;
@@ -533,7 +540,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     fireEvent.click(within(card).getByRole('button', { name: 'Table' }));
     const table = within(card).getByRole('table');
     const heads = within(table).getAllByRole('columnheader').map((h) => h.textContent);
-    expect(heads).toEqual(['Economy', 'Coalition tier', 'Critical', 'Needed with the coalition fixed', 'Single substitutes (any one could replace it)', 'Economies needed to replace it', 'Roles']);
+    expect(heads).toEqual(['Economy', 'Importance to the compact', 'Critical', 'Needed with the coalition fixed', 'Single substitutes (any one could replace it)', 'Economies needed to replace it', 'Roles']);
     const col = (h: string) => heads.indexOf(h);
     for (const tr of within(table).getAllByRole('row').slice(1)) {
       const cells = within(tr).getAllByRole('cell').map((td) => td.textContent ?? '');
@@ -593,21 +600,22 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const warned = ns.filter((n) => n.warning);
     if (warned.length) {
       const notice = screen.getByTestId('compact-physical-warnings').closest('[role="status"]') as HTMLElement;
-      expect(notice.textContent).toContain('PHYSICAL CAPABILITY NOT VALIDATED');
+      expect(notice.textContent).toContain(`${STATE.weakProductionEvidence}: `);
+      expect(notice.textContent).not.toContain('PHYSICAL CAPABILITY NOT VALIDATED');
       for (const n of warned) expect(notice.textContent).toContain(n.label);
     }
-    const card = screen.getByRole('region', { name: "Each step's coverage and treatment" });
+    const card = screen.getByRole('region', { name: "What each step needs and how much demand can be met" });
     for (const n of ns) {
       const item = within(card).getByRole('heading', { level: 4, name: n.label }).closest('li') as HTMLElement;
       if (n.policyNeeds) expect(within(item).getByTestId('policy-needs').textContent).toBe(`Actions needed: ${policyNeedsWords(n.policyNeeds)}`);
       // the warning is a visible tag with the physical validation beside it, not only a tooltip
       if (n.warning) {
-        expect(within(item).getByTestId('physical-warning').textContent).toContain(n.warning);
+        expect(within(item).getByTestId('physical-warning').textContent).toContain(physicalWarningWords(n.warning));
         expect(within(item).getAllByText(n.physicalValidation!).length).toBeGreaterThan(0);
       } else expect(within(item).queryByTestId('physical-warning')).toBeNull();
       if (n.physicalValidation) expect(within(item).getByTestId('physical-validation').textContent).toContain(n.physicalValidation);
       if (n.coordinateSensitiveToGrowth) {
-        expect(within(item).getByTestId('growth-flag').textContent).toMatch(new RegExp(`^Headline ${n.cls}; .*: the class depends on the existing-relationship growth bound\\.$`));
+        expect(within(item).getByTestId('growth-flag').textContent).toMatch(new RegExp(`^${classInfo(n.cls).label} in the main result; .*: the treatment depends on how far existing trade relationships can grow\\.$`));
       } else expect(within(item).queryByTestId('growth-flag')).toBeNull();
       if (n.variants) {
         const line = within(item).getByTestId('constraint-classes');
@@ -654,11 +662,11 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const n = c.nodes.map((id) => doc.nodes.find((y) => y.id === id)!).find((y) => !y.warning && Object.values(y.variantWarnings ?? {}).some(Boolean))!;
     renderAt(`/compacts/${c.id}`);
     expect(await h1(titleOf(c))).toBeTruthy();
-    const card = screen.getByRole('region', { name: "Each step's coverage and treatment" });
+    const card = screen.getByRole('region', { name: "What each step needs and how much demand can be met" });
     const item = within(card).getByRole('heading', { level: 4, name: n.label }).closest('li') as HTMLElement;
     expect(within(item).queryByTestId('physical-warning')).toBeNull();
     expect(within(item).getAllByTestId('variant-physical-warning').length).toBeGreaterThan(0);
-    expect(within(item).getByText(/^Class under other assumptions and growth bounds/).textContent).toMatch(/physical capability not validated under \d+ other setting/);
+    expect(within(item).getByText(/^Treatment under other assumptions and growth bounds/).textContent).toMatch(/production evidence is weak under \d+ other setting/);
     // the node table twin names the settings
     fireEvent.click(within(card).getByRole('button', { name: 'Table' }));
     expect(within(card).getByRole('columnheader', { name: 'Warning under other settings' })).toBeTruthy();
@@ -850,7 +858,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const lede = (screen.getByRole('heading', { level: 1 }).closest('header') ?? main()).textContent ?? '';
     if (techs.length) expect(lede).toContain(`: ${listWords(techs)}`);
     expect(lede).not.toMatch(/ sectors? \(ind/);
-    const card = screen.getByRole('region', { name: "Each step's coverage and treatment" });
+    const card = screen.getByRole('region', { name: "What each step needs and how much demand can be met" });
     for (const n of own) {
       const item = within(card).getByRole('heading', { level: 4, name: n.label }).closest('li') as HTMLElement;
       expect(item.textContent).toContain(nodeWhere(n));
@@ -1097,9 +1105,9 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     // the Sankey draws once its width is measured: wait for it (slow under a loaded full run)
     expect(await within(trade).findByRole('img', { name: /exporter to importer/ }, { timeout: 15_000 })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Specialized suppliers' })).toBeTruthy();
-    // the three lens tags (2026-10-19: Today, OSI recommends, AIB model)
+    // the three lens tags (2026-10-19: Today, OSI ranking, AIB model)
     expect(screen.getAllByText('Today · observed').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/OSI recommends · NEIS defaults/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/OSI ranking · NEIS defaults/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(new RegExp(`^${BASIS_WORDS.model.label}`)).length).toBeGreaterThan(0);
     // the economy filter
     fireEvent.change(screen.getByRole('combobox', { name: 'Economy' }), { target: { value: edge.from } });
@@ -1110,7 +1118,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Investment' }));
     await waitFor(() => expect(new URLSearchParams(r.state.location.search).get('mode')).toBe('investment'));
     expect(await screen.findByRole('region', { name: 'Where new capacity buys most resilience' })).toBeTruthy();
-    expect(screen.getByRole('region', { name: 'Investment hosts' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Countries that could add capacity' })).toBeTruthy();
     // Development: the capacity gaps (facts) without waiting for the engine
     fireEvent.click(screen.getByRole('radio', { name: 'Development' }));
     expect(await screen.findByRole('region', { name: 'Capacity gaps' })).toBeTruthy();
@@ -1321,11 +1329,11 @@ describe.skipIf(!haveFixture())('the diversification scenario (2026-10-19)', () 
     for (const w of warned.slice(0, 3)) {
       const tr = rowOf(w.node.label);
       const td = within(tr).getAllByRole('cell')[headers.indexOf('What it needs under the scenario')];
-      expect(td.textContent, w.node.id).toContain(AIB_PHYSICAL_WARNING);
+      expect(td.textContent, w.node.id).toContain(STATE.weakProductionEvidence);
       expect(within(td).getAllByTestId('variant-physical-warning'), w.node.id).toHaveLength(1);
     }
     const plain = ran.find((x) => x.clsWarning === false);
-    if (plain) expect(within(rowOf(plain.node.label)).getAllByRole('cell')[headers.indexOf('What it needs under the scenario')].textContent).not.toContain(AIB_PHYSICAL_WARNING);
+    if (plain) expect(within(rowOf(plain.node.label)).getAllByRole('cell')[headers.indexOf('What it needs under the scenario')].textContent).not.toContain(STATE.weakProductionEvidence);
     for (const n of near.slice(0, 2)) expect(within(rowOf(n.node.label)).getAllByRole('cell')[headers.indexOf('Status')].textContent).toBe('Already as diversified as its benchmark (above it by less than a small tolerance)');
     if (!process.env.AIB_DATA_DIR) expect([warned.map((x) => x.node.id), near.map((x) => x.node.id)]).toEqual([['wind-down-towers'], ['bat-up-graphite']]);
     noAcronyms();
@@ -1441,7 +1449,7 @@ describe.skipIf(!haveFixture())('the diversification scenario (2026-10-19)', () 
         expect(within(b).getByRole('heading', { name: /^Managed Interdependence · / }).textContent).toBe(`Managed Interdependence · ${rowStatusLabel(row).toLowerCase()}`);
         expect(b.textContent).not.toMatch(/than its sector|diversified as its sector/);
         // the class under the scenario names its physical-capability flag where it carries one
-        if (row.clsWarning) expect(b.textContent).toContain(`(${AIB_PHYSICAL_WARNING})`);
+        if (row.clsWarning) expect(b.textContent).toContain(`(${PHYSICAL_WARNING_INLINE})`);
         expect(within(b).queryByTestId('demand-split')).toBeNull();
         expect(within(b.closest('li') as HTMLElement).getByTestId('node-scenarios').querySelectorAll('[data-scenario]')).toHaveLength(3);
         expect(within(b).getByRole('link', { name: /How Managed Interdependence works/ }).getAttribute('href')).toBe('/aib/diversification');

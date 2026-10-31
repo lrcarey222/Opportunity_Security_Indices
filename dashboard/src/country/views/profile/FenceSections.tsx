@@ -50,7 +50,7 @@ import { Notice } from '../../../components/ui.tsx';
 import { CHOICE_DEFINITION, CONTROL_LAYER_NOTE, FENCE_DEFINITION, FENCE_INTRO, FRAMING, MEASURE_DEFINITION, MEASURE_PLAIN } from '../../../content/vocabulary.ts';
 import {
   byPositionOrder, ChoiceLegend, countryNames, deploymentVars, familyWords, FENCE_TOP_N, FENCE_VERBS, fenceGroups, fenceReason, MARKET_PRIZE_LABEL, POSTURE_TERMS, positionVars, PrizePositionScatter,
-  prizeLabel, prizeVars, shareWords, stageDisplay, supplyNeedVars, Swatch, VERB_LABEL, verbOf, YARD_LABEL, type Family, type Fence, type FenceNode, type PostureCore,
+  prizeLabel, prizeVars, shareWords, stageDisplay, supplyNeedVars, Swatch, unitCountWords, VERB_LABEL, verbOf, YARD_LABEL, type Family, type Fence, type FenceNode, type PostureCore,
 } from '../../../posture/index.ts';
 import { score100 } from '../../../posture/derive.ts';
 import { ratioVsCurrentWords } from '../../../posture/detail.ts';
@@ -307,10 +307,10 @@ function prizeCols(rows: readonly FenceNode[], core: PostureCore, names: Record<
             // a layer's own market-only cap (its value is its step's)
             note: (n) => (n.layer && v(n).cap ? 'market only' : null),
           }),
-          scoreCol('option', 'Future option', (n) => v(n).option, { title: 'The leap tests of a leap candidate; 0 for any other node' }),
+          scoreCol('option', 'Future option', (n) => v(n).option, { title: 'The leap tests of a leap candidate; 0 for any other step' }),
         ]
       : []),
-    scoreCol('node-prize', 'World demand growth', (n) => v(n).nodePrize, { detail: true, ds, title: 'Expected world demand growth to 2035 (the node prize)' }),
+    scoreCol('node-prize', 'World demand growth', (n) => v(n).nodePrize, { detail: true, ds, title: 'Expected world demand growth to 2035' }),
     scoreCol('home', 'Home-market growth', (n) => v(n).homeMarket, { detail: true, ds, title: 'National data only' }),
     scoreCol('investment', 'Investment momentum', (n) => v(n).investmentMomentum, { detail: true, ds }),
     textCol('outlook', 'Market outlook', (n) => v(n).outlook, { detail: true, ds }),
@@ -372,12 +372,12 @@ function FenceTable({ rows, cols, caption, testId }: { rows: FenceNode[]; cols: 
 }
 
 /** A table that may be long, in the top-five pattern: up to five rows shown, else the top five and the full table in a closed drop-down. */
-function LongTable({ id, rows, cols, caption, testId, what }: { id: string; rows: FenceNode[]; cols: Col<FenceNode>[]; caption: string; testId: string; what: string }) {
+function LongTable({ id, rows, cols, caption, testId, what, then, noun }: { id: string; rows: FenceNode[]; cols: Col<FenceNode>[]; caption: string; testId: string; what: string; then: string; noun?: [string, string] }) {
   if (rows.length <= VISIBLE_ROWS) return <FenceTable rows={rows} cols={cols} caption={caption} testId={testId} />;
   return (
     <div className="space-y-2">
       <FenceTable rows={rows.slice(0, VISIBLE_ROWS)} cols={cols} caption={`${caption}: the top ${VISIBLE_ROWS}`} testId={`${testId}-first`} />
-      <Fold id={`${id}-all`} summary={`All ${rows.length} ${what}`}>
+      <Fold id={`${id}-all`} summary={`${what}: ${unitCountWords(rows, ...(noun ?? []))}, ${then}`}>
         <FenceTable rows={rows} cols={cols} caption={caption} testId={testId} />
       </Fold>
     </div>
@@ -515,7 +515,7 @@ export function HighFenceSection() {
             {g.secure.length > 0 && (
               <Fold
                 id="high-all"
-                summary={`All ${g.secure.length} Secure ${g.secure.length === 1 ? 'step' : 'steps'} and what makes them vulnerable: import dependence, supplier concentration, risky supplier exposure, lack of trusted alternatives`}
+                summary={`Secure: ${unitCountWords(g.secure)}, and what makes them vulnerable: import dependence, supplier concentration, risky supplier exposure, lack of trusted alternatives`}
               >
                 <p className="text-xs text-paper-mute">Scores are 0-100; higher is more vulnerable. Select a row for the five questions behind its choice.</p>
                 <FenceTable rows={g.secure} cols={needCols(g.secure, p.core, names, ds)} caption={`${cap(name)}: Secure steps by ${VULNERABILITY}`} testId="high-table" />
@@ -551,7 +551,8 @@ function PartnerLead({ nodes, name }: { nodes: FenceNode[]; name: string }) {
             return (
               <span key={n.key} data-key={n.key}>
                 {i > 0 && '; '}
-                <button type="button" className="link" aria-pressed={selectedUnitKey(p) === n.key} onClick={() => openUnit(p, n)}>
+                {/* inline and left-aligned, so a long step name wraps like the sentence around it */}
+                <button type="button" className="link inline text-left" aria-pressed={selectedUnitKey(p) === n.key} onClick={() => openUnit(p, n)}>
                   {unitWords(n)}
                 </button>
                 {why ? ` (${why.charAt(0).toLowerCase()}${why.slice(1)})` : ''}
@@ -663,7 +664,8 @@ export function MediumFenceSection() {
                 cols={prizeCols(g.compete, p.core, names, ds, { pathway: true, reasons: false })}
                 caption={`${cap(name)}: the prize of the Preserve, Catch Up and Partner steps`}
                 testId="medium-prize-table"
-                what="Preserve, Catch Up and Partner steps and what makes them valuable"
+                what="Preserve, Catch Up and Partner"
+                then="and what makes them valuable"
               />
               <VariableChart id="medium-prize" analysis="prize" rows={g.compete} selected={p.node.selected} iso3={sheet.iso3} siv={p.core.meta.prize_measure === 'strategic_value'} prizeLabel={prizeLabel(p.core.meta)} />
             </>
@@ -697,7 +699,8 @@ export function MediumFenceSection() {
                 cols={positionCols(competeByPosition, p.core, ds)}
                 caption={`${cap(name)}: the position of the Preserve, Catch Up and Partner steps, by Competitive Position`}
                 testId="medium-position-table"
-                what="Preserve, Catch Up and Partner steps and the evidence of their position"
+                what="Preserve, Catch Up and Partner"
+                then="and the evidence of their position"
               />
               <VariableChart id="medium-position" analysis="position" rows={competeByPosition} selected={p.node.selected} iso3={sheet.iso3} />
             </>
@@ -739,7 +742,9 @@ export function MediumFenceSection() {
                 cols={deployCols(g.accelerate, p.core, names, ds, false)}
                 caption={`${cap(name)}: the deployment need of the Accelerate technologies`}
                 testId="medium-accelerate-table"
-                what="Accelerate technologies and their deployment need"
+                what="Accelerate"
+                then="and their deployment need"
+                noun={['technology', 'technologies']}
               />
               <VariableChart id="medium-accelerate" analysis="deployment" rows={g.accelerate} selected={p.node.selected} iso3={sheet.iso3} />
               {scenarioNote.length > 0 && (
@@ -820,7 +825,7 @@ export function LowFenceSection() {
               </div>
             )}
             {g.watchSupply.length > 0 && (
-              <Fold id="low-supply-all" summary={`All ${g.watchSupply.length} producing-stage Watch ${g.watchSupply.length === 1 ? 'step' : 'steps'}: prize, position and vulnerability`}>
+              <Fold id="low-supply-all" summary={`Watch at producing stages: ${unitCountWords(g.watchSupply)}, with their Strategic Industrial Value, Competitive Position and supply-chain vulnerability`}>
                 <p className="text-xs text-paper-mute">Scores are 0-100; world supply share in %. Select a row for the five questions behind its choice.</p>
                 {sub(
                   'Prize and vulnerability',
@@ -844,7 +849,7 @@ export function LowFenceSection() {
               </Fold>
             )}
             {g.watchDeploy.length > 0 && (
-              <Fold id="low-deploy-all" summary={`All ${g.watchDeploy.length} Deployment & Use Watch ${g.watchDeploy.length === 1 ? 'technology' : 'technologies'}: deployment need`}>
+              <Fold id="low-deploy-all" summary={`Watch at Deployment & Use: ${unitCountWords(g.watchDeploy, 'technology', 'technologies')}, with their deployment need`}>
                 <p className="text-xs text-paper-mute">Scores are 0-100. Select a row for the five questions behind its choice.</p>
                 <FenceTable rows={g.watchDeploy} cols={deployCols(g.watchDeploy, p.core, names, ds, true)} caption={`${cap(name)}: the deployment need of the Deployment & Use Watch technologies`} testId="low-deploy-table" />
                 <VariableChart id="low-deploy" analysis="deployment" rows={g.watchDeploy} selected={p.node.selected} iso3={sheet.iso3} />

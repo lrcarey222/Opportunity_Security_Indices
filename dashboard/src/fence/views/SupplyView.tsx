@@ -72,7 +72,7 @@ function NetworkCard({ n, home }: { n: YFNetworkView; home: string }) {
         <ProvBadge p="data" />
       </div>
       <p className="mt-0.5 text-xs text-paper-mute">
-        Opportunity &amp; Security Indices allied network ({n.method === 'milp' ? 'exact design' : n.method}, diversification weight λ = {n.lambda ?? 'n/a'}, built {n.built}). The EU-27 is one node. Model output, not a forecast.
+        Opportunity &amp; Security Indices allied network ({n.method === 'milp' ? 'exact design' : n.method}, diversification weight λ = {n.lambda ?? 'n/a'}, built {n.built}). The EU-27 counts as one supplier. Simulated, not a forecast.
       </p>
       <div className="mt-3">
         <Bars
@@ -84,8 +84,8 @@ function NetworkCard({ n, home }: { n: YFNetworkView; home: string }) {
         />
       </div>
       <p className="mt-3 text-sm text-paper-dim">
-        Designed {hhiTxt(n.designedHhi)} (like {n.effectiveProducers.toFixed(1)} equal producers, no node above {pct(n.maxShare)})
-        {n.observedHhi != null && <> · coalition exports today {hhiTxt(n.observedHhi)}{n.observedTop && <>, largest node {n.observedTop.node} {pct(n.observedTop.share)}</>}</>}
+        Designed {hhiTxt(n.designedHhi)} (like {n.effectiveProducers.toFixed(1)} equal producers, no supplier above {pct(n.maxShare)})
+        {n.observedHhi != null && <> · coalition exports today {hhiTxt(n.observedHhi)}{n.observedTop && <>, largest supplier {n.observedTop.node} {pct(n.observedTop.share)}</>}</>}
         {n.barred.length > 0 && <> · not picked for want of endowment or capacity: {n.barred.join(', ')}</>}
       </p>
     </section>

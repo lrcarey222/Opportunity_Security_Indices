@@ -27,11 +27,10 @@ import { classMixText, scenarioInfo, SCENARIO_ORDER, type AibScenarioId, type Sc
 import { DemandSplitBar, DIVERSIFY_MARK } from './DiversifyChart.tsx';
 
 /**
- * The parts of the coverage split in words (legend, text): content/vocabulary.ts SCENARIO_CHART_LABEL, except
- * "Recovered through trade" (the vocabulary's "allied trade": the suppliers that recover it can be any
- * economy but the one removed, so the pages do not call that trade allied).
+ * The parts of the coverage split in words (legend, text): content/vocabulary.ts SCENARIO_CHART_LABEL ("Recovered
+ * through trade", not "allied trade": the suppliers that recover it can be any economy but the one removed).
  */
-export const COVERAGE_WORDS = { kept: SCENARIO_CHART_LABEL.kept, trade: 'Recovered through trade', build: SCENARIO_CHART_LABEL.newCapacity } as const;
+export const COVERAGE_WORDS = { kept: SCENARIO_CHART_LABEL.kept, trade: SCENARIO_CHART_LABEL.restoredByTrade, build: SCENARIO_CHART_LABEL.newCapacity } as const;
 
 /** "still supplied 51% · recovered through trade 1% · requires new capacity 48%". */
 export const coverageText = (s: DemandSplit): string =>
@@ -66,7 +65,7 @@ const ordered = <T extends { id: AibScenarioId }>(rows: readonly T[]): T[] => SC
 
 /** The default note of a coverage row: Baseline before any shock; a scenario that did not run, unchanged; no figures. */
 function coverageNote(r: Pick<ScenarioFigures, 'id' | 'ran' | 'split'>): string | null {
-  if (!r.split) return 'no coverage figures';
+  if (!r.split) return 'no figures for the share of demand met';
   if (r.id === 'baseline') return 'trade as it is today, before any disruption';
   if (r.id === 'managed' && !r.ran) return 'unchanged: nothing is above its benchmark here';
   return null;

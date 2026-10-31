@@ -242,7 +242,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     // the drop-down: closed, then every Secure node x the need variables, missing values "not measured"
     expect(high.querySelector('[data-testid="high-table"]')).toBeNull();
     const fold = await openFold('high-all');
-    expect(fold.querySelector('summary')?.textContent).toMatch(/All 3 Secure steps and what makes them vulnerable: import dependence, supplier concentration, risky supplier exposure, lack of trusted alternatives/);
+    expect(fold.querySelector('summary')?.textContent).toMatch(/Secure: 3 steps, and what makes them vulnerable: import dependence, supplier concentration, risky supplier exposure, lack of trusted alternatives/);
     const table = within(fold).getByTestId('high-table');
     expect(heads(table)).toEqual(['Supply-chain step', 'Supply-chain vulnerability', 'Import dependence', 'Supplier concentration', 'Risky supplier exposure', 'Lack of trusted alternatives', 'Security rationale']);
     await waitFor(() => expect(rowOf(table, 'Batteries · Refining & Processing').textContent).toContain('92'), { timeout: 30_000 });
@@ -284,7 +284,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     const points = [...scatter.querySelectorAll('[data-verb]')];
     expect(new Set(points.map((pt) => pt.getAttribute('data-verb')))).toEqual(new Set(['secure', 'preserve', 'catch_up', 'partner', 'watch']));
     expect(points.every((pt) => !/Deployment & Use/.test(pt.getAttribute('aria-label') ?? ''))).toBe(true);
-    expect(within(med).getByRole('region', { name: 'Where is the prize, and where is the country already strong?' })).toBeTruthy();
+    expect(within(med).getByRole('region', { name: 'Where is productive capability most valuable, and where is the country already strong?' })).toBeTruthy();
     // the economy's name mid-sentence: lower-case "the", and the possessive of a name in -s
     expect(med.textContent).toContain("Each dot is one of the United States' producing-stage supply-chain steps");
     expect(med.textContent).not.toMatch(/The United States's|one of The United States/);
@@ -293,7 +293,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(new Set(dots.map((d) => d.getAttribute('fill')))).toEqual(new Set(points.map((pt) => VERB_COLOR[pt.getAttribute('data-verb') as Verb])));
     expect(scatter.querySelectorAll('.quad-rule-x line, .quad-rule-y line')).toHaveLength(2);
     const preserve = points.find((pt) => /^Batteries Final Assembly & Equipment/.test(pt.getAttribute('aria-label') ?? ''))!;
-    expect(preserve.getAttribute('aria-label')).toMatch(/Strategic Industrial Value 90%; Competitive Position 95%; supply-chain need 40%; trade momentum/);
+    expect(preserve.getAttribute('aria-label')).toMatch(/Strategic Industrial Value 90%; Competitive Position 95%; supply-chain vulnerability 40%; trade momentum/);
   });
 
   it('Medium fence sub-sections: Prize, Competitive Position, Partner (the partnership analysis) and Accelerate, each with its variables', async () => {
@@ -554,7 +554,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     ]);
     expect(within(prize).queryByTestId('medium-prize-table')).toBeNull();
     const all = await openFold('medium-prize-all');
-    expect(all.querySelector('summary')?.textContent).toMatch(/All 6 Preserve, Catch Up and Partner steps and what makes them valuable$/);
+    expect(all.querySelector('summary')?.textContent).toMatch(/Preserve, Catch Up and Partner: 6 steps, and what makes them valuable$/);
     expect(rows(within(all).getByTestId('medium-prize-table')).map((r) => r[0])).toEqual([
       'Batteries · Final Assembly & Equipment', 'Batteries · Component Manufacturing', 'Solar · Extraction', 'Solar · Final Assembly & Equipment', 'Batteries · Extraction',
       'Solar · Recovery & Recycling',
@@ -791,8 +791,10 @@ describe.skipIf(!haveFixture())('Country page: layers as yard units (Yards & Fen
     await waitFor(() => expect([nodeOf(r), layerOf(r)]).toEqual(['Batteries|Assembly', 'bess-control']), { timeout: 30_000 });
     expect(await drawerTitle()).toBe('Batteries · Final Assembly & Equipment');
     const d = screen.getByTestId('cell-drawer');
-    const focused = await within(d).findByText(CONTROL);
-    const li = focused.closest('li') as HTMLElement;
+    // the layer's row in Yards (its name is also the button of the note at the top of the drawer)
+    const named = await within(d).findAllByText(CONTROL);
+    const li = named.map((x) => x.closest('li')).find(Boolean) as HTMLElement;
+    expect(within(d).getByTestId('drawer-layer-note').textContent).toContain(`Opened from the layer ${CONTROL} (Secure`);
     await waitFor(() => expect(document.activeElement).toBe(li));
     expect(li.getAttribute('data-focused')).toBe('true');
     // the entry is pressed, not its step's own entry elsewhere

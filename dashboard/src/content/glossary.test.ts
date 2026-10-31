@@ -24,7 +24,7 @@ const SPEC_IDS = [
   'yard', 'high_fence', 'medium_fence', 'low_fence', 'large_yard_case',
   // the Allied Industrial Base (the NEIS copy refresh, 2026-10-30)
   'allied_industrial_base', 'managed_interdependence', 'aib_scenario', 'aib_treatment', 'sectoral_compact', 'strategic_compact', 'allied_coverage',
-  'coordination_dividend', 'remaining_gap', 'minimum_coalition', 'n1_resilience', 'concentration_cap', 'demand_anchor', 'scaling_host', 'specialty_host',
+  'coordination_dividend', 'remaining_gap', 'workstream', 'compact_tiers', 'minimum_coalition', 'n1_resilience', 'concentration_cap', 'demand_anchor', 'scaling_host', 'specialty_host',
   'development_host',
 ];
 
@@ -95,7 +95,7 @@ describe('glossary content (C3.2)', () => {
       // the corners of the Security and opportunity chart, told apart from the strategic posture; six
       // stages only, so no three-stage qualifier (2026-10-28)
       expect(s, id).toContain('A corner of the Security and opportunity chart');
-      expect(s, id).toMatch(/not (a strategic|the Secure) posture/);
+      expect(s, id).toMatch(/not (a strategic|the Secure) choice/);
       expect(s, id).not.toMatch(/paper|three-stage|six-stage/i);
     }
     // the corners are Legacy OSI (the paper baseline), each with its closest current choice (design 5)

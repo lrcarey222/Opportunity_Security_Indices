@@ -7,7 +7,7 @@
 
 import { HATCH_STYLE, SIGNAL } from '../../theme/palette.ts';
 import { AIB_CLASSES, AIB_PHYSICAL_WARNING, type AibNode } from '../contract.ts';
-import { classInfo, needsAddToClass, policyNeedsWords } from '../derive/classes.ts';
+import { classInfo, needsAddToClass, physicalWarningWords, policyNeedsWords } from '../derive/classes.ts';
 
 export function ClassSwatch({ cls, size = 10 }: { cls: string; size?: number }) {
   const info = classInfo(cls);
@@ -47,13 +47,13 @@ export function PhysicalWarning({ warning, validation, testId = 'physical-warnin
     <span
       className="tag inline-flex items-center gap-1.5 whitespace-nowrap text-paper"
       style={{ borderColor: SIGNAL }}
-      title={validation ? `Physical validation: ${validation}` : 'The class rests on trade data that physical production data do not confirm.'}
+      title={`${warning}: ${validation ? `physical validation: ${validation}` : 'the treatment rests on trade data that production data do not confirm.'}`}
       data-testid={testId}
     >
       <span aria-hidden="true" style={{ color: SIGNAL }}>
         ▲
       </span>
-      {warning}
+      {physicalWarningWords(warning)}
     </span>
   );
 }

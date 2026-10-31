@@ -8,7 +8,7 @@
 //                   the IMF positions and factory projects of one economy. Development: official aid
 //                   (OECD; the Sector bundle, loaded only on this tab). Geopolitical: shared economic-
 //                   security agreements, UN-vote alignment and the coalition tier.
-//   OSI recommends  Partnership Opportunity, Friendshore and Development Potential at the NEIS defaults (the
+//   OSI ranking  Partnership Opportunity, Friendshore and Development Potential at the NEIS defaults (the
 //                   ties and pcell chunks; Development Potential through the page's one EngineScope); the
 //                   allied coalition (core members and partners: the Country manifest) and Friendshore's
 //                   alignment part.
@@ -201,7 +201,7 @@ const osiCsv = (tx: Parameters<typeof osiFields>[0], n: Parameters<typeof osiFie
 
 /** "Rare-earth oxides & compounds", "these 3 nodes" or "2 of these 3 nodes". */
 const whoOf = (list: readonly { label: string }[], all: readonly { label: string }[]): string =>
-  list.length === 1 ? list[0].label : list.length === all.length ? `these ${plural(all.length, 'node')}` : `${list.length} of these ${plural(all.length, 'node')}`;
+  list.length === 1 ? list[0].label : list.length === all.length ? `these ${plural(all.length, 'supply-chain step')}` : `${list.length} of these ${plural(all.length, 'supply-chain step')}`;
 const whoWords = (pick: OsiCellPick): string => whoOf(pick.nodes, pick.nodes);
 const itsOf = (k: number) => (k === 1 ? 'its' : 'their');
 /** The cells a card reads, labelled as their data are ("Solar – Components"). */
@@ -223,8 +223,8 @@ function cellSourceWords(pick: OsiCellPick, cell: OsiCell): string {
 function pickCaveats(pick: OsiCellPick): string {
   const out: string[] = [];
   if (pick.unscored.length) out.push(`This data build keeps no partner indices for ${cellWordsOf(pick.unscored)}, where ${itsOf(pick.nodes.length)} codes also sit.`);
-  if (pick.nodes.length > 1 && pick.unmapped.length) out.push(`${plural(pick.unmapped.length, 'matching node has', 'matching nodes have')} no basket code (neutral partner scores).`);
-  if (pick.nodes.length > 1 && pick.unscoredNodes.length) out.push(`${plural(pick.unscoredNodes.length, 'matching node sits', 'matching nodes sit')} only in cells without partner indices.`);
+  if (pick.nodes.length > 1 && pick.unmapped.length) out.push(`${plural(pick.unmapped.length, 'matching supply-chain step has', 'matching supply-chain steps have')} no basket code (neutral partner scores).`);
+  if (pick.nodes.length > 1 && pick.unscoredNodes.length) out.push(`${plural(pick.unscoredNodes.length, 'matching supply-chain step sits', 'matching supply-chain steps sit')} only in cells without partner indices.`);
   return out.length ? ` ${out.join(' ')}` : '';
 }
 
@@ -235,7 +235,7 @@ function pickCaveats(pick: OsiCellPick): string {
  */
 function NoCellNotice({ pick, fallback }: { pick: OsiCellPick; fallback: string }) {
   const parts = [
-    pick.unmapped.length ? `the codes of ${whoOf(pick.unmapped, pick.nodes)} sit in no OSI basket cell: in the model ${itsOf(pick.unmapped.length)} partner scores are neutral` : '',
+    pick.unmapped.length ? `the codes of ${whoOf(pick.unmapped, pick.nodes)} sit in no OSI basket cell, so ${itsOf(pick.unmapped.length)} partner scores are neutral` : '',
     pick.unscoredNodes.length
       ? `the codes of ${whoOf(pick.unscoredNodes, pick.nodes)} sit only in ${cellWordsOf(pick.unscored)}, which this data build keeps no partner indices for`
       : '',
@@ -245,7 +245,7 @@ function NoCellNotice({ pick, fallback }: { pick: OsiCellPick; fallback: string 
       <Notice kind="info" title={pick.unscoredNodes.length ? 'No OSI cell with partner indices for this selection' : 'No OSI cell for this selection'}>
         {pick.nodes.length
           ? `Partner indices are kept by OSI technology × stage, and ${parts.join('; ')}. ${fallback}`
-          : `No node matches this selection, so it reaches no OSI cell (partner indices are kept by OSI technology × stage). ${fallback}`}
+          : `No supply-chain step matches this selection, so it reaches no OSI cell (partner indices are kept by OSI technology × stage). ${fallback}`}
       </Notice>
     </div>
   );
@@ -428,7 +428,7 @@ export default function AibPartnershipsView() {
         lede={<QuestionLede question={MODULE_QUESTION.partnerships}>{PARTNERSHIP.lede}</QuestionLede>}
       >
         <p className="mt-3 max-w-3xl text-sm text-paper-mute" data-testid="partnerships-reading">
-          Each kind of partnership (trade, investment, development, geopolitical) is read three ways: as it is today, as the Opportunity Security Indices recommend, and as the Allied
+          Each kind of partnership (trade, investment, development, geopolitical) is read three ways: as it is today, as the OSI partner scores rank it, and as the Allied
           Industrial Base analysis arranges it under the chosen scenario. The summary says where the three agree and where they differ. {PARTNERSHIP.psiCaveat}
         </p>
       </PageHead>
@@ -486,7 +486,7 @@ export default function AibPartnershipsView() {
 function useScope(f: PartnershipFilter): string {
   const { name, nodeOf } = useAibCtx();
   const parts = [f.country ? name(f.country) : null, f.node ? (nodeOf(f.node)?.label ?? f.node) : null, !f.node && f.tech ? f.tech : null, !f.node && f.stage ? f.stage : null].filter(Boolean);
-  return parts.length ? parts.join(', ') : 'all economies and sub-sectors';
+  return parts.length ? parts.join(', ') : 'all economies and supply-chain steps';
 }
 
 interface TabProps {
@@ -679,7 +679,7 @@ function TradeTab({ f, partner, onKind }: TabProps) {
       { id: 'contribution', header: "Share of the step's demand served", value: (p) => p.share, cell: (p) => fmtShare(p.share), num: true, title: 'The largest share of one supply-chain step’s demand the relationship serves in the coordinated solution' },
       { id: 'rel', header: 'Relationship', value: (p) => REL_WORDS[p.relationship] },
       { id: 'opp', header: 'Partnership Opportunity score', value: (p) => p.opportunity, cell: (p) => fmtScore(p.opportunity), num: true },
-      { id: 'nodes', header: 'Sub-sectors', value: (p) => p.nodes.map(label).join(', '), minWidth: 200 },
+      { id: 'nodes', header: 'Supply-chain steps', value: (p) => p.nodes.map(label).join(', '), minWidth: 200 },
       { id: 'compacts', header: 'Compacts', value: (p) => p.compacts.join(', '), cell: (p) => <CompactLinks ids={p.compacts} /> },
     ];
     const csv = () => ({
@@ -695,9 +695,9 @@ function TradeTab({ f, partner, onKind }: TabProps) {
     });
     const supCols: Col<SupplierRow>[] = [
       { id: 'name', header: 'Economy', value: (r) => name(r.iso3), cell: (r) => <Link className="link" to={toCountry(r.iso3, 'aib-role')}>{name(r.iso3)}</Link> },
-      { id: 'n', header: 'Sub-sectors where it is the largest supplier', value: (r) => r.nodes.length, num: true },
+      { id: 'n', header: 'Supply-chain steps where it is the largest supplier', value: (r) => r.nodes.length, num: true },
       { id: 'top', header: 'Its largest share', value: (r) => r.top, cell: (r) => fmtShare(r.top), num: true },
-      { id: 'nodes', header: 'Sub-sectors', value: (r) => r.nodes.map(label).join(', '), minWidth: 240 },
+      { id: 'nodes', header: 'Supply-chain steps', value: (r) => r.nodes.map(label).join(', '), minWidth: 240 },
     ];
     aib = {
       names: lensNames(f.country ? partnersInPairs(pairs, f.country) : sideTotals(pairs, 'producer'), 10, f.country),
@@ -712,7 +712,7 @@ function TradeTab({ f, partner, onKind }: TabProps) {
             summary={`Trade relationships, ${scope}, ${sc.label}: ${pairs.slice(0, 5).map((p) => `${name(p.producer)} to ${name(p.consumer)} ${fmtUsd(p.value)}`).join('; ') || 'none'}.`}
             table={() => <TableView rows={pairs} cols={cols} caption={`Coordinated trade relationships, ${scope}, ${sc.label}`} search pageSize={20} initialSort={{ id: 'usd', desc: true }} />}
             csv={csv}
-            notes={<span>Each compact&apos;s export keeps its largest relationships; the Partnership Opportunity score is the partner score the model uses to break ties among equally good solutions.</span>}
+            notes={<span>Each compact&apos;s export keeps its largest relationships; the Partnership Opportunity score is the partner score the analysis uses to break ties among equally good solutions.</span>}
           >
             {pairs.length ? (
               <SankeyChart
@@ -745,7 +745,7 @@ function TradeTab({ f, partner, onKind }: TabProps) {
                       {name(r.iso3)}
                     </Link>
                     <span className="text-paper-dim">
-                      {plural(r.nodes.length, 'sub-sector')} (up to {fmtShare(r.top, 0)}): {listWords(r.nodes.slice(0, 3).map(label))}
+                      {plural(r.nodes.length, 'supply-chain step')} (up to {fmtShare(r.top, 0)}): {listWords(r.nodes.slice(0, 3).map(label))}
                       {r.nodes.length > 3 ? ' and more' : ''}
                     </span>
                   </>
@@ -782,17 +782,17 @@ function TodayTrade({
     { id: 'from', header: 'Supplier', value: (p) => name(p.producer), cell: (p) => <Link className="link" to={toCountry(p.producer)}>{name(p.producer)}</Link> },
     { id: 'to', header: 'Buyer', value: (p) => name(p.consumer), cell: (p) => <Link className="link" to={toCountry(p.consumer)}>{name(p.consumer)}</Link> },
     ...(filtered
-      ? [{ id: 'scope', header: `Supplier's supply in scope, ${year}`, value: (p: TodayPair) => p.scopeUsd, cell: (p: TodayPair) => fmtUsd(p.scopeUsd), num: true, title: "The supplier's observed supply to the allied market over the sub-sectors in scope (each sub-sector's top ten suppliers): what the pairs are ranked by" }]
+      ? [{ id: 'scope', header: `Supplier's supply in scope, ${year}`, value: (p: TodayPair) => p.scopeUsd, cell: (p: TodayPair) => fmtUsd(p.scopeUsd), num: true, title: "The supplier's observed supply to the allied market over the supply-chain steps in scope (each supply-chain step's top ten suppliers): what the pairs are ranked by" }]
       : []),
-    { id: 'usd', header: filtered ? `Pair's trade in ${year}, every sub-sector` : `Trade in ${year}`, value: (p) => p.value, cell: (p) => fmtUsd(p.value), num: true },
-    { id: 'nodes', header: 'Sub-sectors in scope', value: (p) => p.nodes.length, num: true },
-    { id: 'all', header: 'Sub-sectors it trades in', value: (p) => p.nAll, num: true },
+    { id: 'usd', header: filtered ? `Pair's trade in ${year}, every supply-chain step` : `Trade in ${year}`, value: (p) => p.value, cell: (p) => fmtUsd(p.value), num: true },
+    { id: 'nodes', header: 'Supply-chain steps in scope', value: (p) => p.nodes.length, num: true },
+    { id: 'all', header: 'Supply-chain steps it trades in', value: (p) => p.nAll, num: true },
   ];
   const supCols: Col<TodaySupplier>[] = [
     { id: 'name', header: 'Supplier', value: (r) => name(r.iso3), cell: (r) => <Link className="link" to={toCountry(r.iso3)}>{name(r.iso3)}</Link> },
     { id: 'usd', header: `Supply to the allied market, ${year}`, value: (r) => r.usd, cell: (r) => fmtUsd(r.usd), num: true },
-    { id: 'n', header: 'Sub-sectors where it is a top-ten supplier', value: (r) => r.nodes.length, num: true },
-    { id: 'nodes', header: 'Sub-sectors', value: (r) => r.nodes.map(label).join(', '), minWidth: 220 },
+    { id: 'n', header: 'Supply-chain steps where it is a top-ten supplier', value: (r) => r.nodes.length, num: true },
+    { id: 'nodes', header: 'Supply-chain steps', value: (r) => r.nodes.map(label).join(', '), minWidth: 220 },
   ];
   const retry = baseline.error ? (
     <p className="text-sm text-paper-mute">
@@ -809,7 +809,7 @@ function TodayTrade({
         title="Who supplies whom today"
         sub={`Observed ${year} trade, supplier to buyer (buyers in the allied market), ${scope}: ${
           filtered
-            ? 'the pairs whose supplier supplies most over the sub-sectors in scope (each sub-sector’s top ten suppliers). A pair’s value covers every strategic sub-sector it trades in; the table counts those in scope.'
+            ? 'the pairs whose supplier supplies most over the supply-chain steps in scope (each supply-chain step’s top ten suppliers). A pair’s value covers every strategic supply-chain step it trades in; the table counts those in scope.'
             : 'the largest pairs.'
         }`}
         table={() => <TableView rows={pairs} cols={pairCols} caption={`Who supplies whom today, ${scope}`} search pageSize={20} initialSort={{ id: filtered ? 'scope' : 'usd', desc: true }} />}
@@ -832,7 +832,7 @@ function TodayTrade({
           retry
         ) : baseline.missing || !baseline.doc ? (
           <p className="text-sm text-paper-mute" data-testid="lens-empty">
-            This data build has no supplier-to-buyer pairs for today; the largest suppliers below come from each sub-sector&apos;s top five.
+            This data build has no supplier-to-buyer pairs for today; the largest suppliers below come from each supply-chain step&apos;s top five.
           </p>
         ) : pairs.length ? (
           <RankedNames
@@ -844,8 +844,8 @@ function TodayTrade({
             value={(p) => fmtUsd(p.value)}
             note={(p) =>
               filtered
-                ? `${name(p.producer)} supplies ${fmtUsd(p.scopeUsd)} in scope; the pair trades in ${plural(p.nodes.length, 'sub-sector')} in scope of ${p.nAll}`
-                : `${plural(p.nAll, 'sub-sector')}`
+                ? `${name(p.producer)} supplies ${fmtUsd(p.scopeUsd)} in scope; the pair trades in ${plural(p.nodes.length, 'supply-chain step')} in scope of ${p.nAll}`
+                : `${plural(p.nAll, 'supply-chain step')}`
             }
           />
         ) : (
@@ -855,7 +855,7 @@ function TodayTrade({
       <ChartCard
         headingLevel={3}
         title="Largest suppliers today"
-        sub={`Observed ${year} supply to the allied market, summed over the sub-sectors in scope (each sub-sector's top ten suppliers)${f.country ? '; the economy filter does not apply here' : ''}.`}
+        sub={`Observed ${year} supply to the allied market, summed over the supply-chain steps in scope (each supply-chain step's top ten suppliers)${f.country ? '; the economy filter does not apply here' : ''}.`}
         table={() => <TableView rows={suppliers} cols={supCols} caption={`Largest suppliers today, ${scope}`} search pageSize={20} initialSort={{ id: 'usd', desc: true }} />}
       >
         {suppliers.length ? (
@@ -867,7 +867,7 @@ function TodayTrade({
             nameOf={(r) => name(r.iso3)}
             href={(r) => toCountry(r.iso3)}
             value={(r) => fmtUsd(r.usd)}
-            note={(r) => `a top-ten supplier in ${plural(r.nodes.length, 'sub-sector')}`}
+            note={(r) => `a top-ten supplier in ${plural(r.nodes.length, 'supply-chain step')}`}
           />
         ) : baseline.loading ? (
           <Loading label="Loading today's suppliers" />
@@ -956,16 +956,16 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
     ];
     const hostCols: Col<HostRow>[] = [
       { id: 'name', header: 'Host', value: (r) => name(r.iso3), cell: (r) => <Link className="link" to={toCountry(r.iso3)}>{name(r.iso3)}</Link> },
-      { id: 'first', header: 'Sub-sectors where it is the best host', value: (r) => r.first.length, num: true },
-      { id: 'eligible', header: 'Sub-sectors where it is eligible', value: (r) => r.eligible.length, num: true },
-      { id: 'nodes', header: 'Sub-sectors', value: (r) => r.eligible.map(label).join(', '), minWidth: 240 },
+      { id: 'first', header: 'Supply-chain steps where it is the best host', value: (r) => r.first.length, num: true },
+      { id: 'eligible', header: 'Supply-chain steps where it is eligible', value: (r) => r.eligible.length, num: true },
+      { id: 'nodes', header: 'Supply-chain steps', value: (r) => r.eligible.map(label).join(', '), minWidth: 240 },
     ];
     const flowCols: Col<PairInvestment>[] = [
       { id: 'investor', header: 'Investor', value: (p) => name(p.producer) },
       { id: 'host', header: 'Host', value: (p) => name(p.consumer) },
       { id: 'usd', header: 'Supply from new capacity', value: (p) => p.value, cell: (p) => fmtUsd(p.value), num: true },
       { id: 'fs', header: 'Friendshore score', value: (p) => p.friendshore, cell: (p) => fmtScore(p.friendshore), num: true },
-      { id: 'nodes', header: 'Sub-sectors', value: (p) => p.nodes.map(label).join(', ') },
+      { id: 'nodes', header: 'Supply-chain steps', value: (p) => p.nodes.map(label).join(', ') },
     ];
     const csv = () => ({
       name: `Allied Industrial Base investment hosts ${sc.label} ${scope}`,
@@ -985,14 +985,14 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
             headingLevel={3}
             title="Where new capacity buys most resilience"
             sub={`Where a gap remains after coordinated trade, the analysis adds a standard amount of capacity in each country that could add it, in turn (a fixed share of the step’s demand, capped at that country’s current output of the step), and ranks them by the resilience it buys. ${scope.charAt(0).toUpperCase()}${scope.slice(1)}, ${sc.label}: ${plural(nodes.length, 'supply-chain step')}, largest gain first. A host must already show the capability (revealed by its exports).`}
-            table={() => <TableView rows={nodes} cols={nodeCols} caption={`Investment hosts by sub-sector, ${scope}`} search pageSize={20} initialSort={{ id: 'gain', desc: true }} />}
+            table={() => <TableView rows={nodes} cols={nodeCols} caption={`Countries that could add capacity, by supply-chain step, ${scope}`} search pageSize={20} initialSort={{ id: 'gain', desc: true }} />}
             csv={csv}
             notes={<span>The increment is a synthetic simulation, not a project or a cost estimate.</span>}
           >
             {nodes.length ? (
               <RankList
                 rows={nodes.slice(0, 8)}
-                label="Sub-sectors where new capacity buys most resilience"
+                label="Supply-chain steps where new capacity buys most resilience"
                 render={(n) => (
                   <>
                     <span className="w-14 shrink-0 text-right font-medium tabular text-paper">{fmtPp(n.bestGain, 0)}</span>
@@ -1009,21 +1009,21 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
           </ChartCard>
           <ChartCard
             headingLevel={3}
-            title="Investment hosts"
+            title="Countries that could add capacity"
             sub={`Countries that could add capacity, ${scope}, ${sc.label}: how often each is the best-ranked or an eligible host for new capacity.`}
-            table={() => <TableView rows={hosts} cols={hostCols} caption={`Investment hosts, ${scope}`} search pageSize={20} />}
+            table={() => <TableView rows={hosts} cols={hostCols} caption={`Countries that could add capacity, ${scope}`} search pageSize={20} />}
           >
             {hosts.length ? (
               <RankList
                 rows={hosts.slice(0, 8)}
-                label="Most frequent investment hosts"
+                label="Countries most often best placed to add capacity"
                 render={(r) => (
                   <>
                     <Link className="link min-w-[9rem]" to={toCountry(r.iso3)}>
                       {name(r.iso3)}
                     </Link>
                     <span className="text-paper-dim">
-                      best host in {plural(r.first.length, 'sub-sector')}, eligible in {r.eligible.length}
+                      best host in {plural(r.first.length, 'supply-chain step')}, eligible in {r.eligible.length}
                     </span>
                   </>
                 )}
@@ -1304,8 +1304,8 @@ function GeopoliticalTab({ f, partner, onKind }: TabProps) {
 
   // OSI: the allied coalition and Friendshore's alignment part
   let osi: LensPanelSpec;
-  if (man.status === 'loading') osi = { names: LENS_LOADING, content: <Loading label="Loading the coalition tiers" /> };
-  else if (!roster) osi = { names: lensNone('the coalition tiers could not be loaded'), empty: 'The coalition tiers could not be loaded (the Countries data is not available).' };
+  if (man.status === 'loading') osi = { names: LENS_LOADING, content: <Loading label="Loading the coalition membership" /> };
+  else if (!roster) osi = { names: lensNone('the coalition membership could not be loaded'), empty: 'The coalition membership could not be loaded (the Countries data is not available).' };
   else {
     const core = coalition.filter((c) => c.tier === 'core');
     const partner = coalition.filter((c) => c.tier === 'partner');
@@ -1379,7 +1379,7 @@ function AibCoalitions({
   const toCountry = useCountryHref();
   const cols: Col<ScenarioCompactRel>[] = [
     { id: 'id', header: 'Compact', value: (c) => c.id, cell: (c) => <CompactLinks ids={[c.id]} /> },
-    { id: 'title', header: 'Sub-sectors', value: (c) => c.nodes.map(label).join(', '), minWidth: 200 },
+    { id: 'title', header: 'Supply-chain steps', value: (c) => c.nodes.map(label).join(', '), minWidth: 200 },
     { id: 'members', header: 'Coalition', value: (c) => (c.members ? c.members.map(name).join(', ') : (c.reason ?? 'none')), minWidth: 220 },
     { id: 'critical', header: 'Critical supply partners', value: (c) => c.criticalPartners.map(name).join(', ') },
     { id: 'external', header: 'Critical dependencies outside', value: (c) => c.criticalExternal.map(name).join(', ') },

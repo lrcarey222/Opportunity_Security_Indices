@@ -46,7 +46,7 @@ describe('InfoTip', () => {
         Scores <InfoTip id="es" /> run from 0 to 1. <button type="button">elsewhere</button>
       </p>,
     );
-    const btn = screen.getByRole('button', { name: 'What is Energy Security?' });
+    const btn = screen.getByRole('button', { name: 'What is “Energy Security”?' });
     expect(btn.getAttribute('aria-expanded')).toBe('false');
     expect(screen.queryByRole('dialog')).toBeNull();
     fireEvent.click(btn);
@@ -68,7 +68,7 @@ describe('InfoTip', () => {
         <button type="button">outside</button>
       </div>,
     );
-    const btn = screen.getByRole('button', { name: 'What is Partnership Strength Index?' });
+    const btn = screen.getByRole('button', { name: 'What is “Partnership Strength Index”?' });
     fireEvent.click(btn);
     expect(screen.getByRole('dialog')).toBeTruthy();
     fireEvent.keyDown(document, { key: 'Escape' });
@@ -86,7 +86,7 @@ describe('InfoTip', () => {
         <InfoTip id="no_such_term" />
       </p>,
     );
-    expect(screen.getByRole('button', { name: 'What is the concentration index?' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'What is “the concentration index”?' })).toBeTruthy();
     expect(screen.getAllByRole('button')).toHaveLength(1);
   });
 });
@@ -103,7 +103,7 @@ describe('Term', () => {
     expect(p.textContent).toContain('Energy Security');
     expect(p.textContent).toContain('economic opportunity');
     const names = screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'));
-    expect(names).toEqual(['What is Strategic Index?', 'What is economic opportunity?']);
+    expect(names).toEqual(['What is “Strategic Index”?', 'What is “economic opportunity”?']);
   });
 });
 

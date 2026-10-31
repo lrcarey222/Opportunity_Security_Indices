@@ -241,7 +241,7 @@ describe('the strategic layer: the division of labour', () => {
     expect(divisionValueText(null, 'demand')).toBe('–');
     expect(divisionLegend('supply').levels.map((l) => l.words)).toEqual(['2% to 10%', '10% to 25%', '25% or more']);
     expect(divisionLegend('host').levels.map((l) => l.words)).toEqual(['ranked 4th or lower', 'ranked 2nd or 3rd', 'the best-ranked host']);
-    expect(divisionLegend('demand').note).toMatch(/no economy is expected to build every node/);
+    expect(divisionLegend('demand').note).toMatch(/No country is expected to build every step\./);
   });
 
   it('the matrix: the nodes in spine order; the economies with a dot, along the chain; allied or not; their compact role', () => {
