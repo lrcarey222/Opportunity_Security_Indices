@@ -1,9 +1,9 @@
 {
   "schema": "osi-sector",
   "schema_version": 2,
-  "bundle_id": "4fc957417249457b995dad78b83a498f",
-  "created": "2026-10-30T21:22:40Z",
-  "git_commit": "a54a9d3",
+  "bundle_id": "8f4910df5216fbdbcf73b0be919043a7",
+  "created": "2026-10-31T15:58:13Z",
+  "git_commit": "4bb2adc",
   "generator": "scripts/87_export_sector_data.R",
   "phase": 1,
   "strategic_bundle_id": "c1736c4a25c7a33e73d56466eac415e6",
@@ -23,10 +23,10 @@
   "chunks": [
     {
       "name": "sector-meta",
-      "file": "sector-meta.f5314af7.osb",
-      "bytes": 367336,
-      "bytes_gz": 113627,
-      "md5": "f5314af798a03b378c63ac7cc5195146",
+      "file": "sector-meta.a1ee8228.osb",
+      "bytes": 367360,
+      "bytes_gz": 113629,
+      "md5": "a1ee8228b9828cbb91616710d5587d80",
       "tech": null
     },
     {
@@ -624,7 +624,7 @@
       "country_data": true
     }
   ],
-  "notes": ["Coalition: 59 economies (31 core, 28 partners); the EU-27 is one node in the Strategic network.", "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.", "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.", "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.", "Fossil production EI does not report separately comes from the EIA International Energy Statistics where the pipeline took it (converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 and the net balance and self-sufficiency say so (marked 'not reported separately').", "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.", "Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, 2021-2025, tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector (config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology.", "IEA pathways: World Energy Outlook 2025 free dataset (World), Historical, Stated Policies, Current Policies and Net Zero Emissions by 2050, CC BY-NC-SA 4.0; mineral demand by scenario from the IEA Critical Minerals Dataset (Current Policies, Stated Policies, High Demand; no Net Zero scenario), CC BY 4.0; IEA scenario projections, mapped to technology x stage with a match quality (config/iea_pathways_map.yml).", "Climate sources: Global Carbon Project, Global Carbon Budget 2025 v1.0 (Friedlingstein et al. 2025; consumption-based: Peters et al. 2012), national fossil CO2 from 1990 and World CO2 by fuel; Energy Institute Statistical Review, 2025 Country Transition Tracker, with the median of the economies it lists; IEA World Energy Outlook 2025 free dataset, Regions (CC BY-NC-SA 4.0; regions have no Net Zero scenario); IEA Net Zero by 2050 (2021) Annex A, 2030 milestones (CC BY-NC-SA 3.0 IGO; an older edition); IEA World Energy Investment 2026 (CC BY 4.0; 2026 values are IEA estimates); config/climate_sources_map.yml. The IEA Energy and Emissions per Value Added database is licence-restricted and not shown.", "Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; project counts and sums of disclosed capital computed by the OSI authors, no record altered; undisclosed capital investment is shown as not disclosed, never zero.", "Sectors are technology x six supply-chain stages (Extraction, Refining, Components, Assembly, Deployment, Recovery): 66 headline sectors and the Semiconductors stages; each HS6 code sits at the stage of the six-stage basket. Trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total; codes excluded in the 2026-10 basket review are listed per technology.", "Figures a source gives once for a technology's manufacturing (manufacturing investment, IEA capacity shares) appear on both Components and Assembly and are never added across them.", "Scenario dials apply to Strategic Insights only."],
+  "notes": ["Coalition: 59 economies (31 core, 28 partners); the EU-27 is one node in the Strategic network.", "Trade on screen is the reconciled Comtrade matrix (importer-declared; exporters' reports x1.06 where an importer did not declare); Hong Kong is kept and tagged as a re-export hub.", "Hong Kong is out of the exporter-reported Comtrade measures (RCA and the reported side of the reconciliation), as in Strategic Insights.", "Critical-mineral reserves: USGS Mineral Commodity Summaries 2026.", "Fossil production EI does not report separately comes from the EIA International Energy Statistics where the pipeline took it (converted to EI's units; gas and coal from EIA's latest year); where neither reports it, production is assumed to be 0 and the net balance and self-sufficiency say so (marked 'not reported separately').", "Policy: IEA Policies and Measures records; Climate Action Tracker ratings where CAT rates the economy.", "Sector emissions: Climate TRACE (climatetrace.org), CC BY 4.0, 2021-2025, tonnes CO2e (100-year GWP), mapped to technology x stage with a match quality per sector (config/climate_trace_map.yml); sectors with no match show the IPCC lifecycle intensity of the technology.", "IEA pathways: World Energy Outlook 2025 free dataset (World), Historical, Stated Policies, Current Policies and Net Zero Emissions by 2050, CC BY-NC-SA 4.0; mineral demand by scenario from the IEA Critical Minerals Dataset (Current Policies, Stated Policies, High Demand; no Net Zero scenario), CC BY 4.0; IEA scenario projections, mapped to technology x stage with a match quality (config/iea_pathways_map.yml).", "Climate sources: Global Carbon Project, Global Carbon Budget 2025 v1.0 (Friedlingstein et al. 2025; consumption-based: Peters et al. 2012), national fossil CO2 from 1990 and World CO2 by fuel; Energy Institute Statistical Review, 2025 Country Transition Tracker, with the median of the economies it lists; IEA World Energy Outlook 2025 free dataset, Regions (CC BY-NC-SA 4.0; regions have no Net Zero scenario); IEA Net Zero by 2050 (2021) Annex A, 2030 milestones (CC BY-NC-SA 3.0 IGO; an older edition); IEA World Energy Investment 2026 (CC BY 4.0; 2026 values are IEA estimates); config/climate_sources_map.yml. The IEA Energy and Emissions per Value Added database is licence-restricted and not shown.", "Cross-border clean-tech manufacturing projects: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0; project counts and sums of disclosed capital computed by the Explorer's authors, no record altered; undisclosed capital investment is shown as not disclosed, never zero.", "Sectors are technology x six supply-chain stages (Extraction, Refining, Components, Assembly, Deployment, Recovery): 66 headline sectors and the Semiconductors stages; each HS6 code sits at the stage of the six-stage basket. Trade is also shown by sub-component (the groups of HS6 codes a basket is built from), which add up to each sector's total; codes excluded in the 2026-10 basket review are listed per technology.", "Figures a source gives once for a technology's manufacturing (manufacturing investment, IEA capacity shares) appear on both Components and Assembly and are never added across them.", "Scenario dials apply to Strategic Insights only."],
   "validation": [
     {
       "check": "dictionary: valid, every measure of the build has an entry",
@@ -1710,9 +1710,9 @@
   "sources": [
     {
       "path": "config/sector_dictionary.yml",
-      "mtime": "2026-10-30T17:00:30Z",
-      "bytes": 175613,
-      "md5": "68428d7e2abc7054810a55e2f570756f"
+      "mtime": "2026-10-31T15:38:58Z",
+      "bytes": 172439,
+      "md5": "166f3fcb4a8eb4a78d554681f1a4cb5b"
     },
     {
       "path": "data/processed/coalition_tbl.rds",
@@ -2190,8 +2190,8 @@
     }
   ],
   "budget": {
-    "sector_gz": 5976365,
-    "combined_gz": 23729741,
+    "sector_gz": 5976367,
+    "combined_gz": 23729743,
     "limit_sector_gz": 9437184,
     "limit_combined_gz": 27787264
   },
