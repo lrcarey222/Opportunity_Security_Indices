@@ -497,9 +497,9 @@ sources:
     edition: "2026.10.05"
     url: "https://cmfdi.netzeropolicylab.com/"
     licence: attribution
-    attribution: "Source: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: project counts and sums of disclosed capital computed by the OSI authors; no record altered."
+    attribution: "Source: Cleantech Manufacturing FDI Dataset (CM-FDI), P. Bandara and the Net Zero Industrial Policy Lab, Johns Hopkins University, edition 2026.10.05, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: project counts and sums of disclosed capital computed by the Explorer's authors; no record altered."
     accessed: "2026-10-11"
-    transform: "One row per project as published ({fdi_n} projects; {fdi_n_dest} destination and {fdi_n_home} home economies; {fdi_n_parents} parent companies; announced {fdi_years}). Country names to ISO3 (Czechia and Czech Republic as one); technology to its manufacturing sectors, Components and Assembly, which carry the same projects (Battery -> Batteries, EV -> Electric Vehicles, Solar, Wind); undisclosed capital investment kept as not disclosed, never zero; source cells verbatim with their http(s) links. Flows (home -> destination), parent-headquarters group splits and announcements by year are counts and sums computed by the OSI authors, over all projects and over the projects the Partnership indices use (config/partnership.yml cm_fdi)."
+    transform: "One row per project as published ({fdi_n} projects; {fdi_n_dest} destination and {fdi_n_home} home economies; {fdi_n_parents} parent companies; announced {fdi_years}). Country names to ISO3 (Czechia and Czech Republic as one); technology to its manufacturing sectors, Components and Assembly, which carry the same projects (Battery -> Batteries, EV -> Electric Vehicles, Solar, Wind); undisclosed capital investment kept as not disclosed, never zero; source cells verbatim with their http(s) links. Flows (home -> destination), parent-headquarters group splits and announcements by year are counts and sums computed by the Explorer's authors, over all projects and over the projects the Partnership indices use (config/partnership.yml cm_fdi)."
     issues: "{fdi_n_undisclosed} of {fdi_n} projects disclose no capital investment; values are announced, not audited. Cross-border projects only: domestic investment is not covered."
   # Development & finance (development data change 2026-10-15): the raw inputs of Development Potential
   # (R/themes/partnership_strength/stronger_development.R) and of Friendshore's outbound component
@@ -591,7 +591,7 @@ sources:
     licence: attribution
     attribution: "Source: Energy Institute Statistical Review of World Energy 2025, Country Transition Tracker."
     accessed: "2026-10-17"
-    transform: "scripts/18_build_climate_sources.R: the eight indicator sheets as published (the tracker's growth columns are not read); the median economy is the middle of the economies the tracker lists for each indicator and year, computed by the OSI authors; the low-carbon share of power adds the wind, solar, hydro, other renewables and nuclear shares on screen."
+    transform: "scripts/18_build_climate_sources.R: the eight indicator sheets as published (the tracker's growth columns are not read); the median economy is the middle of the economies the tracker lists for each indicator and year, computed by the Explorer's authors; the low-carbon share of power adds the wind, solar, hydro, other renewables and nuclear shares on screen."
     issues: "79 economies (70 for emissions and carbon intensity, 31 for the power mix). The workbook does not state the GDP basis of its intensities. The Carbon Intensity sheet labels its unit tonnes per megajoule; its values are tonnes per terajoule, as its Contents sheet says."
   - id: iea_weo_regions
     short: "IEA World Energy Outlook 2025 regions"

@@ -283,7 +283,7 @@ caveats:
 
 # Sources the sheet cites besides the Sector dictionary's (merged by id; the dictionary wins for its own).
 sources:
-  - {id: osi_indices, label: "Energy Security, Economic Opportunity, Strategic Index and Partnership Strength Index, NEIS baseline at six supply-chain stages (Opportunity Security Indices pipeline)", licence: "CC BY 4.0 (the indices)", url: null}
+  - {id: osi_indices, label: "Energy Security, Economic Opportunity, Strategic Index and Partnership Strength Index at six supply-chain stages, computed by the Explorer's authors", licence: "CC BY 4.0 (the indices)", url: null}
   - {id: agreements, label: "Economic-security agreements: G7, NATO, Indo-Pacific Economic Framework, Minerals Security Partnership (and Forum), U.S. free-trade agreements (compiled by the authors from official membership lists)", licence: null, url: null}
   - {id: wdi, label: "World Bank, World Development Indicators: country region and income group", licence: "CC BY 4.0", url: "https://datacatalog.worldbank.org/"}
   - {id: iea_etp, label: "International Energy Agency, Energy Technology Perspectives 2024: manufacturing capacity shares", licence: "International Energy Agency terms of use", url: "https://www.iea.org/"}

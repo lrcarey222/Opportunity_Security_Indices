@@ -293,7 +293,14 @@ test_that("the yards and the strategic value travel in the core and the detail, 
   kl <- match("Batteries|Components|bess-control", coreL$meta$yf_nodes$key)
   expect_equal(as.character(coreL$meta$yf_nodes$label)[kl], "BMS")
   expect_equal(as.character(coreL$meta$yf_nodes$cap)[kl], "market_only")
-  depc <- Filter(function(c) identical(c$stage, "Deployment"), jd$cells)[[1]]
+  # a Deployment & Use layer keeps its label (its stage node has no row)
+  layD <- rbind(lay, transform(lay, supply_chain = "Deployment", layer_id = "ev-charging-mgmt", layer_label = "Charging management"))
+  coreD <- posture_core_doc(g, pe_div(), pe_countries, pe_cfg, created = "x", layers = layD)
+  kd <- match("Batteries|Deployment|ev-charging-mgmt", coreD$meta$yf_nodes$key)
+  expect_false(is.na(kd))
+  expect_equal(as.character(coreD$meta$yf_nodes$label)[kd], "Charging management")
+  expect_true(is.na(match("Batteries|Deployment|stage", coreD$meta$yf_nodes$key)))
+  depc <-Filter(function(c) identical(c$stage, "Deployment"), jd$cells)[[1]]
   expect_null(depc$large_yard)
   expect_null(depc$prize)
   expect_null(Filter(function(c) identical(c$stage, "Extraction"), jd$cells)[[1]]$yard_children)

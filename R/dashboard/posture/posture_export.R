@@ -80,18 +80,20 @@ posture_ly_index <- function(x) {
 # layer: the large-yard case (case, n, signals, unknown, floor) and the strategic-value families that do not
 # depend on the country (industrial commons, future option, the observed counts, the market-only cap), each the
 # modal value across countries (they vary by country for 2 of 55 nodes, where a country's own value is in its
-# detail document). x: the cell table; layers: strategic_posture_layers_tbl (optional).
+# detail document). A Deployment & Use layer (EV charging management) has a row too, for its label: the
+# Strategy Map and the fence lists name every layer (2026-10-31). x: the cell table; layers:
+# strategic_posture_layers_tbl (optional).
 posture_yf_node_rows <- function(x, layers = NULL) {
   cols <- c("tech", "supply_chain", "layer_id", "layer_label", "large_yard_case", "large_yard_n", "large_yard_signals",
             "large_yard_unknown", "large_yard_floor", "siv_commons", "siv_option", "siv_commons_n", "siv_option_n", "siv_cap")
-  pick <- function(d, layer) {
+  pick <- function(d, layer, deployment = FALSE) {
     d <- as.data.frame(d)
     if (!"layer_id" %in% names(d)) d$layer_id <- layer
     for (cl in setdiff(cols, names(d))) d[[cl]] <- NA
-    d[d$supply_chain != "Deployment", cols, drop = FALSE]
+    d[deployment | d$supply_chain != "Deployment", cols, drop = FALSE]
   }
   rows <- pick(x, "stage")
-  if (!is.null(layers) && nrow(layers)) rows <- rbind(rows, pick(layers, NA_character_))
+  if (!is.null(layers) && nrow(layers)) rows <- rbind(rows, pick(layers, NA_character_, deployment = TRUE))
   rows$key <- paste(rows$tech, rows$supply_chain, rows$layer_id, sep = "|")
   modal <- function(v) {
     v <- v[!is.na(v)]
