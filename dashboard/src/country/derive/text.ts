@@ -166,6 +166,17 @@ export function editionSuffix(label: string, edition: string | null | undefined)
   return `, ${ed}`;
 }
 
+/**
+ * A data note of the fact sheet in the Explorer's words (screen and README): the export's baseline note names
+ * the weights as "the NEIS baseline" and the place to change them by a module name the Explorer does not
+ * show, so those two phrases are reworded; every other note is shown as exported.
+ */
+export function caveatText(c: { id: string; text: string }): string {
+  return c.text
+    .replace(/\bthe NEIS baseline\b/g, 'the baseline')
+    .replace(/\bStrategic Insights recomputes them under other weightings\b/, 'Explore scenarios, with the security and opportunity scores, recomputes them under other weights');
+}
+
 export function rawNoteLine(raw: { note: string | null; note_d?: string | null } | null | undefined, name: string): string | null {
   if (!raw || !raw.note) return null;
   if (raw.note === 'eu_region_share') return `${cap(raw.note_d ?? "the EU's figure, carried by each EU member")}, not ${poss(name)} own figure.`;

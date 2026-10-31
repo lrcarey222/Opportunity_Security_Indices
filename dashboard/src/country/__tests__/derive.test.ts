@@ -14,7 +14,7 @@ import {
   cellKeyOfNode, coverageCounts, dateLabel, freshnessItems, hashPlan, LEGACY_MAPPING_ROWS, LEGACY_MIXES, LEGACY_SECTION, MEDIUM_SUBSECTIONS, nodeKeyOfCell, STRATEGY_SECTIONS,
 } from '../derive/strategyPage.ts';
 import {
-  editionSuffix, euRegionSentence, ledeOf, legacyCornerWord, notPlacedReason, poss, proseName, quadrantWord, rawNoteLine, sectorsByTechText, shortCellLabel, whyIntro, whySentence,
+  caveatText, editionSuffix, euRegionSentence, ledeOf, legacyCornerWord, notPlacedReason, poss, proseName, quadrantWord, rawNoteLine, sectorsByTechText, shortCellLabel, whyIntro, whySentence,
 } from '../derive/text.ts';
 import { haveFixture, readSheet } from './fixture.ts';
 
@@ -58,6 +58,15 @@ describe('raw-figure notes (2026-10-14)', () => {
     );
     expect(editionSuffix('Atlas', 'data to 2023')).toBe(' (data to 2023)');
     expect(editionSuffix('Atlas', null)).toBe('');
+  });
+
+  it('shows the baseline data note without the organisation name or a module the Explorer does not show', () => {
+    const exported = { id: 'baseline', text: 'All index values are the NEIS baseline as of 30 October 2026, scored at six supply-chain stages; Strategic Insights recomputes them under other weightings.' };
+    expect(caveatText(exported)).toBe(
+      'All index values are the baseline as of 30 October 2026, scored at six supply-chain stages; Explore scenarios, with the security and opportunity scores, recomputes them under other weights.',
+    );
+    const other = { id: 'hkg_reexport', text: 'Hong Kong’s trade is largely re-exports.' };
+    expect(caveatText(other)).toBe(other.text);
   });
 
   it('names the top drivers that rest on the EU figure, and none otherwise', () => {

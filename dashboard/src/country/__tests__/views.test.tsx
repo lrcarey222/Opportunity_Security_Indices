@@ -173,7 +173,8 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     // the title effect can trail the h1 when the suite runs under load
     await waitFor(() => expect(document.title).toMatch(/United States \| Countries \| /));
     // the head: one generated strategy sentence (spec XI.2, XI.7), the data freshness, the memo and export actions
-    const sentence = screen.getByTestId('strategy-sentence');
+    // the sentence renders once the posture core is in, which can trail the title under load
+    const sentence = await screen.findByTestId('strategy-sentence', {}, { timeout: 30_000 });
     // the head states the page's strategic question for this economy first, then answers it with the sentence
     const question = screen.getByTestId('profile-question');
     expect(question.textContent).toBe('What should the United States secure, build, partner for or deploy?');
@@ -510,7 +511,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     renderAt('/countries/JPN?cell=wind-downstream');
     expect(await h1('Japan')).toBeTruthy();
     expect(await screen.findByText('Ignored in the link', undefined, { timeout: 30_000 })).toBeTruthy();
-    expect(screen.getByText(/cell=wind-downstream \(Wind — Downstream is now Wind — Deployment; showing it\)/)).toBeTruthy();
+    expect(screen.getByText(/cell=wind-downstream \(Wind — Downstream corresponds to Wind — Deployment; showing it\)/)).toBeTruthy();
     // the mapped sector is the selected one (its "why" link under the Legacy OSI scatter, when it is placed)
     const jpn = readManifest().countries.find((c) => c.iso3 === 'JPN')!;
     const sheet = JSON.parse(JSON.stringify(await source.json(jpn.file!))) as { cells: { key: string; placed: boolean }[] };
@@ -519,7 +520,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     cleanup();
     renderAt('/countries/JPN?cell=batteries-midstream');
     expect(await h1('Japan')).toBeTruthy();
-    expect(await screen.findByText(/cell=batteries-midstream \(Batteries — Midstream is no longer a stage: .*Components and Assembly.*; the sector was dropped\)/, undefined, { timeout: 30_000 })).toBeTruthy();
+    expect(await screen.findByText(/cell=batteries-midstream \(Batteries — Midstream corresponds mostly to .*Components and Assembly.*; the sector was dropped\)/, undefined, { timeout: 30_000 })).toBeTruthy();
   });
 
   it('an economy without a posture keeps every section, each with its notice; the head says there is no strategy map', async () => {

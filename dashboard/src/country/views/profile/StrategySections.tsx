@@ -15,7 +15,7 @@
 // Every entry point (map cell, fence entry or row, scatter point, policy row) selects through the page's one
 // ?node= selection (ProfileCtx.posture.node), which opens the one drawer the page mounts. None of these
 // sections reads the Perspective dials or the in-browser engine: the framework's thresholds are fixed, and the
-// Legacy OSI blocks that follow the dials sit in Evidence & Methodology.
+// security and opportunity score blocks that follow the dials sit in Evidence & Methodology.
 
 import type { ReactNode } from 'react';
 import { Notice } from '../../../components/ui.tsx';
@@ -33,7 +33,7 @@ const SEC = Object.fromEntries(STRATEGY_SECTIONS.map((s) => [s.id, s])) as Recor
 
 /**
  * The basis tag of sections 1-6: the framework's label and "fixed thresholds". The posture tag's default note
- * names the dials and the scenario toggle, which on this page live in Legacy OSI (Explore scenarios) and in the
+ * names the dials and the scenario toggle, which on this page live in the security and opportunity scores (Explore scenarios) and in the
  * Allied explore fold; the canonical strategy's own sections do not name them (the tag's tooltip still says so).
  */
 const BASIS_NOTE = 'fixed thresholds';

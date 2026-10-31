@@ -83,13 +83,13 @@ describe('parseSearch / writeSearch', () => {
   it('an old three-stage stage: Downstream opens Deployment, Upstream and Midstream are dropped; each is named', () => {
     const down = parseSearch('?h=80&tech=Solar&stage=Downstream', ctx);
     expect(down.view.stage).toBe('Deployment');
-    expect(down.problems).toEqual(['stage=Downstream (Downstream is now Deployment; showing Deployment)']);
+    expect(down.problems).toEqual(['stage=Downstream (Downstream corresponds to Deployment; showing Deployment)']);
     expect(writeSearch(down.scenario, down.view, ctx)).toBe('?h=80&tech=Solar&stage=Deployment');
     const mid = parseSearch('?tech=Batteries&stage=Midstream', ctx);
     expect(mid.view.stage).toBeNull();
     expect(mid.view.tech).toBe('Batteries');
     expect(mid.problems).toHaveLength(1);
-    expect(mid.problems[0]).toMatch(/^stage=Midstream \(Midstream is no longer a stage: it is now mostly Components and Assembly .*; the stage was dropped\)$/);
+    expect(mid.problems[0]).toMatch(/^stage=Midstream \(Midstream corresponds mostly to Components and Assembly .*; the stage was dropped\)$/);
     const up = parseSearch('?stage=Upstream', ctx);
     expect(up.view.stage).toBeNull();
     expect(up.problems[0]).toContain('Extraction, Refining and Recovery');

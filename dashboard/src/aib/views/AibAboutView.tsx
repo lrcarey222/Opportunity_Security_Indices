@@ -504,7 +504,7 @@ export default function AibAboutView() {
         binary program chooses the fewest economies whose coordination reaches the target in every node, the demand anchors always among them. Among coalitions of that minimum size it keeps
         the one with the widest margin over the target in its weakest node, then the one that adds the most supply; where that tie-break hits its time limit the page says so
         {nTieBreakOpen ? ` (${plural(nTieBreakOpen, 'compact', 'compacts')} in this export)` : ''}. A compact&apos;s members are the exact minimum coalition at the {targetLabel(mid)} target. A
-        greedy heuristic (adding, one at a time, the economy that most reduces the shortfall) is kept for comparison and draws the &ldquo;coverage as members join&rdquo; chart; it can need
+        greedy heuristic (adding, one at a time, the economy that most reduces the shortfall) runs beside it as a check and draws the &ldquo;coverage as members join&rdquo; chart; it can need
         more economies, or different ones. When no coalition reaches the {targetLabel(mid)} target, the members shown are the widest coalition the greedy path found, and the page says so
         {nWidest ? ` (${plural(nWidest, 'compact', 'compacts')} in this export)` : ''}.
       </p>

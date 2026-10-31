@@ -118,7 +118,7 @@ const MFG_SHARE: SectorChart = {
 const ANNUAL_INVESTMENT: SectorChart = {
   label: 'Annual clean-technology investment',
   theme: 'investment', m: 'investment.annual', item: CELL, chart: 'map', basis: 'source',
-  note: 'Annual clean-technology investment (Clean Investment Monitor), the source of investment momentum and current investment; the momentum is the change in world capex, which Over time shows.',
+  note: 'Annual clean-technology investment (Clean Investment Monitor), the source of investment momentum and current investment; the momentum is the change in world capital spending, which Over time shows.',
 };
 const WEO_OUTLOOK: SectorChart = {
   label: 'World energy supply outlook',
@@ -273,7 +273,7 @@ const POSITION: readonly FenceFamily[] = [
     charts: [
       EXPORTS_SHARE,
       { ...ATLAS_SHARE, note: 'Share of world exports in the Harvard Atlas, which the export position uses for economies that do not report their trade.' },
-      { label: 'Export specialization (RCA)', theme: 'trade', m: 'trade.rca', item: CELL, chart: 'map', stages: PRODUCING, basis: 'related', note: 'Revealed comparative advantage of the stage’s basket (exporter-reported): specialisation, which the export position read before the structural benchmark.' },
+      { label: 'Export specialization (RCA)', theme: 'trade', m: 'trade.rca', item: CELL, chart: 'map', stages: PRODUCING, basis: 'related', note: 'Revealed comparative advantage of the stage’s basket (exporter-reported): how specialised the economy’s exports are in these goods.' },
     ],
   },
   {

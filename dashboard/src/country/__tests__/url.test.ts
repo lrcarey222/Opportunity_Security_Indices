@@ -37,22 +37,22 @@ describe('Country URL state (A3)', () => {
   });
 
   it('an old three-stage cell (design U1): Downstream is read as Deployment with a notice; Upstream and Midstream are dropped, naming the stages that replaced them', () => {
-    expect(legacyCellOf('oil-downstream')).toEqual({ to: 'oil-deployment', note: 'Oil — Downstream is now Oil — Deployment' });
+    expect(legacyCellOf('oil-downstream')).toEqual({ to: 'oil-deployment', note: 'Oil — Downstream corresponds to Oil — Deployment' });
     expect(legacyCellOf('batteries-midstream')).toMatchObject({ to: null });
-    expect(legacyCellOf('batteries-midstream')!.note).toMatch(/^Batteries — Midstream is no longer a stage: it is now mostly Components and Assembly/);
-    expect(legacyCellOf('wind-upstream')!.note).toMatch(/^Wind — Upstream is no longer a stage: it is now Extraction, Refining and Recovery/);
+    expect(legacyCellOf('batteries-midstream')!.note).toMatch(/^Batteries — Midstream corresponds mostly to Components and Assembly/);
+    expect(legacyCellOf('wind-upstream')!.note).toMatch(/^Wind — Upstream corresponds to Extraction, Refining and Recovery/);
     // not a legacy key of a Country technology: the ordinary notice
     for (const k of ['fusion-upstream', 'oil-refining', 'oil', 'upstream']) expect(legacyCellOf(k)).toBeNull();
 
     const down = parseCountrySearch('?cell=Solar-Downstream&partner=JPN');
     expect(down.state).toEqual({ cell: 'solar-deployment', partner: 'JPN', all: false, ptab: 'trade' });
-    expect(down.problems).toEqual(['cell=Solar-Downstream (Solar — Downstream is now Solar — Deployment; showing it)']);
+    expect(down.problems).toEqual(['cell=Solar-Downstream (Solar — Downstream corresponds to Solar — Deployment; showing it)']);
     // the URL is written back with the six-stage key
     expect(serializeCountrySearch(down.state)).toBe('?cell=solar-deployment&partner=JPN');
 
     const mid = parseCountrySearch('?cell=batteries-midstream');
     expect(mid.state.cell).toBeNull();
-    expect(mid.problems[0]).toMatch(/^cell=batteries-midstream \(Batteries — Midstream is no longer a stage: .*; the sector was dropped\)$/);
+    expect(mid.problems[0]).toMatch(/^cell=batteries-midstream \(Batteries — Midstream corresponds mostly to .*; the sector was dropped\)$/);
     const up = parseCountrySearch('?cell=oil-upstream');
     expect(up.state.cell).toBeNull();
     expect(up.problems[0]).toMatch(/Extraction, Refining and Recovery; the sector was dropped\)$/);

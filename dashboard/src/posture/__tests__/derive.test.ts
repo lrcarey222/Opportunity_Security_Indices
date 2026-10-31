@@ -244,11 +244,11 @@ describe('the node of the Sector card (?pnode)', () => {
   });
   it('a three-stage stage is reported with the stages that replaced it, never used', () => {
     expect(parsePostureNode('Solar|Midstream', meta)).toEqual({
-      tech: 'Solar', stage: 'Refining', problem: 'pnode=Solar|Midstream (Midstream is no longer a stage: it is now mostly Components and Assembly; showing Solar — Refining)',
+      tech: 'Solar', stage: 'Refining', problem: 'pnode=Solar|Midstream (Midstream corresponds mostly to Components and Assembly; showing Solar — Refining)',
     });
-    expect(parsePostureNode('Batteries|Upstream', meta).problem).toBe('pnode=Batteries|Upstream (Upstream is no longer a stage: it is now Extraction, Refining and Recovery; showing Batteries — Refining)');
-    expect(parsePostureNode('Solar|Downstream', meta).problem).toBe('pnode=Solar|Downstream (Downstream is now Deployment, which this chart leaves out; showing Solar — Refining)');
-    expect(parsePostureNode('Solar|Downstream', meta, meta.stages)).toEqual({ tech: 'Solar', stage: 'Deployment', problem: 'pnode=Solar|Downstream (Downstream is now Deployment; showing Solar — Deployment)' });
+    expect(parsePostureNode('Batteries|Upstream', meta).problem).toBe('pnode=Batteries|Upstream (Upstream corresponds to Extraction, Refining and Recovery; showing Batteries — Refining)');
+    expect(parsePostureNode('Solar|Downstream', meta).problem).toBe('pnode=Solar|Downstream (Downstream corresponds to Deployment, which this chart leaves out; showing Solar — Refining)');
+    expect(parsePostureNode('Solar|Downstream', meta, meta.stages)).toEqual({ tech: 'Solar', stage: 'Deployment', problem: 'pnode=Solar|Downstream (Downstream corresponds to Deployment; showing Solar — Deployment)' });
   });
   it('Deployment, an unknown technology or stage and a malformed value fall back and say why', () => {
     expect(parsePostureNode('Solar|Deployment', meta)).toEqual({

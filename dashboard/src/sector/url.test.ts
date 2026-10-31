@@ -13,13 +13,13 @@ describe('sector url: old three-stage stages (design U1)', () => {
   it('Downstream becomes Deployment, listed; Upstream and Midstream are dropped, listed with the stages that replaced them', () => {
     const d = parseSectorSearch('?tech=Solar&stage=Downstream', ctx);
     expect(d.state.stage).toBe('Deployment');
-    expect(d.problems).toEqual(['stage=Downstream (Downstream is now Deployment; showing it)']);
+    expect(d.problems).toEqual(['stage=Downstream (Downstream corresponds to Deployment; showing it)']);
     const m = parseSectorSearch('?tech=Batteries&stage=Midstream', ctx);
     expect(m.state.stage).toBeNull();
-    expect(m.problems).toEqual(['stage=Midstream (Midstream is no longer a stage: it is now mostly Components and Assembly (some refined materials are under Refining))']);
+    expect(m.problems).toEqual(['stage=Midstream (Midstream corresponds mostly to Components and Assembly (some refined materials are under Refining))']);
     const u = parseSectorSearch('?stage=Upstream');
     expect(u.state.stage).toBeNull();
-    expect(u.problems).toEqual(['stage=Upstream (Upstream is no longer a stage: it is now Extraction, Refining and Recovery)']);
+    expect(u.problems).toEqual(['stage=Upstream (Upstream corresponds to Extraction, Refining and Recovery)']);
     // without the data's stages: the six are accepted, anything else is not a stage
     expect(parseSectorSearch('?stage=Recovery').state.stage).toBe('Recovery');
     expect(parseSectorSearch('?stage=Middle').problems).toEqual(['stage=Middle (not a stage)']);

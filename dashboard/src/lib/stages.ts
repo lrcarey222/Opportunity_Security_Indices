@@ -283,17 +283,23 @@ export function legacyStageWords(stage: LegacyStage): string {
   return stage === 'Midstream' ? `mostly ${words}` : words;
 }
 
+/** How a legacy stage maps onto the six stages, as a verb phrase: "corresponds mostly to Components and Assembly", "corresponds to Deployment". */
+export function legacyStageCorresponds(stage: LegacyStage): string {
+  const words = listAnd(LEGACY_STAGE_REPLACED_BY[stage].map(stageLabel));
+  return `corresponds ${stage === 'Midstream' ? 'mostly ' : ''}to ${words}`;
+}
+
 /**
  * One sentence for the notice of a legacy link, optionally naming the technology:
- * "Batteries — Midstream is no longer a stage: it is now mostly Components and Assembly (some refined
- * materials are under Refining)." / "Solar — Downstream is now Solar — Deployment."
+ * "Batteries — Midstream corresponds mostly to Components and Assembly (some refined materials are under
+ * Refining)." / "Solar — Downstream corresponds to Solar — Deployment."
  */
 export function legacyStageNote(stage: LegacyStage, tech?: string): string {
   const subject = tech ? `${tech} — ${stage}` : stage;
   const exact = legacyStageTargetName(stage);
-  if (exact) return `${subject} is now ${tech ? `${tech} — ` : ''}${stageLabel(exact)}.`;
+  if (exact) return `${subject} corresponds to ${tech ? `${tech} — ` : ''}${stageLabel(exact)}.`;
   const extra = stage === 'Midstream' ? ' (some refined materials are under Refining)' : '';
-  return `${subject} is no longer a stage: it is now ${legacyStageWords(stage)}${extra}.`;
+  return `${subject} ${legacyStageCorresponds(stage)}${extra}.`;
 }
 
 /** Where an old /sector/<tech>/<legacy stage>[/<economy>] link goes. */

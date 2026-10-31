@@ -464,6 +464,6 @@ describe('one drawer for every entry point (spec XIX, design D8)', () => {
     cleanup();
     inRouter(<CountryPage />, '/country?node=Solar|Downstream');
     expect((await screen.findByTestId('cell-drawer')).getAttribute('aria-label')).toBe('Solar Deployment & Use: five questions');
-    expect(screen.getByTestId('node-ignored').textContent).toContain('Downstream is now Deployment & Use');
+    expect(screen.getByTestId('node-ignored').textContent).toContain('Downstream corresponds to Deployment & Use');
   });
 });

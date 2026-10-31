@@ -216,10 +216,10 @@ describe('legacy URLs', () => {
     expect(legacyStageWords('Upstream')).toBe('Extraction, Refining and Recovery');
     expect(legacyStageWords('Midstream')).toBe('mostly Components and Assembly');
     expect(legacyStageWords('Downstream')).toBe('Deployment');
-    expect(legacyStageNote('Midstream', 'Batteries')).toBe('Batteries — Midstream is no longer a stage: it is now mostly Components and Assembly (some refined materials are under Refining).');
-    expect(legacyStageNote('Upstream')).toBe('Upstream is no longer a stage: it is now Extraction, Refining and Recovery.');
-    expect(legacyStageNote('Downstream', 'Solar')).toBe('Solar — Downstream is now Solar — Deployment.');
-    expect(legacyStageNote('Downstream')).toBe('Downstream is now Deployment.');
+    expect(legacyStageNote('Midstream', 'Batteries')).toBe('Batteries — Midstream corresponds mostly to Components and Assembly (some refined materials are under Refining).');
+    expect(legacyStageNote('Upstream')).toBe('Upstream corresponds to Extraction, Refining and Recovery.');
+    expect(legacyStageNote('Downstream', 'Solar')).toBe('Solar — Downstream corresponds to Solar — Deployment.');
+    expect(legacyStageNote('Downstream')).toBe('Downstream corresponds to Deployment.');
   });
 
   it('maps an old Sector path: Downstream to Deployment exactly, the others to the chain page', () => {

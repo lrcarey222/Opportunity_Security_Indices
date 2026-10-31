@@ -10,7 +10,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
-import { isLegacyStage, legacyStageTargetName, legacyStageWords, stageDisplay, stageOfDisplay } from '../lib/stages.ts';
+import { isLegacyStage, legacyStageCorresponds, legacyStageTargetName, stageDisplay, stageOfDisplay } from '../lib/stages.ts';
 import type { PostureMeta } from './contract.ts';
 
 /** The URL key of the selected node. */
@@ -40,9 +40,9 @@ export function parseNodeParam(raw: string | null, meta: Pick<PostureMeta, 'tech
   if (isLegacyStage(stageIn)) {
     const exact = legacyStageTargetName(stageIn);
     if (exact && meta.stages.includes(exact)) {
-      return { key: `${tech}|${exact}`, problem: `${key}=${raw} (${stageIn} is now ${stageDisplay(exact)}; showing ${tech} — ${stageDisplay(exact)})` };
+      return { key: `${tech}|${exact}`, problem: `${key}=${raw} (${stageIn} corresponds to ${stageDisplay(exact)}; showing ${tech} — ${stageDisplay(exact)})` };
     }
-    return ignored(`${stageIn} is no longer a stage: it is now ${legacyStageWords(stageIn)}`);
+    return ignored(`${stageIn} ${legacyStageCorresponds(stageIn)}`);
   }
   const stage = stageOfDisplay(stageIn);
   if (!stage || !meta.stages.includes(stage)) return ignored(`${stageIn || 'an empty name'} is not a supply-chain stage`);

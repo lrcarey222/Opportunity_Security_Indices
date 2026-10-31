@@ -571,7 +571,7 @@ describe('the Sector posture card (schema 2)', () => {
   it('an old three-stage node is reported as ignored, and the chart, selects and takeaway show the same checked node', async () => {
     at('/sector?pnode=Batteries|Midstream', <SectorPostureCard />);
     const ignored = await screen.findByTestId('posture-node-ignored');
-    expect(ignored.textContent).toContain('pnode=Batteries|Midstream (Midstream is no longer a stage: it is now mostly Components and Assembly; showing Batteries — Refining)');
+    expect(ignored.textContent).toContain('pnode=Batteries|Midstream (Midstream corresponds mostly to Components and Assembly; showing Batteries — Refining)');
     expect(screen.getByTestId('posture-takeaway').textContent).toBe('In Batteries refining, 1 country must secure it.');
     expect((screen.getByLabelText('Stage') as HTMLSelectElement).value).toBe('Refining');
     expect(screen.getByTestId('posture-scatter').querySelector('path[data-posture="S"]')).not.toBeNull();

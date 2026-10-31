@@ -251,9 +251,9 @@ describe('aliases and old deep links still resolve', () => {
 // old three-stage Sector link -> where it lands, and its notice (design U1): Downstream is Deployment
 // exactly (query and hash kept); Upstream and Midstream open the chain page (the economy as c, no hash)
 const LEGACY_SECTOR: [string, string, RegExp][] = [
-  ['/sector/batteries/downstream?c=JPN#trade', '/sector/batteries/deployment?c=JPN#trade', /^Batteries — Downstream is now Batteries — Deployment\.$/],
-  ['/sector/solar/midstream/CHN#trade', '/sector/solar?c=CHN', /^Solar — Midstream is no longer a stage: it is now mostly Components and Assembly .*Showing the Solar supply chain: pick a stage there\.$/],
-  ['/sector/wind/upstream?eu=bloc', '/sector/wind?eu=bloc', /^Wind — Upstream is no longer a stage: it is now Extraction, Refining and Recovery\./],
+  ['/sector/batteries/downstream?c=JPN#trade', '/sector/batteries/deployment?c=JPN#trade', /^Batteries — Downstream corresponds to Batteries — Deployment\.$/],
+  ['/sector/solar/midstream/CHN#trade', '/sector/solar?c=CHN', /^Solar — Midstream corresponds mostly to Components and Assembly .*Showing the Solar supply chain: pick a stage there\.$/],
+  ['/sector/wind/upstream?eu=bloc', '/sector/wind?eu=bloc', /^Wind — Upstream corresponds to Extraction, Refining and Recovery\./],
 ];
 
 describe('old three-stage Sector links land on the six stages, with a notice (design U1)', () => {

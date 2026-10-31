@@ -259,7 +259,7 @@ describe('old three-stage Sector links (design U1)', () => {
   it('Downstream opens the Deployment page, the query and hash kept, with a notice', () => {
     expect(legacySectorRedirect('/sector/solar/downstream', '?c=USA', '#trade')).toEqual({
       to: { pathname: '/sector/solar/deployment', search: '?c=USA', hash: '#trade' },
-      notice: 'Solar — Downstream is now Solar — Deployment.',
+      notice: 'Solar — Downstream corresponds to Solar — Deployment.',
     });
     expect(legacySectorRedirect('/sector/electric-vehicles/downstream/IND', '', '#aid-investment')?.to).toEqual({
       pathname: '/sector/electric-vehicles/deployment/IND', search: '', hash: '#aid-investment',
@@ -269,11 +269,11 @@ describe('old three-stage Sector links (design U1)', () => {
     const mid = legacySectorRedirect('/sector/batteries/midstream', '?eu=bloc', '#trade');
     expect(mid?.to).toEqual({ pathname: '/sector/batteries', search: '?eu=bloc', hash: '' });
     expect(mid?.notice).toBe(
-      'Batteries — Midstream is no longer a stage: it is now mostly Components and Assembly (some refined materials are under Refining). Showing the Batteries supply chain: pick a stage there.',
+      'Batteries — Midstream corresponds mostly to Components and Assembly (some refined materials are under Refining). Showing the Batteries supply chain: pick a stage there.',
     );
     const up = legacySectorRedirect('/sector/green-hydrogen/upstream/jpn', '?lens=hhi', '');
     expect(up?.to).toEqual({ pathname: '/sector/green-hydrogen', search: '?c=JPN&lens=hhi', hash: '' });
-    expect(up?.notice).toContain('Green Hydrogen — Upstream is no longer a stage: it is now Extraction, Refining and Recovery.');
+    expect(up?.notice).toContain('Green Hydrogen — Upstream corresponds to Extraction, Refining and Recovery.');
     // a highlight already in the link wins over the economy segment
     expect(legacySectorRedirect('/sector/wind/midstream/CHN', '?c=DEU', '')?.to.search).toBe('?c=DEU');
   });

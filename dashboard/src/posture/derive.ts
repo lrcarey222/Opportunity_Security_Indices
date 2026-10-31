@@ -5,7 +5,7 @@
 // strategy.ts, the Country sections' rows in sections.ts. No React here.
 
 import { rowsToCsv } from '../lib/csv.ts';
-import { DEPLOYMENT_STAGE, isLegacyStage, isProducingStage, legacyStageTargetName, legacyStageWords, stageDisplay, stageRank } from '../lib/stages.ts';
+import { DEPLOYMENT_STAGE, isLegacyStage, isProducingStage, legacyStageCorresponds, legacyStageTargetName, stageDisplay, stageRank } from '../lib/stages.ts';
 import type { DivisionNode, PostureCell, PostureCore, PostureMeta } from './contract.ts';
 import {
   ALIGNMENT_LABEL, choiceWord, DEPLOY_MODE_LABEL, deliveryWords, EVIDENCE_LABEL, flagWords, GAP_LABEL, MODE_LABEL, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE, NEED_TYPE_LABEL,
@@ -215,8 +215,8 @@ export function parsePostureNode(
   if (!meta.techs.includes(tech)) return bad(`${tech || 'an empty name'} is not a technology of the posture data`);
   if (isLegacyStage(stage)) {
     const exact = legacyStageTargetName(stage);
-    if (exact && offered.includes(exact)) return { tech, stage: exact, problem: `${key}=${raw} (${stage} is now ${exact}; showing ${tech} — ${exact})` };
-    const words = exact ? `${stage} is now ${exact}, which this chart leaves out` : `${stage} is no longer a stage: it is now ${legacyStageWords(stage)}`;
+    if (exact && offered.includes(exact)) return { tech, stage: exact, problem: `${key}=${raw} (${stage} corresponds to ${exact}; showing ${tech} — ${exact})` };
+    const words = exact ? `${stage} corresponds to ${exact}, which this chart leaves out` : `${stage} ${legacyStageCorresponds(stage)}`;
     return bad(words, tech);
   }
   if (!offered.includes(stage)) {

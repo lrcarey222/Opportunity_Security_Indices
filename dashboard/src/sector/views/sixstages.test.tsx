@@ -142,11 +142,11 @@ describe('the Sector home: a "What each country should do" section (design L3)',
     expect([new URLSearchParams(router.state.location.search).get('node'), router.state.location.hash]).toEqual(['Batteries|Deployment', '#strategy']);
   });
 
-  it('an old three-stage ?pnode is reported: Downstream is now Deployment and is shown', async () => {
+  it('an old three-stage ?pnode is reported: Downstream corresponds to Deployment and is shown', async () => {
     renderAt('/sector?pnode=Batteries%7CDownstream');
     await h1('Where are the real bottlenecks and opportunities?');
     const notice = await screen.findByTestId('posture-node-ignored', {}, { timeout: 10_000 });
-    expect(notice.textContent).toContain('pnode=Batteries|Downstream (Downstream is now Deployment; showing Batteries — Deployment)');
+    expect(notice.textContent).toContain('pnode=Batteries|Downstream (Downstream corresponds to Deployment; showing Batteries — Deployment)');
     expect(within(document.getElementById('posture') as HTMLElement).getByTestId('sector-strategy-scatter').getAttribute('data-stage')).toBe('Deployment');
   });
 
@@ -203,7 +203,7 @@ describe('old three-stage links (design U1)', () => {
     const r = renderAt('/sector/batteries/downstream#investment');
     await waitFor(() => expect(r.state.location.pathname).toBe('/sector/batteries/deployment'), { timeout: 20_000 });
     expect(r.state.location.hash).toBe('#investment');
-    expect(await screen.findByText('Batteries — Downstream is now Batteries — Deployment.', {}, { timeout: 10_000 })).toBeTruthy();
+    expect(await screen.findByText('Batteries — Downstream corresponds to Batteries — Deployment.', {}, { timeout: 10_000 })).toBeTruthy();
     cleanup();
     const r2 = renderAt('/sector/solar/downstream/USA');
     await waitFor(() => expect(r2.state.location.pathname).toBe('/sector/solar/deployment/USA'), { timeout: 20_000 });
@@ -213,12 +213,12 @@ describe('old three-stage links (design U1)', () => {
     const r = renderAt('/sector/batteries/midstream?c=USA#trade');
     await waitFor(() => expect(r.state.location.pathname).toBe('/sector/batteries'), { timeout: 20_000 });
     expect(r.state.location.search).toBe('?c=USA');
-    expect(await screen.findByText(/^Batteries — Midstream is no longer a stage: it is now mostly Components and Assembly \(some refined materials are under Refining\)\./, {}, { timeout: 10_000 })).toBeTruthy();
+    expect(await screen.findByText(/^Batteries — Midstream corresponds mostly to Components and Assembly \(some refined materials are under Refining\)\./, {}, { timeout: 10_000 })).toBeTruthy();
     expect(await h1('Batteries: the supply chain')).toBeTruthy();
     cleanup();
     const r2 = renderAt('/sector/oil/upstream/RUS');
     await waitFor(() => expect(r2.state.location.pathname).toBe('/sector/oil'), { timeout: 20_000 });
-    expect(await screen.findByText(/^Oil — Upstream is no longer a stage: it is now Extraction, Refining and Recovery\./, {}, { timeout: 10_000 })).toBeTruthy();
+    expect(await screen.findByText(/^Oil — Upstream corresponds to Extraction, Refining and Recovery\./, {}, { timeout: 10_000 })).toBeTruthy();
   });
 });
 

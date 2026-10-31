@@ -362,11 +362,11 @@ describe('Explore', () => {
   it('an old three-stage stage in the link: Downstream shows Deployment, Midstream is dropped; both are listed', async () => {
     renderAt('/sector/explore/investment?tech=Solar&stage=Downstream');
     expect(await h1('Investment')).toBeTruthy();
-    expect(await screen.findByText(/stage=Downstream \(Downstream is now Deployment; showing it\)/, {}, { timeout: 10_000 })).toBeTruthy();
+    expect(await screen.findByText(/stage=Downstream \(Downstream corresponds to Deployment; showing it\)/, {}, { timeout: 10_000 })).toBeTruthy();
     cleanup();
     renderAt('/sector/explore/trade?tech=Batteries&stage=Midstream');
     expect(await h1('Trade')).toBeTruthy();
-    expect(await screen.findByText(/stage=Midstream \(Midstream is no longer a stage: it is now mostly Components and Assembly/, {}, { timeout: 10_000 })).toBeTruthy();
+    expect(await screen.findByText(/stage=Midstream \(Midstream corresponds mostly to Components and Assembly/, {}, { timeout: 10_000 })).toBeTruthy();
   });
 
   it('every theme renders a layout and the notes', async () => {

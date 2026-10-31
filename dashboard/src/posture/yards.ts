@@ -225,7 +225,7 @@ export function sivFamilies(
 
 // ---- the child layers --------------------------------------------------------------------------------------
 
-/** The engine variants in words (R posture_engine.R / decision_engine.R; the paper's yard and fence-scope variants). */
+/** The engine variants in words (R posture_engine.R / decision_engine.R; the Yards & Fences framework's yard and fence-scope variants). */
 export const VARIANT_WORDS: Record<string, string> = {
   secure_control: 'a control layer separable from its hardware: the high fence covers the control path',
   secure_integrated: 'control built partly into the hardware: the high fence extends to the hardware',

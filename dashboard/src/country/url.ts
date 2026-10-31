@@ -57,7 +57,7 @@ const LEGACY_CELL = /^([a-z0-9]+(?:-[a-z0-9]+)*)-(upstream|midstream|downstream)
 /**
  * An old three-stage cell key of a Country technology ("oil-downstream"; design U1): the six-stage key it
  * maps to exactly (Downstream is Deployment) or null (Upstream and Midstream split), and the notice's
- * words ("Oil — Downstream is now Oil — Deployment"); null when the value is not such a key.
+ * words ("Oil — Downstream corresponds to Oil — Deployment"); null when the value is not such a key.
  */
 export function legacyCellOf(v: string): { to: string | null; note: string } | null {
   const m = LEGACY_CELL.exec(v);

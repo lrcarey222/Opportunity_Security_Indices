@@ -30,8 +30,8 @@ describe('?node= (parseNodeParam)', () => {
   });
 
   it('an old three-stage stage: Downstream is mapped to Deployment & Use (and said); Upstream and Midstream are ignored', () => {
-    expect(parseNodeParam('Solar|Downstream', meta)).toEqual({ key: 'Solar|Deployment', problem: 'node=Solar|Downstream (Downstream is now Deployment & Use; showing Solar — Deployment & Use)' });
-    expect(parseNodeParam('Solar|Midstream', meta)).toEqual({ key: null, problem: 'node=Solar|Midstream (Midstream is no longer a stage: it is now mostly Components and Assembly; ignored)' });
+    expect(parseNodeParam('Solar|Downstream', meta)).toEqual({ key: 'Solar|Deployment', problem: 'node=Solar|Downstream (Downstream corresponds to Deployment & Use; showing Solar — Deployment & Use)' });
+    expect(parseNodeParam('Solar|Midstream', meta)).toEqual({ key: null, problem: 'node=Solar|Midstream (Midstream corresponds mostly to Components and Assembly; ignored)' });
     expect(parseNodeParam('Batteries|Upstream', meta).key).toBeNull();
   });
 

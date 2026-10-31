@@ -244,11 +244,11 @@ describe('dial panel and status strip', () => {
     const router = renderAt('/overview?stage=Downstream');
     expect(await screen.findByText(/Ignored in the link/, {}, { timeout: 20_000 })).toBeTruthy();
     await waitFor(() => expect(router.state.location.search).toBe('?stage=Deployment'));
-    expect(screen.getByText(/stage=Downstream \(Downstream is now Deployment; showing Deployment\)/)).toBeTruthy();
+    expect(screen.getByText(/stage=Downstream \(Downstream corresponds to Deployment; showing Deployment\)/)).toBeTruthy();
     await settle(300);
     cleanup();
     const r2 = renderAt('/overview?h=80&stage=Midstream');
-    expect(await screen.findByText(/Midstream is no longer a stage: it is now mostly Components and Assembly/, {}, { timeout: 20_000 })).toBeTruthy();
+    expect(await screen.findByText(/Midstream corresponds mostly to Components and Assembly/, {}, { timeout: 20_000 })).toBeTruthy();
     await waitFor(() => expect(r2.state.location.search).toBe('?h=80'));
     await settle(300);
   }, 60_000);

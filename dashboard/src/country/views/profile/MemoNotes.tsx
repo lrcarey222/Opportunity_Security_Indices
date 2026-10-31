@@ -9,7 +9,7 @@ import { downloadBlob } from '../../../lib/download.ts';
 import { countryPostureRows } from '../../../posture/index.ts';
 import { POSTURE_CSV_COLS, postureCsvRows } from '../../../posture/derive.ts';
 import { factSheetDownloadName, supplierModel } from '../../derive/model.ts';
-import { editionSuffix, legacyCornerWord, proseName } from '../../derive/text.ts';
+import { caveatText, editionSuffix, legacyCornerWord, proseName } from '../../derive/text.ts';
 import { Section, useProfile } from './common.tsx';
 
 function csvFile(rows: Record<string, unknown>[]): string {
@@ -67,7 +67,7 @@ export function DataNotes() {
         : 'measures.csv    strongest active industrial-policy measures by sector (Global Trade Alert, New Industrial Policy Observatory; context only)',
       '',
       'Notes:',
-      ...sheet.caveats.map((c) => `- ${c.text}`),
+      ...sheet.caveats.map((c) => `- ${caveatText(c)}`),
       '',
       'Sources:',
       ...sheet.sources.map((s) => `- ${s.label}${editionSuffix(s.label, s.edition)}${s.licence ? `; ${s.licence}` : ''}${s.url ? `; ${s.url}` : ''}`),
@@ -90,7 +90,7 @@ export function DataNotes() {
         <h3 className="mb-2 text-base font-medium text-paper">Notes</h3>
         <ul className="list-disc space-y-1.5 pl-5 text-sm text-paper-dim">
           {sheet.caveats.map((c) => (
-            <li key={c.id}>{c.text}</li>
+            <li key={c.id}>{caveatText(c)}</li>
           ))}
         </ul>
         <h3 className="mb-2 mt-5 text-base font-medium text-paper">Sources</h3>
