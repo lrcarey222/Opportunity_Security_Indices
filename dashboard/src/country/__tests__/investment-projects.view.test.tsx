@@ -6,7 +6,7 @@
 // chunk of the Partners tests (tiesFixture.ts) instead.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { routes } from '../../routes.tsx';
 import { bareAcronyms } from '../../components/testing/acronyms.ts';
@@ -125,10 +125,11 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const items = within(within(solar.projects).getByRole('list', { name: 'the United States: factory projects in solar by partner' })).getAllByRole('listitem');
     expect(items[0].textContent).toMatch(/^Japan.*into the United States: 3 projects, \$500 million of disclosed capital/);
     cleanup();
-    // Batteries at a CM-FDI stage: none in this chunk, said in one plain line
+    // Batteries at a CM-FDI stage: none in this chunk, so the card opens on all four; picking Batteries says so in one plain line
     renderAt('/countries/USA?cell=batteries-assembly&ptab=investment#partnerships');
     const batteries = await investmentCards();
-    expect(batteries.tech.value).toBe('Batteries');
+    expect(batteries.tech.value).toBe('');
+    fireEvent.change(batteries.tech, { target: { value: 'Batteries' } });
     expect(within(batteries.projects).getByText('No cross-border factory projects in batteries involve the United States, in either direction.')).toBeTruthy();
   }, 90_000);
 });

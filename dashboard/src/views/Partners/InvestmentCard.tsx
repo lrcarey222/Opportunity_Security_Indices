@@ -19,6 +19,7 @@ import { rowsToCsv } from '../../lib/csv.ts';
 import { cellLabel } from '../../lib/format.ts';
 import { COMPARE_COLOR, HATCH_STYLE, PAPER_MUTE } from '../../theme/palette.ts';
 import { stageLabel } from '../../lib/stages.ts';
+import { poss } from '../../country/derive/text.ts';
 import {
   bySize, CMFDI_ATTRIBUTION, CMFDI_SECTORS, cmfdiSameProjectsNote, cmfdiStages, fmtUsdM, hasCmfdi, positionsOf, projectFlows, projectFlowsAllTechs, type PositionRow, type ProjectFlowRow, type Ties,
 } from './ties.ts';
@@ -184,14 +185,14 @@ function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected,
     <ChartCard
       headingLevel={headingLevel}
       title={`Direct investment between ${name} and its partners`}
-      sub={`IMF direct investment positions (the stock of investment, in US dollars; ${kindWord}), latest year reported. Right: what ${name}'s firms hold in the partner (outward). Left: what the partner's firms hold in ${name} (inward). Largest ${N_TOP} pairs first; conduit financial centres, where investment mostly passes through on its way elsewhere, are listed apart and hatched.`}
+      sub={`IMF direct investment positions (the stock of investment, in US dollars; ${kindWord}), latest year reported. Right: what ${poss(name)} firms hold in the partner (outward). Left: what the partner's firms hold in ${name} (inward). Largest ${N_TOP} pairs first; conduit financial centres, where investment mostly passes through on its way elsewhere, are listed apart and hatched.`}
       summary={`${name}: inward and outward direct investment positions with ${ranked.length} partners and ${conduits.length} conduit centres.`}
       tools={<Segmented<'all' | 'debt'> label="Positions" hideLabel value={kind} onChange={setKind} options={[{ value: 'all', label: 'All instruments' }, { value: 'debt', label: 'Debt instruments' }]} />}
       legend={
         <Legend
           items={[
             { label: `Inward (partner's firms in ${name})`, color: IN_COLOR },
-            { label: `Outward (${name}'s firms in the partner)`, color: OUT_COLOR },
+            { label: `Outward (${poss(name)} firms in the partner)`, color: OUT_COLOR },
             { label: 'Conduit financial centre (not ranked)', kind: 'hatch' },
           ]}
         />
@@ -209,7 +210,7 @@ function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected,
       })}
       notes={
         <>
-          How this feeds the index: Friendshore&apos;s investment tie ranks {name}&apos;s outward debt-instrument position in each partner, averaged over {yrs}, together
+          How this feeds the index: Friendshore&apos;s investment tie ranks {poss(name)} outward debt-instrument position in each partner, averaged over {yrs}, together
           with that position relative to the partner&apos;s economy and to both economies ({m ? `GDP of ${m.dip_gdp_year}` : 'GDP'}); a larger position makes the
           partner a stronger friendshoring opportunity. Conduit centres are left out on both sides, so they neither gain nor lose. In {andWords(CMFDI_SECTORS)} at
           the {cmStages} stages the tie is the factory projects instead{projects === 'sector' ? ` (${projectsHint})` : error ? '' : ' (see the factory projects card below)'}. Positions are the stock at the end of the year, as reported to
@@ -252,7 +253,7 @@ function projectParts(rows: ProjectFlowRow[], name: string, nameOf: (iso: string
   const tableRows: ProjectTableRow[] = rows.map((r) => ({ ...r, name: nameOf(r.partner_iso) }));
   const cols: Col<ProjectTableRow>[] = [
     { id: 'name', header: 'Partner', value: (r) => r.name, minWidth: 140 },
-    { id: 'out', header: `Projects by ${name}'s firms there`, value: (r) => r.out_projects, cell: (r) => projectCount(r.out_projects), num: true },
+    { id: 'out', header: `Projects by ${poss(name)} firms there`, value: (r) => r.out_projects, cell: (r) => projectCount(r.out_projects), num: true },
     { id: 'out_v', header: 'Their disclosed capital', value: (r) => r.out_value, cell: (r) => (r.out_projects ? disclosedMoney(r.out_value, r.out_disclosed) : '–'), num: true, minWidth: 170 },
     { id: 'in', header: `Projects by the partner's firms in ${name}`, value: (r) => r.in_projects, cell: (r) => projectCount(r.in_projects), num: true },
     { id: 'in_v', header: 'Their disclosed capital', value: (r) => r.in_value, cell: (r) => (r.in_projects ? disclosedMoney(r.in_value, r.in_disclosed) : '–'), num: true, minWidth: 170 },
@@ -276,7 +277,7 @@ const projectsLegend = (name: string) => (
   <Legend
     items={[
       { label: `Partner's firms in ${name}`, color: IN_COLOR },
-      { label: `${name}'s firms in the partner`, color: OUT_COLOR },
+      { label: `${poss(name)} firms in the partner`, color: OUT_COLOR },
     ]}
   />
 );
@@ -293,7 +294,7 @@ function ProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected,
     <ChartCard
       headingLevel={headingLevel}
       title={`Factory projects in ${label}: ${name} and its partners`}
-      sub={`Cross-border manufacturing projects in ${label} (announced, under construction or operating). Right: projects by ${name}'s firms in the partner (${nOut}). Left: projects by the partner's firms in ${name} (${nIn}). A joint venture counts as a share for each parent's home economy, so counts can be fractions. In this sector these projects, not the IMF positions, are Friendshore's investment tie: a partner where ${name}'s firms have built or announced factories scores higher as a friendshoring opportunity.`}
+      sub={`Cross-border manufacturing projects in ${label} (announced, under construction or operating). Right: projects by ${poss(name)} firms in the partner (${nOut}). Left: projects by the partner's firms in ${name} (${nIn}). A joint venture counts as a share for each parent's home economy, so counts can be fractions. In this sector these projects, not the IMF positions, are Friendshore's investment tie: a partner where ${poss(name)} firms have built or announced factories scores higher as a friendshoring opportunity.`}
       summary={`${name}, ${label}: ${nOut} factory projects abroad and ${nIn} at home by foreign firms, across ${rows.length} partners.`}
       legend={projectsLegend(name)}
       table={() => <TableView<ProjectTableRow> rows={tableRows} cols={cols} caption={`${name}: factory projects in ${label} by partner`} pageSize={15} rowKey={(r) => r.partner_iso} />}
@@ -322,7 +323,8 @@ const TECH_OPTIONS = [{ value: ALL_FOUR_TECHS, label: 'All four technologies' },
 const techWords = (tech: string) => tech.toLowerCase();
 const orWords = (xs: readonly string[]): string => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}`);
 
-/** The technology the factory-projects card starts on: the page's sector's when it is one of the four (any stage), else all four. */
+/** The technology the factory-projects card starts on: the page's sector's when it is one of the four (any stage), else all four
+ *  (the card also falls back to all four when that technology has no projects for the economy). */
 const projectsTechOf = (sector: { tech: string } | null): string => (sector && CMFDI_SECTORS.includes(sector.tech) ? sector.tech : ALL_FOUR_TECHS);
 
 /**
@@ -332,7 +334,13 @@ const projectsTechOf = (sector: { tech: string } | null): string => (sector && C
 function CleantechProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected, onSelect }: InvestmentCardProps) {
   // the reader's own technology; until they pick one the card follows the page's sector
   const [picked, setPicked] = useState<string | null>(null);
-  const tech = picked ?? projectsTechOf(sector);
+  const start = projectsTechOf(sector);
+  // a sector's technology with no projects for this economy opens on all four, not on an empty card
+  const startTech = useMemo(
+    () => (start !== ALL_FOUR_TECHS && ties && !projectFlows(ties, iso, start, null).length ? ALL_FOUR_TECHS : start),
+    [ties, iso, start],
+  );
+  const tech = picked ?? startTech;
   const rows = useMemo(() => (!ties ? [] : tech === ALL_FOUR_TECHS ? projectFlowsAllTechs(ties, iso) : projectFlows(ties, iso, tech, null)), [ties, iso, tech]);
   const { bars, tableRows, cols, nOut, nIn } = projectParts(rows, name, nameOf);
   const four = CMFDI_SECTORS.map(techWords);
@@ -345,7 +353,7 @@ function CleantechProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, 
     <ChartCard
       headingLevel={headingLevel}
       title={`Cleantech factory projects between ${name} and its partners`}
-      sub={`Cross-border manufacturing projects in ${words} (announced, under construction or operating), by the home country of the investing firm and the country where the factory is. Right: projects by ${name}'s firms in the partner (${nOut}). Left: projects by the partner's firms in ${name} (${nIn}). Capital is shown where the project discloses it. A joint venture counts as a share for each parent's home economy, so counts can be fractions. The data cover four technologies only: ${andWords(four)}.`}
+      sub={`Cross-border manufacturing projects in ${words} (announced, under construction or operating), by the home country of the investing firm and the country where the factory is. Right: projects by ${poss(name)} firms in the partner (${nOut}). Left: projects by the partner's firms in ${name} (${nIn}). Capital is shown where the project discloses it. A joint venture counts as a share for each parent's home economy, so counts can be fractions. The data cover four technologies only: ${andWords(four)}.`}
       summary={`${name}, ${words}: ${nOut} factory projects abroad and ${nIn} at home by foreign firms, across ${rows.length} partners.`}
       tools={<Select label="Technology" value={tech} options={TECH_OPTIONS} onChange={setPicked} className="min-w-[12rem]" />}
       legend={projectsLegend(name)}
@@ -357,7 +365,7 @@ function CleantechProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, 
       notes={
         <>
           How this feeds the index: in {andWords(CMFDI_SECTORS)} at the {andWords(stages.map(stageLabel))} stages, these projects, not the IMF positions, are
-          Friendshore&apos;s investment tie, so a partner where {name}&apos;s firms have built or announced factories scores higher as a friendshoring
+          Friendshore&apos;s investment tie, so a partner where {poss(name)} firms have built or announced factories scores higher as a friendshoring
           opportunity. {same && <span data-testid="cmfdi-same-projects">{same} </span>}
           <span data-testid="cmfdi-attribution">{attribution}</span>
         </>

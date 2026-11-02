@@ -211,6 +211,10 @@ describe('bilateral investment cards', () => {
     expect(techSelect().value).toBe('Wind');
     page.rerender(<InvestmentCards iso="USA" name="the United States" ties={ties} sector={{ tech: 'Gas', stage: 'Extraction' }} nameOf={nameOf} />);
     expect(techSelect().value).toBe('');
+    // a sector's technology with no projects for the economy opens on all four, not on an empty card
+    page.rerender(<InvestmentCards iso="USA" name="the United States" ties={ties} sector={{ tech: 'Batteries', stage: 'Assembly' }} nameOf={nameOf} />);
+    expect(techSelect().value).toBe('');
+    expect(projectItems('solar, wind, batteries and electric vehicles')).toHaveLength(2);
     fireEvent.change(techSelect(), { target: { value: 'Solar' } });
     page.rerender(<InvestmentCards iso="USA" name="the United States" ties={ties} sector={{ tech: 'Electric Vehicles', stage: 'Components' }} nameOf={nameOf} />);
     expect(techSelect().value).toBe('Solar');
