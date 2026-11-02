@@ -8,7 +8,7 @@ import { checkPostureDetail, decodeCore, type PostureCell } from '../contract.ts
 import { countryCells, countryNames } from '../derive.ts';
 import {
   alliedRows, alliedSentence, catchUpPositionWords, choiceGroups, countryRankWords, deploymentNeedRanking, detailByKey, diversificationWords, domesticCase, intensityWord, manufacturingPriority, manufacturingPriorityWord,
-  ordinal, partnerWhy, policyMomentumWords, policyRows, positionGap, prizePositionPoints, prizeQuadrant, prizeTendency, protectionWords, secureRisk, secureTreatment, supplyNeedRanking,
+  ordinal, partnerWhy, policyMomentumWords, policyRows, positionGap, prizePositionPoints, prizeQuadrant, prizeTendency, protectionWords, remoteCommandWords, secureRisk, secureTreatment, supplyNeedRanking,
   TOP_QUARTER_NOT_PRESERVE, watchReasons,
 } from '../sections.ts';
 import { fixtureCore, fixtureDetail } from './fixture.ts';
@@ -131,6 +131,11 @@ describe('Strategic Choices (spec XIV)', () => {
     expect(secureRisk(cell('Batteries|Refining'), dk.get('Batteries|Refining')!, names)).toBe('XXX holds 70% of world supply; 80% of imports come from potentially coercive suppliers');
     expect(secureRisk(cell('Solar|Components'), dk.get('Solar|Components')!, names)).toBe('digitally active; remote access');
     expect(secureRisk(cell('Solar|Refining'), null, names)).toMatch(/^it carries an essential function/);
+    // the digitally-active flag as a main risk: 'yes' in words, 'no' / 'Unknown' never printed bare (the rationale instead)
+    const solar = dk.get('Solar|Components')!;
+    const noTrade = { ...solar.supplyChain!, coerciveTop: null, topSupplier: null };
+    expect(secureRisk(cell('Solar|Components'), { ...solar, supplyChain: { ...noTrade, operationalControl: 'yes' } }, names)).toBe('a foreign actor could command, update or disable it remotely');
+    for (const v of ['no', 'Unknown']) expect(secureRisk(cell('Solar|Components'), { ...solar, supplyChain: { ...noTrade, operationalControl: v } }, names)).not.toBe(v);
     expect(secureTreatment(dk.get('Batteries|Refining')!, core.design, 'secure_input')).toBe('Diversify refining through allied offtake and hold a strategic stock.');
     expect(secureTreatment(dk.get('Solar|Refining')!, core.design, 'secure_resilience')).toBeNull();
     expect(secureTreatment(null, core.design, 'secure_input')).toBeNull();
@@ -232,5 +237,12 @@ describe('Allied Strategy (spec XVI)', () => {
       "1 of Cland's 1 priority node is better solved through allies; 1 has no credible allied solution yet.",
     );
     expect(alliedSentence('Wales', [], [])).toBe("None of Wales' 0 priority nodes are a Partner choice.");
+  });
+
+  it('the remote command path in words', () => {
+    expect(remoteCommandWords('yes')).toBe('yes: a foreign actor could command, update or disable it remotely');
+    expect(remoteCommandWords('no')).toBe('none (not digitally active)');
+    expect(remoteCommandWords('Unknown')).toBe('not known');
+    expect(remoteCommandWords('digitally active; remote access')).toBe('digitally active; remote access');
   });
 });

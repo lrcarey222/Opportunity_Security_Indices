@@ -208,14 +208,24 @@ export function manufacturingPriority(tech: string, cells: readonly PostureCell[
 /** The domestic manufacturing priority in one word: not assessed (no producing stage has a choice), low, or set at the producing stages. */
 export const manufacturingPriorityWord = (m: { low: boolean; assessed: boolean }): string => (!m.assessed ? 'not assessed' : m.low ? 'low' : 'set at the producing stages');
 
-/** The main risk of a Secure node (spec XIV): the coercive supplier's hold, else the largest supplier's, else the rationale in words. */
+const REMOTE_COMMAND_YES = 'a foreign actor could command, update or disable it remotely';
+
+/** The drawer's "Remote command path" value: the node's digitally-active flag (yes / no / Unknown) in words; other text as exported. */
+export function remoteCommandWords(v: string): string {
+  if (v === 'yes') return `yes: ${REMOTE_COMMAND_YES}`;
+  if (v === 'no') return 'none (not digitally active)';
+  return /^unknown$/i.test(v) ? 'not known' : v;
+}
+
+/** The main risk of a Secure node (spec XIV): the coercive supplier's hold, else the largest supplier's, else the remote command path, else the rationale in words. */
 export function secureRisk(c: PostureCell, d: NodeDetail | null, names: Record<string, string>): string {
   const sc = d?.supplyChain;
   const name = (i: string) => names[i] ?? i;
   const pc = (v: number) => `${Math.round(v * 100)}%`;
   if (sc?.coerciveTop) return `${name(sc.coerciveTop)} holds ${sc.coerciveTopShare !== null ? pc(sc.coerciveTopShare) : 'a large share'} of world supply${sc.coerciveImportShare !== null ? `; ${pc(sc.coerciveImportShare)} of imports come from potentially coercive suppliers` : ''}`;
   if (sc?.topSupplier && sc.topSupplierShare !== null) return `${name(sc.topSupplier)} supplies ${pc(sc.topSupplierShare)} of imports`;
-  if (sc?.operationalControl) return sc.operationalControl;
+  const oc = sc?.operationalControl;
+  if (oc && !/^(no|unknown)$/i.test(oc)) return oc === 'yes' ? REMOTE_COMMAND_YES : oc;
   return c.rationale ? RATIONALE_WORDS[c.rationale] : 'not stated';
 }
 

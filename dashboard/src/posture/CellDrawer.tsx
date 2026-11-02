@@ -47,7 +47,7 @@ import {
   nodeFill, NOT_ASSESSED_BORDER, PATHWAY_LABEL, POLICY_SOURCE_LABEL, prizeLabel, RATIONALE_LABEL, RATIONALE_WORDS, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
 import { postureMomentum } from './momentum.ts';
-import { catchUpPositionWords, countryRankWords, manufacturingPriority, manufacturingPriorityWord, policyMomentumWords, protectionWords, watchReasons } from './sections.ts';
+import { catchUpPositionWords, countryRankWords, manufacturingPriority, manufacturingPriorityWord, policyMomentumWords, protectionWords, remoteCommandWords, watchReasons } from './sections.ts';
 import { Swatch } from './PostureLegend.tsx';
 import { LAYER_KEY, NODE_KEY } from './selection.ts';
 import { usePostureCore, usePostureDetail } from './store.ts';
@@ -154,7 +154,7 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
             {s.reconstitution && <Row k="Reconstitution time" v={s.reconstitution.replace(/^y1to3$/, '1 to 3 years').replace(/^gt3y$/, 'more than 3 years')} />}
             {s.inventories && <Row k="Inventories" v={s.inventories} />}
             {s.essentiality && <Row k="Systemic essentiality" v={s.essentiality} />}
-            {s.operationalControl && <Row k="Operational control" v={s.operationalControl} />}
+            {s.operationalControl && <Row k={<Term id={POSTURE_TERMS.securityRationale}>Remote command path</Term>} v={remoteCommandWords(s.operationalControl)} />}
           </>
         )}
       </dl>
