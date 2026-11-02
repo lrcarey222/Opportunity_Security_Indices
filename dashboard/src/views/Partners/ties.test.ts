@@ -1,10 +1,13 @@
 // The ties chunk's derive functions (views/Partners/ties.ts): bilateral positions with the partner's
 // mirror report as a flagged fallback and conduit centres marked; factory-project flows both ways, at the
-// CM-FDI stages the chunk names (Components and Assembly, the same projects, counted once);
+// CM-FDI stages the chunk names (Components and Assembly, the same projects, counted once), and the four
+// technologies together (each project once);
 // Development Potential by sector; agreements; UN-vote alignment; money formatting; parsing.
 
 import { describe, expect, it } from 'vitest';
-import { alignmentOf, bySize, CMFDI_STAGES_CONFIG, cmfdiOnce, cmfdiSameProjectsNote, cmfdiStages, dpOfCell, fmtUsdM, hasCmfdi, parseTies, positionsOf, projectFlows, sharedAgreements, tiesName } from './ties.ts';
+import {
+  alignmentOf, bySize, CMFDI_SECTORS, CMFDI_STAGES_CONFIG, cmfdiOnce, cmfdiSameProjectsNote, cmfdiStages, dpOfCell, fmtUsdM, hasCmfdi, parseTies, positionsOf, projectFlows, projectFlowsAllTechs, sharedAgreements, tiesName,
+} from './ties.ts';
 import { syntheticTies } from './tiesFixture.ts';
 
 describe('ties', () => {
@@ -78,6 +81,25 @@ describe('ties', () => {
     );
     expect(cmfdiSameProjectsNote(['Assembly'])).toBeNull();
     expect(cmfdiSameProjectsNote([])).toBeNull();
+  });
+
+  it('the four technologies together: their projects summed by partner, each project once', () => {
+    const all = projectFlowsAllTechs(t, 'USA');
+    // Japan: Solar 3 in and 1 out, Wind 5 in; Germany: Solar 2 out (each flow is written at two stages)
+    expect(all.map((r) => r.partner_iso)).toEqual(['JPN', 'DEU']);
+    expect(all[0]).toEqual({ partner_iso: 'JPN', out_projects: 1, out_value: null, out_disclosed: 0, in_projects: 8, in_value: 1400, in_disclosed: 7 });
+    expect(all[1]).toEqual({ partner_iso: 'DEU', out_projects: 2, out_value: 80, out_disclosed: 1, in_projects: 0, in_value: null, in_disclosed: null });
+    const total = (rs: { out_projects: number; in_projects: number }[]) => rs.reduce((s, r) => s + r.out_projects + r.in_projects, 0);
+    expect(total(all)).toBe(11);
+    expect(total(all)).toBe(CMFDI_SECTORS.reduce((s, tech) => s + total(projectFlows(t, 'USA', tech, null)), 0));
+    // the default is the four technologies; one technology is that technology's flows; a repeat is read once
+    expect(projectFlowsAllTechs(t, 'USA', CMFDI_SECTORS)).toEqual(all);
+    expect(projectFlowsAllTechs(t, 'USA', ['Solar'])).toEqual(projectFlows(t, 'USA', 'Solar', null));
+    expect(projectFlowsAllTechs(t, 'USA', ['Wind', 'Wind'])).toEqual(projectFlows(t, 'USA', 'Wind', null));
+    expect(projectFlowsAllTechs(t, 'USA', ['Batteries'])).toEqual([]);
+    expect(projectFlowsAllTechs(t, 'USA', [])).toEqual([]);
+    // the other side of the same projects
+    expect(projectFlowsAllTechs(t, 'JPN')).toEqual([{ partner_iso: 'USA', out_projects: 8, out_value: 1400, out_disclosed: 7, in_projects: 1, in_value: null, in_disclosed: 0 }]);
   });
 
   it('Development Potential by sector, shared agreements, UN-vote alignment', () => {

@@ -12,7 +12,8 @@
 // CM-FDI (2026-10-29, design E5): the factory projects are the investment tie of the CM-FDI technologies at
 // the stages the chunk names in meta.cmfdi_stages (config/partnership.yml cm_fdi.stages: Components and
 // Assembly). The data do not say which part of manufacturing a project serves, so scripts/85 repeats every
-// project flow once per stage: count and sum them once per project (cmfdiOnce, projectFlows with no stage).
+// project flow once per stage: count and sum them once per project (cmfdiOnce, projectFlows with no stage;
+// projectFlowsAllTechs for the four technologies together).
 //
 // The loaders cache one promise per file; the derive functions below are pure (unit-tested).
 
@@ -314,37 +315,63 @@ export function cmfdiOnce(ties: Ties): CmfdiRow[] {
   return ties.cmfdi.filter((r) => r.supply_chain === first);
 }
 
+/** A sum that stays null until a value is known (disclosed capital, the number of projects disclosing it). */
+const addKnown = (a: number | null, b: number | null) => (b === null ? a : (a ?? 0) + b);
+/** Partners by their projects both ways (largest first; ties by ISO3). */
+const byProjects = (a: ProjectFlowRow, b: ProjectFlowRow) => b.out_projects + b.in_projects - (a.out_projects + a.in_projects) || (a.partner_iso < b.partner_iso ? -1 : 1);
+const flowRowOf = (by: Map<string, ProjectFlowRow>, p: string): ProjectFlowRow => {
+  let r = by.get(p);
+  if (!r) {
+    r = { partner_iso: p, out_projects: 0, out_value: null, out_disclosed: null, in_projects: 0, in_value: null, in_disclosed: null };
+    by.set(p, r);
+  }
+  return r;
+};
+
 /**
  * The CM-FDI factory projects in one sector, both directions, by partner (largest first). With
  * `stage` null: the technology's projects across its CM-FDI stages, each project once (cmfdiOnce).
  */
 export function projectFlows(ties: Ties, iso: string, tech: string, stage: string | null): ProjectFlowRow[] {
   const by = new Map<string, ProjectFlowRow>();
-  const row = (p: string) => {
-    let r = by.get(p);
-    if (!r) {
-      r = { partner_iso: p, out_projects: 0, out_value: null, out_disclosed: null, in_projects: 0, in_value: null, in_disclosed: null };
-      by.set(p, r);
-    }
-    return r;
-  };
-  const add = (a: number | null, b: number | null) => (b === null ? a : (a ?? 0) + b);
   const src = stage === null ? cmfdiOnce(ties) : ties.cmfdi.filter((f) => f.supply_chain === stage);
   for (const f of src) {
     if (f.tech !== tech || f.investor_iso === f.destination_iso) continue;
     if (f.investor_iso === iso) {
-      const r = row(f.destination_iso);
+      const r = flowRowOf(by, f.destination_iso);
       r.out_projects += f.n_projects;
-      r.out_value = add(r.out_value, f.value_usd_m);
-      r.out_disclosed = add(r.out_disclosed, f.n_disclosed);
+      r.out_value = addKnown(r.out_value, f.value_usd_m);
+      r.out_disclosed = addKnown(r.out_disclosed, f.n_disclosed);
     } else if (f.destination_iso === iso) {
-      const r = row(f.investor_iso);
+      const r = flowRowOf(by, f.investor_iso);
       r.in_projects += f.n_projects;
-      r.in_value = add(r.in_value, f.value_usd_m);
-      r.in_disclosed = add(r.in_disclosed, f.n_disclosed);
+      r.in_value = addKnown(r.in_value, f.value_usd_m);
+      r.in_disclosed = addKnown(r.in_disclosed, f.n_disclosed);
     }
   }
-  return [...by.values()].sort((a, b) => b.out_projects + b.in_projects - (a.out_projects + a.in_projects) || (a.partner_iso < b.partner_iso ? -1 : 1));
+  return [...by.values()].sort(byProjects);
+}
+
+/**
+ * The CM-FDI factory projects of several technologies together (default all four), both directions, by
+ * partner (largest first), each project once: every technology's flows across its stages (projectFlows
+ * with no stage) summed by partner. A project has one technology, so the sum counts none twice; a
+ * technology named twice is read once.
+ */
+export function projectFlowsAllTechs(ties: Ties, iso: string, techs: readonly string[] = CMFDI_SECTORS): ProjectFlowRow[] {
+  const by = new Map<string, ProjectFlowRow>();
+  for (const tech of new Set(techs)) {
+    for (const f of projectFlows(ties, iso, tech, null)) {
+      const r = flowRowOf(by, f.partner_iso);
+      r.out_projects += f.out_projects;
+      r.out_value = addKnown(r.out_value, f.out_value);
+      r.out_disclosed = addKnown(r.out_disclosed, f.out_disclosed);
+      r.in_projects += f.in_projects;
+      r.in_value = addKnown(r.in_value, f.in_value);
+      r.in_disclosed = addKnown(r.in_disclosed, f.in_disclosed);
+    }
+  }
+  return [...by.values()].sort(byProjects);
 }
 
 /** Development Potential of every partner in one sector (cell_id as in dims.cells). */

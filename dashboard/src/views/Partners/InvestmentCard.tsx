@@ -1,21 +1,27 @@
-// Bilateral direct investment of one economy, partner by partner (the Partners view and the Country
-// partners section): IMF direct investment positions, inward to the left and outward to the right, with
-// the conduit financial centres listed apart (greyed, never ranked: Friendshore treats them as
-// unobserved); and, in Solar, Wind, Batteries and Electric Vehicles at the CM-FDI stages (the ties
-// chunk's cmfdi_stages: Components and Assembly, which carry the same projects), the CM-FDI factory
-// projects both ways. HTML bars, so the chart reads as a list to assistive technology; the side of the
-// axis and the words carry the direction, never the colour alone.
+// Bilateral direct investment of one economy, partner by partner (the Partners view, the Country
+// partners section and AIB Partnerships): IMF direct investment positions, inward to the left and outward
+// to the right, with the conduit financial centres listed apart (greyed, never ranked: Friendshore treats
+// them as unobserved); then the cleantech factory projects both ways (the CM-FDI database: cross-border
+// manufacturing projects in solar, wind, batteries and electric vehicles), with a technology choice (all
+// four, or one), each project counted once. The choice starts on the page's sector when it is one of the
+// four (any stage) and follows the page's sector until the reader picks a technology here. A page can ask
+// instead for its own sector's projects only (projects 'sector': Solar, Wind, Batteries and Electric
+// Vehicles at the CM-FDI stages, the ties chunk's cmfdi_stages: Components and Assembly, which carry the
+// same projects). HTML bars, so the chart reads as a list to assistive technology; the side of the axis
+// and the words carry the direction, never the colour alone.
 
 import { useMemo, useState } from 'react';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { Legend } from '../../charts/legends.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
-import { EmptyState, Loading, Notice, Segmented } from '../../components/ui.tsx';
+import { EmptyState, Loading, Notice, Segmented, Select } from '../../components/ui.tsx';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { cellLabel } from '../../lib/format.ts';
 import { COMPARE_COLOR, HATCH_STYLE, PAPER_MUTE } from '../../theme/palette.ts';
 import { stageLabel } from '../../lib/stages.ts';
-import { bySize, CMFDI_ATTRIBUTION, CMFDI_SECTORS, cmfdiSameProjectsNote, cmfdiStages, fmtUsdM, hasCmfdi, positionsOf, projectFlows, type PositionRow, type ProjectFlowRow, type Ties } from './ties.ts';
+import {
+  bySize, CMFDI_ATTRIBUTION, CMFDI_SECTORS, cmfdiSameProjectsNote, cmfdiStages, fmtUsdM, hasCmfdi, positionsOf, projectFlows, projectFlowsAllTechs, type PositionRow, type ProjectFlowRow, type Ties,
+} from './ties.ts';
 
 /** 'A', 'A and B', 'A, B and C'. */
 const andWords = (xs: readonly string[]): string => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
@@ -114,23 +120,36 @@ export interface InvestmentCardProps {
   selected?: string | null;
   onSelect?: (iso: string) => void;
   /**
-   * what the positions card's notes tell the reader about the factory-project sectors (default "choose
-   * one of those sectors"; a page whose sector filter does not offer those sectors says something else)
+   * the factory projects: 'always' (default) shows the cleantech factory-projects card after the positions,
+   * with its own technology choice; 'sector' shows the projects only when `sector` is one of the four
+   * technologies at a CM-FDI stage, for that sector (a page whose own note explains the projects by sector)
+   */
+  projects?: 'always' | 'sector';
+  /**
+   * projects 'sector' only: what the positions card's notes tell the reader about the factory-project
+   * sectors (default "choose one of those sectors"; a page whose sector filter does not offer those
+   * sectors says something else)
    */
   projectsHint?: string;
 }
 
-/** IMF positions (always) and, in the four CM-FDI sectors, the factory projects of that sector. */
+/** IMF positions, then the cleantech factory projects (always, or only in the four sectors: `projects`). */
 export function InvestmentCards(p: InvestmentCardProps) {
+  const sectorOnly = p.projects === 'sector';
   return (
     <>
       <PositionsCard {...p} />
-      {p.sector && hasCmfdi(p.sector.tech, p.sector.stage, p.ties) && <ProjectsCard {...p} sector={p.sector} />}
+      {!sectorOnly ? (
+        // the positions card already says when the data are missing; the projects come from the same chunk
+        !p.error && <CleantechProjectsCard {...p} />
+      ) : (
+        p.sector && hasCmfdi(p.sector.tech, p.sector.stage, p.ties) && <ProjectsCard {...p} sector={p.sector} />
+      )}
     </>
   );
 }
 
-function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected, onSelect, projectsHint = 'choose one of those sectors' }: InvestmentCardProps) {
+function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected, onSelect, projects = 'always', projectsHint = 'choose one of those sectors' }: InvestmentCardProps) {
   const [kind, setKind] = useState<'all' | 'debt'>('all');
   const all = useMemo(() => (ties ? positionsOf(ties, iso, kind) : []), [ties, iso, kind]);
   const ranked = useMemo(() => bySize(all.filter((r) => !r.conduit)), [all]);
@@ -192,7 +211,7 @@ function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected,
           How this feeds the index: Friendshore&apos;s investment tie ranks {name}&apos;s outward debt-instrument position in each partner, averaged over {yrs}, together
           with that position relative to the partner&apos;s economy and to both economies ({m ? `GDP of ${m.dip_gdp_year}` : 'GDP'}); a larger position makes the
           partner a stronger friendshoring opportunity. Conduit centres are left out on both sides, so they neither gain nor lose. In {andWords(CMFDI_SECTORS)} at
-          the {cmStages} stages the tie is the factory projects instead ({projectsHint}). Positions are the stock at the end of the year, as reported to
+          the {cmStages} stages the tie is the factory projects instead{projects === 'sector' ? ` (${projectsHint})` : error ? '' : ' (see the factory projects card below)'}. Positions are the stock at the end of the year, as reported to
           the IMF by {name}{yearsOut.length ? ` (${yearsOut.sort().join(', ')})` : ''}; where {name} reports nothing for a pair, the partner&apos;s report is used and
           marked. Source: {m?.dip_source ?? 'IMF, Direct Investment Positions'}.
         </>
@@ -211,31 +230,61 @@ function PositionsCard({ iso, name, ties, error, nameOf, headingLevel, selected,
   );
 }
 
-function ProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected, onSelect }: InvestmentCardProps & { sector: { tech: string; stage: string } }) {
-  const rows = useMemo(() => (ties ? projectFlows(ties, iso, sector.tech, sector.stage) : []), [ties, iso, sector.tech, sector.stage]);
-  const label = cellLabel(sector.tech, sector.stage);
-  const nOut = rows.reduce((s, r) => s + r.out_projects, 0);
-  const nIn = rows.reduce((s, r) => s + r.in_projects, 0);
-  // counts are attributed: a joint venture is split between its parents' home economies, so they can be fractions
-  const count = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(1)} project${n === 1 ? '' : 's'}`;
-  const money = (v: number | null, n: number | null) => (v === null || !n ? 'capital not disclosed' : `${fmtUsdM(v)} of disclosed capital`);
+// ---- factory projects (both cards) ---------------------------------------------------------------------
+
+// counts are attributed: a joint venture is split between its parents' home economies, so they can be fractions
+const projectCount = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(1)} project${n === 1 ? '' : 's'}`;
+const projectTotal = (n: number) => +n.toFixed(1);
+const disclosedMoney = (v: number | null, n: number | null) => (v === null || !n ? 'capital not disclosed' : `${fmtUsdM(v)} of disclosed capital`);
+type ProjectTableRow = ProjectFlowRow & { name: string };
+
+/** The bars, table rows and columns, and the totals both ways, of one list of project flows. */
+function projectParts(rows: ProjectFlowRow[], name: string, nameOf: (iso: string) => string) {
   const bars: Bar[] = rows.slice(0, N_TOP).map((r) => ({
     key: r.partner_iso,
     label: nameOf(r.partner_iso),
     left: r.in_projects,
     right: r.out_projects,
-    leftText: `${count(r.in_projects)}${r.in_projects ? `, ${money(r.in_value, r.in_disclosed)}` : ''}`,
-    rightText: `${count(r.out_projects)}${r.out_projects ? `, ${money(r.out_value, r.out_disclosed)}` : ''}`,
+    leftText: `${projectCount(r.in_projects)}${r.in_projects ? `, ${disclosedMoney(r.in_value, r.in_disclosed)}` : ''}`,
+    rightText: `${projectCount(r.out_projects)}${r.out_projects ? `, ${disclosedMoney(r.out_value, r.out_disclosed)}` : ''}`,
   }));
-  type T = ProjectFlowRow & { name: string };
-  const tableRows: T[] = rows.map((r) => ({ ...r, name: nameOf(r.partner_iso) }));
-  const cols: Col<T>[] = [
+  const tableRows: ProjectTableRow[] = rows.map((r) => ({ ...r, name: nameOf(r.partner_iso) }));
+  const cols: Col<ProjectTableRow>[] = [
     { id: 'name', header: 'Partner', value: (r) => r.name, minWidth: 140 },
-    { id: 'out', header: `Projects by ${name}'s firms there`, value: (r) => r.out_projects, cell: (r) => count(r.out_projects), num: true },
-    { id: 'out_v', header: 'Their disclosed capital', value: (r) => r.out_value, cell: (r) => (r.out_projects ? money(r.out_value, r.out_disclosed) : '–'), num: true, minWidth: 170 },
-    { id: 'in', header: `Projects by the partner's firms in ${name}`, value: (r) => r.in_projects, cell: (r) => count(r.in_projects), num: true },
-    { id: 'in_v', header: 'Their disclosed capital', value: (r) => r.in_value, cell: (r) => (r.in_projects ? money(r.in_value, r.in_disclosed) : '–'), num: true, minWidth: 170 },
+    { id: 'out', header: `Projects by ${name}'s firms there`, value: (r) => r.out_projects, cell: (r) => projectCount(r.out_projects), num: true },
+    { id: 'out_v', header: 'Their disclosed capital', value: (r) => r.out_value, cell: (r) => (r.out_projects ? disclosedMoney(r.out_value, r.out_disclosed) : '–'), num: true, minWidth: 170 },
+    { id: 'in', header: `Projects by the partner's firms in ${name}`, value: (r) => r.in_projects, cell: (r) => projectCount(r.in_projects), num: true },
+    { id: 'in_v', header: 'Their disclosed capital', value: (r) => r.in_value, cell: (r) => (r.in_projects ? disclosedMoney(r.in_value, r.in_disclosed) : '–'), num: true, minWidth: 170 },
   ];
+  const nOut = projectTotal(rows.reduce((s, r) => s + r.out_projects, 0));
+  const nIn = projectTotal(rows.reduce((s, r) => s + r.in_projects, 0));
+  return { bars, tableRows, cols, nOut, nIn };
+}
+
+/** The CSV of one list of project flows; `what` names the sector or technology column. */
+const projectsCsv = (iso: string, what: Record<string, string>, tableRows: ProjectTableRow[], source: string) =>
+  rowsToCsv(
+    tableRows.map((r) => ({
+      economy: iso, ...what, partner: r.name, partner_iso3: r.partner_iso, projects_by_economy_firms_in_partner: r.out_projects, disclosed_capital_usd_m_out: r.out_value,
+      projects_disclosing_out: r.out_disclosed, projects_by_partner_firms_in_economy: r.in_projects, disclosed_capital_usd_m_in: r.in_value, projects_disclosing_in: r.in_disclosed,
+      source,
+    })),
+  );
+
+const projectsLegend = (name: string) => (
+  <Legend
+    items={[
+      { label: `Partner's firms in ${name}`, color: IN_COLOR },
+      { label: `${name}'s firms in the partner`, color: OUT_COLOR },
+    ]}
+  />
+);
+
+/** projects 'sector': the factory projects of the page's sector (one of the four technologies at a CM-FDI stage). */
+function ProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected, onSelect }: InvestmentCardProps & { sector: { tech: string; stage: string } }) {
+  const rows = useMemo(() => (ties ? projectFlows(ties, iso, sector.tech, sector.stage) : []), [ties, iso, sector.tech, sector.stage]);
+  const label = cellLabel(sector.tech, sector.stage);
+  const { bars, tableRows, cols, nOut, nIn } = projectParts(rows, name, nameOf);
   const attribution = ties?.meta.cmfdi_attribution ?? CMFDI_ATTRIBUTION;
   // said once: the stages that carry the same projects (Components and Assembly)
   const same = cmfdiSameProjectsNote(cmfdiStages(ties));
@@ -243,27 +292,11 @@ function ProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected,
     <ChartCard
       headingLevel={headingLevel}
       title={`Factory projects in ${label}: ${name} and its partners`}
-      sub={`Cross-border manufacturing projects in ${label} (announced, under construction or operating). Right: projects by ${name}'s firms in the partner (${+nOut.toFixed(1)}). Left: projects by the partner's firms in ${name} (${+nIn.toFixed(1)}). A joint venture counts as a share for each parent's home economy, so counts can be fractions. In this sector these projects, not the IMF positions, are Friendshore's investment tie: a partner where ${name}'s firms have built or announced factories scores higher as a friendshoring opportunity.`}
-      summary={`${name}, ${label}: ${+nOut.toFixed(1)} factory projects abroad and ${+nIn.toFixed(1)} at home by foreign firms, across ${rows.length} partners.`}
-      legend={
-        <Legend
-          items={[
-            { label: `Partner's firms in ${name}`, color: IN_COLOR },
-            { label: `${name}'s firms in the partner`, color: OUT_COLOR },
-          ]}
-        />
-      }
-      table={() => <TableView<T> rows={tableRows} cols={cols} caption={`${name}: factory projects in ${label} by partner`} pageSize={15} rowKey={(r) => r.partner_iso} />}
-      csv={() => ({
-        name: `factory-projects-${iso}-${sector.tech}-${sector.stage}`.replace(/\s+/g, '-'),
-        text: rowsToCsv(
-          tableRows.map((r) => ({
-            economy: iso, sector: label, partner: r.name, partner_iso3: r.partner_iso, projects_by_economy_firms_in_partner: r.out_projects, disclosed_capital_usd_m_out: r.out_value,
-            projects_disclosing_out: r.out_disclosed, projects_by_partner_firms_in_economy: r.in_projects, disclosed_capital_usd_m_in: r.in_value, projects_disclosing_in: r.in_disclosed,
-            source: attribution,
-          })),
-        ),
-      })}
+      sub={`Cross-border manufacturing projects in ${label} (announced, under construction or operating). Right: projects by ${name}'s firms in the partner (${nOut}). Left: projects by the partner's firms in ${name} (${nIn}). A joint venture counts as a share for each parent's home economy, so counts can be fractions. In this sector these projects, not the IMF positions, are Friendshore's investment tie: a partner where ${name}'s firms have built or announced factories scores higher as a friendshoring opportunity.`}
+      summary={`${name}, ${label}: ${nOut} factory projects abroad and ${nIn} at home by foreign firms, across ${rows.length} partners.`}
+      legend={projectsLegend(name)}
+      table={() => <TableView<ProjectTableRow> rows={tableRows} cols={cols} caption={`${name}: factory projects in ${label} by partner`} pageSize={15} rowKey={(r) => r.partner_iso} />}
+      csv={() => ({ name: `factory-projects-${iso}-${sector.tech}-${sector.stage}`.replace(/\s+/g, '-'), text: projectsCsv(iso, { sector: label }, tableRows, attribution) })}
       notes={
         <>
           {same && <span data-testid="cmfdi-same-projects">{same} </span>}
@@ -277,6 +310,66 @@ function ProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected,
         <DivergingBars bars={bars} label={`${name}: factory projects in ${label} by partner`} leftWord={`into ${name}`} rightWord="abroad" selected={selected} onSelect={onSelect} />
       ) : (
         <EmptyState>No cross-border factory projects in {label} involve {name}.</EmptyState>
+      )}
+    </ChartCard>
+  );
+}
+
+/** The factory-projects card's technology choice: one of the four, or '' for all four together. */
+const ALL_FOUR_TECHS = '';
+const TECH_OPTIONS = [{ value: ALL_FOUR_TECHS, label: 'All four technologies' }, ...CMFDI_SECTORS.map((t) => ({ value: t, label: t }))];
+const techWords = (tech: string) => tech.toLowerCase();
+const orWords = (xs: readonly string[]): string => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}`);
+
+/** The technology the factory-projects card starts on: the page's sector's when it is one of the four (any stage), else all four. */
+const projectsTechOf = (sector: { tech: string } | null): string => (sector && CMFDI_SECTORS.includes(sector.tech) ? sector.tech : ALL_FOUR_TECHS);
+
+/**
+ * projects 'always': the cleantech factory projects between the economy and its partners, all four
+ * technologies together or one (each project once), whatever the page's sector.
+ */
+function CleantechProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, selected, onSelect }: InvestmentCardProps) {
+  // the reader's own technology; until they pick one the card follows the page's sector
+  const [picked, setPicked] = useState<string | null>(null);
+  const tech = picked ?? projectsTechOf(sector);
+  const rows = useMemo(() => (!ties ? [] : tech === ALL_FOUR_TECHS ? projectFlowsAllTechs(ties, iso) : projectFlows(ties, iso, tech, null)), [ties, iso, tech]);
+  const { bars, tableRows, cols, nOut, nIn } = projectParts(rows, name, nameOf);
+  const four = CMFDI_SECTORS.map(techWords);
+  const words = tech === ALL_FOUR_TECHS ? andWords(four) : techWords(tech);
+  const attribution = ties?.meta.cmfdi_attribution ?? CMFDI_ATTRIBUTION;
+  const stages = cmfdiStages(ties);
+  // said once: the stages that carry the same projects (Components and Assembly)
+  const same = cmfdiSameProjectsNote(stages);
+  return (
+    <ChartCard
+      headingLevel={headingLevel}
+      title={`Cleantech factory projects between ${name} and its partners`}
+      sub={`Cross-border manufacturing projects in ${words} (announced, under construction or operating), by the home country of the investing firm and the country where the factory is. Right: projects by ${name}'s firms in the partner (${nOut}). Left: projects by the partner's firms in ${name} (${nIn}). Capital is shown where the project discloses it. A joint venture counts as a share for each parent's home economy, so counts can be fractions. The data cover four technologies only: ${andWords(four)}.`}
+      summary={`${name}, ${words}: ${nOut} factory projects abroad and ${nIn} at home by foreign firms, across ${rows.length} partners.`}
+      tools={<Select label="Technology" value={tech} options={TECH_OPTIONS} onChange={setPicked} className="min-w-[12rem]" />}
+      legend={projectsLegend(name)}
+      table={() => <TableView<ProjectTableRow> rows={tableRows} cols={cols} caption={`${name}: factory projects in ${words} by partner`} pageSize={15} rowKey={(r) => r.partner_iso} />}
+      csv={() => ({
+        name: `factory-projects-${iso}-${tech || 'all-four-technologies'}`.replace(/\s+/g, '-'),
+        text: projectsCsv(iso, { technology: tech || andWords(CMFDI_SECTORS) }, tableRows, attribution),
+      })}
+      notes={
+        <>
+          How this feeds the index: in {andWords(CMFDI_SECTORS)} at the {andWords(stages.map(stageLabel))} stages these projects, not the IMF positions, are
+          Friendshore&apos;s investment tie: a partner where {name}&apos;s firms have built or announced factories scores higher as a friendshoring
+          opportunity. {same && <span data-testid="cmfdi-same-projects">{same} </span>}
+          <span data-testid="cmfdi-attribution">{attribution}</span>
+        </>
+      }
+    >
+      {!ties ? (
+        <Loading label="Loading factory projects" />
+      ) : bars.length ? (
+        <DivergingBars bars={bars} label={`${name}: factory projects in ${words} by partner`} leftWord={`into ${name}`} rightWord="abroad" selected={selected} onSelect={onSelect} />
+      ) : (
+        <EmptyState>
+          No cross-border factory projects in {tech === ALL_FOUR_TECHS ? orWords(four) : words} involve {name}, in either direction.
+        </EmptyState>
       )}
     </ChartCard>
   );

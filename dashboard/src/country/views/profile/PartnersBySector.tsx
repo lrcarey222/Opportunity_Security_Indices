@@ -1,10 +1,12 @@
 // S5 of the Country profile, partners by sector (spec_country.md A4.2 "Partners", 2026-10-15): the top
 // friendshoring opportunities (Friendshore) and export markets (Partnership Opportunity) of one sector (or all sectors)
 // at the baseline with the ties each pair has today, then the country's bilateral direct
-// investment (IMF positions; factory projects in the four CM-FDI sectors). The data come from the
-// Strategic bundle's auxiliary chunks (views/Partners/ties.ts; one pcell-<tech>-<stage> chunk per six-stage
-// sector), not the fact sheet. The factory projects sit on the stages the sheet names (meta.cmfdi_stages:
-// Components and Assembly carry the same projects, design E5), and the card says so once.
+// investment: the IMF positions, then the cleantech factory projects (solar, wind, batteries and electric
+// vehicles, all four together or one; the choice starts on the sector selected on the page when it is one of
+// the four, else all four). The data come from the Strategic bundle's auxiliary chunks (views/Partners/ties.ts;
+// one pcell-<tech>-<stage> chunk per six-stage sector), not the fact sheet. In the partner lists the factory
+// projects sit on the stages the sheet names (meta.cmfdi_stages: Components and Assembly carry the same
+// projects, design E5), and the card says so once.
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';

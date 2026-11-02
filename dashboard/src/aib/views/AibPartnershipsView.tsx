@@ -930,6 +930,7 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
               sector={pick?.cell ? { tech: pick.cell.tech, stage: pick.cell.stage } : null}
               nameOf={name}
               headingLevel={3}
+              projects="sector"
               projectsHint="shown below when the selection's sector is one of those"
             />
           </div>
