@@ -1,7 +1,8 @@
-// Monthly trade by sub-component (additive 2026-10-19): the pure pieces of the Country profile's card over
-// the companion trade file (TradeMonthlyDoc). Which cell to show, the indexed lines (one per sub-component,
-// largest first, at most SUB_LINES, plus the cell total as a neutral line), the notes on what is left out,
-// the table twin and the CSV rows. Months are x = 0..11.
+// Monthly trade by sub-component (additive 2026-10-19): the pure pieces of the Country profile's monthly trade
+// card over the companion trade file (TradeMonthlyDoc). The card left the page on 2026-11-02; these helpers
+// stay, tested, for a page that shows the file again. Which cell to show, the indexed lines (one per
+// sub-component, largest first, at most SUB_LINES, plus the cell total as a neutral line), the notes on what
+// is left out, the table twin and the CSV rows. Months are x = 0..11.
 
 import type { LineSeries } from '../../sector/charts/types.ts';
 import { indexTo100, type TradeMonthlyCell, type TradeMonthlyDoc, type TradeMonthlySeries } from '../contract.ts';

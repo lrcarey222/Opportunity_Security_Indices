@@ -53,9 +53,10 @@ export function DivergingBars({ bars, label, leftWord, rightWord, selected, onSe
     <div>
       <div className="mb-1 grid grid-cols-[minmax(6rem,9rem)_1fr] gap-x-3 text-xs text-paper-mute" aria-hidden="true">
         <span />
-        <span className="flex justify-between">
+        {/* a gap, so a long left word that wraps on a phone never runs into the right one */}
+        <span className="flex justify-between gap-4">
           <span>&larr; {leftWord}</span>
-          <span>{rightWord} &rarr;</span>
+          <span className="shrink-0 text-right">{rightWord} &rarr;</span>
         </span>
       </div>
       <ul className="space-y-1" aria-label={label}>
@@ -355,8 +356,8 @@ function CleantechProjectsCard({ iso, name, ties, nameOf, headingLevel, sector, 
       })}
       notes={
         <>
-          How this feeds the index: in {andWords(CMFDI_SECTORS)} at the {andWords(stages.map(stageLabel))} stages these projects, not the IMF positions, are
-          Friendshore&apos;s investment tie: a partner where {name}&apos;s firms have built or announced factories scores higher as a friendshoring
+          How this feeds the index: in {andWords(CMFDI_SECTORS)} at the {andWords(stages.map(stageLabel))} stages, these projects, not the IMF positions, are
+          Friendshore&apos;s investment tie, so a partner where {name}&apos;s firms have built or announced factories scores higher as a friendshoring
           opportunity. {same && <span data-testid="cmfdi-same-projects">{same} </span>}
           <span data-testid="cmfdi-attribution">{attribution}</span>
         </>

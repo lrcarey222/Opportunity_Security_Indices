@@ -65,7 +65,7 @@ export function useDriversDoc(entry: CountryEntry | null, sheet: FactSheet | nul
   return useLoad<DriversDoc>(ok ? `drivers:${ok.iso3}` : null, ok ? () => countryStore().driversDoc(ok, sheet ?? undefined) : null);
 }
 
-/** The companion monthly trade file (additive 2026-10-19), loaded only when `needed` (the card is near the viewport). */
+/** The companion monthly trade file (additive 2026-10-19), loaded only when `needed`; no page calls it since the card left the Country profile (2026-11-02). */
 export function useTradeMonthly(entry: CountryEntry | null, needed: boolean): Loaded<TradeMonthlyDoc> {
   const ok = needed && entry && entry.trade_monthly ? entry : null;
   return useLoad<TradeMonthlyDoc>(ok ? `trade:${ok.iso3}` : null, ok ? () => countryStore().tradeMonthly(ok) : null);
