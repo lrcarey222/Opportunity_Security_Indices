@@ -1,7 +1,7 @@
 // S5 of the Country profile, "Partnerships" (spec_country.md A4.2; IA refactor 2026-10-16, brief s.12D; the
 // three lenses 2026-10-19, aib_scenarios_spec.md s.5 C and s.6): the shared three-lens component
 // (src/partnerships) with the economy as its focus. Four kinds of partnership (URL `ptab`: trade,
-// investment, development, geopolitical), each read three ways, a cross-lens summary first:
+// investment, development, geopolitical), each read three ways (no cross-lens summary since 2026-11-02):
 //   Today           Trade: its largest trade partners (fact sheet tie order: average import and export
 //                   shares) and, in a disclosure, who supplies it in each sector. Investment: its IMF
 //                   direct-investment positions and factory projects (ties chunk). Development: official
@@ -24,8 +24,8 @@
 // Above the lenses (2026-10-20, strategic task spec s.19): the relationship thesis of the economy and its
 // selected partner (URL `partner`, the profile's own; the picker lists the fact sheet's partners, those the
 // model writes a thesis with first), from the strategic layer of the AIB document (src/partnerships/
-// RelationshipThesis.tsx; shown only when the bundle has the layer). The cross-lens summary says where
-// that partner sits in the three lenses.
+// RelationshipThesis.tsx; shown only when the bundle has the layer). Since 2026-11-02 the profile shows no
+// cross-lens summary, so no line on where that partner sits in the three lenses (the Partnerships page keeps both).
 //
 // The NEIS copy refresh (2026-10-30): as the Partner sub-section it opens with what Partner means for the
 // economy (the guide's "Where should this country rely on allies?" intro), then the economy's Partner steps,
@@ -242,7 +242,7 @@ function ScenarioNote({ sc }: { sc: CountryScenario }) {
 }
 
 /**
- * "Partnerships": the kind of partnership (URL `ptab`), the cross-lens summary and the three lenses, then
+ * "Partnerships": the kind of partnership (URL `ptab`) and the three lenses, then
  * the partner-by-partner table in a disclosure. `title`, `aliases` and `lead` (the economy's Partner steps,
  * shown after the intro and before the analysis) let a page mount it as a sub-section of its own.
  */
@@ -263,7 +263,7 @@ export function PartnershipsSection({
         <p className="max-w-3xl text-sm leading-relaxed text-paper-dim">
           Who {name} could trade, invest, build and align with, read three ways: the ties it has today (observed data), what the partner scores suggest (the{' '}
           <Term id="psi" />, with <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the default weights) and how the Allied Industrial Base analysis would divide
-          the work under the chosen scenario. The summary of each kind says where the three agree and where they differ. Select a Partner step above for its best-placed partners.
+          the work under the chosen scenario. Select a Partner step above for its best-placed partners.
           First, the strategic case for a partnership between {name} and the partner you choose.
         </p>
       </div>
@@ -372,9 +372,9 @@ function PairThesisCard() {
   );
 }
 
-/** The shared component with the profile's settings. */
+/** The shared component with the profile's settings: no cross-lens summary on the Country profile (2026-11-02). */
 function Lenses({ kind, onKind, lenses, sc, name }: { kind: PartnershipKind; onKind: (k: PartnershipKind) => void; lenses: Record<LensId, LensPanelSpec>; sc: CountryScenario; name?: (iso: string) => string }) {
-  const { sheet, partner } = useProfile();
+  const { sheet } = useProfile();
   const href = useProfileHref();
   return (
     <PartnershipLenses
@@ -389,7 +389,7 @@ function Lenses({ kind, onKind, lenses, sc, name }: { kind: PartnershipKind; onK
       partnerHref={href}
       scenarioLabel={sc.label}
       lenses={lenses}
-      pair={partner && partner !== sheet.iso3 ? partner : null}
+      summary={false}
     />
   );
 }

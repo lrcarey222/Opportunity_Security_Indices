@@ -1,7 +1,7 @@
 // The Country profile's Partnerships section on the three lenses (2026-10-19; aib_scenarios_spec.md s.5 C
 // and s.6), in the app, on the synthetic Country and AIB fixtures (the AIB economy AAA renamed USA in the
-// main document and both scenario files): the four kinds (URL ptab), each with the cross-lens summary and
-// three tagged panels; Today from the fact sheet (trade ties) and the ties chunk, OSI ranking from the
+// main document and both scenario files): the four kinds (URL ptab), each with three tagged panels and no
+// cross-lens summary (removed from the Country profile 2026-11-02); Today from the fact sheet (trade ties) and the ties chunk, OSI ranking from the
 // fact sheet's partner scores, the AIB model under the scenario toggle (URL scn, the toggle in the panel):
 // its coordinated trade, investment flows, BUILD nodes and compact coalitions follow Managed
 // Interdependence from its file; Allied Strategy's compacts with a role follow the same key; a lens with
@@ -118,7 +118,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
   const decSeats = seats(doc.compacts.map((c) => ({ members: coalitionMembersOf(c) })));
   const miSeats = seats(managed.compacts.map((c) => ({ members: c.coalition?.members ?? null })));
 
-  it('Trade under Decoupling: four kinds, the summary, then Today (fact sheet ties), OSI ranking (Partnership Opportunity) and the AIB model with its toggle', async () => {
+  it('Trade under Decoupling: four kinds, no summary, then Today (fact sheet ties), OSI ranking (Partnership Opportunity) and the AIB model with its toggle', async () => {
     renderAt('/countries/USA?scn=decoupling#partnerships');
     const part = await section();
     const kinds = within(within(part).getByRole('radiogroup', { name: 'Kind of partnership' })).getAllByRole('radio');
@@ -136,10 +136,11 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     expect(aib.textContent).toContain(`In the compacts' coordinated trade the United States has ${t.trade.n} relationships worth ${fmtUsd(t.trade.usd)}`);
     const toggle = within(lens(part, 'aib')).getByRole('radiogroup', { name: 'Scenario' });
     expect((within(toggle).getByRole('radio', { name: DEC }) as HTMLInputElement).checked).toBe(true);
-    // the summary compares the three lenses
-    const sum = within(part).getByTestId('cross-lens-summary');
-    expect(within(sum).getByRole('heading', { level: 3 }).textContent).toBe('Where the three readings agree: trade, the United States');
-    expect(within(sum).getByTestId('cross-lens-line').textContent).toMatch(/^The three lenses name \d+ partners: /);
+    // no cross-lens summary on the Country profile (2026-11-02): the kind control leads straight into the panels
+    expect(within(part).queryByTestId('cross-lens-summary')).toBeNull();
+    expect(within(part).queryByTestId('cross-lens-line')).toBeNull();
+    expect(within(part).queryByText('Across the three lenses')).toBeNull();
+    expect(within(part).queryByRole('heading', { level: 3, name: /^Where the three readings agree/ })).toBeNull();
     expect(bareAcronyms(part)).toEqual([]);
   }, 90_000);
 
@@ -178,8 +179,11 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const inv = await within(lens(part, 'aib')).findByTestId('aib-as-investor', {}, T);
     expect(inv.textContent).toContain(`New capacity at ${best.length} host${best.length === 1 ? '' : 's'} serves ${fmtUsd(usd)} a year`);
     expect(within(lens(part, 'osi')).getByTestId('fs-top')).toBeTruthy();
-    // the test build has no Strategic ties chunk: the summary leaves Today out and says why
-    expect((await within(part).findByTestId('cross-lens-absent-today', {}, T)).textContent).toMatch(/^Today: .*; left out of the comparison\.$/);
+    // the test build has no Strategic ties chunk: Today still shows its panel (the direct-investment card), and no
+    // cross-lens summary (removed 2026-11-02) says it is left out of a comparison
+    expect((await within(lens(part, 'today')).findAllByText(/Direct investment between the United States and its partners/, {}, T)).length).toBeGreaterThan(0);
+    expect(within(part).queryByTestId('cross-lens-summary')).toBeNull();
+    expect(within(part).queryByTestId('cross-lens-absent-today')).toBeNull();
   }, 90_000);
 
   it('Development under Managed Interdependence: aid says in one line it is not in this build; the BUILD nodes are the scenario\'s', async () => {

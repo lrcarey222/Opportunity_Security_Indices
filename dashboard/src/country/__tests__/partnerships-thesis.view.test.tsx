@@ -4,8 +4,8 @@
 // lenses, the thesis of the economy and its selected partner (URL `partner`) with a Partner picker over the
 // fact sheet's partners (those with a thesis first); the compacts link to their strategic pages and the
 // footer to the pair on the AIB Partnerships page, the scenario carried; a partner the model writes no
-// thesis for says why; the cross-lens summary says where the partner sits; a bundle without the strategic
-// layer shows no thesis. No bare acronym.
+// thesis for says why; no cross-lens summary (removed from the Country profile 2026-11-02), so no line on
+// where the partner sits; a bundle without the strategic layer shows no thesis. No bare acronym.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -97,7 +97,7 @@ const section = async () => {
 const search = (r: ReturnType<typeof renderAt>) => new URLSearchParams(r.state.location.search);
 
 describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Partnerships: the relationship thesis of the selected partner', () => {
-  it('the thesis above the lenses, its Partner picker, its links; the summary says where the partner sits', async () => {
+  it('the thesis above the lenses, its Partner picker, its links; no summary line on where the partner sits', async () => {
     renderAt('/countries/USA?partner=JPN#partnerships');
     const part = await section();
     const card = await within(part).findByTestId('relationship-thesis', {}, T);
@@ -123,11 +123,13 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     // links: the strategic compact pages and the pair on the Partnerships page (Managed Interdependence: no scn)
     expect(within(card).getByRole('link', { name: 'Wind Power Equipment' }).getAttribute('href')).toBe('/compacts/s/SC-WIND');
     expect(within(card).getByRole('link', { name: /^Every relationship thesis of the United States/ }).getAttribute('href')).toBe('/aib/partnerships?country=USA&partner=JPN');
-    // the thesis comes before the lenses; the summary names where Japan sits
-    const summary = within(part).getByTestId('cross-lens-summary');
-    expect(card.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // (the lenses name economies with their own namer: the renamed scenario file calls JPN Borduria)
-    await waitFor(() => expect(within(summary).getByTestId('cross-lens-pair').textContent).toMatch(/^Where (Japan|Borduria) sits: /));
+    // the thesis comes before the lenses; no cross-lens summary, so no line on where Japan sits
+    const lenses = within(part).getByTestId('partnership-lenses');
+    expect(card.compareDocumentPosition(lenses) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await within(lenses).findByTestId('aib-trade', {}, T);
+    expect(within(part).queryByTestId('cross-lens-summary')).toBeNull();
+    expect(within(part).queryByTestId('cross-lens-pair')).toBeNull();
+    expect(within(part).queryByText(/^Where (Japan|Borduria) sits:/)).toBeNull();
     expect(bareAcronyms(document.body)).toEqual([]);
   });
 
@@ -162,7 +164,8 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     );
     renderAt('/countries/USA?partner=JPN#partnerships');
     const part = await section();
-    await within(part).findByTestId('cross-lens-summary', {}, T);
+    await within(part).findByTestId('partnership-lenses', {}, T);
+    expect(within(part).queryByTestId('cross-lens-summary')).toBeNull();
     // the AIB document has loaded (its lens shows), and still no thesis
     await within(part).findByTestId('aib-trade', {}, T);
     expect(within(part).queryByTestId('relationship-thesis')).toBeNull();

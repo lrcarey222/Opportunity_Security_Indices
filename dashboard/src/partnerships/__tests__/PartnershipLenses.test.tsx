@@ -1,7 +1,8 @@
 // The shared three-lens partnerships component (2026-10-19): the kind control (a radio group of the four
 // kinds), the cross-lens summary (readings in plain words, names linked where the page gives a link, "and N
 // more"), three tagged panels in the order Today, OSI ranking, AIB model (its scenario in the tag and the
-// heading), the one-line empty state of a lens with no data (never a blank panel), and no bare acronym.
+// heading), the one-line empty state of a lens with no data (never a blank panel), and no bare acronym;
+// `summary={false}` (2026-11-02, the Country profile) leaves the summary and its pair line out.
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -15,7 +16,7 @@ afterEach(cleanup);
 const NAMES: Record<string, string> = { AAA: 'Avalon', BBB: 'Borduria', CCC: 'Carpania', DDD: 'Dorvalia', EEE: 'Elbonia' };
 const name = (x: string) => NAMES[x] ?? x;
 
-function renderLenses(lenses: Record<'today' | 'osi' | 'aib', LensPanelSpec>, onKind = vi.fn()) {
+function renderLenses(lenses: Record<'today' | 'osi' | 'aib', LensPanelSpec>, onKind = vi.fn(), opts: { summary?: boolean; pair?: string | null } = {}) {
   render(
     <MemoryRouter>
       <PartnershipLenses
@@ -29,6 +30,7 @@ function renderLenses(lenses: Record<'today' | 'osi' | 'aib', LensPanelSpec>, on
         partnerHref={(x) => (x === 'EEE' ? null : `/countries/${x}`)}
         scenarioLabel="Managed Interdependence"
         lenses={lenses}
+        {...opts}
       />
     </MemoryRouter>,
   );
@@ -87,6 +89,31 @@ describe('PartnershipLenses', () => {
     renderLenses({ today: { names: lensNames([]) }, osi: { names: lensNames([]) }, aib: { names: lensNames([]) } });
     expect(within(screen.getByTestId('lens-aib')).getByTestId('lens-empty').textContent).toBe('No AIB analysis data for this selection.');
     expect(screen.getByTestId('cross-lens-line').textContent).toBe('The three lenses name 0 partners.');
+  });
+
+  it('summary={false}: no cross-lens summary (nor its pair line); the kind control and the three panels stay', () => {
+    renderLenses(
+      {
+        today: { names: lensNames(['BBB', 'CCC']), content: <p>today body</p> },
+        osi: { names: lensNames(['CCC', 'DDD']), content: <p>osi body</p> },
+        aib: { names: lensNames(['CCC', 'EEE']), content: <p>aib body</p> },
+      },
+      vi.fn(),
+      { summary: false, pair: 'CCC' },
+    );
+    expect(screen.queryByTestId('cross-lens-summary')).toBeNull();
+    expect(screen.queryByTestId('cross-lens-line')).toBeNull();
+    expect(screen.queryByTestId('cross-lens-pair')).toBeNull();
+    expect(screen.queryByText('Across the three lenses')).toBeNull();
+    expect(screen.queryByRole('heading', { name: /^Where the three readings agree/ })).toBeNull();
+    expect(within(screen.getByRole('radiogroup', { name: 'Partnership type' })).getAllByRole('radio')).toHaveLength(4);
+    expect(screen.getAllByTestId(/^lens-(today|osi|aib)$/).map((p) => p.getAttribute('data-lens'))).toEqual(['today', 'osi', 'aib']);
+    expect(within(screen.getByTestId('lens-osi')).getByText('osi body')).toBeTruthy();
+    cleanup();
+    // the default keeps it, with the pair's line
+    renderLenses({ today: { names: lensNames(['BBB', 'CCC']) }, osi: { names: lensNames(['CCC']) }, aib: { names: lensNames(['CCC']) } }, vi.fn(), { pair: 'CCC' });
+    expect(within(screen.getByTestId('cross-lens-summary')).getByText('Across the three lenses')).toBeTruthy();
+    expect(screen.getByTestId('cross-lens-pair').textContent).toMatch(/^Where Carpania sits: /);
   });
 
   it('a long reading lists the first names and "and N more"', () => {

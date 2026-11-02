@@ -7,7 +7,8 @@
 // instead (never a blank panel) and is left out of the comparison. HTML only: the panels stack at any width,
 // names are links where the page gives one, and every reading is text (no colour carries meaning). With a
 // pair (2026-10-20: `pair`, the partner of the relationship thesis above), the summary adds one line on
-// where that partner sits in the compared lenses.
+// where that partner sits in the compared lenses. `summary={false}` (2026-11-02) leaves the summary out, and
+// with it the pair's line: the Country profile shows the kind control and the three panels only.
 
 import { useId, type ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -58,6 +59,8 @@ export interface PartnershipLensesProps {
   footer?: ReactNode;
   /** the pair's other economy (2026-10-20): the summary says where it sits in the three lenses */
   pair?: string | null;
+  /** show the cross-lens summary ("Across the three lenses"; default true): false leaves it, and the pair's line, out */
+  summary?: boolean;
 }
 
 const KIND_OPTIONS = PARTNERSHIP_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }));
@@ -217,9 +220,9 @@ export function LensPanel({
   );
 }
 
-/** The kind control, the cross-lens summary and the three lens panels. */
+/** The kind control, the cross-lens summary (unless `summary` is false) and the three lens panels. */
 export function PartnershipLenses({
-  idPrefix, kind, onKind, kindLabel = 'Partnership type', headingLevel, focus, noun, name, partnerHref, scenarioLabel, lenses, footer, pair,
+  idPrefix, kind, onKind, kindLabel = 'Partnership type', headingLevel, focus, noun, name, partnerHref, scenarioLabel, lenses, footer, pair, summary = true,
 }: PartnershipLensesProps) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const base = `${idPrefix}-${uid}`;
@@ -227,7 +230,7 @@ export function PartnershipLenses({
   return (
     <div className="space-y-8" data-testid="partnership-lenses" data-kind={kind}>
       <Segmented label={kindLabel} value={kind} options={KIND_OPTIONS} onChange={onKind} />
-      <CrossLensSummary id={`${base}-sum`} level={headingLevel} kind={kind} focus={focus} noun={noun} name={name} partnerHref={partnerHref} lenses={names} pair={pair} />
+      {summary && <CrossLensSummary id={`${base}-sum`} level={headingLevel} kind={kind} focus={focus} noun={noun} name={name} partnerHref={partnerHref} lenses={names} pair={pair} />}
       {LENS_IDS.map((k) => (
         <LensPanel key={k} id={`${base}-${k}`} lens={k} level={headingLevel} kind={kind} scenario={scenarioLabel} spec={lenses[k]} />
       ))}
