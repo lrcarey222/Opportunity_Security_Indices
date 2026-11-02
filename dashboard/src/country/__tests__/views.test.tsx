@@ -537,7 +537,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
       expect(within(document.getElementById(id)!).getAllByText('No strategy map'), id).toHaveLength(1);
       expect(document.getElementById(id)!.querySelectorAll('li[data-key]'), id).toHaveLength(0);
     }
-    // the facts that do not need the framework stay: the observed policy, the monthly trade card, the partnership analysis (the
+    // the facts that do not need the framework stay: the observed policy, the partnership analysis (the
     // Partner sub-section, without its lead of Partner nodes) and the energy-system context; Allied Strategy reads the AIB results only
     expect(within(document.getElementById('policy-alignment')!).getByTestId('policy-behaviour')).toBeTruthy();
     expect(document.getElementById('medium-prize')).toBeNull();

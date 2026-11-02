@@ -5,8 +5,8 @@
 // Strategic priority column but not the facts, and the country's own URL writes keep the dials. Since 2026-10-29
 // (design 5b, D10) the dials, Sector position and the model's disclosures sit in Evidence & Methodology -> Legacy
 // OSI framework (its results open on demand); since 2026-10-30 (the fences) the Partnerships section is the Medium
-// fence's Partner sub-section, open, Allied Strategy lists only the compacts in which the economy holds a role,
-// and the monthly trade card is in the Medium fence's Competitive Position.
+// fence's Partner sub-section, open, and Allied Strategy lists only the compacts in which the economy holds a role;
+// since 2026-11-02 the Medium fence's Competitive Position has no monthly trade card.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -367,45 +367,55 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile page', () => {
   }, 90_000);
 });
 
-describe.skipIf(!haveFixture() || !haveAib())('Country profile: monthly trade by sub-component (2026-10-19)', () => {
-  it('a core member with a monthly file: the card follows the selected sector and switches flow', async () => {
+describe.skipIf(!haveFixture() || !haveAib())('Country profile: no monthly trade card (removed 2026-11-02)', () => {
+  /**
+   * The Competitive Position sub-section, once its content is in where the economy has a strategy map (its
+   * intro names the Preserve bar); without one (`framework` false) the sub-section alone, with its heading.
+   */
+  const position = async (framework = true) => {
+    await h2('Medium fence · Build, preserve, partner and deploy');
+    const pos = document.getElementById('medium-position') as HTMLElement;
+    expect(pos).toBeTruthy();
+    if (framework) await waitFor(() => expect(pos.textContent).toMatch(/A strong position, the bar for Preserve, is/), { timeout: 30_000 });
+    return pos;
+  };
+  const noCard = () => {
+    expect(screen.queryByTestId('trade-monthly')).toBeNull();
+    expect(screen.queryByTestId('trade-monthly-none')).toBeNull();
+    expect(screen.queryByText(/Loading monthly trade/)).toBeNull();
+    expect(screen.queryByRole('heading', { name: /monthly (imports|exports) by sub-component/ })).toBeNull();
+  };
+
+  it('a core member with a monthly file: no card under Competitive Position, whatever the selected sector', async () => {
     setEngineClient(neverReady());
     try {
       renderAt('/countries/USA?cell=solar-assembly#prize-position');
-      const card = await screen.findByTestId('trade-monthly', {}, { timeout: 30_000 });
-      // the Medium fence's Competitive Position: the evidence behind the trade momentum of Competitive Position
-      expect(card.closest('section#medium-position')?.closest('section#medium-fence')).toBeTruthy();
-      expect(within(card).getByRole('heading', { level: 3, name: /Solar — Assembly: monthly imports by sub-component/ })).toBeTruthy();
-      fireEvent.click(within(card).getByRole('radio', { name: 'Exports' }));
-      expect(await within(card).findByRole('heading', { level: 3, name: /monthly exports by sub-component/ })).toBeTruthy();
-    } finally {
-      setEngineClient(null);
-    }
-  }, 90_000);
-
-  it('a sector without a traded-goods basket falls back to the one with the most monthly trade and says why', async () => {
-    setEngineClient(neverReady());
-    try {
+      const pos = await position();
+      // the Medium fence's Competitive Position is there, without the card that followed its tables
+      expect(pos.closest('section#medium-fence')).toBeTruthy();
+      noCard();
+      cleanup();
       renderAt('/countries/USA?cell=oil-extraction#prize-position');
-      const card = await screen.findByTestId('trade-monthly', {}, { timeout: 30_000 });
-      expect(within(card).getByRole('heading', { level: 3, name: /Batteries — Assembly/ })).toBeTruthy();
-      expect(within(card).getByText(/has no traded-goods basket \(HS6 codes\); showing Batteries — Assembly/)).toBeTruthy();
+      await position();
+      noCard();
+      expect(screen.queryByText(/has no traded-goods basket \(HS6 codes\)/)).toBeNull();
     } finally {
       setEngineClient(null);
     }
   }, 90_000);
 
-  it('a core member without monthly data gets a notice; the card stays off non-core pages', async () => {
+  it('a core member without monthly data gets no notice in its place; nor does a non-core page', async () => {
     setEngineClient(neverReady());
     try {
       renderAt('/countries/FRA#prize-position');
-      const none = await screen.findByTestId('trade-monthly-none', {}, { timeout: 30_000 });
-      expect(none.closest('section#medium-position')).toBeTruthy();
+      const pos = await position(false);
+      expect(pos.closest('section#medium-fence')).toBeTruthy();
+      noCard();
+      expect(screen.queryByText(/publishes no monthly data there/)).toBeNull();
       cleanup();
       renderAt('/countries/BRA#prize-position');
       await h2('Medium fence · Build, preserve, partner and deploy');
-      expect(screen.queryByTestId('trade-monthly')).toBeNull();
-      expect(screen.queryByTestId('trade-monthly-none')).toBeNull();
+      noCard();
     } finally {
       setEngineClient(null);
     }

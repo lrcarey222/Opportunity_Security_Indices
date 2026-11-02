@@ -5,8 +5,8 @@
 // the composite's own structure ("Investment momentum (market prize)"); the composite and family scores are not
 // options. Only the indicators with a chart at the step of the row the reader has selected (else the table's
 // first row) are offered; one line under the picker names the families it cannot offer (no Sector measure, or
-// none at this step) and where to see them instead (the row's details; the monthly trade card for trade
-// momentum). A pick shows, beneath, that indicator's Sector explore chart for the step, the economy
+// none at this step, such as trade momentum) and where to see them instead (the row's details). A pick shows,
+// beneath, that indicator's Sector explore chart for the step, the economy
 // highlighted, with "Open in Sectors"; when the reader moves to a row where the pick has no chart, one line says
 // so and the picker stays usable.
 //

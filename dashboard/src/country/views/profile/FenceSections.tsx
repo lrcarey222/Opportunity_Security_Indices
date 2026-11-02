@@ -11,7 +11,7 @@
 //     Industrial Value and its three families: the market prize, from the core or the detail, industrial
 //     commons, future option and the market-only cap, from the node's or layer's evidence in meta.yf_nodes;
 //     then the market prize's components), Competitive Position (#medium-position: the nodes x the position evidence, the Preserve bar
-//     named, the monthly trade card), Partner (#medium-partner, aliases #partnerships, #partners,
+//     named; no monthly trade card since 2026-11-02), Partner (#medium-partner, aliases #partnerships, #partners,
 //     #allied-partnerships: the economy's Partner nodes in one line above the partnership analysis as it read
 //     before the redesign, open: the one place in the strategy sections where the Legacy OSI partner scores
 //     appear, as one of its three lenses and named so) and Accelerate (#medium-accelerate: the Accelerate nodes x the deployment-need
@@ -56,12 +56,11 @@ import { score100 } from '../../../posture/derive.ts';
 import { ratioVsCurrentWords } from '../../../posture/detail.ts';
 import { CountryClimateCard } from '../../../sector/views/climate/CountryClimate.tsx';
 import { CountryTransitionCards } from '../../../sector/views/climate/CountryTransition.tsx';
-import { cellKeyOfNode, MEDIUM_SUBSECTIONS, nodeKeyOfCell, STRATEGY_SECTIONS } from '../../derive/strategyPage.ts';
+import { MEDIUM_SUBSECTIONS, STRATEGY_SECTIONS } from '../../derive/strategyPage.ts';
 import { cap, poss, proseName } from '../../derive/text.ts';
 import { Fold, Section, useProfile, type CountryPosture } from './common.tsx';
 import { PartnershipsSection } from './PartnersSection.tsx';
 import { usePostureState } from './StrategySections.tsx';
-import { TradeMonthlyCard } from './TradeMonthlyCard.tsx';
 import { VariableChart } from './VariableChart.tsx';
 
 const SEC = Object.fromEntries(STRATEGY_SECTIONS.map((s) => [s.id, s])) as Record<string, (typeof STRATEGY_SECTIONS)[number]>;
@@ -569,7 +568,7 @@ function PartnerLead({ nodes, name }: { nodes: FenceNode[]; name: string }) {
 }
 
 export function MediumFenceSection() {
-  const { sheet, posture, setCell } = useProfile();
+  const { sheet } = useProfile();
   const name = proseName(sheet.meta.country);
   const state = usePostureState('Preserve, Catch Up, Partner or Accelerate step');
   const p = useReady();
@@ -579,13 +578,6 @@ export function MediumFenceSection() {
   const t = p?.core.meta.thresholds ?? null;
   // the position tables run in Competitive Position order (the prize tables in the fence's own, by prize)
   const competeByPosition = g ? byPositionOrder(g.compete) : [];
-  // the monthly trade card follows the selected node (its fact-sheet sector), else the page's sector
-  const nodeCell = cellKeyOfNode(posture?.node.selected);
-  const pick = (k: string) => {
-    const c = sheet.cells.find((x) => x.key === k);
-    if (posture && c && posture.core?.meta.techs.includes(c.tech)) posture.node.select(nodeKeyOfCell(c));
-    else setCell(k);
-  };
   const scen = p?.core.meta.scenario_labels ?? {};
   const fam = p?.core.meta.family_scenarios;
   const scenarioNote = fam
@@ -707,7 +699,6 @@ export function MediumFenceSection() {
           ) : (
             <p className="text-sm text-paper-mute">No Preserve, Catch Up or Partner steps.</p>
           ))}
-        <TradeMonthlyCard cell={nodeCell} onPick={pick} />
       </Section>
 
       <PartnershipsSection

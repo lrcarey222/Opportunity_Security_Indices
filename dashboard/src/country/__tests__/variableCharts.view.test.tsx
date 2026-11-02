@@ -155,9 +155,10 @@ describe.skipIf(!haveFixture())('Country page: Show a variable (the Sector chart
     ]);
     // the families it cannot offer, and where to see them
     expect(prize.chartless()).toBe('No Sector chart for World demand growth (none at this step), Industrial commons and Future option: select a row to see them in its details.');
-    // Competitive Position: trade momentum in the monthly trade card
+    // Competitive Position: trade momentum is chartless, its value in the row's details (no monthly trade card since 2026-11-02)
     const pos = expectIndicators('medium-position', 'position', within(sec('medium-position')).getByTestId('medium-position-table'));
-    expect(pos.chartless()).toMatch(/Trade momentum.*: select a row to see (it|them) in its details; for trade momentum, see also the monthly trade card in the Position section\.$/);
+    expect(pos.chartless()).toMatch(/Trade momentum.*: select a row to see (it|them) in its details\.$/);
+    expect(pos.chartless()).not.toMatch(/monthly trade card/);
     expect(pos.groups().map(([g]) => g)).toEqual(expect.arrayContaining(['Export position', 'Current investment']));
     // Accelerate: Batteries at Deployment & Use, the variable renewables and deployment investment
     const acc = expectIndicators('medium-accelerate', 'deployment', within(sec('medium-accelerate')).getByTestId('medium-accelerate-table'));

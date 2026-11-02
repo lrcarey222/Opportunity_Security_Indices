@@ -235,17 +235,16 @@ describe('variable charts: every mapped measure exists in the Sector catalogue',
     expect(ev.filter((o) => o.family.id === 'node-prize').map((o) => o.chart.m)).toEqual(['consumption.ev_sales']);
   });
 
-  it('the families it cannot offer: named in one line with where to see them (the row’s details; the monthly trade card)', () => {
+  it('the families it cannot offer: named in one line with where to see them (the row’s details)', () => {
     const line = (fs: FenceFamily[], tech: string, stage: string, selected = false) => chartlessLine(chartlessAt(fs, { tech, stage }), { selected });
     const siv = fenceFamilies('prize', { siv: true });
     expect(line(siv, 'Solar', 'Assembly')).toBe('No Sector chart for Industrial commons and Future option: select a row to see them in its details.');
     // a family empty at this step is named so
     expect(chartlessAt(siv, { tech: 'Batteries', stage: 'Assembly' }).map((c) => [c.family.id, c.reason])).toEqual([['node-prize', 'step'], ['commons', 'none'], ['option', 'none']]);
     expect(line(siv, 'Batteries', 'Assembly', true)).toBe('No Sector chart for World demand growth (none at this step), Industrial commons and Future option: the selected row’s details show them.');
-    // trade momentum: the monthly trade card
-    expect(line(fenceFamilies('position'), 'Solar', 'Assembly')).toBe(
-      'No Sector chart for Resource base (none at this step) and Trade momentum: select a row to see them in its details; for trade momentum, see also the monthly trade card in the Position section.',
-    );
+    // trade momentum: chartless, its value in the row's details (no monthly trade card since 2026-11-02)
+    expect(line(fenceFamilies('position'), 'Solar', 'Assembly')).toBe('No Sector chart for Resource base (none at this step) and Trade momentum: select a row to see them in its details.');
+    expect(fenceFamilies('position').find((f) => f.id === 'momentum')?.none).not.toMatch(/monthly trade card/);
     expect(line(fenceFamilies('deployment'), 'Batteries', 'Deployment')).toBe(
       'No Sector chart for Target / climate gap (none at this step) and Climate-aligned (alternative): select a row to see them in its details.',
     );

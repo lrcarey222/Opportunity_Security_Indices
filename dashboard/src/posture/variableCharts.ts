@@ -27,8 +27,8 @@
 //               measure of the same thing, not the family's own input. The note says which, in a sentence.
 //
 // A family with no Sector measure (a step attribute of the Yards & Fences evidence, data the Sector bundle does
-// not carry) has `none` and is named under the picker with where to see it instead (the row's details; the
-// monthly trade card for trade momentum). The table never invents a measure. Pure: no React, no IO.
+// not carry) has `none` and is named under the picker with where to see it instead: the row's details (trade
+// momentum is one of these). The table never invents a measure. Pure: no React, no IO.
 
 import type { SupplyStage } from '../lib/stages.ts';
 import type { ExplorePart } from '../sector/derive/explore.ts';
@@ -79,8 +79,6 @@ export interface FenceFamily {
   charts: readonly SectorChart[];
   /** why there is no Sector chart (charts empty) */
   none?: string;
-  /** a chartless family whose trade the Position section's monthly trade card shows (trade momentum) */
-  monthly?: boolean;
 }
 
 // ---- the indicators, each once ----------------------------------------------------------------------------
@@ -288,8 +286,8 @@ const POSITION: readonly FenceFamily[] = [
   { id: 'input-cost', label: 'Input cost', charts: [WAGES, LENDING_RATE] },
   { id: 'resource', label: 'Resource base', charts: [MINERAL_RESERVES, FUEL_RESERVES, URANIUM_RESOURCES] },
   {
-    id: 'momentum', label: 'Trade momentum', charts: [], monthly: true,
-    none: 'It reads monthly trade (UN Comtrade, the latest 12 months against the 12 before), which the Sector data do not carry; the monthly trade card of the Competitive Position section shows it.',
+    id: 'momentum', label: 'Trade momentum', charts: [],
+    none: 'It reads monthly trade (UN Comtrade, the latest 12 months against the 12 before), which the Sector data do not carry; the row’s details show its value.',
   },
   { id: 'feasibility', label: 'Export feasibility', part: PATHWAY_PART, charts: [FEASIBILITY] },
   { id: 'pipeline', label: 'Committed and announced pipeline', part: PATHWAY_PART, charts: [MFG_CAPACITY, MFG_PIPELINE_SHARE] },
@@ -412,16 +410,14 @@ const listWords = (xs: readonly string[]): string => (xs.length < 2 ? (xs[0] ?? 
 
 /**
  * The one line under the picker naming the families it cannot offer and where to see them instead: the row's
- * details (the drawer shows every family's value), and for trade momentum the monthly trade card. Null when
- * every family has a chart at the step.
+ * details (the drawer shows every family's value). Null when every family has a chart at the step.
  */
 export function chartlessLine(list: readonly Chartless[], opts: { selected: boolean }): string | null {
   if (!list.length) return null;
   const names = listWords(list.map((c) => (c.reason === 'step' ? `${c.family.label} (none at this step)` : c.family.label)));
   const them = list.length > 1 ? 'them' : 'it';
   const where = opts.selected ? `the selected row’s details show ${them}` : `select a row to see ${them} in its details`;
-  const monthly = list.filter((c) => c.family.monthly).map((c) => c.family.label.toLowerCase());
-  return `No Sector chart for ${names}: ${where}${monthly.length ? `; for ${listWords(monthly)}, see also the monthly trade card in the Position section` : ''}.`;
+  return `No Sector chart for ${names}: ${where}.`;
 }
 
 /**

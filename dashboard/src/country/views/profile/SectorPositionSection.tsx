@@ -7,7 +7,7 @@
 // preference-adjusted. The sector links go to the six-stage Sector profile (/sector/<tech>/<stage>?c=ISO3).
 // "Explore details" opens the embedded Country scores view (the model). Since 2026-10-29 (design D10) a Legacy
 // OSI block (Evidence & Methodology -> Legacy OSI framework; id legacy-sectors, heading level 3); the monthly
-// trade card moved to Prize & Position.
+// trade card moved to Prize & Position, and left the page on 2026-11-02.
 
 import { useMemo } from 'react';
 import { Link } from 'react-router';

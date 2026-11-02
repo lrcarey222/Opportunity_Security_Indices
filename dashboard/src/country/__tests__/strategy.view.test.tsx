@@ -347,7 +347,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(within(pt).getAllByTestId('fence-pathway')).toHaveLength(1);
     expect(prize.querySelector('[id^="fold-medium-prize"]')).toBeNull();
 
-    // Competitive Position: the Preserve bar named, the nodes x the position evidence in Competitive Position order, the monthly trade card
+    // Competitive Position: the Preserve bar named, the nodes x the position evidence in Competitive Position order, no monthly trade card
     const pos = sec('medium-position');
     expect(pos.textContent).toMatch(/A strong position, the bar for Preserve, is 75 or more: the top quarter of the main producers/);
     expect(pos.textContent).toMatch(/listed by Competitive Position, strongest first/);
@@ -364,7 +364,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     ]);
     const cps = rows(qt).map((r) => Number(r[2]));
     expect(cps).toEqual([...cps].sort((a, b) => b - a));
-    expect(within(pos).queryByTestId('trade-monthly') ?? within(pos).queryByText(/Loading monthly trade/)).toBeTruthy();
+    expect(within(pos).queryByTestId('trade-monthly') ?? within(pos).queryByTestId('trade-monthly-none') ?? within(pos).queryByText(/Loading monthly trade/)).toBeNull();
 
     // Partner: a lead naming the Partner nodes above the partnership analysis, which reads as before the redesign (open, not in a drop-down)
     const partner = sec('medium-partner');
@@ -686,16 +686,16 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(nodeOf(r3)).toBe('Solar|Downstream');
   });
 
-  it('the monthly trade card follows the selected node, and picking a sector there selects that node', async () => {
+  it('no monthly trade card under Competitive Position (removed 2026-11-02), whatever node is selected', async () => {
     const r = await usa('/countries/USA?node=Solar%7CAssembly');
-    const card = await within(sec('medium-position')).findByTestId('trade-monthly', {}, { timeout: 30_000 });
-    expect(within(card).getByRole('heading', { level: 3, name: /^Solar — Assembly: monthly imports by sub-component/ })).toBeTruthy();
-    const pick = within(card).getByRole('combobox', { name: 'Sector' }) as HTMLSelectElement;
-    const batteries = [...pick.options].find((o) => o.value === 'batteries-assembly');
-    if (batteries) {
-      fireEvent.change(pick, { target: { value: 'batteries-assembly' } });
-      await waitFor(() => expect(nodeOf(r)).toBe('Batteries|Assembly'));
-    }
+    expect(nodeOf(r)).toBe('Solar|Assembly');
+    const pos = sec('medium-position');
+    await within(pos).findByTestId('medium-position-table', {}, { timeout: 30_000 });
+    expect(within(pos).queryByTestId('trade-monthly')).toBeNull();
+    expect(within(pos).queryByTestId('trade-monthly-none')).toBeNull();
+    expect(within(pos).queryByText(/Loading monthly trade/)).toBeNull();
+    expect(within(pos).queryByRole('heading', { name: /monthly (imports|exports) by sub-component/ })).toBeNull();
+    expect(document.querySelector('[data-testid^="trade-monthly"]')).toBeNull();
   });
 
   it('narrow width (phone): the section chips scroll sideways, the matrix keeps its own scroller, the drawer is a bottom sheet, the head wraps', async () => {
