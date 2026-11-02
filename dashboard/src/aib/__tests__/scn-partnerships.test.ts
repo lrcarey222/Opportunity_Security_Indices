@@ -1,14 +1,14 @@
 // The partnership lenses' AIB derivations (2026-10-19) on the synthetic fixture: the compacts and nodes
 // under the toggled scenario (Decoupling the main document, Managed Interdependence its file: only the
 // nodes it ran on, their class, gap and hosts), the coordinated trade summed over a scenario's compacts,
-// today's trade from the Baseline file (pairs and the largest suppliers), the compact coalitions with an
-// economy's seats and dependencies, and what each lens names for the cross-lens summary.
+// today's trade from the Baseline file (pairs and the largest suppliers) and the compact coalitions with an
+// economy's seats and dependencies. (What each lens named for the cross-lens summary went with it, 2026-11-02.)
 
 import { describe, expect, it } from 'vitest';
 import { coalitionMembersOf } from '../contract.ts';
 import {
   buildGaps, hostRows, investmentNodes, lensBuildGaps, lensCoalitions, lensHostRows, lensInvestmentNodes, lensNodes, lensSpecializedSuppliers, NO_FILTER, pairInvestmentFlows,
-  pairInvestmentFlowsOf, pairTradeFlows, pairTradeFlowsOf, partnersInPairs, scenarioCompacts, sideTotals, specializedSuppliers, todayPairs, todaySuppliers,
+  pairInvestmentFlowsOf, pairTradeFlows, pairTradeFlowsOf, scenarioCompacts, specializedSuppliers, todayPairs, todaySuppliers,
 } from '../derive/partnerships.ts';
 import { nodeScenario } from '../derive/scenarios.ts';
 import { haveFixture, readDoc, readScenarioDoc } from './fixture.ts';
@@ -48,10 +48,6 @@ describe.skipIf(!haveFixture())('partnership lenses under the scenarios (synthet
     const mi = pairTradeFlowsOf(doc.nodes, scenarioCompacts(doc, 'managed', managed)!, NO_FILTER);
     const want = managed.compacts.flatMap((c) => c.trade).filter((e) => (e.usd ?? 0) > 0 && e.from !== e.to).reduce((s, e) => s + (e.usd ?? 0), 0);
     expect(mi.reduce((s, p) => s + p.value, 0)).toBeCloseTo(want, 0);
-    // an economy's partners in either direction, largest first; one side summed
-    const iso = mi[0].producer;
-    expect(partnersInPairs(mi, iso)).toEqual([...new Set(mi.filter((p) => p.producer === iso || p.consumer === iso).map((p) => (p.producer === iso ? p.consumer : p.producer)))]);
-    expect(sideTotals([{ producer: 'A', consumer: 'B', value: 1 }, { producer: 'C', consumer: 'B', value: 3 }, { producer: 'A', consumer: 'D', value: 3 }], 'producer')).toEqual(['A', 'C']);
   });
 
   it('lensNodes: Decoupling reads every node; Managed Interdependence its class, gap and hosts where it ran, the rest unchanged', () => {

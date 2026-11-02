@@ -2,16 +2,15 @@
 // strategic section, a pair with a thesis (either order), its priority compacts with each side's compact
 // role, its logic labels in the export's fixed order with their compact-role evidence (and the plain
 // meaning where the lookup finds none), a pair without a thesis (allied, no modelled relationship; one side
-// outside the allied economies), the words of a contribution and of a side's Strategic AIB Roles, the
-// suggested partners, and where a partner sits in the cross-lens summary. On the real export (when
-// present): every exported thesis reads back with the same labels, and the evidence lookup, which mirrors
-// aib_relationship_theses(), finds evidence for every compact-role label.
+// outside the allied economies), the words of a contribution and of a side's Strategic AIB Roles and the
+// suggested partners (where a partner sits in the cross-lens summary went with the summary, 2026-11-02). On
+// the real export (when present): every exported thesis reads back with the same labels, and the evidence
+// lookup, which mirrors aib_relationship_theses(), finds evidence for every compact-role label.
 
 import { describe, expect, it } from 'vitest';
 import { AIB_THESIS_LOGIC, strategicOf, type AibStrategic } from '../../aib/contract.ts';
 import { haveFixture, readDoc, REAL_DIR, SYNTHETIC_DIR } from '../../aib/__tests__/fixture.ts';
 import { proseName } from '../../country/derive/text.ts';
-import { crossLens, lensNames, lensNone, LENS_LOADING, pairReading } from '../lenses.ts';
 import { contributionWords, LOGIC_INFO, LOGIC_ORDER, pairThesis, strategicRoleWords, thesisPartners } from '../thesis.ts';
 
 const doc = readDoc(SYNTHETIC_DIR);
@@ -146,16 +145,6 @@ describe('pairThesis on the synthetic strategic section', () => {
   it('every logic label has words, in the export order', () => {
     expect(LOGIC_ORDER).toEqual(AIB_THESIS_LOGIC);
     for (const l of AIB_THESIS_LOGIC) expect(LOGIC_INFO[l]?.title).toBeTruthy();
-  });
-});
-
-describe('where the partner sits in the cross-lens summary', () => {
-  it('the reading of the group naming it, null when no compared lens names it, undefined before any lens is compared', () => {
-    const cl = crossLens({ today: lensNames(['BBB', 'CCC']), osi: lensNames(['CCC']), aib: lensNone('no data here') });
-    expect(pairReading(cl, 'CCC')).toBe('A tie today that ranks high on the partner scores');
-    expect(pairReading(cl, 'BBB')).toBe('A tie today, not ranked high on the partner scores');
-    expect(pairReading(cl, 'ZZZ')).toBeNull();
-    expect(pairReading(crossLens({ today: LENS_LOADING, osi: LENS_LOADING, aib: lensNone('x') }), 'BBB')).toBeUndefined();
   });
 });
 

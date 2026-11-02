@@ -1,8 +1,9 @@
 // /aib/partnerships on the three lenses (2026-10-19) with the synthetic fixture: the four kinds; each kind's
-// cross-lens summary and its three tagged panels (Today, OSI ranking, AIB model with the toggled
-// scenario); Today's trade from the Baseline scenario file; the AIB lens under Managed Interdependence from
-// its file (trade relationships, investment flows, coalitions); a lens with no data at the focus says so in
-// one line; the filters (economy, OSI technology, stage, node) stay; no bare acronym.
+// three tagged panels (Today, OSI ranking, AIB model with the toggled scenario) and no cross-lens summary
+// (gone from every page, 2026-11-02); Today's trade from the Baseline scenario file; the AIB lens under
+// Managed Interdependence from its file (trade relationships, investment flows, coalitions); a lens with no
+// data at the focus says so in the panel itself; the filters (economy, OSI technology, stage, node) stay; no
+// bare acronym.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -78,7 +79,12 @@ function renderAt(path: string) {
 }
 const h1 = async (name: string) => screen.findByRole('heading', { level: 1, name }, { timeout: 30_000 });
 const lens = (id: 'today' | 'osi' | 'aib') => screen.getByTestId(`lens-${id}`);
-const summary = () => screen.getByTestId('cross-lens-summary');
+/** No cross-lens summary on the page (2026-11-02). */
+const noSummary = () => {
+  expect(screen.queryByTestId('cross-lens-summary')).toBeNull();
+  expect(screen.queryByText('Across the three lenses')).toBeNull();
+  expect(screen.queryByText(/left out of the comparison/)).toBeNull();
+};
 const noAcronyms = () => expect(bareAcronyms(document.body)).toEqual([]);
 
 describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lenses', () => {
@@ -87,7 +93,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
   const baseline = readScenarioDoc('baseline', SYNTHETIC_DIR)!;
   const name = (x: string) => doc.countries[x] ?? managed.countries[x] ?? x;
 
-  it("Trade under Decoupling: four kinds, the summary, then Today (the Baseline file's pairs and suppliers), OSI ranking and AIB model", async () => {
+  it("Trade under Decoupling: four kinds, no summary, then Today (the Baseline file's pairs and suppliers), OSI ranking and AIB model", async () => {
     renderAt('/aib/partnerships?scn=decoupling');
     expect(await h1('Partnerships')).toBeTruthy();
     const kinds = within(screen.getByRole('radiogroup', { name: 'Partnership type' })).getAllByRole('radio');
@@ -113,11 +119,21 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     expect(within(lens('aib')).getByRole('region', { name: 'Coordinated trade relationships' })).toBeTruthy();
     expect(within(lens('aib')).getByRole('region', { name: 'Specialized suppliers' })).toBeTruthy();
     expect(within(lens('osi')).getByRole('region', { name: 'Partnership Opportunity' })).toBeTruthy();
-    // the summary compares the lenses with data here; the OSI rankings are not in the test build: left out, said so
-    expect(within(summary()).getByRole('heading').textContent).toBe('Where the three readings agree: trade, all economies and supply-chain steps');
-    await waitFor(() => expect(within(summary()).getByTestId('cross-lens-absent-osi').textContent).toMatch(/^Partner score ranking: .*; left out of the comparison\.$/));
-    expect(within(summary()).getByTestId('cross-lens-line').textContent).toMatch(/^Today and AIB analysis name \d+ economies/);
+    // the OSI rankings are not in the test build: the panel itself says so (no summary note any more)
+    await waitFor(() => expect(within(lens('osi')).getByText(/partner rankings/).textContent).toMatch(/^(This data build has no partner rankings\.|Could not load the partner rankings: .*)$/));
+    noSummary();
+    expect(screen.queryByRole('heading', { name: /^Where the three readings agree/ })).toBeNull();
     noAcronyms();
+  });
+
+  it('Trade: a Baseline file without the network says so in the Today panel itself (the summary said it before, 2026-11-02)', async () => {
+    setAibStoreForTests(new AibStore(fixtureSource(SYNTHETIC_DIR, undefined, { editScenario: (d, id) => void (id === 'baseline' && delete (d as { network?: unknown }).network) })));
+    renderAt('/aib/partnerships?scn=decoupling&country=AAA');
+    expect(await h1('Partnerships')).toBeTruthy();
+    const empty = await within(lens('today')).findByTestId('lens-empty', {}, { timeout: 15_000 });
+    expect(empty.textContent).toBe('This data build has no supplier-to-buyer pairs for today.');
+    expect(within(lens('today')).getByRole('region', { name: 'Largest suppliers today' })).toBeTruthy();
+    noSummary();
   });
 
   it('Trade under Managed Interdependence: the AIB lens reads the scenario file (its relationships), says what it changes, and links to a Country profile carry the scenario', async () => {
@@ -140,8 +156,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     // the Country profile's AIB lens follows the same key: the default is never written on the links
     const sup = within(lens('today')).getByRole('list', { name: 'Largest suppliers to the allied market today' });
     expect(within(sup).getAllByRole('link')[0].getAttribute('href')).toMatch(/^\/countries\/[A-Z]{3}#partnerships$/);
-    const sumLinks = within(summary()).queryAllByRole('link');
-    for (const a of sumLinks) expect(a.getAttribute('href')).toMatch(/^[^?]*#partnerships$/);
+    noSummary();
     noAcronyms();
   });
 
@@ -149,7 +164,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     const r = renderAt('/aib/partnerships?mode=investment');
     expect(await h1('Partnerships')).toBeTruthy();
     expect(within(lens('today')).getByTestId('lens-empty').textContent).toBe('Choose an economy to see its direct-investment positions (IMF) and factory projects.');
-    expect(within(summary()).getByTestId('cross-lens-absent-today').textContent).toMatch(/choose an economy/);
+    noSummary();
     const card = await within(lens('aib')).findByRole('region', { name: 'Who invests where' }, { timeout: 15_000 });
     const best = managed.investmentFlows!.pairs.filter((p) => p.rank === 1);
     await waitFor(() => expect(within(within(card).getByTestId('flow-list')).getAllByRole('listitem')).toHaveLength(best.length));

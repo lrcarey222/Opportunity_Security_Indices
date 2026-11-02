@@ -1,7 +1,7 @@
 // The Country profile's Partnerships section on the three lenses (2026-10-19; aib_scenarios_spec.md s.5 C
 // and s.6), in the app, on the synthetic Country and AIB fixtures (the AIB economy AAA renamed USA in the
 // main document and both scenario files): the four kinds (URL ptab), each with three tagged panels and no
-// cross-lens summary (removed from the Country profile 2026-11-02); Today from the fact sheet (trade ties) and the ties chunk, OSI ranking from the
+// cross-lens summary (removed from every page 2026-11-02); Today from the fact sheet (trade ties) and the ties chunk, OSI ranking from the
 // fact sheet's partner scores, the AIB model under the scenario toggle (URL scn, the toggle in the panel):
 // its coordinated trade, investment flows, BUILD nodes and compact coalitions follow Managed
 // Interdependence from its file; Allied Strategy's compacts with a role follow the same key; a lens with

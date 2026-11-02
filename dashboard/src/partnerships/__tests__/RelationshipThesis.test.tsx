@@ -2,8 +2,8 @@
 // a pair with a thesis (its heading names the pair; the headline; Complementarity, Priority compacts and AIB
 // logic as sub-headings one level down; compacts and economies as links; the logic in the export's order
 // with its evidence; the basis note), a pair without one (one line why, the compacts both take part in, no
-// logic), no partner (the suggestions, linked), the tools slot, and the cross-lens summary's line on where
-// the partner sits. No bare acronym.
+// logic), no partner (the suggestions, linked) and the tools slot. No bare acronym. (The cross-lens
+// summary's line on where the partner sits went with the summary, 2026-11-02.)
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
@@ -11,8 +11,6 @@ import { MemoryRouter } from 'react-router';
 import { bareAcronyms } from '../../components/testing/acronyms.ts';
 import { strategicOf, type AibStrategic } from '../../aib/contract.ts';
 import { readDoc, SYNTHETIC_DIR } from '../../aib/__tests__/fixture.ts';
-import { lensNames, lensNone } from '../lenses.ts';
-import { PartnershipLenses } from '../PartnershipLenses.tsx';
 import { RelationshipThesis, type RelationshipThesisProps } from '../RelationshipThesis.tsx';
 import { PARTNERSHIP } from '../../content/vocabulary.ts';
 
@@ -102,30 +100,5 @@ describe('RelationshipThesis', () => {
   it('the tools slot sits under the heading', () => {
     const card = renderCard({ a: 'AAA', b: 'BBB', tools: <label>Partner picker</label> });
     expect(within(card).getByText('Partner picker')).toBeTruthy();
-  });
-});
-
-describe('the cross-lens summary names where the pair’s partner sits', () => {
-  const lenses = {
-    today: { names: lensNames(['BBB', 'CCC']), content: <p>today</p> },
-    osi: { names: lensNone('not in this build') },
-    aib: { names: lensNames(['CCC']), content: <p>aib</p> },
-  };
-  const renderLenses = (pair: string | null) =>
-    render(
-      <MemoryRouter>
-        <PartnershipLenses idPrefix="p" kind="trade" onKind={() => undefined} headingLevel={2} focus="Avalon" noun={{ one: 'partner', many: 'partners' }} name={name} scenarioLabel="Managed Interdependence" lenses={lenses} pair={pair} />
-      </MemoryRouter>,
-    );
-
-  it('a named partner reads its group; one not named says the lenses name only their leading partners; none without a pair', () => {
-    renderLenses('CCC');
-    expect(screen.getByTestId('cross-lens-pair').textContent).toBe('Where Carpania sits: A tie today that the AIB keeps.');
-    cleanup();
-    renderLenses('DDD');
-    expect(screen.getByTestId('cross-lens-pair').textContent).toBe('Where Dorvalia sits: not among the partners Today and AIB analysis name here (each names only its leading partners).');
-    cleanup();
-    renderLenses(null);
-    expect(screen.queryByTestId('cross-lens-pair')).toBeNull();
   });
 });

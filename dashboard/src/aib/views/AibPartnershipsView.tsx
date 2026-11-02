@@ -2,7 +2,7 @@
 // aib_scenarios_spec.md s.5 C and s.6): "Who should work with whom?" The kind of partnership, Trade |
 // Investment | Development | Geopolitical (URL `mode`), and four filters, economy / OSI technology / stage /
 // node (URL `country`, `tech`, `stage`, `node`), read through the shared three-lens component
-// (src/partnerships): a cross-lens summary, then three tagged panels.
+// (src/partnerships): three tagged panels (the cross-lens summary above them went on 2026-11-02).
 //   Today           Trade: who supplies whom today and today's largest suppliers (the Baseline scenario
 //                   file: observed 2024 supplier -> buyer pairs, each node's top suppliers). Investment:
 //                   the IMF positions and factory projects of one economy. Development: official aid
@@ -23,9 +23,9 @@
 // A pair (2026-10-20, strategic task spec s.19): the Partner filter (URL `partner`, read only with an
 // economy; options grouped by whether the model writes a relationship thesis for the pair) opens the
 // relationship thesis above the lenses (src/partnerships/RelationshipThesis.tsx: complementarity, priority
-// strategic compacts and the AIB logic, from doc.strategic; no score), and the cross-lens summary says
-// where the partner sits in the three lenses. With an economy and no partner, the card suggests the
-// economy's relationships with the most priority compacts. The lenses stay the economy's.
+// strategic compacts and the AIB logic, from doc.strategic; no score). With an economy and no partner, the
+// card suggests the economy's relationships with the most priority compacts. The lenses stay the economy's
+// (since 2026-11-02 no line says where the partner sits in them: the cross-lens summary is gone).
 //
 // The partner indices (Partnership Opportunity, Friendshore, Development Potential) and the factory
 // projects are kept by OSI technology x six-stage stage (the cells of the Strategic data). The AIB filter (an
@@ -58,22 +58,20 @@ import { useTitle } from '../../shell/title.ts';
 import { useApp } from '../../state/EngineProvider.tsx';
 import { InvestmentCards } from '../../views/Partners/InvestmentCard.tsx';
 import { alignmentOf, CMFDI_SECTORS, cmfdiSameProjectsNote, cmfdiStages, hasCmfdi, loadRankedCells, loadSectorTop, loadTies, type Ties, type TopRow } from '../../views/Partners/ties.ts';
-import { AGGREGATE_NAMES, agreementList, agreementNames, agreementMembers, agreementTies, alignmentCounts, alignmentWords, coalitionOf, dipPartners, tierWords } from '../../partnerships/derive.ts';
-import { kindOf, lensNames, lensNone, LENS_LOADING, type LensId, type LensNames, type PartnershipKind } from '../../partnerships/lenses.ts';
+import { AGGREGATE_NAMES, agreementList, agreementNames, agreementTies, alignmentCounts, alignmentWords, coalitionOf, tierWords } from '../../partnerships/derive.ts';
+import { kindOf, type LensId, type PartnershipKind } from '../../partnerships/lenses.ts';
 import { LensCard, PartnershipLenses, RankedNames, type LensPanelSpec } from '../../partnerships/PartnershipLenses.tsx';
 import { RelationshipThesis } from '../../partnerships/RelationshipThesis.tsx';
 import { thesisPartners } from '../../partnerships/thesis.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
-import type { AibInvestmentFlows, AibManagedScenarioDoc, AibMeta, AibScenarioId, AibStrategic } from '../contract.ts';
+import type { AibBaselineScenarioDoc, AibInvestmentFlows, AibManagedScenarioDoc, AibMeta, AibScenarioId, AibStrategic } from '../contract.ts';
 import { ClassChip } from '../charts/ClassChip.tsx';
 import { useAibScenarioDoc, type ScenarioLoad } from '../data/hooks.ts';
 import { fmtPp, fmtScore, fmtShare, fmtUsd, listWords, plural } from '../derive/format.ts';
-import { investmentPairs } from '../derive/investment.ts';
 import {
   aidStageOf,
   dpRows,
   filterChoices,
-  hostsNamed,
   lensBuildGaps,
   lensCoalitions,
   lensHostRows,
@@ -83,10 +81,8 @@ import {
   osiCellPick,
   pairInvestmentFlowsOf,
   pairTradeFlowsOf,
-  partnersInPairs,
   scenarioCompacts,
   scoredCellsOf,
-  sideTotals,
   todayPairs,
   todaySuppliers,
   topPairs,
@@ -356,7 +352,6 @@ function useLensScenario(): { id: LensScenario; label: string; load: ScenarioLoa
 function pendingSpec(load: ScenarioLoad<unknown>): LensPanelSpec {
   if (load.error) {
     return {
-      names: lensNone('the Managed Interdependence data could not be loaded'),
       content: (
         <Notice kind="error" title="The Managed Interdependence data could not be loaded" action={<button type="button" className="btn btn-ghost btn-sm" onClick={load.retry}>Retry</button>}>
           {load.error.message}
@@ -364,8 +359,8 @@ function pendingSpec(load: ScenarioLoad<unknown>): LensPanelSpec {
       ),
     };
   }
-  if (load.missing) return { names: lensNone('this build has no Managed Interdependence detail'), empty: 'This build has no Managed Interdependence detail for the partnerships: choose the major-supplier disruption.' };
-  return { names: LENS_LOADING, content: <Loading label="Loading the Managed Interdependence results" /> };
+  if (load.missing) return { empty: 'This build has no Managed Interdependence detail for the partnerships: choose the major-supplier disruption.' };
+  return { content: <Loading label="Loading the Managed Interdependence results" /> };
 }
 
 /** A line under the AIB lens under Managed Interdependence: what it changes and what it leaves as today. */
@@ -429,7 +424,7 @@ export default function AibPartnershipsView() {
       >
         <p className="mt-3 max-w-3xl text-sm text-paper-mute" data-testid="partnerships-reading">
           Each kind of partnership (trade, investment, development, geopolitical) is read three ways: as it is today, as the partner scores rank it, and as the Allied
-          Industrial Base analysis arranges it under the chosen scenario. The summary says where the three agree and where they differ. {PARTNERSHIP.psiCaveat}
+          Industrial Base analysis arranges it under the chosen scenario. {PARTNERSHIP.psiCaveat}
         </p>
       </PageHead>
       <FilterRow>
@@ -473,10 +468,10 @@ export default function AibPartnershipsView() {
         </div>
       )}
       <div className="mt-6">
-        {mode === 'trade' && <TradeTab f={f} partner={partner} onKind={onKind} />}
-        {mode === 'investment' && <InvestmentTab f={f} partner={partner} onKind={onKind} />}
-        {mode === 'development' && <DevelopmentTab f={f} partner={partner} onKind={onKind} />}
-        {mode === 'geopolitical' && <GeopoliticalTab f={f} partner={partner} onKind={onKind} />}
+        {mode === 'trade' && <TradeTab f={f} onKind={onKind} />}
+        {mode === 'investment' && <InvestmentTab f={f} onKind={onKind} />}
+        {mode === 'development' && <DevelopmentTab f={f} onKind={onKind} />}
+        {mode === 'geopolitical' && <GeopoliticalTab f={f} onKind={onKind} />}
       </div>
     </div>
   );
@@ -491,31 +486,12 @@ function useScope(f: PartnershipFilter): string {
 
 interface TabProps {
   f: PartnershipFilter;
-  /** the pair's other economy (with an economy only) */
-  partner: string | null;
   onKind: (k: PartnershipKind) => void;
 }
 
 /** The shared component with the page's own settings. */
-function Lenses({ kind, f, partner, onKind, name, lenses, scenario }: TabProps & { kind: PartnershipKind; name: (iso: string) => string; lenses: Record<LensId, LensPanelSpec>; scenario: string }) {
-  const scope = useScope(f);
-  const toCountry = useCountryHref();
-  return (
-    <PartnershipLenses
-      idPrefix={`aibp-${kind}`}
-      kind={kind}
-      onKind={onKind}
-      kindLabel="Partnership type"
-      headingLevel={2}
-      focus={scope}
-      noun={f.country ? { one: 'partner', many: 'partners' } : { one: 'economy', many: 'economies' }}
-      name={name}
-      partnerHref={toCountry}
-      scenarioLabel={scenario}
-      lenses={lenses}
-      pair={partner}
-    />
-  );
+function Lenses({ kind, onKind, lenses, scenario }: Pick<TabProps, 'onKind'> & { kind: PartnershipKind; lenses: Record<LensId, LensPanelSpec>; scenario: string }) {
+  return <PartnershipLenses idPrefix={`aibp-${kind}`} kind={kind} onKind={onKind} kindLabel="Partnership type" headingLevel={2} scenarioLabel={scenario} lenses={lenses} />;
 }
 
 /**
@@ -566,15 +542,6 @@ function useTopRows(side: 'po' | 'fs', f: PartnershipFilter): TopRows {
     return topPairs(src, side, f.country, TOP);
   }, [bySector, sector, ties, side, f.country]);
   return { ties, pick, cell, bySector, sectorLoading: !!cell && sector === null, sectorMissing: !!cell && sector !== null && !sector.top, rows };
-}
-
-/** What the OSI lens names: the economy's partners, else (no economy) the exporters (Partnership Opportunity) or the partners to build with (Friendshore). */
-function topNames(t: TopRows, side: 'po' | 'fs', country: string | null): LensNames {
-  if (!t.ties || t.sectorLoading) return LENS_LOADING;
-  if (t.pick && !t.pick.cells.length) return lensNone('no sector with partner indices for this selection');
-  if (t.ties.error && !t.bySector) return lensNone('the partner rankings are not in this build');
-  const keys = country ? t.rows.map((r) => r.partner_iso) : t.rows.map((r) => (side === 'po' ? r.reporter_iso : r.partner_iso));
-  return lensNames(keys, 10, country);
 }
 
 const SIDE_WORDS = {
@@ -632,7 +599,7 @@ function TopPartnersCard({ side, f, t }: { side: 'po' | 'fs'; f: PartnershipFilt
 
 // ---- Trade -----------------------------------------------------------------------------------------------
 
-function TradeTab({ f, partner, onKind }: TabProps) {
+function TradeTab({ f, onKind }: TabProps) {
   const { doc, nodeOf } = useAibCtx();
   const sc = useLensScenario();
   const baseline = useAibScenarioDoc('baseline');
@@ -649,23 +616,11 @@ function TradeTab({ f, partner, onKind }: TabProps) {
   const tSup = useMemo(() => todaySuppliers(doc.nodes, f, baseline.doc), [doc, f, baseline.doc]);
 
   // Today
-  const todayNames: LensNames = f.country
-    ? baseline.loading
-      ? LENS_LOADING
-      : baseline.doc?.network
-        ? lensNames(partnersInPairs(tPairs, f.country), 10, f.country)
-        : lensNone("today's supplier-to-buyer pairs are not in this build")
-    : baseline.loading && !tSup.length
-      ? LENS_LOADING
-      : tSup.length
-        ? lensNames(tSup.map((s) => s.iso3))
-        : lensNone("today's suppliers are not in this build");
   const today: LensPanelSpec = {
-    names: todayNames,
     content: <TodayTrade f={f} pairs={tPairs} suppliers={tSup} baseline={baseline} name={name} label={label} />,
   };
   // OSI
-  const osi: LensPanelSpec = { names: topNames(t, 'po', f.country), content: <TopPartnersCard side="po" f={f} t={t} /> };
+  const osi: LensPanelSpec = { content: <TopPartnersCard side="po" f={f} t={t} /> };
   // AIB
   let aib: LensPanelSpec;
   if (!sc.ready) aib = pendingSpec(sc.load);
@@ -700,7 +655,6 @@ function TradeTab({ f, partner, onKind }: TabProps) {
       { id: 'nodes', header: 'Supply-chain steps', value: (r) => r.nodes.map(label).join(', '), minWidth: 240 },
     ];
     aib = {
-      names: lensNames(f.country ? partnersInPairs(pairs, f.country) : sideTotals(pairs, 'producer'), 10, f.country),
       content: (
         <div className="space-y-6">
           {sc.id === 'managed' && <ManagedNote />}
@@ -759,17 +713,20 @@ function TradeTab({ f, partner, onKind }: TabProps) {
       ),
     };
   }
-  return <Lenses kind="trade" f={f} partner={partner} onKind={onKind} name={name} lenses={{ today, osi, aib }} scenario={sc.label} />;
+  return <Lenses kind="trade" onKind={onKind} lenses={{ today, osi, aib }} scenario={sc.label} />;
 }
 
-/** Today's trade: who supplies whom (the Baseline network) and the largest suppliers to the allied market. */
+/**
+ * Today's trade: who supplies whom (the Baseline network) and the largest suppliers to the allied market. A
+ * baseline file without the network says so here (2026-11-02: only the cross-lens summary said it before).
+ */
 function TodayTrade({
   f, pairs, suppliers, baseline, name, label,
 }: {
   f: PartnershipFilter;
   pairs: TodayPair[];
   suppliers: TodaySupplier[];
-  baseline: ScenarioLoad<unknown>;
+  baseline: ScenarioLoad<AibBaselineScenarioDoc>;
   name: (iso: string) => string;
   label: (id: string) => string;
 }) {
@@ -834,6 +791,10 @@ function TodayTrade({
           <p className="text-sm text-paper-mute" data-testid="lens-empty">
             This data build has no supplier-to-buyer pairs for today; the largest suppliers below come from each supply-chain step&apos;s top five.
           </p>
+        ) : !baseline.doc.network ? (
+          <p className="text-sm text-paper-mute" data-testid="lens-empty">
+            This data build has no supplier-to-buyer pairs for today.
+          </p>
         ) : pairs.length ? (
           <RankedNames
             rows={pairs}
@@ -897,7 +858,7 @@ function CompactLinks({ ids }: { ids: string[] }) {
 
 // ---- Investment ------------------------------------------------------------------------------------------
 
-function InvestmentTab({ f, partner, onKind }: TabProps) {
+function InvestmentTab({ f, onKind }: TabProps) {
   const { doc, nodeOf, tx } = useAibCtx();
   const sc = useLensScenario();
   const t = useTopRows('fs', f);
@@ -913,12 +874,10 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
   const hosts = useMemo(() => lensHostRows(rows, f), [rows, f]);
   const compacts = useMemo(() => scenarioCompacts(doc, sc.id, sc.load.doc), [doc, sc.id, sc.load.doc]);
   const compactPairs = useMemo(() => (compacts ? pairInvestmentFlowsOf(doc.nodes, compacts, f) : []), [doc, compacts, f]);
-  const best = useMemo(() => (flows ? investmentPairs({ nodes: doc.nodes, investmentFlows: flows }, f) : []), [doc, flows, f]);
 
   // Today
   const today: LensPanelSpec = f.country
     ? {
-        names: !ties ? LENS_LOADING : ties.ties ? lensNames(dipPartners(ties.ties, f.country), 10, f.country) : lensNone('the direct-investment positions are not in this build'),
         content: (
           <div className="space-y-4">
             <InvestmentCellNote pick={pick} ties={ties?.ties ?? null} />
@@ -937,11 +896,10 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
         ),
       }
     : {
-        names: lensNone('direct-investment positions are kept economy by economy: choose an economy'),
         empty: 'Choose an economy to see its direct-investment positions (IMF) and factory projects.',
       };
   // OSI
-  const osi: LensPanelSpec = { names: topNames(t, 'fs', f.country), content: <TopPartnersCard side="fs" f={f} t={t} /> };
+  const osi: LensPanelSpec = { content: <TopPartnersCard side="fs" f={f} t={t} /> };
   // AIB
   let aib: LensPanelSpec;
   if (!sc.ready) aib = pendingSpec(sc.load);
@@ -976,9 +934,7 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
         sc.id,
       ),
     });
-    const flowPartners = f.country ? partnersInPairs(best.map((p) => ({ producer: p.investor, consumer: p.host })), f.country) : [];
     aib = {
-      names: f.country ? lensNames(flowPartners.length ? flowPartners : hostsNamed(nodes), 10, f.country) : lensNames(best.length ? sideTotals(best.map((p) => ({ producer: p.investor, consumer: p.host, value: p.usd })), 'consumer') : hostsNamed(nodes)),
       content: (
         <div className="space-y-6">
           {sc.id === 'managed' && <ManagedNote />}
@@ -1068,43 +1024,35 @@ function InvestmentTab({ f, partner, onKind }: TabProps) {
       ),
     };
   }
-  return <Lenses kind="investment" f={f} partner={partner} onKind={onKind} name={name} lenses={{ today, osi, aib }} scenario={sc.label} />;
+  return <Lenses kind="investment" onKind={onKind} lenses={{ today, osi, aib }} scenario={sc.label} />;
 }
 
 // ---- Development -----------------------------------------------------------------------------------------
 
-function DevelopmentTab({ f, partner, onKind }: TabProps) {
+function DevelopmentTab({ f, onKind }: TabProps) {
   const { doc, tx } = useAibCtx();
   const sc = useLensScenario();
   const ties = useTies();
   const name = useNamer(ties?.ties, { scenario: sc.load.doc });
   const scope = useScope(f);
   const toCountry = useCountryHref();
-  const [odaNames, setOdaNames] = useState<LensNames>(LENS_LOADING);
-  const [dpNames, setDpNames] = useState<LensNames>(LENS_LOADING);
-  const onOda = useCallback((n: LensNames) => setOdaNames(n), []);
-  const onDp = useCallback((n: LensNames) => setDpNames(n), []);
   const flows: AibInvestmentFlows | null = sc.id === 'decoupling' ? (doc.investmentFlows ?? null) : (sc.load.doc?.investmentFlows ?? null);
   const rows = useMemo(() => lensNodes(doc.nodes, sc.id, flows), [doc, sc.id, flows]);
   const gaps = useMemo(() => lensBuildGaps(rows, f), [rows, f]);
-  const buildIds = useMemo(() => new Set(lensBuildGaps(rows, { ...f, country: null }).map((g) => g.node.id)), [rows, f]);
-  const buildFlows = useMemo(() => (flows ? investmentPairs({ nodes: doc.nodes, investmentFlows: flows }, f).filter((p) => buildIds.has(p.node)) : []), [doc, flows, f, buildIds]);
   // the aid of the Sector data is linked to six-stage cells: read at the filter's stage, else the node's own
   const odaStage = useMemo(() => aidStageOf(doc.nodes, f), [doc, f]);
 
   const today: LensPanelSpec = {
-    names: odaNames,
     content: (
       <Suspense fallback={<Loading label="Loading the aid flows" />}>
-        <OdaToday iso={f.country} focusName={f.country ? name(f.country) : undefined} stage={odaStage} href={toCountry} onNames={onOda} level={3} />
+        <OdaToday iso={f.country} focusName={f.country ? name(f.country) : undefined} stage={odaStage} href={toCountry} level={3} />
       </Suspense>
     ),
   };
   const osi: LensPanelSpec = {
-    names: dpNames,
     content: (
       <EngineScope hostKeys={PARTNERSHIP_KEYS} fallback={<Loading label="Loading the Development Potential scores" />}>
-        <DevelopmentPartners f={f} scope={scope} onNames={onDp} />
+        <DevelopmentPartners f={f} scope={scope} />
       </EngineScope>
     ),
   };
@@ -1127,13 +1075,7 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
         sc.id,
       ),
     });
-    const partners = f.country
-      ? [...partnersInPairs(buildFlows.map((p) => ({ producer: p.investor, consumer: p.host })), f.country), ...gaps.flatMap((g) => g.hosts)]
-      : buildFlows.length
-        ? sideTotals(buildFlows.map((p) => ({ producer: p.investor, consumer: p.host, value: p.usd })), 'consumer')
-        : hostsNamed(gaps);
     aib = {
-      names: lensNames(partners, 10, f.country),
       content: (
         <div className="space-y-6">
           {sc.id === 'managed' && <ManagedNote />}
@@ -1166,10 +1108,10 @@ function DevelopmentTab({ f, partner, onKind }: TabProps) {
       ),
     };
   }
-  return <Lenses kind="development" f={f} partner={partner} onKind={onKind} name={name} lenses={{ today, osi, aib }} scenario={sc.label} />;
+  return <Lenses kind="development" onKind={onKind} lenses={{ today, osi, aib }} scenario={sc.label} />;
 }
 
-function DevelopmentPartners({ f, scope, onNames }: { f: PartnershipFilter; scope: string; onNames: (n: LensNames) => void }) {
+function DevelopmentPartners({ f, scope }: { f: PartnershipFilter; scope: string }) {
   const app = useApp();
   const { doc, nodeOf } = useAibCtx();
   const ties = useTies();
@@ -1182,13 +1124,6 @@ function DevelopmentPartners({ f, scope, onNames }: { f: PartnershipFilter; scop
   // the OSI cells come from the matching nodes' crosswalk; none: no rows and a notice
   const rows = useMemo(() => (ties?.ties ? dpRows(ties.ties.dp, app.cells, doc.nodes, f) : []), [ties, app.cells, doc.nodes, f]);
   const noCell = !!pick && !pick.cells.length;
-  const names: LensNames = !ties ? LENS_LOADING : ties.error ? lensNone('the Development Potential scores are not in this build') : noCell ? lensNone('no sector with partner indices for this selection') : lensNames(rows.map((r) => r.iso3));
-  const sig = `${names.status}|${names.keys.join(',')}`;
-  useEffect(() => {
-    onNames(names);
-    // the signature carries the value
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sig, onNames]);
   const cols: Col<DpRow>[] = [
     { id: 'name', header: 'Economy', value: (r) => name(r.iso3), cell: (r) => <Link className="link" to={toCountry(r.iso3)}>{name(r.iso3)}</Link> },
     { id: 'value', header: 'Development Potential', value: (r) => r.value, cell: (r) => fmtScore(r.value), num: true },
@@ -1235,7 +1170,7 @@ function DevelopmentPartners({ f, scope, onNames }: { f: PartnershipFilter; scop
 
 // ---- Geopolitical ----------------------------------------------------------------------------------------
 
-function GeopoliticalTab({ f, partner, onKind }: TabProps) {
+function GeopoliticalTab({ f, onKind }: TabProps) {
   const { doc, nodeOf } = useAibCtx();
   const sc = useLensScenario();
   const ties = useTies();
@@ -1252,14 +1187,13 @@ function GeopoliticalTab({ f, partner, onKind }: TabProps) {
 
   // Today: agreements and UN votes
   let today: LensPanelSpec;
-  if (!ties) today = { names: LENS_LOADING, content: <Loading label="Loading the agreements and UN votes" /> };
-  else if (!ties.ties) today = { names: lensNone('the agreements and UN votes are not in this build'), empty: ties.error ?? 'This data build has no agreements or UN votes.' };
+  if (!ties) today = { content: <Loading label="Loading the agreements and UN votes" /> };
+  else if (!ties.ties) today = { empty: ties.error ?? 'This data build has no agreements or UN votes.' };
   else if (iso) {
     const tiesNow = agreementTies(ties.ties, iso);
     const counts = alignmentCounts(ties.ties, iso);
     const tier = tierOf(iso);
     today = {
-      names: lensNames(tiesNow.map((r) => r.iso3), 40, iso),
       content: (
         <LensCard id="geo-today" title={`${name(iso)}: agreements and UN votes`} sub={`${name(iso)} is ${roster ? tierWords(tier) : 'in the roster'} today. In the UN General Assembly it votes in the same bloc as ${plural(counts.same, 'economy', 'economies')}, and in the opposite bloc from ${counts.opposite}.`}>
           {tiesNow.length ? (
@@ -1283,7 +1217,6 @@ function GeopoliticalTab({ f, partner, onKind }: TabProps) {
   } else {
     const list = agreementList(ties.ties);
     today = {
-      names: lensNames(agreementMembers(ties.ties).map((r) => r.iso3), 40),
       content: (
         <LensCard id="geo-today" title="Economic-security agreements today" sub="The economic-security agreements in the data and their members. UN-vote alignment is between two economies: choose an economy to see it.">
           {list.length ? (
@@ -1305,14 +1238,12 @@ function GeopoliticalTab({ f, partner, onKind }: TabProps) {
 
   // OSI: the allied coalition and Friendshore's alignment part
   let osi: LensPanelSpec;
-  if (man.status === 'loading') osi = { names: LENS_LOADING, content: <Loading label="Loading the coalition membership" /> };
-  else if (!roster) osi = { names: lensNone('the coalition membership could not be loaded'), empty: 'The coalition membership could not be loaded (the Countries data is not available).' };
+  if (man.status === 'loading') osi = { content: <Loading label="Loading the coalition membership" /> };
+  else if (!roster) osi = { empty: 'The coalition membership could not be loaded (the Countries data is not available).' };
   else {
     const core = coalition.filter((c) => c.tier === 'core');
     const partner = coalition.filter((c) => c.tier === 'partner');
-    const inside = !iso || coalition.some((c) => c.iso3 === iso);
     osi = {
-      names: inside ? lensNames(coalition.map((c) => c.iso3), 200, iso) : lensNone(`${name(iso as string)} is outside the allied coalition the partner scores use`),
       content: (
         <div className="space-y-4">
           <LensCard
@@ -1358,11 +1289,10 @@ function GeopoliticalTab({ f, partner, onKind }: TabProps) {
   else {
     const co = lensCoalitions(compacts, doc.nodes, f);
     aib = {
-      names: lensNames(co.members.map((m) => m.iso3), 60, iso),
       content: <AibCoalitions co={co} f={f} name={name} label={label} scenario={sc.label} scope={scope} managed={sc.id === 'managed'} />,
     };
   }
-  return <Lenses kind="geopolitical" f={f} partner={partner} onKind={onKind} name={name} lenses={{ today, osi, aib }} scenario={sc.label} />;
+  return <Lenses kind="geopolitical" onKind={onKind} lenses={{ today, osi, aib }} scenario={sc.label} />;
 }
 
 function AibCoalitions({

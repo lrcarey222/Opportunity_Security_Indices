@@ -4,7 +4,7 @@
 // lenses, the thesis of the economy and its selected partner (URL `partner`) with a Partner picker over the
 // fact sheet's partners (those with a thesis first); the compacts link to their strategic pages and the
 // footer to the pair on the AIB Partnerships page, the scenario carried; a partner the model writes no
-// thesis for says why; no cross-lens summary (removed from the Country profile 2026-11-02), so no line on
+// thesis for says why; no cross-lens summary (removed from every page 2026-11-02), so no line on
 // where the partner sits; a bundle without the strategic layer shows no thesis. No bare acronym.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';

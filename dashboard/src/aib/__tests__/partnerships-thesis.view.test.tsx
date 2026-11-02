@@ -2,9 +2,10 @@
 // Partner filter (URL `partner`, read only with an economy, its economies grouped by whether the model
 // writes a thesis for the pair) beside the existing filters and URL keys; the relationship thesis above the
 // lenses (complementarity, priority compacts linked to their strategic pages with the scenario carried, the
-// AIB logic); the suggestions without a partner; the cross-lens summary's line on where the partner sits;
-// a partner that is not valid, or without an economy, is ignored; clearing the economy or choosing the
-// partner as the economy drops it; a bundle without the strategic layer shows no thesis. No bare acronym.
+// AIB logic); the suggestions without a partner; no cross-lens summary, so no line on where the partner
+// sits (gone from every page, 2026-11-02); a partner that is not valid, or without an economy, is ignored;
+// clearing the economy or choosing the partner as the economy drops it; a bundle without the strategic layer
+// shows no thesis. No bare acronym.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -81,9 +82,16 @@ const h1 = async () => screen.findByRole('heading', { level: 1, name: 'Partnersh
 const search = (r: ReturnType<typeof renderAt>) => new URLSearchParams(r.state.location.search);
 const partnerBox = () => screen.getByRole('combobox', { name: 'Partner' }) as HTMLSelectElement;
 const noAcronyms = () => expect(bareAcronyms(document.body)).toEqual([]);
+/** No cross-lens summary and no line on where the partner sits (2026-11-02). */
+const noSummary = () => {
+  expect(screen.queryByTestId('cross-lens-summary')).toBeNull();
+  expect(screen.queryByTestId('cross-lens-pair')).toBeNull();
+  expect(screen.queryByText('Across the three lenses')).toBeNull();
+  expect(screen.queryByText(/^Where .* sits:/)).toBeNull();
+};
 
 describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the relationship thesis of a pair', () => {
-  it('a pair: the Partner filter beside the others, the thesis above the lenses, and where the partner sits in the summary', async () => {
+  it('a pair: the Partner filter beside the others, the thesis above the lenses, and no summary line on where the partner sits', async () => {
     renderAt('/aib/partnerships?country=AAA&partner=CCC');
     await h1();
     for (const f of ['Economy', 'Partner', 'Technology', 'Stage', 'Supply-chain step']) expect(screen.getByRole('combobox', { name: f })).toBeTruthy();
@@ -103,12 +111,13 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the relationshi
       'Priority compacts: where cooperation matters most',
       'AIB logic: what the relationship is about',
     ]);
-    const summary = await screen.findByTestId('cross-lens-summary', {}, T);
-    expect(card.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const lenses = await screen.findByTestId('partnership-lenses', {}, T);
+    expect(card.compareDocumentPosition(lenses) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // Managed Interdependence is the default: the compact link carries no scenario
     expect(within(card).getByRole('link', { name: 'Permanent Magnets & Drive Systems' }).getAttribute('href')).toBe('/compacts/s/SC-MAGNETS');
     expect(within(card).getByRole('link', { name: 'Carpania' }).getAttribute('href')).toBe('/countries/CCC#aib-role');
-    await waitFor(() => expect(within(summary).getByTestId('cross-lens-pair').textContent).toMatch(/^Where Carpania sits: /));
+    await within(lenses).findByRole('region', { name: 'Coordinated trade relationships' }, T);
+    noSummary();
     noAcronyms();
   });
 
@@ -159,15 +168,16 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the relationshi
     expect(within(card).queryByTestId('thesis-logic')).toBeNull();
   });
 
-  it('a bundle without the strategic layer: no thesis, the Partner filter (one list) and the summary line stay', async () => {
+  it('a bundle without the strategic layer: no thesis, the Partner filter (one list) and the lenses stay', async () => {
     setAibStoreForTests(new AibStore(fixtureSource(SYNTHETIC_DIR, (d) => void stripStrategic(d))));
     renderAt('/aib/partnerships?country=AAA&partner=CCC');
     await h1();
     expect(screen.queryByTestId('relationship-thesis')).toBeNull();
     expect(partnerBox().value).toBe('CCC');
     expect(partnerBox().querySelectorAll('optgroup')).toHaveLength(0);
-    const summary = await screen.findByTestId('cross-lens-summary', {}, T);
-    await waitFor(() => expect(within(summary).getByTestId('cross-lens-pair')).toBeTruthy());
+    const lenses = await screen.findByTestId('partnership-lenses', {}, T);
+    expect(within(lenses).getAllByTestId(/^lens-(today|osi|aib)$/)).toHaveLength(3);
+    noSummary();
     noAcronyms();
   });
 });

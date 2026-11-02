@@ -515,13 +515,6 @@ export function lensSpecializedSuppliers(rows: readonly LensNode[], f: Partnersh
   return [...acc.values()].sort((a, b) => b.nodes.length - a.nodes.length || (b.top ?? 0) - (a.top ?? 0) || a.iso3.localeCompare(b.iso3));
 }
 
-/** The economies named as hosts across lens nodes (a best-ranked host counts twice), most first. */
-export function hostsNamed(rows: readonly LensNode[]): string[] {
-  const score = new Map<string, number>();
-  for (const r of rows) r.hosts.forEach((h, i) => score.set(h, (score.get(h) ?? 0) + (i === 0 ? 2 : 1)));
-  return [...score.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([k]) => k);
-}
-
 // ---- Today's trade (scenario-baseline) ------------------------------------------------------------------
 
 export interface TodaySupplier {
@@ -598,24 +591,7 @@ export function todayPairs(network: AibNetwork | null | undefined, nodes: readon
   );
 }
 
-// ---- What each lens names (the cross-lens summary) -------------------------------------------------------
-
-/** The partners of `iso` in producer -> consumer pairs (either side), in the pairs' order, once each. */
-export function partnersInPairs(pairs: readonly { producer: string; consumer: string }[], iso: string): string[] {
-  const out: string[] = [];
-  for (const p of pairs) {
-    const other = p.producer === iso ? p.consumer : p.consumer === iso ? p.producer : null;
-    if (other && other !== iso && !out.includes(other)) out.push(other);
-  }
-  return out;
-}
-
-/** One side of producer -> consumer pairs, summed by value, largest first. */
-export function sideTotals(pairs: readonly { producer: string; consumer: string; value: number }[], side: 'producer' | 'consumer'): string[] {
-  const acc = new Map<string, number>();
-  for (const p of pairs) acc.set(p[side], (acc.get(p[side]) ?? 0) + p.value);
-  return [...acc.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([k]) => k);
-}
+// ---- The compact coalitions (the Geopolitical lens) -----------------------------------------------------
 
 /** The coalitions of the compacts in scope under a scenario (the Geopolitical lens). */
 export interface LensCoalitions {

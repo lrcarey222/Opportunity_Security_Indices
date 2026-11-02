@@ -1,19 +1,14 @@
-// The shared three-lens partnerships derivations (2026-10-19): the kinds, the lens words, the cross-lens
-// summary (which lenses name a partner, in plain words; a lens without data at the focus is left out, never
-// said to differ), the Today / OSI helpers on the synthetic ties chunk (agreements, UN votes, direct-
-// investment partners, the coalition) and the aid flows of the Development lens.
+// The shared three-lens partnerships derivations (2026-10-19): the kinds, the lens words, the Today / OSI
+// helpers on the synthetic ties chunk (agreements, UN votes, the coalition) and the aid flows of the
+// Development lens. (The cross-lens summary and the partner lists that fed it went on 2026-11-02.)
 
 import { describe, expect, it } from 'vitest';
 import type { SectorDevChunk } from '../../sector/contract.ts';
 import { syntheticTies } from '../../views/Partners/tiesFixture.ts';
-import { agreementList, agreementMembers, agreementTies, alignmentCounts, alignmentWords, coalitionOf, dipPartners, tierWords } from '../derive.ts';
-import {
-  comparedWords, crossLens, kindOf, KIND_LABEL, KIND_LENS_WORDS, LENS_IDS, LENS_LOADING, lensNames, lensNone, PARTNERSHIP_KINDS, readingWords, summaryLine, type LensNames,
-} from '../lenses.ts';
-import { aidItemsOfStage, aidSharedStages, aidStages, odaPartners, odaRecipients, odaView, type AidCellLink } from '../oda.ts';
+import { agreementList, agreementTies, alignmentCounts, alignmentWords, coalitionOf, tierWords } from '../derive.ts';
+import { kindOf, KIND_LABEL, KIND_LENS_WORDS, LENS_IDS, PARTNERSHIP_KINDS } from '../lenses.ts';
+import { aidItemsOfStage, aidSharedStages, aidStages, odaView, type AidCellLink } from '../oda.ts';
 import { bareAcronymsInText } from '../../components/testing/acronyms.ts';
-
-const ready = (keys: string[]): LensNames => ({ status: 'ready', keys });
 
 describe('kinds and lenses', () => {
   it('four kinds, Trade by default; three lenses in the panel order', () => {
@@ -32,61 +27,6 @@ describe('kinds and lenses', () => {
     }
     expect(KIND_LENS_WORDS.development.today).toMatch(/Export credits are not in this build/);
   });
-
-  it('lensNames keeps the order, drops duplicates and the focus, and caps the list', () => {
-    expect(lensNames(['JPN', 'USA', 'JPN', 'DEU', '', 'KOR'], 3, 'USA')).toEqual({ status: 'ready', keys: ['JPN', 'DEU', 'KOR'] });
-    expect(lensNone('no data here')).toEqual({ status: 'none', keys: [], reason: 'no data here' });
-  });
-});
-
-describe('the cross-lens summary', () => {
-  it('names each reading in plain words (the spec phrases)', () => {
-    expect(readingWords({ today: true, osi: true, aib: true })).toBe('A tie today that ranks high on the partner scores and that the AIB keeps');
-    expect(readingWords({ today: false, osi: true, aib: false })).toBe('Ranked high on the partner scores, not a tie today and not chosen by the AIB');
-    expect(readingWords({ today: false, osi: false, aib: true })).toBe('Chosen by the AIB, not a tie today and not ranked high on the partner scores');
-    expect(readingWords({ today: true, osi: true, aib: false })).toBe('A tie today that ranks high on the partner scores, not chosen by the AIB');
-    expect(readingWords({ today: true, osi: false, aib: true })).toBe('A tie today that the AIB keeps, not ranked high on the partner scores');
-    expect(readingWords({ today: false, osi: true, aib: true })).toBe('Ranked high on the partner scores and chosen by the AIB, not a tie today');
-    expect(readingWords({ today: true, osi: false, aib: false })).toBe('A tie today, not ranked high on the partner scores and not chosen by the AIB');
-  });
-
-  it('a lens that is not compared never speaks: no "not a tie today" without the Today lens', () => {
-    expect(readingWords({ today: null, osi: true, aib: false })).toBe('Ranked high on the partner scores, not chosen by the AIB');
-    expect(readingWords({ today: true, osi: null, aib: true })).toBe('A tie today that the AIB keeps');
-    expect(readingWords({ today: null, osi: true, aib: true })).toBe('Ranked high on the partner scores and chosen by the AIB');
-  });
-
-  it('groups every named partner by which lenses name it, in a fixed order, the lenses\' best position first', () => {
-    const cl = crossLens({ today: ready(['JPN', 'DEU', 'KOR', 'CHN']), osi: ready(['DEU', 'JPN', 'IND']), aib: ready(['VNM', 'JPN', 'IND']) });
-    expect(cl.compared).toEqual(['today', 'osi', 'aib']);
-    expect(cl.total).toBe(6);
-    expect(cl.groups.map((g) => [g.id, g.keys])).toEqual([
-      ['today+osi+aib', ['JPN']],
-      ['today+osi', ['DEU']],
-      ['osi+aib', ['IND']],
-      ['today', ['KOR', 'CHN']],
-      ['aib', ['VNM']],
-    ]);
-    expect(cl.groups[0].words).toBe('A tie today that ranks high on the partner scores and that the AIB keeps');
-    expect(summaryLine(cl, { one: 'partner', many: 'partners' })).toBe('The three lenses name 6 partners: 1 by all three, 2 by two of them and 3 by one.');
-  });
-
-  it('a loading lens and a lens with no data at the focus are listed apart and left out of the readings', () => {
-    const cl = crossLens({ today: lensNone('no aid data for Zembla'), osi: ready(['AAA', 'BBB']), aib: LENS_LOADING });
-    expect(cl.compared).toEqual(['osi']);
-    expect(cl.pending).toEqual(['aib']);
-    expect(cl.absent).toEqual([{ id: 'today', reason: 'no aid data for Zembla' }]);
-    expect(cl.groups.map((g) => g.words)).toEqual(['Ranked high on the partner scores']);
-    expect(summaryLine(cl, { one: 'partner', many: 'partners' })).toBe('');
-    const two = crossLens({ today: lensNone('none'), osi: ready(['AAA', 'BBB']), aib: ready(['BBB', 'CCC']) });
-    expect(two.groups.map((g) => [g.words, g.keys])).toEqual([
-      ['Ranked high on the partner scores and chosen by the AIB', ['BBB']],
-      ['Ranked high on the partner scores, not chosen by the AIB', ['AAA']],
-      ['Chosen by the AIB, not ranked high on the partner scores', ['CCC']],
-    ]);
-    expect(summaryLine(two, { one: 'economy', many: 'economies' })).toBe('Partner score ranking and AIB analysis name 3 economies: 1 by both and 2 by one.');
-    expect(comparedWords(['today', 'aib'])).toBe('Today and AIB analysis');
-  });
 });
 
 describe('Today and OSI helpers (synthetic ties chunk)', () => {
@@ -97,11 +37,6 @@ describe('Today and OSI helpers (synthetic ties chunk)', () => {
       { iso3: 'JPN', agreements: ['IPEF', 'MSP'], alignment: 0.8 },
       { iso3: 'IND', agreements: ['IPEF'], alignment: null },
     ]);
-    expect(agreementMembers(ties).map((r) => [r.iso3, r.agreements])).toEqual([
-      ['JPN', ['IPEF', 'MSP']],
-      ['USA', ['IPEF', 'MSP']],
-      ['IND', ['IPEF']],
-    ]);
     expect(agreementList(ties)).toEqual([
       { agreement: 'IPEF', members: ['IND', 'JPN', 'USA'] },
       { agreement: 'MSP', members: ['JPN', 'USA'] },
@@ -110,10 +45,6 @@ describe('Today and OSI helpers (synthetic ties chunk)', () => {
     expect(alignmentWords(1)).toBe('votes in the same bloc');
     expect(alignmentWords(0)).toBe('votes in opposite blocs');
     expect(alignmentWords(null)).toBe('UN votes not in the data');
-  });
-
-  it('direct-investment partners by size, conduit financial centres left out (as Friendshore does)', () => {
-    expect(dipPartners(ties, 'USA')).toEqual(['JPN', 'DEU', 'IND']);
   });
 
   it('the coalition: core members first, then partners; tiers in words', () => {
@@ -150,13 +81,11 @@ describe('aid flows (the Development lens, Today)', () => {
     ]);
     // a negative net flow (mining net of its coal and oil-and-gas sub-rows) is not a recipient
     expect(v.given).toEqual([]);
-    expect(odaPartners(v)).toEqual([0, 2]);
     const all = odaView(chunk, [0], null);
     expect(all.flows.map((f) => [f.from, f.to, f.v])).toEqual([
       [0, 1, 15],
       [2, 1, 7],
     ]);
-    expect(odaRecipients(all)).toEqual([1]);
     expect(odaView(chunk, [], null).years).toBeNull();
   });
 

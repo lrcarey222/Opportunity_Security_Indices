@@ -1,9 +1,9 @@
 // The Today and OSI lenses' derivations that both partnership pages share (2026-10-19): the economy's
-// shared economic-security agreements and UN-vote alignment (the Strategic bundle's ties chunk), its
-// direct-investment partners (IMF positions, conduit financial centres left out as Friendshore does) and
-// the allied coalition's tiers (the Country manifest). Pure: filters and orderings of existing fields only.
+// shared economic-security agreements and UN-vote alignment (the Strategic bundle's ties chunk) and the
+// allied coalition's tiers (the Country manifest). Pure: filters and orderings of existing fields only.
+// (The lists of partners each lens named, for the cross-lens summary, went with it on 2026-11-02.)
 
-import { alignmentOf, bySize, positionsOf, sharedAgreements, type Ties } from '../views/Partners/ties.ts';
+import { alignmentOf, sharedAgreements, type Ties } from '../views/Partners/ties.ts';
 
 /**
  * Names of the aggregates that sit among the economies in the partnership data (the European Union is a
@@ -49,13 +49,6 @@ export function agreementTies(ties: Ties, iso: string): AgreementTie[] {
     .sort(byTies);
 }
 
-/** Every economy in an economic-security agreement, with its agreements: most agreements first. */
-export function agreementMembers(ties: Ties): AgreementTie[] {
-  const by = new Map<string, string[]>();
-  for (const g of ties.agreements) by.set(g.iso3, [...new Set([...(by.get(g.iso3) ?? []), g.agreement])].sort());
-  return [...by.entries()].map(([iso3, agreements]) => ({ iso3, agreements, alignment: null })).sort(byTies);
-}
-
 /** The agreements of the chunk with their members, most members first. */
 export function agreementList(ties: Ties): { agreement: string; members: string[] }[] {
   const by = new Map<string, Set<string>>();
@@ -75,11 +68,6 @@ export function alignmentCounts(ties: Ties, iso: string): { same: number; mixed:
     else out.opposite += 1;
   }
   return out;
-}
-
-/** The economy's direct-investment partners by size of the two positions together, conduit financial centres left out. */
-export function dipPartners(ties: Ties, iso: string): string[] {
-  return bySize(positionsOf(ties, iso, 'all').filter((r) => !r.conduit)).map((r) => r.partner_iso);
 }
 
 export interface CoalitionTier {

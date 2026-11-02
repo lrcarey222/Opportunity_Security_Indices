@@ -1,20 +1,19 @@
 // The Development lens's Today panel (2026-10-19), loaded lazily (React.lazy) so the Sector bundle's code and
 // its sector-meta and sector-dev chunks reach a page only when its Development tab is open: official
 // development aid (OECD CRS), donor -> recipient, summed over the aid sectors in scope and the years. For an
-// economy, its donors and its recipients; without one, the largest flows. It reports the partners it names
-// to the page (onNames) for the cross-lens summary. Export credits are not in this build: the panel says so.
+// economy, its donors and its recipients; without one, the largest flows. Export credits are not in this
+// build: the panel says so. (It no longer reports the partners it names: the cross-lens summary is gone, 2026-11-02.)
 // With a stage (six stages since 2026-10-29: the Sector bundle's cells, labels such as "Refining"), only the
 // aid sectors linked to that stage's cells (oda.ts); a stage without any says so and names the stages that
 // have aid, and a stage whose aid sector is shared with other stages says it is the same aid.
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Loading } from '../components/ui.tsx';
 import { useSectorChunk, useSectorManifest, useSectorMeta, useSectorStore } from '../sector/data/SectorDataProvider.tsx';
 import type { SectorModel } from '../sector/data/model.ts';
 import { fmtUsdM } from '../views/Partners/ties.ts';
-import { lensNames, lensNone, LENS_LOADING, type LensNames } from './lenses.ts';
 import { stageLabel } from '../lib/stages.ts';
-import { aidItemsOfStage, aidSharedStages, aidStages, odaPartners, odaRecipients, odaView, type AidCellLink } from './oda.ts';
+import { aidItemsOfStage, aidSharedStages, aidStages, odaView, type AidCellLink } from './oda.ts';
 import { LensCard, RankedNames } from './PartnershipLenses.tsx';
 
 export interface OdaTodayProps {
@@ -26,8 +25,6 @@ export interface OdaTodayProps {
   stage: string | null;
   /** a link to an economy's page (null: plain text) */
   href?: (iso3: string) => string | null;
-  /** the partners the panel names (the cross-lens summary) */
-  onNames: (n: LensNames) => void;
   /** the cards' heading level */
   level?: 3 | 4;
 }
@@ -42,7 +39,7 @@ const andWords = (xs: readonly string[]): string => (xs.length <= 1 ? (xs[0] ?? 
 
 const EXPORT_CREDIT = 'Export credits (official export finance) are not in this build yet, so the aid below is only part of development finance.';
 
-export default function OdaToday({ iso, focusName, stage, href, onNames, level = 3 }: OdaTodayProps) {
+export default function OdaToday({ iso, focusName, stage, href, level = 3 }: OdaTodayProps) {
   const store = useSectorStore();
   const man = useSectorManifest();
   const meta = useSectorMeta();
@@ -66,23 +63,6 @@ export default function OdaToday({ iso, focusName, stage, href, onNames, level =
   };
   const code = (g: number) => model?.geos[g]?.code ?? String(g);
   const failed = man.status === 'error' || meta.status === 'error' || dev.status === 'error';
-  const names: LensNames = !has
-    ? lensNone('this data build has no aid flows')
-    : failed
-      ? lensNone('the aid flows could not be loaded')
-      : noAid
-        ? lensNone(`no aid sector is linked to ${stageLabel(stage as string)}`)
-        : !view
-        ? LENS_LOADING
-        : iso && geo === null
-          ? lensNone(`no aid data for ${focusName ?? iso}`)
-          : lensNames((iso ? odaPartners(view) : odaRecipients(view)).filter(isCountry).map(code), 10, iso);
-  const sig = `${names.status}|${names.keys.join(',')}|${names.reason ?? ''}`;
-  useEffect(() => {
-    onNames(names);
-    // the signature carries the value
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sig, onNames]);
   if (!has) return <p className="text-sm text-paper-mute" data-testid="lens-empty">This data build has no aid flows. {EXPORT_CREDIT}</p>;
   if (failed) {
     return (

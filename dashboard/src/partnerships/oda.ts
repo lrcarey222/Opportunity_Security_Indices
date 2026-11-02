@@ -93,17 +93,3 @@ export function odaView(c: SectorDevChunk, items: readonly number[], geo: number
     flows: all.filter((f) => f.v > 0).sort((a, b) => b.v - a.v || a.from - b.from || a.to - b.to),
   };
 }
-
-/** The partners an economy's aid names (donors and recipients together, largest first), as dims.geo rows. */
-export function odaPartners(v: OdaView): number[] {
-  const m = new Map<number, number>();
-  for (const r of [...v.received, ...v.given]) m.set(r.geo, (m.get(r.geo) ?? 0) + r.v);
-  return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).map(([g]) => g);
-}
-
-/** The recipients of the largest flows (no economy chosen), by total received. */
-export function odaRecipients(v: OdaView): number[] {
-  const m = new Map<number, number>();
-  for (const f of v.flows) m.set(f.to, (m.get(f.to) ?? 0) + f.v);
-  return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).map(([g]) => g);
-}

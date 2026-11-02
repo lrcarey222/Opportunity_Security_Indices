@@ -1,7 +1,8 @@
 // S5 of the Country profile, "Partnerships" (spec_country.md A4.2; IA refactor 2026-10-16, brief s.12D; the
 // three lenses 2026-10-19, aib_scenarios_spec.md s.5 C and s.6): the shared three-lens component
 // (src/partnerships) with the economy as its focus. Four kinds of partnership (URL `ptab`: trade,
-// investment, development, geopolitical), each read three ways (no cross-lens summary since 2026-11-02):
+// investment, development, geopolitical), each read three ways (no cross-lens summary since 2026-11-02, on
+// any page):
 //   Today           Trade: its largest trade partners (fact sheet tie order: average import and export
 //                   shares) and, in a disclosure, who supplies it in each sector. Investment: its IMF
 //                   direct-investment positions and factory projects (ties chunk). Development: official
@@ -24,8 +25,8 @@
 // Above the lenses (2026-10-20, strategic task spec s.19): the relationship thesis of the economy and its
 // selected partner (URL `partner`, the profile's own; the picker lists the fact sheet's partners, those the
 // model writes a thesis with first), from the strategic layer of the AIB document (src/partnerships/
-// RelationshipThesis.tsx; shown only when the bundle has the layer). Since 2026-11-02 the profile shows no
-// cross-lens summary, so no line on where that partner sits in the three lenses (the Partnerships page keeps both).
+// RelationshipThesis.tsx; shown only when the bundle has the layer). Since 2026-11-02 no page shows the
+// cross-lens summary, so no line says where that partner sits in the three lenses.
 //
 // The NEIS copy refresh (2026-10-30): as the Partner sub-section it opens with what Partner means for the
 // economy (the guide's "Where should this country rely on allies?" intro), then the economy's Partner steps,
@@ -49,13 +50,13 @@ import { useAibManifest, useAibScenario, useAibScenarioDoc, type ScenarioLoad } 
 import { aibStore } from '../../../aib/data/store.ts';
 import { compactTitle, fmtPp, fmtShare, fmtUsd, listWords, plural } from '../../../aib/derive/format.ts';
 import { hostRanksOf, investmentPairs, partnerTotals, rankWords, type PartnerTotal } from '../../../aib/derive/investment.ts';
-import { lensCoalitions, lensNodes, NO_FILTER, partnersInPairs, scenarioCompacts, type LensScenario, type ScenarioCompactRel } from '../../../aib/derive/partnerships.ts';
+import { lensCoalitions, lensNodes, NO_FILTER, scenarioCompacts, type LensScenario, type ScenarioCompactRel } from '../../../aib/derive/partnerships.ts';
 import { effectiveScenario, hasScenarios, scenarioLabel, scenarioNameOf, scenarioShockLabel } from '../../../aib/derive/scenarios.ts';
 import { compactHref, strategicCompactHref, withScenario } from '../../../aib/nav.ts';
 import { ScenarioToggle } from '../../../aib/ScenarioToggle.tsx';
 import { INVEST_COLOR, ModelledNote } from '../../../aib/views/networkParts.tsx';
-import { AGGREGATE_NAMES, agreementNames, agreementTies, alignmentWords, coalitionOf, dipPartners, tierWords } from '../../../partnerships/derive.ts';
-import { kindOf, lensNames, lensNone, LENS_LOADING, type LensId, type LensNames, type PartnershipKind } from '../../../partnerships/lenses.ts';
+import { AGGREGATE_NAMES, agreementNames, agreementTies, alignmentWords, coalitionOf, tierWords } from '../../../partnerships/derive.ts';
+import { kindOf, type LensId, type PartnershipKind } from '../../../partnerships/lenses.ts';
 import { PartnershipLenses, RankedNames, type LensPanelSpec } from '../../../partnerships/PartnershipLenses.tsx';
 import { RelationshipThesis } from '../../../partnerships/RelationshipThesis.tsx';
 import { thesisPartners } from '../../../partnerships/thesis.ts';
@@ -213,13 +214,12 @@ function tiesNamer(ties: Ties | null | undefined, fallback: (iso: string) => str
 function aibPending(sc: CountryScenario, status: 'loading' | 'ready' | 'error' | undefined): LensPanelSpec | null {
   if (!sc.doc) {
     return status === 'loading'
-      ? { names: LENS_LOADING, content: <p className="text-sm text-paper-mute">Loading the Allied Industrial Base results…</p> }
-      : { names: lensNone('the Allied Industrial Base results are not available in this build'), empty: 'The Allied Industrial Base results are not available in this build.' };
+      ? { content: <p className="text-sm text-paper-mute">Loading the Allied Industrial Base results…</p> }
+      : { empty: 'The Allied Industrial Base results are not available in this build.' };
   }
   if (sc.id === 'decoupling' || sc.load.doc) return null;
   if (sc.load.error) {
     return {
-      names: lensNone('the Managed Interdependence data could not be loaded'),
       tools: sc.tools,
       content: (
         <p className="text-sm text-paper-mute">
@@ -231,8 +231,8 @@ function aibPending(sc: CountryScenario, status: 'loading' | 'ready' | 'error' |
       ),
     };
   }
-  if (sc.load.missing) return { names: lensNone('this build has no Managed Interdependence detail'), tools: sc.tools, empty: `This data build has no Managed Interdependence detail for the partnerships: choose ${SCENARIO_NAME.decoupling}.` };
-  return { names: LENS_LOADING, tools: sc.tools, content: <Loading label="Loading the Managed Interdependence results" /> };
+  if (sc.load.missing) return { tools: sc.tools, empty: `This data build has no Managed Interdependence detail for the partnerships: choose ${SCENARIO_NAME.decoupling}.` };
+  return { tools: sc.tools, content: <Loading label="Loading the Managed Interdependence results" /> };
 }
 
 /** The scenario's note under an AIB card. */
@@ -372,26 +372,9 @@ function PairThesisCard() {
   );
 }
 
-/** The shared component with the profile's settings: no cross-lens summary on the Country profile (2026-11-02). */
-function Lenses({ kind, onKind, lenses, sc, name }: { kind: PartnershipKind; onKind: (k: PartnershipKind) => void; lenses: Record<LensId, LensPanelSpec>; sc: CountryScenario; name?: (iso: string) => string }) {
-  const { sheet } = useProfile();
-  const href = useProfileHref();
-  return (
-    <PartnershipLenses
-      idPrefix={`ptab-${kind}`}
-      kind={kind}
-      onKind={onKind}
-      kindLabel="Kind of partnership"
-      headingLevel={3}
-      focus={proseName(sheet.meta.country)}
-      noun={{ one: 'partner', many: 'partners' }}
-      name={name ?? sc.name}
-      partnerHref={href}
-      scenarioLabel={sc.label}
-      lenses={lenses}
-      summary={false}
-    />
-  );
+/** The shared component with the profile's settings. */
+function Lenses({ kind, onKind, lenses, sc }: { kind: PartnershipKind; onKind: (k: PartnershipKind) => void; lenses: Record<LensId, LensPanelSpec>; sc: CountryScenario }) {
+  return <PartnershipLenses idPrefix={`ptab-${kind}`} kind={kind} onKind={onKind} kindLabel="Kind of partnership" headingLevel={3} scenarioLabel={sc.label} lenses={lenses} />;
 }
 
 // ---- Trade -----------------------------------------------------------------------------------------------
@@ -410,7 +393,6 @@ function TradeLenses({ onKind }: { onKind: (k: PartnershipKind) => void }) {
   const t = useMemo(() => (sc.compacts ? aibTradeOf(sc.compacts, iso) : null), [sc.compacts, iso]);
 
   const today: LensPanelSpec = {
-    names: rows.length ? lensNames(ties, 10, iso) : lensNone(`${name} has no partner rows`),
     content: rows.length ? (
       <div className="space-y-4">
         <Card id="trade-today" title={`Who ${name} trades with today`}>
@@ -435,7 +417,6 @@ function TradeLenses({ onKind }: { onKind: (k: PartnershipKind) => void }) {
     empty: `${cap(name)} has no partner rows.`,
   };
   const osi: LensPanelSpec = {
-    names: lensNames(topBy(rows, 'po', 10).map((r) => r.iso3), 10, iso),
     content: (
       <div className="space-y-4">
         <Card id="po-top" title="Export markets (Partnership Opportunity)">
@@ -449,7 +430,6 @@ function TradeLenses({ onKind }: { onKind: (k: PartnershipKind) => void }) {
     ),
   };
   const aibSpec: LensPanelSpec = aibPending(sc, aib?.status) ?? {
-    names: t ? lensNames(t.pairs.map((p) => p.partner), 10, iso) : LENS_LOADING,
     tools: sc.tools,
     content: (
       <Card id="aib-trade" title="Coordinated trade in the Allied Industrial Base">
@@ -488,15 +468,12 @@ function TradeLenses({ onKind }: { onKind: (k: PartnershipKind) => void }) {
 function InvestmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void }) {
   const { sheet, aib } = useProfile();
   const sc = useCountryScenario();
-  const ties = useTies();
   const iso = sheet.iso3;
   const rows = sheet.partners.rows;
   const today: LensPanelSpec = {
-    names: !ties ? LENS_LOADING : ties.ties ? lensNames(dipPartners(ties.ties, iso), 10, iso) : lensNone('the direct-investment positions are not in this build'),
     content: <PartnersBySector part="investment" />,
   };
   const osi: LensPanelSpec = {
-    names: lensNames(topBy(rows, 'fs', 10).map((r) => r.iso3), 10, iso),
     content: (
       <div className="space-y-4">
         <Card id="fs-top" title="Friendshoring opportunities (Friendshore)">
@@ -512,11 +489,10 @@ function InvestmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void }) 
   const pending = aibPending(sc, aib?.status);
   const pairs = useMemo(() => (sc.doc && sc.flows ? investmentPairs({ nodes: sc.doc.nodes, investmentFlows: sc.flows }, { ...NO_FILTER, country: iso }) : []), [sc.doc, sc.flows, iso]);
   const aibSpec: LensPanelSpec = pending ?? {
-    names: lensNames(partnersInPairs(pairs.map((p) => ({ producer: p.investor, consumer: p.host })), iso), 10, iso),
     tools: sc.tools,
     content: <AibInvestmentLens sc={sc} pairs={pairs} />,
   };
-  return <Lenses kind="investment" onKind={onKind} lenses={{ today, osi, aib: aibSpec }} sc={sc} name={tiesNamer(ties?.ties, sc.name)} />;
+  return <Lenses kind="investment" onKind={onKind} lenses={{ today, osi, aib: aibSpec }} sc={sc} />;
 }
 
 function Bars({ rows, label, name, nodeName }: { rows: PartnerTotal[]; label: string; name: (iso: string) => string; nodeName: (id: string) => string }) {
@@ -663,8 +639,6 @@ function DevelopmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void })
   const name = proseName(sheet.meta.country);
   const iso = sheet.iso3;
   const rows = sheet.partners.rows;
-  const [odaNames, setOdaNames] = useState<LensNames>(LENS_LOADING);
-  const onOda = useCallback((n: LensNames) => setOdaNames(n), []);
   const href = useProfileHref();
   const doc = sc.doc;
   const lens = useMemo(() => (doc ? lensNodes(doc.nodes, sc.id, sc.flows) : []), [doc, sc.id, sc.flows]);
@@ -673,17 +647,11 @@ function DevelopmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void })
     [sc.compacts, iso],
   );
   const nodes = useMemo(() => buildNodesFor(lens, compactIds, iso), [lens, compactIds, iso]);
-  const buildFlows = useMemo(() => {
-    if (!doc || !sc.flows) return [];
-    const ids = new Set(nodes.map((n) => n.node.id));
-    return investmentPairs({ nodes: doc.nodes, investmentFlows: sc.flows }, { ...NO_FILTER, country: iso }).filter((p) => ids.has(p.node));
-  }, [doc, sc.flows, nodes, iso]);
   const today: LensPanelSpec = {
-    names: odaNames,
     content: (
       <div className="space-y-3">
         <Suspense fallback={<Loading label="Loading the aid flows" />}>
-          <OdaToday iso={iso} focusName={name} stage={null} href={href} onNames={onOda} level={4} />
+          <OdaToday iso={iso} focusName={name} stage={null} href={href} level={4} />
         </Suspense>
         <LinkRow>
           <Link className="link" to={devDataLink(null)}>
@@ -694,7 +662,6 @@ function DevelopmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void })
     ),
   };
   const osi: LensPanelSpec = {
-    names: lensNames(topBy(rows, 'dp', 10).map((r) => r.iso3), 10, iso),
     content: (
       <Card id="dp-top" title="Development partners (Development Potential)">
         <p className="text-xs text-paper-mute">{COUNTRY_PARTNER_SCORE_WORDS.dp} Scored for middle- and lower-income partners only.</p>
@@ -703,9 +670,7 @@ function DevelopmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void })
     ),
   };
   const pending = aibPending(sc, aib?.status);
-  const partners = [...partnersInPairs(buildFlows.map((p) => ({ producer: p.investor, consumer: p.host })), iso), ...nodes.flatMap((n) => n.hosts)];
   const aibSpec: LensPanelSpec = pending ?? {
-    names: lensNames(partners, 10, iso),
     tools: sc.tools,
     content: (
       <Card id="aib-build" title="Capacity to build in its compacts">
@@ -761,7 +726,6 @@ function GeopoliticalLenses({ onKind }: { onKind: (k: PartnershipKind) => void }
   const routes = meta.routes.filter((r) => ROUTE_WORDS[r]).map((r) => ROUTE_WORDS[r]);
   const agreements = [...meta.agreements, ...meta.eu_agreements.map((a) => `${a} (through the EU)`)];
   const today: LensPanelSpec = {
-    names: !ties ? LENS_LOADING : tiesNow ? lensNames(tiesNow.map((r) => r.iso3), 40, iso) : lensNames(fromSheet.map((r) => r.iso3), 40, iso),
     content: (
       <Card id="geo-today" title={`${cap(poss(name))} alignment today`}>
         <p>
@@ -811,12 +775,10 @@ function GeopoliticalLenses({ onKind }: { onKind: (k: PartnershipKind) => void }
   };
   const roster = manifest.countries.map((c) => ({ iso3: c.iso3, name: c.name, tier: c.tier }));
   const coalition = coalitionOf(roster);
-  const inside = meta.tier === 'core' || meta.tier === 'partner';
   const core = coalition.filter((c) => c.tier === 'core');
   const partner = coalition.filter((c) => c.tier === 'partner');
   const fsTop = topBy(sheet.partners.rows, 'fs', 8);
   const osi: LensPanelSpec = {
-    names: inside ? lensNames(coalition.map((c) => c.iso3), 200, iso) : lensNone(`${name} is outside the allied coalition the partner scores use`),
     content: (
       <div className="space-y-4">
         <Card id="geo-osi" title="The allied coalition">
@@ -852,11 +814,10 @@ function GeopoliticalLenses({ onKind }: { onKind: (k: PartnershipKind) => void }
   const pending = aibPending(sc, aib?.status);
   const co = useMemo(() => (sc.compacts && sc.doc ? lensCoalitions(sc.compacts, sc.doc.nodes, { ...NO_FILTER, country: iso }) : null), [sc.compacts, sc.doc, iso]);
   const aibSpec: LensPanelSpec = pending ?? {
-    names: co ? lensNames(co.members.map((m) => m.iso3), 60, iso) : LENS_LOADING,
     tools: sc.tools,
     content: co ? <AibCoalitionCard sc={sc} co={co} /> : <Loading label="Loading the compact coalitions" />,
   };
-  return <Lenses kind="geopolitical" onKind={onKind} lenses={{ today, osi, aib: aibSpec }} sc={sc} name={nm} />;
+  return <Lenses kind="geopolitical" onKind={onKind} lenses={{ today, osi, aib: aibSpec }} sc={sc} />;
 }
 
 function AibCoalitionCard({ sc, co }: { sc: CountryScenario; co: ReturnType<typeof lensCoalitions> }) {
