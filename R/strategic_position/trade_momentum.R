@@ -164,7 +164,7 @@ sp_trade_momentum <- function(monthly, codes, cut, bench = NULL, annual_totals =
     at <- annual_totals[as.integer(annual_totals$year) == check_year, , drop = FALSE]
     a_val <- stats::setNames(as.numeric(at$total_exports), toupper(at$reporter_iso))
     gap <- abs(s_mon[full] / a_val[full] - 1)
-    rep_tbl$annual_gap <- unname(gap[rep_tbl$reporter_iso])
+    rep_tbl$annual_gap <- as.numeric(gap[rep_tbl$reporter_iso]) # tapply gives a 1D array; vctrs >= 0.7 rejects it in case_when
   }
   rep_tbl$reporter_quality <- dplyr::case_when(
     !rep_tbl$has_monthly ~ "no_monthly_data",
