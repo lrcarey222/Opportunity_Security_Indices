@@ -502,9 +502,11 @@ inputs:
   cadence: ad-hoc
   owner: lcarey@rmi.org
   staged_from: repo
+  retain: true
   notes: 370 rows, 318 HS2022 codes in 6 indices x 39 sectors, each code with one stage and one primary row;
     built 2026-10-18 against NZIPL's Green Dictionary and the OSI basket (docs/electro_industrial_dictionary/).
-    The node taxonomy of the Allied Industrial Base (config/aib_taxonomy_dictionary.yml).
+    The node taxonomy of the Allied Industrial Base (config/aib_taxonomy_dictionary.yml). scripts/31 reads
+    it through that config (nodes.dictionary.file), a path the reference scan does not see, hence retain.
   required_by:
   - scripts/31_build_aib_trade_network.R
 - id: hs6_categories_with_essential

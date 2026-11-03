@@ -1,7 +1,8 @@
 # The committed synthetic parity fixtures of the dashboard's TypeScript engine
 # (dashboard/src/engine/__fixtures__/synthetic, written by scripts/86_export_dashboard_fixtures.R)
 # must stay what the R reference engine computes: a few scenarios are regenerated in memory and
-# compared with the committed files, object by object. A failure means R/dashboard changed: rerun
+# compared with the committed files, object by object (numbers within 1e-12, see same_leaf()). A
+# failure means R/dashboard changed: rerun
 # `Rscript scripts/86_export_dashboard_fixtures.R --set synthetic` and the TypeScript parity tests
 # (`npm test` in dashboard/). Skipped when the fixture directory is absent.
 
@@ -24,6 +25,21 @@ read_osb_file <- function(path) {
   dash_osb_decode(do.call(c, chunks))
 }
 
+# Two leaves are the same when identical, or when they differ only in doubles by rounding noise: the
+# fixtures are written on Windows R 4.4 and CI runs Linux R 4.6, where one value of the s2 tie bundle's
+# L4.po_index comes out 1.1e-16 apart. Doubles agree within 1e-12 (absolute, relative above 1), with
+# the same missing and infinite entries; types, shapes, names, integers and strings stay exact.
+same_leaf <- function(x, y, tol = 1e-12) {
+  if (identical(x, y)) return(TRUE)
+  if (is.data.frame(x) && is.data.frame(y)) {
+    return(identical(attributes(x), attributes(y)) && all(vapply(seq_along(x), function(i) same_leaf(x[[i]], y[[i]], tol), logical(1))))
+  }
+  if (!is.double(x) || !is.double(y) || !identical(attributes(x), attributes(y))) return(FALSE)
+  fin <- is.finite(x)
+  identical(fin, is.finite(y)) && identical(x[!fin], y[!fin]) &&
+    all(abs(x[fin] - y[fin]) <= tol * pmax(1, abs(x[fin])))
+}
+
 # Paths (dotted) of the leaves that differ between two nested lists.
 leaf_diffs <- function(x, y, path = NULL) {
   is_branch <- function(v) is.list(v) && !is.data.frame(v)
@@ -33,7 +49,7 @@ leaf_diffs <- function(x, y, path = NULL) {
     for (k in keys) out <- c(out, leaf_diffs(x[[k]], y[[k]], if (is.null(path)) k else paste(path, k, sep = ".")))
     return(out)
   }
-  if (identical(x, y)) character() else if (is.null(path)) "<top>" else path
+  if (same_leaf(x, y)) character() else if (is.null(path)) "<top>" else path
 }
 
 # One line per differing leaf: the columns that differ (a table) and the largest absolute difference of

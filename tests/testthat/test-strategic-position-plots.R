@@ -175,6 +175,7 @@ test_that("sp_review_country_set keeps the requested countries present, by name 
 # ---- A. country matrix -------------------------------------------------------------------------
 
 test_that("the country matrix plots the cells with both axes, within-country position by default", {
+  skip_if_not_installed("ggrepel") # the matrix labels its cells with ggrepel, which CI does not install
   tbl <- sp_fixture()
   p <- sp_plot_country_matrix(tbl, "Japan")
   expect_s3_class(p, "ggplot")
@@ -195,6 +196,7 @@ test_that("the country matrix plots the cells with both axes, within-country pos
 })
 
 test_that("the country matrix colours by recommended posture and shapes by policy alignment", {
+  skip_if_not_installed("ggrepel") # the matrix labels its cells with ggrepel, which CI does not install
   tbl <- sp_fixture()
   b <- sp_build(sp_plot_country_matrix(tbl, "United States"))
   us <- sp_country(tbl, "United States")
@@ -223,6 +225,7 @@ test_that("the country matrix colours by recommended posture and shapes by polic
 })
 
 test_that("the within-country position falls back to re-ranking when cp_within_country_pct is absent", {
+  skip_if_not_installed("ggrepel") # the matrix labels its cells with ggrepel, which CI does not install
   tbl <- sp_fixture()
   with_col <- sp_layer_data(sp_build(sp_plot_country_matrix(tbl, "Germany")), "GeomPoint")
   without <- sp_layer_data(sp_build(sp_plot_country_matrix(tbl[names(tbl) != "cp_within_country_pct"], "Germany")), "GeomPoint")
@@ -230,6 +233,7 @@ test_that("the within-country position falls back to re-ranking when cp_within_c
 })
 
 test_that("the cross-country matrix plots the cross-country percentile and notes the table's basis", {
+  skip_if_not_installed("ggrepel") # the matrix labels its cells with ggrepel, which CI does not install
   tbl <- sp_fixture()
   p <- sp_plot_country_matrix(tbl, "Germany", position = "cross_country")
   b <- sp_build(p)
@@ -242,6 +246,7 @@ test_that("the cross-country matrix plots the cross-country percentile and notes
 })
 
 test_that("the country matrix labels at most n_labels distinct cells as 'Tech - Stage'", {
+  skip_if_not_installed("ggrepel") # the matrix labels its cells with ggrepel, which CI does not install
   tbl <- sp_fixture()
   p <- sp_plot_country_matrix(tbl, "IND", n_labels = 7)
   b <- sp_build(p)
@@ -319,6 +324,7 @@ test_that("the country matrix still draws a country with no cell on both axes", 
 })
 
 test_that("the country matrix draws unclassified cells in grey with their own legend entry", {
+  skip_if_not_installed("ggrepel") # the matrix labels its cells with ggrepel, which CI does not install
   tbl <- sp_fixture()
   jp <- tbl$Country == "Japan" & !is.na(tbl$cp_within_country_pct) & !is.na(tbl$policy_priority_percentile) &
     !is.na(tbl$strategic_need_percentile)
@@ -373,6 +379,7 @@ test_that("the specialization heatmap stops when a requested country is absent",
 # ---- C. alignment heatmap ----------------------------------------------------------------------
 
 test_that("the alignment heatmap combines four panels into one ggplot", {
+  skip_if_not_installed("cowplot") # the panels are joined with cowplot, which CI does not install
   tbl <- sp_fixture()
   p <- sp_plot_alignment_heatmap(tbl, "South Korea")
   expect_s3_class(p, "ggplot")
@@ -420,6 +427,7 @@ test_that("the posture panel fills by recommended posture with policy codes and 
 })
 
 test_that("the posture panel draws without sensitive_layers_secure and with no Secure layers", {
+  skip_if_not_installed("cowplot") # the panels are joined with cowplot, which CI does not install
   tbl <- sp_fixture()
   p1 <- sp_plot_alignment_heatmap(tbl[names(tbl) != "sensitive_layers_secure"], "Japan", combine = FALSE)$posture
   expect_equal(nrow(sp_layer_data(sp_build(p1), "GeomPoint")), 0)

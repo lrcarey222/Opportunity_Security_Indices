@@ -213,7 +213,7 @@ test_that("the dictionary carries the feasibility, sub-component and HHI explain
   }
   # CM-FDI attribution names the changes (CC BY 4.0).
   src <- Filter(function(s) identical(s$id, "cmfdi"), d$sources)
-  if (length(src)) expect_match(src[[1]]$attribution, "Changes: project counts and sums of disclosed capital computed by the OSI authors")
+  if (length(src)) expect_match(src[[1]]$attribution, "Changes: project counts and sums of disclosed capital computed by the Explorer's authors")
   # Competition-authority thresholds: on the 0-1 scale, points = value x 10,000.
   hr <- d$hhi_refs
   expect_gte(length(hr), 3L)
