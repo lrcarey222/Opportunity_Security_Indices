@@ -414,13 +414,16 @@ test_that("Electric Vehicles, Solar, Wind, Nuclear and Semiconductors have Upstr
   long <- hs6_normalize_master(master)
   codes_in <- function(t, s) sort(unique(long$hs6[long$tech == t & long$supply_chain == s]))
 
-  # User decision 2026-10-11: the five Upstream cells get a trade basket, by sub-component.
+  # User decision 2026-10-11: the five Upstream cells get a trade basket, by sub-component. User decision
+  # 2026-10-30: quartz and silver ores join Solar's, as Solar Extraction (silicon metal is Solar Refining).
   ree <- c("261220", "284690", "280530") # monazite, rare-earth compounds, rare-earth metals
   battery_ores <- c("253090", "260400", "260500", "260200", "250410")
   expect_setequal(codes_in("Electric Vehicles", "Upstream"), c(battery_ores, ree))
   expect_setequal(codes_in("Wind", "Upstream"), ree)
   expect_setequal(codes_in("Nuclear", "Upstream"), c("261210", "284410"))
-  expect_setequal(codes_in("Solar", "Upstream"), "280469")
+  expect_setequal(codes_in("Solar", "Upstream"), c("280469", "250610", "261610"))
+  solar_stage <- function(code) unique(master$stage[master$tech == "Solar" & hs6_clean_code(master$hs6) == code])
+  expect_identical(c(solar_stage("250610"), solar_stage("261610"), solar_stage("280469")), c("Extraction", "Extraction", "Refining"))
   expect_setequal(codes_in("Semiconductors", "Upstream"), c("811291", "811292"))
   up <- long[long$supply_chain == "Upstream" & long$tech %in% UPSTREAM_2026_10_11, ]
   expect_true(all(up$essential))
@@ -446,9 +449,9 @@ test_that("Electric Vehicles, Solar, Wind, Nuclear and Semiconductors have Upstr
   expect_true(all(c("280461", "381800") %in% codes_in("Solar", "Midstream")))
 
   # Left out, the reasons in the notes: thorium ores in Nuclear (monazite, sold for its rare earths),
-  # cerium compounds, quartz, silver, tellurium, arsenic, rare gases, fluorspar; copper stays Grid's.
+  # cerium compounds, refined silver, tellurium, arsenic, rare gases, fluorspar; copper stays Grid's.
   expect_false("261220" %in% codes_in("Nuclear", "Upstream"))
-  expect_false(any(c("284610", "250610", "710691", "710610", "261610", "280450", "280480", "280429", "252921",
+  expect_false(any(c("284610", "710691", "710610", "280450", "280480", "280429", "252921",
                      "252922", "260300", "740311") %in% up$hs6))
 
   # Only the HS92 bridge of 8112.92 is a legacy code, beside its successor.
@@ -457,13 +460,17 @@ test_that("Electric Vehicles, Solar, Wind, Nuclear and Semiconductors have Upstr
   # Each row says why it is there (added or moved, with the decision), the caveat where the technology is
   # not the dominant use, and its share of the cell's basket.
   rows <- master[master$supply_chain == "Upstream" & master$tech %in% UPSTREAM_2026_10_11 & !as.logical(master$excluded), ]
-  expect_equal(nrow(rows), 16)
-  expect_true(all(grepl("user decision 2026-10-11", rows$note, fixed = TRUE)))
-  expect_true(all(grepl("^(added \\(basket review 2026-10|moved from Midstream \\(|legacy HS92)", rows$note)))
+  expect_equal(nrow(rows), 18)
+  expect_true(all(grepl("user decision 2026-10-(11|30)", rows$note)))
+  expect_true(all(grepl("^(added \\((basket review 2026-10|user decision 2026-10-30)|moved from Midstream \\(|legacy HS92)", rows$note)))
   current <- rows[!as.logical(rows$legacy_hs), ]
   expect_true(all(mapply(function(note, tech) grepl(paste0("% of the Comtrade 2024 ", tech, " Upstream basket"), note, fixed = TRUE),
                          current$note, current$tech)))
-  caveat <- hs6_clean_code(rows$hs6) %in% c("280530", "284690", "253090", "260400", "260200", "284410", "280469", "811292", "811291")
+  # A cell's shares add up to its whole basket (the notes were written when Solar's was silicon metal alone).
+  share <- as.numeric(sub("^.*?([0-9.]+)% of the Comtrade 2024 .*$", "\\1", current$note, perl = TRUE))
+  expect_true(all(abs(tapply(share, current$tech, sum) - 100) <= 0.3))
+  caveat <- hs6_clean_code(rows$hs6) %in% c("280530", "284690", "253090", "260400", "260200", "284410", "280469", "811292", "811291",
+                                            "250610", "261610")
   expect_true(all(grepl("kept with caveat", rows$note[caveat], fixed = TRUE)))
 })
 
