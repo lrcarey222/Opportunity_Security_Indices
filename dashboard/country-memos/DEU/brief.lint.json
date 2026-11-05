@@ -1,0 +1,23 @@
+{
+  "schema": "osi-country-brief-lint",
+  "iso3": "DEU",
+  "src_sha256": "39a108de55b1fe7dcd1ee3dbd0f885c22a916ba8bbf95d518f7cefa591788732",
+  "facts_sha256": "9129d2c0e64842107b930f0f17e01995996ba715c120a3ec36f97b07af5867a8",
+  "claims_sha256": "e94a8cab08a393cbe924e55c5f969aa31f307db8bc0d8d045f887a47c82e16f8",
+  "words": 2408,
+  "words_tables": 1870,
+  "words_sections": {
+    "1": 426,
+    "2": 744,
+    "3": 238,
+    "4": 388,
+    "5": 150,
+    "6": 143,
+    "7": 319
+  },
+  "n_claims": 1121,
+  "n_sentences": 1220,
+  "n_errors": 0,
+  "n_warnings": 0,
+  "items": []
+}

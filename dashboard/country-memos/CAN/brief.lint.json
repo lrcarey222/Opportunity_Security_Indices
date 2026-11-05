@@ -1,0 +1,23 @@
+{
+  "schema": "osi-country-brief-lint",
+  "iso3": "CAN",
+  "src_sha256": "9f108a61d110118086266308cff0a43491d084062c236e0a18c837546832e726",
+  "facts_sha256": "e3d9b5c112e3557d46399a98aae6dc101ea2a9444b67b2a4e8e1bfe61634f28e",
+  "claims_sha256": "99e0ff36a990604767b13fd0c0ba3fdbbef43e6d5eeda4e26b70237867cbddf1",
+  "words": 2498,
+  "words_tables": 1541,
+  "words_sections": {
+    "1": 381,
+    "2": 754,
+    "3": 243,
+    "4": 436,
+    "5": 161,
+    "6": 156,
+    "7": 367
+  },
+  "n_claims": 1097,
+  "n_sentences": 1176,
+  "n_errors": 0,
+  "n_warnings": 0,
+  "items": []
+}

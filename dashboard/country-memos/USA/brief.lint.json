@@ -1,0 +1,56 @@
+{
+  "schema": "osi-country-brief-lint",
+  "iso3": "USA",
+  "src_sha256": "40202c4419363a0bcbda6840a03e18f4a71c4008c52feeef5c48622ad43dfe1c",
+  "facts_sha256": "07ff1cdfdc1fab12b5625be65bb9d3f98c5003edccf66f61bf3560b97c0f64fe",
+  "claims_sha256": "d02398ecc1e6b914a9ef3b4b17512bb337c1011007af41b040fd914d8555190a",
+  "words": 2549,
+  "words_tables": 1825,
+  "words_sections": {
+    "1": 428,
+    "2": 675,
+    "3": 296,
+    "4": 407,
+    "5": 150,
+    "6": 195,
+    "7": 398
+  },
+  "n_claims": 1082,
+  "n_sentences": 1205,
+  "n_errors": 0,
+  "n_warnings": 4,
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'four' outside a token: \"Four bargains turn the American market and capital into trusted capacity that allies and t\"",
+      "section": 3,
+      "sentence_id": "s3.12"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'three' outside a token: \"Deployment need by technology, with the largest of its three measures: demand adequacy, th\"",
+      "section": 5,
+      "sentence_id": "s5.6"
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'third' outside a token: \"Second, protection sits in the top third of the country's steps for wafers and PV cells (6\"",
+      "section": 6,
+      "sentence_id": "s6.34"
+    },
+    {
+      "id": "l4",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'six' outside a token: \"Each technology is split into six supply-chain stages, and each step gets a strategic choi\"",
+      "section": 0,
+      "sentence_id": "a.3"
+    }
+  ]
+}

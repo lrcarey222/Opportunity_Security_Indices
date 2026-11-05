@@ -57,7 +57,7 @@ export const KIND_LENS_WORDS: Readonly<Record<PartnershipKind, Record<LensId, st
   },
   development: {
     today: 'Official development aid by donor and recipient (OECD). Export credits are not in this build yet.',
-    osi: 'Development Potential: middle- and lower-income partners where building supply chains together pays off most.',
+    osi: 'Development Potential, a supporting indicator: development conditions, aid, investment environment and energy use of middle- and lower-income partners. It does not set the development partnerships.',
     aib: 'Where new capacity should go under the scenario: the countries that could add capacity at the supply-chain steps that need it.',
   },
   geopolitical: {

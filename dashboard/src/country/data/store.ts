@@ -7,6 +7,7 @@ import {
   COUNTRY_DATA_DIR, COUNTRY_MANIFEST_FILE, COUNTRY_SCHEMA_VERSION, CountryContractError, checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc,
   checkTradeMonthlyDoc, type CountryEntry, type CountryManifest, type DriversDoc, type FactSheet, type MemoDoc, type TradeMonthlyDoc,
 } from '../contract.ts';
+import { checkDevpartDoc, type DevpartDoc } from '../devpart.ts';
 
 export type CountryLoadCode = 'NO_DATA' | 'NEWER' | 'CONTRACT' | 'NETWORK';
 
@@ -87,6 +88,7 @@ export class CountryStore {
   private readonly memos = new Map<string, Promise<MemoDoc>>();
   private readonly drivers = new Map<string, Promise<DriversDoc>>();
   private readonly trades = new Map<string, Promise<TradeMonthlyDoc>>();
+  private readonly devparts = new Map<string, Promise<DevpartDoc>>();
   /** settled values, for synchronous reads after the first load */
   private readonly done = new Map<string, unknown>();
   readonly calls: string[] = [];
@@ -208,6 +210,30 @@ export class CountryStore {
           throw contractError(e, `The monthly trade file of ${entry.name}`);
         });
       this.trades.set(file, p);
+    }
+    return p;
+  }
+
+  /** The development-partnership file (additive 2026-11-03; devpart.ts): the economy as donor or recipient. */
+  devpart(entry: CountryEntry): Promise<DevpartDoc> {
+    const file = entry.devpart;
+    if (!file) return Promise.reject(new CountryLoadError('NETWORK', `${entry.name} has no development-partnership file.`));
+    let p = this.devparts.get(file);
+    if (!p) {
+      this.calls.push(file);
+      p = this.source
+        .json(file)
+        .then((x) => {
+          const problems = checkDevpartDoc(x, entry.iso3);
+          if (problems.length) throw new CountryContractError(`Development partnerships ${entry.iso3}`, problems);
+          this.done.set(`devpart:${entry.iso3}`, x);
+          return x as DevpartDoc;
+        })
+        .catch((e) => {
+          this.devparts.delete(file);
+          throw contractError(e, `The development partnerships of ${entry.name}`);
+        });
+      this.devparts.set(file, p);
     }
     return p;
   }

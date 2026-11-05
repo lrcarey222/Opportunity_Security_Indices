@@ -1,0 +1,309 @@
+# Country strategy briefs ("[Country] and the Allied Industrial Base"), the successor of the Country Insights
+# policy memos (config/country_insights.yml `memo`). Read only by scripts/92_export_country_briefs.R and the
+# pure helpers R/dashboard/country/country_brief*.R. Editorial facts only: titles, section order, lint word
+# lists, the High-fence capability groups, chart colours and the source list. Every number comes from the
+# published dashboard bundles (dashboard/public/data/posture, dashboard/public/data/aib), so a brief says
+# what the Country page shows.
+#
+# 2026-11-02 (pilot, Australia): the brief replaces the five legacy sections (Energy security risks,
+# Economic opportunities, Sectoral priorities, Partnership priorities, Data notes) with a strategy brief
+# organized by the Yards & Fences choices. The spec the user gave ends after Chart 2; sections 3-6 are this
+# file's proposal and are marked `proposed: true` until the user approves them.
+
+version: 1
+
+brief:
+  title: "{country} and the Allied Industrial Base"
+  subtitle: "What to secure, build, source from partners, and deploy"
+  # the verbatim provenance line under the title (screen, PDF, Word). 2026-11-03 (17D): a quiet provenance line
+  # replaces the AI disclosure in the title area; the dashboard checks it against BRIEF_LABEL_PREFIX
+  # (dashboard/src/country/contract.ts). The disclosure is kept, at the end of the brief.
+  label: "Generated from Allied Industrial Base Explorer data; evidence, sources and caveats in the appendix. Data as of {as_of_label}."
+  disclosure: "AI-generated from the data and checked against it by an independent verifier."
+  footer: "Allied Industrial Base Explorer, Country strategy brief: {country}"
+  eyebrow: "Country strategy brief"
+  page_size: "Letter"
+  # section titles, verbatim and in order ({country}, {country_poss} = "Australia's"): the user's full
+  # specification of 2026-11-02 (Downloads/Country memo prompt.txt)
+  sections:
+    - {id: bottom_line, title: "Bottom line — {country_poss} strategic role"}
+    - {id: fences, title: "Where {country} should secure, compete and stay open"}
+    - {id: bargain, title: "{country_poss} allied bargain"}
+    # 2026-11-03: the development arm of the Allied Industrial Base, titled by the economy's perspective
+    # (development_titles: donor = high income in the AIB demand scope, recipient = not high income)
+    - {id: development, title: "{development_title}"}
+    - {id: energy, title: "Energy-system priorities"}
+    - {id: policy, title: "Is current policy pointed in the right direction?"}
+    - {id: agenda, title: "Strategic agenda — what should {country} do next?"}
+  appendix_title: "Appendix — evidence and method"
+  # Briefs are for core coalition members; these economies outside the core get one on request (2026-11-04:
+  # India, a coalition partner and a development recipient). The dashboard shows a brief for any tier.
+  beyond_core: [IND]
+  development_titles:
+    donor: "Development strategy — build trusted capacity by helping partners Catch Up"
+    recipient: "Development partnerships — what support could help {country} Catch Up?"
+    none: "Development partnerships"
+  # the development table's rows (user spec: approximately 3-5 priority partnerships)
+  development_rows: [3, 5]
+  # the shared capabilities named in section 2 (17C), most material first
+  shared_max: 4
+  # the PDF's page range (2026-11-03, spec D: about 8-9 pages of main text, then the appendix)
+  pdf_pages: [4, 16]
+  # the figures, the section each must sit in, and whether the brief must carry it (Chart 4 is conditional:
+  # only where deployment need tells a differentiated story)
+  figures:
+    strategy_map:
+      section: bottom_line
+      title: "Where {country} should secure, build, partner or stay open"
+    value_position:
+      section: fences
+      title: "Which producing capabilities are worth holding, and where {country} is strong today"
+    aib_roles:
+      section: bargain
+      title: "{country_poss} role in the Allied Industrial Base"
+    deployment:
+      section: energy
+      title: "What {country} needs to deploy faster"
+      required: false
+  # the generated tables (first-class objects built from the facts; @table <id> in the source) and the section
+  # each must sit in (appendix tables: section appendix)
+  tables:
+    policy_gaps: {section: policy, required: true}
+    development: {section: development, required: true}
+    shared_table: {section: fences}
+    review_table: {section: appendix}
+    development_table: {section: appendix}
+    development_ties: {section: development}
+    strategy_table: {section: appendix}
+    layer_table: {section: appendix}
+    partner_table: {section: appendix}
+    compact_table: {section: appendix}
+    coverage_table: {section: appendix}
+  policy_gaps_max: 10
+  high_fence_rows: [3, 5]
+  # words of the main text (sections 1-7; tables, figure captions and the appendix are not counted). 2026-11-03:
+  # the development section is paid for by tightening the others (aim of about 8-9 pages before the appendix)
+  words_total: [1800, 2600]
+  words_total_hard: [1500, 2800]
+  sentence_max_words: 40
+
+# The capabilities of the High-fence table. A group gathers Secure steps and Secure layers that one policy
+# answer covers (a layer id matches the layer in any technology; a step is "Technology|Stage"). Groups are
+# ranked by the highest supply-chain need among their members, then by member count; a Secure unit in no
+# group stands alone under its own name.
+high_fence_groups:
+  # one chain, one answer (2026-11-02 review): separation, metal-making and magnets are built or sourced together
+  - id: rare_earth_chain
+    name: "The rare-earth chain: separation, metals and magnets"
+    members: ["Electric Vehicles|Refining", "ree-separation", "ree-magnets"]
+  - id: power_system_control
+    name: "Control software of grids, inverters and batteries"
+    members: ["grid-scada", "grid-ami", "grid-inverter-firmware", "pv-inverter-firmware-dist", "bess-control", "bess-comms", "hvdc-control"]
+  - id: connected_equipment
+    name: "Remote access to wind turbines and vehicles"
+    members: ["wind-turbine-control", "ev-connected-vehicle", "ev-charging-mgmt"]
+  - id: hydrocarbon_control
+    name: "Control systems of oil and gas networks"
+    members: ["gas-ot-control", "oil-ot-control"]
+  - id: nuclear_control
+    name: "Reactor control and safety systems"
+    members: ["nuc-reactor-controls"]
+
+# The posture steps and layers behind each strategic compact: the partner-dependency column of Figure 3
+# and the steps whose single point of failure makes a supplier role essential (division). Editorial: the
+# compacts are AIB node groups, the posture is technology x stage, and nothing in the bundles maps one to
+# the other.
+compacts:
+  SC-BATTERIES: {techs: [Batteries], division: ["Batteries|Extraction", "Electric Vehicles|Extraction"]}
+  SC-EV: {techs: [Electric Vehicles], exclude: ["Electric Vehicles|Extraction", "Electric Vehicles|Refining"]}
+  SC-MAGNETS: {steps: ["Electric Vehicles|Refining", "Electric Vehicles|Components", "Wind|Components"], layers: [ree-magnets, ree-separation]}
+  SC-WIND: {techs: [Wind]}
+  SC-SOLAR: {techs: [Solar]}
+  SC-GRID: {techs: [Electric Grid]}
+  SC-NUCLEAR: {techs: [Nuclear], division: ["Nuclear|Extraction"]}
+  SC-INDUSTRY: {techs: [Green Hydrogen]}
+  SC-SEMIS: {}
+  SC-HEAT: {}
+# the visible column labels of Figure 3 (the AIB's canonical function names in the notes)
+aib_matrix:
+  columns:
+    supplier: {label: "Supplier", functions: ["Resource supplier", "Processing anchor", "Specialized technology supplier", "Scale manufacturer"]}
+    host: {label: "Capacity host", functions: ["Capacity-building host", "Scaling host", "Development host"]}
+    demand: {label: "Demand anchor", functions: ["Demand anchor"]}
+    bridge: {label: "Bridge / coordination", functions: ["Bridge / coordination partner", "Diversification partner"]}
+    relies: {label: "Relies on partners", functions: []}
+
+# Words the brief prints for the data's codes
+words:
+  # why a call is a review case (country_brief_review(); "Review / insufficient evidence")
+  review:
+    artifact: "a known data artifact"
+    review_flag: "flagged for review by the engine"
+    low_confidence: "low confidence"
+    single_indicator: "a single indicator of low confidence"
+    thin_anchor: "a thin capability anchor (corroborated by context signals only)"
+  choice: {secure: "Secure", preserve: "Preserve", catch_up: "Catch Up", partner: "Partner", accelerate: "Accelerate", watch: "Watch", not_assessed: "Not assessed"}
+  fence: {high: "High", medium: "Medium", low: "Low"}
+  mixed: {mixed_high_medium: "Mixed High/Medium", mixed_medium_low: "Mixed Medium/Low", mixed_high_low: "Mixed High/Low", mixed_high_medium_low: "Mixed High/Medium/Low"}
+  rationale: {operational_control: "control-system risk", coercive_chokepoint: "chokepoint risk", systemic_resilience: "system resilience"}
+  alignment: {aligned: "broadly aligned", under_prioritized: "needs more attention", over_prioritized: "too much intervention", misaligned: "wrong tool for the problem", deployment_gap: "deployment policy lags", mixed: "mixed signals", insufficient_data: "not enough policy evidence"}
+  delivery: {domestic: "domestic", allied: "allied", mixed: "mixed: domestic and allied", diversified_global: "diversified", diversified: "diversified"}
+  evidence: {high: "strong", medium: "moderate", low: "weak", none: "none"}
+  substitutability: {easy: "easy", moderate: "moderate", hard: "hard", impossible: "impossible"}
+  reconstitution: {lt6m: "under six months", m6to12: "six to twelve months", lt1y: "under a year", y1to3: "one to three years", gt3y: "more than three years"}
+  # AIB node names that read badly in running text (the aggregated thin nodes)
+  aib_node: {uranium-fuel-upstream--aggregated: "uranium ores and spent fuel"}
+  # the policy-alignment notes (dashboard/src/posture/grammar.ts ALIGNMENT_FLAG_LABEL)
+  alignment_flag:
+    partner_autarkic: "protection or localization in the top third"
+    fence_without_build: "heavy protection with little support (a fence without a build)"
+    watch_protection: "heavy protection or localization"
+    watch_localisation_deployment: "heavy local-content protection on the equipment of a Watch deployment"
+    watch_attention: "heavy total policy attention where the choice is Watch (protection not measured)"
+    weak_deployment_policy: "deployment policy below the middle"
+    sources_disagree: "the policy sources (industrial-policy measures and IEA records) disagree"
+  # what each mismatch means (dashboard/src/content/vocabulary.ts ALIGNMENT_EXAMPLE)
+  gap:
+    secure_under: "Vulnerability without enough policy attention"
+    under_prioritized: "Capability case without enough policy attention"
+    misaligned: "Domestic duplication where trusted specialization is the answer"
+    over_prioritized: "Localizing what is not a domestic priority"
+    deployment_gap: "Deployment needed faster than policy supports"
+  dn_family: {dn_demand: "demand adequacy", dn_policy_gap: "target gap", dn_system: "system need"}
+  partner_evidence: {high: "strong", moderate: "moderate", low: "weak", none: "none"}
+  # the matrix levels of Figure 3
+  matrix_level: {essential: "essential", role: "holds a role, substitutable", relies: "relies on partners", gap: "relies on partners; allied supply falls short"}
+  aib_status: {covered: "allied supply covers the need", gap: "allied supply falls short"}
+  anchor:
+    direct_supply_share: "a share of world supply"
+    direct_export_share: "a share of world exports"
+    operating_capacity: "operating capacity"
+    committed_pipeline: "committed investment"
+    adjacent_stage_share: "a strong position in the next step up the chain"
+    resource_base: "a resource base"
+  support:
+    feasibility: "feasibility"
+    input_cost: "input costs"
+    adjacent_stage_relative: "specialization in the adjacent step"
+    learning: "industrial learning"
+    announced_pipeline: "announced projects"
+  variant:
+    secure_control: "a control layer separable from its hardware"
+    secure_integrated: "control built partly into the hardware"
+    secure_whole: "control inseparable from the hardware"
+    secure_unclear: "a control layer whose separability from the hardware is not established"
+    secure_both: "a control path and a physical chokepoint"
+    secure_input: "a physical input a coercive supplier could withhold"
+    secure_dual_use: "a dual-use capability with national-security end uses"
+    secure_resilience: "essential, import-dependent and slow to rebuild"
+
+# Chart colours: the dashboard's NEIS choice colours (dashboard/src/posture/grammar.ts VERB_COLOR). Print
+# shows Watch in a mid grey (the dashboard's Watch outline) so dark text stays legible on white paper.
+charts:
+  colors: {secure: "#f58229", preserve: "#1889b0", catch_up: "#b4e7fe", partner: "#55c4c5", accelerate: "#a3b63b", watch: "#c5cad3", not_assessed: "#ffffff"}
+  text_on: {secure: "#111827", preserve: "#ffffff", catch_up: "#111827", partner: "#111827", accelerate: "#111827", watch: "#111827", not_assessed: "#4b5563"}
+  # the corner flags of mixed steps carry fence colours that no choice uses for its fill (2026-11-02 review:
+  # the Preserve blue read as Preserve): High orange, Medium violet, Low grey
+  yard_colors: {small: "#f58229", medium: "#7c6fd6", large: "#9ca3af"}
+  ink: "#111827"
+  muted: "#4b5563"
+  rule: "#d1d5db"
+  width_in: 7.0
+  map_height_in: 4.35
+  scatter_height_in: 3.7
+  # Figure 3's minimum height: it grows with its rows so that no cell's text leaves its tile (2026-11-05)
+  matrix_height_in: 2.9
+  deployment_height_in: 2.85
+  dpi: 200
+  label_max: 10
+
+# Lint (R/dashboard/country/country_brief_doc.R country_brief_lint()). Errors stop publication; warnings
+# must be cleared by the verifier.
+lint:
+  # never in visible copy (dashboard/src/content/VOCABULARY.md rule 11 and the retired index views)
+  banned: ["OSI", "Legacy", "legacy", "paper baseline", "NEIS baseline", "formerly", "the model", "colour", "favour", "coloured", "Strategic Index", "Economic Opportunity", "Energy Security index",
+           "Energy Security score", "Partnership Strength", "allied pick", "Grow corner", "Upgrade corner", "Exposed corner", "Stable corner",
+           "quadrant", "four corners", "upstream", "midstream", "downstream", "the model names"]
+  avoid: ["optimize", "optimise", "leverage", "unlock", "synergy", "best-in-class", "game-changing", "world-class", "cutting-edge"]
+  number_words: ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "dozen", "half", "third"]  # not quarter: "top quarter" is the position bar
+  # digits allowed outside tokens: figure and table numbers only
+  digit_ok: "(Figure|Table|Chart) [0-9]+|^[0-9]+[.]( |$)"
+
+# Sources (numbered in order of first use). A fact carries the ids of its sources; the ids resolve here.
+# Labels and editions of the shared inputs are those of the Country fact sheets (scripts/88, `sources`).
+sources:
+  neis_strategy:
+    label: "Country strategy choices by technology and supply-chain step (supply-chain need, Strategic Industrial Value, Competitive Position, deployment need, policy alignment), computed by the Explorer's authors"
+    edition: "{posture_edition}"
+    licence: "CC BY 4.0"
+  neis_aib:
+    label: "Allied Industrial Base model: roles, compacts, trade restored and new capacity across the allied coalition, computed by the Explorer's authors"
+    edition: "{aib_edition}"
+    licence: "CC BY 4.0"
+  comtrade_matrix:
+    label: "United Nations, UN Comtrade Database, HS6 bilateral trade (all reporters); reconciled by the authors"
+    edition: "2022-2024 data"
+    licence: "attribution"
+    url: "https://comtradeplus.un.org/"
+  iea_weo:
+    label: "International Energy Agency, World Energy Outlook 2025 (Stated Policies Scenario) and Global Critical Minerals Outlook: demand 2024-2035"
+    edition: "2025"
+    licence: "CC BY-NC-SA 4.0 (free dataset)"
+    url: "https://www.iea.org/"
+  cim:
+    label: "Clean Investment Monitor: clean-technology manufacturing investment and capacity (aggregated), world capital expenditure 2021-22 to 2024-25"
+    edition: null
+    licence: "attribution"
+    url: "https://www.cleaninvestmentmonitor.org/"
+  ember:
+    label: "Ember, electricity generation and capacity data (2020-2025) and 2030 Renewable Target Tracker"
+    edition: null
+    licence: "CC BY 4.0"
+    url: "https://ember-energy.org/"
+  gta_nipo:
+    label: "Global Trade Alert, New Industrial Policy Observatory: industrial-policy interventions, strength scored by the authors"
+    edition: "October 2026 extract (as of 5 October 2026)"
+    licence: "subscription (titles, dates and links only)"
+    url: "https://www.globaltradealert.org/"
+  iea_pams:
+    label: "International Energy Agency, Policies and Measures Database"
+    edition: "export of 2026-10-26"
+    licence: "attribution"
+    url: "https://www.iea.org/policies"
+  ei:
+    label: "Energy Institute, Statistical Review of World Energy 2026: oil consumption"
+    edition: "2026 (data to 2025)"
+    licence: "attribution"
+    url: "https://www.energyinst.org/statistical-review"
+  iea_ev:
+    label: "International Energy Agency, Global EV Outlook: electric-car sales"
+    edition: "2025"
+    licence: "attribution"
+    url: "https://www.iea.org/reports/global-ev-outlook-2025"
+  oecd_crs:
+    label: "OECD Creditor Reporting System: official development assistance by donor, recipient and purpose code, gross disbursements at constant prices, energy, industry and mining purpose codes only, mapped to supply-chain steps by the authors (Components and Assembly share purpose codes; no code funds recycling)"
+    edition: "2020-2024 data"
+    licence: "attribution"
+    url: "https://data-explorer.oecd.org/"
+  oci_finance:
+    label: "Oil Change International, Public Finance for Energy: export-credit and development-lender energy finance (not aid)"
+    edition: "2013-2025 data"
+    licence: "attribution"
+    url: "https://energyfinance.org/"
+  imf_dip:
+    label: "International Monetary Fund, Direct Investment Positions: outward positions (reported, else derived from the counterpart's reports)"
+    edition: "2020-2024 data"
+    licence: "attribution"
+    url: "https://data.imf.org/"
+  cm_fdi:
+    label: "fDi Markets clean-manufacturing projects (CM-FDI): factory projects by home and destination economy (Components and Assembly not separated)"
+    edition: null
+    licence: "subscription (aggregates only)"
+  dev_tools:
+    label: "Development tool families by supply-chain stage and constraint, and the development-partnership tests, set by the authors (config/development_partnerships.yml)"
+    edition: "2026-11-03"
+    licence: "CC BY 4.0"
+  yf_attributes:
+    label: "Yards & Fences node attributes: standardization, learning, industrial commons and control layers, curated by the authors from public sources"
+    edition: "2026-10-30"
+    licence: "CC BY 4.0"

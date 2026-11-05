@@ -281,7 +281,7 @@ test_that("the gzip budgets are the six-stage export's measured sizes + ~15% (th
   # 2026-10-28, first six-stage export (the largest of the check-only, scratch and published runs): largest sheet
   # 52,001 B (JPN; 51,998 published), median 37,621 B; manifest 18,560 B (published, 49 validation rows); largest
   # monthly trade file 17,043 B (USA)
-  expect_identical(COUNTRY_BUDGET_GZ, c(manifest = 21504, sheet = 60416, sheet_target = 37888, trade_monthly = 25600))
+  expect_identical(COUNTRY_BUDGET_GZ, c(manifest = 25600, sheet = 60416, sheet_target = 37888, trade_monthly = 25600))
   expect_true(all(COUNTRY_BUDGET_GZ %% 1024 == 0))
   expect_lt(COUNTRY_BUDGET_GZ[["sheet_target"]], COUNTRY_BUDGET_GZ[["sheet"]])
   measured <- c(sheet = 52001, manifest = 18560, trade_monthly = 17043)

@@ -55,10 +55,12 @@ export const COUNTRY_FILE_RE = /^(facts|drivers|trade|memo)-[A-Z0-9]{3}\.[0-9a-f
  * gzip budgets in bytes (A10), equal to R COUNTRY_BUDGET_GZ (country_check.R). Six-stage export of
  * 2026-10-28 (design E4: measured + ~15%, rounded up to a KiB): the largest sheet 51,998 B (JPN; 52,001 in
  * the check-only run; median 37,621) -> sheet 60,416 (59 KiB; was 40,960 at three stages); the manifest
- * 18,560 B -> 21,504 (21 KiB; was 20,480); the largest monthly trade file 17,043 B (USA) stays under 25,600.
+ * 18,560 B -> 21,504 (21 KiB; was 20,480), then 21,883 B (Node gzip; 21,604 in R) with the first five
+ * country strategy briefs (2026-11-04) -> 25,600 (25 KiB); the largest monthly trade file 17,043 B (USA)
+ * stays under 25,600.
  * R also warns above 37,888 B a sheet (its sheet_target line, not a limit).
  */
-export const COUNTRY_BUDGET_GZ = { manifest: 21_504, sheet: 60_416, memoJson: 25_600, memoPdf: 409_600, memoDocx: 102_400, tradeMonthly: 25_600 } as const;
+export const COUNTRY_BUDGET_GZ = { manifest: 25_600, sheet: 60_416, memoJson: 25_600, memoPdf: 409_600, memoDocx: 102_400, tradeMonthly: 25_600 } as const;
 /** Path segments under /countries that are not ISO3 codes. */
 export const COUNTRY_RESERVED = ['about'] as const;
 
@@ -260,6 +262,11 @@ export interface MemoEntry {
   rule_note?: string | null;
   /** the notice's words for this memo */
   rule_note_d?: string | null;
+  /** 'brief' for a country strategy brief (scripts/92_export_country_briefs.R, 2026-11-02); absent on the
+   *  legacy policy memos */
+  format?: typeof MEMO_FORMAT_BRIEF;
+  /** a brief's figure files (memo-<ISO3>-f<n>.<h8>.svg and .png), beside the memo files */
+  figures?: string[];
 }
 
 /** The rule notes a kept memo may carry (scripts/88; the R COUNTRY_MEMO_RULE_NOTE). */
@@ -285,6 +292,8 @@ export interface CountryEntry {
   iso_n3?: string | null;
   /** additive 2026-10-19: the companion monthly trade file (core members with monthly Comtrade data) */
   trade_monthly?: string | null;
+  /** additive 2026-11-03: the development-partnership file (devpart.ts; scripts/93), donor or recipient perspective */
+  devpart?: string | null;
 }
 
 export interface ValidationRow {
@@ -823,10 +832,25 @@ export interface MemoItem {
   refs: number[];
 }
 
-export type MemoBlock = ({ type: 'p' } & MemoItem) | { type: 'ul'; items: MemoItem[] };
+/** The colour key of an item of a brief's box of strategic choices (the choice colours of posture/grammar.ts). */
+export type MemoChoiceKind = 'secure' | 'preserve' | 'partner' | 'accelerate' | 'watch';
+export const MEMO_CHOICE_KINDS: readonly MemoChoiceKind[] = ['secure', 'preserve', 'partner', 'accelerate', 'watch'];
+
+/** Blocks of a document. The legacy memos have p and ul only; a strategy brief (format 'brief') adds
+ *  sub-headings, the box of strategic choices, tables (source numbers once, under the table) and figures
+ *  (published SVG for the screen, PNG for Word, beside the memo files). */
+export type MemoBlock =
+  | ({ type: 'p' } & MemoItem)
+  | { type: 'ul'; items: MemoItem[] }
+  | { type: 'h3'; text: string }
+  | { type: 'choices'; items: (MemoItem & { label: string; kind: MemoChoiceKind })[] }
+  | { type: 'table'; n: number; head: string[]; rows: MemoItem[][]; refs: number[] }
+  | { type: 'figure'; id: string; n: number; title: string; svg: string | null; png: string | null; alt: string | null; caption: MemoItem };
 
 export interface MemoSection {
   n: number;
+  /** a brief's section id (bottom_line, fences, deploy, aib, bargains, confidence) */
+  id?: string;
   title: string;
   blocks: MemoBlock[];
 }
@@ -855,7 +879,26 @@ export interface MemoDoc {
   placeholder?: boolean;
   /** additive 2026-10-13: the closing line under the label ("Allied Industrial Base Explorer, Country Insights: {Country}") */
   footer?: string;
+  /** a country strategy brief (2026-11-02): format 'brief', its eyebrow, the words of its tables and its
+   *  technical appendix; a brief has no summary box (summary is empty) and sections of its own */
+  format?: typeof MEMO_FORMAT_BRIEF;
+  format_version?: number;
+  eyebrow?: string;
+  /** a brief's AI disclosure (2026-11-03): shown at the end of the brief, not in the title area */
+  disclosure?: string | null;
+  words_tables?: number;
+  appendix?: { title: string; blocks: MemoBlock[] } | null;
 }
+
+/** The verbatim label of a country strategy brief (config/country_brief.yml brief.label): since 2026-11-03 (17D) a
+ *  quiet provenance line under the title; the AI disclosure (`disclosure`) closes the brief instead. */
+export const BRIEF_LABEL_PREFIX = 'Generated from Allied Industrial Base Explorer data; evidence, sources and caveats in the appendix. Data as of';
+/** The format of a country strategy brief ("[Country] and the Allied Industrial Base"). */
+export const MEMO_FORMAT_BRIEF = 'brief' as const;
+/** A brief's figure files: memo-<ISO3>-f<n>.<h8>.svg (screen, PDF) and .png (Word). */
+export const MEMO_FIGURE_FILE_RE = /^memo-[A-Z0-9]{3}-f[0-9]+\.[0-9a-f]{8}\.(svg|png)$/;
+/** True for a country strategy brief (a manifest entry or a document). */
+export const isBrief = (x: { format?: string } | null | undefined): boolean => x?.format === MEMO_FORMAT_BRIEF;
 
 /** The five memo sections, verbatim and in order (B2). */
 export const MEMO_SECTIONS = [
@@ -965,11 +1008,18 @@ export function checkCountryManifest(x: unknown): string[] {
             if (!isStr(m.rule_note_d) || !m.rule_note_d) p.add(`${at}.memo.rule_note_d: a rule note needs its words`);
             if (m.stale === true) p.add(`${at}.memo.rule_note: set on a stale memo`);
           }
-          if (c.tier !== 'core') p.add(`${at}.memo: memos are for core members only`);
+          if (c.tier !== 'core' && m.format !== MEMO_FORMAT_BRIEF) p.add(`${at}.memo: legacy memos are for core members only`);
+          if (m.format !== undefined && m.format !== MEMO_FORMAT_BRIEF) p.add(`${at}.memo.format: '${String(m.format)}'`);
+          if (m.figures !== undefined && (!Array.isArray(m.figures) || !m.figures.every((f) => isStr(f) && MEMO_FIGURE_FILE_RE.test(f)))) {
+            p.add(`${at}.memo.figures: not a list of figure file names`);
+          }
         }
       }
       if (c.trade_monthly !== null && c.trade_monthly !== undefined && (!isStr(c.trade_monthly) || !/^trade-[A-Z0-9]{3}\.[0-9a-f]{8}\.json$/.test(c.trade_monthly))) {
         p.add(`${at}.trade_monthly: not a monthly trade file name`);
+      }
+      if (c.devpart !== null && c.devpart !== undefined && (!isStr(c.devpart) || !/^devpart-[A-Z0-9]{3}\.[0-9a-f]{8}\.json$/.test(c.devpart))) {
+        p.add(`${at}.devpart: not a development-partnership file name`);
       }
       if (c.quadrants !== undefined && c.quadrants !== null) p.add(`${at}.quadrants: renamed legacy_corners in schema 3`);
       if (c.legacy_corners !== null && c.legacy_corners !== undefined) {
@@ -1638,6 +1688,70 @@ function checkItem(p: Problems, x: unknown, path: string): void {
   if (!Array.isArray(x.refs) || !x.refs.every((r) => Number.isInteger(r))) p.add(`${path}.refs: not an array of integers`);
 }
 
+/** The blocks of a strategy brief (any of MemoBlock's types). */
+function checkBriefBlocks(p: Problems, blocks: unknown, at: string): void {
+  if (!Array.isArray(blocks)) return p.add(`${at}: not an array`);
+  blocks.forEach((b, j) => {
+    const bt = `${at}[${j}]`;
+    if (!isObj(b)) return p.add(`${bt}: not an object`);
+    switch (b.type) {
+      case 'p':
+        return checkItem(p, b, bt);
+      case 'ul':
+        if (!Array.isArray(b.items)) return p.add(`${bt}.items: not an array`);
+        return b.items.forEach((it, k) => checkItem(p, it, `${bt}.items[${k}]`));
+      case 'h3':
+        return p.str(b.text, `${bt}.text`);
+      case 'choices':
+        if (!Array.isArray(b.items)) return p.add(`${bt}.items: not an array`);
+        return b.items.forEach((it, k) => {
+          checkItem(p, it, `${bt}.items[${k}]`);
+          if (isObj(it)) {
+            p.str(it.label, `${bt}.items[${k}].label`);
+            p.oneOf(it.kind, MEMO_CHOICE_KINDS, `${bt}.items[${k}].kind`);
+          }
+        });
+      case 'table':
+        if (!Array.isArray(b.head) || !b.head.every(isStr)) p.add(`${bt}.head: not an array of strings`);
+        if (!Array.isArray(b.refs) || !b.refs.every((r) => Number.isInteger(r))) p.add(`${bt}.refs: not an array of integers`);
+        if (!Array.isArray(b.rows)) return p.add(`${bt}.rows: not an array`);
+        return b.rows.forEach((r, i) => {
+          if (!Array.isArray(r)) return p.add(`${bt}.rows[${i}]: not an array`);
+          if (Array.isArray(b.head) && r.length !== b.head.length) p.add(`${bt}.rows[${i}]: ${r.length} cells, ${b.head.length} columns`);
+          r.forEach((c, k) => checkItem(p, c, `${bt}.rows[${i}][${k}]`));
+        });
+      case 'figure':
+        p.str(b.id, `${bt}.id`);
+        p.str(b.title, `${bt}.title`);
+        for (const k of ['svg', 'png'] as const) {
+          if (b[k] !== null && b[k] !== undefined && (!isStr(b[k]) || !MEMO_FIGURE_FILE_RE.test(b[k] as string))) p.add(`${bt}.${k}: not a figure file name`);
+        }
+        return checkItem(p, b.caption, `${bt}.caption`);
+      default:
+        return p.add(`${bt}.type: '${String(b.type)}'`);
+    }
+  });
+}
+
+/** The sections and the appendix of a strategy brief: numbered, titled, with brief blocks. */
+function checkBriefSections(p: Problems, x: Obj): void {
+  if (!Array.isArray(x.sections) || !x.sections.length) return p.add('memo.sections: a brief needs its sections');
+  x.sections.forEach((s, i) => {
+    const at = `memo.sections[${i}]`;
+    if (!isObj(s)) return p.add(`${at}: not an object`);
+    if (s.n !== i + 1) p.add(`${at}.n: not ${i + 1}`);
+    p.str(s.title, `${at}.title`);
+    checkBriefBlocks(p, s.blocks, `${at}.blocks`);
+  });
+  if (x.appendix !== null && x.appendix !== undefined) {
+    if (!isObj(x.appendix)) p.add('memo.appendix: not an object');
+    else {
+      p.str(x.appendix.title, 'memo.appendix.title');
+      checkBriefBlocks(p, x.appendix.blocks, 'memo.appendix.blocks');
+    }
+  }
+}
+
 /** Problems with a memo document (empty when it is valid). */
 export function checkMemoDoc(x: unknown, iso3?: string): string[] {
   const p = new Problems();
@@ -1647,11 +1761,14 @@ export function checkMemoDoc(x: unknown, iso3?: string): string[] {
   if (iso3 && x.iso3 !== iso3) p.add(`memo.iso3: ${String(x.iso3)} is not ${iso3}`);
   for (const k of ['title', 'subtitle', 'label', 'as_of', 'facts_sha256']) p.str(x[k], `memo.${k}`);
   // a schema-1 memo (written on the three-stage sheets; kept hidden as stale) carries the label of its day
-  const prefix = isNumber(x.schema_version) && Math.floor(x.schema_version) < 2 ? MEMO_LABEL_PREFIX_V1 : MEMO_LABEL_PREFIX;
+  const prefix = x.format === MEMO_FORMAT_BRIEF ? BRIEF_LABEL_PREFIX : isNumber(x.schema_version) && Math.floor(x.schema_version) < 2 ? MEMO_LABEL_PREFIX_V1 : MEMO_LABEL_PREFIX;
   if (isStr(x.label) && !x.label.startsWith(prefix)) p.add('memo.label: not the verbatim label');
   if (!Array.isArray(x.summary)) p.add('memo.summary: not an array');
   else x.summary.forEach((it, i) => checkItem(p, it, `memo.summary[${i}]`));
-  if (!Array.isArray(x.sections)) p.add('memo.sections: not an array');
+  if (x.format === MEMO_FORMAT_BRIEF) {
+    checkBriefSections(p, x);
+  } else if (x.format !== undefined) p.add(`memo.format: '${String(x.format)}'`);
+  else if (!Array.isArray(x.sections)) p.add('memo.sections: not an array');
   else {
     if (x.sections.length !== MEMO_SECTIONS.length) p.add(`memo.sections: ${x.sections.length} sections, ${MEMO_SECTIONS.length} expected`);
     x.sections.forEach((s, i) => {

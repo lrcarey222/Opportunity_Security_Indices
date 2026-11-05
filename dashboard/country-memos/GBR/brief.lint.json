@@ -1,0 +1,23 @@
+{
+  "schema": "osi-country-brief-lint",
+  "iso3": "GBR",
+  "src_sha256": "78656ec8f0dc7e85e33a90dec15b69aef1668517e1fc096273a5cb2f123178c0",
+  "facts_sha256": "8655f3811dfa470678b2b3af186b2fa12ef8d956421f75647822a33c500bda2f",
+  "claims_sha256": "84d670b94303724bd62fbdddc98c6000b52b161adf46ea297b461dbda80635ec",
+  "words": 2459,
+  "words_tables": 1772,
+  "words_sections": {
+    "1": 363,
+    "2": 746,
+    "3": 253,
+    "4": 397,
+    "5": 184,
+    "6": 157,
+    "7": 359
+  },
+  "n_claims": 1139,
+  "n_sentences": 1231,
+  "n_errors": 0,
+  "n_warnings": 0,
+  "items": []
+}

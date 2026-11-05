@@ -13,8 +13,9 @@ COUNTRY_MEMO_NO_SOURCE <- "^(caveats\\.|meta\\.(country|as_of_label|trade_year|u
 # ---- Parse -------------------------------------------------------------------------------------------
 
 # Split inline Markdown (**strong**, *em*, _em_) and {{tokens}} into nodes: list(t = "text" | "strong" |
-# "em" | "token", v, path, filter). Returns list(nodes, errors).
-country_memo_inlines <- function(text) {
+# "em" | "token", v, path, filter). Returns list(nodes, errors). `filters`: the token filters allowed (the
+# country strategy briefs, country_brief_doc.R, pass their own).
+country_memo_inlines <- function(text, filters = COUNTRY_MEMO_FILTERS) {
   errors <- character()
   tok_m <- gregexpr("\\{\\{([^{}]*)\\}\\}", text, perl = TRUE)[[1]]
   toks <- if (tok_m[1] > 0) regmatches(text, list(tok_m))[[1]] else character()
@@ -39,7 +40,7 @@ country_memo_inlines <- function(text) {
         bits <- trimws(strsplit(inner, "|", fixed = TRUE)[[1]])
         path <- bits[1]
         filter <- if (length(bits) > 1) bits[2] else NA_character_
-        if (length(bits) > 2 || (!is.na(filter) && !filter %in% COUNTRY_MEMO_FILTERS)) errors <<- c(errors, paste0(raw, ": unknown filter"))
+        if (length(bits) > 2 || (!is.na(filter) && !filter %in% filters)) errors <<- c(errors, paste0(raw, ": unknown filter"))
         if (!grepl("^[A-Za-z0-9_.-]+$", path %||% "")) errors <<- c(errors, paste0(raw, ": not a path"))
         nodes[[length(nodes) + 1]] <<- list(t = "token", raw = raw, path = path, filter = filter)
       } else {

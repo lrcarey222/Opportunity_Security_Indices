@@ -57,6 +57,8 @@ archive/site/
 # verification records stay version controlled)
 dashboard/country-memos/*/memo.ast.json
 dashboard/country-memos/*/memo.print.html
+dashboard/country-memos/*/brief.ast.json
+dashboard/country-memos/*/brief.print.html
 
 # Working paper: LaTeX build files, the duplicate build PDF, stale previews and agent notes
 paper/*.aux

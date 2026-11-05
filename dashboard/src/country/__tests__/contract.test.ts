@@ -361,7 +361,7 @@ describe.skipIf(!haveFixture())('Country contract on the synthetic fixture', () 
       expect(COUNTRY_BUDGET_GZ.sheet).toBe(rb.sheet);
       expect(COUNTRY_BUDGET_GZ.manifest).toBe(rb.manifest);
       expect(COUNTRY_BUDGET_GZ.tradeMonthly).toBe(rb.trade_monthly);
-      expect(COUNTRY_BUDGET_GZ).toMatchObject({ sheet: 60_416, manifest: 21_504, tradeMonthly: 25_600 });
+      expect(COUNTRY_BUDGET_GZ).toMatchObject({ sheet: 60_416, manifest: 25_600, tradeMonthly: 25_600 });
     });
   });
 

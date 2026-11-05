@@ -68,6 +68,7 @@ import { GROUP_WORD, partnerTableRows, slopeModel, supplierModel } from '../../d
 import { agreementsText, alignmentText, matchText, partnerReason, proseName, poss, cap, tierPhrase } from '../../derive/text.ts';
 import { csvWithSource, Fold, LinkRow, Section, useProfile } from './common.tsx';
 import { PartnersBySector } from './PartnersBySector.tsx';
+import { DevelopmentPartnershipsSummary } from './DevelopmentPartnerships.tsx';
 
 const OdaToday = lazy(() => import('../../../partnerships/OdaToday.tsx'));
 
@@ -80,8 +81,11 @@ type Row = PartnerRow & { extra: boolean };
 export const COUNTRY_PARTNER_SCORE_WORDS = {
   fs: 'Where the country could shift sourcing or investment to reduce a strategic dependency.',
   po: "Where the partner is an attractive market for the country's competitive sectors.",
-  dp: 'Where joint investment could help build a new supply base and create value in a developing partner economy.',
 } as const;
+
+/** The legacy Development Potential score's label and definition since the development partnerships (2026-11-03). */
+export const DP_SUPPORTING_DEFINITION =
+  'A supporting partner indicator describing development conditions, aid relationships, investment environment and energy use for middle- and lower-income economies. It informs the reading but is not the basis of the strategic recommendation: the development partnerships above come from the strategy, not from this score.';
 
 /** The Partner sub-section's opening (guide: "Where should this country rely on allies?"). */
 export const PARTNER_SUBSECTION_INTRO =
@@ -271,7 +275,12 @@ export function PartnershipsSection({
       <div data-testid={`ptab-${kind}`}>
         {kind === 'trade' && <TradeLenses onKind={onKind} />}
         {kind === 'investment' && <InvestmentLenses onKind={onKind} />}
-        {kind === 'development' && <DevelopmentLenses onKind={onKind} />}
+        {kind === 'development' && (
+          <div className="space-y-4">
+            <DevelopmentPartnershipsSummary />
+            <DevelopmentLenses onKind={onKind} />
+          </div>
+        )}
         {kind === 'geopolitical' && <GeopoliticalLenses onKind={onKind} />}
       </div>
       <div>
@@ -663,8 +672,8 @@ function DevelopmentLenses({ onKind }: { onKind: (k: PartnershipKind) => void })
   };
   const osi: LensPanelSpec = {
     content: (
-      <Card id="dp-top" title="Development partners (Development Potential)">
-        <p className="text-xs text-paper-mute">{COUNTRY_PARTNER_SCORE_WORDS.dp} Scored for middle- and lower-income partners only.</p>
+      <Card id="dp-top" title="Development Potential — supporting indicator">
+        <p className="text-xs text-paper-mute">{DP_SUPPORTING_DEFINITION}</p>
         <ScoreList rows={topBy(rows, 'dp')} k="dp" label="Development Potential" />
       </Card>
     ),

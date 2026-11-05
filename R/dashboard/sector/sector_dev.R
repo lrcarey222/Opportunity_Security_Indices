@@ -94,6 +94,9 @@ SECTOR_DEV_DIP_AGGREGATES <- c(
 )
 SECTOR_DEV_DIP_INDICATOR <- "Outward Direct investment, Assets (gross), Debt instruments, All entities"
 SECTOR_DEV_DIP_BASIS <- "Reported official data"
+# the total outward direct investment position, equity and debt (2026-11-04: the development-partnership ties;
+# the debt-instrument series alone is a small fraction of it, about a twentieth for Japan in Thailand)
+SECTOR_DEV_DIP_TOTAL_INDICATOR <- "Outward Direct investment, Net (assets less liabilities), All financial instruments, All entities"
 SECTOR_DEV_CONDUIT <- c("none", "counterpart", "investor", "both")
 # WDI series the builder leaves out of the development basket (stronger_development.R
 # excluded_codes) other than energy use, which enters Development Potential on its own.
@@ -342,12 +345,14 @@ sector_dev_crs_parity <- function(stage, builder, flows) {
 # the reported annual positions (USD m), IMF names -> ISO3 through the pipeline's mapping,
 # aggregates dropped, two spellings of one economy averaged. Conduit positions are kept and flagged
 # (`conduit`: which side is a conduit centre). Also: first and last year reported and their count.
-sector_dev_dip <- function(fdi_raw, country_info, years, conduit_iso) {
+# indicator: the IMF series (Friendshore's debt-instrument assets by default; the development partnerships use
+# the total outward position, SECTOR_DEV_DIP_TOTAL_INDICATOR).
+sector_dev_dip <- function(fdi_raw, country_info, years, conduit_iso, indicator = SECTOR_DEV_DIP_INDICATOR) {
   require_columns(fdi_raw, c("COUNTRY", "COUNTERPART_COUNTRY", "DV_TYPE", "INDICATOR"), label = "fdi_raw")
   year_cols <- grep("^X?[0-9]{4}$", names(fdi_raw), value = TRUE)
   year_cols <- year_cols[as.integer(sub("^X", "", year_cols)) %in% years]
   if (!length(year_cols)) stop("sector_dev_dip(): no year columns for ", paste(range(years), collapse = "-"))
-  fdi <- fdi_raw[fdi_raw$DV_TYPE == SECTOR_DEV_DIP_BASIS & fdi_raw$INDICATOR == SECTOR_DEV_DIP_INDICATOR, , drop = FALSE]
+  fdi <- fdi_raw[fdi_raw$DV_TYPE == SECTOR_DEV_DIP_BASIS & fdi_raw$INDICATOR == indicator, , drop = FALSE]
   positions <- vapply(year_cols, function(col) suppressWarnings(as.numeric(fdi[[col]])), numeric(nrow(fdi)))
   positions <- matrix(positions, nrow = nrow(fdi))
   n_reported <- rowSums(!is.na(positions))

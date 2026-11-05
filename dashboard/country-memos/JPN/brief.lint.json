@@ -1,0 +1,40 @@
+{
+  "schema": "osi-country-brief-lint",
+  "iso3": "JPN",
+  "src_sha256": "aff8ce5225ceced2739fa81d138e78a0b0a80050ee4a0aec8c50ce5a2fcbcdee",
+  "facts_sha256": "fc893e239109101e57be12c38a862d94cb2672e8005f365ffa7e6d843b18996c",
+  "claims_sha256": "c35831b9e3c0edebf3026dd1887b72ae05cda0e851223015ef11e7b46698d4fb",
+  "words": 2488,
+  "words_tables": 1926,
+  "words_sections": {
+    "1": 455,
+    "2": 688,
+    "3": 296,
+    "4": 477,
+    "5": 182,
+    "6": 99,
+    "7": 291
+  },
+  "n_claims": 1139,
+  "n_sentences": 1232,
+  "n_errors": 0,
+  "n_warnings": 2,
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "long_sentence",
+      "detail": "42 words: \"The last row rests on the allied gap alone, in a step where Japan's own call is a review c\"",
+      "section": 4,
+      "sentence_id": "s4.11"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'half' outside a token: \"Aid is called technology-coded only where codes naming the technology hold at least half o\"",
+      "section": 0,
+      "sentence_id": "a.66"
+    }
+  ]
+}

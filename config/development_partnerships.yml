@@ -1,0 +1,237 @@
+# Development partnerships (docs/development_partnerships.md): donor x recipient x technology x supply-chain
+# step pairs where a high-income economy's real supply-chain or allied-capacity need meets a developing
+# economy's credible Catch Up pathway in the same step. Transparent eligibility tests and a fixed
+# lexicographic order: no composite score. Legacy Development Potential is context only and never enters
+# a test or the order. Every bar below is an existing engine setting, named where it comes from; none is
+# tuned to produce pairs.
+version: 1
+
+income:
+  high: "High income"
+
+donor:
+  # Donors are high-income economies in the Allied Industrial Base demand scope (aib_host_screen.csv
+  # in_demand_scope; an economy missing from the screen falls back to the Core / Partner tier of the
+  # Country manifest). Outside the scope, "trusted supply" has no reference coalition.
+  scope_tiers: [core, partner]
+  # Secure counts only where allied or trusted supply is part of the delivery mode (posture detail
+  # delivery: allied, mixed; not domestic or diversified_global).
+  secure_allied_delivery: [allied, mixed]
+  # high need: the posture engine's high supply-chain need bar (posture core meta.thresholds.need).
+  # A High-fence step lacks trusted alternatives when its need family sn_trusted_alternatives (posture
+  # detail trusted_alternatives: high = few trusted alternatives) is at or above the same bar.
+  # Signals in the order the pairs are ranked by (national reasons first, then allied-only ones).
+  signals: [partner, secure_allied, high_fence_untrusted, high_need, aib_shortfall, build]
+  national: [partner, secure_allied, high_fence_untrusted, high_need]
+  allied: [aib_shortfall, build]
+  # Donor calls that cannot carry a recommendation (they make the pair a review case).
+  review_confidence: [low]
+
+recipient:
+  # evidence quality (posture core ev) and posture confidence a Catch Up must have
+  evidence_ok: [high, medium]
+  confidence_ok: [high, moderate]
+  # The engine counts "learning" as corroboration, but documents it as "context rather than capability"
+  # (R/strategic_position/pathway.R). A pathway corroborated only by context signals is a thin anchor.
+  context_only_support: [learning]
+
+# Known data artifacts: steps whose call rests on a measure the reviews found does not capture the
+# capability. They never become headline recommendations (memo or dashboard) until the data are fixed.
+review_cells:
+  - {iso3: AUS, tech: Nuclear, stage: Refining, reason: "the supply share is a trade share in uranium compounds, not conversion capacity (2026-11-02 review)"}
+
+# Capability checks: steps whose measures describe different products. The donor's need is measured on the
+# step's trade basket; a recipient's anchor can measure another product of the step (or another stage). On
+# these steps a Catch Up or Preserve must rest on an anchor that measures the product the need is about,
+# else it is a review case ("capability unverified"), not a recommendation (2026-11-03 review findings
+# 39-42). Each check takes one of:
+#   match_anchors     the anchors that measure the same product (posture detail pathway_basis);
+#   match_step_share  the recipient's trade benchmark share in another step that holds that product, at
+#                     min_share (the engine's pathway direct_share_min, 0.5% of world exports);
+#   unverifiable      the data cannot tell the product apart: every Catch Up / Preserve is a review case.
+# measured / other: the product the need is about, and what the other anchors measure (the caveat text).
+capability_checks:
+  # trade basket: magnet rare earths (config/sector_dictionary.yml basket_ev_refining); the GCIM capacity
+  # behind its capacity anchors is battery-metal refining
+  - {tech: Electric Vehicles, stage: Refining, stages: [Refining], match_anchors: [direct_export_share], measured: "magnet rare-earth refining (trade)", other: "battery-metal capacity data (critical-minerals facilities, which include mines)"}
+  # the BUILD nodes and the donors' need are rare earths; about 70% of the basket by value is copper wire
+  # rod, and adjacency reads the mining of other wind minerals. The rare-earth codes are the EV Refining
+  # basket (HS 284690, 280530), so the recipient's share there is the check.
+  - {tech: Wind, stage: Refining, stages: [Refining], match_step_share: "Electric Vehicles|Refining", min_share: 0.005, measured: "rare-earth refining (exports of the rare-earth codes)", other: "copper wire rod exports or the mining of other wind minerals"}
+  # the basket is enriched uranium (HS 2844.20); the supply share is an Atlas share in uranium compounds
+  # (yellowcake included), and adjacency is uranium mining
+  - {tech: Nuclear, stage: Refining, stages: [Refining], match_anchors: [direct_export_share], measured: "conversion and enrichment (exports of enriched uranium)", other: "uranium compounds and mining"}
+  # GCIM routes every critical-minerals facility to Refining; for several recipients these are mines
+  - {tech: Batteries, stage: Refining, stages: [Refining], match_anchors: [direct_supply_share, direct_export_share], measured: "refined battery materials (refining output and trade)", other: "critical-minerals mines in the capacity data"}
+  # the baskets mix reactor and fuel lines (HS 840110-840140) with generic boiler and steam-turbine parts,
+  # which the shares cannot tell apart
+  - {tech: Nuclear, stages: [Components, Assembly], unverifiable: true, measured: "reactor and fuel parts", other: "a basket that mixes them with generic boiler and steam-turbine parts"}
+
+# Recipient test failures that make a pair a review case (insufficient evidence); the others (income,
+# catch_up, pathway, anchor, trust) exclude it.
+review_fails: [thin_anchor, evidence, confidence, review_flag, artifact, capability]
+
+aid:
+  # OECD CRS purpose-coded aid (oecd_crs_purpose.csv): ODA is "current_oda"; OOF and PSI (official
+  # development finance that is not ODA) are reported apart, never added to it. Years, flow and the
+  # window follow config/partnership.yml development_aid.
+  # Amounts are totals over the window (constant USD millions), not annual means.
+  oda_measures: [ODA]
+  other_measures: [OOF, PSI]
+  # Direct codes that only approximate a technology (32172 Transport equipment industry, mapped to Electric
+  # Vehicles): reported as "proxy", never as technology-coded aid. The shared crosswalk is not changed.
+  proxy_codes: ["32172"]
+  # A label for words, not a selection threshold: aid is called technology-coded when codes naming only the
+  # technology hold at least this share of the aid at the step (then named + shared, then proxy).
+  technology_share_min: 0.5
+  # the donor's largest aid recipients listed in the current-aid comparison (a display length, not a test)
+  top_recipients: 10
+
+# Tool families by stage (user spec 2026-11-03 section 6). `support`: what development cooperation can
+# fund; `scale`: the commercial instruments that should carry a capability at scale.
+tools:
+  Extraction:
+    support: [geological surveys and public geodata, regulatory and permitting capacity, environmental and social safeguards, community-benefit systems, workforce and technical training, enabling power and transport infrastructure, project preparation]
+    scale: [development finance, private capital]
+  Refining:
+    support: [feasibility studies and project preparation, industrial infrastructure, environmental and permitting capability, workforce development, technical standards, testing facilities, early-stage concessional or blended finance, technology transfer and joint ventures]
+    scale: [offtake, market access, investment guarantees]
+  Components:
+    support: [supplier development, technical and vocational skills, quality systems and certification, common testing facilities, standards and interoperability, customs and trade facilitation, investment promotion, industrial infrastructure, project preparation]
+    scale: [development finance, guarantees, offtake, equity and joint ventures, export finance, procurement]
+  Assembly:
+    support: [supplier development, technical and vocational skills, quality systems and certification, common testing facilities, standards and interoperability, customs and trade facilitation, investment promotion, industrial infrastructure, project preparation]
+    scale: [development finance, guarantees, offtake, equity and joint ventures, export finance, procurement]
+  Deployment:
+    support: [grid planning, utility capacity, project preparation, procurement reform, infrastructure, permitting, local financial-market capacity, standards]
+    scale: [development finance, guarantees]
+  Recovery:
+    support: [collection systems, standards, material tracking, reverse logistics, recycling infrastructure, workforce, environmental regulation]
+    scale: [development finance, offtake]
+
+# Income groups for which development cooperation leads with finance (additionality): grants and technical
+# assistance only for public goods, the capability carried by development finance, guarantees and offtake.
+tools_lead_with_finance: [Upper middle income]
+
+# The constraint each absent pathway signal points to, and the stage tools it leads with (in order).
+# A recipient's constraints are the signals its pathway lacks (posture detail pathway_basis), raised only
+# where the engine observed the input (strategic_position_tbl pw_*, joined by scripts/93): `observed` inputs
+# must be present; `zero` inputs must all be observed and 0; `positive` needs one above 0. An input the data
+# do not cover is listed as "not covered by the data" (words.unobserved), never as a constraint.
+constraints:
+  no_capacity:
+    text: "no operating or committed plant in the capacity data"
+    when_absent: [operating_capacity, committed_pipeline]
+    zero: [pw_operating_share, pw_committed_share]
+    tools: [project preparation, feasibility studies and project preparation, investment promotion, geological surveys and public geodata, industrial infrastructure]
+  small_capacity:
+    text: "operating or committed plant below the capacity bar"
+    when_absent: [operating_capacity, committed_pipeline]
+    positive: [pw_operating_share, pw_committed_share]
+    tools: [early-stage concessional or blended finance, project preparation, feasibility studies and project preparation, investment promotion, industrial infrastructure]
+  not_operating:
+    text: "committed projects not yet operating"
+    when_present: [committed_pipeline]
+    when_absent: [operating_capacity]
+    observed: [pw_operating_share]
+    tools: [early-stage concessional or blended finance, regulatory and permitting capacity, environmental and permitting capability, project preparation]
+  know_how:
+    text: "related industrial know-how outside the top quarter"
+    when_absent: [feasibility]
+    observed: [pw_feasibility_pct]
+    tools: [workforce and technical training, workforce development, technical and vocational skills, supplier development, technology transfer and joint ventures]
+  input_costs:
+    text: "input costs outside the cheapest quarter"
+    when_absent: [input_cost]
+    observed: [pw_input_cost_pct]
+    tools: [enabling power and transport infrastructure, industrial infrastructure]
+  trade_only:
+    text: "a position that rests on trade or output shares, not on plant capacity"
+    only_anchors: [direct_supply_share, direct_export_share]
+    observed: [pw_operating_share]
+    tools: [quality systems and certification, technical standards, testing facilities, common testing facilities, standards and interoperability]
+
+# Commercial route: a recipient that is already a capacity host of the step's BUILD nodes in the AIB (the
+# AIB's treatment for them is coordinated finance, guarantees and long-term offtake) or that already
+# Preserves the step is not a grant case.
+commercial:
+  tools: [trade and offtake, private investment, export finance, development finance and guarantees]
+
+# What each side gains, in plain words: the donor by its reasons, the recipient by the step it builds.
+benefits:
+  donor:
+    partner: "a trusted second source"
+    secure_allied: "trusted supply of a High-fence input"
+    high_fence_untrusted: "an alternative to concentrated, untrusted supply"
+    high_need: "diversified supply for a high-need step"
+    aib_shortfall: "allied capacity where allied supply falls short"
+    build: "new allied capacity where the AIB finds a gap"
+  recipient:
+    Extraction: "a better-governed resource sector, with skills, infrastructure and a path to local processing"
+    Refining: "processing capacity at home, with the skills, standards and value capture of a refinery"
+    Components: "a certified supplier base and export sales of components"
+    Assembly: "factory capacity, skills and export sales of finished equipment"
+    Deployment: "affordable, reliable energy infrastructure"
+    Recovery: "a recycling industry and the materials it recovers"
+
+words:
+  signal:
+    partner: "Partner: sources from trusted partners"
+    secure_allied: "Secure, with allied or trusted supply in the delivery"
+    high_fence_untrusted: "High fence with few trusted alternatives"
+    high_need: "high supply-chain need"
+    aib_shortfall: "allied supply falls short"
+    build: "allies need new capacity (BUILD)"
+  signal_short: {partner: "Partner", secure_allied: "Secure with allied delivery", high_fence_untrusted: "few trusted alternatives", high_need: "high need", aib_shortfall: "allied supply falls short", build: "new allied capacity needed"}
+  choice: {secure: Secure, preserve: Preserve, catch_up: Catch Up, partner: Partner, accelerate: Accelerate, watch: Watch, not_assessed: Not assessed}
+  fence: {high: High, medium: Medium, low: Low}
+  anchor:
+    direct_supply_share: "a share of world supply"
+    direct_export_share: "a share of world exports"
+    operating_capacity: "operating capacity"
+    committed_pipeline: "committed investment"
+    adjacent_stage_share: "a strong position in the next step up the chain"
+    resource_base: "a resource base"
+  support:
+    feasibility: "feasibility"
+    input_cost: "input costs"
+    adjacent_stage_relative: "specialization in the adjacent step"
+    learning: "industrial learning"
+    announced_pipeline: "announced projects"
+  route: {development: "Development partnership", commercial: "Commercial route (not aid)", review: "Review / insufficient evidence"}
+  # the recipient test a pair fails, in plain words
+  fail:
+    income: "not development eligible (high income or unclassified)"
+    catch_up: "the step is not Catch Up"
+    trust: "outside the AIB trust screen"
+    pathway: "no credible pathway"
+    anchor: "no capability anchor"
+    thin_anchor: "a thin anchor (corroborated by context signals only)"
+    capability: "capability unverified (the anchor measures another product than the need)"
+    evidence: "insufficient evidence"
+    confidence: "low confidence"
+    review_flag: "flagged for review"
+    artifact: "a known data artifact"
+  evidence: {strong: strong, moderate: moderate}
+  aid_status:
+    recorded: "aid recorded at this step"
+    other_stage: "aid recorded at other steps only"
+    none: "no energy, industry or mining aid recorded for the pair"
+    not_reporting: "the donor does not report purpose-coded aid to the CRS"
+  aid_gap:
+    aligned: "Existing aid already at the step"
+    wrong_stage: "Aid concentrated at another step"
+    no_support: "Strategic partnership with no current aid"
+    no_aib: "Aid with no partnership in this analysis"
+    graduate: "Commercially mature: graduate from aid to investment and finance"
+    proxy: "Recycling aid cannot be identified in the CRS (proxy only)"
+    stage_wide: "Stage-wide aid only: the technology is not identified"
+    stage_wide_commercial: "Commercially mature, with stage-wide aid only"
+  # an input the engine did not observe, by the constraint it would have raised
+  unobserved:
+    no_capacity: "plant capacity not covered by the data"
+    not_operating: "plant capacity not covered by the data"
+    know_how: "related know-how not covered by the data"
+    input_costs: "input costs not covered by the data"
+    trade_only: "plant capacity not covered by the data"
+  stage_display: {Extraction: Extraction, Refining: "Refining & Processing", Components: "Component Manufacturing", Assembly: "Final Assembly & Equipment", Deployment: "Deployment & Use", Recovery: "Recovery & Recycling"}

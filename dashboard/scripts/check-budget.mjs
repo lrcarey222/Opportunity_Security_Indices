@@ -20,7 +20,7 @@
 //                           embedded explorer's code beyond the profile + the sector manifest, meta
 //                           and facts (a country measure's map); never in the profile's first view <= 900 kB
 //   each Country file       fact sheet 59 kB, manifest 21 kB, memo JSON 25 kB / PDF 400 kB / DOCX 100 kB
-//   Country data            public/data/country/** (every file)                                <= 16 MB
+//   Country data            public/data/country/** (every file)                                <= 23 MB
 //   Compacts landing        entry + AibLayout + the strategic compacts view (2026-10-20; the
 //                           compacts index view in a build without it) + manifest + document   <= 700 kB
 //   Compacts workstreams    entry + AibLayout + the compacts index view + manifest + document  <= 700 kB
@@ -30,7 +30,7 @@
 //                           page that shows the scenario; never on the landing)                <= 250 kB
 //   Compacts data           public/data/aib/* (manifest + the compacts document + the scenario
 //                           files)                                                             <= 2 MB
-//   All data                Strategic + Sector + Country + Compacts                            <= 42.5 MB
+//   All data                Strategic + Sector + Country + Compacts                            <= 52 MB
 //
 // Fails above a limit, when a manifest lists a chunk file that does not exist, or when a route chunk
 // the figures need cannot be found in the build. A data bundle that is absent (CI without the
@@ -68,8 +68,12 @@ const LIMITS = {
   countryVariableChart: 900 * KB,
   // 10 MB until 2026-10-14; 11 MB once the 31 memos (PDF, Word, Markdown, JSON) were published (10.23 MB);
   // 16 MB once the six-stage Country export (2026-10-28: 66 sectors a sheet, 219 sheets) measured 13.58 MB
-  // (2026-10-29 build): the measured size + ~15% (design E4)
-  countryData: 16 * MB,
+  // (2026-10-29 build): the measured size + ~15% (design E4); 23 MB once the first five country strategy
+  // briefs (AUS, JPN, KOR, IND, USA, about 1.2 MB each with their PDF, Word file and figures, the PNGs
+  // palette-compressed) took it to 19.87 MB (2026-11-04); 28 MB once the next four (DEU, GBR, FRA, CAN)
+  // took it to 24.08 MB (2026-11-05): measured + ~15%. Each further brief adds about 1.05 MB, so the
+  // rollout to every core member needs this raised again.
+  countryData: 28 * MB,
   aibLanding: 700 * KB,
   aibCompact: 900 * KB,
   aibData: 2 * MB,
@@ -80,8 +84,10 @@ const LIMITS = {
   // six-stage Sector (scripts/87) and Country (scripts/88) exports brought it to 36.87 MB (2026-10-29:
   // Strategic 17.19 + Sector 5.68 + Country 13.58 + Compacts 0.43): the measured size + ~15% (design E4).
   // public/data/posture/ counts here since 2026-10-29 (posture schema 2: 38.72 MB in all, under the limit);
-  // its per-file raw limits stay in src/posture/__tests__/budget.test.ts and the R exporter.
-  allData: 42.5 * MB,
+  // its per-file raw limits stay in src/posture/__tests__/budget.test.ts and the R exporter. 52 MB once the
+  // first five country strategy briefs took it to 45.22 MB (2026-11-04; Country 19.87 MB): measured + ~15%;
+  // 57 MB once the next four briefs took it to 49.43 MB (2026-11-05; Country 24.08 MB).
+  allData: 57 * MB,
   // the posture bundle (scripts/91, schema 2, 2026-10-29): manifest + core + 214 drawer documents measured
   // 1.87 MB on the wire; the measured size + ~15% (design E4). 2.4 MB since 2026-10-31: the rebuilt bundle
   // (Atlas 2024, the new basket and method) carries the Yards & Fences drawer evidence and measured 2.28 MB;
@@ -90,10 +96,17 @@ const LIMITS = {
 };
 // spec_country.md A10 (the same numbers as COUNTRY_BUDGET_GZ in src/country/contract.ts)
 // manifest: 15 kB until 2026-10-14; 20 kB once the 31 memo entries (2.8 kB gz) were added (16.9 kB);
-// 21 kB at six stages (2026-10-28: 18,560 B). sheet: 40 kB until the six-stage export (2026-10-28), whose
+// 21 kB at six stages (2026-10-28: 18,560 B); 25 kB once the first five brief entries (their figure lists)
+// took it to 21,883 B at Node's gzip (21,604 in R; 2026-11-04). sheet: 40 kB until the six-stage export (2026-10-28), whose
 // largest sheet is 51,998 B (JPN; 50.0 kB here at gzip level 9): 59 kB (60,416 B; design E4)
 // tradeMonthly (2026-10-19): the companion monthly trade file of a core member (trade-<ISO3>)
-const COUNTRY_FILE_LIMIT = { manifest: 21 * KB, sheet: 59 * KB, memoJson: 25 * KB, memoPdf: 400 * KB, memoDocx: 100 * KB, tradeMonthly: 25 * KB };
+// devpart (2026-11-03): the development-partnership file of an economy (devpart-<ISO3>, scripts/93), loaded only
+// with the Allied strategy section (16.8 kB measured for India, the largest, gzipped)
+const COUNTRY_FILE_LIMIT = { manifest: 25 * KB, sheet: 59 * KB, memoJson: 25 * KB, memoPdf: 400 * KB, memoDocx: 100 * KB, tradeMonthly: 25 * KB, devpart: 40 * KB };
+// a country strategy brief (memo format 'brief', scripts/92, 2026-11-02) carries four figures: its Word file
+// embeds them as PNG (Australia pilot of 2026-11-03, 12 pages with the appendix tables: JSON 21.2 kB gz, PDF
+// 643 kB, DOCX 486 kB), and each figure ships as SVG (screen, up to about 40 kB) and PNG (about 150 kB)
+const BRIEF_FILE_LIMIT = { memoJson: 60 * KB, memoPdf: 900 * KB, memoDocx: 700 * KB, figure: 300 * KB };
 const TARGET_APP = 350 * KB;
 // the same numbers as SECTOR_BUDGET_GZ (src/sector/contract.ts) and R SECTOR_BUDGET_GZ (sector_chunks.R).
 // Schema 2 (2026-10-28, design E4): sector-facts 600 -> 670 kB (577.4 kB measured), sector-trade
@@ -238,7 +251,7 @@ const sectorChunk = (name) => sectorChunks.find((c) => c.name === name)?.wire ??
 // Country (scripts/88): JSON and Markdown files travel gzipped; PDF and Word files are compressed already
 // (counted as they are). Every file under public/data/country counts towards the Country total.
 const countryManifest = readManifest(join(countryDir, 'manifest.json'));
-const countryWire = (file) => (/\.(pdf|docx)$/.test(file) ? statSync(file).size : gz(file));
+const countryWire = (file) => (/\.(pdf|docx|png)$/.test(file) ? statSync(file).size : gz(file));
 function walkFiles(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walkFiles(join(dir, d.name)) : [join(dir, d.name)]));
@@ -256,9 +269,11 @@ const countryListed = (name) => {
 };
 const countrySheets = (countryManifest?.countries ?? []).filter((c) => c.file).map((c) => [c.file, countryListed(c.file)]);
 const countryTrades = (countryManifest?.countries ?? []).filter((c) => c.trade_monthly).map((c) => [c.trade_monthly, countryListed(c.trade_monthly)]);
+const countryDevparts = (countryManifest?.countries ?? []).filter((c) => c.devpart).map((c) => [c.devpart, countryListed(c.devpart)]);
 const countryMemos = (countryManifest?.countries ?? [])
   .filter((c) => c.memo)
-  .map((c) => ({ iso3: c.iso3, json: countryListed(c.memo.json), pdf: countryListed(c.memo.pdf), docx: countryListed(c.memo.docx) }));
+  .map((c) => ({ iso3: c.iso3, brief: c.memo.format === 'brief', json: countryListed(c.memo.json), pdf: countryListed(c.memo.pdf), docx: countryListed(c.memo.docx),
+    figures: (c.memo.figures ?? []).map((f) => [f, countryListed(f)]) }));
 const maxOf = (xs) => xs.reduce((m, x) => Math.max(m, x), 0);
 
 // Posture (scripts/91; 2026-10-29): the Country profile loads the posture manifest, the core and its economy's
@@ -348,6 +363,8 @@ figure(
     ['largest fact sheet', maxSheet],
     ['posture manifest + core', postureManifestSize + postureCoreSize],
     ['largest posture detail', postureMaxDetail],
+    // the Allied strategy section always mounts, so the development-partnership file is part of the first view
+    ['largest development-partnership file', maxOf(countryDevparts.map(([, n]) => n))],
   ],
   LIMITS.countryProfile,
   [countryManifest ? '' : 'Country data absent: code only', postureNote].filter(Boolean).join('; '),
@@ -377,10 +394,13 @@ if (keys.countryVariableChart) {
 if (countryManifest && countryManifestSize > COUNTRY_FILE_LIMIT.manifest) fail(`Country manifest ${size(countryManifestSize)} > ${size(COUNTRY_FILE_LIMIT.manifest)}`);
 for (const [f, n] of countrySheets) if (n > COUNTRY_FILE_LIMIT.sheet) fail(`${f} ${size(n)} > ${size(COUNTRY_FILE_LIMIT.sheet)} (fact sheet)`);
 for (const [f, n] of countryTrades) if (n > COUNTRY_FILE_LIMIT.tradeMonthly) fail(`${f} ${size(n)} > ${size(COUNTRY_FILE_LIMIT.tradeMonthly)} (monthly trade)`);
+for (const [f, n] of countryDevparts) if (n > COUNTRY_FILE_LIMIT.devpart) fail(`${f} ${size(n)} > ${size(COUNTRY_FILE_LIMIT.devpart)} (development partnerships)`);
 for (const m of countryMemos) {
-  for (const [k, lim] of [['json', COUNTRY_FILE_LIMIT.memoJson], ['pdf', COUNTRY_FILE_LIMIT.memoPdf], ['docx', COUNTRY_FILE_LIMIT.memoDocx]]) {
+  const L = m.brief ? BRIEF_FILE_LIMIT : COUNTRY_FILE_LIMIT;
+  for (const [k, lim] of [['json', L.memoJson], ['pdf', L.memoPdf], ['docx', L.memoDocx]]) {
     if (m[k] > lim) fail(`memo ${m.iso3} ${k.toUpperCase()} ${size(m[k])} > ${size(lim)}`);
   }
+  for (const [f, n] of m.figures) if (n > BRIEF_FILE_LIMIT.figure) fail(`${f} ${size(n)} > ${size(BRIEF_FILE_LIMIT.figure)} (brief figure)`);
 }
 const countryData = countryFiles.reduce((s, f) => s + countryWire(f), 0);
 if (countryManifest) figure('Country data', [['manifest + sheets + drivers + memos', countryData]], LIMITS.countryData);

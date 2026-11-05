@@ -1,0 +1,40 @@
+{
+  "schema": "osi-country-brief-lint",
+  "iso3": "IND",
+  "src_sha256": "f5793b5142cdd7973195050a9f794468192156fc955798347bbd20c17c28ee03",
+  "facts_sha256": "7952ba7c108fc6d7fc806e2ad2cc1a0febea23bd583fd05ddca970e185e2b3d7",
+  "claims_sha256": "37e0899ce9eef93d793bdb181ba3048c210dda0dee336725e6fdf1e1ee5b39be",
+  "words": 2587,
+  "words_tables": 1577,
+  "words_sections": {
+    "1": 496,
+    "2": 645,
+    "3": 311,
+    "4": 343,
+    "5": 277,
+    "6": 168,
+    "7": 347
+  },
+  "n_claims": 969,
+  "n_sentences": 1139,
+  "n_errors": 0,
+  "n_warnings": 2,
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'one' outside a token: \"It holds no measurable position in battery mineral mining and only a weak one in EV minera\"",
+      "section": 2,
+      "sentence_id": "s2.54"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'one' outside a token: \"Overhead conductors show the gap: the cables layer of India's grid equipment reads Watch, \"",
+      "section": 2,
+      "sentence_id": "s2.62"
+    }
+  ]
+}

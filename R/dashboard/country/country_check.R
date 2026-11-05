@@ -18,10 +18,11 @@ COUNTRY_QUADRANT_IDS <- c("legacy_grow", "legacy_upgrade", "legacy_exposed", "le
 # - sheet_target, the WARN line (not a limit): spec A10's 25 of 40 kB (0.625) of the sheet limit, 37,888
 #   (37 KiB); about half of the sheets are above it (about 109 of 219), as at three stages (102 of 219 above 25,600).
 # - manifest: 15 kB until 2026-10-14, 20 kB once the 31 memo entries (2.8 kB gz) took it to 16.9 kB; six-stage
-#   18,560 B (the no_es_cells and cmfdi_stages fields and more validation rows; 91% of 20,480) -> 21,504 (21 KiB).
+#   18,560 B (the no_es_cells and cmfdi_stages fields and more validation rows; 91% of 20,480) -> 21,504 (21 KiB);
+#   21,604 B once the first five country strategy briefs listed their figures (2026-11-04) -> 25,600 (25 KiB).
 # - trade_monthly (2026-10-19, the companion monthly trade file of a core member, trade-<ISO3>): six-stage
 #   largest 17,043 B (USA, 38 sectors; three-stage about 14 kB): unchanged.
-COUNTRY_BUDGET_GZ <- c(manifest = 21504, sheet = 60416, sheet_target = 37888, trade_monthly = 25600)
+COUNTRY_BUDGET_GZ <- c(manifest = 25600, sheet = 60416, sheet_target = 37888, trade_monthly = 25600)
 COUNTRY_CLASSES <- c("aligned_high", "gap", "policy_ahead", "aligned_low", "partial")
 COUNTRY_CAVEAT_IDS <- c("relative_scores", "baseline", "rankability", "imputed_driver", "policy_pams_only", "no_si", "near_tie",
                         "inherited_alignment", "assumed_zero_production", "cmfdi_coverage", "trade_mirror", "few_economies", "cat_eu_bloc",

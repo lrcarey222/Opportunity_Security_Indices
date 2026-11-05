@@ -861,6 +861,11 @@ digest_md5 <- function(txt) {
 old_manifest <- if (file.exists(file.path(out_dir, "manifest.json"))) tryCatch(jsonlite::fromJSON(file.path(out_dir, "manifest.json"), simplifyVector = FALSE), error = function(e) NULL) else NULL
 old_memo <- list()
 if (!is.null(old_manifest)) for (c in old_manifest$countries) if (!is.null(c$memo)) old_memo[[c$iso3]] <- c$memo
+# The development-partnership files (scripts/93_export_development_partnerships.R, 2026-11-03) cite the posture
+# and AIB bundles, not the fact sheet: an entry whose file still exists is carried as it is (rerun scripts/93
+# after scripts/88 and 91 to rebuild them).
+old_devpart <- list()
+if (!is.null(old_manifest)) for (c in old_manifest$countries) if (!is.null(c$devpart) && file.exists(file.path(out_dir, c$devpart))) old_devpart[[c$iso3]] <- c$devpart
 
 # Memos kept under an earlier quadrant rule (the user's decision of 2026-10-15; country_memo_rule_status()
 # in R/dashboard/country/country_memo.R). A published memo whose fact sheet changed is re-checked: its
@@ -925,8 +930,13 @@ for (i in seq_len(nrow(roster))) {
       files[[tfile]] <- trade_texts[[iso]]
     } else tfile <- NULL
     om <- old_memo[[iso]]
-    if (!is.null(om) && identical(ro$tier, "core") && file.exists(file.path(out_dir, om$json))) {
-      if (country_memo_under_revision(om, cfg$memo_revision)) {
+    # legacy memos are for core members; a brief can be for any economy (config/country_brief.yml beyond_core)
+    if (!is.null(om) && (identical(ro$tier, "core") || identical(om$format, "brief")) && file.exists(file.path(out_dir, om$json))) {
+      if (identical(om$format, "brief")) {
+        # a country strategy brief (scripts/92_export_country_briefs.R, 2026-11-02) cites the posture and AIB
+        # bundles, not the fact sheet: kept as it is; scripts/92 rebuilds and re-signs it when those change
+        om$stale <- isTRUE(om$stale)
+      } else if (country_memo_under_revision(om, cfg$memo_revision)) {
         # written before the revision cut-off (config memo_revision): hidden as "being revised"
         om$stale <- TRUE
         om["rule_note"] <- list(NULL)
@@ -950,6 +960,7 @@ for (i in seq_len(nrow(roster))) {
   e <- country_manifest_entry(as.list(ro), s, file, bytes, memo)
   e$drivers <- if (!is.null(s)) dfile else NULL
   e$trade_monthly <- if (!is.null(s)) tfile else NULL
+  e$devpart <- old_devpart[[iso]]
   entries[[length(entries) + 1]] <- e
 }
 
@@ -1035,7 +1046,7 @@ if (partial && !is.null(old_manifest)) {
   manifest$counts$sheets <- sum(vapply(allc, function(c) !is.null(c$file), TRUE))
   mtxt <- as.character(country_json(manifest))
 }
-listed <- unlist(lapply(manifest$countries, function(c) c(c$file, c$drivers, c$trade_monthly, c$memo$json, c$memo$pdf, c$memo$docx, c$memo$md)))
+listed <- unlist(lapply(manifest$countries, function(c) c(c$file, c$drivers, c$trade_monthly, c$devpart, c$memo$json, c$memo$pdf, c$memo$docx, c$memo$md)))
 old <- list.files(out_dir, pattern = "^(facts|drivers|trade|memo)-[A-Z0-9]{3}\\.[0-9a-f]{8}\\.(json|pdf|docx|md)$")
 stale_files <- setdiff(old, listed)
 if (length(stale_files)) unlink(file.path(out_dir, stale_files))

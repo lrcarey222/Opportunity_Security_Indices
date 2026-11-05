@@ -1,0 +1,40 @@
+{
+  "schema": "osi-country-brief-lint",
+  "iso3": "KOR",
+  "src_sha256": "fb44a0835bf65f9ba65d97dc05d06997e9f275403085e86c5d5f07a61e754ab5",
+  "facts_sha256": "00c2538fce8fb8b1fe780e17b4e21db53599dbaefcd6b872d9636d3b9ddd1ab3",
+  "claims_sha256": "b5fa055f789abf723dccc203a1cddc5969533183ff56edc0af1aa1ac45bbac2a",
+  "words": 2465,
+  "words_tables": 1862,
+  "words_sections": {
+    "1": 453,
+    "2": 652,
+    "3": 263,
+    "4": 481,
+    "5": 145,
+    "6": 125,
+    "7": 346
+  },
+  "n_claims": 1135,
+  "n_sentences": 1253,
+  "n_errors": 0,
+  "n_warnings": 2,
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'one' outside a token: \"It is the largest allied holder of battery components and of gas turbines and LNG plant, a\"",
+      "section": 1,
+      "sentence_id": "s1.3"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'one' outside a token: \"Of the partners, 6 receive it at other steps and 3 at no supply-chain step; a partner with\"",
+      "section": 4,
+      "sentence_id": "s4.83"
+    }
+  ]
+}
