@@ -23,7 +23,7 @@ import type { Bundle, Table } from '../../engine/types.ts';
 import { SUPPLY_STAGES } from '../../lib/stages.ts';
 import { median } from '../../views/Space/derive.ts';
 import {
-  checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc, COUNTRY_BUDGET_GZ, COUNTRY_CELL_KEYS, countryMedianOf, legacyCornerOf, NO_ES_CELLS, stageOfCellKey,
+  checkCountryManifest, checkDriversDoc, checkFactSheet, checkMemoDoc, COUNTRY_BUDGET_GZ, isBrief, COUNTRY_CELL_KEYS, countryMedianOf, legacyCornerOf, NO_ES_CELLS, stageOfCellKey,
   type CountryManifest, type FactSheet,
 } from '../contract.ts';
 
@@ -105,8 +105,9 @@ describe.skipIf(!wanted || !hasData)('Country Insights on the real export', () =
     expect(sheets.get('USA')!.pick?.cell).toBe('solar-components');
     expect(picksByStage.get('Deployment') ?? 0).toBe(0);
     expect(picksByStage.get('Extraction') ?? 0).toBeGreaterThan(0);
-    // the memos written on three-stage sheets stay hidden (being revised, design K3)
-    for (const e of m.countries.filter((c) => c.memo)) expect(e.memo!.stale, e.iso3).toBe(true);
+    // the memos written on three-stage sheets stay hidden (being revised, design K3); a country strategy
+    // brief (format 'brief', scripts/92, 2026-11-02) replaces a country's memo and may be shown
+    for (const e of m.countries.filter((c) => c.memo && !isBrief(c.memo))) expect(e.memo!.stale, e.iso3).toBe(true);
   });
 
   it('the gzip sizes are within the six-stage budgets (COUNTRY_BUDGET_GZ, as R measures: gzip of the JSON text)', () => {
@@ -215,13 +216,20 @@ describe.skipIf(!wanted || !hasData)('Country Insights on the real export', () =
     }
   }, 600_000);
 
-  it('every memo entry has its files and a facts_sha256 matching its sheet', () => {
+  it('every memo entry has its files and a facts_sha256 matching its sheet (a brief: its own facts and its figures)', () => {
     for (const e of m.countries.filter((c) => c.memo)) {
       const memo = e.memo!;
-      expect(e.tier, e.iso3).toBe('core');
+      // legacy memos are for core members; a brief can be for any economy (config/country_brief.yml beyond_core)
+      if (!isBrief(memo)) expect(e.tier, e.iso3).toBe('core');
       for (const f of [memo.json, memo.pdf, memo.docx, memo.md]) if (f) expect(existsSync(join(countryDir, f)), f).toBe(true);
       const doc = readJson<{ facts_sha256: string }>(memo.json);
       expect(checkMemoDoc(doc, e.iso3)).toEqual([]);
+      if (isBrief(memo)) {
+        // a brief cites the posture and AIB bundles (its own facts hash), and ships its figures beside it
+        expect(doc.facts_sha256, e.iso3).toBe(memo.facts_sha256);
+        for (const f of memo.figures ?? []) expect(existsSync(join(countryDir, f)), f).toBe(true);
+        continue;
+      }
       if (!memo.stale) {
         expect(doc.facts_sha256, e.iso3).toBe(memo.facts_sha256);
         // kept under the earlier quadrant rule (scripts/88): written on an earlier sheet, with its notice

@@ -26,6 +26,7 @@ import { STRATEGY_SECTIONS } from '../../derive/strategyPage.ts';
 import { policyBehaviour } from '../../derive/framing.ts';
 import { cap, poss, proseName } from '../../derive/text.ts';
 import { AlliedCompactsSection } from './AlliedCompacts.tsx';
+import { DevelopmentPartnershipsSection } from './DevelopmentPartnerships.tsx';
 import { BasisTag, Fold, Section, useProfile } from './common.tsx';
 import { NipoCard, PolicyCoverage } from './PrioritiesSection.tsx';
 
@@ -183,7 +184,10 @@ export function PolicyAlignmentSection() {
 
 // ---- 6 Allied Strategy ---------------------------------------------------------------------------------
 
-/** The compacts in which the economy holds a role (the AIB results; the framework is not needed). */
+/**
+ * The compacts in which the economy holds a role (the AIB results; the framework is not needed), then its
+ * development partnerships (2026-11-03: the development arm of the AIB, donor or recipient perspective).
+ */
 export function AlliedSection() {
-  return <AlliedCompactsSection />;
+  return <AlliedCompactsSection extra={<DevelopmentPartnershipsSection />} />;
 }

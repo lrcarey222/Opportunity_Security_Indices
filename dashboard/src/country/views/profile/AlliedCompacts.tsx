@@ -45,7 +45,7 @@ function roleWords(x: { member: boolean; associate: boolean; roles: readonly str
   return x.member ? 'coalition member' : x.associate ? 'associate' : 'named in the compact';
 }
 
-export function AlliedCompactsSection({ basis }: { basis?: ReactNode }) {
+export function AlliedCompactsSection({ basis, extra }: { basis?: ReactNode; extra?: ReactNode }) {
   const { sheet, aib } = useProfile();
   const name = proseName(sheet.meta.country);
   const iso = sheet.iso3;
@@ -178,6 +178,7 @@ export function AlliedCompactsSection({ basis }: { basis?: ReactNode }) {
       }
     >
       {body}
+      {extra}
       <LinkRow>
         <Link className="link" to={rolesHref(iso, sid)}>
           See all country roles &rarr;

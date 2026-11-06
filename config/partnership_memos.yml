@@ -1,0 +1,126 @@
+# Partnership Memos (docs/partnership_memos.md): a bilateral reading of the six-stage strategic-position engine
+# (scripts/26) and the Allied Industrial Base strategic layer (scripts/33), plus a curated, date-stamped external
+# evidence layer (data/reference/partnership_evidence/). Run: scripts/34_build_partnership_memo.R --pair USA_JPN.
+#
+# Every rule below is read by R/partnerships/*.R. Thresholds mirror the engine's where one exists, and the
+# comment names it. Nothing here is specific to one pair except the `pairs` block.
+
+version: 1
+
+pairs:
+  USA_JPN:
+    a: USA
+    b: JPN
+    a_name: "the United States"
+    a_short: "US"
+    a_ref: "the US"        # prose reference
+    b_name: "Japan"
+    b_short: "Japan"
+    b_ref: "Japan"
+    title: "United States–Japan Strategic Energy & Industrial Partnership"
+
+inputs:
+  # AIB scenario whose compact missions and roles are read (Managed Interdependence is the Explorer default).
+  aib_scenario: managed
+  # Economies treated as coercive suppliers at node level (the engine uses its bloc rule at cell level).
+  coercive_suppliers: [CHN, HKG, MAC, RUS]
+
+thresholds:
+  need_high: 0.67              # decision_framework.supply_chain_need threshold
+  deployment_need_high: 0.60   # decision_framework.deployment_need threshold
+  prize_high: 0.60             # decision_framework.prize_threshold
+  chokepoint_share: 0.50       # a coercive supplier (or the largest non-pair supplier, if coercive) at or above this share of world supply
+  severe_chokepoint_share: 0.70  # gate for the heaviest instruments (price floors, strategic equity)
+  trusted_capacity_min: 0.30   # = strategic_position partner_trusted_capacity: trusted suppliers below this share = allied capacity short
+  both_dependent_coercive_share: 0.40  # both countries import at least this share from coercive suppliers = a shared dependence
+  bilateral_share_working: 0.30  # the buyer already takes >= 30% of its imports from the supplier: the market already works
+  bilateral_share_partial: 0.10
+  node:
+    strong_share: 0.10         # AIB anchor line
+    presence_share: 0.02       # AIB presence line
+    specialist_rca: 1.5        # AIB specialist line
+    material_net_import_share: 0.02   # share of the allied scope's net imports that makes a country a material buyer
+    material_demand_share: 0.05       # share of allied demand that makes a country a demand anchor
+    demand_scale_share: 0.10          # demand share treated as a full demand leg (0-1 scale)
+
+evidence:
+  # stage_evidence_quality (engine) and AIB data_quality to a 0-1 score
+  quality_score: {high: 1.0, medium: 0.67, low: 0.33, none: 0.0}
+  aib_quality_score: {"High confidence": 1.0, "Usable with caution": 0.67, "Insufficient for optimization": 0.33}
+  proxy_cap: 0.67              # a node whose need is inherited from its technology x stage cell is at most medium
+  low_evidence_below: 0.50     # recommendations below this are flagged review, never a joint bet
+  external_verification_score: {verified: 1.0, partial: 0.67, unverified: 0.33, institutional_reference: 0.67}
+
+priority:
+  max_joint_bets: 5
+  max_compacts: 5
+  min_non_priorities: 3
+  max_deals: 12
+  max_trade_actions: 12
+  max_third_country: 10
+
+# The main instrument is the lightest (lowest intensity) instrument whose family can resolve the state's problem;
+# lighter instruments of other families are listed beside it as complements, never as the answer.
+effective_families:
+  a_supplies_b_needs: [trade, standards, demand]
+  b_supplies_a_needs: [trade, standards, demand]
+  capacity_constrained_trusted_supply: [demand, finance, investment]
+  shared_vulnerability: [demand, finance, development, security, investment]
+  complementary_specialization: [technology, investment, standards]
+  direct_competition: [technology, standards]
+
+# Importance of a material buyer without a measured security need (need band "demand"): capped below the need line
+# unless the node is a chokepoint (allied demand alone is a market, not a vulnerability).
+demand_importance_cap: 0.60
+
+# Compact recommendation: OSI-led priorities first, then evidence-led candidates (an in-force bilateral mechanism with a
+# pipeline, or at least `evidence_led_min_items` project / financing items naming both countries, where OSI measures a
+# need in the compact but not the partner's capability). Evidence-led compacts are labelled external in the memo.
+evidence_led_min_items: 2
+
+# The print document (PDF, Word, Markdown, JSON) in the country strategy briefs' format: same renderer, print
+# style and page geometry (R/partnerships/pm_document.R). {pair}, {as_of_label}, {evidence_access} are filled.
+document:
+  eyebrow: "Partnership memo"
+  subtitle: "Where deeper industrial integration creates strategic value, through which instruments, and where to stay out"
+  label: "Generated from Allied Industrial Base Explorer data and a curated external evidence layer (accessed {evidence_access}); evidence, sources and caveats in the appendix. Data as of {as_of_label}."
+  disclosure: "Rule-generated from the data (R/partnerships) with external facts from a dated, curated evidence layer; not yet checked by an independent verifier. Items marked partial or unverified must be confirmed before citation."
+  footer: "Allied Industrial Base Explorer, Partnership memo: {pair}"
+  appendix_title: "Appendix — evidence tables and method"
+  appendix_intro: "The tables below carry the full complementarity map, the node profiles and the trade actions that the main text summarises. Method, decision rules and limitations: docs/partnership_memos.md. Machine-readable outputs: country_profiles.csv, dyad_complementarity.csv, compact_candidates.csv, trade_priorities.csv, investment_priorities.csv, third_country_opportunities.csv, deal_pipeline.csv and evidence_register.csv."
+  doc_kind: "Partnership memo"
+  keywords: "Allied Industrial Base; Partnership memo; Strategic Sectoral Compacts; trade; investment; development cooperation"
+  osi_source: "Allied Industrial Base Explorer tables: six-stage strategic position (Competitive Position, supply-chain and deployment need, Strategic Industrial Value, NIPO and IEA PAMS policy priority; scripts/26), the Allied Industrial Base strategic layer (node trade and production shares, allied demand, node classes, compact roles; scripts/31-33), bilateral imports by technology and stage (UN Comtrade 2024; scripts/15) and development-partnership pairs (scripts/93). Underlying sources are listed in the country strategy briefs. Data as of {as_of_label}."
+  max_table_rows: 14
+  # print tables: at most this many columns; columns whose header matches these patterns go first, in order
+  max_table_cols: 9
+  print_drop_columns: ["^Additionality components$", "^Key obstacle$", "^Logic$", "^Private actors", "^Capital / demand scale$",
+                       "^36m outcome$", "^Confidence$", "^Problem solved$", "^Evidence items$", "^Manage competition$", "^Coordinate$",
+                       " RCA$", "^Tools$", "^Evidence$", "^Cross-sector$", "^Sunset$", "^Status$", " demand$", "^Stage$"]
+  pdf_pages: [6, 40]
+
+speed:   # execution speed by instrument family (0-1, fast = 1)
+  trade: 1.0
+  standards: 1.0
+  demand: 0.67
+  finance: 0.67
+  security: 0.67
+  technology: 0.5
+  investment: 0.33
+  development: 0.33
+
+stage_speed_penalty:   # greenfield mines and refineries take longest; multiplies nothing, it caps speed
+  Extraction: 0.2
+  Refining: 0.33
+
+mea:
+  # Rule order (docs/partnership_memos.md, MEA assessment):
+  #   existing  = every recommended compact is covered by a mechanism with a pipeline and finance, and a
+  #               cross-sector mechanism has KPIs and a review cycle;
+  #   upgrade   = at least `upgrade_min_coverage` of recommended compacts are covered by a mechanism with
+  #               finance or a pipeline, or a cross-sector mechanism with a pipeline exists; the gap is
+  #               sector strategy, reciprocity or KPIs;
+  #   new_mea   = otherwise.
+  upgrade_min_coverage: 0.5
+  review_cycle_months: 12
+  kpi_horizon: 2030

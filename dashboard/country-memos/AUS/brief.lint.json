@@ -1,0 +1,176 @@
+{
+  "schema": "osi-country-brief-lint",
+  "iso3": "AUS",
+  "src_sha256": "8d98fccb064db0e41187269778ea543fa68b4bbc69a7c47912cb341dd9074a27",
+  "facts_sha256": "7d4840f1ef3bc1ffeee9511d2866a801cad6bac2a1ea58ca944e115bb55698f8",
+  "claims_sha256": "421d39a77626dd0f50011fc0e87304829d6b8e76735deac364687eebd8087db8",
+  "words": 2453,
+  "words_tables": 1750,
+  "words_sections": {
+    "1": 471,
+    "2": 611,
+    "3": 257,
+    "4": 450,
+    "5": 239,
+    "6": 115,
+    "7": 310
+  },
+  "n_claims": 1065,
+  "n_sentences": 1220,
+  "n_errors": 0,
+  "n_warnings": 19,
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'two' outside a token: \"That is an allied role first: nationally, those two mining steps read Watch and a low-conf\"",
+      "section": 1,
+      "sentence_id": "s1.2"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'one' outside a token: \"Its domestic industrial effort should go one step down from the mine, into battery materia\"",
+      "section": 1,
+      "sentence_id": "s1.3"
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'two' outside a token: \"The color sits in the first two columns, where Australia mines and refines, and in deploym\"",
+      "section": 1,
+      "sentence_id": "s1.24"
+    },
+    {
+      "id": "l4",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'one' outside a token: \"Each cell is one supply-chain step of a technology, colored by its strategic choice.\"",
+      "section": 1,
+      "sentence_id": "s1.28"
+    },
+    {
+      "id": "l5",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'half' outside a token: \"About half the hardware comes from China: 56% of PV module and inverter imports and 49% of\"",
+      "section": 2,
+      "sentence_id": "s2.18"
+    },
+    {
+      "id": "l6",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'two' outside a token: \"Two questions decide each step: is the capability worth having (Strategic Industrial Value\"",
+      "section": 2,
+      "sentence_id": "s2.33"
+    },
+    {
+      "id": "l7",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'two' outside a token: \"The two mining steps sit just left of the bar because their value is capped where it rests\"",
+      "section": 2,
+      "sentence_id": "s2.67"
+    },
+    {
+      "id": "l8",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'five' outside a token: \"Five cases stand out.\"",
+      "section": 2,
+      "sentence_id": "s2.74"
+    },
+    {
+      "id": "l9",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'one' outside a token: \"The one Catch Up layer, grain-oriented electrical steel, inherits the step's grid-metal ex\"",
+      "section": 2,
+      "sentence_id": "s2.79"
+    },
+    {
+      "id": "l10",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'four' outside a token: \"Four bargains turn that exchange into a specialization partners can count on.\"",
+      "section": 3,
+      "sentence_id": "s3.12"
+    },
+    {
+      "id": "l11",
+      "severity": "warning",
+      "check": "avoid",
+      "detail": "'leverage' in \"Australia's leverage is its mineral supply; its exposure is the equipment it installs.\"",
+      "section": 3,
+      "sentence_id": "s3.43"
+    },
+    {
+      "id": "l12",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'three' outside a token: \"Battery storage, grid networks, wind and solar power all clear the Accelerate bar of 60, s\"",
+      "section": 5,
+      "sentence_id": "s5.2"
+    },
+    {
+      "id": "l13",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'three' outside a token: \"Deployment need by technology, with the largest of its three measures: demand adequacy, th\"",
+      "section": 5,
+      "sentence_id": "s5.5"
+    },
+    {
+      "id": "l14",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'three' outside a token: \"Government should change course in three places.\"",
+      "section": 6,
+      "sentence_id": "s6.43"
+    },
+    {
+      "id": "l15",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'three', 'four' outside a token: \"Second, deployment policy lags for grid, wind and solar, three of the four technologies th\"",
+      "section": 6,
+      "sentence_id": "s6.45"
+    },
+    {
+      "id": "l16",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'third' outside a token: \"Third, measures run ahead of the case in nuclear fuel and reactor parts, gas components an\"",
+      "section": 6,
+      "sentence_id": "s6.46"
+    },
+    {
+      "id": "l17",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'one' outside a token: \"This is the one place where a chokepoint meets an Australian capability.\"",
+      "section": 7,
+      "sentence_id": "s7.4"
+    },
+    {
+      "id": "l18",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'six' outside a token: \"Each technology is split into six supply-chain stages, and each step gets a strategic choi\"",
+      "section": 0,
+      "sentence_id": "a.3"
+    },
+    {
+      "id": "l19",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'half' outside a token: \"Aid is called technology-coded only where codes naming the technology hold at least half o\"",
+      "section": 0,
+      "sentence_id": "a.61"
+    }
+  ]
+}

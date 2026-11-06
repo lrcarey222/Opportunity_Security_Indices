@@ -16,6 +16,7 @@ import { useMemoDoc } from '../data/hooks.ts';
 import { countryStore } from '../data/store.ts';
 import { memoDownloadName } from '../derive/model.ts';
 import { MemoDocument } from '../memo/MemoDocument.tsx';
+import { isBrief } from '../contract.ts';
 import { rememberCountry } from '../nav.ts';
 import { MEMO_REVISED_TEXT } from './profile/Header.tsx';
 
@@ -38,7 +39,8 @@ export default function MemoView() {
   const [copied, setCopied] = useState(false);
   if (!entry) return <Redirect to="/countries" notice={`No country with the code '${raw}'; showing all countries.`} />;
   rememberCountry(entry.iso3);
-  if (entry.tier !== 'core') {
+  // legacy memos are for core members; a brief can be for any economy (config/country_brief.yml beyond_core)
+  if (entry.tier !== 'core' && entry.memo?.format !== 'brief') {
     return <Redirect to={`/countries/${entry.iso3}`} notice={`Memos are available for the ${manifest.counts.core} core coalition members for now.`} />;
   }
   if (!entry.memo) {
@@ -81,6 +83,7 @@ export default function MemoView() {
     );
   }
   const url = (f: string | null) => (f ? countryStore().url(f) : null);
+  const brief = isBrief(doc);
   const pdf = url(entry.memo.pdf);
   const docx = url(entry.memo.docx);
   const copy = async () => {
@@ -94,12 +97,12 @@ export default function MemoView() {
   };
   return (
     <div className={PAGE}>
-      <PageHead eyebrow="COUNTRY INSIGHTS · POLICY MEMO" title={doc.title} lede={doc.subtitle} />
+      <PageHead eyebrow={brief ? (doc.eyebrow ?? 'Country strategy brief').toUpperCase() : 'COUNTRY INSIGHTS · POLICY MEMO'} title={doc.title} lede={doc.subtitle} />
       <div className="mb-6 max-w-3xl">
         <Notice kind="info">
           <span className="text-paper">{doc.label}</span>
           <span className="mt-1 block text-xs text-paper-mute">
-            Written {when(doc.generated_at)} · checked {when(doc.verified_at)} · {doc.words.toLocaleString('en-US')} words · fact sheet {doc.facts_sha256.slice(0, 8)}
+            Written {when(doc.generated_at)} · checked {when(doc.verified_at)} · {doc.words.toLocaleString('en-US')} words · {brief ? 'data' : 'fact sheet'} {doc.facts_sha256.slice(0, 8)}
           </span>
         </Notice>
       </div>
@@ -142,9 +145,9 @@ export default function MemoView() {
         {back}
       </div>
       <div className="mb-6 print:hidden">
-        <Switch label="Show where each number comes from" checked={trace} onChange={setTrace} hint="Outlines every value taken from the fact sheet; hover one for its field and source." />
+        <Switch label="Show where each number comes from" checked={trace} onChange={setTrace} hint={`Outlines every value taken from the ${brief ? 'data' : 'fact sheet'}; hover one for its field and source.`} />
       </div>
-      <MemoDocument doc={doc} trace={trace} />
+      <MemoDocument doc={doc} trace={trace} fileUrl={(f) => countryStore().url(f)} />
     </div>
   );
 }

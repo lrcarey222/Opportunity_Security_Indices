@@ -1,0 +1,40 @@
+{
+  "schema": "osi-country-brief-lint",
+  "iso3": "FRA",
+  "src_sha256": "f059fb9692b4c21d3e6ac1c64501f601f66161e0b465ef70caec7eb7bfeab32f",
+  "facts_sha256": "479584c96b2fa473e7092bad64ba0e2c42fdf34ab0982a6325deee6dd0a062b1",
+  "claims_sha256": "cb37d76df919e4cc9885f12210eb8ab71eebffa3b263d4d23c9f0af07f3ea83b",
+  "words": 2327,
+  "words_tables": 1657,
+  "words_sections": {
+    "1": 459,
+    "2": 680,
+    "3": 247,
+    "4": 451,
+    "5": 139,
+    "6": 114,
+    "7": 237
+  },
+  "n_claims": 1103,
+  "n_sentences": 1196,
+  "n_errors": 0,
+  "n_warnings": 2,
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'two' outside a token: \"7 partners receive French aid at a partnership's step, only under stage-wide codes that do\"",
+      "section": 4,
+      "sentence_id": "s4.80"
+    },
+    {
+      "id": "l2",
+      "severity": "warning",
+      "check": "number_word",
+      "detail": "'half' outside a token: \"Aid is called technology-coded only where codes naming the technology hold at least half o\"",
+      "section": 0,
+      "sentence_id": "a.59"
+    }
+  ]
+}

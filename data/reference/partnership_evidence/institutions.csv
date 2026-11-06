@@ -1,0 +1,16 @@
+iso3,institution,abbreviation,instrument_families,url,verification,note
+USA,Office of the U.S. Trade Representative,USTR,trade|standards,https://ustr.gov,institutional_reference,Trade agreements and tariff actions
+USA,Department of Commerce (incl. Investment Accelerator),Commerce,trade|investment,https://www.commerce.gov,institutional_reference,Section 232; runs the US side of the Strategic Investment Initiative (E07)
+USA,Department of Energy Loan Programs Office,DOE LPO,finance,https://www.energy.gov/lpo,institutional_reference,Loans and loan guarantees for energy and manufacturing projects
+USA,Department of Energy,DOE,technology|demand,https://www.energy.gov,institutional_reference,R&D and demonstration; leads the US side of the Rapid Response Group (E13)
+USA,Department of War (Office of Strategic Capital; DPA Title III),DoW OSC,finance|security|demand,https://www.cto.mil/osc/,institutional_reference,Strategic equity and offtake precedent: MP Materials (UJ-001 UJ-002)
+USA,Defense Logistics Agency Strategic Materials,DLA,security|demand,https://www.dla.mil/Strategic-Materials/,institutional_reference,National Defense Stockpile; GOES procurement precedent (UJ-019)
+USA,U.S. International Development Finance Corporation,DFC,finance|development,https://www.dfc.gov,institutional_reference,Third-country loans equity and political-risk insurance
+USA,Export-Import Bank of the United States,EXIM,finance,https://www.exim.gov,institutional_reference,Export credit and guarantees
+USA,Nuclear Regulatory Commission,NRC,standards,https://www.nrc.gov,institutional_reference,Reactor licensing (E30)
+JPN,Ministry of Economy Trade and Industry,METI,trade|investment|standards|technology|demand,https://www.meti.go.jp/english/,institutional_reference,Industrial and economic-security policy; Japanese side of the Rapid Response Group (E13)
+JPN,Japan Bank for International Cooperation,JBIC,finance|investment,https://www.jbic.go.jp/en/,institutional_reference,Loans to the Strategic Investment Initiative SPVs (E23-E26)
+JPN,Nippon Export and Investment Insurance,NEXI,finance,https://www.nexi.go.jp/en/,institutional_reference,Insurance of private lenders to the Initiative SPVs (E23-E26)
+JPN,Japan Organization for Metals and Energy Security,JOGMEC,finance|security|investment|demand,https://www.jogmec.go.jp/english/,institutional_reference,Equity and stockpiling; Lynas (UJ-029)
+JPN,New Energy and Industrial Technology Development Organization,NEDO,technology,https://www.nedo.go.jp/english/,institutional_reference,R&D and demonstration
+JPN,Japan International Cooperation Agency,JICA,development,https://www.jica.go.jp/english/,institutional_reference,ODA loans and technical cooperation

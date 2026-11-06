@@ -27,15 +27,18 @@ import { cap, poss, proseName, tierTag } from '../../derive/text.ts';
 import { countryHref } from '../../url.ts';
 import { useProfile } from './common.tsx';
 
-export function memoReady(e: { tier: string; memo: { stale: boolean } | null }): boolean {
-  return e.tier === 'core' && !!e.memo && !e.memo.stale;
+/** A memo the economy may show: a core member's, or a brief for any economy (config/country_brief.yml beyond_core). */
+const memoTier = (e: { tier: string; memo: { stale: boolean; format?: string } | null }) => e.tier === 'core' || e.memo?.format === 'brief';
+
+export function memoReady(e: { tier: string; memo: { stale: boolean; format?: string } | null }): boolean {
+  return memoTier(e) && !!e.memo && !e.memo.stale;
 }
 
 /** A core member's memo that exists but is not shown: a later fact sheet changed a claim, or the memo is
  *  under revision (config memo_revision, 2026-10-17: the original allied network design is retired and
  *  the memos are being rewritten). The memo page, the profile's memo panel and GENERATE MEMO say so. */
-export function memoRevised(e: { tier: string; memo: { stale: boolean } | null }): boolean {
-  return e.tier === 'core' && !!e.memo && e.memo.stale;
+export function memoRevised(e: { tier: string; memo: { stale: boolean; format?: string } | null }): boolean {
+  return memoTier(e) && !!e.memo && e.memo.stale;
 }
 
 export const MEMO_REVISED_TEXT = 'This memo is being revised. It will be available again once it has been rewritten.';
@@ -138,7 +141,11 @@ function MemoAction({ manifest }: { manifest: CountryManifest }) {
         <Link to={`/countries/${entry.iso3}/memo`} className="btn btn-primary">
           GENERATE MEMO
         </Link>
-        <p className="mt-1 max-w-xs text-xs text-paper-mute">AI-generated from the data and checked against it; baseline as of {manifest.as_of_label}. It reads the security and opportunity scores, not the strategy above.</p>
+        <p className="mt-1 max-w-xs text-xs text-paper-mute">
+          {entry.memo?.format === 'brief'
+            ? `A short strategy brief built on the choices above, generated from the Explorer data as of ${manifest.as_of_label}; evidence, sources and caveats in its appendix.`
+            : `AI-generated from the data and checked against it; baseline as of ${manifest.as_of_label}. It reads the security and opportunity scores, not the strategy above.`}
+        </p>
         {entry.memo?.rule_note && entry.memo.rule_note_d && (
           <p className="mt-1 max-w-md text-xs text-paper-mute" data-testid="memo-rule-note">
             {entry.memo.rule_note_d}

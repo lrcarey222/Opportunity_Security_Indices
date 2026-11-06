@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { CountryEntry, CountryManifest, DriversDoc, FactSheet, MemoDoc, TradeMonthlyDoc } from '../contract.ts';
+import type { DevpartDoc } from '../devpart.ts';
 import { countryStore, CountryLoadError, type LoadState } from './store.ts';
 
 export interface Loaded<T> extends LoadState<T> {
@@ -63,6 +64,12 @@ export function useMemoDoc(entry: CountryEntry | null): Loaded<MemoDoc> {
 export function useDriversDoc(entry: CountryEntry | null, sheet: FactSheet | null, needed: boolean): Loaded<DriversDoc> {
   const ok = needed && entry && entry.drivers && sheet ? entry : null;
   return useLoad<DriversDoc>(ok ? `drivers:${ok.iso3}` : null, ok ? () => countryStore().driversDoc(ok, sheet ?? undefined) : null);
+}
+
+/** The development-partnership file (additive 2026-11-03), when the economy has one. */
+export function useDevpartDoc(entry: CountryEntry | null): Loaded<DevpartDoc> {
+  const ok = entry && entry.devpart ? entry : null;
+  return useLoad<DevpartDoc>(ok ? `devpart:${ok.iso3}` : null, ok ? () => countryStore().devpart(ok) : null);
 }
 
 /** The companion monthly trade file (additive 2026-10-19), loaded only when `needed`; no page calls it since the card left the Country profile (2026-11-02). */

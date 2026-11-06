@@ -127,7 +127,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     id: 'dp',
     term: 'Development Potential',
     abbr: 'DP',
-    short: 'Where joint investment could create a new supply base while building productive capacity in a middle- or lower-income partner, from development, investment-climate, aid and energy-use data. Not scored for high-income partners.',
+    short: 'A supporting partner indicator of development conditions, aid relationships, investment environment and energy use in middle- and lower-income economies. It informs, but does not set, the strategic recommendation. Not scored for high-income partners.',
     modules: SCA,
     related: ['psi'],
   },
