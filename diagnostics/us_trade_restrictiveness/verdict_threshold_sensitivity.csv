@@ -1,0 +1,35 @@
+"choice","verdict","Freq","open_threshold"
+"watch","Fence above recommendation",16,5
+"catch_up","In line",2,5
+"partner","In line",3,5
+"watch","In line",7,5
+"secure","No tariff fence",1,5
+"not_assessed","Not assessed",2,5
+"accelerate","Taxes trusted partners",2,5
+"catch_up","Taxes trusted partners",6,5
+"partner","Taxes trusted partners",1,5
+"preserve","Taxes trusted partners",8,5
+"watch","Fence above recommendation",16,10
+"accelerate","In line",1,10
+"catch_up","In line",3,10
+"partner","In line",3,10
+"preserve","In line",2,10
+"watch","In line",7,10
+"secure","No tariff fence",1,10
+"not_assessed","Not assessed",2,10
+"accelerate","Taxes trusted partners",1,10
+"catch_up","Taxes trusted partners",5,10
+"partner","Taxes trusted partners",1,10
+"preserve","Taxes trusted partners",6,10
+"watch","Fence above recommendation",12,15
+"accelerate","In line",1,15
+"catch_up","In line",5,15
+"partner","In line",3,15
+"preserve","In line",5,15
+"watch","In line",11,15
+"secure","No tariff fence",1,15
+"not_assessed","Not assessed",2,15
+"accelerate","Taxes trusted partners",1,15
+"catch_up","Taxes trusted partners",3,15
+"partner","Taxes trusted partners",1,15
+"preserve","Taxes trusted partners",3,15

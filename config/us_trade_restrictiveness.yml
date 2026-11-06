@@ -1,0 +1,57 @@
+# US trade restrictiveness by technology x stage (scripts/28_build_us_trade_restrictiveness.R,
+# docs/us_trade_restrictiveness.md): the Trade War Tracker's Trade Restrictiveness Index on the project's HS6
+# basket, with AD/CVD deposits, compared with the recommended posture. Override this file with
+# OPSI_TRADE_RESTRICTIVENESS.
+#
+# Inputs outside the repository (data/raw is not tracked). scripts/fetchers/trade_war_tracker.R downloads the
+# files the build reads into data/raw/trade_war_tracker/ when they are missing; OPSI_TWT_TRI_DIR and
+# OPSI_TWT_REDUX_DIR point the build at other copies (for example full clones of the two repositories).
+
+reporter: USA
+
+# Census data month for the tariffs: "latest" takes the newest month in the tracker's all-country file.
+data_month: latest
+# Weights: import value of each HS10 line from each partner in this calendar year (the tracker's choice).
+weight_year: 2024
+# Import-volume ratio: this many months ending at the data month, against the same months of the weight year.
+volume_months: 3
+
+tracker:
+  # GitHub repositories and branch the fetcher reads (raw.githubusercontent.com).
+  tri_repo: tradewartracker/how-restrictive-us-trade
+  redux_repo: tradewartracker/trade-war-redux-2025
+  ref: main
+  # Section 232 product lists of the tracker's engine, in tariff-lists/ of the redux repository.
+  section232_lists:
+    autos: auto-tariffs.csv
+    metals_ia: metals-annex-IA.csv
+    metals_ib: metals-annex-IB.csv
+    metals_iii: metals-annex-III-temporary.csv
+    metals_removed: metals-annex-II-removed.csv
+    copper: copper-list.csv
+    timber: timber-232.csv
+
+# AD/CVD orders and investigations (rates for exporters without their own rate, from Federal Register
+# notices). Review it when Commerce or the ITC publishes a new order, review or revocation.
+adcvd_orders: data/reference/adcvd_orders.csv
+# Census country codes of the tracker's partners and their ISO3 codes (EU = the 27-member bloc).
+partner_codes: data/reference/census_partner_codes.csv
+# Every line's tariff is capped at these rates (percent) in the AD/CVD measures: the first is the headline,
+# the others are sensitivities. A deposit far above 100% is prohibitive; the cap stops one such line from
+# dominating a cell's TRI, which squares the rates.
+caps: [100, 250]
+
+# Optional statutory cross-check: a CSV from scripts/utils/tracker_statutory_rates.py (one row per date,
+# partner and HS10 with the tracker engine's added duty). Skipped when the file is not there or the setting is
+# empty. OPSI_TWT_STATUTORY overrides.
+statutory_rates: data/raw/trade_war_tracker/statutory_rates.csv
+
+# Verdict lines (percent TRI). open: the gate is open below it (ordinary MFN territory; the 2024
+# economy-wide TRI was 6.6%). high: a high fence from it (about the economy-wide TRI in August 2026).
+thresholds:
+  open: 5
+  high: 15
+  # Extra open-gate lines reported in the sensitivity table.
+  open_sensitivity: [10, 15]
+# Cells under this 2024 import value are flagged thin.
+thin_imports_usd: 5.0e+8
