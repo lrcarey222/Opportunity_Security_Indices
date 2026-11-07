@@ -1,0 +1,979 @@
+# Partnership agreements layer (docs/partnership_agreements.md).
+#
+# Individual agreements from several datasets are normalised to one schema
+# (R/agreements/agr_schema.R), linked across sources into canonical agreements, rolled up to
+# country pairs with a provisional depth class, and joined to the capability, need and policy
+# data for the agreement-gap view. Read by scripts/35 (ingest), 36 (build) and 37 (export).
+# Every list below is a controlled vocabulary: the validators in R/agreements stop on a value
+# that is not listed here.
+
+version: 1
+
+# --- Sources -------------------------------------------------------------------------------
+# One adapter per source (R/agreements/adapter_<id>.R). Each can be ingested on its own
+# (scripts/35 --source <id>); scripts/36 reads whichever per-source files exist.
+# kind: structured_dataset | curated | project_reference | staged_export
+# authority: how the confidence rule treats a record from it (structured | curated | secondary)
+sources:
+  gsp:
+    label: Global Strategic Partnership Dataset
+    short: GSP
+    citation: >-
+      Chang-Liao, N., Fu, Lin (2025). Global Strategic Partnership Dataset, 1990-2020, V1.0.
+      Harvard Dataverse, doi:10.7910/DVN/UJD7LW (CC0 1.0); paper: Conflict Management and Peace
+      Science 43(4), doi:10.1177/07388942251385542.
+    url: https://doi.org/10.7910/DVN/UJD7LW
+    licence: CC0-1.0
+    kind: structured_dataset
+    authority: structured
+    raw_files: [gsp_partnership_documents.csv]
+  desta:
+    label: Design of Trade Agreements (DESTA)
+    short: DESTA
+    citation: >-
+      Dür, A., Baccini, L. and Elsig, M. (2014). The Design of International Trade Agreements:
+      Introducing a New Database. Review of International Organizations 9(3): 353-375. DESTA
+      version 2.3 (September 2025), designoftradeagreements.org.
+    url: https://www.designoftradeagreements.org/downloads/
+    licence: none published (citation requested); redistribution of derived facts only
+    kind: structured_dataset
+    authority: structured
+    raw_files: [desta_list_of_treaties.csv, desta_dyads.csv, desta_withdrawals.csv,
+                desta_provisions.csv, desta_indices.csv]
+  memberships:
+    label: Economic-security agreement memberships (project reference)
+    short: Memberships
+    citation: data/reference/economic_security_agreements.csv (USTR, IPEF, MSP, G7, NATO pages; accessed 2026-10-08)
+    url: https://ustr.gov/trade-agreements/free-trade-agreements
+    licence: project-authored from official pages
+    kind: project_reference
+    authority: structured
+  curated:
+    label: Curated government agreements
+    short: Curated
+    citation: data/reference/partnership_agreements/curated_agreements.csv (one official source per row)
+    url: ''
+    licence: project-authored; each row cites its official source
+    kind: curated
+    authority: curated
+  pmemo:
+    label: Partnership memo evidence (US-Japan)
+    short: Memo evidence
+    citation: data/reference/partnership_evidence/ (bilateral_mechanisms.csv, policy_evidence.csv)
+    url: ''
+    licence: project-authored; each row cites its source
+    kind: curated
+    authority: curated
+  iisd:
+    label: IISD Trade & Climate Tracker
+    short: IISD
+    citation: >-
+      IISD (2026). Trade & Climate Tracker. International Institute for Sustainable Development.
+      https://www.iisd.org/trade-climate-tracker/
+    url: https://www.iisd.org/trade-climate-tracker/
+    licence: All rights reserved (IISD); ingest only an export IISD has shared for this use
+    kind: staged_export
+    authority: structured
+    raw_files: [iisd_trade_climate_tracker.csv]
+
+# --- Common schema vocabularies ------------------------------------------------------------
+agreement_types:
+  treaty: Treaty
+  fta: FTA / Trade Agreement
+  epa: Economic Partnership Agreement
+  strategic_partnership: Strategic Partnership
+  framework: Framework Agreement
+  mou: MOU
+  joint_declaration: Joint Declaration
+  joint_statement: Joint Statement
+  sectoral_partnership: Sectoral Partnership
+  ministerial_initiative: Ministerial Initiative
+  plurilateral_forum: Plurilateral forum or club
+  financing_agreement: Financing Agreement
+  other: Other
+
+# The partnership a document names, where it names one (GSP has no tier field: the label is read
+# from the title, else from a body sentence that names the partnership). Empty when none.
+partnership_labels:
+  comprehensive_strategic: Comprehensive strategic partnership
+  global_strategic: Global strategic partnership
+  special_strategic: Special strategic partnership
+  strategic: Strategic partnership
+  comprehensive: Comprehensive partnership
+  other_partnership: Other named partnership
+# Labels that make class 2 (Framework) of the depth rule on their own.
+strategic_partnership_labels: [comprehensive_strategic, global_strategic, special_strategic, strategic]
+
+legal_statuses:
+  binding: Legally binding
+  non_binding: Political commitment / non-binding
+  mixed: Mixed / unclear
+  unknown: Unknown
+
+# How legal status was established. A status is never read off the title.
+legal_status_bases:
+  source_field: the source codes it
+  source_document_type: the source's own document type (a treaty in a treaty dataset, a joint statement)
+  curated: stated in the official source and recorded by hand
+  none: not established
+
+implementation_statuses:
+  announced: Announced
+  signed: Signed
+  in_force: In force
+  implementation_underway: Implementation underway
+  operational: Implemented / operational
+  inactive: Inactive / expired
+  cancelled: Cancelled
+  unknown: Unknown
+
+# Delivery evidence is separate from existence: only these statuses say an agreement is being
+# delivered, and only a source that records projects, disbursements or operating bodies sets them.
+delivery_statuses: [implementation_underway, operational]
+existence_order: [announced, signed, in_force]
+
+# How a sector, technology, segment or instrument code was obtained. Shown with every code.
+coding_bases:
+  source_coded: coded by the source dataset (a DESTA provision, an IISD topic)
+  curated: recorded by hand from the official text
+  type_implied: implied by the source's agreement type (a free-trade agreement reduces tariffs)
+  text_title: keyword in the title
+  text_body: keyword in a sentence of the published text that also speaks of cooperation
+
+# Evidence grade used by the pair roll-up: specific = source_coded, curated, type_implied or
+# text_title; text = text_body only.
+specific_bases: [source_coded, curated, type_implied, text_title]
+
+confidence_levels:
+  high: primary government or agreement text, or two or more independent sources
+  medium: one reputable structured dataset
+  low: a secondary source only, or uncertain entity or record matching
+
+# Hosts whose pages count as primary government or agreement text (a source_url on one of them
+# makes primary_source_available TRUE). Matched against the host, and against the archived host
+# of a web.archive.org link. Regular expressions, case-insensitive.
+official_hosts:
+  - '\.gov$'
+  - '\.gov\.[a-z]{2}$'
+  - '\.go\.[a-z]{2}$'
+  - '(^|\.)gob\.[a-z]{2}$'
+  - '\.gouv\.[a-z]{2}$'
+  - '\.gouv\.fr$'
+  - '\.govt\.nz$'
+  - '\.gc\.ca$'
+  - '(^|\.)canada\.ca$'
+  - '(^|\.)gov\.uk$'
+  - '(^|\.)europa\.eu$'
+  - '(^|\.)admin\.ch$'
+  - '(^|\.)bund\.de$'
+  - '(^|\.)auswaertiges-amt\.de$'
+  - '(^|\.)bundesregierung\.de$'
+  - '(^|\.)diplomatie\.gouv\.fr$'
+  - '(^|\.)elysee\.fr$'
+  - '(^|\.)mofa\.go\.jp$'
+  - '(^|\.)kantei\.go\.jp$'
+  - '(^|\.)meti\.go\.jp$'
+  - '(^|\.)mofa\.go\.kr$'
+  - '(^|\.)president\.go\.kr$'
+  - '(^|\.)fmprc\.gov\.cn$'
+  - '(^|\.)mfa\.gov\.cn$'
+  - '(^|\.)gov\.cn$'
+  - '(^|\.)mea\.gov\.in$'
+  - '(^|\.)pmindia\.gov\.in$'
+  - '(^|\.)pib\.gov\.in$'
+  - '(^|\.)kremlin\.ru$'
+  - '(^|\.)mid\.ru$'
+  - '(^|\.)dfat\.gov\.au$'
+  - '(^|\.)pm\.gov\.au$'
+  - '(^|\.)whitehouse\.gov$'
+  - '(^|\.)state\.gov$'
+  - '(^|\.)ustr\.gov$'
+  - '(^|\.)energy\.gov$'
+  - '(^|\.)commerce\.gov$'
+  - '(^|\.)treaties\.un\.org$'
+  - '(^|\.)un\.org$'
+  - '(^|\.)wto\.org$'
+  - '(^|\.)nato\.int$'
+  - '(^|\.)mfa\.[a-z.]+$'
+  - '(^|\.)mofa\.[a-z.]+$'
+  - '(^|\.)mofa\.gov\.[a-z]{2}$'
+  - '(^|\.)mfa\.gov\.[a-z]{2}$'
+  - '(^|\.)gov\.[a-z]{2}$'
+  - '(^|\.)president\.az$'
+  - '(^|\.)nic\.in$'
+  - '(^|\.)mae\.ro$'
+  - '(^|\.)vie-publique\.fr$'
+  - '(^|\.)baochinhphu\.vn$'
+  - '(^|\.)korea\.kr$'
+  - '(^|\.)vlada\.cz$'
+  - '(^|\.)maroc\.ma$'
+  - '(^|\.)prezydent\.pl$'
+  - '(^|\.)president\.pl$'
+  - '(^|\.)palaugov\.pw$'
+  - '(^|\.)president\.bg$'
+  - '(^|\.)governo\.it$'
+  - '(^|\.)lex\.uz$'
+
+# --- Sectors -------------------------------------------------------------------------------
+# The sector list of the brief, mapped onto the dashboard's technologies (strategic_position_tbl
+# `tech`) and six stages where one exists. `techs` and `stages` drive the agreement-gap join;
+# a sector without techs is shown but cannot be compared with capability data.
+# electro_industrial: TRUE puts an agreement that covers the sector into the electro-industrial
+# view. fossil_fuels is not in the brief's list; it is kept apart so that LNG, oil and coal
+# deals do not land in "General clean energy".
+# patterns: case-insensitive regular expressions (PCRE) matched within one sentence. CJK, French
+# and Spanish forms catch the main terms of documents published in those languages; other
+# languages are not coded (docs, Known limitations).
+sectors:
+  critical_minerals:
+    label: Critical minerals
+    electro_industrial: true
+    techs: [Batteries, Electric Vehicles, Electric Grid, Wind, Solar]
+    stages: [Extraction, Refining, Recovery]
+    compacts: [SC-BATTERIES, SC-MAGNETS, SC-SEMIS]
+    patterns:
+      - 'critical (raw )?(minerals?|materials?)'
+      - 'strategic (minerals?|raw materials?|metals?)'
+      - 'rare[- ]earths?'
+      - '\blithium\b'
+      - '\bcobalt\b'
+      - '\bnickel\b'
+      - '\bgraphite\b'
+      - '\bmanganese\b'
+      - '\bgallium\b'
+      - '\bgermanium\b'
+      - '\bcopper\b'
+      - 'minerals? (supply|security|sector|resources?|processing|value chains?)'
+      - '\bmining\b'
+      - '关键矿产|稀土|锂矿|矿产资源'
+      - '重要鉱物|レアアース|鉱物資源'
+      - '핵심광물|희토류'
+      - 'minerais critiques|matières premières critiques|terres rares'
+      - 'minerales críticos|materias primas críticas|tierras raras|\blitio\b'
+  solar:
+    label: Solar
+    electro_industrial: true
+    techs: [Solar]
+    patterns:
+      - '\bsolar\b'
+      - 'photovoltaic'
+      - '\bPV\b'
+      - 'polysilicon'
+      - '光伏|太阳能'
+      - '太陽光|太陽電池'
+      - 'solaire|photovoltaïque'
+      - 'energía solar|fotovoltaic'
+  wind:
+    label: Wind
+    electro_industrial: true
+    techs: [Wind]
+    patterns:
+      - '\bwind (power|energy|turbines?|farms?|industry|projects?)\b'
+      - '\b(offshore|onshore) wind\b'
+      - '风电|风能'
+      - '風力'
+      - 'éolien'
+      - 'eólic'
+  batteries:
+    label: Batteries
+    electro_industrial: true
+    techs: [Batteries]
+    patterns:
+      - '\bbatter(y|ies)\b'
+      - 'energy storage'
+      - '电池|储能'
+      - '蓄電池|バッテリー|電池'
+      - '배터리|이차전지'
+      - '\bbatteries\b|stockage (de l.)?énergie'
+      - '\bbaterías?\b|almacenamiento de energía'
+  evs:
+    label: EVs
+    electro_industrial: true
+    techs: [Electric Vehicles]
+    patterns:
+      - 'electric (vehicles?|cars?|buses|mobility)'
+      - '\bEVs?\b'
+      - '\be-mobility\b'
+      - 'zero[- ]emissions? vehicles?'
+      - 'new energy vehicles?'
+      - 'charging (stations?|infrastructure|networks?)'
+      - '新能源汽车|电动汽车'
+      - '電気自動車|電動車'
+      - '전기차'
+      - 'véhicules? électriques?'
+      - 'vehículos? eléctricos?|electromovilidad'
+  nuclear:
+    label: Nuclear
+    electro_industrial: true
+    techs: [Nuclear]
+    patterns:
+      - '\bnuclear (energy|power|reactors?|fuels?|plants?|industry|technolog(y|ies)|new build)\b'
+      - '\bcivil(ian)? nuclear\b'
+      - 'peaceful uses? of (nuclear|atomic) energy'
+      - '\batomic energy\b'
+      - 'small modular reactors?'
+      - '\bSMRs?\b'
+      - '\buranium\b'
+      - '核电|核能'
+      - '原子力'
+      - '원자력|원전'
+      - 'énergie nucléaire|nucléaire civil'
+      - 'energía nuclear'
+  grid_equipment:
+    label: Grid equipment
+    electro_industrial: true
+    techs: [Electric Grid]
+    stages: [Components, Assembly]
+    compacts: [SC-GRID]
+    patterns:
+      - '\b(electricity|power|electric|energy) grids?\b'
+      - '\bsmart grids?\b'
+      - '\bgrid (infrastructure|modernis|moderniz|equipment|interconnect|connection|integration)'
+      - '\bswitchgear\b'
+      - 'electricity interconnect(ion|or)s?|power interconnect(ion|or)s?'
+      - '电网'
+      - '送電網|電力網'
+      - 'réseaux? électriques?'
+      - 'redes? eléctricas?'
+  transformers:
+    label: Transformers
+    electro_industrial: true
+    techs: [Electric Grid]
+    stages: [Components, Assembly]
+    compacts: [SC-GRID]
+    patterns:
+      - '\b(power |distribution |electrical )?transformers?\b'
+      - '变压器'
+      - '変圧器'
+  transmission:
+    label: Transmission
+    electro_industrial: true
+    techs: [Electric Grid]
+    stages: [Components, Assembly, Deployment]
+    compacts: [SC-GRID]
+    patterns:
+      - '\b(power |electricity )?transmission (lines?|networks?|infrastructure|systems?|grids?|projects?)\b'
+      - '\bhigh[- ]voltage\b'
+      - '\bHVDC\b'
+      - '\b(submarine|undersea|subsea|power) cables?\b'
+      - '输电'
+      - '送電'
+  power_electronics:
+    label: Power electronics
+    electro_industrial: true
+    techs: [Electric Grid, Solar]
+    stages: [Components]
+    compacts: [SC-SEMIS]
+    patterns:
+      - '\bpower electronics\b'
+      - '\binverters?\b'
+      - '\bpower semiconductors?\b'
+      - '\bsilicon carbide\b'
+      - '\bgallium nitride\b'
+  semiconductors:
+    label: Semiconductors
+    electro_industrial: true
+    techs: []
+    compacts: [SC-SEMIS]
+    patterns:
+      - '\bsemiconductors?\b'
+      - '\bmicrochips?\b'
+      - '\bchips? (supply|manufacturing|industry|production|fabrication|design)\b'
+      - '半导体|芯片|集成电路'
+      - '半導体'
+      - '반도체'
+      - 'semi-?conducteurs?'
+      - 'semiconductores?'
+  hydrogen:
+    label: Hydrogen
+    electro_industrial: true
+    techs: [Green Hydrogen]
+    compacts: [SC-INDUSTRY]
+    patterns:
+      - '\bhydrogen\b'
+      - '\b(fuel |clean |green )ammonia\b'
+      - '\belectroly[sz](ers?|is)\b'
+      - '氢能|氢气|绿氢'
+      - '水素'
+      - '수소'
+      - 'hydrogène'
+      - 'hidrógeno'
+  geothermal:
+    label: Geothermal
+    electro_industrial: true
+    techs: [Geothermal]
+    patterns:
+      - 'geotherm'
+      - '地热'
+      - '地熱'
+      - 'géotherm'
+      - 'geotérm'
+  ccs:
+    label: CCS
+    electro_industrial: true
+    techs: []
+    patterns:
+      - '\bcarbon (dioxide )?capture\b'
+      - '\bCCUS?\b'
+      - '\b(carbon|CO2) (storage|sequestration)\b'
+      - 'carbon recycling'
+      - '碳捕集'
+      - '二酸化炭素回収|\bCCS\b'
+  industrial_heat:
+    label: Industrial heat
+    electro_industrial: true
+    techs: []
+    compacts: [SC-INDUSTRY, SC-HEAT]
+    patterns:
+      - '\b(industrial|process) heat\b'
+      - '\bheat pumps?\b'
+      - '\belectric (arc )?furnaces?\b'
+      - '\bindustrial (decarboni[sz]ation|electrification)\b'
+  steel:
+    label: Steel
+    electro_industrial: true
+    techs: []
+    compacts: [SC-INDUSTRY]
+    patterns:
+      - '\bsteel\b'
+      - '\biron ore\b'
+      - '钢铁'
+      - '鉄鋼'
+      - '\bacier\b'
+      - '\bacero\b'
+  aluminum:
+    label: Aluminum
+    electro_industrial: true
+    techs: []
+    patterns:
+      - '\balumin(i)?um\b'
+      - '\bbauxite\b'
+      - '\balumina\b'
+      - '电解铝|铝土矿'
+  cement:
+    label: Cement
+    electro_industrial: true
+    techs: []
+    patterns:
+      - '\bcement\b'
+      - '\bclinker\b'
+      - '水泥'
+  data_centers:
+    label: Data centers / compute infrastructure
+    electro_industrial: true
+    techs: []
+    patterns:
+      - '\bdata cent(er|re)s?\b'
+      - '\b(AI|artificial intelligence|compute|computing|cloud) infrastructure\b'
+      - '\bsupercomput'
+      - '\bcompute capacity\b'
+  general_clean_energy:
+    label: General clean energy
+    electro_industrial: true
+    techs: []
+    patterns:
+      - '\bclean energy\b'
+      - '\brenewable(s| energy| power)\b'
+      - '\benergy transition\b'
+      - '\blow[- ]carbon\b'
+      - '\bdecarboni[sz]'
+      - '\bnet[- ]zero\b'
+      - '\bcarbon neutral'
+      - '\bgreen (energy|transition|growth)\b'
+      - '\benergy efficiency\b'
+      - '清洁能源|可再生能源|新能源|绿色能源'
+      - '再生可能エネルギー|クリーンエネルギー|脱炭素'
+      - '재생에너지|청정에너지|탄소중립'
+      - 'énergies? renouvelables?|transition énergétique|énergie propre'
+      - 'energías? renovables?|transición energética|energía limpia'
+  fossil_fuels:
+    label: Oil, gas and coal
+    electro_industrial: false
+    techs: [Oil, Gas, Coal]
+    patterns:
+      - '\bLNG\b'
+      - 'liquefied natural gas'
+      - '\bnatural gas\b'
+      - '\b(crude )?oil and gas\b|\bcrude oil\b|\bpetroleum\b'
+      - '\bcoal\b'
+      - '液化天然气|天然气|石油'
+      - '液化天然ガス|天然ガス'
+  general_industrial:
+    label: General industrial cooperation
+    electro_industrial: false
+    techs: []
+    patterns:
+      - '\bindustrial (cooperation|partnership|policy|development|collaboration)\b'
+      - '\bmanufacturing\b'
+      - '\b(resilient|secure|diversified|manufacturing|industrial|critical) supply chains?\b'
+      - '\bsupply[- ]chains? (resilience|security|diversification)\b'
+      - '产业合作|工业合作|产业链|供应链'
+      - '産業協力|サプライチェーン'
+      - '공급망'
+  trade:
+    label: Trade
+    electro_industrial: false
+    techs: []
+    patterns:
+      - '\bfree trade\b'
+      - '\btrade (agreement|and investment|facilitation|liberali[sz]ation)\b'
+      - '\btariffs?\b'
+      - '\bmarket access\b'
+      - '\b(comprehensive )?economic partnership agreement\b'
+      - '\bagreement\b.*\bfor an? economic partnership\b'
+      - '\btrade and (economic )?cooperation agreement\b'
+      - '自由贸易|自贸协定'
+      - '自由貿易|経済連携協定'
+  science_rd:
+    label: Science / R&D
+    electro_industrial: false
+    techs: []
+    patterns:
+      - '\bscience and technology\b'
+      - '\bscientific (and technological )?cooperation\b'
+      - '\bresearch and development\b|\bR&D\b'
+      - '\bjoint research\b'
+      - '\binnovation (cooperation|partnership|dialogue)\b'
+      - '科技合作|科学技术'
+      - '科学技術'
+
+# --- Instruments ---------------------------------------------------------------------------
+# group: the instrument family the pair roll-up flags (trade, finance, investment, offtake,
+# supply, manufacturing, rd, standards, procurement, dialogue, other).
+# operational: TRUE for a concrete delivery mechanism (counts toward depth class 4 when coded
+# with a specific basis); FALSE for cooperation forms that commit no resources by themselves.
+instruments:
+  trade_preference:
+    label: Trade preference
+    group: trade
+    operational: true
+    patterns:
+      - '\bpreferential (tariffs?|treatment|trade|access)\b'
+      - '\bfree trade (agreement|area)\b'
+      - '\b(comprehensive )?economic partnership agreement\b'
+      - '\bCEPA\b'
+      - '\bCECA\b'
+  tariff_reduction:
+    label: Tariff reduction
+    group: trade
+    operational: true
+    patterns:
+      - '\btariff (reductions?|elimination|cuts?|concessions?|rate quotas?)\b'
+      - '\b(eliminat|reduc|lower|remov)\w* (of )?(the )?tariffs\b'
+      - '\bzero[- ]tariffs?\b'
+      - '\bduty[- ]free\b'
+  market_access:
+    label: Market access
+    group: trade
+    operational: true
+    patterns:
+      - '\bmarket access\b'
+  investment_facilitation:
+    label: Investment facilitation
+    group: investment
+    operational: true
+    patterns:
+      - '\binvestment (facilitation|promotion|protection)\b'
+      - '\b(promote|facilitate|encourage) (mutual |two-way |bilateral |reciprocal )?investments?\b'
+  fdi_framework:
+    label: FDI framework
+    group: investment
+    operational: true
+    patterns:
+      - '\b(bilateral )?investment (agreement|treaty|framework|chapter)\b'
+      - '\bforeign direct investment\b'
+      - '\binvestment screening\b'
+  public_finance:
+    label: Public finance
+    group: finance
+    operational: true
+    patterns:
+      - '\bconcessional (loans?|finance|financing|credit)\b'
+      - '\bsovereign (loans?|guarantees?)\b'
+      - '\bgovernment (loans?|financing|funding)\b'
+      - '\bpublic (finance|financing|funding)\b'
+      - '\bfinancing (of|for) (the )?(projects?|infrastructure|construction)\b'
+  export_credit:
+    label: Export credit
+    group: finance
+    operational: true
+    patterns:
+      - '\bexport credits?\b'
+      - '\bexport[- ]import bank\b'
+      - '\bEXIM\b'
+      - '\bJBIC\b'
+      - '\bNEXI\b'
+      - '\bK-?EXIM\b|\bK-?SURE\b'
+      - '\bUK Export Finance\b'
+      - '\bEuler Hermes\b'
+  development_finance:
+    label: Development finance
+    group: finance
+    operational: true
+    patterns:
+      - '\bdevelopment finance\b'
+      - '\bDFC\b'
+      - '\bofficial development assistance\b|\bODA\b'
+      - '\bJICA\b'
+      - '\bblended finance\b'
+  loan_guarantee:
+    label: Loan guarantee
+    group: finance
+    operational: true
+    patterns:
+      - '\b(loan|credit) guarantees?\b'
+      - '\bguarantee (facility|scheme|programme|program)\b'
+  joint_investment_fund:
+    label: Joint investment fund
+    group: investment
+    operational: true
+    patterns:
+      - '\b(joint|bilateral|co-?)\s*investment (fund|facility|vehicle|platform)s?\b'
+      - '\bjoint fund\b'
+      - '\bco-?invest(ment|ing)?\b'
+  offtake:
+    label: Offtake / purchase commitment
+    group: offtake
+    operational: true
+    patterns:
+      - '\boff-?take\b'
+      - '\bpurchase (commitments?|agreements?|contracts?)\b'
+      - '\blong-term (purchase|offtake|sales?) (contracts?|agreements?)\b'
+  demand_guarantee:
+    label: Demand guarantee
+    group: offtake
+    operational: true
+    patterns:
+      - '\bdemand (guarantees?|aggregation)\b'
+      - '(?<!COVAX )\badvance market commitments?\b'
+  price_support:
+    label: Price support
+    group: offtake
+    operational: true
+    patterns:
+      - '\bprice (floors?|support|stabili[sz]ation)\b'
+      - '\bcontracts? for difference\b'
+      - '\breference prices?\b'
+  critical_mineral_supply:
+    label: Critical-mineral supply agreement
+    group: supply
+    operational: true
+    patterns:
+      - '\b(critical )?minerals? (supply|security) (agreement|partnership|framework|arrangement)s?\b'
+      - '\b(secure|stable|reliable) supply of (critical )?(minerals?|raw materials?|rare earths?)\b'
+      - '\bstockpil\w*'
+  long_term_supply:
+    label: Long-term supply arrangement
+    group: supply
+    operational: true
+    patterns:
+      - '\blong[- ]term (supply|stable supply)\b'
+      - '\bsupply (agreements?|contracts?|arrangements?)\b'
+  joint_venture:
+    label: Joint venture
+    group: manufacturing
+    operational: true
+    patterns:
+      - '\bjoint ventures?\b'
+      - '合资|合弁|합작'
+      - '\bJVs?\b'
+  co_production:
+    label: Co-production
+    group: manufacturing
+    operational: true
+    patterns:
+      - '\bco-?production\b'
+      - '\bjoint (production|manufacturing)\b'
+  manufacturing_cooperation:
+    label: Manufacturing cooperation
+    group: manufacturing
+    operational: true
+    patterns:
+      - '\bmanufacturing (cooperation|partnership|facilit(y|ies)|plants?|capacity|investments?)\b'
+      - '\b(build|establish|construct)\w* (a |new )?(factor(y|ies)|plants?|facilit(y|ies))\b'
+  rd_cooperation:
+    label: R&D cooperation
+    group: rd
+    operational: true
+    patterns:
+      - '\bresearch and development\b|\bR&D\b'
+      - '\bjoint research\b'
+      - '联合研究|共同研究|공동연구'
+      - '\bresearch (cooperation|collaboration|programmes?|programs?|projects?)\b'
+      - '\bdemonstration (projects?|programmes?|programs?)\b'
+  technology_cooperation:
+    label: Technology cooperation
+    group: rd
+    operational: false
+    patterns:
+      - '\btechnolog(y|ical) (cooperation|collaboration|partnership)\b'
+      - '\bscience and technology cooperation\b'
+  technology_transfer:
+    label: Technology transfer
+    group: rd
+    operational: true
+    patterns:
+      - '\btechnology transfer\b'
+      - '\btransfer of technolog'
+  standards_cooperation:
+    label: Standards cooperation
+    group: standards
+    operational: true
+    patterns:
+      - '\bstandards? (cooperation|alignment|harmoni[sz]ation|setting|development)\b'
+      - '\b(international|technical|common) standards\b'
+      - '\btechnical barriers to trade\b|\bTBT\b'
+      - '\bsanitary and phytosanitary\b|\bSPS\b'
+      - '\bstandardi[sz]ation\b'
+  regulatory_cooperation:
+    label: Regulatory cooperation
+    group: standards
+    operational: true
+    patterns:
+      - '\bregulatory (cooperation|coherence|alignment|convergence|dialogue)\b'
+  mutual_recognition:
+    label: Mutual recognition
+    group: standards
+    operational: true
+    patterns:
+      - '\bmutual recognition\b'
+      - '\bMRAs?\b'
+      - '\bconformity assessment\b'
+  workforce_skills:
+    label: Workforce / skills cooperation
+    group: other
+    operational: false
+    patterns:
+      - '\b(workforce|skills?) (development|training|cooperation|partnership)\b'
+      - '\bvocational (training|education)\b'
+      - '\bhuman resources? development\b'
+      - '\bcapacity[- ]building\b'
+  permitting_coordination:
+    label: Permitting / regulatory coordination
+    group: standards
+    operational: false
+    patterns:
+      - '\bpermitting\b'
+      - '\b(streamlin|expedit|accelerat)\w* (the )?(approvals?|permits?|licensing)\b'
+  data_sharing:
+    label: Data / information sharing
+    group: dialogue
+    operational: false
+    patterns:
+      - '\b(information|data) (sharing|exchange)\b'
+      - '\bexchange (of )?information\b'
+      - '\bshare (relevant )?(information|data)\b'
+  government_procurement:
+    label: Government procurement
+    group: procurement
+    operational: true
+    patterns:
+      - '\b(government|public) procurement\b'
+  supply_chain_monitoring:
+    label: Supply-chain monitoring
+    group: supply
+    operational: false
+    patterns:
+      - '\bsupply[- ]chain (monitoring|mapping|resilience|security|risks?)\b'
+      - '\bresilient supply chains?\b'
+  early_warning:
+    label: Early-warning mechanism
+    group: supply
+    operational: false
+    patterns:
+      - '\bearly[- ]warning\b'
+      - '\brapid response (group|mechanism|team)\b'
+      - '\bcrisis (response|coordination) mechanisms?\b'
+  strategic_dialogue:
+    label: Strategic dialogue
+    group: dialogue
+    operational: false
+    patterns:
+      - '\b(strategic|economic|energy|ministerial|high[- ]level|policy|security) dialogues?\b'
+      - '\b2\s?\+\s?2\b'
+      - '战略对话|戦略対話|전략대화'
+      - '\bannual (summits?|consultations?)\b'
+  working_group:
+    label: Working group
+    group: dialogue
+    operational: false
+    patterns:
+      - '\bworking groups?\b'
+      - '工作组|联合委员会|作業部会|ワーキンググループ|합동위원회|실무그룹'
+      - '\bjoint (committees?|commissions?|working groups?|task ?forces?)\b'
+      - '\btask ?forces?\b'
+      - '\bsteering committees?\b'
+  other:
+    label: Other
+    group: other
+    operational: false
+    patterns: []
+
+instrument_groups:
+  trade: Trade
+  finance: Finance
+  investment: Investment
+  offtake: Offtake and demand
+  supply: Supply security
+  manufacturing: Manufacturing
+  rd: R&D and technology
+  standards: Standards and regulation
+  procurement: Procurement
+  dialogue: Dialogue and working groups
+  other: Other
+
+# --- Text coding ---------------------------------------------------------------------------
+# A keyword in the published text counts (basis text_body) only when its sentence also speaks of
+# cooperation, so that "nuclear" in a sentence about weapons or "steel" in a tariff complaint is
+# not read as a partnership. Titles are coded without this test (basis text_title).
+text_coding:
+  cooperation_patterns:
+    - '\bcooperat'
+    - '\bco-operat'
+    - '\bcollaborat'
+    - '\bpartnership'
+    - '\bjoint(ly)?\b'
+    - '\bwork(ing)? (together|closely)\b'
+    - '\bagree[ds]?\b|\bagreement\b'
+    - '\bmemorandum\b|\bMOU\b|\bMoC\b'
+    - '\b(promot|strengthen|deepen|expand|enhanc|advanc|support|establish|launch)\w*\b'
+    - '\bdevelop(s|ed|ing)?\b'
+    - '\bcommit\w*\b'
+    - '\binvest\w*\b'
+    - '合作|协作|伙伴'
+    - '協力|連携|パートナーシップ'
+    - '협력'
+    - 'coopération|partenariat'
+    - 'cooperación|asociación'
+  # Sentences are split on . ! ? and the CJK full stops; a "sentence" longer than this many
+  # characters is cut into pieces of this length so that one run-on paragraph does not pair a
+  # keyword with a far-off cooperation word.
+  max_sentence_chars: 600
+  # Snippet kept with a text code for provenance (characters around the keyword).
+  snippet_chars: 160
+  # A sector counts as covered from the body text (grade text) when at least this many distinct
+  # sentences of one document code it.
+  min_body_sentences: 2
+
+# --- Linkage (deduplication) ---------------------------------------------------------------
+linkage:
+  # Within GSP: documents on the same unordered pair within this many days are one event (both
+  # governments often publish; the authors' replication groups pair x year x month).
+  gsp_event_window_days: 7
+  # Across sources: candidate pairs share the same party set (Jaccard of parties >= this for a
+  # plurilateral) and dates within the windows below.
+  party_jaccard_min: 0.8
+  date_window_days: 45
+  year_window: 1
+  # Normalised-title token Jaccard needed to link two records (country names, stop words and
+  # generic words such as "agreement" removed first).
+  title_jaccard_min: 0.5
+  # Two trade agreements (fta, epa, or a treaty coded with the trade sector) on the same bilateral
+  # pair, signed within year_window of each other, link on that alone (rule trade_pair_year).
+  trade_pair_year_rule: true
+  # A bilateral trade agreement that one source records as a leg of a small plurilateral another
+  # source records (U.S. FTA "NAFTA / USMCA" with Canada vs DESTA's NAFTA) links to the best such
+  # plurilateral (rule trade_leg; R/agreements/agr_link.R). Legs of one plurilateral from one source
+  # may share its canonical agreement.
+  trade_leg_rule: true
+  trade_leg_max_parties: 8
+  trade_leg_year_window: 5
+  trade_leg_min_containment: 0.5
+  # A short title wholly inside a longer one ("US-Australia Critical Minerals Framework" in the
+  # full title of the same framework) also links: at least this share of the shorter title's
+  # tokens, and at least this many tokens in it (rule title_containment; its similarity counts
+  # 0.75 x the containment in the score).
+  title_containment_min: 0.8
+  title_containment_min_tokens: 3
+  # Sources whose records may link with each other (two research passes of the curated table can
+  # record one agreement twice, e.g. the EU-US critical minerals MoU from both sides). Records of
+  # the other sources never link within their source except GSP documents of one event, and a
+  # canonical agreement never holds two records of one of exclusive_sources.
+  within_source_sources: [curated]
+  exclusive_sources: [desta, memberships, pmemo, iisd]
+  # Below this match score a candidate link is not merged; both records stay canonical.
+  min_link_score: 0.6
+  generic_title_words: [agreement, agreements, between, government, governments, republic, kingdom,
+    states, united, people, peoples, democratic, federal, federation, the, of, and, 'on', for, in,
+    to, a, an, joint, statement, declaration, memorandum, understanding, mou, concerning,
+    relating, regarding, with, its, their, state, islamic, socialist, union, s]
+
+# --- Pair roll-up ---------------------------------------------------------------------------
+pairs:
+  # A non-binding document without a later status counts as active for this many years after its
+  # date; binding agreements count while in force (DESTA entry into force, minus withdrawals).
+  active_window_years: 10
+  recent_years: 5
+  # The as-of date of the roll-up (recency windows); scripts/36 overrides it with --as-of.
+  as_of: '2026-11-06'
+  # EU-level agreements (party EUU) are also attributed to each current member state's pair with
+  # the counterpart, flagged via_eu. DESTA already lists EC agreements under member states.
+  eu_code: EUU
+  propagate_eu: true
+  # The EU's seat in a club (G7, the Minerals Security Partnership) does not make its member states
+  # members: agreements of these relationship categories are not propagated.
+  no_propagate_categories: [plurilateral_club]
+  # Plurilateral agreements with more parties than this are kept for the club view but do not
+  # lift a pair's depth (NATO, the G7 summit process).
+  max_parties_for_depth: 20
+
+# Partnership depth (provisional). Rules are tested in order from 5 down; the first that holds
+# sets the class. Each is computed twice: over all agreements (depth_all) and over the
+# electro-industrial ones (depth_ei; an agreement is electro-industrial when it covers a sector
+# with electro_industrial: true, at a specific grade or a text grade).
+depth:
+  classes:
+    0: No identified partnership
+    1: Dialogue
+    2: Framework
+    3: Sectoral cooperation
+    4: Operational partnership
+    5: Integrated partnership
+  # Class 2: at least one agreement of these types (a formal framework), or a strategic
+  # partnership named in a title.
+  framework_types: [treaty, fta, epa, strategic_partnership, framework, mou, sectoral_partnership,
+    financing_agreement]
+  # Class 3: an electro-industrial or industrial sector covered at a specific grade, or at the
+  # text grade (min_body_sentences) in a document of the pair. Trade, Science / R&D and General
+  # clean energy alone do not make class 3.
+  sectoral_exclude: [trade, science_rd, general_clean_energy]
+  # Class 4: an operational instrument coded at a specific grade in an agreement that is not
+  # cancelled or inactive.
+  # Class 5: class 4, plus operational instruments in the trade group AND in the finance or
+  # investment groups (or manufacturing), plus class-3 sectoral cooperation, plus evidence that
+  # something is in effect: a binding agreement in force or delivery evidence (integrated_needs).
+  integrated_needs: in_force_or_delivery   # in_force_or_delivery | delivery
+
+# --- Agreement gaps ------------------------------------------------------------------------
+# Joins the pair roll-up to the capability and need data at pair x technology. Every component
+# is exported; the quadrant is a labelled rule over them, not a score.
+gaps:
+  # Complementarity between A (the side with the need) and B (the side with the capability) in a
+  # technology x stage cell: B is a recommended partner of A in the cell (strategic_position_tbl
+  # recommended_partner_1..3), or A's need percentile >= need_min while B's competitive position
+  # percentile >= capability_min in the cell. Cells are evaluated stage by stage; a gap row is per
+  # technology and lists the stages where complementarity is high (stages_high).
+  need_min: 0.67
+  capability_min: 0.75
+  # The stages where one economy can supply another. Deployment (installing and using equipment) is
+  # demand context, not supply: it is left out of complementarity, need, capability, coverage
+  # stages and execution gaps.
+  supply_stages: [Extraction, Refining, Components, Assembly, Recovery]
+  # Complementarity is high only between economies whose UN-vote alignment (geo_alignment_tbl:
+  # 1 same bloc, 0.5 one side non-aligned, 0 opposite blocs) is at least this; a pair in opposite
+  # blocs keeps its components but is flagged alignment_blocked. Unknown alignment does not block.
+  min_alignment: 0.5
+  # Architecture is strong in a technology when an agreement of the pair covers it at a specific
+  # grade at a stage where complementarity is high (any stage when it is not). A sector covers the
+  # stages listed for it under `sectors` (all six when none are listed): a critical-minerals
+  # framework covers Extraction, Refining and Recovery, not battery assembly. strong_depth: when
+  # set, a pair whose depth_ei is at least this is also strong; null (the default) keeps the
+  # architecture technology- and stage-specific.
+  strong_depth: null
+  # Execution gap: a cell A prioritises (policy_priority_percentile >= priority_min within A, or a
+  # strategic choice in priority_choices) with high-complementarity suppliers at that stage, where
+  # none of A's agreements with them covers the technology at that stage at a specific grade.
+  priority_min: 0.75
+  priority_choices: [secure, partner]
+  # Export: per country and technology, the strongest candidates by complementarity.
+  top_candidates: 5

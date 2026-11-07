@@ -359,6 +359,8 @@ function PairThesisCard() {
     />
   ) : null;
   const pairLink = `/aib/partnerships?country=${iso}${b ? `&partner=${b}` : ''}`;
+  // the partnership agreements page (2026-11-06): a plain link, no agreements code in the profile
+  const agreementsLink = `/aib/agreements?country=${iso}${b ? `&partner=${b}` : ''}`;
   return (
     <RelationshipThesis
       id="profile-thesis"
@@ -374,6 +376,10 @@ function PairThesisCard() {
         <p className="text-xs">
           <Link className="link" to={href(pairLink)}>
             Every relationship thesis of {name}, with any partner, on the Partnerships page &rarr;
+          </Link>
+          <br />
+          <Link className="link" to={href(agreementsLink)}>
+            {b ? `The agreements of ${name} and ${nameOf(b)}` : `The agreements of ${name}`} on the Agreements page &rarr;
           </Link>
         </p>
       }
