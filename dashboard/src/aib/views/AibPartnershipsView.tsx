@@ -1225,7 +1225,7 @@ function GeopoliticalTab({ f, onKind }: TabProps) {
               label="Economic-security agreements"
               keyOf={(r) => r.agreement}
               nameOf={(r) => agreementNames([r.agreement])}
-              value={(r) => plural(r.members.length, 'member')}
+              value={(r) => (r.hub ? plural(r.members.length, 'bilateral agreement') : plural(r.members.length, 'member'))}
               note={(r) => `${r.members.slice(0, 8).map(name).join(', ')}${r.members.length > 8 ? ` and ${r.members.length - 8} more` : ''}`}
             />
           ) : (
