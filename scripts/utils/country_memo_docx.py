@@ -226,11 +226,16 @@ def blocks_texts(blocks):
     return out
 
 
+def section_title(s):
+    """A brief section heading; a section numbered 0 (a Partnership Memo's executive summary) has no number."""
+    return s["title"] if int(s["n"]) == 0 else f"{s['n']}. {s['title']}"
+
+
 def expected_texts_brief(doc):
     """Body paragraph texts of a brief in reading order (table cells included)."""
     out = [x for x in (doc.get("eyebrow") or "", doc["title"], doc["subtitle"], doc["label"]) if x]
     for s in doc["sections"]:
-        out.append(f"{s['n']}. {s['title']}")
+        out.append(section_title(s))
         out += blocks_texts(s["blocks"])
     out.append("Sources")
     out += [s["text"] for s in doc["sources"]]
@@ -363,9 +368,9 @@ def build_brief(doc, out, figdir=None):
 
     cp = d.core_properties
     cp.title = doc["title"]
-    cp.subject = "Country strategy brief: " + doc["subtitle"]
+    cp.subject = (doc.get("doc_kind") or "Country strategy brief") + ": " + doc["subtitle"]
     cp.author = "NEIS Center, Allied Industrial Base Explorer (AI-generated, checked against the data)"
-    cp.keywords = "Allied Industrial Base; Yards and Fences; Secure; Preserve; Catch Up; Partner; Accelerate; " + doc["iso3"]
+    cp.keywords = (doc.get("keywords") or "Allied Industrial Base; Yards and Fences; Secure; Preserve; Catch Up; Partner; Accelerate") + "; " + doc["iso3"]
     cp.comments = f"NEIS baseline as of {doc.get('as_of_label') or doc.get('as_of')}; facts sha256 {doc.get('facts_sha256', '')}"
 
     if doc.get("eyebrow"):
@@ -384,7 +389,7 @@ def build_brief(doc, out, figdir=None):
     hairline_above(lab)
 
     for s in doc["sections"]:
-        d.add_paragraph(f"{s['n']}. {s['title']}", style="Heading 1")
+        d.add_paragraph(section_title(s), style="Heading 1")
         add_blocks(d, s["blocks"], figdir)
 
     src_head = d.add_paragraph("Sources", style="Heading 2")

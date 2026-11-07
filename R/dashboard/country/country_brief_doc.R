@@ -581,7 +581,9 @@ country_brief_html <- function(doc, svgs = list(), font_b64 = NULL, page_size = 
             paste0("<h1>", country_memo_esc(doc$title), "</h1>"),
             paste0("<p class=\"sub\">", country_memo_esc(doc$subtitle), "</p>"),
             paste0("<p class=\"label\">", country_memo_esc(doc$label), "</p>"))
-  for (s in doc$sections) body <- c(body, sprintf("<h2>%d. %s</h2>", s$n, country_memo_esc(s$title)), country_brief_blocks_html(s$blocks, svgs))
+  # a section numbered 0 prints without a number (the Partnership Memo's executive summary)
+  for (s in doc$sections) body <- c(body, if (identical(as.integer(s$n), 0L)) sprintf("<h2>%s</h2>", country_memo_esc(s$title)) else
+                                      sprintf("<h2>%d. %s</h2>", s$n, country_memo_esc(s$title)), country_brief_blocks_html(s$blocks, svgs))
   body <- c(body, "<div class=\"sources\"><h2>Sources</h2><ol>",
             vapply(doc$sources, function(s) paste0("<li value=\"", s$n, "\">", country_memo_esc(s$text), "</li>"), ""), "</ol></div>")
   if (!is.null(doc$appendix)) body <- c(body, "<div class=\"appendix\">", paste0("<h2>", country_memo_esc(doc$appendix$title), "</h2>"),
@@ -611,7 +613,7 @@ country_brief_markdown <- function(doc) {
     out
   }
   out <- c(paste0("# ", doc$title), "", paste0("*", doc$subtitle, "*"), "", paste0("*", doc$label, "*"), "")
-  for (s in doc$sections) out <- c(out, sprintf("## %d. %s", s$n, s$title), "", blocks_md(s$blocks))
+  for (s in doc$sections) out <- c(out, if (identical(as.integer(s$n), 0L)) paste0("## ", s$title) else sprintf("## %d. %s", s$n, s$title), "", blocks_md(s$blocks))
   out <- c(out, "## Sources", "", vapply(doc$sources, function(s) paste0(s$n, ". ", s$text), ""), "")
   if (!is.null(doc$appendix)) out <- c(out, paste0("## ", doc$appendix$title), "", blocks_md(doc$appendix$blocks))
   out <- c(out, paste0("*", doc$disclosure %||% doc$label, "*"), "", paste0("*", doc$footer %||% "", "*"), "")

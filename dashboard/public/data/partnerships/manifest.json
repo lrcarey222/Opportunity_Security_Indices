@@ -1,0 +1,22 @@
+{
+  "schema": "osi-partnership-memos",
+  "schema_version": 1,
+  "pairs": {
+    "USA_JPN": {
+      "pair": "USA_JPN",
+      "country_a": "USA",
+      "country_b": "JPN",
+      "title": "United States–Japan Strategic Energy & Industrial Partnership",
+      "json": "memo-USA_JPN.d98e5bec.json",
+      "pdf": "memo-USA_JPN.8d6ad4b9.pdf",
+      "docx": "memo-USA_JPN.0009fc50.docx",
+      "md": "memo-USA_JPN.9c2e4839.md",
+      "words": 7553,
+      "generated_at": "2026-11-06T17:50:45Z",
+      "as_of": "2026-10-30",
+      "evidence_access": "2026-11-06",
+      "format": "brief",
+      "verified": false
+    }
+  }
+}

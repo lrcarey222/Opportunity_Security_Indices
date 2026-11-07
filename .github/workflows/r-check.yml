@@ -13,7 +13,7 @@ jobs:
       SKIP_DATA_DOWNLOADS: "true"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Matches credential values, not env-var names: Comtrade keys are 32 hex, Datawrapper tokens
       # 64 alphanumerics, the rest fixed provider prefixes. No -i, and prefixes can't follow a base64
