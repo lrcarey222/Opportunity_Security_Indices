@@ -21,6 +21,7 @@
 # These are internal project utilities used elsewhere in your repo.
 # - median_scurve(): monotonic mapping of values to 0-1; robust-ish to outliers
 # - standardize_country_names(): ensures consistent Implementing Jurisdiction names
+# - country_name_to_iso3(): resolves Implementing Jurisdiction to iso3 (R/utils/country.R)
 
 if (!exists("median_scurve", mode = "function")) {
   source(file.path(dirname(sys.frame(1)$ofile), "..", "..", "utils", "scurve.R"))
@@ -1794,22 +1795,42 @@ clean_nipo_raw <- function(raw_nipo,
     dplyr::mutate(nipo_row_id = dplyr::row_number()) %>%
     dplyr::left_join(per_policy_hs6, by = "nipo_row_id") %>%
     dplyr::mutate(
-      country = standardize_country_names(.data$`Implementing Jurisdiction`)
+      country = standardize_country_names(.data$`Implementing Jurisdiction`),
+      # iso3 is resolved from the GTA name by CODE (R/utils/country.R). It used
+      # to come only from a name join against country_info (WDI). Before the
+      # country harmonisation that join missed "Slovakia", "Vietnam" and
+      # "Bosnia & Herzegovina", which WDI spells differently, and it still
+      # misses "Chinese Taipei", because WDI has no Taiwan row and scripts/10
+      # passes WDI as it is.
+      iso3 = country_name_to_iso3(.data$`Implementing Jurisdiction`)
     )
-  
+
   if (!is.null(country_info) && all(c("country", "iso3c") %in% names(country_info))) {
     country_lu <- country_info %>%
       dplyr::mutate(country = standardize_country_names(.data$country)) %>%
-      dplyr::select(.data$country, .data$iso3c)
-    
+      dplyr::select("country", "iso3c")
+
+    # The name join is kept as a fallback for any spelling countrycode cannot
+    # resolve. Its iso3c column is dropped once merged so that a stale NA cannot
+    # sit beside a resolved iso3.
     nipo_classified <- nipo_classified %>%
       dplyr::left_join(country_lu, by = "country") %>%
-      dplyr::mutate(iso3 = toupper(.data$iso3c))
-  } else {
-    nipo_classified <- nipo_classified %>%
-      dplyr::mutate(iso3 = NA_character_)
+      dplyr::mutate(iso3 = dplyr::coalesce(.data$iso3, toupper(.data$iso3c))) %>%
+      dplyr::select(-"iso3c")
   }
-  
+
+  unresolved_jurisdictions <- unique(
+    nipo_classified$`Implementing Jurisdiction`[is.na(nipo_classified$iso3)]
+  )
+  if (length(unresolved_jurisdictions) > 0) {
+    warning(
+      "clean_nipo_raw(): no iso3 code for Implementing Jurisdiction ",
+      paste(sQuote(unresolved_jurisdictions, q = FALSE), collapse = ", "),
+      ". Add the spelling to country_iso3_custom_match() in R/utils/country.R.",
+      call. = FALSE
+    )
+  }
+
   if ("Sector: CPC 3-digit (v2.1)" %in% names(nipo_classified)) {
     nipo_classified <- nipo_classified %>%
       dplyr::mutate(
