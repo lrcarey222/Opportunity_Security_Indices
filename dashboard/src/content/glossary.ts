@@ -921,6 +921,49 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     modules: AIB,
     related: ['scaling_host', 'specialty_host', 'dp'],
   },
+  // ---- the partnership agreements (/aib/agreements, 2026-11-06; docs/partnership_agreements.md) ---------------
+  {
+    id: 'partnership_depth',
+    term: 'Partnership depth',
+    short: 'How far the agreements between two economies go, as a class from 0 to 5: none found, dialogue, framework, sectoral cooperation, operational, integrated. A labelled rule, not a score.',
+    more:
+      'The first rule that holds, tested from class 5 down, sets the class; more agreements never raise it. Class 4 needs a concrete instrument (finance, offtake, supply, a trade preference) established by a source, an official text or the agreement type, never a keyword in a broad statement. Class 5 adds trade and finance, investment or manufacturing instruments, sectoral cooperation and something in effect. Class 0 means no agreement was found in these sources, not that there is no cooperation.',
+    modules: AIB,
+    related: ['electro_industrial_agreement', 'coding_basis', 'delivery_evidence', 'agreement_gap'],
+  },
+  {
+    id: 'agreement_gap',
+    term: 'Agreement gap',
+    short: 'Where two economies complement each other in a technology (one needs supply the other could provide) but no agreement of the pair covers it at an established level.',
+    more:
+      'Complementarity is high when the supplier is a recommended partner of the economy that needs it, or when need and capability are both high at the same supply-chain step. Architecture is strong when an agreement of the pair covers the technology at an established level at the stages where the two complement each other. Missing need or capability data leave complementarity not assessed. The groups are a rule over these parts, always shown with them: high complementarity and weak architecture is an opportunity, high and strong is established, and low and strong is an older tie that complementarity does not explain.',
+    modules: AIB,
+    related: ['partnership_depth', 'coding_basis', 'partner_gap'],
+  },
+  {
+    id: 'electro_industrial_agreement',
+    term: 'Electro-industrial agreement',
+    short: 'An agreement that covers an electro-industrial sector: clean-energy technologies, the grid, critical minerals, batteries, semiconductors, data centres and the heavy industries that supply them.',
+    more: 'Oil, gas and coal, general industrial or trade cooperation and science cooperation are not electro-industrial. The electro-industrial depth class of a pair counts only these agreements.',
+    modules: AIB,
+    related: ['partnership_depth', 'agreement_gap'],
+  },
+  {
+    id: 'delivery_evidence',
+    term: 'Delivery evidence',
+    short: 'A record that an agreement is being carried out (implementation underway or operational), from a source that tracks delivery. Signing or entry into force alone shows existence, not delivery.',
+    more: 'Most sources record only that an agreement exists, so "no evidence recorded" does not mean nothing was delivered.',
+    modules: AIB,
+    related: ['partnership_depth', 'coding_basis'],
+  },
+  {
+    id: 'coding_basis',
+    term: 'Coding basis',
+    short: 'Why a sector or instrument is attached to an agreement. Established: coded by the source, recorded from the official text, implied by the type or in the title. Mentioned: in the body text only.',
+    more: 'A mention is shown, marked "mentioned in text", but never counts as established: it cannot make a partnership operational, and a technology that is only mentioned stays an agreement gap. A keyword in the title establishes a sector, never an instrument.',
+    modules: AIB,
+    related: ['partnership_depth', 'agreement_gap', 'delivery_evidence'],
+  },
 ];
 
 /** Fill {{placeholders}} (unknown keys are left as written, so a test can catch them). */

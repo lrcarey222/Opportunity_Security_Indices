@@ -1350,3 +1350,138 @@ inputs:
     data/raw so far; copy data/raw/ember/ to the SharePoint raw folder.
   required_by:
   - scripts/95_build_deployment_need.R
+- id: gsp_partnership_documents
+  path: gsp_partnership_documents.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Global Strategic Partnership Dataset, partnership documents with full text
+    (Chang-Liao and Fu 2025, Harvard Dataverse)
+  url: https://doi.org/10.7910/DVN/UJD7LW
+  cadence: irregular
+  owner: lcarey@rmi.org
+  vintage: Dataverse V1.0 (2025-09-23), db_world_Dataverse_20250923.csv, 1,949 rows (1,948
+    after the one exact duplicate), documents dated 1992-2023
+  licence: CC0-1.0
+  staged_from: sharepoint
+  notes: Fetched from the Harvard Dataverse API (public, no key) by scripts/fetchers/gsp_partnerships.R
+    (fetcher gsp_partnership_documents), which takes the newest db_world*.csv of the latest
+    released version and writes it in a fixed schema (the 17 upstream columns, fulltext
+    included, plus row_key = doc_id + MD5 of the source URL, source_file, dataset_version,
+    fetched_on). Rows are directed documents (country1 published, country2 is the partner);
+    values are kept as published ("Kosovo", "GE-AB", blank dates, one invalid day) and
+    normalised by R/agreements/adapter_gsp.R. The only exact duplicate (RUSMAR2016315) is
+    dropped. Two fulltexts stop at 32,767 characters (spreadsheet cell limit upstream).
+    dataverse.harvard.edu sometimes fails TLS with schannel SEC_E_WRONG_PRINCIPAL; the fetch
+    retries. Nothing needs staging - staged_from is sharepoint so that scripts/05 runs the
+    fetcher. Standalone - Rscript scripts/fetchers/gsp_partnerships.R [--dest=<path>].
+  required_by:
+  - scripts/35_ingest_agreements.R
+- id: desta_list_of_treaties
+  path: desta_list_of_treaties.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), list of treaties (Dür, Baccini and Elsig)
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 1,410 entries
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/desta.R (fetcher desta_list_of_treaties), which reads the
+    downloads page, takes the newest version of each linked file (falling back to the v2.3 URLs),
+    converts Latin-1 to UTF-8 and adds source_version, source_release and fetched_on. One row
+    per entry (base treaty, accession, withdrawal, protocol, consolidated, negotiation) with
+    parties c1..c91 and membership roles mc1..mc91; R/agreements/adapter_desta.R builds the
+    agreement records and their parties from it. Only derived facts are redistributed.
+  required_by:
+  - scripts/35_ingest_agreements.R
+- id: desta_dyads
+  path: desta_dyads.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), dyadic list of treaties
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 20,569 dyads
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  retain: true
+  notes: Reference only - fetched by scripts/fetchers/desta.R (fetcher desta_dyads) for checks by
+    hand and not read by the pipeline. The dyadic version omits dyads by membership role, so
+    parties are built from desta_list_of_treaties instead; hence retain.
+  required_by:
+  - scripts/35_ingest_agreements.R
+- id: desta_withdrawals
+  path: desta_withdrawals.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), dyadic withdrawals
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 1,650 withdrawal dyads (72 withdrawal entries)
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/desta.R (fetcher desta_withdrawals); iso1 is the
+    withdrawing country. It is the fallback - R/agreements/adapter_desta.R reads withdrawals from
+    the list file (role 1) first, removes the withdrawing country from the agreement and its
+    accession records, and makes a record with fewer than two remaining parties inactive.
+  required_by:
+  - scripts/35_ingest_agreements.R
+- id: desta_provisions
+  path: desta_provisions.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), content coding of provisions
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 781 coded entries
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/desta.R (fetcher desta_provisions; upstream
+    desta_version_*.csv). About 500 provision variables per coded entry; the adapter turns the
+    provisions it maps into sector and instrument codes with basis source_coded, taking the
+    newest consolidated entry of an agreement where one exists.
+  required_by:
+  - scripts/35_ingest_agreements.R
+- id: desta_indices
+  path: desta_indices.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), depth, flexibility and enforcement indices
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 692 entries
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/desta.R (fetcher desta_indices). depth_index (0-7) and its
+    seven components, depth_rasch, flexibility and enforcement; the adapter takes depth_index
+    from here and recomputes it from the provisions where an entry has no index row.
+  required_by:
+  - scripts/35_ingest_agreements.R
+- id: iisd_trade_climate_tracker
+  path: iisd_trade_climate_tracker.csv
+  fetch_policy: never
+  source_type: manual
+  source_name: IISD Trade & Climate Tracker (export shared by IISD)
+  url: https://www.iisd.org/trade-climate-tracker/
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  licence: All rights reserved (IISD); staged only with IISD permission
+  staged_from: sharepoint
+  optional: yes
+  notes: IISD's tracker site sits behind a bot challenge and its content is all rights
+    reserved, so it is never fetched. Ask IISD (contact through the tracker page) for a CSV
+    export for research use, record the date and
+    the permission here (vintage), and save it under this name. One row per agreement signed
+    by two or more governments (January 2025 - June 2026; methodology of 1 July 2026) with
+    title, parties, signature date, agreement type, text availability and one coded-summary
+    column per subtopic (or a long-form topics column). Column names are matched loosely
+    (IISD_COLUMN_ALIASES in R/agreements/adapter_iisd.R); the expected schema is in
+    data/reference/partnership_agreements/README.md, section 2. Optional - the layer builds
+    without it.
+  required_by:
+  - scripts/35_ingest_agreements.R

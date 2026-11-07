@@ -1,0 +1,584 @@
+{
+ "version": 1,
+ "created": "2026-11-06T12:00:00Z",
+ "as_of": "2026-11-06",
+ "git_commit": "synthetic",
+ "files": {
+  "global": "agreements-global.d91b68ab.json",
+  "countries": {
+   "JPN": "agreements-JPN.6033ad15.json",
+   "AUS": "agreements-AUS.ee038a5d.json",
+   "USA": "agreements-USA.eccb9497.json",
+   "DEU": "agreements-DEU.1121a89d.json"
+  }
+ },
+ "vocab": {
+  "agreement_types": {
+   "treaty": "Treaty",
+   "fta": "FTA / Trade Agreement",
+   "epa": "Economic Partnership Agreement",
+   "strategic_partnership": "Strategic Partnership",
+   "framework": "Framework Agreement",
+   "mou": "MOU",
+   "joint_declaration": "Joint Declaration",
+   "joint_statement": "Joint Statement",
+   "sectoral_partnership": "Sectoral Partnership",
+   "ministerial_initiative": "Ministerial Initiative",
+   "plurilateral_forum": "Plurilateral forum or club",
+   "financing_agreement": "Financing Agreement",
+   "other": "Other"
+  },
+  "partnership_labels": {
+   "comprehensive_strategic": "Comprehensive strategic partnership",
+   "global_strategic": "Global strategic partnership",
+   "special_strategic": "Special strategic partnership",
+   "strategic": "Strategic partnership",
+   "comprehensive": "Comprehensive partnership",
+   "other_partnership": "Other named partnership"
+  },
+  "legal_statuses": {
+   "binding": "Legally binding",
+   "non_binding": "Political commitment / non-binding",
+   "mixed": "Mixed / unclear",
+   "unknown": "Unknown"
+  },
+  "implementation_statuses": {
+   "announced": "Announced",
+   "signed": "Signed",
+   "in_force": "In force",
+   "implementation_underway": "Implementation underway",
+   "operational": "Implemented / operational",
+   "inactive": "Inactive / expired",
+   "cancelled": "Cancelled",
+   "unknown": "Unknown"
+  },
+  "delivery_statuses": [
+   "implementation_underway",
+   "operational"
+  ],
+  "coding_bases": {
+   "source_coded": "coded by the source dataset (a DESTA provision, an IISD topic)",
+   "curated": "recorded by hand from the official text",
+   "type_implied": "implied by the source's agreement type (a free-trade agreement reduces tariffs)",
+   "text_title": "keyword in the title",
+   "text_body": "keyword in a sentence of the published text that also speaks of cooperation"
+  },
+  "confidence_levels": {
+   "high": "primary government or agreement text, or two or more independent sources",
+   "medium": "one reputable structured dataset",
+   "low": "a secondary source only, or uncertain entity or record matching"
+  },
+  "depth_classes": {
+   "0": "No identified partnership",
+   "1": "Dialogue",
+   "2": "Framework",
+   "3": "Sectoral cooperation",
+   "4": "Operational partnership",
+   "5": "Integrated partnership"
+  },
+  "instrument_groups": {
+   "trade": "Trade",
+   "finance": "Finance",
+   "investment": "Investment",
+   "offtake": "Offtake and demand",
+   "supply": "Supply security",
+   "manufacturing": "Manufacturing",
+   "rd": "R&D and technology",
+   "standards": "Standards and regulation",
+   "procurement": "Procurement",
+   "dialogue": "Dialogue and working groups",
+   "other": "Other"
+  },
+  "sectors": [
+   {
+    "id": "critical_minerals",
+    "label": "Critical minerals",
+    "ei": true,
+    "techs": [
+     "Batteries",
+     "Electric Vehicles",
+     "Electric Grid",
+     "Wind",
+     "Solar"
+    ]
+   },
+   {
+    "id": "solar",
+    "label": "Solar",
+    "ei": true,
+    "techs": [
+     "Solar"
+    ]
+   },
+   {
+    "id": "wind",
+    "label": "Wind",
+    "ei": true,
+    "techs": [
+     "Wind"
+    ]
+   },
+   {
+    "id": "batteries",
+    "label": "Batteries",
+    "ei": true,
+    "techs": [
+     "Batteries"
+    ]
+   },
+   {
+    "id": "evs",
+    "label": "EVs",
+    "ei": true,
+    "techs": [
+     "Electric Vehicles"
+    ]
+   },
+   {
+    "id": "nuclear",
+    "label": "Nuclear",
+    "ei": true,
+    "techs": [
+     "Nuclear"
+    ]
+   },
+   {
+    "id": "grid_equipment",
+    "label": "Grid equipment",
+    "ei": true,
+    "techs": [
+     "Electric Grid"
+    ]
+   },
+   {
+    "id": "transformers",
+    "label": "Transformers",
+    "ei": true,
+    "techs": [
+     "Electric Grid"
+    ]
+   },
+   {
+    "id": "transmission",
+    "label": "Transmission",
+    "ei": true,
+    "techs": [
+     "Electric Grid"
+    ]
+   },
+   {
+    "id": "power_electronics",
+    "label": "Power electronics",
+    "ei": true,
+    "techs": [
+     "Electric Grid",
+     "Solar"
+    ]
+   },
+   {
+    "id": "semiconductors",
+    "label": "Semiconductors",
+    "ei": true,
+    "techs": []
+   },
+   {
+    "id": "hydrogen",
+    "label": "Hydrogen",
+    "ei": true,
+    "techs": [
+     "Green Hydrogen"
+    ]
+   },
+   {
+    "id": "geothermal",
+    "label": "Geothermal",
+    "ei": true,
+    "techs": [
+     "Geothermal"
+    ]
+   },
+   {
+    "id": "ccs",
+    "label": "CCS",
+    "ei": true,
+    "techs": []
+   },
+   {
+    "id": "industrial_heat",
+    "label": "Industrial heat",
+    "ei": true,
+    "techs": []
+   },
+   {
+    "id": "steel",
+    "label": "Steel",
+    "ei": true,
+    "techs": []
+   },
+   {
+    "id": "aluminum",
+    "label": "Aluminum",
+    "ei": true,
+    "techs": []
+   },
+   {
+    "id": "cement",
+    "label": "Cement",
+    "ei": true,
+    "techs": []
+   },
+   {
+    "id": "data_centers",
+    "label": "Data centers / compute infrastructure",
+    "ei": true,
+    "techs": []
+   },
+   {
+    "id": "general_clean_energy",
+    "label": "General clean energy",
+    "ei": true,
+    "techs": []
+   },
+   {
+    "id": "fossil_fuels",
+    "label": "Oil, gas and coal",
+    "ei": false,
+    "techs": [
+     "Oil",
+     "Gas",
+     "Coal"
+    ]
+   },
+   {
+    "id": "general_industrial",
+    "label": "General industrial cooperation",
+    "ei": false,
+    "techs": []
+   },
+   {
+    "id": "trade",
+    "label": "Trade",
+    "ei": false,
+    "techs": []
+   },
+   {
+    "id": "science_rd",
+    "label": "Science / R&D",
+    "ei": false,
+    "techs": []
+   }
+  ],
+  "instruments": [
+   {
+    "id": "trade_preference",
+    "label": "Trade preference",
+    "group": "trade",
+    "operational": true
+   },
+   {
+    "id": "tariff_reduction",
+    "label": "Tariff reduction",
+    "group": "trade",
+    "operational": true
+   },
+   {
+    "id": "market_access",
+    "label": "Market access",
+    "group": "trade",
+    "operational": true
+   },
+   {
+    "id": "investment_facilitation",
+    "label": "Investment facilitation",
+    "group": "investment",
+    "operational": true
+   },
+   {
+    "id": "fdi_framework",
+    "label": "FDI framework",
+    "group": "investment",
+    "operational": true
+   },
+   {
+    "id": "public_finance",
+    "label": "Public finance",
+    "group": "finance",
+    "operational": true
+   },
+   {
+    "id": "export_credit",
+    "label": "Export credit",
+    "group": "finance",
+    "operational": true
+   },
+   {
+    "id": "development_finance",
+    "label": "Development finance",
+    "group": "finance",
+    "operational": true
+   },
+   {
+    "id": "loan_guarantee",
+    "label": "Loan guarantee",
+    "group": "finance",
+    "operational": true
+   },
+   {
+    "id": "joint_investment_fund",
+    "label": "Joint investment fund",
+    "group": "investment",
+    "operational": true
+   },
+   {
+    "id": "offtake",
+    "label": "Offtake / purchase commitment",
+    "group": "offtake",
+    "operational": true
+   },
+   {
+    "id": "demand_guarantee",
+    "label": "Demand guarantee",
+    "group": "offtake",
+    "operational": true
+   },
+   {
+    "id": "price_support",
+    "label": "Price support",
+    "group": "offtake",
+    "operational": true
+   },
+   {
+    "id": "critical_mineral_supply",
+    "label": "Critical-mineral supply agreement",
+    "group": "supply",
+    "operational": true
+   },
+   {
+    "id": "long_term_supply",
+    "label": "Long-term supply arrangement",
+    "group": "supply",
+    "operational": true
+   },
+   {
+    "id": "joint_venture",
+    "label": "Joint venture",
+    "group": "manufacturing",
+    "operational": true
+   },
+   {
+    "id": "co_production",
+    "label": "Co-production",
+    "group": "manufacturing",
+    "operational": true
+   },
+   {
+    "id": "manufacturing_cooperation",
+    "label": "Manufacturing cooperation",
+    "group": "manufacturing",
+    "operational": true
+   },
+   {
+    "id": "rd_cooperation",
+    "label": "R&D cooperation",
+    "group": "rd",
+    "operational": true
+   },
+   {
+    "id": "technology_cooperation",
+    "label": "Technology cooperation",
+    "group": "rd",
+    "operational": false
+   },
+   {
+    "id": "technology_transfer",
+    "label": "Technology transfer",
+    "group": "rd",
+    "operational": true
+   },
+   {
+    "id": "standards_cooperation",
+    "label": "Standards cooperation",
+    "group": "standards",
+    "operational": true
+   },
+   {
+    "id": "regulatory_cooperation",
+    "label": "Regulatory cooperation",
+    "group": "standards",
+    "operational": true
+   },
+   {
+    "id": "mutual_recognition",
+    "label": "Mutual recognition",
+    "group": "standards",
+    "operational": true
+   },
+   {
+    "id": "workforce_skills",
+    "label": "Workforce / skills cooperation",
+    "group": "other",
+    "operational": false
+   },
+   {
+    "id": "permitting_coordination",
+    "label": "Permitting / regulatory coordination",
+    "group": "standards",
+    "operational": false
+   },
+   {
+    "id": "data_sharing",
+    "label": "Data / information sharing",
+    "group": "dialogue",
+    "operational": false
+   },
+   {
+    "id": "government_procurement",
+    "label": "Government procurement",
+    "group": "procurement",
+    "operational": true
+   },
+   {
+    "id": "supply_chain_monitoring",
+    "label": "Supply-chain monitoring",
+    "group": "supply",
+    "operational": false
+   },
+   {
+    "id": "early_warning",
+    "label": "Early-warning mechanism",
+    "group": "supply",
+    "operational": false
+   },
+   {
+    "id": "strategic_dialogue",
+    "label": "Strategic dialogue",
+    "group": "dialogue",
+    "operational": false
+   },
+   {
+    "id": "working_group",
+    "label": "Working group",
+    "group": "dialogue",
+    "operational": false
+   },
+   {
+    "id": "other",
+    "label": "Other",
+    "group": "other",
+    "operational": false
+   }
+  ],
+  "sources": [
+   {
+    "id": "gsp",
+    "label": "Global Strategic Partnership Dataset",
+    "short": "GSP",
+    "citation": "Chang-Liao, N., Fu, Lin (2025). Global Strategic Partnership Dataset, 1990-2020, V1.0. Harvard Dataverse, doi:10.7910/DVN/UJD7LW (CC0 1.0).",
+    "url": "https://doi.org/10.7910/DVN/UJD7LW",
+    "licence": "CC0-1.0",
+    "n_records": 2,
+    "last_updated": "2025-06-30"
+   },
+   {
+    "id": "desta",
+    "label": "Design of Trade Agreements (DESTA)",
+    "short": "DESTA",
+    "citation": "Dür, A., Baccini, L. and Elsig, M. (2014). The Design of International Trade Agreements. Review of International Organizations 9(3): 353-375. DESTA version 2.3.",
+    "url": "https://www.designoftradeagreements.org/downloads/",
+    "licence": "none published (citation requested); redistribution of derived facts only",
+    "n_records": 6,
+    "last_updated": "2025-09-15"
+   },
+   {
+    "id": "memberships",
+    "label": "Economic-security agreement memberships (project reference)",
+    "short": "Memberships",
+    "citation": "data/reference/economic_security_agreements.csv (USTR, IPEF, MSP, G7, NATO pages; accessed 2026-10-08)",
+    "url": "https://ustr.gov/trade-agreements/free-trade-agreements",
+    "licence": "project-authored from official pages",
+    "n_records": 3,
+    "last_updated": "2026-11-01"
+   },
+   {
+    "id": "curated",
+    "label": "Curated government agreements",
+    "short": "Curated",
+    "citation": "data/reference/partnership_agreements/curated_agreements.csv (one official source per row)",
+    "url": "",
+    "licence": "project-authored; each row cites its official source",
+    "n_records": 13,
+    "last_updated": "2026-11-01"
+   },
+   {
+    "id": "pmemo",
+    "label": "Partnership memo evidence (US-Japan)",
+    "short": "Memo evidence",
+    "citation": "data/reference/partnership_evidence/ (bilateral_mechanisms.csv, policy_evidence.csv)",
+    "url": "",
+    "licence": "project-authored; each row cites its source",
+    "n_records": 3,
+    "last_updated": "2026-11-01"
+   },
+   {
+    "id": "iisd",
+    "label": "IISD Trade & Climate Tracker",
+    "short": "IISD",
+    "citation": "IISD (2026). Trade & Climate Tracker. International Institute for Sustainable Development.",
+    "url": "https://www.iisd.org/trade-climate-tracker/",
+    "licence": "All rights reserved (IISD); ingest only an export IISD has shared for this use",
+    "n_records": 1,
+    "last_updated": "2026-11-01"
+   }
+  ],
+  "specific_bases": [
+   "source_coded",
+   "curated",
+   "type_implied",
+   "text_title"
+  ],
+  "established_instrument_bases": [
+   "source_coded",
+   "curated",
+   "type_implied"
+  ],
+  "compacts": {
+   "SC-BATTERIES": "Battery Materials & Cells",
+   "SC-NUCLEAR": "Nuclear Fuel & Reactor Systems",
+   "SC-GRID": "Grid Equipment & Conductors",
+   "SC-SOLAR": "Solar Manufacturing"
+  }
+ },
+ "names": {
+  "AUS": "Australia",
+  "CAN": "Canada",
+  "DEU": "Germany",
+  "EUU": "European Union",
+  "FRA": "France",
+  "GBR": "United Kingdom",
+  "IND": "India",
+  "ITA": "Italy",
+  "JPN": "Japan",
+  "KOR": "Korea",
+  "NOR": "Norway",
+  "NZL": "New Zealand",
+  "USA": "United States"
+ },
+ "counts": {
+  "records": 28,
+  "canonical": 23,
+  "pairs": 67,
+  "countries": 13,
+  "by_source": {
+   "desta": 6,
+   "curated": 13,
+   "gsp": 2,
+   "pmemo": 3,
+   "memberships": 3,
+   "iisd": 1
+  }
+ },
+ "caveats": [
+  "There is no comprehensive global registry of non-binding MOUs, joint statements and joint initiatives: an empty cell means no agreement was found in these sources, not that no cooperation exists.",
+  "SYNTHETIC data for tests: invented records in the shape of the real export."
+ ]
+}

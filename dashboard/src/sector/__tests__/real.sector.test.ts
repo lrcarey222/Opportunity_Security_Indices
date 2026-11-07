@@ -195,9 +195,10 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
         expect(statSync(join(SECTOR_DIR, c.file)).size, c.name).toBe(c.bytes_gz);
       }
       const sector = dirBytes(SECTOR_DIR, false);
-      // Strategic + Sector + Compacts only: public/data/country (Country Insights fact sheets and memos) and
-      // public/data/posture (the core plus one drawer per economy, loaded on demand) are budgeted separately
-      const all = dirBytes(DATA_DIR, true, ['country', 'posture']);
+      // Strategic + Sector + Compacts only: public/data/country (Country Insights fact sheets and memos),
+      // public/data/posture (the core plus one drawer per economy, loaded on demand) and public/data/agreements
+      // (the Agreements page, scripts/check-budget.mjs "Agreements data") are budgeted separately
+      const all = dirBytes(DATA_DIR, true, ['country', 'posture', 'agreements']);
       console.info(`data on disk (gz): sector ${(sector / 2 ** 20).toFixed(2)} MB, Strategic + Sector + Compacts ${(all / 2 ** 20).toFixed(2)} MB`);
       expect(sector).toBeLessThanOrEqual(SECTOR_BUDGET_GZ.sector_total);
       expect(all).toBeLessThanOrEqual(SECTOR_BUDGET_GZ.combined_total);
