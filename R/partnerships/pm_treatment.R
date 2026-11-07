@@ -50,7 +50,8 @@ pm_match_evidence <- function(d, ev, countries) {
     hit_node <- !is.na(d$node_id[i]) & nzchar(ev$aib_node) & ev$aib_node == d$node_id[i]
     if (d$unit_type[i] == "cell") hit_node <- nzchar(ev$aib_node) & ev$aib_node %in% d$nodes_of_cell[[i]]
     cmp <- if (d$unit_type[i] == "node") d$compact[i] else d$primary_compact[i]
-    hit_cmp <- !is.na(cmp) & ev$compact %in% cmp & ev$stage == d$stage[i]
+    # an item that names a node matches that node only; a compact-level item matches the compact at its stage
+    hit_cmp <- !nzchar(ev$aib_node) & !is.na(cmp) & ev$compact %in% cmp & ev$stage == d$stage[i]
     ev$evidence_id[both & (hit_node | hit_cmp)]
   })
 }
@@ -158,7 +159,7 @@ pm_fields <- function(d, cfg, ev, mech, devpart_n, invest_pairs, roles) {
     cm <- if (d$unit_type[i] == "node") d$compact[i] else d$compacts_of_cell[i]
     cms <- if (is.na(cm)) character() else strsplit(cm, ";")[[1]]
     m <- mech[vapply(strsplit(mech$scope_compacts, "\\|"), function(z) any(z %in% cms), logical(1)), , drop = FALSE]
-    if (!nrow(m)) 0 else if (any(m$status %in% c("in_force", "signed") & m$has_finance %in% c("TRUE", "partial"))) 1 else 0.5
+    if (!nrow(m)) 0 else if (any(m$status %in% PM_ACTIVE_MECH & m$has_finance %in% c("TRUE", "partial"))) 1 else 0.5
   }, numeric(1))
   d$mechanism_score <- mech_score
   d$tractability <- round(rowMeans(cbind(d$policy_priority_a, d$policy_priority_b, mech_score), na.rm = TRUE), 3)
