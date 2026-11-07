@@ -5,17 +5,27 @@ This repository holds the **Opportunity Security Indices** pipeline. It produces
 - **Energy Security (ES)**: exposure and resilience across energy supply chains (higher = more secure).
 - **Economic Opportunity (EO)**: market opportunity and competitiveness in energy-related value chains.
 - **Policy index**: industrial and climate policy support (IEA Policies and Measures + Climate Action Tracker).
-- **Strategic Position and Strategic Posture** ([below](#strategic-position-and-strategic-posture)): three independent dimensions per country x technology x stage (Competitive Position, Strategic Need, Revealed Policy Priority, each with its evidence quality), the Yards & Fences decision engine that turns them into a recommended **Secure / Compete / Deploy** posture with a fence, gate and build, and a comparison with what governments actually do. It answers: where should a country secure critical vulnerabilities, where should it compete industrially, where should it deliberately prioritize affordable deployment, and does its current policy mix match those choices?
+- **Decision framework: Strategic Position and Strategic Posture** ([below](#strategic-position-and-strategic-posture)): the project's main output since 29 October 2026. For each country x technology x stage it runs **Need -> Prize -> Position -> Choice -> Policy alignment** and recommends one of six choices:
+  - **Secure**;
+  - **Compete**, as **Preserve**, **Catch Up** or **Partner**;
+  - **Deploy**, as **Accelerate** or **Watch**.
+
+  Each choice comes with a Yards & Fences fence, gate and build. The framework then compares the choice with what the government actually does. It answers: what should a country secure, where should it compete industrially and how, where should it deploy faster, what should it deliberately not prioritize, and does its policy match those choices?
 - **Strategic Index (SI)** (deprecated; kept for the dashboard export and the paper): one score from EO, energy-security *need*, policy support, a supply-chain-stage prior and the technology's climate weight.
 - **Geopolitical alignment**: bloc membership on the US-China axis of UN General Assembly voting.
 - **Allied coalition**: a two-tier coalition (core and partners) derived from alignment, economic-security agreements and major-supplier (or reserve-holder) status, with the EU-27 as one coalition node.
 - **Partnership Strength Index (PSI)**: a partner-level score from bilateral Friendshore (friendshoring opportunities: where a reporter's security need in a sector meets a partner's economic opportunity there, on existing trade and investment ties), Opportunity (export markets) and Development components, from the coalition's point of view.
 - **Allied Industrial Base**: how the coalition absorbs a supply shock with the trade it has, where new investment would close the rest, the emergent network of trade and investment relationships, country roles and the Sectoral Compacts. It replaces the original allied network design (a MILP with a diversification term), retired on 2026-10-17.
+- **Built on the framework and the Allied Industrial Base:**
+  - **Development partnerships**: donor x recipient pairs where a high-income economy's need meets a developing economy's credible Catch Up pathway ([docs/development_partnerships.md](docs/development_partnerships.md)).
+  - **Partnership Memos**: one country pair's integration agenda. The pilot is United States-Japan ([docs/partnership_memos.md](docs/partnership_memos.md)).
+  - **US trade restrictiveness**: US tariffs by technology x stage, set against the recommended posture ([docs/us_trade_restrictiveness.md](docs/us_trade_restrictiveness.md)).
+  - **Country strategy briefs**: "[Country] and the Allied Industrial Base" ([docs/country_briefs.md](docs/country_briefs.md)). These replace the earlier Country Insights policy memos.
 
 > **Unit of analysis:** **Country × Technology × Supply-chain stage**
 > The six stages are canonical: `Extraction`, `Refining`, `Components`, `Assembly`, `Deployment`, `Recovery` ([docs/supply_chain_stages.md](docs/supply_chain_stages.md)). `Upstream` / `Midstream` / `Downstream` is a derived roll-up for compatibility and charts. Sources are often coarser than six stages: every input carries an evidence status (exact, split, shared, proxy, tech-wide, no data) and each cell reports how much of its score rests on stage-specific evidence. The 11 headline technologies are Electric Vehicles, Nuclear, Coal, Batteries, Green Hydrogen, Wind, Oil, Solar, Gas, Geothermal and Electric Grid.
 
-The code is the specification. `docs/methodology.md` states the method in one place; this README adds the category-by-category notes, how to run the pipeline, and what changed on this branch ([Changelog](#changelog-fixallied-base-paper-sep-oct-2026)).
+The code is the specification. `docs/methodology.md` states the method in one place; [docs/strategic_position.md](docs/strategic_position.md) states the decision framework. This README adds the category-by-category notes, how to run the pipeline, and the corrections of September-October 2026 ([Changelog](#changelog-sep-oct-2026)).
 
 ---
 
@@ -57,7 +67,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
   - [How refresh works](#how-refresh-works)
   - [Key external sources (cited)](#key-external-sources-cited)
 - [Known issues and to-dos](#known-issues-and-to-dos)
-- [Changelog (fix/allied-base-paper, Sep-Oct 2026)](#changelog-fixallied-base-paper-sep-oct-2026)
+- [Changelog (Sep-Oct 2026)](#changelog-sep-oct-2026)
 - [Citation](#citation)
 - [License](#license)
 
@@ -68,6 +78,7 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Step | Script | Main outputs (`data/processed/`) |
 | --- | --- | --- |
 | Themes | `scripts/10_build_themes.R` | one tidy table per theme (`*_tbl.rds`), policy components, technology GHG weights |
+| NIPO by stage | `scripts/11_build_nipo_stage_policy.R` | `nipo_stage_{measures,links,cells,country}_tbl.rds`: NIPO support and protection stock and flow by country x technology x six-stage cell, read by scripts/26 |
 | Climate emissions | `scripts/16_build_climate_trace.R` | `climate_trace_{country,assets,sources,map,cells,emissions,intensity,lifecycle}_tbl.rds` (Climate TRACE sector emissions mapped to technology x stage, `config/climate_trace_map.yml`) |
 | Climate sources | `scripts/18_build_climate_sources.R` | `climate_src_{gcp_national,gcp_fuel,ei,ei_ind,ei_median,weo_series,weo_values,weo_regions,weo_geo,nze21_series,nze21_values,wei_rows,wei_values,wei_regions,map,cells,meta}_tbl.rds` (Global Carbon Project national fossil CO2 and World CO2 by fuel; Energy Institute Country Transition Tracker with the median economy; IEA WEO 2025 regional pathways and the economy -> region map; IEA Net Zero by 2050 (2021) milestones; IEA World Energy Investment 2026; `config/climate_sources_map.yml`; the IEA Energy and Emissions per Value Added database is licence-restricted and not read) |
 | Climate pathways | `scripts/17_build_iea_pathways.R` | `iea_pathways_{series,values,map,cells,minerals,meta,vintage}_tbl.rds` (IEA World Energy Outlook 2025 Annex A World pathways: Historical, Stated Policies, Current Policies, Net Zero; IEA Critical Minerals demand by scenario; mapped to technology x stage, `config/iea_pathways_map.yml`) |
@@ -76,6 +87,10 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Pillars, Policy, SI | `scripts/20_build_indices.R` | `outputs/index_outputs.rds` (ES, EO, contributions, diagnostics, Policy index, Strategic Index, coalition), `charts/allied_strategic.csv` |
 | Partner themes | `scripts/15_build_partner_themes.R` | `partner_{friendshore,opportunity,development}_*_tbl.rds`, `partner_trade_coverage_tbl.rds`, `cm_fdi_projects_tbl.rds`, `partner_cm_fdi_{ties,exposure,coverage}_tbl.rds` |
 | PSI | `scripts/25_build_partner_indices.R` | `psi_tbl.rds` (core-coalition view, headline), `psi_full_coalition_tbl.rds`, `psi_world_tbl.rds`, `psi_dyad_tbl.rds` and category contributions |
+| Deployment need | `scripts/95_build_deployment_need.R` (by hand: `run_pipeline.R` does not run it) | `deployment_need_tbl.rds`, `home_market_tbl.rds` (Ember, IEA Global EV Outlook, IEA WEO; `config/deployment_need.yml`) |
+| Decision framework | `scripts/26_build_strategic_position.R`, `scripts/27_review_strategic_position.R` | `outputs/strategic_position_tbl.{rds,csv}` (one row per country x technology x stage: need, prize, position, choice, policy alignment), `strategic_posture_layers_tbl.rds` (sensitive layers), `strategic_aib_division_tbl.{rds,csv}`, `diagnostics/strategic_position/`, review charts in `charts/strategic_review/` |
+| US trade restrictiveness | `scripts/28_build_us_trade_restrictiveness.R` | `outputs/us_trade_restrictiveness_cells.{rds,csv}`, `diagnostics/us_trade_restrictiveness/` |
+| Partnership Memo | `scripts/34_build_partnership_memo.R --pair USA_JPN` | `output/partnerships/<pair>/`: the memo's tables and `partnership_memo.md` (PDF unless `--no-pdf`) |
 | Allied network (retired 2026-10-17) | `scripts/30_build_allied_network_design.R`: dormant, not run by `run_pipeline.R` | `outputs/allied_network_*.csv` (last copies kept on disk; only the paper scripts `scripts/paper/fig_coalition.R` and `fig_reconcile.R` still read them) |
 | Allied Industrial Base | `scripts/31_build_aib_trade_network.R`, `scripts/32_build_aib_partnerships.R`, `scripts/33_build_aib_strategic_layer.R` | `outputs/aib/`: `allied_trade_{stress_test,partnerships,frontier}.csv`, `allied_investment_{partnerships,pairs}.csv`, `emergent_aib_{edges,country_summary}.csv`, `aib_compact_{candidates,nodes,members,coalition_path,leave_one_out}.csv`, `aib_diversification.csv`, `allied_trade_growth_sensitivity.csv`, `aib_node_classification.csv`, `allied_subsector_data_quality.csv`, `aib_validation_cases.{csv,md}`; the dashboard scenarios' `aib_observed_supply.csv`, `emergent_aib_{edges,country_summary}_{baseline,managed}.csv`, `aib_compact_{candidates,members,coalition_path,leave_one_out}_managed.csv`; the strategic layer's `aib_strategic_{compacts,spine}.csv`, `aib_compact_{workstreams,country_roles,division_of_labour}.csv`, `aib_country_strategic_role{s,_metrics}.csv`, `aib_country_role_narratives.csv`, `aib_relationship_theses.csv`, `aib_strategic.rds` |
 | Vintages | `scripts/40_build_index_vintages.R` | `vintages/*` (ES and EO at several years) |
@@ -83,7 +98,10 @@ The code is the specification. `docs/methodology.md` states the method in one pl
 | Dashboard: Sector Insights | `scripts/87_export_sector_data.R` | `dashboard/sector_validation.csv`; the app's Sector data go to the repo's `dashboard/public/data/sector/` (manifest + 16 OSB chunks, `sector-fdi` among them, plus the optional `sector-climate` chunk: `flags.climate`, with the optional IEA pathway tables `climate.nze_*` from scripts/17; `--no-nze` leaves them out; and the optional `sector-climate-src` chunk: `flags.climate_src`, the climate sources of scripts/18; `--no-climate-sources` leaves it out) |
 | Dashboard: Sectoral Compacts | `scripts/84_export_aib_data.R` | the app's Sectoral Compacts data go to `dashboard/public/data/aib/` (manifest + one `compacts.<hash>.json`, schema `osi-aib` v2, the Decoupling scenario; plus the lazily loaded `scenario-managed.<hash>.json` and `scenario-baseline.<hash>.json`, schema `osi-aib-scenario` v1, named in `manifest.files.scenarios`; since 2026-10-20 the main document's optional `strategic` section, from `scripts/33`) |
 | Dashboard: strategic posture | `scripts/91_export_posture_data.R` | the six-stage posture bundle (manifest, `posture-core.<hash>.json`, a `posture-detail-<ISO3>.<hash>.json` per economy; schema `osi-posture` v1) for the headline charts of the Country, Sector and AIB pages |
-| Dashboard: Country Insights | `scripts/88_export_country_data.R` | the app's Country data go to the repo's `dashboard/public/data/country/` (manifest, a fact sheet per economy, drivers files; `--render-memos` publishes the verified policy memos of the 31 core members as JSON, PDF, Word and Markdown) |
+| Dashboard: Country Insights | `scripts/88_export_country_data.R` | the app's Country data go to the repo's `dashboard/public/data/country/` (manifest, a fact sheet per economy, drivers files; `--render-memos` publishes the legacy policy memos of the 31 core members, now hidden and replaced by the briefs below) |
+| Dashboard: development partnerships | `scripts/93_export_development_partnerships.R` (after 88 and 91) | `devpart-<ISO3>.<hash>.json` per economy and its `devpart` manifest entry in `dashboard/public/data/country/`; `data/processed/development_partnerships/development_partnerships.{csv,rds}` and `development_partnership_steps.csv` |
+| Dashboard: country strategy briefs | `scripts/92_export_country_briefs.R --iso3 <ISO3>` (after 84, 88, 91 and 93) | the brief of one economy in `dashboard/public/data/country/` (JSON, PDF, Word, Markdown and two figures), verified before it is published; nine are published |
+| Draw the Fence (separate site) | `scripts/89_export_yards_fences_data.R` (after 85 and 87) | the standalone Yards & Fences tool's data, `dashboard/fence/public/data/yards-fences/` ([docs/yards_fences.md](docs/yards_fences.md)) |
 
 Every index keeps its decomposition (category and variable contributions reconcile to the index value), and every country-cell carries how much of its weight rests on imputed inputs.
 
@@ -163,7 +181,7 @@ Cross-country rankings, top-N lists and the Strategic Index use rankable cells o
 
 ### Supply-chain coupling (not applied)
 
-`R/indices/couple_pillar_scores_by_hhi.R` (shrinking stage scores toward a technology-level chain score) is still in the repository and sourced by `scripts/20`, but no pipeline step calls it: the published pillars are **uncoupled** stage scores.
+The published pillars are **uncoupled** stage scores. A coupling step, `R/indices/couple_pillar_scores_by_hhi.R`, would have shrunk stage scores toward a technology-level chain score. It was never applied, and it was removed when the pillars moved to six stages (commit 9cea7cd8).
 
 ---
 
@@ -414,7 +432,7 @@ w: IEA PAMS 3, CAT 2
 - **Climate Action Tracker (CAT)** ratings (`R/categories/policy/cat_policy_index.R`): EU members without a rating of their own take the EU bloc rating.
 - **Eligibility:** IEA PAMS is required; CAT is added where it rates the country (39 countries and the EU). A country is scored if it has IEA PAMS for at least one of its headline cells. One without a CAT rating is scored from IEA PAMS alone and flagged `policy_basis = "IEA PAMS only"` (150 of 215 in the October 2026 build, Israel, Ukraine and nine coalition partners among them); one with both is `"IEA PAMS + CAT"` (65). A country with a CAT rating but no IEA PAMS is not scored (none in the build): CAT varies across a country's cells only through the technology GHG index, so on its own it would rank sectors by emissions, which the SI's climate term already carries. Until 9 October 2026 both components were required (65 countries); `OPSI_POLICY_REQUIRE_ALL=1` restores that rule for robustness runs. The two bases are different readings: for the 65 countries with both, ranking their cells on IEA PAMS alone agrees with the composite at a median within-country Spearman of 0.48, so tables and charts show the basis.
 - **Excluded for now (October 2026):** GTA **NIPO** (weight 4 until October 2026). `scripts/10` still builds it and its tables stay on disk (`OPSI_SKIP_NIPO=true` reuses the stored NIPO rows instead of rescoring them), so it can return by adding it to the weights. The **dual-use** score is not a component: it is an LLM-elicited judgement per technology × stage, identical for every country, so it cannot rank countries.
-- **NIPO tables on disk: the October 2026 refresh.** `data/processed/nipo_*` come from the October 2026 extract (`GTA NIPO - October 2026.xlsx`, as of 5 October 2026; `nipo_refresh_manifest.txt`), built by the NIPO pipeline of PR #333 on `main` (debiased strength), which this branch has not merged yet. They are read only as context - the strongest active measures per sector in Country Insights and the paper's "NIPO added back" robustness variant (77 jurisdictions; the stored February 2026 component in `policy_component_tbl.rds` covers 23) - and do not enter the Policy index.
+- **NIPO tables on disk: the October 2026 refresh.** `data/processed/nipo_*` come from the October 2026 extract (`GTA NIPO - October 2026.xlsx`, as of 5 October 2026; `nipo_refresh_manifest.txt`), built by the debiased NIPO pipeline of PR #333. They are read only as context - the strongest active measures per sector in Country Insights and the paper's "NIPO added back" robustness variant (77 jurisdictions; the stored February 2026 component in `policy_component_tbl.rds` covers 23) - and do not enter the Policy index.
 
 `scripts/20` passes the weights and the required components explicitly and records them, the exclusions, the eligibility rule and the scored countries by basis in `index_outputs.rds$policy_index_provenance`. **Implementation:** `R/indices/build_policy_index.R` (`build_composite_policy_index()`).
 
@@ -422,55 +440,104 @@ w: IEA PAMS 3, CAT 2
 
 ### Strategic Position and Strategic Posture
 
-Method: [docs/strategic_position.md](docs/strategic_position.md). Results and validation:
-[docs/strategic_position_readout.md](docs/strategic_position_readout.md). Example decision cards:
-`diagnostics/strategic_position/decision_cards.md`.
+Sources:
+- Method: [docs/strategic_position.md](docs/strategic_position.md).
+- Results and validation: [docs/strategic_position_readout.md](docs/strategic_position_readout.md) and
+  `diagnostics/strategic_position/decision_review.md`.
+- Per-country choice cards: `diagnostics/strategic_position/choice_cards.md`.
+- The 2026-10-29/30 changes, with their counts: [docs/decision_framework_report.md](docs/decision_framework_report.md).
 
-One system in four steps, per country x technology x six-stage node:
+This is the canonical decision framework since 29 October 2026. It replaces the Energy Security x Economic
+Opportunity reading (the Grow / Upgrade / Exposed / Stable quadrants and the Strategic Index), which is kept
+for replication and comparison. It asks, per country x technology x six-stage node:
 
-1. **Strategic Position** (what the evidence says): **Competitive Position** (demonstrated export,
-   production, capacity, investment, cost and resource position, across countries in the cell),
-   **Strategic Need** (net import dependence, concentration of the country's own suppliers, exposure to
-   China and opposite-bloc suppliers, across countries in the cell) and **Revealed Policy Priority**
-   (where observable NIPO and IEA PAMS intervention concentrates, across the country's own cells;
-   NIPO support and protection separate, stock and 1/3/5-year flow), each with its evidence
-   specificity. No dimension feeds another, and there is no stage or technology prior.
-2. **Strategic Posture** (what kind of problem it is): the Yards & Fences decision engine
-   (`dashboard/src/fence/engine`, ported to R) runs five tri-state tests: critical consequence,
-   exploitable vulnerability (a control layer an outsider could command, or a coercive physical
-   chokepoint; concentration alone is never enough), capability case, credible strategy (preserve,
-   adjacent capability, catch up, leap ahead) and proportionality. **Secure** (small yard): an acute
-   consequence meets an exploitable vulnerability. **Compete** (medium yard): a capability case with a
-   credible strategy at a proportionate cost. **Deploy** (large yard): neither, an affirmative choice
-   of openness and affordable deployment. Sensitive layers (firmware, fuels, critical materials) get
-   their own posture without dragging their cell. Unknowns are bracketed, never filled; the
-   recommendation is the strict reading, with the postures the unknowns still allow and the pivotal
-   inputs. **Observed policy never enters a test.**
-3. **Policy Design**: fence, gate and build for the posture variant and delivery mode (domestic,
-   allied, diversified global, mixed).
-4. **Evaluation**: `policy_alignment` (aligned, under-prioritized, over-prioritized, mixed) compares the
-   recommendation with observed policy; benchmarks, review dates and exit conditions say when to
-   reclassify.
+> What does this country need, where is there a prize worth pursuing, where does it already have an
+> advantage, and therefore what should it Secure, Preserve, Catch Up in, rely on Partners for, Deploy
+> faster, and deliberately not prioritize? And does its current policy match those choices?
 
-Important readings: policy activity is not evidence of competitive advantage; a low observed policy
-priority is low observed NIPO / PAMS intervention, not proof of no priority (GTA misses standards,
-regulation and agreed international measures); CAT is country context (`cat_context`), not technology
-x stage policy evidence.
+| Step | Question | Main output |
+|---|---|---|
+| **Need** | What problem does the country need to solve? | `supply_chain_need` at the five producing stages; `deployment_need` at Deployment & Use (`scripts/95`). The two are never combined. |
+| **Prize** | Is domestic capability in this node strategically valuable? | `strategic_industrial_value`: market, industrial-commons and future-option value, with a market-only cap. It sits beside the countervailing `large_yard_case`. Nothing that measures capability or need enters the prize. |
+| **Position** | How strong is the country today? | `competitive_position_percentile` and `cp_contender_pct` (among the node's contenders). Position counts demonstrated export, production, capacity, investment, cost and resource evidence only. Trade evidence is the 2022-24 benchmark plus current momentum (`scripts/94`). |
+| **Choice** | What follows? | `strategic_posture`, `compete_mode` and `deploy_mode`, with `security_rationale`, `delivery_mode`, `decision_trace`, confidence and borderline flags. Sensitive layers (firmware, enrichment, magnets, ...) take their own choice and yard and roll up to the cell. |
+| **Policy alignment** | Does observed policy match the choice? | `policy_alignment` from Revealed Policy Priority: NIPO by six-stage cell (`scripts/11`) and IEA PAMS. For the United States, `scripts/28` makes a separate check of the same kind, against US tariffs. |
 
-**Implementation:** `scripts/94_pull_comtrade_trade_refresh.R` (the 2022-24 annual trade benchmark
-and the monthly momentum window; resumable, keyed calls budgeted per UTC day, the key never logged),
-`scripts/11_build_nipo_stage_policy.R` (NIPO by six-stage cell),
-`scripts/26_build_strategic_position.R` (all four steps and diagnostics; `SP_BASELINE_TBL` points it at
-an earlier `strategic_position_tbl.rds` for the old-vs-new comparisons),
-`scripts/27_review_strategic_position.R` (review charts and decision cards),
-`scripts/91_export_posture_data.R` (the Explorer's six-stage posture bundle,
-`dashboard/public/data/posture/`); pure functions in `R/strategic_position/` and
-`R/dashboard/posture/`; rules in `config/strategic_position.yml`; reference tables
-`data/reference/index_variable_stage_evidence.csv`, `data/reference/posture_node_attributes.csv`,
-`config/security_route_rules.csv`, `config/nipo_instrument_posture.csv`,
-`config/posture_policy_design.csv`, `config/posture_delivery_modes.csv`. Outputs:
-`strategic_position_tbl`, `strategic_posture_layers_tbl`, `strategic_aib_division_tbl`,
-`diagnostics/strategic_position/`.
+How a choice is reached:
+1. **Secure** overrides everything else. It applies where the Yards & Fences engine finds an acute
+   consequence plus one of three routes: operational control, a coercive chokepoint or systemic
+   resilience. Secure does not mean reshoring: delivery follows trusted supply (domestic, allied,
+   diversified global or mixed).
+2. **Deployment & Use** is decided on deployment need alone: **Deploy . Accelerate** or **Deploy . Watch**.
+3. At the **producing stages**, a large-yard case gives **Watch**, unless the country already holds a
+   strong position. Otherwise Need x Prize triages the node and Competitive Position decides the response:
+   - **Preserve**: strong position.
+   - **Catch Up**: a credible pathway, meaning a capability anchor corroborated by a second evidence family.
+   - **Partner**: high need without such a pathway.
+   - **Watch**: neither.
+4. A node whose Need or Prize is not measured is **not assessed**, never Watch.
+
+Policy design adds a fence, gate and build to each choice, with the fence height following the yard.
+
+Current run (rule changes of 2026-10-30):
+
+| Choice | Cells |
+|---|---|
+| Secure | 206 |
+| Preserve | 103 |
+| Catch Up | 355 |
+| Partner | 1,474 |
+| Accelerate | 514 |
+| Watch | 6,585 |
+| Not assessed | 4,887 |
+
+Important readings:
+- **Observed policy never enters Need, Prize, Position or Choice.** `tests/testthat/test-decision-engine.R`
+  checks this.
+- Policy activity is not evidence of competitive advantage.
+- A low observed policy priority is low *observed* NIPO / PAMS intervention, not proof of no priority. GTA misses
+  standards, regulation and agreed international measures.
+- CAT is country context (`cat_context`), not technology x stage policy evidence.
+- There is no stage prior and no technology prior.
+
+**Implementation:**
+- Trade evidence: `scripts/94_pull_comtrade_trade_refresh.R` pulls the 2022-24 annual benchmark and the
+  monthly momentum window. It is resumable and budgets its keyed calls per UTC day, and the key is never
+  logged.
+- `scripts/11_build_nipo_stage_policy.R`: NIPO by six-stage cell.
+- `scripts/95_build_deployment_need.R`: deployment need and the home market. Without its outputs, every
+  Deployment & Use cell is not assessed.
+- `scripts/26_build_strategic_position.R`: all five steps and the diagnostics. `SP_BASELINE_TBL` points it
+  at an earlier `strategic_position_tbl.rds` for old-vs-new comparisons.
+- `scripts/27_review_strategic_position.R`: review charts and decision cards.
+- `scripts/91_export_posture_data.R`: the Explorer's six-stage posture bundle, written to
+  `dashboard/public/data/posture/`.
+- Pure functions: `R/strategic_position/` and `R/dashboard/posture/`.
+- Rules: `config/strategic_position.yml` and `config/deployment_need.yml`.
+- Reference tables: `data/reference/index_variable_stage_evidence.csv` and
+  `data/reference/posture_node_attributes.csv` (see [docs/yf_node_attributes.md](docs/yf_node_attributes.md)).
+- Config tables: `config/security_route_rules.csv`, `config/nipo_instrument_posture.csv`,
+  `config/posture_policy_design.csv` and `config/posture_delivery_modes.csv`.
+- Outputs: `strategic_position_tbl`, `strategic_posture_layers_tbl`, `strategic_aib_division_tbl` and
+  `diagnostics/strategic_position/`.
+
+Run order after an engine change: 10, 11, 17, 18 and 20 when their inputs change, then 95 -> 26 -> 27 -> 91.
+
+**Built on it:**
+- **US trade restrictiveness** (`scripts/28`, [docs/us_trade_restrictiveness.md](docs/us_trade_restrictiveness.md)):
+  the Trade War Tracker's Trade Restrictiveness Index on the project's HS6 basket, plus AD/CVD deposits, by
+  supplier group. It is compared with the US recommendation and never feeds it.
+- **Development partnerships** (`scripts/93`, [docs/development_partnerships.md](docs/development_partnerships.md)):
+  donor x recipient x step pairs where a high-income economy's need meets a developing economy's credible
+  Catch Up pathway. Each pair carries its aid, finance, investment and AIB evidence and the recommended
+  tools. There is no composite score.
+- **Partnership Memos** (`scripts/34`, [docs/partnership_memos.md](docs/partnership_memos.md)): where deeper
+  integration between two countries creates the most strategic value, and through which instruments.
+  Pairs are set in `config/partnership_memos.yml` (pilot: USA_JPN). The script writes to
+  `output/partnerships/<pair>/`.
+- **Country strategy briefs** (`scripts/92`, [docs/country_briefs.md](docs/country_briefs.md)): briefs on
+  what to secure, build, source from partners and deploy, made by a writer -> lint -> independent verifier
+  -> render loop. Nine are published (AUS, CAN, DEU, FRA, GBR, IND, JPN, KOR, USA).
 
 ---
 
@@ -715,11 +782,14 @@ R/                    # Pure functions (no IO)
   utils/              # Helpers: schema, theme standardization, country harmonisation, HS6 crosswalk
   categories/         # Theme builders by category
   indices/            # ES/EO builders, Policy index, Strategic Index, coalition, PSI (allied network: retired, dormant)
+  strategic_position/ # Decision framework: need, prize, position, choice engine, policy alignment and design, trade restrictiveness
   aib/                # Allied Industrial Base: trade network, shocks, LP, investment, network, compacts
+  partnerships/       # Partnership Memo rules (profiles, dyad, treatment, agenda, document)
   geopolitical_distance/  # UNGA ideal points and alignment
   themes/             # Bilateral partnership themes (Friendshore, Opportunity, Development)
   charts/             # Chart builders (no file IO)
-  dashboard/          # Pure builders of the dashboard data (Strategic bundle; sector/ and country/ helpers)
+  dashboard/          # Pure builders of the dashboard data (Strategic bundle; sector/, country/ incl. briefs and
+                      # development partnerships, posture/, aib/, yards_fences/)
 
 scripts/              # Orchestration + IO (reads raw, writes processed/outputs)
   fetchers/           # One file per API source; registered, contract-validated
@@ -733,9 +803,12 @@ data/
 
 config/               # Weights, missing data, index definitions, rankability, alignment,
                       # coalition, partnership settings, raw-input manifest
-docs/                 # Methodology, data dictionary, sources
+docs/                 # Methodology, decision framework, module docs, data dictionary, sources
+diagnostics/          # NIPO diagnostic scripts; review tables and cards written by scripts/26-27
+                      # (strategic_position/) and scripts/28 (us_trade_restrictiveness/)
 paper/                # Working paper (LaTeX)
-dashboard/            # Allied Industrial Base Explorer (static React app; see dashboard/README.md)
+dashboard/            # Allied Industrial Base Explorer (static React app; see dashboard/README.md);
+                      # dashboard/fence/ is the Draw the Fence site
 run_pipeline.R        # Pipeline entry point
 tests/                # Unit tests (testthat)
 ```
@@ -771,13 +844,19 @@ export COMTRADE_API_KEY=your_key_here
 # export COMTRADE_MAX_RETRIES=3
 ```
 
-Then run (the order matters: 13 reads the trade theme of 10 and the alignment of 12; 15 reads the pillars of 20 and the alignment; 25 reads the top-5 tables of 15 and the coalition of 13; 30 reads all of them):
+Then run the scripts in order. The order matters because later steps read earlier outputs:
+- 13 reads the trade theme of 10 and the alignment of 12.
+- 15 reads the pillars of 20 and the alignment.
+- 25 reads the top-5 tables of 15 and the coalition of 13.
+- 95 reads 10, 17, 18 and 20.
+- 26 reads 20, 11, 15, 95 and the trade refresh of 94.
 
 ```bash
 Rscript scripts/00_setup.R
 Rscript scripts/04_build_hs6_views.R
 Rscript scripts/05_ingest_sources.R
 Rscript scripts/10_build_themes.R
+Rscript scripts/11_build_nipo_stage_policy.R
 Rscript scripts/16_build_climate_trace.R
 Rscript scripts/17_build_iea_pathways.R
 Rscript scripts/18_build_climate_sources.R
@@ -786,17 +865,27 @@ Rscript scripts/13_build_coalition.R
 Rscript scripts/20_build_indices.R
 Rscript scripts/15_build_partner_themes.R
 Rscript scripts/25_build_partner_indices.R
+Rscript scripts/95_build_deployment_need.R
+Rscript scripts/26_build_strategic_position.R
+Rscript scripts/27_review_strategic_position.R
 Rscript scripts/31_build_aib_trade_network.R
 Rscript scripts/32_build_aib_partnerships.R
 Rscript scripts/33_build_aib_strategic_layer.R
 Rscript scripts/80_write_outputs.R
 ```
 
-For an end-to-end run (`00, 05, 07, 10, 16, 12, 13, 20, 15, 25, 31, 32, 33, 80`; 31, 32 and 33 unless `OPSI_RUN_AIB=false`):
+`run_pipeline.R` runs most of this end to end, in the order `00, 05, 07, 10, 11, 16, 17, 18, 12, 13, 20, 15, 25, 26, 27, 31, 32, 33, 80`. It runs 31, 32 and 33 unless `OPSI_RUN_AIB=false`.
 
 ```bash
 Rscript run_pipeline.R
 ```
+
+It does not run 95, so run 95 by hand first whenever 10, 17, 18 or 20 change. Without 95's outputs, scripts/26 leaves every Deployment & Use cell not assessed.
+
+The steps after the pipeline:
+- **Optional analyses:** `scripts/28` (US trade restrictiveness) and `scripts/34 --pair <pair>` (a Partnership Memo).
+- **Dashboard exports**, in this order: 91, 85, 86, 87, 88, 84, 93, then `scripts/92 --iso3 <ISO3>` for each brief. Commit the R code before running 91, because 91 stamps the git commit into the posture bundle. It adds `-dirty` when `R/`, `scripts/` or `config/` have uncommitted changes.
+- **Draw the Fence:** `scripts/89`, after 85 and 87.
 
 The retired allied network design still runs by hand (dormant; the pipeline and the dashboard do not read its outputs):
 
@@ -826,13 +915,19 @@ When `COMTRADE_CHUNK_COUNT > 1`, each run writes chunk files under `data/raw/com
 
 ## Interactive explorer
 
-`dashboard/` holds the Allied Industrial Base Explorer, a static React app (Vite, TypeScript, NEIS design). Since the October 2026 navigation refactor readers move between three questions, each a tab: **Sectors** (what matters about a sector: a Sector profile led by Economic Opportunity, Energy Security, Policy and Climate), **Countries** (a country's strategic position: one Country profile, where the four preference dials sit behind "Perspective: NEIS baseline" and change priorities but never the observed or modelled facts) and **Allied Industrial Base** (partnerships, Sectoral Compacts and country roles), with **About** (methods, data and sources, glossary) secondary; `dashboard/README.md` has the routes. Since 28 October 2026 every page reads the six supply-chain stages (Extraction, Refining, Components, Assembly, Deployment, Recovery: 11 technologies x 6 stages = 66 cells), and the Country, Sector and Allied Industrial Base pages each have a Strategic posture section (Secure, Compete or Deploy, from the strategic position framework's bundle, `scripts/91`; fixed thresholds, so the dials do not move it). Links made before the six stages (`/sector/:tech/midstream`, `?stage=Upstream`) still open, with a notice naming the stages that replaced the old one. The pages are composed from the data bundles below, named by the modules they first fed:
+`dashboard/` holds the Allied Industrial Base Explorer, a static React app (Vite, TypeScript, NEIS design). Since the October 2026 navigation refactor readers move between three questions, each a tab: **Sectors** (what matters about a sector: a Sector profile led by Economic Opportunity, Energy Security, Policy and Climate), **Countries** (a country's strategic position: one Country profile, where the four preference dials sit behind "Perspective: NEIS baseline" and change priorities but never the observed or modelled facts) and **Allied Industrial Base** (partnerships, Sectoral Compacts and country roles), with **About** (methods, data and sources, glossary) secondary; `dashboard/README.md` has the routes. Since 28 October 2026 every page reads the six supply-chain stages (Extraction, Refining, Components, Assembly, Deployment, Recovery: 11 technologies x 6 stages = 66 cells), and the Country, Sector and Allied Industrial Base pages each have a Strategic posture section. That section shows the decision framework's six choices: Secure, Preserve, Catch Up, Partner, Accelerate and Watch. They come from the `scripts/91` bundle and use fixed thresholds, so the dials do not move them. The Country page groups a country's cells by fence height:
+- High: Secure.
+- Medium: Preserve, Catch Up, Partner and Accelerate.
+- Low: Watch. Links made before the six stages (`/sector/:tech/midstream`, `?stage=Upstream`) still open, with a notice naming the stages that replaced the old one. The pages are composed from the data bundles below, named by the modules they first fed:
 
 * **Strategic Insights** (normative) recomputes the indices and partnership scores in the browser when a reader moves the four preference dials. Its data bundle (`dashboard/public/data/`) is exported from the pipeline outputs by `scripts/85_export_dashboard_data.R` (builders in `R/dashboard/`), which also checks the dashboard engine at its six-stage baseline (the NEIS baseline) against the stored outputs; rerun it after a pipeline rerun, then `scripts/86_export_dashboard_fixtures.R` for the engine's parity fixtures. The TypeScript engine in `dashboard/src/engine/` is a port of `R/dashboard/` and is parity-tested against it.
 * **Sector Insights** (descriptive) shows the measured data behind the indices, by technology and supply-chain stage, in each source's own units and years: trade (the reconciled Comtrade dyad matrix), investment, cross-border manufacturing projects (CM-FDI, announced 1996-2026, at the Components and Assembly stages of Solar, Wind, Batteries and EV, which carry the same projects: home → destination flows, the parent-HQ group split - China, coalition core, partners, rest - announcements by year and the project table with status and CM-FDI's source links; project counts and disclosed US$ m only, an undisclosed value never read as 0, the CC BY attribution on every card), reserves, production, consumption, prices, policy (IEA PAMS records and CAT ratings), time series (EI 1965-2025, IMF monthly prices, CIM investment and capacity, IEA EV regions) and, under Development & finance, the raw data behind Development Potential and Friendshore's investment tie (since 2026-10-15): the World Bank WDI series and Doing Business score the builder ranks, OECD CRS official development assistance received and given by aid sector (energy, industry, mining: the stage the builder maps each to) with the donor -> recipient flows, and the IMF bilateral direct-investment positions (who invests where; conduit financial centres shown and flagged), each read with the builders' own functions and checked against them (`--no-dev` leaves them out). No index, weight or dial value appears in it, apart from the strategic posture sections (a recommendation at fixed thresholds). Its data (`dashboard/public/data/sector/`) are exported by `scripts/87_export_sector_data.R` (pure helpers in `R/dashboard/sector/`, captions and units from `config/sector_dictionary.yml`): every value with a `data/processed` source is checked `identical()` to it after the encode/decode round trip, and the run writes `data/processed/dashboard/sector_validation.csv`. Rerun it after a pipeline rerun (`--check-only` runs every check without writing; `--synthetic <dir>` writes the small test fixture). Restricted sources (BNEF, BCG) never ship.
-* **Country Insights** (a hybrid of the two) puts one economy's index results and the data behind them on one page, on the NEIS baseline (with a link to the same country in Strategic Insights), after its strategic posture: its sectors on the Economic Opportunity x Energy Security plane (each axis the share of other economies it beats in that sector) with the Grow / Upgrade / Exposed / Stable quadrants (recomputed at the six stages; Exposed and Stable were Secure and Watch until 2026-10-28, renamed so they do not clash with the posture words) split at the country's own median sector, so they show its relatively strong and weak sectors, the drivers of its high-priority sectors in raw data, its sector priorities (the Strategic Index without its policy term) against its policy activity, the strongest active industrial-policy measures per sector from the latest GTA NIPO run (context only, not part of the Policy index; NIPO is not yet staged at the six stages, so it is not listed per sector), and partner priorities - friendshoring opportunities (Friendshore: partners where its security need meets the partner's economic opportunity, on existing trade and investment ties) and export markets (Partnership Opportunity) - against today's trade, factory projects, agreements and UN-vote alignment. The 31 core members have an AI-written policy memo (on screen, PDF and Word; hidden while the memos are revised for the six stages) in which every number is a token filled from the country's fact sheet, checked by a linter and an independent AI verifier. Data and memos are exported by `scripts/88_export_country_data.R` (pure helpers in `R/dashboard/country/`, settings in `config/country_insights.yml`, memo sources in `dashboard/country-memos/`).
+* **Country Insights** (a hybrid of the two) puts one economy's index results and the data behind them on one page, on the NEIS baseline (with a link to the same country in Strategic Insights), after its strategic posture: its sectors on the Economic Opportunity x Energy Security plane (each axis the share of other economies it beats in that sector) with the Grow / Upgrade / Exposed / Stable quadrants (recomputed at the six stages; Exposed and Stable were Secure and Watch until 2026-10-28, renamed so they do not clash with the posture words) split at the country's own median sector, so they show its relatively strong and weak sectors, the drivers of its high-priority sectors in raw data, its sector priorities (the Strategic Index without its policy term) against its policy activity, the strongest active industrial-policy measures per sector from the latest GTA NIPO run (context only, not part of the Policy index; NIPO is not yet staged at the six stages, so it is not listed per sector), and partner priorities - friendshoring opportunities (Friendshore: partners where its security need meets the partner's economic opportunity, on existing trade and investment ties) and export markets (Partnership Opportunity) - against today's trade, factory projects, agreements and UN-vote alignment. The page also lists the country's development partnerships (`scripts/93`). Nine economies have a country strategy brief: AUS, CAN, DEU, FRA, GBR, IND, JPN, KOR and USA (`scripts/92`). Briefs come on screen, as PDF and as Word. Every number in a brief is a token filled from the country's facts, and each brief is checked by a linter and an independent AI verifier. The earlier policy memos of the 31 core members were written on the old framework and stay hidden. Data are exported by `scripts/88_export_country_data.R`:
+- pure helpers are in `R/dashboard/country/`;
+- settings are in `config/country_insights.yml` and `config/country_brief.yml`;
+- memo and brief sources are in `dashboard/country-memos/`.
 
-To run it: `cd dashboard && npm ci && npm run dev`; `dashboard/README.md` covers tests, the build and the Netlify deployment.
+To run it: `cd dashboard && npm ci && npm run dev`. `dashboard/README.md` covers tests, the build and the Netlify deployment. A public beta build is published by hand on GitHub Pages from a separate repository, [lrcarey222/aib-explorer](https://github.com/lrcarey222/aib-explorer). It includes the published strategy briefs but not the hidden legacy memos.
 
 ---
 
@@ -892,6 +987,9 @@ The `testthat` suite under `tests/testthat/` covers, among others:
 * ES/EO v2 construction: available-case aggregation, observed-only imputation, contributions, rankability
 * Theme builders (energy, minerals incl. the mirror, uranium, trade, TRL stage mapping, HS6 crosswalk, GHG weights)
 * Policy index and Strategic Index (weights, eligibility, exclusions, coalition wiring)
+* Decision framework: supply-chain and deployment need, strategic value and the large-yard case, the posture engine and policy design, the decision engine (including the check that observed policy never changes a choice), yard roll-up, the posture export (`test-strategic-{need,value,posture,alignment}.R`, `test-decision-engine.R`, `test-deployment-need.R`, `test-yard-rollup.R`, `test-posture-*.R`)
+* US trade restrictiveness, development partnerships, Partnership Memos and the country strategy briefs (`test-trade-restrictiveness.R`, `test-development-partnerships.R`, `test-partnership-memos.R`, `test-country-brief.R`)
+* NIPO policy index and NIPO by stage (`test-nipo-policy-index.R`, `test-nipo-stage-policy.R`)
 * Geopolitical alignment, the ideal-point fetchers and the territory map
 * Coalition tiers and EU stage weights
 * Partnership themes: trade flows (importer-first / mirror rule), conduits, PSI viewpoints and rankability, Comtrade dyad helpers
@@ -906,6 +1004,8 @@ Run tests from the repo root with:
 Rscript -e "testthat::test_dir('tests/testthat')"
 ```
 
+CI runs the suite in the R Tests, R Checks and R CI workflows, and the app's tests in the Dashboard workflow (`.github/workflows/`).
+
 ---
 
 ## Additional utilities and workflows
@@ -919,7 +1019,11 @@ Rscript -e "testthat::test_dir('tests/testthat')"
 * `scripts/86_export_dashboard_fixtures.R` — writes the TypeScript engine's parity fixtures.
 * `scripts/87_export_sector_data.R` — exports the Sector Insights data to `dashboard/public/data/sector/` (`--check-only`, `--synthetic <dir>`).
 * `scripts/88_export_country_data.R` — exports the Country Insights data to `dashboard/public/data/country/` (`--check-only`, `--synthetic`, `--iso3`, `--facts-dir <dir>`, `--save-ctx` / `--load-ctx`; `--render-memos [--lint-only]` lints and publishes the policy memos; rendering needs Edge or Chrome and Python with python-docx and pypdf).
+* `scripts/89_export_yards_fences_data.R` — exports the data of the Draw the Fence site to `dashboard/fence/public/data/yards-fences/` (`--check-only`, `--country`).
 * `scripts/90_build_package_selection_viz.R` — package-selection visualization outputs.
+* `scripts/91_export_posture_data.R`, `scripts/92_export_country_briefs.R`, `scripts/93_export_development_partnerships.R` — the posture bundle, the country strategy briefs (`--facts-only`, `--lint-only`, `--preview <dir>`) and the development partnerships (`--audit <ISO3>`); see [What this repo produces](#what-this-repo-produces).
+* `scripts/94_pull_comtrade_trade_refresh.R` — Competitive Position's trade evidence. It pulls the 2022-24 annual benchmark (`data/raw/comtrade_benchmark_annual.csv`) and the monthly momentum window (`data/raw/comtrade_momentum_monthly.csv`), and needs `COMTRADE_API_KEY`.
+* `scripts/99_pull_comtrade_monthly_core.R` — pulls the latest 12 months of the core members' trade with the World (`data/raw/comtrade_monthly_core.csv`) and needs `COMTRADE_API_KEY`. `scripts/88` still writes a monthly file per core member from it, but the app no longer shows that card.
 * `scripts/96_pull_trade_timeseries.R` and `R/charts/trade_timeseries.R` — trade time series.
 * `scripts/98_pull_comtrade_energy_dyads.R` — the all-reporter Comtrade dyad pull (below).
 * `R/charts/export_similarity.R` — Finger–Kreinin export similarity between the six major energy-technology exporters (CHN, DEU, FRA, JPN, KOR, USA) over the HS6 basket, at `ESI_LEVEL` (`hs6`/`hs4`/`hs2`/`tech`/`sub_sector`, default `hs4`); only comparable within a level.
@@ -1070,9 +1174,13 @@ Reports, without writing anything, which inputs are blocking, which are absent b
 * **Comtrade-only trade variables cover reporters only.** Export size, RCA and the export HHI of both trade themes read `comtrade_energy_trade.csv` (2024; 142 exporting reporters, every basket code since 2026-10-09). Economies that file no 2024 data with Comtrade - Viet Nam, Russia, Iran, the UAE and Guinea among them - have no export size or RCA and are left out of the HHI; the Atlas market share and the bilateral mirror flows include them. Hong Kong's Comtrade exports are mostly re-exports: it was the largest 2024 exporter of Semiconductors Midstream (19% of the cell) and fifth in Electric Grid Midstream, so since 2026-10-09 it is left out of export size, RCA and the export HHI and their world aggregates (`trade: re_export_hubs`); it keeps its Atlas variables, and its bilateral flows stay in the partner themes and the network. Other economies with large re-exports (Singapore) stay in. HS 8517.62 (switching and routing apparatus; 28% of Electric Grid Midstream's Comtrade exports) left the grid basket the same day. Before 2026-10-09 the file lacked 19 of the 20 Semiconductors Midstream codes ($3.5bn of the cell's $1.24tn), so earlier Semiconductors trade results are not comparable. No index scores Semiconductors; since 2026-10-09 its cells (Midstream, and Upstream since 2026-10-11) take no part in the HHI S-curve's ranking (the Midstream cell had moved Batteries Midstream's HHI index from 0.290 to 0.217; 0.224 on the 2026-10-10 inputs).
 * **The Upstream baskets of 2026-10-11 are thin and partly shared.** Solar Upstream is one code (silicon metal), Semiconductors Upstream one (unwrought gallium, germanium and indium), Wind Upstream rare earths only; their 2024 Comtrade basket exports are $3.5bn, $0.8bn and $1.6bn (EV $13.9bn, Nuclear $10.2bn). Silicon metal, rare earths, natural uranium compounds and the minor metals are kept with caveat, and 2846.90 and 2844.10 mix raw and processed forms. EV Upstream shares its five battery-mineral codes with Batteries Upstream and its rare earths with Wind Upstream. Large suppliers that do not report to Comtrade - Myanmar (31% of the Atlas Wind Upstream basket), Laos, Nigeria - are in the Atlas share and the mirror flows only. Australia does not publish its uranium exports in Comtrade: it reports neither 2612.10 nor 2844.10 for 2024, although importers name it the origin of 76% of 2024 2612.10 imports (5.2% of the Atlas 2023 Nuclear Upstream basket), so the Comtrade measures of Nuclear Upstream (exports, RCA, export size, HHI) miss a top-four producer and its EO Trade category is imputed; the dyad layers (partner themes, network) see it through mirror flows. The Trade category is imputed for economies with no trade in these baskets (170 of 218 in EO Nuclear Upstream), which moved 18 small economies out of the rankable set of EO Nuclear Upstream (Taiwan joined it). In ES the cells' Trade and Minerals Trade categories partly draw on the same minerals.
 * **CM-FDI exposure covers foreign-invested capacity, not total capacity.** `chinese_parent_exposure` is a share of the supplier's foreign-invested plants only, so an industry that is mostly domestic can score high: Korea Batteries 0.91 (seven Chinese cathode and precursor plants, several of them JVs or announcements, against four Umicore plants; LG, Samsung and SK are domestic), Germany Batteries 0.53. A capacity-weighted version needs plant capacity by owner, which is not available here. HQ is as CM-FDI codes it (Maxeon is China in one project and Singapore in three), and status can lag events (the Vestas and Siemens Gamesa plants in Russia are still "Operational", so Russia Wind reads 0). Choices for the user to confirm, each with a setting in `config/partnership.yml` `cm_fdi`: China, Hong Kong and Macao as suppliers get 1 (`china_supplier`), `min_projects` 2, HKG and MAC parents count as Chinese (`china_hq_iso3`), "Ceased operations" and "Paused" plants dropped (`drop_operational`), the 3 "R&D & Manufacturing" projects left out (`manufacturing_activities`), JVs 0.5 to the listed parent (`jv_parent_share`); the variants measured (`china_supplier: missing`, `min_projects: 1`, `jv_parent_share: 1`, 2015 window, count or value weighting) keep the coalition PSI Spearman at 0.9998 or above (at most 7 ranks); and, without a switch, the exposure is the same for every reporter, China-bloc reporters included (world view only).
-* **Memos of Belgium, Ireland and Sweden carry the first verification round only.** Their writer revised them on the fact sheets corrected on 2026-10-14 (priority and policy ranks had been offset by the out-of-sample sectors) and they lint clean, but the independent re-verification was skipped to save time; re-verify them before relying on them.
+* **The legacy memos of Belgium, Ireland and Sweden carry the first verification round only.** All legacy memos are hidden, and the country strategy briefs replace them. Their writer revised them on the fact sheets corrected on 2026-10-14 (priority and policy ranks had been offset by the out-of-sample sectors) and they lint clean, but the independent re-verification was skipped to save time; re-verify them before relying on them.
 * **EU members carry the EU's regional IEA figures.** The IEA reports the 2035 announced manufacturing-capacity shares (ES `Market Share`, EO `Overall Market Share`) and the EV-region terms for the EU as one region, so every EU member carries the same value (Wind Midstream 0.15, Batteries Midstream 0.11, Green Hydrogen Midstream 0.24, Solar Midstream 0.00). Members are not ranked apart on these variables, and each scores the EU's capacity as if it were its own (Finland's Wind Midstream EO rests largely on it). The indices are unchanged; Country Insights labels the values as the EU's (`eu_region_share`) and the paper discloses it. Found by the dashboard memo verifiers, 2026-10-13.
-* **Four NIPO jurisdictions lack an ISO3 code in the October 2026 index table** (`nipo_policy_index_tbl.rds`): Slovakia, Vietnam, Bosnia and Herzegovina and Chinese Taipei, whose GTA names miss the WDI name join in `R/categories/policy/nipo_policy_index.R` (on `main`). Country Insights matches measures by jurisdiction name and is unaffected; anything that joins the index table by ISO3 misses them until the fix lands.
+* **The stored NIPO index table predates the ISO3 fix.** The October 2026 `nipo_policy_index_tbl.rds` has no ISO3 code for four jurisdictions: Slovakia, Vietnam, Bosnia and Herzegovina, and Chinese Taipei. Their GTA names missed the WDI name join.
+  * The code is fixed on `main` (PR #351, 2026-11-06). `clean_nipo_raw()` now resolves these jurisdictions by code.
+  * The stored table keeps the gaps until `scripts/10` rescores NIPO, which means running without `OPSI_SKIP_NIPO`.
+  * Country Insights matches measures by jurisdiction name, so it is unaffected.
+  * Anything that joins the stored table by ISO3 still misses the four jurisdictions.
 * **Supplier-route coverage.** Chromium, molybdenum, silver and silicon have no supply data in the coalition's supplier test, and the trade-based supplier measures inherit the HS6 basket's judgement calls (re-export hubs such as Singapore, generic codes kept with caveat).
 * **Mineral reserves are USGS MCS 2026 (since 2026-10-09).** The data release CSV predates the report's ver. 1.3 correction of Brazil's rare earths (21 -> 11 Mt; world >85 -> >75 Mt), which the parser applies (`usgs_mcs_errata()`; a no-op once a corrected CSV is staged); its manganese world total (1.70 Gt) disagrees with the report (1.80 Gt) and the listed rows (1.798 Gt), which the denominator rule (larger of the two) absorbs. USGS lists some holders without a figure - India, Madagascar, Myanmar, Nigeria and Thailand (rare earths), Ukraine, the United States, Austria and Germany (graphite, 's'), Côte d'Ivoire (manganese), Bolivia (zinc) - and folds others into 'Other countries' (Morocco, New Caledonia, South Africa and Zambia cobalt, which EI's older copy listed); they score like an unlisted economy (zero-filled and counted as imputed in their mineral variable, 0 in the technology roll-ups, whose cells are not flagged imputed for it). Counting such a mineral as 0 rather than dropping it from the country's roll-up weights lowers, for example, India's Wind and EV reserves and the United States' Batteries and EV reserves. Manganese reserves are gross weight (the chapter default), the other minerals metal content (REO for rare earths); only within-mineral ranks and shares are used, so bases do not mix. The coalition partner list is unchanged by the switch; 26 more scored Upstream cells pass the SI endowment screen, none fewer.
 * **EO mineral Upstream production: "not named" counts as 0.** The IEA supply sheet names five to seven producers per mineral; the rest sits in "Rest of world" (33% of copper mining, 12% of cobalt, 9% of nickel, 8% of lithium, 6% of magnet rare earths, 3% of graphite). An economy the IEA names for some mineral counts 0 for the minerals it is not named for; an economy it names nowhere takes the EO global-average fill. So Electric Grid Upstream (copper only) and Solar Upstream (copper 0.994) record 0 for Australia, Indonesia, Zambia, Canada and Brazil, real copper miners, while Mexico or Kazakhstan take the average. The 2026-10-10 fix extended this observed zero from `size` to `growth_abs` and `Overall Production`, which made nine cells rankable (India and Viet Nam Batteries and EV Upstream; Lao PDR Green Hydrogen and Solar Upstream; Zimbabwe Green Hydrogen, Solar and Wind Upstream). A source covering every producer (USGS mine production) would remove the asymmetry. Open choice: growth is the absolute change P(2035) − P(2025), matching the variable's name and the fuel cells; the relative alternative P(2035)/P(2025) − 1 (0/0 read as 0) changes only the growth term.
@@ -1086,7 +1194,6 @@ Reports, without writing anything, which inputs are blocking, which are absent b
 * **The EU node's demand weight** is about 3.8% of coalition demand while the EU-27 is about a quarter of coalition GDP: demand is a rank S-curve over nodes, so the bundled EU is one point.
 * **Policy index on IEA PAMS alone for countries CAT does not rate** (150 economies, 11 coalition members). Their policy term lacks CAT's technology-GHG tilt: for the countries with both, IEA PAMS alone and the composite agree at a median within-country Spearman of 0.48, and on the tables of 2026-10-09 six of the 45 members with CAT (AUS, BGR, CAN, CZE, FIN, PRT) would get another pick on IEA PAMS alone. `policy_basis` flags it; `OPSI_POLICY_REQUIRE_ALL=1` is the both-required variant. The fallback also brings thinner policy signals into the SI (192 scored countries on the tables of 2026-10-09, up from 65, micro-states among them): any cross-country SI or policy-level table should show the basis.
 * **Vintages differ from the headline build in two ways:** `scripts/40` does not pass the rankability threshold (its `rankable` flags use tau = 1, sovereignty only) and does not pass the uranium production table, so EO Nuclear Upstream lacks its Production category in every vintage.
-* **Supply-chain coupling** (`couple_pillar_scores_by_hhi.R`) is unused; delete it or wire it in deliberately.
 * **Raw-input completeness is environment dependent.** Use the manifest workflow and `scripts/03_check_raw_inputs.R` to reconcile gaps before full builds.
 * **`allies.csv` remains staged from SharePoint.** It only feeds the 22-reporter allied Comtrade file, which is now a fallback behind the all-reporter pull.
 * **Remaining automation candidates**: `imf_dip.csv` (a full pull is ~6.5 MB per reporter, so it needs dimension filtering), `oecd_crs_api.csv` (the 3-digit CRS extract the dashboard's Development & finance chunk ships; the index reads the fetched `oecd_crs_purpose.csv`), and the Atlas extracts via Harvard Dataverse.
@@ -1095,7 +1202,9 @@ Reports, without writing anything, which inputs are blocking, which are absent b
 
 ---
 
-## Changelog (fix/allied-base-paper, Sep-Oct 2026)
+## Changelog (Sep-Oct 2026)
+
+These corrections and extensions were made on the `fix/allied-base-paper` branch and are now on `main`. Later additions are listed after the corrections and extensions, under [Since late October 2026](#since-late-october-2026). Their methods are documented in the files under `docs/` that each entry names.
 
 Corrections:
 
@@ -1140,6 +1249,27 @@ Extensions:
 - **CM-FDI in Friendshore** (user decision 2026-10-11; measured at function level on the 2026-10-10 final-run data): the Cleantech Manufacturing FDI Dataset (Net Zero Industrial Policy Lab, edition 2026.10.05) gives the investment tie in Solar, Wind, Batteries and EV Midstream in place of the IMF position, and a new Friendshore risk component, `chinese_parent_exposure` (weight 1, scored 1 − share), the parent-company case of the common-mode risk of the AIB concept paper (section 7.4). 905 of the 1,042 projects are used (manufacturing; announced, under construction, completed or operational; all years). Outside the four cells every exported value is unchanged; coalition PSI Spearman 0.9998 (max rank change 5), world 0.9996 (max 8); Economic Opportunity, Opportunity and Development unchanged. Sector Insights shows the projects descriptively (flows, parent-HQ groups, years, the project table with source links). See [Partnership Strength Index](#partnership-strength-index-psi).
 - **Allied network:** Upstream and Midstream only, diversification term with a calibration rule, perspective tangent cuts, strict top-K caps, node policy term off, EU node aggregation, MILP for every stage (≤ 60 nodes, 300 s, 30 cap passes), observed-HHI output and warning.
 - **Vertical complementarities tested, not adopted** (2026-10-12): whether a stage's EO should reward capability in the adjacent stages and its ES the security of its inputs. In an Atlas panel (1995-2023, 172 economies, country-year and technology-year fixed effects) the linkages are cross-sectional co-location, concentrated in fossil fuels and nuclear, about zero for clean-tech chains and within country-technology cells, with no out-of-sample gain; sourcing-weighted input security did not predict the 2021-22 shortfalls (sourcing concentration did). Reported in the paper (methods and an appendix); no index change.
+
+### Since late October 2026
+
+- **Six supply-chain stages** (2026-10-26 to 10-28). Extraction, Refining, Components, Assembly, Deployment and Recovery are now the canonical stages. Upstream / Midstream / Downstream is derived from them. Every input carries an evidence status ([docs/supply_chain_stages.md](docs/supply_chain_stages.md)).
+- **Canonical decision framework** (2026-10-29 and 10-30; on `main` since 2026-11-03). Need -> Prize -> Position -> Choice -> Policy alignment, with six choices. Further changes:
+  - a capability-anchor rule for Catch Up;
+  - a floor under supply-chain need;
+  - fence heights that follow the yard;
+  - Strategic Industrial Value and the large-yard case from the Yards & Fences paper.
+
+  The Strategic Index is kept for comparison only ([docs/strategic_position.md](docs/strategic_position.md), [docs/decision_framework_report.md](docs/decision_framework_report.md)).
+- **Atlas 2024 and the trade refresh** (2026-10-30):
+  - The Atlas of Economic Complexity moved to the Dataverse V18 release.
+  - Two codes joined Solar Extraction: quartz (2506.10) and silver ores (2616.10).
+  - Yellowcake (2844.10) moved from Nuclear Refining to Nuclear Extraction.
+  - `scripts/94` re-pulled the 2022-24 trade benchmark and the monthly momentum window.
+- **Development partnerships, country strategy briefs and the US-Japan Partnership Memo** (PR #350, merged 2026-11-06).
+  - Strategy briefs are published for AUS, CAN, DEU, FRA, GBR, IND, JPN, KOR and USA.
+  - The legacy policy memos stay hidden.
+- **US trade restrictiveness** by technology x stage (`scripts/28`, PR #347, merged 2026-11-06).
+- **NIPO jurisdiction codes** (PR #351, merged 2026-11-06). `clean_nipo_raw()` takes each jurisdiction's ISO3 code from `country_name_to_iso3()`, which resolves "Chinese Taipei" to TWN. It warns when a name stays unresolved. See [Known issues](#known-issues-and-to-dos) for the table on disk.
 
 ---
 
