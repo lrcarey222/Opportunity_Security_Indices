@@ -379,11 +379,36 @@ export function dpOfCell(ties: Ties, cellId: number): Map<string, number | null>
   return new Map(ties.dp.filter((d) => d.cell_id === cellId).map((d) => [d.partner_iso, d.value]));
 }
 
-/** The agreements two economies share (the coalition's economic-security agreements). */
+/**
+ * Agreements the chunk records as one row per partner of a hub economy that has no row of its own: each row is a
+ * bilateral agreement with the hub. data/reference/economic_security_agreements.csv lists the United States' FTA
+ * partners under "U.S. FTA", not the United States. Two partners do not share such an agreement (Korea and
+ * Australia each have an FTA with the United States, not with each other); the hub shares it with each partner.
+ * The same rule as the Country fact sheets (R/dashboard/country/country_ties.R, COUNTRY_US_FTA).
+ */
+export const HUB_AGREEMENTS: Readonly<Record<string, string>> = { 'U.S. FTA': 'USA' };
+
+/** The agreements two economies share (the coalition's economic-security agreements): plurilaterals by membership of both,
+ *  a hub agreement (HUB_AGREEMENTS) only between the hub and a listed partner. */
 export function sharedAgreements(ties: Ties, a: string, b: string): string[] {
   const of = (x: string) => new Set(ties.agreements.filter((g) => g.iso3 === x).map((g) => g.agreement));
   const A = of(a);
-  return [...of(b)].filter((g) => A.has(g)).sort();
+  const B = of(b);
+  const out = new Set([...B].filter((g) => A.has(g) && !(g in HUB_AGREEMENTS)));
+  if (a !== b) {
+    for (const [g, hub] of Object.entries(HUB_AGREEMENTS)) {
+      if ((a === hub && B.has(g)) || (b === hub && A.has(g))) out.add(g);
+    }
+  }
+  return [...out].sort();
+}
+
+/** The hubs of the hub agreements the chunk lists (an economy that shares those agreements without a row of its own). */
+export function agreementHubs(ties: Ties): string[] {
+  const listed = new Set(ties.agreements.map((g) => g.agreement));
+  return Object.entries(HUB_AGREEMENTS)
+    .filter(([g]) => listed.has(g))
+    .map(([, hub]) => hub);
 }
 
 /** UN-vote alignment of the pair (null: not in the data). */

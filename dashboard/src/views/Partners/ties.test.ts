@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  alignmentOf, bySize, CMFDI_SECTORS, CMFDI_STAGES_CONFIG, cmfdiOnce, cmfdiSameProjectsNote, cmfdiStages, dpOfCell, fmtUsdM, hasCmfdi, parseTies, positionsOf, projectFlows, projectFlowsAllTechs, sharedAgreements, tiesName,
+  agreementHubs, alignmentOf, bySize, CMFDI_SECTORS, CMFDI_STAGES_CONFIG, cmfdiOnce, cmfdiSameProjectsNote, cmfdiStages, dpOfCell, fmtUsdM, hasCmfdi, parseTies, positionsOf, projectFlows, projectFlowsAllTechs, sharedAgreements, tiesName,
 } from './ties.ts';
 import { syntheticTies } from './tiesFixture.ts';
 
@@ -107,6 +107,20 @@ describe('ties', () => {
     expect(dpOfCell(t, 3).size).toBe(0);
     expect(sharedAgreements(t, 'USA', 'JPN')).toEqual(['IPEF', 'MSP']);
     expect(sharedAgreements(t, 'USA', 'DEU')).toEqual([]);
+    // U.S. FTA rows list the United States' partners, not the United States: the agreement is bilateral with it
+    const fta = { ...t, agreements: [...t.agreements, { iso3: 'KOR', agreement: 'U.S. FTA' }, { iso3: 'AUS', agreement: 'U.S. FTA' }, { iso3: 'KOR', agreement: 'IPEF' }] };
+    expect(sharedAgreements(fta, 'USA', 'KOR')).toEqual(['IPEF', 'U.S. FTA']);
+    expect(sharedAgreements(fta, 'KOR', 'USA')).toEqual(['IPEF', 'U.S. FTA']);
+    expect(sharedAgreements(fta, 'AUS', 'USA')).toEqual(['U.S. FTA']);
+    expect(sharedAgreements(fta, 'KOR', 'AUS')).toEqual([]); // two U.S. FTA partners do not share an FTA
+    expect(sharedAgreements(fta, 'KOR', 'JPN')).toEqual(['IPEF']);
+    // the same if the data ever lists the United States under its own FTAs
+    const withHub = { ...fta, agreements: [...fta.agreements, { iso3: 'USA', agreement: 'U.S. FTA' }] };
+    expect(sharedAgreements(withHub, 'KOR', 'AUS')).toEqual([]);
+    expect(sharedAgreements(withHub, 'USA', 'AUS')).toEqual(['U.S. FTA']);
+    expect(sharedAgreements(withHub, 'USA', 'USA')).toEqual(['IPEF', 'MSP']);
+    expect(agreementHubs(fta)).toEqual(['USA']);
+    expect(agreementHubs(t)).toEqual([]);
     expect(alignmentOf(t, 'USA', 'JPN')).toBe(0.8);
     expect(alignmentOf(t, 'JPN', 'USA')).toBeNull();
     expect(alignmentOf(t, 'USA', 'XXX')).toBeNull();
