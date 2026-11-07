@@ -18,6 +18,66 @@ pairs:
     b_short: "Japan"
     b_ref: "Japan"
     title: "United States–Japan Strategic Energy & Industrial Partnership"
+  USA_KOR:
+    a: USA
+    b: KOR
+    a_name: "the United States"
+    a_short: "US"
+    a_ref: "the US"
+    b_name: "South Korea"
+    b_short: "Korea"
+    b_ref: "Korea"
+    title: "United States–Korea Strategic Energy & Industrial Partnership"
+  USA_DEU:
+    a: USA
+    b: DEU
+    a_name: "the United States"
+    a_short: "US"
+    a_ref: "the US"
+    b_name: "Germany"
+    b_short: "Germany"
+    b_ref: "Germany"
+    title: "United States–Germany Strategic Energy & Industrial Partnership"
+  JPN_KOR:
+    a: JPN
+    b: KOR
+    a_name: "Japan"
+    a_short: "Japan"
+    a_ref: "Japan"
+    b_name: "South Korea"
+    b_short: "Korea"
+    b_ref: "Korea"
+    title: "Japan–Korea Strategic Energy & Industrial Partnership"
+  USA_AUS:
+    a: USA
+    b: AUS
+    a_name: "the United States"
+    a_short: "US"
+    a_ref: "the US"
+    b_name: "Australia"
+    b_short: "Australia"
+    b_ref: "Australia"
+    title: "United States–Australia Strategic Energy & Industrial Partnership"
+  KOR_CAN:
+    a: KOR
+    b: CAN
+    a_name: "South Korea"
+    a_short: "Korea"
+    a_ref: "Korea"
+    b_name: "Canada"
+    b_short: "Canada"
+    b_ref: "Canada"
+    title: "Korea–Canada Strategic Energy & Industrial Partnership"
+  KOR_AUS:
+    a: KOR
+    b: AUS
+    a_name: "South Korea"
+    a_short: "Korea"
+    a_ref: "Korea"
+    b_name: "Australia"
+    b_short: "Australia"
+    b_ref: "Australia"
+    title: "Korea–Australia Strategic Energy & Industrial Partnership"
 
 inputs:
   # AIB scenario whose compact missions and roles are read (Managed Interdependence is the Explorer default).
@@ -50,6 +110,9 @@ evidence:
   proxy_cap: 0.67              # a node whose need is inherited from its technology x stage cell is at most medium
   low_evidence_below: 0.50     # recommendations below this are flagged review, never a joint bet
   external_verification_score: {verified: 1.0, partial: 0.67, unverified: 0.33, institutional_reference: 0.67}
+  # institution names starting with these are public bodies, not private actors (on top of institutions.csv
+  # and the pair's own names)
+  public_actor_prefixes: ["Govt", "Government", "U.S.", "US ", "DoD", "TVA", "Ministry", "Federal"]
 
 priority:
   max_joint_bets: 5
