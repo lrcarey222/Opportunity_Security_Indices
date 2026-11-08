@@ -123,6 +123,8 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     // links: the strategic compact pages and the pair on the Partnerships page (Managed Interdependence: no scn)
     expect(within(card).getByRole('link', { name: 'Wind Power Equipment' }).getAttribute('href')).toBe('/compacts/s/SC-WIND');
     expect(within(card).getByRole('link', { name: /^Every relationship thesis of the United States/ }).getAttribute('href')).toBe('/aib/partnerships?country=USA&partner=JPN');
+    // and the pair's agreements (2026-11-06; a plain link, no agreements code in the profile)
+    expect(within(card).getByRole('link', { name: /^The agreements of the United States and Japan on the Agreements page/ }).getAttribute('href')).toBe('/aib/agreements?country=USA&partner=JPN');
     // the thesis comes before the lenses; no cross-lens summary, so no line on where Japan sits
     const lenses = within(part).getByTestId('partnership-lenses');
     expect(card.compareDocumentPosition(lenses) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

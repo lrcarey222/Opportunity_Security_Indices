@@ -1,6 +1,7 @@
 // Allied Industrial Base routes (IA refactor, 2026-10-16; strategic layer 2026-10-20). The shell mounts two
 // subtrees under AppRoot, both inside AibLayout (the compacts document and the module nav):
-//   * aibHubRoute at /aib: the Overview (index), Partnerships (/aib/partnerships), Country roles
+//   * aibHubRoute at /aib: the Overview (index), Partnerships (/aib/partnerships), Agreements
+//     (/aib/agreements, the partnership agreements, 2026-11-06), Country roles
 //     (/aib/roles) and Diversification (/aib/diversification), the module's composition pages;
 //   * aibRoute at /compacts: Sectoral Compacts. /compacts lands on the Strategic Sectoral Compacts
 //     (StrategicCompactsView); a strategic compact is /compacts/s/:sid (StrategicCompactView); the compact
@@ -86,6 +87,8 @@ export const aibHubRoute: RouteObject = {
   children: [
     { index: true, lazy: view(() => import('./views/AibOverviewView.tsx')) },
     { path: 'partnerships', lazy: view(() => import('./views/AibPartnershipsView.tsx')) },
+    // the partnership agreements (2026-11-06; src/agreements/, its own lazily loaded data)
+    { path: 'agreements', lazy: view(() => import('../agreements/views/AgreementsView.tsx')) },
     { path: 'roles', lazy: view(() => import('./views/AibRolesView.tsx')) },
     { path: 'diversification', lazy: view(() => import('./views/AibDiversifyView.tsx')) },
     { path: '*', element: <ToAibHome /> },

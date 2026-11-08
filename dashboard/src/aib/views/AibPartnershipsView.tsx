@@ -1171,7 +1171,8 @@ function DevelopmentPartners({ f, scope }: { f: PartnershipFilter; scope: string
 // ---- Geopolitical ----------------------------------------------------------------------------------------
 
 function GeopoliticalTab({ f, onKind }: TabProps) {
-  const { doc, nodeOf } = useAibCtx();
+  const { doc, nodeOf, href } = useAibCtx();
+  const [params] = useSearchParams();
   const sc = useLensScenario();
   const ties = useTies();
   const man = useCountryManifest();
@@ -1184,6 +1185,18 @@ function GeopoliticalTab({ f, onKind }: TabProps) {
   const coalition = useMemo(() => (roster ? coalitionOf(roster) : []), [roster]);
   const tierOf = (x: string) => roster?.find((c) => c.iso3 === x)?.tier ?? null;
   const fsTop = useMemo(() => (ties?.ties && iso ? topPairs(ties.ties.top_all, 'fs', iso, 8) : []), [ties, iso]);
+  // the partnership agreements page (/aib/agreements, 2026-11-06), with the economy and partner chosen here
+  const partnerQ = iso ? params.get('partner') : null;
+  const toAgreements = (
+    <p className="mt-2 text-xs">
+      <Link className="link" to={href(`/aib/agreements${iso ? `?country=${encodeURIComponent(iso)}${partnerQ && partnerQ !== iso ? `&partner=${encodeURIComponent(partnerQ)}` : ''}` : ''}`)}>
+        {iso
+          ? `The agreements of ${name(iso)}${partnerQ && partnerQ !== iso ? ` and ${name(partnerQ)}` : ''}: how deep the partnership goes and what is delivered`
+          : 'Every recorded agreement between economies: how deep each partnership goes and what is delivered'}
+        , on the Agreements page &rarr;
+      </Link>
+    </p>
+  );
 
   // Today: agreements and UN votes
   let today: LensPanelSpec;
@@ -1211,6 +1224,7 @@ function GeopoliticalTab({ f, onKind }: TabProps) {
             <p className="text-paper-mute">{name(iso)} shares no economic-security agreement in the data.</p>
           )}
           {tiesNow.length > 12 && <p className="text-xs text-paper-mute">And {tiesNow.length - 12} more.</p>}
+          {toAgreements}
         </LensCard>
       ),
     };
@@ -1231,6 +1245,7 @@ function GeopoliticalTab({ f, onKind }: TabProps) {
           ) : (
             <p className="text-paper-mute">No agreement in the data.</p>
           )}
+          {toAgreements}
         </LensCard>
       ),
     };
