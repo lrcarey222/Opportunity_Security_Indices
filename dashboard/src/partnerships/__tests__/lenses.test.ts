@@ -47,6 +47,27 @@ describe('Today and OSI helpers (synthetic ties chunk)', () => {
     expect(alignmentWords(null)).toBe('UN votes not in the data');
   });
 
+  it('U.S. FTAs: shared between the United States and each partner only; listed as partners of the United States', () => {
+    const fta = { ...ties, agreements: [...ties.agreements, { iso3: 'KOR', agreement: 'U.S. FTA' }, { iso3: 'AUS', agreement: 'U.S. FTA' }] };
+    expect(agreementTies(fta, 'USA').map((r) => [r.iso3, r.agreements])).toEqual([
+      ['JPN', ['IPEF', 'MSP']],
+      ['AUS', ['U.S. FTA']],
+      ['IND', ['IPEF']],
+      ['KOR', ['U.S. FTA']],
+    ]);
+    // Korea's ties: the United States, not Australia
+    expect(agreementTies(fta, 'KOR').map((r) => [r.iso3, r.agreements])).toEqual([['USA', ['U.S. FTA']]]);
+    // the hub counts even without a row of its own
+    const only = { ...ties, agreements: [{ iso3: 'KOR', agreement: 'U.S. FTA' }, { iso3: 'AUS', agreement: 'U.S. FTA' }] };
+    expect(agreementTies(only, 'AUS').map((r) => r.iso3)).toEqual(['USA']);
+    expect(agreementTies(only, 'USA').map((r) => r.iso3)).toEqual(['AUS', 'KOR']);
+    expect(agreementList(fta)).toEqual([
+      { agreement: 'IPEF', members: ['IND', 'JPN', 'USA'] },
+      { agreement: 'MSP', members: ['JPN', 'USA'] },
+      { agreement: 'U.S. FTA', members: ['AUS', 'KOR'], hub: 'USA' },
+    ]);
+  });
+
   it('the coalition: core members first, then partners; tiers in words', () => {
     const c = coalitionOf([
       { iso3: 'ZZZ', name: 'Zembla', tier: 'none' },

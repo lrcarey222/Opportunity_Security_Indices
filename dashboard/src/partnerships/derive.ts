@@ -3,7 +3,7 @@
 // allied coalition's tiers (the Country manifest). Pure: filters and orderings of existing fields only.
 // (The lists of partners each lens named, for the cross-lens summary, went with it on 2026-11-02.)
 
-import { alignmentOf, sharedAgreements, type Ties } from '../views/Partners/ties.ts';
+import { agreementHubs, alignmentOf, HUB_AGREEMENTS, sharedAgreements, type Ties } from '../views/Partners/ties.ts';
 
 /**
  * Names of the aggregates that sit among the economies in the partnership data (the European Union is a
@@ -42,18 +42,25 @@ const byTies = (a: AgreementTie, b: AgreementTie) => b.agreements.length - a.agr
 
 /** The economies that share at least one economic-security agreement with `iso`: most agreements first, then the most aligned. */
 export function agreementTies(ties: Ties, iso: string): AgreementTie[] {
-  const others = new Set(ties.agreements.map((g) => g.iso3).filter((x) => x !== iso));
+  // every listed economy, and the hub of a hub agreement (the United States has no "U.S. FTA" row of its own)
+  const others = new Set([...ties.agreements.map((g) => g.iso3), ...agreementHubs(ties)].filter((x) => x !== iso));
   return [...others]
     .map((x) => ({ iso3: x, agreements: sharedAgreements(ties, iso, x), alignment: alignmentOf(ties, iso, x) }))
     .filter((r) => r.agreements.length > 0)
     .sort(byTies);
 }
 
-/** The agreements of the chunk with their members, most members first. */
-export function agreementList(ties: Ties): { agreement: string; members: string[] }[] {
+/** The agreements of the chunk with their members, most members first. A hub agreement (the U.S. FTAs) is a set of
+ *  bilateral agreements: `members` are the hub's partners and `hub` names the hub. */
+export function agreementList(ties: Ties): { agreement: string; members: string[]; hub?: string }[] {
   const by = new Map<string, Set<string>>();
   for (const g of ties.agreements) by.set(g.agreement, (by.get(g.agreement) ?? new Set()).add(g.iso3));
-  return [...by.entries()].map(([agreement, s]) => ({ agreement, members: [...s].sort() })).sort((a, b) => b.members.length - a.members.length || a.agreement.localeCompare(b.agreement));
+  return [...by.entries()]
+    .map(([agreement, s]) => {
+      const hub = HUB_AGREEMENTS[agreement];
+      return hub ? { agreement, members: [...s].filter((x) => x !== hub).sort(), hub } : { agreement, members: [...s].sort() };
+    })
+    .sort((a, b) => b.members.length - a.members.length || a.agreement.localeCompare(b.agreement));
 }
 
 /** How many economies vote with `iso` in the UN General Assembly at each alignment level (same bloc, one nonaligned, opposite blocs). */
