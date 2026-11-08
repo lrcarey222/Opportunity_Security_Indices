@@ -11,6 +11,8 @@ PM_STATES <- c("a_supplies_b_needs", "b_supplies_a_needs", "complementary_specia
                "capacity_constrained_trusted_supply", "direct_competition", "low_strategic_case", "deployment_demand", "not_assessed")
 PM_ACTIVE_STATES <- c("a_supplies_b_needs", "b_supplies_a_needs", "complementary_specialization",
                       "shared_vulnerability", "capacity_constrained_trusted_supply")
+# mechanism statuses that count as a working channel (bilateral_mechanisms.csv)
+PM_ACTIVE_MECH <- c("in_force", "signed", "operating")
 
 # imports: reporter_iso (importer), partner_iso (exporter), tech, supply_chain, imports_usd (scripts/15 table)
 pm_bilateral_trade <- function(imports, a, b) {

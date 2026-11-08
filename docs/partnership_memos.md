@@ -10,7 +10,12 @@ It is not a relationship summary and not an ally ranking. The chain is:
 **A capability/need + B capability/need → dyadic relationship → supply-chain problem → treatment → instrument →
 transaction → milestone.**
 
-Pilot: United States–Japan (`output/partnerships/USA_JPN/`).
+Pilot: United States–Japan (`output/partnerships/USA_JPN/`). Drafted 2026-11-06 from the same rules, each with its
+own evidence layer: United States–Korea, United States–Germany, Japan–Korea, United States–Australia, Korea–Canada
+and Korea–Australia (pairs `USA_KOR`, `USA_DEU`, `JPN_KOR`, `USA_AUS`, `KOR_CAN`, `KOR_AUS`). They were chosen by
+running the rules over all 45 pairs of the United States, Japan, Korea, Australia, the United Kingdom, Canada,
+Germany, France, India and Mexico and reading the tier-1 (joint-bet) units, with weight on two-way supply rather
+than the shared mineral-refining exposure every pair has.
 
 ## Where it sits in the architecture
 
@@ -157,7 +162,8 @@ or the technology cell where no node sits there; stages are not forced to carry 
 ### Master Energy Agreement assessment
 
 `bilateral_mechanisms.csv` records each mechanism's scope, cross-sector reach, pipeline, finance, KPIs, review,
-reciprocity and sunset. Rule: **existing** if every recommended compact has a mechanism with pipeline and finance and
+reciprocity and sunset. Rule: **none** if no compact passes (nothing for a framework to carry: the joint bets run as
+individual deals through existing channels); **existing** if every recommended compact has a mechanism with pipeline and finance and
 a cross-sector mechanism has KPIs and a review cycle; **upgrade** if at least half the compacts are covered by finance
 or a pipeline, or a cross-sector mechanism with a pipeline exists; **new MEA** otherwise. The memo then specifies
 scope, reciprocal commitments, portfolio, financing lanes, governance, milestones, KPI dashboard, review cycle and
@@ -188,7 +194,11 @@ recommendation lacks one.
 
 The memo is rendered from these files; nothing is scraped at render time. The vintage (access date, verification
 counts) is printed under the title. The 2026-11-06 vintage was compiled by two research passes (agreements and
-finance; sector projects); 16 items verified against the primary source, 56 partial, 13 unverified.
+finance; sector projects); 16 items verified against the primary source, 56 partial, 13 unverified. The six further pairs
+(same date) have one research pass each, 171 items in all, mostly partial (secondary sources); counts by pair are in
+the evidence README. An item that names an AIB node matches that node only; a compact-level item matches every unit
+of its compact at its stage. Items naming more than the two countries (a trilateral or plurilateral) count for every
+pair inside them, so a Japan-Korea joint venture in the US is a US-Japan commitment too.
 
 ## Print document (PDF, Word) in the country-brief format
 
@@ -218,8 +228,9 @@ Outputs in `output/partnerships/<PAIR>/`: `partnership_memo.pdf`, `.docx`, `.ast
 writes `memo-<PAIR>.<h8>.{json,pdf,docx,md}` and the pair's entry in `<dir>/manifest.json` (`pairs.<PAIR>`: title,
 file names, words, generated_at, as_of, evidence_access, format `brief`, `verified: false`), the country briefs'
 publication convention, replacing the pair's older hashed files. The dashboard does not read this manifest yet. A
-download needs a Partnerships entry point and the size budget checked (`npm run budget`; the US–Japan set is about
-1.7 MB, mostly the PDF with its embedded font). Needs Edge or Chrome and python with python-docx and pypdf
+download needs a Partnerships entry point and a budget line for this folder (`scripts/check-budget.mjs` counts the
+Strategic, Sector, Country, Compacts and Posture data only; each pair's set is about 1.5–1.7 MB, mostly the PDF with
+its embedded font). Needs Edge or Chrome and python with python-docx and pypdf
 (`--edge`, `--python`); `--no-pdf` skips the print step. The Roboto font is read from `dashboard/node_modules`, else
 from the processed-data worktree's `dashboard/node_modules`, else `--font`.
 
@@ -236,7 +247,11 @@ Not yet done: the briefs' independent-verifier step. The disclosure says so, and
    ```
 2. Add the pair's rows to `policy_evidence.csv` (countries `USA|KOR`), `bilateral_mechanisms.csv` and, if new,
    `institutions.csv`. Without them the memo still runs: MEA becomes "new MEA", additionality ignores commitments, and
-   no compact can be evidence-led.
+   no compact can be evidence-led. The memo text is pair-neutral: country names come from the pair config, the
+   finance, demand and development institutions from `institutions.csv`, the working channels and governance line
+   from `bilateral_mechanisms.csv`, and the "private actors" columns drop institution names that start with a name in
+   `institutions.csv`, the pair's own names or `evidence.public_actor_prefixes`. Use a new evidence-id prefix per pair
+   (`USKR-`, `USDE-`, ...): ids must be unique across the file.
 3. Run (with the stages data and the development-partnership table):
    ```
    Rscript scripts/34_build_partnership_memo.R --pair USA_KOR \
