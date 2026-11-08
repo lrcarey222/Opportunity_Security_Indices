@@ -370,17 +370,18 @@ describe('strategic gaps and execution gaps in words, with the exact numbers', (
     expect(gapGroups(jpn.gaps).flatMap((g) => g.rows).some((r) => r.complementarity === 'not_assessed')).toBe(false);
   });
 
-  it('the rule that set a depth class, in words: instruments with their basis, sectors with their grade, types and groups by label, ids as titles', () => {
+  it('the rule that set a depth class, in words: instruments and established sectors by label, a text-only sector marked, types and groups by label, ids as titles', () => {
     const ix = new Map(jpn.agreements.map((a) => [a.id, a]));
     const p = (iso: string) => jpn.partners.find((x) => x.partner === iso)!;
     const t = (id: string) => `“${ix.get(id)!.title}”`;
     const deuAll = depthRuleWords(p('DEU').depth_all_rule, v, ix)!;
     expect(deuAll).not.toMatch(/agr-[0-9a-f]{10}|\[|Operational partnership \(all agreements\)/);
-    expect(deuAll).toMatch(/^Tariff reduction \(coded by the source\), /);
+    expect(deuAll).toMatch(/^Tariff reduction, /);
+    expect(deuAll).not.toMatch(/coded by the source|recorded by hand|implied by the agreement type/);
     const deuEi = depthRuleWords(p('DEU').depth_ei_rule, v, ix)!;
     expect(deuEi).toMatch(/^Critical minerals \(mentioned in text\), Hydrogen \(mentioned in text\) in “/);
     const aus = depthRuleWords(p('AUS').depth_all_rule, v, ix)!;
-    expect(aus).toMatch(/^trade instrument in “[^”]+” \(2014\); finance, investment or manufacturing \(Finance, Supply security\) in “[^”]+” \(\d{4}\); sectoral cooperation: Steel \(established\), Hydrogen \(established\) in “[^”]+” \(\d{4}\); in effect: “[^”]+” \(\d{4}\)$/);
+    expect(aus).toMatch(/^trade instrument in “[^”]+” \(2014\); finance, investment or manufacturing \(Finance, Supply security\) in “[^”]+” \(\d{4}\); sectoral cooperation: Steel, Hydrogen in “[^”]+” \(\d{4}\); in effect: “[^”]+” \(\d{4}\)$/);
     expect(depthRuleWords(p('IND').depth_all_rule, v, ix)).toBe(`${labelOf(v, 'agreement_types', 'strategic_partnership')} in ${t('agr-0b1c2d3e4f')} (${ix.get('agr-0b1c2d3e4f')!.date!.slice(0, 4)})`);
     expect(depthRuleWords(p('NZL').depth_all_rule, v, ix)).toBeNull();
     // an id the file does not hold, and a rule in another wording

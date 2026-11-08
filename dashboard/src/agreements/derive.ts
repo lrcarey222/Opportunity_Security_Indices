@@ -325,8 +325,8 @@ const RULE_HEAD_RE = /^\s*[0-5]\s[^:]*\((?:all|electro-industrial) agreements\)\
 
 /**
  * The rule that set a pair's depth class (depth_all_rule / depth_ei_rule as R writes it) in plain words: the
- * class head dropped (the chip shows it), instruments with the basis that established them, sectors with their
- * grade (established or mentioned in text), agreement types and instrument groups by their labels, and agreement
+ * class head dropped (the chip shows it), instruments and established sectors by their labels (a sector only
+ * mentioned in text says so), agreement types and instrument groups by their labels, and agreement
  * ids as their titles. Null when nothing is left (class 0: the general rule applies). A rule in another
  * wording passes through with only the ids replaced.
  */
@@ -336,8 +336,10 @@ export function depthRuleWords(rule: string | null | undefined, v: AgrVocab, byI
   const groupIds = new Set(Object.keys(v.instrument_groups ?? {}));
   const body = rule
     .replace(RULE_HEAD_RE, '')
-    .replace(/\b([a-z][a-z0-9_]*) \[([a-z_]+)\]/g, (_m, c: string, b: string) => `${labelOf(v, 'instruments', c)} (${BASIS_WORD[b] ?? humanize(b)})`)
-    .replace(/\b([a-z][a-z0-9_]*):(specific|text)\b/g, (_m, c: string, g: CodeGrade) => `${labelOf(v, 'sectors', c)} (${GRADE_WORD[g]})`)
+    // an instrument that sets a class is always established: its basis stays in the agreement's code list
+    .replace(/\b([a-z][a-z0-9_]*) \[([a-z_]+)\]/g, (_m, c: string) => labelOf(v, 'instruments', c))
+    // a sector reads plainly when established; one only mentioned in text says so (it changes what the class means)
+    .replace(/\b([a-z][a-z0-9_]*):(specific|text)\b/g, (_m, c: string, g: CodeGrade) => (g === 'text' ? `${labelOf(v, 'sectors', c)} (${MENTIONED})` : labelOf(v, 'sectors', c)))
     .replace(/\(([a-z_]+(?:\|[a-z_]+)*)\)/g, (m, s: string) => (s.split('|').every((x) => groupIds.has(x)) ? `(${s.split('|').map((g) => labelOf(v, 'instrument_groups', g)).join(', ')})` : m))
     .replace(/(^|: |; )([a-z][a-z0-9_]*)(?= in agr-)/g, (m, pre: string, t: string) => (typeIds.has(t) ? `${pre}${labelOf(v, 'agreement_types', t)}` : m))
     .replace('strategic partnership label', 'a named strategic partnership')

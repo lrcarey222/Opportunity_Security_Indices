@@ -77,8 +77,8 @@ export function GradeMark({ grade, short }: { grade: CodeGrade; short?: boolean 
 export function GradeLegend() {
   return (
     <p className="text-xs text-paper-mute" data-testid="grade-legend">
-      <GradeMark grade="specific" />: coded by the source, recorded by hand from the official text, implied by the agreement type or, for a sector, named in the title (a title alone never establishes an instrument).{' '}
-      <GradeMark grade="text" />: only in the body text of a document; shown, but never counted as established.
+      <GradeMark grade="specific" />: established by the source or the official text. <GradeMark grade="text" />: only mentioned in a document's text, never counted as established.
+      Hover a code for its source.
     </p>
   );
 }
@@ -95,8 +95,9 @@ export function CodeList({ codes, kind, v }: { codes: readonly AgrCode[]; kind: 
           <span aria-hidden="true" className={x.grade === 'specific' ? 'text-paper' : 'text-paper-mute'}>
             {GRADE_GLYPH[x.grade]}
           </span>{' '}
-          <span className={x.grade === 'specific' ? 'text-paper-dim' : 'text-paper-mute'}>{labelOf(v, kind, code)}</span>{' '}
-          <span className="text-[0.6875rem] text-paper-mute">({x.grade === 'specific' ? x.bases.filter((b) => b !== 'text_body').map((b) => BASIS_WORD[b] ?? b).join('; ') : 'mentioned in text'})</span>
+          <span className={x.grade === 'specific' ? 'text-paper-dim' : 'text-paper-mute'}>{labelOf(v, kind, code)}</span>
+          {/* the grade is the glyph; the basis is in the tooltip (and read out), not printed */}
+          <span className="sr-only"> ({GRADE_WORD[x.grade]}: {x.bases.map((b) => BASIS_WORD[b] ?? b).join('; ')})</span>
         </li>
       ))}
     </ul>
