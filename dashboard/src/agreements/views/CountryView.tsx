@@ -10,10 +10,11 @@ import { ChartCard } from '../../charts/ChartCard.tsx';
 import { Segmented } from '../../components/ui.tsx';
 import type { AgreementsCountry, AgreementsManifest, CodeGrade, InstLevel } from '../contract.ts';
 import {
-  activeKeys, complementarityWord, dateWords, depthRuleWords, executionGapText, filterAgreements, gapComponents, gapGroups, gapsInScope, gapText, indexCountry, instrumentCoverage, labelOf, nameOf, plural, QUADRANT_NAME, QUADRANT_TITLE,
+  activeKeys, dateWords, depthRuleWords, filterAgreements, gapsInScope, indexCountry, instrumentCoverage, labelOf, nameOf, plural,
   rankPartners, recentAgreements, SCOPE_LABEL, sectorCoverage, SORT_INFO, SORT_KEYS, zeroDepthWords, type AgrFilter, type PartnerRank, type SortKey,
 } from '../derive.ts';
 import { PartnerMap, type RosterEntry } from './AgreementsMap.tsx';
+import { ExecutionGapCard, GapMatrixCard } from './GapVisuals.tsx';
 import { AbsenceCaveat, AgreementsTable, DepthChip, DepthLegend, GradeLegend, GradeMark, NoneFound } from './parts.tsx';
 
 const TOP = 25;
@@ -49,7 +50,7 @@ export function CountryView({ manifest, file, f, sort, onSort, roster, names, hr
   const filtered = activeKeys(f).length > 0;
   const sectors = useMemo(() => sectorCoverage(top, f.scope, v, names), [top, f.scope, v, names]);
   const insts = useMemo(() => instrumentCoverage(top, v, names, { scope: f.scope, ix }), [top, v, names, f.scope, ix]);
-  const groups = useMemo(() => gapGroups(gapsInScope(file.gaps, f.scope, manifest.vocab), null, f.tech), [file.gaps, f.scope, manifest.vocab, f.tech]);
+  const gapRows = useMemo(() => gapsInScope(file.gaps, f.scope, manifest.vocab).filter((g) => !f.tech || g.tech === f.tech), [file.gaps, f.scope, manifest.vocab, f.tech]);
   const execution = useMemo(
     () => gapsInScope(file.execution_gaps, f.scope, manifest.vocab).filter((g) => !f.tech || g.tech === f.tech),
     [file.execution_gaps, f.scope, manifest.vocab, f.tech],
@@ -75,7 +76,7 @@ export function CountryView({ manifest, file, f, sort, onSort, roster, names, hr
       >
         {ranked.length ? (
           <>
-            <div className="overflow-x-auto border hairline">
+            <div className="relative overflow-x-auto border hairline">
               <table className="data-table" data-testid="partner-ranking">
                 <caption className="sr-only">Partners of {name(iso)} ranked by {SORT_INFO[sort].label.toLowerCase()}</caption>
                 <thead>
@@ -162,63 +163,8 @@ export function CountryView({ manifest, file, f, sort, onSort, roster, names, hr
         <AgreementsTable rows={recent} v={v} names={names} focal={iso} caption={`Recent agreements of ${name(iso)}`} />
       </ChartCard>
 
-      <section className="card p-5" aria-labelledby="agr-gaps-t" data-testid="strategic-gaps">
-        <h2 id="agr-gaps-t" className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
-          Strategic gaps
-        </h2>
-        <p className="mt-1 text-sm text-paper-mute">
-          Where {name(iso)} and a partner complement each other in a technology (one needs supply the other could provide) and whether an agreement covers it. Each row shows the parts
-          the label is read from; the label is a rule over them, not a score.{f.tech ? ` ${f.tech} only.` : ''}
-        </p>
-        {groups.length ? (
-          groups.map((g) => (
-            <div key={g.quadrant} className="mt-5" data-testid={`gaps-${g.quadrant}`}>
-              <h3 className="text-sm font-medium text-paper">
-                {QUADRANT_NAME[g.quadrant]}: {QUADRANT_TITLE[g.quadrant].toLowerCase()} ({g.rows.length})
-              </h3>
-              <ul className="mt-2 space-y-2 text-sm text-paper-dim">
-                {g.rows.map((r) => (
-                  <li key={`${r.partner}-${r.tech}-${r.side}`} className="border-l-2 border-ink-600 pl-3">
-                    <p>{gapText(r, gctx)}</p>
-                    <p className="mt-0.5 text-xs text-paper-mute">
-                      <Link className="link" to={hrefOf(iso, r.partner)}>
-                        {name(r.partner)}: the relationship
-                      </Link>
-                      {' · '}
-                      complementarity {complementarityWord(r)}, architecture {r.architecture}, coverage {r.covered_grade === 'specific' ? 'established' : r.covered_grade === 'text' ? 'mentioned in text' : 'none found'}
-                      <span className="sr-only"> ({gapComponents(r, v.compacts)})</span>
-                    </p>
-                  </li>
-                ))}
-              </ul>
-              {/* an opportunity says no agreement in these sources covers the technology */}
-              {g.quadrant === 'opportunity' && <AbsenceCaveat className="mt-2" />}
-            </div>
-          ))
-        ) : (
-          <NoneFound>No strategic gap rows for {name(iso)}{f.tech ? ` in ${f.tech}` : ''}.</NoneFound>
-        )}
-        <div className="mt-6" data-testid="execution-gaps">
-          <h3 className="text-sm font-medium text-paper">Execution gaps</h3>
-          <p className="mt-1 text-xs text-paper-mute">
-            Technologies {name(iso)} prioritises where no agreement in these sources with a capable supplier covers the technology at an established level.
-          </p>
-          {execution.length ? (
-            <>
-              <ul className="mt-2 space-y-1.5 text-sm text-paper-dim">
-                {execution.map((g) => (
-                  <li key={g.tech} className="border-l-2 border-ink-600 pl-3">
-                    {executionGapText(g, gctx)}
-                  </li>
-                ))}
-              </ul>
-              <AbsenceCaveat className="mt-2" />
-            </>
-          ) : (
-            <p className="mt-2 text-sm text-paper-mute">No execution gap recorded{f.tech ? ` in ${f.tech}` : ''}.</p>
-          )}
-        </div>
-      </section>
+      <GapMatrixCard gaps={gapRows} focal={iso} names={names} ctx={gctx} hrefOf={hrefOf} tech={f.tech} />
+      <ExecutionGapCard execution={execution} ctx={gctx} tech={f.tech} />
     </div>
   );
 }
@@ -266,7 +212,7 @@ function PartnerRow({ r, i, manifest, href, rule }: { r: PartnerRank; i: number;
 function CoverageMatrix<C>({ rows, cols, colLabel, cell, caption, what }: { rows: { partner: string; name: string; cells: Record<string, C | null> }[]; cols: string[]; colLabel: (c: string) => string; cell: (x: C | null) => React.ReactNode; caption: string; what: string }) {
   if (!rows.length || !cols.length) return <NoneFound>No {what} coverage recorded for these partners.</NoneFound>;
   return (
-    <div className="overflow-x-auto" data-testid={`${what}-coverage`}>
+    <div className="relative overflow-x-auto" data-testid={`${what}-coverage`}>
       <table className="data-table">
         <caption className="sr-only">{caption}</caption>
         <thead>

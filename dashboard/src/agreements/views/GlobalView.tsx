@@ -225,7 +225,7 @@ export function GlobalView({ manifest, global, f, roster, group, onGroup, hrefOf
         notes={<AbsenceCaveat />}
       >
         {members.length ? (
-          <div className="overflow-x-auto" data-testid="network-matrix">
+          <div className="relative overflow-x-auto" data-testid="network-matrix">
             <table className="border-collapse text-xs">
               <caption className="sr-only">Depth class of each pair of the group</caption>
               <thead>

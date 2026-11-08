@@ -10,9 +10,10 @@ import { ChartCard } from '../../charts/ChartCard.tsx';
 import { StatTile } from '../../components/ui.tsx';
 import type { AgreementsCountry, AgreementsManifest, AgrPartner, Depth, InstLevel } from '../contract.ts';
 import {
-  activeKeys, agreementsOfPartner, architectureOf, codeTallies, DEPTH_RULE, depthRuleWords, zeroDepthWords, type CountryIndex, filterAgreements, gapGroups, gapsInScope, gapText, indexCountry, labelOf, nameOf, plural, QUADRANT_NAME, SCOPE_LABEL, statusCounts, timelineBins,
+  activeKeys, agreementsOfPartner, architectureOf, codeTallies, DEPTH_RULE, depthRuleWords, zeroDepthWords, type CountryIndex, filterAgreements, gapGroups, gapsInScope, indexCountry, labelOf, nameOf, plural, SCOPE_LABEL, statusCounts, timelineBins,
   type AgrFilter, type Scope,
 } from '../derive.ts';
+import { PairGapStrips } from './GapVisuals.tsx';
 import { AbsenceCaveat, AgreementsTable, DepthChip, GradeLegend, GradeMark, NoneFound } from './parts.tsx';
 
 export interface PairProps {
@@ -57,6 +58,7 @@ export function PairView({ manifest, file, partner, f, names, hrefOf }: PairProp
   const tallies = useMemo(() => codeTallies(rows, v), [rows, v]);
   const statuses = useMemo(() => statusCounts(rows, v), [rows, v]);
   const gaps = useMemo(() => gapGroups(gapsInScope(file.gaps, f.scope, v), partner, f.tech), [file.gaps, f.scope, v, partner, f.tech]);
+  const pairGapRows = useMemo(() => gaps.flatMap((g) => g.rows), [gaps]);
   const pairName = `${name(iso)} and ${name(partner)}`;
   const eu = manifest.eu_members ?? [];
   const bothEu = eu.includes(iso) && eu.includes(partner);
@@ -149,7 +151,7 @@ export function PairView({ manifest, file, partner, f, names, hrefOf }: PairProp
         )}
       >
         {timeline.bins.length ? (
-          <div className="flex h-28 items-end gap-px overflow-x-auto" data-testid="timeline" role="list" aria-label={`Agreements of ${pairName} by year`}>
+          <div className="relative flex h-28 items-end gap-px overflow-x-auto" data-testid="timeline" role="list" aria-label={`Agreements of ${pairName} by year`}>
             {timeline.bins.map((b) => (
               <div key={b.year} role="listitem" className="flex min-w-2 flex-1 flex-col items-center justify-end" title={`${b.year}: ${plural(b.n, 'agreement')}`}>
                 <span className="sr-only">
@@ -237,21 +239,18 @@ export function PairView({ manifest, file, partner, f, names, hrefOf }: PairProp
         </ChartCard>
       </div>
 
-      {gaps.length > 0 && (
+      {pairGapRows.length > 0 && (
         <section className="card p-5" aria-labelledby="agr-pair-gaps-t" data-testid="pair-gaps">
           <h2 id="agr-pair-gaps-t" className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
             Strategic gaps of the pair
           </h2>
-          <ul className="mt-3 space-y-2 text-sm text-paper-dim">
-            {gaps.flatMap((g) =>
-              g.rows.map((r) => (
-                <li key={`${r.tech}-${r.side}`} className="border-l-2 border-ink-600 pl-3">
-                  <span className="tag mr-2">{QUADRANT_NAME[g.quadrant]}</span>
-                  {gapText(r, { focal: iso, name, depthEi: () => p.depth_ei, compacts: v.compacts })}
-                </li>
-              )),
-            )}
-          </ul>
+          <p className="mt-1 max-w-3xl text-sm text-paper-mute">
+            For each direction, the technologies where one could supply the other, stage by stage: where they complement each other and where an agreement covers it. Choose a
+            technology to read it.
+          </p>
+          <div className="mt-4">
+            <PairGapStrips gaps={pairGapRows} focal={iso} partner={partner} ctx={{ focal: iso, name, depthEi: () => p.depth_ei, compacts: v.compacts }} />
+          </div>
           <AbsenceCaveat className="mt-3" />
         </section>
       )}

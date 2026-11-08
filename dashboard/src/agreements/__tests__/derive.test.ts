@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AgrAgreement, AgreementsGlobal, AgrGap, AgrVocab } from '../contract.ts';
 import {
-  ABSENCE_CAVEAT, activeKeys, alignmentWords, bestGrades, compactName, complementarityNotAssessed, complementarityWord, depthRestsOnEu, gapComponents, gapsInScope, viaEuForPair, agreementPasses, architectureOf, codeTallies, countBin, countryChoices, dateWords, deliveryWords, depthMatrix, depthName, depthRuleWords, executionGapText,
+  ABSENCE_CAVEAT, gapMatrix, stageStates, activeKeys, alignmentWords, bestGrades, compactName, complementarityNotAssessed, complementarityWord, depthRestsOnEu, gapComponents, gapsInScope, viaEuForPair, agreementPasses, architectureOf, codeTallies, countBin, countryChoices, dateWords, deliveryWords, depthMatrix, depthName, depthRuleWords, executionGapText,
   existenceWords, filterAgreements, filterOfSearch, filterPairs, gapGroups, gapText, globalDates, globalPairs, gradedSectors, gradeOf, indexCountry, instrumentBases, instrumentCoverage, labelOf, NO_FILTER, orderPairs, pairInScope,
   partnersAtDepth, partnerTipWords, percentileWords, primarySource, priorityBasisWords, rankPartners, recentAgreements, sectorCoverage, setFilterSearch, sortKeyOf, statusCounts, timelineBins, topEconomies, zeroDepthShort, zeroDepthWords,
   type AgrFilter, type GlobalPair,
@@ -413,9 +413,9 @@ describe('strategic gaps and execution gaps in words, with the exact numbers', (
 
   it('execution gaps name the basis, the priority and the suppliers without coverage', () => {
     expect(executionGapText(jpn.execution_gaps[0], ctx)).toBe(
-      'Solar is a priority for Japan (policy priority, priority 86th percentile within Japan), but none of its agreements in these sources with 2 capable, aligned suppliers (India and Korea) covers it at an established level.',
+      'Solar at Components and Assembly is a priority for Japan (policy priority, priority 86th percentile within Japan), but none of its agreements in these sources with 2 capable, aligned suppliers (India and Korea) covers it at an established level.',
     );
-    expect(executionGapText(jpn.execution_gaps[1], ctx)).toBe('Electric Grid is a priority for Japan (strategic choice Secure), but no agreement in these sources with a capable supplier covers it at an established level.');
+    expect(executionGapText(jpn.execution_gaps[1], ctx)).toBe('Electric Grid at Components is a priority for Japan (strategic choice Secure), but no agreement in these sources with a capable supplier covers it at an established level.');
     expect(priorityBasisWords('policy_priority|partner')).toBe('policy priority; strategic choice Partner');
     expect(priorityBasisWords('policy_priority|choice_secure')).toBe('policy priority; strategic choice Secure');
     expect(executionGapText({ ...jpn.execution_gaps[1], stages: ['Components', 'Assembly'] }, ctx)).toMatch(/^Electric Grid at Components and Assembly is a priority for Japan/);
@@ -478,5 +478,28 @@ describe('class 0 with agreements is not "none found"', () => {
     });
     expect(partnerTipWords({ ...o, depth: null, nInScope: 0 })).toEqual({ words: 'No agreement found (all partnerships)', caveat: true });
     expect(partnerTipWords({ ...o, depth: null, nInScope: 0, filtered: true })).toEqual({ words: 'No agreement that matches the filters (all partnerships)', caveat: true });
+  });
+});
+
+describe('the gap visuals: matrix model and stage states', () => {
+  const g = (partner: string, tech: string, quadrant: AgrGap['quadrant'], side: AgrGap['side'] = 'needs', extra: Partial<AgrGap> = {}): AgrGap => ({
+    partner, tech, side, need: 0.8, capability: 0.9, recommended: 1, friendshore: null, aib_shared: [], complementarity: quadrant === 'legacy' ? 'low' : 'high',
+    covered_grade: quadrant === 'opportunity' ? 'none' : 'specific', architecture: quadrant === 'opportunity' ? 'weak' : 'strong', quadrant, ...extra,
+  });
+  it('rows: most opportunities, then established cells, then the strongest counterpart; columns in the dashboard order; low-low rows left out', () => {
+    const rows = [
+      g('AAA', 'Wind', 'established'), g('BBB', 'Batteries', 'opportunity'), g('BBB', 'Solar', 'opportunity'), g('CCC', 'Solar', 'opportunity', 'needs', { capability: 0.99 }),
+      g('DDD', 'Solar', 'opportunity', 'needs', { capability: 0.5 }), g('EEE', 'Oil', 'none'), g('FFF', 'Solar', 'opportunity', 'supplies'),
+    ];
+    const m = gapMatrix(rows, 'needs', {});
+    expect(m.rows.map((r) => r.partner)).toEqual(['BBB', 'CCC', 'DDD', 'AAA']);
+    expect(m.techs).toEqual(['Solar', 'Wind', 'Batteries']);
+    expect(m.counts).toEqual({ opportunity: 4, established: 1, legacy: 0 });
+    expect(gapMatrix(rows, 'supplies', {}).rows.map((r) => r.partner)).toEqual(['FFF']);
+  });
+  it('stage states: complementary and uncovered is a gap; covered where complementary, or covered only', () => {
+    const st = stageStates(g('AAA', 'Batteries', 'established', 'needs', { stages_high: ['Extraction', 'Assembly'], stages_covered: ['Extraction', 'Refining', 'Recovery'] }));
+    expect(st).toEqual({ Extraction: 'covered', Refining: 'covered_only', Components: 'none', Assembly: 'gap', Recovery: 'covered_only' });
+    expect(Object.values(stageStates(g('AAA', 'Batteries', 'opportunity'))).every((s) => s === 'none')).toBe(true);
   });
 });

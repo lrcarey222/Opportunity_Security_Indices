@@ -401,11 +401,11 @@ const GAPS = {
 };
 const EXEC = {
   JPN: [
-    { tech: 'Solar', priority_basis: 'policy_priority', priority: 0.86, suppliers_without_coverage: ['IND', 'KOR'] },
-    { tech: 'Electric Grid', priority_basis: 'secure', priority: null, suppliers_without_coverage: [] },
+    { tech: 'Solar', stages: ['Components', 'Assembly'], priority_basis: 'policy_priority', priority: 0.86, suppliers_without_coverage: ['IND', 'KOR'] },
+    { tech: 'Electric Grid', stages: ['Components'], priority_basis: 'secure', priority: null, suppliers_without_coverage: [] },
   ],
-  AUS: [{ tech: 'Solar', priority_basis: 'policy_priority|partner', priority: 0.91, suppliers_without_coverage: ['USA'] }],
-  USA: [{ tech: 'Batteries', priority_basis: 'secure', priority: 0.95, suppliers_without_coverage: ['KOR'] }],
+  AUS: [{ tech: 'Solar', stages: ['Refining'], priority_basis: 'policy_priority|partner', priority: 0.91, suppliers_without_coverage: ['USA'] }],
+  USA: [{ tech: 'Batteries', stages: ['Assembly'], priority_basis: 'secure', priority: 0.95, suppliers_without_coverage: ['KOR'] }],
   DEU: [],
 };
 

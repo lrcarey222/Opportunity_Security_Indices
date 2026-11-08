@@ -12,9 +12,10 @@ import { fixtureSource as countrySource, haveFixture as haveCountry } from '../.
 import { AgreementsStore, setAgreementsStoreForTests } from '../data.ts';
 import type { AgreementsGlobal } from '../contract.ts';
 import {
-  ABSENCE_CAVEAT, depthRuleWords, executionGapText, filterPairs, zeroDepthWords, gapText, globalPairs, NO_FILTER, partnersAtDepth, rankPartners, type AgrFilter, type SortKey,
+  ABSENCE_CAVEAT, depthRuleWords, executionGapText, gapCellWords, filterPairs, zeroDepthWords, gapText, globalPairs, NO_FILTER, partnersAtDepth, rankPartners, type AgrFilter, type SortKey,
 } from '../derive.ts';
 import AgreementsView from '../views/AgreementsView.tsx';
+import { GAP_GLYPH } from '../views/GapVisuals.tsx';
 import { emptySource, fixtureSource, readCountry, readGlobal, readManifest } from './fixture.ts';
 
 const T = { timeout: 30_000 };
@@ -254,24 +255,43 @@ describe('one economy', () => {
     expect(sectors.querySelector('[data-grade="text"]')?.textContent).toContain('mentioned in text');
     expect(screen.getAllByTestId('grade-legend').length).toBeGreaterThan(0);
     const gaps = screen.getByTestId('strategic-gaps');
+    const gapCard = gaps.closest('section')!;
     const ctx = { focal: 'JPN', name: nameOf, depthEi: (p: string) => file.partners.find((x) => x.partner === p)?.depth_ei ?? null, compacts: v.compacts };
     const kor = file.gaps.find((x) => x.partner === 'KOR' && x.quadrant === 'opportunity')!;
     const text = gapText(kor, ctx);
     expect(text).toMatch(/^High complementarity, weak architecture: Korea could supply Batteries to Japan \(\d+ recommended cells?, capability \d+(st|nd|rd|th) percentile/);
     // compacts by name, and the absence in these sources
     expect(text).toMatch(/shared strategic compacts: Battery Materials & Cells.* but no agreement in these sources covers Batteries\.$/);
-    const opp = within(gaps).getByTestId('gaps-opportunity');
-    expect(within(opp).getByText(text)).toBeTruthy();
-    expect(within(opp).getByTestId('absence-caveat').textContent).toBe(ABSENCE_CAVEAT);
-    expect(gaps.textContent).not.toMatch(/SC-BATTERIES/);
-    expect(within(gaps).getByTestId('gaps-established')).toBeTruthy();
+    // the matrix: partner x technology, each cell a button with its class in colour, glyph and words
+    const matrix = within(gaps).getByTestId('gap-matrix');
+    const korCell = within(matrix).getByRole('button', { name: gapCellWords(kor, 'JPN', nameOf) });
+    expect(korCell.getAttribute('data-quadrant')).toBe('opportunity');
+    expect(korCell.textContent).toBe(GAP_GLYPH.opportunity);
+    expect(matrix.querySelector('[data-quadrant="established"]')).not.toBeNull();
     // the fixture's legacy row is Oil: outside the electro-industrial scope (the default), shown under all partnerships
-    expect(within(gaps).queryByTestId('gaps-legacy')).toBeNull();
-    // the low-low row is not a gap group
-    expect(within(gaps).queryByTestId('gaps-none')).toBeNull();
-    const exec = within(gaps).getByTestId('execution-gaps');
-    for (const e of file.execution_gaps) expect(within(exec).getByText(executionGapText(e, ctx))).toBeTruthy();
-    expect(within(exec).getByTestId('absence-caveat')).toBeTruthy();
+    expect(matrix.querySelector('[data-quadrant="legacy"]')).toBeNull();
+    // choosing a cell opens its reading: the full sentence and the stage strip
+    fireEvent.click(korCell);
+    expect(korCell.getAttribute('aria-pressed')).toBe('true');
+    const detail = within(gaps).getByTestId('gap-detail');
+    expect(within(detail).getByText(text)).toBeTruthy();
+    expect(within(detail).getAllByTestId('stage-strip').length).toBe(1);
+    expect(gapCard.textContent).not.toMatch(/SC-BATTERIES/);
+    expect(within(gapCard).getAllByTestId('absence-caveat')[0].textContent).toBe(ABSENCE_CAVEAT);
+    expect(within(gapCard).getByTestId('gap-legend')).toBeTruthy();
+    // the other direction: where Japan could supply
+    const ind = file.gaps.find((x) => x.partner === 'IND' && x.side === 'supplies' && x.quadrant === 'opportunity')!;
+    fireEvent.click(within(gapCard).getByRole('radio', { name: 'Where Japan could supply' }));
+    expect(within(within(gaps).getByTestId('gap-matrix')).getByRole('button', { name: gapCellWords(ind, 'JPN', nameOf) })).toBeTruthy();
+    // execution gaps: technology x stage, each priority stage with its number of suppliers; a row opens its reading
+    const exec = screen.getByTestId('execution-gaps');
+    const execMatrix = within(exec).getByTestId('execution-matrix');
+    expect(execMatrix.querySelectorAll('[data-gap="yes"]').length).toBeGreaterThan(0);
+    for (const e of file.execution_gaps) {
+      fireEvent.click(within(execMatrix).getByRole('button', { name: e.tech }));
+      expect(within(exec).getByTestId('execution-detail').textContent).toBe(executionGapText(e, ctx));
+    }
+    expect(within(exec.closest('section')!).getByTestId('absence-caveat')).toBeTruthy();
     // the coverage tables read whole pair profiles: they say the narrowing filters do not apply
     expect(screen.getAllByText(/filters other than the scope are not applied/).length).toBe(2);
     expect(bareAcronyms(main())).toEqual([]);
@@ -289,7 +309,7 @@ describe('one economy', () => {
   it('all partnerships brings back the gaps of oil, gas and coal', async () => {
     mount('/aib/agreements?country=JPN&scope=all');
     await screen.findByTestId('agreements-country', {}, T);
-    expect(within(screen.getByTestId('strategic-gaps')).getByTestId('gaps-legacy')).toBeTruthy();
+    expect(within(screen.getByTestId('gap-matrix')).getAllByRole('button').some((b) => b.getAttribute('data-quadrant') === 'legacy')).toBe(true);
   });
 });
 
@@ -348,7 +368,11 @@ describe('a pair', () => {
     const lts = [...table.querySelectorAll('[data-grade]')].find((e) => /Long-term supply arrangement/.test(e.textContent ?? ''))!;
     expect(lts.getAttribute('data-grade')).toBe('text');
     // the pair's gaps carry the absence caveat
-    expect(within(within(view).getByTestId('pair-gaps')).getByTestId('absence-caveat')).toBeTruthy();
+    const pairGaps = within(view).getByTestId('pair-gaps');
+    expect(within(pairGaps).getByTestId('absence-caveat')).toBeTruthy();
+    // the pair's gaps as stage strips, one panel per direction, a chosen technology opens its reading
+    expect(within(pairGaps).getAllByTestId('stage-strip').length).toBeGreaterThan(0);
+    expect(within(pairGaps).getByTestId('pair-gap-detail').textContent).toMatch(/could supply|covers/);
     expect(bareAcronyms(main())).toEqual([]);
   });
 

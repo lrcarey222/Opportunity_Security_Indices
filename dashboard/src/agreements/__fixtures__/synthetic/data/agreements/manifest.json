@@ -6,9 +6,9 @@
  "files": {
   "global": "agreements-global.d91b68ab.json",
   "countries": {
-   "JPN": "agreements-JPN.6033ad15.json",
-   "AUS": "agreements-AUS.ee038a5d.json",
-   "USA": "agreements-USA.eccb9497.json",
+   "JPN": "agreements-JPN.a97a6ff9.json",
+   "AUS": "agreements-AUS.b9a2db31.json",
+   "USA": "agreements-USA.35df2d62.json",
    "DEU": "agreements-DEU.1121a89d.json"
   }
  },

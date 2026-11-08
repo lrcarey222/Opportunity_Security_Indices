@@ -11,7 +11,7 @@
 import {
   DEFAULT_DELIVERY_STATUSES, DEFAULT_SPECIFIC_BASES, DEPTH_CLASSES, SEGMENTS, splitGraded, TITLE_BASIS,
   type AgrAgreement, type AgrExecutionGap, type AgrGap, type AgrPartner, type AgreementsCountry, type AgreementsGlobal, type AgreementsManifest, type AgrVocab, type CodeGrade, type Depth,
-  type InstLevel, type Quadrant,
+  type GapSide, type InstLevel, type Quadrant,
 } from './contract.ts';
 import { ZERO_FILL } from '../theme/palette.ts';
 
@@ -1227,4 +1227,111 @@ export function clearFiltersSearch(q: URLSearchParams): URLSearchParams {
   const out = new URLSearchParams(q);
   for (const k of NARROWING_KEYS) out.delete(k);
   return out;
+}
+
+// ---- gap visuals (the Strategic gaps matrix, the stage strips) ----------------------------------------------
+
+/** The supply stages a gap is read at (Deployment is demand context, not supply: R/agreements/agr_gaps.R). */
+export const GAP_STAGES = ['Extraction', 'Refining', 'Components', 'Assembly', 'Recovery'] as const;
+export type GapStage = (typeof GAP_STAGES)[number];
+export const GAP_STAGE_SHORT: Record<GapStage, string> = { Extraction: 'Ext', Refining: 'Ref', Components: 'Com', Assembly: 'Asm', Recovery: 'Rec' };
+
+/** The order technologies take as matrix columns (the dashboard's order); others follow alphabetically. */
+export const GAP_TECH_ORDER: readonly string[] = ['Solar', 'Wind', 'Batteries', 'Electric Vehicles', 'Electric Grid', 'Nuclear', 'Green Hydrogen', 'Geothermal', 'Semiconductors', 'Oil', 'Gas', 'Coal'];
+/** Short column labels for long technology names (the full name stays in the header's title and the cell words). */
+export const TECH_SHORT: Readonly<Record<string, string>> = { 'Electric Vehicles': 'EVs', 'Electric Grid': 'Grid', 'Green Hydrogen': 'Hydrogen' };
+
+export function techOrder(techs: Iterable<string>): string[] {
+  const rank = (t: string) => {
+    const i = GAP_TECH_ORDER.indexOf(t);
+    return i < 0 ? GAP_TECH_ORDER.length : i;
+  };
+  return [...new Set(techs)].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+}
+
+/** The quadrants a gap visual shows (the low-low and not-assessed rows are not gaps). */
+export type ShownQuadrant = 'opportunity' | 'established' | 'legacy';
+export const SHOWN_QUADRANTS: readonly ShownQuadrant[] = ['opportunity', 'established', 'legacy'];
+const isShown = (q: Quadrant): q is ShownQuadrant => (SHOWN_QUADRANTS as readonly string[]).includes(q);
+
+export interface GapMatrixRow {
+  partner: string;
+  name: string;
+  /** technology -> the gap row (one per technology on a side) */
+  cells: Record<string, AgrGap>;
+  n: Record<ShownQuadrant, number>;
+}
+
+export interface GapMatrixModel {
+  side: GapSide;
+  techs: string[];
+  rows: GapMatrixRow[];
+  counts: Record<ShownQuadrant, number>;
+}
+
+/**
+ * The partner x technology matrix of one side's gap rows. `needs`: the partner could supply the focal country;
+ * `supplies`: the focal country could supply the partner. Rows: partners with the most opportunities first, then the
+ * most established cells, then the strongest counterpart (the partner's capability when it supplies, its need when it
+ * is supplied), then the name. Low-low and not-assessed rows are left out.
+ */
+export function gapMatrix(gaps: readonly AgrGap[], side: GapSide, names: Readonly<Record<string, string>>): GapMatrixModel {
+  const keep = gaps.filter((g) => g.side === side && isShown(g.quadrant));
+  const counts: Record<ShownQuadrant, number> = { opportunity: 0, established: 0, legacy: 0 };
+  const by = new Map<string, GapMatrixRow & { best: number }>();
+  for (const g of keep) {
+    const q = g.quadrant as ShownQuadrant;
+    counts[q] += 1;
+    let r = by.get(g.partner);
+    if (!r) {
+      r = { partner: g.partner, name: nameOf(names, g.partner), cells: {}, n: { opportunity: 0, established: 0, legacy: 0 }, best: -1 };
+      by.set(g.partner, r);
+    }
+    r.cells[g.tech] = g;
+    r.n[q] += 1;
+    const strength = side === 'needs' ? g.capability : g.need;
+    if (strength !== null && strength > r.best) r.best = strength;
+  }
+  const rows = [...by.values()].sort(
+    (a, b) => b.n.opportunity - a.n.opportunity || b.n.established - a.n.established || b.best - a.best || a.name.localeCompare(b.name, 'en'),
+  );
+  return { side, techs: techOrder(keep.map((g) => g.tech)), rows: rows.map(({ best: _best, ...r }) => r), counts };
+}
+
+/** What a stage of a gap row shows: complementary and not covered at an established grade (gap), complementary and
+ *  covered (covered), covered where the measures find no complementarity (covered_only), or neither (none). */
+export type StageState = 'gap' | 'covered' | 'covered_only' | 'none';
+
+export function stageStates(g: AgrGap): Record<GapStage, StageState> {
+  const high = new Set(g.stages_high ?? []);
+  const cov = new Set(g.stages_covered ?? []);
+  const out = {} as Record<GapStage, StageState>;
+  for (const s of GAP_STAGES) out[s] = high.has(s) ? (cov.has(s) ? 'covered' : 'gap') : cov.has(s) ? 'covered_only' : 'none';
+  return out;
+}
+
+export const STAGE_STATE_WORDS: Record<StageState, string> = {
+  gap: 'complementary, no established agreement',
+  covered: 'complementary and covered by an agreement',
+  covered_only: 'covered by an agreement, not complementary',
+  none: 'neither',
+};
+
+/** One matrix cell in words (its button label and tooltip): the class, who supplies whom, the stages. */
+export function gapCellWords(g: AgrGap, focal: string, name: (iso3: string) => string): string {
+  const [supplier, buyer] = g.side === 'needs' ? [name(g.partner), name(focal)] : [name(focal), name(g.partner)];
+  const parts = [`${QUADRANT_NAME[g.quadrant]}: ${supplier} could supply ${g.tech} to ${buyer}`];
+  if (g.alignment_blocked) parts[0] = `${QUADRANT_NAME[g.quadrant]}: ${supplier} and ${buyer} in ${g.tech} (opposite UN-vote blocs)`;
+  if (g.quadrant === 'legacy' && !g.alignment_blocked) parts[0] = `${QUADRANT_NAME[g.quadrant]}: an agreement of ${name(focal)} and ${name(g.partner)} covers ${g.tech}, but the measures find no complementarity`;
+  if (g.stages_high?.length) parts.push(`complementary at ${stageListWords(g.stages_high)}`);
+  parts.push(g.stages_covered?.length ? `covered at ${stageListWords(g.stages_covered)}` : g.covered_grade === 'text' ? 'only mentioned in text' : 'no agreement in these sources covers it');
+  return parts.join('; ');
+}
+
+/** Execution gaps by technology and stage: each priority stage without coverage, with the number of capable suppliers. */
+export function executionStageRows(execution: readonly AgrExecutionGap[]): { tech: string; gap: AgrExecutionGap; stages: Set<string> }[] {
+  return techOrder(execution.map((g) => g.tech)).map((tech) => {
+    const gap = execution.find((g) => g.tech === tech)!;
+    return { tech, gap, stages: new Set(gap.stages ?? []) };
+  });
 }
