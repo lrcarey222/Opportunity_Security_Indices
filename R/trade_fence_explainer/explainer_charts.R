@@ -195,7 +195,7 @@ tfe_chart_04 <- function(d, family = "", dec4_flags = NULL) {
   p +
     ggplot2::facet_wrap(~tech_f, ncol = 1, scales = "free_y") +
     ggplot2::geom_vline(xintercept = c(4.5, 7.5), colour = TFE_INK[["secondary"]], linewidth = 0.4) +
-    ggplot2::scale_fill_manual(values = TFE_BAND_COL, drop = FALSE, name = "Fence height against the same tool across all US imports",
+    ggplot2::scale_fill_manual(values = TFE_BAND_COL, drop = FALSE, name = "Relative intensity of each policy tool (against the same tool across all US imports)",
                                na.translate = FALSE) +
     ggplot2::scale_colour_identity() +
     ggplot2::scale_x_discrete(position = "top", labels = TFE_TOOL_AXIS, drop = FALSE) +
@@ -259,7 +259,8 @@ tfe_chart_05b <- function(d, family = "", symbol_family = family, col = "cells_o
 # ---- chart 6: dollar-weighted --------------------------------------------------------------------------------------
 tfe_chart_06 <- function(d, family = "") {
   bars <- c(`All suppliers` = "All US imports in the assessed basket", `Trusted partners` = "Imports from trusted partners",
-            `All suppliers (excl. oil, gas, coal)` = "All imports, clean-energy and grid technologies only (excl. oil, gas, coal)")
+            `All suppliers (excl. oil, gas, coal)` = "All imports, clean-energy and grid technologies only (excl. oil, gas, coal)",
+            `Trusted partners (excl. oil, gas, coal)` = "Imports from trusted partners, clean-energy and grid technologies only")
   d <- d[d$suppliers %in% names(bars), ]
   d$panel <- factor(paste0(bars[d$suppliers], ", 2024: ", tfe_bn(d$basis_total_usd)), unique(paste0(bars[d$suppliers], ", 2024: ", tfe_bn(d$basis_total_usd))))
   d$v <- factor(d$verdict, names(TFE_VERDICT_COL))
@@ -341,7 +342,8 @@ tfe_chart_08a <- function(m, events, family = "", end_date = as.Date("2026-12-31
     ggplot2::geom_label(data = ev, ggplot2::aes(x = date, y = ymax * 0.97, label = n), size = 2.6, family = family, fontface = "bold",
                         label.size = 0.25, label.r = grid::unit(0.5, "lines"), fill = "#ffffff", colour = TFE_INK[["primary"]],
                         label.padding = grid::unit(0.12, "lines")) +
-    ggplot2::scale_fill_manual(values = pal, name = NULL) +
+    ggplot2::scale_fill_manual(values = pal, name = NULL,
+                               labels = function(x) ifelse(x %in% c("Cambodia", "Laos", "Philippines", "Africa"), paste0(x, " (est.)"), x)) +
     ggplot2::scale_x_date(limits = c(as.Date("2023-12-10"), end_date), date_breaks = "6 months", date_labels = "%b\n%Y", expand = c(0, 0)) +
     ggplot2::scale_y_continuous(labels = function(x) paste0("$", x, "bn"), expand = c(0, 0), limits = c(0, ymax)) +
     ggplot2::labs(x = NULL, y = "US imports per month") +

@@ -38,4 +38,17 @@ for (p in months) {
       file.path(d2, sprintf("854143_%s.json", p)))
   Sys.sleep(1.5)
 }
+# US imports and exports of every basket HS6 code (partner World) by month, for the trade overview (chart 00a):
+# the preview API returns at most 500 records, so the codes go in batches of 125 (x 2 flows).
+master <- utils::read.csv(file.path(repo_root, "data", "reference", "energy_hs6_master.csv"), colClasses = "character")
+is_true <- function(x) toupper(x) %in% c("TRUE", "T", "1")
+basket <- sort(unique(master$hs6[!is_true(master$excluded) & !is_true(master$legacy_hs)]))
+batches <- split(basket, ceiling(seq_along(basket) / 125))
+for (p in months) {
+  for (b in seq_along(batches)) {
+    get(sprintf("%s/M/HS?reporterCode=842&period=%s&flowCode=X,M&cmdCode=%s&partnerCode=0&partner2Code=0&customsCode=C00&motCode=0",
+                base, p, paste(batches[[b]], collapse = ",")), file.path(d2, sprintf("basket%d_%s.json", b, p)))
+    Sys.sleep(1.5)
+  }
+}
 message("Comtrade files in ", d1, " and ", d2)

@@ -72,3 +72,25 @@ response_groups:
   Permanent magnets: ["850511"]
   Graphite (natural and artificial): ["250410", "250490", "380110"]
   Rare-earth compounds: ["284690"]
+
+# Opening section (scripts/trade_fence_explainer/03_build_trade_overview.R): what the US trades and how its sources
+# changed. The same calendar months of 2024 and 2026 (the latest Census month is August 2026; September needs a
+# Census API key). Product groups (from response_groups) added to chart 00b as separate points.
+trade_overview:
+  months: ["01", "02", "03", "04", "05", "06", "07", "08"]
+  product_groups: [Permanent magnets, Rare-earth compounds, Graphite (natural and artificial), Refined copper cathodes]
+  # Archetype lines of the fence-change analysis: a change in all-supplier TRI of this many points or more is a
+  # higher fence; a change in coercive-supplier share of this many points or less is reduced dependence.
+  fence_line: 10
+  dependence_line: -5
+policy_timeline: data/reference/trade_fence_explainer/policy_timeline.csv
+s338_hts_check: data/reference/trade_fence_explainer/s338_hts_check.csv
+
+# Datawrapper copies of the charts (scripts/trade_fence_explainer/04_datawrapper.R): NEIS team folder created
+# 2026-11-10 through the API, NEIS theme. The registry keeps chart IDs so reruns update the same charts.
+datawrapper:
+  team: tbtM5ZLH
+  folder_id: 460185
+  folder_name: Trade fence explainer (Dec 2026)
+  theme: neis
+  registry: outputs/trade_fence_explainer/datawrapper_charts.csv
