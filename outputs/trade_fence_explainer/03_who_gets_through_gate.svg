@@ -1,0 +1,125 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' class='svglite' width='468.00pt' height='396.00pt' viewBox='0 0 468.00 396.00'>
+<defs>
+  <style type='text/css'><![CDATA[
+    .svglite line, .svglite polyline, .svglite polygon, .svglite path, .svglite rect, .svglite circle {
+      fill: none;
+      stroke: #000000;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-miterlimit: 10.00;
+    }
+    .svglite text {
+      white-space: pre;
+    }
+  ]]></style>
+</defs>
+<rect width='100%' height='100%' style='stroke: none; fill: #FFFFFF;'/>
+<defs>
+  <clipPath id='cpMC4wMHw0NjguMDB8MC4wMHwzOTYuMDA='>
+    <rect x='0.00' y='0.00' width='468.00' height='396.00' />
+  </clipPath>
+</defs>
+<g clip-path='url(#cpMC4wMHw0NjguMDB8MC4wMHwzOTYuMDA=)'>
+<rect x='0.000000000000064' y='-0.00000000000011' width='468.00' height='396.00' style='stroke-width: 0.92; stroke: none; fill: #FFFFFF;' />
+<rect x='42.73' y='110.83' width='355.53' height='155.03' style='stroke-width: 0.92; stroke: none; fill: #FFFFFF;' />
+<polyline points='42.73,265.85 398.26,265.85 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='42.73,233.08 398.26,233.08 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='42.73,200.31 398.26,200.31 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='42.73,167.53 398.26,167.53 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='42.73,134.76 398.26,134.76 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='65.23,265.85 65.23,110.83 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='144.45,265.85 144.45,110.83 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='223.67,265.85 223.67,110.83 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='302.88,265.85 302.88,110.83 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='382.10,265.85 382.10,110.83 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<line x1='42.73' y1='225.44' x2='398.26' y2='225.44' style='stroke-width: 0.96; stroke: #1889B0; stroke-dasharray: 5.12,5.12; stroke-linecap: butt;' />
+<line x1='42.73' y1='239.25' x2='398.26' y2='239.25' style='stroke-width: 0.96; stroke: #9CA3AF; stroke-dasharray: 5.12,5.12; stroke-linecap: butt;' />
+<line x1='42.73' y1='174.77' x2='398.26' y2='174.77' style='stroke-width: 0.96; stroke: #F58229; stroke-dasharray: 5.12,5.12; stroke-linecap: butt;' />
+<line x1='42.73' y1='218.64' x2='398.26' y2='218.64' style='stroke-width: 0.96; stroke: #F58229; stroke-dasharray: 1.28,3.84; stroke-linecap: butt;' />
+<text x='391.61' y='228.07' style='font-size: 7.40px;fill: #374151; font-family: "Roboto";' textLength='42.76px' lengthAdjust='spacingAndGlyphs'>Trusted 6.2%</text>
+<text x='391.61' y='241.88' style='font-size: 7.40px;fill: #374151; font-family: "Roboto";' textLength='54.94px' lengthAdjust='spacingAndGlyphs'>Nonaligned 4.1%</text>
+<text x='391.61' y='177.40' style='font-size: 7.40px;fill: #374151; font-family: "Roboto";' textLength='50.21px' lengthAdjust='spacingAndGlyphs'>Coercive 13.9%</text>
+<text x='391.61' y='221.09' style='font-size: 7.40px;fill: #374151; font-family: "Roboto";' textLength='53.52px' lengthAdjust='spacingAndGlyphs'>Excl. China 7.2%</text>
+<circle cx='157.85' cy='245.59' r='16.36' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='284.74' cy='246.51' r='15.64' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='65.23' cy='122.31' r='13.92' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #F58229; fill-opacity: 0.85;' />
+<circle cx='286.53' cy='206.69' r='8.87' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='238.03' cy='196.16' r='8.74' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='248.15' cy='216.07' r='8.16' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='92.92' cy='223.25' r='7.23' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #F58229; fill-opacity: 0.85;' />
+<circle cx='327.99' cy='223.49' r='7.07' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='134.34' cy='210.37' r='6.71' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='275.26' cy='231.04' r='6.51' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='233.68' cy='254.80' r='6.40' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='273.86' cy='207.06' r='6.15' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='305.29' cy='230.42' r='6.01' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='163.16' cy='198.30' r='5.69' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='134.46' cy='254.13' r='5.57' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='226.33' cy='234.40' r='5.55' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='122.97' cy='232.37' r='5.40' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='110.23' cy='243.44' r='5.33' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='271.48' cy='242.87' r='4.71' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='288.60' cy='240.23' r='4.29' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='266.02' cy='204.36' r='4.09' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='92.91' cy='170.74' r='3.83' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #F58229; fill-opacity: 0.85;' />
+<circle cx='161.72' cy='243.66' r='3.73' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='334.57' cy='240.34' r='3.72' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='158.86' cy='245.47' r='3.64' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='256.75' cy='197.36' r='3.20' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='113.37' cy='238.15' r='3.18' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #9CA3AF; fill-opacity: 0.85;' />
+<circle cx='239.71' cy='198.29' r='2.96' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #1889B0; fill-opacity: 0.85;' />
+<circle cx='83.12' cy='241.47' r='1.43' style='stroke-width: 0.71; stroke: #FFFFFF; stroke-opacity: 0.85; fill: #F58229; fill-opacity: 0.85;' />
+<line x1='279.81' y1='253.60' x2='283.67' y2='248.04' style='stroke-width: 0.53; stroke: #6B7280;' />
+<line x1='60.31' y1='127.01' x2='63.71' y2='123.77' style='stroke-width: 0.53; stroke: #6B7280;' />
+<line x1='289.22' y1='199.53' x2='287.12' y2='205.11' style='stroke-width: 0.53; stroke: #6B7280;' />
+<line x1='232.39' y1='202.19' x2='236.64' y2='197.64' style='stroke-width: 0.53; stroke: #6B7280;' />
+<line x1='242.48' y1='221.79' x2='246.69' y2='217.54' style='stroke-width: 0.53; stroke: #6B7280;' />
+<line x1='88.97' y1='216.03' x2='92.07' y2='221.69' style='stroke-width: 0.53; stroke: #6B7280;' />
+<line x1='318.87' y1='224.30' x2='324.38' y2='223.81' style='stroke-width: 0.53; stroke: #6B7280;' />
+<line x1='140.06' y1='205.62' x2='136.05' y2='208.95' style='stroke-width: 0.53; stroke: #6B7280;' />
+<line x1='131.50' y1='227.67' x2='125.25' y2='231.12' style='stroke-width: 0.53; stroke: #6B7280;' />
+<line x1='107.41' y1='236.24' x2='109.61' y2='241.86' style='stroke-width: 0.53; stroke: #6B7280;' />
+<text x='179.54' y='243.64' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='28.51px' lengthAdjust='spacingAndGlyphs'>Mexico</text>
+<text x='263.03' y='259.11' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='29.95px' lengthAdjust='spacingAndGlyphs'>Canada</text>
+<text x='59.70' y='135.07' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='22.38px' lengthAdjust='spacingAndGlyphs'>China</text>
+<text x='308.62' y='200.20' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='35.20px' lengthAdjust='spacingAndGlyphs'>Germany</text>
+<text x='218.46' y='207.83' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='24.26px' lengthAdjust='spacingAndGlyphs'>Japan</text>
+<text x='229.18' y='227.48' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='22.99px' lengthAdjust='spacingAndGlyphs'>Korea</text>
+<text x='70.84' y='216.75' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='32.67px' lengthAdjust='spacingAndGlyphs'>Vietnam</text>
+<text x='314.82' y='232.36' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='11.24px' lengthAdjust='spacingAndGlyphs'>UK</text>
+<text x='151.44' y='206.05' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='19.16px' lengthAdjust='spacingAndGlyphs'>India</text>
+<text x='107.22' y='260.09' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='39.59px' lengthAdjust='spacingAndGlyphs'>Singapore</text>
+<text x='136.90' y='225.87' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='33.80px' lengthAdjust='spacingAndGlyphs'>Thailand</text>
+<text x='88.07' y='236.92' text-anchor='middle' style='font-size: 8.82px;fill: #111827; font-family: "Roboto";' textLength='35.07px' lengthAdjust='spacingAndGlyphs'>Malaysia</text>
+<text x='38.48' y='268.55' text-anchor='end' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='9.83px' lengthAdjust='spacingAndGlyphs'>0%</text>
+<text x='38.48' y='235.78' text-anchor='end' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='9.83px' lengthAdjust='spacingAndGlyphs'>5%</text>
+<text x='38.48' y='203.01' text-anchor='end' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='14.09px' lengthAdjust='spacingAndGlyphs'>10%</text>
+<text x='38.48' y='170.23' text-anchor='end' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='14.09px' lengthAdjust='spacingAndGlyphs'>15%</text>
+<text x='38.48' y='137.46' text-anchor='end' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='14.09px' lengthAdjust='spacingAndGlyphs'>20%</text>
+<text x='65.23' y='275.51' text-anchor='middle' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='4.26px' lengthAdjust='spacingAndGlyphs'>0</text>
+<text x='65.23' y='283.72' text-anchor='middle' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='34.54px' lengthAdjust='spacingAndGlyphs'>votes with</text>
+<text x='65.23' y='291.93' text-anchor='middle' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='19.30px' lengthAdjust='spacingAndGlyphs'>China</text>
+<text x='144.45' y='275.51' text-anchor='middle' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='14.79px' lengthAdjust='spacingAndGlyphs'>0.25</text>
+<text x='223.67' y='275.51' text-anchor='middle' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='10.53px' lengthAdjust='spacingAndGlyphs'>0.5</text>
+<text x='302.88' y='275.51' text-anchor='middle' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='14.79px' lengthAdjust='spacingAndGlyphs'>0.75</text>
+<text x='382.10' y='275.51' text-anchor='middle' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='4.26px' lengthAdjust='spacingAndGlyphs'>1</text>
+<text x='382.10' y='283.72' text-anchor='middle' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='34.54px' lengthAdjust='spacingAndGlyphs'>votes with</text>
+<text x='382.10' y='291.93' text-anchor='middle' style='font-size: 7.60px;fill: #374151; font-family: "Roboto";' textLength='22.00px' lengthAdjust='spacingAndGlyphs'>the US</text>
+<text x='220.50' y='302.12' text-anchor='middle' style='font-size: 8.74px;fill: #374151; font-family: "Roboto";' textLength='233.63px' lengthAdjust='spacingAndGlyphs'>Position on the US-China axis of UN General Assembly votes</text>
+<text transform='translate(20.15,188.34) rotate(-90)' text-anchor='middle' style='font-size: 8.74px;fill: #374151; font-family: "Roboto";' textLength='148.53px' lengthAdjust='spacingAndGlyphs'>Effective tariff paid, June-August 2026</text>
+<text x='13.95' y='56.94' style='font-size: 9.69px;fill: #374151; font-family: "Roboto";' textLength='363.98px' lengthAdjust='spacingAndGlyphs'>Effective tariff (duties collected / imports, all goods, June-August 2026) against each</text>
+<text x='13.95' y='70.89' style='font-size: 9.69px;fill: #374151; font-family: "Roboto";' textLength='372.83px' lengthAdjust='spacingAndGlyphs'>partner's position on the US-China axis of UN votes; bubble size is 2024 two-way goods</text>
+<text x='13.95' y='84.84' style='font-size: 9.69px;fill: #374151; font-family: "Roboto";' textLength='367.89px' lengthAdjust='spacingAndGlyphs'>trade. China pays 21.9%. Trusted partners pay 6.2% on average, more than nonaligned</text>
+<text x='13.95' y='98.80' style='font-size: 9.69px;fill: #374151; font-family: "Roboto";' textLength='68.03px' lengthAdjust='spacingAndGlyphs'>partners (4.1%).</text>
+<text x='13.95' y='24.08' style='font-size: 14.25px; font-weight: bold;fill: #111827; font-family: "Roboto";' textLength='360.55px' lengthAdjust='spacingAndGlyphs'>The US has a China gate. It does not yet have a coherent</text>
+<text x='13.95' y='42.03' style='font-size: 14.25px; font-weight: bold;fill: #111827; font-family: "Roboto";' textLength='129.79px' lengthAdjust='spacingAndGlyphs'>trusted-partner gate</text>
+<text x='13.95' y='321.08' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='407.25px' lengthAdjust='spacingAndGlyphs'>Averages are import-weighted over the 29 partners plotted (the Trade War Tracker's 30 largest suppliers less Taiwan, which has</text>
+<text x='13.95' y='331.65' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='369.86px' lengthAdjust='spacingAndGlyphs'>no UN vote). Coercive excluding China (Vietnam, Indonesia, Russia): 7.2%. Effective rates exclude AD/CVD deposits.</text>
+<text x='13.95' y='342.22' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='388.07px' lengthAdjust='spacingAndGlyphs'>Supplier groups (NEIS posture engine): trusted = US-leaning UN-voting bloc (incl. EU, UK, Japan, Korea, Canada, Australia);</text>
+<text x='13.95' y='352.79' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='413.70px' lengthAdjust='spacingAndGlyphs'>coercive = China, Hong Kong, Macao, Russia and the China-leaning UN-voting bloc (incl. Vietnam and Indonesia); nonaligned = the</text>
+<text x='13.95' y='363.36' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='243.86px' lengthAdjust='spacingAndGlyphs'>rest (incl. Mexico, India, Taiwan, Thailand, Malaysia, Singapore, Switzerland).</text>
+<text x='13.95' y='373.93' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='422.07px' lengthAdjust='spacingAndGlyphs'>Sources: US Census Bureau (via the Trade War Tracker); UN Comtrade 2024 US goods trade by partner; UN General Assembly voting</text>
+<text x='13.95' y='384.50' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='336.46px' lengthAdjust='spacingAndGlyphs'>ideal points (Bailey, Strezhnev and Voeten), 2019-2023 sessions, as used by the NEIS alignment measure.</text>
+</g>
+</svg>
