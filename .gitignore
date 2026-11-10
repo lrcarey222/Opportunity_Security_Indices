@@ -29,6 +29,10 @@ data/raw_cache/
 outputs/
 output/
 output*/
+# The trade-fence explainer package is versioned (outputs/trade_fence_explainer/README.md).
+!outputs/
+outputs/*
+!outputs/trade_fence_explainer/
 !data/raw/2026-01-10/
 !data/raw/2026-01-10/GTA NIPO - February 2026.xlsx
 

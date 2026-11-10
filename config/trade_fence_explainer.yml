@@ -1,0 +1,96 @@
+# NEIS Substack explainer on US trade fences across the electro-industrial stack (scripts/trade_fence_explainer/,
+# outputs/trade_fence_explainer/README.md). Override this file with OPSI_TRADE_FENCE_EXPLAINER.
+#
+# Everything here re-cuts the US trade restrictiveness measure (scripts/28_build_us_trade_restrictiveness.R,
+# config/us_trade_restrictiveness.yml): same goods, weights, supplier groups, AD/CVD rule, thresholds and
+# verdict logic. Run scripts/28 first; it writes us_trade_restrictiveness_goods.rds, which this build reads.
+
+output_dir: outputs/trade_fence_explainer
+
+# The statutory snapshot: the regime legally in force on this date (data/dec4_2026_policy_snapshot.csv).
+snapshot_date: "2026-12-04"
+# Engine date the observed Census month is compared with: the statutory change from here to the snapshot is
+# added to the observed August 2026 rates ("observed + statutory change").
+statutory_base_date: "2026-08-15"
+# Statutory engine outputs written by scripts/trade_fence_explainer/statutory_variants.py (relative to the
+# repository, or absolute). OPSI_TFE_STATUTORY_DIR overrides.
+statutory_dir: data/raw/trade_war_tracker/statutory_variants
+# Actions in force by the snapshot date that the tracker's engine does not model yet (input of
+# statutory_variants.py; see the README).
+statutory_extra_actions: data/reference/trade_fence_explainer/statutory_extra_actions.csv
+policy_snapshot: data/dec4_2026_policy_snapshot.csv
+# AD/CVD in force on the snapshot date: data/reference/adcvd_orders.csv (the audit, 3 November 2026) updated for
+# the orders and provisional deposits that started since (dec4_change column).
+adcvd_orders_dec4: data/reference/trade_fence_explainer/adcvd_orders_dec4.csv
+
+# Chart 2 and 5 rows (technologies with a traded basket) in display order.
+techs: [Batteries, Electric Vehicles, Solar, Wind, Electric Grid, Nuclear, Gas, Oil, Coal]
+
+# Chart 3: effective tariff = Census calculated duty / imports for consumption over these months, all goods.
+partner_rate_months: ["2026-06", "2026-07", "2026-08"]
+label_partners: [CHN, CAN, MEX, JPN, KOR, DEU, VNM, IND, THA, MYS, GBR, SGP]
+# US total goods trade by partner in 2024 from the UN Comtrade public preview API (no key), fetched by
+# scripts/trade_fence_explainer/fetch_us_partner_trade.R into this file when missing.
+comtrade_partner_trade: data/raw/comtrade_us_partner_2024/us_partner_trade_2024.json
+
+# Chart 4: the derived inputs of US_Fence_Tools_by_Stage.xlsx (frozen copies; see the README).
+fence_tools_dir: data/reference/trade_fence_explainer/fence_tools
+
+# Chart 7: cells decomposed (tech|stage).
+decompose_cells: ["Wind|Assembly", "Solar|Assembly", "Electric Grid|Assembly", "Batteries|Refining", "Oil|Assembly", "Gas|Assembly"]
+
+# Chart 8: Census HS10 prefixes (imports for consumption, all months from 2024).
+modules_hs10: ["8541430010"]
+batteries_hs10: ["850760"]
+# UN Comtrade monthly US imports of HS 854143 by partner (scripts/trade_fence_explainer/fetch_comtrade.R).
+comtrade_monthly_dir: data/raw/comtrade_us_monthly
+module_origins: {"5520": Vietnam, "5490": Thailand, "5570": Malaysia, "5330": India, "5600": Indonesia, "5700": China}
+battery_origins: {"5700": China, "5800": Korea, "5880": Japan, "5570": Malaysia, "5490": Thailand, "5520": Vietnam}
+# Battery ownership annotation: CM-FDI project table (processed directory) and destinations shown.
+cm_fdi_projects: cm_fdi_projects_tbl.rds
+ownership_destinations: [MYS, THA, IDN, KOR, HUN, USA]
+domestic_response: data/reference/trade_fence_explainer/us_domestic_response.csv
+policy_events: data/reference/trade_fence_explainer/chart8_policy_events.csv
+
+# Supporting table C: product groups (HS prefixes) compared January-August 2024 with January-August 2026.
+response_months: ["01", "02", "03", "04", "05", "06", "07", "08"]
+response_groups:
+  Crystalline-silicon PV modules: ["8541430010"]
+  PV cells: ["854142"]
+  Polysilicon: ["280461"]
+  Silicon wafers: ["381800"]
+  Lithium-ion batteries: ["850760"]
+  Electric passenger vehicles: ["870380"]
+  Static converters (inverters, chargers): ["850440"]
+  Liquid-dielectric transformers: ["850421", "850422", "850423"]
+  Towers and lattice masts (incl. wind towers): ["730820"]
+  Wind-turbine generating sets: ["850231"]
+  OCTG casing and tubing: ["730429", "730629"]
+  Line pipe: ["730419", "730619"]
+  Unwrought aluminium: ["760110", "760120"]
+  Refined copper cathodes: ["740311"]
+  Permanent magnets: ["850511"]
+  Graphite (natural and artificial): ["250410", "250490", "380110"]
+  Rare-earth compounds: ["284690"]
+
+# Opening section (scripts/trade_fence_explainer/03_build_trade_overview.R): what the US trades and how its sources
+# changed. The same calendar months of 2024 and 2026 (the latest Census month is August 2026; September needs a
+# Census API key). Product groups (from response_groups) added to chart 00b as separate points.
+trade_overview:
+  months: ["01", "02", "03", "04", "05", "06", "07", "08"]
+  product_groups: [Permanent magnets, Rare-earth compounds, Graphite (natural and artificial), Refined copper cathodes]
+  # Archetype lines of the fence-change analysis: a change in all-supplier TRI of this many points or more is a
+  # higher fence; a change in coercive-supplier share of this many points or less is reduced dependence.
+  fence_line: 10
+  dependence_line: -5
+policy_timeline: data/reference/trade_fence_explainer/policy_timeline.csv
+s338_hts_check: data/reference/trade_fence_explainer/s338_hts_check.csv
+
+# Datawrapper copies of the charts (scripts/trade_fence_explainer/04_datawrapper.R): NEIS team folder created
+# 2026-11-10 through the API, NEIS theme. The registry keeps chart IDs so reruns update the same charts.
+datawrapper:
+  team: tbtM5ZLH
+  folder_id: 460185
+  folder_name: Trade fence explainer (Dec 2026)
+  theme: neis
+  registry: outputs/trade_fence_explainer/datawrapper_charts.csv

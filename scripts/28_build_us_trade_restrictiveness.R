@@ -192,6 +192,9 @@ long$data_month <- data_month
 long <- long[order(long$measure, long$tech, match(long$stage, SUPPLY_CHAIN_STAGES), match(long$supplier_group, TRI_GROUPS)), ]
 saveRDS(long, file.path(outputs_dir, "us_trade_restrictiveness_cells.rds"))
 utils::write.csv(long, file.path(outputs_dir, "us_trade_restrictiveness_cells.csv"), row.names = FALSE, na = "")
+# The HS10 x partner lines behind every measure (weights, rates, tags, AD/CVD), for analyses that need the
+# line level (scripts/trade_fence_explainer/).
+saveRDS(goods, file.path(outputs_dir, "us_trade_restrictiveness_goods.rds"))
 
 # --- posture comparison ------------------------------------------------------------------------------------
 pos_cols <- c("iso3", "tech", "supply_chain", "strategic_posture", "strategic_choice", "fence_level", "yard")

@@ -1,0 +1,22 @@
+"level","key","group","stage","imports_2024","imports_2026","exports_2024","exports_2026","period","balance_2026","imports_change_pct","exports_change_pct"
+"technology","Batteries","Clean energy and grid","All producing stages",19260785820,18476664180,6766167795,5289264326,"January-August",-13187399854,-4.07107813423575,-21.8277688899673
+"technology","Electric Vehicles","Clean energy and grid","All producing stages",113805733635,118038311073,39476631848,41235527793,"January-August",-76802783280,3.71912495338311,4.45553701686714
+"technology","Solar","Clean energy and grid","All producing stages",72491674047,75449028696,36616526576,42415282409,"January-August",-33033746287,4.07957836245112,15.8364442923452
+"technology","Wind","Clean energy and grid","All producing stages",44123049693,53694948656,18723463436,21247269725,"January-August",-32447678931,21.6936477183683,13.4793773471815
+"technology","Electric Grid","Clean energy and grid","All producing stages",59055513320,81537274630,25603138726,29884065845,"January-August",-51653208785,38.0688610531241,16.7203215387523
+"technology","Nuclear","Clean energy and grid","All producing stages",5123661105,5212886490,1219543784,1609966542,"January-August",-3602919948,1.74143806882403,32.0138369054243
+"technology","Gas","Fuels (oil, gas, coal)","All producing stages",18511634956,22651718948,51436722405,74407102391,"January-August",51755383443,22.3647668174124,44.6575499215073
+"technology","Oil","Fuels (oil, gas, coal)","All producing stages",165736742765,149096662339,172483148551,206998716459,"January-August",57902054120,-10.040067246642,20.0109797379971
+"technology","Coal","Fuels (oil, gas, coal)","All producing stages",779507695,1009212319,10584041160,8124944075,"January-August",7115731756,29.4679097426998,-23.234009088075
+"stage","All electro-industrial technologies","All electro-industrial technologies","Extraction",113234423666,105497042770,117288322743,149773712090,"January-August",44276669320,-6.83306422684893,27.6970363180838
+"stage","All electro-industrial technologies","All electro-industrial technologies","Refining",74678720400,79413873589,106891494764,132010023511,"January-August",52596149922,6.34069941696538,23.4990901778087
+"stage","All electro-industrial technologies","All electro-industrial technologies","Components",48584785026.5,55022233839,27449834107,27287042738.5,"January-August",-27735191100.5,13.2499275421076,-0.593050463858669
+"stage","All electro-industrial technologies","All electro-industrial technologies","Assembly",120851124405.5,117169544707,48578534101,50208133706.5,"January-August",-66961411000.5,-3.04637604044704,3.3545672706218
+"stage","All electro-industrial technologies","All electro-industrial technologies","Recovery",528449618,486525046,256257490,412786002,"January-August",-73739044,-7.93350407909652,61.0825119687233
+"stage","Clean energy and grid (excl. oil, gas, coal)","Clean energy and grid (excl. oil, gas, coal)","Extraction",1932952074,1568897864,2821675198,3473456983,"January-August",1904559119,-18.8341043162356,23.0991074189539
+"stage","Clean energy and grid (excl. oil, gas, coal)","Clean energy and grid (excl. oil, gas, coal)","Refining",21073637361,33205604299,6847599589,6863376672,"January-August",-26342227627,57.5694016660459,0.230403118566458
+"stage","Clean energy and grid (excl. oil, gas, coal)","Clean energy and grid (excl. oil, gas, coal)","Components",45558392515.5,51346759994.5,22028267410.5,22385921675.5,"January-August",-28960838319,12.7053812906824,1.62361505031268
+"stage","Clean energy and grid (excl. oil, gas, coal)","Clean energy and grid (excl. oil, gas, coal)","Assembly",112269635916.5,106879837160.5,40864000851.5,42961484734.5,"January-August",-63918352426,-4.80076265679585,5.13284024885929
+"stage","Clean energy and grid (excl. oil, gas, coal)","Clean energy and grid (excl. oil, gas, coal)","Recovery",462511334,480034294,226809551,270304619,"January-August",-209729675,3.78865526352701,19.1769119987368
+"total","All electro-industrial technologies (unique HS6)","All electro-industrial technologies (unique HS6)","All producing stages",357877503116,357589219951,300464443205,359691698048,"January-August",2102478097,-0.0805535867692053,19.7119014187614
+"total","Clean energy and grid (unique HS6)","Clean energy and grid (unique HS6)","All producing stages",181297129201,193481133612,72788352600,75954544684,"January-August",-117526588928,6.72046185435837,4.34986089244174
