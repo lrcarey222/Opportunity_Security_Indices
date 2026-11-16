@@ -70,3 +70,58 @@ test_that("compare keeps only own monthly reports as current and flags large Chi
   expect_true(ind$top_supplier_changed)
   expect_false(cmp$flag_china_move[cmp$importer_iso == "USA"])
 })
+
+blend_fixture <- function() {
+  base <- data.frame(importer_iso = c("USA", "AUT", "IND", "NEW"), tech = "Solar", supply_chain = "Assembly",
+                     observed = c(TRUE, TRUE, TRUE, FALSE), china_share = c(0.6, 0.4, 0.8, NA),
+                     coercive_import_share = c(0.6, 0.4, 0.8, NA), import_hhi = c(0.4, 0.2, 0.65, NA),
+                     imports_usd = c(10, 1, 3, NA), top_supplier_iso3 = "CHN", stringsAsFactors = FALSE)
+  current <- data.frame(importer_iso = c("USA", "AUT", "IND", "NEW"), tech = "Solar", supply_chain = "Assembly",
+                        observed = TRUE, current_basis = c("own_monthly", "no_monthly_report", "own_monthly", "own_monthly"),
+                        china_share = c(0.2, 0.0, 0.5, 0.9), coercive_import_share = c(0.2, 0, 0.5, 0.9),
+                        import_hhi = c(0.3, 0.5, 0.4, 0.8), imports_usd = c(20, 2, 3, 5), window_end = 202608L,
+                        stringsAsFactors = FALSE)
+  list(base = base, current = current)
+}
+
+test_that("blend averages own-monthly cells, keeps the rest and records its basis", {
+  f <- blend_fixture()
+  b <- ctm_blend_exposure(f$base, f$current, weight = 0.5)
+  usa <- b[b$importer_iso == "USA", ]
+  expect_equal(usa$china_share, 0.4)
+  expect_equal(usa$imports_usd, 15)
+  expect_equal(usa$china_share_base, 0.6)
+  expect_equal(usa$china_share_t12m, 0.2)
+  expect_equal(usa$exposure_basis, "blend")
+  expect_equal(usa$exposure_window_end, 202608L)
+  aut <- b[b$importer_iso == "AUT", ]
+  expect_equal(aut$china_share, 0.4)
+  expect_equal(aut$exposure_basis, "base")
+  new <- b[b$importer_iso == "NEW", ]
+  expect_true(new$observed)
+  expect_equal(new$china_share, 0.9)
+  expect_equal(new$exposure_basis, "current_only")
+  expect_equal(b$top_supplier_iso3, rep("CHN", 4))
+})
+
+test_that("weight 0 reproduces the base and weight 1 takes the current value", {
+  f <- blend_fixture()
+  b0 <- ctm_blend_exposure(f$base, f$current, weight = 0)
+  expect_equal(b0$china_share, f$base$china_share[order(f$base$importer_iso)])
+  expect_equal(b0$observed, f$base$observed[order(f$base$importer_iso)])
+  expect_true(all(b0$exposure_basis == "base"))
+  b1 <- ctm_blend_exposure(f$base, f$current, weight = 1)
+  expect_equal(b1$china_share[b1$importer_iso == "IND"], 0.5)
+  expect_error(ctm_blend_exposure(f$base, f$current, weight = 1.5), "weight")
+})
+
+test_that("trade flags mark large China moves on blended cells only", {
+  f <- blend_fixture()
+  f$base$imports_usd <- c(5e8, 1e9, 3e8, NA)
+  f$current$imports_usd <- c(5e8, 1e9, 3e8, 5e8)
+  fl <- ctm_trade_flags(ctm_blend_exposure(f$base, f$current, weight = 0.5))
+  expect_equal(fl$current_trade_flag[fl$iso3 == "USA"], "china_down")
+  expect_true(is.na(fl$current_trade_flag[fl$iso3 == "AUT"]))
+  expect_true(is.na(fl$current_trade_flag[fl$iso3 == "NEW"]))
+  expect_equal(fl$exposure_window_end[fl$iso3 == "IND"], 202608L)
+})

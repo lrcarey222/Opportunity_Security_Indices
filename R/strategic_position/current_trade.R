@@ -116,3 +116,72 @@ ctm_exposure_compare <- function(base, current, min_move = 0.10, min_imports_usd
   rownames(out) <- NULL
   out
 }
+
+# The columns of an import exposure table that the blend moves: shares and HHI (weighted average of base
+# and current), and the two levels (imports_usd, imports_to_gdp).
+CTM_BLEND_COLS <- c("china_share", "opposite_bloc_share", "coercive_import_share", "trusted_import_share",
+                    "import_hhi", "top_supplier_share", "imports_usd", "imports_to_gdp")
+
+# Import exposure for Strategic Need and the posture, with the current (T12M) measurement blended into the
+# base year where the importer reported its own monthly imports:
+#   value = (1 - weight) * base + weight * current
+# `base` and `current` are sp_import_exposure() tables; current needs current_basis (scripts/38). A cell
+# with no own-monthly current value keeps its base row; a cell observed only now takes the current value.
+# Shares stay in [0, 1] because each is a convex combination of two shares. Adds exposure_basis
+# ("base", "blend", "current_only"), exposure_window_end, exposure_weight and <col>_base / <col>_t12m for
+# china_share and coercive_import_share, so every changed value can be traced. weight = 0 returns the base
+# values unchanged.
+ctm_blend_exposure <- function(base, current, weight = 0.5, cols = CTM_BLEND_COLS) {
+  if (!is.numeric(weight) || length(weight) != 1 || is.na(weight) || weight < 0 || weight > 1) {
+    stop("ctm_blend_exposure(): weight must be one number in [0, 1].")
+  }
+  keys <- c("importer_iso", "tech", "supply_chain")
+  if (!"current_basis" %in% names(current)) stop("ctm_blend_exposure(): current lacks current_basis (scripts/38).")
+  cols <- intersect(cols, intersect(names(base), names(current)))
+  cur <- current[current$current_basis %in% "own_monthly" & current$observed %in% TRUE,
+                 c(keys, cols, intersect("window_end", names(current))), drop = FALSE]
+  names(cur)[match(cols, names(cur))] <- paste0(cols, ".now")
+  out <- merge(base, cur, by = keys, all.x = TRUE, sort = FALSE)
+  has_now <- !is.na(out[[paste0(cols[1], ".now")]])
+  base_obs <- out$observed %in% TRUE
+  out$exposure_basis <- ifelse(has_now & base_obs, "blend", "base")
+  for (v in intersect(c("china_share", "coercive_import_share"), cols)) {
+    out[[paste0(v, "_base")]] <- out[[v]]
+    out[[paste0(v, "_t12m")]] <- out[[paste0(v, ".now")]]
+  }
+  for (v in cols) {
+    now <- out[[paste0(v, ".now")]]
+    b <- out[[v]]
+    blend <- has_now & base_obs & !is.na(b)
+    out[[v]][blend] <- (1 - weight) * b[blend] + weight * now[blend]
+    fill <- has_now & (!base_obs | is.na(b))
+    if (weight > 0) out[[v]][fill] <- now[fill]
+    out[[paste0(v, ".now")]] <- NULL
+  }
+  only_now <- has_now & !base_obs & weight > 0
+  out$observed[only_now] <- TRUE
+  out$exposure_basis[only_now] <- "current_only"
+  if (weight == 0) out$exposure_basis <- "base"
+  out$exposure_weight <- ifelse(out$exposure_basis == "base", 0, weight)
+  out$exposure_window_end <- if ("window_end" %in% names(out)) ifelse(out$exposure_basis == "base", NA, out$window_end) else NA
+  out$window_end <- NULL
+  out <- out[order(out$importer_iso, out$tech, out$supply_chain), ]
+  rownames(out) <- NULL
+  tibble::as_tibble(out)
+}
+
+# Per-cell trace of the blend for strategic_position_tbl (iso3, tech, supply_chain): exposure_basis,
+# exposure_window_end, exposure_weight, china_share_base / _t12m, coercive_import_share_base / _t12m, and
+# current_trade_flag ("china_up", "china_down" or NA): the latest 12 months put China's share at least
+# `min_move` above or below the base year on at least `min_imports_usd` of blended imports. `blended` is
+# ctm_blend_exposure()'s output.
+ctm_trade_flags <- function(blended, min_move = 0.10, min_imports_usd = 1e8) {
+  keep <- c("importer_iso", "tech", "supply_chain", "exposure_basis", "exposure_window_end", "exposure_weight",
+            intersect(c("china_share_base", "china_share_t12m", "coercive_import_share_base", "coercive_import_share_t12m"), names(blended)))
+  out <- as.data.frame(blended)[, intersect(keep, names(blended)), drop = FALSE]
+  names(out)[1] <- "iso3"
+  move <- if (all(c("china_share_base", "china_share_t12m") %in% names(out))) out$china_share_t12m - out$china_share_base else NA_real_
+  big <- !is.na(move) & abs(move) >= min_move & blended$imports_usd >= min_imports_usd & out$exposure_basis == "blend"
+  out$current_trade_flag <- ifelse(big & move > 0, "china_up", ifelse(big & move < 0, "china_down", NA_character_))
+  out
+}

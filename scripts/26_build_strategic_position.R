@@ -63,7 +63,7 @@ for (f in c(
   "R/utils/variable_stage_evidence.R", "R/indices/build_indices.R", "R/indices/build_policy_index.R",
   "R/categories/policy/cat_policy_index.R",
   "R/strategic_position/sp_helpers.R", "R/strategic_position/competitive_position.R",
-  "R/strategic_position/import_exposure.R", "R/strategic_position/strategic_need.R",
+  "R/strategic_position/import_exposure.R", "R/strategic_position/current_trade.R", "R/strategic_position/strategic_need.R",
   "R/strategic_position/policy_priority.R", "R/strategic_position/alignment.R",
   "R/strategic_position/supply_structure.R", "R/strategic_position/posture_nodes.R",
   "R/strategic_position/posture_engine.R", "R/strategic_position/posture_inputs.R",
@@ -107,7 +107,22 @@ policy_outputs <- read_required(file.path(processed_dir, "policy_outputs.rds"), 
 nipo_cells <- read_required(file.path(processed_dir, "nipo_stage_cells_tbl.rds"), "run scripts/11_build_nipo_stage_policy.R.")
 nipo_country <- read_required(file.path(processed_dir, "nipo_stage_country_tbl.rds"), "run scripts/11_build_nipo_stage_policy.R.")
 import_exposure <- read_required(file.path(processed_dir, "import_exposure_tbl.rds"), "run scripts/15_build_partner_themes.R.")
-geo_alignment <- read_required(file.path(processed_dir, "geo_alignment_tbl.rds"), "run scripts/12_build_geopolitical_alignment.R.")
+# Current trade (config current_trade; OPSI_CURRENT_TRADE_WEIGHT overrides the weight): the importer's latest
+# 12 months of its own monthly reports blended into the base-year import exposure (ctm_blend_exposure()).
+ct_cfg <- sp_cfg$current_trade
+ct_weight <- Sys.getenv("OPSI_CURRENT_TRADE_WEIGHT", "")
+ct_weight <- if (nzchar(ct_weight)) as.numeric(ct_weight) else if (isTRUE(ct_cfg$enabled)) as.numeric(ct_cfg$weight %||% 0) else 0
+if (is.na(ct_weight)) stop("OPSI_CURRENT_TRADE_WEIGHT must be a number in [0, 1].")
+if (ct_weight > 0) {
+  current_exposure <- read_required(file.path(processed_dir, "current_import_exposure_tbl.rds"),
+                                    "run scripts/37 and scripts/38_build_current_import_exposure.R, or set current_trade$enabled: false.")
+  import_exposure <- ctm_blend_exposure(import_exposure, current_exposure, weight = ct_weight)
+  message("Current trade: ", sum(import_exposure$exposure_basis == "blend"), " importer x cells blended at weight ", ct_weight,
+          " (", length(unique(import_exposure$importer_iso[import_exposure$exposure_basis == "blend"])), " importers); ",
+          sum(import_exposure$exposure_basis == "current_only"), " observed only now.")
+  rm(current_exposure)
+}
+geo_alignment <-read_required(file.path(processed_dir, "geo_alignment_tbl.rds"), "run scripts/12_build_geopolitical_alignment.R.")
 major_supplier_shares <- read_required(file.path(processed_dir, "major_supplier_shares_tbl.rds"), "run scripts/10_build_themes.R.")
 tech_ghg <- read_required(file.path(processed_dir, "tech_ghg_tbl.rds"), "run scripts/10_build_themes.R.")
 evidence <- vse_read_check(utils::read.csv(
@@ -574,6 +589,15 @@ layers_tbl <- sp_policy_design(layers_tbl, design_tables$design, design_tables$d
 
 stopifnot(!anyDuplicated(strategic_position_tbl[, c("Country", "tech", "supply_chain")]))
 assert_supply_chain_stages(strategic_position_tbl$supply_chain, label = "strategic_position_tbl")
+
+# Current-trade trace: which cells blend the latest 12 months, as of when, and where China's share moved.
+if (ct_weight > 0) {
+  ct_flags <- ctm_trade_flags(import_exposure, min_move = ct_cfg$flag_min_move %||% 0.10,
+                              min_imports_usd = ct_cfg$flag_min_imports_usd %||% 1e8)
+  strategic_position_tbl <- dplyr::left_join(strategic_position_tbl, ct_flags, by = c("iso3", "tech", "supply_chain"))
+  message("Current trade flags: ", sum(strategic_position_tbl$current_trade_flag %in% "china_up"), " china_up, ",
+          sum(strategic_position_tbl$current_trade_flag %in% "china_down"), " china_down.")
+}
 
 # Compatibility view: the three-stage roll-up of the headline columns.
 strategic_position_legacy_tbl <- sp_legacy_rollup(
