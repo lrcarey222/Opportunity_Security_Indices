@@ -24,6 +24,8 @@ PM_FAILURE_SCORE <- c(geopolitical_chokepoint = 1, trusted_partner_capacity_cons
 pm_constraint <- function(d, cfg) {
   dn_hi <- cfg$thresholds$deployment_need_high
   emerging <- (pmax(d$deployment_need_a, d$deployment_need_b, na.rm = TRUE) >= dn_hi) & !is.na(d$world_top_share) & d$world_top_share >= 0.4
+  # a pair whose own member is the largest world supplier is not short of it between themselves
+  if (!is.null(d$country_a) && !is.null(d$world_top_iso3)) emerging <- emerging & !(d$world_top_iso3 %in% c(d$country_a[1], d$country_b[1]))
   emerging[is.na(emerging)] <- FALSE
   supply_state <- d$relationship_state %in% c("a_supplies_b_needs", "b_supplies_a_needs")
   manufacturing <- d$stage %in% c("Components", "Assembly") | (pmax(d$prize_a, d$prize_b, na.rm = TRUE) >= cfg$thresholds$prize_high) %in% TRUE
@@ -53,6 +55,16 @@ pm_match_evidence <- function(d, ev, countries) {
     # an item that names a node matches that node only; a compact-level item matches the compact at its stage
     hit_cmp <- !nzchar(ev$aib_node) & !is.na(cmp) & ev$compact %in% cmp & ev$stage == d$stage[i]
     ev$evidence_id[both & (hit_node | hit_cmp)]
+  })
+}
+
+# Node-specific evidence only (items naming the node, or a node of the cell): commitments and private actors
+# read these, so a compact-level item (a tariff, another mineral's mine) does not spill into every unit at its stage.
+pm_match_evidence_node <- function(d, ev, countries) {
+  both <- vapply(strsplit(ev$countries, "\\|"), function(z) all(countries %in% z), logical(1))
+  lapply(seq_len(nrow(d)), function(i) {
+    nodes <- if (d$unit_type[i] == "node") d$node_id[i] else d$nodes_of_cell[[i]]
+    ev$evidence_id[both & nzchar(ev$aib_node) & ev$aib_node %in% nodes]
   })
 }
 
@@ -165,7 +177,7 @@ pm_fields <- function(d, cfg, ev, mech, devpart_n, invest_pairs, roles) {
   d$tractability <- round(rowMeans(cbind(d$policy_priority_a, d$policy_priority_b, mech_score), na.rm = TRUE), 3)
   # additionality: market failure, existing commitment, market already working
   mf <- ifelse(is.na(d$constraint_type), NA_real_, unname(PM_FAILURE_SCORE[d$constraint_type]))
-  commit <- pm_commitment(d$evidence_ids, ev)
+  commit <- pm_commitment(if (is.null(d$evidence_ids_node)) d$evidence_ids else d$evidence_ids_node, ev)
   share_buy <- ifelse(sup_is_a, d$b_imports_from_a_share, d$a_imports_from_b_share)
   working <- ifelse(is.na(share_buy), 0, ifelse(share_buy >= th$bilateral_share_working, 1, ifelse(share_buy >= th$bilateral_share_partial, 0.5, 0)))
   working[!supply_state] <- 0

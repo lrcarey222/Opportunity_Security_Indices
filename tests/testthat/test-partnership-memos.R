@@ -245,3 +245,22 @@ test_that("the print document follows the brief format and cites external eviden
   txt <- unlist(lapply(doc$sections, function(s) lapply(s$blocks, function(b) if (!is.null(b$items)) lapply(b$items, function(i) vapply(i$inlines, function(z) z$v, "")) else if (!is.null(b$inlines)) vapply(b$inlines, function(z) z$v, ""))))
   expect_false(any(grepl("[External", txt, fixed = TRUE)))
 })
+
+test_that("a cell whose products are assessed node by node is context only", {
+  r <- run_pair()
+  cov <- r$d[r$d$node_grain_covered %in% TRUE, ]
+  expect_gt(nrow(cov), 0)
+  expect_true(all(cov$priority_tier %in% c(0L, 5L, 6L)))
+  expect_false(any(cov$unit_id %in% r$trade$unit_id))
+  expect_false(any(cov$unit_id %in% r$nonp$unit_id))
+  expect_false(any(cov$unit_id %in% r$deals$unit_id))
+})
+
+test_that("a material net importer with high need is never a node supplier", {
+  inp <- mk_inputs(dol_over = function(dol) { i <- dol$node_id == "n-comp" & dol$iso3 == "BBB"; dol$net_import_share[i] <- 0.3; dol$scope_demand_share[i] <- 0.3; dol })
+  inp$sp$supply_chain_need[inp$sp$iso3 == "BBB" & inp$sp$supply_chain == "Components"] <- 0.9
+  d <- run_pair(inp)$d
+  r <- d[d$unit_id == "n-comp", ]
+  expect_equal(r$need_band_b, "high")
+  expect_false(r$supplier %in% "BBB")
+})

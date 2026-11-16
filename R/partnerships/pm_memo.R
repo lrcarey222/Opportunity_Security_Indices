@@ -15,7 +15,7 @@ pm_ev_tag <- function(e) sprintf("[External %s, %s]", e$evidence_id, e$verificat
 # register and the verification status goes with the source.
 pm_claim_clean <- function(x) vapply(x, function(s) {
   cl <- trimws(strsplit(sub("\\.\\s*$", "", s), ";\\s+")[[1]])
-  drop <- grepl("(^|\\s)I\\s|\\bmy (sources|searches)\\b|not opened|search summar|not confirmed|unverified|not checked|unchecked|not captured|not verified|was not (read|fetched)|did not (verify|resolve|open|find)",
+  drop <- grepl("(^|\\s)I\\s|\\bmy (sources|searches)\\b|not opened|search summar|not confirmed|unverified|not checked|unchecked|not captured|not verified|was not (read|fetched)|did not (verify|resolve|open|find)|\\bnot found\\b|\\binferred\\b|date approximate|approximate date|identified through press",
                 cl, ignore.case = FALSE)
   keep <- if (all(drop)) cl[1] else cl[!drop]
   paste0(paste(keep, collapse = "; "), ".")
@@ -62,7 +62,9 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
   jb_all <- jb_all[order(jb_all$unit_type != "node", jb_all$priority_rank), ]
   grp_best <- jb_all[!duplicated(jb_all$group), ]
   gu <- tapply(jb_all$urgency, jb_all$group, max, na.rm = TRUE)
-  grp_best <- grp_best[order(-(gu[grp_best$group] >= 0.4), -grp_best$strategic_importance, grp_best$priority_rank), ]
+  # bundles inside the recommended compacts (Section 7) come first
+  rec_cc <- cc$strategic_compact_id[cc$recommended]
+  grp_best <- grp_best[order(!grp_best$group %in% rec_cc, -(gu[grp_best$group] >= 0.4), -grp_best$strategic_importance, grp_best$priority_rank), ]
   jb <- utils::head(grp_best, cfg$priority$max_joint_bets)
   short_state <- function(r) ifelse(r$relationship_state == "shared_vulnerability", "joint",
                                     ifelse(is.na(r$supplier), "", sprintf("%s->%s", nm(r$supplier), nm(r$buyer))))
@@ -77,10 +79,10 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
   cname <- setNames(cc$strategic_compact_name, cc$strategic_compact_id)
   grp_name <- function(g) ifelse(g %in% names(cname), cname[g], g)
   contrib <- function(r, iso) {
-    if (r$relationship_state == "shared_vulnerability") return("its demand for pooled offtake, and finance for non-Chinese supply")
+    if (r$relationship_state == "shared_vulnerability") return(sprintf("its demand for pooled offtake, and finance for supply outside %s", if (is.na(r$coercive_top_iso3) || !nzchar(r$coercive_top_iso3)) "the coercive supplier" else r$coercive_top_iso3))
     if (!is.na(r$supplier) && r$supplier == iso) {
       sh <- if (iso == a) r$world_share_a else r$world_share_b
-      return(if (r$unit_type == "node") sprintf("trusted capacity (%s of world supply)", pm_pct(sh, 0)) else "trusted capacity (top-quarter position)")
+      return(if (r$unit_type == "node") sprintf("trusted capacity (%s of world exports or production)", pm_pct(sh, 0)) else if (r$position_band_a %in% "strong" || r$position_band_b %in% "strong") "trusted capacity (top-quarter position)" else "trusted capacity (a named contender)")
     }
     if (!is.na(r$buyer) && r$buyer == iso) return("demand and long-term offtake")
     "-"
@@ -93,6 +95,9 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
       sprintf("_Partnership Memo, generated %s by scripts/34_build_partnership_memo.R. OSI data: six-stage strategic-position table (trade 2022-24 benchmark, flows 2024, NIPO policy as of 2025) and the Allied Industrial Base strategic layer (%s scenario). External evidence: %d curated items, accessed %s (verified %d, partial %d, unverified %d)._",
               format(Sys.Date()), cfg$inputs$aib_scenario, nrow(ev), ev_vintage, sum(ev$verification == "verified"), sum(ev$verification == "partial"), sum(ev$verification == "unverified")),
       "", sprintf("_Tags: **[Data]** OSI tables; **[External Exx, verification]** curated evidence layer; **[Inference]** a documented rule applied to the data; **[Recommendation]** what the two governments should do. Country A is %s in every table (`_a`), country B is %s (`_b`)._", pair_cfg$a_name, pair_cfg$b_name), "")
+  if (!is.null(pair_cfg$note)) add(sprintf("_%s_", pair_cfg$note), "")
+  # a bloc side names the member that holds its position
+  lm_txt <- function(x) ifelse(is.na(x) | !nzchar(ifelse(is.na(x), "", x)), "", sprintf(" (%s)", x))
 
   # ---- Executive summary ---------------------------------------------------------------------------------
   st <- table(factor(d$relationship_state, levels = PM_STATES))
@@ -114,7 +119,7 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
       sprintf("- [Inference] From the AIB roles, %s brings %s; %s brings %s.%s The trade is market access and demand certainty for trusted capacity.",
               Ar, brings(a), Br, brings(b),
               if (length(c(inst_of(a, "finance"), inst_of(b, "finance")))) sprintf(" Public finance runs through %s on the %s side and %s on the %s side.", inst_txt(a, "finance"), A, inst_txt(b, "finance"), B) else ""),
-      "", sprintf("**The %d highest-priority joint bets** (tier 1 by the rules in Section 3, one per compact; ranked by urgency then importance):", nrow(jb)), "")
+      "", sprintf("**The %d highest-priority joint bets** (tier 1 by the rules in Section 3, one per compact; recommended compacts first, then by urgency and importance):", nrow(jb)), "")
   bundle_contrib <- function(g, iso) {
     m <- jb_all[jb_all$group == g, ]; m <- m[order(m$unit_type != "node"), ]
     v <- unique(vapply(seq_len(nrow(m)), function(i) { cx <- contrib(m[i, ], iso); if (cx == "-") "" else sprintf("%s: %s", slab(m[i, ]), cx) }, character(1)))
@@ -139,6 +144,13 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
 
   # ---- 1. Current state ----------------------------------------------------------------------------------
   pair_ev <- ev[vapply(strsplit(ev$countries, "\\|"), function(z) all(c(a, b) %in% z), logical(1)), ]
+  # Sections 1, 6 and 7 list every pair item, or at most `evidence_list_cap` per list where the pair config sets one (a bloc pair,
+  # whose member-state items would otherwise crowd the memo past the page limit)
+  s1_lines <- function(ids) {
+    if (is.null(pair_cfg$evidence_list_cap)) return(pm_ev_line(ev, ids))
+    x <- pm_ev_lines_capped(ev, ids, pair_cfg$evidence_list_cap)
+    c(x$lines, if (x$n_more > 0) sprintf("- [Data] %d further item%s in the evidence layer (policy_evidence.csv).", x$n_more, if (x$n_more > 1) "s are" else " is"))
+  }
   # items behind an investment vehicle, plus cross-sector projects and financing
   vehicle_ids <- unique(c(unlist(strsplit(mech$evidence_ids[mech$mechanism_type %in% "investment_vehicle"], "\\|")),
                           pair_ev$evidence_id[pair_ev$item_type %in% c("project", "financing") & pair_ev$compact %in% "cross_sector"]))
@@ -149,19 +161,19 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
       paste0("This section sets out what already exists before anything new is proposed. Facts are from the curated evidence layer (accessed ", ev_vintage, "); items marked partial or unverified rest on secondary sources and should be confirmed before citation."), "",
       "**Alliance and plurilateral architecture**",
       sprintf("- [Data] %s's memberships in OSI's economic-security agreements table: %s.", B, paste(plur, collapse = ", ")),
-      pm_ev_line(ev, pair_ev$evidence_id[pair_ev$item_type %in% c("plurilateral", "dialogue")]), "",
+      s1_lines(pair_ev$evidence_id[pair_ev$item_type %in% c("plurilateral", "dialogue")]), "",
       "**Trade architecture and frictions**",
       sprintf("- [Data] In the OSI energy basket, %s imported %s from %s and %s imported %s from %s (bilateral flows 2024, summed over the technology x stage cells).",
               A, pm_usd(sum(d$a_imports_from_b_usd[d$unit_type == "cell"], na.rm = TRUE)), B, B, pm_usd(sum(d$b_imports_from_a_usd[d$unit_type == "cell"], na.rm = TRUE)), A),
-      pm_ev_line(ev, pair_ev$evidence_id[pair_ev$item_type %in% c("agreement") & pair_ev$instrument %in% c("trade_agreement", "tariff")]),
-      pm_ev_line(ev, pair_ev$evidence_id[pair_ev$item_type == "dispute"]), "",
+      s1_lines(pair_ev$evidence_id[pair_ev$item_type %in% c("agreement") & pair_ev$instrument %in% c("trade_agreement", "tariff")]),
+      s1_lines(pair_ev$evidence_id[pair_ev$item_type == "dispute"]), "",
       "**Industrial and energy agreements**",
-      pm_ev_line(ev, pair_ev$evidence_id[pair_ev$item_type %in% c("framework", "institution") | (pair_ev$item_type == "agreement" & !pair_ev$instrument %in% c("trade_agreement", "tariff")) |
+      s1_lines(pair_ev$evidence_id[pair_ev$item_type %in% c("framework", "institution") | (pair_ev$item_type == "agreement" & !pair_ev$instrument %in% c("trade_agreement", "tariff")) |
                                            (pair_ev$item_type == "agreement" & pair_ev$instrument == "trade_agreement" & pair_ev$technology != "cross_sector")]), "",
       "**Investment vehicle, project pipeline and financing**",
-      pm_ev_line(ev, pair_ev$evidence_id[pair_ev$evidence_id %in% vehicle_ids & pair_ev$item_type %in% c("project", "financing", "corporate")]), "",
+      s1_lines(pair_ev$evidence_id[pair_ev$evidence_id %in% vehicle_ids & pair_ev$item_type %in% c("project", "financing", "corporate")]), "",
       "**Corporate relationships in the recommended compacts**",
-      pm_ev_line(ev, pair_ev$evidence_id[pair_ev$item_type %in% c("corporate", "project", "financing") & !pair_ev$evidence_id %in% vehicle_ids &
+      s1_lines(pair_ev$evidence_id[pair_ev$item_type %in% c("corporate", "project", "financing") & !pair_ev$evidence_id %in% vehicle_ids &
                                            pair_ev$compact %in% cc$strategic_compact_id[cc$recommended]]), "",
       "- [Data] Unverified items are left out of this section; they stay in the evidence register (`evidence_register.csv`) and the evidence layer.", "",
       {ch <- mech[mech$status %in% PM_ACTIVE_MECH & (mech$has_pipeline %in% c("TRUE", "partial") | mech$has_finance %in% c("TRUE", "partial")), , drop = FALSE]
@@ -185,9 +197,11 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
       pm_md_table(mat, names(mat)), "")
   nd <- d[d$unit_type == "node" & (d$position_band_a %in% c("strong", "moderate") | d$position_band_b %in% c("strong", "moderate") | d$need_band_a %in% c("high", "demand") | d$need_band_b %in% c("high", "demand")), ]
   nd <- nd[order(nd$compact, nd$step_order), ]
+  ndl_a <- if ("lead_member_a" %in% names(nd)) nd$lead_member_a else rep(NA_character_, nrow(nd))
+  ndl_b <- if ("lead_member_b" %in% names(nd)) nd$lead_member_b else rep(NA_character_, nrow(nd))
   nt <- data.frame(Compact = nd$compact, Node = nd$node_label, Stage = nd$stage,
-                   A_share = pm_pct(nd$world_share_a, 1), A_rca = pm_f2(nd$rca_a), A_need = pm_need_txt(nd$need_band_a, nd$strategic_need_a), A_demand = pm_pct(nd$demand_share_a, 0),
-                   B_share = pm_pct(nd$world_share_b, 1), B_rca = pm_f2(nd$rca_b), B_need = pm_need_txt(nd$need_band_b, nd$strategic_need_b), B_demand = pm_pct(nd$demand_share_b, 0),
+                   A_share = paste0(pm_pct(nd$world_share_a, 1), lm_txt(ndl_a)), A_rca = pm_f2(nd$rca_a), A_need = pm_need_txt(nd$need_band_a, nd$strategic_need_a), A_demand = pm_pct(nd$demand_share_a, 0),
+                   B_share = paste0(pm_pct(nd$world_share_b, 1), lm_txt(ndl_b)), B_rca = pm_f2(nd$rca_b), B_need = pm_need_txt(nd$need_band_b, nd$strategic_need_b), B_demand = pm_pct(nd$demand_share_b, 0),
                    AIB = nd$aib_class, Coercive = sprintf("%s %s", ifelse(is.na(nd$coercive_top_iso3), "", nd$coercive_top_iso3), pm_pct(nd$coercive_world_share, 0)), stringsAsFactors = FALSE)
   add(sprintf("**Electro-industrial nodes where either country has a position or a need** (AIB division of labour, 2024 trade; share = world export or production share; need is the node's technology x stage need, inherited, so a proxy; demand = share of allied demand). %d of %d nodes:", nrow(nt), sum(d$unit_type == "node")), "",
       pm_md_table(nt, names(nt), c("Compact", "Node", "Stage", paste(A, "share"), paste(A, "RCA"), paste(A, "need"), paste(A, "demand"), paste(B, "share"), paste(B, "RCA"), paste(B, "need"), paste(B, "demand"), "AIB class", "Coercive top supplier")), "")
@@ -197,11 +211,14 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
       sprintf("- [Data] Evidence quality: %d of %d cells have high stage-specific evidence for both countries; %d units are flagged low-evidence.", sum(cells$evidence_quality >= 1, na.rm = TRUE), nrow(cells), sum(d$low_evidence)), "")
 
   # ---- 3. Complementarity map ----------------------------------------------------------------------------
-  cm <- d[d$relationship_state %in% c(PM_ACTIVE_STATES, "direct_competition"), ]
+  cm <- d[d$relationship_state %in% c(PM_ACTIVE_STATES, "direct_competition") & !d$node_grain_covered %in% TRUE, ]
   cm <- cm[order(cm$priority_rank), ]
+  cml_a <- if ("lead_member_a" %in% names(cm)) cm$lead_member_a else rep(NA_character_, nrow(cm))
+  cml_b <- if ("lead_member_b" %in% names(cm)) cm$lead_member_b else rep(NA_character_, nrow(cm))
   ct <- data.frame(Rank = cm$priority_rank, Tier = cm$priority_label, Technology = ifelse(cm$unit_type == "node", vapply(cm$compact, grp_name, character(1)), cm$tech),
                    Unit = cm$node_label, Stage = cm$stage,
-                   A = pm_pos_txt(cm$position_band_a, cm$world_share_a, cm$unit_type), B = pm_pos_txt(cm$position_band_b, cm$world_share_b, cm$unit_type),
+                   A = paste0(pm_pos_txt(cm$position_band_a, cm$world_share_a, cm$unit_type), ifelse(cm$position_band_a %in% c("strong", "moderate"), lm_txt(cml_a), "")),
+                   B = paste0(pm_pos_txt(cm$position_band_b, cm$world_share_b, cm$unit_type), ifelse(cm$position_band_b %in% c("strong", "moderate"), lm_txt(cml_b), "")),
                    State = cm$state_label, Case = sprintf("%s; need %s / %s", gsub("_", " ", cm$constraint_type), pm_f2(cm$strategic_need_a), pm_f2(cm$strategic_need_b)),
                    Confidence = pm_band(cm$evidence_quality), stringsAsFactors = FALSE)
   add("## 3. Bilateral Complementarity Map", "",
@@ -209,20 +226,24 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
       "", "[Inference] Rules (Section 3 of docs/partnership_memos.md): two strong positions are **direct competition**, never complementarity; a supplier must be strong (or a contender the engine names as the other's trusted partner) and the buyer must have high need, or material demand where trusted capacity is short or a chokepoint exists; **capacity-constrained** where the AIB finds allied capacity short of demand; **shared vulnerability** where both need the node, neither supplies it and a coercive supplier holds at least half of world supply.", "",
       pm_md_table(ct, names(ct), c("Rank", "Tier", "Technology", "Unit", "Stage", paste(A, "position"), paste(B, "position"), "Dyadic relationship", "Strategic case", "Confidence")), "")
   low <- d[d$relationship_state == "low_strategic_case" & d$unit_type == "node", ]
+  n_cov <- sum(d$node_grain_covered %in% TRUE & d$relationship_state %in% c(PM_ACTIVE_STATES, "direct_competition"))
   add(sprintf("- [Data] Low-priority / open-market nodes (%d): %s.", nrow(low), paste(tolower(low$node_label), collapse = ", ")),
+      if (n_cov) sprintf("- [Inference] %d technology x stage cells whose products are assessed node by node are context only and left out of this map (their cell states are in dyad_complementarity.csv): the node reading is the more specific one.", n_cov) else character(),
       sprintf("- [Data] Deployment cells are demand context, not supply relations: high deployment need in %s.", paste(sprintf("%s (%s)", d$tech[d$relationship_state == "deployment_demand"], gsub(".*need is high in (.*): demand.*", "\\1", d$state_reason[d$relationship_state == "deployment_demand"])), collapse = "; ")), "")
 
   # ---- 4. Trade ------------------------------------------------------------------------------------------
   tt <- trade_tbl
   q <- function(type) tt[tt$action_type %in% type, ]
+  lab_of <- function(ids) paste(unique(tolower(d$node_label[match(ids, d$unit_id)])), collapse = ", ")
   add("## 4. Trade Agenda", "",
       sprintf("- [Inference] **What %s should export to %s:** %s.", Ar, Br, paste(unique(d$node_label[d$supplier %in% a & d$priority_tier %in% 1:2]), collapse = "; ")),
       sprintf("- [Inference] **What %s should export to %s:** %s.", Br, Ar, paste(unique(d$node_label[d$supplier %in% b & d$priority_tier %in% 1:2]), collapse = "; ")),
-      sprintf("- [Inference] **Where tariffs would undermine allied specialisation:** %s.", if (nrow(q("tariff_risk"))) paste(q("tariff_risk")$unit_id, collapse = ", ") else "no node where the buyer's protection priority is in its top third and the partner is the trusted supplier"),
-      sprintf("- [Inference] **Procurement, standards and content rules to recognise mutually:** %s.", paste(q(c("procurement_recognition", "mutual_recognition"))$unit_id, collapse = ", ")),
-      sprintf("- [Inference] **Where third-country circumvention safeguards are genuinely required:** %s; elsewhere they would add cost without security.", if (nrow(q("anti_circumvention"))) paste(q("anti_circumvention")$unit_id, collapse = ", ") else "none"),
-      sprintf("- [Inference] **Where unrestricted global sourcing is acceptable:** %s.", paste(q("open_sourcing")$unit_id, collapse = ", ")),
-      "", pm_md_table(tt, c("rec_id", "direction", "unit_id", "action_type", "action"), c("ID", "Direction", "Unit", "Action type", "Action")), "")
+      sprintf("- [Inference] **Where tariffs would undermine allied specialisation:** %s.", if (nrow(q("tariff_risk"))) lab_of(q("tariff_risk")$unit_id) else "no node where the buyer's protection priority is in its top third and the partner is the trusted supplier"),
+      sprintf("- [Inference] **Procurement, standards and content rules to recognise mutually:** %s.", if (nrow(q(c("procurement_recognition", "mutual_recognition")))) lab_of(q(c("procurement_recognition", "mutual_recognition"))$unit_id) else "none"),
+      sprintf("- [Inference] **Where third-country circumvention safeguards are genuinely required:** %s.", if (nrow(q("anti_circumvention"))) paste0(lab_of(q("anti_circumvention")$unit_id), "; elsewhere they would add cost without security") else "none"),
+      sprintf("- [Inference] **Where unrestricted global sourcing is acceptable:** %s.", if (nrow(q("open_sourcing"))) lab_of(q("open_sourcing")$unit_id) else "none identified"),
+      "", if (nrow(tt)) pm_md_table(transform(tt, unit_label = d$node_label[match(tt$unit_id, d$unit_id)], action_type = gsub("_", " ", tt$action_type)),
+                                    c("rec_id", "direction", "unit_label", "action_type", "action"), c("ID", "Direction", "Unit", "Action type", "Action")) else "_No trade action passes the rules._", "")
   ef <- pair_ev[pair_ev$instrument %in% "tariff", , drop = FALSE]
   if (length(pm_ev_line(ev, ef$evidence_id))) add("- [External] The tariff measures in force or in dispute between the two, the baseline any binding of the nodes above works from:", pm_ev_line(ev, ef$evidence_id), "")
 
@@ -245,10 +266,12 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
         sprintf("- [Inference] Roles: %s brings %s; %s brings %s (AIB strategic roles).", A, third$a_contribution[1], B, third$b_contribution[1]), "",
         pm_md_table(third, c("rec_id", "recipient", "technology", "stage", "compact", "recipient_choice", "recipient_anchor", "a_need", "b_need", "tools", "evidence_quality"),
                     c("ID", "Recipient", "Technology", "Stage", "Compact", "Recipient choice", "Recipient anchor", paste(A, "interest"), paste(B, "interest"), "Tools", "Evidence")), "")
-  } else add("_No development-partnership table was supplied; run scripts/93 and pass --devpart._", "")
-  add(pm_ev_line(ev, ev$evidence_id[vapply(strsplit(ev$countries, "\\|"), function(z) all(c(a, b) %in% z) && length(z) > 2, logical(1))]), "")
+  } else add("- [Data] No recipient step has both countries as donors in the development-partnership pairs (scripts/93).", "")
+  add(s1_lines(ev$evidence_id[vapply(strsplit(ev$countries, "\\|"), function(z) all(c(a, b) %in% z) && length(z) > 2, logical(1))]), "")
 
   # ---- 7. Compacts ---------------------------------------------------------------------------------------
+  node_lab <- function(id) { v <- d$node_label[match(id, d$unit_id)]; ifelse(is.na(v), id, tolower(v)) }
+  role_txt <- function(role, lead) if (is.na(role) || !nzchar(role)) "holds no compact role" else if (is.na(lead) || !nzchar(lead)) role else sprintf("%s (lead node %s)", role, lead)
   sel <- cc[cc$recommended, ]
   add("## 7. Recommended Sectoral Compacts", "",
       sprintf("[Inference] %d compacts pass (rule: at least one joint bet, at least two active nodes and both countries holding an AIB compact role; or, labelled **evidence-led**, an existing bilateral pipeline or at least %d bilateral project items where OSI measures a need but cannot see the partner's capability). The hypothesis test for every AIB compact:", nrow(sel), cfg$evidence_led_min_items), "",
@@ -274,9 +297,11 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
           sprintf("- [Recommendation] Use %s to tie the announced projects to the nodes where OSI measures need, and verify the partner capability that trade data cannot see (ownership abroad, domestic sales, heavy components) before any public finance is added.", if (nzchar(s$mechanisms)) s$mechanisms else "the existing bilateral channels"),
         "", "**Why this pair?**",
         if (nrow(act)) sprintf("- [Inference] %s", paste(sprintf("%s: %s (%s).", act$node_label, act$state_label, act$state_reason), collapse = " ")) else "- [Inference] No OSI-observed complementarity; see the evidence below.",
-        sprintf("- [Data] AIB compact roles: %s %s (lead node %s); %s %s (lead node %s).", A, s$role_a, s$lead_node_a, B, s$role_b, s$lead_node_b),
+        sprintf("- [Data] AIB compact roles: %s %s; %s %s.", A, role_txt(s$role_a, node_lab(s$lead_node_a)), B, role_txt(s$role_b, node_lab(s$lead_node_b))),
         "", "**Supply-chain architecture**", "",
-        pm_md_table(ar, c("stage", "unit", "basis", "position_a", "position_b", "relationship_state", "treatment", "main_instrument"),
+        pm_md_table(transform(ar, unit = ifelse(is.na(ar$unit), "-", d$node_label[match(ar$unit, d$unit_id)]), relationship_state = gsub("_", " ", ar$relationship_state),
+                              main_instrument = gsub("_", " ", ar$main_instrument)),
+                    c("stage", "unit", "basis", "position_a", "position_b", "relationship_state", "treatment", "main_instrument"),
                     c("Stage", "Unit", "Basis", paste(A, "position"), paste(B, "position"), "Desired bilateral arrangement", "Treatment", "Instrument")), "",
         "**Reciprocal bargain**",
         sprintf("- %s provides: %s.", A, paste(unique(c(if (any(act$supplier %in% a)) sprintf("supply of %s", paste(tolower(act$node_label[act$supplier %in% a]), collapse = ", ")),
@@ -294,7 +319,7 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
          if (nrow(bp)) sprintf("- [Data] Better placed than this pair (largest trusted supplier once China is removed, AIB): %s. The bilateral compact should not try to replace them there.",
                                paste(sprintf("%s at %s", bp$largest_trusted_supplier, tolower(bp$node_label)), collapse = "; ")) else character()},
         "", "**Policy instruments (minimum necessary)**",
-        if (nrow(act)) sprintf("- [Recommendation] %s", paste(unique(sprintf("%s for %s", act$main_instrument, tolower(act$node_label))), collapse = "; ")) else "- [Recommendation] Use the existing investment vehicle; no new instrument.",
+        if (nrow(act[!is.na(act$main_instrument), ])) sprintf("- [Recommendation] %s", paste(unique(sprintf("%s for %s", gsub("_", " ", act$main_instrument[!is.na(act$main_instrument)]), tolower(act$node_label[!is.na(act$main_instrument)]))), collapse = "; ")) else "- [Recommendation] Use the existing investment vehicle; no new instrument.",
         "", "**Priority transactions**",
         if (nrow(dl)) sprintf("- [Recommendation] %s (%s).", dl$deal, dl$rec_id) else "- See Section 9; no OSI-ranked deal in this compact.",
         "", "**Success by 2030**",
@@ -311,7 +336,7 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
         "- Projects proceed on commercial terms without public support: stop the support (it is not additional).", "")
     eids <- unique(unlist(strsplit(paste(x$evidence_id_list, collapse = ";"), ";")))
     eids <- c(eids, ev$evidence_id[ev$compact %in% cmid & vapply(strsplit(ev$countries, "\\|"), function(z) all(c(a, b) %in% z), logical(1))])
-    if (length(unique(eids[nzchar(eids)]))) add("**Evidence (external)**", pm_ev_line(ev, unique(eids)), "")
+    if (length(unique(eids[nzchar(eids)]))) add("**Evidence (external)**", s1_lines(unique(eids)), "")
   }
 
   # ---- 8. MEA --------------------------------------------------------------------------------------------
@@ -328,7 +353,7 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
         sprintf("- **Scope:** %s; no other sectors.", paste(sc, collapse = "; ")),
         {sa <- unique(tolower(d$node_label[d$unit_type == "node" & d$supplier %in% a & d$priority_tier %in% 1:2 & d$compact %in% sel$strategic_compact_id]))
          sb <- unique(tolower(d$node_label[d$unit_type == "node" & d$supplier %in% b & d$priority_tier %in% 1:2 & d$compact %in% sel$strategic_compact_id]))
-         lst <- function(v) if (length(v)) paste(utils::head(v, 4), collapse = ", ") else "none at the top two tiers"
+         lst <- function(v) if (length(v)) paste(utils::head(v, 4), collapse = ", ") else "none inside the recommended compacts"
          sprintf("- **Reciprocal commitments:** %s commits demand certainty (procurement recognition and anchor offtake) and market-access predictability for the nodes %s supplies (%s); %s commits the same for the nodes %s supplies (%s). Each commits public finance for the compact nodes, at home, in the partner or with named third-country hosts.",
                  A, B, lst(sb), B, A, lst(sa))},
         sprintf("- **Compact portfolio:** %s.", paste(sprintf("%s (%s)", sc, sel$compact_fit), collapse = "; ")),
@@ -341,7 +366,7 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
         "- **Milestones:** the 12-month milestones of the deal pipeline (Section 9).",
         "- **KPI dashboard:** per compact node, the coercive share of each country's supply, the bilateral import share, offtake signed (volume), capacity at FID and operating, and public money committed vs private.",
         sprintf("- **Review cycle:** every %d months, with the OSI tables re-run on new trade data.", cfg$mea$review_cycle_months),
-        sprintf("- **Sunset / exit:** each compact carries the exit conditions in Section 7; the framework expires with the investment vehicle (%s) unless renewed on evidence.", if (nrow(hm) && !is.na(hm$sunset)) hm$sunset else "its own sunset"), "")
+        sprintf("- **Sunset / exit:** each compact carries the exit conditions in Section 7; the framework expires with the investment vehicle (%s) unless renewed on evidence.", if (nrow(hm) && !is.na(hm$sunset) && nzchar(hm$sunset)) hm$sunset else "its own sunset"), "")
   }
 
   # ---- 9. Deals ------------------------------------------------------------------------------------------
@@ -364,10 +389,12 @@ pm_memo_sections <- function(d, prof, cc, arch, trade_tbl, inv_tbl, third, deals
       sprintf("- %s has no listed trade position (under 1%% of world supply) at nodes where %s has material demand: %s. Trade data miss capability that is owned abroad or sold at home, so these nodes cannot show complementarity even where corporate evidence suggests it.",
               Br, Ar, paste(tolower(d$node_label[which(d$unit_type == "node" & d$world_share_b < 0.01 & d$need_band_a %in% c("high", "demand"))]), collapse = ", ")),
       {cf <- d[which(d$unit_type == "node" & d$relationship_state == "low_strategic_case"), ]
-       mf <- pair_ev[pair_ev$item_type == "market_fact" & pair_ev$aib_node %in% cf$node_id & grepl("deficit|shortage|lead time|gap|only|sole", ev$claim, ignore.case = TRUE), ]
+       mf <- pair_ev[pair_ev$item_type == "market_fact" & pair_ev$aib_node %in% cf$node_id & grepl("deficit|shortage|lead time|gap|only|sole", pair_ev$claim, ignore.case = TRUE), ]
        if (nrow(mf)) sprintf("- OSI reads %s as low strategic case, but the evidence layer records a capacity problem the annual trade data cannot see: %s %s Treat it as an emerging bottleneck to re-test, not a settled open-market node.",
                              mf$aib_node, pm_ev_tag(mf), pm_claim_clean(mf$claim)) else character()},
-      sprintf("- Low-evidence units among the active states: %s.", { z <- d$unit_id[d$low_evidence & d$relationship_state %in% PM_ACTIVE_STATES]; if (length(z)) paste(z, collapse = ", ") else "none" }),
+      sprintf("- Low-evidence units among the active states: %s.", { z <- d$node_label[d$low_evidence & d$relationship_state %in% PM_ACTIVE_STATES & !d$node_grain_covered %in% TRUE]; if (length(z)) paste(tolower(z), collapse = ", ") else "none" }),
+      {bs <- cfg$trade_blind_spots; z <- intersect(names(bs), d$unit_id)
+       if (length(z)) sprintf("- Trade data understate concentration at %s: %s", tolower(d$node_label[match(z, d$unit_id)]), unlist(bs[z])) else character()},
       if (nrow(jb_off)) sprintf("- Fuel-trade lanes reach tier 1 (%s; buyer: %s): real energy-security lanes, but outside the electro-industrial compacts and with no market failure beyond the supply concentration the engine measures.",
                                 paste(unique(tolower(jb_off$node_label)), collapse = "; "), paste(unique(ifelse(is.na(jb_off$buyer), "both", nm(jb_off$buyer))), collapse = " and ")) else character(),
       "")

@@ -17,6 +17,15 @@ running the rules over all 45 pairs of the United States, Japan, Korea, Australi
 Germany, France, India and Mexico and reading the tier-1 (joint-bet) units, with weight on two-way supply rather
 than the shared mineral-refining exposure every pair has.
 
+Added 2026-11-13 (branch `feat/partnership-memos-compacts`, on top of the six pairs):
+
+- three more pairs, United States–Canada (`USA_CAN`), United States–India (`USA_IND`) and **United States–European
+  Union** (`USA_EUU`), the first memo with a **bloc** on one side (see "Blocs");
+- US–Korea and US–Australia re-run on a refreshed evidence layer (cited partial items re-checked against primary
+  sources, developments to 2026-11-13 added);
+- a second memo type, the **Compact memo**, for the Solar Manufacturing compact (`SC-SOLAR`), the Battery Materials &
+  Cells compact (`SC-BATTERIES`) and a cross-cutting **Critical Minerals** compact (`SC-CRITMIN`) (see "Compact memos").
+
 ## Where it sits in the architecture
 
 Branch `feat/partnership-memos` (worktree `osi-worktrees/pmemo`), cut from `feat/country-memo-aib` (country briefs
@@ -190,6 +199,8 @@ recommendation lacks one.
   verification, research_pass, basis.
 - `bilateral_mechanisms.csv`: the MEA inputs, one row per mechanism and pair.
 - `institutions.csv`: public institutions by country and instrument family (responsible institutions in the deal pipeline).
+- `plurilateral_mechanisms.csv`: plurilateral bodies and bundles of bilateral MOUs covering a compact (same columns
+  as `bilateral_mechanisms.csv`; read by the Compact memos only, so pair verdicts do not change).
 - `data/reference/economic_security_agreements.csv` (existing) supplies plurilateral memberships.
 
 The memo is rendered from these files; nothing is scraped at render time. The vintage (access date, verification
@@ -264,8 +275,133 @@ Not yet done: the briefs' independent-verifier step. The disclosure says so, and
 Any pair of the 219 economies in the strategic-position table works. Node-level profiles need both countries in the
 AIB assessed set (the demand scope plus major non-allied suppliers); otherwise their nodes read "unlisted".
 
+## Rule changes of 2026-11-13 (after an independent review of the eight new memos)
+
+A review of the drafts found contradictions that traced to a few rules. These changes apply to every memo; the six
+pairs published on 2026-11-06 (US-Japan, US-Germany, Japan-Korea, Korea-Canada, Korea-Australia) were not
+re-published and change when re-run.
+
+- **Node grain wins.** A technology x stage cell whose products are assessed as AIB nodes is context only
+  (`node_grain_covered`, tier 6 "context (node grain)"): its state no longer becomes a joint bet, trade action, deal
+  or non-priority, and it is left out of the Section 3 map. Before, a cell (say Electric Vehicles components) and its
+  nodes (separators, motors) could get opposite verdicts on the same products. Cells without nodes (fuel trade) and
+  Deployment cells are unchanged.
+- **A material net importer with high need is never a node supplier** (nor the strong side of a chain
+  specialisation): the US is no longer cast as Korea's rare-earth-oxide or India's Li-ion supplier.
+- **Emerging bottleneck** no longer fires where one of the pair is itself the largest world supplier.
+- **Commitments and private actors read node-specific evidence only** (items naming the node, or a node of the
+  cell), so a tariff, a trade-remedy order or another mineral's mine no longer makes a unit "already committed".
+- **Trade agreement in force**: a tariff-risk action reads "hold exports to the trade agreement's terms" rather than
+  "bind market access".
+- **Trade blind spots** (config `trade_blind_spots`): uranium conversion and enrichment, and gallium, germanium and
+  indium, are never left open to global sourcing or called adequate; Section 11 says why.
+- **Joint-bet table**: bundles inside the recommended compacts come first; shared-vulnerability contributions name
+  the coercive supplier instead of assuming China; third-country hosts are attached only to joint deals.
+- Text guards: no NA roles or instruments, labels instead of unit ids, empty lists say "none", process notes such as
+  "not found" or "inferred" are dropped from claims.
+
+Compact memos additionally: a member is never both a supplier and a buyer at a node; lanes without 2024 trade are not
+shown; every compact bet gets a deal; bets follow the Section 3 order; a node whose AIB mapping note is a caveat
+(mixed HS codes, other uses) carries a dagger.
+
+Known remaining limits from the review: evidence is matched by party and node, not by direction (a US reactor sale
+to Poland can appear beside an EU-to-US lane); duplicate evidence items describing one event are not merged;
+transit trade (cobalt through Namibia) counts as demand; the MEA rule can pick a narrow host (US-India: the DFC
+investment agreement) where a broader framework is only announced.
+
+## Blocs (United States–European Union)
+
+A pair side can be a bloc: config `blocs` lists its members (`EUU`: the 27 EU member states) and the pair names the
+bloc code (`b: EUU`). `scripts/34` then builds the bloc's inputs from its members (`R/partnerships/pm_bloc.R`, pure)
+before the ordinary rules run; nothing upstream is recomputed.
+
+| Input | Bloc treatment |
+|---|---|
+| Node trade (AIB division of labour) | Members merged in the node flows and **intra-EU trade dropped**. Every economy's world export share, allied-demand share and net-import share is re-based on world trade without intra-EU trade, so the other side's shares rise a little (US wind blades 8.2% → 9.8%). Production shares add up across members; RCA is the export-weighted mean of members' RCAs; anchor and specialist flags follow the AIB role rules (`config/aib_strategic_layer.yml` `roles`) on the re-based shares. The member with the largest share is named (`lead_member`). |
+| Cells (six-stage strategic position) | Competitive Position, `cp_high` and contender status are the **strongest member's** (named); supply-chain need is the members' need weighted by their **extra-EU imports**; deployment need and policy priority are weighted by the members' import size; import exposure (coercive and China share, top supplier, HHI) is recomputed from extra-EU imports; the engine's choice, evidence and posture fields are the lead importer's; the partners the members name are pooled by weight. |
+| Bilateral trade, development partnerships, compact and strategic roles, investment pairs, AIB hosts | Members recoded to the bloc; intra-bloc pairs dropped; the most relevant member's compact role is shown as "role (via member)". |
+| Evidence | An item naming a member also names the bloc, so member-state facts (Westinghouse in Poland) count for the pair. Mechanisms are **not** recoded: a US–Germany channel is not a US–EU channel. |
+
+The memo prints a method note under the tags line and names the member behind each EU position in brackets. A
+bloc memo can set `evidence_list_cap` (US–EU: 8) so the member-state items do not crowd Sections 1, 6 and 7 past
+the page limit; the rest stay in `policy_evidence.csv`.
+
+## Compact memos
+
+A Compact memo asks the memo's question for a group: across the allied economies with a stake in one Strategic
+Sectoral Compact, where does coordinated integration create strategic value, through which instruments, and where
+should the compact stay out? Code: `R/partnerships/pm_compact.R` (rules) and `pm_compact_memo.R` (text), pure;
+`scripts/35_build_compact_memo.R` (IO); config `compacts` and `compact_memo` in `config/partnership_memos.yml`.
+Print, render checks and publication are shared with the pair memos (`scripts/utils/partnership_memo_print.R`).
+
+```
+Rscript scripts/35_build_compact_memo.R --compact SC-BATTERIES --processed-dir <stages>/data/processed \
+  --devpart <memos>/data/processed/development_partnerships/development_partnerships.rds [--publish-dir dashboard/public/data/partnerships]
+```
+
+Outputs in `output/compacts/<id>/`: `compact_memo.{md,pdf,docx,ast.json,print.html}`, `compact_members.csv`,
+`compact_member_profiles.csv`, `compact_nodes.csv`, `compact_lanes.csv`, `trade_priorities.csv`,
+`investment_priorities.csv`, `third_country_opportunities.csv`, `deal_pipeline.csv`, `non_priorities.csv`,
+`compact_mechanisms.csv`, `compact_evidence.csv`, `evidence_register.csv`, `compact_summary.json`. Published files
+are `memo-<id>.<h8>.*` with an entry under `compacts` in `manifest.json`.
+
+**Scope.** An AIB compact (`source_compacts`) takes its nodes and steps from the scripts/33 spine. A cross-cutting
+compact lists its nodes and steps in config; each node keeps its AIB compact as `source_compact`. `SC-CRITMIN`
+(Critical Minerals) takes the 16 mineral nodes of the battery, magnet, grid, semiconductor and industry compacts in
+four steps (ores and concentrates; refined chemicals and oxides; metals and engineered materials; recycling);
+uranium, polysilicon, electrical steel and manufactured parts stay in their own compacts.
+
+**Members.** Allied economies (AIB `allied`) with a presence (>= 2% of world supply, or an AIB anchor or specialist
+position) or material demand (>= 2% of allied net imports, or >= 5% of allied demand with net imports) at any
+compact node, ranked by demand-weighted presence plus net imports. Core members are the AIB core countries of the
+compact; for a cross-cutting compact, the `n_core` most relevant members. Each member's node profile is the pair
+memo's own (`pm_node_profile()`: position band, inherited need, demand).
+
+**Node states, first match wins:**
+
+1. **not_assessed**: no member has a measured position or need.
+2. **member supply / capacity-constrained trusted supply**: a capable member supplier (strong, or present and named
+   by the AIB as largest trusted supplier or ranked host with >= 2%) **outranks** a member buyer (high need, or
+   material demand where a chokepoint or allied shortage exists); capacity-constrained when the AIB class is BUILD.
+   Treatment COORDINATE / BUILD.
+3. **shared vulnerability**: no member supplier outranks a buyer, at least two members need the node (one high), and
+   a coercive supplier holds >= 50% of world supply (or the buyers import >= 40% from coercive suppliers). BUILD.
+4. **member competition**: two or more members are strong and no other member needs more. MANAGE SPECIALIZATION
+   where more trusted capacity is needed, else LOW INTERVENTION. Strength alone is never complementarity.
+5. **low strategic case**, with reasons.
+
+Constraint type and instrument reuse the pair functions through each state's pair analogue (member supply →
+supplier/needer). **Lanes** are member supplier → member buyer pairs at the active nodes, with the 2024 node flow and
+the supplier's share of the buyer's imports. Fields as for pairs, read across members: importance = the highest
+buyer need score; urgency = chokepoint share, AIB residual gap, an in-force export control, high deployment need;
+tractability = mean of the top suppliers' and buyers' policy priority and a mechanism score; buyer protection is the
+buyers' demand-weighted protection priority. **Additionality differs:** in a compact one committed project is
+partial coverage (0.5; announced 0.25), not closure, and the market "already works" when member buyers take >= 30% of
+their imports of the node from member suppliers. Tier 1 **compact bet**: active, importance >= 0.67, evidence >=
+0.5, additionality not low.
+
+**Governance (the MEA analogue).** Mechanisms covering the compact with at least two member parties are read from
+`plurilateral_mechanisms.csv` and the two-party rows of `bilateral_mechanisms.csv`. A bundle of separate bilateral
+MOUs (`bilateral_bundle`) is never a plurilateral body. For an AIB compact with critical-mineral nodes, mechanisms of
+the minerals compact also count, flagged `partial_scope`; for the minerals compact, a mechanism scoped only to a
+source compact counts when its name matches `mechanism_name_pattern`. Rule: **existing** if an active plurilateral
+host (plurilateral, framework, finance cooperation or investment vehicle) has a pipeline, finance, KPIs and review
+and includes >= 50% of the core; **upgrade** if such a host has the core coverage (ranked by core coverage, whole-chain
+scope, breadth, finance, pipeline); **network** if none, but >= 2 active bilateral host-type mechanisms with finance or
+a pipeline exist; **new compact framework** otherwise, built on the closest plurilateral body where one exists.
+
+**Results at this vintage.** Solar: 6 nodes, 24 members, 3 compact bets (wafers, modules, cover glass); a new compact
+framework built on the Quad clean-energy supply-chain initiative. Batteries: 14 nodes, 42 members, 8 compact bets
+led by synthetic graphite, cobalt chemicals and natural graphite; upgrade MSP/FORGE for the mineral steps with a
+working group for the manufacturing steps. Critical minerals: 16 nodes, 43 members, 5 compact bets led by synthetic
+graphite, rare-earth oxides and cobalt chemicals; upgrade MSP/FORGE.
+
 ## Limitations
 
+- **Bloc aggregation is an approximation.** The EU's cell-level position is its best member's, not a recomputed EU
+  engine score, and its need is an import-weighted mean; node shares are exact on the merged flows.
+- **Compact membership is read from trade and demand**, not from policy alignment or politics; non-member trusted
+  suppliers are flagged ("better placed outside the membership") but not assessed as members.
 - **Trade cannot see ownership.** Japanese capability held abroad (Hitachi Energy's transformer plants in Europe and
   the US) or sold at home (heavy nuclear forgings, domestic transformers) is invisible at node level. Nuclear and grid
   therefore rely on external evidence.

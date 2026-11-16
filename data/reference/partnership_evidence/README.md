@@ -10,6 +10,28 @@ from these files; nothing is fetched at render time.
 - `bilateral_mechanisms.csv`: the inputs to the Master Energy Agreement assessment (scope, pipeline, finance, KPIs,
   review, reciprocity, sunset), with the evidence ids behind each.
 - `institutions.csv`: public institutions by country and instrument family.
+- `plurilateral_mechanisms.csv`: plurilateral bodies (and bundles of bilateral MOUs, type `bilateral_bundle`) that
+  cover a compact; same columns as `bilateral_mechanisms.csv`; read by the Compact memos only.
+
+Vintage 2026-11-13 (three pairs, two refreshes, three compacts; one research pass each, by evidence-id prefix):
+US-Canada `USCA-` 28 (25 verified, 3 partial), US-India `USIN-` 38 (15 verified, 13 partial, 10 unverified),
+US-EU `USEU-` 30 (all verified; EU-level items carry `USA|EUU`, member-state items the member's code), Solar compact
+`CSOL-` 40 (22 verified, 18 partial), Batteries compact `CBAT-` 30 (14 verified, 16 partial; CBAT-13 dropped as a
+duplicate of USEU-20), Critical Minerals compact `CCRM-` 38 (17 verified, 21 partial). The US-Korea and US-Australia
+refreshes re-checked the partial items those memos cite against primary sources (25 rows updated, mostly to verified,
+including two UJ- items) and added 4 `USKR-` and 5 `USAU-` items for developments to 2026-11-13. The shared
+web-search quota ran out early in the pass, so most items come from directly fetched official pages (hence the high
+verified share) and some topics are thinner than intended. New files and rows: `plurilateral_mechanisms.csv` (20
+compact-level mechanisms, plus the Quad and US-Japan-Korea rows copied from the bilateral file), 20 bilateral
+mechanisms (two unilateral tariff "mechanisms" dropped), institutions for India and the EU (`EUU`) from the research,
+and 49 institutional-reference rows for frequent compact members (POL, IDN, MYS, VNM, THA, TWN, FRA, GBR, CHL, COD,
+SWE, FIN, ESP, ITA, NLD, MEX, HUN, BRA, SGP, NOR, PER) added from general knowledge and marked so; check their names
+before citation. Known open points at this vintage: China's extension (9 Nov 2026, to 10 Jan 2027) covers only the
+October 2025 export-control package; the separate suspension of the gallium/germanium/antimony ban on the US runs to
+27 Nov 2026 with no extension reported; the outcome of the Section 232 processed-critical-minerals deadline (13 Jul
+2026) and the refined-copper duty; company rates in the US solar AD/CVD cases on India, Indonesia and Laos beyond those
+listed; the products covered by the US Section 338 duties and import bans on Canada (annexes are images); 2026
+progress against the EU's US$750bn energy and US$600bn investment intents; the EU Battery Booster.
 
 Vintage 2026-11-06, six further pairs (one research pass each, by evidence-id prefix): US-Korea `USKR-` 33 items
 (8 verified, 25 partial), US-Germany `USDE-` 27 (3 verified, 24 partial; EU-level trade instruments carry

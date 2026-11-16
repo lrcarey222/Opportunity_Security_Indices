@@ -102,8 +102,8 @@ pm_classify_dyad <- function(d, cfg) {
   pres <- cfg$thresholds$node$presence_share
   share_ok_a <- d$unit_type == "cell" | (!is.na(d$world_share_a) & d$world_share_a >= pres)
   share_ok_b <- d$unit_type == "cell" | (!is.na(d$world_share_b) & d$world_share_b >= pres)
-  cap_a <- pa == "strong" | (pa == "moderate" & d$a_named_by_b & share_ok_a)
-  cap_b <- pb == "strong" | (pb == "moderate" & d$b_named_by_a & share_ok_b)
+  cap_a <- (pa == "strong" | (pa == "moderate" & d$a_named_by_b & share_ok_a)) & !(d$unit_type == "node" & na %in% "high")
+  cap_b <- (pb == "strong" | (pb == "moderate" & d$b_named_by_a & share_ok_b)) & !(d$unit_type == "node" & nb %in% "high")
   sup_a <- cap_a & rk(pa) > rk(pb)
   sup_b <- cap_b & rk(pb) > rk(pa)
   state <- character(nrow(d)); supplier <- rep(NA_character_, nrow(d)); reason <- character(nrow(d))
@@ -145,8 +145,8 @@ pm_classify_dyad <- function(d, cfg) {
       }
       next
     }
-    ca <- pa[i] == "strong" && d$b_strong_elsewhere_in_chain[i] && d$chain_stressed[i]
-    cb <- pb[i] == "strong" && d$a_strong_elsewhere_in_chain[i] && d$chain_stressed[i]
+    ca <- pa[i] == "strong" && !(d$unit_type[i] == "node" && na[i] %in% "high") && d$b_strong_elsewhere_in_chain[i] && d$chain_stressed[i]
+    cb <- pb[i] == "strong" && !(d$unit_type[i] == "node" && nb[i] %in% "high") && d$a_strong_elsewhere_in_chain[i] && d$chain_stressed[i]
     if (ca || cb) {
       state[i] <- "complementary_specialization"
       supplier[i] <- if (ca) a[i] else b[i]
