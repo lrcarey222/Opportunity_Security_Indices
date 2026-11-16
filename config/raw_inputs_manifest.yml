@@ -1350,3 +1350,26 @@ inputs:
     data/raw so far; copy data/raw/ember/ to the SharePoint raw folder.
   required_by:
   - scripts/95_build_deployment_need.R
+- id: ember_china_cleantech_exports
+  path: ember/clean_tech_exports_full_release_monthly_lower.csv
+  source_type: manual
+  source_name: Ember, China Cleantech Export Data (monthly China customs exports by destination and
+    commodity code)
+  url: https://files.ember-energy.org/public-downloads/customs/outputs/clean_tech_exports_full_release_monthly_lower.csv
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: retrieved 2026-11-16 (server Last-Modified 2026-09-30 14:04 GMT); 2018-01 to 2026-08, 237
+    destinations and 13 regions, 31 codes; SHA-256
+    402b973fa0e88662e2ff50192f59bc4dc0943b662a421196d5b551dca329f7dd
+  licence: CC BY 4.0 (https://ember-energy.org/data/china-cleantech-export-data/); cite Ember wherever the
+    figures are shown
+  staged_from: sharepoint
+  notes: Direct download linked from https://ember-energy.org/data/china-cleantech-export-data/ (no form or
+    account); scripts/36 downloads it when missing. Staged only in data/raw so far; copy it to the
+    SharePoint raw folder. One row per area x month x commodity code, Amount (USD)
+    and a 12-month rolling sum. Codes are full HS6 headings or Chinese 8-digit sub-headings (PV inverters
+    85044030, wind nacelles 85030030, wafers 38180015/19), which cover only part of their HS6 heading.
+    Categories Solar PV, Batteries, EVs, Wind, Grid, Heating and cooling (AC units and heat pumps sit
+    outside the basket). Origin is China only.
+  required_by:
+  - scripts/36_build_ember_china_exports.R
