@@ -96,6 +96,39 @@ inputs:
   required_by:
   - scripts/88_export_country_data.R
   - scripts/99_pull_comtrade_monthly_core.R
+- id: comtrade_monthly_dyads
+  path: comtrade_monthly_dyads.csv.gz
+  source_type: api
+  source_name: UN Comtrade (monthly HS6 basket imports and exports by partner, every monthly reporter)
+  url: https://comtradeplus.un.org/
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: each reporter's latest 12 calendar months in Comtrade's monthly availability listing at pull
+    time (first pull 2026-11-16 UTC; newest month 2026-09; 92 reporters, windows end 2025-12 to 2026-09;
+    3.86M rows)
+  staged_from: pipeline
+  notes: Written by scripts/37_pull_comtrade_monthly_dyads.R (chunked, resumable; requires
+    COMTRADE_API_KEY; 76 calls). Columns reporter_iso, partner_iso, flow_direction, period (YYYYMM),
+    cmd_code, primary_value. Reporters whose latest month trails the newest by more than 9 months are
+    left out - China (no monthly data since 2024-12), Ukraine, Kuwait and others - as are Vietnam, UAE,
+    Taiwan, Austria and Russia, which publish none. Read by scripts/38_build_current_import_exposure.R.
+  required_by:
+  - scripts/37_pull_comtrade_monthly_dyads.R
+  - scripts/38_build_current_import_exposure.R
+- id: comtrade_monthly_dyads_windows
+  path: comtrade_monthly_dyads_windows.csv
+  source_type: generated
+  source_name: Per-reporter windows of the monthly dyad pull (reporter_iso, window_start, window_end,
+    months_listed)
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: written with comtrade_monthly_dyads.csv.gz
+  staged_from: pipeline
+  notes: Written by scripts/37_pull_comtrade_monthly_dyads.R; scripts/38 reads window_start for the
+    current exposure rows.
+  required_by:
+  - scripts/37_pull_comtrade_monthly_dyads.R
+  - scripts/38_build_current_import_exposure.R
 - id: comtrade_total_export
   path: comtrade_total_export.csv
   source_type: api
