@@ -139,11 +139,31 @@ export interface DeploymentCases {
 }
 
 /** The deployment case block of a Deployment detail (R posture_export.R need_block), or null where absent. */
+/**
+ * One case from the compact detail string (R posture_case_string): "82" (percentile x 100), "66*" (not material),
+ * "na" not assessed, "nm" not measured for the technology, "x" not applicable; null where empty or unknown.
+ */
+export function parseCaseToken(t: string): DeploymentCase | null {
+  if (t === 'na') return { value: null, material: null, status: 'not_assessed' };
+  if (t === 'nm') return { value: null, material: null, status: 'not_measured' };
+  if (t === 'x') return { value: null, material: null, status: 'not_applicable' };
+  const m = /^(\d{1,3})(\*)?$/.exec(t);
+  return m ? { value: Number(m[1]) / 100, material: m[2] !== '*', status: 'assessed' } : null;
+}
+
 function deploymentCases(r: Record<string, unknown>): DeploymentCases | null {
+  // the compact string (security;climate;demand;integration) or, from older exports and fixtures, an object
+  const compact = str(r.dn_cases);
   const raw = isObj(r.dn_cases) ? r.dn_cases : null;
   const code = parseDeployCase(str(r.deploy_case));
-  if (!raw && code === null) return null;
+  if (!raw && compact === null && code === null) return null;
   const byCase: Partial<Record<DeployCaseId, DeploymentCase>> = {};
+  if (compact !== null) {
+    compact.split(';').forEach((t, k) => {
+      const c = parseCaseToken(t);
+      if (c && DEPLOY_CASE_IDS[k]) byCase[DEPLOY_CASE_IDS[k]] = c;
+    });
+  }
   for (const id of DEPLOY_CASE_IDS) {
     const c = raw && isObj(raw[id]) ? (raw[id] as Record<string, unknown>) : null;
     const st = c ? str(c.status) : null;
@@ -156,7 +176,7 @@ function deploymentCases(r: Record<string, unknown>): DeploymentCases | null {
   const nAssessed = st.filter((c) => c?.status === 'assessed').length;
   return {
     code,
-    basis: str(r.dn_case_basis) ?? (raw ? (nAssessed >= 2 ? 'multi_case' : nAssessed === 1 ? 'single_case' : null) : null),
+    basis: str(r.dn_case_basis) ?? (raw || compact !== null ? (nAssessed >= 2 ? 'multi_case' : nAssessed === 1 ? 'single_case' : null) : null),
     unassessed: un
       ? (un.split(';').filter((x) => (DEPLOY_CASE_IDS as readonly string[]).includes(x)) as DeployCaseId[])
       : DEPLOY_CASE_IDS.filter((id) => byCase[id]?.status === 'not_assessed'),

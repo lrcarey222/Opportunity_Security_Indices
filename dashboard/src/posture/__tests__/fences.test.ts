@@ -12,6 +12,7 @@ import { checkPostureDetail, decodeCore } from '../contract.ts';
 import { countryCells } from '../derive.ts';
 import { byPositionOrder, deploymentVars, familyWords, fenceGroups, fenceReason, pathwayWords, positionVars, prizeVars, supplyNeedVars, topDeploymentFamily, tradeMomentumWords, unitCountWords } from '../fences.ts';
 import { FENCE_VERBS, nodeFence, verbOf } from '../grammar.ts';
+import { parseCaseToken } from '../detail.ts';
 import { fixtureCore, fixtureDetail, withCell } from './fixture.ts';
 
 const core = decodeCore(fixtureCore());
@@ -272,5 +273,17 @@ describe('the kind of deployment Watch (cells.wk)', () => {
     const odd = doc();
     (odd.cells as Record<string, unknown[]>).wk = (odd.cells as Record<string, unknown[]>).p.map((_, j) => (j === at(odd, 'Solar', 4) ? 'fading' : null));
     expect(() => decodeCore(odd)).toThrow(/an unknown watch kind/);
+  });
+});
+
+describe('the compact deployment case string (R posture_case_string)', () => {
+  it('reads percentiles, immaterial cases and the three statuses; rejects junk', () => {
+    expect(parseCaseToken('82')).toEqual({ value: 0.82, material: true, status: 'assessed' });
+    expect(parseCaseToken('66*')).toEqual({ value: 0.66, material: false, status: 'assessed' });
+    expect(parseCaseToken('na')?.status).toBe('not_assessed');
+    expect(parseCaseToken('nm')?.status).toBe('not_measured');
+    expect(parseCaseToken('x')?.status).toBe('not_applicable');
+    expect(parseCaseToken('')).toBeNull();
+    expect(parseCaseToken('high')).toBeNull();
   });
 });
