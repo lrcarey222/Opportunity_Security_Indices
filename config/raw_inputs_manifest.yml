@@ -1406,3 +1406,4 @@ inputs:
     outside the basket). Origin is China only.
   required_by:
   - scripts/36_build_ember_china_exports.R
+  - scripts/38_build_current_import_exposure.R

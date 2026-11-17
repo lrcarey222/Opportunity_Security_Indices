@@ -105,7 +105,15 @@ annual <- data.table::fread(
   colClasses = list(character = c("reporter_iso", "partner_iso", "flow_direction", "cmd_code")), na.strings = c("", "NA"))
 annual <- as.data.frame(annual[annual$period == base_year, ])
 dyads <- rbind(annual, t12m[c("reporter_iso", "partner_iso", "period", "flow_direction", "cmd_code", "primary_value")])
-rm(annual)
+# Ember fill inputs (base-year exports at HS6): China's, and those of the exporters that also report monthly.
+annual_x <- annual[annual$flow_direction == "export", c("reporter_iso", "partner_iso", "cmd_code", "primary_value")]
+annual_x$hs6 <- formatC(as.integer(annual_x$cmd_code), width = 6, flag = "0")
+monthly_exporters <- setdiff(unique(t12m$reporter_iso[t12m$flow_direction == "export"]), "CHN")
+china_x24 <- stats::aggregate(primary_value ~ partner_iso + hs6, data = annual_x[annual_x$reporter_iso == "CHN", ], FUN = sum)
+names(china_x24) <- c("importer_iso", "hs6", "usd")
+others_x24 <- stats::aggregate(primary_value ~ reporter_iso + partner_iso + hs6,
+                               data = annual_x[annual_x$reporter_iso %in% monthly_exporters, ], FUN = sum)
+rm(annual, annual_x)
 invisible(gc())
 
 subcat <- utils::read.csv(need_file(file.path(raw_data_path, "energy_hs6_master.csv"), "stage the HS6 master."))
@@ -135,7 +143,59 @@ win <-unique(t12m[t12m$flow_direction == "import", c("reporter_iso", "window_end
 win <- merge(win, windows[c("reporter_iso", "window_start")], by = "reporter_iso")
 current <- merge(current, setNames(win, c("importer_iso", "window_end", "months_used", "window_start")), by = "importer_iso", all.x = TRUE)
 current$current_basis <- ifelse(current$import_source %in% "importer", "own_monthly", "no_monthly_report")
-saveRDS(current, file.path(processed_dir, "current_import_exposure_tbl.rds"))
+
+# Ember fill: importers without monthly reports (China publishes none either, so their mirror rows lack
+# China), from China's growth in Ember's customs data and the other suppliers' growth in monthly exporters'
+# reports (ctm_ember_fill()).
+ember_path <- file.path(raw_data_path, "ember", "clean_tech_exports_full_release_monthly_lower.csv")
+if (file.exists(ember_path)) {
+  source(file.path(repo_root, "R", "strategic_position", "ember_china_exports.R"))
+  ember <- ember_cte_prepare(utils::read.csv(ember_path, check.names = FALSE, colClasses = c("Commodity code" = "character")))
+  ember_end <- max(ember$date)
+  ew <- ember_cte_code_windows(ember, base_year = base_year)
+  ew <- merge(ew, unique(ember[!ember$partial_hs6, c("code", "hs6")]), by = "code")
+  ew <- stats::aggregate(cbind(usd_latest, usd_base) ~ iso3 + hs6, data = ew, FUN = sum)
+  names(ew)[1] <- "importer_iso"
+  code_cells <- unique(data.frame(hs6 = formatC(as.integer(subcat$hs6), width = 6, flag = "0"), tech = subcat$tech,
+                                  supply_chain = subcat$supply_chain, stringsAsFactors = FALSE))
+  # Other suppliers: exporters with both base-year and T12M reports, by importer x cell.
+  xn <- t12m[t12m$flow_direction == "export" & t12m$reporter_iso %in% monthly_exporters, ]
+  xn$hs6 <- formatC(as.integer(xn$cmd_code), width = 6, flag = "0")
+  xn <- stats::aggregate(primary_value ~ reporter_iso + partner_iso + hs6, data = xn, FUN = sum)
+  ox <- merge(others_x24, xn, by = c("reporter_iso", "partner_iso", "hs6"), all = TRUE, suffixes = c("_24", "_now"))
+  both <- unique(intersect(others_x24$reporter_iso, xn$reporter_iso))
+  ox <- ox[ox$reporter_iso %in% both, ]
+  ox[is.na(ox)] <- 0
+  ox <- merge(ox, code_cells, by = "hs6")
+  others <- stats::aggregate(cbind(primary_value_24, primary_value_now) ~ partner_iso + tech + supply_chain, data = ox, FUN = sum)
+  names(others) <- c("importer_iso", "tech", "supply_chain", "x24", "xnow")
+  chn_pairs <- pairs[pairs$partner_iso == "CHN", c("reporter_iso", "coercive", "trusted")]
+  chn_geo <- geo[geo$partner_iso == "CHN", c("reporter_iso", "geo_alignment")]
+  flags <- merge(chn_pairs, chn_geo, by = "reporter_iso", all = TRUE)
+  flags <- data.frame(importer_iso = flags$reporter_iso, coercive = flags$coercive %in% TRUE, trusted = flags$trusted %in% TRUE,
+                      opposite = flags$geo_alignment %in% 0)
+  targets <- setdiff(unique(current$importer_iso), c(unique(current$importer_iso[current$current_basis %in% "own_monthly"]), "CHN", "HKG", "MAC"))
+  fill <- ctm_ember_fill(base, targets, code_cells, ew, china_x24, others, flags, cif_fob = cif_fob,
+                         window_end = as.integer(format(ember_end, "%Y%m")))
+  if (!is.null(fill) && nrow(fill)) {
+    k <- paste(current$importer_iso, current$tech, current$supply_chain)
+    i <- match(paste(fill$importer_iso, fill$tech, fill$supply_chain), k)
+    for (v in intersect(c("observed", "current_basis", "imports_usd", "china_share", "coercive_import_share", "opposite_bloc_share",
+                          "trusted_import_share", "import_hhi", "top_supplier_iso3", "top_supplier_share", "window_end"), names(fill))) {
+      current[[v]][i] <- fill[[v]]
+    }
+    current$imports_to_gdp[i] <- NA_real_
+    current$window_start[i] <- as.integer(format(seq(ember_end, by = "-11 months", length.out = 2)[2], "%Y%m"))
+    saveRDS(fill, file.path(processed_dir, "current_ember_fill_tbl.rds"))
+    big <- fill[fill$imports_usd >= 1e8, ]
+    message("Ember fill: ", nrow(fill), " cells for ", length(unique(fill$importer_iso)), " importers without monthly reports (",
+            nrow(big), " with $100m+); ", length(targets) - length(unique(fill$importer_iso)), " importers had no cell passing coverage.")
+  }
+  rm(ember, ew, xn, ox, others)
+} else {
+  message("Ember file not staged (", ember_path, "): no fill for importers without monthly reports.")
+}
+saveRDS(current,file.path(processed_dir, "current_import_exposure_tbl.rds"))
 
 # The 2024 side should reproduce scripts/15's table.
 old_path <- file.path(processed_dir, "import_exposure_tbl.rds")
@@ -154,8 +214,9 @@ cmp <- ctm_exposure_compare(base, current)
 cmp <- merge(cmp, setNames(win, c("importer_iso", "window_end", "months_used", "window_start")), by = "importer_iso", all.x = TRUE)
 saveRDS(cmp, file.path(processed_dir, "import_exposure_compare_tbl.rds"))
 
-own <- cmp[cmp$current_basis == "own_monthly", , drop = FALSE]
-cov <- own %>% group_by(importer_iso, window_start, window_end, months_used) %>%
+if (exists("ember_end")) cmp$window_end[cmp$current_basis %in% "ember_fill"] <- as.integer(format(ember_end, "%Y%m"))
+own <- cmp[cmp$current_basis %in% CTM_CURRENT_BASES, , drop = FALSE]
+cov <- own %>% group_by(importer_iso, current_basis, window_end) %>%
   summarise(cells = n(), imports_base_bn = sum(imports_usd_base, na.rm = TRUE) / 1e9,
             imports_now_bn = sum(imports_usd_now, na.rm = TRUE) / 1e9, china_moves = sum(flag_china_move),
             .groups = "drop") %>% arrange(desc(imports_now_bn))
@@ -164,8 +225,9 @@ moves <- own[own$flag_china_move, , drop = FALSE]
 utils::write.csv(moves[order(-abs(moves$china_share_change)), ], file.path(diag_dir, "china_share_moves.csv"), row.names = FALSE)
 tops <- own[own$top_supplier_changed & own$imports_usd_now >= 1e8, , drop = FALSE]
 utils::write.csv(tops[order(-tops$imports_usd_now), ], file.path(diag_dir, "top_supplier_changes.csv"), row.names = FALSE)
-message("Current exposure: ", length(unique(own$importer_iso)), " importers from their own monthly data (",
-        nrow(own), " cells); ", nrow(moves), " cells with a China-share move of 10+ points on $100m+; ",
+message("Current exposure: ", length(unique(own$importer_iso[own$current_basis == "own_monthly"])), " importers from their own monthly data (",
+        sum(own$current_basis == "own_monthly"), " cells), ", length(unique(own$importer_iso[own$current_basis == "ember_fill"])),
+        " from the Ember fill (", sum(own$current_basis == "ember_fill"), " cells); ", nrow(moves), " cells with a China-share move of 10+ points on $100m+; ",
         nrow(tops), " top-supplier changes on $100m+. Imports-weighted mean China share ",
         round(stats::weighted.mean(own$china_share_base, own$imports_usd_base, na.rm = TRUE), 3), " -> ",
         round(stats::weighted.mean(own$china_share_now, own$imports_usd_now, na.rm = TRUE), 3), ".")

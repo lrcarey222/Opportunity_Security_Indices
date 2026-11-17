@@ -170,3 +170,46 @@ test_that("import partners blend for reporters with current data only", {
   expect_equal(usa[["MEX"]], 30)
   expect_equal(b$imports_usd[b$reporter_iso == "AUT"], 10)
 })
+
+test_that("Ember fill scales China and the other suppliers separately and respects coverage", {
+  base <- data.frame(importer_iso = c("VNM", "VNM", "AUT"), tech = c("Solar", "Wind", "Solar"), supply_chain = "Assembly",
+                     observed = TRUE, imports_usd = c(100, 100, 50), china_share = c(0.6, 0.5, 0.2),
+                     coercive_import_share = c(0.7, 0.5, 0.2), opposite_bloc_share = c(0, 0, 0.2), trusted_import_share = c(0.1, 0.2, 0.5))
+  code_cells <- data.frame(hs6 = c("854143", "850440", "850231"), tech = c("Solar", "Solar", "Wind"), supply_chain = "Assembly")
+  ember <- data.frame(importer_iso = c("VNM", "VNM", "AUT"), hs6 = c("854143", "850231", "854143"),
+                      usd_latest = c(40, 10, 30), usd_base = c(20, 10, 10))
+  china_x24 <- data.frame(importer_iso = c("VNM", "VNM", "VNM", "AUT"), hs6 = c("854143", "850440", "850231", "854143"),
+                          usd = c(50, 10, 10, 5))
+  others <- data.frame(importer_iso = c("VNM", "VNM", "AUT"), tech = c("Solar", "Wind", "Solar"), supply_chain = "Assembly",
+                       x24 = c(40, 10, 40), xnow = c(20, 10, 40))
+  flags <- data.frame(importer_iso = c("VNM", "AUT"), coercive = c(TRUE, FALSE), opposite = c(FALSE, TRUE), trusted = FALSE)
+  f <- ctm_ember_fill(base, c("VNM", "AUT"), code_cells, ember, china_x24, others, flags, window_end = 202608L, min_base_usd = 0)
+  vs <- f[f$importer_iso == "VNM" & f$tech == "Solar", ]
+  # China 60 x 2 = 120; others 40 x 0.5 = 20; total 140.
+  expect_equal(vs$imports_usd, 140)
+  expect_equal(vs$china_share, 120 / 140)
+  # Coercive: (70 - 60) x 0.5 + 120 = 125.
+  expect_equal(vs$coercive_import_share, 125 / 140)
+  expect_equal(vs$trusted_import_share, 10 * 0.5 / 140)
+  expect_equal(vs$fill_china_cov, 50 / 60)
+  expect_equal(vs$current_basis, "ember_fill")
+  expect_true(is.na(vs$import_hhi))
+  # Wind: others' coverage 10 / 50 is below 0.5, so no fill.
+  expect_false(any(f$importer_iso == "VNM" & f$tech == "Wind"))
+  au <- f[f$importer_iso == "AUT", ]
+  expect_equal(au$china_share, 30 / (30 + 40))
+  expect_equal(au$opposite_bloc_share, 30 / 70)
+  small <- ctm_ember_fill(base, c("VNM", "AUT"), code_cells, ember, china_x24, others, flags, min_base_usd = 15)
+  expect_false(any(small$importer_iso == "AUT"))
+})
+
+test_that("blend takes Ember-fill rows column by column and leaves missing columns at base", {
+  base <- data.frame(importer_iso = "VNM", tech = "Solar", supply_chain = "Assembly", observed = TRUE,
+                     china_share = 0.6, import_hhi = 0.4, imports_usd = 100)
+  cur <- data.frame(importer_iso = "VNM", tech = "Solar", supply_chain = "Assembly", observed = TRUE, current_basis = "ember_fill",
+                    china_share = 0.8, import_hhi = NA_real_, imports_usd = 140, window_end = 202608L)
+  b <- ctm_blend_exposure(base, cur, weight = 0.5)
+  expect_equal(b$china_share, 0.7)
+  expect_equal(b$import_hhi, 0.4)
+  expect_equal(b$exposure_current_source, "ember_fill")
+})

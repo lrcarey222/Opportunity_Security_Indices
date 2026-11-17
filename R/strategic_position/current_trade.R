@@ -85,26 +85,33 @@ ctm_t12m_dyads <- function(monthly, windows, completeness, n_months = 12L, min_m
   s
 }
 
+# The current_basis values that count as a current measurement: the importer's own monthly reports, and
+# the Ember fill for importers without them (ctm_ember_fill()).
+CTM_CURRENT_BASES <- c("own_monthly", "ember_fill")
+
 # Current vs base import exposure per importer x tech x stage (both from sp_import_exposure()). Current
-# rows count only where the importer reported its own monthly imports (import_source == "importer"):
-# a mirror row is built from exporters' monthly reports, and China publishes none, so its China share
-# would be missing the largest supplier. Columns: base and current imports, China share, top supplier
-# and HHI, their changes, current_basis ("own_monthly" or "no_monthly_report"), and flag_china_move
+# rows count only where current_basis is in CTM_CURRENT_BASES (without the column: import_source ==
+# "importer"): a plain mirror row is built from exporters' monthly reports, and China publishes none, so its
+# China share would be missing the largest supplier. Columns: base and current imports, China share, top
+# supplier and HHI, their changes, current_basis ("own_monthly", "ember_fill" or "no_monthly_report"), and flag_china_move
 # (|change in China share| >= `min_move` on at least `min_imports_usd` of current imports).
 ctm_exposure_compare <- function(base, current, min_move = 0.10, min_imports_usd = 1e8) {
   keys <- c("importer_iso", "tech", "supply_chain")
   b <- base[base$observed %in% TRUE, c(keys, "imports_usd", "china_share", "top_supplier_iso3", "top_supplier_share", "import_hhi")]
   names(b)[-(1:3)] <- paste0(names(b)[-(1:3)], "_base")
-  cur <- current[current$observed %in% TRUE, c(keys, "import_source", "imports_usd", "china_share", "top_supplier_iso3",
+  if (!"current_basis" %in% names(current)) {
+    current$current_basis <- ifelse(current$import_source %in% "importer", "own_monthly", "no_monthly_report")
+  }
+  cur <- current[current$observed %in% TRUE, c(keys, "current_basis", "imports_usd", "china_share", "top_supplier_iso3",
                                                 "top_supplier_share", "import_hhi")]
   names(cur)[-(1:3)] <- paste0(names(cur)[-(1:3)], "_now")
   out <- merge(b, cur, by = keys, all = TRUE)
-  own <- out$import_source_now %in% "importer"
-  out$current_basis <- ifelse(own, "own_monthly", "no_monthly_report")
+  own <- out$current_basis_now %in% CTM_CURRENT_BASES
+  out$current_basis <- ifelse(own, out$current_basis_now, "no_monthly_report")
+  out$current_basis_now <- NULL
   for (v in c("imports_usd", "china_share", "top_supplier_iso3", "top_supplier_share", "import_hhi")) {
     out[[paste0(v, "_now")]][!own] <- NA
   }
-  out$import_source_now <- NULL
   out$china_share_change <- out$china_share_now - out$china_share_base
   out$import_hhi_change <- out$import_hhi_now - out$import_hhi_base
   out$imports_growth <- ifelse(out$imports_usd_base > 0, out$imports_usd_now / out$imports_usd_base, NA_real_)
@@ -138,13 +145,15 @@ ctm_blend_exposure <- function(base, current, weight = 0.5, cols = CTM_BLEND_COL
   keys <- c("importer_iso", "tech", "supply_chain")
   if (!"current_basis" %in% names(current)) stop("ctm_blend_exposure(): current lacks current_basis (scripts/38).")
   cols <- intersect(cols, intersect(names(base), names(current)))
-  cur <- current[current$current_basis %in% "own_monthly" & current$observed %in% TRUE,
-                 c(keys, cols, intersect("window_end", names(current))), drop = FALSE]
+  cur <- current[current$current_basis %in% CTM_CURRENT_BASES & current$observed %in% TRUE,
+                 c(keys, cols, "current_basis", intersect("window_end", names(current))), drop = FALSE]
   names(cur)[match(cols, names(cur))] <- paste0(cols, ".now")
   out <- merge(base, cur, by = keys, all.x = TRUE, sort = FALSE)
   has_now <- !is.na(out[[paste0(cols[1], ".now")]])
   base_obs <- out$observed %in% TRUE
   out$exposure_basis <- ifelse(has_now & base_obs, "blend", "base")
+  out$exposure_current_source <- ifelse(has_now, out$current_basis, NA_character_)
+  out$current_basis <- NULL
   for (v in intersect(c("china_share", "coercive_import_share"), cols)) {
     out[[paste0(v, "_base")]] <- out[[v]]
     out[[paste0(v, "_t12m")]] <- out[[paste0(v, ".now")]]
@@ -152,9 +161,9 @@ ctm_blend_exposure <- function(base, current, weight = 0.5, cols = CTM_BLEND_COL
   for (v in cols) {
     now <- out[[paste0(v, ".now")]]
     b <- out[[v]]
-    blend <- has_now & base_obs & !is.na(b)
+    blend <- has_now & base_obs & !is.na(b) & !is.na(now)
     out[[v]][blend] <- (1 - weight) * b[blend] + weight * now[blend]
-    fill <- has_now & (!base_obs | is.na(b))
+    fill <- has_now & (!base_obs | is.na(b)) & !is.na(now)
     if (weight > 0) out[[v]][fill] <- now[fill]
     out[[paste0(v, ".now")]] <- NULL
   }
@@ -176,7 +185,7 @@ ctm_blend_exposure <- function(base, current, weight = 0.5, cols = CTM_BLEND_COL
 # `min_move` above or below the base year on at least `min_imports_usd` of blended imports. `blended` is
 # ctm_blend_exposure()'s output.
 ctm_trade_flags <- function(blended, min_move = 0.10, min_imports_usd = 1e8) {
-  keep <- c("importer_iso", "tech", "supply_chain", "exposure_basis", "exposure_window_end", "exposure_weight",
+  keep <- c("importer_iso", "tech", "supply_chain", "exposure_basis", "exposure_current_source", "exposure_window_end", "exposure_weight",
             intersect(c("china_share_base", "china_share_t12m", "coercive_import_share_base", "coercive_import_share_t12m"), names(blended)))
   out <- as.data.frame(blended)[, intersect(keep, names(blended)), drop = FALSE]
   names(out)[1] <- "iso3"
@@ -266,4 +275,89 @@ ctm_blend_import_partners <- function(base, now, weight = 0.5) {
   out <- rbind(as.data.frame(keep)[c(keys, "imports_usd")], m[c(keys, "imports_usd")])
   out <- out[out$imports_usd > 0, , drop = FALSE]
   tibble::as_tibble(out)
+}
+
+# ---- Ember fill for importers without monthly reports ---------------------------------------------------
+
+# Current import exposure for importers that publish no monthly data, from two growth rates applied to their
+# base-year cell imports (T = imports_usd, C = china_share x T):
+#   gC  China's growth: Ember's latest-window / base-year exports to the importer over the cell's full-HS6
+#       Ember codes (China's own customs data on both sides). Used when those codes carried at least
+#       `min_china_cov` of China's base-year exports to the importer in the cell (`china_x24`, China's
+#       annual Comtrade exports at HS6).
+#   gO  the other suppliers' growth: monthly-reporting exporters' T12M / base-year exports to the importer in
+#       the cell (exporter-declared both sides, `others`). Used when those exporters carried at least
+#       `min_others_cov` of the base-year non-China imports (x24 x cif_fob / (T - C)).
+#   A growth rate needs at least `min_base_usd` in its base year (a small base gives outsized ratios).
+#   imports_now = C x gC + (T - C) x gO; china_share = C x gC / imports_now; for each other share s with
+#   China in the group (`china_flags`: coercive, opposite, trusted per importer), s_now = ((s x T - C) x gO +
+#   C x gC) / imports_now, else s x T x gO / imports_now. A cell where China supplied nothing in the base year
+#   needs only gO. HHI and the top supplier are not re-estimated (NA).
+# Inputs: base (sp_import_exposure()); targets (importer ISO3s to fill); code_cells (hs6, tech, supply_chain);
+# ember (importer_iso, hs6, usd_latest, usd_base: full-HS6 codes only); china_x24 (importer_iso, hs6, usd);
+# others (importer_iso, tech, supply_chain, x24, xnow); china_flags (importer_iso, coercive, opposite, trusted).
+# Returns one row per filled cell with current_basis "ember_fill" and the fill diagnostics.
+ctm_ember_fill <- function(base, targets, code_cells, ember, china_x24, others, china_flags,
+                           min_china_cov = 0.5, min_others_cov = 0.5, cif_fob = 1, window_end = NA_integer_,
+                           min_base_usd = 1e7) {
+  keys <- c("importer_iso", "tech", "supply_chain")
+  b <- as.data.frame(base)[base$importer_iso %in% targets & base$observed %in% TRUE & base$imports_usd > 0,
+                           c(keys, "imports_usd", "china_share", intersect(c("coercive_import_share", "opposite_bloc_share",
+                                                                             "trusted_import_share"), names(base)))]
+  if (nrow(b) == 0) return(NULL)
+  cc <- unique(code_cells[c("hs6", "tech", "supply_chain")])
+  # China's base-year exports by cell, and the part on Ember codes.
+  cx <- merge(china_x24, cc, by = "hs6")
+  cx$covered <- cx$hs6 %in% ember$hs6
+  cx_all <- stats::aggregate(usd ~ importer_iso + tech + supply_chain, data = cx, FUN = sum)
+  cx_cov <- stats::aggregate(usd ~ importer_iso + tech + supply_chain, data = cx[cx$covered, , drop = FALSE], FUN = sum)
+  names(cx_all)[4] <- "china_x24"
+  names(cx_cov)[4] <- "china_x24_cov"
+  # Ember growth by cell.
+  em <- merge(ember, cc, by = "hs6")
+  eg <- stats::aggregate(cbind(usd_latest, usd_base) ~ importer_iso + tech + supply_chain, data = em, FUN = sum)
+  eg$china_growth <- ifelse(eg$usd_base >= min_base_usd, eg$usd_latest / eg$usd_base, NA_real_)
+  o <- others
+  o$others_growth <- ifelse(o$x24 >= min_base_usd, o$xnow / o$x24, NA_real_)
+  j <- Reduce(function(x, y) merge(x, y, by = keys, all.x = TRUE),
+              list(b, cx_all, cx_cov, eg[c(keys, "china_growth")], o[c(keys, "x24", "others_growth")]))
+  j$china_x24_cov[is.na(j$china_x24_cov)] <- 0
+  C <- j$china_share * j$imports_usd
+  O <- j$imports_usd - C
+  j$fill_china_cov <- ifelse(j$china_x24 > 0, j$china_x24_cov / j$china_x24, NA_real_)
+  j$fill_others_cov <- ifelse(O > 0, pmin(1, j$x24 * cif_fob / O), NA_real_)
+  china_ok <- C == 0 | (!is.na(j$fill_china_cov) & j$fill_china_cov >= min_china_cov & !is.na(j$china_growth))
+  others_ok <- O == 0 | (!is.na(j$fill_others_cov) & j$fill_others_cov >= min_others_cov & !is.na(j$others_growth))
+  ok <- (!is.na(C) & china_ok & others_ok) %in% TRUE
+  gC <- ifelse(C == 0, 1, j$china_growth)
+  gO <- ifelse(O == 0, 1, j$others_growth)
+  j <- j[ok, , drop = FALSE]
+  C <- C[ok]; O <- O[ok]; gC <- gC[ok]; gO <- gO[ok]
+  if (nrow(j) == 0) return(NULL)
+  now <- C * gC + O * gO
+  out <- j[keys]
+  out$observed <- TRUE
+  out$current_basis <- "ember_fill"
+  out$imports_usd <- now
+  out$china_share <- ifelse(now > 0, C * gC / now, NA_real_)
+  fl <- merge(j[keys], china_flags, by = "importer_iso", all.x = TRUE, sort = FALSE)
+  fl <- fl[match(paste(j$importer_iso, j$tech, j$supply_chain), paste(fl$importer_iso, fl$tech, fl$supply_chain)), ]
+  flag_of <- c(coercive_import_share = "coercive", opposite_bloc_share = "opposite", trusted_import_share = "trusted")
+  for (s in names(flag_of)) {
+    if (!s %in% names(j)) next
+    f <- fl[[flag_of[[s]]]] %in% TRUE
+    s_usd <- j[[s]] * j$imports_usd
+    out[[s]] <- ifelse(now > 0, (ifelse(f, (s_usd - C) * gO + C * gC, s_usd * gO)) / now, NA_real_)
+    out[[s]] <- pmin(1, pmax(0, out[[s]]))
+  }
+  out$import_hhi <- NA_real_
+  out$top_supplier_iso3 <- NA_character_
+  out$top_supplier_share <- NA_real_
+  out$fill_china_growth <- gC
+  out$fill_others_growth <- gO
+  out$fill_china_cov <- j$fill_china_cov
+  out$fill_others_cov <- j$fill_others_cov
+  out$window_end <- as.integer(window_end)
+  rownames(out) <- NULL
+  out
 }
