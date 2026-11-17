@@ -63,6 +63,7 @@ for (f in c(
   "R/utils/variable_stage_evidence.R", "R/indices/build_indices.R", "R/indices/build_policy_index.R",
   "R/categories/policy/cat_policy_index.R",
   "R/strategic_position/sp_helpers.R", "R/strategic_position/competitive_position.R",
+  "R/strategic_position/innovation_position.R",
   "R/strategic_position/import_exposure.R", "R/strategic_position/strategic_need.R",
   "R/strategic_position/policy_priority.R", "R/strategic_position/alignment.R",
   "R/strategic_position/supply_structure.R", "R/strategic_position/posture_nodes.R",
@@ -224,7 +225,24 @@ if (file.exists(monthly_path)) {
 }
 
 # ---- Step 1: the three dimensions ------------------------------------------------------------------
-cp <- sp_competitive_position(eo_contrib_cp, es_contrib, sp_cfg$competitive_position, techs = techs)
+# Innovation evidence (pillar INN; scripts/29). Without its file, families that read INN are dropped
+# with a warning, so the run still matches the configuration minus innovation.
+innovation_theme_path <- file.path(outputs_dir, "innovation", "innovation_theme.csv")
+inn_contrib <- NULL
+inn_families <- names(Filter(function(f) any(vapply(f$variables, function(v) identical(v$pillar, "INN"), logical(1))),
+                             sp_cfg$competitive_position$families))
+if (length(inn_families)) {
+  if (file.exists(innovation_theme_path)) {
+    inn_stages <- unique(unlist(lapply(sp_cfg$competitive_position$families[inn_families], `[[`, "stages")))
+    inn_contrib <- sp_innovation_contrib(
+      utils::read.csv(innovation_theme_path, stringsAsFactors = FALSE, na.strings = ""), inn_stages, techs = techs)
+  } else {
+    warning(innovation_theme_path, " not found (run scripts/29_build_innovation_position.R): dropping Competitive ",
+            "Position famil", if (length(inn_families) > 1) "ies " else "y ", paste(inn_families, collapse = ", "), ".")
+    sp_cfg$competitive_position$families[inn_families] <- NULL
+  }
+}
+cp <- sp_competitive_position(eo_contrib_cp, es_contrib, sp_cfg$competitive_position, techs = techs, inn_contrib = inn_contrib)
 cp_families <- names(sp_cfg$competitive_position$families)
 cp_structural <- cp$cells
 if (!is.null(tm)) {

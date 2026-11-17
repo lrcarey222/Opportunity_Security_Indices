@@ -4,7 +4,7 @@
 "United States","Wind","Deployment",0.587282246487551,"deploy","deploy","aligned","latent_advantage"
 "United States","Solar","Components",0.586734748487996,"deploy","deploy","over_prioritized","latent_advantage"
 "United States","Solar","Deployment",0.585328955299715,"deploy","deploy","over_prioritized","low_priority"
-"China","Solar","Deployment",0.637054207449941,"deploy","deploy","aligned","policy_led_bet"
+"China","Solar","Deployment",0.637054207449941,"deploy","deploy","aligned","aligned_strength"
 "China","Batteries","Deployment",0.605484858170142,"deploy","deploy_accelerate","aligned","aligned_strength"
 "China","Wind","Deployment",0.594607801253197,"deploy","deploy","aligned","aligned_strength"
 "China","Nuclear","Deployment",0.564003869986501,"deploy","deploy_accelerate","aligned","aligned_strength"

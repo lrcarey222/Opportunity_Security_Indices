@@ -1350,3 +1350,37 @@ inputs:
     data/raw so far; copy data/raw/ember/ to the SharePoint raw folder.
   required_by:
   - scripts/95_build_deployment_need.R
+- id: uspto_y02_patents
+  path: uspto_y02_patents.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: USPTO Open Data Portal, granted US utility patents by Y02/Y04S technology and inventor
+    country
+  url: https://api.uspto.gov/api/v1/patent/applications/search
+  cadence: annual
+  owner: lcarey@rmi.org
+  licence: US government public data
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/uspto_patents.R (needs a free ODP API key in USPTO_KEY). Grant
+    years 2016-2025, technologies and CPC groups in config/patent_tech_cpc.yml; whole and fractional
+    counts by inventor country, WLD rows are the number of grants and tech _ALL rows all utility grants.
+    Prototype input for the Innovation category (scripts/29_build_innovation_position.R), 2026-11-17.
+  required_by:
+  - scripts/29_build_innovation_position.R
+- id: iea_rdd_public
+  path: iea_rdd/RDDPUBLIC.zip
+  source_type: manual
+  source_name: IEA Energy Technology RD&D Budgets, public sector (RDDPUBLIC)
+  url: https://www.iea.org/data-and-statistics/data-product/energy-technology-rdd-budgets
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: October 2026 edition (RDDPUBLIC.csv dated 2026-10-20), downloaded 2026-11-17
+  licence: IEA terms; check before publishing derived figures
+  staged_from: sharepoint
+  notes: Downloaded after signing in on the IEA product page (no public API). One CSV in the zip,
+    SDMX-style long format (COUNTRY, RDD_SECTOR, RDD_TYPE, RDD_TECH, UNIT, TIME_PERIOD, OBS_VALUE).
+    scripts/29_build_innovation_position.R reads public sector RD&D in USD at constant prices plus
+    the units-of-GDP series; technology codes in config/iea_rdd_tech_map.yml. No US data after 2015,
+    no China or India. Prototype input for the Innovation category, 2026-11-17.
+  required_by:
+  - scripts/29_build_innovation_position.R

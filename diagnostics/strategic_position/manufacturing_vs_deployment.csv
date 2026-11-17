@@ -10,16 +10,16 @@
 "Batteries","watch","not_assessed",4
 "Batteries","watch","partner",59
 "Batteries","watch","watch",61
-"Coal","accelerate","compete_at_home",4
+"Coal","accelerate","compete_at_home",5
 "Coal","accelerate","not_assessed",1
-"Coal","accelerate","partner",27
+"Coal","accelerate","partner",26
 "Coal","accelerate","watch",9
 "Coal","not_assessed","not_assessed",6
 "Coal","not_assessed","partner",6
 "Coal","not_assessed","watch",41
-"Coal","watch","compete_at_home",2
+"Coal","watch","compete_at_home",1
 "Coal","watch","not_assessed",2
-"Coal","watch","partner",55
+"Coal","watch","partner",56
 "Coal","watch","watch",61
 "Electric Grid","accelerate","compete_at_home",9
 "Electric Grid","accelerate","partner",20
@@ -43,9 +43,9 @@
 "Electric Vehicles","watch","compete_at_home",20
 "Electric Vehicles","watch","partner",29
 "Electric Vehicles","watch","watch",20
-"Gas","accelerate","compete_at_home",9
+"Gas","accelerate","compete_at_home",10
 "Gas","accelerate","partner",26
-"Gas","accelerate","watch",27
+"Gas","accelerate","watch",26
 "Gas","not_assessed","not_assessed",5
 "Gas","not_assessed","partner",4
 "Gas","not_assessed","watch",7
