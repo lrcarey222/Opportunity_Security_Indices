@@ -34,7 +34,7 @@ import { MODULE_QUESTION, ROLES_FRAMING, TERMS } from '../../content/vocabulary.
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import { ScenarioTag } from '../charts/ScenarioCompare.tsx';
-import { scenarioNamesOf } from '../contract.ts';
+import { tradeWhen, scenarioNamesOf } from '../contract.ts';
 import { plural } from '../derive/format.ts';
 import { strategicScopeShort } from '../derive/settings.ts';
 import {
@@ -334,7 +334,7 @@ export default function AibRolesView() {
                 What changes from today
               </h2>
               <p className="text-[0.9375rem] leading-relaxed text-paper-dim">
-                Today&apos;s network is the trade as it is ({meta.tradeYear}): who supplies whom, before any disruption. {info.label}&apos;s network is the trade and new capacity it adds or
+                Today&apos;s network is the trade as it is ({tradeWhen(meta)}): who supplies whom, before any disruption. {info.label}&apos;s network is the trade and new capacity it adds or
                 redirects to replace the supply {scenario === 'managed' ? 'held above each step’s cap' : 'it removes'}. The two measure different things, so they stand side by side, each on its own
                 scale. {scenarioCaveat(meta)}
               </p>
