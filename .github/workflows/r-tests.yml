@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  r-tests:
+  r-tests:
     # Pinned: the R packages below are Posit binaries built for Ubuntu 24.04 (noble). On the newer
     # ubuntu-latest image (26.04) they install but stringi cannot load its ICU library, so stringr fails.
     runs-on: ubuntu-24.04
