@@ -115,6 +115,23 @@ inputs:
   required_by:
   - scripts/37_pull_comtrade_monthly_dyads.R
   - scripts/38_build_current_import_exposure.R
+- id: comtrade_monthly_dyads_dictionary_extra
+  path: comtrade_monthly_dyads_dictionary_extra.csv.gz
+  source_type: api
+  source_name: UN Comtrade (monthly HS6 imports and exports by partner for the AIB dictionary's core codes
+    outside the OSI basket)
+  url: https://comtradeplus.un.org/
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: first pull 2026-11-17 UTC on the basket pull's reporter windows (92 reporters); 68 codes
+  staged_from: pipeline
+  notes: Written by scripts/37_pull_comtrade_monthly_dyads.R with COMTRADE_MD_CODE_SET=dictionary_extra (27
+    calls). Same layout as comtrade_monthly_dyads.csv.gz. Read by scripts/39_build_current_dyads.R, which sums
+    it to the same 12-month windows so the AIB's copper, silver, rail, cooling and other dictionary-only codes
+    are current rather than carried from 2024.
+  required_by:
+  - scripts/37_pull_comtrade_monthly_dyads.R
+  - scripts/39_build_current_dyads.R
 - id: comtrade_monthly_dyads_windows
   path: comtrade_monthly_dyads_windows.csv
   source_type: generated

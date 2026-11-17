@@ -78,6 +78,24 @@ annual <- data.table::fread(
   colClasses = list(character = c("reporter_iso", "partner_iso", "flow_direction", "cmd_code")), na.strings = c("", "NA"))
 annual <- as.data.frame(annual[annual$period %in% years, ])
 t12m <- readRDS(need_file(file.path(processed_dir, "current_trade_dyads_tbl.rds"), "run scripts/38_build_current_import_exposure.R."))
+# The AIB dictionary's codes outside the basket, when scripts/37 has pulled them (COMTRADE_MD_CODE_SET=
+# dictionary_extra): summed to the same 12-month windows and partner universe, and counted as pulled.
+extra_path <- file.path(raw_data_path, "comtrade_monthly_dyads_dictionary_extra.csv.gz")
+if (file.exists(extra_path)) {
+  mx <- as.data.frame(data.table::fread(extra_path, colClasses = list(character = c("reporter_iso", "partner_iso", "flow_direction", "cmd_code"))))
+  win <- utils::read.csv(need_file(file.path(raw_data_path, "comtrade_monthly_dyads_windows.csv"), "run scripts/37."), stringsAsFactors = FALSE)
+  tx <- ctm_t12m_dyads(mx, win, ctm_month_completeness(mx), min_months = as.integer(Sys.getenv("OPSI_CURRENT_TRADE_MIN_MONTHS", "10")),
+                       period_label = max(years))
+  economies <- unique(c(annual$reporter_iso, annual$partner_iso))
+  tx <- tx[tx$partner_iso %in% economies & tx$reporter_iso %in% economies, , drop = FALSE]
+  extra_codes <- unique(mx$cmd_code)
+  t12m <- rbind(as.data.frame(t12m)[c("reporter_iso", "partner_iso", "flow_direction", "cmd_code", "primary_value")],
+                tx[c("reporter_iso", "partner_iso", "flow_direction", "cmd_code", "primary_value")])
+  pulled_codes <- union(pulled_codes, extra_codes)
+  message("Dictionary extra codes: ", length(extra_codes), " codes, ", length(unique(tx$reporter_iso)), " reporters, ",
+          format(nrow(tx), big.mark = ","), " T12M rows.")
+  rm(mx, tx)
+}
 
 ember <- ember_cte_prepare(utils::read.csv(
   need_file(file.path(raw_data_path, "ember", "clean_tech_exports_full_release_monthly_lower.csv"), "stage Ember's file (scripts/36 downloads it)."),

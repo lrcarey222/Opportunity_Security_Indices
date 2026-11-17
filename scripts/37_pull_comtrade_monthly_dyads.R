@@ -82,20 +82,26 @@ retries <- 5L
 timeout_seconds <- 600
 backoff_seconds <- 15
 max_wait_seconds <- 600
-n_code_groups <- 2L
 # Monthly basket rows per reporter-flow over 12 months as a multiple of its 2024 annual rows (Germany,
 # 2025-06 imports: ~4,000 rows a month for 244 codes against ~9,300 a year), and the fallback for a
 # reporter without annual rows.
 monthly_row_factor <- 5.5
 fallback_rows <- 6000
 
-chunk_dir <- file.path(raw_data_path, "comtrade_chunks", "comtrade_monthly_dyads")
+# Code set (COMTRADE_MD_CODE_SET): "basket" (the OSI basket; default) or "dictionary_extra" (the AIB
+# dictionary's core codes outside the basket, which scripts/31 reads; written to its own chunk folder and file,
+# on the basket pull's reporter windows so both sets cover the same months).
+code_set <- tolower(env_chr("COMTRADE_MD_CODE_SET", "basket"))
+if (!code_set %in% c("basket", "dictionary_extra")) stop("COMTRADE_MD_CODE_SET must be basket or dictionary_extra.")
+suffix <- if (code_set == "basket") "" else paste0("_", code_set)
+basket_chunk_dir <- file.path(raw_data_path, "comtrade_chunks", "comtrade_monthly_dyads")
+chunk_dir <- paste0(basket_chunk_dir, suffix)
 dir.create(chunk_dir, recursive = TRUE, showWarnings = FALSE)
 log_path <- file.path(chunk_dir, "log.md")
 calls_path <- file.path(chunk_dir, "calls.csv")
 plan_path <- file.path(chunk_dir, "plan.csv")
 windows_path <- file.path(chunk_dir, "windows.csv")
-out_path <- file.path(raw_data_path, "comtrade_monthly_dyads.csv.gz")
+out_path <- file.path(raw_data_path, paste0("comtrade_monthly_dyads", suffix, ".csv.gz"))
 out_windows_path <- file.path(raw_data_path, "comtrade_monthly_dyads_windows.csv")
 
 utc_now <- function() format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
@@ -124,7 +130,18 @@ master <- utils::read.csv(file.path(repo_root, "data", "reference", "energy_hs6_
 is_true <- function(x) toupper(x) %in% c("TRUE", "T", "1")
 master <- master[!is_true(master$excluded) & !is_true(master$legacy_hs), ]
 basket <- sort(unique(formatC(as.integer(master$hs6), width = 6, flag = "0")))
-code_groups <- comtrade_dyads_code_groups(basket, n_code_groups)
+codes <- basket
+if (code_set == "dictionary_extra") {
+  for (f in c("R/utils/schema.R", "R/utils/hs6_crosswalk.R", "R/aib/aib_nodes.R")) source(file.path(repo_root, f))
+  aib_nodes_cfg <- yaml::read_yaml(file.path(repo_root, "config", "aib.yml"))$nodes$dictionary
+  dict <- utils::read.csv(file.path(repo_root, "data", "reference", aib_nodes_cfg$file %||% "electro_industrial_hs6_dictionary.csv"),
+                          colClasses = c(hs6 = "character", hs1992_join = "character"), stringsAsFactors = FALSE)
+  dm <- aib_dictionary_master(dict, aib_nodes_cfg$scope %||% "core", primary_only = !identical(aib_nodes_cfg$primary_only, FALSE))
+  codes <- setdiff(sort(unique(formatC(as.integer(dm$hs6), width = 6, flag = "0"))), basket)
+  message("Dictionary codes outside the basket: ", length(codes), ".")
+}
+n_code_groups <- if (length(codes) > 150) 2L else 1L
+code_groups <- comtrade_dyads_code_groups(codes, n_code_groups)
 reporter_ref <- comtradr::ct_get_ref_table("reporter")
 to_comtrade_iso <- function(iso) ifelse(iso == "TWN", COMTRADE_DYADS_TAIWAN_ISO, iso)
 
@@ -133,24 +150,34 @@ if (replan || !file.exists(plan_path)) {
   if (replan && length(list.files(chunk_dir, pattern = "\\.(csv\\.gz|empty)$"))) {
     stop("Chunks already fetched in ", chunk_dir, "; move them aside before COMTRADE_MD_REPLAN.")
   }
-  this_year <- as.integer(format(Sys.Date(), "%Y"))
-  periods <- as.vector(outer((this_year - 2L):this_year, 1:12, function(y, m) y * 100L + m))
-  da <- do.call(rbind, lapply(split(sort(periods), ceiling(seq_along(periods) / 12)), function(p) {
-    req <- httr2::req_timeout(httr2::req_url_query(
-      httr2::request("https://comtradeapi.un.org/public/v1/getDA/C/M/HS"), period = paste(p, collapse = ",")), 120)
-    d <- jsonlite::fromJSON(httr2::resp_body_string(httr2::req_perform(req)))$data
-    if (NROW(d) == 0) NULL else data.frame(reporter_iso = as.character(d$reporterISO), period = as.integer(d$period))
-  }))
-  da$reporter_iso <- ifelse(da$reporter_iso == COMTRADE_DYADS_TAIWAN_ISO, "TWN", da$reporter_iso)
-  economies <- reporter_ref$iso_3[!as.logical(reporter_ref$group)]
-  da <- da[da$reporter_iso %in% c(economies, "TWN"), , drop = FALSE]
-  newest <- max(da$period)
-  windows <- ctm_reporter_windows(da, n_months, min_months, min_end = ctm_month_add(newest, -max_staleness))
-  dropped <- attr(windows, "dropped")
-  utils::write.csv(rbind(cbind(windows, reason = "kept"), dropped), windows_path, row.names = FALSE)
-  log_line("## Plan (", utc_now(), "): newest month ", newest, "; ", nrow(windows), " reporters kept, ",
-           sum(dropped$reason == "stale"), " stale (", paste(utils::head(dropped$reporter_iso[dropped$reason == "stale"], 40), collapse = " "),
-           "), ", sum(dropped$reason == "gappy"), " gappy.")
+  if (code_set != "basket") {
+    # the basket pull's windows, so both code sets cover the same months per reporter
+    basket_windows <- file.path(basket_chunk_dir, "windows.csv")
+    if (!file.exists(basket_windows)) stop(basket_windows, " not found; plan the basket pull first.")
+    all_w <- utils::read.csv(basket_windows, stringsAsFactors = FALSE)
+    utils::write.csv(all_w, windows_path, row.names = FALSE)
+    windows <- all_w[all_w$reason == "kept", c("reporter_iso", "window_start", "window_end", "months_listed")]
+    log_line("## Plan (", utc_now(), "): ", code_set, ", ", length(codes), " codes on the basket pull's windows (", nrow(windows), " reporters).")
+  } else {
+    this_year <- as.integer(format(Sys.Date(), "%Y"))
+    periods <- as.vector(outer((this_year - 2L):this_year, 1:12, function(y, m) y * 100L + m))
+    da <- do.call(rbind, lapply(split(sort(periods), ceiling(seq_along(periods) / 12)), function(p) {
+      req <- httr2::req_timeout(httr2::req_url_query(
+        httr2::request("https://comtradeapi.un.org/public/v1/getDA/C/M/HS"), period = paste(p, collapse = ",")), 120)
+      d <- jsonlite::fromJSON(httr2::resp_body_string(httr2::req_perform(req)))$data
+      if (NROW(d) == 0) NULL else data.frame(reporter_iso = as.character(d$reporterISO), period = as.integer(d$period))
+    }))
+    da$reporter_iso <- ifelse(da$reporter_iso == COMTRADE_DYADS_TAIWAN_ISO, "TWN", da$reporter_iso)
+    economies <- reporter_ref$iso_3[!as.logical(reporter_ref$group)]
+    da <- da[da$reporter_iso %in% c(economies, "TWN"), , drop = FALSE]
+    newest <- max(da$period)
+    windows <- ctm_reporter_windows(da, n_months, min_months, min_end = ctm_month_add(newest, -max_staleness))
+    dropped <- attr(windows, "dropped")
+    utils::write.csv(rbind(cbind(windows, reason = "kept"), dropped), windows_path, row.names = FALSE)
+    log_line("## Plan (", utc_now(), "): newest month ", newest, "; ", nrow(windows), " reporters kept, ",
+             sum(dropped$reason == "stale"), " stale (", paste(utils::head(dropped$reporter_iso[dropped$reason == "stale"], 40), collapse = " "),
+             "), ", sum(dropped$reason == "gappy"), " gappy.")
+  }
 
   annual_rows <- NULL
   dyad_path <- file.path(raw_data_path, "comtrade_energy_dyads_all.csv")
@@ -165,7 +192,7 @@ if (replan || !file.exists(plan_path)) {
                                                                  annual_rows$reporter_iso[annual_rows$flow_code == code])
     rows <- unname(n[windows$reporter_iso])
     data.frame(year = windows$window_end, reporter_iso = windows$reporter_iso, flow = fl,
-               est = ifelse(is.na(rows), fallback_rows, rows * monthly_row_factor))
+               est = ifelse(is.na(rows), fallback_rows, rows * monthly_row_factor) * length(codes) / length(basket))
   }))
   plan <- comtrade_dyads_plan(est, target_records = target_records, max_reporters = 50, n_groups = n_code_groups)
   utils::write.csv(plan, plan_path, row.names = FALSE)
