@@ -376,7 +376,7 @@ posture_detail_doc <- function(tbl, iso3, cfg, created, yf_nodes = NULL) {
       flag = g(r, "current_trade_flag")))
   }
   cp_fams <- c("export_position", "export_position_structural", "production_position", "manufacturing_capacity", "investment_position",
-               "cost_position", "resource_endowment", "deployment_scale")
+               "innovation_position", "cost_position", "resource_endowment", "deployment_scale")
   cells <- lapply(seq_len(nrow(x)), function(i) {
     r <- x[i, , drop = FALSE]
     dep <- r$supply_chain == "Deployment"

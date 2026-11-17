@@ -341,6 +341,7 @@ export const CP_FAMILIES: readonly { id: string; label: string }[] = [
   { id: 'production_position', label: 'Production share' },
   { id: 'manufacturing_capacity', label: 'Operating manufacturing capacity' },
   { id: 'investment_position', label: 'Current investment' },
+  { id: 'innovation_position', label: 'Innovation (patents and public R&D)' },
   { id: 'cost_position', label: 'Cost position' },
   { id: 'resource_endowment', label: 'Resource endowment' },
   { id: 'deployment_scale', label: 'Deployment scale' },

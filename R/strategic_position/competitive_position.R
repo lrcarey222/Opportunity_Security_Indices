@@ -11,7 +11,9 @@
 
 CP_FILLS <- c("na", "structural_zero")
 CP_ORIENTS <- c("as_is", "invert")
-CP_PILLARS <- c("EO", "ES")
+# INN: technology-level innovation evidence (patents, public RD&D) from scripts/29, repeated at the
+# stages the family names by sp_innovation_contrib() (R/strategic_position/innovation_position.R).
+CP_PILLARS <- c("EO", "ES", "INN")
 
 # Categories that describe the technology or the world market rather than the country's own
 # position. They are refused even if a config names them, so a config edit cannot quietly bring
@@ -214,15 +216,24 @@ sp_cp_stop_if_absent <- function(coverage) {
 #   variable_coverage: per family x variable spec x stage, whether the data carries it, for which
 #     technologies, and how much of it is observed.
 # )
-sp_competitive_position <- function(eo_contrib, es_contrib, cfg_cp, techs = NULL) {
+sp_cp_empty_contrib <- function() {
+  data.frame(Country = character(), tech = character(), supply_chain = character(), category = character(),
+             variable = character(), component_value = numeric(), imputed = logical(), stringsAsFactors = FALSE)
+}
+
+# inn_contrib: optional INN pillar rows (sp_innovation_contrib()); NULL = none, and a family that
+# names pillar INN then stops as absent from the data.
+sp_competitive_position <- function(eo_contrib, es_contrib, cfg_cp, techs = NULL, inn_contrib = NULL) {
+  if (is.null(inn_contrib)) inn_contrib <- sp_cp_empty_contrib()
   sp_cp_check_contrib(eo_contrib, "eo_contrib")
   sp_cp_check_contrib(es_contrib, "es_contrib")
+  sp_cp_check_contrib(inn_contrib, "inn_contrib")
   specs <- sp_cp_specs(cfg_cp)
   ctx <- sp_cp_context_specs(cfg_cp)
   min_vars <- as.integer(sp_cp_or(cfg_cp[["min_observed_variables"]], 1L))
   min_countries <- as.integer(sp_cp_or(cfg_cp[["min_countries_per_cell"]], 5L))
 
-  tables <- list(EO = eo_contrib, ES = es_contrib)
+  tables <- list(EO = eo_contrib, ES = es_contrib, INN = inn_contrib)
   sel <- dplyr::bind_rows(lapply(CP_PILLARS, function(p) {
     tbl <- as.data.frame(tables[[p]], stringsAsFactors = FALSE)
     if (!is.null(techs)) tbl <- tbl[tbl$tech %in% techs, , drop = FALSE]
@@ -345,9 +356,9 @@ sp_competitive_position <- function(eo_contrib, es_contrib, cfg_cp, techs = NULL
 # The context variables of competitive_position.context_variables as a long table (Country, tech,
 # supply_chain, pillar, category, variable, value = component_value, observed, reason), for
 # carrying demand and market-size context next to the position. Never used in the score.
-sp_cp_context <- function(eo_contrib, es_contrib, cfg_cp, techs = NULL) {
+sp_cp_context <- function(eo_contrib, es_contrib, cfg_cp, techs = NULL, inn_contrib = NULL) {
   ctx <- sp_cp_context_specs(cfg_cp)
-  tables <- list(EO = eo_contrib, ES = es_contrib)
+  tables <- list(EO = eo_contrib, ES = es_contrib, INN = if (is.null(inn_contrib)) sp_cp_empty_contrib() else inn_contrib)
   out <- lapply(CP_PILLARS, function(p) {
     tbl <- as.data.frame(tables[[p]], stringsAsFactors = FALSE)
     if (!is.null(techs)) tbl <- tbl[tbl$tech %in% techs, , drop = FALSE]
