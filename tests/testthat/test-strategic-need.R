@@ -449,3 +449,19 @@ test_that("fuel_import_techs and immaterial_families are read from the config", 
   expect_equal(al$need_percentile[al$variable == "china_share"], 0.9)
   expect_equal(al$need_percentile[al$variable == "import_hhi"], 0)
 })
+
+test_that("share floor: a trivial China share joins the zero block instead of outranking it", {
+  es <- sn_es(five, rep(0.5, 5))
+  ie <- sn_ie(toupper(substr(five, 1, 3)), imports = rep(1e9, 5), hhi = rep(0.3, 5),
+              china = c(0, 0, 0, 0.005, 0.4), opposite = rep(0, 5))
+  risky <- function(floor) {
+    cl <- sn_stage(sp_strategic_need(es, ie, sn_cfg(share_floor = floor), country_iso3 = sn_lookup(five)))
+    stats::setNames(cl$sn_risky_supplier_exposure, cl$Country)
+  }
+  on <- risky(0.01)
+  expect_equal(on[["Dorne"]], on[["Aland"]])
+  expect_gt(on[["Elbonia"]], on[["Dorne"]])
+  off <- risky(0)
+  expect_gt(off[["Dorne"]], off[["Aland"]])
+  expect_error(sp_strategic_need(es, ie, sn_cfg(share_floor = 1), country_iso3 = sn_lookup(five)), "share_floor")
+})

@@ -184,6 +184,10 @@ strategic_need:
   # by construction: it is treated as not applicable (NA) and their risky-supplier family rests on
   # the China share.
   nonaligned_opposite_bloc: na
+  # A China or opposite-bloc import share below this counts as 0, so a trivial share does not outrank
+  # the large tie of importers that buy nothing from them (rule 7 in R/strategic_position/strategic_need.R).
+  share_floor: 0.01
+  share_floor_variables: [china_share, opposite_bloc_share]
 
 # ---- Revealed Policy Priority ---------------------------------------------------------------------------
 policy_priority:
