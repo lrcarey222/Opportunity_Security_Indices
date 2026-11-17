@@ -359,7 +359,7 @@ function profile(p) {
 }
 const profiles = new Map([...pairs].map(([k, p]) => [k, { ...p, ...profile(p) }]));
 
-// ---- gaps (invented components, as scripts/36 would join them) ---------------------------------------------
+// ---- gaps (invented components, as scripts/42 would join them) ---------------------------------------------
 // complementarity: high (recommended, or need and capability both high), not_assessed (need or capability missing:
 // quadrant none), else low; architecture: strong only when an agreement covers the technology at an established
 // level (R's strong_depth is null by default)

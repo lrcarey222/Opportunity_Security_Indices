@@ -65,6 +65,7 @@ import { RelationshipThesis } from '../../partnerships/RelationshipThesis.tsx';
 import { thesisPartners } from '../../partnerships/thesis.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import type { AibBaselineScenarioDoc, AibInvestmentFlows, AibManagedScenarioDoc, AibMeta, AibScenarioId, AibStrategic } from '../contract.ts';
+import { tradeWhen } from '../contract.ts';
 import { ClassChip } from '../charts/ClassChip.tsx';
 import { useAibScenarioDoc, type ScenarioLoad } from '../data/hooks.ts';
 import { fmtPp, fmtScore, fmtShare, fmtUsd, listWords, plural } from '../derive/format.ts';
@@ -734,7 +735,7 @@ function TodayTrade({
   const scope = useScope(f);
   const toCountry = useCountryHref();
   const filtered = !!(f.tech || f.stage || f.node);
-  const year = doc.meta.tradeYear;
+  const year = tradeWhen(doc.meta);
   const pairCols: Col<TodayPair>[] = [
     { id: 'from', header: 'Supplier', value: (p) => name(p.producer), cell: (p) => <Link className="link" to={toCountry(p.producer)}>{name(p.producer)}</Link> },
     { id: 'to', header: 'Buyer', value: (p) => name(p.consumer), cell: (p) => <Link className="link" to={toCountry(p.consumer)}>{name(p.consumer)}</Link> },

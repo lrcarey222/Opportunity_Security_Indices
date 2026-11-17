@@ -40,7 +40,7 @@ import { NOT_IN_BASKET } from '../derive/taxonomy.ts';
 import { coalitionTargets, isGreedySetMethod, TIER_LABEL, tierMeanings, tierShares } from '../derive/tiers.ts';
 import { aboveWords, DIVERSIFY_HREF, diversifyTotals, hasDiversify } from '../derive/diversify.ts';
 import { QuestionLede, ReadingNotes } from './common.tsx';
-import { AIB_CLASSES, AIB_TIERS, diversifyShockIdOf, inStrategicScope, supplyScenariosOf, type AibDoc } from '../contract.ts';
+import { tradeWhen, AIB_CLASSES, AIB_TIERS, diversifyShockIdOf, inStrategicScope, supplyScenariosOf, type AibDoc } from '../contract.ts';
 import { comparableNodes, nodeScenario, scenarioInfo, SCENARIO_CAVEAT, SCENARIO_ORDER } from '../derive/scenarios.ts';
 import { ScenarioSwatch } from '../charts/ScenarioCompare.tsx';
 
@@ -577,8 +577,11 @@ export default function AibAboutView() {
 
       <H id="data">Data and settings</H>
       <dl className="grid max-w-3xl gap-x-6 gap-y-2 text-sm sm:grid-cols-[12rem_minmax(0,1fr)]">
-        <dt className="text-paper-mute">Trade year</dt>
-        <dd className="text-paper-dim">{m.tradeYear}</dd>
+        <dt className="text-paper-mute">{m.tradePeriod ? 'Trade period' : 'Trade year'}</dt>
+        <dd className="text-paper-dim">
+          {tradeWhen(m)}
+          {m.tradeNote && <span className="block text-xs text-paper-mute" data-testid="aib-trade-note">{m.tradeNote}</span>}
+        </dd>
         {ds || cu ? (
           <>
             <dt className="text-paper-mute">Demand scope</dt>

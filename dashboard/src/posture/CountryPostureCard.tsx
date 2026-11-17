@@ -22,6 +22,7 @@ import { countPostures, countryCells, countryNames, countryPostureRows, POSTURE_
 import { prizeLabel } from './grammar.ts';
 import { StrategyMapLegend, TradeFreshness } from './PostureLegend.tsx';
 import { PostureMatrix } from './PostureMatrix.tsx';
+import { TradeShifts } from './TradeShifts.tsx';
 import { mixedYards } from './yards.ts';
 import { usePostureCore, usePostureDetail } from './store.ts';
 import type { PostureDetail } from './contract.ts';
@@ -159,7 +160,8 @@ export function CountryPostureCard({
           </div>
         </div>
       </ChartCard>
-      {drawer && sel && <PostureNodeDrawer iso3={iso3} name={name} selected={sel} onClose={close} sectorHref={sectorHref} />}
+      <TradeShifts detail={doc ?? null} onSelect={(k) => setSel(k)} />
+      {drawer && sel &&<PostureNodeDrawer iso3={iso3} name={name} selected={sel} onClose={close} sectorHref={sectorHref} />}
     </div>
   );
 }

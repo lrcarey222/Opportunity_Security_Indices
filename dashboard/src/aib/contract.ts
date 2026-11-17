@@ -467,6 +467,13 @@ export interface AibMeta {
   /** the diversification scenario (additive, 2026-10-19; absent in an older bundle) */
   diversify?: AibDiversifyMeta;
   tradeYear: number;
+  /**
+   * the trade period the views name in place of tradeYear, for a run on current dyads (scripts/39; scripts/84
+   * --trade-period, e.g. "2025–26"); absent: tradeYear. Read through tradeWhen().
+   */
+  tradePeriod?: string;
+  /** what the trade period is (scripts/84 --trade-note), for the About page */
+  tradeNote?: string;
   built: string;
   shocks: AibShock[];
   /**
@@ -1582,10 +1589,15 @@ function checkScenarioFiles(p: Problems, s: unknown): void {
 /** True when a manifest's version is newer than this app reads (the module asks for a reload). */
 export const needsNewerApp = (problems: readonly string[]): boolean => problems.some((q) => /needs a newer app/.test(q));
 
+/** The trade period the views name: meta.tradePeriod for a run on current dyads, else the trade year. */
+export const tradeWhen = (m?: Pick<AibMeta, 'tradeYear' | 'tradePeriod'> | null): string =>
+  m?.tradePeriod ?? String(m?.tradeYear ?? 2024);
+
 function checkMeta(p: Problems, m: unknown): void {
   if (!isObj(m)) return p.add('meta: not an object');
   for (const k of ['universe', 'headlineShock', 'headlineScenario', 'built']) p.str(m[k], `meta.${k}`);
   p.num(m.tradeYear, 'meta.tradeYear', { int: true });
+  for (const k of ['tradePeriod', 'tradeNote']) if (m[k] !== undefined) p.str(m[k], `meta.${k}`);
   if (p.arr(m.shocks, 'meta.shocks')) {
     m.shocks.forEach((s, i) => {
       if (!isObj(s)) return p.add(`meta.shocks[${i}]: not an object`);

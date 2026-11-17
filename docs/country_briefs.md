@@ -7,9 +7,12 @@ seven pages plus a technical appendix). It is built on the Country page's curren
 Fences choices, Strategic Industrial Value, Competitive Position, supply-chain and deployment need, and
 policy alignment. It also draws on the Allied Industrial Base (AIB) roles and compacts.
 
-**Status (2026-11-03):** pilot only, for Australia. The other Core Coalition briefs wait for the user's
-review of the pilot's structure, content and figures. The legacy memos of the other 30 core members stay
-hidden, as they were. The pilot report, with the implementation notes and open questions, is
+**Status (2026-11-06):** nine briefs are published:
+- Australia, the pilot, approved after review;
+- Japan, Korea, India and the United States, on 2026-11-04;
+- Germany, the United Kingdom, France and Canada, on 2026-11-05.
+
+The legacy memos stay hidden. The pilot report has the implementation notes and open questions:
 [country_briefs_pilot_report.md](country_briefs_pilot_report.md).
 
 ## Structure

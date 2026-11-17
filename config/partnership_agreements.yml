@@ -3,7 +3,7 @@
 # Individual agreements from several datasets are normalised to one schema
 # (R/agreements/agr_schema.R), linked across sources into canonical agreements, rolled up to
 # country pairs with a provisional depth class, and joined to the capability, need and policy
-# data for the agreement-gap view. Read by scripts/35 (ingest), 36 (build) and 37 (export).
+# data for the agreement-gap view. Read by scripts/41 (ingest), 36 (build) and 37 (export).
 # Every list below is a controlled vocabulary: the validators in R/agreements stop on a value
 # that is not listed here.
 
@@ -11,7 +11,7 @@ version: 1
 
 # --- Sources -------------------------------------------------------------------------------
 # One adapter per source (R/agreements/adapter_<id>.R). Each can be ingested on its own
-# (scripts/35 --source <id>); scripts/36 reads whichever per-source files exist.
+# (scripts/41 --source <id>); scripts/42 reads whichever per-source files exist.
 # kind: structured_dataset | curated | project_reference | staged_export
 # authority: how the confidence rule treats a record from it (structured | curated | secondary)
 sources:
@@ -904,7 +904,7 @@ pairs:
   # date; binding agreements count while in force (DESTA entry into force, minus withdrawals).
   active_window_years: 10
   recent_years: 5
-  # The as-of date of the roll-up (recency windows); scripts/36 overrides it with --as-of.
+  # The as-of date of the roll-up (recency windows); scripts/42 overrides it with --as-of.
   as_of: '2026-11-06'
   # EU-level agreements (party EUU) are also attributed to each current member state's pair with
   # the counterpart, flagged via_eu. DESTA already lists EC agreements under member states.

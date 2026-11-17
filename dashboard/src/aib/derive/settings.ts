@@ -8,7 +8,7 @@
 // supplier cap on the allied market's demand, in words for About and the Diversification page).
 // An older bundle carries only meta.universe, one set for both roles; the words then say that. Pure.
 
-import { diversifyMetaOf, isDictionary, type AibMeta } from '../contract.ts';
+import { tradeWhen, diversifyMetaOf, isDictionary, type AibMeta } from '../contract.ts';
 import { listWords } from './format.ts';
 import { NOT_IN_BASKET, taxonomyOf } from './taxonomy.ts';
 
@@ -74,7 +74,7 @@ export function diversifyRules(m: AibMeta): string[] {
     `A node more concentrated than its benchmark, by more than ${tolerance}, gets the supplier-share cap that would bring its concentration down to the benchmark. In the allied market${n} no supplier may then ship more than the cap times the allied market's demand: every supplier above it loses the excess. A capped supplier that is itself an allied economy (Germany in electric cars) loses only its excess sales: its own purchases stay protected like every allied buyer's.`,
     'Existing relationships, then optimized trade, replace what they can, with the cap holding for every supplier in both; what neither replaces is the new capacity diversification needs, and the investment simulation ranks the hosts for it. Coverage after trade is never below the coverage before it.',
     `The scenario removes no supplier. It runs under the headline settings: ${sem} semantics, ${con} supply, the ${m.headlineScenario} supply assumption, ${demand}, and ${supply}.`,
-    `It is a stress test of how the market could be organized, not a forecast. Dollar values are ${m.tradeYear} trade values.`,
+    `It is a stress test of how the market could be organized, not a forecast. Dollar values are ${tradeWhen(m)} trade values.`,
   ];
 }
 

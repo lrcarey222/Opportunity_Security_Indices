@@ -1,7 +1,7 @@
 # Partnership agreements: hand-maintained inputs
 
 Inputs of the partnership agreements layer (`docs/partnership_agreements.md`) that are kept by
-hand. Each is read by `scripts/35_ingest_agreements.R` through an adapter in `R/agreements/`.
+hand. Each is read by `scripts/41_ingest_agreements.R` through an adapter in `R/agreements/`.
 
 | File | Adapter | Source id |
 |---|---|---|
@@ -63,7 +63,7 @@ from an official source**. Every row becomes one agreement record (`source_recor
 
 1. Find the official source; read it.
 2. Fill one row; keep `curated_id` stable and unique.
-3. Run `scripts/35_ingest_agreements.R --source curated`. The adapter stops on a malformed row and
+3. Run `scripts/41_ingest_agreements.R --source curated`. The adapter stops on a malformed row and
    names its `curated_id` and the problem (bad ISO3, a value outside the vocabularies, a bad date,
    a missing source, a legal status without its wording, a delivery status without evidence).
 

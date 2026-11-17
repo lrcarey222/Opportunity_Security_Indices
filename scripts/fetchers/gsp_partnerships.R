@@ -20,7 +20,7 @@
 # doc_id (whitespace removed) + "-" + the first 8 hex characters of the MD5 of the source URL,
 # with "-2", "-3", ... appended in a fixed order when two rows still share it.
 #
-# Consumer: scripts/35_ingest_agreements.R --source gsp. Manifest id gsp_partnership_documents
+# Consumer: scripts/41_ingest_agreements.R --source gsp. Manifest id gsp_partnership_documents
 # (fetch_policy prefer). To refetch:
 #   Rscript scripts/fetchers/gsp_partnerships.R [--dest=<path>]
 # (default destination: <raw_data_dir>/gsp_partnership_documents.csv, raw_data_dir from the

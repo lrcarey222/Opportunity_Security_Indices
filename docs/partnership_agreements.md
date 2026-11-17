@@ -1,7 +1,7 @@
 # Partnership agreements layer
 
 Status: provisional (built 2026-11-06 on `feat/partnership-agreements`). Config:
-`config/partnership_agreements.yml`. Code: `R/agreements/` (pure), `scripts/35`-`37` (IO),
+`config/partnership_agreements.yml`. Code: `R/agreements/` (pure), `scripts/41`-`43` (IO),
 `dashboard/src/agreements/`.
 
 The layer answers *who cooperates with whom, on what, with which instruments, how deeply, and where
@@ -60,12 +60,12 @@ data/raw/ (gitignored)                 data/reference/
   iisd_trade_climate_tracker.csv (opt.)  partnership_evidence/ (pmemo, when merged)
         |                                       |
         v                                       v
-scripts/35_ingest_agreements.R --source <gsp|desta|memberships|curated|pmemo|iisd|all>
+scripts/41_ingest_agreements.R --source <gsp|desta|memberships|curated|pmemo|iisd|all>
    R/agreements/adapter_<source>.R  ->  data/processed/agreements/source_<source>.rds
    (records + codes + extras, validated by agr_validate())
         |
         v
-scripts/36_build_agreement_partnerships.R
+scripts/42_build_agreement_partnerships.R
    R/agreements/agr_link.R    canonical agreements + links (dedup, provenance kept)
    R/agreements/agr_pairs.R   pair profiles + depth class
    R/agreements/agr_gaps.R    agreement gaps (joins strategic_position_tbl, partner tables)
@@ -76,14 +76,14 @@ scripts/36_build_agreement_partnerships.R
     outputs/aib/aib_relationship_theses.csv; partnership_index_outputs.rds is never read)
         |
         v
-scripts/37_export_agreement_data.R  ->  dashboard/public/data/agreements/
+scripts/43_export_agreement_data.R  ->  dashboard/public/data/agreements/
    R/agreements/agr_export.R  (pure shaping; manifest.json, agreements-global.<h8>.json,
                                agreements-<ISO3>.<h8>.json)
 ```
 
-Run order: `Rscript scripts/35_ingest_agreements.R --source all [--pmemo-dir <dir>]`, then
-`scripts/36_build_agreement_partnerships.R [--processed-dir <dir>]`, then
-`scripts/37_export_agreement_data.R`. `canonical_agreements` carries the per-agreement flags of
+Run order: `Rscript scripts/41_ingest_agreements.R --source all [--pmemo-dir <dir>]`, then
+`scripts/42_build_agreement_partnerships.R [--processed-dir <dir>]`, then
+`scripts/43_export_agreement_data.R`. `canonical_agreements` carries the per-agreement flags of
 section 7 as additive columns (`active`, `recent`, `eligible`, `ei`, `trade`, `in_effect`,
 `trade_depth_index`).
 
@@ -94,7 +94,7 @@ its own; reruns are idempotent (deterministic ids, files overwritten whole).
 
 Adding a source (an EU MoU list, a foreign-ministry database, an export-credit agency): write
 `R/agreements/adapter_<id>.R` returning `list(records, codes, extras)` in the common schema, add the
-source to `sources:` in the config and to `AGR_SOURCES`, and a branch in scripts/35. A source that
+source to `sources:` in the config and to `AGR_SOURCES`, and a branch in scripts/41. A source that
 is a hand-maintained table can instead add rows to the curated CSV.
 
 ## 4. Common schema
@@ -280,7 +280,7 @@ recommendation and no matching need and capability at one stage).
 
 ## 9. Dashboard data contract (`dashboard/public/data/agreements/`)
 
-Written by scripts/37; checked by `dashboard/src/agreements/contract.ts`. Arrays that R exports are
+Written by scripts/43; checked by `dashboard/src/agreements/contract.ts`. Arrays that R exports are
 wrapped in `I()` so a one-item array stays an array.
 
 `manifest.json`
@@ -352,7 +352,7 @@ complementarity (recommended, then need x capability) plus every partner with co
 ## 10. Sources
 
 Records per source at the 2026-11-06 build: GSP 1,946, DESTA 1,028, memberships 25, curated 66,
-pmemo 9, IISD 0 (not staged). Each source is ingested on its own by scripts/35
+pmemo 9, IISD 0 (not staged). Each source is ingested on its own by scripts/41
 (`--source <id>`), validated by `agr_validate()` and written to
 `data/processed/agreements/source_<id>.rds`; raw files have entries in
 `config/raw_inputs_manifest.yml` (rendered in `docs/sources.md`).
@@ -531,7 +531,7 @@ instruments. Types: FTA and ART -> `fta`, ECA and CRM frameworks -> `framework`,
 `mou`, strategic partnership -> `strategic_partnership`.
 
 **Misses and caveats.** The site is behind a bot challenge and all rights reserved: nothing is
-fetched, and without a shared export the source is empty (scripts/35 skips it with a message).
+fetched, and without a shared export the source is empty (scripts/41 skips it with a message).
 IISD codes text, not implementation, so every record is `signed`; legal status stays unknown
 unless the export codes it. Climate subtopics have no sector of their own (kept in
 `extras$topics`). The window starts in 2025.
@@ -588,7 +588,7 @@ unless the export codes it. Climate subtopics have no sector of their own (kept 
   agreement between members; intra-EU pairs look thin in the electro-industrial scope. EU-level
   agreements are attributed to the current 27 members (DESTA applies historical membership).
 - The memo evidence (`data/reference/partnership_evidence/`, merged to main with the partnership
-  memos on 2026-11-06; scripts/35 reads it by default) covers the US-Japan relationship only. The
+  memos on 2026-11-06; scripts/41 reads it by default) covers the US-Japan relationship only. The
   2026-11-06 build read the same files from the memo worktree, before that merge reached this branch.
 
 **Method**

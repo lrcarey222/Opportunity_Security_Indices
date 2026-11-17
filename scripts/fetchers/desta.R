@@ -26,7 +26,7 @@
 #   desta_provisions         the content coding (desta_version_*.csv)
 #   desta_indices            depth_index and its components, depth_rasch, flexibility, enforcement
 #
-# Consumers: scripts/35_ingest_agreements.R --source desta. scripts/05_ingest_sources.R refreshes
+# Consumers: scripts/41_ingest_agreements.R --source desta. scripts/05_ingest_sources.R refreshes
 # the files when they are older than the annual cadence allows (fetch_policy prefer). To refetch:
 #   Rscript scripts/fetchers/desta.R [--raw-dir data/raw] [--only desta_indices,desta_provisions]
 

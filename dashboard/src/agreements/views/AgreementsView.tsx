@@ -1,5 +1,5 @@
 // The Agreements page (/aib/agreements, 2026-11-06; a lazy route chunk of the Allied Industrial Base hub): the
-// partnership agreements of docs/partnership_agreements.md, from public/data/agreements/ (scripts/37), which
+// partnership agreements of docs/partnership_agreements.md, from public/data/agreements/ (scripts/43), which
 // this page loads itself (the manifest with no-cache, then the global file or one economy's file, lazily).
 // Three views on one page, by the URL:
 //   * no economy                  GlobalView: the world map, the pair table and the network matrix;
@@ -246,7 +246,7 @@ function LoadProblem({ error, retry, what }: { error: AgreementsLoadError | null
   if (error?.code === 'NO_DATA') {
     return (
       <Notice kind="info" title="No agreements data in this build">
-        The partnership agreements are not part of this build of the explorer (public/data/agreements/ is written by scripts/37). The rest of the explorer is unaffected.
+        The partnership agreements are not part of this build of the explorer (public/data/agreements/ is written by scripts/43). The rest of the explorer is unaffected.
       </Notice>
     );
   }

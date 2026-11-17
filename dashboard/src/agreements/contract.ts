@@ -1,5 +1,5 @@
 // The partnership agreements data contract (docs/partnership_agreements.md section 9; written by
-// scripts/37_export_agreement_data.R into public/data/agreements/): the manifest (vocabularies, names,
+// scripts/43_export_agreement_data.R into public/data/agreements/): the manifest (vocabularies, names,
 // counts, caveats and the file names), the columnar global file (one entry per pair with an agreement,
 // and per-economy totals) and one file per economy (its agreements, its partners' pair profiles, its
 // agreement gaps and execution gaps). Arrays that R exports are wrapped in I(), so a one-item array stays

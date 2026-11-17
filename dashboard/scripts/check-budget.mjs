@@ -101,7 +101,7 @@ const LIMITS = {
   // (Atlas 2024, the new basket and method) carries the Yards & Fences drawer evidence and measured 2.28 MB;
   // each of the 214 drawer documents still loads only when its economy's drawer opens
   postureData: 2.4 * MB,
-  // the partnership agreements (scripts/37, 2026-11-06; docs/partnership_agreements.md section 9): the page's first
+  // the partnership agreements (scripts/43, 2026-11-06; docs/partnership_agreements.md section 9): the page's first
   // view (no real export measured yet: the limits are the design's), and every file of the bundle
   agreementsPage: 1 * MB,
   agreementsData: 4 * MB,
@@ -473,7 +473,7 @@ figure(
 for (const s of aibScenarios) figure(`Compacts scenario ${s.id}`, [[s.name, s.size]], LIMITS.aibScenario, 'lazy');
 const aibData = aibManifestSize + aibDocSize + aibScenarioSize;
 if (aibManifest) figure('Compacts data', [['manifest + document', aibManifestSize + aibDocSize], ...aibScenarios.map((s) => [`scenario ${s.id}`, s.size])], LIMITS.aibData);
-// the partnership agreements (scripts/37): JSON files, gzipped on the wire; absent: code only
+// the partnership agreements (scripts/43): JSON files, gzipped on the wire; absent: code only
 const agreementsManifest = readManifest(join(agreementsDir, 'manifest.json'));
 const agreementsManifestSize = agreementsManifest ? gz(join(agreementsDir, 'manifest.json')) : 0;
 const agreementsListed = (name) => {
@@ -489,7 +489,7 @@ const agreementsGlobalSize = agreementsManifest ? agreementsListed(agreementsMan
 const agreementsCountries = agreementsManifest ? Object.entries(agreementsManifest.files?.countries ?? {}).map(([iso3, f]) => [iso3, f, agreementsListed(f)]) : [];
 const agreementsMaxCountry = maxOf(agreementsCountries.map(([, , n]) => n));
 const agreementsData = agreementsManifest ? walkFiles(agreementsDir).reduce((s, f) => s + gz(f), 0) : 0;
-const agreementsNote = agreementsManifest ? '' : 'Agreements data absent (scripts/37): code only';
+const agreementsNote = agreementsManifest ? '' : 'Agreements data absent (scripts/43): code only';
 if (keys.aibAgreements) {
   const code = closure([entryKey, keys.aibLayout, keys.aibAgreements].filter(Boolean));
   if (atlasKey) code.add(vm[atlasKey].file);
@@ -534,7 +534,7 @@ else console.log('  (public/data/aib/manifest.json not found: export the Sectora
 if (postureManifest) console.log(`  data/posture/: manifest ${size(postureManifestSize)}, ${postureManifest.core} ${size(postureCoreSize)}; ${postureDetails.length} drawer documents (largest ${size(postureMaxDetail)}), ${size(postureData)} in all`);
 else console.log('  (public/data/posture/manifest.json not found: export the posture bundle with scripts/91)');
 if (agreementsManifest) console.log(`  data/agreements/: manifest ${size(agreementsManifestSize)}, global ${size(agreementsGlobalSize)}; ${agreementsCountries.length} economy files (largest ${size(agreementsMaxCountry)}), ${size(agreementsData)} in all`);
-else console.log('  (public/data/agreements/manifest.json not found: export the partnership agreements with scripts/37)');
+else console.log('  (public/data/agreements/manifest.json not found: export the partnership agreements with scripts/43)');
 console.log('');
 console.log('Figures');
 for (const f of figures) {

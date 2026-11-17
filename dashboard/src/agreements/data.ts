@@ -1,4 +1,4 @@
-// The agreements data (public/data/agreements/, scripts/37): data/agreements/manifest.json is fetched with
+// The agreements data (public/data/agreements/, scripts/43): data/agreements/manifest.json is fetched with
 // no-cache and checked against the contract; the global file and each economy's file (hashed names, cached
 // for good) are fetched lazily, one shared promise each, checked, and kept for the page life. A failure is
 // retryable (the cached promise is dropped). A missing manifest is 'NO_DATA': the page says the bundle is
