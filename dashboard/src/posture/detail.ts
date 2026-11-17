@@ -78,6 +78,33 @@ export interface SupplyChainNeed {
   inventories: string | null;
   essentiality: string | null;
   operationalControl: string | null;
+  /** the latest 12 months of trade blended into this cell's import exposure; null where the cell stays on the base year */
+  currentTrade: CurrentTrade | null;
+}
+
+/** Where the cell's import shares were refreshed with the latest 12 months of trade (scripts/26 current_trade). */
+export interface CurrentTrade {
+  /** "own_monthly": the importer's own monthly customs reports; "ember_fill": estimated from Ember's China export data and partners' reports */
+  source: 'own_monthly' | 'ember_fill' | null;
+  /** the last month of the 12-month window, as YYYYMM */
+  windowEnd: number | null;
+  /** the blend weight on the latest window (the rest is the base year) */
+  weight: number | null;
+  chinaShareBase: number | null;
+  chinaShareLatest: number | null;
+  coerciveShareBase: number | null;
+  coerciveShareLatest: number | null;
+  /** China's share moved 10+ points on $100m+ of imports */
+  flag: 'china_up' | 'china_down' | null;
+}
+
+/** "Aug 2026" from 202608; null when the value is not a YYYYMM month. */
+export function monthLabel(ym: number | null): string | null {
+  if (ym === null || !Number.isFinite(ym)) return null;
+  const y = Math.floor(ym / 100);
+  const m = ym % 100;
+  if (m < 1 || m > 12 || y < 1900) return null;
+  return `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1]} ${y}`;
 }
 
 export interface DeploymentNeed {
@@ -271,6 +298,23 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 const first = <T,>(...xs: (T | null)[]): T | null => xs.find((x) => x !== null) ?? null;
 const numOf = (r: Raw, ...keys: string[]): number | null => first(...keys.map((k) => num(r[k])));
 const strOf = (r: Raw, ...keys: string[]): string | null => first(...keys.map((k) => str(r[k])));
+
+/** The cell's current_trade block (R posture_detail_doc); null when absent. */
+function currentTrade(v: unknown): CurrentTrade | null {
+  if (!isObj(v)) return null;
+  const src = strOf(v, 'source');
+  const fl = strOf(v, 'flag');
+  return {
+    source: src === 'own_monthly' || src === 'ember_fill' ? src : null,
+    windowEnd: numOf(v, 'window_end'),
+    weight: numOf(v, 'weight'),
+    chinaShareBase: numOf(v, 'china_share_base'),
+    chinaShareLatest: numOf(v, 'china_share_latest'),
+    coerciveShareBase: numOf(v, 'coercive_share_base'),
+    coerciveShareLatest: numOf(v, 'coercive_share_latest'),
+    flag: fl === 'china_up' || fl === 'china_down' ? fl : null,
+  };
+}
 /** a list as an array of words or a ";"-separated string */
 const listOf = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x !== '') : typeof v === 'string' && v !== '' ? v.split(';').map((x) => x.trim()).filter(Boolean) : [];
@@ -377,6 +421,7 @@ export function nodeDetail(r: Raw): NodeDetail {
           inventories: strOf(r, 'inventories', 'stockpile'),
           essentiality: strOf(r, 'systemic_essentiality', 'essentiality'),
           operationalControl: strOf(r, 'operational_control', 'digitally_active'),
+          currentTrade: currentTrade(r.current_trade),
         };
   const deployment: DeploymentNeed | null =
     needType === 'deployment'
