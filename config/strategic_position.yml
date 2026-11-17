@@ -78,6 +78,20 @@ competitive_position:
       stages: [Deployment]
       variables:
         - {pillar: EO, category: Production, variable: size, fill: na}
+    innovation_position:
+      # Next-generation position (2026-11-17 prototype, after CFR's Global Energy Innovation Index):
+      # US patent grants in the technology's CPC Y02/Y04S groups (share of world and revealed
+      # technological advantage, plus five-year growth) and IEA public RD&D (share of reporters and
+      # per-GDP intensity, plus growth). Pillar INN reads <outputs>/innovation/innovation_theme.csv
+      # (scripts/29); both are technology-level and repeated at the manufacturing stages only:
+      # extraction, refining and deployment positions are not patent- or lab-driven.
+      # fill na: patents cover the ~67 countries with 100+ US grants in the window; RD&D has no US
+      # after 2015 and no China or India, so a missing value is not a zero.
+      label: Innovation position (climate-tech patents and public RD&D)
+      stages: [Components, Assembly]
+      variables:
+        - {pillar: INN, category: Innovation, variable: Patent Innovation Index, fill: na}
+        - {pillar: INN, category: Innovation, variable: Public RD&D Index, fill: na}
   # Kept out of Competitive Position and reported as cell context (country-invariant, projected or
   # not a measure of the country's own position).
   context_variables:

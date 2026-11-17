@@ -4,7 +4,7 @@
      Regenerate with: Rscript scripts/02_render_sources_doc.R
      Edit config/raw_inputs_manifest.yml instead. -->
 
-Every raw input the pipeline reads, grouped by how it arrives. There are 90 inputs in total.
+Every raw input the pipeline reads, grouped by how it arrives. There are 92 inputs in total.
 
 - **api** — fetched automatically during ingestion; no human step.
 - **manual** — staged by hand into `sharepoint_raw_dir` before a run.
@@ -46,6 +46,7 @@ Fetched programmatically; no human step. Comtrade requires `COMTRADE_API_KEY`. E
 | [UN Comtrade bulk annual totals (TOTAL commodity code, World partner)](https://comtradeplus.un.org/) | `comtrade_bulk/comtrade_bulk_annual_totals.csv` | annual | 2020-2025 (2025 a stub of 8 reporters) | lcarey@rmi.org | `31_build_aib_trade_network.R` |
 | [UN General Assembly ideal points, all-votes series (Bailey, Strezhnev and Voeten 2017; Voeten et al., Harvard Dataverse)](https://doi.org/10.7910/DVN/LEJUQZ) | `un_ga_ideal_points_all.csv`<br>fetch: prefer (API wins) | annual | Dataverse V39.0 (2026-07-30), IdealpointsJuly2025.tab (idealpointall), sessions 1-78 (1946-2023) | lcarey@rmi.org | `12_build_geopolitical_alignment.R` |
 | [UN General Assembly ideal points, final-passage series (Bailey, Strezhnev and Voeten 2017; Voeten et al., Harvard Dataverse)](https://doi.org/10.7910/DVN/LEJUQZ) | `un_ga_ideal_points.csv`<br>fetch: prefer (API wins) | annual | Dataverse V39.0 (2026-07-30), IdealpointestimatesFP_2026FP.csv, sessions 1-80 (1946-2025) | lcarey@rmi.org | `12_build_geopolitical_alignment.R` |
+| [USPTO Open Data Portal, granted US utility patents by Y02/Y04S technology and inventor country](https://api.uspto.gov/api/v1/patent/applications/search) | `uspto_y02_patents.csv`<br>fetch: prefer (API wins) | annual | — | lcarey@rmi.org | `29_build_innovation_position.R` |
 | [World Bank Doing Business indicators (historical)](https://archive.doingbusiness.org/en/data) | `wb_doingbusiness.csv`<br>fetch: prefer (API wins) | discontinued | — | lcarey@rmi.org | `15_build_partner_themes.R` |
 | [World Bank WDI country reference table](https://databank.worldbank.org/source/world-development-indicators) | `wdi_country_info.csv` | annual | — | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `15_build_partner_themes.R`, `20_build_indices.R`, `30_build_allied_network_design.R`, `31_build_aib_trade_network.R`, `40_build_index_vintages.R`, `98_pull_comtrade_energy_dyads.R` |
 | [World Bank WDI development indicator panel](https://databank.worldbank.org/source/world-development-indicators) | `wb_wdi.csv`<br>fetch: prefer (API wins) | annual | — | lcarey@rmi.org | `15_build_partner_themes.R` |
@@ -84,6 +85,7 @@ Each of these must be downloaded and placed in `sharepoint_raw_dir` before a run
 | [IEA clean technology midstream manufacturing capacity](https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide) | `iea_cleantech_Midstream.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R`, `13_build_coalition.R` |
 | [IEA Critical Minerals Dataset](https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset) | `IEA Critical Minerals Dataset 2026.xlsx`<br>newest match: `^IEA Critical Minerals Dataset \d{4}\.xlsx$\|^iea_criticalminerals_\d{2}\.csv$` | annual | 2026 | lcarey@rmi.org | `05_ingest_sources.R`, `10_build_themes.R`, `17_build_iea_pathways.R`, `40_build_index_vintages.R`, `87_export_sector_data.R`, `fig_es.R` |
 | [IEA Energy and Emissions per Value Added database (interactive Excel file)](https://www.iea.org/data-and-statistics/data-product/energy-and-emissions-per-value-added-database) | `IEA_Energy_ValueAdded.xlsx` | irregular | last updated 2023-03-24 (data to 2021) | lcarey@rmi.org | — |
+| [IEA Energy Technology RD&D Budgets, public sector (RDDPUBLIC)](https://www.iea.org/data-and-statistics/data-product/energy-technology-rdd-budgets) | `iea_rdd/RDDPUBLIC.zip` | annual | October 2026 edition (RDDPUBLIC.csv dated 2026-10-20), downloaded 2026-11-17 | lcarey@rmi.org | `29_build_innovation_position.R` |
 | [IEA ETP Clean Energy Technology Guide](https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide) | `IEACleanTechGuidepublicdataset.csv`<br>newest match: `^IEACleanTechGuide.*\.csv$\|^IEA_Clean_Tech_Guide\.csv$` | annual | 2026 | lcarey@rmi.org | `10_build_themes.R` |
 | [IEA EV midstream manufacturing capacity extract](https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer) | `ev_Midstream_capacity.csv` | annual | — | lcarey@rmi.org | `10_build_themes.R` |
 | [IEA Global EV Outlook](https://www.iea.org/data-and-statistics/data-product/global-ev-outlook-2026) | `EV data by country 2026.csv`<br>newest match: `^EV data by country \d{4}\.csv$\|^IEA_EVDataExplorer\d{4}\.xlsx$` | annual | 2026 | lcarey@rmi.org | `10_build_themes.R` |

@@ -188,7 +188,8 @@ describe('the detail document, schema 2', () => {
     expect(com.prize).toMatchObject({ value: 0.8, nodePrize: 0.85, investmentMomentum: 0.7, homeMarket: 0.75, basis: 'national' });
     expect(node('Batteries|Refining').prize).toMatchObject({ value: 0.4, nodePrize: 0.45, homeMarket: null });
     expect(node('Batteries|Extraction').prize.maturity).toBe(9);
-    expect(com.cpFamilies.map((f) => f.id)).toEqual(['export_position', 'manufacturing_capacity', 'investment_position']);
+    expect(com.cpFamilies.map((f) => f.id)).toEqual(['export_position', 'manufacturing_capacity', 'investment_position', 'innovation_position']);
+    expect(com.cpFamilies.find((f) => f.id === 'innovation_position')?.value).toBe(0.7);
     expect(com.pathway).toEqual({ credible: 'yes', basis: ['feasibility', 'pipeline'] });
     expect(com.trace.map((s) => s.result)).toEqual(['high', 'weak', 'yes', 'catch_up']);
     expect(com.policy).toMatchObject({ priority: 0.6, support: 0.6, protection: 0.3, protectionRecorded: false, momentum: 0.12, alignment: 'aligned', alignmentConfidence: 'medium', sources: ['NIPO'] });
