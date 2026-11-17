@@ -94,7 +94,6 @@ t12m <- ctm_t12m_dyads(monthly, windows, completeness, min_months = min_months, 
 dropped <- attr(t12m, "dropped")
 rm(monthly)
 invisible(gc())
-saveRDS(t12m, file.path(processed_dir, "current_trade_dyads_tbl.rds"))
 message("T12M: ", length(unique(t12m$reporter_iso)), " reporters, ", format(nrow(t12m), big.mark = ","), " rows; ",
         sum(!completeness$complete), " partial reporter-months dropped; ", nrow(dropped), " reporter-flows under ",
         min_months, " complete months.")
@@ -104,6 +103,13 @@ annual <- data.table::fread(
   select = c("reporter_iso", "partner_iso", "period", "flow_direction", "cmd_code", "primary_value"),
   colClasses = list(character = c("reporter_iso", "partner_iso", "flow_direction", "cmd_code")), na.strings = c("", "NA"))
 annual <- as.data.frame(annual[annual$period == base_year, ])
+# Same economy universe as the annual dyads: the monthly data also carry aggregate partners ("_X" areas n.e.s.,
+# X1, X2, XX, E19) that scripts/98 never keeps, and they would rank as suppliers.
+economies <- unique(c(annual$reporter_iso, annual$partner_iso))
+n_before <- sum(t12m$primary_value)
+t12m <- t12m[t12m$partner_iso %in% economies & t12m$reporter_iso %in% economies, , drop = FALSE]
+message("T12M: ", round(100 * (1 - sum(t12m$primary_value) / n_before), 2), "% of value dropped as non-economy partners.")
+saveRDS(t12m, file.path(processed_dir, "current_trade_dyads_tbl.rds"))
 dyads <- rbind(annual, t12m[c("reporter_iso", "partner_iso", "period", "flow_direction", "cmd_code", "primary_value")])
 # Ember fill inputs (base-year exports at HS6): China's, and those of the exporters that also report monthly.
 annual_x <- annual[annual$flow_direction == "export", c("reporter_iso", "partner_iso", "cmd_code", "primary_value")]

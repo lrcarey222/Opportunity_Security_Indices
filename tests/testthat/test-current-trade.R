@@ -213,3 +213,35 @@ test_that("blend takes Ember-fill rows column by column and leaves missing colum
   expect_equal(b$import_hhi, 0.4)
   expect_equal(b$exposure_current_source, "ember_fill")
 })
+
+test_that("current dyads take T12M where reported, carry the rest and scale China rows by Ember", {
+  annual <- data.frame(
+    reporter_iso = c("USA", "USA", "VNM", "VNM", "CHN", "CHN", "USA"),
+    partner_iso = c("CHN", "KOR", "CHN", "KOR", "VNM", "USA", "CHN"),
+    period = c(2024L, 2024L, 2024L, 2024L, 2024L, 2024L, 2020L),
+    flow_direction = c("Import", "Import", "Import", "Import", "Export", "Export", "Import"),
+    cmd_code = "854143", primary_value = c(100, 50, 80, 20, 70, 90, 30), stringsAsFactors = FALSE)
+  t12m <- data.frame(reporter_iso = "USA", partner_iso = "CHN", flow_direction = "import", cmd_code = "854143", primary_value = 40)
+  eg <- data.frame(importer_iso = c("VNM", "USA"), hs6 = "854143", growth = c(1.5, 0.5))
+  d <- ctm_current_dyads(annual, t12m, eg)
+  cur <- d[d$period == 2024L, ]
+  expect_equal(cur$primary_value[cur$reporter_iso == "USA"], 40)
+  expect_false(any(cur$reporter_iso == "USA" & cur$partner_iso == "KOR"))
+  expect_equal(cur$primary_value[cur$reporter_iso == "VNM" & cur$partner_iso == "CHN"], 120)
+  expect_equal(cur$current_source[cur$reporter_iso == "VNM" & cur$partner_iso == "CHN"], "carried_ember")
+  expect_equal(cur$primary_value[cur$reporter_iso == "VNM" & cur$partner_iso == "KOR"], 20)
+  expect_equal(cur$primary_value[cur$reporter_iso == "CHN" & cur$partner_iso == "VNM"], 105)
+  expect_equal(cur$primary_value[cur$reporter_iso == "CHN" & cur$partner_iso == "USA"], 45)
+  expect_equal(d$primary_value[d$period == 2020L], 30)
+})
+
+test_that("current dyads keep codes the monthly pull did not ask for", {
+  annual <- data.frame(reporter_iso = "USA", partner_iso = "KOR", period = 2024L, flow_direction = "import",
+                       cmd_code = c("854143", "740311"), primary_value = c(50, 30), stringsAsFactors = FALSE)
+  t12m <- data.frame(reporter_iso = "USA", partner_iso = "KOR", flow_direction = "import", cmd_code = "854143", primary_value = 60)
+  d <- ctm_current_dyads(annual, t12m, data.frame(importer_iso = character(), hs6 = character(), growth = numeric()),
+                         pulled_codes = c("854143", "850760"))
+  expect_equal(d$primary_value[d$cmd_code == "854143"], 60)
+  expect_equal(d$primary_value[d$cmd_code == "740311"], 30)
+  expect_equal(d$current_source[d$cmd_code == "740311"], "carried")
+})

@@ -361,3 +361,42 @@ ctm_ember_fill <- function(base, targets, code_cells, ember, china_x24, others, 
   rownames(out) <- NULL
   out
 }
+
+# ---- Current dyads for the AIB trade network --------------------------------------------------------------
+
+# A dyad table in the scripts/98 layout (reporter_iso, partner_iso, period, flow_direction, cmd_code,
+# primary_value) whose `trade_year` rows are as current as the data allow, for scripts/31 (--dyads):
+#   - a reporter-flow with T12M data (`t12m`, ctm_t12m_dyads()) takes it;
+#   - any other reporter-flow carries its `trade_year` rows forward, and its China rows (China's own
+#     exports, and a non-monthly importer's imports from China) are scaled by Ember's growth for that
+#     destination and HS6 (`ember_growth`: importer_iso, hs6, growth), when Ember has the pair.
+# `pulled_codes` (default: every code in `t12m`) are the codes the monthly pull asked for; a reporter-flow with T12M
+# data still carries its other codes forward (the AIB dictionary reaches beyond the pulled basket).
+# Rows of other years pass through. Adds current_source: "t12m", "carried" or "carried_ember".
+ctm_current_dyads <- function(annual, t12m, ember_growth, trade_year = 2024L, pulled_codes = NULL) {
+  cols <- c("reporter_iso", "partner_iso", "period", "flow_direction", "cmd_code", "primary_value")
+  miss <- setdiff(cols, names(annual))
+  if (length(miss)) stop("ctm_current_dyads(): annual lacks ", paste(miss, collapse = ", "), ".")
+  annual <- as.data.frame(annual)[cols]
+  annual$flow_direction <- tolower(annual$flow_direction)
+  other <- annual[annual$period != trade_year, , drop = FALSE]
+  other$current_source <- rep(NA_character_, nrow(other))
+  base <- annual[annual$period == trade_year, , drop = FALSE]
+  t <- as.data.frame(t12m)[c("reporter_iso", "partner_iso", "flow_direction", "cmd_code", "primary_value")]
+  t$flow_direction <- tolower(t$flow_direction)
+  t$period <- as.integer(trade_year)
+  t$current_source <- rep("t12m", nrow(t))
+  has_now <- unique(paste(t$reporter_iso, t$flow_direction))
+  if (is.null(pulled_codes)) pulled_codes <- unique(t$cmd_code)
+  carried <- base[!(paste(base$reporter_iso, base$flow_direction) %in% has_now & base$cmd_code %in% pulled_codes), , drop = FALSE]
+  carried$current_source <- rep("carried", nrow(carried))
+  dest <- ifelse(carried$reporter_iso == "CHN" & carried$flow_direction == "export", carried$partner_iso,
+                 ifelse(carried$partner_iso == "CHN" & carried$flow_direction == "import", carried$reporter_iso, NA_character_))
+  g <- ember_growth$growth[match(paste(dest, carried$cmd_code), paste(ember_growth$importer_iso, ember_growth$hs6))]
+  scale <- !is.na(dest) & !is.na(g)
+  carried$primary_value[scale] <- carried$primary_value[scale] * g[scale]
+  carried$current_source[scale] <- "carried_ember"
+  out <- rbind(other, carried, t[c(cols, "current_source")])
+  rownames(out) <- NULL
+  out
+}
