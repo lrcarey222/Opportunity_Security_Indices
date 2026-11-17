@@ -185,3 +185,85 @@ ctm_trade_flags <- function(blended, min_move = 0.10, min_imports_usd = 1e8) {
   out$current_trade_flag <- ifelse(big & move > 0, "china_up", ifelse(big & move < 0, "china_down", NA_character_))
   out
 }
+
+# ---- Supplier shares and import partners (partner recommendations) --------------------------------------
+
+# Exporter shares of supply into a balanced panel of importers: those whose own declarations cover the cell
+# in both the base year and the T12M window (source_first == source_last == "importer" in
+# partnership_strength_build_trade_cells() output). China publishes no monthly data, but the panel's
+# imports from China are recorded, so its share is measured. Returns exporter_iso, tech, supply_chain,
+# panel_share_base, panel_share_now, panel_share_change, panel_n_importers, panel_usd_base, panel_usd_now.
+ctm_panel_supplier_shares <- function(trade_cells) {
+  need <- c("exporter_iso", "importer_iso", "tech", "supply_chain", "value_first", "value_last", "source_first", "source_last")
+  miss <- setdiff(need, names(trade_cells))
+  if (length(miss)) stop("ctm_panel_supplier_shares(): trade_cells lacks ", paste(miss, collapse = ", "), ".")
+  p <- trade_cells[trade_cells$source_first %in% "importer" & trade_cells$source_last %in% "importer", need, drop = FALSE]
+  p$value_first[is.na(p$value_first)] <- 0
+  p$value_last[is.na(p$value_last)] <- 0
+  key <- paste(p$tech, p$supply_chain, sep = "\r")
+  n_imp <- tapply(p$importer_iso, key, function(x) length(unique(x)))
+  ex <- stats::aggregate(cbind(value_first, value_last) ~ exporter_iso + tech + supply_chain, data = p, FUN = sum)
+  tot_first <- tapply(ex$value_first, paste(ex$tech, ex$supply_chain, sep = "\r"), sum)
+  tot_last <- tapply(ex$value_last, paste(ex$tech, ex$supply_chain, sep = "\r"), sum)
+  k <- paste(ex$tech, ex$supply_chain, sep = "\r")
+  out <- data.frame(
+    exporter_iso = ex$exporter_iso, tech = ex$tech, supply_chain = ex$supply_chain,
+    panel_share_base = ifelse(tot_first[k] > 0, ex$value_first / tot_first[k], NA_real_),
+    panel_share_now = ifelse(tot_last[k] > 0, ex$value_last / tot_last[k], NA_real_),
+    panel_n_importers = as.integer(n_imp[k]), panel_usd_base = as.numeric(tot_first[k]), panel_usd_now = as.numeric(tot_last[k]),
+    stringsAsFactors = FALSE
+  )
+  out$panel_share_change <- out$panel_share_now - out$panel_share_base
+  out <- out[order(out$tech, out$supply_chain, -out$panel_share_now), ]
+  rownames(out) <- NULL
+  out
+}
+
+# major_supplier_shares with the Atlas export shares moved by the panel's change in supply share:
+#   share = max(0, atlas + weight * panel_share_change), rescaled so each cell's listed total is unchanged
+# (the Atlas listing is complete, so shares keep summing to what they did). Additive, not a ratio, so a
+# small base cannot produce an outsized move. Cells whose panel has fewer than `min_importers` importers
+# or less than `min_panel_usd` of current imports keep their Atlas shares. Other measures pass through.
+# Adds share_basis ("atlas" or "atlas_current") and atlas_share (the unmoved value).
+ctm_update_export_shares <- function(mss, panel, weight = 0.5, measure = "atlas_export_share",
+                                     min_importers = 10L, min_panel_usd = 1e8) {
+  if (!is.numeric(weight) || length(weight) != 1 || is.na(weight) || weight < 0 || weight > 1) {
+    stop("ctm_update_export_shares(): weight must be one number in [0, 1].")
+  }
+  mss$atlas_share <- ifelse(mss$measure == measure, mss$world_share, NA_real_)
+  mss$share_basis <- ifelse(mss$measure == measure, "atlas", NA_character_)
+  ok <- panel[panel$panel_n_importers >= min_importers & panel$panel_usd_now >= min_panel_usd, , drop = FALSE]
+  if (weight == 0 || nrow(ok) == 0) return(mss)
+  idx <- which(mss$measure == measure & !mss$is_aggregate %in% TRUE)
+  key_m <- paste(mss$iso3[idx], mss$tech[idx], mss$supply_chain[idx], sep = "\r")
+  key_p <- paste(ok$exporter_iso, ok$tech, ok$supply_chain, sep = "\r")
+  chg <- ok$panel_share_change[match(key_m, key_p)]
+  cell_ok <- paste(mss$tech[idx], mss$supply_chain[idx], sep = "\r") %in% unique(paste(ok$tech, ok$supply_chain, sep = "\r"))
+  old <- mss$world_share[idx]
+  new <- ifelse(cell_ok, pmax(0, old + weight * ifelse(is.na(chg), 0, chg)), old)
+  cell <- paste(mss$tech[idx], mss$supply_chain[idx], mss$year[idx], sep = "\r")
+  tot_old <- tapply(old, cell, sum, na.rm = TRUE)
+  tot_new <- tapply(new, cell, sum, na.rm = TRUE)
+  scale <- ifelse(tot_new[cell] > 0, tot_old[cell] / tot_new[cell], 1)
+  new <- ifelse(cell_ok, new * scale, old)
+  mss$world_share[idx] <- new
+  if ("value" %in% names(mss)) mss$value[idx] <- ifelse(cell_ok, new, mss$value[idx])
+  mss$share_basis[idx] <- ifelse(cell_ok, "atlas_current", "atlas")
+  mss
+}
+
+# Import partners (reporter_iso, partner_iso, tech, supply_chain, imports_usd) with the T12M table blended in
+# for reporters present in `now`: value = (1 - weight) * base + weight * now over the union of their partners
+# (a partner missing on one side counts 0 there). Reporters absent from `now` keep their base rows.
+ctm_blend_import_partners <- function(base, now, weight = 0.5) {
+  keys <- c("reporter_iso", "partner_iso", "tech", "supply_chain")
+  if (weight == 0 || is.null(now) || nrow(now) == 0) return(base)
+  upd <- unique(now$reporter_iso)
+  keep <- base[!base$reporter_iso %in% upd, , drop = FALSE]
+  m <- merge(base[base$reporter_iso %in% upd, c(keys, "imports_usd")], now[c(keys, "imports_usd")], by = keys,
+             all = TRUE, suffixes = c(".b", ".n"))
+  m$imports_usd <- (1 - weight) * dplyr::coalesce(m$imports_usd.b, 0) + weight * dplyr::coalesce(m$imports_usd.n, 0)
+  out <- rbind(as.data.frame(keep)[c(keys, "imports_usd")], m[c(keys, "imports_usd")])
+  out <- out[out$imports_usd > 0, , drop = FALSE]
+  tibble::as_tibble(out)
+}

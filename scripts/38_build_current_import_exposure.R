@@ -57,6 +57,9 @@ source(local({
 # - data/processed/current_import_exposure_tbl.rds  sp_import_exposure() on the T12M flows, with
 #   window_start/window_end/months_used per importer (rows from mirrors are kept but flagged).
 # - data/processed/import_exposure_compare_tbl.rds  ctm_exposure_compare(): base vs current per importer x cell.
+# - data/processed/current_supplier_panel_tbl.rds  ctm_panel_supplier_shares(): exporter shares of supply into the
+#   balanced importer panel, base year vs T12M (scripts/26 moves the Atlas export shares by the change).
+# - data/processed/current_trade_dyads_tbl.rds  the T12M dyads (scripts/26 builds current import partners).
 # - diagnostics/current_trade/: coverage_by_importer.csv, china_share_moves.csv, top_supplier_changes.csv,
 #   base_reproduction.csv.
 
@@ -91,6 +94,7 @@ t12m <- ctm_t12m_dyads(monthly, windows, completeness, min_months = min_months, 
 dropped <- attr(t12m, "dropped")
 rm(monthly)
 invisible(gc())
+saveRDS(t12m, file.path(processed_dir, "current_trade_dyads_tbl.rds"))
 message("T12M: ", length(unique(t12m$reporter_iso)), " reporters, ", format(nrow(t12m), big.mark = ","), " rows; ",
         sum(!completeness$complete), " partial reporter-months dropped; ", nrow(dropped), " reporter-flows under ",
         min_months, " complete months.")
@@ -121,8 +125,13 @@ base <- sp_import_exposure(trade_cells, alignment = geo, gdp = sp_gdp_usd(gdp_ra
                            value_col = "value_first", trade_year = base_year, coercive_pairs = pairs)
 current <- sp_import_exposure(trade_cells, alignment = geo, gdp = sp_gdp_usd(gdp_raw, year = latest_gdp_year),
                               value_col = "value_last", trade_year = NULL, coercive_pairs = pairs)
+panel <- ctm_panel_supplier_shares(trade_cells)
+attr(panel, "base_year") <- base_year
+saveRDS(panel, file.path(processed_dir, "current_supplier_panel_tbl.rds"))
+message("Supplier panel: ", length(unique(paste(panel$tech, panel$supply_chain))), " cells; median ",
+        stats::median(unique(panel[c("tech", "supply_chain", "panel_n_importers")])$panel_n_importers), " importers per cell.")
 rm(trade_cells)
-win <- unique(t12m[t12m$flow_direction == "import", c("reporter_iso", "window_end", "months_used")])
+win <-unique(t12m[t12m$flow_direction == "import", c("reporter_iso", "window_end", "months_used")])
 win <- merge(win, windows[c("reporter_iso", "window_start")], by = "reporter_iso")
 current <- merge(current, setNames(win, c("importer_iso", "window_end", "months_used", "window_start")), by = "importer_iso", all.x = TRUE)
 current$current_basis <- ifelse(current$import_source %in% "importer", "own_monthly", "no_monthly_report")

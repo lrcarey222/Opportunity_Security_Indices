@@ -125,3 +125,48 @@ test_that("trade flags mark large China moves on blended cells only", {
   expect_true(is.na(fl$current_trade_flag[fl$iso3 == "NEW"]))
   expect_equal(fl$exposure_window_end[fl$iso3 == "IND"], 202608L)
 })
+
+test_that("panel supplier shares use importers that report both years", {
+  tc <- data.frame(
+    exporter_iso = c("CHN", "KOR", "CHN", "KOR", "CHN"), importer_iso = c("USA", "USA", "DEU", "DEU", "AUT"),
+    tech = "Batteries", supply_chain = "Assembly", value_first = c(60, 40, 50, 50, 99), value_last = c(30, 70, 80, 20, 99),
+    source_first = c("importer", "importer", "importer", "importer", "mirror"),
+    source_last = c("importer", "importer", "importer", "importer", "mirror"), stringsAsFactors = FALSE)
+  p <- ctm_panel_supplier_shares(tc)
+  chn <- p[p$exporter_iso == "CHN", ]
+  expect_equal(chn$panel_share_base, 110 / 200)
+  expect_equal(chn$panel_share_now, 110 / 200)
+  expect_equal(chn$panel_n_importers, 2L)
+  expect_equal(p$panel_share_change[p$exporter_iso == "KOR"], 0)
+})
+
+test_that("export shares move by weight x panel change, keep the cell total and skip thin panels", {
+  mss <- data.frame(iso3 = c("CHN", "KOR", "JPN", "CHN"), tech = c("Batteries", "Batteries", "Batteries", "Solar"),
+                    supply_chain = "Assembly", measure = "atlas_export_share", year = 2024L, is_aggregate = FALSE,
+                    world_share = c(0.6, 0.2, 0.2, 0.8), value = c(0.6, 0.2, 0.2, 0.8), stringsAsFactors = FALSE)
+  panel <- data.frame(exporter_iso = c("CHN", "KOR", "CHN"), tech = c("Batteries", "Batteries", "Solar"), supply_chain = "Assembly",
+                      panel_share_change = c(-0.2, 0.2, 0.1), panel_n_importers = c(20L, 20L, 3L), panel_usd_now = 1e10)
+  u <- ctm_update_export_shares(mss, panel, weight = 0.5)
+  b <- u[u$tech == "Batteries", ]
+  expect_equal(sum(b$world_share), 1)
+  expect_equal(b$world_share[b$iso3 == "CHN"], 0.5)
+  expect_equal(b$world_share[b$iso3 == "KOR"], 0.3)
+  expect_equal(b$atlas_share[b$iso3 == "CHN"], 0.6)
+  expect_true(all(b$share_basis == "atlas_current"))
+  expect_equal(u$world_share[u$tech == "Solar"], 0.8)
+  expect_equal(u$share_basis[u$tech == "Solar"], "atlas")
+  expect_equal(ctm_update_export_shares(mss, panel, weight = 0)$world_share, mss$world_share)
+})
+
+test_that("import partners blend for reporters with current data only", {
+  base <- data.frame(reporter_iso = c("USA", "USA", "AUT"), partner_iso = c("CHN", "KOR", "DEU"), tech = "Batteries",
+                     supply_chain = "Assembly", imports_usd = c(100, 50, 10))
+  now <- data.frame(reporter_iso = c("USA", "USA"), partner_iso = c("CHN", "MEX"), tech = "Batteries",
+                    supply_chain = "Assembly", imports_usd = c(40, 60))
+  b <- ctm_blend_import_partners(base, now, weight = 0.5)
+  usa <- stats::setNames(b$imports_usd[b$reporter_iso == "USA"], b$partner_iso[b$reporter_iso == "USA"])
+  expect_equal(usa[["CHN"]], 70)
+  expect_equal(usa[["KOR"]], 25)
+  expect_equal(usa[["MEX"]], 30)
+  expect_equal(b$imports_usd[b$reporter_iso == "AUT"], 10)
+})
