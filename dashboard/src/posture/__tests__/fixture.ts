@@ -267,6 +267,9 @@ function fixtureDetailBase(): Record<string, unknown> {
         // as R writes it (scripts/95): a ratio to current policies, not a 0-1 score
         dn_climate_aligned: { value: 1.04, basis: 'global_context', note: 'World 2035, Net Zero vs Current Policies', unit: 'ratio_vs_current_policies' },
         deployment_trend: 'rising',
+        // the deployment case tag as R writes it (posture_export.R need_block; descriptive, never the choice)
+        deploy_case: 'climate+demand', dn_case_basis: 'multi_case',
+        dn_cases: { security: { status: 'not_measured' }, climate: { value: 0.82, material: true, status: 'assessed' }, demand: { value: 0.78, material: true, status: 'assessed' }, integration: { value: 0.66, material: false, status: 'assessed' } },
         cp: 0.5, cp_deployment_scale: 0.5,
         trace: trace(['2', 'Deployment need', 0.85, 0.67, 'high'], ['2', 'Choice', null, null, 'accelerate']),
         policy: { priority: 0.2, alignment: 'deployment_gap', alignment_confidence: 'low', sources: ['IEA PAMS'], n_sources: 1 },

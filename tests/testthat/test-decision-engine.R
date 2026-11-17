@@ -75,6 +75,44 @@ test_that("Deployment & Use is decided on deployment_need: high -> Accelerate, l
                   cp_contender_pct = 0.99, t3_capability_lo = "strong", pathway_credible = "yes")$deploy_mode, "watch")
 })
 
+test_that("the deployment case is a tag on Accelerate and Watch, never the choice", {
+  case_cols <- list(dn_case = "security+demand", dn_case_security = 0.9, dn_case_security_material = TRUE,
+                    dn_case_climate = NA_real_, dn_case_climate_material = NA, dn_case_demand = 0.82, dn_case_demand_material = TRUE)
+  a <- do.call(de, c(list(supply_chain = "Deployment", deployment_need = 0.9), case_cols))
+  expect_equal(a$deploy_case, "security+demand")
+  expect_match(sp_choice_reason(a, de_cfg()), "mainly for energy security and demand growth")
+  # the tag never moves the choice: the same need without it decides the same way
+  expect_equal(a$strategic_choice, de(supply_chain = "Deployment", deployment_need = 0.9)$strategic_choice)
+  # a Watch with a strong material case says so in its reasons; a strong but immaterial case does not count
+  w <- do.call(de, c(list(supply_chain = "Deployment", deployment_need = 0.5), case_cols))
+  expect_equal(w$strategic_choice, "watch")
+  expect_match(w$watch_reasons, "strong_deployment_case")
+  expect_match(sp_choice_reason(w, de_cfg()), "though the case on energy security and demand growth is strong")
+  # a dual tag whose second case is below the bar: only the strong case is called strong
+  half <- utils::modifyList(case_cols, list(dn_case_demand = 0.7))
+  w3 <- do.call(de, c(list(supply_chain = "Deployment", deployment_need = 0.5), half))
+  expect_match(sp_choice_reason(w3, de_cfg()), "though the case on energy security is strong[.]")
+  # the kind of Watch shows as a reason and in the sentence (public trend data only)
+  pd <- do.call(de, c(list(supply_chain = "Deployment", tech = "Coal", deployment_need = 0.3, dn_watch_kind = "phase_down"), case_cols))
+  expect_match(pd$watch_reasons, "phase_down")
+  expect_equal(pd$watch_kind, "phase_down")
+  expect_match(sp_choice_reason(pd, de_cfg()), "plan for its phase-down")
+  mo <- do.call(de, c(list(supply_chain = "Deployment", deployment_need = 0.3, dn_watch_kind = "momentum", deployment_trend_growth = 22.8), case_cols))
+  expect_match(sp_choice_reason(mo, de_cfg()), "already growing fast [(][+]23% a year[)]")
+  expect_true(is.na(do.call(de, c(list(supply_chain = "Deployment", deployment_need = 0.9, dn_watch_kind = "momentum"), case_cols))$watch_kind))
+  # a fossil Accelerate that the pathway phases down says so
+  fa <- do.call(de, c(list(supply_chain = "Deployment", tech = "Gas", deployment_need = 0.9, dn_phase_down = TRUE), case_cols))
+  expect_match(sp_choice_reason(fa, de_cfg()), "pathway deploys substantially less of it")
+  imm <- utils::modifyList(case_cols, list(dn_case = "none", dn_case_security_material = FALSE, dn_case_demand_material = FALSE))
+  w2 <- do.call(de, c(list(supply_chain = "Deployment", deployment_need = 0.5), imm))
+  expect_false(grepl("strong_deployment_case", w2$watch_reasons))
+  expect_equal(w2$deploy_case, "none")
+  # not assessed, Secure and the producing stages carry no tag
+  expect_true(is.na(do.call(de, c(list(supply_chain = "Deployment", deployment_need = NA_real_), case_cols))$deploy_case))
+  expect_true(is.na(do.call(de, c(list(supply_chain = "Deployment", strategic_posture = "secure", deployment_need = 0.9), case_cols))$deploy_case))
+  expect_true(is.na(do.call(de, c(list(supply_chain = "Components"), case_cols))$deploy_case))
+})
+
 test_that("a Deployment cell never becomes Partner, Preserve or Catch Up", {
   grid <- expand.grid(dn = c(NA, 0.1, 0.5, 0.66, 0.67, 0.9), n = c(NA, 0.1, 0.9), o = c(NA, 0.1, 0.9), cp = c(0.1, 0.95),
                       pw = c("yes", "no", "unknown"), stringsAsFactors = FALSE)

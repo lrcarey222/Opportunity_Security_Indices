@@ -157,6 +157,9 @@ posture_check_invariants <- function(x) {
     secure_or_unassessed_with_mode = sum(p %in% c("secure", "not_assessed") & (!is.na(m) | !is.na(dm))),
     compete_at_deployment = sum(p %in% "compete" & dep),
     accelerate_off_deployment = sum(dm %in% "accelerate" & !dep),
+    # the deployment case tag only on Deploy cells at Deployment (decision_engine.R deploy_case)
+    deploy_case_off_deployment = if ("deploy_case" %in% names(x)) sum(!is.na(x$deploy_case) & !(p %in% "deploy" & dep)) else 0L,
+    watch_kind_off_deployment_watch = if ("watch_kind" %in% names(x)) sum(!is.na(x$watch_kind) & !(dm %in% "watch" & dep)) else 0L,
     unknown_posture = sum(!p %in% names(POSTURE_CODE))
   )
   if (any(bad > 0)) stop("posture bundle: cells break the framework invariants: ",
@@ -200,6 +203,10 @@ posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit 
     p = unname(POSTURE_CODE[x$strategic_posture]),
     m = col("compete_mode"),
     dm = col("deploy_mode"),
+    # the deployment case tag (security / climate / demand / integration, two joined by "+", or none); Deployment only
+    dc = col("deploy_case"),
+    # the kind of deployment Watch is on the detail only (watch_kind and its watch reason): the core is at its
+    # 2.4 MiB budget (2026-11-17); cells.wk stays optional in the contract
     need = posture_r3(posture_need(x)),
     prize = posture_r3(col(posture_prize_col(x))),
     cp = posture_r3(col("cp_contender_pct")),
@@ -388,7 +395,16 @@ posture_detail_doc <- function(tbl, iso3, cfg, created, yf_nodes = NULL) {
         value = num(r, "dn_climate_aligned"), scenario = "climate_aligned", basis = g(r, "dn_climate_aligned_basis"),
         note = "World 2035, Net Zero vs Current Policies", unit = "ratio_vs_current_policies")) else NULL,
       dn_families_observed = num(r, "dn_families_observed"), dn_confidence = g(r, "dn_confidence"),
-      deployment_trend = g(r, "deployment_trend")
+      deployment_trend = g(r, "deployment_trend"),
+      # the deployment case tag and its three cases (deployment_need.R dn_cases(); descriptive, never the choice)
+      # the case statuses below carry the basis and the unassessed cases, and the watch reasons the kind of Watch
+      # (detail.ts derives them): the posture bundle is at its 2.4 MiB budget (2026-11-17)
+      deploy_case = g(r, "deploy_case"),
+      dn_cases = (function(z) if (length(z)) z else NULL)(Filter(Negate(is.null), stats::setNames(lapply(c("security", "climate", "demand", "integration"), function(cs) {
+        st <- g(r, paste0("dn_case_", cs, "_status"))
+        if (is.null(st)) return(NULL)
+        Filter(Negate(is.null), list(value = num(r, paste0("dn_case_", cs)), material = g(r, paste0("dn_case_", cs, "_material")), status = st))
+      }), c("security", "climate", "demand", "integration"))))
     ) else list(
       import_dependence = num(r, "sn_import_dependence"), import_hhi = num(r, "sn_supplier_concentration"),
       china_bloc = num(r, "sn_risky_supplier_exposure"), trusted_alternatives = num(r, "sn_trusted_alternatives"),

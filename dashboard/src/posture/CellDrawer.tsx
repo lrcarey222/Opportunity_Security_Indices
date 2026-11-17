@@ -38,11 +38,11 @@ import { isProducingStage, stageDisplay } from '../lib/stages.ts';
 import { Term } from '../components/Term.tsx';
 import { CHOICE_DEFINITION, CONTROL_LAYER_NOTE, STRATEGY_STEP, TERMS, WATCH_DEPLOYMENT_DEFINITION, WATCH_PROSE_LABEL } from '../content/vocabulary.ts';
 import { POSTURE_TERMS } from './basis.tsx';
-import type { PostureCell, PostureCore, Verb } from './contract.ts';
+import { DEPLOY_CASE_IDS, type DeployCaseId, type PostureCell, type PostureCore, type Verb } from './contract.ts';
 import { cellKey, cellKeyParts, countryCells, countryNames, pct } from './derive.ts';
-import { plainReason, ratioVsCurrentWords, type Family, type NodeDetail } from './detail.ts';
+import { plainReason, ratioVsCurrentWords, type DeploymentCases, type Family, type NodeDetail } from './detail.ts';
 import {
-  ALIGNMENT_CONFIDENCE_LABEL, ALIGNMENT_LABEL, ALIGNMENT_WORDS, alignmentFlagWords, basisWords, borderlineWords, choiceWord, deliveryWords, EVIDENCE_LABEL, flagWords, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE,
+  ALIGNMENT_CONFIDENCE_LABEL, ALIGNMENT_LABEL, DEPLOY_CASE_LABEL, deployCaseWords, ALIGNMENT_WORDS, alignmentFlagWords, basisWords, borderlineWords, choiceWord, deliveryWords, EVIDENCE_LABEL, flagWords, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE,
   pathwayEvidenceWords, traceCodeWords, traceNumberWords, traceTestWords, FENCE_LABEL, MARKET_PRIZE_LABEL, nodeFence,
   nodeFill, NOT_ASSESSED_BORDER, PATHWAY_LABEL, POLICY_SOURCE_LABEL, prizeLabel, RATIONALE_LABEL, RATIONALE_WORDS, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
@@ -108,6 +108,30 @@ function familyText(f: Family | null | undefined, scenarios: Record<string, stri
   return [ratio ?? pct(f.value), ratio ? f.note : null, basisWords(f.basis), f.scenario ? (scenarios[f.scenario] ?? f.scenario) : null].filter(Boolean).join(' · ');
 }
 
+/**
+ * Why more deployment is needed (R deployment_need.R dn_cases): the main case, then each case's percentile within
+ * the technology. A descriptive tag beside Accelerate or Watch, never the choice; a case with no data is "Not
+ * assessed", never weak; fossil technologies have no climate-target case.
+ */
+function DeploymentCaseRows({ cases }: { cases: DeploymentCases }) {
+  const main = deployCaseWords(cases.code);
+  const caseText = (id: DeployCaseId): string => {
+    const c = cases.byCase[id];
+    if (!c || c.status === 'not_assessed') return 'Not assessed';
+    if (c.status === 'not_applicable') return 'Not applicable to this technology';
+    if (c.status === 'not_measured') return 'No measure for this technology yet';
+    return [pct(c.value), c.material === false ? 'relatively high but not material' : null].filter(Boolean).join(' · ');
+  };
+  return (
+    <>
+      <Row k="Main case" v={main ? main.charAt(0).toUpperCase() + main.slice(1) : cases.code === 'none' ? 'No single case stands out' : 'Not assessed'} />
+      {DEPLOY_CASE_IDS.map((id) => (
+        <Row key={id} k={`Case: ${DEPLOY_CASE_LABEL[id]}`} v={caseText(id)} />
+      ))}
+    </>
+  );
+}
+
 function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: NodeDetail | null; core: PostureCore; names: Record<string, string>; status: DrawerDetailStatus }) {
   const sc = core.meta.scenario_labels;
   if (cell.needType === 'deployment') {
@@ -125,6 +149,7 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
               {dn.trend !== null && <Row k="Current deployment trend" v={typeof dn.trend === 'number' ? `${dn.trend >= 0 ? '+' : ''}${(dn.trend * 100).toFixed(0)}% a year` : dn.trend} />}
             </>
           )}
+          {dn?.cases && <DeploymentCaseRows cases={dn.cases} />}
         </dl>
         <Pending status={status} />
         <p className="mt-1 text-xs text-paper-mute">

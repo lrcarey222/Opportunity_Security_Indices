@@ -15,8 +15,9 @@
 // choice, variant}]; their names and evidence are the core's meta.yf_nodes, resolved by yards.ts).
 
 import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
+import { DEPLOY_CASE_IDS, parseDeployCase } from './contract.ts';
 import type {
-  Alignment, AlignmentConfidence, CompeteMode, DeployMode, NeedType, Pathway, PostureStage, PostureWord, SecurityRationale, Verb, Yard,
+  Alignment, AlignmentConfidence, CompeteMode, DeployCase, DeployCaseId, DeployMode, NeedType, Pathway, PostureStage, PostureWord, SecurityRationale, Verb, Yard,
 } from './contract.ts';
 
 /**
@@ -89,6 +90,51 @@ export interface DeploymentNeed {
   alternative: Family | null;
   /** the current deployment trend, in words or as a growth rate */
   trend: string | number | null;
+  /** why more deployment is needed (R deployment_need.R dn_cases): a descriptive tag; absent from older details */
+  cases?: DeploymentCases | null;
+}
+
+/** One deployment case: its percentile within the technology, whether its absolute gate holds, and its status. */
+export interface DeploymentCase {
+  value: number | null;
+  material: boolean | null;
+  /** assessed; not_assessed (no data for this country); not_measured (no measure for the technology yet); not_applicable (no climate case for fossil technologies) */
+  status: 'assessed' | 'not_assessed' | 'not_measured' | 'not_applicable';
+}
+export interface DeploymentCases {
+  /** the tag the engine wrote (deploy_case), or null */
+  code: DeployCase | null;
+  /** multi_case (two or more cases assessed) or single_case */
+  basis: string | null;
+  /** the cases with no data (uncertainty, never a weak case) */
+  unassessed: DeployCaseId[];
+  byCase: Partial<Record<DeployCaseId, DeploymentCase>>;
+}
+
+/** The deployment case block of a Deployment detail (R posture_export.R need_block), or null where absent. */
+function deploymentCases(r: Record<string, unknown>): DeploymentCases | null {
+  const raw = isObj(r.dn_cases) ? r.dn_cases : null;
+  const code = parseDeployCase(str(r.deploy_case));
+  if (!raw && code === null) return null;
+  const byCase: Partial<Record<DeployCaseId, DeploymentCase>> = {};
+  for (const id of DEPLOY_CASE_IDS) {
+    const c = raw && isObj(raw[id]) ? (raw[id] as Record<string, unknown>) : null;
+    const st = c ? str(c.status) : null;
+    if (!c || (st !== 'assessed' && st !== 'not_assessed' && st !== 'not_measured' && st !== 'not_applicable')) continue;
+    byCase[id] = { value: numOf(c, 'value'), material: typeof c.material === 'boolean' ? c.material : null, status: st };
+  }
+  // the unassessed cases and the basis: written by older exports, else derived from the statuses
+  const un = str(r.dn_case_unassessed);
+  const st = Object.values(byCase);
+  const nAssessed = st.filter((c) => c?.status === 'assessed').length;
+  return {
+    code,
+    basis: str(r.dn_case_basis) ?? (raw ? (nAssessed >= 2 ? 'multi_case' : nAssessed === 1 ? 'single_case' : null) : null),
+    unassessed: un
+      ? (un.split(';').filter((x) => (DEPLOY_CASE_IDS as readonly string[]).includes(x)) as DeployCaseId[])
+      : DEPLOY_CASE_IDS.filter((id) => byCase[id]?.status === 'not_assessed'),
+    byCase,
+  };
 }
 
 export interface Prize {
@@ -386,6 +432,7 @@ export function nodeDetail(r: Raw): NodeDetail {
           system: family(r, 'dn_system'),
           alternative: r.dn_climate_aligned !== undefined && r.dn_climate_aligned !== null ? { ...family(r, 'dn_climate_aligned'), scenario: family(r, 'dn_climate_aligned').scenario ?? 'climate_aligned' } : null,
           trend: typeof r.deployment_trend === 'number' && Number.isFinite(r.deployment_trend) ? r.deployment_trend : str(r.deployment_trend),
+          cases: deploymentCases(r),
         }
       : null;
   const pr = isObj(r.prize) ? r.prize : {};

@@ -25,6 +25,10 @@
 # R/strategic_position/sp_helpers.R and dplyr.
 
 DN_FAMILIES <- c("dn_demand", "dn_policy_gap", "dn_system")
+# The family of measures that feed only the deployment case tag (dn_cases()), never deployment_need.
+DN_CASE_ONLY <- "case_only"
+# The deployment cases, in tie-breaking order (dn_cases()).
+DN_CASES <- c("security", "climate", "demand", "integration")
 # Strongest first. A family's basis is the weakest basis among its observed measures (conservative), and
 # the row's dn_basis the weakest among its observed families.
 DN_BASIS_LEVELS <- c("national", "regional_proxy", "observed_trend", "global_context", "not_assessed")
@@ -55,8 +59,10 @@ dn_measure_meta <- function(cfg, measure) {
   m <- cfg$measures[[measure]]
   if (is.null(m)) stop("deployment_need: measure '", measure, "' is not defined in the config.")
   fam <- m$family
-  if (!fam %in% DN_FAMILIES) stop("deployment_need: measure '", measure, "' has unknown family '", fam, "'.")
-  list(family = fam, scenario = cfg$families[[fam]]$scenario, direction = as.numeric(dn_or(m$direction, 1)))
+  if (!fam %in% c(DN_FAMILIES, DN_CASE_ONLY)) stop("deployment_need: measure '", measure, "' has unknown family '", fam, "'.")
+  # a case-only measure (the deployment case tag, dn_cases()) never enters deployment_need
+  scen <- if (fam == DN_CASE_ONLY) dn_or(m$scenario, "current_policy") else cfg$families[[fam]]$scenario
+  list(family = fam, scenario = scen, direction = as.numeric(dn_or(m$direction, 1)))
 }
 
 # The technologies a measure is attributed to: the names of a mapping (tech -> details) or the values of
@@ -595,7 +601,12 @@ dn_generation_shares <- function(ember, sources) {
 # with `fuel`: that fuel's import dependence (EVs displace oil; green hydrogen displaces gas).
 # A source below min_fuel_share contributes nothing; at or above it an unknown import dependence makes the
 # measure unknown (NA), as does an unknown own-fuel import dependence.
-dn_measure_import_displacement <- function(ember, import_dep, spec, cfg) {
+#
+# With `risk` (iso3, fuel, risk in [0, 1]: dn_fuel_supplier_risk()) each displaced fuel's import dependence is
+# multiplied by the risk of its suppliers, giving the imported fuel from risky suppliers that deployment can
+# displace (measure fuel_supplier_risk); an imported fuel (at or above min_fuel_share) with no supplier risk
+# measured makes the measure unknown. A fuel with no imports (import dependence 0) needs no supplier risk.
+dn_measure_import_displacement <- function(ember, import_dep, spec, cfg, risk = NULL, measure = "import_displacement") {
   fuel_of <- unlist(cfg$fuel_of_source)
   srcs <- unique(unlist(lapply(spec, function(s) c(s$displaces))))
   shares <- if (length(srcs) > 0) dn_generation_shares(ember, srcs) else NULL
@@ -603,17 +614,30 @@ dn_measure_import_displacement <- function(ember, import_dep, spec, cfg) {
     v <- import_dep$import_dependence[import_dep$iso3 == iso & import_dep$fuel == fuel]
     if (length(v) == 0) NA_real_ else v[1]
   }
+  rk_of <- function(iso, fuel, idv) {
+    if (is.null(risk)) return(1)
+    if (!is.na(idv) && idv == 0) return(0)
+    v <- risk$risk[risk$iso3 == iso & risk$fuel == fuel]
+    if (length(v) == 0) NA_real_ else v[1]
+  }
   id_year <- suppressWarnings(max(import_dep$year, na.rm = TRUE))
+  src_w <- if (is.null(risk)) "" else " x supplier risk (coercive share of fuel imports, UN Comtrade)"
   out <- list()
   for (tech in names(spec)) {
     s <- spec[[tech]]
     if (!is.null(s$fuel)) {
       d <- import_dep[import_dep$fuel == s$fuel & !is.na(import_dep$import_dependence), , drop = FALSE]
       if (nrow(d) == 0) next
-      out[[tech]] <- dn_df(iso3 = d$iso3, tech = tech, value = d$import_dependence, basis = "national",
-                                source = paste0("EI Statistical Review / EIA: ", tolower(s$fuel), " import dependence (1 - self-sufficiency)"),
+      rk <- vapply(seq_len(nrow(d)), function(j) rk_of(d$iso3[j], s$fuel, d$import_dependence[j]), numeric(1))
+      ok <- !is.na(rk)
+      if (!any(ok)) next
+      d <- d[ok, , drop = FALSE]
+      rk <- rk[ok]
+      out[[tech]] <- dn_df(iso3 = d$iso3, tech = tech, value = d$import_dependence * rk, basis = "national",
+                                source = paste0("EI Statistical Review / EIA: ", tolower(s$fuel), " import dependence (1 - self-sufficiency)", src_w),
                                 year_from = d$year, year_to = d$year,
-                                context = sprintf("%s import dependence %.2f", tolower(s$fuel), d$import_dependence),
+                                context = if (is.null(risk)) sprintf("%s import dependence %.2f", tolower(s$fuel), d$import_dependence)
+                                          else sprintf("%s import dependence %.2f x supplier risk %.2f", tolower(s$fuel), d$import_dependence, rk),
                                 stringsAsFactors = FALSE)
       next
     }
@@ -630,8 +654,11 @@ dn_measure_import_displacement <- function(ember, import_dep, spec, cfg) {
         if (share < cfg$min_fuel_share) next
         idv <- id_of(iso, fuel_of[[r$source[j]]])
         if (is.na(idv)) return(NULL)
-        total <- total + share * idv
-        parts <- c(parts, sprintf("%s %.0f%% x %.2f", tolower(r$source[j]), 100 * share, idv))
+        rk <- rk_of(iso, fuel_of[[r$source[j]]], idv)
+        if (is.na(rk)) return(NULL)
+        total <- total + share * idv * rk
+        parts <- c(parts, if (is.null(risk)) sprintf("%s %.0f%% x %.2f", tolower(r$source[j]), 100 * share, idv)
+                          else sprintf("%s %.0f%% x %.2f x risk %.2f", tolower(r$source[j]), 100 * share, idv, rk))
       }
       if (!is.null(s$own_fuel)) {
         own <- id_of(iso, s$own_fuel)
@@ -640,7 +667,7 @@ dn_measure_import_displacement <- function(ember, import_dep, spec, cfg) {
         parts <- c(parts, sprintf("x (1 - own %s import dependence %.2f)", tolower(s$own_fuel), own))
       }
       dn_df(iso3 = iso, tech = tech, value = total, basis = "national",
-                 source = "Ember generation shares x EI Statistical Review / EIA import dependence",
+                 source = paste0("Ember generation shares x EI Statistical Review / EIA import dependence", src_w),
                  year_from = min(r$year), year_to = max(r$year),
                  context = if (length(parts)) paste(parts, collapse = "; ") else "no imported-fuel generation",
                  stringsAsFactors = FALSE)
@@ -649,9 +676,210 @@ dn_measure_import_displacement <- function(ember, import_dep, spec, cfg) {
     if (!is.null(rows) && nrow(rows) > 0) out[[tech]] <- rows
   }
   if (length(out) == 0) return(dn_empty_measures())
-  res <- dn_finish_measure(do.call(rbind, out), cfg, "import_displacement")
+  res <- dn_finish_measure(do.call(rbind, out), cfg, measure)
   attr(res, "import_dependence_year") <- id_year
   res
+}
+
+# Supplier risk of each fuel's imports per importer (0-1): the coercive share of the fuel's imports at the
+# fuel stage (import_exposure_tbl, UN Comtrade; Coal, Gas and Oil at Extraction: coal, natural gas incl.
+# LNG, crude). Returns iso3, fuel, risk, import_hhi, top_supplier_iso3.
+dn_fuel_supplier_risk <- function(import_exposure, fuels = c("Coal", "Gas", "Oil"), stage = "Extraction") {
+  x <- as.data.frame(import_exposure, stringsAsFactors = FALSE)
+  x <- x[x$tech %in% fuels & x$supply_chain %in% stage & x$observed %in% TRUE & !is.na(x$coercive_import_share), , drop = FALSE]
+  if (nrow(x) == 0) return(dn_df(iso3 = character(), fuel = character(), risk = numeric(), import_hhi = numeric(),
+                                 top_supplier_iso3 = character()))
+  x <- x[!duplicated(x[, c("importer_iso", "tech")]), , drop = FALSE]
+  dn_df(iso3 = toupper(x$importer_iso), fuel = x$tech, risk = pmin(pmax(x$coercive_import_share, 0), 1),
+        import_hhi = x$import_hhi, top_supplier_iso3 = x$top_supplier_iso3, stringsAsFactors = FALSE)
+}
+
+# Net electricity imports as % of demand (0 for net exporters) at the latest year with both (Ember).
+dn_measure_electricity_imports <- function(ember, techs, cfg) {
+  ni <- ember[ember$source == "Net imports", c("iso3", "year", "generation_twh")]
+  names(ni)[3] <- "net"
+  dem <- ember[ember$source == "Demand", c("iso3", "year", "generation_twh")]
+  names(dem)[3] <- "demand"
+  d <- merge(ni, dem, by = c("iso3", "year"))
+  w <- dn_window(d, 0, c("net", "demand"))
+  w <- w[w$demand_to >= cfg$min_system_twh, , drop = FALSE]
+  if (nrow(w) == 0) return(dn_empty_measures())
+  rows <- dn_df(iso3 = w$iso3, value = 100 * pmax(w$net_to, 0) / w$demand_to, basis = "national",
+                source = "Ember yearly electricity data: net imports and demand",
+                year_from = w$year_to, year_to = w$year_to, stringsAsFactors = FALSE)
+  rows$context <- sprintf("net electricity imports %.1f TWh, %.1f%% of demand (%d)", w$net_to, rows$value, w$year_to)
+  dn_finish_measure(dn_expand_techs(rows, techs), cfg, "electricity_import_share")
+}
+
+# One World Development Indicators series from the WDI download (Country.Code, Series.Code, X2022..YR2022.,
+# ...; ".." is missing) -> iso3, year, value at each economy's latest observed year. Aggregates (codes that
+# `is_country` rejects) are dropped.
+dn_wdi_latest <- function(wdi, code, is_country = function(iso3) rep(TRUE, length(iso3))) {
+  w <- wdi[wdi$Series.Code %in% code, , drop = FALSE]
+  ycols <- grep("^X[0-9]{4}", names(w), value = TRUE)
+  if (nrow(w) == 0 || length(ycols) == 0) return(dn_df(iso3 = character(), year = integer(), value = numeric()))
+  long <- do.call(rbind, lapply(ycols, function(yc) {
+    dn_df(iso3 = toupper(trimws(w$Country.Code)), year = as.integer(substr(yc, 2, 5)),
+          value = suppressWarnings(as.numeric(as.character(w[[yc]]))), stringsAsFactors = FALSE)
+  }))
+  long <- long[!is.na(long$value) & nchar(long$iso3) == 3 & is_country(long$iso3), , drop = FALSE]
+  if (nrow(long) == 0) return(dn_df(iso3 = character(), year = integer(), value = numeric()))
+  long <- long[order(long$iso3, -long$year), , drop = FALSE]
+  long <- long[!duplicated(long$iso3), , drop = FALSE]
+  rownames(long) <- NULL
+  long
+}
+
+# Electricity access gap: % of the population without electricity (100 - WDI EG.ELC.ACCS.ZS), unmet demand.
+# `access`: dn_wdi_latest() output.
+dn_measure_access_gap <- function(access, techs, cfg) {
+  if (is.null(access) || nrow(access) == 0) return(dn_empty_measures())
+  rows <- dn_df(iso3 = access$iso3, value = pmax(100 - access$value, 0), basis = "national",
+                source = "World Bank WDI: access to electricity (% of population), EG.ELC.ACCS.ZS",
+                year_from = access$year, year_to = access$year, stringsAsFactors = FALSE)
+  rows$context <- sprintf("%.1f%% of the population without electricity (%d)", rows$value, rows$year_to)
+  dn_finish_measure(dn_expand_techs(rows, techs), cfg, "access_gap")
+}
+
+# ---- Climate case: climate-aligned projections (case-only; user decision 2026-11-17) ----------------------
+
+# BloombergNEF New Energy Outlook long file (read with skip = 2: Report, Scenario, Region, Macro sector, Sector,
+# Indicator, Fuel/type, Unit, Note, 2000 ... 2050) -> one row per series with numeric year columns y<year>.
+dn_neo_prepare <- function(raw) {
+  need <- c("Report", "Scenario", "Region", "Sector", "Indicator", "Fuel/type")
+  miss <- setdiff(need, names(raw))
+  if (length(miss)) stop("BNEF NEO file is missing columns: ", paste(miss, collapse = ", "))
+  ycols <- grep("^[0-9]{4}$", names(raw), value = TRUE)
+  out <- data.frame(scenario = as.character(raw$Scenario), region = as.character(raw$Region), sector = as.character(raw$Sector),
+                    indicator = as.character(raw$Indicator), fuel = as.character(raw[["Fuel/type"]]), stringsAsFactors = FALSE)
+  for (y in ycols) out[[paste0("y", y)]] <- suppressWarnings(as.numeric(raw[[y]]))
+  out[grepl("^NEO", raw$Report) & nzchar(out$scenario), , drop = FALSE]
+}
+
+# One NEO series per region for a scenario: the sum over `fuels` of `indicator` in `sector`, at `year` or summed
+# over `years` (a vector). Returns region, value.
+dn_neo_value <- function(neo, scenario, sector, indicator, fuels, years) {
+  d <- neo[neo$scenario == scenario & neo$sector == sector & neo$indicator == indicator & neo$fuel %in% fuels, , drop = FALSE]
+  cols <- paste0("y", years)
+  if (!nrow(d) || !all(cols %in% names(d))) return(dn_df(region = character(), value = numeric()))
+  v <- rowSums(as.matrix(d[, cols, drop = FALSE]))
+  a <- stats::aggregate(list(value = v), by = list(region = d$region), FUN = function(z) if (any(is.na(z))) NA_real_ else sum(z))
+  a[!is.na(a$value), , drop = FALSE]
+}
+
+# How much more of a technology a climate-aligned pathway deploys than the economics-led baseline: BNEF NEO
+# Net Zero Scenario over Economic Transition Scenario, minus 1, in % (installed capacity at the target year,
+# or a quantity summed over a span of years for investment). National for the economies NEO models, else
+# the NEO region (basis regional_proxy). `region_of`: iso3, region, basis. Spec per technology:
+# {sector, indicator, fuels, year} or {..., years: [from, to]}. Values at or below the reference are kept
+# (the pathway asks for less: no climate case).
+dn_measure_climate_pathway <- function(neo, region_of, cfg) {
+  m <- cfg$measures$climate_pathway
+  if (is.null(neo) || !nrow(neo) || is.null(m)) return(dn_empty_measures())
+  sc <- dn_or(m$scenarios, list(aligned = "NZS", reference = "ETS"))
+  out <- list()
+  for (tech in names(m$techs)) {
+    s <- m$techs[[tech]]
+    yrs <- if (!is.null(s$years)) seq(s$years[[1]], s$years[[2]]) else s$year
+    a <- dn_neo_value(neo, sc$aligned, s$sector, s$indicator, unlist(s$fuels), yrs)
+    r <- dn_neo_value(neo, sc$reference, s$sector, s$indicator, unlist(s$fuels), yrs)
+    j <- merge(a, r, by = "region", suffixes = c("_a", "_r"))
+    j <- j[!is.na(j$value_r) & j$value_r > 0, , drop = FALSE]
+    if (!nrow(j)) next
+    j$ratio <- 100 * (j$value_a / j$value_r - 1)
+    k <- match(region_of$region, j$region)
+    ok <- !is.na(k)
+    if (!any(ok)) next
+    yl <- if (length(yrs) > 1) paste0(min(yrs), "-", max(yrs)) else as.character(yrs)
+    out[[tech]] <- dn_df(iso3 = region_of$iso3[ok], tech = tech, value = j$ratio[k[ok]], basis = region_of$basis[ok],
+                         source = "BloombergNEF New Energy Outlook (subscription): Net Zero vs Economic Transition Scenario",
+                         year_from = min(yrs), year_to = max(yrs),
+                         context = sprintf("NEO %s: net zero %+.0f%% vs economic transition (%s, %s)", region_of$region[ok],
+                                           j$ratio[k[ok]], yl, tolower(s$indicator)),
+                         stringsAsFactors = FALSE)
+  }
+  if (!length(out)) return(dn_empty_measures())
+  dn_finish_measure(do.call(rbind, out), cfg, "climate_pathway")
+}
+
+# Expected growth under BloombergNEF's Economic Transition Scenario (NEO): the compound annual growth, % a year,
+# of the technology's series between base_year and target_year (spec per technology as climate_pathway's).
+# National for the modelled economies; regional proxies only where the measure's regional_proxy is true.
+# Not in the committed config (D13): a sensitivity of deployment_need (config/deployment_need_bnef_*.yml).
+dn_measure_neo_growth <- function(neo, region_of, cfg, measure = "neo_growth") {
+  m <- cfg$measures[[measure]]
+  if (is.null(neo) || !nrow(neo) || is.null(m)) return(dn_empty_measures())
+  y0 <- as.integer(dn_or(m$base_year, 2024))
+  y1 <- as.integer(dn_or(m$target_year, 2035))
+  sc <- dn_or(m$scenario_code, "ETS")
+  ro <- if (isTRUE(m$regional_proxy)) region_of else region_of[region_of$basis == "national", , drop = FALSE]
+  out <- list()
+  for (tech in names(m$techs)) {
+    s <- m$techs[[tech]]
+    a <- dn_neo_value(neo, sc, s$sector, s$indicator, unlist(s$fuels), y0)
+    b <- dn_neo_value(neo, sc, s$sector, s$indicator, unlist(s$fuels), y1)
+    j <- merge(a, b, by = "region", suffixes = c("_0", "_1"))
+    j$g <- dn_cagr_pct(j$value_1, j$value_0, y1 - y0)
+    j <- j[!is.na(j$g), , drop = FALSE]
+    k <- match(ro$region, j$region)
+    ok <- !is.na(k)
+    if (!any(ok)) next
+    out[[tech]] <- dn_df(iso3 = ro$iso3[ok], tech = tech, value = j$g[k[ok]], basis = ro$basis[ok],
+                         source = "BloombergNEF New Energy Outlook (subscription): Economic Transition Scenario",
+                         year_from = y0, year_to = y1,
+                         context = sprintf("NEO %s ETS %+.1f%% a year %d-%d", ro$region[ok], j$g[k[ok]], y0, y1),
+                         stringsAsFactors = FALSE)
+  }
+  if (!length(out)) return(dn_empty_measures())
+  dn_finish_measure(do.call(rbind, out), cfg, measure)
+}
+
+# Distance to the climate-aligned milestone for cars (all new cars electric by 2035 in net-zero pathways):
+# 100 - the latest observed EV share of new-car sales (IEA GEVO "Historical").
+dn_measure_ev_sales_gap <- function(gevo_share, techs, cfg) {
+  if (is.null(gevo_share) || !nrow(gevo_share)) return(dn_empty_measures())
+  h <- gevo_share[gevo_share$category == "Historical" & !is.na(gevo_share$value), , drop = FALSE]
+  if (!nrow(h)) return(dn_empty_measures())
+  h <- h[order(h$iso3, -h$year), , drop = FALSE]
+  h <- h[!duplicated(h$iso3), , drop = FALSE]
+  rows <- dn_df(iso3 = h$iso3, value = pmax(100 - h$value, 0), basis = "national",
+                source = "IEA Global EV Outlook: EV share of new-car sales (historical)", year_from = h$year, year_to = h$year,
+                stringsAsFactors = FALSE)
+  rows$context <- sprintf("EV share of new-car sales %.1f%% (%d): %.1f points from all-electric sales", h$value, h$year, rows$value)
+  dn_finish_measure(dn_expand_techs(rows, techs), cfg, "ev_sales_gap")
+}
+
+# Distance to a decarbonised power system: the fossil share of generation (%) at the latest year (Ember).
+dn_measure_fossil_power_share <- function(ember, techs, cfg) {
+  sh <- dn_generation_shares(ember, "Fossil")
+  if (is.null(sh) || !nrow(sh)) return(dn_empty_measures())
+  sh <- sh[!is.na(sh$share), , drop = FALSE]
+  rows <- dn_df(iso3 = sh$iso3, value = 100 * sh$share, basis = "national",
+                source = "Ember yearly electricity data: fossil share of generation", year_from = sh$year, year_to = sh$year,
+                stringsAsFactors = FALSE)
+  rows$context <- sprintf("fossil fuels %.0f%% of generation (%d)", rows$value, rows$year_to)
+  dn_finish_measure(dn_expand_techs(rows, techs), cfg, "fossil_power_share")
+}
+
+# The NEO region of each economy: the economy itself where NEO models it (config climate_pathway$national,
+# iso3 -> NEO name), else the regional rule on the World Bank region (and UN sub-region for South-eastern Asia).
+# `regions`: iso3, wb_region, un_subregion (from countrycode, in the script). Returns iso3, region, basis.
+dn_neo_region_of <- function(regions, cfg) {
+  m <- cfg$measures$climate_pathway
+  nat <- unlist(m$national)
+  rr <- m$regional
+  reg <- vapply(seq_len(nrow(regions)), function(i) {
+    iso <- regions$iso3[i]
+    if (iso %in% names(rr$overrides)) return(rr$overrides[[iso]])
+    if (!is.na(regions$un_subregion[i]) && regions$un_subregion[i] %in% names(rr$by_un_subregion)) return(rr$by_un_subregion[[regions$un_subregion[i]]])
+    w <- regions$wb_region[i]
+    if (!is.na(w) && w %in% names(rr$by_wb_region)) return(rr$by_wb_region[[w]])
+    dn_or(rr$default, NA_character_)
+  }, character(1))
+  is_nat <- regions$iso3 %in% names(nat)
+  reg[is_nat] <- unname(nat[regions$iso3[is_nat]])
+  out <- dn_df(iso3 = regions$iso3, region = reg, basis = ifelse(is_nat, "national", "regional_proxy"), stringsAsFactors = FALSE)
+  out[!is.na(out$region), , drop = FALSE]
 }
 
 # Variable-renewable (solar + wind) share of generation, %, at the latest year.
@@ -859,6 +1087,168 @@ dn_assemble <- function(measures, universe, cfg) {
   grid[, c(lead, setdiff(names(grid), lead))]
 }
 
+# ---- Deployment case (a descriptive tag; never changes deployment_need or the choice) -------------------
+#
+# Why a country needs more of a technology, as evidence: energy security, climate (national targets and a
+# climate-aligned pathway), demand growth or grid integration (a high wind and solar share that storage, grids
+# and flexible gas must firm). Each case is built like a family from the measures config `cases` attributes
+# to it (a measure may serve different cases for different technologies: approved national-plan capacities
+# for Coal, Gas and Nuclear are demand, renewable and storage targets are climate). Measures that share a
+# `group` are averaged first, so several measures of one thing (fuel imports) count once. Per case:
+#   dn_case_<c>          mid-rank within the technology of the case score (mean of group means of the
+#                        measure percentiles); NA where not assessed
+#   dn_case_<c>_score    the case score
+#   dn_case_<c>_material the absolute gate: at least one of its measures shows the need is real (the
+#                        displaced fuel is imported, a target has a shortfall, demand grows), not just
+#                        relatively high
+#   dn_case_<c>_status   assessed, not_assessed (measures attributed, no data for this country), not_measured
+#                        (no measure of the case is attributed to the technology yet) or not_applicable (the
+#                        case cannot hold for the technology: no climate case for fossil technologies)
+# A case is strong at or above min_pct and material. dn_case is the strongest strong case, or the two
+# strongest joined with "+" (higher first) where the second is within dual_margin; "none" where cases were
+# assessed and none is strong; NA where no case is assessed. Exact ties follow DN_CASES order. A technology's
+# anchor case (config cases$anchor) is named first wherever it is material, whatever its rank, with the
+# strongest other strong case after it.
+# dn_case_unassessed lists the cases with no data (missing evidence is uncertainty, never a weak case);
+# dn_case_basis is multi_case (two or more cases assessed) or single_case.
+dn_cases <- function(scored, dn_tbl, cfg) {
+  cc <- cfg$cases
+  if (is.null(cc)) return(dn_tbl)
+  min_pct <- as.numeric(dn_or(cc$min_pct, 0.5))
+  margin <- as.numeric(dn_or(cc$dual_margin, 0.1))
+  key <- paste(dn_tbl$iso3, dn_tbl$tech)
+  passes <- function(v, g) {
+    if (is.null(g)) return(rep(TRUE, length(v)))
+    ok <- !is.na(v)
+    if (!is.null(g$gt)) ok <- ok & v > g$gt
+    if (!is.null(g$ge)) ok <- ok & v >= g$ge
+    if (!is.null(g$le)) ok <- ok & v <= g$le
+    ok
+  }
+  pct_m <- matrix(NA_real_, nrow(dn_tbl), length(DN_CASES), dimnames = list(NULL, DN_CASES))
+  mat_m <- matrix(FALSE, nrow(dn_tbl), length(DN_CASES), dimnames = list(NULL, DN_CASES))
+  na_m <- matrix(FALSE, nrow(dn_tbl), length(DN_CASES), dimnames = list(NULL, DN_CASES))
+  meas_m <- matrix(NA_character_, nrow(dn_tbl), length(DN_CASES), dimnames = list(NULL, DN_CASES))
+  nm_m <- matrix(FALSE, nrow(dn_tbl), length(DN_CASES), dimnames = list(NULL, DN_CASES))
+  for (cs in DN_CASES) {
+    def <- cc$cases[[cs]]
+    na_m[, cs] <- dn_tbl$tech %in% unlist(def$not_applicable_techs)
+    rows <- list()
+    for (m in names(def$measures)) {
+      md <- def$measures[[m]]
+      s <- scored[scored$measure == m & !is.na(scored$pct), c("iso3", "tech", "measure", "value", "pct"), drop = FALSE]
+      if (!is.null(md$techs)) s <- s[s$tech %in% unlist(md$techs), , drop = FALSE]
+      # include: a measure that is zero for most countries (electricity imports, the access gap) enters a case
+      # only where present; it is still ranked against every country, zeros included
+      if (!is.null(md$include)) s <- s[passes(s$value, md$include), , drop = FALSE]
+      if (nrow(s) == 0) next
+      s$group <- dn_or(md$group, m)
+      s$material <- passes(s$value, md$material)
+      rows[[m]] <- s
+    }
+    if (!length(rows)) next
+    s <- do.call(rbind, rows)
+    s <- s[!s$tech %in% unlist(def$not_applicable_techs), , drop = FALSE]
+    if (nrow(s) == 0) next
+    g <- dplyr::summarise(dplyr::group_by(s, .data$iso3, .data$tech, .data$group), gp = mean(.data$pct),
+                          mat = any(.data$material), ms = paste(sort(unique(.data$measure)), collapse = ", "), .groups = "drop")
+    a <- dplyr::summarise(dplyr::group_by(g, .data$iso3, .data$tech), score = mean(.data$gp), mat = any(.data$mat),
+                          ms = paste(.data$ms, collapse = ", "), .groups = "drop")
+    a <- dplyr::mutate(dplyr::group_by(a, .data$tech), pct = sp_midrank_pct(.data$score))
+    a <- as.data.frame(dplyr::ungroup(a))
+    i <- match(key, paste(a$iso3, a$tech))
+    pct_m[, cs] <- a$pct[i]
+    mat_m[, cs] <- dplyr::coalesce(a$mat[i], FALSE)
+    meas_m[, cs] <- a$ms[i]
+    dn_tbl[[paste0("dn_case_", cs)]] <- a$pct[i]
+    dn_tbl[[paste0("dn_case_", cs, "_score")]] <- a$score[i]
+  }
+  for (cs in DN_CASES) {
+    if (is.null(dn_tbl[[paste0("dn_case_", cs)]])) {
+      dn_tbl[[paste0("dn_case_", cs)]] <- NA_real_
+      dn_tbl[[paste0("dn_case_", cs, "_score")]] <- NA_real_
+    }
+    dn_tbl[[paste0("dn_case_", cs, "_material")]] <- ifelse(is.na(pct_m[, cs]), NA, mat_m[, cs])
+    # not_measured: no measure of the case is attributed to the technology (by design, not a data gap)
+    att <- vapply(dn_tbl$tech, function(t) any(vapply(names(cc$cases[[cs]]$measures), function(m) {
+      md <- cc$cases[[cs]]$measures[[m]]
+      t %in% dn_measure_techs(cfg$measures[[m]]) && (is.null(md$techs) || t %in% unlist(md$techs))
+    }, logical(1))), logical(1))
+    nm_m[, cs] <- !na_m[, cs] & !att
+    dn_tbl[[paste0("dn_case_", cs, "_status")]] <- ifelse(na_m[, cs], "not_applicable", ifelse(!is.na(pct_m[, cs]), "assessed",
+                                                         ifelse(nm_m[, cs], "not_measured", "not_assessed")))
+  }
+  strong <- !is.na(pct_m) & pct_m >= min_pct & mat_m
+  n_ass <- rowSums(!is.na(pct_m))
+  anchor <- unlist(cc$anchor)
+  dn_tbl$dn_case <- vapply(seq_len(nrow(dn_tbl)), function(r) {
+    if (n_ass[r] == 0) return(NA_character_)
+    a <- if (dn_tbl$tech[r] %in% names(anchor)) anchor[[dn_tbl$tech[r]]] else NA_character_
+    # an anchor case that is material is named first, with the strongest other strong case after it
+    if (!is.na(a) && a %in% DN_CASES && !is.na(pct_m[r, a]) && mat_m[r, a]) {
+      o <- pct_m[r, strong[r, ] & DN_CASES != a]
+      if (!length(o)) return(a)
+      return(paste(a, names(o)[order(-o, match(names(o), DN_CASES))][1], sep = "+"))
+    }
+    v <- pct_m[r, strong[r, ]]
+    if (!length(v)) return("none")
+    o <- order(-v, match(names(v), DN_CASES))
+    v <- v[o]
+    if (length(v) >= 2 && v[1] - v[2] <= margin + 1e-9) paste(names(v)[1:2], collapse = "+") else names(v)[1]
+  }, character(1))
+  dn_tbl$dn_case_basis <- ifelse(n_ass == 0, NA_character_, ifelse(n_ass >= 2, "multi_case", "single_case"))
+  dn_tbl$dn_case_unassessed <- vapply(seq_len(nrow(dn_tbl)), function(r) {
+    u <- DN_CASES[is.na(pct_m[r, ]) & !na_m[r, ] & !nm_m[r, ]]
+    if (length(u)) paste(u, collapse = ";") else NA_character_
+  }, character(1))
+  p2 <- function(v) format(round(v, 2), nsmall = 2)
+  dn_tbl$dn_case_note <- vapply(seq_len(nrow(dn_tbl)), function(r) {
+    parts <- vapply(DN_CASES, function(cs) {
+      if (na_m[r, cs]) return(paste0(cs, " n/a"))
+      if (nm_m[r, cs]) return(paste0(cs, " not measured for this technology"))
+      if (is.na(pct_m[r, cs])) return(paste0(cs, " not assessed"))
+      paste0(cs, " ", p2(pct_m[r, cs]), if (!mat_m[r, cs]) " (not material)" else "", " [", meas_m[r, cs], "]")
+    }, character(1))
+    if (n_ass[r] == 0) NA_character_ else paste(parts, collapse = "; ")
+  }, character(1))
+  dn_tbl
+}
+
+# What kind of Watch a cell would be (config watch_kind): phase_down, momentum, declining or low_need, from the
+# climate pathway (scored measures, climate_pathway), the observed deployment trend (deployment_trend_growth,
+# joined by scripts/95 before this runs) and the national target (dn_target_met). Adds dn_watch_kind,
+# dn_phase_down (a fossil technology the pathway asks for less of), dn_momentum and dn_declining (logicals; NA
+# where unobserved) and dn_trend_pct (the observed growth's percentile within the technology, context only). Computed for every assessed cell; the
+# engine shows it on Watch cells only. dn_phase_down is also read beside Accelerate for the fossil technologies.
+dn_watch_kind <- function(scored, dn_tbl, cfg) {
+  wk <- cfg$watch_kind
+  if (is.null(wk)) return(dn_tbl)
+  key <- paste(dn_tbl$iso3, dn_tbl$tech)
+  pw <- scored[scored$measure == "climate_pathway" & !is.na(scored$value), , drop = FALSE]
+  pv <- pw$value[match(key, paste(pw$iso3, pw$tech))]
+  fossil <- dn_tbl$tech %in% unlist(wk$fossil_techs)
+  # fossil technologies only (config watch_kind: the hydrogen series is not a call to phase green hydrogen down)
+  phase <- ifelse(!fossil, FALSE, ifelse(is.na(pv), NA, pv <= as.numeric(dn_or(wk$phase_down_max, -20))))
+  g <- if ("deployment_trend_growth" %in% names(dn_tbl)) as.numeric(dn_tbl$deployment_trend_growth) else rep(NA_real_, nrow(dn_tbl))
+  gp <- rep(NA_real_, nrow(dn_tbl))
+  for (t in unique(dn_tbl$tech)) {
+    i <- dn_tbl$tech == t & !is.na(g)
+    if (any(i)) gp[i] <- sp_midrank_pct(g[i])
+  }
+  met <- if ("dn_target_met" %in% names(dn_tbl)) dn_tbl$dn_target_met %in% TRUE else rep(FALSE, nrow(dn_tbl))
+  fast <- !is.na(g) & g >= as.numeric(dn_or(wk$momentum_min_growth, 15))
+  mom <- ifelse(is.na(g) & !met, NA, fast | (met & !fossil))
+  dec <- ifelse(is.na(g), NA, g < as.numeric(dn_or(wk$decline_max, -2)))
+  assessed <- !is.na(dn_tbl$deployment_need)
+  kind <- ifelse(phase %in% TRUE, "phase_down", ifelse(mom %in% TRUE, "momentum", ifelse(dec %in% TRUE, "declining", "low_need")))
+  dn_tbl$dn_watch_kind <- ifelse(assessed, kind, NA_character_)
+  dn_tbl$dn_phase_down <- phase
+  dn_tbl$dn_momentum <- mom
+  dn_tbl$dn_declining <- dec
+  dn_tbl$dn_trend_pct <- gp
+  dn_tbl
+}
+
 # Measure-level columns, wide: dnm_<measure> (raw value), _pct, _basis, _years, _source, _context.
 dn_measures_wide <- function(scored, cfg) {
   base <- unique(scored[, c("iso3", "tech")])
@@ -917,6 +1307,9 @@ dn_target_detail <- function(shortfall, cfg) {
 #   oil          iso3, year, value (EJ): dn_ei_series(.., "oil_tes_ej")
 #   targets      dn_targets_prepare() output (may have zero rows)
 #   bess         dn_ei_bess_prepare() output (may be NULL)
+#   fuel_risk    dn_fuel_supplier_risk() output (may be NULL; case tag only)
+#   access       dn_wdi_latest(.., "EG.ELC.ACCS.ZS") output (may be NULL; case tag only)
+#   neo          dn_neo_prepare() output and neo_region dn_neo_region_of() output (may be NULL; case tag only)
 # Returns list(measures, shortfall, installed, cap_series).
 dn_build_measures <- function(inp, cfg) {
   ms <- cfg$measures
@@ -941,7 +1334,19 @@ dn_build_measures <- function(inp, cfg) {
                                                "renewables_target_shortfall", default_key = "Renewables") else NULL,
     dn_measure_import_displacement(inp$ember, inp$import_dep, ms$import_displacement$techs, cfg),
     dn_measure_flexibility(inp$ember, dn_measure_techs(ms$flexibility_need), cfg),
-    dn_measure_firm_capacity(inp$ember, dn_measure_techs(ms$firm_capacity_need), cfg)
+    dn_measure_firm_capacity(inp$ember, dn_measure_techs(ms$firm_capacity_need), cfg),
+    # case-only measures (the deployment case tag; never in deployment_need)
+    if (!is.null(ms$fuel_supplier_risk) && !is.null(inp$fuel_risk) && nrow(inp$fuel_risk) > 0)
+      dn_measure_import_displacement(inp$ember, inp$import_dep, ms$fuel_supplier_risk$techs, cfg, risk = inp$fuel_risk,
+                                     measure = "fuel_supplier_risk") else NULL,
+    if (!is.null(ms$electricity_import_share)) dn_measure_electricity_imports(inp$ember, dn_measure_techs(ms$electricity_import_share), cfg) else NULL,
+    if (!is.null(ms$access_gap) && !is.null(inp$access)) dn_measure_access_gap(inp$access, dn_measure_techs(ms$access_gap), cfg) else NULL,
+    if (!is.null(ms$climate_pathway) && !is.null(inp$neo) && !is.null(inp$neo_region))
+      dn_measure_climate_pathway(inp$neo, inp$neo_region, cfg) else NULL,
+    if (!is.null(ms$ev_sales_gap) && !is.null(inp$gevo_share)) dn_measure_ev_sales_gap(inp$gevo_share, dn_measure_techs(ms$ev_sales_gap), cfg) else NULL,
+    if (!is.null(ms$fossil_power_share)) dn_measure_fossil_power_share(inp$ember, dn_measure_techs(ms$fossil_power_share), cfg) else NULL,
+    # the BNEF growth sensitivity (only where a sensitivity config names neo_growth)
+    if (!is.null(ms$neo_growth) && !is.null(inp$neo) && !is.null(inp$neo_region)) dn_measure_neo_growth(inp$neo, inp$neo_region, cfg) else NULL
   )
   parts <- parts[!vapply(parts, is.null, logical(1))]
   measures <- do.call(rbind, c(list(dn_empty_measures()), parts))

@@ -23,7 +23,7 @@ import { isProducingStage, stageRank } from '../lib/stages.ts';
 import type { PostureCell, PostureCore, PostureDetail, PostureMeta, PostureThresholds, Verb, Yard } from './contract.ts';
 import { pct, score100 } from './derive.ts';
 import { ratioVsCurrentWords, type Family, type NodeDetail } from './detail.ts';
-import { basisWords, EVIDENCE_LABEL, MOMENTUM_LABEL, nodeFence, PATHWAY_LABEL, pathwayEvidenceWords, RATIONALE_LABEL, verbOf } from './grammar.ts';
+import { basisWords, deployCaseWords, EVIDENCE_LABEL, MOMENTUM_LABEL, nodeFence, PATHWAY_LABEL, pathwayEvidenceWords, RATIONALE_LABEL, verbOf } from './grammar.ts';
 import { postureMomentum } from './momentum.ts';
 import { cellKeyOf, detailByKey, watchReasons } from './sections.ts';
 import { layerUnits, sivFamilies } from './yards.ts';
@@ -341,6 +341,12 @@ export function fenceReason(n: FenceNode, core: Pick<PostureCore, 'meta'>, names
       return lead ? `${TERMS.bestPlacedPartner}: ${names[lead] ?? lead}` : null;
     }
     case 'accelerate': {
+      // the engine's deployment case (R deployment_need.R dn_cases) where the core carries it; an older core
+      // without cells.dc falls back to the highest family
+      if (c.deployCase !== undefined) {
+        const w = deployCaseWords(c.deployCase);
+        return w ? `Main case: ${w}` : c.deployCase === 'none' ? 'No single case stands out' : 'Case not assessed';
+      }
       const top = topDeploymentFamily(n);
       return top ? `Top need: ${top.label} ${familyWords(top.family, core.meta.scenario_labels)}` : null;
     }

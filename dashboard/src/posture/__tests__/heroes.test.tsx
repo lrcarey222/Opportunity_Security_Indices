@@ -460,7 +460,7 @@ describe('the Country Strategy Map', () => {
     expect(lines[0].split(',').slice(0, 8)).toEqual(['country', 'iso3', 'coalition_tier', 'technology', 'stage', 'stage_name', 'classified', 'posture']);
     expect(lines).toHaveLength(14);
     expect(lines[2]).toBe(
-      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,Secure · High fence,Chokepoint risk,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Needs more attention,medium,Strong,high,,,,,,,${SOURCE},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,,Secure · High fence,Chokepoint risk,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Needs more attention,medium,Strong,high,,,,,,,${SOURCE},2026-10-29,abc1234`,
     );
     expect(lines[12].startsWith('Aland,AAA,core,Solar,Recovery,Recovery & Recycling,FALSE,,')).toBe(true);
   });
@@ -1066,5 +1066,23 @@ describe('Yards & Fences on the Strategy Map and in the drawer (2026-10-30)', ()
     expect([...p.querySelectorAll('dt')][0].textContent?.trim()).toBe('Industrial Opportunity');
     expect(p.textContent).not.toMatch(/Strategic Industrial Value|Industrial commons|Future option|Market prize/);
     expect(screen.queryByTestId('legend-mixed')).toBeNull();
+  });
+});
+
+describe('the drawer: the deployment case beside Accelerate', () => {
+  beforeEach(() => setPostureStore(fixtureStore()));
+  afterEach(() => {
+    cleanup();
+    setPostureStore(null);
+  });
+  it('names the main case and each of the four cases (no measure for the technology says so)', async () => {
+    at('/', <PostureNodeDrawer iso3="AAA" selected="Batteries|Deployment" onClose={() => undefined} />);
+    const d = await screen.findByTestId('cell-drawer');
+    const row = async (k: string) => (await within(d).findByText(k)).nextElementSibling?.textContent;
+    expect(await row('Main case')).toBe('Climate and demand growth');
+    expect(await row('Case: energy security')).toBe('No measure for this technology yet');
+    expect(await row('Case: climate')).toMatch(/^82/);
+    expect(await row('Case: demand growth')).toMatch(/^78/);
+    expect(await row('Case: grid integration')).toMatch(/not material/);
   });
 });

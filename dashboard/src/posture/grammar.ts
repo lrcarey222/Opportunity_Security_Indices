@@ -26,7 +26,7 @@
 //   (the user's tokens).
 
 import type {
-  AibGap, Alignment, AlignmentConfidence, AssessedPosture, CompeteMode, DeployMode, Evidence, Momentum, Pathway, PostureCell, PostureCode, PostureWord,
+  AibGap, Alignment, AlignmentConfidence, AssessedPosture, CompeteMode, DeployCase, DeployCaseId, DeployMode, Evidence, Momentum, Pathway, PostureCell, PostureCode, PostureWord,
   SecurityRationale, Verb,
 } from './contract.ts';
 
@@ -77,6 +77,20 @@ export const VERB_SUBTITLE: Record<Verb, string> = CHOICE_ACTION;
 
 export const MODE_LABEL: Record<CompeteMode, string> = { preserve: 'Preserve', catch_up: 'Catch Up', partner: 'Partner' };
 export const DEPLOY_MODE_LABEL: Record<DeployMode, string> = { accelerate: 'Accelerate', watch: 'Watch' };
+/**
+ * Why more deployment is needed, in words (R decision_engine.R SP_DEPLOY_CASE_LABEL): a sub-label of Accelerate
+ * and Watch, never a seventh choice. Climate reads the country's own targets and a climate-aligned pathway; grid
+ * integration is a wind and solar share that storage, grids and flexible gas must firm.
+ */
+export const DEPLOY_CASE_LABEL: Record<DeployCaseId, string> = {
+  security: 'energy security',
+  climate: 'climate',
+  demand: 'demand growth',
+  integration: 'grid integration',
+};
+/** A deployment case code in words ("energy security and demand growth"); null for none or no case. */
+export const deployCaseWords = (c: DeployCase | null | undefined): string | null =>
+  !c || c === 'none' ? null : c.split('+').map((k) => DEPLOY_CASE_LABEL[k as DeployCaseId] ?? k).join(' and ');
 
 /** The verb of a node (null: not assessed). */
 export function verbOf(c: Pick<PostureCell, 'posture' | 'mode' | 'deployMode'>): Verb | null {
@@ -261,6 +275,12 @@ export const WATCH_REASON_LABEL: Record<string, string> = {
   low_deployment_need: 'Deployment need below the acceleration bar',
   // R decision_engine.R (2026-10-30): the large-yard case holds, so affordable, diversified access should dominate
   large_yard_case: 'Large yard: affordable, diversified access should dominate',
+  // R decision_engine.R (2026-11-17): one deployment case is in the top quarter although overall need is below the bar
+  strong_deployment_case: 'A strong case on one ground (energy security, climate, demand growth or grid integration), though overall need is below the bar',
+  // R deployment_need.R dn_watch_kind (2026-11-17): what kind of deployment Watch
+  phase_down: 'Phase-down: a climate-aligned pathway deploys substantially less of it by 2035',
+  strong_momentum: 'Already growing fast (or the national target is met at the recent build rate)',
+  declining: 'Deployment is falling',
 };
 /** One Watch reason code in words (an unknown code loses its underscores). */
 export const watchReasonWords = (r: string): string => WATCH_REASON_LABEL[r] ?? r.replace(/_/g, ' ');

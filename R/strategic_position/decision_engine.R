@@ -51,6 +51,10 @@ SP_CHOICE_COMPETE_MODES <- c("preserve", "catch_up", "partner")
 SP_CHOICE_FLAGS <- c("review_strong_position_low_prize", "review_top_quarter_below_floor")
 SP_CHOICE_VERB_POSTURE <- c(secure = "secure", preserve = "compete", catch_up = "compete", partner = "compete",
                             accelerate = "deploy", watch = "deploy", not_assessed = "not_assessed")
+# The deployment case (deployment_need.R dn_cases()): why a country needs more of a technology. A descriptive
+# tag on Deployment cells decided Accelerate or Watch; it never changes the choice (user decision 2026-11-17).
+SP_DEPLOY_CASES <- c("security", "climate", "demand", "integration")
+SP_DEPLOY_CASE_LABEL <- c(security = "energy security", climate = "climate", demand = "demand growth", integration = "grid integration")
 
 # The thresholds with their defaults (large_min: the large-yard min_signals; large_position_first: a high
 # Competitive Position is tested before the large-yard case, decision_framework.large_yard.position_first).
@@ -58,7 +62,51 @@ sp_choice_thresholds <- function(cfg = list()) {
   list(need = cfg$need_threshold %||% 0.67, prize = cfg$prize_threshold %||% 0.6, cp = cfg$cp_preserve_pct %||% 0.75,
        deployment = cfg$deployment_threshold %||% 0.6, band = cfg$borderline_band %||% 0.05,
        floor = unlist(cfg$capability_floor %||% c("moderate", "strong")),
-       large_min = as.integer(cfg$large_yard$min_signals %||% 5L), large_position_first = !isFALSE(cfg$large_yard$position_first))
+       large_min = as.integer(cfg$large_yard$min_signals %||% 5L), large_position_first = !isFALSE(cfg$large_yard$position_first),
+       case_watch = cfg$deployment_case$watch_min %||% 0.75)
+}
+
+# The strongest material deployment case per cell (its percentile within the technology), NA where none is
+# assessed and material: the dn_case_<case> and dn_case_<case>_material columns from deployment_need.R.
+sp_deploy_case_max <- function(tbl) {
+  m <- vapply(SP_DEPLOY_CASES, function(cs) {
+    v <- if (paste0("dn_case_", cs) %in% names(tbl)) as.numeric(tbl[[paste0("dn_case_", cs)]]) else rep(NA_real_, nrow(tbl))
+    ok <- if (paste0("dn_case_", cs, "_material") %in% names(tbl)) tbl[[paste0("dn_case_", cs, "_material")]] %in% TRUE else rep(FALSE, nrow(tbl))
+    ifelse(ok, v, NA_real_)
+  }, numeric(nrow(tbl)))
+  if (!is.matrix(m)) m <- matrix(m, nrow = nrow(tbl))
+  out <- suppressWarnings(apply(m, 1, max, na.rm = TRUE))
+  out[!is.finite(out)] <- NA_real_
+  out
+}
+
+# The material cases at or above `min` per cell, strongest first, in words ("energy security and demand
+# growth"); NA where none. A dual tag can hold one strong case and one just within the dual margin.
+sp_deploy_case_strong_words <- function(tbl, min) {
+  m <- vapply(SP_DEPLOY_CASES, function(cs) {
+    v <- if (paste0("dn_case_", cs) %in% names(tbl)) as.numeric(tbl[[paste0("dn_case_", cs)]]) else rep(NA_real_, nrow(tbl))
+    ok <- if (paste0("dn_case_", cs, "_material") %in% names(tbl)) tbl[[paste0("dn_case_", cs, "_material")]] %in% TRUE else rep(FALSE, nrow(tbl))
+    ifelse(ok & !is.na(v) & v >= min, v, NA_real_)
+  }, numeric(nrow(tbl)))
+  if (!is.matrix(m)) m <- matrix(m, nrow = nrow(tbl), dimnames = list(NULL, SP_DEPLOY_CASES))
+  vapply(seq_len(nrow(tbl)), function(r) {
+    v <- m[r, ]
+    v <- v[!is.na(v)]
+    if (!length(v)) return(NA_character_)
+    v <- v[order(-v, match(names(v), SP_DEPLOY_CASES))]
+    paste(unname(SP_DEPLOY_CASE_LABEL[names(v)]), collapse = " and ")
+  }, character(1))
+}
+
+# A column of the table, or NA for every row where the table has none.
+col_or <- function(tbl, nm) if (nm %in% names(tbl)) tbl[[nm]] else rep(NA, nrow(tbl))
+
+# A deployment case code in words: "energy security", "energy security and demand growth"; NA for none / NA.
+sp_deploy_case_words <- function(code) {
+  vapply(code, function(x) {
+    if (is.na(x) || x %in% "none") return(NA_character_)
+    paste(unname(SP_DEPLOY_CASE_LABEL[strsplit(x, "+", fixed = TRUE)[[1]]]), collapse = " and ")
+  }, character(1), USE.NAMES = FALSE)
 }
 
 # The prize column the rule reads: strategic_industrial_value (prize_measure strategic_value, the default) or
@@ -327,6 +375,11 @@ sp_decision_choice <- function(tbl, cfg = list(), post_cfg = list()) {
   tbl$strategic_posture <- posture
   tbl$compete_mode <- mode
   tbl$deploy_mode <- dmode
+  # the deployment case tag (security / climate / demand / integration, two joined by "+", or none) on Deployment cells
+  # decided Accelerate or Watch; NA elsewhere and where no case is assessed
+  tbl$deploy_case <- ifelse(dep & verb %in% SP_DEPLOY_MODES, col("dn_case", NA_character_), NA_character_)
+  # what kind of Watch (deployment_need.R dn_watch_kind): phase_down / momentum / declining / low_need
+  tbl$watch_kind <- ifelse(dep & verb %in% "watch", col("dn_watch_kind", NA_character_), NA_character_)
   tbl$posture_variant <- variant
   tbl$compete_strategy <- mode
   tbl$security_rationale <- ifelse(verb %in% "secure", col("security_rationale", NA_character_), NA_character_)
@@ -381,7 +434,14 @@ sp_watch_reasons <- function(tbl, verb, need, prize, hp, hn, cp_high, pathway, d
     ample_diversified_supply = !dep & !diversify,
     weak_domestic_case = tri & hp & !(cp_high %in% TRUE) & !(pathway %in% "yes"),
     option_value = !dep & mat %in% "emerging",
-    low_deployment_need = dep & !is.na(dn) & dn < th$deployment
+    low_deployment_need = dep & !is.na(dn) & dn < th$deployment,
+    # a material deployment case in the top quarter of the technology although the overall need is below the
+    # bar (deployment_need.R dn_cases(); evidence for readers, never a choice)
+    strong_deployment_case = dep & !is.na(dn) & dn < th$deployment & dplyr::coalesce(sp_deploy_case_max(tbl) >= (th$case_watch %||% 0.75), FALSE),
+    # the kind of deployment Watch (deployment_need.R dn_watch_kind): one of these at most
+    phase_down = dep & !is.na(dn) & dn < th$deployment & col_or(tbl, "dn_watch_kind") %in% "phase_down",
+    strong_momentum = dep & !is.na(dn) & dn < th$deployment & col_or(tbl, "dn_watch_kind") %in% "momentum",
+    declining = dep & !is.na(dn) & dn < th$deployment & col_or(tbl, "dn_watch_kind") %in% "declining"
   )
   out <- apply(r, 1, function(z) if (any(z)) paste(colnames(r)[z], collapse = ";") else NA_character_)
   ifelse(verb %in% "watch", out, NA_character_)
@@ -516,6 +576,22 @@ sp_choice_reason <- function(tbl, cfg = list()) {
                    paste0("a credible pathway (capability anchor: ", words(anc), ifelse(is.na(sup), "", paste0("; corroborated by ", words(sup))), ")"),
                    paste0("a credible pathway (", words(pw), ")"))
   cp_na <- ifelse(is.na(cp), ", with Competitive Position not measured", "")
+  # the deployment case in words (Deployment cells; deployment_need.R dn_cases())
+  case_w <- sp_deploy_case_words(col("dn_case", NA_character_))
+  # the Watch wording names only the cases that clear the bar (a dual tag's second case may not)
+  strong_w <- sp_deploy_case_strong_words(tbl, th$case_watch)
+  # the kind of Watch in words (deployment_need.R dn_watch_kind); public data only (no BNEF value is printed)
+  wk <- col("dn_watch_kind", NA_character_)
+  tg <- suppressWarnings(as.numeric(col("deployment_trend_growth", NA_real_)))
+  tg_w <- ifelse(is.na(tg), "", paste0(" (", ifelse(tg >= 0, "+", ""), format(round(tg), trim = TRUE), "% a year)"))
+  kind_w <- dplyr::case_when(
+    wk %in% "phase_down" ~ ". A climate-aligned pathway deploys substantially less of it by 2035: plan for its phase-down",
+    wk %in% "momentum" & !is.na(tg) ~ paste0(". Deployment is already growing fast", tg_w),
+    wk %in% "momentum" ~ ". The national target is met at the recent build rate",
+    wk %in% "declining" ~ paste0(". Deployment is falling", tg_w),
+    TRUE ~ "")
+  # an Accelerate for a fossil technology that a climate-aligned pathway phases down says so
+  acc_pd <- col("dn_phase_down", NA) %in% TRUE
   dplyr::case_when(
     is.na(v) ~ NA_character_,
     v == "secure" ~ paste0("An acute vulnerability (", gsub("_", " ", dplyr::coalesce(tbl$security_rationale, "security")), "): Secure, whatever the prize."),
@@ -524,8 +600,12 @@ sp_choice_reason <- function(tbl, cfg = list()) {
     v == "not_assessed" & is.na(need) ~ "Supply-chain need is not measured (too few comparable importers or no trade data): not assessed.",
     v == "not_assessed" ~ paste0("The market prize behind ", prize_na_w, " is not measured for this node: not assessed."),
     ly_dec ~ paste0(ly_w, ". Watch: keep it open."),
-    v == "accelerate" ~ paste0("Deployment need ", p2(dn), " is at or above ", p2(th$deployment), ": the energy system needs more of it. This says nothing about where the equipment is made."),
-    v == "watch" & tbl$supply_chain == "Deployment" ~ paste0("Deployment need ", p2(dn), " is below ", p2(th$deployment), ": no major acceleration is required."),
+    v == "accelerate" ~ paste0("Deployment need ", p2(dn), " is at or above ", p2(th$deployment), ": the energy system needs more of it",
+                               ifelse(is.na(case_w), "", paste0(", mainly for ", case_w)),
+                               ifelse(acc_pd, ", though a climate-aligned pathway deploys substantially less of it by 2035", ""),
+                               ". This says nothing about where the equipment is made."),
+    v == "watch" & tbl$supply_chain == "Deployment" ~ paste0("Deployment need ", p2(dn), " is below ", p2(th$deployment), ": no major acceleration is required",
+                                                         ifelse(!is.na(strong_w), paste0(", though the case on ", strong_w, " is strong"), ""), kind_w, "."),
     v == "preserve" & !hp ~ paste0(need_w, ", ", prize_w, ", but a top-quarter position (", p2(cp), " among contenders): Preserve, flagged for review rather than handed to partners."),
     v == "preserve" ~ paste0(prize_w, " and a top-quarter position among contenders (", p2(cp), "): Preserve and extend it."),
     v == "catch_up" ~ paste0(prize_w, ", ", pos_cu, " and ", pw_yes, ": Catch Up."),
