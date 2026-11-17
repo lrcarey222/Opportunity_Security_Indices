@@ -113,16 +113,22 @@ ct_cfg <- sp_cfg$current_trade
 ct_weight <- Sys.getenv("OPSI_CURRENT_TRADE_WEIGHT", "")
 ct_weight <- if (nzchar(ct_weight)) as.numeric(ct_weight) else if (isTRUE(ct_cfg$enabled)) as.numeric(ct_cfg$weight %||% 0) else 0
 if (is.na(ct_weight)) stop("OPSI_CURRENT_TRADE_WEIGHT must be a number in [0, 1].")
+ct_files <- file.path(processed_dir, c("current_import_exposure_tbl.rds", "current_supplier_panel_tbl.rds", "current_trade_dyads_tbl.rds"))
+if (ct_weight > 0 && !all(file.exists(ct_files))) {
+  warning("current_trade is on but ", paste(basename(ct_files[!file.exists(ct_files)]), collapse = ", "),
+          " not found (run scripts/37 and scripts/38_build_current_import_exposure.R): using the base-year trade only.",
+          call. = FALSE, immediate. = TRUE)
+  ct_weight <- 0
+}
 if (ct_weight > 0) {
-  current_exposure <- read_required(file.path(processed_dir, "current_import_exposure_tbl.rds"),
-                                    "run scripts/37 and scripts/38_build_current_import_exposure.R, or set current_trade$enabled: false.")
+  current_exposure <- readRDS(ct_files[1])
   import_exposure <- ctm_blend_exposure(import_exposure, current_exposure, weight = ct_weight)
   message("Current trade: ", sum(import_exposure$exposure_basis == "blend"), " importer x cells blended at weight ", ct_weight,
           " (", length(unique(import_exposure$importer_iso[import_exposure$exposure_basis == "blend"])), " importers); ",
           sum(import_exposure$exposure_basis == "current_only"), " observed only now.")
   rm(current_exposure)
 }
-geo_alignment <-read_required(file.path(processed_dir, "geo_alignment_tbl.rds"), "run scripts/12_build_geopolitical_alignment.R.")
+geo_alignment <- read_required(file.path(processed_dir, "geo_alignment_tbl.rds"), "run scripts/12_build_geopolitical_alignment.R.")
 major_supplier_shares <- read_required(file.path(processed_dir, "major_supplier_shares_tbl.rds"), "run scripts/10_build_themes.R.")
 tech_ghg <- read_required(file.path(processed_dir, "tech_ghg_tbl.rds"), "run scripts/10_build_themes.R.")
 evidence <- vse_read_check(utils::read.csv(
@@ -515,9 +521,7 @@ capability <- sp_cell_capability(supply$cells, aib_cells)
 # posture and opportunity axis keep the structural supply.
 ct_partners <- ct_weight > 0 && !isFALSE(ct_cfg$partner_recs)
 if (ct_partners) {
-  panel_path <- file.path(processed_dir, "current_supplier_panel_tbl.rds")
-  if (!file.exists(panel_path)) stop(panel_path, " not found; run scripts/38_build_current_import_exposure.R.")
-  mss_now <- ctm_update_export_shares(major_supplier_shares, readRDS(panel_path), weight = ct_weight,
+  mss_now <- ctm_update_export_shares(major_supplier_shares, readRDS(ct_files[2]), weight = ct_weight,
                                       min_importers = ct_cfg$supplier_min_importers %||% 10L,
                                       min_panel_usd = ct_cfg$supplier_min_panel_usd %||% 1e8)
   supply_now <- sp_supply_structure(mss_now, coercive_pairs, post_cfg$mineral_min_demand_share,
@@ -559,7 +563,7 @@ if (file.exists(dyad_path) && (!file.exists(imp_path) || file.mtime(imp_path) < 
 }
 import_partners <- if (file.exists(imp_path)) readRDS(imp_path) else NULL
 if (ct_partners && !is.null(import_partners)) {
-  t12 <- read_required(file.path(processed_dir, "current_trade_dyads_tbl.rds"), "run scripts/38_build_current_import_exposure.R.")
+  t12 <- readRDS(ct_files[3])
   t12 <- t12[t12$flow_direction == "import", , drop = FALSE]
   t12$code6 <- stringr::str_pad(t12$cmd_code, 6, side = "left", pad = "0")
   codes6 <- unique(trade_codes[, c("tech", "supply_chain", "code6")])
