@@ -10,7 +10,8 @@
 VSE_STATUSES <- c("exact", "split", "shared", "proxy", "tech_wide", "no_data")
 VSE_COUNTRY_VARIATION <- c("country", "regional", "global", "pair", "single_country")
 # SI documents the terms of the deprecated Strategic Index; CP, SN and PP are the new dimensions.
-VSE_PILLARS <- c("EO", "ES", "Policy", "PSI", "SI", "CP", "SN", "PP")
+# INN: innovation evidence (patents, public RD&D; scripts/29) read by Competitive Position.
+VSE_PILLARS <- c("EO", "ES", "Policy", "PSI", "SI", "CP", "SN", "PP", "INN")
 VSE_COLUMNS <- c(
   "map_id", "pillar", "category", "variable", "tech", "stage", "legacy_stage",
   "evidence_status", "allocation_method", "country_variation", "source", "notes"

@@ -24,7 +24,7 @@
 import { SCENARIO_DEFINITION, SCENARIO_METHOD_NAME, SCENARIO_NAME, STATE } from '../../content/vocabulary.ts';
 import { NEUTRAL_SERIES } from '../../theme/palette.ts';
 import { isNum } from '../../lib/format.ts';
-import {
+import { tradeWhen,
   AIB_CLASSES, AIB_SCENARIO_IDS, diversifyShockIdOf, scenarioDefsOf, scenarioFilesOf, scenarioNamesOf,
   type AibBaselineScenarioDoc, type AibCoalition, type AibCompact, type AibDoc, type AibInvestmentEdge, type AibInvestmentFlows, type AibManagedScenarioDoc,
   type AibManifest, type AibMeta, type AibMetrics, type AibNetwork, type AibNode, type AibPathStep, type AibRole, type AibScenarioDoc, type AibScenarioId,
@@ -177,8 +177,8 @@ export const scenarioFileTag = (id: AibScenarioId, meta: AibMeta | null | undefi
 export const SCENARIO_CAVEAT = 'Scenarios are stress tests of how the market could be organized, not forecasts; dollar values are 2024 trade values.';
 
 /** SCENARIO_CAVEAT with the bundle's trade year. */
-export const scenarioCaveat = (meta?: Pick<AibMeta, 'tradeYear'> | null): string =>
-  `Scenarios are stress tests of how the market could be organized, not forecasts; dollar values are ${meta?.tradeYear ?? 2024} trade values.`;
+export const scenarioCaveat = (meta?: Pick<AibMeta, 'tradeYear' | 'tradePeriod'> | null): string =>
+  `Scenarios are stress tests of how the market could be organized, not forecasts; dollar values are ${tradeWhen(meta)} trade values.`;
 
 /**
  * The bundle carries Managed Interdependence as a scenario (the toggle is shown): meta.scenarios lists it,
@@ -210,7 +210,7 @@ export const MANAGED_SHOCK_WORDS = 'no supplier removed; supply above the concen
  * scenario's), so the pages call it by one name.
  */
 export function scenarioShockLabel(meta: AibMeta, id: AibScenarioId): string {
-  if (id === 'baseline') return `No disruption: trade as it is today (${meta.tradeYear})`;
+  if (id === 'baseline') return `No disruption: trade as it is today (${tradeWhen(meta)})`;
   if (id === 'managed') return MANAGED_SHOCK_WORDS;
   const sid = scenarioInfo(meta, id).shockId;
   return meta.shocks.find((s) => s.id === sid)?.label ?? sid ?? scenarioLabel(id, meta);

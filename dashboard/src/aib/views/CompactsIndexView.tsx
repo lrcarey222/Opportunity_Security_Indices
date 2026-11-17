@@ -43,7 +43,7 @@ import { TableView, type Col } from '../../components/TableView.tsx';
 import { Checkbox, Disclosure, EmptyState, FilterRow, PageHead, Select } from '../../components/ui.tsx';
 import { useTitle } from '../../shell/title.ts';
 import { EYEBROW, PAGE, useAibCtx } from '../AibLayout.tsx';
-import { AIB_PHYSICAL_WARNING, coalitionMembersOf, diversifyShockIdOf, inStrategicScope, type AibCompact, type AibManagedScenarioDoc, type AibNode, type AibStrategic } from '../contract.ts';
+import { tradeWhen, AIB_PHYSICAL_WARNING, coalitionMembersOf, diversifyShockIdOf, inStrategicScope, type AibCompact, type AibManagedScenarioDoc, type AibNode, type AibStrategic } from '../contract.ts';
 import { ClassLegend, ClassSwatch, FlaggedClass, PhysicalWarning, PolicyNeeds } from '../charts/ClassChip.tsx';
 import { CoverageStrip } from '../charts/CoverageStrip.tsx';
 import { LostByClassBar } from '../charts/LostByClassBar.tsx';
@@ -426,7 +426,7 @@ function RunLine() {
         </>
       )}
       {sem && !mi ? `, ${sem.label.toLowerCase()} semantics (${sem.mode === 'hold' ? 'the removed supplier keeps buying' : sem.words})` : ''}
-      {con ? `, ${con.label.toLowerCase()} supply` : ''}; trade in {m.tradeYear}.{' '}
+      {con ? `, ${con.label.toLowerCase()} supply` : ''}; trade in {tradeWhen(m)}.{' '}
       {ds || cu ? (
         <>
           Whose demand is protected: <span className="text-paper-dim">{ds ? ds.words : m.universe}</span>. Who may supply:{' '}

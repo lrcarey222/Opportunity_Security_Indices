@@ -28,7 +28,7 @@ import { AIB_SIDES, MANAGED_INTERDEPENDENCE, MODULE_QUESTION, SCENARIO_CHART_LAB
 import { POSTURE_TERMS } from '../../posture/index.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
-import { AIB_CLASSES, inStrategicScope, type AibCompact } from '../contract.ts';
+import { tradeWhen, AIB_CLASSES, inStrategicScope, type AibCompact } from '../contract.ts';
 import { ClassChip, ClassLegend, ClassSwatch } from '../charts/ClassChip.tsx';
 import { LostByClassBar } from '../charts/LostByClassBar.tsx';
 import { CoverageLegend, ScenarioBars, ScenarioClassBars, ScenarioCoverageCompare, ScenarioSwatch, ScenarioTag } from '../charts/ScenarioCompare.tsx';
@@ -203,7 +203,7 @@ function ThreeWay({ rows }: { rows: OverviewRow[] }) {
     <ChartCard
       headingLevel={3}
       title="The three scenarios side by side"
-      sub={`The ${weighed} supply-chain steps with demand and supply figures to compare${doc.nodes.length > weighed ? ` (of ${doc.nodes.length}; the others lack them)` : ''}, weighed the same in each scenario. Shares are of allied demand; dollar values are a year at ${meta.tradeYear} trade values.`}
+      sub={`The ${weighed} supply-chain steps with demand and supply figures to compare${doc.nodes.length > weighed ? ` (of ${doc.nodes.length}; the others lack them)` : ''}, weighed the same in each scenario. Shares are of allied demand; dollar values are a year at ${tradeWhen(meta)} trade values.`}
       summary={summary}
       legend={<CoverageLegend />}
       notes={<span>{scenarioCaveat(meta)}</span>}
@@ -323,7 +323,7 @@ export default function AibOverviewView() {
               Results below use <span className="text-paper-dim">{shockLabel}</span>
             </>
           )}
-          ; trade in {m.tradeYear}; <span title={`Assumption about how much suppliers can expand: ${m.headlineScenario}`}>{plural(total, 'supply-chain step')}</span> (groups of traded goods, finer than the technology × stage cells of{' '}
+          ; trade in {tradeWhen(m)}; <span title={`Assumption about how much suppliers can expand: ${m.headlineScenario}`}>{plural(total, 'supply-chain step')}</span> (groups of traded goods, finer than the technology × stage cells of{' '}
           <a className="link" href={`#${DIVISION_SECTION.id}`}>
             who can cover each supply-chain step
           </a>

@@ -1,0 +1,51 @@
+# Patent technology classes for the Innovation prototype (2026-11-17).
+#
+# Each technology is the set of CPC groups whose US patent grants count towards it. A grant counts
+# once per technology if any of its CPC codes matches any pattern (codes are OR-ed in one query, so
+# a grant tagged with two of a technology's groups is not counted twice). A grant can count towards
+# more than one technology.
+#
+# Patterns are written the way the CPC prints them, without the padding USPTO stores ("Y02E10/5*"
+# for Y02E 10/50-10/58); R/utils/uspto_patents.R turns them into the Open Data Portal's query syntax.
+# A trailing * matches every subgroup below the stem.
+#
+# The Y02/Y04S tagging scheme is the EPO's climate-change-mitigation scheme, the same domain the
+# OECD "patents in environment-related technologies" counts (and CFR's Global Energy Innovation Index
+# K4 indicator) use. Fossil technologies (Coal, Gas, Oil) have no mitigation class and are not scored;
+# Semiconductors is a non-headline basket and is left out.
+
+version: 1
+
+source:
+  name: "USPTO Open Data Portal, patent file wrapper search (granted utility patents)"
+  url: "https://api.uspto.gov/api/v1/patent/applications/search"
+  api_key_env: USPTO_KEY
+  first_grant_year: 2016
+  # The last complete grant year; the fetch never asks for a later one.
+  last_grant_year: 2025
+
+techs:
+  Solar:
+    cpc: ["Y02E10/5*"]
+    note: "Photovoltaic energy (Y02E 10/50-10/56); solar thermal (10/40s) is not in the solar basket."
+  Wind:
+    cpc: ["Y02E10/7*"]
+    note: "Wind energy (Y02E 10/70-10/76), including offshore (10/727)."
+  Geothermal:
+    cpc: ["Y02E10/1*"]
+    note: "Geothermal energy (Y02E 10/10-10/18)."
+  Nuclear:
+    cpc: ["Y02E30/*"]
+    note: "Fission and fusion reactors (Y02E 30/00-30/40)."
+  Batteries:
+    cpc: ["Y02E60/10"]
+    note: "Energy storage using batteries (Y02E 60/10)."
+  Green Hydrogen:
+    cpc: ["Y02E60/36*"]
+    note: "Hydrogen production from non-carbon sources, e.g. electrolysis (Y02E 60/36)."
+  Electric Vehicles:
+    cpc: ["Y02T10/70", "Y02T10/7072", "Y02T90/1*"]
+    note: "Electromobility energy storage (Y02T 10/70), on-board charging (10/7072) and EV charging infrastructure (Y02T 90/10-90/16)."
+  Electric Grid:
+    cpc: ["Y02E40/*", "Y04S*"]
+    note: "Efficient transmission and distribution (Y02E 40) and smart grids (Y04S). Y04S carries most of the volume and includes grid ICT."

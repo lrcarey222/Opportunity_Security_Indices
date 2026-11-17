@@ -242,7 +242,7 @@ function fixtureDetailBase(): Record<string, unknown> {
         tech: 'Batteries', stage: 'Components', posture: 'compete', variant: 'compete_catch_up', mode: 'catch_up', delivery: 'domestic',
         need: 0.5, import_dependence: 0.6, import_hhi: 0.4, china_bloc: 0.5,
         industrial_opportunity: 0.8, io_node_prize: 0.85, io_investment_momentum: 0.7, io_home_market: 0.75, io_basis: 'national',
-        cp: 0.4, cp_export_position: 0.35, cp_manufacturing_capacity: 0.5, cp_investment_position: 0.6,
+        cp: 0.4, cp_export_position: 0.35, cp_manufacturing_capacity: 0.5, cp_investment_position: 0.6, cp_innovation_position: 0.7,
         pathway_credible: 'yes', pathway_basis: 'feasibility;pipeline',
         trace: trace(['3', 'Prize', 0.8, 0.6, 'high'], ['3', 'Competitive Position', 0.4, 0.75, 'weak'], ['3', 'Credible pathway', 'feasibility; pipeline', null, 'yes'], ['3', 'Choice', null, null, 'catch_up']),
         // support, protection and momentum are within-country percentile ranks; no protection measure is recorded here (its rank is a tie among zeros)
