@@ -46,6 +46,7 @@ import {
   pathwayEvidenceWords, traceCodeWords, traceNumberWords, traceTestWords, FENCE_LABEL, MARKET_PRIZE_LABEL, nodeFence,
   nodeFill, NOT_ASSESSED_BORDER, PATHWAY_LABEL, POLICY_SOURCE_LABEL, prizeLabel, RATIONALE_LABEL, RATIONALE_WORDS, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
+import { chinaShareWords, currentTradeSourceWords } from './currentTrade.ts';
 import { postureMomentum } from './momentum.ts';
 import { catchUpPositionWords, countryRankWords, manufacturingPriority, manufacturingPriorityWord, policyMomentumWords, protectionWords, remoteCommandWords, watchReasons } from './sections.ts';
 import { Swatch } from './PostureLegend.tsx';
@@ -150,6 +151,17 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
               <Row k="Largest potentially coercive supplier" v={`${names[s.coerciveTop] ?? s.coerciveTop}${s.coerciveTopShare !== null ? ` (${pct(s.coerciveTopShare)} of world supply)` : ''}`} />
             )}
             {s.coerciveImportShare !== null && <Row k="Coercive share of own imports" v={pct(s.coerciveImportShare)} />}
+            {chinaShareWords(s.currentTrade) && (
+              <Row
+                k="China's share of imports, latest trade"
+                v={
+                  <span data-testid="current-trade-china">
+                    {chinaShareWords(s.currentTrade)}
+                    <span className="block text-xs text-paper-mute">{currentTradeSourceWords(s.currentTrade)}</span>
+                  </span>
+                }
+              />
+            )}
             {s.substitutability && <Row k="Substitutability" v={s.substitutability} />}
             {s.reconstitution && <Row k="Reconstitution time" v={s.reconstitution.replace(/^y1to3$/, '1 to 3 years').replace(/^gt3y$/, 'more than 3 years')} />}
             {s.inventories && <Row k="Inventories" v={s.inventories} />}

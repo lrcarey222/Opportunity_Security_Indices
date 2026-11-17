@@ -96,6 +96,56 @@ inputs:
   required_by:
   - scripts/88_export_country_data.R
   - scripts/99_pull_comtrade_monthly_core.R
+- id: comtrade_monthly_dyads
+  path: comtrade_monthly_dyads.csv.gz
+  source_type: api
+  source_name: UN Comtrade (monthly HS6 basket imports and exports by partner, every monthly reporter)
+  url: https://comtradeplus.un.org/
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: each reporter's latest 12 calendar months in Comtrade's monthly availability listing at pull
+    time (first pull 2026-11-16 UTC; newest month 2026-09; 92 reporters, windows end 2025-12 to 2026-09;
+    3.86M rows)
+  staged_from: pipeline
+  notes: Written by scripts/37_pull_comtrade_monthly_dyads.R (chunked, resumable; requires
+    COMTRADE_API_KEY; 76 calls). Columns reporter_iso, partner_iso, flow_direction, period (YYYYMM),
+    cmd_code, primary_value. Reporters whose latest month trails the newest by more than 9 months are
+    left out - China (no monthly data since 2024-12), Ukraine, Kuwait and others - as are Vietnam, UAE,
+    Taiwan, Austria and Russia, which publish none. Read by scripts/38_build_current_import_exposure.R.
+  required_by:
+  - scripts/37_pull_comtrade_monthly_dyads.R
+  - scripts/38_build_current_import_exposure.R
+- id: comtrade_monthly_dyads_dictionary_extra
+  path: comtrade_monthly_dyads_dictionary_extra.csv.gz
+  source_type: api
+  source_name: UN Comtrade (monthly HS6 imports and exports by partner for the AIB dictionary's core codes
+    outside the OSI basket)
+  url: https://comtradeplus.un.org/
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: first pull 2026-11-17 UTC on the basket pull's reporter windows (92 reporters); 68 codes
+  staged_from: pipeline
+  notes: Written by scripts/37_pull_comtrade_monthly_dyads.R with COMTRADE_MD_CODE_SET=dictionary_extra (27
+    calls). Same layout as comtrade_monthly_dyads.csv.gz. Read by scripts/39_build_current_dyads.R, which sums
+    it to the same 12-month windows so the AIB's copper, silver, rail, cooling and other dictionary-only codes
+    are current rather than carried from 2024.
+  required_by:
+  - scripts/37_pull_comtrade_monthly_dyads.R
+  - scripts/39_build_current_dyads.R
+- id: comtrade_monthly_dyads_windows
+  path: comtrade_monthly_dyads_windows.csv
+  source_type: generated
+  source_name: Per-reporter windows of the monthly dyad pull (reporter_iso, window_start, window_end,
+    months_listed)
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: written with comtrade_monthly_dyads.csv.gz
+  staged_from: pipeline
+  notes: Written by scripts/37_pull_comtrade_monthly_dyads.R; scripts/38 reads window_start for the
+    current exposure rows.
+  required_by:
+  - scripts/37_pull_comtrade_monthly_dyads.R
+  - scripts/38_build_current_import_exposure.R
 - id: comtrade_total_export
   path: comtrade_total_export.csv
   source_type: api
@@ -1350,3 +1400,27 @@ inputs:
     data/raw so far; copy data/raw/ember/ to the SharePoint raw folder.
   required_by:
   - scripts/95_build_deployment_need.R
+- id: ember_china_cleantech_exports
+  path: ember/clean_tech_exports_full_release_monthly_lower.csv
+  source_type: manual
+  source_name: Ember, China Cleantech Export Data (monthly China customs exports by destination and
+    commodity code)
+  url: https://files.ember-energy.org/public-downloads/customs/outputs/clean_tech_exports_full_release_monthly_lower.csv
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: retrieved 2026-11-16 (server Last-Modified 2026-09-30 14:04 GMT); 2018-01 to 2026-08, 237
+    destinations and 13 regions, 31 codes; SHA-256
+    402b973fa0e88662e2ff50192f59bc4dc0943b662a421196d5b551dca329f7dd
+  licence: CC BY 4.0 (https://ember-energy.org/data/china-cleantech-export-data/); cite Ember wherever the
+    figures are shown
+  staged_from: sharepoint
+  notes: Direct download linked from https://ember-energy.org/data/china-cleantech-export-data/ (no form or
+    account); scripts/36 downloads it when missing. Staged only in data/raw so far; copy it to the
+    SharePoint raw folder. One row per area x month x commodity code, Amount (USD)
+    and a 12-month rolling sum. Codes are full HS6 headings or Chinese 8-digit sub-headings (PV inverters
+    85044030, wind nacelles 85030030, wafers 38180015/19), which cover only part of their HS6 heading.
+    Categories Solar PV, Batteries, EVs, Wind, Grid, Heating and cooling (AC units and heat pumps sit
+    outside the basket). Origin is China only.
+  required_by:
+  - scripts/36_build_ember_china_exports.R
+  - scripts/38_build_current_import_exposure.R

@@ -127,6 +127,27 @@ competitive_position:
     min_reporters_per_cell: 5
     share_coverage_min: 0.8
 
+# ---- Current trade --------------------------------------------------------------------------------------
+# The latest 12 months of each importer's own monthly Comtrade reports (scripts/37 -> 38,
+# current_import_exposure_tbl.rds) blended into the base-year import exposure that Strategic Need and the
+# posture read: value = (1 - weight) * base + weight * current (ctm_blend_exposure()). Importers without
+# monthly reports (and China, which publishes none) keep their base values. OPSI_CURRENT_TRADE_WEIGHT
+# overrides the weight (0 = base only).
+current_trade:
+  enabled: true
+  weight: 0.5
+  weight_sensitivity: [0, 0.5, 1]
+  # current_trade_flag on strategic_position_tbl: China's share moved this much on at least this much imports.
+  flag_min_move: 0.10
+  flag_min_imports_usd: 1.0e+8
+  # Partner recommendations: import partners blended at the same weight, and the Atlas export shares that
+  # set partner capability moved by weight x the change in each exporter's share of supply into the
+  # importers reporting both years (current_supplier_panel_tbl.rds). Cells with a thinner panel than this
+  # keep the Atlas shares. Posture and the opportunity axis keep the structural supply.
+  partner_recs: true
+  supplier_min_importers: 10
+  supplier_min_panel_usd: 1.0e+8
+
 # ---- Strategic Need -------------------------------------------------------------------------------------
 # Vulnerability only, oriented so that higher = more need. Each measure is turned into a mid-rank
 # percentile across countries within the cell; a family is the mean of its measures' percentiles; the
@@ -170,6 +191,10 @@ strategic_need:
   # by construction: it is treated as not applicable (NA) and their risky-supplier family rests on
   # the China share.
   nonaligned_opposite_bloc: na
+  # A China or opposite-bloc import share below this counts as 0, so a trivial share does not outrank
+  # the large tie of importers that buy nothing from them (rule 7 in R/strategic_position/strategic_need.R).
+  share_floor: 0.01
+  share_floor_variables: [china_share, opposite_bloc_share]
 
 # ---- Revealed Policy Priority ---------------------------------------------------------------------------
 policy_priority:
