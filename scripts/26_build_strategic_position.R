@@ -64,7 +64,7 @@ for (f in c(
   "R/categories/policy/cat_policy_index.R",
   "R/strategic_position/sp_helpers.R", "R/strategic_position/competitive_position.R",
   "R/strategic_position/innovation_position.R",
-  "R/strategic_position/import_exposure.R", "R/strategic_position/strategic_need.R",
+  "R/strategic_position/import_exposure.R", "R/strategic_position/current_trade.R", "R/strategic_position/strategic_need.R",
   "R/strategic_position/policy_priority.R", "R/strategic_position/alignment.R",
   "R/strategic_position/supply_structure.R", "R/strategic_position/posture_nodes.R",
   "R/strategic_position/posture_engine.R", "R/strategic_position/posture_inputs.R",
@@ -108,6 +108,27 @@ policy_outputs <- read_required(file.path(processed_dir, "policy_outputs.rds"), 
 nipo_cells <- read_required(file.path(processed_dir, "nipo_stage_cells_tbl.rds"), "run scripts/11_build_nipo_stage_policy.R.")
 nipo_country <- read_required(file.path(processed_dir, "nipo_stage_country_tbl.rds"), "run scripts/11_build_nipo_stage_policy.R.")
 import_exposure <- read_required(file.path(processed_dir, "import_exposure_tbl.rds"), "run scripts/15_build_partner_themes.R.")
+# Current trade (config current_trade; OPSI_CURRENT_TRADE_WEIGHT overrides the weight): the importer's latest
+# 12 months of its own monthly reports blended into the base-year import exposure (ctm_blend_exposure()).
+ct_cfg <- sp_cfg$current_trade
+ct_weight <- Sys.getenv("OPSI_CURRENT_TRADE_WEIGHT", "")
+ct_weight <- if (nzchar(ct_weight)) as.numeric(ct_weight) else if (isTRUE(ct_cfg$enabled)) as.numeric(ct_cfg$weight %||% 0) else 0
+if (is.na(ct_weight)) stop("OPSI_CURRENT_TRADE_WEIGHT must be a number in [0, 1].")
+ct_files <- file.path(processed_dir, c("current_import_exposure_tbl.rds", "current_supplier_panel_tbl.rds", "current_trade_dyads_tbl.rds"))
+if (ct_weight > 0 && !all(file.exists(ct_files))) {
+  warning("current_trade is on but ", paste(basename(ct_files[!file.exists(ct_files)]), collapse = ", "),
+          " not found (run scripts/37 and scripts/38_build_current_import_exposure.R): using the base-year trade only.",
+          call. = FALSE, immediate. = TRUE)
+  ct_weight <- 0
+}
+if (ct_weight > 0) {
+  current_exposure <- readRDS(ct_files[1])
+  import_exposure <- ctm_blend_exposure(import_exposure, current_exposure, weight = ct_weight)
+  message("Current trade: ", sum(import_exposure$exposure_basis == "blend"), " importer x cells blended at weight ", ct_weight,
+          " (", length(unique(import_exposure$importer_iso[import_exposure$exposure_basis == "blend"])), " importers); ",
+          sum(import_exposure$exposure_basis == "current_only"), " observed only now.")
+  rm(current_exposure)
+}
 geo_alignment <- read_required(file.path(processed_dir, "geo_alignment_tbl.rds"), "run scripts/12_build_geopolitical_alignment.R.")
 major_supplier_shares <- read_required(file.path(processed_dir, "major_supplier_shares_tbl.rds"), "run scripts/10_build_themes.R.")
 tech_ghg <- read_required(file.path(processed_dir, "tech_ghg_tbl.rds"), "run scripts/10_build_themes.R.")
@@ -513,7 +534,22 @@ if (all(file.exists(aib_files))) {
   warning("AIB outputs not found in ", aib_dir, " (scripts/31-33): partner capability falls back to world supply shares everywhere.")
 }
 capability <- sp_cell_capability(supply$cells, aib_cells)
-compat_path <- file.path(processed_dir, "partner_compat_cells_tbl.rds")
+# Current trade for partner recommendations: the Atlas export shares moved by the change in each exporter's
+# share of supply into the monthly-reporting importers (ctm_update_export_shares()); capability only, the
+# posture and opportunity axis keep the structural supply.
+ct_partners <- ct_weight > 0 && !isFALSE(ct_cfg$partner_recs)
+if (ct_partners) {
+  mss_now <- ctm_update_export_shares(major_supplier_shares, readRDS(ct_files[2]), weight = ct_weight,
+                                      min_importers = ct_cfg$supplier_min_importers %||% 10L,
+                                      min_panel_usd = ct_cfg$supplier_min_panel_usd %||% 1e8)
+  supply_now <- sp_supply_structure(mss_now, coercive_pairs, post_cfg$mineral_min_demand_share,
+                                    measure_priority = measure_priority, techs = techs)
+  capability <- sp_cell_capability(supply_now$cells, aib_cells)
+  message("Current trade: supplier shares moved in ", length(unique(paste(mss_now$tech, mss_now$supply_chain)[mss_now$share_basis %in% "atlas_current"])),
+          " tech x stage cells for partner capability.")
+  rm(mss_now, supply_now)
+}
+compat_path <-file.path(processed_dir, "partner_compat_cells_tbl.rds")
 fs_path <- file.path(processed_dir, "partner_friendshore_tbl.rds")
 if (file.exists(fs_path) && (!file.exists(compat_path) || file.mtime(compat_path) < file.mtime(fs_path))) {
   fs <- readRDS(fs_path)
@@ -544,6 +580,20 @@ if (file.exists(dyad_path) && (!file.exists(imp_path) || file.mtime(imp_path) < 
   invisible(gc())
 }
 import_partners <- if (file.exists(imp_path)) readRDS(imp_path) else NULL
+if (ct_partners && !is.null(import_partners)) {
+  t12 <- readRDS(ct_files[3])
+  t12 <- t12[t12$flow_direction == "import", , drop = FALSE]
+  t12$code6 <- stringr::str_pad(t12$cmd_code, 6, side = "left", pad = "0")
+  codes6 <- unique(trade_codes[, c("tech", "supply_chain", "code6")])
+  codes6$tech[codes6$tech == "Natural Gas"] <- "Gas"
+  imp_now <- dplyr::inner_join(t12[c("reporter_iso", "partner_iso", "code6", "primary_value")], codes6, by = "code6",
+                               relationship = "many-to-many") %>%
+    dplyr::group_by(.data$reporter_iso, .data$partner_iso, .data$tech, .data$supply_chain) %>%
+    dplyr::summarise(imports_usd = sum(.data$primary_value, na.rm = TRUE), .groups = "drop")
+  import_partners <- ctm_blend_import_partners(import_partners, imp_now, weight = ct_weight)
+  message("Current trade: import partners blended for ", length(unique(imp_now$reporter_iso)), " reporters.")
+  rm(t12, imp_now)
+}
 # Partner recommendations for Compete . Partner cells and for Secure cells whose mitigation relies on
 # trusted foreign capacity (delivery allied, mixed or diversified_global).
 partner_cells <- strategic_position_tbl %>%
@@ -592,6 +642,15 @@ layers_tbl <- sp_policy_design(layers_tbl, design_tables$design, design_tables$d
 
 stopifnot(!anyDuplicated(strategic_position_tbl[, c("Country", "tech", "supply_chain")]))
 assert_supply_chain_stages(strategic_position_tbl$supply_chain, label = "strategic_position_tbl")
+
+# Current-trade trace: which cells blend the latest 12 months, as of when, and where China's share moved.
+if (ct_weight > 0) {
+  ct_flags <- ctm_trade_flags(import_exposure, min_move = ct_cfg$flag_min_move %||% 0.10,
+                              min_imports_usd = ct_cfg$flag_min_imports_usd %||% 1e8)
+  strategic_position_tbl <- dplyr::left_join(strategic_position_tbl, ct_flags, by = c("iso3", "tech", "supply_chain"))
+  message("Current trade flags: ", sum(strategic_position_tbl$current_trade_flag %in% "china_up"), " china_up, ",
+          sum(strategic_position_tbl$current_trade_flag %in% "china_down"), " china_down.")
+}
 
 # Compatibility view: the three-stage roll-up of the headline columns.
 strategic_position_legacy_tbl <- sp_legacy_rollup(

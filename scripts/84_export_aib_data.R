@@ -2,6 +2,7 @@
 #
 # Usage:
 #   Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR] [--top-edges N] [--strategic FILE] [--inputs FILE]
+#                                        [--trade-period LABEL] [--trade-note TEXT]
 #
 #   --in-dir     where scripts/32 wrote aib_results.rds (default: <outputs_dir>/aib)
 #   --out-dir    bundle directory (default: dashboard/public/data/aib)
@@ -135,6 +136,12 @@ if (!file.exists(inputs_path)) {
 }
 
 bundle <- aib_dash_bundle(res, top_edges = top_edges, strategic = strategic, legacy_cells = legacy_cells)
+# A run on current dyads (scripts/39) keeps its trade-year label: --trade-period names the period the views
+# show in place of the year ("2025-26"), --trade-note says what it is (the About page). Both optional.
+trade_period <- arg_value("--trade-period")
+trade_note <- arg_value("--trade-note")
+if (!is.null(trade_period)) bundle$meta$tradePeriod <- trade_period
+if (!is.null(trade_note)) bundle$meta$tradeNote <- trade_note
 problems <- aib_check_bundle_additions(bundle)
 if (length(problems)) stop("The AIB bundle does not match the contract:\n  ", paste(utils::head(problems, 20), collapse = "\n  "))
 # The scenario files (Managed Interdependence, Baseline), each checked against the contract, the main

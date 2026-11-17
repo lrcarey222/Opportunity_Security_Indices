@@ -1,5 +1,5 @@
 "Country","n_cells","secure","catch_up","preserve","partner","deploy_watch","deploy_other","borderline","consistency_flags","partner_gaps"
-"Australia",66,1,0,3,15,23,24,9,11,0
+"Australia",66,1,0,3,15,23,24,9,7,0
 "Canada",66,1,6,5,7,24,23,12,11,0
 "China",66,3,9,21,0,5,28,4,8,0
 "France",66,2,5,11,7,17,24,6,9,0

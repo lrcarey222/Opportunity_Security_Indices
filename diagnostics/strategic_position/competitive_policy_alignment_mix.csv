@@ -58,72 +58,68 @@
 "Antigua and Barbuda","low_priority","not_assessed",2
 "Antigua and Barbuda","policy_led_bet","deploy",3
 "Antigua and Barbuda","policy_led_bet","not_assessed",3
-"Argentina","aligned_strength","compete",3
-"Argentina","aligned_strength","deploy",12
+"Argentina","aligned_strength","compete",2
+"Argentina","aligned_strength","deploy",11
 "Argentina","insufficient_data","deploy",4
-"Argentina","insufficient_data","not_assessed",11
+"Argentina","insufficient_data","not_assessed",15
 "Argentina","latent_advantage","compete",3
 "Argentina","latent_advantage","deploy",5
 "Argentina","latent_advantage","not_assessed",3
 "Argentina","low_priority","compete",2
 "Argentina","low_priority","deploy",8
-"Argentina","low_priority","not_assessed",3
-"Argentina","policy_led_bet","deploy",11
-"Argentina","policy_led_bet","not_assessed",1
+"Argentina","policy_led_bet","compete",1
+"Argentina","policy_led_bet","deploy",12
 "Armenia","aligned_strength","deploy",2
 "Armenia","aligned_strength","not_assessed",1
 "Armenia","insufficient_data","deploy",5
-"Armenia","insufficient_data","not_assessed",13
+"Armenia","insufficient_data","not_assessed",17
 "Armenia","latent_advantage","compete",3
-"Armenia","latent_advantage","deploy",18
+"Armenia","latent_advantage","deploy",16
 "Armenia","low_priority","compete",2
-"Armenia","low_priority","deploy",12
-"Armenia","low_priority","not_assessed",7
+"Armenia","low_priority","deploy",14
+"Armenia","low_priority","not_assessed",3
 "Armenia","policy_led_bet","deploy",3
 "Aruba","insufficient_data","compete",2
 "Aruba","insufficient_data","deploy",40
 "Aruba","insufficient_data","not_assessed",23
 "Aruba","insufficient_data","secure",1
 "Australia","aligned_strength","compete",4
-"Australia","aligned_strength","deploy",9
+"Australia","aligned_strength","deploy",8
 "Australia","aligned_strength","not_assessed",1
 "Australia","aligned_strength","secure",1
 "Australia","insufficient_data","compete",2
 "Australia","insufficient_data","deploy",2
-"Australia","insufficient_data","not_assessed",11
+"Australia","insufficient_data","not_assessed",15
 "Australia","latent_advantage","compete",1
-"Australia","latent_advantage","deploy",8
+"Australia","latent_advantage","deploy",7
 "Australia","latent_advantage","not_assessed",2
 "Australia","low_priority","compete",5
-"Australia","low_priority","deploy",5
-"Australia","low_priority","not_assessed",2
+"Australia","low_priority","deploy",6
 "Australia","policy_led_bet","compete",2
-"Australia","policy_led_bet","deploy",9
-"Australia","policy_led_bet","not_assessed",2
+"Australia","policy_led_bet","deploy",10
 "Austria","aligned_strength","compete",5
-"Austria","aligned_strength","deploy",8
-"Austria","aligned_strength","not_assessed",2
+"Austria","aligned_strength","deploy",7
 "Austria","insufficient_data","compete",1
 "Austria","insufficient_data","deploy",3
-"Austria","insufficient_data","not_assessed",11
-"Austria","latent_advantage","compete",8
-"Austria","latent_advantage","deploy",3
-"Austria","low_priority","compete",3
-"Austria","low_priority","deploy",9
+"Austria","insufficient_data","not_assessed",15
+"Austria","latent_advantage","compete",7
+"Austria","latent_advantage","deploy",5
+"Austria","low_priority","compete",4
+"Austria","low_priority","deploy",7
 "Austria","low_priority","not_assessed",1
 "Austria","low_priority","secure",1
-"Austria","policy_led_bet","deploy",6
-"Austria","policy_led_bet","not_assessed",4
+"Austria","policy_led_bet","deploy",7
+"Austria","policy_led_bet","not_assessed",2
 "Austria","policy_led_bet","secure",1
 "Azerbaijan","aligned_strength","deploy",5
 "Azerbaijan","insufficient_data","deploy",4
 "Azerbaijan","insufficient_data","not_assessed",15
-"Azerbaijan","latent_advantage","compete",7
-"Azerbaijan","latent_advantage","deploy",10
+"Azerbaijan","latent_advantage","compete",6
+"Azerbaijan","latent_advantage","deploy",11
 "Azerbaijan","latent_advantage","not_assessed",1
 "Azerbaijan","latent_advantage","secure",1
-"Azerbaijan","low_priority","compete",7
-"Azerbaijan","low_priority","deploy",11
+"Azerbaijan","low_priority","compete",8
+"Azerbaijan","low_priority","deploy",10
 "Azerbaijan","low_priority","not_assessed",2
 "Azerbaijan","policy_led_bet","deploy",3
 "Bahamas","aligned_strength","compete",1
@@ -141,17 +137,17 @@
 "Bahrain","insufficient_data","deploy",42
 "Bahrain","insufficient_data","not_assessed",19
 "Bangladesh","aligned_strength","compete",5
-"Bangladesh","aligned_strength","deploy",4
+"Bangladesh","aligned_strength","deploy",5
 "Bangladesh","insufficient_data","deploy",5
 "Bangladesh","insufficient_data","not_assessed",15
-"Bangladesh","latent_advantage","compete",6
+"Bangladesh","latent_advantage","compete",5
 "Bangladesh","latent_advantage","deploy",5
 "Bangladesh","latent_advantage","secure",3
-"Bangladesh","low_priority","compete",4
+"Bangladesh","low_priority","compete",5
 "Bangladesh","low_priority","deploy",7
 "Bangladesh","low_priority","not_assessed",1
 "Bangladesh","policy_led_bet","compete",2
-"Bangladesh","policy_led_bet","deploy",7
+"Bangladesh","policy_led_bet","deploy",6
 "Bangladesh","policy_led_bet","not_assessed",2
 "Barbados","insufficient_data","deploy",5
 "Barbados","insufficient_data","not_assessed",17
@@ -162,29 +158,30 @@
 "Barbados","low_priority","not_assessed",1
 "Barbados","policy_led_bet","deploy",5
 "Belarus","aligned_strength","compete",2
-"Belarus","aligned_strength","deploy",6
+"Belarus","aligned_strength","deploy",5
 "Belarus","insufficient_data","deploy",5
-"Belarus","insufficient_data","not_assessed",11
-"Belarus","latent_advantage","compete",9
+"Belarus","insufficient_data","not_assessed",15
+"Belarus","latent_advantage","compete",8
 "Belarus","latent_advantage","deploy",8
-"Belarus","low_priority","compete",5
+"Belarus","low_priority","compete",6
 "Belarus","low_priority","deploy",6
-"Belarus","low_priority","not_assessed",7
-"Belarus","policy_led_bet","deploy",7
-"Belgium","aligned_strength","compete",5
-"Belgium","aligned_strength","deploy",3
+"Belarus","low_priority","not_assessed",3
+"Belarus","policy_led_bet","deploy",8
+"Belgium","aligned_strength","compete",4
+"Belgium","aligned_strength","deploy",2
 "Belgium","insufficient_data","compete",1
 "Belgium","insufficient_data","deploy",3
-"Belgium","insufficient_data","not_assessed",11
-"Belgium","latent_advantage","compete",6
-"Belgium","latent_advantage","deploy",10
+"Belgium","insufficient_data","not_assessed",15
+"Belgium","latent_advantage","compete",5
+"Belgium","latent_advantage","deploy",11
 "Belgium","latent_advantage","secure",2
-"Belgium","low_priority","compete",2
-"Belgium","low_priority","deploy",8
+"Belgium","low_priority","compete",3
+"Belgium","low_priority","deploy",7
 "Belgium","low_priority","not_assessed",2
 "Belgium","low_priority","secure",1
-"Belgium","policy_led_bet","deploy",7
-"Belgium","policy_led_bet","not_assessed",5
+"Belgium","policy_led_bet","compete",1
+"Belgium","policy_led_bet","deploy",8
+"Belgium","policy_led_bet","not_assessed",1
 "Belize","aligned_strength","not_assessed",1
 "Belize","insufficient_data","deploy",4
 "Belize","insufficient_data","not_assessed",18
@@ -245,14 +242,13 @@
 "Brazil","aligned_strength","deploy",12
 "Brazil","insufficient_data","compete",1
 "Brazil","insufficient_data","deploy",3
-"Brazil","insufficient_data","not_assessed",11
-"Brazil","latent_advantage","deploy",8
+"Brazil","insufficient_data","not_assessed",15
+"Brazil","latent_advantage","deploy",6
 "Brazil","latent_advantage","not_assessed",3
-"Brazil","low_priority","deploy",7
-"Brazil","low_priority","not_assessed",4
+"Brazil","low_priority","deploy",9
 "Brazil","low_priority","secure",1
-"Brazil","policy_led_bet","compete",3
-"Brazil","policy_led_bet","deploy",9
+"Brazil","policy_led_bet","compete",2
+"Brazil","policy_led_bet","deploy",10
 "Brazil","policy_led_bet","secure",1
 "British Virgin Islands","insufficient_data","deploy",40
 "British Virgin Islands","insufficient_data","not_assessed",26
@@ -272,16 +268,16 @@
 "Bulgaria","aligned_strength","deploy",7
 "Bulgaria","insufficient_data","compete",1
 "Bulgaria","insufficient_data","deploy",3
-"Bulgaria","insufficient_data","not_assessed",11
-"Bulgaria","latent_advantage","compete",2
-"Bulgaria","latent_advantage","deploy",16
+"Bulgaria","insufficient_data","not_assessed",15
+"Bulgaria","latent_advantage","compete",3
+"Bulgaria","latent_advantage","deploy",13
 "Bulgaria","latent_advantage","secure",1
-"Bulgaria","low_priority","compete",4
-"Bulgaria","low_priority","deploy",6
+"Bulgaria","low_priority","compete",3
+"Bulgaria","low_priority","deploy",9
 "Bulgaria","low_priority","not_assessed",1
 "Bulgaria","low_priority","secure",1
 "Bulgaria","policy_led_bet","deploy",7
-"Bulgaria","policy_led_bet","not_assessed",6
+"Bulgaria","policy_led_bet","not_assessed",2
 "Burkina Faso","aligned_strength","deploy",7
 "Burkina Faso","insufficient_data","deploy",5
 "Burkina Faso","insufficient_data","not_assessed",17
@@ -326,18 +322,17 @@
 "Cameroon","policy_led_bet","deploy",2
 "Canada","aligned_strength","compete",6
 "Canada","aligned_strength","deploy",6
+"Canada","aligned_strength","secure",1
 "Canada","insufficient_data","compete",2
 "Canada","insufficient_data","deploy",2
-"Canada","insufficient_data","not_assessed",11
-"Canada","latent_advantage","compete",3
+"Canada","insufficient_data","not_assessed",15
+"Canada","latent_advantage","compete",2
 "Canada","latent_advantage","deploy",6
-"Canada","latent_advantage","not_assessed",5
-"Canada","low_priority","compete",3
+"Canada","latent_advantage","not_assessed",3
+"Canada","low_priority","compete",4
 "Canada","low_priority","deploy",4
 "Canada","policy_led_bet","compete",9
 "Canada","policy_led_bet","deploy",6
-"Canada","policy_led_bet","not_assessed",2
-"Canada","policy_led_bet","secure",1
 "Cayman Islands","insufficient_data","compete",2
 "Cayman Islands","insufficient_data","deploy",38
 "Cayman Islands","insufficient_data","not_assessed",26
@@ -360,48 +355,45 @@
 "Chad","low_priority","not_assessed",1
 "Chad","policy_led_bet","deploy",2
 "Channel Islands","insufficient_data","not_assessed",66
-"Chile","aligned_strength","compete",5
-"Chile","aligned_strength","deploy",7
+"Chile","aligned_strength","compete",3
+"Chile","aligned_strength","deploy",9
 "Chile","aligned_strength","not_assessed",1
 "Chile","insufficient_data","deploy",4
-"Chile","insufficient_data","not_assessed",11
+"Chile","insufficient_data","not_assessed",15
 "Chile","latent_advantage","compete",2
-"Chile","latent_advantage","deploy",9
+"Chile","latent_advantage","deploy",7
 "Chile","latent_advantage","not_assessed",2
 "Chile","low_priority","compete",1
-"Chile","low_priority","deploy",8
-"Chile","low_priority","not_assessed",2
-"Chile","policy_led_bet","deploy",12
-"Chile","policy_led_bet","not_assessed",2
-"China","aligned_strength","compete",6
-"China","aligned_strength","deploy",10
+"Chile","low_priority","deploy",10
+"Chile","policy_led_bet","compete",2
+"Chile","policy_led_bet","deploy",10
+"China","aligned_strength","compete",7
+"China","aligned_strength","deploy",8
 "China","aligned_strength","not_assessed",1
 "China","insufficient_data","compete",1
 "China","insufficient_data","deploy",3
-"China","insufficient_data","not_assessed",11
-"China","latent_advantage","compete",6
+"China","insufficient_data","not_assessed",15
+"China","latent_advantage","compete",5
 "China","latent_advantage","deploy",3
-"China","latent_advantage","not_assessed",1
-"China","low_priority","compete",3
+"China","low_priority","compete",4
 "China","low_priority","deploy",5
-"China","low_priority","not_assessed",4
+"China","low_priority","not_assessed",2
 "China","low_priority","secure",2
-"China","policy_led_bet","compete",2
-"China","policy_led_bet","deploy",6
-"China","policy_led_bet","not_assessed",1
+"China","policy_led_bet","compete",1
+"China","policy_led_bet","deploy",8
 "China","policy_led_bet","secure",1
 "Colombia","aligned_strength","compete",1
-"Colombia","aligned_strength","deploy",12
+"Colombia","aligned_strength","deploy",11
 "Colombia","insufficient_data","deploy",4
-"Colombia","insufficient_data","not_assessed",11
+"Colombia","insufficient_data","not_assessed",15
 "Colombia","latent_advantage","compete",2
-"Colombia","latent_advantage","deploy",11
+"Colombia","latent_advantage","deploy",10
 "Colombia","low_priority","compete",2
-"Colombia","low_priority","deploy",6
-"Colombia","low_priority","not_assessed",3
+"Colombia","low_priority","deploy",7
+"Colombia","low_priority","not_assessed",1
 "Colombia","policy_led_bet","compete",2
-"Colombia","policy_led_bet","deploy",8
-"Colombia","policy_led_bet","not_assessed",4
+"Colombia","policy_led_bet","deploy",9
+"Colombia","policy_led_bet","not_assessed",2
 "Comoros","aligned_strength","deploy",1
 "Comoros","insufficient_data","deploy",8
 "Comoros","insufficient_data","not_assessed",18
@@ -427,16 +419,16 @@
 "Congo","low_priority","secure",1
 "Congo","policy_led_bet","compete",1
 "Congo","policy_led_bet","deploy",4
-"Costa Rica","aligned_strength","deploy",8
+"Costa Rica","aligned_strength","deploy",7
 "Costa Rica","insufficient_data","deploy",5
-"Costa Rica","insufficient_data","not_assessed",13
+"Costa Rica","insufficient_data","not_assessed",17
 "Costa Rica","latent_advantage","compete",1
-"Costa Rica","latent_advantage","deploy",14
+"Costa Rica","latent_advantage","deploy",13
 "Costa Rica","latent_advantage","not_assessed",1
-"Costa Rica","low_priority","deploy",11
-"Costa Rica","low_priority","not_assessed",4
-"Costa Rica","policy_led_bet","deploy",7
-"Costa Rica","policy_led_bet","not_assessed",2
+"Costa Rica","low_priority","deploy",12
+"Costa Rica","low_priority","not_assessed",1
+"Costa Rica","policy_led_bet","deploy",8
+"Costa Rica","policy_led_bet","not_assessed",1
 "Cote d'Ivoire","aligned_strength","deploy",9
 "Cote d'Ivoire","insufficient_data","deploy",5
 "Cote d'Ivoire","insufficient_data","not_assessed",17
@@ -447,28 +439,27 @@
 "Cote d'Ivoire","low_priority","not_assessed",3
 "Cote d'Ivoire","policy_led_bet","deploy",4
 "Croatia","insufficient_data","deploy",4
-"Croatia","insufficient_data","not_assessed",11
+"Croatia","insufficient_data","not_assessed",15
 "Croatia","latent_advantage","compete",2
 "Croatia","latent_advantage","deploy",21
 "Croatia","latent_advantage","not_assessed",1
-"Croatia","latent_advantage","secure",2
 "Croatia","low_priority","compete",3
 "Croatia","low_priority","deploy",11
-"Croatia","low_priority","not_assessed",4
+"Croatia","low_priority","not_assessed",1
+"Croatia","low_priority","secure",2
 "Croatia","policy_led_bet","deploy",5
-"Croatia","policy_led_bet","not_assessed",2
+"Croatia","policy_led_bet","not_assessed",1
 "Cuba","aligned_strength","compete",1
-"Cuba","aligned_strength","deploy",6
+"Cuba","aligned_strength","deploy",7
 "Cuba","insufficient_data","deploy",6
 "Cuba","insufficient_data","not_assessed",17
 "Cuba","latent_advantage","compete",1
-"Cuba","latent_advantage","deploy",12
+"Cuba","latent_advantage","deploy",11
 "Cuba","latent_advantage","not_assessed",2
 "Cuba","low_priority","compete",11
-"Cuba","low_priority","deploy",5
+"Cuba","low_priority","deploy",6
 "Cuba","low_priority","not_assessed",2
 "Cuba","policy_led_bet","compete",2
-"Cuba","policy_led_bet","deploy",1
 "Curaçao","insufficient_data","compete",4
 "Curaçao","insufficient_data","deploy",32
 "Curaçao","insufficient_data","not_assessed",29
@@ -476,29 +467,29 @@
 "Cyprus","aligned_strength","deploy",3
 "Cyprus","insufficient_data","deploy",3
 "Cyprus","insufficient_data","not_assessed",16
-"Cyprus","latent_advantage","compete",3
-"Cyprus","latent_advantage","deploy",16
+"Cyprus","latent_advantage","compete",4
+"Cyprus","latent_advantage","deploy",15
 "Cyprus","latent_advantage","not_assessed",1
 "Cyprus","latent_advantage","secure",1
-"Cyprus","low_priority","compete",5
-"Cyprus","low_priority","deploy",14
+"Cyprus","low_priority","compete",4
+"Cyprus","low_priority","deploy",15
 "Cyprus","low_priority","not_assessed",2
 "Cyprus","policy_led_bet","deploy",2
 "Czech Republic","aligned_strength","compete",10
-"Czech Republic","aligned_strength","deploy",3
-"Czech Republic","aligned_strength","secure",2
+"Czech Republic","aligned_strength","deploy",2
+"Czech Republic","aligned_strength","secure",1
 "Czech Republic","insufficient_data","compete",2
 "Czech Republic","insufficient_data","deploy",2
-"Czech Republic","insufficient_data","not_assessed",11
-"Czech Republic","latent_advantage","compete",3
+"Czech Republic","insufficient_data","not_assessed",15
+"Czech Republic","latent_advantage","compete",5
 "Czech Republic","latent_advantage","deploy",6
-"Czech Republic","latent_advantage","secure",1
-"Czech Republic","low_priority","compete",6
+"Czech Republic","low_priority","compete",4
 "Czech Republic","low_priority","deploy",6
 "Czech Republic","low_priority","not_assessed",1
-"Czech Republic","policy_led_bet","deploy",6
-"Czech Republic","policy_led_bet","not_assessed",6
-"Czech Republic","policy_led_bet","secure",1
+"Czech Republic","low_priority","secure",1
+"Czech Republic","policy_led_bet","deploy",7
+"Czech Republic","policy_led_bet","not_assessed",2
+"Czech Republic","policy_led_bet","secure",2
 "Democratic Republic of Congo","aligned_strength","deploy",4
 "Democratic Republic of Congo","aligned_strength","not_assessed",1
 "Democratic Republic of Congo","insufficient_data","deploy",5
@@ -512,11 +503,10 @@
 "Democratic Republic of Congo","policy_led_bet","deploy",2
 "Denmark","aligned_strength","compete",4
 "Denmark","aligned_strength","deploy",8
-"Denmark","aligned_strength","not_assessed",2
 "Denmark","aligned_strength","secure",1
 "Denmark","insufficient_data","compete",1
 "Denmark","insufficient_data","deploy",3
-"Denmark","insufficient_data","not_assessed",11
+"Denmark","insufficient_data","not_assessed",15
 "Denmark","latent_advantage","compete",2
 "Denmark","latent_advantage","deploy",8
 "Denmark","latent_advantage","not_assessed",1
@@ -525,16 +515,15 @@
 "Denmark","low_priority","not_assessed",2
 "Denmark","policy_led_bet","compete",1
 "Denmark","policy_led_bet","deploy",6
-"Denmark","policy_led_bet","not_assessed",2
 "Denmark","policy_led_bet","secure",1
 "Djibouti","aligned_strength","compete",1
 "Djibouti","aligned_strength","deploy",2
 "Djibouti","insufficient_data","deploy",6
 "Djibouti","insufficient_data","not_assessed",18
-"Djibouti","latent_advantage","compete",8
+"Djibouti","latent_advantage","compete",6
 "Djibouti","latent_advantage","deploy",5
 "Djibouti","latent_advantage","not_assessed",6
-"Djibouti","low_priority","compete",5
+"Djibouti","low_priority","compete",7
 "Djibouti","low_priority","deploy",12
 "Djibouti","low_priority","not_assessed",2
 "Djibouti","policy_led_bet","compete",1
@@ -572,16 +561,16 @@
 "Egypt","aligned_strength","deploy",9
 "Egypt","aligned_strength","secure",2
 "Egypt","insufficient_data","deploy",4
-"Egypt","insufficient_data","not_assessed",11
-"Egypt","latent_advantage","compete",4
+"Egypt","insufficient_data","not_assessed",15
+"Egypt","latent_advantage","compete",2
 "Egypt","latent_advantage","deploy",6
 "Egypt","latent_advantage","secure",1
-"Egypt","low_priority","compete",6
+"Egypt","low_priority","compete",8
 "Egypt","low_priority","deploy",5
-"Egypt","low_priority","not_assessed",4
+"Egypt","low_priority","not_assessed",2
 "Egypt","policy_led_bet","compete",3
 "Egypt","policy_led_bet","deploy",4
-"Egypt","policy_led_bet","not_assessed",3
+"Egypt","policy_led_bet","not_assessed",1
 "El Salvador","aligned_strength","compete",1
 "El Salvador","aligned_strength","deploy",5
 "El Salvador","aligned_strength","not_assessed",1
@@ -597,11 +586,11 @@
 "Equatorial Guinea","aligned_strength","deploy",6
 "Equatorial Guinea","insufficient_data","deploy",5
 "Equatorial Guinea","insufficient_data","not_assessed",15
-"Equatorial Guinea","latent_advantage","compete",2
-"Equatorial Guinea","latent_advantage","deploy",12
+"Equatorial Guinea","latent_advantage","compete",1
+"Equatorial Guinea","latent_advantage","deploy",13
 "Equatorial Guinea","latent_advantage","not_assessed",3
-"Equatorial Guinea","low_priority","compete",2
-"Equatorial Guinea","low_priority","deploy",18
+"Equatorial Guinea","low_priority","compete",3
+"Equatorial Guinea","low_priority","deploy",17
 "Equatorial Guinea","low_priority","not_assessed",1
 "Equatorial Guinea","policy_led_bet","deploy",2
 "Eritrea","insufficient_data","compete",9
@@ -609,26 +598,24 @@
 "Eritrea","insufficient_data","not_assessed",26
 "Eritrea","insufficient_data","secure",1
 "Estonia","aligned_strength","compete",1
-"Estonia","aligned_strength","deploy",6
-"Estonia","aligned_strength","not_assessed",2
-"Estonia","aligned_strength","secure",1
+"Estonia","aligned_strength","deploy",8
 "Estonia","insufficient_data","compete",1
 "Estonia","insufficient_data","deploy",3
-"Estonia","insufficient_data","not_assessed",11
+"Estonia","insufficient_data","not_assessed",15
 "Estonia","latent_advantage","compete",2
-"Estonia","latent_advantage","deploy",14
-"Estonia","low_priority","deploy",9
-"Estonia","low_priority","not_assessed",5
+"Estonia","latent_advantage","deploy",13
+"Estonia","low_priority","deploy",10
+"Estonia","low_priority","not_assessed",3
 "Estonia","low_priority","secure",1
-"Estonia","policy_led_bet","deploy",10
+"Estonia","policy_led_bet","deploy",8
+"Estonia","policy_led_bet","secure",1
 "Eswatini","aligned_strength","deploy",4
 "Eswatini","insufficient_data","compete",1
 "Eswatini","insufficient_data","deploy",5
 "Eswatini","insufficient_data","not_assessed",17
-"Eswatini","latent_advantage","deploy",17
-"Eswatini","latent_advantage","not_assessed",1
-"Eswatini","low_priority","deploy",14
-"Eswatini","low_priority","not_assessed",3
+"Eswatini","latent_advantage","deploy",18
+"Eswatini","low_priority","deploy",13
+"Eswatini","low_priority","not_assessed",4
 "Eswatini","policy_led_bet","deploy",4
 "Ethiopia","aligned_strength","deploy",2
 "Ethiopia","insufficient_data","deploy",6
@@ -648,35 +635,34 @@
 "Fiji","insufficient_data","compete",5
 "Fiji","insufficient_data","deploy",40
 "Fiji","insufficient_data","not_assessed",21
-"Finland","aligned_strength","compete",5
+"Finland","aligned_strength","compete",4
 "Finland","aligned_strength","deploy",5
 "Finland","insufficient_data","compete",2
 "Finland","insufficient_data","deploy",2
-"Finland","insufficient_data","not_assessed",11
-"Finland","latent_advantage","compete",6
+"Finland","insufficient_data","not_assessed",15
+"Finland","latent_advantage","compete",5
 "Finland","latent_advantage","deploy",7
 "Finland","latent_advantage","not_assessed",3
+"Finland","low_priority","compete",1
 "Finland","low_priority","deploy",5
-"Finland","low_priority","not_assessed",2
-"Finland","policy_led_bet","compete",2
+"Finland","policy_led_bet","compete",3
 "Finland","policy_led_bet","deploy",11
-"Finland","policy_led_bet","not_assessed",2
 "Finland","policy_led_bet","secure",3
-"France","aligned_strength","compete",9
-"France","aligned_strength","deploy",5
+"France","aligned_strength","compete",7
+"France","aligned_strength","deploy",6
 "France","insufficient_data","compete",2
 "France","insufficient_data","deploy",2
-"France","insufficient_data","not_assessed",11
+"France","insufficient_data","not_assessed",15
 "France","latent_advantage","compete",4
-"France","latent_advantage","deploy",5
-"France","latent_advantage","not_assessed",3
+"France","latent_advantage","deploy",6
+"France","latent_advantage","not_assessed",1
 "France","low_priority","compete",1
-"France","low_priority","deploy",7
+"France","low_priority","deploy",6
 "France","low_priority","not_assessed",1
 "France","low_priority","secure",2
-"France","policy_led_bet","compete",2
-"France","policy_led_bet","deploy",9
-"France","policy_led_bet","not_assessed",3
+"France","policy_led_bet","compete",4
+"France","policy_led_bet","deploy",8
+"France","policy_led_bet","not_assessed",1
 "French Polynesia","insufficient_data","compete",4
 "French Polynesia","insufficient_data","deploy",35
 "French Polynesia","insufficient_data","not_assessed",26
@@ -697,12 +683,12 @@
 "Gambia","insufficient_data","compete",1
 "Gambia","insufficient_data","deploy",3
 "Gambia","insufficient_data","not_assessed",18
-"Gambia","latent_advantage","compete",3
+"Gambia","latent_advantage","compete",4
 "Gambia","latent_advantage","deploy",9
-"Gambia","latent_advantage","not_assessed",7
-"Gambia","low_priority","compete",4
+"Gambia","latent_advantage","not_assessed",6
+"Gambia","low_priority","compete",3
 "Gambia","low_priority","deploy",10
-"Gambia","low_priority","not_assessed",1
+"Gambia","low_priority","not_assessed",2
 "Gambia","policy_led_bet","deploy",7
 "Georgia","insufficient_data","compete",6
 "Georgia","insufficient_data","deploy",37
@@ -710,17 +696,15 @@
 "Georgia","insufficient_data","secure",2
 "Germany","aligned_strength","compete",7
 "Germany","aligned_strength","deploy",7
-"Germany","aligned_strength","not_assessed",2
 "Germany","aligned_strength","secure",1
 "Germany","insufficient_data","compete",2
 "Germany","insufficient_data","deploy",2
-"Germany","insufficient_data","not_assessed",11
+"Germany","insufficient_data","not_assessed",15
 "Germany","latent_advantage","compete",5
-"Germany","latent_advantage","deploy",1
-"Germany","latent_advantage","not_assessed",2
+"Germany","latent_advantage","deploy",3
 "Germany","latent_advantage","secure",1
 "Germany","low_priority","compete",2
-"Germany","low_priority","deploy",8
+"Germany","low_priority","deploy",6
 "Germany","low_priority","not_assessed",2
 "Germany","low_priority","secure",2
 "Germany","policy_led_bet","compete",3
@@ -741,19 +725,19 @@
 "Gibraltar","insufficient_data","deploy",37
 "Gibraltar","insufficient_data","not_assessed",29
 "Greece","aligned_strength","compete",2
-"Greece","aligned_strength","deploy",10
+"Greece","aligned_strength","deploy",9
 "Greece","aligned_strength","secure",1
 "Greece","insufficient_data","compete",1
 "Greece","insufficient_data","deploy",3
-"Greece","insufficient_data","not_assessed",11
-"Greece","latent_advantage","compete",2
-"Greece","latent_advantage","deploy",11
-"Greece","low_priority","compete",4
-"Greece","low_priority","deploy",3
-"Greece","low_priority","not_assessed",7
+"Greece","insufficient_data","not_assessed",15
+"Greece","latent_advantage","compete",3
+"Greece","latent_advantage","deploy",9
+"Greece","low_priority","compete",3
+"Greece","low_priority","deploy",5
+"Greece","low_priority","not_assessed",3
 "Greece","low_priority","secure",1
 "Greece","policy_led_bet","compete",1
-"Greece","policy_led_bet","deploy",9
+"Greece","policy_led_bet","deploy",10
 "Greenland","insufficient_data","deploy",39
 "Greenland","insufficient_data","not_assessed",26
 "Greenland","insufficient_data","secure",1
@@ -769,16 +753,16 @@
 "Guam","insufficient_data","deploy",27
 "Guam","insufficient_data","not_assessed",35
 "Guatemala","aligned_strength","compete",1
-"Guatemala","aligned_strength","deploy",5
+"Guatemala","aligned_strength","deploy",6
 "Guatemala","aligned_strength","not_assessed",1
 "Guatemala","insufficient_data","deploy",5
 "Guatemala","insufficient_data","not_assessed",17
 "Guatemala","latent_advantage","compete",1
-"Guatemala","latent_advantage","deploy",13
+"Guatemala","latent_advantage","deploy",12
 "Guatemala","latent_advantage","not_assessed",1
-"Guatemala","low_priority","deploy",13
+"Guatemala","low_priority","deploy",14
 "Guatemala","low_priority","not_assessed",2
-"Guatemala","policy_led_bet","deploy",7
+"Guatemala","policy_led_bet","deploy",6
 "Guinea","aligned_strength","compete",4
 "Guinea","aligned_strength","deploy",2
 "Guinea","insufficient_data","compete",1
@@ -809,15 +793,15 @@
 "Guyana","low_priority","deploy",17
 "Guyana","low_priority","not_assessed",3
 "Guyana","policy_led_bet","deploy",3
-"Haiti","aligned_strength","deploy",1
+"Haiti","aligned_strength","deploy",2
 "Haiti","insufficient_data","deploy",7
 "Haiti","insufficient_data","not_assessed",17
-"Haiti","latent_advantage","deploy",18
+"Haiti","latent_advantage","deploy",17
 "Haiti","latent_advantage","not_assessed",2
 "Haiti","low_priority","compete",1
-"Haiti","low_priority","deploy",15
+"Haiti","low_priority","deploy",16
 "Haiti","low_priority","not_assessed",2
-"Haiti","policy_led_bet","deploy",3
+"Haiti","policy_led_bet","deploy",2
 "Honduras","aligned_strength","compete",4
 "Honduras","aligned_strength","deploy",6
 "Honduras","insufficient_data","deploy",5
@@ -829,82 +813,78 @@
 "Honduras","low_priority","deploy",14
 "Honduras","low_priority","not_assessed",3
 "Honduras","policy_led_bet","deploy",3
-"Hong Kong","aligned_strength",,11
-"Hong Kong","insufficient_data",,16
-"Hong Kong","latent_advantage",,14
-"Hong Kong","low_priority",,19
+"Hong Kong","aligned_strength",,10
+"Hong Kong","insufficient_data",,20
+"Hong Kong","latent_advantage",,13
+"Hong Kong","low_priority",,17
 "Hong Kong","policy_led_bet",,6
 "Hungary","aligned_strength","compete",3
 "Hungary","aligned_strength","deploy",5
 "Hungary","aligned_strength","secure",1
 "Hungary","insufficient_data","compete",1
 "Hungary","insufficient_data","deploy",3
-"Hungary","insufficient_data","not_assessed",11
-"Hungary","latent_advantage","compete",9
-"Hungary","latent_advantage","deploy",5
-"Hungary","latent_advantage","not_assessed",2
+"Hungary","insufficient_data","not_assessed",15
+"Hungary","latent_advantage","compete",10
+"Hungary","latent_advantage","deploy",4
 "Hungary","latent_advantage","secure",1
-"Hungary","low_priority","compete",5
-"Hungary","low_priority","deploy",8
-"Hungary","low_priority","not_assessed",5
+"Hungary","low_priority","compete",4
+"Hungary","low_priority","deploy",9
+"Hungary","low_priority","not_assessed",3
 "Hungary","policy_led_bet","compete",2
 "Hungary","policy_led_bet","deploy",5
 "Iceland","aligned_strength","compete",1
-"Iceland","aligned_strength","deploy",8
+"Iceland","aligned_strength","deploy",9
 "Iceland","aligned_strength","secure",1
 "Iceland","insufficient_data","deploy",3
-"Iceland","insufficient_data","not_assessed",12
-"Iceland","latent_advantage","deploy",12
-"Iceland","latent_advantage","not_assessed",3
+"Iceland","insufficient_data","not_assessed",16
+"Iceland","latent_advantage","compete",2
+"Iceland","latent_advantage","deploy",9
+"Iceland","latent_advantage","not_assessed",1
 "Iceland","latent_advantage","secure",1
-"Iceland","low_priority","compete",3
-"Iceland","low_priority","deploy",12
-"Iceland","low_priority","not_assessed",3
-"Iceland","policy_led_bet","deploy",6
-"Iceland","policy_led_bet","not_assessed",1
+"Iceland","low_priority","compete",1
+"Iceland","low_priority","deploy",15
+"Iceland","low_priority","not_assessed",2
+"Iceland","policy_led_bet","deploy",5
 "India","aligned_strength","compete",10
 "India","aligned_strength","deploy",9
 "India","aligned_strength","not_assessed",1
 "India","insufficient_data","compete",2
 "India","insufficient_data","deploy",2
-"India","insufficient_data","not_assessed",11
+"India","insufficient_data","not_assessed",15
 "India","latent_advantage","compete",3
 "India","latent_advantage","deploy",2
 "India","latent_advantage","not_assessed",1
 "India","low_priority","compete",3
 "India","low_priority","deploy",9
-"India","low_priority","not_assessed",3
+"India","low_priority","not_assessed",1
 "India","low_priority","secure",1
 "India","policy_led_bet","compete",4
 "India","policy_led_bet","deploy",3
-"India","policy_led_bet","not_assessed",2
-"Indonesia","aligned_strength","compete",5
+"Indonesia","aligned_strength","compete",4
 "Indonesia","aligned_strength","deploy",9
 "Indonesia","aligned_strength","not_assessed",1
 "Indonesia","insufficient_data","deploy",4
-"Indonesia","insufficient_data","not_assessed",11
-"Indonesia","latent_advantage","compete",5
+"Indonesia","insufficient_data","not_assessed",15
+"Indonesia","latent_advantage","compete",4
 "Indonesia","latent_advantage","deploy",4
 "Indonesia","latent_advantage","not_assessed",2
-"Indonesia","low_priority","compete",5
+"Indonesia","low_priority","compete",6
 "Indonesia","low_priority","deploy",2
-"Indonesia","low_priority","not_assessed",4
-"Indonesia","policy_led_bet","compete",5
+"Indonesia","policy_led_bet","compete",6
 "Indonesia","policy_led_bet","deploy",7
 "Indonesia","policy_led_bet","secure",2
-"Iran","aligned_strength","compete",5
-"Iran","aligned_strength","deploy",9
+"Iran","aligned_strength","compete",2
+"Iran","aligned_strength","deploy",10
 "Iran","insufficient_data","compete",1
 "Iran","insufficient_data","deploy",4
-"Iran","insufficient_data","not_assessed",11
+"Iran","insufficient_data","not_assessed",15
 "Iran","latent_advantage","compete",2
 "Iran","latent_advantage","deploy",9
 "Iran","low_priority","compete",5
 "Iran","low_priority","deploy",6
-"Iran","low_priority","not_assessed",5
-"Iran","policy_led_bet","compete",5
-"Iran","policy_led_bet","deploy",2
-"Iran","policy_led_bet","not_assessed",2
+"Iran","low_priority","not_assessed",3
+"Iran","policy_led_bet","compete",8
+"Iran","policy_led_bet","deploy",1
 "Iraq","aligned_strength","deploy",6
 "Iraq","insufficient_data","compete",1
 "Iraq","insufficient_data","deploy",3
@@ -916,49 +896,44 @@
 "Iraq","low_priority","compete",13
 "Iraq","low_priority","deploy",9
 "Iraq","low_priority","secure",1
-"Ireland","aligned_strength","compete",2
+"Ireland","aligned_strength","compete",1
 "Ireland","aligned_strength","deploy",11
-"Ireland","aligned_strength","not_assessed",2
 "Ireland","aligned_strength","secure",2
 "Ireland","insufficient_data","compete",1
 "Ireland","insufficient_data","deploy",3
-"Ireland","insufficient_data","not_assessed",11
+"Ireland","insufficient_data","not_assessed",15
 "Ireland","latent_advantage","compete",2
-"Ireland","latent_advantage","deploy",5
-"Ireland","latent_advantage","not_assessed",2
+"Ireland","latent_advantage","deploy",8
 "Ireland","low_priority","compete",4
-"Ireland","low_priority","deploy",8
+"Ireland","low_priority","deploy",5
 "Ireland","low_priority","not_assessed",2
+"Ireland","policy_led_bet","compete",1
 "Ireland","policy_led_bet","deploy",10
 "Ireland","policy_led_bet","not_assessed",1
 "Isle of Man","insufficient_data","not_assessed",66
 "Israel","aligned_strength","compete",3
-"Israel","aligned_strength","deploy",7
-"Israel","aligned_strength","not_assessed",1
+"Israel","aligned_strength","deploy",8
+"Israel","aligned_strength","secure",1
 "Israel","insufficient_data","deploy",4
-"Israel","insufficient_data","not_assessed",11
+"Israel","insufficient_data","not_assessed",15
 "Israel","latent_advantage","compete",2
 "Israel","latent_advantage","deploy",10
-"Israel","latent_advantage","not_assessed",3
 "Israel","low_priority","compete",1
 "Israel","low_priority","deploy",11
 "Israel","low_priority","not_assessed",3
-"Israel","policy_led_bet","deploy",9
-"Israel","policy_led_bet","secure",1
-"Italy","aligned_strength","compete",7
-"Italy","aligned_strength","deploy",10
+"Israel","policy_led_bet","deploy",8
+"Italy","aligned_strength","compete",8
+"Italy","aligned_strength","deploy",8
 "Italy","insufficient_data","compete",1
 "Italy","insufficient_data","deploy",3
-"Italy","insufficient_data","not_assessed",11
-"Italy","latent_advantage","compete",4
-"Italy","latent_advantage","deploy",3
-"Italy","latent_advantage","secure",2
-"Italy","low_priority","compete",4
-"Italy","low_priority","deploy",8
-"Italy","low_priority","not_assessed",5
-"Italy","policy_led_bet","compete",1
-"Italy","policy_led_bet","deploy",5
-"Italy","policy_led_bet","not_assessed",2
+"Italy","insufficient_data","not_assessed",15
+"Italy","latent_advantage","compete",3
+"Italy","latent_advantage","deploy",5
+"Italy","low_priority","compete",5
+"Italy","low_priority","deploy",6
+"Italy","low_priority","not_assessed",3
+"Italy","low_priority","secure",2
+"Italy","policy_led_bet","deploy",7
 "Jamaica","aligned_strength","deploy",2
 "Jamaica","insufficient_data","compete",1
 "Jamaica","insufficient_data","deploy",4
@@ -969,61 +944,59 @@
 "Jamaica","low_priority","deploy",18
 "Jamaica","policy_led_bet","deploy",4
 "Japan","aligned_strength","compete",7
-"Japan","aligned_strength","deploy",10
+"Japan","aligned_strength","deploy",9
 "Japan","insufficient_data","compete",1
 "Japan","insufficient_data","deploy",3
-"Japan","insufficient_data","not_assessed",11
-"Japan","latent_advantage","compete",3
+"Japan","insufficient_data","not_assessed",15
+"Japan","latent_advantage","compete",2
 "Japan","latent_advantage","deploy",4
 "Japan","latent_advantage","not_assessed",1
 "Japan","latent_advantage","secure",1
-"Japan","low_priority","compete",3
+"Japan","low_priority","compete",4
 "Japan","low_priority","deploy",5
 "Japan","low_priority","not_assessed",2
 "Japan","low_priority","secure",3
 "Japan","policy_led_bet","compete",3
-"Japan","policy_led_bet","deploy",5
-"Japan","policy_led_bet","not_assessed",4
+"Japan","policy_led_bet","deploy",6
 "Jordan","aligned_strength","compete",3
 "Jordan","aligned_strength","deploy",3
 "Jordan","insufficient_data","deploy",5
 "Jordan","insufficient_data","not_assessed",17
-"Jordan","latent_advantage","compete",9
-"Jordan","latent_advantage","deploy",6
+"Jordan","latent_advantage","compete",8
+"Jordan","latent_advantage","deploy",7
 "Jordan","latent_advantage","secure",1
-"Jordan","low_priority","compete",2
-"Jordan","low_priority","deploy",10
+"Jordan","low_priority","compete",3
+"Jordan","low_priority","deploy",9
 "Jordan","low_priority","not_assessed",3
 "Jordan","low_priority","secure",1
 "Jordan","policy_led_bet","deploy",6
-"Kazakhstan","aligned_strength","compete",1
+"Kazakhstan","aligned_strength","compete",2
 "Kazakhstan","aligned_strength","deploy",9
 "Kazakhstan","insufficient_data","compete",1
 "Kazakhstan","insufficient_data","deploy",3
 "Kazakhstan","insufficient_data","not_assessed",15
-"Kazakhstan","latent_advantage","compete",5
+"Kazakhstan","latent_advantage","compete",4
 "Kazakhstan","latent_advantage","deploy",6
 "Kazakhstan","latent_advantage","not_assessed",2
 "Kazakhstan","latent_advantage","secure",1
-"Kazakhstan","low_priority","compete",10
+"Kazakhstan","low_priority","compete",11
 "Kazakhstan","low_priority","deploy",4
 "Kazakhstan","low_priority","not_assessed",1
-"Kazakhstan","policy_led_bet","compete",2
+"Kazakhstan","policy_led_bet","compete",1
 "Kazakhstan","policy_led_bet","deploy",6
-"Kenya","aligned_strength","compete",4
+"Kenya","aligned_strength","compete",5
 "Kenya","aligned_strength","deploy",7
 "Kenya","aligned_strength","not_assessed",1
 "Kenya","insufficient_data","compete",1
 "Kenya","insufficient_data","deploy",4
 "Kenya","insufficient_data","not_assessed",17
 "Kenya","latent_advantage","compete",7
-"Kenya","latent_advantage","not_assessed",1
 "Kenya","latent_advantage","secure",2
 "Kenya","low_priority","compete",2
 "Kenya","low_priority","deploy",7
-"Kenya","low_priority","not_assessed",2
+"Kenya","low_priority","not_assessed",3
 "Kenya","low_priority","secure",1
-"Kenya","policy_led_bet","compete",5
+"Kenya","policy_led_bet","compete",4
 "Kenya","policy_led_bet","deploy",5
 "Kiribati","insufficient_data","compete",5
 "Kiribati","insufficient_data","deploy",35
@@ -1058,18 +1031,18 @@
 "Lao PDR","low_priority","deploy",9
 "Lao PDR","low_priority","secure",2
 "Lao PDR","policy_led_bet","deploy",3
-"Latvia","aligned_strength","deploy",3
+"Latvia","aligned_strength","deploy",2
 "Latvia","insufficient_data","compete",1
 "Latvia","insufficient_data","deploy",3
-"Latvia","insufficient_data","not_assessed",11
+"Latvia","insufficient_data","not_assessed",15
 "Latvia","latent_advantage","compete",3
-"Latvia","latent_advantage","deploy",17
-"Latvia","latent_advantage","not_assessed",1
-"Latvia","latent_advantage","secure",2
+"Latvia","latent_advantage","deploy",18
+"Latvia","latent_advantage","secure",1
 "Latvia","low_priority","compete",2
-"Latvia","low_priority","deploy",14
-"Latvia","low_priority","not_assessed",6
-"Latvia","policy_led_bet","deploy",3
+"Latvia","low_priority","deploy",13
+"Latvia","low_priority","not_assessed",3
+"Latvia","low_priority","secure",1
+"Latvia","policy_led_bet","deploy",4
 "Lebanon","insufficient_data","deploy",5
 "Lebanon","insufficient_data","not_assessed",17
 "Lebanon","latent_advantage","compete",9
@@ -1084,11 +1057,11 @@
 "Lesotho","insufficient_data","compete",1
 "Lesotho","insufficient_data","deploy",3
 "Lesotho","insufficient_data","not_assessed",18
-"Lesotho","latent_advantage","compete",5
-"Lesotho","latent_advantage","deploy",10
+"Lesotho","latent_advantage","compete",6
+"Lesotho","latent_advantage","deploy",9
 "Lesotho","latent_advantage","not_assessed",3
-"Lesotho","low_priority","compete",2
-"Lesotho","low_priority","deploy",14
+"Lesotho","low_priority","compete",1
+"Lesotho","low_priority","deploy",15
 "Lesotho","low_priority","not_assessed",1
 "Lesotho","policy_led_bet","deploy",5
 "Liberia","aligned_strength",,7
@@ -1109,34 +1082,34 @@
 "Libya","low_priority","secure",1
 "Libya","policy_led_bet","deploy",1
 "Libya","policy_led_bet","not_assessed",1
-"Liechtenstein","aligned_strength","not_assessed",2
-"Liechtenstein","insufficient_data","not_assessed",28
-"Liechtenstein","latent_advantage","not_assessed",17
-"Liechtenstein","low_priority","not_assessed",11
-"Liechtenstein","policy_led_bet","not_assessed",8
+"Liechtenstein","aligned_strength","not_assessed",1
+"Liechtenstein","insufficient_data","not_assessed",42
+"Liechtenstein","latent_advantage","not_assessed",11
+"Liechtenstein","low_priority","not_assessed",6
+"Liechtenstein","policy_led_bet","not_assessed",6
 "Lithuania","aligned_strength","deploy",6
 "Lithuania","insufficient_data","compete",1
 "Lithuania","insufficient_data","deploy",3
-"Lithuania","insufficient_data","not_assessed",11
-"Lithuania","latent_advantage","compete",4
+"Lithuania","insufficient_data","not_assessed",15
+"Lithuania","latent_advantage","compete",2
 "Lithuania","latent_advantage","deploy",15
 "Lithuania","latent_advantage","secure",1
-"Lithuania","low_priority","compete",2
+"Lithuania","low_priority","compete",4
 "Lithuania","low_priority","deploy",7
 "Lithuania","low_priority","not_assessed",1
 "Lithuania","low_priority","secure",1
 "Lithuania","policy_led_bet","compete",2
 "Lithuania","policy_led_bet","deploy",6
-"Lithuania","policy_led_bet","not_assessed",6
+"Lithuania","policy_led_bet","not_assessed",2
 "Luxembourg","aligned_strength","deploy",4
 "Luxembourg","insufficient_data","compete",1
 "Luxembourg","insufficient_data","deploy",3
-"Luxembourg","insufficient_data","not_assessed",11
-"Luxembourg","latent_advantage","compete",4
-"Luxembourg","latent_advantage","deploy",18
-"Luxembourg","low_priority","compete",2
-"Luxembourg","low_priority","deploy",10
-"Luxembourg","low_priority","not_assessed",7
+"Luxembourg","insufficient_data","not_assessed",15
+"Luxembourg","latent_advantage","compete",3
+"Luxembourg","latent_advantage","deploy",17
+"Luxembourg","low_priority","compete",3
+"Luxembourg","low_priority","deploy",11
+"Luxembourg","low_priority","not_assessed",3
 "Luxembourg","low_priority","secure",1
 "Luxembourg","policy_led_bet","deploy",5
 "Macau","insufficient_data",,66
@@ -1150,31 +1123,30 @@
 "Madagascar","low_priority","deploy",17
 "Madagascar","policy_led_bet","compete",1
 "Madagascar","policy_led_bet","deploy",1
-"Malawi","aligned_strength","deploy",3
+"Malawi","aligned_strength","deploy",4
 "Malawi","insufficient_data","compete",1
 "Malawi","insufficient_data","deploy",4
 "Malawi","insufficient_data","not_assessed",17
 "Malawi","latent_advantage","compete",1
-"Malawi","latent_advantage","deploy",15
+"Malawi","latent_advantage","deploy",14
 "Malawi","latent_advantage","not_assessed",3
 "Malawi","low_priority","compete",1
-"Malawi","low_priority","deploy",18
+"Malawi","low_priority","deploy",19
 "Malawi","low_priority","not_assessed",1
-"Malawi","policy_led_bet","deploy",2
+"Malawi","policy_led_bet","deploy",1
 "Malaysia","aligned_strength","compete",6
 "Malaysia","aligned_strength","deploy",12
 "Malaysia","insufficient_data","compete",2
 "Malaysia","insufficient_data","deploy",2
-"Malaysia","insufficient_data","not_assessed",11
-"Malaysia","latent_advantage","compete",5
+"Malaysia","insufficient_data","not_assessed",15
+"Malaysia","latent_advantage","compete",3
 "Malaysia","latent_advantage","deploy",1
 "Malaysia","latent_advantage","not_assessed",2
-"Malaysia","low_priority","compete",6
+"Malaysia","low_priority","compete",8
 "Malaysia","low_priority","deploy",7
-"Malaysia","low_priority","not_assessed",4
+"Malaysia","low_priority","not_assessed",1
 "Malaysia","policy_led_bet","compete",2
 "Malaysia","policy_led_bet","deploy",5
-"Malaysia","policy_led_bet","not_assessed",1
 "Maldives","aligned_strength","deploy",1
 "Maldives","aligned_strength","not_assessed",3
 "Maldives","insufficient_data","deploy",4
@@ -1206,13 +1178,14 @@
 "Malta","aligned_strength","not_assessed",1
 "Malta","insufficient_data","compete",1
 "Malta","insufficient_data","deploy",4
-"Malta","insufficient_data","not_assessed",13
-"Malta","latent_advantage","compete",5
+"Malta","insufficient_data","not_assessed",17
+"Malta","latent_advantage","compete",3
 "Malta","latent_advantage","deploy",15
 "Malta","latent_advantage","not_assessed",1
 "Malta","latent_advantage","secure",1
+"Malta","low_priority","compete",2
 "Malta","low_priority","deploy",14
-"Malta","low_priority","not_assessed",6
+"Malta","low_priority","not_assessed",2
 "Malta","policy_led_bet","deploy",3
 "Malta","policy_led_bet","secure",1
 "Marshall Islands","insufficient_data",,66
@@ -1243,19 +1216,18 @@
 "Mauritius","low_priority","not_assessed",2
 "Mauritius","policy_led_bet","deploy",2
 "Mexico","aligned_strength","compete",3
-"Mexico","aligned_strength","deploy",12
-"Mexico","aligned_strength","not_assessed",1
+"Mexico","aligned_strength","deploy",11
 "Mexico","insufficient_data","compete",2
 "Mexico","insufficient_data","deploy",2
-"Mexico","insufficient_data","not_assessed",11
+"Mexico","insufficient_data","not_assessed",15
 "Mexico","latent_advantage","compete",7
 "Mexico","latent_advantage","deploy",2
 "Mexico","latent_advantage","not_assessed",1
 "Mexico","low_priority","compete",3
 "Mexico","low_priority","deploy",7
-"Mexico","low_priority","not_assessed",4
+"Mexico","low_priority","not_assessed",1
 "Mexico","policy_led_bet","compete",4
-"Mexico","policy_led_bet","deploy",6
+"Mexico","policy_led_bet","deploy",7
 "Mexico","policy_led_bet","not_assessed",1
 "Micronesia","insufficient_data","compete",5
 "Micronesia","insufficient_data","deploy",31
@@ -1288,26 +1260,26 @@
 "Montenegro","low_priority","not_assessed",3
 "Montenegro","policy_led_bet","deploy",1
 "Morocco","aligned_strength","compete",6
-"Morocco","aligned_strength","deploy",6
+"Morocco","aligned_strength","deploy",5
 "Morocco","insufficient_data","deploy",4
-"Morocco","insufficient_data","not_assessed",11
+"Morocco","insufficient_data","not_assessed",15
 "Morocco","latent_advantage","compete",5
-"Morocco","latent_advantage","deploy",9
+"Morocco","latent_advantage","deploy",8
 "Morocco","low_priority","compete",2
-"Morocco","low_priority","deploy",10
-"Morocco","low_priority","not_assessed",6
-"Morocco","policy_led_bet","deploy",6
+"Morocco","low_priority","deploy",11
+"Morocco","low_priority","not_assessed",2
+"Morocco","policy_led_bet","deploy",7
 "Morocco","policy_led_bet","not_assessed",1
 "Mozambique","aligned_strength","compete",1
 "Mozambique","aligned_strength","deploy",4
 "Mozambique","insufficient_data","compete",2
 "Mozambique","insufficient_data","deploy",3
 "Mozambique","insufficient_data","not_assessed",17
-"Mozambique","latent_advantage","compete",4
-"Mozambique","latent_advantage","deploy",10
+"Mozambique","latent_advantage","compete",3
+"Mozambique","latent_advantage","deploy",11
 "Mozambique","latent_advantage","not_assessed",3
-"Mozambique","low_priority","compete",4
-"Mozambique","low_priority","deploy",12
+"Mozambique","low_priority","compete",5
+"Mozambique","low_priority","deploy",11
 "Mozambique","low_priority","not_assessed",1
 "Mozambique","policy_led_bet","compete",1
 "Mozambique","policy_led_bet","deploy",4
@@ -1316,18 +1288,18 @@
 "Myanmar","insufficient_data","not_assessed",19
 "Myanmar","insufficient_data","secure",2
 "Namibia","aligned_strength","compete",4
-"Namibia","aligned_strength","deploy",4
+"Namibia","aligned_strength","deploy",5
 "Namibia","insufficient_data","compete",1
 "Namibia","insufficient_data","deploy",4
 "Namibia","insufficient_data","not_assessed",17
-"Namibia","latent_advantage","compete",3
+"Namibia","latent_advantage","compete",2
 "Namibia","latent_advantage","deploy",10
 "Namibia","latent_advantage","not_assessed",1
-"Namibia","low_priority","compete",1
+"Namibia","low_priority","compete",2
 "Namibia","low_priority","deploy",11
 "Namibia","low_priority","not_assessed",2
 "Namibia","policy_led_bet","compete",1
-"Namibia","policy_led_bet","deploy",6
+"Namibia","policy_led_bet","deploy",5
 "Namibia","policy_led_bet","not_assessed",1
 "Nauru","aligned_strength","deploy",3
 "Nauru","insufficient_data","deploy",10
@@ -1349,42 +1321,38 @@
 "Nepal","low_priority","deploy",13
 "Nepal","low_priority","not_assessed",1
 "Nepal","policy_led_bet","deploy",1
-"Netherlands","aligned_strength","compete",7
-"Netherlands","aligned_strength","deploy",8
-"Netherlands","aligned_strength","secure",1
+"Netherlands","aligned_strength","compete",6
+"Netherlands","aligned_strength","deploy",11
 "Netherlands","insufficient_data","compete",1
 "Netherlands","insufficient_data","deploy",3
-"Netherlands","insufficient_data","not_assessed",11
-"Netherlands","latent_advantage","compete",5
+"Netherlands","insufficient_data","not_assessed",15
+"Netherlands","latent_advantage","compete",4
 "Netherlands","latent_advantage","deploy",2
-"Netherlands","latent_advantage","not_assessed",2
 "Netherlands","latent_advantage","secure",1
-"Netherlands","low_priority","compete",3
+"Netherlands","low_priority","compete",4
 "Netherlands","low_priority","deploy",4
-"Netherlands","low_priority","not_assessed",3
+"Netherlands","low_priority","not_assessed",2
 "Netherlands","low_priority","secure",1
-"Netherlands","policy_led_bet","compete",2
-"Netherlands","policy_led_bet","deploy",9
-"Netherlands","policy_led_bet","not_assessed",2
-"Netherlands","policy_led_bet","secure",1
+"Netherlands","policy_led_bet","compete",3
+"Netherlands","policy_led_bet","deploy",6
+"Netherlands","policy_led_bet","not_assessed",1
+"Netherlands","policy_led_bet","secure",2
 "New Caledonia","insufficient_data","compete",3
 "New Caledonia","insufficient_data","deploy",40
 "New Caledonia","insufficient_data","not_assessed",21
 "New Caledonia","insufficient_data","secure",2
-"New Zealand","aligned_strength","compete",2
+"New Zealand","aligned_strength","compete",3
 "New Zealand","aligned_strength","deploy",9
 "New Zealand","insufficient_data","compete",1
 "New Zealand","insufficient_data","deploy",3
-"New Zealand","insufficient_data","not_assessed",11
-"New Zealand","latent_advantage","deploy",13
-"New Zealand","latent_advantage","not_assessed",2
-"New Zealand","low_priority","compete",3
-"New Zealand","low_priority","deploy",8
-"New Zealand","low_priority","not_assessed",4
+"New Zealand","insufficient_data","not_assessed",15
+"New Zealand","latent_advantage","compete",1
+"New Zealand","latent_advantage","deploy",11
+"New Zealand","low_priority","compete",2
+"New Zealand","low_priority","deploy",10
+"New Zealand","low_priority","not_assessed",3
 "New Zealand","low_priority","secure",1
-"New Zealand","policy_led_bet","compete",1
 "New Zealand","policy_led_bet","deploy",7
-"New Zealand","policy_led_bet","not_assessed",1
 "Nicaragua","aligned_strength","deploy",6
 "Nicaragua","aligned_strength","secure",1
 "Nicaragua","insufficient_data","deploy",5
@@ -1439,43 +1407,39 @@
 "Northern Mariana Islands","insufficient_data","not_assessed",29
 "Northern Mariana Islands","insufficient_data","secure",1
 "Norway","aligned_strength","compete",2
-"Norway","aligned_strength","deploy",11
+"Norway","aligned_strength","deploy",7
 "Norway","aligned_strength","secure",1
 "Norway","insufficient_data","compete",1
 "Norway","insufficient_data","deploy",3
-"Norway","insufficient_data","not_assessed",11
-"Norway","latent_advantage","compete",3
+"Norway","insufficient_data","not_assessed",15
+"Norway","latent_advantage","compete",4
 "Norway","latent_advantage","deploy",7
-"Norway","latent_advantage","not_assessed",2
-"Norway","low_priority","compete",1
+"Norway","latent_advantage","not_assessed",3
 "Norway","low_priority","deploy",9
-"Norway","low_priority","not_assessed",4
 "Norway","policy_led_bet","compete",1
-"Norway","policy_led_bet","deploy",9
-"Norway","policy_led_bet","not_assessed",1
-"Oman","aligned_strength","compete",4
-"Oman","aligned_strength","deploy",6
+"Norway","policy_led_bet","deploy",13
+"Oman","aligned_strength","compete",5
+"Oman","aligned_strength","deploy",5
 "Oman","insufficient_data","deploy",4
 "Oman","insufficient_data","not_assessed",15
-"Oman","latent_advantage","compete",3
-"Oman","latent_advantage","deploy",10
+"Oman","latent_advantage","compete",4
+"Oman","latent_advantage","deploy",9
 "Oman","latent_advantage","secure",1
-"Oman","low_priority","compete",7
-"Oman","low_priority","deploy",7
+"Oman","low_priority","compete",6
+"Oman","low_priority","deploy",8
 "Oman","low_priority","not_assessed",2
-"Oman","policy_led_bet","compete",1
-"Oman","policy_led_bet","deploy",5
+"Oman","policy_led_bet","deploy",6
 "Oman","policy_led_bet","not_assessed",1
-"Pakistan","aligned_strength","compete",6
+"Pakistan","aligned_strength","compete",5
 "Pakistan","aligned_strength","deploy",7
 "Pakistan","insufficient_data","deploy",4
-"Pakistan","insufficient_data","not_assessed",11
-"Pakistan","latent_advantage","compete",5
+"Pakistan","insufficient_data","not_assessed",15
+"Pakistan","latent_advantage","compete",4
 "Pakistan","latent_advantage","deploy",8
-"Pakistan","low_priority","compete",3
+"Pakistan","low_priority","compete",4
 "Pakistan","low_priority","deploy",1
-"Pakistan","low_priority","not_assessed",7
-"Pakistan","policy_led_bet","compete",5
+"Pakistan","low_priority","not_assessed",3
+"Pakistan","policy_led_bet","compete",6
 "Pakistan","policy_led_bet","deploy",9
 "Palau","insufficient_data","compete",4
 "Palau","insufficient_data","deploy",33
@@ -1498,100 +1462,92 @@
 "Paraguay","low_priority","deploy",16
 "Paraguay","low_priority","not_assessed",2
 "Paraguay","policy_led_bet","deploy",3
-"Peru","aligned_strength","compete",2
+"Peru","aligned_strength","compete",3
 "Peru","aligned_strength","deploy",12
 "Peru","insufficient_data","deploy",4
 "Peru","insufficient_data","not_assessed",15
 "Peru","latent_advantage","compete",1
-"Peru","latent_advantage","deploy",6
+"Peru","latent_advantage","deploy",5
 "Peru","latent_advantage","not_assessed",3
 "Peru","low_priority","compete",2
-"Peru","low_priority","deploy",13
-"Peru","policy_led_bet","compete",1
+"Peru","low_priority","deploy",14
 "Peru","policy_led_bet","deploy",7
-"Philippines","aligned_strength","compete",1
-"Philippines","aligned_strength","deploy",6
+"Philippines","aligned_strength","compete",2
+"Philippines","aligned_strength","deploy",4
 "Philippines","aligned_strength","not_assessed",2
 "Philippines","insufficient_data","compete",1
 "Philippines","insufficient_data","deploy",3
-"Philippines","insufficient_data","not_assessed",11
+"Philippines","insufficient_data","not_assessed",15
 "Philippines","latent_advantage","compete",6
-"Philippines","latent_advantage","deploy",10
+"Philippines","latent_advantage","deploy",9
 "Philippines","latent_advantage","not_assessed",1
 "Philippines","low_priority","compete",2
-"Philippines","low_priority","deploy",8
-"Philippines","low_priority","not_assessed",4
-"Philippines","policy_led_bet","compete",1
-"Philippines","policy_led_bet","deploy",10
-"Poland","aligned_strength","compete",10
+"Philippines","low_priority","deploy",9
+"Philippines","policy_led_bet","deploy",12
+"Poland","aligned_strength","compete",9
 "Poland","aligned_strength","deploy",6
 "Poland","aligned_strength","not_assessed",1
 "Poland","insufficient_data","compete",2
 "Poland","insufficient_data","deploy",2
-"Poland","insufficient_data","not_assessed",11
+"Poland","insufficient_data","not_assessed",15
 "Poland","latent_advantage","compete",3
-"Poland","latent_advantage","deploy",6
+"Poland","latent_advantage","deploy",5
 "Poland","low_priority","compete",2
-"Poland","low_priority","deploy",5
-"Poland","low_priority","not_assessed",4
+"Poland","low_priority","deploy",6
+"Poland","low_priority","not_assessed",2
 "Poland","low_priority","secure",1
-"Poland","policy_led_bet","compete",1
+"Poland","policy_led_bet","compete",2
 "Poland","policy_led_bet","deploy",8
-"Poland","policy_led_bet","not_assessed",2
 "Poland","policy_led_bet","secure",2
 "Portugal","aligned_strength","compete",1
-"Portugal","aligned_strength","deploy",7
+"Portugal","aligned_strength","deploy",8
 "Portugal","insufficient_data","compete",1
 "Portugal","insufficient_data","deploy",3
-"Portugal","insufficient_data","not_assessed",11
-"Portugal","latent_advantage","compete",7
-"Portugal","latent_advantage","deploy",10
-"Portugal","latent_advantage","secure",1
-"Portugal","low_priority","compete",3
-"Portugal","low_priority","deploy",7
-"Portugal","low_priority","not_assessed",7
-"Portugal","low_priority","secure",1
-"Portugal","policy_led_bet","deploy",7
+"Portugal","insufficient_data","not_assessed",15
+"Portugal","latent_advantage","compete",8
+"Portugal","latent_advantage","deploy",7
+"Portugal","low_priority","compete",2
+"Portugal","low_priority","deploy",10
+"Portugal","low_priority","not_assessed",3
+"Portugal","low_priority","secure",2
+"Portugal","policy_led_bet","deploy",6
 "Puerto Rico","insufficient_data","deploy",8
 "Puerto Rico","insufficient_data","not_assessed",58
-"Qatar","aligned_strength","deploy",17
+"Qatar","aligned_strength","deploy",16
 "Qatar","aligned_strength","not_assessed",1
 "Qatar","insufficient_data","deploy",4
-"Qatar","insufficient_data","not_assessed",11
+"Qatar","insufficient_data","not_assessed",15
 "Qatar","latent_advantage","deploy",5
 "Qatar","latent_advantage","not_assessed",2
 "Qatar","low_priority","deploy",1
-"Qatar","low_priority","not_assessed",4
 "Qatar","policy_led_bet","compete",8
-"Qatar","policy_led_bet","deploy",13
-"Romania","aligned_strength","compete",4
-"Romania","aligned_strength","deploy",7
+"Qatar","policy_led_bet","deploy",14
+"Romania","aligned_strength","compete",5
+"Romania","aligned_strength","deploy",8
 "Romania","insufficient_data","deploy",4
-"Romania","insufficient_data","not_assessed",11
-"Romania","latent_advantage","compete",4
-"Romania","latent_advantage","deploy",10
-"Romania","latent_advantage","secure",1
-"Romania","low_priority","compete",4
-"Romania","low_priority","deploy",5
-"Romania","low_priority","not_assessed",6
-"Romania","policy_led_bet","compete",2
-"Romania","policy_led_bet","deploy",7
+"Romania","insufficient_data","not_assessed",15
+"Romania","latent_advantage","compete",3
+"Romania","latent_advantage","deploy",8
+"Romania","low_priority","compete",5
+"Romania","low_priority","deploy",7
+"Romania","low_priority","not_assessed",2
+"Romania","low_priority","secure",1
+"Romania","policy_led_bet","compete",1
+"Romania","policy_led_bet","deploy",6
 "Romania","policy_led_bet","not_assessed",1
 "Russia","aligned_strength","compete",2
 "Russia","aligned_strength","deploy",11
 "Russia","insufficient_data","compete",1
 "Russia","insufficient_data","deploy",3
-"Russia","insufficient_data","not_assessed",11
+"Russia","insufficient_data","not_assessed",15
 "Russia","latent_advantage","compete",2
-"Russia","latent_advantage","deploy",7
+"Russia","latent_advantage","deploy",5
 "Russia","latent_advantage","not_assessed",3
 "Russia","latent_advantage","secure",1
 "Russia","low_priority","compete",3
-"Russia","low_priority","deploy",1
-"Russia","low_priority","not_assessed",3
+"Russia","low_priority","deploy",3
 "Russia","policy_led_bet","compete",11
 "Russia","policy_led_bet","deploy",6
-"Russia","policy_led_bet","not_assessed",1
 "Rwanda","aligned_strength","deploy",4
 "Rwanda","insufficient_data","deploy",5
 "Rwanda","insufficient_data","not_assessed",17
@@ -1611,26 +1567,26 @@
 "San Marino","insufficient_data","deploy",35
 "San Marino","insufficient_data","not_assessed",29
 "San Marino","insufficient_data","secure",1
+"Sao Tome and Principe","aligned_strength","deploy",1
 "Sao Tome and Principe","insufficient_data","deploy",7
 "Sao Tome and Principe","insufficient_data","not_assessed",18
-"Sao Tome and Principe","latent_advantage","deploy",16
+"Sao Tome and Principe","latent_advantage","deploy",15
 "Sao Tome and Principe","latent_advantage","not_assessed",5
-"Sao Tome and Principe","low_priority","deploy",13
+"Sao Tome and Principe","low_priority","deploy",14
 "Sao Tome and Principe","low_priority","not_assessed",3
-"Sao Tome and Principe","policy_led_bet","deploy",4
-"Saudi Arabia","aligned_strength","compete",5
-"Saudi Arabia","aligned_strength","deploy",14
+"Sao Tome and Principe","policy_led_bet","deploy",3
+"Saudi Arabia","aligned_strength","compete",4
+"Saudi Arabia","aligned_strength","deploy",12
 "Saudi Arabia","insufficient_data","compete",1
 "Saudi Arabia","insufficient_data","deploy",3
-"Saudi Arabia","insufficient_data","not_assessed",11
-"Saudi Arabia","latent_advantage","compete",2
-"Saudi Arabia","latent_advantage","deploy",3
-"Saudi Arabia","latent_advantage","not_assessed",2
-"Saudi Arabia","low_priority","compete",3
-"Saudi Arabia","low_priority","deploy",5
-"Saudi Arabia","low_priority","not_assessed",5
-"Saudi Arabia","policy_led_bet","compete",3
-"Saudi Arabia","policy_led_bet","deploy",9
+"Saudi Arabia","insufficient_data","not_assessed",15
+"Saudi Arabia","latent_advantage","compete",3
+"Saudi Arabia","latent_advantage","deploy",5
+"Saudi Arabia","low_priority","compete",2
+"Saudi Arabia","low_priority","deploy",3
+"Saudi Arabia","low_priority","not_assessed",3
+"Saudi Arabia","policy_led_bet","compete",4
+"Saudi Arabia","policy_led_bet","deploy",11
 "Senegal","aligned_strength","compete",4
 "Senegal","aligned_strength","deploy",5
 "Senegal","aligned_strength","secure",2
@@ -1649,9 +1605,9 @@
 "Serbia","aligned_strength","deploy",1
 "Serbia","insufficient_data","deploy",12
 "Serbia","insufficient_data","not_assessed",18
-"Serbia","latent_advantage","compete",4
+"Serbia","latent_advantage","compete",3
 "Serbia","latent_advantage","deploy",19
-"Serbia","low_priority","compete",4
+"Serbia","low_priority","compete",5
 "Serbia","low_priority","deploy",5
 "Serbia","low_priority","not_assessed",1
 "Serbia","policy_led_bet","deploy",2
@@ -1677,45 +1633,46 @@
 "Sierra Leone","low_priority","not_assessed",4
 "Sierra Leone","policy_led_bet","deploy",6
 "Sierra Leone","policy_led_bet","not_assessed",1
-"Singapore","aligned_strength","compete",8
-"Singapore","aligned_strength","deploy",8
+"Singapore","aligned_strength","compete",7
+"Singapore","aligned_strength","deploy",9
 "Singapore","insufficient_data","compete",2
 "Singapore","insufficient_data","deploy",2
-"Singapore","insufficient_data","not_assessed",11
+"Singapore","insufficient_data","not_assessed",15
 "Singapore","latent_advantage","compete",6
-"Singapore","latent_advantage","deploy",4
+"Singapore","latent_advantage","deploy",2
 "Singapore","low_priority","compete",3
-"Singapore","low_priority","deploy",9
-"Singapore","low_priority","not_assessed",5
+"Singapore","low_priority","deploy",11
+"Singapore","low_priority","not_assessed",3
 "Singapore","policy_led_bet","compete",1
 "Singapore","policy_led_bet","deploy",5
-"Singapore","policy_led_bet","not_assessed",2
 "Sint Maarten (Dutch part)","insufficient_data","compete",1
 "Sint Maarten (Dutch part)","insufficient_data","deploy",35
 "Sint Maarten (Dutch part)","insufficient_data","not_assessed",29
 "Sint Maarten (Dutch part)","insufficient_data","secure",1
-"Slovak Republic","aligned_strength","compete",4
-"Slovak Republic","aligned_strength","deploy",5
-"Slovak Republic","aligned_strength","secure",3
+"Slovak Republic","aligned_strength","compete",3
+"Slovak Republic","aligned_strength","deploy",8
+"Slovak Republic","aligned_strength","secure",1
 "Slovak Republic","insufficient_data","deploy",4
-"Slovak Republic","insufficient_data","not_assessed",11
-"Slovak Republic","latent_advantage","compete",8
+"Slovak Republic","insufficient_data","not_assessed",15
+"Slovak Republic","latent_advantage","compete",6
 "Slovak Republic","latent_advantage","deploy",6
-"Slovak Republic","low_priority","compete",2
+"Slovak Republic","low_priority","compete",4
 "Slovak Republic","low_priority","deploy",3
-"Slovak Republic","low_priority","not_assessed",6
-"Slovak Republic","policy_led_bet","deploy",13
+"Slovak Republic","low_priority","not_assessed",2
+"Slovak Republic","policy_led_bet","compete",1
+"Slovak Republic","policy_led_bet","deploy",10
 "Slovak Republic","policy_led_bet","not_assessed",1
-"Slovenia","aligned_strength","compete",7
+"Slovak Republic","policy_led_bet","secure",2
+"Slovenia","aligned_strength","compete",5
 "Slovenia","aligned_strength","deploy",17
 "Slovenia","aligned_strength","secure",1
 "Slovenia","insufficient_data","compete",1
 "Slovenia","insufficient_data","deploy",3
-"Slovenia","insufficient_data","not_assessed",11
+"Slovenia","insufficient_data","not_assessed",15
 "Slovenia","latent_advantage","deploy",1
 "Slovenia","low_priority","deploy",2
-"Slovenia","low_priority","not_assessed",6
-"Slovenia","policy_led_bet","compete",1
+"Slovenia","low_priority","not_assessed",2
+"Slovenia","policy_led_bet","compete",3
 "Slovenia","policy_led_bet","deploy",14
 "Slovenia","policy_led_bet","not_assessed",1
 "Slovenia","policy_led_bet","secure",1
@@ -1726,25 +1683,23 @@
 "Somalia","insufficient_data","deploy",33
 "Somalia","insufficient_data","not_assessed",26
 "South Africa","aligned_strength","compete",3
-"South Africa","aligned_strength","deploy",11
+"South Africa","aligned_strength","deploy",10
 "South Africa","aligned_strength","not_assessed",1
 "South Africa","insufficient_data","deploy",4
-"South Africa","insufficient_data","not_assessed",11
-"South Africa","latent_advantage","compete",3
+"South Africa","insufficient_data","not_assessed",15
+"South Africa","latent_advantage","compete",2
 "South Africa","latent_advantage","deploy",7
 "South Africa","latent_advantage","not_assessed",1
-"South Africa","low_priority","compete",1
+"South Africa","low_priority","compete",2
 "South Africa","low_priority","deploy",9
-"South Africa","low_priority","not_assessed",4
+"South Africa","low_priority","not_assessed",1
 "South Africa","policy_led_bet","compete",1
-"South Africa","policy_led_bet","deploy",9
-"South Africa","policy_led_bet","not_assessed",1
+"South Africa","policy_led_bet","deploy",10
 "South Korea","aligned_strength","compete",9
 "South Korea","aligned_strength","deploy",6
-"South Korea","aligned_strength","not_assessed",2
 "South Korea","insufficient_data","compete",1
 "South Korea","insufficient_data","deploy",3
-"South Korea","insufficient_data","not_assessed",11
+"South Korea","insufficient_data","not_assessed",15
 "South Korea","latent_advantage","compete",6
 "South Korea","latent_advantage","deploy",3
 "South Korea","latent_advantage","not_assessed",1
@@ -1754,7 +1709,6 @@
 "South Korea","low_priority","secure",4
 "South Korea","policy_led_bet","compete",4
 "South Korea","policy_led_bet","deploy",2
-"South Korea","policy_led_bet","not_assessed",2
 "South Korea","policy_led_bet","secure",1
 "South Sudan","insufficient_data","compete",6
 "South Sudan","insufficient_data","deploy",39
@@ -1763,16 +1717,16 @@
 "Spain","aligned_strength","deploy",10
 "Spain","insufficient_data","compete",2
 "Spain","insufficient_data","deploy",2
-"Spain","insufficient_data","not_assessed",11
-"Spain","latent_advantage","compete",6
-"Spain","latent_advantage","deploy",3
-"Spain","low_priority","compete",5
-"Spain","low_priority","deploy",3
-"Spain","low_priority","not_assessed",4
+"Spain","insufficient_data","not_assessed",15
+"Spain","latent_advantage","compete",5
+"Spain","latent_advantage","deploy",2
+"Spain","low_priority","compete",6
+"Spain","low_priority","deploy",4
+"Spain","low_priority","not_assessed",2
 "Spain","low_priority","secure",2
 "Spain","policy_led_bet","compete",1
 "Spain","policy_led_bet","deploy",8
-"Spain","policy_led_bet","not_assessed",3
+"Spain","policy_led_bet","not_assessed",1
 "Sri Lanka","insufficient_data","compete",16
 "Sri Lanka","insufficient_data","deploy",27
 "Sri Lanka","insufficient_data","not_assessed",19
@@ -1819,33 +1773,30 @@
 "Suriname","low_priority","not_assessed",1
 "Suriname","low_priority","secure",1
 "Suriname","policy_led_bet","deploy",1
-"Sweden","aligned_strength","compete",8
-"Sweden","aligned_strength","deploy",5
+"Sweden","aligned_strength","compete",4
+"Sweden","aligned_strength","deploy",7
 "Sweden","insufficient_data","compete",2
 "Sweden","insufficient_data","deploy",2
-"Sweden","insufficient_data","not_assessed",11
+"Sweden","insufficient_data","not_assessed",15
 "Sweden","latent_advantage","compete",4
 "Sweden","latent_advantage","deploy",8
 "Sweden","latent_advantage","not_assessed",1
 "Sweden","low_priority","compete",1
 "Sweden","low_priority","deploy",2
-"Sweden","low_priority","not_assessed",5
+"Sweden","low_priority","not_assessed",2
 "Sweden","low_priority","secure",2
-"Sweden","policy_led_bet","compete",2
-"Sweden","policy_led_bet","deploy",11
-"Sweden","policy_led_bet","not_assessed",1
+"Sweden","policy_led_bet","compete",6
+"Sweden","policy_led_bet","deploy",9
 "Sweden","policy_led_bet","secure",1
 "Switzerland","aligned_strength","compete",5
 "Switzerland","aligned_strength","deploy",6
-"Switzerland","aligned_strength","not_assessed",1
 "Switzerland","insufficient_data","compete",1
 "Switzerland","insufficient_data","deploy",3
-"Switzerland","insufficient_data","not_assessed",11
+"Switzerland","insufficient_data","not_assessed",15
 "Switzerland","latent_advantage","compete",4
-"Switzerland","latent_advantage","deploy",6
-"Switzerland","latent_advantage","not_assessed",3
+"Switzerland","latent_advantage","deploy",9
 "Switzerland","low_priority","compete",1
-"Switzerland","low_priority","deploy",10
+"Switzerland","low_priority","deploy",7
 "Switzerland","low_priority","not_assessed",3
 "Switzerland","policy_led_bet","compete",1
 "Switzerland","policy_led_bet","deploy",11
@@ -1857,12 +1808,12 @@
 "Taiwan","aligned_strength","deploy",8
 "Taiwan","insufficient_data","compete",1
 "Taiwan","insufficient_data","deploy",3
-"Taiwan","insufficient_data","not_assessed",11
-"Taiwan","latent_advantage","compete",12
-"Taiwan","latent_advantage","deploy",5
-"Taiwan","low_priority","compete",2
+"Taiwan","insufficient_data","not_assessed",15
+"Taiwan","latent_advantage","compete",9
+"Taiwan","latent_advantage","deploy",6
+"Taiwan","low_priority","compete",4
 "Taiwan","low_priority","deploy",10
-"Taiwan","low_priority","not_assessed",7
+"Taiwan","low_priority","not_assessed",3
 "Taiwan","low_priority","secure",1
 "Taiwan","policy_led_bet","compete",1
 "Taiwan","policy_led_bet","deploy",4
@@ -1870,58 +1821,57 @@
 "Tajikistan","insufficient_data","deploy",26
 "Tajikistan","insufficient_data","not_assessed",21
 "Tajikistan","insufficient_data","secure",3
-"Tanzania","aligned_strength","deploy",6
+"Tanzania","aligned_strength","deploy",5
 "Tanzania","insufficient_data","compete",1
 "Tanzania","insufficient_data","deploy",4
 "Tanzania","insufficient_data","not_assessed",17
-"Tanzania","latent_advantage","compete",4
+"Tanzania","latent_advantage","compete",5
 "Tanzania","latent_advantage","deploy",9
 "Tanzania","latent_advantage","not_assessed",3
-"Tanzania","low_priority","compete",6
+"Tanzania","low_priority","compete",5
 "Tanzania","low_priority","deploy",9
 "Tanzania","low_priority","not_assessed",1
 "Tanzania","policy_led_bet","compete",2
-"Tanzania","policy_led_bet","deploy",4
+"Tanzania","policy_led_bet","deploy",5
 "Thailand","aligned_strength","compete",10
-"Thailand","aligned_strength","deploy",7
+"Thailand","aligned_strength","deploy",6
 "Thailand","insufficient_data","compete",2
 "Thailand","insufficient_data","deploy",2
-"Thailand","insufficient_data","not_assessed",11
-"Thailand","latent_advantage","compete",4
+"Thailand","insufficient_data","not_assessed",15
+"Thailand","latent_advantage","compete",3
 "Thailand","latent_advantage","deploy",5
-"Thailand","low_priority","compete",4
+"Thailand","low_priority","compete",5
 "Thailand","low_priority","deploy",6
-"Thailand","low_priority","not_assessed",6
+"Thailand","low_priority","not_assessed",3
 "Thailand","policy_led_bet","compete",1
-"Thailand","policy_led_bet","deploy",7
-"Thailand","policy_led_bet","not_assessed",1
+"Thailand","policy_led_bet","deploy",8
 "Timor-Leste","insufficient_data","compete",5
 "Timor-Leste","insufficient_data","deploy",32
 "Timor-Leste","insufficient_data","not_assessed",29
+"Togo","aligned_strength","compete",1
 "Togo","aligned_strength","deploy",3
 "Togo","insufficient_data","deploy",5
 "Togo","insufficient_data","not_assessed",17
 "Togo","latent_advantage","compete",2
-"Togo","latent_advantage","deploy",14
+"Togo","latent_advantage","deploy",13
 "Togo","latent_advantage","not_assessed",3
 "Togo","low_priority","compete",1
-"Togo","low_priority","deploy",13
+"Togo","low_priority","deploy",14
 "Togo","low_priority","not_assessed",1
-"Togo","policy_led_bet","compete",1
 "Togo","policy_led_bet","deploy",6
 "Tonga","insufficient_data","compete",4
 "Tonga","insufficient_data","deploy",36
 "Tonga","insufficient_data","not_assessed",26
-"Trinidad and Tobago","aligned_strength","deploy",2
+"Trinidad and Tobago","aligned_strength","deploy",3
 "Trinidad and Tobago","insufficient_data","deploy",4
 "Trinidad and Tobago","insufficient_data","not_assessed",15
 "Trinidad and Tobago","latent_advantage","compete",5
-"Trinidad and Tobago","latent_advantage","deploy",16
+"Trinidad and Tobago","latent_advantage","deploy",15
 "Trinidad and Tobago","latent_advantage","not_assessed",1
 "Trinidad and Tobago","low_priority","compete",3
-"Trinidad and Tobago","low_priority","deploy",16
+"Trinidad and Tobago","low_priority","deploy",17
 "Trinidad and Tobago","low_priority","not_assessed",2
-"Trinidad and Tobago","policy_led_bet","deploy",2
+"Trinidad and Tobago","policy_led_bet","deploy",1
 "Tunisia","aligned_strength","compete",1
 "Tunisia","aligned_strength","deploy",2
 "Tunisia","aligned_strength","secure",1
@@ -1933,20 +1883,19 @@
 "Tunisia","low_priority","not_assessed",4
 "Tunisia","policy_led_bet","deploy",3
 "Turkiye","aligned_strength","compete",6
-"Turkiye","aligned_strength","deploy",10
+"Turkiye","aligned_strength","deploy",9
 "Turkiye","aligned_strength","not_assessed",1
 "Turkiye","insufficient_data","compete",1
 "Turkiye","insufficient_data","deploy",3
-"Turkiye","insufficient_data","not_assessed",11
+"Turkiye","insufficient_data","not_assessed",15
 "Turkiye","latent_advantage","compete",5
 "Turkiye","latent_advantage","deploy",3
-"Turkiye","latent_advantage","secure",1
 "Turkiye","low_priority","compete",1
 "Turkiye","low_priority","deploy",8
-"Turkiye","low_priority","not_assessed",4
+"Turkiye","low_priority","not_assessed",2
+"Turkiye","low_priority","secure",1
 "Turkiye","policy_led_bet","compete",4
-"Turkiye","policy_led_bet","deploy",6
-"Turkiye","policy_led_bet","not_assessed",2
+"Turkiye","policy_led_bet","deploy",7
 "Turkmenistan","aligned_strength","deploy",4
 "Turkmenistan","insufficient_data","deploy",6
 "Turkmenistan","insufficient_data","not_assessed",15
@@ -1980,66 +1929,61 @@
 "Uganda","policy_led_bet","compete",2
 "Uganda","policy_led_bet","deploy",2
 "Ukraine","aligned_strength","compete",2
-"Ukraine","aligned_strength","deploy",13
+"Ukraine","aligned_strength","deploy",14
 "Ukraine","aligned_strength","secure",1
 "Ukraine","insufficient_data","deploy",4
-"Ukraine","insufficient_data","not_assessed",11
+"Ukraine","insufficient_data","not_assessed",15
 "Ukraine","latent_advantage","compete",6
-"Ukraine","latent_advantage","deploy",4
+"Ukraine","latent_advantage","deploy",1
 "Ukraine","low_priority","compete",6
-"Ukraine","low_priority","deploy",3
+"Ukraine","low_priority","deploy",6
 "Ukraine","low_priority","not_assessed",1
-"Ukraine","policy_led_bet","deploy",8
-"Ukraine","policy_led_bet","not_assessed",6
+"Ukraine","policy_led_bet","deploy",7
+"Ukraine","policy_led_bet","not_assessed",2
 "Ukraine","policy_led_bet","secure",1
-"United Arab Emirates","aligned_strength","compete",6
-"United Arab Emirates","aligned_strength","deploy",8
-"United Arab Emirates","aligned_strength","not_assessed",2
+"United Arab Emirates","aligned_strength","compete",7
+"United Arab Emirates","aligned_strength","deploy",7
 "United Arab Emirates","insufficient_data","compete",2
 "United Arab Emirates","insufficient_data","deploy",3
-"United Arab Emirates","insufficient_data","not_assessed",11
-"United Arab Emirates","latent_advantage","compete",5
+"United Arab Emirates","insufficient_data","not_assessed",15
+"United Arab Emirates","latent_advantage","compete",4
 "United Arab Emirates","latent_advantage","deploy",4
-"United Arab Emirates","low_priority","compete",2
+"United Arab Emirates","low_priority","compete",3
 "United Arab Emirates","low_priority","deploy",6
-"United Arab Emirates","low_priority","not_assessed",5
+"United Arab Emirates","low_priority","not_assessed",3
 "United Arab Emirates","low_priority","secure",1
-"United Arab Emirates","policy_led_bet","compete",4
-"United Arab Emirates","policy_led_bet","deploy",5
+"United Arab Emirates","policy_led_bet","compete",3
+"United Arab Emirates","policy_led_bet","deploy",6
 "United Arab Emirates","policy_led_bet","secure",2
-"United Kingdom","aligned_strength","compete",9
-"United Kingdom","aligned_strength","deploy",5
-"United Kingdom","aligned_strength","not_assessed",3
+"United Kingdom","aligned_strength","compete",7
+"United Kingdom","aligned_strength","deploy",9
 "United Kingdom","insufficient_data","compete",2
 "United Kingdom","insufficient_data","deploy",2
-"United Kingdom","insufficient_data","not_assessed",11
-"United Kingdom","latent_advantage","compete",1
-"United Kingdom","latent_advantage","deploy",5
-"United Kingdom","latent_advantage","not_assessed",1
+"United Kingdom","insufficient_data","not_assessed",15
+"United Kingdom","latent_advantage","compete",2
+"United Kingdom","latent_advantage","deploy",4
 "United Kingdom","latent_advantage","secure",2
-"United Kingdom","low_priority","compete",6
-"United Kingdom","low_priority","deploy",6
+"United Kingdom","low_priority","compete",5
+"United Kingdom","low_priority","deploy",7
 "United Kingdom","low_priority","not_assessed",2
-"United Kingdom","policy_led_bet","compete",1
-"United Kingdom","policy_led_bet","deploy",8
+"United Kingdom","policy_led_bet","compete",3
+"United Kingdom","policy_led_bet","deploy",4
 "United Kingdom","policy_led_bet","not_assessed",1
 "United Kingdom","policy_led_bet","secure",1
-"United States","aligned_strength","compete",7
+"United States","aligned_strength","compete",4
 "United States","aligned_strength","deploy",4
-"United States","aligned_strength","not_assessed",2
 "United States","aligned_strength","secure",1
 "United States","insufficient_data","compete",2
 "United States","insufficient_data","deploy",2
-"United States","insufficient_data","not_assessed",11
+"United States","insufficient_data","not_assessed",15
 "United States","latent_advantage","compete",4
-"United States","latent_advantage","deploy",7
+"United States","latent_advantage","deploy",10
 "United States","latent_advantage","not_assessed",1
 "United States","low_priority","compete",2
-"United States","low_priority","deploy",8
+"United States","low_priority","deploy",5
 "United States","low_priority","not_assessed",2
-"United States","policy_led_bet","compete",5
+"United States","policy_led_bet","compete",8
 "United States","policy_led_bet","deploy",6
-"United States","policy_led_bet","not_assessed",2
 "Uruguay","aligned_strength","deploy",10
 "Uruguay","aligned_strength","not_assessed",1
 "Uruguay","insufficient_data","deploy",5
@@ -2051,17 +1995,17 @@
 "Uruguay","low_priority","deploy",15
 "Uruguay","policy_led_bet","deploy",5
 "Uruguay","policy_led_bet","not_assessed",1
+"Uzbekistan","aligned_strength","compete",2
 "Uzbekistan","aligned_strength","deploy",3
 "Uzbekistan","aligned_strength","secure",3
 "Uzbekistan","insufficient_data","deploy",4
 "Uzbekistan","insufficient_data","not_assessed",15
-"Uzbekistan","latent_advantage","compete",8
+"Uzbekistan","latent_advantage","compete",6
 "Uzbekistan","latent_advantage","deploy",8
 "Uzbekistan","latent_advantage","secure",2
-"Uzbekistan","low_priority","compete",9
+"Uzbekistan","low_priority","compete",11
 "Uzbekistan","low_priority","deploy",4
 "Uzbekistan","low_priority","not_assessed",2
-"Uzbekistan","policy_led_bet","compete",2
 "Uzbekistan","policy_led_bet","deploy",5
 "Uzbekistan","policy_led_bet","not_assessed",1
 "Vanuatu","insufficient_data","compete",1
@@ -2078,21 +2022,20 @@
 "Venezuela","low_priority","not_assessed",2
 "Venezuela","policy_led_bet","compete",4
 "Venezuela","policy_led_bet","deploy",4
-"Viet Nam","aligned_strength","compete",6
-"Viet Nam","aligned_strength","deploy",5
+"Viet Nam","aligned_strength","compete",7
+"Viet Nam","aligned_strength","deploy",4
 "Viet Nam","aligned_strength","secure",2
 "Viet Nam","insufficient_data","deploy",5
-"Viet Nam","insufficient_data","not_assessed",11
-"Viet Nam","latent_advantage","compete",6
-"Viet Nam","latent_advantage","deploy",4
-"Viet Nam","latent_advantage","not_assessed",2
-"Viet Nam","low_priority","compete",4
-"Viet Nam","low_priority","deploy",2
-"Viet Nam","low_priority","not_assessed",4
+"Viet Nam","insufficient_data","not_assessed",15
+"Viet Nam","latent_advantage","compete",7
+"Viet Nam","latent_advantage","deploy",2
+"Viet Nam","latent_advantage","not_assessed",1
+"Viet Nam","low_priority","compete",3
+"Viet Nam","low_priority","deploy",4
+"Viet Nam","low_priority","not_assessed",2
 "Viet Nam","low_priority","secure",2
-"Viet Nam","policy_led_bet","compete",4
-"Viet Nam","policy_led_bet","deploy",8
-"Viet Nam","policy_led_bet","not_assessed",1
+"Viet Nam","policy_led_bet","compete",3
+"Viet Nam","policy_led_bet","deploy",9
 "Virgin Islands (U.S.)","insufficient_data","deploy",3
 "Virgin Islands (U.S.)","insufficient_data","not_assessed",63
 "West Bank and Gaza","insufficient_data","compete",1
@@ -2118,11 +2061,10 @@
 "Zimbabwe","insufficient_data","deploy",3
 "Zimbabwe","insufficient_data","not_assessed",16
 "Zimbabwe","latent_advantage","compete",3
-"Zimbabwe","latent_advantage","deploy",10
+"Zimbabwe","latent_advantage","deploy",11
 "Zimbabwe","latent_advantage","not_assessed",3
-"Zimbabwe","latent_advantage","secure",1
 "Zimbabwe","low_priority","compete",12
-"Zimbabwe","low_priority","deploy",6
-"Zimbabwe","low_priority","secure",3
+"Zimbabwe","low_priority","deploy",5
+"Zimbabwe","low_priority","secure",4
 "Zimbabwe","policy_led_bet","deploy",1
 "Zimbabwe","policy_led_bet","not_assessed",1

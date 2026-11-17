@@ -22,6 +22,7 @@ import { TableView, type Col } from '../../components/TableView.tsx';
 import { EmptyState, FilterRow, Select } from '../../components/ui.tsx';
 import { ScenarioName, ScenarioTag } from '../charts/ScenarioCompare.tsx';
 import type { AibMeta, AibNetwork } from '../contract.ts';
+import { tradeWhen } from '../contract.ts';
 import type { AddedSupplier } from '../derive/flows.ts';
 import { fmtShare, fmtUsd, plural } from '../derive/format.ts';
 import { changeHolders, edgeTotal, fmtPts, supplyPairs, type ChangeRole, type PairCompare, type RoleChange, type RoleComparison } from '../derive/network.ts';
@@ -121,7 +122,7 @@ export function SuppliersCompare({ today, added, scenario, meta, name, scope, re
           <p className="text-sm text-paper-mute">This data build has no list of today&apos;s suppliers here.</p>
         )}
         <p className="mt-2 text-xs text-paper-mute">
-          Observed {meta.tradeYear} supply to the allied market, as a share of its demand
+          Observed {tradeWhen(meta)} supply to the allied market, as a share of its demand
           {todayPartial ? '; the five largest while the full list loads' : ''}.
         </p>
       </section>
@@ -154,7 +155,7 @@ export function SuppliersCompare({ today, added, scenario, meta, name, scope, re
         ) : (
           <p className="text-sm text-paper-mute">No added trade here under {label}.</p>
         )}
-        <p className="mt-2 text-xs text-paper-mute">The trade the solution adds or redirects to replace the supply lost or shifted (USD a year, {meta.tradeYear} values); its own scale.</p>
+        <p className="mt-2 text-xs text-paper-mute">The trade the solution adds or redirects to replace the supply lost or shifted (USD a year, {tradeWhen(meta)} values); its own scale.</p>
       </section>
     </div>
   );
@@ -273,7 +274,7 @@ export function WhoSuppliesWhomCard({ today, network, scenario, meta, name, head
       headingLevel={headingLevel}
       title={`Who supplies whom: today and under ${label}`}
       badge={<ScenarioTag id={scenario} meta={meta} />}
-      sub={`Supplier to buyer, ${scope}. Today: the observed supply (${meta.tradeYear}, USD a year), largest first. Under ${label}: the trade and new capacity the response adds or redirects, largest first. Points are shares of a supply-chain step's demand summed over the steps (1 point is 1% of one step's demand); each list has its own scale.`}
+      sub={`Supplier to buyer, ${scope}. Today: the observed supply (${tradeWhen(meta)}, USD a year), largest first. Under ${label}: the trade and new capacity the response adds or redirects, largest first. Points are shares of a supply-chain step's demand summed over the steps (1 point is 1% of one step's demand); each list has its own scale.`}
       summary={`Largest supply relationships today, ${scope}: ${p.today.slice(0, 3).map((x) => `${name(x.from)} to ${name(x.to)}`).join('; ') || 'none'}. Under ${label}: ${p.scenario.slice(0, 3).map((x) => `${name(x.from)} to ${name(x.to)}`).join('; ') || 'none'}.`}
       table={() => <TableView rows={p.all} cols={cols} caption={`Who supplies whom today and under ${label}, ${scope}`} search pageSize={20} initialSort={{ id: 't-usd', desc: true }} rowKey={(r) => `${r.from}|${r.to}`} />}
       csv={csv}

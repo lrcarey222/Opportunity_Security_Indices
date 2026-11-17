@@ -364,6 +364,17 @@ posture_detail_doc <- function(tbl, iso3, cfg, created, yf_nodes = NULL) {
                                         note = g(r, paste0(n, "_note")) %||% g(r, paste0(n, "_measures"))))
     if (is.null(v) && is.null(out$basis)) NULL else out
   }
+  # The latest 12 months of trade blended into the cell's import exposure (scripts/26 current_trade): where the
+  # measurement came from, its window end (YYYYMM), the weight, China's and the coercive suppliers' import
+  # shares in the base year and the latest window, and current_trade_flag. NULL for a cell left on the base year.
+  current_trade <- function(r) {
+    if (!identical(g(r, "exposure_basis"), "blend")) return(NULL)
+    Filter(Negate(is.null), list(
+      source = g(r, "exposure_current_source"), window_end = g(r, "exposure_window_end"), weight = num(r, "exposure_weight"),
+      china_share_base = num(r, "china_share_base"), china_share_latest = num(r, "china_share_t12m"),
+      coercive_share_base = num(r, "coercive_import_share_base"), coercive_share_latest = num(r, "coercive_import_share_t12m"),
+      flag = g(r, "current_trade_flag")))
+  }
   cp_fams <- c("export_position", "export_position_structural", "production_position", "manufacturing_capacity", "investment_position",
                "innovation_position", "cost_position", "resource_endowment", "deployment_scale")
   cells <- lapply(seq_len(nrow(x)), function(i) {
@@ -399,7 +410,8 @@ posture_detail_doc <- function(tbl, iso3, cfg, created, yf_nodes = NULL) {
       coercive_top_share = num(r, "coercive_top_share"), coercive_import_share = num(r, "coercive_import_share"),
       substitutability = g(r, "substitutability"), reconstitution_time = g(r, "reconstitution_time"),
       stockpile = if (identical(g(r, "stockpile"), "Unknown")) NULL else g(r, "stockpile"),
-      systemic_essentiality = g(r, "systemic_essentiality"), operational_control = g(r, "digitally_active")
+      systemic_essentiality = g(r, "systemic_essentiality"), operational_control = g(r, "digitally_active"),
+      current_trade = current_trade(r)
     )
     # the strategic-value families that do not depend on the country (commons, option, cap) are in the core's
     # yf_nodes; the detail keeps what does: the value the choice read and the market prize

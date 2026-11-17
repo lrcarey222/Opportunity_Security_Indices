@@ -36,6 +36,11 @@
 #      import-exposure table cannot tell: it carries only alignment_coverage_share, and a 0
 #      opposite-bloc share there may as well be an aligned importer that buys nothing from the
 #      other bloc.
+#   7. Share floor (share_floor, share_floor_variables). Many material importers buy exactly nothing
+#      from China or the opposite bloc, so those measures carry a large tie at 0 (2,268 cells for the
+#      China share, 2026-11-16) that mid-ranks near 0.5; a trivial share then outranks the whole
+#      block (India Gas Extraction: China 0.08% moved risky-supplier exposure from 0.47 to 0.97).
+#      A share below share_floor counts as 0.
 #
 # Needs R/strategic_position/sp_helpers.R, R/utils/supply_chain_stages.R and, when country_iso3 is
 # NULL, R/utils/country.R. Pure: no IO.
@@ -60,6 +65,8 @@ SP_NEED_IMPORT_CATEGORY <- "Import Exposure"
 SP_NEED_EXCLUDE_ISO3 <- character()
 SP_NEED_NONALIGNED_RULES <- c("na", "as_is")
 SP_NEED_OPPOSITE_BLOC_VARIABLE <- "opposite_bloc_share"
+# The import-share measures share_floor applies to (rule 7). share_floor 0 (the default) is the old behaviour.
+SP_NEED_SHARE_FLOOR_VARIABLES <- c("china_share", "opposite_bloc_share")
 
 # NULL default (a private operator: other files may define their own %||%).
 `%sp_or%` <- function(a, b) if (is.null(a)) b else a
@@ -203,6 +210,11 @@ sp_strategic_need <- function(es_contrib,
     immaterial_families %sp_or% cfg_need$immaterial_families %sp_or% SP_NEED_IMMATERIAL_FAMILIES
   ))
   immaterial_need <- as.character(immaterial_need %sp_or% cfg_need$immaterial_need %sp_or% "zero")
+  share_floor <- as.numeric(cfg_need$share_floor %sp_or% 0)
+  if (length(share_floor) != 1 || is.na(share_floor) || share_floor < 0 || share_floor >= 1) {
+    stop("sp_strategic_need(): share_floor must be one number in [0, 1).")
+  }
+  share_floor_vars <- as.character(unlist(cfg_need$share_floor_variables %sp_or% SP_NEED_SHARE_FLOOR_VARIABLES))
   if (!immaterial_need %in% c("zero", "tie")) stop("sp_strategic_need(): immaterial_need must be zero or tie.")
   exclude_iso3 <- toupper(as.character(unlist(exclude_iso3 %sp_or% cfg_need$exclude_iso3 %sp_or% SP_NEED_EXCLUDE_ISO3)))
   nonaligned_rule <- as.character(nonaligned_opposite_bloc %sp_or% cfg_need$nonaligned_opposite_bloc %sp_or% "as_is")
@@ -288,6 +300,8 @@ sp_strategic_need <- function(es_contrib,
   ie_rows <- lapply(seq_len(nrow(ie_m)), function(i) {
     v <- ie_m$variable[i]
     val <- as.numeric(ie[[v]])
+    # Shares below the floor are no exposure (rule 7): they join the zero block instead of outranking it.
+    if (v %in% share_floor_vars) val[!is.na(val) & val < share_floor] <- 0
     obs <- as.logical(ie$observed) & !is.na(val)
     # Immaterial imports: the concentration and risky-supplier measures carry no need.
     imm <- obs & ie_m$family[i] %in% immaterial_families & ie$imports_usd < min_import_usd
