@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Allied Industrial Policy Fantasy Draft</title>
-  <meta name="description" content="Draft the Electro-Industrial Stack. Pick your Ally, build your supply-chain dynasty, out-draft the alliance." />
+  <meta name="description" content="Draft the clean-energy supply chain, stage by stage. Pick your Ally, build your supply-chain dynasty, out-draft the alliance." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="styles-coord.css" />
@@ -19,11 +19,11 @@
         <div class="brand-mark">⚡</div>
         <div>
           <h1 id="brandTitle">Allied Industrial Policy — Fantasy Draft</h1>
-          <div class="sub" id="brandSub">The Electro-Industrial Stack · Season 1</div>
+          <div class="sub" id="brandSub">Six-stage supply chains · Season 2</div>
         </div>
       </div>
       <div class="spacer"></div>
-      <div class="pill" id="brandPill">21 Fighters · <b>39</b> sub-sectors</div>
+      <div class="pill" id="brandPill">21 Fighters · <b>42</b> supply-chain cards</div>
     </header>
 
     <!-- ================= SETUP SCREEN ================= -->
@@ -32,9 +32,9 @@
         <div class="kicker">Insert Coin · Season 1 · Snake Draft</div>
         <div class="player-select">Player Select</div>
         <div class="choose">Choose Your Ally</div>
-        <p class="lede">You are an allied nation entering the arena to assemble a supply-chain dynasty from the <b>Electro-Industrial Stack</b> —
-          the minerals, chips, cells, wires, turbines and molecules that power the electro-industrial age.
-          Out-draft your rival allies. Own the chokepoints. Build the deepest stack.</p>
+        <p class="lede">You are an allied nation entering the arena to assemble a supply-chain dynasty from the <b>six stages</b> of clean-energy supply chains —
+          extraction, refining, components, assembly, deployment and recovery, across batteries, EVs, grids, solar, wind, nuclear, hydrogen and the fossil incumbents.
+          Draft your High fence, chain your stages, and let your partners hold what you should not build.</p>
       </div>
 
       <!-- ===== GAME MODE PICKER ===== -->
@@ -47,8 +47,8 @@
           <div class="mc-tag">Mode 1 · 1–21 players</div>
           <div class="mc-title">Fantasy Draft</div>
           <div class="mc-q">“What sectors should <b>my country</b> prioritize?”</div>
-          <p class="mc-body">Build the strongest national industrial portfolio. Snake-draft the 39 sub-sectors
-            of the Electro-Industrial Stack against rival allies, then take the alliance into the final boss fight.</p>
+          <p class="mc-body">Build the strongest national industrial portfolio. Snake-draft technology &times; stage cards, each rated for your country
+            on the High / Medium / Low fences, against rival allies, then take the alliance into the final boss fight.</p>
           <div class="mc-foot">Competitive · draft · scoring</div>
         </button>
         <button class="mode-card" data-mode="coordination">
@@ -64,7 +64,7 @@
 
       <div class="section-title">
         <h3>Select your fighter</h3><div class="rule"></div>
-        <span class="hint">Each ally has home-turf synergies + signature picks</span>
+        <span class="hint">Each ally rates every card High, Medium or Low</span>
       </div>
       <div class="ally-grid" id="allyGrid"></div>
 
@@ -96,7 +96,7 @@
         <div class="field">Difficulty
           <select id="diffSel" title="How much scouting info you see while drafting">
             <option value="easy">Easy — all numbers</option>
-            <option value="normal" selected>Normal — synergies only</option>
+            <option value="normal" selected>Normal — your fences only</option>
             <option value="hard">Hard — no numbers</option>
           </select>
         </div>
@@ -203,7 +203,7 @@
         <span class="hint">Share of each stack tier claimed</span></div>
       <div class="catprio" id="catPriority"></div>
 
-      <div class="section-title"><h3>Sector Priority Board</h3><div class="rule"></div>
+      <div class="section-title"><h3>Supply-Chain Priority Board</h3><div class="rule"></div>
         <span class="hint">Draft-order picks vs. metric ranking — compare the manual list to the numbers</span></div>
       <div class="board-2col">
         <div class="panel">
@@ -211,7 +211,7 @@
           <div class="body" style="overflow-x:auto"><div class="prio-list" id="sectorBoard"></div></div>
         </div>
         <div class="panel">
-          <h4>📊 By metric score <span class="panel-sub">ranked by OVR · four OSI pillars</span></h4>
+          <h4>📊 By metric score <span class="panel-sub">ranked by OVR · need, prize, allied demand · H/M/L = how the 21 countries fence it</span></h4>
           <div class="body" style="overflow-x:auto"><div class="metric-list" id="metricBoard"></div></div>
         </div>
       </div>
@@ -242,7 +242,7 @@
 
     <footer>
       A playful companion to the <b>Opportunity Security Indices</b> — Energy Security · Economic Opportunity · Partnership Strength.<br>
-      Sub-sector taxonomy from the Electro-Industrial Stack. Stats are for fantasy fun, not investment advice. ⚡🌱
+      Cards and fences from the six-stage supply-chain decision framework. Stats are for fantasy fun, not investment advice. ⚡🌱
     </footer>
   </div>
 
@@ -254,7 +254,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
 
+  <script src="data-osi.js"></script>
   <script src="data.js"></script>
+  <script src="cards.js"></script>
   <script src="avatars.js"></script>
   <script src="fight-frames.js"></script>
   <script src="art.js"></script>
