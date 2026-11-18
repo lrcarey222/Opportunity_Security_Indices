@@ -73,7 +73,7 @@ rm(aib_in); invisible(gc())
 spine <- rcsv(file.path(aib_dir, "aib_strategic_spine.csv"))
 spine_base <- spine[spine$scenario == "baseline", , drop = FALSE]
 nclass <- rcsv(file.path(aib_dir, "aib_node_classification.csv"))
-dol <- rcsv(file.path(aib_dir, "aib_compact_division_of_labour.csv"))
+dol <- pm_apply_share_corrections(rcsv(file.path(aib_dir, "aib_compact_division_of_labour.csv")), cfg$data_caveats)
 croles <- rcsv(file.path(aib_dir, "aib_compact_country_roles.csv"))
 compacts <- rcsv(file.path(aib_dir, "aib_strategic_compacts.csv"))
 compacts <- compacts[compacts$scenario == cfg$inputs$aib_scenario, , drop = FALSE]

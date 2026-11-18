@@ -20,23 +20,26 @@ pm_assess_pair <- function(inputs, pair_cfg, cfg) {
   # node <-> cell links
   fr <- inputs$frame
   links <- do.call(rbind, lapply(seq_len(nrow(fr)), function(i) {
-    z <- trimws(strsplit(as.character(fr$score_cells[i]), ";")[[1]]); z <- z[nzchar(z)]
+    # a node without score cells (NA) links to no cell: strsplit(NA) gives NA, which would otherwise become a
+    # link row with cell NA, and `links$cell == x` would then index NA node ids into every cell (2026-11-16 fix:
+    # fuel cells had been read as "covered at node grain")
+    z <- trimws(strsplit(as.character(fr$score_cells[i]), ";")[[1]]); z <- z[!is.na(z) & nzchar(z) & z != "NA"]
     if (!length(z)) return(NULL)
     data.frame(node_id = fr$node_id[i], compact = fr$strategic_compact_id[i], cell = z, stringsAsFactors = FALSE)
   }))
-  d$nodes_of_cell <- lapply(seq_len(nrow(d)), function(i) if (d$unit_type[i] == "cell") unique(links$node_id[links$cell == d$unit_id[i]]) else character())
+  d$nodes_of_cell <- lapply(seq_len(nrow(d)), function(i) if (d$unit_type[i] == "cell") unique(links$node_id[which(links$cell == d$unit_id[i])]) else character())
   d$compacts_of_cell <- vapply(seq_len(nrow(d)), function(i) {
     if (d$unit_type[i] == "node") return(d$compact[i])
-    z <- sort(unique(links$compact[links$cell == d$unit_id[i]])); if (!length(z)) NA_character_ else paste(z, collapse = ";")
+    z <- sort(unique(links$compact[which(links$cell == d$unit_id[i])])); if (!length(z)) NA_character_ else paste(z, collapse = ";")
   }, character(1))
   d$primary_compact <- vapply(seq_len(nrow(d)), function(i) {
     if (d$unit_type[i] == "node") return(d$compact[i])
-    z <- links$compact[links$cell == d$unit_id[i]]; z <- z[!is.na(z)]; if (!length(z)) NA_character_ else names(sort(table(z), decreasing = TRUE))[1]
+    z <- links$compact[which(links$cell == d$unit_id[i])]; z <- z[!is.na(z)]; if (!length(z)) NA_character_ else names(sort(table(z), decreasing = TRUE))[1]
   }, character(1))
   d$n_steps <- fr$n_steps[match(d$node_id, fr$node_id)]
   lab <- setNames(fr$node_label, fr$node_id)
   d$cell_nodes <- vapply(seq_len(nrow(d)), function(i) { z <- unname(lab[d$nodes_of_cell[[i]]]); paste(utils::head(z[!is.na(z)], 3), collapse = ", ") }, character(1))
-  d$node_label <- ifelse(d$unit_type == "cell", ifelse(nzchar(d$cell_nodes), sprintf("%s %s (%s)", d$tech, tolower(d$stage), tolower(d$cell_nodes)),
+  d$node_label <- ifelse(d$unit_type == "cell", ifelse(nzchar(d$cell_nodes), sprintf("%s %s (%s)", d$tech, tolower(d$stage), pm_lc(d$cell_nodes)),
                                                        sprintf("%s %s", d$tech, tolower(d$stage))), d$node_label)
   d$aib_third_hosts <- vapply(seq_len(nrow(d)), function(i) {
     nodes <- if (d$unit_type[i] == "node") d$node_id[i] else d$nodes_of_cell[[i]]
@@ -166,6 +169,12 @@ pm_compact_architecture <- function(d, cm, links) {
                                      position_a = NA, position_b = NA, relationship_state = NA, treatment = "no intervention",
                                      main_instrument = NA, stringsAsFactors = FALSE))
     r <- c1[1, ]
+    # a cell whose products are assessed as nodes of other compacts is context only: its state is not this compact's
+    if (isTRUE(r$node_grain_covered))
+      return(data.frame(strategic_compact_id = cm, stage = s, unit = r$unit_id, other_units = "",
+                        basis = sprintf("OSI cell; its products are assessed as AIB nodes (%s)", gsub(";", ", ", pm_or(r$compacts_of_cell, "other compacts"))),
+                        position_a = r$position_band_a, position_b = r$position_band_b, relationship_state = NA,
+                        treatment = "see the node rows", main_instrument = NA, stringsAsFactors = FALSE))
     data.frame(strategic_compact_id = cm, stage = s, unit = r$unit_id, other_units = "", basis = "OSI cell (no AIB node at this stage)",
                position_a = r$position_band_a, position_b = r$position_band_b, relationship_state = r$relationship_state,
                treatment = r$treatment, main_instrument = r$main_instrument, stringsAsFactors = FALSE)
@@ -189,7 +198,9 @@ pm_trade_agenda <- function(d, cfg, a, b, names, fta = FALSE) {
         tariff_risk = if (fta) sprintf("Hold %s %s exports to %s to the trade agreement's terms (no new tariffs, safeguards or content rules on the node): %s's protection priority on this node is in its top third (%.2f), which would tax the trusted supplier it needs.", nm(r$supplier), r$node_label, nm(r$buyer), nm(r$buyer), r$buyer_protection)
                       else sprintf("Bind market access for %s %s into %s: %s's protection priority on this node is in its top third (%.2f), which taxes the trusted supplier it needs.", nm(r$supplier), r$node_label, nm(r$buyer), nm(r$buyer), r$buyer_protection),
         procurement_recognition = sprintf("Recognise %s output of %s as trusted domestic-equivalent supply in %s procurement and content rules; capacity, not access, is the constraint.", nm(r$supplier), r$node_label, nm(r$buyer)),
-        predictability = sprintf("Keep %s exports of %s to %s tariff-free and predictable; the buyer's need is met by the trusted supplier.", nm(r$supplier), r$node_label, nm(r$buyer)))
+        predictability = if (r$unit_id %in% names(cfg$trade_blind_spots))
+                           sprintf("Keep %s exports of %s to %s tariff-free and predictable, but confirm the supplier's actual capability first: trade data understate concentration at this node (Section 11).", nm(r$supplier), r$node_label, nm(r$buyer))
+                         else sprintf("Keep %s exports of %s to %s tariff-free and predictable; the buyer's need is met by the trusted supplier.", nm(r$supplier), r$node_label, nm(r$buyer)))
       rows[[length(rows) + 1]] <- data.frame(unit_type = r$unit_type, unit_id = r$unit_id, direction = sprintf("%s -> %s", r$supplier, r$buyer),
         action_type = type, action = txt, relationship_state = r$relationship_state, priority_rank = r$priority_rank, stringsAsFactors = FALSE)
     } else if (r$relationship_state == "complementary_specialization") {
@@ -207,14 +218,16 @@ pm_trade_agenda <- function(d, cfg, a, b, names, fta = FALSE) {
   }
   out <- if (length(rows)) do.call(rbind, rows) else data.frame()
   if (nrow(out)) out <- utils::head(out[order(out$priority_rank), ], cfg$priority$max_trade_actions)
-  # open sourcing: material importers of nodes with adequate trusted supply
+  # open sourcing: material importers of nodes with adequate trusted supply; never a chokepoint (a coercive
+  # supplier holds half of world supply) or a node the AIB cannot classify (2026-11-16)
   blind <- names(cfg$trade_blind_spots)
   open <- d[which(d$relationship_state == "low_strategic_case" & grepl("adequate_trusted_supply", d$state_reason) & !d$node_grain_covered &
-              !d$unit_id %in% blind & (d$buyer_a %in% TRUE | d$buyer_b %in% TRUE)), , drop = FALSE]
+              !d$unit_id %in% blind & !d$chokepoint %in% TRUE & !d$aib_class %in% "INSUFFICIENT DATA" &
+              (d$buyer_a %in% TRUE | d$buyer_b %in% TRUE)), , drop = FALSE]
   osz <- pmax(ifelse(is.na(open$net_import_share_a), 0, open$net_import_share_a), ifelse(is.na(open$net_import_share_b), 0, open$net_import_share_b))
   open <- utils::head(open[order(open$unit_type != "node", -osz, open$unit_id), ], 6)
   if (nrow(open)) out <- rbind(out, data.frame(unit_type = open$unit_type, unit_id = open$unit_id, direction = "open", action_type = "open_sourcing",
-    action = sprintf("Leave %s open to global sourcing: trusted supply is adequate and diversified, so a bilateral preference adds cost without security.", open$node_label),
+    action = sprintf("Leave %s open to global sourcing: trusted supply is adequate and no coercive supplier is near the chokepoint line, so a bilateral preference adds cost without security.", open$node_label),
     relationship_state = open$relationship_state, priority_rank = open$priority_rank, stringsAsFactors = FALSE))
   comp <- d[d$relationship_state == "direct_competition" & !d$node_grain_covered, , drop = FALSE]
   if (nrow(comp)) out <- rbind(out, data.frame(unit_type = comp$unit_type, unit_id = comp$unit_id, direction = "both", action_type = "no_preference",
@@ -226,6 +239,21 @@ pm_trade_agenda <- function(d, cfg, a, b, names, fta = FALSE) {
 
 pm_or <- function(x, y) if (is.null(x) || length(x) == 0 || is.na(x)) y else x
 pm_or_list <- function(x, y) if (is.null(x)) y else x
+
+# Lower-case a label for running text without breaking acronyms: only a capital followed by a lower-case letter is
+# lowered ("Grain-oriented electrical steel (GOES)" -> "grain-oriented electrical steel (GOES)", "AC generators" kept).
+pm_lc <- function(x) ifelse(is.na(x), x, gsub("\\b([A-Z])(?=[a-z])", "\\L\\1", x, perl = TRUE))
+
+# Institutions in scope for a compact (institutions.csv scope_compacts, "SC-NUCLEAR|..."; blank = every compact).
+# A unit outside the compacts (fuel trade) takes the blank rows and the rows scoped "fuel". `compact` may hold
+# several ids (a framework covering several compacts): a row is in scope if it covers any of them.
+pm_inst_scope_ok <- function(institutions, compact) {
+  if (is.null(institutions) || !nrow(institutions)) return(logical())
+  sc <- if (is.null(institutions$scope_compacts)) rep("", nrow(institutions)) else ifelse(is.na(institutions$scope_compacts), "", institutions$scope_compacts)
+  key <- compact[!is.na(compact) & nzchar(compact)]
+  if (!length(key)) key <- "fuel"
+  !nzchar(sc) | vapply(strsplit(sc, "\\|"), function(z) any(key %in% z), logical(1))
+}
 
 # ---- Investment agenda (Section 5) ------------------------------------------------------------------------
 
@@ -258,12 +286,18 @@ PM_OBSTACLE <- c(geopolitical_chokepoint = "Non-coercive producers cannot match 
                  no_material_intervention = "None")
 
 pm_investment_agenda <- function(d, cfg, ev, inst, a, b, public = character()) {
+  # a chain specialisation at a node is an investment lane only where the other side is a material buyer of the
+  # node; otherwise "builds near the buyer's demand" has no demand to build near (2026-11-16)
+  buyer_material <- ifelse(!is.na(d$buyer) & d$buyer == a, d$buyer_a, d$buyer_b) %in% TRUE
   x <- d[which(d$relationship_state %in% PM_ACTIVE_STATES & !d$node_grain_covered %in% TRUE & d$investment_fit >= 0.33 & !d$constraint_type %in% "no_material_intervention" &
-                 (d$strategic_importance >= 0.4 | d$aib_class %in% "BUILD")), , drop = FALSE]
+                 (d$strategic_importance >= 0.4 | d$aib_class %in% "BUILD") &
+                 !(d$relationship_state == "complementary_specialization" & d$unit_type == "node" & !buyer_material)), , drop = FALSE]
   if (!nrow(x)) return(data.frame())
   # resource stages: capital follows the buyer into the supplier's resource (offtake-linked equity); manufacturing:
-  # the capability owner invests near the buyer's demand
-  resource <- x$stage %in% c("Extraction", "Recovery") | (x$stage == "Refining" & x$tech %in% c("Coal", "Gas", "Oil"))
+  # the capability owner invests near the buyer's demand. config investment_resource_nodes adds nodes whose trade is
+  # mostly a resource product (uranium: HS 284410 concentrate reads as conversion)
+  resource <- x$stage %in% c("Extraction", "Recovery") | (x$stage == "Refining" & x$tech %in% c("Coal", "Gas", "Oil")) |
+    x$unit_id %in% unlist(cfg$investment_resource_nodes)
   inv_inst <- inst$instrument_id[inst$family %in% c("investment", "finance", "development")]
   lane <- ifelse(x$relationship_state == "shared_vulnerability", "joint",
           ifelse(x$relationship_state == "capacity_constrained_trusted_supply" & nzchar(x$aib_third_hosts) & x$chokepoint, "joint",
@@ -280,7 +314,9 @@ pm_investment_agenda <- function(d, cfg, ev, inst, a, b, public = character()) {
   pub <- vapply(strsplit(x$instruments, ";"), function(z) { z <- z[z %in% inv_inst]; if (length(z)) z[1] else NA_character_ }, character(1))
   out <- data.frame(lane = lane, unit_type = x$unit_type, unit_id = x$unit_id, node_label = x$node_label, stage = x$stage,
     capability_owner = owner, destination = dest, investment_logic = ifelse(lane == "joint", "joint capacity outside the pair or pooled",
-      ifelse(resource, "offtake-linked equity: the buyer invests in the supplier's resource", "the capability owner builds near the buyer's demand")), demand_case = dem,
+      ifelse(resource, "offtake-linked equity: the buyer invests in the supplier's resource",
+             ifelse(x$relationship_state == "complementary_specialization", "the capability owner builds its specialised step near the partner's part of the shared chain",
+                    "the capability owner builds near the buyer's demand"))), demand_case = dem,
     private_actors = pm_private_actors(pm_or_list(x$evidence_ids_node, x$evidence_ids), ev, public),
     public_instrument = ifelse(is.na(pub), x$main_instrument, pub),
     additionality = x$additionality, additionality_label = x$additionality_label,
@@ -325,7 +361,8 @@ pm_third_country <- function(dp, sroles, d, compacts_sel, cfg, a, b) {
 
 # ---- Deal pipeline (Section 9) ----------------------------------------------------------------------------
 
-pm_deal_pipeline <- function(d, inst, institutions, ev, cfg, a, b, names, public = character()) {
+#   fta: a trade agreement is in force between the two, so a market-access deal holds its terms rather than binding anew
+pm_deal_pipeline <- function(d, inst, institutions, ev, cfg, a, b, names, public = character(), fta = FALSE) {
   x <- d[which(d$priority_tier %in% c(1L, 2L) & !is.na(d$main_instrument) & !d$constraint_type %in% "no_material_intervention" &
                  (d$strategic_importance >= 0.4 | d$aib_class %in% "BUILD")), , drop = FALSE]
   # a cell is dropped where an active node already covers the same technology x stage
@@ -333,13 +370,15 @@ pm_deal_pipeline <- function(d, inst, institutions, ev, cfg, a, b, names, public
   x <- x[!(x$unit_type == "cell" & x$unit_id %in% node_keys), , drop = FALSE]
   if (!nrow(x)) return(data.frame())
   il <- setNames(inst$label, inst$instrument_id)
-  inst_by <- function(iso, fam) {
-    r <- institutions[institutions$iso3 == iso & vapply(strsplit(institutions$instrument_families, "\\|"), function(z) fam %in% z, logical(1)), ]
-    paste(r$abbreviation, collapse = ", ")
+  dcm <- ifelse(x$unit_type == "node", x$compact, x$primary_compact)
+  inst_by <- function(iso, fam, cm) {
+    r <- institutions[institutions$iso3 == iso & vapply(strsplit(institutions$instrument_families, "\\|"), function(z) fam %in% z, logical(1)) &
+                        pm_inst_scope_ok(institutions, cm), ]
+    z <- paste(r$abbreviation, collapse = ", "); if (nzchar(z)) z else "none listed"
   }
   resp <- vapply(seq_len(nrow(x)), function(i) {
     f <- x$main_instrument_family[i]
-    paste(c(sprintf("%s: %s", a, inst_by(a, f)), sprintf("%s: %s", b, inst_by(b, f))), collapse = "; ")
+    paste(c(sprintf("%s: %s", a, inst_by(a, f, dcm[i])), sprintf("%s: %s", b, inst_by(b, f, dcm[i]))), collapse = "; ")
   }, character(1))
   scale <- ifelse(x$unit_type == "node" & !is.na(x$node_demand_usd), sprintf("allied demand US$%.1fbn", x$node_demand_usd / 1e9),
                   ifelse(!is.na(x$imports_usd_a) | !is.na(x$imports_usd_b),
@@ -349,12 +388,18 @@ pm_deal_pipeline <- function(d, inst, institutions, ev, cfg, a, b, names, public
   o36 <- inst$outcome_36m[match(x$main_instrument, inst$instrument_id)]
   who <- ifelse(is.na(x$supplier), "joint", paste(x$supplier, "->", x$buyer))
   tp <- inst$deal_template[match(x$main_instrument, inst$instrument_id)]
+  if (isTRUE(fta)) {
+    ma <- x$main_instrument %in% "market_access"
+    tp[ma] <- "Hold {buyer}'s trade-agreement terms for {supplier} {node} (no new tariff, safeguard or content rule)"
+    m12[ma] <- "Written confirmation that the node stays at the trade agreement's terms, with no new safeguard or content rule"
+    o36[ma] <- "The trusted supplier's exports of the node face no new barrier under the agreement"
+  }
   sup_nm <- ifelse(is.na(x$supplier), "non-coercive", ifelse(x$supplier == a, names$a_short, names$b_short))
   buy_nm <- ifelse(is.na(x$buyer), sprintf("%s and %s", names$a_short, names$b_short), ifelse(x$buyer == a, names$a_short, names$b_short))
   hosts <- ifelse(nzchar(x$aib_third_hosts) & is.na(x$supplier),
                   sprintf(" (candidate hosts: %s)", gsub(";", ", ", x$aib_third_hosts)), "")
-  nodetxt <- ifelse(x$unit_type == "node", tolower(x$node_label), ifelse(nzchar(x$cell_nodes), tolower(sprintf("%s %s (%s)", x$tech, x$stage, x$cell_nodes)),
-                    tolower(sprintf("%s %s", x$tech, x$stage))))
+  nodetxt <- ifelse(x$unit_type == "node", pm_lc(x$node_label), ifelse(nzchar(x$cell_nodes), pm_lc(sprintf("%s %s (%s)", x$tech, x$stage, x$cell_nodes)),
+                    pm_lc(sprintf("%s %s", x$tech, x$stage))))
   txt <- vapply(seq_len(nrow(x)), function(i) {
     s <- tp[i]; s <- gsub("{supplier}", sup_nm[i], s, fixed = TRUE); s <- gsub("{buyer}", buy_nm[i], s, fixed = TRUE)
     s <- gsub("{node}", nodetxt[i], s, fixed = TRUE); gsub("{hosts}", hosts[i], s, fixed = TRUE) }, character(1))
@@ -434,7 +479,7 @@ pm_mea <- function(sel, mech, cfg) {
 
 # ---- What not to do (Section 10) --------------------------------------------------------------------------
 
-pm_non_priorities <- function(d, mea, cfg, names, a, b) {
+pm_non_priorities <- function(d, mea, cfg, names, a, b, ev = NULL) {
   nm <- function(iso) if (iso == a) names$a_short else names$b_short
   rows <- list()
   if (is.null(d$node_grain_covered)) d$node_grain_covered <- FALSE
@@ -450,11 +495,17 @@ pm_non_priorities <- function(d, mea, cfg, names, a, b) {
   done <- d[which(d$relationship_state %in% PM_ACTIVE_STATES & !d$node_grain_covered & d$existing_commitment >= 1), , drop = FALSE]
   for (i in seq_len(nrow(done))) {
     r <- done[i, ]
+    # cite only the items that make the commitment (pm_commitment's rule), not every item at the node
+    ids <- pm_committed_ids(pm_or_list(r$evidence_ids_node, r$evidence_ids)[[1]], ev)
     rows[[length(rows) + 1]] <- data.frame(unit_id = r$unit_id, kind = "already_committed",
-      text = sprintf("Do not put new public money behind %s investment that is already committed (evidence %s); support is additional only beyond it.", r$node_label, paste(pm_or_list(r$evidence_ids_node, r$evidence_ids)[[1]], collapse = ", ")),
+      text = sprintf("Do not put new public money behind %s investment that is already committed (evidence %s); support is additional only beyond it.", r$node_label, paste(ids, collapse = ", ")),
       weight = 2.5, stringsAsFactors = FALSE)
   }
-  def <- d[which(d$relationship_state == "low_strategic_case" & !d$node_grain_covered & !d$unit_id %in% names(cfg$trade_blind_spots) & (d$aib_low %in% TRUE | grepl("large_yard", d$state_reason)) &
+  # never inside a recommended compact: "do not defend" would contradict the compact's own mission (2026-11-16)
+  rec_cm <- mea$per_compact$strategic_compact_id
+  unit_cm <- ifelse(d$unit_type == "node", d$compact, d$primary_compact)
+  def <- d[which(d$relationship_state == "low_strategic_case" & !d$node_grain_covered & !d$unit_id %in% names(cfg$trade_blind_spots) & !unit_cm %in% rec_cm &
+             (d$aib_low %in% TRUE | grepl("large_yard", d$state_reason)) &
              ((pmax(d$policy_protection_priority_a, d$policy_protection_priority_b, na.rm = TRUE) >= 0.67) %in% TRUE |
                 d$policy_alignment_label_a %in% "over_prioritized" | d$policy_alignment_label_b %in% "over_prioritized")), , drop = FALSE]
   for (i in seq_len(nrow(def))) {

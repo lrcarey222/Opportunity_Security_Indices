@@ -84,7 +84,7 @@ rm(aib_in); invisible(gc())
 spine <- rcsv(file.path(aib_dir, "aib_strategic_spine.csv"))
 spine_base <- spine[spine$scenario == "baseline", , drop = FALSE]
 nclass <- rcsv(file.path(aib_dir, "aib_node_classification.csv"))
-dol <- rcsv(file.path(aib_dir, "aib_compact_division_of_labour.csv"))
+dol <- pm_apply_share_corrections(rcsv(file.path(aib_dir, "aib_compact_division_of_labour.csv")), cfg$data_caveats)
 croles <- rcsv(file.path(aib_dir, "aib_compact_country_roles.csv"))
 sroles <- rcsv(file.path(aib_dir, "aib_country_strategic_roles.csv"))
 compacts <- rcsv(file.path(aib_dir, "aib_strategic_compacts.csv"))
@@ -98,6 +98,9 @@ evdir <- file.path(ref_dir, "partnership_evidence")
 ev <- utils::read.csv(need_file(file.path(evdir, "policy_evidence.csv")), stringsAsFactors = FALSE, colClasses = "character")
 mech <- utils::read.csv(need_file(file.path(evdir, "bilateral_mechanisms.csv")), stringsAsFactors = FALSE, colClasses = "character")
 mech <- mech[vapply(strsplit(mech$pair, "\\|"), function(z) all(c(a, b) %in% z), logical(1)), , drop = FALSE]
+# a plurilateral platform of more than three economies is not a bilateral mechanism: it neither covers a compact
+# for the MEA test nor hosts one (the compact memos read it from plurilateral_mechanisms.csv; 2026-11-16)
+mech <- mech[!(mech$mechanism_type %in% "plurilateral" & lengths(strsplit(mech$pair, "\\|")) > 3), , drop = FALSE]
 institutions <- utils::read.csv(need_file(file.path(evdir, "institutions.csv")), stringsAsFactors = FALSE, colClasses = "character")
 agreements <- rcsv(file.path(ref_dir, "economic_security_agreements.csv"))
 inst <- utils::read.csv(file.path(repo_root, "config", "partnership_instruments.csv"), stringsAsFactors = FALSE)
@@ -139,12 +142,20 @@ trade_tbl <- pm_trade_agenda(d, cfg, a, b, names_short, fta)
 public_names <- pm_public_names(institutions, pair_cfg, cfg)
 inv_tbl <- pm_investment_agenda(d, cfg, ev, inst, a, b, public_names)
 third <- pm_third_country(res$devpart, sroles, d, sel, cfg, a, b)
-deals <- pm_deal_pipeline(d, inst, institutions, ev, cfg, a, b, names_short, public_names)
+deals <- pm_deal_pipeline(d, inst, institutions, ev, cfg, a, b, names_short, public_names, fta)
 mea <- pm_mea(sel, mech, cfg)
-nonp <- pm_non_priorities(d, mea, cfg, names_short, a, b)
+nonp <- pm_non_priorities(d, mea, cfg, names_short, a, b, ev)
+# product-definition caveats: AIB mapping notes that change how a node's numbers read, and config data_caveats for
+# this pair's countries (a bloc side counts its members)
+map_notes <- yaml::read_yaml(file.path(repo_root, "config", "aib_strategic_compacts.yml"))$mapping_notes
+node_notes <- map_notes[vapply(map_notes, function(z) grepl(PM_CAVEAT_RE, z), logical(1))]
+data_notes <- list()
+for (dc in cfg$data_caveats) if (dc$iso3 %in% c(a, b, members))
+  data_notes[[dc$node]] <- if (is.null(data_notes[[dc$node]])) dc$note else paste(data_notes[[dc$node]], dc$note)
 memo <- pm_memo_sections(d = d, prof = res$profiles, cc = cc, arch = arch, trade_tbl = trade_tbl, inv_tbl = inv_tbl,
                          third = third, deals = deals, mea = mea, nonp = nonp, ev = ev, mech = mech, sroles = sroles,
-                         agreements = agreements, compacts = compacts, pair_cfg = pair_cfg, cfg = cfg, institutions = institutions)
+                         agreements = agreements, compacts = compacts, pair_cfg = pair_cfg, cfg = cfg, institutions = institutions,
+                         node_notes = node_notes, data_notes = data_notes)
 recs <- memo$recommendations
 reg <- pm_evidence_register(recs, d, ev, mech, a, b)
 

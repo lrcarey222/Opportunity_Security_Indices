@@ -9,9 +9,21 @@ from these files; nothing is fetched at render time.
   source). `access_date` is the vintage printed in the memo.
 - `bilateral_mechanisms.csv`: the inputs to the Master Energy Agreement assessment (scope, pipeline, finance, KPIs,
   review, reciprocity, sunset), with the evidence ids behind each.
-- `institutions.csv`: public institutions by country and instrument family.
+- `institutions.csv`: public institutions by country and instrument family; `scope_compacts` limits an institution
+  to the compacts it serves (blank = all; `fuel` = units outside the compacts).
 - `plurilateral_mechanisms.csv`: plurilateral bodies (and bundles of bilateral MOUs, type `bilateral_bundle`) that
-  cover a compact; same columns as `bilateral_mechanisms.csv`; read by the Compact memos only.
+  cover a compact; same columns as `bilateral_mechanisms.csv`; read by the Compact and Group memos only.
+
+Vintage 2026-11-17 (the Quad group memo; one research pass each): the Quad `QUAD-` 25 (20 verified, 5 partial) with
+six Quad mechanisms (`QUAD-M1`..`M6`: the ministerial and summit cycle, energy security, export-credit agencies,
+ports, cables, semiconductors), Japan-India `JPIN-` 26 (18 verified), Japan-Australia `JPAU-` 23 (10 verified) and
+India-Australia `INAU-` 26 (13 verified), each pair with five mechanisms. Corrections: the Quad critical-minerals
+framework is one plurilateral row (`QUAD-M7`, formerly `USJ-QUAD`, rebuilt from the framework text; the old row had a column shift, and
+`USAU-M4` duplicated it); E33 (an unverified report of the 4 May 2026 Japan-Australia statement, Australian dollars
+read as US dollars) is replaced by the verified `JPAU-05`; UJ-046 (Rio Tinto's Rincon lithium project) is in
+Argentina, not Australia, and now carries the JBIC loan terms. Open points at this vintage: the Manila Quad leaders'
+meeting of 17 Nov 2026 rests on wire reports (`QUAD-10`..`12`, partial) until the official statement is published;
+the handover of the Quad chair from India to Australia is reported but not official.
 
 Vintage 2026-11-13 (three pairs, two refreshes, three compacts; one research pass each, by evidence-id prefix):
 US-Canada `USCA-` 28 (25 verified, 3 partial), US-India `USIN-` 38 (15 verified, 13 partial, 10 unverified),

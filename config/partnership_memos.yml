@@ -109,6 +109,49 @@ pairs:
     b_ref: "the EU"
     title: "United States–European Union Strategic Energy & Industrial Partnership"
     evidence_list_cap: 8   # evidence lists in Sections 1, 6 and 7 show at most this many items each (member-state items crowd a bloc memo)
+  JPN_IND:             # the Quad's pairs without a published memo (tables for the group memo, 2026-11-17)
+    a: JPN
+    b: IND
+    a_name: "Japan"
+    a_short: "Japan"
+    a_ref: "Japan"
+    b_name: "India"
+    b_short: "India"
+    b_ref: "India"
+    title: "Japan–India Strategic Energy & Industrial Partnership"
+  JPN_AUS:             # the Quad's pairs without a published memo (tables for the group memo, 2026-11-17)
+    a: JPN
+    b: AUS
+    a_name: "Japan"
+    a_short: "Japan"
+    a_ref: "Japan"
+    b_name: "Australia"
+    b_short: "Australia"
+    b_ref: "Australia"
+    title: "Japan–Australia Strategic Energy & Industrial Partnership"
+  IND_AUS:             # the Quad's pairs without a published memo (tables for the group memo, 2026-11-17)
+    a: IND
+    b: AUS
+    a_name: "India"
+    a_short: "India"
+    a_ref: "India"
+    b_name: "Australia"
+    b_short: "Australia"
+    b_ref: "Australia"
+    title: "India–Australia Strategic Energy & Industrial Partnership"
+
+# Group memos (scripts/36_build_group_memo.R; docs/partnership_memos.md, Group memos): a fixed group of economies read
+# across every electro-industrial node of the AIB compacts (the compact engine with the group as members), with each
+# member's own priorities, its AIB roles and the bilateral engine's reading of every pair in the group.
+groups:
+  QUAD:
+    title: "The Quad: Energy and Industrial Partnership of the United States, Japan, India and Australia"
+    short: "Quad"
+    members: [USA, JPN, IND, AUS]
+    short_names: {USA: "US", JPN: "Japan", IND: "India", AUS: "Australia"}
+    ref_names: {USA: "the US"}      # prose references where the short name needs an article
+    # a group-wide mechanism (every member a party) whose name matches this can host the group agenda
+    mechanism_pattern: "Quad"
 
 # Blocs: a pair side that is a group of economies. Its members are merged into one economy for the memo
 # (R/partnerships/pm_bloc.R): intra-bloc trade is dropped and world shares are re-based on world trade without it.
@@ -149,6 +192,25 @@ compacts:
 trade_blind_spots:
   uranium-conversion-and-enrichment: "enrichment is sold as a service under long-term contracts, so goods trade understates Russia's share of world enrichment capacity (roughly 40%), and the 2024 US ban on Russian low-enriched uranium imports makes trusted capacity the binding constraint."
   gallium-germanium-and-indium: "China's export controls since 2023 cut its recorded exports, so 2024 trade understates its share of primary gallium and germanium output (the large majority of world supply)."
+
+# Nodes whose trade is mostly a resource product, so investment follows the buyer into the supplier's resource
+# (offtake-linked equity) rather than the supplier building near the buyer (2026-11-16)
+investment_resource_nodes: [uranium-conversion-and-enrichment]
+
+# Known flaws in one country's node numbers, printed beside them (dagger) in any memo with that country (2026-11-16)
+data_caveats:   # share: production -> the memos read the member's production share at the node instead (pm_apply_share_corrections)
+  - node: rare-earth-metals
+    iso3: AUS
+    share: production
+    note: "Almost all of Australia's export share is one Malaysia-reported flow (about US$128m in 2024), most likely Lynas's Kalgoorlie intermediate entering Lynas Malaysia: feedstock, not rare-earth metal capacity. The memos read Australia's production share instead (none recorded), so Australia is not a supplier of the node."
+  - node: polysilicon
+    iso3: USA
+    share: production
+    note: "US polysilicon exports (31% of world exports) are mostly electronic-grade material for wafer makers, Japan's above all, while the chokepoint is solar-grade supply. The memos read the US production share (about 2%) instead, so the US is not a supplier of the node."
+  - node: uranium-fuel-upstream--aggregated
+    iso3: AUS
+    share: production
+    note: "Australia files uranium oxide concentrate under a different HS heading from most producers, so its 75% export share is a coding artefact; it mines about 8-10% of world uranium. The memos read its production share (about 7.5%) instead."
 
 # Display names in the Compact memos (the AIB country names are World Bank style: "Korea, Rep.")
 display_names: {KOR: "Korea", COD: "DR Congo", COG: "Congo", EGY: "Egypt", HKG: "Hong Kong", IRN: "Iran", LAO: "Laos",
@@ -248,6 +310,14 @@ document:
   pdf_pages: [6, 40]
 
 # The Compact memo print document: `document` with these fields replaced.
+group_document:
+  eyebrow: "Group memo"
+  subtitle: "Country priorities, AIB roles and partnership opportunities: where the group integrates, through which instruments, and where it stays out"
+  footer: "Allied Industrial Base Explorer, Group memo: {pair}"
+  doc_kind: "Group memo"
+  keywords: "Allied Industrial Base; Group memo; Quad; Strategic Sectoral Compacts; trade; investment; development cooperation"
+  appendix_intro: "The tables below carry the full node map, the member matrix and the trade actions that the main text summarises. Method, decision rules and limitations: docs/partnership_memos.md (Group memos). Machine-readable outputs: group_members.csv, country_priorities.csv, partner_matrix.csv, aib_strategic_roles.csv, aib_compact_roles.csv, group_pairs.csv, group_member_profiles.csv, group_nodes.csv, group_lanes.csv, trade_priorities.csv, investment_priorities.csv, third_country_opportunities.csv, deal_pipeline.csv, group_mechanisms.csv, group_evidence.csv and evidence_register.csv."
+
 compact_document:
   eyebrow: "Compact memo"
   subtitle: "Where coordinated industrial integration across allied economies creates strategic value, through which instruments, and where to stay out"

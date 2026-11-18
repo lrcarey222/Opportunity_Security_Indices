@@ -207,3 +207,18 @@ pm_country_profiles <- function(sp, frame, dol, a, b, cfg) {
   out <- rbind(ca, cb, na, nb)
   out[order(out$unit_type, out$iso3, out$tech, match(out$stage, c("Extraction", "Refining", "Components", "Assembly", "Deployment", "Recovery")), out$unit_id), ]
 }
+
+# Config `data_caveats` entries with `share: production` correct a member's node share that trade misreads (a
+# re-export booked as the member's, a coding artefact): its position and export shares become its production share
+# (0 where none is recorded) and it holds no anchor or specialist position at the node. Applied to the division of
+# labour before any memo reads it, so the pair, compact and group memos agree (2026-11-17).
+pm_apply_share_corrections <- function(dol, caveats) {
+  for (dc in caveats) if (identical(dc$share, "production")) {
+    k <- dol$node_id == dc$node & dol$iso3 == dc$iso3
+    if (!any(k)) next
+    p <- pm_num(dol$production_share[k]); p[is.na(p)] <- 0
+    dol$position_share[k] <- p; dol$world_share[k] <- p
+    dol$anchor_position[k] <- FALSE; dol$specialist_position[k] <- FALSE
+  }
+  dol
+}

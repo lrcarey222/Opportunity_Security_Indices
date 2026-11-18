@@ -33,8 +33,7 @@ pm_compact_memo_sections <- function(na, prof, cells, members, lanes, trade_tbl,
   act <- na[na$relationship_state %in% PM_COMPACT_ACTIVE, , drop = FALSE]
   bets <- na[na$priority_tier == 1, , drop = FALSE]
   bets <- utils::head(bets[order(bets$priority_rank), , drop = FALSE], cfg$priority$max_joint_bets)
-  caveat_re <- "Alternative|also (covers|feeds|makes)|Mostly|mixes|alike|dominates|semiconductor"
-  if (!is.null(node_notes)) node_notes <- node_notes[vapply(node_notes, function(z) grepl(caveat_re, z), logical(1))]
+  if (!is.null(node_notes)) node_notes <- node_notes[vapply(node_notes, function(z) grepl(PM_CAVEAT_RE, z), logical(1))]
   noted <- if (is.null(node_notes)) character() else intersect(names(node_notes), na$node_id)
   cexp <- ev[ev$evidence_id %in% ev_ids, , drop = FALSE]
 
@@ -168,7 +167,7 @@ pm_compact_memo_sections <- function(na, prof, cells, members, lanes, trade_tbl,
       sprintf("[Data] State counts over the compact's nodes: %s.", paste(sprintf("%s %d", names(st)[st > 0], st[st > 0]), collapse = "; ")), "",
       "[Inference] Rules (docs/partnership_memos.md, Compact memos): a node is **member supply** where a capable member supplier outranks a member buyer (high need, or material demand where trusted capacity is short or a chokepoint exists), **capacity-constrained** where the AIB also finds allied capacity short of demand, **shared vulnerability** where at least two members need the node, none supplies it and a coercive supplier holds at least half of world supply, and **member competition** where two or more members are strong and no other member needs more. Strength alone is never complementarity.", "",
       pm_md_table(ct, names(ct), c("Rank", "Tier", "Step", "Node", "Compact relationship", "Member suppliers", "Member buyers", "Strategic case", "Confidence")), "",
-      sprintf("- [Data] Low-priority / open-market nodes (%d): %s.", nrow(low), if (nrow(low)) paste(sprintf("%s (%s)", pm_lc1(low$node_label), gsub("_", " ", gsub(";", ", ", low$state_reason))), collapse = "; ") else "none"),
+      sprintf("- [Data] Nodes with no compact case (low priority for the compact; not necessarily open-market) (%d): %s.", nrow(low), if (nrow(low)) paste(sprintf("%s (%s)", pm_lc1(low$node_label), gsub("_", " ", gsub(";", ", ", low$state_reason))), collapse = "; ") else "none"),
       sprintf("- [Data] Deployment demand behind the compact (deployment need >= %.2f): %s.", cfg$thresholds$deployment_need_high,
               if (nrow(dep)) paste(vapply(split(dep$iso3, dep$tech), function(z) pm_join(nm1(sort(unique(z))), 8), character(1)), names(split(dep$iso3, dep$tech)), sep = " in ", collapse = "; ") else "none above the line"), "")
 
@@ -199,7 +198,9 @@ pm_compact_memo_sections <- function(na, prof, cells, members, lanes, trade_tbl,
   add("## 6. Third-Country and Development Cooperation", "")
   if (nrow(third)) {
     add(sprintf("- [Data] From the development-partnership pairs (scripts/93: a donor's need meets a developing economy's credible Catch Up pathway in the same step), at least two members are donors at %d recipient step%s in the compact's cells. Ranked: number of donors with their own need, then number of member donors.", nrow(third), if (nrow(third) == 1) "" else "s"), "",
-        pm_md_table(third, c("rec_id", "recipient", "technology", "stage", "donor_names", "recipient_choice", "recipient_anchor", "tools", "evidence_quality"),
+        pm_md_table(transform(third, recipient_choice = gsub("_", " ", third$recipient_choice),
+                              recipient_anchor = gsub(";", ", ", gsub("_", " ", ifelse(is.na(third$recipient_anchor), "", third$recipient_anchor)))),
+                    c("rec_id", "recipient", "technology", "stage", "donor_names", "recipient_choice", "recipient_anchor", "tools", "evidence_quality"),
                     c("ID", "Recipient", "Technology", "Stage", "Member donors", "Recipient choice", "Recipient anchor", "Tools", "Evidence")), "")
   } else add("_No recipient step has two or more member donors (or no development-partnership table was supplied)._", "")
   nonmem <- cexp[vapply(strsplit(cexp$countries, "\\|"), function(z) any(!z %in% parties) && any(z %in% parties), logical(1)) &
@@ -246,10 +247,13 @@ pm_compact_memo_sections <- function(na, prof, cells, members, lanes, trade_tbl,
                              ifelse(act$chokepoint, sprintf("coercive share of member buyers' supply below %s (%s now holds %s of world supply)", pm_pct(cfg$thresholds$chokepoint_share), act$coercive_top_iso3, pm_pct(act$coercive_world_share)),
                                     ifelse(!is.na(act$residual_gap), sprintf("allied residual gap under the China shock closed (now %s of allied demand); member buyers' imports from member suppliers up from %s", pm_pct(act$residual_gap), pm_pct(act$buyers_from_member_suppliers)),
                                            "trusted member capacity added and contracted"))) else "- No active node.",
-      "- The AIB node class moves from BUILD to COORDINATE or LOW INTERVENTION on the next run.",
+      # class lines only where they can apply (a LOW INTERVENTION node has already met the old exit test; 2026-11-16)
+      if (any(act$aib_class %in% "BUILD")) "- The AIB node class of the BUILD nodes moves to COORDINATE or LOW INTERVENTION on the next run." else character(),
       "", "**Failure / exit conditions**",
       "- No signed offtake or financing at a node within 24 months of launch: drop the node from the compact.",
-      "- The coercive share of world supply falls below the chokepoint line, or the AIB class turns LOW INTERVENTION: move the node to open-market treatment.",
+      if (any(!act$aib_class %in% "LOW INTERVENTION")) "- The coercive share of world supply falls below the chokepoint line, or a node's AIB class turns LOW INTERVENTION: move that node to open-market treatment." else
+        "- The coercive share of world supply falls below the chokepoint line: move the node to open-market treatment.",
+      if (any(act$aib_class %in% "LOW INTERVENTION")) "- Nodes already in the AIB's LOW INTERVENTION class rest on the chokepoint or capacity case alone; support ends when that case does." else character(),
       "- Projects proceed on commercial terms without public support: stop the support (it is not additional).", "")
   bev <- pm_ev_lines_capped(ev, unique(unlist(na$evidence_ids[na$priority_tier %in% 1:2])), 12)
   if (length(bev$lines)) add("**Evidence behind the compact bets (external)**", bev$lines, more(bev), "")

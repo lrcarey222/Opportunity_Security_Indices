@@ -37,6 +37,15 @@ PM_COMPACT_STATE_LABEL <- c(member_supply = "Member supply meets member need", c
                             low_strategic_case = "Low strategic case", not_assessed = "Not assessed")
 
 pm_names_of <- function(iso, names) { v <- unname(names[iso]); ifelse(is.na(v), iso, v) }
+# The parties of each node's lane: its member suppliers and buyers (the buyers alone where none supplies).
+pm_lane_parties <- function(x) lapply(seq_len(nrow(x)), function(i) {
+  z <- c(strsplit(x$lane_suppliers[i], ";")[[1]], strsplit(if (nzchar(x$lane_buyers[i])) x$lane_buyers[i] else x$buyers[i], ";")[[1]])
+  unique(z[!is.na(z) & nzchar(z)]) })
+# Evidence ids (per node) that name at least one of the node's parties; all ids where no party is known.
+pm_ids_of_parties <- function(ids_list, ev, parties_list) lapply(seq_along(ids_list), function(i) {
+  e <- ev[ev$evidence_id %in% ids_list[[i]], , drop = FALSE]; p <- parties_list[[i]]
+  if (!length(p)) return(e$evidence_id)
+  e$evidence_id[vapply(strsplit(e$countries, "\\|"), function(z) any(z %in% p), logical(1))] })
 # lower-case a label's first letter for use inside a sentence, keeping acronyms (PV, EMD, PGMs)
 pm_lc1 <- function(x) ifelse(grepl("^[A-Z][a-z]", x), paste0(tolower(substr(x, 1, 1)), substring(x, 2)), x)
 pm_join <- function(x, n = 3, last = " and ") {
@@ -166,7 +175,10 @@ pm_compact_assess <- function(prof, cells, frame_c, flows, members, cfg, ev, mec
     named <- (p$largest_trusted %in% TRUE) | !is.na(p$host_rank)
     share_ok <- !is.na(p$world_share) & p$world_share >= th$node$presence_share
     # a material net importer with high need is short of the node itself: a buyer, never a supplier
-    capable <- (p$position_band == "strong" | (p$position_band == "moderate" & named & share_ok)) & !p$need_band %in% "high"
+    # a "moderate" supplier must also export the node: a producer for its home market does not supply another member
+    # (2026-11-17: US wind turbine sets, 7% of world output, 1% of exports)
+    exp_ok <- is.na(p$export_share) | p$export_share >= th$node$presence_share
+    capable <- (p$position_band == "strong" | (p$position_band == "moderate" & named & share_ok & exp_ok)) & !p$need_band %in% "high"
     need_v <- p$need_band == "high" | (p$need_band == "demand" & more_cap)
     dem <- ifelse(is.na(p$demand_share), 0, p$demand_share)
     ns <- ifelse(p$need_band == "high", p$strategic_need, ifelse(p$need_band == "demand", pmin(dcap_of(choke), dem / th$node$demand_scale_share), 0))
@@ -286,7 +298,7 @@ pm_compact_fields <- function(d, cfg, ev) {
                     ifelse(bw >= th$bilateral_share_working, 1, ifelse(bw >= th$bilateral_share_partial, 0.5, 0)))
   d$market_failure_score <- mf; d$existing_commitment <- commit; d$market_already_working <- working
   d$additionality <- round(rowMeans(cbind(mf, 1 - commit, 1 - working)), 3)
-  d$additionality_label <- ifelse(is.na(mf), "unknown", ifelse(mf == 0 | (working >= 1 & commit >= 0.5), "low",
+  d$additionality_label <- ifelse(is.na(mf), "unknown", ifelse(mf == 0 | (working >= 1 & commit >= 0.5) | (working >= 1 & d$aib_class %in% "LOW INTERVENTION"), "low",
                            ifelse(mf >= 0.75 & commit < 0.5 & working < 0.5, "high", "medium")))
   sp <- cfg$speed; pen <- cfg$stage_speed_penalty
   d$execution_speed <- round(vapply(seq_len(nrow(d)), function(i) {
@@ -406,7 +418,7 @@ pm_compact_governance <- function(cm, core, cfg) {
     if (length(miss)) gaps <- c(gaps, sprintf("core members outside %s: %s", host, paste(miss, collapse = ", ")))
   }
   feats <- if (!nrow(hr)) NA_character_ else {
-    f <- c(if (hr$has_finance[1] %in% c("TRUE", "partial")) "finance", if (hr$has_pipeline[1] %in% "TRUE") "a project pipeline" else if (hr$has_pipeline[1] %in% "partial") "projects but no published list")
+    f <- c(if (hr$has_finance[1] %in% "TRUE") "finance" else if (hr$has_finance[1] %in% "partial") "partial finance", if (hr$has_pipeline[1] %in% "TRUE") "a project pipeline" else if (hr$has_pipeline[1] %in% "partial") "projects but no published list")
     if (length(f)) paste(f, collapse = " and ") else "a standing framework with no pipeline or finance yet"
   }
   # the closest candidate host when none qualifies: a plurilateral body of a host type that covers the compact,
@@ -446,11 +458,12 @@ pm_compact_trade <- function(na, cfg, names) {
   }
   out <- if (length(rows)) do.call(rbind, rows) else data.frame()
   if (nrow(out)) out <- utils::head(out[order(out$priority_rank), ], cfg$priority$max_trade_actions)
-  open <- na[na$relationship_state == "low_strategic_case" & grepl("adequate_trusted_supply", na$state_reason) & na$buyer_net_import_share > 0 &
-               !na$node_id %in% names(cfg$trade_blind_spots), , drop = FALSE]
+  # never a chokepoint or a node the AIB cannot classify (2026-11-16, as in the pair memos)
+  open <- na[which(na$relationship_state == "low_strategic_case" & grepl("adequate_trusted_supply", na$state_reason) & na$buyer_net_import_share > 0 &
+               !na$node_id %in% names(cfg$trade_blind_spots) & !na$chokepoint %in% TRUE & !na$aib_class %in% "INSUFFICIENT DATA"), , drop = FALSE]
   open <- utils::head(open[order(-open$buyer_net_import_share), ], 4)
   if (nrow(open)) out <- rbind(out, data.frame(node_id = open$node_id, node_label = open$node_label, direction = "open", action_type = "open_sourcing",
-    action = sprintf("Leave %s open to global sourcing: trusted supply is adequate and diversified, so a compact preference adds cost without security.", pm_lc1(open$node_label)),
+    action = sprintf("Leave %s open to global sourcing: trusted supply is adequate and no coercive supplier is near the chokepoint line, so a compact preference adds cost without security.", pm_lc1(open$node_label)),
     relationship_state = open$relationship_state, priority_rank = open$priority_rank, stringsAsFactors = FALSE))
   comp <- na[na$relationship_state == "member_competition", , drop = FALSE]
   if (nrow(comp)) out <- rbind(out, data.frame(node_id = comp$node_id, node_label = comp$node_label, direction = "members", action_type = "no_preference",
@@ -477,7 +490,7 @@ pm_compact_investment <- function(na, cfg, ev, inst, names, public = character()
   out <- data.frame(rec_id = NA_character_, node_id = x$node_id, node_label = x$node_label, step = x$step, stage = x$stage,
     capability_owner = owners, destination = hosts, investment_logic = logic,
     demand_case = sprintf("member buyers take %s of allied demand (%s of allied net imports); allied demand %s; AIB class %s", pm_pct(x$buyer_demand_share), pm_pct(x$buyer_net_import_share), pm_usd(x$node_demand_usd), x$aib_class),
-    private_actors = pm_private_actors(x$evidence_ids_node, ev, public), public_instrument = ifelse(is.na(pub), x$main_instrument, pub),
+    private_actors = pm_private_actors(pm_ids_of_parties(x$evidence_ids_node, ev, pm_lane_parties(x)), ev, public), public_instrument = ifelse(is.na(pub), x$main_instrument, pub),
     additionality = x$additionality, additionality_label = x$additionality_label,
     additionality_rationale = sprintf("market failure %.2f; existing commitment %.2f; market already working %.1f", x$market_failure_score, x$existing_commitment, x$market_already_working),
     key_obstacle = unname(PM_OBSTACLE[x$constraint_type]), time_horizon = pm_horizon(pmin(x$execution_speed, 0.5, na.rm = TRUE)),
@@ -516,13 +529,19 @@ pm_compact_third <- function(devpart, frame_c, members, cfg, names) {
   out
 }
 
-pm_compact_deals <- function(na, inst, institutions, ev, cfg, names, public = character()) {
+#   fta_pairs: "A|B" keys (sorted) of members with a trade agreement in force; a market-access deal between them holds
+#   the agreement's terms instead of binding new access
+pm_compact_deals <- function(na, inst, institutions, ev, cfg, names, public = character(), fta_pairs = character()) {
   x <- na[which(na$priority_tier %in% c(1L, 2L) & !is.na(na$main_instrument) & !na$constraint_type %in% "no_material_intervention" &
                   (na$strategic_importance >= 0.4 | na$aib_class %in% "BUILD")), , drop = FALSE]
   if (!nrow(x)) return(data.frame())
   nm <- function(s, n = 2) pm_join(pm_names_of(strsplit(s, ";")[[1]], names), n)
-  inst_by <- function(iso, fam) {
-    r <- institutions[institutions$iso3 == iso & vapply(strsplit(institutions$instrument_families, "\\|"), function(z) fam %in% z, logical(1)), , drop = FALSE]
+  # institutions in scope for the node's compact (institutions.csv scope_compacts; a nuclear regulator never signs a
+  # battery standards deal)
+  cm_of <- function(i) unique(stats::na.omit(c(if (!is.null(x$source_compact)) x$source_compact[i], if (!is.null(x$strategic_compact_id)) x$strategic_compact_id[i])))
+  inst_by <- function(iso, fam, cm) {
+    ok <- if (length(cm)) pm_inst_scope_ok(institutions, cm) else rep(TRUE, nrow(institutions))
+    r <- institutions[institutions$iso3 == iso & vapply(strsplit(institutions$instrument_families, "\\|"), function(z) fam %in% z, logical(1)) & ok, , drop = FALSE]
     if (nrow(r)) paste(utils::head(r$abbreviation, 3), collapse = ", ") else "no institution listed"
   }
   lead_s <- vapply(strsplit(x$lane_suppliers, ";"), function(z) if (length(z)) z[1] else NA_character_, character(1))
@@ -530,12 +549,18 @@ pm_compact_deals <- function(na, inst, institutions, ev, cfg, names, public = ch
   resp <- vapply(seq_len(nrow(x)), function(i) {
     f <- x$main_instrument_family[i]
     isos <- unique(stats::na.omit(c(lead_s[i], lead_b[i])))
-    paste(vapply(isos, function(z) sprintf("%s: %s", z, inst_by(z, f)), character(1)), collapse = "; ")
+    paste(vapply(isos, function(z) sprintf("%s: %s", z, inst_by(z, f, cm_of(i))), character(1)), collapse = "; ")
   }, character(1))
   tp <- inst$deal_template[match(x$main_instrument, inst$instrument_id)]
+  m12 <- inst$milestone_12m[match(x$main_instrument, inst$instrument_id)]; o36 <- inst$outcome_36m[match(x$main_instrument, inst$instrument_id)]
+  fta <- x$main_instrument %in% "market_access" & vapply(seq_len(nrow(x)), function(i) paste(sort(c(lead_s[i], lead_b[i])), collapse = "|") %in% fta_pairs, logical(1))
+  tp[fta] <- "Hold {buyer}'s trade-agreement terms for {supplier} {node} (no new tariff, safeguard or content rule)"
+  m12[fta] <- "Written confirmation that the node stays at the trade agreement's terms, with no new safeguard or content rule"
+  o36[fta] <- "The trusted supplier's exports of the node face no new barrier under the agreement"
   sup_nm <- ifelse(nzchar(x$lane_suppliers), vapply(x$lane_suppliers, nm, character(1)), "non-coercive")
   buy_nm <- vapply(ifelse(nzchar(x$lane_buyers), x$lane_buyers, x$buyers), nm, character(1), n = 3)
-  hosts <- ifelse(nzchar(x$aib_third_hosts), sprintf(" (candidate hosts: %s)", vapply(x$aib_third_hosts, nm, character(1), n = 3)), "")
+  # candidate hosts for pooled capacity only (a deal with a member supplier is built by that supplier)
+  hosts <- ifelse(nzchar(x$aib_third_hosts) & !nzchar(x$lane_suppliers), sprintf(" (candidate hosts: %s)", vapply(x$aib_third_hosts, nm, character(1), n = 3)), "")
   txt <- vapply(seq_len(nrow(x)), function(i) {
     # several buyer economies read "buyers in A, B and 3 others", not "A, B and 3 others buyers"
     s <- gsub("{buyer} buyers", "buyers in {buyer}", tp[i], fixed = TRUE)
@@ -543,15 +568,18 @@ pm_compact_deals <- function(na, inst, institutions, ev, cfg, names, public = ch
     s <- gsub("{node}", pm_lc1(x$node_label[i]), s, fixed = TRUE); gsub("{hosts}", hosts[i], s, fixed = TRUE) }, character(1))
   out <- data.frame(node_id = x$node_id, unit_id = x$node_id, deal = txt, step = x$step, stage = x$stage, problem_solved = x$market_failure,
     constraint_type = x$constraint_type, instrument = x$main_instrument, responsible_institutions = resp,
-    private_actors = pm_private_actors(x$evidence_ids_node, ev, c(public, institutions$abbreviation, institutions$institution)),
+    private_actors = pm_private_actors(pm_ids_of_parties(x$evidence_ids_node, ev, pm_lane_parties(x)), ev, c(public, institutions$abbreviation, institutions$institution)),
     scale = ifelse(is.na(x$node_demand_usd), NA_character_, sprintf("allied demand %s", pm_usd(x$node_demand_usd))),
-    milestone_12m = inst$milestone_12m[match(x$main_instrument, inst$instrument_id)], outcome_36m = inst$outcome_36m[match(x$main_instrument, inst$instrument_id)],
+    milestone_12m = m12, outcome_36m = o36,
     confidence = pm_band(x$evidence_quality), importance = pm_band(x$strategic_importance), urgency = pm_band(x$urgency),
     tractability = pm_band(x$tractability, 0.6, 0.4), execution_speed = x$execution_speed, additionality = x$additionality_label,
     interdependency = x$interdependency, evidence_quality = x$evidence_quality, priority_tier = x$priority_tier, evidence_ids = x$evidence_id_list, stringsAsFactors = FALSE)
   lv <- function(v) match(v, c("high", "medium", "low", "unknown"))
   out <- out[order(lv(out$importance), lv(out$additionality), lv(out$urgency), lv(out$tractability), -out$execution_speed, -out$interdependency, -out$evidence_quality, out$node_id), ]
-  out <- out[order(out$priority_tier != 1), , drop = FALSE]
+  # the headline bets (the first max_joint_bets of tier 1 in Section 3 order) each get a deal before the cap
+  t1 <- na[na$priority_tier == 1, , drop = FALSE]
+  head_ids <- utils::head(t1$node_id[order(t1$priority_rank)], cfg$priority$max_joint_bets)
+  out <- out[order(!out$node_id %in% head_ids, out$priority_tier != 1), , drop = FALSE]
   keep <- out$priority_tier == 1 | (stats::ave(seq_len(nrow(out)), out$step, FUN = seq_along) <= 2 & !duplicated(paste(out$step, out$instrument)))
   out <- utils::head(out[keep, ], cfg$priority$max_deals)
   out$rank <- seq_len(nrow(out)); out$rec_id <- sprintf("D%02d", out$rank)
@@ -571,9 +599,13 @@ pm_compact_non_priorities <- function(na, gov, cfg, names, ev) {
   for (i in seq_len(nrow(crowd))) add(crowd$node_id[i], "crowding",
     sprintf("Do not run parallel national subsidy races for %s: %d members (%s) are already strong suppliers; agree in the compact who expands where.", pm_lc1(crowd$node_label[i]), crowd$n_strong[i], nm(crowd$strong_members[i])), 2.9)
   done <- na[na$relationship_state %in% PM_COMPACT_ACTIVE & na$existing_commitment >= 0.5 & na$additionality_label == "low", , drop = FALSE]
-  committed <- function(ids) { e <- ev[ev$evidence_id %in% ids & ev$item_type %in% c("project", "financing", "corporate") & ev$status %in% c("under_construction", "operating", "signed", "in_force"), , drop = FALSE]; paste(e$evidence_id, collapse = ", ") }
-  for (i in seq_len(nrow(done))) add(done$node_id[i], "already_committed",
-    sprintf("Do not put new public money behind %s projects that are already committed (evidence %s): member suppliers already serve member buyers, so compact support is additional only beyond them.", pm_lc1(done$node_label[i]), committed(done$evidence_ids[[i]])), 2.5)
+  # cite only committed items that name the lane's own suppliers or buyers (a member's project elsewhere serves no one here)
+  committed <- function(ids, parties) { e <- ev[ev$evidence_id %in% ids & ev$item_type %in% c("project", "financing", "corporate") & ev$status %in% c("under_construction", "operating", "signed", "in_force"), , drop = FALSE]
+    e <- e[vapply(strsplit(e$countries, "\\|"), function(z) !length(parties) || any(z %in% parties), logical(1)), , drop = FALSE]; paste(e$evidence_id, collapse = ", ") }
+  dpart <- pm_lane_parties(done)
+  for (i in seq_len(nrow(done))) { cid <- committed(done$evidence_ids[[i]], dpart[[i]]); if (!nzchar(cid)) next
+    add(done$node_id[i], "already_committed",
+    sprintf("Do not put new public money behind %s projects that are already committed (evidence %s): member suppliers already serve member buyers, so compact support is additional only beyond them.", pm_lc1(done$node_label[i]), cid), 2.5) }
   low <- na[na$relationship_state == "low_strategic_case", , drop = FALSE]
   nw <- low[grepl("supplier_without_member_need", low$state_reason), , drop = FALSE]
   nw <- utils::head(nw[order(-nw$member_share), ], 3)

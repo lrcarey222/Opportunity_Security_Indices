@@ -75,6 +75,15 @@ pm_commitment <- function(ids, ev) {
   }, numeric(1))
 }
 
+# The items behind a commitment under pm_commitment's rule: the committed ones (project, financing or corporate
+# items under construction, operating, signed or in force); with none, the ids unchanged.
+pm_committed_ids <- function(ids, ev) {
+  if (is.null(ev) || !length(ids)) return(ids)
+  z <- ev$evidence_id[ev$evidence_id %in% ids & ev$item_type %in% c("project", "financing", "corporate") &
+                        ev$status %in% c("under_construction", "operating", "signed", "in_force")]
+  if (length(z)) unique(z) else ids
+}
+
 pm_restriction <- function(ids, ev) {
   vapply(ids, function(z) any(ev$evidence_id %in% z & ev$instrument == "export_control" & ev$status == "in_force"), logical(1))
 }
