@@ -205,10 +205,16 @@ const GLYPHS = {
   electrolyser:`<rect x="10" y="12" width="12" height="24" rx="2"/><rect x="26" y="12" width="12" height="24" rx="2"/><path d="M16 20l-2 4h4l-2 4M32 20l-2 4h4l-2 4"/><path d="M22 24h4"/>`,
   fuel:`<path d="M18 10h8v6l4 4v18H14V20l4-4Z"/><path d="M14 28h16"/><path d="M22 40v-6"/>`,
   carbon:`<circle cx="24" cy="24" r="6"/><circle cx="12" cy="16" r="3"/><circle cx="36" cy="16" r="3"/><circle cx="24" cy="40" r="3"/><path d="M19 21 14 18M29 21 34 18M24 30v7"/>`,
+  // six-stage cards (2026-11-18): fossil fuels and recycling
+  coal:`<path d="M8 38 14 26l8 4 6-10 8 6 4 12Z"/><path d="M16 32l4-2M26 28l3 3M32 34l3-2"/>`,
+  flame:`<path d="M24 6c2 8 10 12 10 22a10 10 0 0 1-20 0c0-6 4-8 4-14 3 3 4 6 4 9 2-4 2-10 2-17Z"/><path d="M24 40a4 4 0 0 1-4-4c0-3 4-6 4-6s4 3 4 6a4 4 0 0 1-4 4Z"/>`,
+  oilrig:`<path d="M18 40 24 8 30 40M20 30h8M21 22h6M24 8h-6l-4 6"/><path d="M8 40h32"/><path d="M36 30c0 2-1.5 4-3 4s-3-2-3-4 3-6 3-6 3 4 3 6Z"/>`,
+  recycle:`<path d="M20 10 14 20h8M28 10l6 10-4 6M14 26l-4 6 4 6h10M34 26l4 6-4 6H24"/><path d="M20 10h8M24 38l3-3M24 38l3 3"/>`,
 };
 
 function iconSVG(glyph, c1, c2, size = 48) {
-  const gid = "ic-" + glyph;
+  // the gradient id carries the colours: the same glyph is drawn in several technology colours
+  const gid = "ic-" + glyph + "-" + String(c1).replace(/[^a-z0-9]/gi, "") + String(c2).replace(/[^a-z0-9]/gi, "");
   return `<svg viewBox="0 0 48 48" width="${size}" height="${size}" class="ind-icon" aria-hidden="true">
     <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="${c2}"/><stop offset="100%" stop-color="${c1}"/>
