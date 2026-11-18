@@ -204,9 +204,15 @@ sensitive layer:
 - `siv_score` = the weighted mean of the three families (`decision_framework.strategic_value.weights`, 1:1:1;
   renormalised only where the market prize is missing and `require_market` is false). **Calibration choice
   to report**: equal weights are a neutral prior, not an estimate.
-- `strategic_industrial_value` = the mid-rank percentile of `siv_score` across the assessed producing-stage
-  cells (as the node prize is a percentile across the producing nodes), so `prize_threshold` (0.6) keeps its
-  selectivity: about the top 40% of producing cells. Layers are placed among the cells' scores.
+- `strategic_industrial_value` = `siv_score` on a **fixed score scale** (`strategic_value.scale: score`, user
+  decision 2026-11-17): a monotone piecewise-linear map with 0 -> 0, `score_threshold` (0.3658) -> `prize_threshold`
+  (0.6) and 1 -> 1 (`sp_siv_score_scale()`), so a cell or layer is high exactly when its score reaches 0.3658.
+  **Calibration choice to report**: 0.3658 reproduces the earlier percentile rule's cut exactly on the 2026-11-17
+  run (every cell and layer kept its side; about the top 40% of producing cells are high). Until 2026-11-17 the value
+  was the mid-rank percentile of `siv_score` across the assessed producing-stage cells (`scale: percentile`, kept as
+  an option). The percentile was zero-sum: scores tie across countries within a node, so new learning evidence on
+  one node (Electric Grid Components, 219 cells) pushed another whole node (Electric Grid Assembly, 0.613 -> 0.595)
+  below the threshold. On the score scale no row's value depends on another row's score.
 - **Market-only cap** (`siv_cap = market_only`): where neither commons nor option reaches
   `strategic_value.gate` (0.5), observed or not (an unobserved family counts 0, so less evidence never
   lifts the cap), the value is capped at `prize_threshold - cap_margin` (0.59). Market size alone never makes
