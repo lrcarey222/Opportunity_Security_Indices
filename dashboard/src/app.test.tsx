@@ -393,8 +393,9 @@ describe('home and the shell', () => {
       expect(create).not.toHaveBeenCalled();
       expect(peekEngineClient()).toBeNull();
       expect(screen.queryByTestId('coverage-glyph')).toBeNull();
-      // idle: the Sector manifest (no-cache), then the sector-meta bytes; the country picker's options
-      expect(idle.length).toBe(2);
+      // idle: the Sector manifest (no-cache), then the sector-meta bytes; the country picker's options; and (since
+      // 2026-11-17) the Chart of the Day strip, which loads its index only then
+      expect(idle.length).toBe(3);
       await act(async () => {
         for (const f of idle) f();
         await new Promise((r) => setTimeout(r, 50));
