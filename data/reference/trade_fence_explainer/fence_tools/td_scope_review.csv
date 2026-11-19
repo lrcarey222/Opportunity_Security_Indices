@@ -1,0 +1,38 @@
+family,pattern,decision,kept_codes,reason
+Solar safeguard (Section 201),Safeguard measure on imports of crystalline silicon,exclude,,"The Section 201 safeguard on solar cells and modules ended on 6 February 2026, the eight-year statutory limit; NIPO still lists it as in force."
+PTFE resin (termination record),Termination of provisional countervailing,exclude,,"The entry records the termination of a provisional duty, not a duty in force."
+Active anode material (graphite),active anode material,exclude,,"The ITC's final injury determination was negative, so no order was issued and the provisional duties lapsed."
+Solar cells and modules (CSPV),crystalline silicon photovoltaic,restrict,850171 850172 850180 854142 854143,"Kept the lines in the orders' Federal Register scope (data/reference/adcvd_orders.csv); NIPO also names transformers, converters, lithium-ion cells and capacitors."
+Utility-scale wind towers,wind towers,restrict,,"The orders' Federal Register scope is 7308.20 and 8502.31 (data/reference/adcvd_orders.csv); none of the grid or solar lines NIPO names."
+Silicon metal,silicon metal,restrict,280469,"The orders cover silicon below 99.99% (2804.69) per their Federal Register scope; 2804.61 (99.99% and above, which includes polysilicon) is outside."
+Aluminium extrusions,alumini?um extrusions,restrict,761090 848690 853690,Kept as NIPO names them: extrusions can enter as aluminium structures and as parts of other goods.
+Aluminium wire and cable,alumini?um wire and cable,restrict,854442 854449,Insulated aluminium conductors are classified in 8544.42 and 8544.49.
+Barium chloride,barium chloride,restrict,282739,Barium chloride is classified in 2827.39.
+Aluminium foil,alumini?um foil,restrict,760711 760719,Aluminium foil is classified in 7607.11 and 7607.19.
+Common alloy aluminium sheet,common alloy alumin,restrict,,"Sheet (7606, 0.2 mm and thicker) is not foil (7607)."
+Cut-to-length steel plate,cut-to-length,restrict,,"Plate (4.75 mm and thicker) cannot be the electrical-steel sheet that 7225.11/19 and 7226.11/19 hold."
+Cold-rolled steel flat products,cold-rolled steel flat,restrict,,The cold-rolled orders exclude grain-oriented and non-oriented electrical steel from their scope.
+Hot-rolled steel flat products,hot-rolled (?:carbon )?steel flat,restrict,722511 722519 722611 722619,Kept as NIPO names them: hot-rolled silicon-electrical steel is classified in these subheadings.
+Non-oriented electrical steel,non-oriented electrical steel,restrict,722519 722619,"Non-oriented electrical steel is classified in 7225.19 and 7226.19; 7225.11 and 7226.11 hold grain-oriented steel, which these orders do not cover."
+Steel concrete reinforcing bar,reinforcing bar,restrict,,Rebar (7213/7214/7228) is not electrical steel.
+Prestressed concrete steel wire strand,prestressed concrete steel wire strand,restrict,731210,PC strand is classified in 7312.10; copper and aluminium strand (7413/7614) is outside.
+Steel grating,steel grating,restrict,730890,Steel grating is classified in 7308.90.
+Steel racks,steel racks,restrict,730890,Kept as NIPO names it: steel racks can be classified in 7308.90.
+Temporary steel fencing,temporary steel fencing,restrict,730890,Kept 7308.90 (steel structures); the stranded-wire and aluminium lines are outside.
+Van-type trailers,van-type trailers,restrict,730890,Kept as NIPO names it: trailer subassemblies can be classified in 7308.90.
+Large power transformers,large power transformers,restrict,850423 850490,Transformers above 10 MVA (8504.23) and their active parts (8504.90).
+Electrolytic manganese dioxide,electrolytic manganese dioxide,restrict,282010,Manganese dioxide is classified in 2820.10.
+Ceramic abrasive grains,ceramic abrasive grains,restrict,281820,Kept as NIPO names it: the grains are aluminium oxide.
+Graphite electrodes,graphite electrodes,restrict,380110 380190,Kept as NIPO names them (artificial-graphite lines).
+Freight rail couplers,freight rail couplers,restrict,,"Couplers are cast-steel railway parts (8607.30), not stranded wire."
+Non-refillable steel cylinders,non-refillable steel cylinders,restrict,,Cylinders (7311) are not stranded wire.
+Overhead door torsion springs,torsion springs,restrict,,Springs (7320) are not structures or stranded wire.
+Quartz surface products,quartz surface,restrict,,Engineered quartz slabs (6810) are not natural quartz (2506.10).
+Tow-behind lawn groomers,lawn groomers,restrict,,Lawn groomers are not semiconductor or solar-cell manufacturing machinery (8486).
+Chromium trioxide,chromium trioxide,restrict,,"Chromium trioxide (2819.10) is none of the silicon, manganese-oxide, chloride and other chemical lines named."
+Citric acid and citrate salts,citric acid,restrict,,Citric acid and citrates (2918.14/15) are not 2920.90.
+Erythritol,erythritol,restrict,,"Erythritol is a sugar alcohol (2905.49), not 2920.90."
+Tetrahydrofurfuryl alcohol,tetrahydrofurfuryl,restrict,,Tetrahydrofurfuryl alcohol (2932.13) is not 2920.90.
+Float glass products,float glass,restrict,,"Float glass (7005) is not safety glass, steel or aluminium structures, or insulators."
+Hard empty capsules,hard empty capsules,restrict,,Capsules are not doped silicon wafers (3818).
+Oleoresin paprika,oleoresin paprika,restrict,,A spice extract is not doped silicon wafers (3818).

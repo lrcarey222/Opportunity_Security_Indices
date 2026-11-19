@@ -1,0 +1,118 @@
+"tech","chain","stage","tool_key","tool","tool_group","band","percentile","value","import_coverage","n_measures","single_measure","imports_2024_usd","tariff_incl_adcvd","dec4_price_floor"
+"Electric Grid","Grid equipment","Extraction","tariff","Tariffs","At the border","Low",0.247775628626692,6.11634751636185,0.99800228569586,,FALSE,157298268,6.11634751636185,FALSE
+"Electric Grid","Grid equipment","Extraction","trade_defence","AD/CVD","At the border","Low",0.31667576916075,0,0,0,FALSE,157298268,6.11634751636185,FALSE
+"Electric Grid","Grid equipment","Extraction","import_ban","Import bans","At the border","Low",0.454649055899199,0.0039954286082794,0.0019977143041397,2,FALSE,157298268,6.11634751636185,FALSE
+"Electric Grid","Grid equipment","Extraction","other_import_restriction","Quotas / licensing","At the border","Low",0.446568359730566,0,0,0,FALSE,157298268,6.11634751636185,FALSE
+"Electric Grid","Grid equipment","Extraction","localisation_requirement","Local-content rules","Domestic market","Low",0.473875841980703,0,0,0,FALSE,157298268,6.11634751636185,FALSE
+"Electric Grid","Grid equipment","Extraction","local_content_incentive","Local-content incentives","Domestic market","Low",0.465137447660659,0,0,0,FALSE,157298268,6.11634751636185,FALSE
+"Electric Grid","Grid equipment","Extraction","procurement_preference","Public purchasing","Domestic market","Medium",0.791370835608957,1,1,1,TRUE,157298268,6.11634751636185,FALSE
+"Electric Grid","Grid equipment","Extraction","investment_restriction","Investment restrictions","Capital / technology","Low",0.329706674164407,0.0019977143041397,0.0019977143041397,1,FALSE,157298268,6.11634751636185,FALSE
+"Electric Grid","Grid equipment","Extraction","export_restriction","Export controls","Capital / technology","Low",0.392499544875296,0,0,0,FALSE,157298268,6.11634751636185,FALSE
+"Electric Grid","Grid equipment","Refining","tariff","Tariffs","At the border","Medium",0.849129593810445,23.1196720643228,0.999963910829129,,FALSE,21681573201,23.1196720643228,FALSE
+"Electric Grid","Grid equipment","Refining","trade_defence","AD/CVD","At the border","Low",0.332134635711831,0.0871132008037538,0.034476042216601,9,FALSE,21681573201,23.1196720643228,FALSE
+"Electric Grid","Grid equipment","Refining","import_ban","Import bans","At the border","High",0.968575205249715,2.20593210066482,0.963876414652241,3,FALSE,21681573201,23.1196720643228,FALSE
+"Electric Grid","Grid equipment","Refining","other_import_restriction","Quotas / licensing","At the border","Medium",0.696151827526056,1.42296476413331,0.472398607935314,7,FALSE,21681573201,23.1196720643228,FALSE
+"Electric Grid","Grid equipment","Refining","localisation_requirement","Local-content rules","Domestic market","Low",0.476742983268471,0.00576894032736661,0.00576894032736661,1,FALSE,21681573201,23.1196720643228,FALSE
+"Electric Grid","Grid equipment","Refining","local_content_incentive","Local-content incentives","Domestic market","Low",0.468091758445455,0.380750061606196,0.00576894032736661,66,FALSE,21681573201,23.1196720643228,FALSE
+"Electric Grid","Grid equipment","Refining","procurement_preference","Public purchasing","Domestic market","Low",0.362115647534176,4.77342226173083,0.00576894032736661,828,FALSE,21681573201,23.1196720643228,FALSE
+"Electric Grid","Grid equipment","Refining","investment_restriction","Investment restrictions","Capital / technology","Low",0.43208497844339,0.24735723673191,0.24735723673191,3,FALSE,21681573201,23.1196720643228,FALSE
+"Electric Grid","Grid equipment","Refining","export_restriction","Export controls","Capital / technology","Low",0.395146603965819,0.00549831559245441,0.00549831559245441,1,FALSE,21681573201,23.1196720643228,FALSE
+"Electric Grid","Grid equipment","Components","tariff","Tariffs","At the border","Medium",0.702514506769826,16.0377739382696,1,,FALSE,6587764095,16.0365998612192,FALSE
+"Electric Grid","Grid equipment","Components","trade_defence","AD/CVD","At the border","Low",0.560156193427431,1.32405532912453,0.591128735158511,7,FALSE,6587764095,16.0365998612192,FALSE
+"Electric Grid","Grid equipment","Components","import_ban","Import bans","At the border","Medium",0.672288108998223,0.444543416365306,0.444543416365306,1,TRUE,6587764095,16.0365998612192,FALSE
+"Electric Grid","Grid equipment","Components","other_import_restriction","Quotas / licensing","At the border","Low",0.517352550172761,0.146585318793204,0.146585318793204,1,FALSE,6587764095,16.0365998612192,FALSE
+"Electric Grid","Grid equipment","Components","localisation_requirement","Local-content rules","Domestic market","Medium",0.60463930912822,0.263107591590224,0.263107591590224,1,TRUE,6587764095,16.0365998612192,FALSE
+"Electric Grid","Grid equipment","Components","local_content_incentive","Local-content incentives","Domestic market","Low",0.465137447660659,0,0,0,FALSE,6587764095,16.0365998612192,FALSE
+"Electric Grid","Grid equipment","Components","procurement_preference","Public purchasing","Domestic market","Medium",0.859475850301969,7.30790680187524,0.877583352201078,35,FALSE,6587764095,16.0365998612192,FALSE
+"Electric Grid","Grid equipment","Components","investment_restriction","Investment restrictions","Capital / technology","Medium",0.835912878633904,7.88550708918486,0.826298328917317,26,FALSE,6587764095,16.0365998612192,FALSE
+"Electric Grid","Grid equipment","Components","export_restriction","Export controls","Capital / technology","Medium",0.819339460469335,4.22971952367702,0.70765100795553,8,FALSE,6587764095,16.0365998612192,FALSE
+"Electric Grid","Grid equipment","Assembly / Deployment","tariff","Tariffs","At the border","Low",0.585299806576402,13.066082459615,1,,FALSE,61635732453,13.066082459615,FALSE
+"Electric Grid","Grid equipment","Assembly / Deployment","trade_defence","AD/CVD","At the border","Low",0.414950611241929,0.552216040183414,0.215580786958803,4,FALSE,61635732453,13.066082459615,FALSE
+"Electric Grid","Grid equipment","Assembly / Deployment","import_ban","Import bans","At the border","Medium",0.73138039840719,0.862872202947454,0.534987906765681,5,FALSE,61635732453,13.066082459615,FALSE
+"Electric Grid","Grid equipment","Assembly / Deployment","other_import_restriction","Quotas / licensing","At the border","Low",0.446568359730566,0,0,0,FALSE,61635732453,13.066082459615,FALSE
+"Electric Grid","Grid equipment","Assembly / Deployment","localisation_requirement","Local-content rules","Domestic market","Medium",0.65283459981858,14.4654751323979,0.342590350136615,44,FALSE,61635732453,13.066082459615,FALSE
+"Electric Grid","Grid equipment","Assembly / Deployment","local_content_incentive","Local-content incentives","Domestic market","High",0.961829395380421,27.8034098767263,0.991724290152811,81,FALSE,61635732453,13.066082459615,FALSE
+"Electric Grid","Grid equipment","Assembly / Deployment","procurement_preference","Public purchasing","Domestic market","High",0.91297073076147,7.68274490317916,0.999019639118492,25,FALSE,61635732453,13.066082459615,FALSE
+"Electric Grid","Grid equipment","Assembly / Deployment","investment_restriction","Investment restrictions","Capital / technology","High",0.918455943219211,5.14602027367587,0.96485719747629,19,FALSE,61635732453,13.066082459615,FALSE
+"Electric Grid","Grid equipment","Assembly / Deployment","export_restriction","Export controls","Capital / technology","High",0.920358276791618,1.6488966480523,0.961681656159421,6,FALSE,61635732453,13.066082459615,FALSE
+"Solar","Solar","Extraction","tariff","Tariffs","At the border","Low",0.587137330754352,13.099910776021,1,,FALSE,30585811,13.099910776021,FALSE
+"Solar","Solar","Extraction","trade_defence","AD/CVD","At the border","Low",0.31667576916075,0,0,0,FALSE,30585811,13.099910776021,FALSE
+"Solar","Solar","Extraction","import_ban","Import bans","At the border","Low",0.453577280174768,0,0,0,FALSE,30585811,13.099910776021,FALSE
+"Solar","Solar","Extraction","other_import_restriction","Quotas / licensing","At the border","Low",0.446568359730566,0,0,0,FALSE,30585811,13.099910776021,FALSE
+"Solar","Solar","Extraction","localisation_requirement","Local-content rules","Domestic market","Low",0.473875841980703,0,0,0,FALSE,30585811,13.099910776021,FALSE
+"Solar","Solar","Extraction","local_content_incentive","Local-content incentives","Domestic market","Low",0.465137447660659,0,0,0,FALSE,30585811,13.099910776021,FALSE
+"Solar","Solar","Extraction","procurement_preference","Public purchasing","Domestic market","Low",0.358456217003459,0,0,0,FALSE,30585811,13.099910776021,FALSE
+"Solar","Solar","Extraction","investment_restriction","Investment restrictions","Capital / technology","Low",0.328873111232478,0,0,0,FALSE,30585811,13.099910776021,FALSE
+"Solar","Solar","Extraction","export_restriction","Export controls","Capital / technology","Low",0.392499544875296,0,0,0,FALSE,30585811,13.099910776021,FALSE
+"Solar","Solar","Refining","tariff","Tariffs","At the border","Low",0.320502901353965,8.60912681131536,1,,FALSE,2882343215,9.47772272115629,TRUE
+"Solar","Solar","Refining","trade_defence","AD/CVD","At the border","Low",0.39034689212358,0.83107770252128,0.118725386074469,7,FALSE,2882343215,9.47772272115629,FALSE
+"Solar","Solar","Refining","import_ban","Import bans","At the border","Medium",0.881058099767193,0.86888145865724,0.86888145865724,2,FALSE,2882343215,9.47772272115629,FALSE
+"Solar","Solar","Refining","other_import_restriction","Quotas / licensing","At the border","Low",0.446568359730566,0,0,0,FALSE,2882343215,9.47772272115629,FALSE
+"Solar","Solar","Refining","localisation_requirement","Local-content rules","Domestic market","Low",0.473875841980703,0,0,0,FALSE,2882343215,9.47772272115629,FALSE
+"Solar","Solar","Refining","local_content_incentive","Local-content incentives","Domestic market","Low",0.465137447660659,0,0,0,FALSE,2882343215,9.47772272115629,FALSE
+"Solar","Solar","Refining","procurement_preference","Public purchasing","Domestic market","Low",0.358456217003459,0,0,0,FALSE,2882343215,9.47772272115629,FALSE
+"Solar","Solar","Refining","investment_restriction","Investment restrictions","Capital / technology","Low",0.397166508472798,0.16367174129192,0.16367174129192,1,FALSE,2882343215,9.47772272115629,FALSE
+"Solar","Solar","Refining","export_restriction","Export controls","Capital / technology","Low",0.414138109661851,0.0449463552174511,0.0449463552174511,1,FALSE,2882343215,9.47772272115629,FALSE
+"Solar","Solar","Components","tariff","Tariffs","At the border","Low",0.327852998065764,8.83835036009676,1,,FALSE,17401140300,12.3782181133201,TRUE
+"Solar","Solar","Components","trade_defence","AD/CVD","At the border","Medium",0.612976988732438,1.62625318680983,0.689122843058739,9,FALSE,17401140300,12.3782181133201,FALSE
+"Solar","Solar","Components","import_ban","Import bans","At the border","Low",0.536377333531665,0.168296278663991,0.168296278663991,1,FALSE,17401140300,12.3782181133201,FALSE
+"Solar","Solar","Components","other_import_restriction","Quotas / licensing","At the border","Low",0.446568359730566,0,0,0,FALSE,17401140300,12.3782181133201,FALSE
+"Solar","Solar","Components","localisation_requirement","Local-content rules","Domestic market","Medium",0.689632279575004,8.09764836543499,0.419823380942455,45,FALSE,17401140300,12.3782181133201,FALSE
+"Solar","Solar","Components","local_content_incentive","Local-content incentives","Domestic market","Medium",0.612240957510712,14.4540131785501,0.284403302926073,81,FALSE,17401140300,12.3782181133201,FALSE
+"Solar","Solar","Components","procurement_preference","Public purchasing","Domestic market","Medium",0.87097645590643,3.10697489778874,0.955082221766811,14,FALSE,17401140300,12.3782181133201,FALSE
+"Solar","Solar","Components","investment_restriction","Investment restrictions","Capital / technology","High",0.902634138715558,6.14143036154935,0.957280701311281,26,FALSE,17401140300,12.3782181133201,FALSE
+"Solar","Solar","Components","export_restriction","Export controls","Capital / technology","High",0.938857636419028,5.06401011679677,0.912362923078093,16,FALSE,17401140300,12.3782181133201,FALSE
+"Solar","Solar","Assembly / Deployment","tariff","Tariffs","At the border","Medium",0.6357833655706,14.1530642192337,1,,FALSE,87608784304,24.3787299333387,TRUE
+"Solar","Solar","Assembly / Deployment","trade_defence","AD/CVD","At the border","Low",0.542774641133287,2.10515825572961,0.409116890295252,22,FALSE,87608784304,24.3787299333387,FALSE
+"Solar","Solar","Assembly / Deployment","import_ban","Import bans","At the border","Medium",0.641534750566406,0.591843129030072,0.361165475920836,4,FALSE,87608784304,24.3787299333387,FALSE
+"Solar","Solar","Assembly / Deployment","other_import_restriction","Quotas / licensing","At the border","Low",0.482228327426284,0.073847390217748,0.073847390217748,1,FALSE,87608784304,24.3787299333387,FALSE
+"Solar","Solar","Assembly / Deployment","localisation_requirement","Local-content rules","Domestic market","Medium",0.685010770560844,9.73690656983643,0.405588129150397,46,FALSE,87608784304,24.3787299333387,FALSE
+"Solar","Solar","Assembly / Deployment","local_content_incentive","Local-content incentives","Domestic market","High",0.915244735243479,18.8355977631419,0.904826525373674,85,FALSE,87608784304,24.3787299333387,FALSE
+"Solar","Solar","Assembly / Deployment","procurement_preference","Public purchasing","Domestic market","High",0.914201178341348,8.41724134335843,0.99864148211911,55,FALSE,87608784304,24.3787299333387,FALSE
+"Solar","Solar","Assembly / Deployment","investment_restriction","Investment restrictions","Capital / technology","Medium",0.876544132438909,4.95607674214897,0.885348412390407,22,FALSE,87608784304,24.3787299333387,FALSE
+"Solar","Solar","Assembly / Deployment","export_restriction","Export controls","Capital / technology","High",0.929749560712483,2.56067282895463,0.972372952698426,15,FALSE,87608784304,24.3787299333387,FALSE
+"Batteries","Batteries","Extraction","tariff","Tariffs","At the border","Low",0.349709864603482,9.38200917930086,0.712042082755341,,FALSE,298539640,9.38200917930086,FALSE
+"Batteries","Batteries","Extraction","trade_defence","AD/CVD","At the border","Low",0.31667576916075,0,0,0,FALSE,298539640,9.38200917930086,FALSE
+"Batteries","Batteries","Extraction","import_ban","Import bans","At the border","Low",0.453577280174768,0,0,0,FALSE,298539640,9.38200917930086,FALSE
+"Batteries","Batteries","Extraction","other_import_restriction","Quotas / licensing","At the border","Low",0.446568359730566,0,0,0,FALSE,298539640,9.38200917930086,FALSE
+"Batteries","Batteries","Extraction","localisation_requirement","Local-content rules","Domestic market","Low",0.473875841980703,0,0,0,FALSE,298539640,9.38200917930086,FALSE
+"Batteries","Batteries","Extraction","local_content_incentive","Local-content incentives","Domestic market","Low",0.465137447660659,0,0,0,FALSE,298539640,9.38200917930086,FALSE
+"Batteries","Batteries","Extraction","procurement_preference","Public purchasing","Domestic market","Medium",0.791370835608957,1,1,1,TRUE,298539640,9.38200917930086,FALSE
+"Batteries","Batteries","Extraction","investment_restriction","Investment restrictions","Capital / technology","Low",0.328873111232478,0,0,0,FALSE,298539640,9.38200917930086,FALSE
+"Batteries","Batteries","Extraction","export_restriction","Export controls","Capital / technology","Low",0.392499544875296,0,0,0,FALSE,298539640,9.38200917930086,FALSE
+"Batteries","Batteries","Refining","tariff","Tariffs","At the border","Medium",0.749903288201161,17.6019044501948,0.731115450604318,,FALSE,5520859001,17.6019044501948,FALSE
+"Batteries","Batteries","Refining","trade_defence","AD/CVD","At the border","Low",0.465084172242494,1.12058946730561,0.271210408331165,11,FALSE,5520859001,17.6019044501948,FALSE
+"Batteries","Batteries","Refining","import_ban","Import bans","At the border","Medium",0.78065632467483,0.81910696871282,0.649460348896891,2,FALSE,5520859001,17.6019044501948,FALSE
+"Batteries","Batteries","Refining","other_import_restriction","Quotas / licensing","At the border","Low",0.536163270359733,0.508939859447789,0.16964661981593,3,FALSE,5520859001,17.6019044501948,FALSE
+"Batteries","Batteries","Refining","localisation_requirement","Local-content rules","Domestic market","Low",0.558189563462131,0.16964661981593,0.16964661981593,1,FALSE,5520859001,17.6019044501948,FALSE
+"Batteries","Batteries","Refining","local_content_incentive","Local-content incentives","Domestic market","Low",0.465137447660659,0,0,0,FALSE,5520859001,17.6019044501948,FALSE
+"Batteries","Batteries","Refining","procurement_preference","Public purchasing","Domestic market","Low",0.510646780526352,0.381275995025181,0.343218632581774,2,FALSE,5520859001,17.6019044501948,FALSE
+"Batteries","Batteries","Refining","investment_restriction","Investment restrictions","Capital / technology","Low",0.345272203477362,0.0393020129586171,0.0393020129586171,1,FALSE,5520859001,17.6019044501948,FALSE
+"Batteries","Batteries","Refining","export_restriction","Export controls","Capital / technology","Low",0.411130012845012,0.0386981132757243,0.0386981132757243,3,FALSE,5520859001,17.6019044501948,FALSE
+"Batteries","Batteries","Components","tariff","Tariffs","At the border","Medium",0.770889748549323,18.4288123105485,1,,FALSE,3052365526,18.4288123105485,FALSE
+"Batteries","Batteries","Components","trade_defence","AD/CVD","At the border","Low",0.31667576916075,0,0,0,FALSE,3052365526,18.4288123105485,FALSE
+"Batteries","Batteries","Components","import_ban","Import bans","At the border","Low",0.453577280174768,0,0,0,FALSE,3052365526,18.4288123105485,FALSE
+"Batteries","Batteries","Components","other_import_restriction","Quotas / licensing","At the border","Low",0.446568359730566,0,0,0,FALSE,3052365526,18.4288123105485,FALSE
+"Batteries","Batteries","Components","localisation_requirement","Local-content rules","Domestic market","High",0.970872018933188,1,1,1,TRUE,3052365526,18.4288123105485,FALSE
+"Batteries","Batteries","Components","local_content_incentive","Local-content incentives","Domestic market","Low",0.465137447660659,0,0,0,FALSE,3052365526,18.4288123105485,FALSE
+"Batteries","Batteries","Components","procurement_preference","Public purchasing","Domestic market","High",0.912525031858729,3,1,3,FALSE,3052365526,18.4288123105485,FALSE
+"Batteries","Batteries","Components","investment_restriction","Investment restrictions","Capital / technology","Low",0.328873111232478,0,0,0,FALSE,3052365526,18.4288123105485,FALSE
+"Batteries","Batteries","Components","export_restriction","Export controls","Capital / technology","Low",0.392499544875296,0,0,0,FALSE,3052365526,18.4288123105485,FALSE
+"Batteries","Batteries","Assembly / Deployment","tariff","Tariffs","At the border","Medium",0.88742746615087,26.6016939833974,1,,FALSE,22355258197,26.6016939833974,FALSE
+"Batteries","Batteries","Assembly / Deployment","trade_defence","AD/CVD","At the border","Low",0.31667576916075,0,0,0,FALSE,22355258197,26.6016939833974,FALSE
+"Batteries","Batteries","Assembly / Deployment","import_ban","Import bans","At the border","High",0.943805191554502,0.996418840780343,0.996418840780343,1,TRUE,22355258197,26.6016939833974,FALSE
+"Batteries","Batteries","Assembly / Deployment","other_import_restriction","Quotas / licensing","At the border","Low",0.446568359730566,0,0,0,FALSE,22355258197,26.6016939833974,FALSE
+"Batteries","Batteries","Assembly / Deployment","localisation_requirement","Local-content rules","Domestic market","High",0.970872018933188,1,1,1,TRUE,22355258197,26.6016939833974,FALSE
+"Batteries","Batteries","Assembly / Deployment","local_content_incentive","Local-content incentives","Domestic market","Low",0.465137447660659,0,0,0,FALSE,22355258197,26.6016939833974,FALSE
+"Batteries","Batteries","Assembly / Deployment","procurement_preference","Public purchasing","Domestic market","High",0.92513218813658,3.99641884078034,1,4,FALSE,22355258197,26.6016939833974,FALSE
+"Batteries","Batteries","Assembly / Deployment","investment_restriction","Investment restrictions","Capital / technology","Medium",0.746131440014564,1,1,1,TRUE,22355258197,26.6016939833974,FALSE
+"Batteries","Batteries","Assembly / Deployment","export_restriction","Export controls","Capital / technology","Low",0.392499544875296,0,0,0,FALSE,22355258197,26.6016939833974,FALSE
+"Batteries","Batteries","Recovery","tariff","Tariffs","At the border","Low",0.0862669245647969,0.136265886211881,0.562119264074533,,FALSE,735550083,0.136265886211881,FALSE
+"Batteries","Batteries","Recovery","trade_defence","AD/CVD","At the border","Low",0.31667576916075,0,0,0,FALSE,735550083,0.136265886211881,FALSE
+"Batteries","Batteries","Recovery","import_ban","Import bans","At the border","Medium",0.717154733595789,0.535737632429851,0.535737632429851,1,TRUE,735550083,0.136265886211881,FALSE
+"Batteries","Batteries","Recovery","other_import_restriction","Quotas / licensing","At the border","Low",0.446568359730566,0,0,0,FALSE,735550083,0.136265886211881,FALSE
+"Batteries","Batteries","Recovery","localisation_requirement","Local-content rules","Domestic market","Low",0.473875841980703,0,0,0,FALSE,735550083,0.136265886211881,FALSE
+"Batteries","Batteries","Recovery","local_content_incentive","Local-content incentives","Domestic market","Low",0.465137447660659,0,0,0,FALSE,735550083,0.136265886211881,FALSE
+"Batteries","Batteries","Recovery","procurement_preference","Public purchasing","Domestic market","Medium",0.791370835608957,1,1,1,TRUE,735550083,0.136265886211881,FALSE
+"Batteries","Batteries","Recovery","investment_restriction","Investment restrictions","Capital / technology","Low",0.328873111232478,0,0,0,FALSE,735550083,0.136265886211881,FALSE
+"Batteries","Batteries","Recovery","export_restriction","Export controls","Capital / technology","Low",0.393950946594484,0.00499220390951951,0.00249610195475975,2,FALSE,735550083,0.136265886211881,FALSE

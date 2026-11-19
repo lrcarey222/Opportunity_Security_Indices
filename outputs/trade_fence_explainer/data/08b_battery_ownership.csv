@@ -1,0 +1,25 @@
+"destination_iso3","status_group","n_projects","n_chinese_parent","capital_disclosed_usd_m","capital_chinese_parent_usd_m","n_capital_undisclosed","chinese_parent_share_count","chinese_parent_share_capital"
+"HUN","All projects",21,11,20876.04,11942.6,2,0.523809523809524,0.57207209796494
+"HUN","Announced / other",6,6,992.6,992.6,1,1,1
+"HUN","Operational",12,3,15533.94,9280,1,0.25,0.597401560711577
+"HUN","Under construction",3,2,4349.5,1670,0,0.666666666666667,0.383952178411312
+"IDN","All projects",23,19,9981.75,5339.05,9,0.826086956521739,0.534881158113557
+"IDN","Announced / other",5,4,7293.2,3293.2,2,0.8,0.451543903910492
+"IDN","Operational",16,14,2688.55,2045.85,5,0.875,0.760949210540998
+"IDN","Under construction",2,1,0,0,2,0.5,
+"KOR","All projects",11,7,1956.189,1765.04,1,0.636363636363636,0.902285004158596
+"KOR","Announced / other",4,3,900.8,880.8,1,0.75,0.977797513321492
+"KOR","Operational",5,2,511.389,340.24,0,0.4,0.665325222091206
+"KOR","Under construction",2,2,544,544,0,1,1
+"MYS","All projects",16,14,4387.9,3087.9,3,0.875,0.703730714008979
+"MYS","Announced / other",9,9,1253,1253,2,1,1
+"MYS","Operational",4,3,1257.9,1257.9,1,0.75,1
+"MYS","Under construction",3,2,1877,577,0,0.666666666666667,0.307405434203516
+"THA","All projects",12,9,1634.1,1553.1,4,0.75,0.950431430145034
+"THA","Announced / other",3,3,29,29,2,1,1
+"THA","Operational",7,5,82.6,24.1,2,0.714285714285714,0.291767554479419
+"THA","Under construction",2,1,1522.5,1500,0,0.5,0.985221674876847
+"USA","All projects",96,16,70083.83,9575,13,0.166666666666667,0.136622099562766
+"USA","Announced / other",19,4,7937.5,1850,6,0.210526315789474,0.233070866141732
+"USA","Operational",46,4,34426.45,1920,5,0.0869565217391304,0.0557710713709953
+"USA","Under construction",31,8,27719.88,5805,2,0.258064516129032,0.20941649098048

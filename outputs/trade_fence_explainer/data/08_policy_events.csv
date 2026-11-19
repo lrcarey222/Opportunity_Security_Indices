@@ -1,0 +1,15 @@
+panel,date,label,authority,source_url,future,verified
+solar,2024-06-06,"Duty-free moratorium on SE Asian
+cells and modules ends",Proclamation 10414 (24 months),https://www.federalregister.gov/documents/search?conditions%5Bterm%5D=Proclamation+10414,FALSE,24-month term from 2022-06-06 per the proclamation; not re-fetched
+solar,2024-09-27,"Section 301: China
+modules to 50%",Section 301 four-year review,https://www.federalregister.gov/d/2024-21217,FALSE,verified 2026-11-09
+solar,2025-06-24,"AD/CVD orders: Cambodia,
+Malaysia, Thailand, Vietnam",AD/CVD,https://www.federalregister.gov/d/2025-11588,FALSE,verified 2026-11-09
+solar,2026-02-24,"IEEPA tariffs end;
+Section 122 10%",IEEPA / Section 122,https://www.federalregister.gov/d/2026-03824,FALSE,verified 2026-11-09
+solar,2026-07-24,"Section 301 forced-labour
+action 10-12.5%",Section 301,https://www.federalregister.gov/d/2026-15181,FALSE,verified 2026-11-09
+solar,2026-11-05,"AD/CVD deposits: India,
+Indonesia, Laos",AD/CVD,https://www.federalregister.gov/d/2026-22824,TRUE,verified 2026-11-09
+solar,2026-12-04,"Section 232: 15% + minimum
+price $0.38/W",Proclamation 11052,https://www.federalregister.gov/documents/2026/08/11/2026-16400/adjusting-imports-of-polysilicon-and-its-derivatives-into-the-united-states,TRUE,verified 2026-11-09

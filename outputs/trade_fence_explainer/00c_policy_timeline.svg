@@ -1,0 +1,107 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' class='svglite' width='468.00pt' height='280.80pt' viewBox='0 0 468.00 280.80'>
+<defs>
+  <style type='text/css'><![CDATA[
+    .svglite line, .svglite polyline, .svglite polygon, .svglite path, .svglite rect, .svglite circle {
+      fill: none;
+      stroke: #000000;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-miterlimit: 10.00;
+    }
+    .svglite text {
+      white-space: pre;
+    }
+  ]]></style>
+</defs>
+<rect width='100%' height='100%' style='stroke: none; fill: #FFFFFF;'/>
+<defs>
+  <clipPath id='cpMC4wMHw0NjguMDB8MC4wMHwyODAuODA='>
+    <rect x='0.00' y='0.00' width='468.00' height='280.80' />
+  </clipPath>
+</defs>
+<g clip-path='url(#cpMC4wMHw0NjguMDB8MC4wMHwyODAuODA=)'>
+<rect x='0.00' y='-0.000000000000057' width='468.00' height='280.80' style='stroke-width: 0.92; stroke: none; fill: #FFFFFF;' />
+<rect x='20.30' y='96.87' width='417.81' height='111.97' style='stroke-width: 0.92; stroke: none; fill: #FFFFFF;' />
+<polyline points='20.30,181.70 438.11,181.70 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='20.30,147.77 438.11,147.77 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='20.30,113.84 438.11,113.84 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='20.30,208.84 20.30,96.87 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='87.83,208.84 87.83,96.87 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='156.11,208.84 156.11,96.87 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='223.27,208.84 223.27,96.87 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='291.54,208.84 291.54,96.87 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='358.71,208.84 358.71,96.87 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<polyline points='426.98,208.84 426.98,96.87 ' style='stroke-width: 0.64; stroke: #E5E7EB; stroke-linecap: butt;' />
+<rect x='20.30' y='101.96' width='90.17' height='91.61' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #EEF7FC;' />
+<rect x='291.54' y='101.96' width='89.80' height='91.61' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #EEF7FC;' />
+<text x='65.57' y='201.19' text-anchor='middle' style='font-size: 7.11px;fill: #6B7280; font-family: "Roboto";' textLength='43.93px' lengthAdjust='spacingAndGlyphs'>Jan-Aug 2024</text>
+<text x='336.44' y='201.19' text-anchor='middle' style='font-size: 7.11px;fill: #6B7280; font-family: "Roboto";' textLength='43.93px' lengthAdjust='spacingAndGlyphs'>Jan-Aug 2026</text>
+<line x1='20.30' y1='147.77' x2='438.11' y2='147.77' style='stroke-width: 1.07; stroke: #374151; stroke-linecap: butt;' />
+<line x1='120.48' y1='147.77' x2='120.48' y2='129.11' style='stroke-width: 0.64; stroke: #6B7280; stroke-linecap: butt;' />
+<line x1='192.47' y1='147.77' x2='192.47' y2='166.43' style='stroke-width: 0.64; stroke: #6B7280; stroke-linecap: butt;' />
+<line x1='213.25' y1='147.77' x2='213.25' y2='114.86' style='stroke-width: 0.64; stroke: #6B7280; stroke-linecap: butt;' />
+<line x1='220.67' y1='147.77' x2='220.67' y2='180.68' style='stroke-width: 0.64; stroke: #6B7280; stroke-linecap: butt;' />
+<line x1='291.54' y1='147.77' x2='291.54' y2='129.11' style='stroke-width: 0.64; stroke: #6B7280; stroke-linecap: butt;' />
+<line x1='311.58' y1='147.77' x2='311.58' y2='166.43' style='stroke-width: 0.64; stroke: #6B7280; stroke-linecap: butt;' />
+<line x1='326.79' y1='147.77' x2='326.79' y2='114.86' style='stroke-width: 0.64; stroke: #6B7280; stroke-linecap: butt;' />
+<line x1='367.24' y1='147.77' x2='367.24' y2='180.68' style='stroke-width: 0.64; stroke: #6B7280; stroke-linecap: butt;' />
+<line x1='378.00' y1='147.77' x2='378.00' y2='129.11' style='stroke-width: 0.64; stroke: #6B7280; stroke-linecap: butt;' />
+<line x1='405.83' y1='147.77' x2='405.83' y2='166.43' style='stroke-width: 0.64; stroke: #6B7280; stroke-dasharray: 2.00,2.00; stroke-linecap: butt;' />
+<line x1='416.59' y1='147.77' x2='416.59' y2='114.86' style='stroke-width: 0.64; stroke: #6B7280; stroke-dasharray: 2.00,2.00; stroke-linecap: butt;' />
+<circle cx='120.48' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='192.47' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='213.25' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='220.67' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='291.54' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='311.58' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='326.79' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='367.24' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='378.00' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='405.83' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<circle cx='416.59' cy='147.77' r='2.27' style='stroke-width: 0.71; stroke: #111827; fill: #111827;' />
+<polygon points='90.82,136.28 150.15,136.28 150.10,136.28 150.29,136.27 150.48,136.23 150.66,136.17 150.82,136.07 150.97,135.95 151.09,135.81 151.19,135.65 151.27,135.48 151.31,135.29 151.33,135.10 151.33,135.10 151.33,123.11 151.33,123.11 151.31,122.92 151.27,122.74 151.19,122.56 151.09,122.40 150.97,122.26 150.82,122.14 150.66,122.05 150.48,121.98 150.29,121.94 150.15,121.93 90.82,121.93 90.96,121.94 90.77,121.93 90.58,121.96 90.40,122.01 90.23,122.09 90.07,122.20 89.94,122.33 89.82,122.48 89.74,122.65 89.68,122.83 89.64,123.02 89.64,123.11 89.64,135.10 89.64,135.01 89.64,135.20 89.68,135.38 89.74,135.56 89.82,135.73 89.94,135.88 90.07,136.02 90.23,136.12 90.40,136.20 90.58,136.26 90.77,136.28 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='120.48' y='127.97' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='30.78px' lengthAdjust='spacingAndGlyphs'>China 301:</text>
+<text x='120.48' y='134.88' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='59.80px' lengthAdjust='spacingAndGlyphs'>EVs 100%; solar 50%</text>
+<polygon points='139.14,170.15 245.80,170.15 245.76,170.15 245.94,170.14 246.13,170.10 246.31,170.04 246.47,169.94 246.62,169.82 246.74,169.68 246.85,169.52 246.92,169.34 246.97,169.16 246.98,168.97 246.98,168.97 246.98,163.89 246.98,163.89 246.97,163.70 246.92,163.52 246.85,163.34 246.74,163.18 246.62,163.04 246.47,162.92 246.31,162.83 246.13,162.76 245.94,162.72 245.80,162.71 139.14,162.71 139.28,162.72 139.09,162.71 138.90,162.74 138.72,162.79 138.55,162.87 138.39,162.98 138.26,163.11 138.14,163.26 138.05,163.43 137.99,163.61 137.96,163.79 137.96,163.89 137.96,168.97 137.96,168.88 137.96,169.07 137.99,169.25 138.05,169.43 138.14,169.60 138.26,169.75 138.39,169.88 138.55,169.99 138.72,170.07 138.90,170.13 139.09,170.15 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='192.47' y='168.75' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='107.14px' lengthAdjust='spacingAndGlyphs'>IEEPA reciprocal tariffs (China 145%)</text>
+<polygon points='172.95,118.57 253.55,118.57 253.50,118.57 253.69,118.57 253.88,118.53 254.06,118.46 254.22,118.37 254.37,118.25 254.49,118.10 254.59,117.94 254.67,117.77 254.71,117.59 254.73,117.40 254.73,117.40 254.73,112.31 254.73,112.31 254.71,112.13 254.67,111.94 254.59,111.77 254.49,111.61 254.37,111.47 254.22,111.35 254.06,111.25 253.88,111.18 253.69,111.15 253.55,111.14 172.95,111.14 173.09,111.15 172.90,111.14 172.71,111.16 172.53,111.21 172.36,111.29 172.20,111.40 172.07,111.53 171.95,111.69 171.87,111.85 171.81,112.03 171.78,112.22 171.77,112.31 171.77,117.40 171.78,117.30 171.78,117.49 171.81,117.68 171.87,117.86 171.95,118.03 172.07,118.18 172.20,118.31 172.36,118.42 172.53,118.50 172.71,118.55 172.90,118.57 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='213.25' y='117.18' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='81.07px' lengthAdjust='spacingAndGlyphs'>232 steel/aluminium to 50%</text>
+<polygon points='199.87,187.86 241.47,187.86 241.42,187.85 241.61,187.85 241.80,187.81 241.98,187.74 242.14,187.65 242.29,187.53 242.41,187.39 242.51,187.23 242.59,187.05 242.63,186.87 242.65,186.68 242.65,186.68 242.65,174.69 242.65,174.69 242.63,174.50 242.59,174.31 242.51,174.14 242.41,173.98 242.29,173.84 242.14,173.72 241.98,173.62 241.80,173.55 241.61,173.52 241.47,173.51 199.87,173.51 200.01,173.52 199.82,173.51 199.64,173.53 199.45,173.58 199.28,173.67 199.13,173.77 198.99,173.90 198.88,174.06 198.79,174.22 198.73,174.40 198.70,174.59 198.69,174.69 198.69,186.68 198.70,186.58 198.70,186.77 198.73,186.96 198.79,187.14 198.88,187.31 198.99,187.46 199.13,187.59 199.28,187.70 199.45,187.78 199.64,187.83 199.82,187.85 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='220.67' y='179.55' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='42.07px' lengthAdjust='spacingAndGlyphs'>Solar AD/CVD:</text>
+<text x='220.67' y='186.46' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='35.40px' lengthAdjust='spacingAndGlyphs'>SE Asia four</text>
+<polygon points='253.16,136.28 329.93,136.28 329.88,136.28 330.07,136.27 330.26,136.23 330.43,136.17 330.60,136.07 330.74,135.95 330.87,135.81 330.97,135.65 331.05,135.48 331.09,135.29 331.11,135.10 331.11,135.10 331.11,123.11 331.11,123.11 331.09,122.92 331.05,122.74 330.97,122.56 330.87,122.40 330.74,122.26 330.60,122.14 330.43,122.05 330.26,121.98 330.07,121.94 329.93,121.93 253.16,121.93 253.30,121.94 253.11,121.93 252.92,121.96 252.74,122.01 252.57,122.09 252.41,122.20 252.28,122.33 252.16,122.48 252.07,122.65 252.01,122.83 251.98,123.02 251.98,123.11 251.98,135.10 251.98,135.01 251.98,135.20 252.01,135.38 252.07,135.56 252.16,135.73 252.28,135.88 252.41,136.02 252.57,136.12 252.74,136.20 252.92,136.26 253.11,136.28 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='291.54' y='127.97' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='30.78px' lengthAdjust='spacingAndGlyphs'>China 301:</text>
+<text x='291.54' y='134.88' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='77.24px' lengthAdjust='spacingAndGlyphs'>batteries and graphite 25%</text>
+<polygon points='269.58,170.15 353.58,170.15 353.53,170.15 353.72,170.14 353.91,170.10 354.09,170.04 354.25,169.94 354.40,169.82 354.52,169.68 354.62,169.52 354.70,169.34 354.74,169.16 354.76,168.97 354.76,168.97 354.76,163.89 354.76,163.89 354.74,163.70 354.70,163.52 354.62,163.34 354.52,163.18 354.40,163.04 354.25,162.92 354.09,162.83 353.91,162.76 353.72,162.72 353.58,162.71 269.58,162.71 269.72,162.72 269.53,162.71 269.35,162.74 269.16,162.79 268.99,162.87 268.84,162.98 268.70,163.11 268.59,163.26 268.50,163.43 268.44,163.61 268.41,163.79 268.40,163.89 268.40,168.97 268.41,168.88 268.41,169.07 268.44,169.25 268.50,169.43 268.59,169.60 268.70,169.75 268.84,169.88 268.99,169.99 269.16,170.07 269.35,170.13 269.53,170.15 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='311.58' y='168.75' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='84.47px' lengthAdjust='spacingAndGlyphs'>IEEPA ends; Section 122 10%</text>
+<polygon points='292.52,118.57 361.06,118.57 361.02,118.57 361.21,118.57 361.39,118.53 361.57,118.46 361.73,118.37 361.88,118.25 362.01,118.10 362.11,117.94 362.18,117.77 362.23,117.59 362.24,117.40 362.24,117.40 362.24,112.31 362.24,112.31 362.23,112.13 362.18,111.94 362.11,111.77 362.01,111.61 361.88,111.47 361.73,111.35 361.57,111.25 361.39,111.18 361.21,111.15 361.06,111.14 292.52,111.14 292.67,111.15 292.48,111.14 292.29,111.16 292.11,111.21 291.93,111.29 291.78,111.40 291.64,111.53 291.53,111.69 291.44,111.85 291.38,112.03 291.35,112.22 291.35,112.31 291.35,117.40 291.35,117.30 291.35,117.49 291.38,117.68 291.44,117.86 291.53,118.03 291.64,118.18 291.78,118.31 291.93,118.42 292.11,118.50 292.29,118.55 292.48,118.57 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='326.79' y='117.18' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='69.01px' lengthAdjust='spacingAndGlyphs'>232 metals on full value</text>
+<polygon points='333.90,184.40 400.58,184.40 400.53,184.40 400.72,184.39 400.91,184.35 401.08,184.29 401.25,184.19 401.39,184.07 401.52,183.93 401.62,183.77 401.70,183.60 401.74,183.41 401.76,183.22 401.76,183.22 401.76,178.14 401.76,178.14 401.74,177.95 401.70,177.77 401.62,177.59 401.52,177.43 401.39,177.29 401.25,177.17 401.08,177.08 400.91,177.01 400.72,176.97 400.58,176.96 333.90,176.96 334.04,176.97 333.85,176.96 333.67,176.99 333.48,177.04 333.31,177.12 333.16,177.23 333.02,177.36 332.91,177.51 332.82,177.68 332.76,177.86 332.73,178.05 332.72,178.14 332.72,183.22 332.73,183.13 332.73,183.32 332.76,183.50 332.82,183.68 332.91,183.85 333.02,184.00 333.16,184.13 333.31,184.24 333.48,184.32 333.67,184.38 333.85,184.40 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='367.24' y='183.00' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='67.15px' lengthAdjust='spacingAndGlyphs'>301 forced-labour tariff</text>
+<polygon points='344.66,132.83 411.34,132.83 411.29,132.82 411.48,132.82 411.67,132.78 411.85,132.71 412.01,132.62 412.16,132.50 412.28,132.36 412.39,132.19 412.46,132.02 412.50,131.84 412.52,131.65 412.52,131.65 412.52,126.57 412.52,126.57 412.50,126.38 412.46,126.19 412.39,126.02 412.28,125.86 412.16,125.72 412.01,125.60 411.85,125.50 411.67,125.43 411.48,125.40 411.34,125.39 344.66,125.39 344.80,125.40 344.61,125.39 344.42,125.41 344.24,125.46 344.07,125.55 343.91,125.65 343.78,125.78 343.66,125.94 343.58,126.10 343.52,126.28 343.48,126.47 343.48,126.57 343.48,131.65 343.48,131.55 343.48,131.74 343.52,131.93 343.58,132.11 343.66,132.28 343.78,132.43 343.91,132.56 344.07,132.67 344.24,132.75 344.42,132.80 344.61,132.82 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='378.00' y='131.43' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='67.15px' lengthAdjust='spacingAndGlyphs'>Section 338 on Canada</text>
+<polygon points='375.02,173.60 436.64,173.60 436.59,173.60 436.78,173.60 436.97,173.56 437.15,173.49 437.31,173.40 437.46,173.28 437.58,173.13 437.68,172.97 437.76,172.80 437.80,172.62 437.82,172.43 437.82,172.43 437.82,160.43 437.82,160.43 437.80,160.25 437.76,160.06 437.68,159.89 437.58,159.73 437.46,159.58 437.31,159.46 437.15,159.37 436.97,159.30 436.78,159.27 436.64,159.26 375.02,159.26 375.16,159.27 374.97,159.26 374.78,159.28 374.60,159.33 374.43,159.41 374.27,159.52 374.14,159.65 374.02,159.80 373.94,159.97 373.88,160.15 373.84,160.34 373.84,160.43 373.84,172.43 373.84,172.33 373.84,172.52 373.88,172.71 373.94,172.89 374.02,173.06 374.14,173.21 374.27,173.34 374.43,173.45 374.60,173.53 374.78,173.58 374.97,173.60 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='405.83' y='165.30' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='42.07px' lengthAdjust='spacingAndGlyphs'>Solar AD/CVD:</text>
+<text x='405.83' y='172.21' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='62.09px' lengthAdjust='spacingAndGlyphs'>India/Indonesia/Laos</text>
+<polygon points='392.57,122.03 440.62,122.03 440.57,122.03 440.76,122.02 440.94,121.98 441.12,121.92 441.28,121.82 441.43,121.70 441.56,121.56 441.66,121.40 441.73,121.22 441.78,121.04 441.79,120.85 441.79,120.85 441.79,108.86 441.79,108.86 441.78,108.67 441.73,108.49 441.66,108.31 441.56,108.15 441.43,108.01 441.28,107.89 441.12,107.80 440.94,107.73 440.76,107.69 440.62,107.68 392.57,107.68 392.71,107.69 392.52,107.68 392.33,107.71 392.15,107.76 391.98,107.84 391.82,107.95 391.68,108.08 391.57,108.23 391.48,108.40 391.42,108.58 391.39,108.76 391.39,108.86 391.39,120.85 391.39,120.76 391.39,120.95 391.42,121.13 391.48,121.31 391.57,121.48 391.68,121.63 391.82,121.76 391.98,121.87 392.15,121.95 392.33,122.01 392.52,122.03 ' style='stroke-width: 0.00; stroke: none; fill: #FFFFFF; fill-opacity: 0.93;' />
+<text x='416.59' y='113.72' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='45.12px' lengthAdjust='spacingAndGlyphs'>232 polysilicon:</text>
+<text x='416.59' y='120.63' text-anchor='middle' style='font-size: 6.54px;fill: #111827; font-family: "Roboto";' textLength='48.52px' lengthAdjust='spacingAndGlyphs'>15% + price floor</text>
+<text x='20.30' y='218.79' text-anchor='middle' style='font-size: 8.00px;fill: #374151; font-family: "Roboto";' textLength='33.13px' lengthAdjust='spacingAndGlyphs'>Jan 2024</text>
+<text x='87.83' y='218.79' text-anchor='middle' style='font-size: 8.00px;fill: #374151; font-family: "Roboto";' textLength='30.72px' lengthAdjust='spacingAndGlyphs'>Jul 2024</text>
+<text x='156.11' y='218.79' text-anchor='middle' style='font-size: 8.00px;fill: #374151; font-family: "Roboto";' textLength='33.13px' lengthAdjust='spacingAndGlyphs'>Jan 2025</text>
+<text x='223.27' y='218.79' text-anchor='middle' style='font-size: 8.00px;fill: #374151; font-family: "Roboto";' textLength='30.72px' lengthAdjust='spacingAndGlyphs'>Jul 2025</text>
+<text x='291.54' y='218.79' text-anchor='middle' style='font-size: 8.00px;fill: #374151; font-family: "Roboto";' textLength='33.13px' lengthAdjust='spacingAndGlyphs'>Jan 2026</text>
+<text x='358.71' y='218.79' text-anchor='middle' style='font-size: 8.00px;fill: #374151; font-family: "Roboto";' textLength='30.72px' lengthAdjust='spacingAndGlyphs'>Jul 2026</text>
+<text x='426.98' y='218.79' text-anchor='middle' style='font-size: 8.00px;fill: #374151; font-family: "Roboto";' textLength='33.13px' lengthAdjust='spacingAndGlyphs'>Jan 2027</text>
+<text x='17.93' y='56.94' style='font-size: 9.69px;fill: #374151; font-family: "Roboto";' textLength='419.08px' lengthAdjust='spacingAndGlyphs'>Key US measures for the electro-industrial stack, January 2024 to the 4 December 2026 snapshot;</text>
+<text x='17.93' y='70.89' style='font-size: 9.69px;fill: #374151; font-family: "Roboto";' textLength='424.28px' lengthAdjust='spacingAndGlyphs'>shading marks the January-August windows compared in the trade charts. Dashed stems: after the</text>
+<text x='17.93' y='84.84' style='font-size: 9.69px;fill: #374151; font-family: "Roboto";' textLength='91.37px' lengthAdjust='spacingAndGlyphs'>latest Census month.</text>
+<text x='17.93' y='24.08' style='font-size: 14.25px; font-weight: bold;fill: #111827; font-family: "Roboto";' textLength='383.22px' lengthAdjust='spacingAndGlyphs'>The policy environment changed fast between the two trade</text>
+<text x='17.93' y='42.03' style='font-size: 14.25px; font-weight: bold;fill: #111827; font-family: "Roboto";' textLength='56.11px' lengthAdjust='spacingAndGlyphs'>windows</text>
+<text x='17.93' y='237.59' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='404.04px' lengthAdjust='spacingAndGlyphs'>Policy events are shown for context; changes in trade flows cannot be attributed to individual measures from these descriptive</text>
+<text x='17.93' y='248.16' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='41.50px' lengthAdjust='spacingAndGlyphs'>charts alone.</text>
+<text x='17.93' y='258.73' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='328.21px' lengthAdjust='spacingAndGlyphs'>Full list with sources (Federal Register, HTSUS; 2025 IEEPA steps from the Trade War Tracker registry):</text>
+<text x='17.93' y='269.30' style='font-size: 7.22px;fill: #6B7280; font-family: "Roboto";' textLength='91.14px' lengthAdjust='spacingAndGlyphs'>data/00_policy_timeline.csv.</text>
+</g>
+</svg>
