@@ -103,14 +103,15 @@ cc <- pm_compact_candidates(d, compacts, croles, mech, cfg, a, b, ev)
 sel <- cc$strategic_compact_id[cc$recommended]
 arch <- do.call(rbind, lapply(cc$strategic_compact_id, function(cm) pm_compact_architecture(d, cm, res$links)))
 trade_tbl <- pm_trade_agenda(d, cfg, a, b, names_short)
-inv_tbl <- pm_investment_agenda(d, cfg, ev, inst, a, b)
+public_names <- pm_public_names(institutions, pair_cfg, cfg)
+inv_tbl <- pm_investment_agenda(d, cfg, ev, inst, a, b, public_names)
 third <- pm_third_country(res$devpart, sroles, d, sel, cfg, a, b)
-deals <- pm_deal_pipeline(d, inst, institutions, ev, cfg, a, b, names_short)
+deals <- pm_deal_pipeline(d, inst, institutions, ev, cfg, a, b, names_short, public_names)
 mea <- pm_mea(sel, mech, cfg)
 nonp <- pm_non_priorities(d, mea, cfg, names_short, a, b)
 memo <- pm_memo_sections(d = d, prof = res$profiles, cc = cc, arch = arch, trade_tbl = trade_tbl, inv_tbl = inv_tbl,
                          third = third, deals = deals, mea = mea, nonp = nonp, ev = ev, mech = mech, sroles = sroles,
-                         agreements = agreements, compacts = compacts, pair_cfg = pair_cfg, cfg = cfg)
+                         agreements = agreements, compacts = compacts, pair_cfg = pair_cfg, cfg = cfg, institutions = institutions)
 recs <- memo$recommendations
 reg <- pm_evidence_register(recs, d, ev, mech, a, b)
 
@@ -177,7 +178,7 @@ if (!tables_only && !("--no-pdf" %in% args)) {
   html <- country_brief_html(doc, list(), font_b64, "Letter", list())
   # long URLs and node ids must wrap: an over-wide line makes Edge shrink the whole page to fit (memo only;
   # the briefs' stylesheet is untouched)
-  html <- sub("</style>", ".sources li,p,li{overflow-wrap:anywhere}</style>", html, fixed = TRUE)
+  html <- sub("</style>", ".sources li,p,li,td,th{overflow-wrap:anywhere}</style>", html, fixed = TRUE)
   work <- tempfile("pmemo"); dir.create(work); on.exit(unlink(work, recursive = TRUE), add = TRUE)
   edge <- country_memo_edge(args); python <- country_memo_python(args)
   if (is.na(edge)) stop("no Edge or Chrome for the PDF (pass --edge, or --no-pdf)")

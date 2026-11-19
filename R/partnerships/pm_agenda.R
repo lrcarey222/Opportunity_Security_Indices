@@ -115,8 +115,8 @@ pm_compact_candidates <- function(d, compacts, croles, mech, cfg, a, b, ev = NUL
       n_evidence_items = if (is.null(ev)) 0L else sum(ev$compact == cm & ev$item_type %in% c("project", "financing", "corporate") &
                                                        vapply(strsplit(ev$countries, "\\|"), function(z) all(c(a, b) %in% z), logical(1))),
       mechanisms = paste(m$mechanism_id, collapse = ";"),
-      mechanism_with_finance = any(m$has_finance %in% c("TRUE", "partial") & m$status %in% c("in_force", "signed")),
-      mechanism_with_pipeline = any(m$has_pipeline %in% "TRUE" & m$status %in% c("in_force", "signed")),
+      mechanism_with_finance = any(m$has_finance %in% c("TRUE", "partial") & m$status %in% PM_ACTIVE_MECH),
+      mechanism_with_pipeline = any(m$has_pipeline %in% "TRUE" & m$status %in% PM_ACTIVE_MECH),
       stringsAsFactors = FALSE)
   }))
   out$max_urgency[!is.finite(out$max_urgency)] <- 0
@@ -214,14 +214,24 @@ pm_or <- function(x, y) if (is.null(x) || length(x) == 0 || is.na(x)) y else x
 
 # ---- Investment agenda (Section 5) ------------------------------------------------------------------------
 
-pm_private_actors <- function(ids, ev) {
+# Private actors named in the evidence items: institution names minus the public bodies (`public`: names and
+# abbreviations from institutions.csv, the two countries' names and config evidence$public_actor_prefixes,
+# matched as prefixes).
+pm_private_actors <- function(ids, ev, public = character()) {
+  public <- unique(public[!is.na(public) & nzchar(public)])
   vapply(ids, function(z) {
     e <- ev[ev$evidence_id %in% z & ev$item_type %in% c("project", "corporate", "financing"), , drop = FALSE]
     if (!nrow(e)) return("")
     nm <- unique(trimws(unlist(strsplit(e$institution, ";|/"))))
-    nm <- nm[!grepl("^(US|Japan|Govt|Government|U\\.S\\.|DoD|DOE|METI|JBIC|NEXI|JOGMEC|DFC|EXIM|Commerce|NRC|TVA|DLA)", nm)]
+    if (length(public)) nm <- nm[!vapply(nm, function(n) any(startsWith(n, public)), logical(1))]
     paste(utils::head(nm, 3), collapse = "; ")
   }, character(1))
+}
+
+# The public names pm_private_actors drops, from the institutions table, the pair's names and the config.
+pm_public_names <- function(institutions, pair_cfg, cfg) {
+  c(if (!is.null(institutions)) c(institutions$abbreviation, institutions$institution),
+    unlist(pair_cfg[c("a_name", "a_short", "b_name", "b_short")]), unlist(cfg$evidence$public_actor_prefixes))
 }
 
 pm_horizon <- function(speed) ifelse(is.na(speed), NA, ifelse(speed >= 0.67, "12-24 months", ifelse(speed >= 0.5, "2-3 years", "3-6 years")))
@@ -232,7 +242,7 @@ PM_OBSTACLE <- c(geopolitical_chokepoint = "Non-coercive producers cannot match 
                  emerging_bottleneck = "Lead times and qualification of new suppliers",
                  no_material_intervention = "None")
 
-pm_investment_agenda <- function(d, cfg, ev, inst, a, b) {
+pm_investment_agenda <- function(d, cfg, ev, inst, a, b, public = character()) {
   x <- d[which(d$relationship_state %in% PM_ACTIVE_STATES & d$investment_fit >= 0.33 & !d$constraint_type %in% "no_material_intervention" &
                  (d$strategic_importance >= 0.4 | d$aib_class %in% "BUILD")), , drop = FALSE]
   if (!nrow(x)) return(data.frame())
@@ -256,7 +266,7 @@ pm_investment_agenda <- function(d, cfg, ev, inst, a, b) {
   out <- data.frame(lane = lane, unit_type = x$unit_type, unit_id = x$unit_id, node_label = x$node_label, stage = x$stage,
     capability_owner = owner, destination = dest, investment_logic = ifelse(lane == "joint", "joint capacity outside the pair or pooled",
       ifelse(resource, "offtake-linked equity: the buyer invests in the supplier's resource", "the capability owner builds near the buyer's demand")), demand_case = dem,
-    private_actors = pm_private_actors(x$evidence_ids, ev),
+    private_actors = pm_private_actors(x$evidence_ids, ev, public),
     public_instrument = ifelse(is.na(pub), x$main_instrument, pub),
     additionality = x$additionality, additionality_label = x$additionality_label,
     additionality_rationale = sprintf("market failure %.2f; existing commitment %.1f; market already working %.1f", x$market_failure_score, x$existing_commitment, x$market_already_working),
@@ -300,7 +310,7 @@ pm_third_country <- function(dp, sroles, d, compacts_sel, cfg, a, b) {
 
 # ---- Deal pipeline (Section 9) ----------------------------------------------------------------------------
 
-pm_deal_pipeline <- function(d, inst, institutions, ev, cfg, a, b, names) {
+pm_deal_pipeline <- function(d, inst, institutions, ev, cfg, a, b, names, public = character()) {
   x <- d[which(d$priority_tier %in% c(1L, 2L) & !is.na(d$main_instrument) & !d$constraint_type %in% "no_material_intervention" &
                  (d$strategic_importance >= 0.4 | d$aib_class %in% "BUILD")), , drop = FALSE]
   # a cell is dropped where an active node already covers the same technology x stage
@@ -336,7 +346,7 @@ pm_deal_pipeline <- function(d, inst, institutions, ev, cfg, a, b, names) {
   out <- data.frame(unit_type = x$unit_type, unit_id = x$unit_id,
     deal = txt, compact = ifelse(x$unit_type == "node", x$compact, x$primary_compact),
     stage = x$stage, problem_solved = x$market_failure, constraint_type = x$constraint_type, instrument = x$main_instrument,
-    responsible_institutions = resp, private_actors = pm_private_actors(x$evidence_ids, ev), scale = scale,
+    responsible_institutions = resp, private_actors = pm_private_actors(x$evidence_ids, ev, c(public, institutions$abbreviation, institutions$institution)), scale = scale,
     milestone_12m = m12, outcome_36m = o36, confidence = pm_band(x$evidence_quality),
     importance = pm_band(x$strategic_importance), urgency = pm_band(x$urgency), tractability = pm_band(x$tractability, 0.6, 0.4),
     execution_speed = x$execution_speed, additionality = x$additionality_label, interdependency = x$interdependency,
@@ -356,7 +366,7 @@ pm_deal_pipeline <- function(d, inst, institutions, ev, cfg, a, b, names) {
 
 pm_mea <- function(sel, mech, cfg) {
   covers <- function(cm, need) {
-    m <- mech[vapply(strsplit(mech$scope_compacts, "\\|"), function(z) cm %in% z, logical(1)) & mech$status %in% c("in_force", "signed"), , drop = FALSE]
+    m <- mech[vapply(strsplit(mech$scope_compacts, "\\|"), function(z) cm %in% z, logical(1)) & mech$status %in% PM_ACTIVE_MECH, , drop = FALSE]
     switch(need, any = nrow(m) > 0,
            finance_or_pipeline = any(m$has_finance %in% c("TRUE", "partial") | m$has_pipeline %in% c("TRUE", "partial")),
            both = any(m$has_finance %in% "TRUE" & m$has_pipeline %in% "TRUE"))
@@ -365,18 +375,35 @@ pm_mea <- function(sel, mech, cfg) {
                     covered_any = vapply(sel, covers, logical(1), need = "any"),
                     covered_finance_or_pipeline = vapply(sel, covers, logical(1), need = "finance_or_pipeline"),
                     covered_full = vapply(sel, covers, logical(1), need = "both"), stringsAsFactors = FALSE)
-  cross <- mech[mech$cross_sector %in% "TRUE" & mech$status %in% c("in_force", "signed"), , drop = FALSE]
+  cross <- mech[mech$cross_sector %in% "TRUE" & mech$status %in% PM_ACTIVE_MECH, , drop = FALSE]
   cross_kpi <- any(cross$has_kpis %in% "TRUE" & cross$has_review %in% "TRUE")
   cross_pipe <- cross[cross$has_pipeline %in% "TRUE", , drop = FALSE]
+  # a signed cross-sector framework, investment vehicle, finance line or dialogue is a lighter host than a new MEA
+  host_types <- c("investment_vehicle", "framework", "finance_cooperation", "dialogue")
+  cross_frame <- cross[cross$mechanism_type %in% host_types, , drop = FALSE]
+  cross_frame <- cross_frame[order(match(cross_frame$mechanism_type, host_types)), , drop = FALSE]
   share <- if (length(sel)) mean(per$covered_finance_or_pipeline) else 0
-  option <- if (length(sel) && all(per$covered_full) && cross_kpi) "existing"
-            else if (share >= cfg$mea$upgrade_min_coverage || nrow(cross_pipe) > 0) "upgrade" else "new_mea"
-  host <- if (nrow(cross_pipe)) cross_pipe$mechanism_id[1] else NA_character_
+  # "none": no compact passes the rules, so there is nothing for a framework to carry
+  option <- if (!length(sel)) "none" else if (all(per$covered_full) && cross_kpi) "existing"
+            else if (share >= cfg$mea$upgrade_min_coverage || nrow(cross_pipe) > 0 || nrow(cross_frame) > 0) "upgrade" else "new_mea"
+  funded <- mech[mech$status %in% PM_ACTIVE_MECH & mech$mechanism_type %in% host_types & mech$has_finance %in% "TRUE", , drop = FALSE]
+  funded$n_cov <- vapply(strsplit(funded$scope_compacts, "\\|"), function(z) sum(sel %in% z), numeric(1))
+  funded <- funded[funded$n_cov > 0, , drop = FALSE]
+  funded <- funded[order(-funded$n_cov, funded$cross_sector != "TRUE", match(funded$mechanism_type, host_types)), , drop = FALSE]
+  host <- if (nrow(cross_pipe)) cross_pipe$mechanism_id[1] else if (nrow(funded)) funded$mechanism_id[1] else if (nrow(cross_frame)) cross_frame$mechanism_id[1] else NA_character_
   gaps <- character()
+  if (!length(sel)) gaps <- c(gaps, "no sectoral compact passes the rules")
   if (!cross_kpi) gaps <- c(gaps, "no cross-sector KPI dashboard or review cycle")
   if (any(!per$covered_any)) gaps <- c(gaps, paste("no bilateral mechanism covers", paste(per$strategic_compact_id[!per$covered_any], collapse = ", ")))
+  if (!nrow(cross_pipe) && !is.na(host)) gaps <- c(gaps, sprintf("%s has no published project pipeline", host))
   if (nrow(cross_pipe) && any(cross_pipe$reciprocal %in% "FALSE")) gaps <- c(gaps, sprintf("%s has a pipeline and finance but no reciprocal commitments or sector strategy", host))
-  list(option = option, host_mechanism = host, coverage_share = round(share, 2), per_compact = per, gaps = gaps,
+  hr <- mech[mech$mechanism_id %in% host, , drop = FALSE]
+  host_features <- if (!nrow(hr)) NA_character_ else {
+    f <- c(if (hr$has_finance[1] %in% c("TRUE", "partial")) "finance",
+           if (hr$has_pipeline[1] %in% "TRUE") "a project pipeline" else if (hr$has_pipeline[1] %in% "partial") "projects but no published list")
+    if (length(f)) paste(f, collapse = " and ") else "a standing framework with no pipeline or finance yet"
+  }
+  list(option = option, host_mechanism = host, host_features = host_features, coverage_share = round(share, 2), per_compact = per, gaps = gaps,
        cross_sector_with_kpis = cross_kpi)
 }
 
@@ -420,11 +447,15 @@ pm_non_priorities <- function(d, mea, cfg, names, a, b) {
       weight = 1.5, stringsAsFactors = FALSE)
   }
   if (mea$option != "new_mea") rows[[length(rows) + 1]] <- data.frame(unit_id = NA_character_, kind = "institution",
-      text = sprintf("Do not create a new bilateral energy MOU or a free-standing MEA institution: %s already carries a pipeline and finance; dock the compacts in it.", mea$host_mechanism),
+      text = if (is.na(mea$host_mechanism)) "Do not create a new bilateral energy MOU or a free-standing MEA institution: no sectoral compact passes the rules, so there is nothing for it to carry." else
+        sprintf("Do not create a new bilateral energy MOU or a free-standing MEA institution: %s already exists (%s); dock the compacts in it.", mea$host_mechanism,
+                if (is.null(mea$host_features)) "an existing channel" else mea$host_features),
       weight = 2.8, stringsAsFactors = FALSE)
   out <- do.call(rbind, rows)
   out <- out[order(-out$weight, out$unit_id), ]
   out <- out[!duplicated(out$text), ]
+  # at most three of a kind, so one kind (say, many "both strong" duplications) cannot crowd out the rest
+  out <- out[stats::ave(seq_len(nrow(out)), out$kind, FUN = seq_along) <= 3, ]
   out <- utils::head(out, max(cfg$priority$min_non_priorities, 6))
   out$rec_id <- sprintf("N%02d", seq_len(nrow(out)))
   out

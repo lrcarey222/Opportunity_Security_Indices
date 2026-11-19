@@ -6,7 +6,7 @@
 
 ## Executive Decision Summary
 
-- **Build together.** Permanent Magnets & Drive Systems: Rare-earth oxides & compounds (joint); Rare-earth permanent magnets (Japan->US). Battery Materials & Cells: Natural graphite (joint); Accumulator parts & separators (Japan->US). Solar Manufacturing: Polysilicon (US->Japan). Wind & Hydropower Equipment: Wind turbine generating sets (US->Japan).
+- **Build together.** Semiconductors & Power Electronics: Piezo-electric quartz (Japan->US). Permanent Magnets & Drive Systems: Rare-earth oxides & compounds (joint); Rare-earth permanent magnets (Japan->US). Battery Materials & Cells: Natural graphite (joint); Accumulator parts & separators (Japan->US). Solar Manufacturing: Polysilicon (US->Japan). Wind & Hydropower Equipment: Wind turbine generating sets (US->Japan).
 - **Trade and standards.** Recognise trusted partner supply of electric vehicles extraction (cobalt ores, lithium minerals, natural graphite); wind turbine generating sets; accumulator parts & separators in procurement and content rules. Common anti-circumvention rules for electric vehicles refining (rare-earth metals, rare-earth oxides & compounds) and rare-earth oxides & compounds. Keep uranium/fuel extraction: aggregated low-coverage sub-sectors (spent fuel & nuclear scrap, uranium ores); pgms (iridium, ruthenium); nuclear special materials open to global sourcing.
 - **Institutions.** Upgrade Japan-US Strategic Investment Initiative (MOU of 4 Sep 2025): sector strategy, reciprocal commitments, a KPI dashboard and an annual review. No new MOU.
 - **Stay out.** Do not co-subsidise new Automatic controllers capacity. Do not co-subsidise new Gas components capacity. Do not co-subsidise new Semiconductor manufacturing equipment capacity.
@@ -18,17 +18,18 @@
 
 **The central bilateral bargain.**
 
-- *Inference. *Japan supplies specialised processed materials and components where the US is short (accumulator parts & separators, rare-earth permanent magnets, wafers, battery materials (foil, electrolyte)); the US supplies polysilicon, wind turbine generating sets, battery recycling feed where Japan is short; and the two share exposure to the same coercive supplier in rare-earth oxides & compounds and natural graphite, where neither can supply the other and the answer is joint demand, finance and third-country capacity.
-- *Inference. *The US brings demand, offtake and capital to Japan's capability; Japan brings specialised capacity and patient finance (JBIC, NEXI, JOGMEC) to the US's market. That is the trade: market access and demand certainty for trusted capacity.
+- *Inference. *Japan supplies accumulator parts & separators, rare-earth permanent magnets, piezo-electric quartz, wafers where the US is short; the US supplies polysilicon, wind turbine generating sets, battery recycling feed, refrigerants where Japan is short; the two share exposure to the same coercive supplier in rare-earth oxides & compounds, natural graphite, where neither can supply the other and the answer is joint demand, finance and third-country capacity.
+- *Inference. *From the AIB roles, the US brings demand and offtake, coordination across allied chains, capital; Japan brings capital, specialised technology and manufacturing, scale manufacturing. Public finance runs through DOE LPO, DoW OSC, DFC, EXIM on the US side and JBIC, NEXI, JOGMEC on the Japan side. The trade is market access and demand certainty for trusted capacity.
 
-**The 4 highest-priority joint bets** (tier 1 by the rules in Section 3, one per compact; ranked by urgency then importance):
+**The 5 highest-priority joint bets** (tier 1 by the rules in Section 3, one per compact; ranked by urgency then importance):
 
 | Priority | Sector | Nodes in the bet (direction) | Strategic problem | US contribution | Japan contribution | Main instrument (lead node) | Timing |
 |---|---|---|---|---|---|---|---|
-| 1 | Permanent Magnets & Drive Systems | Rare-earth oxides & compounds (joint); Rare-earth permanent magnets (Japan->US) | geopolitical chokepoint | Rare-earth oxides & compounds: its demand for pooled offtake, and finance for non-Chinese supply; Rare-earth permanent magnets: demand and long-term offtake | Rare-earth oxides & compounds: its demand for pooled offtake, and finance for non-Chinese supply; Rare-earth permanent magnets: trusted capacity (9% of world supply) | anchor offtake | 12-24 months |
-| 2 | Battery Materials & Cells | Natural graphite (joint); Accumulator parts & separators (Japan->US) | geopolitical chokepoint | Natural graphite: its demand for pooled offtake, and finance for non-Chinese supply; Accumulator parts & separators: demand and long-term offtake | Natural graphite: its demand for pooled offtake, and finance for non-Chinese supply; Accumulator parts & separators: trusted capacity (11% of world supply) | anchor offtake | 12-24 months |
-| 3 | Solar Manufacturing | Polysilicon (US->Japan) | geopolitical chokepoint | Polysilicon: trusted capacity (31% of world supply) | Polysilicon: demand and long-term offtake | strategic imports | 12-24 months |
-| 4 | Wind & Hydropower Equipment | Wind turbine generating sets (US->Japan) | geopolitical chokepoint | Wind turbine generating sets: trusted capacity (7% of world supply) | Wind turbine generating sets: demand and long-term offtake | anchor offtake | 12-24 months |
+| 1 | Semiconductors & Power Electronics | Piezo-electric quartz (Japan->US) | geopolitical chokepoint | Piezo-electric quartz: demand and long-term offtake | Piezo-electric quartz: trusted capacity (11% of world supply) | anchor offtake | 12-24 months |
+| 2 | Permanent Magnets & Drive Systems | Rare-earth oxides & compounds (joint); Rare-earth permanent magnets (Japan->US) | geopolitical chokepoint | Rare-earth oxides & compounds: its demand for pooled offtake, and finance for non-Chinese supply; Rare-earth permanent magnets: demand and long-term offtake | Rare-earth oxides & compounds: its demand for pooled offtake, and finance for non-Chinese supply; Rare-earth permanent magnets: trusted capacity (9% of world supply) | anchor offtake | 12-24 months |
+| 3 | Battery Materials & Cells | Natural graphite (joint); Accumulator parts & separators (Japan->US) | geopolitical chokepoint | Natural graphite: its demand for pooled offtake, and finance for non-Chinese supply; Accumulator parts & separators: demand and long-term offtake | Natural graphite: its demand for pooled offtake, and finance for non-Chinese supply; Accumulator parts & separators: trusted capacity (11% of world supply) | anchor offtake | 12-24 months |
+| 4 | Solar Manufacturing | Polysilicon (US->Japan) | geopolitical chokepoint | Polysilicon: trusted capacity (31% of world supply) | Polysilicon: demand and long-term offtake | strategic imports | 12-24 months |
+| 5 | Wind & Hydropower Equipment | Wind turbine generating sets (US->Japan) | geopolitical chokepoint | Wind turbine generating sets: trusted capacity (7% of world supply) | Wind turbine generating sets: demand and long-term offtake | anchor offtake | 12-24 months |
 
 Sources: 1.
 
@@ -42,7 +43,7 @@ Sources: 1.
 
 **Existing mechanisms and the MEA question** (Section 8):
 
-- *Inference. *MEA assessment: **upgrade an existing framework (USJ-SII)**. Gaps: no cross-sector KPI dashboard or review cycle; no bilateral mechanism covers SC-SOLAR, SC-GRID; USJ-SII has a pipeline and finance but no reciprocal commitments or sector strategy.
+- *Inference. *MEA assessment: **upgrade an existing framework (USJ-SII)**. Gaps: no cross-sector KPI dashboard or review cycle; no bilateral mechanism covers SC-SOLAR; USJ-SII has a pipeline and finance but no reciprocal commitments or sector strategy.
 - *Recommendation. *Do not sign a new energy MOU. Give USJ-SII a sector strategy, reciprocal commitments and a KPI dashboard covering the recommended compacts, reviewed every 12 months.
 
 ## 1. Current State of the Relationship
@@ -53,69 +54,71 @@ This section sets out what already exists before anything new is proposed. Facts
 
 - Japan's memberships in OSI's economic-security agreements table: G7, IPEF, MSP. [1]
 - Both sides in 2024 said the 2022-launched Economic 2+2 works as an effective economic-security framework and agreed to hold it periodically; no 2026 meeting found (Feb 2026 Rubio-Motegi and Ichikawa-Rubio contacts only). [2]
-- Quad foreign ministers adopted a framework to mobilise up to $20bn for secure critical-mineral supply chains; a separate July 2025 Quad initiative is mentioned only in passing and not sourced. [3]
+- Senior officials meeting in New York agreed to enhance dialogue on critical minerals and cooperation in Southeast Asia and Sub-Saharan Africa through the trilateral Early Warning System. [3]
+- The US-hosted ministerial in Feb 2026 was attended by Japan and Korea among others, and Korea was reported to chair the FORGE critical-minerals forum through June 2026. [4]
+- Korea chaired the Minerals Security Partnership until June 2026; a February 2026 report says its 17 members carried into the successor FORGE; Korean public lenders joined the MSP Finance Network; no signed US-Korea critical-minerals MOU was found. [5]
+- Quad foreign ministers adopted a framework to mobilise up to $20bn for secure critical-mineral supply chains; a separate July 2025 Quad initiative is mentioned only in passing and not sourced. [6]
+- Launched July 2025 and framework adopted May 2026 to mobilise up to US$20bn of public and private support for mining, processing and recycling; no project list. [7]
 
 **Trade architecture and frictions**
 
 - In the OSI energy basket, US imported US$41.9bn from Japan and Japan imported US$20.1bn from US (bilateral flows 2024, summed over the technology x stage cells). [1]
-- Lighthizer and Ambassador Sugiyama signed the Trade Agreement and the Digital Trade Agreement on 7 Oct 2019. [4]
-- Signed 28 Mar 2023 and in force on signature without congressional approval; covers cobalt/graphite/lithium/manganese/nickel; no export duties; consult on non-market measures and forced-labour imports; Treasury/USTR treated it as an FTA for the IRA EV credit critical-minerals test. [5]
-- Japan government text states that for any Section 232 tariff on pharmaceuticals and semiconductors (incl. SME) the US intends to apply to Japan a rate no greater than that applied to any other country; search snippet only, full document not read. [6]
-- EO signed 4 Sep 2025 sets 15% all-in tariff on Japanese goods (reciprocal) and a Section 232 auto/auto-parts rate that tops MFN up to 15% (added rate zero at or above 15%). [7]
-- CRS (Apr 2026) describes the DTA as an executive agreement enacted without changes to US law. [8]
-- IRS says the new clean vehicle credit (30D) is not allowed for vehicles acquired after 30 Sep 2025, so the CMA's IRA-credit eligibility function is largely moot; no source found on any formal CMA amendment or termination (status in force but unreviewed). [9]
-- In Feb 2026 Akazawa said the sides were far apart on first projects; Lutnick claimed Trump has complete discretion while Akazawa said selection follows the investment and consultation committees; resolved only by the 17 Feb announcement; later disputes not found. [10]
-- On 20 Feb 2026 the Court ruled 6-3 that IEEPA does not authorise tariffs, removing the legal basis of the 15% Japan reciprocal rate; a temporary Section 122 global surcharge replaced it; Section 232 duties (autos etc.) unaffected. [11]
-- Axios (30 Jun 2026) says Nippon reaffirmed an $11bn investment pledge with allocation of $7.8bn unspecified and mostly still promised, the golden share has not been used on management decisions, and leverage rose with an S&P downgrade; the deal closed 18 Jun 2025. [12]
-- Jiji reports the US imposed new 12.5% Section 301 tariffs on Japan and dozens of partners after the Section 122 surcharge expired 24 Jul 2026; Japan called it regrettable and the 15% auto rate is said to be maintained; a separate excess-capacity 301 probe (launched Mar 2026) includes Japan. Check USTR Federal Register notice for final rate. [13]
-- As of Sep 2026 Akazawa declined detail on a third tranche, with AI and semiconductor projects reported as leading candidates and no date; no third announcement found by 6 Nov 2026. [14]
+- Lighthizer and Ambassador Sugiyama signed the Trade Agreement and the Digital Trade Agreement on 7 Oct 2019. [8]
+- Signed 28 Mar 2023 and in force on signature without congressional approval; covers cobalt/graphite/lithium/manganese/nickel; no export duties; consult on non-market measures and forced-labour imports; Treasury/USTR treated it as an FTA for the IRA EV credit critical-minerals test. [9]
+- Japan government text states that for any Section 232 tariff on pharmaceuticals and semiconductors (incl. SME) the US intends to apply to Japan a rate no greater than that applied to any other country; search snippet only, full document not read. [10]
+- EO signed 4 Sep 2025 sets 15% all-in tariff on Japanese goods (reciprocal) and a Section 232 auto/auto-parts rate that tops MFN up to 15% (added rate zero at or above 15%). [11]
+- CRS (Apr 2026) describes the DTA as an executive agreement enacted without changes to US law. [12]
+- IRS says the new clean vehicle credit (30D) is not allowed for vehicles acquired after 30 Sep 2025, so the CMA's IRA-credit eligibility function is largely moot; no source found on any formal CMA amendment or termination (status in force but unreviewed). [13]
+- In Feb 2026 Akazawa said the sides were far apart on first projects; Lutnick claimed Trump has complete discretion while Akazawa said selection follows the investment and consultation committees; resolved only by the 17 Feb announcement; later disputes not found. [14]
+- On 20 Feb 2026 the Court ruled 6-3 that IEEPA does not authorise tariffs, removing the legal basis of the 15% Japan reciprocal rate; a temporary Section 122 global surcharge replaced it; Section 232 duties (autos etc.) unaffected. [15]
+- Axios (30 Jun 2026) says Nippon reaffirmed an $11bn investment pledge with allocation of $7.8bn unspecified and mostly still promised, the golden share has not been used on management decisions, and leverage rose with an S&P downgrade; the deal closed 18 Jun 2025. [16]
+- Jiji reports the US imposed new 12.5% Section 301 tariffs on Japan and dozens of partners after the Section 122 surcharge expired 24 Jul 2026; Japan called it regrettable and the 15% auto rate is said to be maintained; a separate excess-capacity 301 probe (launched Mar 2026) includes Japan. Check USTR Federal Register notice for final rate. [17]
+- As of Sep 2026 Akazawa declined detail on a third tranche, with AI and semiconductor projects reported as leading candidates and no date; no third announcement found by 6 Nov 2026. [18]
 
 **Industrial and energy agreements**
 
-- MOU signed 4 Sep 2025 (Lutnick/Akazawa): presidential investment committee chaired by Commerce Secretary consults a joint consultation committee; US proposes projects; Japan has 45 days to fund each approved project or may decline and forfeit distributions (President may raise tariffs); per-project SPVs split cash 50/50 then 90/10 to the US after a deemed allocation amount; investments before 19 Jan 2029; US Investment Accelerator executes. [15]
-- Framework text dated 27 Oct 2025 (signed Tokyo 28 Oct) commits to financing within six months for selected projects (grants/guarantees/loans/equity/offtake/insurance), a ministerial within 180 days, faster permitting, pricing measures to support non-China supply, scrap recycling, a complementary stockpile arrangement, and a Rapid Response Group led by the US Energy Secretary and METI Minister; names no dollar amounts and is non-binding. [16]
-- Framework establishes a group led by the US Energy Secretary and Japan's METI Minister to identify priority minerals and accelerate processed-mineral deliveries. [17]
-- Greer announced the Action Plan on 19 Mar 2026: the two countries will develop strategic trade policies and border mechanisms to protect downstream industries and lay the foundation for a binding plurilateral agreement supported by price floors; trade press adds deep-sea R&D (not read from primary). [18]
-- Signed 28 Mar 2023 and in force on signature without congressional approval; covers cobalt/graphite/lithium/manganese/nickel; no export duties; consult on non-market measures and forced-labour imports; Treasury/USTR treated it as an FTA for the IRA EV credit critical-minerals test. [5]
+- Signed 28 Mar 2023 and in force on signature without congressional approval; covers cobalt/graphite/lithium/manganese/nickel; no export duties; consult on non-market measures and forced-labour imports; Treasury/USTR treated it as an FTA for the IRA EV credit critical-minerals test. [9]
+- The three leaders agreed to pilot an early warning system exchanging supply-chain information via embassies in selected countries, with critical minerals and rechargeable batteries as priority products, plus an annual commerce and industry ministers track; the system is not published as operating beyond the pilot. [19]
+- MOU signed 4 Sep 2025 (Lutnick/Akazawa): presidential investment committee chaired by Commerce Secretary consults a joint consultation committee; US proposes projects; Japan has 45 days to fund each approved project or may decline and forfeit distributions (President may raise tariffs); per-project SPVs split cash 50/50 then 90/10 to the US after a deemed allocation amount; investments before 19 Jan 2029; US Investment Accelerator executes. [20]
+- Framework text dated 27 Oct 2025 (signed Tokyo 28 Oct) commits to financing within six months for selected projects (grants/guarantees/loans/equity/offtake/insurance), a ministerial within 180 days, faster permitting, pricing measures to support non-China supply, scrap recycling, a complementary stockpile arrangement, and a Rapid Response Group led by the US Energy Secretary and METI Minister; names no dollar amounts and is non-binding. [21]
+- Framework establishes a group led by the US Energy Secretary and Japan's METI Minister to identify priority minerals and accelerate processed-mineral deliveries. [22]
+- Greer announced the Action Plan on 19 Mar 2026: the two countries will develop strategic trade policies and border mechanisms to protect downstream industries and lay the foundation for a binding plurilateral agreement supported by price floors; trade press adds deep-sea R&D (not read from primary). [23]
 
 **Investment vehicle, project pipeline and financing**
 
-- US government will arrange financing and permitting for at least $80bn of new Westinghouse reactors (mainly AP1000) and receives a participation interest of 20% of distributions above $17.5bn convertible to up to 20% equity; date 28 Oct 2025 per most sources (one says 27 Oct). [19]
-- Announced 28 Oct 2025 as preliminary pledges in a launch phase needing review; AA lists nuclear up to $332bn, Mitsubishi Electric AI infrastructure $30bn and Panasonic energy storage $15bn. [20]
-- The fact sheet lists up to $100B for Westinghouse AP1000/SMR with possible Japanese supplier involvement (MHI Toshiba IHI); CSIS cites a separate figure of $80B in a US-Westinghouse partnership. [21]
-- The fact sheet lists up to $100B for GE Vernova Hitachi BWRX-300 SMR construction with Hitachi GE Vernova as a possible Japanese participant. [22]
-- JERA (Sep 2025) and Tokyo Gas (6 Nov 2025) each signed non-binding LOIs for 1 MTPA from Alaska LNG; no binding SPA, JBIC financing or FID found, and it is not among announced SII projects. [23]
-- One of the first three funded projects under the $550B vehicle is a $33B 9.2GW SB Energy gas plant in Portsmouth Ohio. [24]
-- Commerce lists industrial synthetic diamond manufacturing at about $0.6bn in the first batch announced 17 Feb 2026; the Georgia site and Element Six (De Beers) operator come from secondary reporting only. [25]
-- Commerce lists US crude oil export infrastructure at about $2.1bn in the first batch (17 Feb 2026); Sentinel Midstream's Texas GulfLink identification comes from secondary reporting only. [26]
-- Commerce lists natural gas generation at about $33.3bn (first batch total about $36bn); the Ohio location and 9.2 GW size come from the Lutnick statement as quoted in secondary coverage. [27]
-- ANS (17 Mar 2026) says the 2025 US-Japan agreement projected up to $100bn for Westinghouse reactors but specific projects were not yet identified and Westinghouse is still working transactions. [28]
-- Second batch announced 19 Mar 2026 at the Takaichi-Trump summit lists SMRs by GE Vernova Hitachi in Tennessee and Alabama at up to $40bn; TVA Clinch River and Bellefonte/Widows Creek siting is from secondary reports. [29]
-- Commerce lists gas generation in Pennsylvania at up to $17bn with offtake including co-located data centres; NextEra/South Mon 4.3 GW identification is secondary only. [30]
-- Commerce lists gas generation in Texas at up to $16bn with offtake including data centres (second batch total about $73bn). [31]
-- JBIC signed a loan of about $7m to Japan Invest 1 LLC on 17 Apr 2026 (total co-financing about $23m) with NEXI insuring the private lenders' portion. [32]
-- JBIC signed a loan of about $630m to Japan Invest 3 LLC on 17 Apr 2026 (total co-financing about $1.885bn) for a gas generation project integrated with data centre and transmission; NEXI insures private lenders; lenders unnamed. [33]
-- JBIC signed about $739m (loan agreement 7 Aug 2026; total co-financing about $2.213bn) to Japan Invest 5 LLC for Texas gas generation under the Initiative; NEXI insures private loans; Citibank Tokyo agent with JPMorgan Tokyo. [34]
-- Reported: JBIC US$801m loan to JI4 signed 7 Aug 2026 with NEXI insuring a US$1.6bn private loan, and a Citi-led facility of about US$4.6bn covering JI4 and JI5. [35]
+- Announced 28 Oct 2025 as preliminary pledges in a launch phase needing review; AA lists nuclear up to $332bn, Mitsubishi Electric AI infrastructure $30bn and Panasonic energy storage $15bn. [24]
+- JERA (Sep 2025) and Tokyo Gas (6 Nov 2025) each signed non-binding LOIs for 1 MTPA from Alaska LNG; no binding SPA, JBIC financing or FID found, and it is not among announced SII projects. [25]
+- One of the first three funded projects under the $550B vehicle is a $33B 9.2GW SB Energy gas plant in Portsmouth Ohio. [26]
+- Commerce lists industrial synthetic diamond manufacturing at about $0.6bn in the first batch announced 17 Feb 2026; the Georgia site and Element Six (De Beers) operator come from secondary reporting only. [27]
+- Commerce lists US crude oil export infrastructure at about $2.1bn in the first batch (17 Feb 2026); Sentinel Midstream's Texas GulfLink identification comes from secondary reporting only. [28]
+- Commerce lists natural gas generation at about $33.3bn (first batch total about $36bn); the Ohio location and 9.2 GW size come from the Lutnick statement as quoted in secondary coverage. [29]
+- Second batch announced 19 Mar 2026 at the Takaichi-Trump summit lists SMRs by GE Vernova Hitachi in Tennessee and Alabama at up to $40bn; TVA Clinch River and Bellefonte/Widows Creek siting is from secondary reports. [30]
+- Commerce lists gas generation in Pennsylvania at up to $17bn with offtake including co-located data centres; NextEra/South Mon 4.3 GW identification is secondary only. [31]
+- Commerce lists gas generation in Texas at up to $16bn with offtake including data centres (second batch total about $73bn). [32]
+- JBIC signed a loan of about $7m to Japan Invest 1 LLC on 17 Apr 2026 (total co-financing about $23m) with NEXI insuring the private lenders' portion. [33]
+- JBIC signed a loan of about $630m to Japan Invest 3 LLC on 17 Apr 2026 (total co-financing about $1.885bn) for a gas generation project integrated with data centre and transmission; NEXI insures private lenders; lenders unnamed. [34]
+- JBIC signed about $739m (loan agreement 7 Aug 2026; total co-financing about $2.213bn) to Japan Invest 5 LLC for Texas gas generation under the Initiative; NEXI insures private loans; Citibank Tokyo agent with JPMorgan Tokyo. [35]
+- Reported: JBIC US$801m loan to JI4 signed 7 Aug 2026 with NEXI insuring a US$1.6bn private loan, and a Citi-led facility of about US$4.6bn covering JI4 and JI5. [36]
 
 **Corporate relationships in the recommended compacts**
 
-- Hitachi Energy pledged more than $1B for US grid equipment manufacturing including the $457M South Boston plant. [36]
-- Hitachi Energy is reported to commit $528M to a Gallman Mississippi power transformer plant supporting 650+ jobs, with no capacity or timeline released. [37]
-- Mitsubishi Electric opened a roughly $200M Memphis Tennessee transformer factory in 2013. [38]
-- Mitsubishi Electric announced an $86M advanced switchgear factory in Western Pennsylvania in October 2024. [39]
-- AESC paused its $1.6B Florence County plant in June 2025 citing policy and market uncertainty. [40]
-- Nippon Steel committed about $11B of new US Steel investment by 2028 (some reports cite $14B) with electrical steel mentioned mainly for automotive. [41]
-- Panasonic opened the De Soto plant in July 2025 with about 1100 employees and one of eight lines running versus a 4000-job target. [42]
-- Nikkei reported in November 2025 that US Steel would build GOES capability at Big River Osceola Arkansas with mass production in 2028; US Steel confirmed the project to Argus without investment or capacity details (date approximate). [43]
-- Toyota began production at its Liberty NC battery plant on 2025-11-12 (reported investment $13.9B with a further $10B pledged); output is mainly hybrid batteries and sources differ on line counts. [44]
-- LGES agreed to sell the Ohio JV factory building and related assets to Honda for about $2.85B with the JV continuing via lease and closing targeted for 2026-02-28. [45]
-- Panasonic plans to repurpose some US lines including De Soto to data-center energy storage with first cells expected mid-to-late 2028 or early 2029 while EV cell output continues; ramp is slower than planned. [46]
-- Hitachi Energy broke ground on 2026-06-29 on a $457M South Boston expansion creating about 825 jobs; the site already employs about 850 and completion date was not stated on the page (other reports say 2028). [47]
+- The trilateral Wagerup gallium project reportedly involves Sojitz and the Japanese government with an estimated $174M US Dept of War equity investment and groundbreaking on 2026-08-24; the equity announcement year is unclear. [37]
+- LGES agreed to supply Toyota's North American EVs with about 20 GWh a year of modules from 2025, with roughly 4 trillion won (about 3 billion dollars) invested in Michigan lines dedicated to Toyota. [38]
+- AESC paused its $1.6B Florence County plant in June 2025 citing policy and market uncertainty. [39]
+- Panasonic opened the De Soto plant in July 2025 with about 1100 employees and one of eight lines running versus a 4000-job target. [40]
+- Australia offered up to US$200m concessional equity with an offtake right and the US also takes equity with an offtake right; trilateral with Japan, which has funded 50% of costs; could supply up to 10% of world gallium. [41]
+- US government will arrange financing and permitting for at least $80bn of new Westinghouse reactors (mainly AP1000) and receives a participation interest of 20% of distributions above $17.5bn convertible to up to 20% equity; date 28 Oct 2025 per most sources (one says 27 Oct). [42]
+- The fact sheet lists up to $100B for Westinghouse AP1000/SMR with possible Japanese supplier involvement (MHI Toshiba IHI); CSIS cites a separate figure of $80B in a US-Westinghouse partnership. [43]
+- The fact sheet lists up to $100B for GE Vernova Hitachi BWRX-300 SMR construction with Hitachi GE Vernova as a possible Japanese participant. [44]
+- Toyota began production at its Liberty NC battery plant on 2025-11-12 (reported investment $13.9B with a further $10B pledged); output is mainly hybrid batteries and sources differ on line counts. [45]
+- The 2023 Honda-LGES joint venture L-H Battery keeps operating its Ohio cell plant under a lease after LGES sold the building to Honda for about 4.22 trillion won (2.85 billion dollars) announced Dec 2025; a later report of a lower closing value of 3.74 trillion won is unconfirmed. [46]
+- LGES agreed to sell the Ohio JV factory building and related assets to Honda for about $2.85B with the JV continuing via lease and closing targeted for 2026-02-28. [47]
+- ANS (17 Mar 2026) says the 2025 US-Japan agreement projected up to $100bn for Westinghouse reactors but specific projects were not yet identified and Westinghouse is still working transactions. [48]
+- Panasonic plans to repurpose some US lines including De Soto to data-center energy storage with first cells expected mid-to-late 2028 or early 2029 while EV cell output continues; ramp is slower than planned. [49]
 
 - Unverified items are left out of this section; they stay in the evidence register (evidence_register.csv) and the evidence layer. [1]
 
-- *Inference. *The relationship already has two working channels: an investment vehicle with a project pipeline and JBIC/NEXI finance (so far gas power, crude export, synthetic diamonds and SMRs), and a critical-minerals framework with financing, pricing and stockpile commitments but no published project list. What it lacks is a link between the two and any sector strategy for the electro-industrial chains where the data show complementarity.
+- *Inference. *Working channels today: Japan-US Strategic Investment Initiative (MOU of 4 Sep 2025) (a project pipeline and finance); US-Japan critical minerals and rare earths framework (Oct 2025) with the Supply Security Rapid Response Group (a project pipeline and finance); DFC-JBIC cooperation memorandum (finance). What the relationship lacks: no cross-sector KPI dashboard or review cycle; no bilateral mechanism covers SC-SOLAR; USJ-SII has a pipeline and finance but no reciprocal commitments or sector strategy.
 
 ## 2. What Each Country Is Good At — and What It Needs
 
@@ -162,18 +165,19 @@ State counts over all units: a_supplies_b_needs 7; complementary_specialization 
 ## 4. Trade Agenda
 
 - *Inference. ***What the US should export to Japan:** Polysilicon; Electric Vehicles extraction (cobalt ores, lithium minerals, natural graphite); Wind turbine generating sets; Batteries components (accumulator parts & separators); Oil extraction; Wind assembly (electricity meters, overhead conductors, power cables); Battery recycling feed; Batteries assembly (li-ion cells & packs, other accumulators); Gas extraction; Gas refining; Refrigerants; Sensors & controller parts; AC generators; Oil refining; Coal extraction.
-- *Inference. ***What Japan should export to the US:** Accumulator parts & separators; Rare-earth permanent magnets; Wafers; Battery materials (foil, electrolyte); Manganese dioxide (EMD); Piezo-electric quartz; Gas assembly; Electrolysers; Refrigeration & heat-pump compressors; Furnace parts; Oil assembly (ac generators); Coal components; Coal assembly.
+- *Inference. ***What Japan should export to the US:** Accumulator parts & separators; Rare-earth permanent magnets; Piezo-electric quartz; Wafers; Battery materials (foil, electrolyte); Manganese dioxide (EMD); Gas assembly; Electrolysers; Refrigeration & heat-pump compressors; Furnace parts; Oil assembly (ac generators); Coal components; Coal assembly.
 - *Inference. ***Where tariffs would undermine allied specialisation:** no node where the buyer's protection priority is in its top third and the partner is the trusted supplier.
-- *Inference. ***Procurement, standards and content rules to recognise mutually:** Electric Vehicles|Extraction, wind-turbine-generating-sets, accumulator-parts-and-separators, rare-earth-permanent-magnets, Oil|Extraction.
+- *Inference. ***Procurement, standards and content rules to recognise mutually:** Electric Vehicles|Extraction, wind-turbine-generating-sets, accumulator-parts-and-separators, rare-earth-permanent-magnets, piezo-electric-quartz.
 - *Inference. ***Where third-country circumvention safeguards are genuinely required:** Electric Vehicles|Refining, rare-earth-oxides-and-compounds; elsewhere they would add cost without security.
 - *Inference. ***Where unrestricted global sourcing is acceptable:** uranium-fuel-upstream--aggregated, pgms-iridium-ruthenium, nuclear-special-materials, transformers, uranium-conversion-and-enrichment, copper-ores-and-concentrates.
 
 *Table A3 in the appendix (22 rows) carries this table in full; the CSV outputs carry every column.*
 
-- The tariff baseline is unsettled, which is itself a reason to bind the nodes above:
-- EO signed 4 Sep 2025 sets 15% all-in tariff on Japanese goods (reciprocal) and a Section 232 auto/auto-parts rate that tops MFN up to 15% (added rate zero at or above 15%). [7]
-- On 20 Feb 2026 the Court ruled 6-3 that IEEPA does not authorise tariffs, removing the legal basis of the 15% Japan reciprocal rate; a temporary Section 122 global surcharge replaced it; Section 232 duties (autos etc.) unaffected. [11]
-- Jiji reports the US imposed new 12.5% Section 301 tariffs on Japan and dozens of partners after the Section 122 surcharge expired 24 Jul 2026; Japan called it regrettable and the 15% auto rate is said to be maintained; a separate excess-capacity 301 probe (launched Mar 2026) includes Japan. Check USTR Federal Register notice for final rate. [13]
+- The tariff measures in force or in dispute between the two, the baseline any binding of the nodes above works from:
+- EO signed 4 Sep 2025 sets 15% all-in tariff on Japanese goods (reciprocal) and a Section 232 auto/auto-parts rate that tops MFN up to 15% (added rate zero at or above 15%). [11]
+- IRS says the new clean vehicle credit (30D) is not allowed for vehicles acquired after 30 Sep 2025, so the CMA's IRA-credit eligibility function is largely moot; no source found on any formal CMA amendment or termination (status in force but unreviewed). [13]
+- On 20 Feb 2026 the Court ruled 6-3 that IEEPA does not authorise tariffs, removing the legal basis of the 15% Japan reciprocal rate; a temporary Section 122 global surcharge replaced it; Section 232 duties (autos etc.) unaffected. [15]
+- Jiji reports the US imposed new 12.5% Section 301 tariffs on Japan and dozens of partners after the Section 122 surcharge expired 24 Jul 2026; Japan called it regrettable and the 15% auto rate is said to be maintained; a separate excess-capacity 301 probe (launched Mar 2026) includes Japan. Check USTR Federal Register notice for final rate. [17]
 
 ## 5. Investment Agenda
 
@@ -218,7 +222,7 @@ Sources: 1.
 | I15 | Electric Vehicles extraction (cobalt ores, lithium minerals, natural graphite) | USA+JPN | third countries (CHL; ARG; BRA) and either partner | supply-chain need 0.82 (USA) / 0.98 (JPN) |  | anchor offtake | high | 2-3 years |
 | I16 | Wind turbine generating sets | USA+JPN | third countries (ESP; DNK) and either partner | JPN takes 2% of allied demand (2% of allied net imports); AIB class BUILD |  | anchor offtake | high | 2-3 years |
 | I17 | Rare-earth permanent magnets | USA+JPN | third countries (PHL; VNM) and either partner | USA takes 10% of allied demand (9% of allied net imports); AIB class BUILD | Shin-Etsu; TDK; Proterial | anchor offtake | high | 2-3 years |
-| I18 | Piezo-electric quartz | USA+JPN | third countries (TWN; PHL) and either partner | USA takes 16% of allied demand (11% of allied net imports); AIB class BUILD | Alcoa; Sojitz | anchor offtake | low | 2-3 years |
+| I18 | Piezo-electric quartz | USA+JPN | third countries (TWN; PHL) and either partner | USA takes 16% of allied demand (11% of allied net imports); AIB class BUILD |  | anchor offtake | high | 2-3 years |
 
 Sources: 1.
 
@@ -246,11 +250,19 @@ Sources: 1.
 
 Sources: 1.
 
-- The trilateral Wagerup gallium project reportedly involves Sojitz and the Japanese government with an estimated $174M US Dept of War equity investment and groundbreaking on 2026-08-24; the equity announcement year is unclear. [48]
-- AESC paused its $1.6B Florence County plant in June 2025 citing policy and market uncertainty. [40]
-- US government will arrange financing and permitting for at least $80bn of new Westinghouse reactors (mainly AP1000) and receives a participation interest of 20% of distributions above $17.5bn convertible to up to 20% equity; date 28 Oct 2025 per most sources (one says 27 Oct). [19]
-- LGES agreed to sell the Ohio JV factory building and related assets to Honda for about $2.85B with the JV continuing via lease and closing targeted for 2026-02-28. [45]
-- Quad foreign ministers adopted a framework to mobilise up to $20bn for secure critical-mineral supply chains; a separate July 2025 Quad initiative is mentioned only in passing and not sourced. [3]
+- The trilateral Wagerup gallium project reportedly involves Sojitz and the Japanese government with an estimated $174M US Dept of War equity investment and groundbreaking on 2026-08-24; the equity announcement year is unclear. [37]
+- The three leaders agreed to pilot an early warning system exchanging supply-chain information via embassies in selected countries, with critical minerals and rechargeable batteries as priority products, plus an annual commerce and industry ministers track; the system is not published as operating beyond the pilot. [19]
+- LGES agreed to supply Toyota's North American EVs with about 20 GWh a year of modules from 2025, with roughly 4 trillion won (about 3 billion dollars) invested in Michigan lines dedicated to Toyota. [38]
+- AESC paused its $1.6B Florence County plant in June 2025 citing policy and market uncertainty. [39]
+- Senior officials meeting in New York agreed to enhance dialogue on critical minerals and cooperation in Southeast Asia and Sub-Saharan Africa through the trilateral Early Warning System. [3]
+- Australia offered up to US$200m concessional equity with an offtake right and the US also takes equity with an offtake right; trilateral with Japan, which has funded 50% of costs; could supply up to 10% of world gallium. [41]
+- US government will arrange financing and permitting for at least $80bn of new Westinghouse reactors (mainly AP1000) and receives a participation interest of 20% of distributions above $17.5bn convertible to up to 20% equity; date 28 Oct 2025 per most sources (one says 27 Oct). [42]
+- The 2023 Honda-LGES joint venture L-H Battery keeps operating its Ohio cell plant under a lease after LGES sold the building to Honda for about 4.22 trillion won (2.85 billion dollars) announced Dec 2025; a later report of a lower closing value of 3.74 trillion won is unconfirmed. [46]
+- LGES agreed to sell the Ohio JV factory building and related assets to Honda for about $2.85B with the JV continuing via lease and closing targeted for 2026-02-28. [47]
+- The US-hosted ministerial in Feb 2026 was attended by Japan and Korea among others, and Korea was reported to chair the FORGE critical-minerals forum through June 2026. [4]
+- Korea chaired the Minerals Security Partnership until June 2026; a February 2026 report says its 17 members carried into the successor FORGE; Korean public lenders joined the MSP Finance Network; no signed US-Korea critical-minerals MOU was found. [5]
+- Quad foreign ministers adopted a framework to mobilise up to $20bn for secure critical-mineral supply chains; a separate July 2025 Quad initiative is mentioned only in passing and not sourced. [6]
+- Launched July 2025 and framework adopted May 2026 to mobilise up to US$20bn of public and private support for mining, processing and recycling; no project list. [7]
 
 ## 7. Recommended Sectoral Compacts
 
@@ -260,13 +272,13 @@ Sources: 1.
 
 | Rank | Compact | Verdict | Joint bets | Coordinate | US role | Japan role | Bilateral mechanisms | Recommended |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Battery Materials & Cells | bilateral priority | 2 | 3 | Resource supplier | Processing anchor | USJ-CMF; USJ-CMAP; USJ-CMA; USJ-QUAD | TRUE |
-| 2 | Permanent Magnets & Drive Systems | bilateral priority | 2 | 1 | Scale manufacturer | Scale manufacturer | USJ-CMF; USJ-CMAP; USJ-QUAD | TRUE |
+| 1 | Battery Materials & Cells | bilateral priority | 2 | 3 | Resource supplier | Processing anchor | USJ-CMF; USJ-CMAP; USJ-CMA; USJ-QUAD; JPKR-M6 | TRUE |
+| 2 | Permanent Magnets & Drive Systems | bilateral priority | 2 | 1 | Scale manufacturer | Scale manufacturer | USJ-CMF; USJ-CMAP; USJ-QUAD; JPKR-M6 | TRUE |
 | 3 | Solar Manufacturing | bilateral priority | 1 | 1 | Demand anchor | Specialized technology supplier |  | TRUE |
-| 4 | Nuclear Fuel & Reactor Systems | evidence-led candidate | 0 | 0 | Specialized technology supplier | Capacity-building host | USJ-SII | TRUE |
-| 5 | Grid Equipment & Conductors | evidence-led candidate | 0 | 0 | Demand anchor | Specialized technology supplier |  | TRUE |
-| 6 | Wind & Hydropower Equipment | secondary | 1 | 0 | Demand anchor | Bridge / coordination partner |  | FALSE |
-| 7 | Semiconductors & Power Electronics | secondary | 0 | 2 | Specialized technology supplier | Specialized technology supplier | USJ-CMF; USJ-CMAP | FALSE |
+| 4 | Semiconductors & Power Electronics | bilateral priority | 1 | 1 | Specialized technology supplier | Specialized technology supplier | USJ-CMF; USJ-CMAP | TRUE |
+| 5 | Nuclear Fuel & Reactor Systems | evidence-led candidate | 0 | 0 | Specialized technology supplier | Capacity-building host | USJ-SII | TRUE |
+| 6 | Grid Equipment & Conductors | evidence-led candidate | 0 | 0 | Demand anchor | Specialized technology supplier |  | FALSE |
+| 7 | Wind & Hydropower Equipment | secondary | 1 | 0 | Demand anchor | Bridge / coordination partner |  | FALSE |
 | 8 | Heat Pumps & Cooling | secondary | 0 | 2 | Processing anchor | Specialized technology supplier |  | FALSE |
 | 9 | Industrial Electrification & Hydrogen | secondary | 0 | 2 | Demand anchor | Scale manufacturer |  | FALSE |
 | 10 | Electric Vehicles | not a bilateral priority | 0 | 0 | Scale manufacturer | Scale manufacturer |  | FALSE |
@@ -300,8 +312,8 @@ Sources: 1.
 
 **Reciprocal bargain**
 
-- US provides: supply of battery recycling feed; long-term demand and offtake for accumulator parts & separators, battery materials (foil, electrolyte), manganese dioxide (emd); procurement recognition of the partner as trusted supply.
-- Japan provides: capacity and technology in accumulator parts & separators, battery materials (foil, electrolyte), manganese dioxide (emd); long-term demand for battery recycling feed; JBIC/NEXI finance for capacity in the partner market.
+- US provides: supply of battery recycling feed; long-term demand and offtake for accumulator parts & separators, battery materials (foil, electrolyte), manganese dioxide (emd); procurement recognition of the partner as trusted supply; finance for the compact's nodes (DOE LPO, DoW OSC, DFC, EXIM).
+- Japan provides: capacity and technology in accumulator parts & separators, battery materials (foil, electrolyte), manganese dioxide (emd); long-term demand for battery recycling feed; procurement recognition of the partner as trusted supply; finance for capacity in the partner market (JBIC, NEXI, JOGMEC).
 - Jointly: pooled offtake and finance for non-coercive natural graphite.
 - Third-country partners needed: MDG, MOZ, DEU, KOR, MYS, TWN, GRC, ESP, HUN, POL.
 - Better placed than this pair (largest trusted supplier once China is removed, AIB): MDG at natural graphite; DEU at synthetic graphite (anode-grade); KOR at cathode materials & precursors; POL at li-ion cells & packs; FIN at cobalt intermediates & chemicals; CHL at lithium chemicals; VNM at other accumulators. The bilateral compact should not try to replace them there. [1]
@@ -331,12 +343,16 @@ Sources: 1.
 
 **Evidence (external)**
 
-- Signed 28 Mar 2023 and in force on signature without congressional approval; covers cobalt/graphite/lithium/manganese/nickel; no export duties; consult on non-market measures and forced-labour imports; Treasury/USTR treated it as an FTA for the IRA EV credit critical-minerals test. [5]
-- AESC paused its $1.6B Florence County plant in June 2025 citing policy and market uncertainty. [40]
-- Panasonic opened the De Soto plant in July 2025 with about 1100 employees and one of eight lines running versus a 4000-job target. [42]
-- Toyota began production at its Liberty NC battery plant on 2025-11-12 (reported investment $13.9B with a further $10B pledged); output is mainly hybrid batteries and sources differ on line counts. [44]
-- LGES agreed to sell the Ohio JV factory building and related assets to Honda for about $2.85B with the JV continuing via lease and closing targeted for 2026-02-28. [45]
-- Panasonic plans to repurpose some US lines including De Soto to data-center energy storage with first cells expected mid-to-late 2028 or early 2029 while EV cell output continues; ramp is slower than planned. [46]
+- Signed 28 Mar 2023 and in force on signature without congressional approval; covers cobalt/graphite/lithium/manganese/nickel; no export duties; consult on non-market measures and forced-labour imports; Treasury/USTR treated it as an FTA for the IRA EV credit critical-minerals test. [9]
+- The three leaders agreed to pilot an early warning system exchanging supply-chain information via embassies in selected countries, with critical minerals and rechargeable batteries as priority products, plus an annual commerce and industry ministers track; the system is not published as operating beyond the pilot. [19]
+- LGES agreed to supply Toyota's North American EVs with about 20 GWh a year of modules from 2025, with roughly 4 trillion won (about 3 billion dollars) invested in Michigan lines dedicated to Toyota. [38]
+- AESC paused its $1.6B Florence County plant in June 2025 citing policy and market uncertainty. [39]
+- Panasonic opened the De Soto plant in July 2025 with about 1100 employees and one of eight lines running versus a 4000-job target. [40]
+- Senior officials meeting in New York agreed to enhance dialogue on critical minerals and cooperation in Southeast Asia and Sub-Saharan Africa through the trilateral Early Warning System. [3]
+- Toyota began production at its Liberty NC battery plant on 2025-11-12 (reported investment $13.9B with a further $10B pledged); output is mainly hybrid batteries and sources differ on line counts. [45]
+- The 2023 Honda-LGES joint venture L-H Battery keeps operating its Ohio cell plant under a lease after LGES sold the building to Honda for about 4.22 trillion won (2.85 billion dollars) announced Dec 2025; a later report of a lower closing value of 3.74 trillion won is unconfirmed. [46]
+- LGES agreed to sell the Ohio JV factory building and related assets to Honda for about $2.85B with the JV continuing via lease and closing targeted for 2026-02-28. [47]
+- Panasonic plans to repurpose some US lines including De Soto to data-center energy storage with first cells expected mid-to-late 2028 or early 2029 while EV cell output continues; ramp is slower than planned. [49]
 
 ### 2. Permanent Magnets & Drive Systems
 
@@ -365,8 +381,8 @@ Sources: 1.
 
 **Reciprocal bargain**
 
-- US provides: supply of ac generators; long-term demand and offtake for rare-earth permanent magnets; procurement recognition of the partner as trusted supply.
-- Japan provides: capacity and technology in rare-earth permanent magnets; long-term demand for ac generators; JBIC/NEXI finance for capacity in the partner market.
+- US provides: supply of ac generators; long-term demand and offtake for rare-earth permanent magnets; procurement recognition of the partner as trusted supply; finance for the compact's nodes (DOE LPO, DoW OSC, DFC, EXIM).
+- Japan provides: capacity and technology in rare-earth permanent magnets; long-term demand for ac generators; procurement recognition of the partner as trusted supply; finance for capacity in the partner market (JBIC, NEXI, JOGMEC).
 - Jointly: pooled offtake and finance for non-coercive rare-earth oxides & compounds.
 - Third-country partners needed: MYS, PHL, VNM.
 - Better placed than this pair (largest trusted supplier once China is removed, AIB): MYS at rare-earth oxides & compounds; VNM at rare-earth metals; DEU at ferrite & other magnets; DEU at electric motors; DEU at motor & generator parts; DEU at non-oriented electrical steel (ngo). The bilateral compact should not try to replace them there. [1]
@@ -394,8 +410,9 @@ Sources: 1.
 
 **Evidence (external)**
 
-- Framework text dated 27 Oct 2025 (signed Tokyo 28 Oct) commits to financing within six months for selected projects (grants/guarantees/loans/equity/offtake/insurance), a ministerial within 180 days, faster permitting, pricing measures to support non-China supply, scrap recycling, a complementary stockpile arrangement, and a Rapid Response Group led by the US Energy Secretary and METI Minister; names no dollar amounts and is non-binding. [16]
-- Trump and Takaichi signed a framework on 2025-10-28 in Tokyo covering permitting streamlining, coordinated investment and a Supply Security Rapid Response Group led by the US Energy Secretary and Japan's METI minister. [49]
+- Framework text dated 27 Oct 2025 (signed Tokyo 28 Oct) commits to financing within six months for selected projects (grants/guarantees/loans/equity/offtake/insurance), a ministerial within 180 days, faster permitting, pricing measures to support non-China supply, scrap recycling, a complementary stockpile arrangement, and a Rapid Response Group led by the US Energy Secretary and METI Minister; names no dollar amounts and is non-binding. [21]
+- Trump and Takaichi signed a framework on 2025-10-28 in Tokyo covering permitting streamlining, coordinated investment and a Supply Security Rapid Response Group led by the US Energy Secretary and Japan's METI minister. [50]
+- The US-hosted ministerial in Feb 2026 was attended by Japan and Korea among others, and Korea was reported to chair the FORGE critical-minerals forum through June 2026. [4]
 
 ### 3. Solar Manufacturing
 
@@ -424,8 +441,8 @@ Sources: 1.
 
 **Reciprocal bargain**
 
-- US provides: supply of polysilicon; long-term demand and offtake for wafers; procurement recognition of the partner as trusted supply.
-- Japan provides: capacity and technology in wafers; long-term demand for polysilicon; JBIC/NEXI finance for capacity in the partner market.
+- US provides: supply of polysilicon; long-term demand and offtake for wafers; procurement recognition of the partner as trusted supply; finance for the compact's nodes (DOE LPO, DoW OSC, DFC, EXIM).
+- Japan provides: capacity and technology in wafers; long-term demand for polysilicon; procurement recognition of the partner as trusted supply; finance for capacity in the partner market (JBIC, NEXI, JOGMEC).
 - Jointly: common specifications and qualification.
 - Third-country partners needed: MYS, DEU, TWN.
 - Better placed than this pair (largest trusted supplier once China is removed, AIB): THA at solar cells; VNM at pv modules & generators; MYS at pv cover glass. The bilateral compact should not try to replace them there. [1]
@@ -436,7 +453,7 @@ Sources: 1.
 
 **Priority transactions**
 
-- *Recommendation. *Multi-year supply agreements for US polysilicon into Japan buyers (D05).
+- *Recommendation. *Multi-year supply agreements for US polysilicon into Japan buyers (D06).
 - *Recommendation. *Joint specification work plan for wafers (D10).
 
 **Success by 2030**
@@ -451,7 +468,67 @@ Sources: 1.
 - The coercive share of world supply falls below the chokepoint line, or the AIB class turns LOW INTERVENTION: move to open-market treatment.
 - Projects proceed on commercial terms without public support: stop the support (it is not additional).
 
-### 4. Nuclear Fuel & Reactor Systems (evidence-led)
+### 4. Semiconductors & Power Electronics
+
+**Strategic objective**
+
+- AIB mission: Monitor: no intervention class reaches the materiality floor (25% of the compact's supply to shift or US$1bn); targeted: build missing capacity in piezo-electric quartz (semiconductor materials); preserve and second-source specialized production in piezo-electric quartz (semiconductor materials).. [1]
+- *Recommendation. *Change the outcome at piezo-electric quartz, sensors & controller parts: geopolitical chokepoint; trusted partner capacity constraint.
+
+**Why this pair?**
+
+- *Inference. *Piezo-electric quartz: Capacity-constrained trusted supply (JPN is a capable trusted supplier, the other side needs the node, and allied capacity is short of demand). Sensors & controller parts: Capacity-constrained trusted supply (USA is a capable trusted supplier, the other side needs the node, and allied capacity is short of demand).
+- AIB compact roles: US Specialized technology supplier (lead node semiconductor-manufacturing-equipment); Japan Specialized technology supplier (lead node semiconductor-manufacturing-equipment). [1]
+
+**Supply-chain architecture**
+
+| Stage | Unit | Basis | US position | Japan position | Desired bilateral arrangement | Treatment | Instrument |
+|---|---|---|---|---|---|---|---|
+| Extraction | Electric Grid/Extraction | OSI cell (no AIB node at this stage) | moderate | weak | low strategic case | LOW INTERVENTION |
+| Refining | piezo-electric-quartz | AIB node | moderate | strong | capacity constrained trusted supply | BUILD | anchor offtake |
+| Components | sensors-and-controller-parts | AIB node | strong | moderate | capacity constrained trusted supply | BUILD | anchor offtake |
+| Assembly | automatic-controllers | AIB node | strong | strong | direct competition | MANAGE SPECIALIZATION |
+| Deployment | Electric Grid/Deployment | OSI cell (no AIB node at this stage) | not measured | not measured | low strategic case | LOW INTERVENTION |
+| Recovery | Electric Grid/Recovery | OSI cell (no AIB node at this stage) | not measured | not measured | not assessed | INSUFFICIENT DATA |
+
+Sources: 1.
+
+**Reciprocal bargain**
+
+- US provides: supply of sensors & controller parts; long-term demand and offtake for piezo-electric quartz; procurement recognition of the partner as trusted supply; finance for the compact's nodes (DOE LPO, DoW OSC, DFC, EXIM).
+- Japan provides: capacity and technology in piezo-electric quartz; long-term demand for sensors & controller parts; procurement recognition of the partner as trusted supply; finance for capacity in the partner market (JBIC, NEXI, JOGMEC).
+- Jointly: common specifications and qualification.
+- Third-country partners needed: TWN, PHL, DEU.
+- Better placed than this pair (largest trusted supplier once China is removed, AIB): DEU at static converters & inverters; DEU at power electronics components; BRA at gallium, germanium & indium; MYS at power semiconductors. The bilateral compact should not try to replace them there. [1]
+
+**Policy instruments (minimum necessary)**
+
+- *Recommendation. *anchor_offtake for piezo-electric quartz; anchor_offtake for sensors & controller parts
+
+**Priority transactions**
+
+- *Recommendation. *Long-term offtake by US buyers for Japan piezo-electric quartz, sized to underwrite new capacity (candidate hosts: TWN, PHL) (D04).
+
+**Success by 2030**
+
+- Piezo-electric quartz: coercive share of supply to the two buyers below 50% (CHN now holds 60% of world supply); Japan's share of US's imports up from n/a.
+- Sensors & controller parts: allied residual gap under the China shock closed (now 22% of allied demand); US's share of Japan's imports up from n/a.
+- The AIB node class moves from BUILD to COORDINATE or LOW INTERVENTION on the next run.
+
+**Failure / exit conditions**
+
+- No signed offtake or financing within 24 months of launch: drop the node from the compact.
+- The coercive share of world supply falls below the chokepoint line, or the AIB class turns LOW INTERVENTION: move to open-market treatment.
+- Projects proceed on commercial terms without public support: stop the support (it is not additional).
+
+**Evidence (external)**
+
+- IBM supplies 2nm process technology to Rapidus with Rapidus engineers at IBM Albany and Rapidus targeting mass production in 2H 2027; subsidy totals vary by source. [51]
+- The trilateral Wagerup gallium project reportedly involves Sojitz and the Japanese government with an estimated $174M US Dept of War equity investment and groundbreaking on 2026-08-24; the equity announcement year is unclear. [37]
+- Australia offered up to US$200m concessional equity with an offtake right and the US also takes equity with an offtake right; trilateral with Japan, which has funded 50% of costs; could supply up to 10% of world gallium. [41]
+- As of Sep 2026 Akazawa declined detail on a third tranche, with AI and semiconductor projects reported as leading candidates and no date; no third announcement found by 6 Nov 2026. [18]
+
+### 5. Nuclear Fuel & Reactor Systems (evidence-led)
 
 - *Inference. ***Basis: external evidence.** OSI trade data show no bilateral complementarity at this compact's nodes (Japan world share: uranium/fuel extraction: aggregated low-coverage sub-sectors (spent fuel & nuclear scrap, uranium ores) 0.0%, uranium conversion & enrichment 0.1%, nuclear reactors & enrichment machinery 0.0%, fuel assemblies & zirconium 0.7%, reactor parts 0.0%, nuclear special materials 4.8%); the case rests on the bilateral pipeline and corporate evidence listed at the end of this compact.
 - Need that OSI does measure in the compact: uranium/fuel extraction: aggregated low-coverage sub-sectors (spent fuel & nuclear scrap, uranium ores) (US high 0.99, 91% of allied demand; Japan low 0.61); uranium conversion & enrichment (US high 0.99, 42% of allied demand; Japan low (cell 0.97; not a material buyer)); nuclear reactors & enrichment machinery (US demand 0.47, 8% of allied demand; Japan low 0.66); fuel assemblies & zirconium (US low 0.48, 7% of allied demand; Japan demand 0.61); nuclear special materials (US demand n/a, 51% of allied demand; Japan low n/a). [1]
@@ -472,7 +549,7 @@ Sources: 1.
 |---|---|---|---|---|---|---|---|
 | Extraction | uranium-fuel-upstream--aggregated | AIB node | weak | weak | low strategic case | LOW INTERVENTION |
 | Refining | uranium-conversion-and-enrichment | AIB node | moderate | weak | low strategic case | LOW INTERVENTION |
-| Components | fuel-assemblies-and-zirconium | AIB node | moderate | weak | low strategic case | LOW INTERVENTION |
+| Components | reactor-parts | AIB node | strong | weak | low strategic case | LOW INTERVENTION |
 | Assembly | nuclear-reactors-and-enrichment-machinery | AIB node | weak | weak | low strategic case | LOW INTERVENTION |
 | Deployment | Nuclear/Deployment | OSI cell (no AIB node at this stage) | strong | strong | deployment demand | DEMAND CONTEXT |
 | Recovery | Nuclear/Recovery | OSI cell (no AIB node at this stage) | not measured | not measured | not assessed | INSUFFICIENT DATA |
@@ -481,8 +558,8 @@ Sources: 1.
 
 **Reciprocal bargain**
 
-- US provides: procurement recognition of the partner as trusted supply.
-- Japan provides: JBIC/NEXI finance for capacity in the partner market.
+- US provides: procurement recognition of the partner as trusted supply; finance for the compact's nodes (DOE LPO, DoW OSC, DFC, EXIM).
+- Japan provides: procurement recognition of the partner as trusted supply; finance for capacity in the partner market (JBIC, NEXI, JOGMEC).
 - Jointly: common specifications and qualification.
 - Third-country partners needed: none identified by the AIB host model.
 
@@ -507,91 +584,26 @@ Sources: 1.
 
 **Evidence (external)**
 
-- US government will arrange financing and permitting for at least $80bn of new Westinghouse reactors (mainly AP1000) and receives a participation interest of 20% of distributions above $17.5bn convertible to up to 20% equity; date 28 Oct 2025 per most sources (one says 27 Oct). [19]
-- Announced 28 Oct 2025 as preliminary pledges in a launch phase needing review; AA lists nuclear up to $332bn, Mitsubishi Electric AI infrastructure $30bn and Panasonic energy storage $15bn. [20]
-- The joint fact sheet lists Japanese-linked interest of up to about $490B in 'launch phase' projects, with Lutnick saying projects still need approval and final selection rests with the US. [50]
-- The fact sheet lists up to $100B for Westinghouse AP1000/SMR with possible Japanese supplier involvement (MHI Toshiba IHI); CSIS cites a separate figure of $80B in a US-Westinghouse partnership. [21]
-- The fact sheet lists up to $100B for GE Vernova Hitachi BWRX-300 SMR construction with Hitachi GE Vernova as a possible Japanese participant. [22]
-- ANS (17 Mar 2026) says the 2025 US-Japan agreement projected up to $100bn for Westinghouse reactors but specific projects were not yet identified and Westinghouse is still working transactions. [28]
-- Second batch announced 19 Mar 2026 at the Takaichi-Trump summit lists SMRs by GE Vernova Hitachi in Tennessee and Alabama at up to $40bn; TVA Clinch River and Bellefonte/Widows Creek siting is from secondary reports. [29]
-
-### 5. Grid Equipment & Conductors (evidence-led)
-
-- *Inference. ***Basis: external evidence.** OSI trade data show no bilateral complementarity at this compact's nodes (Japan world share: copper smelting & refining 6.2%, grain-oriented electrical steel (goes) 25.1%, insulators & bushings 4.1%, electricity meters 0.0%, transformers 0.0%, switchgear & protection 1.8%, copper ores & concentrates 0.0%, copper wire & rod 1.1%, overhead conductors 0.0%, power cables 1.8%, aluminium wire rod 0.0%); the case rests on the bilateral pipeline and corporate evidence listed at the end of this compact.
-- Need that OSI does measure in the compact: copper smelting & refining (US high 0.90, 15% of allied demand; Japan low (cell 0.71; not a material buyer)); insulators & bushings (US demand 0.32, 19% of allied demand; Japan low 0.60); electricity meters (US demand 0.33, 22% of allied demand; Japan low (cell 0.75; not a material buyer)); transformers (US demand 0.33, 40% of allied demand; Japan low (cell 0.75; not a material buyer)); switchgear & protection (US demand 0.33, 20% of allied demand; Japan low (cell 0.75; not a material buyer)); copper ores & concentrates (US low (cell 0.89; not a material buyer), 0% of allied demand; Japan high 0.98); copper wire & rod (US high 0.96, 10% of allied demand; Japan low (cell 0.95; not a material buyer)); overhead conductors (US demand 0.33, 32% of allied demand; Japan low (cell 0.75; not a material buyer)); power cables (US demand 0.33, 20% of allied demand; Japan low (cell 0.75; not a material buyer)); aluminium wire rod (US demand n/a, 24% of allied demand; Japan not_measured n/a). [1]
-
-**Strategic objective**
-
-- AIB mission: Monitor: no intervention class reaches the materiality floor (25% of the compact's supply to shift or US$1bn); targeted: build missing capacity in grain-oriented electrical steel (GOES) (wire rod & transformer steel).. [1]
-- *Recommendation. *Use the existing bilateral channels to tie the announced projects to the nodes where OSI measures need, and verify the partner capability that trade data cannot see (ownership abroad, domestic sales, heavy components) before any public finance is added.
-
-**Why this pair?**
-
-- *Inference. *No OSI-observed complementarity; see the evidence below.
-- AIB compact roles: US Demand anchor (lead node transformers); Japan Specialized technology supplier (lead node grain-oriented-electrical-steel-goes). [1]
-
-**Supply-chain architecture**
-
-| Stage | Unit | Basis | US position | Japan position | Desired bilateral arrangement | Treatment | Instrument |
-|---|---|---|---|---|---|---|---|
-| Extraction | copper-ores-and-concentrates | AIB node | moderate | weak | low strategic case | LOW INTERVENTION |
-| Refining | copper-smelting-and-refining | AIB node | weak | moderate | low strategic case | LOW INTERVENTION |
-| Components | insulators-and-bushings | AIB node | moderate | moderate | low strategic case | LOW INTERVENTION |
-| Assembly | electricity-meters | AIB node | moderate | weak | low strategic case | LOW INTERVENTION |
-| Deployment | Electric Grid/Deployment | OSI cell (no AIB node at this stage) | not measured | not measured | low strategic case | LOW INTERVENTION |
-| Recovery | Electric Grid/Recovery | OSI cell (no AIB node at this stage) | not measured | not measured | not assessed | INSUFFICIENT DATA |
-
-Sources: 1.
-
-**Reciprocal bargain**
-
-- US provides: procurement recognition of the partner as trusted supply.
-- Japan provides: JBIC/NEXI finance for capacity in the partner market.
-- Jointly: common specifications and qualification.
-- Third-country partners needed: none identified by the AIB host model.
-- Better placed than this pair (largest trusted supplier once China is removed, AIB): ITA at insulators & bushings; MEX at electricity meters. The bilateral compact should not try to replace them there. [1]
-
-**Policy instruments (minimum necessary)**
-
-- *Recommendation. *Use the existing investment vehicle; no new instrument.
-
-**Priority transactions**
-
-- *Recommendation. *Long-term offtake by US and Japan buyers for non-coercive electric grid refining (copper smelting & refining, copper wire & rod, grain-oriented electrical steel (goes)), sized to underwrite new capacity (candidate hosts: DEU, KOR, TWN) (D07).
-
-**Success by 2030**
-
-- Projects in the pipeline reach final investment decision with partner-made equipment in the bill of materials.
-- The AIB node class moves from BUILD to COORDINATE or LOW INTERVENTION on the next run.
-
-**Failure / exit conditions**
-
-- No signed offtake or financing within 24 months of launch: drop the node from the compact.
-- The coercive share of world supply falls below the chokepoint line, or the AIB class turns LOW INTERVENTION: move to open-market treatment.
-- Projects proceed on commercial terms without public support: stop the support (it is not additional).
-
-**Evidence (external)**
-
-- Hitachi Energy pledged more than $1B for US grid equipment manufacturing including the $457M South Boston plant. [36]
-- Hitachi Energy is reported to commit $528M to a Gallman Mississippi power transformer plant supporting 650+ jobs, with no capacity or timeline released. [37]
-- Mitsubishi Electric opened a roughly $200M Memphis Tennessee transformer factory in 2013. [38]
-- Mitsubishi Electric announced an $86M advanced switchgear factory in Western Pennsylvania in October 2024. [39]
-- Nippon Steel committed about $11B of new US Steel investment by 2028 (some reports cite $14B) with electrical steel mentioned mainly for automotive. [41]
-- Nikkei reported in November 2025 that US Steel would build GOES capability at Big River Osceola Arkansas with mass production in 2028; US Steel confirmed the project to Argus without investment or capacity details (date approximate). [43]
-- Hitachi Energy broke ground on 2026-06-29 on a $457M South Boston expansion creating about 825 jobs; the site already employs about 850 and completion date was not stated on the page (other reports say 2028). [47]
+- US government will arrange financing and permitting for at least $80bn of new Westinghouse reactors (mainly AP1000) and receives a participation interest of 20% of distributions above $17.5bn convertible to up to 20% equity; date 28 Oct 2025 per most sources (one says 27 Oct). [42]
+- Announced 28 Oct 2025 as preliminary pledges in a launch phase needing review; AA lists nuclear up to $332bn, Mitsubishi Electric AI infrastructure $30bn and Panasonic energy storage $15bn. [24]
+- The joint fact sheet lists Japanese-linked interest of up to about $490B in 'launch phase' projects, with Lutnick saying projects still need approval and final selection rests with the US. [52]
+- The fact sheet lists up to $100B for Westinghouse AP1000/SMR with possible Japanese supplier involvement (MHI Toshiba IHI); CSIS cites a separate figure of $80B in a US-Westinghouse partnership. [43]
+- The fact sheet lists up to $100B for GE Vernova Hitachi BWRX-300 SMR construction with Hitachi GE Vernova as a possible Japanese participant. [44]
+- ANS (17 Mar 2026) says the 2025 US-Japan agreement projected up to $100bn for Westinghouse reactors but specific projects were not yet identified and Westinghouse is still working transactions. [48]
+- Second batch announced 19 Mar 2026 at the Takaichi-Trump summit lists SMRs by GE Vernova Hitachi in Tennessee and Alabama at up to $40bn; TVA Clinch River and Bellefonte/Widows Creek siting is from secondary reports. [30]
 
 ## 8. Master Energy Agreement Assessment
 
 - *Inference. *Rule: **existing** if every recommended compact is covered by a mechanism with both a pipeline and finance and a cross-sector mechanism has KPIs and a review cycle; **upgrade** if at least 50% of compacts are covered by a mechanism with finance or a pipeline, or a cross-sector mechanism with a pipeline exists; **new MEA** otherwise.
-- *Inference. *Result: **upgrade**; coverage 60% of recommended compacts; cross-sector mechanism with KPIs and review: no.
+- *Inference. *Result: **upgrade**; coverage 80% of recommended compacts; cross-sector mechanism with KPIs and review: no.
 
 | Compact | Any mechanism | Finance or pipeline | Pipeline and finance |
 |---|---|---|---|
 | SC-BATTERIES | TRUE | TRUE | FALSE |
 | SC-MAGNETS | TRUE | TRUE | FALSE |
 | SC-SOLAR | FALSE | FALSE | FALSE |
+| SC-SEMIS | TRUE | TRUE | FALSE |
 | SC-NUCLEAR | TRUE | TRUE | TRUE |
-| SC-GRID | FALSE | FALSE | FALSE |
 
 Sources: 1.
 
@@ -607,16 +619,17 @@ Sources: 1.
 | USJ-EPC | US-Japan Economic Policy Consultative Committee (Economic 2+2) | in force | cross sector | FALSE | FALSE | FALSE | partial | TRUE |
 | USJ-DFCJBIC | DFC-JBIC cooperation memorandum | in force | cross sector | FALSE | TRUE | FALSE | FALSE | TRUE |
 | USJ-QUAD | Quad Critical Minerals Initiative Framework (May 2026) | announced | SC-MAGNETS/SC-BATTERIES | FALSE | TRUE | FALSE | FALSE | TRUE |
+| JPKR-M6 | US-Japan-ROK trilateral supply-chain early warning and critical-minerals dialogue | announced | SC-BATTERIES/SC-MAGNETS | FALSE | FALSE | FALSE | partial | TRUE |
 
 Sources: 1.
 
 **Recommended: upgrade Japan-US Strategic Investment Initiative (MOU of 4 Sep 2025) into the execution framework for the compacts**
 
-- **Scope:** Battery Materials & Cells; Permanent Magnets & Drive Systems; Solar Manufacturing; Nuclear Fuel & Reactor Systems; Grid Equipment & Conductors; no other sectors.
-- **Reciprocal commitments:** US commits demand certainty (procurement recognition and anchor offtake for the nodes where Japan supplies) and market-access predictability on those nodes; Japan commits capacity and JBIC/NEXI/JOGMEC finance for the same nodes, in the US or with named third-country hosts, and offtake for US-supplied nodes.
-- **Compact portfolio:** Battery Materials & Cells (bilateral priority); Permanent Magnets & Drive Systems (bilateral priority); Solar Manufacturing (bilateral priority); Nuclear Fuel & Reactor Systems (evidence-led candidate); Grid Equipment & Conductors (evidence-led candidate).
-- **Financing lanes:** project SPV loans and insurance as in the existing vehicle (JBIC, NEXI); US loan guarantees and offtake (DOE LPO, DoW OSC, DLA); third-country finance (DFC with JBIC).
-- **Governance:** one bilateral steering line inside USJ-SII, reporting to the Economic 2+2; the critical-minerals Rapid Response Group runs the minerals and magnets workstreams. Selection by joint committee, not by one side (the 2026 selection dispute is evidence the current process is not reciprocal).
+- **Scope:** Battery Materials & Cells; Permanent Magnets & Drive Systems; Solar Manufacturing; Semiconductors & Power Electronics; Nuclear Fuel & Reactor Systems; no other sectors.
+- **Reciprocal commitments:** US commits demand certainty (procurement recognition and anchor offtake) and market-access predictability for the nodes Japan supplies (accumulator parts & separators, rare-earth permanent magnets, piezo-electric quartz, wafers); Japan commits the same for the nodes US supplies (polysilicon, battery recycling feed, sensors & controller parts, ac generators). Each commits public finance for the compact nodes, at home, in the partner or with named third-country hosts.
+- **Compact portfolio:** Battery Materials & Cells (bilateral priority); Permanent Magnets & Drive Systems (bilateral priority); Solar Manufacturing (bilateral priority); Semiconductors & Power Electronics (bilateral priority); Nuclear Fuel & Reactor Systems (evidence-led candidate).
+- **Financing lanes:** US: DOE LPO, DoW OSC, DFC, EXIM; Japan: JBIC, NEXI, JOGMEC; demand-side tools (offtake, stockpiles, procurement): DOE, DoW OSC, DLA and METI, JOGMEC; third-country finance: DFC and JICA.
+- **Governance:** one bilateral steering line inside Japan-US Strategic Investment Initiative (MOU of 4 Sep 2025), with the existing sector mechanisms running their workstreams (US-Japan critical minerals and rare earths framework (Oct 2025) with the Supply Security Rapid Response Group; DFC-JBIC cooperation memorandum). Projects are selected by a joint committee, not by one side.
 - **Milestones:** the 12-month milestones of the deal pipeline (Section 9).
 - **KPI dashboard:** per compact node, the coercive share of each country's supply, the bilateral import share, offtake signed (volume), capacity at FID and operating, and public money committed vs private.
 - **Review cycle:** every 12 months, with the OSI tables re-run on new trade data.
@@ -633,9 +646,9 @@ Sources: 1.
 | 1 | Long-term offtake by Japan buyers for US electric vehicles extraction (cobalt ores, lithium minerals, natural graphite), sized to underwrite new capacity (candidate hosts: CHL, ARG, BRA) | SC-BATTERIES | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | high | high | high |
 | 2 | Long-term offtake by US and Japan buyers for non-coercive rare-earth oxides & compounds, sized to underwrite new capacity (candidate hosts: MYS) | SC-MAGNETS | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | high | high | high |
 | 3 | Long-term offtake by Japan buyers for US wind turbine generating sets, sized to underwrite new capacity (candidate hosts: ESP, DNK) | SC-WIND | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | high | high | high |
-| 4 | Long-term offtake by Japan buyers for US oil extraction, sized to underwrite new capacity |  | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | high | low | high |
-| 5 | Multi-year supply agreements for US polysilicon into Japan buyers | SC-SOLAR | strategic imports | USA: USTR, Commerce; JPN: METI | Named import lanes and volumes agreed between buyers and the supplier's producers | high | high | medium |
-| 6 | Long-term offtake by US buyers for Japan piezo-electric quartz, sized to underwrite new capacity (candidate hosts: TWN, PHL) | SC-SEMIS | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | high | medium | low |
+| 4 | Long-term offtake by US buyers for Japan piezo-electric quartz, sized to underwrite new capacity (candidate hosts: TWN, PHL) | SC-SEMIS | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | high | medium | high |
+| 5 | Long-term offtake by Japan buyers for US oil extraction, sized to underwrite new capacity |  | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | high | low | high |
+| 6 | Multi-year supply agreements for US polysilicon into Japan buyers | SC-SOLAR | strategic imports | USA: USTR, Commerce; JPN: METI | Named import lanes and volumes agreed between buyers and the supplier's producers | high | high | medium |
 | 7 | Long-term offtake by US and Japan buyers for non-coercive electric grid refining (copper smelting & refining, copper wire & rod, grain-oriented electrical steel (goes)), sized to underwrite new capacity (candidate hosts: DEU, KOR, TWN) | SC-GRID | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | high | medium | low |
 | 8 | Long-term offtake by Japan buyers for US refrigerants, sized to underwrite new capacity (candidate hosts: NLD) | SC-HEAT | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | medium | low | high |
 | 9 | Long-term offtake by US buyers for Japan electrolysers, sized to underwrite new capacity (candidate hosts: DEU) | SC-INDUSTRY | anchor offtake | USA: DOE, DoW OSC, DLA; JPN: METI, JOGMEC | Signed long-term offtake from at least one large buyer | medium | low | high |
@@ -648,79 +661,77 @@ Sources: 1.
 - *Recommendation. ***N01** Do not co-subsidise new Automatic controllers capacity: both are strong suppliers (US 16%, Japan 11%). Trusted supply is adequate: this is commercial competition.
 - *Recommendation. ***N02** Do not co-subsidise new Gas components capacity: both are strong suppliers (US 21%, Japan 4%). Trusted supply is adequate: this is commercial competition.
 - *Recommendation. ***N03** Do not co-subsidise new Semiconductor manufacturing equipment capacity: both are strong suppliers (US 16%, Japan 21%). Trusted supply is adequate: this is commercial competition.
-- *Recommendation. ***N04** Do not co-subsidise new Silver powder capacity: both are strong suppliers (US 26%, Japan 59%). Trusted supply is adequate: this is commercial competition.
-- *Recommendation. ***N05** Do not create a new bilateral energy MOU or a free-standing MEA institution: USJ-SII already carries a pipeline and finance; dock the compacts in it.
-- *Recommendation. ***N06** Do not put new public money behind Batteries assembly (li-ion cells & packs, other accumulators) investment that is already committed (evidence UJ-034; UJ-035; UJ-036; UJ-037; UJ-038); support is additional only beyond it.
+- *Recommendation. ***N04** Do not create a new bilateral energy MOU or a free-standing MEA institution: USJ-SII already exists (finance and a project pipeline); dock the compacts in it.
+- *Recommendation. ***N05** Do not put new public money behind Batteries assembly (li-ion cells & packs, other accumulators) investment that is already committed (evidence UJ-034; UJ-035; UJ-036; UJ-037; UJ-038; JPKR-29; JPKR-30); support is additional only beyond it.
+- *Recommendation. ***N06** Do not put new public money behind Electric Grid refining (copper smelting & refining, copper wire & rod, grain-oriented electrical steel (goes)) investment that is already committed (evidence UJ-020; UJ-021); support is additional only beyond it.
 
 ## 11. Evidence Register
 
 - Every recommendation (IDs J, C, T, I, X, D, N, M) has rows in evidence_register.csv: the OSI metrics behind it (variable, value for each country, year, source, evidence specificity) and any external items, with URL and access date. Recommendations that rest on external research only carry basis = external. [1]
-- External evidence vintage: accessed 2026-11-06; 85 items (partial 56, unverified 13, verified 16). [1]
+- External evidence vintage: accessed 2026-11-06; 256 items (partial 197, unverified 18, verified 41). [1]
 
 **Where the findings are weak or counterintuitive**
 
-- Joint bets resting on a node need inherited from its cell (a proxy): Rare-earth oxides & compounds; Natural graphite; Polysilicon; Wind turbine generating sets.
+- Joint bets resting on a node need inherited from its cell (a proxy): Piezo-electric quartz; Rare-earth oxides & compounds; Natural graphite; Polysilicon; Wind turbine generating sets.
 - Evidence-led compacts (OSI cannot see the partner's capability in trade data): Nuclear Fuel & Reactor Systems; Grid Equipment & Conductors.
 - Japan has no listed trade position (under 1% of world supply) at nodes where the US has material demand: solar cells, pv modules & generators, uranium/fuel extraction: aggregated low-coverage sub-sectors (spent fuel & nuclear scrap, uranium ores), uranium conversion & enrichment, nuclear reactors & enrichment machinery, lithium chemicals, pv cover glass, wind towers, heat pumps & ac units, solar thermal water heaters, electricity meters, transformers, hydro turbine parts, blade core wood (balsa), overhead conductors, aluminium wire rod, direct-reduced iron (dri/hbi). Trade data miss capability that is owned abroad or sold at home, so these nodes cannot show complementarity even where corporate evidence suggests it.
-- OSI reads transformers as low strategic case, but the evidence layer records a capacity problem the annual trade data cannot see: Wood Mackenzie projected a 30% supply deficit for power transformers and 10% for distribution units in 2025 with imports about 80% of power transformer supply and Q2 2025 lead times of 128 weeks (GSUs 144 weeks). Treat it as an emerging bottleneck to re-test, not a settled open-market node. [51]
-- OSI reads grain-oriented-electrical-steel-goes as low strategic case, but the evidence layer records a capacity problem the annual trade data cannot see: Cleveland-Cliffs states Butler Works is the only US producer of regular grain-oriented electrical steel used in power and distribution transformers. Treat it as an emerging bottleneck to re-test, not a settled open-market node. [52]
 - Low-evidence units among the active states: none.
-- Fuel-trade lanes reach tier 1 on Japanese import need (oil extraction): real energy-security lanes, but outside the electro-industrial compacts and with no market failure beyond the supply concentration the engine measures.
+- Fuel-trade lanes reach tier 1 (oil extraction; buyer: Japan): real energy-security lanes, but outside the electro-industrial compacts and with no market failure beyond the supply concentration the engine measures.
 
 ## Sources
 
 1. Allied Industrial Base Explorer tables: six-stage strategic position (Competitive Position, supply-chain and deployment need, Strategic Industrial Value, NIPO and IEA PAMS policy priority; scripts/26), the Allied Industrial Base strategic layer (node trade and production shares, allied demand, node classes, compact roles; scripts/31-33), bilateral imports by technology and stage (UN Comtrade 2024; scripts/15) and development-partnership pairs (scripts/93). Underlying sources are listed in the country strategy briefs. Data as of 30 October 2026.
 2. E39. US-Japan Economic 2+2 (EPC). METI press release 2024-09-26, 2024-09-26; https://www.meti.go.jp/english/press/2024/0926_001.html; accessed 2026-11-06; partial.
-3. E36. Quad Critical Minerals Initiative Framework (New Delhi). The National (UAE), 2026-05-26; https://www.thenationalnews.com/business/energy/2026/05/26/quad-members-unveil-20bn-critical-minerals-initiative/; accessed 2026-11-06; partial.
-4. E01. US-Japan Trade Agreement (USJTA). Kelley Drye; CRS R46140, 2019-10-07; https://www.everycrsreport.com/reports/R46140.html; accessed 2026-11-06; partial.
-5. E03. US-Japan Critical Minerals Agreement (CMA). CRS IN12152, 2023-03-28; https://www.everycrsreport.com/reports/IN12152.html; accessed 2026-11-06; verified.
-6. E05. US-Japan Agreement joint statement (July 2025 deal). Japan Cabinet Secretariat joint statement, 2025-09-04; https://www.cas.go.jp/jp/seisaku/tariff_measures/houmon/pdf/kyoudouseimei(EN).pdf; accessed 2026-11-06; partial.
-7. E06. Executive Order 14345 Implementing the US-Japan Agreement. Federal Register 90 FR 43535 (2025-09-09); secondary summaries, 2025-09-04; https://www.govinfo.gov/content/pkg/FR-2025-09-09/pdf/2025-17389.pdf; accessed 2026-11-06; partial.
-8. E02. US-Japan Digital Trade Agreement. CRS IF11120 (updated 2026-04-03), 2026-04-03; https://www.everycrsreport.com/changes/2025-07-15_IF11120_172b8a899ed483f43dad6e75248b8931fcd27b6b__2026-04-03_IF11120_5c1c00cebb9670f0c9a26b7158576d12558050fe.html; accessed 2026-11-06; partial.
-9. E04. Section 30D clean vehicle credit terminated (reduces CMA's IRA function). IRS bulletin; OBBBA summaries, 2025-10-06; https://content.govdelivery.com/accounts/USIRS/bulletins/3f4df63; accessed 2026-11-06; partial.
-10. E42. US-Japan dispute over SII project selection and control. Bloomberg Law; Investing Live, 2026-02-13; https://news.bloomberglaw.com/tech-and-telecom-law/japan-us-far-apart-on-550-billion-fund-projects-akazawa-says; accessed 2026-11-06; partial.
-11. E08. Supreme Court strikes down IEEPA tariffs; Section 122 surcharge. WilmerHale; Troutman; IOG, 2026-02-20; https://www.wilmerhale.com/en/insights/client-alerts/20260220-supreme-court-strikes-down-ieepa-tariffs-what-now; accessed 2026-11-06; partial.
-12. E41. Nippon Steel-US Steel golden share and investment commitments. Axios, 2026-06-30; https://www.axios.com/2026/06/30/us-steel-nippon-trump; accessed 2026-11-06; partial.
-13. E09. Section 301 forced-labour tariffs replace Section 122 (12.5% on Japan). Nippon.com / Jiji, 2026-07-24; https://www.nippon.com/en/news/yjj2026072400366/; accessed 2026-11-06; partial.
-14. E22. SII third tranche not yet announced. Fnnews / Yonhap report; Energy Connects, 2026-09-06; https://www.energyconnects.com/news/gas-lng/2026/september/japan-says-progress-made-on-550-billion-investment-pact-with-us/; accessed 2026-11-06; partial.
-15. E07. US-Japan MOU on Strategic Investment (Japan-US Strategic Investment Initiative). CSIS analysis (MOU text at cas.go.jp not machine-readable), 2025-09-04; https://www.csis.org/analysis/new-documents-reveal-next-steps-us-japan-trade-deal; accessed 2026-11-06; partial.
-16. E12. US-Japan Framework for Securing the Supply of Critical Minerals and Rare Earths through Mining and Processing. White House, 2025-10-27; https://www.whitehouse.gov/briefings-statements/2025/10/united-states-japan-framework-for-securing-the-supply-of-critical-minerals-and-rare-earths-through-mining-and-processing; accessed 2026-11-06; verified.
-17. E13. US-Japan Critical Minerals Supply Security Rapid Response Group. White House, 2025-10-27; https://www.whitehouse.gov/briefings-statements/2025/10/united-states-japan-framework-for-securing-the-supply-of-critical-minerals-and-rare-earths-through-mining-and-processing; accessed 2026-11-06; verified.
-18. E14. US-Japan Action Plan on Critical Minerals. USTR press release, 2026-03-19; https://ustr.gov/about/policy-offices/press-office/press-releases/2026/march/ambassador-jamieson-greer-announces-us-japan-action-plan-critical-minerals; accessed 2026-11-06; verified.
-19. E28. Westinghouse / US Government / Brookfield / Cameco AP1000 partnership. Power Magazine; S&P Global, 2025-10-28; https://www.powermag.com/westinghouse-enters-partnership-for-80-billion-of-new-nuclear-reactors/; accessed 2026-11-06; partial.
-20. E21. SII October 2025 candidate list (Westinghouse/GE Vernova/Hitachi up to $332bn; Mitsubishi Electric AI $30bn; Panasonic storage $15bn). Anadolu Agency, 2025-10-29; https://www.aa.com.tr/en/energy/finance/japan-us-reveal-1st-projects-under-tokyo-s-550b-investment-package/52548; accessed 2026-11-06; partial.
-21. UJ-005. Westinghouse AP1000 and SMR fleet under Japan investment package. Japan MOF fact sheet (via search summary), 2025-10-29; https://www.mof.go.jp/policy/international_policy/convention/dialogue/251029_fact_sheet_1.pdf; accessed 2026-11-06; partial.
-22. UJ-006. GE Vernova Hitachi BWRX-300 SMR construction under Japan package. Japan MOF fact sheet (via search summary), 2025-10-29; https://www.mof.go.jp/policy/international_policy/convention/dialogue/251029_fact_sheet_1.pdf; accessed 2026-11-06; partial.
-23. E40. Alaska LNG letters of intent (JERA and Tokyo Gas). Glenfarne/Tokyo Gas via Tank News; Energy Intelligence, 2025-11-06; https://tanknewsinternational.com/glenfarne-grows-alaska-lng-commercial-momentum-with-tokyo-gas-agreement/; accessed 2026-11-06; partial.
-24. UJ-043. SB Energy Portsmouth Ohio gas plant under Japan fund. TheStreet (via search summary), 2026-02-01; https://pro.thestreet.com/market-commentary/heres-the-takeaway-from-japans-first-3-u-s-investments; accessed 2026-11-06; partial.
-25. E15. SII first batch: industrial synthetic diamond manufacturing. Commerce/DOC joint announcement (govdelivery), 2026-02-17; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; partial.
-26. E16. SII first batch: US crude oil export infrastructure (reported as Texas GulfLink). Commerce/DOC joint announcement (govdelivery), 2026-02-17; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; partial.
-27. E17. SII first batch: natural gas generation (reported as 9.2 GW Ohio). Commerce/DOC joint announcement (govdelivery), 2026-02-17; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; partial.
-28. E29. Japan support for Westinghouse AP1000 and SMRs (up to $100bn). ANS Nuclear Newsroom, 2026-03-17; https://www.ans.org/news/2026-03-17/article-7847/westinghouse-updates-japan-investment-competitors-and-a-new-report/; accessed 2026-11-06; partial.
-29. E18. SII second batch: GE Vernova Hitachi SMRs (Tennessee and Alabama). Commerce/DOC joint announcement (govdelivery), 2026-03-19; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; verified.
-30. E19. SII second batch: natural gas generation Pennsylvania (reported NextEra South Mon). Commerce/DOC joint announcement (govdelivery), 2026-03-19; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; verified.
-31. E20. SII second batch: natural gas generation Texas. Commerce/DOC joint announcement (govdelivery), 2026-03-19; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; verified.
-32. E23. JBIC Japan Invest 1 LLC loan for synthetic diamond project. JBIC press release, 2026-05-01; https://www.jbic.go.jp/en/information/press/press-2026/press_00015.html; accessed 2026-11-06; verified.
-33. E24. JBIC Japan Invest 3 LLC loan for gas generation plus data centre. JBIC press release, 2026-05-01; https://www.jbic.go.jp/en/information/press/press-2026/press_00014.html; accessed 2026-11-06; verified.
-34. E25. JBIC Japan Invest 5 LLC loan for Texas gas generation. JBIC press release, 2026-08-14; https://www.jbic.go.jp/en/information/press/press-2026/press_00055.html; accessed 2026-11-06; verified.
-35. E26. JBIC Japan Invest 4 LLC loan and Citi-led syndicated facility (Pennsylvania gas). Citi press release; search summary of JBIC release, 2026-08-14; https://www.citigroup.com/global/news/press-release/2026/citi-participates-in-financing-for-japan-us-strategic-investment-initiative; accessed 2026-11-06; partial.
-36. UJ-011. Hitachi $1B US grid manufacturing pledge. Trade press (Transformers Magazine; TDWorld) via search; https://www.manufacturing.net/energy/news/22949458/hitachi-pledges-1-billion-us-energy-infrastructure-manufacturing-investment; accessed 2026-11-06; partial.
-37. UJ-012. Hitachi Energy Gallman Mississippi power transformer plant. Latin Times (via search summary); https://www.latintimes.com/japan-mississippi-just-sealed-528-million-deal-heres-what-it-means-americas-power-grid-599259; accessed 2026-11-06; partial.
-38. UJ-014. Mitsubishi Electric Memphis transformer plant. Area Development (via search), 2013-04-26; https://www.areadevelopment.com/newsitems/4-26-2013/mitsubishi-electric-power-products-opens-transformer-factory-memphis-tennessee348934.shtml; accessed 2026-11-06; partial.
-39. UJ-013. Mitsubishi Electric Power Products Pennsylvania switchgear factory. Mitsubishi Electric press release (via search), 2024-10-30; https://www.mitsubishielectric.com/en/pr/2024/1030/; accessed 2026-11-06; partial.
-40. UJ-038. AESC South Carolina plant construction paused. SC Daily Gazette, 2025-06-05; https://scdailygazette.com/2025/06/05/electric-vehicle-battery-company-halts-construction-of-sc-manufacturing-plant/; accessed 2026-11-06; partial.
-41. UJ-021. Nippon Steel US Steel acquisition investment commitments. Steelorbis / Reuters (via search summary), 2025-06-18; https://www.steelorbis.com/steel-news/latest-news/nippon-steel-details-its-investments-for-us-steel-1407361.htm; accessed 2026-11-06; partial.
-42. UJ-034. Panasonic Energy De Soto Kansas plant opening. Lawrence Journal-World, 2025-07-14; https://www2.ljworld.com/news/state-region/2025/jul/14/panasonic-officially-opens-de-soto-battery-plant-leader-says-facility-still-on-track-to-employ-4000-people/; accessed 2026-11-06; partial.
-43. UJ-020. US Steel (Nippon Steel) Big River GOES plan. Argus Media / Nikkei (via search summary), 2025-11-01; https://www.argusmedia.com/en/news-and-insights/latest-market-news/2756144-us-steel-to-invest-in-new-electrical-steel-facility; accessed 2026-11-06; partial.
-44. UJ-036. Toyota Battery Manufacturing North Carolina. EVXL (via search summary), 2025-11-13; https://evxl.co/2025/11/13/toyota-opens-14b-north-carolina-battery-plant; accessed 2026-11-06; partial.
-45. UJ-037. Honda-LG Ohio JV building sale to Honda. Electrive, 2026-01-05; https://www.electrive.com/2026/01/05/lg-energy-solution-sells-us-plant-building-to-honda; accessed 2026-11-06; partial.
-46. UJ-035. Panasonic De Soto shift toward data-center batteries. Lawrence Journal-World, 2026-06-12; https://www2.ljworld.com/news/general-news/2026/jun/12/panasonic-exploring-data-center-battery-production-at-u-s-plants-as-ev-demand-slows/; accessed 2026-11-06; partial.
-47. UJ-010. Hitachi Energy South Boston VA large power transformer plant groundbreaking. Hitachi Energy press release, 2026-06-29; https://www.hitachienergy.com/jp/ja/news-and-events/press-releases/2026/06/hitachi-energy-breaks-ground-on-the-nation-s-largest-facility-for-the-production-of-large-power-transformers-in-south-boston-virginia; accessed 2026-11-06; verified.
-48. UJ-045. Alcoa-Sojitz Wagerup gallium project. Metal Tech News (via search summary); https://www.metaltechnews.com/story/2026/10/21/tech-metals/us-au-critical-minerals-pact-turns-one/2992.html; accessed 2026-11-06; partial.
-49. UJ-003. US-Japan Framework for Securing Supply of Critical Minerals and Rare Earths. Reporting on White House text (Mining.com; The National), 2025-10-28; https://www.mining.com/us-and-japan-strike-rare-earths-deal/; accessed 2026-11-06; partial.
-50. UJ-004. US-Japan $550B investment vehicle project list (Oct 2025). Japan MOF fact sheet (via search; PDF not opened), 2025-10-29; https://www.mof.go.jp/policy/international_policy/convention/dialogue/251029_fact_sheet_1.pdf; accessed 2026-11-06; partial.
-51. UJ-016. US power transformer deficit and import dependence. Wood Mackenzie press release (via search summary); https://www.woodmac.com/press-releases/power-transformers-and-distribution-transformers-will-face-supply-deficits-of-30-and-10-in-2025/; accessed 2026-11-06; partial.
-52. UJ-017. Single US supplier of GOES. Cleveland-Cliffs Butler Works page; https://clevelandcliffs.com/operations/steelmaking/butler-works; accessed 2026-11-06; verified.
+3. JPKR-11. US-Japan-ROK senior officials agree to deepen critical minerals dialogue (Sept 2025). Tribune (Philippines) news report, 2025-09-23; https://tribune.net.ph/2025/09/24/us-japan-sokor-strengthen-ties-in-trilateral-talks; accessed 2026-11-06; partial.
+4. JPKR-12. Critical Minerals Ministerial, Washington (Feb 2026); Korea chairs FORGE. Search summary of press coverage, 2026-02-04; https://www.zeebiz.com/world/news-us-launches-global-push-to-reduce-supply-chain-risks-in-critical-minerals-market-389893; accessed 2026-11-06; partial.
+5. USKR-33. Minerals Security Partnership and successor FORGE. CSIS; Asiae, 2026-02-05; https://cm.asiae.co.kr/en/article/2026020517420769268; accessed 2026-11-06; partial.
+6. E36. Quad Critical Minerals Initiative Framework (New Delhi). The National (UAE), 2026-05-26; https://www.thenationalnews.com/business/energy/2026/05/26/quad-members-unveil-20bn-critical-minerals-initiative/; accessed 2026-11-06; partial.
+7. USAU-03. Quad Critical Minerals Initiative. IEA policies database, 2026-05-26; https://www.iea.org/policies/29656-quad-critical-minerals-initiative; accessed 2026-11-06; partial.
+8. E01. US-Japan Trade Agreement (USJTA). Kelley Drye; CRS R46140, 2019-10-07; https://www.everycrsreport.com/reports/R46140.html; accessed 2026-11-06; partial.
+9. E03. US-Japan Critical Minerals Agreement (CMA). CRS IN12152, 2023-03-28; https://www.everycrsreport.com/reports/IN12152.html; accessed 2026-11-06; verified.
+10. E05. US-Japan Agreement joint statement (July 2025 deal). Japan Cabinet Secretariat joint statement, 2025-09-04; https://www.cas.go.jp/jp/seisaku/tariff_measures/houmon/pdf/kyoudouseimei(EN).pdf; accessed 2026-11-06; partial.
+11. E06. Executive Order 14345 Implementing the US-Japan Agreement. Federal Register 90 FR 43535 (2025-09-09); secondary summaries, 2025-09-04; https://www.govinfo.gov/content/pkg/FR-2025-09-09/pdf/2025-17389.pdf; accessed 2026-11-06; partial.
+12. E02. US-Japan Digital Trade Agreement. CRS IF11120 (updated 2026-04-03), 2026-04-03; https://www.everycrsreport.com/changes/2025-07-15_IF11120_172b8a899ed483f43dad6e75248b8931fcd27b6b__2026-04-03_IF11120_5c1c00cebb9670f0c9a26b7158576d12558050fe.html; accessed 2026-11-06; partial.
+13. E04. Section 30D clean vehicle credit terminated (reduces CMA's IRA function). IRS bulletin; OBBBA summaries, 2025-10-06; https://content.govdelivery.com/accounts/USIRS/bulletins/3f4df63; accessed 2026-11-06; partial.
+14. E42. US-Japan dispute over SII project selection and control. Bloomberg Law; Investing Live, 2026-02-13; https://news.bloomberglaw.com/tech-and-telecom-law/japan-us-far-apart-on-550-billion-fund-projects-akazawa-says; accessed 2026-11-06; partial.
+15. E08. Supreme Court strikes down IEEPA tariffs; Section 122 surcharge. WilmerHale; Troutman; IOG, 2026-02-20; https://www.wilmerhale.com/en/insights/client-alerts/20260220-supreme-court-strikes-down-ieepa-tariffs-what-now; accessed 2026-11-06; partial.
+16. E41. Nippon Steel-US Steel golden share and investment commitments. Axios, 2026-06-30; https://www.axios.com/2026/06/30/us-steel-nippon-trump; accessed 2026-11-06; partial.
+17. E09. Section 301 forced-labour tariffs replace Section 122 (12.5% on Japan). Nippon.com / Jiji, 2026-07-24; https://www.nippon.com/en/news/yjj2026072400366/; accessed 2026-11-06; partial.
+18. E22. SII third tranche not yet announced. Fnnews / Yonhap report; Energy Connects, 2026-09-06; https://www.energyconnects.com/news/gas-lng/2026/september/japan-says-progress-made-on-550-billion-investment-pact-with-us/; accessed 2026-11-06; partial.
+19. JPKR-10. Camp David trilateral supply-chain early warning system (18 Aug 2023). Mayer Brown (on White House fact sheet), 2023-08-18; https://www.mayerbrown.com/en/insights/publications/2023/09/us-japan-south-korea-promise-to-improve-supply-chain-monitoring-at-camp-david-summit; accessed 2026-11-06; partial.
+20. E07. US-Japan MOU on Strategic Investment (Japan-US Strategic Investment Initiative). CSIS analysis (MOU text at cas.go.jp not machine-readable), 2025-09-04; https://www.csis.org/analysis/new-documents-reveal-next-steps-us-japan-trade-deal; accessed 2026-11-06; partial.
+21. E12. US-Japan Framework for Securing the Supply of Critical Minerals and Rare Earths through Mining and Processing. White House, 2025-10-27; https://www.whitehouse.gov/briefings-statements/2025/10/united-states-japan-framework-for-securing-the-supply-of-critical-minerals-and-rare-earths-through-mining-and-processing; accessed 2026-11-06; verified.
+22. E13. US-Japan Critical Minerals Supply Security Rapid Response Group. White House, 2025-10-27; https://www.whitehouse.gov/briefings-statements/2025/10/united-states-japan-framework-for-securing-the-supply-of-critical-minerals-and-rare-earths-through-mining-and-processing; accessed 2026-11-06; verified.
+23. E14. US-Japan Action Plan on Critical Minerals. USTR press release, 2026-03-19; https://ustr.gov/about/policy-offices/press-office/press-releases/2026/march/ambassador-jamieson-greer-announces-us-japan-action-plan-critical-minerals; accessed 2026-11-06; verified.
+24. E21. SII October 2025 candidate list (Westinghouse/GE Vernova/Hitachi up to $332bn; Mitsubishi Electric AI $30bn; Panasonic storage $15bn). Anadolu Agency, 2025-10-29; https://www.aa.com.tr/en/energy/finance/japan-us-reveal-1st-projects-under-tokyo-s-550b-investment-package/52548; accessed 2026-11-06; partial.
+25. E40. Alaska LNG letters of intent (JERA and Tokyo Gas). Glenfarne/Tokyo Gas via Tank News; Energy Intelligence, 2025-11-06; https://tanknewsinternational.com/glenfarne-grows-alaska-lng-commercial-momentum-with-tokyo-gas-agreement/; accessed 2026-11-06; partial.
+26. UJ-043. SB Energy Portsmouth Ohio gas plant under Japan fund. TheStreet (via search summary), 2026-02-01; https://pro.thestreet.com/market-commentary/heres-the-takeaway-from-japans-first-3-u-s-investments; accessed 2026-11-06; partial.
+27. E15. SII first batch: industrial synthetic diamond manufacturing. Commerce/DOC joint announcement (govdelivery), 2026-02-17; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; partial.
+28. E16. SII first batch: US crude oil export infrastructure (reported as Texas GulfLink). Commerce/DOC joint announcement (govdelivery), 2026-02-17; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; partial.
+29. E17. SII first batch: natural gas generation (reported as 9.2 GW Ohio). Commerce/DOC joint announcement (govdelivery), 2026-02-17; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; partial.
+30. E18. SII second batch: GE Vernova Hitachi SMRs (Tennessee and Alabama). Commerce/DOC joint announcement (govdelivery), 2026-03-19; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; verified.
+31. E19. SII second batch: natural gas generation Pennsylvania (reported NextEra South Mon). Commerce/DOC joint announcement (govdelivery), 2026-03-19; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; verified.
+32. E20. SII second batch: natural gas generation Texas. Commerce/DOC joint announcement (govdelivery), 2026-03-19; https://content.govdelivery.com/accounts/USDOC/bulletins/40f28b5; accessed 2026-11-06; verified.
+33. E23. JBIC Japan Invest 1 LLC loan for synthetic diamond project. JBIC press release, 2026-05-01; https://www.jbic.go.jp/en/information/press/press-2026/press_00015.html; accessed 2026-11-06; verified.
+34. E24. JBIC Japan Invest 3 LLC loan for gas generation plus data centre. JBIC press release, 2026-05-01; https://www.jbic.go.jp/en/information/press/press-2026/press_00014.html; accessed 2026-11-06; verified.
+35. E25. JBIC Japan Invest 5 LLC loan for Texas gas generation. JBIC press release, 2026-08-14; https://www.jbic.go.jp/en/information/press/press-2026/press_00055.html; accessed 2026-11-06; verified.
+36. E26. JBIC Japan Invest 4 LLC loan and Citi-led syndicated facility (Pennsylvania gas). Citi press release; search summary of JBIC release, 2026-08-14; https://www.citigroup.com/global/news/press-release/2026/citi-participates-in-financing-for-japan-us-strategic-investment-initiative; accessed 2026-11-06; partial.
+37. UJ-045. Alcoa-Sojitz Wagerup gallium project. Metal Tech News (via search summary); https://www.metaltechnews.com/story/2026/10/21/tech-metals/us-au-critical-minerals-pact-turns-one/2992.html; accessed 2026-11-06; partial.
+38. JPKR-29. Toyota-LGES long-term battery supply agreement, US. Korea JoongAng Daily; KED Global, 2023-10-05; https://www.koreajoongangdaily.com/business/lg-energy-solution-to-supply-toyota-with-batteries-invest-3-billion-in-michigan-plant/12457792; accessed 2026-11-06; partial.
+39. UJ-038. AESC South Carolina plant construction paused. SC Daily Gazette, 2025-06-05; https://scdailygazette.com/2025/06/05/electric-vehicle-battery-company-halts-construction-of-sc-manufacturing-plant/; accessed 2026-11-06; partial.
+40. UJ-034. Panasonic Energy De Soto Kansas plant opening. Lawrence Journal-World, 2025-07-14; https://www2.ljworld.com/news/state-region/2025/jul/14/panasonic-officially-opens-de-soto-battery-plant-leader-says-facility-still-on-track-to-employ-4000-people/; accessed 2026-11-06; partial.
+41. USAU-06. Alcoa-Sojitz Wagerup gallium recovery project. Prime Minister of Australia, 2025-10-20; https://www.pm.gov.au/media/historic-critical-minerals-framework-signed-president-trump-and-prime-minister-albanese; accessed 2026-11-06; verified.
+42. E28. Westinghouse / US Government / Brookfield / Cameco AP1000 partnership. Power Magazine; S&P Global, 2025-10-28; https://www.powermag.com/westinghouse-enters-partnership-for-80-billion-of-new-nuclear-reactors/; accessed 2026-11-06; partial.
+43. UJ-005. Westinghouse AP1000 and SMR fleet under Japan investment package. Japan MOF fact sheet (via search summary), 2025-10-29; https://www.mof.go.jp/policy/international_policy/convention/dialogue/251029_fact_sheet_1.pdf; accessed 2026-11-06; partial.
+44. UJ-006. GE Vernova Hitachi BWRX-300 SMR construction under Japan package. Japan MOF fact sheet (via search summary), 2025-10-29; https://www.mof.go.jp/policy/international_policy/convention/dialogue/251029_fact_sheet_1.pdf; accessed 2026-11-06; partial.
+45. UJ-036. Toyota Battery Manufacturing North Carolina. EVXL (via search summary), 2025-11-13; https://evxl.co/2025/11/13/toyota-opens-14b-north-carolina-battery-plant; accessed 2026-11-06; partial.
+46. JPKR-30. Honda-LGES L-H Battery joint venture, Ohio: building sold to Honda. Utility Dive; electrive, 2025-12-29; https://www.electrive.com/2026/01/05/lg-energy-solution-sells-us-plant-building-to-honda; accessed 2026-11-06; partial.
+47. UJ-037. Honda-LG Ohio JV building sale to Honda. Electrive, 2026-01-05; https://www.electrive.com/2026/01/05/lg-energy-solution-sells-us-plant-building-to-honda; accessed 2026-11-06; partial.
+48. E29. Japan support for Westinghouse AP1000 and SMRs (up to $100bn). ANS Nuclear Newsroom, 2026-03-17; https://www.ans.org/news/2026-03-17/article-7847/westinghouse-updates-japan-investment-competitors-and-a-new-report/; accessed 2026-11-06; partial.
+49. UJ-035. Panasonic De Soto shift toward data-center batteries. Lawrence Journal-World, 2026-06-12; https://www2.ljworld.com/news/general-news/2026/jun/12/panasonic-exploring-data-center-battery-production-at-u-s-plants-as-ev-demand-slows/; accessed 2026-11-06; partial.
+50. UJ-003. US-Japan Framework for Securing Supply of Critical Minerals and Rare Earths. Reporting on White House text (Mining.com; The National), 2025-10-28; https://www.mining.com/us-and-japan-strike-rare-earths-deal/; accessed 2026-11-06; partial.
+51. UJ-041. Rapidus-IBM 2nm cooperation. TechWireAsia / TrendForce (via search); https://techwireasia.com/2022/12/ibm-wants-to-make-worlds-most-advanced-chips-in-japan-with-chip-maker-rapidus/; accessed 2026-11-06; partial.
+52. UJ-004. US-Japan $550B investment vehicle project list (Oct 2025). Japan MOF fact sheet (via search; PDF not opened), 2025-10-29; https://www.mof.go.jp/policy/international_policy/convention/dialogue/251029_fact_sheet_1.pdf; accessed 2026-11-06; partial.
 
 ## Appendix — evidence tables and method
 
@@ -823,15 +834,15 @@ Sources: 1.
 | 9 | joint bet | Batteries | Batteries components (accumulator parts & separators) | Components | strong | moderate | US supplies / Japan needs | strategic manufacturing gap; need 0.06 / 0.75 |
 | 10 | joint bet | Battery Materials & Cells | Accumulator parts & separators | Components | moderate (3.1% of world supply) | strong (11.0% of world supply) | Capacity-constrained trusted supply | trusted partner capacity constraint; need 0.73 / 0.75 |
 | 11 | joint bet | Permanent Magnets & Drive Systems | Rare-earth permanent magnets | Components | moderate (1.8% of world supply) | strong (8.8% of world supply) | Capacity-constrained trusted supply | geopolitical chokepoint; need 0.73 / 0.62 |
-| 12 | joint bet | Oil | Oil extraction | Extraction | strong | weak | Capacity-constrained trusted supply | trusted partner capacity constraint; need 0.47 / 0.98 |
-| 13 | coordinate | Solar Manufacturing | Wafers | Refining | moderate (9.9% of world supply) | strong (28.4% of world supply) | Complementary specialisation | geopolitical chokepoint; need 0.21 / 0.32 |
-| 14 | coordinate | Solar | Solar refining (copper wire & rod, polysilicon) | Refining | weak | moderate | Shared vulnerability | geopolitical chokepoint; need 0.71 / 0.95 |
-| 15 | coordinate | Wind | Wind assembly (electricity meters, overhead conductors, power cables) | Assembly | strong | moderate | US supplies / Japan needs | strategic manufacturing gap; need 0.33 / 0.75 |
-| 16 | coordinate | Battery Materials & Cells | Battery materials (foil, electrolyte) | Refining | moderate (2.8% of world supply) | strong (11.2% of world supply) | Capacity-constrained trusted supply | trusted partner capacity constraint; need 0.45 / 0.94 |
-| 17 | coordinate | Battery Materials & Cells | Manganese dioxide (EMD) | Refining | moderate (3.7% of world supply) | strong (18.3% of world supply) | Capacity-constrained trusted supply | trusted partner capacity constraint; need 0.45 / 0.94 |
-| 18 | coordinate | Battery Materials & Cells | Battery recycling feed | Recovery | strong (43.7% of world supply) | moderate (1.6% of world supply) | Complementary specialisation | emerging bottleneck; need 0.88 / 0.98 |
-| 19 | coordinate | Batteries | Batteries assembly (li-ion cells & packs, other accumulators) | Assembly | strong | moderate | US supplies / Japan needs | geopolitical chokepoint; need 0.90 / 0.71 |
-| 20 | coordinate | Semiconductors & Power Electronics | Piezo-electric quartz | Refining | moderate (3.3% of world supply) | strong (10.8% of world supply) | Capacity-constrained trusted supply | geopolitical chokepoint; need n/a / n/a |
+| 12 | joint bet | Semiconductors & Power Electronics | Piezo-electric quartz | Refining | moderate (3.3% of world supply) | strong (10.8% of world supply) | Capacity-constrained trusted supply | geopolitical chokepoint; need n/a / n/a |
+| 13 | joint bet | Oil | Oil extraction | Extraction | strong | weak | Capacity-constrained trusted supply | trusted partner capacity constraint; need 0.47 / 0.98 |
+| 14 | coordinate | Solar Manufacturing | Wafers | Refining | moderate (9.9% of world supply) | strong (28.4% of world supply) | Complementary specialisation | geopolitical chokepoint; need 0.21 / 0.32 |
+| 15 | coordinate | Solar | Solar refining (copper wire & rod, polysilicon) | Refining | weak | moderate | Shared vulnerability | geopolitical chokepoint; need 0.71 / 0.95 |
+| 16 | coordinate | Wind | Wind assembly (electricity meters, overhead conductors, power cables) | Assembly | strong | moderate | US supplies / Japan needs | strategic manufacturing gap; need 0.33 / 0.75 |
+| 17 | coordinate | Battery Materials & Cells | Battery materials (foil, electrolyte) | Refining | moderate (2.8% of world supply) | strong (11.2% of world supply) | Capacity-constrained trusted supply | trusted partner capacity constraint; need 0.45 / 0.94 |
+| 18 | coordinate | Battery Materials & Cells | Manganese dioxide (EMD) | Refining | moderate (3.7% of world supply) | strong (18.3% of world supply) | Capacity-constrained trusted supply | trusted partner capacity constraint; need 0.45 / 0.94 |
+| 19 | coordinate | Battery Materials & Cells | Battery recycling feed | Recovery | strong (43.7% of world supply) | moderate (1.6% of world supply) | Complementary specialisation | emerging bottleneck; need 0.88 / 0.98 |
+| 20 | coordinate | Batteries | Batteries assembly (li-ion cells & packs, other accumulators) | Assembly | strong | moderate | US supplies / Japan needs | geopolitical chokepoint; need 0.90 / 0.71 |
 | 21 | coordinate | Gas | Gas assembly | Assembly | moderate | strong | Complementary specialisation | strategic manufacturing gap; need 0.18 / 0.40 |
 | 22 | coordinate | Gas | Gas extraction | Extraction | strong | weak | US supplies / Japan needs | no material intervention; need 0.30 / 0.94 |
 | 23 | coordinate | Gas | Gas refining | Refining | strong | weak | US supplies / Japan needs | no material intervention; need 0.09 / 0.74 |
@@ -869,7 +880,7 @@ Sources: 1.
 | T09 | USA -> JPN | Batteries/Components | predictability | Keep US exports of Batteries components (accumulator parts & separators) to Japan tariff-free and predictable; the buyer's need is met by the trusted supplier. |
 | T10 | JPN -> USA | accumulator-parts-and-separators | procurement recognition | Recognise Japan output of Accumulator parts & separators as trusted domestic-equivalent supply in US procurement and content rules; capacity, not access, is the constraint. |
 | T11 | JPN -> USA | rare-earth-permanent-magnets | procurement recognition | Recognise Japan output of Rare-earth permanent magnets as trusted domestic-equivalent supply in US procurement and content rules; capacity, not access, is the constraint. |
-| T12 | USA -> JPN | Oil/Extraction | procurement recognition | Recognise US output of Oil extraction as trusted domestic-equivalent supply in Japan procurement and content rules; capacity, not access, is the constraint. |
+| T12 | JPN -> USA | piezo-electric-quartz | procurement recognition | Recognise Japan output of Piezo-electric quartz as trusted domestic-equivalent supply in US procurement and content rules; capacity, not access, is the constraint. |
 | T13 | open | uranium-fuel-upstream--aggregated | open sourcing | Leave Uranium/fuel Extraction: aggregated low-coverage sub-sectors (Spent fuel & nuclear scrap, Uranium ores) open to global sourcing: trusted supply is adequate and diversified, so a bilateral preference adds cost without security. |
 | T14 | open | pgms-iridium-ruthenium | open sourcing | Leave PGMs (iridium, ruthenium) open to global sourcing: trusted supply is adequate and diversified, so a bilateral preference adds cost without security. |
 | T15 | open | nuclear-special-materials | open sourcing | Leave Nuclear special materials open to global sourcing: trusted supply is adequate and diversified, so a bilateral preference adds cost without security. |
