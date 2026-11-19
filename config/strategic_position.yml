@@ -530,12 +530,23 @@ decision_framework:
   # workforce_suppliers, adjacent_innovation: yes 1 / partly 0.5 / no 0 summed over the three and divided by
   # three, Unknown 0, the strict reading of the paper's learning score) and future option (for a leap candidate,
   # the four leap tests beyond_novelty, cost_perf_advantage, incumbent_vulnerable, scale_pathway summed over four,
-  # Unknown 0; any other node 0). Their weighted mean is ranked (mid-rank percentile) across the assessed
-  # producing-stage cells; layers are placed among the cells. No Competitive Position or need variable enters.
+  # Unknown 0; any other node 0). Their weighted mean (siv_score) is put on the 0-1 prize scale (scale below);
+  # layers share the cells' scale. No Competitive Position or need variable enters.
   strategic_value:
     # strategic_value: the rule reads strategic_industrial_value; market: industrial_opportunity (the rule until
     # 2026-10-30, kept for the sensitivity strategic_value_vs_market.csv).
     prize_measure: strategic_value
+    # score (user decision 2026-11-17): a fixed scale, high exactly when siv_score >= score_threshold (mapped
+    # piecewise-linearly so score_threshold sits at prize_threshold; strategic_value.R sp_siv_score_scale()).
+    # percentile: the mid-rank percentile across the assessed producing-stage cells (the rule until 2026-11-17).
+    # The percentile made the prize zero-sum: siv_score ties across countries within a node, so lifting one node's
+    # learning evidence (Electric Grid Components) pushed Electric Grid Assembly (219 cells) from 0.613 to 0.595.
+    scale: score
+    # CALIBRATION CHOICE to report: 0.3658 reproduces the percentile rule's 0.6 cut exactly on the 2026-11-17 run
+    # for every cell and layer (highest cell score below the cut 0.36566, lowest at or above 0.36712; a Mexico
+    # polysilicon layer at 0.36588 was high; 39.9% of assessed cells high). It is a
+    # family sum of about 1.1 at equal weights. A whole node sits just below it (206 cells at 0.36566).
+    score_threshold: 0.3658
     # relative family weights (1:1:1 = a third each, the spec's default; renormalised only where the market prize
     # is missing and require_market is false). CALIBRATION CHOICE to report: equal weights are a neutral prior.
     weights: {market: 1, commons: 1, option: 1}

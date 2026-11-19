@@ -68,17 +68,52 @@ test_that("the three families: market unchanged, commons and option on yes 1 / p
   expect_equal(x$siv_score[1], mean(c(0.8, 0.5, 0)))
   expect_equal(x$siv_score[3], 0.6 / 3)
   expect_equal(x$siv_cap[1:3], c(NA, NA, "market_only"))
-  # a mid-rank percentile across the producing rows; Deployment is decided on deployment_need
-  expect_equal(x$strategic_industrial_value[1:3], sp_midrank_pct(x$siv_score[1:3]))
+  # the fixed score scale (config scale score); Deployment is decided on deployment_need
+  sc <- sp_siv_cfg(sv_cfg())
+  expect_equal(sc$scale, "score")
+  expect_equal(x$strategic_industrial_value[1:2], sp_siv_score_scale(x$siv_score[1:2], sc$score_threshold, sc$prize_threshold))
   expect_true(all(is.na(unlist(x[4, SP_SIV_COLUMNS[SP_SIV_COLUMNS != "siv_cap"]]))))
+  # on the score scale the other rows' scores (ref) are never read
+  expect_equal(sp_strategic_value(r$tbl, r$attrs, sv_cfg(), ref = c(0.99, 0.98))$strategic_industrial_value,
+               x$strategic_industrial_value)
+  # percentile scale (the rule until 2026-11-17): a mid-rank percentile across the producing rows
+  pc <- sv_cfg()
+  pc$strategic_value$scale <- "percentile"
+  xp <- sp_strategic_value(r$tbl, r$attrs, pc)
+  expect_equal(xp$strategic_industrial_value[1:2], sp_midrank_pct(xp$siv_score[1:3])[1:2])
   # layers are placed among the cells' scores
   ref <- c(0.2, 0.4, x$siv_score[2], 0.9)
-  y <- sp_strategic_value(r$tbl, r$attrs, sv_cfg(), ref = ref)
+  y <- sp_strategic_value(r$tbl, r$attrs, pc, ref = ref)
   expect_equal(y$strategic_industrial_value[1], 2 / 4)            # two below
   expect_equal(y$strategic_industrial_value[2], (2 + 0.5) / 4)    # two below, one equal
   # without the market prize the node stays not assessed
   r$tbl$industrial_opportunity[2] <- NA
   expect_true(is.na(sp_strategic_value(r$tbl, r$attrs, sv_cfg())$strategic_industrial_value[2]))
+})
+
+test_that("the score scale is fixed: high exactly at score_threshold, monotone, and one node never re-ranks another", {
+  expect_equal(sp_siv_score_scale(c(0, 0.3658, 1), 0.3658, 0.6), c(0, 0.6, 1))
+  s <- seq(0, 1, by = 0.01)
+  v <- sp_siv_score_scale(s, 0.3658, 0.6)
+  expect_true(all(diff(v) > 0))
+  expect_identical(v >= 0.6, s >= 0.3658)
+  expect_true(is.na(sp_siv_score_scale(NA_real_, 0.3658, 0.6)))
+  # the zero-sum case of 2026-11-17: lifting one node's commons left the other node's prize unchanged
+  r <- sv_rows(list(list(market = 0.46, attr = list(process_knowledge = "partly", workforce_suppliers = "partly", adjacent_innovation = "partly")),
+                    list(market = 0.46, attr = list(process_knowledge = "partly", workforce_suppliers = "yes", adjacent_innovation = "partly")),
+                    list(market = 0.2, attr = list(process_knowledge = "partly", workforce_suppliers = "partly", adjacent_innovation = "partly"))))
+  a <- sp_strategic_value(r$tbl, r$attrs, sv_cfg())
+  r$attrs$process_knowledge[1] <- "yes"
+  r$attrs$adjacent_innovation[1] <- "yes"
+  b <- sp_strategic_value(r$tbl, r$attrs, sv_cfg())
+  expect_gt(b$strategic_industrial_value[1], a$strategic_industrial_value[1])
+  expect_equal(b$strategic_industrial_value[2:3], a$strategic_industrial_value[2:3])
+  bad <- sv_cfg()
+  bad$strategic_value$scale <- "rank"
+  expect_error(sp_siv_cfg(bad), "scale")
+  bad <- sv_cfg()
+  bad$strategic_value$score_threshold <- 1
+  expect_error(sp_siv_cfg(bad), "score_threshold")
 })
 
 test_that("less evidence never lifts the prize: unobserved commons count 0 and the market-only cap still applies", {
