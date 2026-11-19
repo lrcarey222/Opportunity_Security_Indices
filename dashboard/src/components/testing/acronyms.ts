@@ -31,10 +31,17 @@ export const ACRONYM_NAMES: Readonly<Record<string, readonly string[]>> = {
   IPEF: ['Indo-Pacific Economic Framework'],
   MSP: ['Minerals Security Partnership'],
   POL: ['Policy activity', 'Policy'],
+  // the partnership agreements (/aib/agreements, 2026-11-06): the sources and the agreement and sector words
+  GSP: ['Global Strategic Partnership Dataset', 'Global Strategic Partnership'],
+  DESTA: ['Design of Trade Agreements'],
+  IISD: ['International Institute for Sustainable Development'],
+  MOU: ['Memorandum of understanding'],
+  MOUs: ['Memoranda of understanding', 'Memorandums of understanding'],
+  CCS: ['Carbon capture', 'Carbon capture and storage'],
 };
 
 // CM-FDI first: the alternation must try the longer token before FDI-free ones
-const ACRONYM_RE = /(?<![\w-])(CM-FDI|PSI|PAMS|IPEF|HHI|RCA|CAT|TRL|MSP|POL|ES|EO|SI|FS|PO|DP)(?![\w-])/g;
+const ACRONYM_RE = /(?<![\w-])(CM-FDI|PSI|PAMS|IPEF|HHI|RCA|CAT|TRL|MSP|POL|DESTA|IISD|GSP|MOUs|MOU|CCS|ES|EO|SI|FS|PO|DP)(?![\w-])/g;
 
 /** The visible text of an element, leaving out <abbr> elements (an <abbr title> is allowed). */
 function textWithoutAbbr(el: Element): string {

@@ -100,10 +100,11 @@ export const COUNTRY_SEGMENT = 'countries';
 /** Second segments under /countries that are views, not countries. */
 const COUNTRY_RESERVED = new Set(['about']);
 
-export type AibNavKey = 'overview' | 'partnerships' | 'compacts' | 'roles' | 'diversification' | 'about';
+export type AibNavKey = 'overview' | 'partnerships' | 'agreements' | 'compacts' | 'roles' | 'diversification' | 'about';
 
 /**
- * Allied Industrial Base views: the overview, the three questions, then the Managed Interdependence
+ * Allied Industrial Base views: the overview, the three questions (Agreements, the partnership agreements, after
+ * Partnerships since 2026-11-06), then the Managed Interdependence
  * explainer (2026-10-19: the diversification scenario; path kept). Sectoral Compacts: /compacts (the
  * Strategic Sectoral Compacts since 2026-10-20), /compacts/s/:sid, /compacts/workstreams and the workstreams'
  * /compacts/:id, all under the one link; /compacts/about stays (About lists it). The module registers the
@@ -113,6 +114,7 @@ export type AibNavKey = 'overview' | 'partnerships' | 'compacts' | 'roles' | 'di
 export const AIB_NAV: { key: AibNavKey; to: string; label: string }[] = [
   { key: 'overview', to: '/aib', label: 'Overview' },
   { key: 'partnerships', to: '/aib/partnerships', label: 'Partnerships' },
+  { key: 'agreements', to: '/aib/agreements', label: 'Agreements' },
   { key: 'compacts', to: '/compacts', label: 'Sectoral Compacts' },
   { key: 'roles', to: '/aib/roles', label: 'Country roles' },
   { key: 'diversification', to: '/aib/diversification', label: 'Managed Interdependence' },
@@ -177,7 +179,7 @@ export function aibNavKeyOf(pathname: string): AibNavKey | null {
   if (s[0] === AIB_SEGMENT) {
     if (s.length === 1) return 'overview';
     const v = s[1].toLowerCase();
-    return v === 'partnerships' ? 'partnerships' : v === 'roles' ? 'roles' : v === 'diversification' ? 'diversification' : null;
+    return v === 'partnerships' ? 'partnerships' : v === 'agreements' ? 'agreements' : v === 'roles' ? 'roles' : v === 'diversification' ? 'diversification' : null;
   }
   if (s[0] === COMPACTS_SEGMENT) return s.length > 1 && s[1].toLowerCase() === 'about' ? 'about' : 'compacts';
   // the legacy Partners view lives with the partnerships
