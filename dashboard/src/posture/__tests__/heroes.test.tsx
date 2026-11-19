@@ -22,7 +22,7 @@ import { MAP_HELPER, MAX_TIP_PARTS, PostureMatrix } from '../PostureMatrix.tsx';
 import { SECTOR_POSTURE_TITLE, SectorPostureCard } from '../SectorPostureCard.tsx';
 import type { PostureDetail, Verb } from '../contract.ts';
 import { countryCells } from '../derive.ts';
-import { VERB_COLOR, VERB_LABEL, VERB_OUTLINE } from '../grammar.ts';
+import { DEPLOY_CASE_COLOR, VERB_COLOR, VERB_LABEL, VERB_OUTLINE } from '../grammar.ts';
 import { setPostureStore } from '../store.ts';
 import { YARD_AND_FENCE, YARD_DEFINITION } from '../../content/vocabulary.ts';
 import { fixtureCore, fixtureStore, withCell, withoutCell } from './fixture.ts';
@@ -1084,5 +1084,43 @@ describe('the drawer: the deployment case beside Accelerate', () => {
     expect(await row('Case: climate')).toMatch(/^82/);
     expect(await row('Case: demand growth')).toMatch(/^78/);
     expect(await row('Case: grid integration')).toMatch(/not material/);
+  });
+});
+
+describe('the Country Strategy Map: the deployment case strip', () => {
+  // the fixture core with cells.dc: Aland's Batteries Deployment (Accelerate) tagged climate+demand
+  const coreWithCase = () => {
+    const doc = fixtureCore();
+    const k = doc.cells as Record<string, unknown[]>;
+    const ti = ((doc.meta as Record<string, unknown>).techs as string[]).indexOf('Batteries');
+    const i = k.c.findIndex((_, j) => k.c[j] === 0 && k.t[j] === ti && k.s[j] === 4);
+    k.dc = k.p.map((_, j) => (j === i ? 'climate+demand' : null));
+    return doc;
+  };
+  afterEach(() => setPostureStore(fixtureStore()));
+
+  it('draws a strip of the case colours on the Deployment cell, names the case, and adds the legend row with counts', async () => {
+    setPostureStore(fixtureStore({ core: coreWithCase() }));
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+    const m = await screen.findByTestId('posture-matrix');
+    const strips = within(m).getAllByTestId('map-case');
+    expect(strips).toHaveLength(1);
+    expect(strips[0].getAttribute('data-case')).toBe('climate+demand');
+    const segs = Array.from(strips[0].querySelectorAll('[data-case-part]')) as HTMLElement[];
+    expect(segs.map((x) => x.getAttribute('data-case-part'))).toEqual(['climate', 'demand']);
+    expect(segs.map((x) => cssHex(x.style.background))).toEqual([DEPLOY_CASE_COLOR.climate, DEPLOY_CASE_COLOR.demand]);
+    // identity is never colour alone: the cell's name says the case
+    expect(within(m).getByRole('button', { name: /Batteries Deployment & Use.*deployment case: climate and demand growth/ })).toBeTruthy();
+    const legend = screen.getByTestId('legend-cases');
+    expect(legend.textContent).toContain('Deployment case');
+    const entries = Array.from(legend.querySelectorAll('[data-case]')).map((x) => [x.getAttribute('data-case'), /· (\d+) step/.exec(x.textContent ?? '')?.[1] ?? null]);
+    expect(entries).toEqual([['security', '0'], ['climate', '1'], ['demand', '1'], ['integration', '0']]);
+  });
+
+  it('an older core without cells.dc draws no strip and no case legend', async () => {
+    at('/', <CountryPostureCard iso3="AAA" name="Aland" />);
+    const m = await screen.findByTestId('posture-matrix');
+    expect(within(m).queryAllByTestId('map-case')).toHaveLength(0);
+    expect(screen.queryByTestId('legend-cases')).toBeNull();
   });
 });

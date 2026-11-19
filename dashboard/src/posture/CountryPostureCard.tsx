@@ -19,13 +19,13 @@ import { Loading, Notice } from '../components/ui.tsx';
 import { POSTURE_TERMS } from './basis.tsx';
 import { PostureNodeDrawer } from './CellDrawer.tsx';
 import { countPostures, countryCells, countryNames, countryPostureRows, POSTURE_CSV_COLS, postureCsvRows, postureCsvText, postureProvenance, strategyCountsText } from './derive.ts';
-import { prizeLabel } from './grammar.ts';
+import { deployCaseParts, prizeLabel } from './grammar.ts';
 import { StrategyMapLegend, TradeFreshness } from './PostureLegend.tsx';
 import { PostureMatrix } from './PostureMatrix.tsx';
 import { TradeShifts } from './TradeShifts.tsx';
 import { mixedYards } from './yards.ts';
 import { usePostureCore, usePostureDetail } from './store.ts';
-import type { PostureDetail } from './contract.ts';
+import type { DeployCaseId, PostureDetail } from './contract.ts';
 import { strategySentence } from './strategy.ts';
 import { countryPostureCols } from './tables.tsx';
 
@@ -108,6 +108,13 @@ export function CountryPostureCard({
   const counts = countPostures(cells);
   // the nodes the map splits on the diagonal (layers in different yards)
   const mixed = cells.filter((x) => mixedYards(x) !== null).length;
+  // the Deployment cells naming each case (a two-case tag counts for both); null where the core carries no case
+  // (computed here, after the early returns, so not a hook)
+  let caseCounts: Partial<Record<DeployCaseId, number>> | null = null;
+  if (cells.some((x) => x.deployCase !== undefined)) {
+    caseCounts = {};
+    for (const x of cells) for (const k of deployCaseParts(x.deployCase)) caseCounts[k] = (caseCounts[k] ?? 0) + 1;
+  }
   const prizeTermId = c.meta.prize_measure === 'market' ? POSTURE_TERMS.industrialOpportunity : POSTURE_TERMS.strategicValue;
   const cw = strategyCountsText(counts);
   const summary = `${sentence} ${cw.verbs}.`;
@@ -154,7 +161,12 @@ export function CountryPostureCard({
       >
         {/* the legend leads on wide screens; on a phone it follows the map, so the map stays near the top */}
         <div className="flex flex-col">
-          <StrategyMapLegend counts={showCounts ? counts : null} mixed={mixed > 0 ? (showCounts ? mixed : true) : null} className="order-last mt-4 sm:order-none sm:mt-0 sm:mb-4" />
+          <StrategyMapLegend
+            counts={showCounts ? counts : null}
+            mixed={mixed > 0 ? (showCounts ? mixed : true) : null}
+            cases={caseCounts ? (showCounts ? caseCounts : true) : null}
+            className="order-last mt-4 sm:order-none sm:mt-0 sm:mb-4"
+          />
           <div className="overflow-x-auto">
             <PostureMatrix core={c} cells={cells} selected={sel} onSelect={toggle} names={names} detail={doc} />
           </div>

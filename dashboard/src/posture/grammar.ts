@@ -88,6 +88,27 @@ export const DEPLOY_CASE_LABEL: Record<DeployCaseId, string> = {
   demand: 'demand growth',
   integration: 'grid integration',
 };
+/**
+ * The deployment case colours on the Strategy Map (a strip along the bottom of a Deployment & Use cell). Validated
+ * as a categorical set on the dark card (#1f2937; dataviz validate_palette, 2026-11-19: lightness band, chroma,
+ * CVD and normal-vision separation, contrast all pass) and kept clear of the six choice colours.
+ */
+export const DEPLOY_CASE_COLOR: Record<DeployCaseId, string> = {
+  security: '#e05252',
+  climate: '#7c6cf0',
+  demand: '#b98a12',
+  integration: '#d04f9a',
+};
+/** What each case means, for the legend. */
+export const DEPLOY_CASE_DEFINITION: Record<DeployCaseId, string> = {
+  security: 'more of it would cut imported fuel from risky suppliers, electricity imports or a thin firm-capacity margin',
+  climate: 'national climate targets, or a climate-aligned pathway, call for more of it',
+  demand: 'electricity, car or fuel demand is growing, or many people still lack electricity',
+  integration: 'a high wind and solar share that storage, grids and flexible gas must firm',
+};
+/** The cases of a deployment case code, stronger first; [] for none or no case. */
+export const deployCaseParts = (c: DeployCase | null | undefined): DeployCaseId[] =>
+  !c || c === 'none' ? [] : (c.split('+') as DeployCaseId[]).filter((k) => k in DEPLOY_CASE_COLOR);
 /** A deployment case code in words ("energy security and demand growth"); null for none or no case. */
 export const deployCaseWords = (c: DeployCase | null | undefined): string | null =>
   !c || c === 'none' ? null : c.split('+').map((k) => DEPLOY_CASE_LABEL[k as DeployCaseId] ?? k).join(' and ');
