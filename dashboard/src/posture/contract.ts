@@ -39,6 +39,18 @@ export type AssessedPosture = Exclude<PostureCode, 'N'>;
 export type PostureWord = 'secure' | 'compete' | 'deploy' | 'not_assessed';
 export type CompeteMode = 'preserve' | 'catch_up' | 'partner';
 export type DeployMode = 'accelerate' | 'watch';
+/** Why more deployment is needed (R deployment_need.R dn_cases): a descriptive tag, never the choice. */
+export type DeployCaseId = 'security' | 'climate' | 'demand' | 'integration';
+/** The core's deployment case: one case, two joined by "+" (stronger first), or none. */
+export type DeployCase = DeployCaseId | `${DeployCaseId}+${DeployCaseId}` | 'none';
+export const DEPLOY_CASE_IDS: readonly DeployCaseId[] = ['security', 'climate', 'demand', 'integration'];
+const DEPLOY_CASE_RE = /^(none|(security|climate|demand|integration)(\+(security|climate|demand|integration))?)$/;
+/** What kind of deployment Watch (R deployment_need.R dn_watch_kind): the need is below the bar because the
+ * technology should be phased down, is already growing fast, is falling, or simply is not needed more. */
+export type WatchKind = 'phase_down' | 'momentum' | 'declining' | 'low_need';
+export const WATCH_KINDS: ReadonlySet<string> = new Set(['phase_down', 'momentum', 'declining', 'low_need']);
+/** A known deployment case code, or null. */
+export const parseDeployCase = (v: string | null): DeployCase | null => (v !== null && DEPLOY_CASE_RE.test(v) ? (v as DeployCase) : null);
 /** The six verbs of the counts line, the Choices groups and the markers: Secure and the five modes. */
 export type Verb = 'secure' | CompeteMode | DeployMode;
 export type NeedType = 'supply_chain' | 'deployment';
@@ -177,6 +189,10 @@ export interface PostureCell {
   mode: CompeteMode | null;
   /** Deploy only: Accelerate (Deployment & Use, high deployment need) or Watch */
   deployMode: DeployMode | null;
+  /** Deploy at Deployment & Use only: the deployment case (cells.dc); absent from older cores */
+  deployCase?: DeployCase | null;
+  /** Watch at Deployment & Use only: what kind of Watch (cells.wk); absent from older cores */
+  watchKind?: WatchKind | null;
   /** Secure only */
   rationale: SecurityRationale | null;
   /** deployment at Deployment & Use, supply_chain elsewhere (the core's column when written, else by stage) */
@@ -455,7 +471,7 @@ function decodeYfNodes(raw: unknown, signals: readonly string[], techs: readonly
 
 /** The columns every core must carry (others are optional; a column that is present has one value per cell). */
 const REQUIRED_COLUMNS = ['c', 't', 's', 'p', 'm', 'dm', 'need', 'prize', 'cp'] as const;
-const OPTIONAL_COLUMNS = ['v', 'sec', 'nt', 'share', 'pw', 'bd', 'conf', 'fl', 'ev', 'al', 'alc', 'alf', 'p1', 'gap', 'mom', 'mq', 'io', 'yd'] as const;
+const OPTIONAL_COLUMNS = ['v', 'sec', 'nt', 'share', 'pw', 'bd', 'conf', 'fl', 'ev', 'al', 'alc', 'alf', 'p1', 'gap', 'mom', 'mq', 'io', 'yd', 'dc', 'wk'] as const;
 
 /** Check and decode the columnar core document (schema 2). */
 export function decodeCore(doc: unknown): PostureCore {
@@ -485,11 +501,13 @@ export function decodeCore(doc: unknown): PostureCore {
   const col = (name: string): unknown[] => (has(name) ? asArr(k[name]) : new Array<unknown>(n).fill(null));
   const cells: PostureCell[] = [];
   if (!p.length) {
-    const [cc, tt, ss, pp, vv, mm, dmm, secc, ntt, need, prize, cp, share, pw, bd, conf, fl, ev, al, alc, alf, p1, gap, mom, mq, io, yd] = [
-      'c', 't', 's', 'p', 'v', 'm', 'dm', 'sec', 'nt', 'need', 'prize', 'cp', 'share', 'pw', 'bd', 'conf', 'fl', 'ev', 'al', 'alc', 'alf', 'p1', 'gap', 'mom', 'mq', 'io', 'yd',
+    const [cc, tt, ss, pp, vv, mm, dmm, secc, ntt, need, prize, cp, share, pw, bd, conf, fl, ev, al, alc, alf, p1, gap, mom, mq, io, yd, dcc, wkk] = [
+      'c', 't', 's', 'p', 'v', 'm', 'dm', 'sec', 'nt', 'need', 'prize', 'cp', 'share', 'pw', 'bd', 'conf', 'fl', 'ev', 'al', 'alc', 'alf', 'p1', 'gap', 'mom', 'mq', 'io', 'yd', 'dc', 'wk',
     ].map(col);
     // without a market column, the prize is the market prize only where the core says it is
     const marketIsPrize = !has('io') && meta.prize_measure === 'market';
+    const hasDc = has('dc');
+    const hasWk = has('wk');
     const bad = new Map<string, number>();
     const count = (why: string) => bad.set(why, (bad.get(why) ?? 0) + 1);
     for (let i = 0; i < n; i++) {
@@ -523,6 +541,12 @@ export function decodeCore(doc: unknown): PostureCore {
       if ((code === 'S' || code === 'N') && (m !== null || dm !== null)) count('a Secure or not-assessed node with a mode');
       if (code === 'C' && stage === DEPLOYMENT_STAGE) count('a Compete node at Deployment');
       if (dm === 'accelerate' && stage !== DEPLOYMENT_STAGE) count('Accelerate outside Deployment');
+      const dcv = str(dcc[i]);
+      if (dcv !== null && parseDeployCase(dcv) === null) count('an unknown deployment case');
+      if (dcv !== null && (code !== 'D' || stage !== DEPLOYMENT_STAGE)) count('a deployment case outside Deploy at Deployment');
+      const wkv = str(wkk[i]);
+      if (wkv !== null && !WATCH_KINDS.has(wkv)) count('an unknown watch kind');
+      if (wkv !== null && (dm !== 'watch' || stage !== DEPLOYMENT_STAGE)) count('a watch kind outside Watch at Deployment');
       const evidence = normalizeEvidence(ev[i]);
       if (evidence === undefined) count('an unknown evidence word');
       const confidence = normalizeConfidence(conf[i]);
@@ -539,6 +563,9 @@ export function decodeCore(doc: unknown): PostureCore {
         iso3: iso[ci], tech: techs[ti], stage, posture: code as PostureCode, variant: str(vv[i]),
         mode: m !== null && MODES.has(m) ? (m as CompeteMode) : null,
         deployMode: dm !== null && DEPLOY_MODES.has(dm) ? (dm as DeployMode) : null,
+        // only where the core writes cells.dc: an older core leaves it undefined (the fence reason then falls back)
+        ...(hasDc ? { deployCase: parseDeployCase(dcv) } : {}),
+        ...(hasWk ? { watchKind: wkv !== null && WATCH_KINDS.has(wkv) ? (wkv as WatchKind) : null } : {}),
         rationale: sec !== null && RATIONALES.has(sec) ? (sec as SecurityRationale) : null,
         needType: nt !== null && NEED_TYPES.has(nt) ? (nt as NeedType) : needTypeOfStage(stage),
         need: num(need[i]), prize: num(prize[i]), market: marketIsPrize ? num(prize[i]) : num(io[i]), yards, cp: num(cp[i]), share: num(share[i]),

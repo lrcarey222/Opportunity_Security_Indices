@@ -339,13 +339,20 @@ test_that("the measure attribution in the config covers the eleven technologies 
   att <- lapply(cfg$measures, dn_measure_techs)
   # every technology has at least one attributed measure
   expect_true(all(unlist(cfg$techs) %in% unlist(att)))
-  # every measure belongs to one of the three families
-  expect_true(all(vapply(cfg$measures, function(m) m$family %in% DN_FAMILIES, logical(1))))
+  # every measure belongs to one of the three families, or feeds only the deployment case tag (case_only)
+  expect_true(all(vapply(cfg$measures, function(m) m$family %in% c(DN_FAMILIES, DN_CASE_ONLY), logical(1))))
+  # every measure a case reads is defined, and the case-only measures feed a case
+  case_measures <- unique(unlist(lapply(cfg$cases$cases, function(cs) names(cs$measures))))
+  expect_true(all(case_measures %in% names(cfg$measures)))
+  case_only <- names(cfg$measures)[vapply(cfg$measures, function(m) identical(m$family, DN_CASE_ONLY), logical(1))]
+  expect_true(all(case_only %in% case_measures))
   # Oil (which burns oil) and Electric Grid are never credited with displacing imported fuel
   expect_false(any(c("Oil", "Electric Grid") %in% att$import_displacement))
   # coal and gas plants displace imports only net of their own fuel's import dependence
   expect_equal(cfg$measures$import_displacement$techs$Coal$own_fuel, "Coal")
   expect_equal(cfg$measures$import_displacement$techs$Gas$own_fuel, "Gas")
-  # no measure reads a subscription source (D13)
-  expect_false(any(grepl("bnef|bloomberg", tolower(unlist(cfg)))))
+  # no deployment_need measure reads a subscription source (D13); BNEF feeds only the case tag (case_only)
+  scored_measures <- cfg$measures[vapply(cfg$measures, function(m) m$family %in% DN_FAMILIES, logical(1))]
+  expect_false(any(grepl("bnef|bloomberg", tolower(unlist(scored_measures)))))
+  expect_false(any(grepl("bnef|bloomberg", tolower(unlist(cfg$home_market)))))
 })

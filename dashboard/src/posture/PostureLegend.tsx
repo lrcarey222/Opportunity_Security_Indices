@@ -9,9 +9,10 @@
 
 import type { ReactNode } from 'react';
 import { CHOICE_ACTION, STATE, WATCH_DEPLOYMENT_DEFINITION, YARD_AND_FENCE, YARD_DEFINITION } from '../content/vocabulary.ts';
-import type { PostureCore, Verb, Yard } from './contract.ts';
+import type { DeployCaseId, PostureCore, Verb, Yard } from './contract.ts';
 import { freshnessLine } from './derive.ts';
-import { FENCE_LABEL, FENCE_ORDER, FENCE_VERBS, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, type Fence } from './grammar.ts';
+import {
+  DEPLOY_CASE_COLOR, DEPLOY_CASE_DEFINITION, DEPLOY_CASE_LABEL, FENCE_LABEL, FENCE_ORDER, FENCE_VERBS, NOT_ASSESSED_BORDER, NOT_ASSESSED_HATCH, VERB_COLOR, VERB_LABEL, VERB_OUTLINE, type Fence } from './grammar.ts';
 import { MIXED_LEGEND, mixedFill } from './yards.ts';
 
 const cap1 = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
@@ -148,6 +149,8 @@ export interface StrategyMapLegendProps {
   counts?: ChoiceLegendCounts | null;
   /** the Mixed entry (a split cell): its count, or true without one; off when 0 or null */
   mixed?: number | boolean | null;
+  /** the deployment case row: the Deployment cells naming each case, or true without counts; off when null */
+  cases?: Partial<Record<DeployCaseId, number>> | boolean | null;
   className?: string;
 }
 
@@ -157,7 +160,7 @@ export interface StrategyMapLegendProps {
  * and one plain line (CHOICE_ACTION); then Not assessed and Mixed (the split cell). Three columns on wide
  * screens (the Medium fence the widest), one on a phone.
  */
-export function StrategyMapLegend({ counts, mixed = null, className }: StrategyMapLegendProps) {
+export function StrategyMapLegend({ counts, mixed = null, cases = null, className }: StrategyMapLegendProps) {
   const n = (k: Verb | 'N') => (counts ? (counts[k] ?? 0) : null);
   const group = (f: Fence) => {
     const y = YARD_OF_FENCE[f];
@@ -198,6 +201,29 @@ export function StrategyMapLegend({ counts, mixed = null, className }: StrategyM
           ) : null}
         </ul>
       </div>
+      {cases ? (
+        <div className="min-w-0 border-t border-white/10 pt-2 lg:col-span-3" data-testid="legend-cases">
+          <p className="font-medium text-paper">Deployment case: the strip along the foot of a Deployment &amp; Use cell</p>
+          <p className="mt-0.5 text-paper-mute">
+            Why more of the technology is needed, beside Accelerate or Watch (it never changes the choice). Two segments: two cases of about equal strength. No strip: no single
+            case stands out, or it is not assessed.
+          </p>
+          <ul className="mt-1.5 grid gap-x-6 gap-y-1 sm:grid-cols-2" aria-label="Deployment cases">
+            {(['security', 'climate', 'demand', 'integration'] as const).map((k) => (
+              <DefinitionEntry
+                key={k}
+                data-case={k}
+                swatch={
+                  <span aria-hidden="true" className="mt-[4px] inline-block rounded-[1px]" style={{ width: 14, height: 6, background: DEPLOY_CASE_COLOR[k] }} />
+                }
+                name={DEPLOY_CASE_LABEL[k].charAt(0).toUpperCase() + DEPLOY_CASE_LABEL[k].slice(1)}
+                count={typeof cases === 'object' ? (cases[k] ?? 0) : null}
+                definition={DEPLOY_CASE_DEFINITION[k]}
+              />
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }
