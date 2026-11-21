@@ -1,0 +1,608 @@
+# Golden regression cases for the published AIB Explorer (docs/QC_SYSTEM_DESIGN.md 4.5 and 6.1). Each entry under
+# `cases:` maps 1:1 to GoldenCase in dashboard/src/review/model.ts and is evaluated by src/review/qc/golden.ts
+# against main's shipped bundles. Every expectation below was read from, and passes on, posture
+# 2026-11-17T20:33 @0496e7ba (posture-core.f665dc19) and AIB 2026-11-17 (compacts.c5643da1).
+#
+# A golden case pins CURRENT behaviour so that any change is deliberate and reviewed. It does not endorse the
+# output: where the current result looks doubtful the rationale says so plainly.
+#
+# expect.choice: canonical key (posture: secure, preserve, catch_up, partner, accelerate, watch, not_assessed;
+#   AIB node: the class string, e.g. BUILD; compact: sectoral | narrower | none, the strategic layer's
+#   materiality rule on the case's scenario: a material lead mission = sectoral, a targeted lead mission =
+#   narrower, no mission = none; R/aib/aib_strategic.R aib_strategic_missions).
+# expect.choice_in: the accepted set where more than one result is defensible (then exact: false).
+# expect.fence: high (Secure), medium (Preserve, Catch Up, Partner, Accelerate), low (Watch).
+# expect.numeric: accepted [min, max] per snapshot fact id (posture: need, prize, cp, home_share; Deployment
+#   cells: deployment_need; AIB node: exposure, existing, dividend, residual; compact: lost_usd, exposure,
+#   coverage_coordinated). Tolerances are about +/-0.03 on scores and tighter where the case sits on a threshold;
+#   a value pinned to a cap (prize 0.59, need 0.61) is pinned exactly.
+# change_requires_review: any change fails until NEIS re-approves the case (always true for near_threshold,
+#   surprising, method_sensitive and neis_central; also true here for the doubtful entrepot results).
+# IDs GC_### are stable and never reused; retire a case by deleting it with a note in the commit, never by
+#   renumbering. approved.release stays null until NEIS approves against a data release ID.
+
+cases:
+  # ---------------------------------------------------------------------------------------------- obvious_secure
+  - id: GC_001
+    category: obvious_secure
+    kind: posture_cell
+    key: {iso3: JPN, tech: Electric Vehicles, stage: Refining}
+    expect:
+      choice: secure
+      fence: high
+      numeric: {need: [0.97, 1.0]}
+    exact: true
+    change_requires_review: false
+    rationale: >-
+      Japan's processing of EV battery and magnet materials: Secure through the coercive-chokepoint route (need
+      0.998; China 47.2% of imports, 94.4% of world supply). An anchor of the Secure override. Two things to watch:
+      Batteries/Refining in Japan shares the same world-supply facts (China 94.4%, trusted partners 4.0%) but is
+      Catch Up (need 0.939) on a different import mix (China 22.4% of imports), and the opposite-bloc share of
+      imports (0.885) is far above the China share (0.472), which should be explained before the cell is used as
+      an anchor.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_002
+    category: obvious_secure
+    kind: posture_cell
+    key: {iso3: KOR, tech: Nuclear, stage: Refining}
+    expect:
+      choice: secure
+      fence: high
+      numeric: {need: [0.94, 1.0]}
+    exact: true
+    change_requires_review: false
+    rationale: >-
+      Korea's nuclear fuel conversion and enrichment: Secure through operational control (need 0.973; Russia 44.2%
+      of imports, no measured domestic supply). One of only four operational-control Secure cells in the bundle.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- keep_open
+  - id: GC_003
+    category: keep_open
+    kind: posture_cell
+    key: {iso3: NLD, tech: Oil, stage: Refining}
+    expect:
+      choice: watch
+      fence: low
+      numeric: {need: [0.19, 0.25], prize: [0.21, 0.27], cp: [0.77, 0.83]}
+    exact: true
+    change_requires_review: false
+    rationale: >-
+      Netherlands oil refining: a large refiner (position 0.803, export RCA 2.33) with low need (0.222) and a low,
+      declining-market prize (0.239): Watch is the framework's intended "keep open" result. The node holds exactly
+      5 large-yard signals, but the top-quarter position bypasses the large yard and the triage reaches Watch anyway.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_004
+    category: keep_open
+    kind: posture_cell
+    key: {iso3: USA, tech: Solar, stage: Extraction}
+    expect:
+      choice: watch
+      fence: low
+      numeric: {need: [0.845, 0.905], prize: [0.256, 0.316]}
+    exact: true
+    change_requires_review: false
+    rationale: >-
+      US solar raw-material extraction (silica and related inputs): Watch through the large yard (6 of 5 signals)
+      although need is high (0.875); the trace never reaches need or prize. Pins the rule that a commodity node is
+      kept open whatever the dependence. Turkey supplies 51.2% of imports.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_005
+    category: keep_open
+    kind: posture_cell
+    key: {iso3: DEU, tech: Electric Grid, stage: Components}
+    expect:
+      choice: watch
+      fence: low
+      numeric: {need: [0.28, 0.34], prize: [0.467, 0.467], cp: [0.918, 0.978]}
+    exact: true
+    change_requires_review: false
+    rationale: >-
+      Germany's grid components: globally competitive (position 0.948, 9.2% of world supply, RCA 1.32) but low need
+      (0.31) and a low prize (0.467, the same in all 214 economies), so Watch. Also review case CASE_013. If the
+      node-level prize moves, every economy's grid-components cell moves with it.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- strong_producer
+  - id: GC_006
+    category: strong_producer
+    kind: posture_cell
+    key: {iso3: CHN, tech: Batteries, stage: Refining}
+    expect:
+      choice: preserve
+      fence: medium
+      numeric: {prize: [0.80, 0.87], cp: [0.908, 0.968], home_share: [0.80, 0.90]}
+    exact: true
+    change_requires_review: false
+    rationale: >-
+      China's battery-material refining: 84.8% of measured world supply, position 0.938, prize 0.834, need 0.056:
+      Preserve. The reference case for a dominant producer.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_007
+    category: strong_producer
+    kind: posture_cell
+    key: {iso3: USA, tech: Batteries, stage: Components}
+    expect:
+      choice: preserve
+      fence: medium
+      numeric: {need: [0.03, 0.09], prize: [0.784, 0.844], cp: [0.891, 0.951], home_share: [0.28, 0.32]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      US battery components: Preserve on a 30.1% world share and position 0.921. Doubtful input: the share (0.301)
+      is more than twice the US share of 2022-24 world exports of the node (0.137), and China supplies 30.1% of US
+      imports while need is only 0.062; the basis of the production share should be checked against capacity data
+      before this is used as a strong-producer reference.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- import_dependent
+  - id: GC_008
+    category: import_dependent
+    kind: posture_cell
+    key: {iso3: JPN, tech: Batteries, stage: Extraction}
+    expect:
+      choice_in: [partner, watch]
+      numeric: {need: [0.96, 1.0], cp: [0.0, 0.03]}
+    exact: false
+    change_requires_review: false
+    rationale: >-
+      Japan's battery minerals: need 0.993, no domestic supply, South Africa 35.2% of imports; Partner (with
+      Australia) today, one large-yard signal short of Watch (4 of 5). Either is a defensible framework result for an
+      import-dependent non-producer, so the set is pinned rather than the single choice; Secure or a build choice
+      would be a regression.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_009
+    category: import_dependent
+    kind: posture_cell
+    key: {iso3: KOR, tech: Batteries, stage: Refining}
+    expect:
+      choice: catch_up
+      fence: medium
+      numeric: {need: [0.96, 1.0], prize: [0.737, 0.797], cp: [0.0, 0.03]}
+    exact: true
+    change_requires_review: false
+    rationale: >-
+      Korea's battery-material refining: need 0.993 (China 41.6% of imports), prize 0.767, position 0 (0.1% of
+      world supply) yet a credible pathway, so Catch Up. Pins the "build from an adjacent base" reading for a large
+      importer.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_010
+    category: surprising
+    kind: posture_cell
+    key: {iso3: IDN, tech: Batteries, stage: Extraction}
+    expect:
+      choice: watch
+      fence: low
+      numeric: {need: [0.82, 0.88], home_share: [0.0, 0.005]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Indonesia's battery mineral mining: Watch through the large yard on exactly 5 signals (with a capability
+      floor), with need 0.85 (the Philippines 66% of imports) and a measured world share of 0 although its
+      production-position family scores 0.743 and its pathway records a resource base. Doubtful data: Indonesia
+      is the world's largest nickel miner (and its imports, led by the Philippines, look like nickel ore), yet a
+      world share of 0 makes it a non-contender and keeps the self-supply guard off. Pinned (share included) so
+      that a fix to the production basis shows up as a deliberate change.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- entrepot
+  - id: GC_011
+    category: entrepot
+    kind: posture_cell
+    key: {iso3: BEL, tech: Oil, stage: Extraction}
+    expect:
+      choice: secure
+      fence: high
+      numeric: {need: [0.93, 0.99], cp: [0.0, 0.03]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Belgium crude oil: Secure (systemic resilience) with zero production and the Netherlands recorded as the
+      supplier of 98.4% of imports. This looks wrong: it reads Rotterdam transit as Dutch supply and makes a hub
+      relationship the basis of a high fence. Pinned so that an entrepot fix shows up as a deliberate change, not
+      to endorse it. Also review case CASE_010.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_012
+    category: entrepot
+    kind: posture_cell
+    key: {iso3: SGP, tech: Batteries, stage: Refining}
+    expect:
+      choice: catch_up
+      fence: medium
+      numeric: {need: [0.884, 0.944], prize: [0.737, 0.797], cp: [0.0, 0.03]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Singapore battery-material refining: Catch Up with no measured world supply and position 0, on a pathway
+      whose only anchor is a 0.54% share of world exports (re-export signature) plus a relative-adjacency signal.
+      Doubtful: a hub's re-exports stand in for capability. Pinned so that a re-export correction is visible.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- sparse
+  - id: GC_013
+    category: sparse
+    kind: posture_cell
+    key: {iso3: USA, tech: Solar, stage: Recovery}
+    expect:
+      choice: not_assessed
+    exact: true
+    change_requires_review: false
+    rationale: >-
+      US solar recovery: not assessed because supply-chain need is not measured (too few comparable importers or no
+      trade data), with prize 0.435. Pins the rule that missing need gives Not assessed, never Watch.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- near_threshold
+  - id: GC_014
+    category: near_threshold
+    kind: posture_cell
+    key: {iso3: KOR, tech: Batteries, stage: Components}
+    expect:
+      choice: preserve
+      fence: medium
+      numeric: {cp: [0.75, 0.775], need: [0.70, 0.76], prize: [0.757, 0.817]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Korea's battery components: Preserve with position 0.763, 0.013 over the bar (Catch Up possible). The node has
+      19 contenders, so one rank step moves the position by 0.053: a single contender overtaking Korea makes it
+      Catch Up. Anchor case CASE_001.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_015
+    category: near_threshold
+    kind: posture_cell
+    key: {iso3: JPN, tech: Nuclear, stage: Components}
+    expect:
+      choice: preserve
+      fence: medium
+      numeric: {cp: [0.75, 0.76], need: [0.60, 0.645], prize: [0.747, 0.807]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Japan's nuclear components: Preserve with position exactly 0.750 on the inclusive bar (Catch Up possible) and
+      need 0.622, also inside the borderline band; confidence low. Any movement of the contender ranks changes it.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_016
+    category: near_threshold
+    kind: posture_cell
+    key: {iso3: USA, tech: Nuclear, stage: Deployment}
+    expect:
+      choice: watch
+      fence: low
+      numeric: {deployment_need: [0.585, 0.599]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      US nuclear deployment: Watch at deployment need 0.597, 0.003 under the 0.6 bar, on two of three families (the
+      policy-gap family is not assessed for the US). The reason text rounds it to "Deployment need 0.60 is below
+      0.60", which reads as a contradiction. Review case CASE_012.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_017
+    category: near_threshold
+    kind: posture_cell
+    key: {iso3: CHN, tech: Electric Vehicles, stage: Deployment}
+    expect:
+      choice: accelerate
+      fence: medium
+      numeric: {deployment_need: [0.60, 0.615]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      China EV deployment: Accelerate at deployment need 0.604, 0.004 over the bar. The mirror image of GC_016.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_018
+    category: near_threshold
+    kind: posture_cell
+    key: {iso3: IND, tech: Wind, stage: Refining}
+    expect:
+      choice: catch_up
+      fence: medium
+      numeric: {prize: [0.60, 0.61], need: [0.746, 0.806]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      India wind materials refining: Catch Up on a prize of 0.603, 0.003 over the bar (Partner possible), with
+      position 0 and a pathway anchored on export share. The US cell in the same node is Partner at prize 0.583.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- neis_central
+  - id: GC_019
+    category: neis_central
+    kind: posture_cell
+    key: {iso3: USA, tech: Batteries, stage: Refining}
+    expect:
+      choice: catch_up
+      fence: medium
+      numeric: {need: [0.423, 0.483], prize: [0.804, 0.864], cp: [0.282, 0.342]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      US battery-material refining: Catch Up on a high prize (0.834) and five capability anchors. Need is only 0.453
+      although China holds 94.4% of world supply of the node, because need ranks the US against every economy's
+      import mix. Review case CASE_004.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_020
+    category: neis_central
+    kind: posture_cell
+    key: {iso3: DEU, tech: Solar, stage: Assembly}
+    expect:
+      choice: preserve
+      fence: medium
+      numeric: {cp: [0.75, 0.809], prize: [0.785, 0.845], need: [0.104, 0.164]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Germany's solar module and inverter assembly: Preserve with position 0.779 and low confidence (borderline on
+      position and on the large-yard test at 4 of 5 signals). Review case CASE_007.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_021
+    category: neis_central
+    kind: posture_cell
+    key: {iso3: JPN, tech: Electric Grid, stage: Assembly}
+    expect:
+      choice: catch_up
+      fence: medium
+      numeric: {need: [0.67, 0.70], prize: [0.613, 0.613], cp: [0.673, 0.7499]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Japan grid equipment assembly: Catch Up, borderline on need (0.685), prize (0.613, the same for all 214
+      economies) and position (0.703); Preserve, Catch Up and Partner are all possible. Anchor case CASE_008.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_022
+    category: neis_central
+    kind: posture_cell
+    key: {iso3: USA, tech: Batteries, stage: Assembly}
+    expect:
+      choice: preserve
+      fence: medium
+      numeric: {need: [0.693, 0.753], prize: [0.97, 1.0], cp: [0.891, 0.951]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      US battery cells and packs: Preserve with need 0.723, the maximum prize (1.000, lifted by the home market) and
+      position 0.921 on a 4.6% world share. Compare the US component cell (GC_007), whose need is 0.062.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- surprising
+  - id: GC_023
+    category: surprising
+    kind: posture_cell
+    key: {iso3: CHN, tech: Solar, stage: Components}
+    expect:
+      choice: watch
+      fence: low
+      numeric: {prize: [0.59, 0.59], cp: [0.953, 1.0], need: [0.0, 0.042]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      China's solar cells and wafers: Watch although China holds 25.9% of measured world supply with position 0.983,
+      because need is 0.012 and the market-only cap holds the prize at 0.59 in every economy. Most readers will find
+      "Watch" for the world's dominant producer surprising; the result follows from the cap, not from evidence
+      about China. Anchor case CASE_006.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_024
+    category: surprising
+    kind: posture_cell
+    key: {iso3: AUS, tech: Batteries, stage: Extraction}
+    expect:
+      choice: watch
+      fence: low
+      numeric: {need: [0.085, 0.145], prize: [0.59, 0.59], cp: [0.834, 0.894], home_share: [0.14, 0.18]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Australia's battery minerals: Watch although Australia holds 16% of world supply (RCA 25.2, position 0.864).
+      Doubtful: the same minerals under Electric Vehicles/Extraction are Preserve (GC_025) because the self-supply
+      guard fires here (world share 0.16) and not there (0.083, with the pipeline's home_share missing), which takes
+      need from 0.738 to 0.115 on an identical import mix. Anchor case CASE_003.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_025
+    category: method_sensitive
+    kind: posture_cell
+    key: {iso3: AUS, tech: Electric Vehicles, stage: Extraction}
+    expect:
+      choice: preserve
+      fence: medium
+      numeric: {need: [0.708, 0.768], prize: [0.59, 0.59], cp: [0.899, 0.959]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Australia's EV minerals: Preserve, flagged review_strong_position_low_prize, on need 0.738. Method-sensitive
+      against GC_024: the import mix, exports and RCA are identical, but the world share used by the self-supply
+      guard differs (0.083 here, 0.160 for Batteries), so the composition families count here and not there.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_026
+    category: surprising
+    kind: posture_cell
+    key: {iso3: IND, tech: Solar, stage: Components}
+    expect:
+      choice: partner
+      fence: medium
+      numeric: {cp: [0.918, 0.978], need: [0.821, 0.881], prize: [0.59, 0.59]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      India's solar cells: Partner although its contender position is 0.948, because the capability lower bound
+      misses the floor (flag review_top_quarter_below_floor) and the prize is capped. Doubtful on its face for an
+      economy with a large cell-manufacturing build-out; pinned so a change in the capability floor is reviewed.
+      Review case CASE_005.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- method_sensitive
+  - id: GC_027
+    category: method_sensitive
+    kind: posture_cell
+    key: {iso3: IND, tech: Solar, stage: Refining}
+    expect:
+      choice: preserve
+      fence: medium
+      numeric: {cp: [0.75, 0.76], prize: [0.532, 0.5999], need: [0.864, 0.924]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      India solar refining: Preserve (flag review_strong_position_low_prize) only because its position is exactly
+      0.750: the top-quarter test runs before the large yard (position_first), so 6 of 5 large-yard signals are
+      bypassed. A strict bar, or position_first off, makes it Watch. The prize (0.562) comes from a home-market
+      lift of a world node prize of 0.20.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_028
+    category: method_sensitive
+    kind: posture_cell
+    key: {iso3: ARG, tech: Nuclear, stage: Refining}
+    expect:
+      choice: watch
+      fence: low
+      numeric: {need: [0.61, 0.61], prize: [0.748, 0.808]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Argentina nuclear fuel refining: Watch at need 0.61, which is the need-floor cap (score 0.069, uncapped rank
+      0.835 in the 2026-11-17 pipeline table); uncapped, the high prize (0.778) and high need would make it Partner.
+      The bundle does not mark the cap, so the cell looks like an ordinary low-need Watch.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- AIB nodes
+  - id: GC_029
+    category: neis_central
+    kind: aib_node
+    key: {node: rare-earth-permanent-magnets, scenario: decoupling}
+    expect:
+      choice: BUILD
+      numeric: {exposure: [0.588, 0.648], residual: [0.577, 0.637]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Rare-earth permanent magnets under Decoupling: China supplies 61.7% of allied traded demand, the residual gap
+      after redistributed trade is 60.7%, and every variant gives BUILD. The clearest BUILD in the AIB. Review case
+      CASE_014.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_030
+    category: method_sensitive
+    kind: aib_node
+    key: {node: graphite-electrodes, scenario: decoupling}
+    expect:
+      choice: COORDINATE
+      numeric: {existing: [0.82, 0.85], dividend: [0.07, 0.09], residual: [0.075, 0.0999]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Graphite electrodes under Decoupling: COORDINATE (existing links 83.4%, coordination dividend 8.1 points,
+      residual 8.5%, under the 10% BUILD bar). Growth-sensitive: LOW INTERVENTION with unlimited growth of existing
+      links, BUILD under the conservative supply scenario, LOW under China halved. Review case CASE_015.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_031
+    category: surprising
+    kind: aib_node
+    key: {node: polysilicon, scenario: decoupling}
+    expect:
+      choice: LOW INTERVENTION
+      numeric: {exposure: [0.10, 0.1499]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Polysilicon under Decoupling: LOW INTERVENTION because China supplies only 11.7% of allied traded demand (the
+      US is the largest supplier at 41.6%). Doubtful: the node carries PHYSICAL CAPABILITY NOT VALIDATED and says
+      trade exposure understates physical concentration; a production-based measure would very likely give BUILD.
+      Review case CASE_016.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_032
+    category: neis_central
+    kind: aib_node
+    key: {node: li-ion-cells-and-packs, scenario: managed}
+    expect:
+      choice: BUILD
+      numeric: {residual: [0.426, 0.486]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Lithium-ion cells and packs under Managed Interdependence: China capped at 23.2% so that the node's HHI
+      (0.488) falls to the HHI of the other lines of heading 8507 (0.103); a 45.6% gap (US$60.6bn) remains, BUILD.
+      Note that the benchmark is lead-acid and other accumulators, not a comparable battery market. Review case
+      CASE_017.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_033
+    category: near_threshold
+    kind: aib_node
+    key: {node: integrated-circuits, scenario: decoupling}
+    expect:
+      choice: BUILD
+      numeric: {residual: [0.10, 0.115], exposure: [0.18, 0.21]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Integrated circuits under Decoupling: BUILD on a residual gap of 0.107, 0.007 over the bar, on US$139bn of
+      lost supply (the largest node by value). LOW INTERVENTION under China halved, release and every
+      largest-supplier shock; the class of the biggest node rests on a 0.7-point margin.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  # ---------------------------------------------------------------------------------------------- compacts
+  - id: GC_034
+    category: neis_central
+    kind: compact
+    key: {sid: SC-BATTERIES, scenario: decoupling}
+    expect:
+      choice: sectoral
+      numeric: {exposure: [0.563, 0.623], coverage_coordinated: [0.39, 0.45]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Battery Materials & Cells under Decoupling: the shock removes 59.4% of the chain's allied traded demand
+      (US$108.3bn), coordinated trade restores 42.0%, 10 of 14 steps are BUILD and the lead BUILD mission carries
+      100% of lost supply: a Sectoral Compact. Doubtful detail: the proposed core lists the United States as a
+      "Resource supplier" (minerals and recycled feed). Review case CASE_018.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_035
+    category: near_threshold
+    kind: compact
+    key: {sid: SC-GRID, scenario: managed}
+    expect:
+      choice: sectoral
+      numeric: {lost_usd: [8.0e+9, 8.4e+9], exposure: [0.02, 0.05]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Grid Equipment & Conductors under Managed Interdependence: Sectoral only through the dollar arm of the
+      materiality rule. Its one BUILD step (grain-oriented electrical steel) is 12.5% of US$8.21bn to shift,
+      US$1.026bn against the US$1bn floor; a shift 2.6% smaller would make it a targeted action (narrower). Review case
+      CASE_020.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
+
+  - id: GC_036
+    category: method_sensitive
+    kind: compact
+    key: {sid: SC-NUCLEAR, scenario: managed}
+    expect:
+      choice: sectoral
+      numeric: {lost_usd: [1.5e+8, 2.5e+8]}
+    exact: true
+    change_requires_review: true
+    rationale: >-
+      Nuclear Fuel & Reactor Systems under Managed Interdependence: a Sectoral Compact on US$0.20bn of supply to
+      shift in the whole chain, because the lead BUILD mission holds 52% of it (share arm of the rule). Under
+      Decoupling the same chain needs no compact. Doubtful as a policy signal: a standing compact for a US$0.1bn
+      mission. Review case CASE_019.
+    approved: {by: "draft - pending NEIS approval", on: "2026-11-20", release: null}
