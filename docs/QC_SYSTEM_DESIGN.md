@@ -493,3 +493,113 @@ parallel with the pipeline-level R suite; the UI comes second; documentation and
 - It does not produce a single "validated" score or an agreement-percentage release gate.
 - It does not invent production data: where production or capacity evidence is missing the diagnostic
   says "no production evidence", it does not guess.
+
+---
+
+## As built (2026-11-21)
+
+Built on `feat/qc-review` against main's bundles (posture 2026-11-17T20:33 @0496e7ba, AIB 2026-11-17,
+country/sector 2026-10-31 @4bb2adc, strategic 2026-10-30 @a54a9d3; data release `rel-9c8f1877b5c6`, with the
+partnerships manifest hashed LF-normalised; the CRLF checkout hash gave `rel-cfef665eb878` before 2026-11-21).
+How to operate it: [QC_ADMIN_GUIDE.md](QC_ADMIN_GUIDE.md); for reviewers: [QC_REVIEWER_GUIDE.md](QC_REVIEWER_GUIDE.md);
+hosting and storage: [QC_DEPLOYMENT.md](QC_DEPLOYMENT.md); release gate: [QC_RELEASE_CHECKLIST.md](QC_RELEASE_CHECKLIST.md).
+
+### File layout
+
+```
+config/review/README.md, campaigns/aib_qc_2027_round1.yml, review_cases.yml (CASE_001-021),
+  method_cards.yml (MC_001-022), framework_scenarios.yml (FS_001-012)
+config/qc/golden_cases.yml (GC_001-036)
+dashboard/src/review/
+  model.ts tags.ts manifest.ts assign.ts flow.ts storage.ts sink.ts context.ts appInfo.ts release.ts
+  exports.ts aggregate.ts privacy.ts demo.ts ReviewLayout.tsx routes.tsx
+  data/store.ts                       review data loader (manifest, cases, cards, scenarios, robustness, QC summary)
+  qc/ choiceRule.ts sensitivity.ts bundleQc.ts threat.ts provenance.ts golden.ts snapshot.ts answerOptions.ts
+      bundles.ts run.ts reports.ts reviewData.ts node/loadBundles.ts (Node only)
+  components/ form.tsx IssueReportDialog.tsx ReportIssueButton.tsx ReviewToolbar.tsx WhyThisResult.tsx
+  views/ ReviewHome ProfileView AssignmentsView CaseReviewView DecisionUseStep ThreatStep MethodCardsView
+         FrameworkView BreakModelView AdminDashboardView
+dashboard/scripts/review/ build-review-data.mjs run-bundle-qc.mjs export-review.mjs
+dashboard/public/data/review/ manifest.json cases.aib_qc_2027_round1.json method_cards.json
+  framework_scenarios.json robustness.json qc_summary.json fixtures/demo_submissions.json
+R/qc/ qc_core.R qc_data_checks.R qc_trade_production.R qc_drift.R qc_golden.R qc_sensitivity.R qc_audit.R qc_report.R
+scripts/qc/ run_data_qc.R run_sensitivity.R build_case_audit.R write_validation_report.R
+tests/testthat/test-qc-{audit,data-checks,drift,golden,report,sensitivity,trade-production}.R
+qc/results/ bundle layer: bundle_qc_checks.csv choice_reproduction.csv qc_sensitivity_bundle.csv
+              robustness_bundle_summary.csv qc_golden_case_status.csv
+            pipeline layer: pipeline_data_qc_checks.csv pipeline_trade_production_flags.csv pipeline_drift_*.csv
+              pipeline_golden_case_status.csv pipeline_qc_summary.md qc_sensitivity_pipeline.csv
+              pipeline_robustness_summary.csv
+qc/audits/ <ISO3>_<Tech>_<Stage>.{json,md} and CASE_###.{json,md} (posture cells only)
+qc/private/ git-ignored (submissions, adjudications, exports)
+reports/AIB_VALIDATION_REPORT.md
+```
+
+Shell edits outside `review/`: `shell/buildInfo.ts` publishes posture, country, AIB and memo stamps (the
+stores call the setters); `vite.config.ts` defines `VITE_APP_COMMIT` and `VITE_BUILD_DATE`; the review
+route is registered before `'*'` in `routes.tsx` (`modules.ts` place `review`, no top-level tab);
+`check-budget.mjs` has review-view and review-data limits; report buttons sit in the posture cell drawer,
+AIB node classes, the strategic compact view and the partnerships view; `ReviewToolbar` sits in
+`AppRoot` above the footer.
+
+### CLIs
+
+- `node scripts/review/build-review-data.mjs [--config-dir] [--data-dir] [--out] [--golden | --no-golden] [--built-at ISO] [--app-commit] [--seed] [--no-demo] [--quiet]` (exit 1 invalid content, nothing written).
+- `node scripts/review/run-bundle-qc.mjs [--data-dir] [--out] [--golden | --no-golden] [--quiet]` (exit 1 on any failing check, golden included).
+- `node scripts/review/export-review.mjs --submissions <dir|file>... --out <dir> [--cases] [--adjudications] [--cards] [--scenarios] [--include-names] [--strict]` (exit 2 when `--out` is in a work tree but not under an ignored `qc/private/`).
+- `Rscript scripts/qc/run_data_qc.R --processed-dir <dir> [--bundle-dir] [--previous-table] [--out] [--raw-dir] [--golden] [--theme-tables] [--dyads] [--as-of]`.
+- `Rscript scripts/qc/run_sensitivity.R [--processed-dir] [--out] [--sp-config] [--node-attributes] [--yf-components] [--no-node-attributes]`.
+- `Rscript scripts/qc/build_case_audit.R [--processed-dir] (--case | --iso3/--tech/--stage | --cells | --all-posture-cases) [--bundle-dir] [--out] [--sensitivity] [--date]`.
+- `Rscript scripts/qc/write_validation_report.R [--results] [--exports] [--audits] [--cases] [--out] [--date]`.
+
+### Deviations from the design above
+
+1. **Sensitivity files.** Two files, `qc/results/qc_sensitivity_bundle.csv` and
+   `qc/results/qc_sensitivity_pipeline.csv` (each still with a `layer` column), plus
+   `robustness_bundle_summary.csv` / `pipeline_robustness_summary.csv`, instead of one
+   `qc_sensitivity_results.csv`. Golden status likewise: `qc_golden_case_status.csv` (bundle) and
+   `pipeline_golden_case_status.csv` (pipeline; failures there are warnings, i.e. drift evidence).
+   The bundle layer cannot run the structural specs that need unshipped inputs (gate 0.33 / Unknown 0.5,
+   need floor, two-family deployment, cap-aware need) and reports a "possible" flip when a 3-digit value
+   sits exactly on a moved threshold. Secure cells are `not_testable` in both layers (the override is not
+   re-run).
+2. **Answer options** come from `review/qc/answerOptions.ts` (always ending with "I don't know"), which
+   `manifest.ts` also uses for canonical keys. There is no `review/vocab.ts` and main has no
+   `compact/decide.ts`.
+3. **Compact decisions on main** are two families: strategic `SC-*` compacts answer `sectoral` /
+   `narrower` / `none`, labelled Potential Sectoral Compact / Targeted action / No compact needed
+   ("Targeted action" is quoted from `aib/views/strategic/sections.tsx`, the one label not importable);
+   operational `AIB-Cxx` compacts use the `AIB_COMPACT_TYPES` strings. Keys are validated per family.
+   Framework scenario FS_010 (`compact_decision`) offers the three strategic answers only.
+4. **Partnership cases** are limited to the USA_JPN memo, the only memo whose data main ships in
+   `public/data/partnerships`. Memo choice kinds have no Catch Up, so partnership answer options cannot
+   offer it.
+5. **"Why this result?"** is a collapsed disclosure in the posture cell drawer only, shown only when the
+   review UI is enabled (`reviewUiEnabled()`: a reviewer profile in the browser or `VITE_REVIEW_UI=1`).
+   Review reveal screens show the decision trace and link to the Explorer rather than embedding it.
+6. **Release ID.** Case files carry the full release ID including the memos manifest hash. Explorer
+   pages do not load the memos manifest (and each page loads only some bundles), so the ID a report
+   carries can be partial; it also records its bundle stamps one by one (`page_context.bundle_stamps`),
+   so match a report with a release by comparing stamps, not the composite ID. Case submissions record the case file's release.
+   The memos hash is taken with LF line endings.
+7. **Campaign rules** are written into `public/data/review/manifest.json` by `build-review-data.mjs`; the
+   reviewer pages fall back to defaults equal to round 1's YAML, and say so, when a rule is missing.
+   `status` and `review_types` are informational in the UI (no module is hidden, a closed campaign is
+   announced, not locked). The optional `reviewers` pre-registration list is validated (codes only) but
+   not read by the reviewer pages.
+8. **Anchor targets** cannot be enforced across reviewers on a static site (each browser assigns cases
+   without knowing the others); `target_reviews_per_anchor` is monitored on the admin Overview tab.
+9. **Exports** add `qc_framework_answers.csv`, `qc_decision_use.csv`, `qc_threat_reviews.csv`,
+   `qc_priority_fixes.csv` and `export_summary.json`, and neutralise spreadsheet formulas in reviewer text.
+10. **Admin dashboard.** Adjudications are stored in the admin's browser and downloaded as JSON for
+    `export-review.mjs --adjudications`; the dashboard cannot re-load that file. An adjudication is
+    attached to the first submission of an issue group. The Data QC and Robustness tabs show the bundle
+    layer (`qc_summary.json`, `robustness.json`); pipeline results are read from `qc/results` and the
+    report.
+11. **Audits** exist for posture cells only; AIB-node, compact and partnership cases have none.
+12. **Hosting.** The CSP in `dashboard/netlify.toml` applies on Netlify only; the GitHub Pages copy sets
+    no headers and `index.html` has no CSP meta tag (see QC_DEPLOYMENT.md). No backend is configured;
+    the default sink is `local`.
+13. **Reviewer-facing wording** still contains a few upstream labels that break the house vocabulary
+    ("optimized", bare "HHI" on AIB node facts); they are listed in `KNOWN_WORDING` in
+    `views/CaseReviewView.real.test.tsx` so that a new one, or a fix, fails the test.
