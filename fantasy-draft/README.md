@@ -5,7 +5,7 @@ Security Indices, with two game modes chosen on the home screen:
 
 | | Mode | Players | The question it asks |
 |---|---|---|---|
-| **1** | [**Fantasy Draft**](#mode-1--fantasy-draft) | 1–21 | *What sectors should **my country** prioritize?* |
+| **1** | [**Fantasy Draft**](#mode-1--fantasy-draft) | 1–21 | *Which supply-chain steps should **my country** prioritize?* |
 | **2** | [**Alliance Architect**](#mode-2--alliance-architect-coordination-mode) | 3–6 | *Given what **every** country wants to prioritize, what negotiated bargains beat acting alone?* |
 
 The Fantasy Draft is a competitive snake draft. Alliance Architect is a
@@ -16,7 +16,7 @@ Both modes are companions to the **OSI** pillars — Energy Security · Economic
 Opportunity · Partnership Strength — and share one taxonomy and one country roster.
 
 ![theme](https://img.shields.io/badge/theme-street%20fighter%20arcade-e02440) ·
-21 fighters · 39 sub-sectors · snake draft · 9-node battery negotiation
+21 fighters · 42 supply-chain cards · snake draft · 9-node battery negotiation
 
 ## Play it
 
@@ -37,41 +37,53 @@ python3 -m http.server -d fantasy-draft 8080  # then visit localhost:8080
 
 ## Mode 1 — Fantasy Draft
 
-Instead of picking fighters, you're an **allied nation** drafting
-sub-sectors from the **Electro-Industrial Stack** — minerals, chips, cells, wires,
-turbines and molecules.
+You're an **allied nation** drafting **supply-chain cards**: one card per technology at
+one of six supply-chain stages, from extraction to recycling. Each card is a cell of the
+Opportunity Security decision framework, and every country rates every card with the same
+**High / Medium / Low fences** the Explorer's Country page uses.
 
 ### How it works
 
 1. **Select your fighter** — a full 21-nation PLAYER SELECT roster, each with a
-   Street-Fighter-style portrait, a signature title (THE LEADER, THE CHIP MASTER, …),
-   home-turf synergies, and signature sub-sectors reflecting real industrial strengths
-   (Taiwan → advanced logic, South Korea → battery cells, Australia → critical minerals,
-   France → nuclear, Germany → machines, and so on).
+   Street-Fighter-style portrait and a signature title. The detail panel shows how many
+   cards the country fences High, Medium and Low, and names its **Secure** and **Preserve** cards.
 2. **Choose the field** — pick how many allies play (4 → 21) and the number of rounds.
-   The rounds available scale automatically so `allies × rounds ≤ 39` sub-sectors. Your
+   The rounds available scale automatically so `allies × rounds ≤` the number of cards. Your
    chosen fighter is always in the draft.
    - **Difficulty** controls how much scouting info you see while drafting:
-     **Easy** shows everything (sector OVR/stats + home-turf synergy numbers);
-     **Normal** (default) shows only the home-turf synergies and hides sector scores;
-     **Hard** hides all numbers, so you draft on names and judgement alone. Sort options
+     **Easy** shows everything (card stats + your fence on every card);
+     **Normal** (default) shows only your fences and hides card stats;
+     **Hard** hides both, so you draft on names and judgement alone. Sort options
      adapt so you can't sort by a hidden number.
-3. **Snake draft** against the AI allies — a pure snake draft, no salary cap. Each of the
-   39 sub-sectors is a "player" card with an industry icon, an **OVR** rating, tier
-   (S/A/B/C), and four scouting stats rendered as HP life-bars, drawn from the OSI scoring
-   framework: **National Security · Energy & Economic Security · Climate Salience ·
-   Economic Opportunity** (OVR is their mean).
-4. **Score** = fantasy points (OVR + home synergy + signature fit) **+ sector coverage**
-   (breadth across the six stack categories) **+ vertical-stack combos** (e.g. owning
-   *Silicon → Materials → Chips* or the *full battery stack*).
-5. **Draft Priorities board** — the final screen reveals what the *group* valued: every
-   sub-sector ranked by the overall draft order (pick #1 = top alliance priority, with the
-   ones nobody took shown as "passed over"), a per-category demand summary, and the final
-   standings. Rematch with a new fighter.
+3. **Snake draft** against the AI allies. Each card has an industry icon, an **OVR** rating,
+   a tier (S/A/B/C) and up to three stats, means over the 21 game countries:
+   **Need** (supply-chain need; deployment need at the Deployment stage), **Prize**
+   (strategic industrial value; none at Deployment) and **Allied demand** (the share of the
+   21 countries whose fence on the card is High or Medium). OVR is their mean.
+4. **Score** = fantasy points (OVR + **your fence fit**) **+ stage coverage** (5 per stage
+   held) **+ technology chains** (6 per pair of neighbouring stages in one technology, 10
+   more for Extraction → Refining → Components → Assembly) **+ Partner payouts**.
+
+   | Your choice on the card | Fence | Fit |
+   |---|---|---|
+   | Secure | High | +18 |
+   | Preserve | Medium | +12 |
+   | Catch Up / Accelerate | Medium | +9 |
+   | Partner | Medium | +3, and **+4 whenever another team drafts it** |
+   | Watch | Low | −6 |
+   | not assessed | — | 0 |
+
+   Partner is the alliance card: the model says *rely on trusted partners* there, so it pays
+   most when an ally holds it for you.
+5. **Supply-Chain Priority board** — the final screen reveals what the *group* valued: every
+   card ranked by the overall draft order (with the drafter's own fence on it), a per-stage
+   demand summary, the cards ranked by OVR with how the 21 countries fence each one, the
+   final standings, and **model alignment**: the share of picks that were the drafter's own
+   High or Medium fence.
 6. **Final boss vs China.** The board shows the alliance's **power** — how close the
-   collective draft got to the maximum-possible stack (the highest-OVR sub-sectors).
+   collective draft got to the maximum-possible OVR.
    - **▶ Watch cinematic** — a six-frame storyboard animation whose outcome is decided by the
-     draft: reach the win threshold (**85%** of the max stack) and the *Allies Win* sequence
+     draft: reach the win threshold (**85%** of the max) and the *Allies Win* sequence
      plays; fall short and the *China Wins* sequence plays.
 
 ### Multiplayer leagues (draft with friends)
@@ -94,16 +106,37 @@ on the Realtime Database, paste the web config). Then deploy on **GitHub Pages**
 static host) — the multiplayer link won't work inside the Claude artifact preview, which
 can't reach outside services.
 
-### The Electro-Industrial Stack (the six "positions")
+### The cards: technology × stage (the six "positions")
 
-| | Category | Draftable sub-sectors |
-|---|---|---|
-| **A** | Upstream Materials & Processed Inputs | 1–9 |
-| **B** | Semiconductors, Electrochemistry & Machines | 10–19 |
-| **C** | Grid & Electricity-System Equipment | 20–25 |
-| **D** | Power-Generation Technologies | 26–31 |
-| **E** | Electrified End-Use Systems | 32–36 |
-| **F** | Molecules, Materials & Carbon Management | 37–39 |
+The six stages are the draft's positions; the technology is the card's colour.
+
+| Stage | Examples |
+|---|---|
+| **Extraction** | battery-mineral mining, crude oil, natural gas, uranium |
+| **Refining & Processing** | battery materials, rare-earth metals, the nuclear fuel cycle, polysilicon |
+| **Component Manufacturing** | drive units and magnets, nacelles and blades, solar cells and wafers |
+| **Final Assembly & Equipment** | battery cells and packs, transformers, wind turbines, reactor systems |
+| **Deployment & Use** | solar and wind farms, EVs on the road, grid build-out |
+| **Recovery & Recycling** | battery recycling, waste-oil recovery |
+
+The cards come from `data-osi.js`, which is **generated**: `scripts/41_export_fantasy_draft_cards.R`
+reads the Explorer's six-stage posture bundle (`dashboard/public/data/posture`) and keeps every
+technology × stage cell that at least one game country has assessed, dropping the ones every game
+country rates Low (rules in `config/fantasy_draft.yml`; coal, gas and oil are kept, since most of the
+High fence sits there). Regenerate it after `scripts/91` re-exports the posture bundle:
+
+```bash
+Rscript scripts/41_export_fantasy_draft_cards.R
+```
+
+Card ids are `100 + 10 × technology position + stage position`, so they never collide with the 39
+Electro-Industrial Stack sub-sectors (ids 1–39) of leagues drafted before the switch (2026-11-18).
+Those leagues still render with their old sub-sectors and scoring; Alliance Architect still uses the
+39-sector categories and home synergies.
+
+**News scoring.** The news bot tags each headline with the legacy sub-sectors *and* the six-stage
+cards (technology phrases × stage words in `scripts/lexicon.mjs`, card ids read from `data-osi.js`),
+so old and new leagues both score. Seasons whose last week has ended take no more events.
 
 ---
 
@@ -405,7 +438,22 @@ authored — the battery game was built end-to-end first, deliberately.
 
 ### Testing
 
-The scoring engine has an 89-assertion suite that runs in **both** Node and the
+The Fantasy Draft's cards, fences, portfolio scoring and news tagging, and the news/scoring
+pipeline, have offline Node suites; the card export has an R test:
+
+```bash
+node fantasy-draft/scripts/test-cards.mjs
+```
+
+```bash
+node fantasy-draft/scripts/test.mjs
+```
+
+```bash
+Rscript -e "testthat::test_file('tests/testthat/test-fantasy-draft-cards.R')"
+```
+
+The Alliance Architect scoring engine has an 89-assertion suite that runs in **both** Node and the
 browser:
 
 ```bash
@@ -445,7 +493,9 @@ Firebase is configured — playtest without writing to the live database.
 | `index.html` | App shell + screens (mode select / draft / lobby / results / coordination) |
 | `styles.css` | Street Fighter arcade theme, fully responsive |
 | `styles-coord.css` | Alliance Architect theme (reuses `styles.css` tokens) |
-| `data.js` | The 21 allies, 39 sub-sectors, stats, synergies, scoring |
+| `data-osi.js` | **Generated** cards + each country's fences (`scripts/41_export_fantasy_draft_cards.R`) |
+| `data.js` | The 21 allies, the legacy 39 sub-sectors and home synergies (old leagues, Alliance Architect) |
+| `cards.js` | The six-stage cards: names, icons, fences, fit and portfolio scoring |
 | `avatars.js` | Cropped fighter portraits (WebP data-URIs) per ally |
 | `fight-frames.js` | 12 boss-fight keyframes (WebP data-URIs) cropped from the storyboard |
 | `net.js` | Realtime sync layer (Firebase adapter + local BroadcastChannel fallback, `?local=1` override) |

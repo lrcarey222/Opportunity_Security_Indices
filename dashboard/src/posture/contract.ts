@@ -266,6 +266,9 @@ export interface PostureDetail {
   iso3: string;
   country: string;
   created: string | null;
+  /** the commit scripts/91 ran on (the manifest's and core's stamp, "-dirty" when R/scripts/config had changes);
+   *  null when the document has none (details written before 2026-11-21 carry no git_commit) */
+  gitCommit?: string | null;
   /** the 66 nodes, normalised (detail.ts) */
   cells: NodeDetail[];
 }
@@ -625,5 +628,5 @@ export function checkPostureDetail(doc: unknown): PostureDetail {
   }
   if (p.length) throw new PostureContractError(p);
   const d = doc as Record<string, unknown>;
-  return { iso3: d.iso3 as string, country: str(d.country) ?? (d.iso3 as string), created: str(d.created), cells };
+  return { iso3: d.iso3 as string, country: str(d.country) ?? (d.iso3 as string), created: str(d.created), gitCommit: str(d.git_commit), cells };
 }

@@ -79,6 +79,8 @@ export const ABOUT_ENGINE_ROUTES: RouteObject[] = [
 ];
 
 export const routes: RouteObject[] = [
+  // Chart of the Day PNG export card (no shell): screenshotted by scripts/chart-of-day-png.mjs
+  { path: '/export/chart-of-the-day/:date', lazy: view(() => import('./chartOfDay/ExportCard.tsx')), errorElement: <RootError /> },
   {
     path: '/',
     element: <AppRoot />,
@@ -97,6 +99,8 @@ export const routes: RouteObject[] = [
       { errorElement: <RouteError />, ...aibHubRoute },
       { errorElement: <RouteError />, ...aibRoute },
       { path: 'about', lazy: view(() => import('./shell/AboutView.tsx')), errorElement: <RouteError /> },
+      // Chart of the Day (2026-11-17): one raw-data chart a day, picked by scripts/chart_of_day/01_chart_of_day.R
+      { path: 'chart-of-the-day/:date?', lazy: view(() => import('./chartOfDay/ChartOfDayView.tsx')), errorElement: <RouteError /> },
       { path: 'glossary', lazy: view(() => import('./shell/GlossaryView.tsx')), errorElement: <RouteError /> },
       { path: 'sectors', element: <Alias to="/sector" /> },
       { path: 'sector-insights', element: <Alias to="/sector" /> },

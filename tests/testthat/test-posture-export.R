@@ -218,6 +218,16 @@ test_that("the bundle's commit stamp says -dirty when R, scripts or config have 
   expect_true(is.na(posture_commit_stamp(character(), character())))
 })
 
+test_that("every detail document carries the export's commit stamp", {
+  d <- posture_detail_doc(pe_tbl(), "AAA", pe_cfg, created = "x", git_commit = "abc1234")
+  expect_equal(d$git_commit, "abc1234")
+  expect_equal(names(d)[1:5], c("schema", "schema_version", "created", "git_commit", "iso3"))
+  j <- jsonlite::fromJSON(as.character(jsonlite::toJSON(posture_detail_doc(pe_tbl(), "AAA", pe_cfg, created = "x"),
+                                                        auto_unbox = TRUE, na = "null", null = "null")), simplifyVector = FALSE)
+  expect_true("git_commit" %in% names(j))
+  expect_null(j$git_commit)
+})
+
 test_that("the yards and the strategic value travel in the core and the detail, additive to schema 2", {
   g <- pe_tbl()
   prod <- g$supply_chain != "Deployment"

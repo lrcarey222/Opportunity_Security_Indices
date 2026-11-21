@@ -373,8 +373,9 @@ posture_commit_stamp <- function(sha, porcelain = character()) {
   if (any(nzchar(trimws(porcelain)))) paste0(sha[1], "-dirty") else sha[1]
 }
 
-# One country's drawer document (schema 2): per cell, the five questions' evidence.
-posture_detail_doc <- function(tbl, iso3, cfg, created, yf_nodes = NULL) {
+# One country's drawer document (schema 2): per cell, the five questions' evidence. git_commit: the export's
+# commit stamp (posture_commit_stamp(); the manifest and core carry the same one), null when unknown.
+posture_detail_doc <- function(tbl, iso3, cfg, created, yf_nodes = NULL, git_commit = NA_character_) {
   techs <- unlist(cfg$headline_techs %||% sort(unique(tbl$tech)))
   # the node-level large-yard case the core carries (pass it in when writing many documents)
   if (is.null(yf_nodes) && "large_yard_case" %in% names(tbl)) yf_nodes <- posture_yf_node_rows(tbl[tbl$tech %in% techs, , drop = FALSE])
@@ -526,6 +527,6 @@ posture_detail_doc <- function(tbl, iso3, cfg, created, yf_nodes = NULL) {
     if (!length(out$trade)) out$trade <- NULL
     Filter(Negate(is.null), out)
   })
-  list(schema = POSTURE_SCHEMA, schema_version = POSTURE_SCHEMA_VERSION, created = created, iso3 = iso3,
-       country = x$Country[1], cells = cells)
+  list(schema = POSTURE_SCHEMA, schema_version = POSTURE_SCHEMA_VERSION, created = created, git_commit = git_commit,
+       iso3 = iso3, country = x$Country[1], cells = cells)
 }

@@ -23,6 +23,7 @@
     "test:country-real": "vitest run --project country-real",
     "test:aib-real": "vitest run --project aib-real",
     "budget": "node scripts/check-budget.mjs",
+    "cod:png": "node scripts/chart-of-day-png.mjs",
     "bench:engine": "vitest run --project parity-real -t performance"
   },
   "dependencies": {
