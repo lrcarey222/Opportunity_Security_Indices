@@ -661,3 +661,17 @@ test_that("the R mirror names each broken strategic field", {
   expect_true(any(startsWith(p2, "strategic.compacts[1].id: duplicate 'SC-A'")))
   expect_true(any(startsWith(p2, "strategic.compacts[1].steps[0].nodes: 'ore' is in more than one step or compact")))
 })
+
+test_that("the export's provenance (created, git_commit) goes into meta and the manifest, checked", {
+  m <- aib_dash_provenance(list(universe = "u"), "2026-11-21T00:00:00Z", "abc1234")
+  expect_equal(m[c("created", "git_commit")], list(created = "2026-11-21T00:00:00Z", git_commit = "abc1234"))
+  expect_true(is.na(aib_dash_provenance(list(), "x", NA_character_)$git_commit))
+  expect_true(is.na(aib_dash_provenance(list(), "x", character())$git_commit))
+  expect_true(is.na(aib_dash_provenance(list(), "x", NULL)$git_commit))
+  expect_match(as.character(country_json(aib_dash_provenance(list(), "x", NA_character_))), '"git_commit":null', fixed = TRUE)
+  expect_length(aib_check_provenance(m, "manifest"), 0)
+  expect_length(aib_check_provenance(aib_dash_provenance(list(), "x", NA_character_), "meta"), 0)
+  expect_length(aib_check_provenance(list(), "meta"), 0)
+  expect_equal(aib_check_provenance(list(git_commit = 7), "meta"), "meta.git_commit: expected a string or null")
+  expect_true("meta.created: expected a string or null" %in% aib_check_bundle_additions(list(meta = list(created = 1))))
+})

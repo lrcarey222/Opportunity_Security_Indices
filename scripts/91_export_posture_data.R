@@ -24,7 +24,8 @@ source(local({
 # alignment), its Secure rationale, partner recommendations and AIB status, trade freshness and the allied
 # division of labour, for the Country, Sector and AIB views (dashboard/src/posture/contract.ts).
 # Writes manifest.json, posture-core.<md5>.json and posture-detail-<ISO3>.<md5>.json, and stops if the core
-# is over 3 MiB or a detail document over 128 KiB.
+# is over 3 MiB or a detail document over 128 KiB. The manifest, the core and (since 2026-11-21) every detail
+# document carry created and git_commit.
 #   --out-dir DIR   default dashboard/public/data/posture
 
 library(dplyr)
@@ -88,7 +89,7 @@ if (core_file$bytes > POSTURE_BUDGET_CORE) stop("posture core is ", core_file$by
 isos <- core$countries$iso3
 techs <- unlist(sp_cfg$headline_techs %||% sort(unique(tbl$tech)))
 yf_nodes <- if ("large_yard_case" %in% names(tbl)) posture_yf_node_rows(tbl[tbl$tech %in% techs, , drop = FALSE]) else NULL
-details <- lapply(isos, function(iso) write_doc(paste0("posture-detail-", iso), posture_detail_doc(tbl, iso, sp_cfg, created, yf_nodes)))
+details <- lapply(isos, function(iso) write_doc(paste0("posture-detail-", iso), posture_detail_doc(tbl, iso, sp_cfg, created, yf_nodes, git_commit = git_commit)))
 detail_bytes <- vapply(details, function(d) d$bytes, numeric(1))
 if (any(detail_bytes > POSTURE_BUDGET_DETAIL)) {
   stop("posture detail over the ", POSTURE_BUDGET_DETAIL / 1024, " KiB budget: ", paste(isos[detail_bytes > POSTURE_BUDGET_DETAIL], collapse = ", "))
