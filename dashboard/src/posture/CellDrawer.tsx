@@ -52,6 +52,10 @@ import { catchUpPositionWords, countryRankWords, manufacturingPriority, manufact
 import { Swatch } from './PostureLegend.tsx';
 import { LAYER_KEY, NODE_KEY } from './selection.ts';
 import { usePostureCore, usePostureDetail } from './store.ts';
+import type { MetricRef } from '../review/model.ts';
+import { ReportIssueButton } from '../review/components/ReportIssueButton.tsx';
+import { WhyThisResult } from '../review/components/WhyThisResult.tsx';
+import { reviewUiEnabled } from '../review/appInfo.ts';
 import {
   capWords, FENCE_SCOPE_WORDS, largeYardOf, largeYardWords, layerUnits, mixedFill, mixedYards, nodeYard, partChoiceWords, partFences, partsMixed, REQUIRED_LARGE_YARD_SIGNALS, rollupWords, signalWords,
   sivFamilies, splitSignals, stepParts, variantWords, yardWords, type StepPart,
@@ -70,14 +74,23 @@ const NA = 'not assessed';
 const pctOr = (v: number | null | undefined, digits = 0) => (v === null || v === undefined ? NA : pct(v, digits));
 const usd = (v: number | undefined) => (v === undefined ? '—' : v >= 1e9 ? `$${(v / 1e9).toFixed(1)}bn` : v >= 1e6 ? `$${(v / 1e6).toFixed(0)}m` : `$${Math.round(v / 1e3)}k`);
 
-function Row({ k, v, indent = false }: { k: ReactNode; v: ReactNode; indent?: boolean }) {
+function Row({ k, v, indent = false, metric }: { k: ReactNode; v: ReactNode; indent?: boolean; metric?: MetricRef }) {
   return (
     <div className={`flex justify-between gap-3 py-1 text-sm ${indent ? 'pl-3' : ''}`}>
       <dt className="text-paper-mute">{k}</dt>
-      <dd className="text-right tabular text-paper-dim">{v}</dd>
+      <dd className="text-right tabular text-paper-dim">
+        {v}
+        {/* review only: renders nothing unless the review controls are on (review/appInfo.ts) */}
+        {metric && <ReportIssueButton metric={metric} className="ml-2" />}
+      </dd>
     </div>
   );
 }
+
+/** The measure a row shows, for a data-issue report (review/components/ReportIssueButton.tsx). */
+const metricOf = (cell: PostureCell, id: string, label: string, value: number | string | null | undefined, display: string, extra: Partial<MetricRef> = {}): MetricRef => ({
+  id, label, value: value ?? null, display, tech: cell.tech, stage: cell.stage, ...extra,
+});
 
 function Question({ q, children }: { q: (typeof DRAWER_QUESTIONS)[number]; children: ReactNode }) {
   const id = useId();
@@ -116,7 +129,7 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
     return (
       <>
         <dl>
-          <Row k={<Term id={POSTURE_TERMS.deploymentNeed}>Deployment need</Term>} v={pctOr(cell.need)} />
+          <Row k={<Term id={POSTURE_TERMS.deploymentNeed}>Deployment need</Term>} v={pctOr(cell.need)} metric={metricOf(cell, 'deployment_need', 'Deployment need', cell.need, pctOr(cell.need))} />
           {dn && (
             <>
               <Row k="Demand adequacy" v={familyText(dn.demand, sc)} />
@@ -139,7 +152,7 @@ function NeedAnswer({ cell, d, core, names, status }: { cell: PostureCell; d: No
   return (
     <>
       <dl>
-        <Row k={<Term id={POSTURE_TERMS.supplyChainNeed}>Supply-chain vulnerability</Term>} v={pctOr(cell.need)} />
+        <Row k={<Term id={POSTURE_TERMS.supplyChainNeed}>Supply-chain vulnerability</Term>} v={pctOr(cell.need)} metric={metricOf(cell, 'need', 'Supply-chain vulnerability', cell.need, pctOr(cell.need))} />
         {s && (
           <>
             <Row k="Import dependence" v={pctOr(s.importDependence)} />
@@ -200,7 +213,7 @@ function PrizeAnswer({ cell, d, core, cells, status }: { cell: PostureCell; d: N
   return (
     <>
       <dl data-testid="drawer-prize">
-        <Row k={<Term id={term}>{label}</Term>} v={`${pctOr(cell.prize)} (high at ${pct(core.meta.thresholds.prize)} or more)${siv && f.cap ? '; capped: market only' : ''}`} />
+        <Row k={<Term id={term}>{label}</Term>} v={`${pctOr(cell.prize)} (high at ${pct(core.meta.thresholds.prize)} or more)${siv && f.cap ? '; capped: market only' : ''}`} metric={metricOf(cell, 'prize', label, cell.prize, pctOr(cell.prize))} />
         {siv && <Row k={<Term id={POSTURE_TERMS.industrialOpportunity}>Market prize ({MARKET_PRIZE_LABEL})</Term>} v={pctOr(f.market)} />}
         {p && (
           <>
@@ -251,14 +264,19 @@ function PositionAnswer({ cell, d, core, status }: { cell: PostureCell; d: NodeD
               ? `${pctOr(cell.cp)}: a top-quarter score, but not a main producer or below the capability floor, so not a strong position`
               : `${pctOr(cell.cp)} (strong at ${pct(meta.thresholds.cp)} or more among the step's main producers)`
           }
+          metric={metricOf(cell, 'cp', 'Competitive Position', cell.cp, pctOr(cell.cp))}
         />
-        <Row k="World supply share" v={pctOr(cell.share ?? d?.homeShare ?? null, 1)} />
+        <Row k="World supply share" v={pctOr(cell.share ?? d?.homeShare ?? null, 1)} metric={metricOf(cell, 'home_share', 'World supply share', cell.share ?? d?.homeShare ?? null, pctOr(cell.share ?? d?.homeShare ?? null, 1))} />
         {(d?.cpFamilies ?? []).map((f) => (
           <Row key={f.id} k={f.label} v={pct(f.value)} />
         ))}
         {tr && (
           <>
-            <Row k={`Trade position ${meta.benchmark_period ?? ''}`} v={`${pct(tr.benchmark_share, 1)} of world exports · RCA ${tr.benchmark_rca !== undefined ? tr.benchmark_rca.toFixed(2) : '—'}`} />
+            <Row
+              k={`Trade position ${meta.benchmark_period ?? ''}`}
+              v={`${pct(tr.benchmark_share, 1)} of world exports · RCA ${tr.benchmark_rca !== undefined ? tr.benchmark_rca.toFixed(2) : '—'}`}
+              metric={metricOf(cell, 'benchmark_share', 'World export share (trade benchmark)', tr.benchmark_share, pct(tr.benchmark_share, 1), { source: tr.benchmark_source ?? null, source_year: meta.benchmark_period ?? null })}
+            />
             <Row k="Benchmark exports (avg.)" v={usd(tr.benchmark_exports)} />
             {mom ? (
               <Row
@@ -293,6 +311,7 @@ function ChoiceAnswer({
       <p className="text-sm text-paper">
         <strong>{v ? VERB_LABEL[v] : choiceWord(cell)}</strong>
         {cell.posture === 'S' && cell.rationale ? ` · ${RATIONALE_LABEL[cell.rationale]}` : ''}
+        <ReportIssueButton metric={metricOf(cell, 'choice', 'Strategic choice', v ?? 'not_assessed', choiceWord(cell))} displayedResult={choiceWord(cell)} className="ml-2" />
       </p>
       {cell.posture === 'N' && (
         <p className="mt-1 text-sm text-paper-dim">
@@ -404,6 +423,8 @@ function ChoiceAnswer({
         </details>
       )}
       {d?.reason && <p className="mt-1 text-xs text-paper-mute">{d.reason}</p>}
+      {/* review only, like the report buttons: ordinary visitors see the drawer exactly as before (review/appInfo.ts) */}
+      {d && reviewUiEnabled() && <WhyThisResult cell={d} core={core} />}
       <Pending status={status} />
       <YardsPart cell={cell} d={d} core={core} />
     </>

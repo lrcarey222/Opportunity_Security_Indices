@@ -1,0 +1,729 @@
+{
+  "schema": "aib-review-method-cards",
+  "schema_version": 1,
+  "data_release": "rel-9c8f1877b5c6",
+  "built_at": "2026-11-21T00:00:00Z",
+  "cards": [
+    {
+      "card_id": "MC_001",
+      "title": "A strong position alone does not make a capability worth preserving",
+      "area": "choice_rule",
+      "current_choice": "When supply-chain need is low (below 0.67) and the prize is low (below 0.6, or capped below it), the choice is Watch even if the economy ranks in the top quarter of the node's producers (Competitive Position 0.75 or more). Preserve needs a strong position together with a high prize or a high need.",
+      "why": "Watch is meant as a positive conclusion, not neglect: \"Watch is a positive conclusion, 'domestic industrial priority: low'\" (docs/strategic_position.md). An economy that is already competitive in a node that is neither strategically valuable nor a dependence does not need industrial policy to stay there; it keeps access open and buys competitively.",
+      "example": {
+        "text": "Australia, battery-mineral extraction: Watch with Competitive Position 0.864, 16% of world supply and an export RCA of 25.2, because need is 0.115 and the prize is capped at 0.59. Germany's grid components are Watch with position 0.948 and 9.2% of world supply (need 0.31, prize 0.467). In all, 101 producing cells are Watch with a contender-ranked position of 0.75 or more.",
+        "explorer_path": "/countries/AUS?node=Batteries|Extraction"
+      },
+      "alternatives": [
+        "Preserve whenever the position is in the top quarter, whatever the prize and need.",
+        "Keep Watch but add a 'Preserve for review' flag, as the code already does for a strong position with high need and a low prize (review_strong_position_low_prize).",
+        "Treat a large world share (for example 10% or more) as a reason to Preserve, separately from the position percentile."
+      ],
+      "affected_outputs": [
+        "Watch and Preserve counts",
+        "Low fence (Keep open) sections of Country pages",
+        "Partnership memo 'Stay out' lists"
+      ],
+      "code_refs": [
+        "R/strategic_position/decision_engine.R:160-182",
+        "docs/strategic_position.md:41"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.cp_preserve_pct",
+        "config/strategic_position.yml decision_framework.prize_threshold",
+        "config/strategic_position.yml decision_framework.need_threshold"
+      ],
+      "method_tags": [
+        "industrial_policy",
+        "indices_statistics"
+      ]
+    },
+    {
+      "card_id": "MC_002",
+      "title": "Market size alone never makes a high prize (market-only cap)",
+      "area": "prize",
+      "current_choice": "The prize (Strategic Industrial Value) is capped at 0.59, just below the 0.6 bar, wherever neither the industrial-commons score nor the future-option score reaches 0.5. An attribute that is unknown counts as 0. The attributes are set per node, not per country, so the cap applies to every economy in that node.",
+      "why": "\"Market size alone never makes a prize\" (docs/strategic_position.md). The gate of 0.5 sits between the paper's moderate and strong learning; counting an unknown as 0 means that \"less evidence never lifts the cap\" (R/strategic_position/strategic_value.R). The config marks the gate as a calibration choice.",
+      "example": {
+        "text": "Solar component manufacturing has a prize of exactly 0.59 in all 214 economies, so China (Competitive Position 0.983, 25.9% of world supply) is Watch and India (position 0.948, need 0.851) is Partner. No Extraction cell in any economy has a prize above 0.59, so no Extraction cell can be Catch Up (none is). 432 cells carry exactly 0.59.",
+        "explorer_path": "/countries/CHN?node=Solar|Components"
+      },
+      "alternatives": [
+        "A gate of 0.33 instead of 0.5.",
+        "Score unknown attributes as 0.5 (neutral) rather than 0, or average only the observed attributes.",
+        "Drop the cap and let the market family carry the prize where commons and option are unknown."
+      ],
+      "affected_outputs": [
+        "Prize of every capped node",
+        "Catch Up and Preserve counts",
+        "Every Extraction and Solar Components cell",
+        "Greenfield-option flag"
+      ],
+      "code_refs": [
+        "R/strategic_position/strategic_value.R:224-228",
+        "docs/strategic_position.md:212"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.strategic_value.gate",
+        "config/strategic_position.yml decision_framework.strategic_value.cap_margin"
+      ],
+      "method_tags": [
+        "industrial_policy",
+        "indices_statistics"
+      ]
+    },
+    {
+      "card_id": "MC_003",
+      "title": "The prize threshold acts on whole nodes, not on countries",
+      "area": "prize",
+      "current_choice": "The prize is a percentile of a score built from node attributes (commons, option) and the world market for the node, lifted by the national home market where that is larger. Where no home market lifts it, every economy gets the same prize, so the 0.6 bar classifies whole nodes at once.",
+      "why": "The prize answers \"is this capability strategically valuable\", which the method treats as a property of the technology and stage; only the home-market lift is national (docs/strategic_position.md, Prize).",
+      "example": {
+        "text": "Grid equipment assembly has a prize of 0.613 for all 214 economies, 0.013 over the bar: the United States, Germany, India and Korea are Preserve there, Japan is Catch Up (borderline on need, prize and position) and Australia is Partner. A bar of 0.62 would turn all four Preserve cells into Watch and Japan's Catch Up into Partner at once (Australia stays Partner on need alone). 20 producing nodes carry a single prize value in every economy (Green Hydrogen Refining 0.632, Grid Components 0.467 among them).",
+        "explorer_path": "/countries/JPN?node=Electric%20Grid|Assembly"
+      },
+      "alternatives": [
+        "A prize threshold of 0.65.",
+        "Rank the prize within each node or within each country, so it separates economies rather than nodes.",
+        "Show the node-level prize separately from the country choice, so readers see it is not a country judgment."
+      ],
+      "affected_outputs": [
+        "All 214 cells of a node flip together",
+        "Catch Up and Preserve in Grid Assembly",
+        "Sector pages"
+      ],
+      "code_refs": [
+        "R/strategic_position/strategic_value.R:209-239",
+        "R/strategic_position/industrial_opportunity.R:246-251",
+        "R/strategic_position/decision_engine.R:90"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.prize_threshold"
+      ],
+      "method_tags": [
+        "indices_statistics",
+        "industrial_policy"
+      ]
+    },
+    {
+      "card_id": "MC_004",
+      "title": "Top quarter means at or above 0.75 among a small, discrete set of contenders",
+      "area": "position",
+      "current_choice": "A position is strong when the economy's Competitive Position ranks at or above 0.75 among the node's contenders (economies with at least 0.5% of measured world supply), it is itself a contender and its capability lower bound is at least moderate. The comparison is inclusive and the percentile moves in steps, because a node often has only a dozen or so contenders.",
+      "why": "All thresholds are inclusive (\"high = at or above\"). The top quarter of contenders is the user decision of 2026-10-29 (docs/strategic_position.md); the 0.5% line keeps non-producers out of the comparison.",
+      "example": {
+        "text": "15 assessed cells sit exactly on 0.750 and 8 of them are Preserve: UAE oil extraction, China nuclear refining, France solar assembly, India EV assembly, India oil assembly, India solar refining, Japan nuclear components and Korea nuclear assembly. Under a strict \"above 0.75\" rule none of them would stay Preserve (India solar refining would fall into the large yard). India solar components is the opposite case: position 0.948 but Partner, because its capability lower bound misses the floor.",
+        "explorer_path": "/countries/JPN?node=Nuclear|Components"
+      },
+      "alternatives": [
+        "A strict greater-than rule at 0.75.",
+        "Require a minimum number of contenders before the percentile is used.",
+        "A threshold of 0.67 or 0.85."
+      ],
+      "affected_outputs": [
+        "Preserve versus Catch Up or Watch",
+        "Fence height of the cells on the line",
+        "Country strategy pages"
+      ],
+      "code_refs": [
+        "R/strategic_position/decision_engine.R:111-147",
+        "R/strategic_position/decision_engine.R:152-154"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.cp_preserve_pct",
+        "config/strategic_position.yml decision_framework.contenders",
+        "config/strategic_position.yml decision_framework.capability_floor"
+      ],
+      "method_tags": [
+        "indices_statistics",
+        "trade_data"
+      ]
+    },
+    {
+      "card_id": "MC_005",
+      "title": "The commodity (large-yard) test, and a strong position that overrides it",
+      "area": "choice_rule",
+      "current_choice": "A node is a large-yard case (Watch before the prize is read) when it is mature and passive and at least 5 of 8 further commodity signals hold (standardized, substitutable, easy qualification, diversified, low learning, low spillover, low differentiation, commoditized). \"Diversified\" means no supplier holds 50% or more of world supply. A top-quarter position is tested first (position_first): such a producer skips the large-yard test.",
+      "why": "Five is \"a clear majority\" of the eight signals; position_first follows the paper's gate order, where a present position worth defending is a Medium-yard rationale that comes before Large (docs/strategic_position.md, config large_yard). Both are marked calibration choices.",
+      "example": {
+        "text": "2,504 cell traces carry 5 or more signals, 698 of them exactly 5, and 1,397 cells sit one signal short (4). Indonesia battery-mineral extraction has need 0.85 but is Watch on exactly 5 signals; India and Japan battery minerals are Partner on 4, with Watch as the other possible choice. Five cells escape the large yard through a top-quarter position and end Preserve: India solar refining (6 signals, position exactly 0.750), UAE and Canada oil extraction, Chile solar extraction, Nigeria gas refining.",
+        "explorer_path": "/countries/IND?node=Solar|Refining"
+      },
+      "alternatives": [
+        "min_signals 4 or 6.",
+        "Group the eight signals into product-market, learning and supply families and count families, not signals.",
+        "position_first off: run the large-yard test before the position."
+      ],
+      "affected_outputs": [
+        "Watch counts and the Low fence",
+        "Partner versus Watch for import-dependent mineral cells",
+        "Paper reproduction"
+      ],
+      "code_refs": [
+        "R/strategic_position/strategic_value.R:299",
+        "R/strategic_position/decision_engine.R:166"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.large_yard.min_signals",
+        "config/strategic_position.yml decision_framework.large_yard.diversified_top_share_max",
+        "config/strategic_position.yml decision_framework.large_yard.position_first"
+      ],
+      "method_tags": [
+        "industrial_policy",
+        "supply_chain_security"
+      ]
+    },
+    {
+      "card_id": "MC_006",
+      "title": "A minimum need score, applied as a cap at 0.61",
+      "area": "need",
+      "current_choice": "Where the need percentile would be 0.62 or more but the underlying need score is below 0.10, the need is capped at 0.61, just under the 0.67 bar and its borderline band. The cap is not shipped as a flag: the Explorer shows only the capped value.",
+      "why": "In a thinly traded node most economies import too little to register and score 0, \"so a tiny positive score ranks above most of the field\" (user decision 2026-10-30, R/strategic_position/supply_chain_need.R).",
+      "example": {
+        "text": "Argentina nuclear fuel refining: need score 0.069, which ranks at 0.835, shown as 0.61, so the cell is Watch; without the cap a high prize (0.778) and high need would make it Partner. Its imports are about 6e-9 of GDP, all from Germany. The pipeline table of the 2026-11-17 run caps 38 cells (31 Watch, 5 Catch Up, 2 Preserve; all Nuclear: 21 Extraction, 17 Refining); the bundle shows 45 producing cells at exactly 0.61 and does not say which are capped: only the 13 cells decided Watch at triage mention the floor in their reason text.",
+        "explorer_path": "/countries/ARG?node=Nuclear|Refining"
+      },
+      "alternatives": [
+        "A floor of 0.05.",
+        "Use an absolute need score (or a ratio to the node median) instead of a capped percentile.",
+        "Ship the cap as a flag so the cell drawer and the sensitivity runs can see it."
+      ],
+      "affected_outputs": [
+        "Need of the capped cells",
+        "Watch versus Partner in thin nodes (mostly Nuclear)",
+        "Threshold-sensitivity counts"
+      ],
+      "code_refs": [
+        "R/strategic_position/supply_chain_need.R:67-78",
+        "R/strategic_position/decision_engine.R:84"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.supply_chain_need.score_floor"
+      ],
+      "method_tags": [
+        "indices_statistics",
+        "supply_chain_security"
+      ]
+    },
+    {
+      "card_id": "MC_007",
+      "title": "Need is a rank within each node, not an absolute dependence",
+      "area": "need",
+      "current_choice": "Supply-chain need is the mid-rank percentile, across the assessed economies, of the mean of four families (import dependence, supplier concentration, risky-supplier exposure, lack of trusted alternatives). High need means the top third of the node by construction.",
+      "why": "Percentiles make nodes with very different trade values comparable and keep the 0.67 bar equally selective in every node (docs/strategic_position.md, Need).",
+      "example": {
+        "text": "US battery-material refining has need 0.453 (low) although China, the largest coercive supplier, holds 94.4% of world supply of the node; Korea's need in the same node is 0.993. The US family scores are import dependence 0.437, concentration 0.318, China bloc 0.52 and trusted alternatives 0.703; China supplies 10.3% of US imports directly, Canada 19.3%.",
+        "explorer_path": "/countries/USA?node=Batteries|Refining"
+      },
+      "alternatives": [
+        "An absolute import-dependence share (imports over apparent consumption).",
+        "A percentile within a peer group (for example the 59 AIB economies) instead of all economies.",
+        "Raise need when world supply is concentrated, whatever the economy's own rank."
+      ],
+      "affected_outputs": [
+        "Every producing-stage choice",
+        "Partner counts",
+        "Secure screening inputs"
+      ],
+      "code_refs": [
+        "R/strategic_position/supply_chain_need.R:33-80"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.need_threshold"
+      ],
+      "method_tags": [
+        "trade_data",
+        "indices_statistics",
+        "supply_chain_security"
+      ]
+    },
+    {
+      "card_id": "MC_008",
+      "title": "Large producers are not scored on the mix of their imports (self-supply guard)",
+      "area": "need",
+      "current_choice": "An economy holding 10% or more of world supply of a node has its supplier-concentration, risky-supplier and trusted-alternative families set to 0 in the need score; only import dependence counts.",
+      "why": "\"A country holding that share of world supply is not dependent on the composition of its imports\" (R/strategic_position/supply_chain_need.R). The 10% line is the Secure engine's self-supply line.",
+      "example": {
+        "text": "Australia's battery minerals and its EV minerals share one import mix (Gabon 45.4% of imports, China 5.9%, export RCA 25.2), yet Batteries/Extraction holds 16.0% of world supply, the guard fires, the need score is 0.013 and the cell is Watch (need 0.115), while Electric Vehicles/Extraction records 8.3% (the pipeline's home_share there is missing), the guard does not fire, the score is 0.619 and the cell is Preserve (need 0.738, flagged for review). The guard reads home_share, while the position test and the bundle's share fall back to home_share_exposure, so the two can read different world shares for the same cell. The cell drawer shows the composition-family percentiles before the guard zeroes them (Australia battery minerals: supplier concentration 0.82, China bloc 0.751), so the shown families do not add up to the need.",
+        "explorer_path": "/countries/AUS?node=Electric%20Vehicles|Extraction"
+      },
+      "alternatives": [
+        "Scale the composition families down with the world share instead of a 10% switch.",
+        "Keep risky-supplier exposure for large producers (it is the security-relevant family).",
+        "Measure world share once per mineral basket so shared baskets cannot disagree."
+      ],
+      "affected_outputs": [
+        "Need of large producers",
+        "Preserve versus Watch for mineral producers",
+        "Consistency across technologies that share a basket"
+      ],
+      "code_refs": [
+        "R/strategic_position/supply_chain_need.R:35",
+        "R/strategic_position/supply_chain_need.R:58-62",
+        "R/strategic_position/decision_engine.R:106-109"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.self_supply_share"
+      ],
+      "method_tags": [
+        "supply_chain_security",
+        "trade_data",
+        "production_capacity_data"
+      ]
+    },
+    {
+      "card_id": "MC_009",
+      "title": "Catch Up needs a capability anchor plus one corroborating signal",
+      "area": "choice_rule",
+      "current_choice": "A pathway is credible when at least one capability anchor fires (0.5% of world supply or of world exports, operating capacity, a committed pipeline, 5% of an adjacent stage, or a resource base at Extraction) and signals from at least two different evidence families fire. Re-exports count as exports.",
+      "why": "\"Capability anchor + corroboration\": at least one anchor and one more signal from a different evidence family; \"two enabling signals without an anchor are never enough\" (user spec 2026-10-30, R/strategic_position/pathway.R).",
+      "example": {
+        "text": "Singapore battery-material refining is Catch Up with no measured world supply and position scores of 0 for production, capacity and investment: the anchor is its 0.54% share of world exports (a hub signature) and the corroboration a relative-adjacency signal. Eight Catch Up cells rest on exactly that pair (three in Singapore, two in Norway, and Laos, Papua New Guinea and the Philippines). US battery-material refining is Catch Up on five anchors.",
+        "explorer_path": "/countries/SGP?node=Batteries|Refining"
+      },
+      "alternatives": [
+        "Require an anchor in production or capacity, not exports alone.",
+        "The legs rule (two of five design legs), kept in config for the sensitivity.",
+        "Require the anchor at the node itself rather than at an adjacent stage."
+      ],
+      "affected_outputs": [
+        "Catch Up versus Partner or Watch",
+        "Medium-fence build recommendations"
+      ],
+      "code_refs": [
+        "R/strategic_position/pathway.R:5-47",
+        "R/strategic_position/pathway.R:222-225"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.pathway.rule",
+        "config/strategic_position.yml decision_framework.pathway.direct_share_min"
+      ],
+      "method_tags": [
+        "production_capacity_data",
+        "industrial_policy",
+        "trade_data"
+      ]
+    },
+    {
+      "card_id": "MC_010",
+      "title": "Deployment need is decided at 0.6, even on a single family of evidence",
+      "area": "deployment",
+      "current_choice": "At the Deployment & Use stage the choice is Accelerate when deployment need (the mean of the observed demand, policy-gap and system families, each a percentile within the technology) is 0.6 or more, else Watch. One observed family is enough; manufacturing strength does not enter.",
+      "why": "0.6 matches the selectivity of the 0.67 percentile used for supply-chain need. Confidence falls with fewer families (high 3, moderate 2, low 1), but the choice does not wait for them (config/deployment_need.yml).",
+      "example": {
+        "text": "137 of the 514 Accelerate cells rest on one family. US nuclear deployment is Watch at 0.597 on two families (the policy-gap family is not assessed for the US) and its reason reads \"Deployment need 0.60 is below 0.60\". Korea battery storage is Watch at 0.559 on three families; China EV deployment is Accelerate at 0.604.",
+        "explorer_path": "/countries/USA?node=Nuclear|Deployment"
+      },
+      "alternatives": [
+        "Require at least two observed families before Accelerate.",
+        "Use the cross-country deployment_need_pct (already computed, not read by the rule).",
+        "A threshold of 0.55 or 0.67."
+      ],
+      "affected_outputs": [
+        "Accelerate versus Watch at Deployment & Use",
+        "Country deployment priorities"
+      ],
+      "code_refs": [
+        "R/strategic_position/deployment_need.R:842",
+        "R/strategic_position/deployment_need.R:760",
+        "R/strategic_position/decision_engine.R:169-170"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.deployment_threshold",
+        "config/deployment_need.yml confidence"
+      ],
+      "method_tags": [
+        "energy_systems",
+        "indices_statistics"
+      ]
+    },
+    {
+      "card_id": "MC_011",
+      "title": "The prize weighs market, industrial commons and future option equally",
+      "area": "prize",
+      "current_choice": "The prize score is the equal-weighted mean of three families: market growth, industrial commons (process knowledge, workforce and suppliers, adjacent innovation) and future option (a credible technology leap), then ranked as a percentile.",
+      "why": "\"Equal weights are a neutral prior, not an estimate\" (docs/strategic_position.md, config strategic_value.weights, marked a calibration choice to report). No sensitivity output exists for the weights.",
+      "example": {
+        "text": "Japan grid equipment assembly: market 0.46, commons 0.67, option 0.00, prize 0.613, just over the bar; the commons family carries it. US battery-material refining: market 0.78, commons 0.67, option 0.00, prize 0.834. A node whose option family is 0 everywhere can reach at most two thirds of the possible score.",
+        "explorer_path": "/countries/JPN?node=Electric%20Grid|Assembly"
+      },
+      "alternatives": [
+        "Weight the market family more (for example 2:1:1).",
+        "Drop the option family where no node in the technology is a leap candidate.",
+        "Run and publish a weight sensitivity before choosing."
+      ],
+      "affected_outputs": [
+        "Prize of every producing cell",
+        "Catch Up and Preserve counts"
+      ],
+      "code_refs": [
+        "R/strategic_position/strategic_value.R:76-83",
+        "docs/strategic_position.md:206"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.strategic_value.weights"
+      ],
+      "method_tags": [
+        "indices_statistics",
+        "industrial_policy"
+      ]
+    },
+    {
+      "card_id": "MC_012",
+      "title": "A fast-growing home market lifts the prize but a small one never lowers it",
+      "area": "prize",
+      "current_choice": "The market part of the prize is the node's world-market prize, raised to the mean of that and the national home-market growth where the home market is higher. A weaker home market leaves the world prize unchanged.",
+      "why": "\"Lifted by national home-market growth\" (user decision): a fast-growing home market adds to the prize, a small one does not penalise an export-oriented producer (R/strategic_position/industrial_opportunity.R, home_market_mode lift). The plain mean is in config for sensitivity only.",
+      "example": {
+        "text": "India solar refining: world node prize 0.20, national home market 0.906, market prize 0.553 (their mean), prize 0.562. US battery-material refining: node 0.633, home market 0.929, market 0.781. US battery assembly reaches the maximum prize of 1.000.",
+        "explorer_path": "/countries/IND?node=Solar|Refining"
+      },
+      "alternatives": [
+        "The plain mean both ways (home_market_mode mean).",
+        "Use the world prize only, so the prize stays a property of the node."
+      ],
+      "affected_outputs": [
+        "Prize of lifted cells",
+        "Catch Up in large home markets"
+      ],
+      "code_refs": [
+        "R/strategic_position/industrial_opportunity.R:14-20",
+        "R/strategic_position/industrial_opportunity.R:246-251"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml decision_framework.industrial_opportunity.home_market_mode"
+      ],
+      "method_tags": [
+        "industrial_policy",
+        "energy_systems"
+      ]
+    },
+    {
+      "card_id": "MC_013",
+      "title": "Secure is reached through three curated routes, not through dependence alone",
+      "area": "secure",
+      "current_choice": "A cell is Secure only when the security engine finds an acute vulnerability through a route the node's rule allows: operational control (control systems or dual-use materials), a coercive chokepoint, or systemic resilience (an essential function, import-dependent and slow to rebuild). Routes are curated per node in a rule table, never inferred from trade.",
+      "why": "\"The routes are curated, never inferred from trade; data only decide whether a country meets a route its node allows. There is no quota\" (docs/strategic_position.md, Three Secure routes). \"Secure does not mean reshoring: delivery follows where trusted supply is.\"",
+      "example": {
+        "text": "212 cells are Secure: systemic resilience 179, coercive chokepoint 29, operational control 4 (the methods document still says 206: 175, 27, 4). 69 of the 101 Secure Extraction cells have no measured world share. Belgium crude oil is Secure (systemic resilience) with the Netherlands as supplier of 98.4% of imports. Japan EV refining (chokepoint) and Korea nuclear fuel (operational control) show the other two routes.",
+        "explorer_path": "/countries/BEL?node=Oil|Extraction"
+      },
+      "alternatives": [
+        "Require a coercive or opposite-bloc supplier for every Secure route, including resilience.",
+        "Give resilience cells a separate label (for example a stockholding or reserves posture) rather than Secure.",
+        "Infer routes from measured concentration in addition to the curated table."
+      ],
+      "affected_outputs": [
+        "High fence (Secure) counts and sections",
+        "Fuel-supply cells of importing economies"
+      ],
+      "code_refs": [
+        "docs/strategic_position.md:820-851",
+        "docs/strategic_position.md:496-497",
+        "R/strategic_position/security_routes.R:12",
+        "config/security_route_rules.csv"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml strategic_posture"
+      ],
+      "method_tags": [
+        "supply_chain_security",
+        "geopolitics_alliances"
+      ]
+    },
+    {
+      "card_id": "MC_014",
+      "title": "Trade hubs are handled only for Hong Kong and Macao (and four excluded economies)",
+      "area": "data",
+      "current_choice": "The posture layer leaves out Hong Kong, Macao, the Marshall Islands, Liberia and Panama (entrepots and ship registries). The AIB stress test attributes only Hong Kong and Macao re-exports to China. Every other hub (Singapore, the Netherlands, Belgium, the UAE) is scored as an ordinary producer and importer.",
+      "why": "Re-exports through Hong Kong and Macao are the dominant distortion in China's trade (config/aib.yml reexport_hubs); ship registries \"trade\" vessels through their flags. No origin-adjusted trade is used.",
+      "example": {
+        "text": "Belgium crude oil lists the Netherlands as supplier of 98.4% of imports (Rotterdam routing). Singapore grid components show an export RCA of 4.18 and a position of 0.741, 0.009 under the bar; Singapore battery refining is Catch Up on its export share alone. In the AIB, Singapore is a core \"Specialized technology supplier\" of the semiconductors compact and one of its build hosts under Decoupling.",
+        "explorer_path": "/countries/SGP?node=Batteries|Refining"
+      },
+      "alternatives": [
+        "Add Singapore, the Netherlands, Belgium and the UAE as hubs.",
+        "Use origin-adjusted (re-export corrected) trade.",
+        "Show excluded economies as 'not assessed (entrepot)' instead of dropping them."
+      ],
+      "affected_outputs": [
+        "Need, position and pathway of hub economies",
+        "AIB roles, core countries and hosts"
+      ],
+      "code_refs": [
+        "config/strategic_position.yml:203",
+        "config/aib.yml:33-40",
+        "R/aib/aib_trade_model.R:41-43"
+      ],
+      "config_keys": [
+        "config/strategic_position.yml strategic_need.exclude_iso3",
+        "config/aib.yml trade.reexport_hubs"
+      ],
+      "method_tags": [
+        "trade_data",
+        "supply_chain_security"
+      ]
+    },
+    {
+      "card_id": "MC_015",
+      "title": "The AIB stress test counts traded demand only",
+      "area": "aib_stress_test",
+      "current_choice": "Allied demand for a node is the allied economies' observed imports. Domestic production never enters, so exposure, coverage and every class describe traded supply, not total supply.",
+      "why": "\"Observed exports are revealed tradable capability, not spare physical capacity ... All quantities are shares of the universe's baseline demand for the node (its importers' observed imports)\" (R/aib/aib_trade_model.R).",
+      "example": {
+        "text": "Polysilicon is LOW INTERVENTION: a China cut-off removes 11.7% of allied traded demand because the United States (41.6%) and Germany (18.4%) are the largest suppliers to allied importers; the node's own note says \"trade exposure understates physical concentration\" and it carries PHYSICAL CAPABILITY NOT VALIDATED, with the flag that China holds 97% of GCIM operational polysilicon capacity against 10% of exports.",
+        "explorer_path": "/compacts/workstreams?scn=decoupling#nodes"
+      },
+      "alternatives": [
+        "Apparent consumption (production + imports - exports) where production data exist.",
+        "Keep traded demand but raise exposure where the physical-concentration flag fires."
+      ],
+      "affected_outputs": [
+        "Exposure, coverage and class of every AIB node",
+        "Compact missions"
+      ],
+      "code_refs": [
+        "R/aib/aib_trade_model.R:8-18"
+      ],
+      "config_keys": [
+        "config/aib.yml demand_scope"
+      ],
+      "method_tags": [
+        "trade_data",
+        "supply_chain_security",
+        "production_capacity_data"
+      ]
+    },
+    {
+      "card_id": "MC_016",
+      "title": "In the headline shock China keeps buying (hold semantics)",
+      "area": "aib_stress_test",
+      "current_choice": "The headline China shock is an export cut only: China keeps importing, so supply headed to China stays there. A two-way cut (release) is run as a sensitivity.",
+      "why": "\"hold: an export / supply shock: the shocked economy keeps buying ... (the security stress test)\" (config/aib.yml shocked_demand). It is the harder case for allied supply.",
+      "example": {
+        "text": "Under hold, 45 of 77 nodes are BUILD; under release, 36 (LOW INTERVENTION 32, COORDINATE 4, MANAGE SPECIALIZATION 2). Lithium chemicals move from BUILD to MANAGE SPECIALIZATION under release; graphite electrodes stay COORDINATE. The methods document still reports 42 and 32 from an earlier run.",
+        "explorer_path": "/compacts/AIB-C25?scn=decoupling#nodes"
+      },
+      "alternatives": [
+        "Release as the headline.",
+        "Report a blend, or both side by side."
+      ],
+      "affected_outputs": [
+        "Every Decoupling class",
+        "BUILD missions and compact decisions"
+      ],
+      "code_refs": [
+        "config/aib.yml:109-117",
+        "docs/aib_methodology.md:881-882"
+      ],
+      "config_keys": [
+        "config/aib.yml shocked_demand",
+        "config/aib.yml headline_shock"
+      ],
+      "method_tags": [
+        "supply_chain_security",
+        "trade_data"
+      ]
+    },
+    {
+      "card_id": "MC_017",
+      "title": "Existing trade links may at most double after a shock",
+      "area": "aib_stress_test",
+      "current_choice": "In the existing-network state, each observed 2024 trade relationship may grow to at most twice its size; growing further, or opening new links, counts as the coordination dividend.",
+      "why": "Without a bound \"any USD 10k relationship could carry unlimited volume\"; on the first full run \"the coordination dividend was ~0 in 89 of 91 nodes for that reason\" (config/aib.yml).",
+      "example": {
+        "text": "COORDINATE nodes number 4, 3, 3 and 0 when existing links may grow 1.25x, 2x, 4x or without limit. All three headline COORDINATE nodes (graphite electrodes, wind towers, hydro turbines) are flagged growth-sensitive; graphite electrodes have a dividend of 8.1 points at 2x and become LOW INTERVENTION without a limit. The methods document still reports 3, 2, 1 and 0 from an earlier run.",
+        "explorer_path": "/compacts/AIB-C15?scn=decoupling#nodes"
+      },
+      "alternatives": [
+        "A node-specific growth bound from lead-time or capacity data.",
+        "Report COORDINATE only when it holds across the growth range."
+      ],
+      "affected_outputs": [
+        "COORDINATE class",
+        "Coordination dividend",
+        "Compact archetypes"
+      ],
+      "code_refs": [
+        "config/aib.yml:165-173",
+        "R/aib/aib_trade_model.R:352-357"
+      ],
+      "config_keys": [
+        "config/aib.yml optimization.existing_relationship_growth"
+      ],
+      "method_tags": [
+        "trade_data",
+        "supply_chain_security"
+      ]
+    },
+    {
+      "card_id": "MC_018",
+      "title": "Suppliers may redirect exports from buyers outside the allied group (reallocation)",
+      "area": "aib_stress_test",
+      "current_choice": "In the headline supply scenario, any partner can redirect its observed exports to markets outside the allied group toward allied buyers. The share drawn that way is reported as diversion.",
+      "why": "Observed exports are revealed tradable capability; the conservative scenario (surviving shipments stay put) is kept apart everywhere as the cautious reading (config/aib.yml supply scenarios).",
+      "example": {
+        "text": "Under reallocation 45 nodes are BUILD; under the conservative scenario, 53. The three COORDINATE nodes and hydro-turbine parts become BUILD under the conservative scenario; graphite electrodes draw 19.9% and wind towers 25.3% of demand from buyers outside the allied group.",
+        "explorer_path": "/compacts/AIB-C18?scn=decoupling#nodes"
+      },
+      "alternatives": [
+        "Cap diversion (for example at half of a supplier's outside sales).",
+        "Conservative as the headline."
+      ],
+      "affected_outputs": [
+        "Coverage and class of every node",
+        "Coordination dividend"
+      ],
+      "code_refs": [
+        "config/aib.yml:118-126",
+        "R/aib/aib_trade_model.R:260-274"
+      ],
+      "config_keys": [
+        "config/aib.yml headline_scenario"
+      ],
+      "method_tags": [
+        "trade_data",
+        "supply_chain_security"
+      ]
+    },
+    {
+      "card_id": "MC_019",
+      "title": "Round-number bars decide the AIB class (BUILD at a 10% gap, LOW below 15% exposure)",
+      "area": "aib_stress_test",
+      "current_choice": "In order: exposure under 15% is LOW INTERVENTION; a residual gap of 10% or more after redistributed trade is BUILD; concentrated supply is MANAGE SPECIALIZATION; existing links restoring 90% or more is LOW INTERVENTION; a coordination dividend of 5% or more is COORDINATE; otherwise LOW INTERVENTION.",
+      "why": "The class is a policy interpretation of each node's continuous results; the columns it reads stay in the output (R/aib/aib_compacts.R). No calibration of the bars is stated.",
+      "example": {
+        "text": "Integrated circuits are BUILD on a residual gap of 0.107 (0.007 over the bar) with US$139bn of supply lost; furnace parts are BUILD at 0.109. Automatic controllers are LOW INTERVENTION at exposure 0.147, 0.003 under the bar. Power cables are LOW INTERVENTION with a gap of 0.091 and existing links at 0.897.",
+        "explorer_path": "/compacts/AIB-C01?scn=decoupling#nodes"
+      },
+      "alternatives": [
+        "Bars weighted by US dollars at stake rather than shares.",
+        "Bars scaled by how critical the node is.",
+        "Show a band (for example 8-12%) as borderline instead of a hard class."
+      ],
+      "affected_outputs": [
+        "Class counts",
+        "Compact missions and decisions"
+      ],
+      "code_refs": [
+        "R/aib/aib_compacts.R:16-31",
+        "config/aib.yml:278-293"
+      ],
+      "config_keys": [
+        "config/aib.yml classification.low_exposure",
+        "config/aib.yml classification.build_gap",
+        "config/aib.yml classification.adequate_coverage",
+        "config/aib.yml classification.coordinate_dividend"
+      ],
+      "method_tags": [
+        "supply_chain_security",
+        "indices_statistics"
+      ]
+    },
+    {
+      "card_id": "MC_020",
+      "title": "Managed Interdependence judges concentration against sibling products",
+      "area": "aib_stress_test",
+      "current_choice": "The Managed Interdependence scenario caps each supplier's share of allied supply so that the node's exporter concentration (HHI) falls to the trade-weighted mean HHI of the other HS6 lines in the same 4-digit heading (or, failing that, the other nodes of the sector). Allied suppliers are capped too.",
+      "why": "The benchmark asks how concentrated supply normally is for comparable products rather than imposing one ceiling for all (config/aib.yml diversify_benchmark). The methods document itself notes that \"an HS4 heading is a customs grouping, not a market\".",
+      "example": {
+        "text": "Rare-earth oxides read \"already as diversified as its benchmark\" (HHI 0.158 against 0.281) and cathode materials too (0.316 against 0.424) while China supplies 35% and 58% of allied traded demand. Lithium-ion cells are benchmarked on the other lines of heading 8507 (0.103), which caps China at 23.2%. Polysilicon caps the United States, an allied supplier.",
+        "explorer_path": "/aib/diversification"
+      },
+      "alternatives": [
+        "Benchmark on production concentration rather than trade.",
+        "A fixed HHI ceiling (for example 0.18).",
+        "Cap only non-allied suppliers."
+      ],
+      "affected_outputs": [
+        "Every Managed Interdependence class",
+        "Managed compact decisions"
+      ],
+      "code_refs": [
+        "config/aib.yml:94-108",
+        "R/aib/aib_diversify.R:41",
+        "docs/aib_methodology.md:1043-1046"
+      ],
+      "config_keys": [
+        "config/aib.yml shocks[id=diversify_benchmark].benchmark"
+      ],
+      "method_tags": [
+        "trade_data",
+        "supply_chain_security",
+        "indices_statistics"
+      ]
+    },
+    {
+      "card_id": "MC_021",
+      "title": "A compact is warranted at 25% of lost supply OR US$1bn",
+      "area": "aib_compact",
+      "current_choice": "A mission is material when its steps carry at least 25% of the chain's lost supply (supply to shift, under Managed Interdependence) or at least US$1bn. A chain whose lead mission is material reads as a Sectoral Compact; below both bars its missions are shown as \"Targeted action\" (a narrower arrangement); with no mission, no compact is needed.",
+      "why": "Materiality rule of the 2026-10-21 review (config/aib_strategic_layer.yml missions; R/aib/aib_strategic.R aib_strategic_missions).",
+      "example": {
+        "text": "Nuclear Fuel & Reactor Systems is led by a material BUILD mission under Managed Interdependence on US$0.20bn of supply to shift in the whole chain, because that mission holds 52% of it. Grid Equipment & Conductors is material only on the dollar arm: its BUILD step (grain-oriented electrical steel) is 12.5% of US$8.21bn, US$1.026bn. Heat Pumps & Cooling is a targeted action (2% of US$2.9bn).",
+        "explorer_path": "/compacts/s/SC-NUCLEAR"
+      },
+      "alternatives": [
+        "Require both the share and the dollar bar (AND instead of OR).",
+        "A dollar floor only.",
+        "Scale the dollar floor by the chain's total demand."
+      ],
+      "affected_outputs": [
+        "Compact decision of each strategic compact",
+        "Missions on the compact pages"
+      ],
+      "code_refs": [
+        "config/aib_strategic_layer.yml:42-49",
+        "R/aib/aib_strategic.R:534-584",
+        "dashboard/src/aib/views/strategic/sections.tsx:294-295"
+      ],
+      "config_keys": [
+        "config/aib_strategic_layer.yml missions.material_share",
+        "config/aib_strategic_layer.yml missions.material_usd"
+      ],
+      "method_tags": [
+        "industrial_policy",
+        "geopolitics_alliances"
+      ]
+    },
+    {
+      "card_id": "MC_022",
+      "title": "Five different definitions of a trusted partner coexist",
+      "area": "aib_partners",
+      "current_choice": "The AIB protects a demand scope of 59 economies (the US-leaning UN voting bloc above a GDP floor, plus partners by agreement or supply); any exporter may supply it; investment hosts exclude the China-leaning bloc; the strategic layer also treats Taiwan and Switzerland as allied; partnership memos treat China, Hong Kong, Macao and Russia as the coercive suppliers.",
+      "why": "Each definition answers a different question (whom to protect, who can supply, who may host investment, whom to rely on), and no geopolitical alignment score enters the AIB objectives (config/aib.yml, config/coalition.yml).",
+      "example": {
+        "text": "Taiwan, Switzerland and Slovenia are outside the 59-economy demand scope (posture tier \"none\"); Taiwan is a build host for the semiconductors compact under Decoupling, and Slovenia, an EU member, is listed among the non-allied economies the battery compact relies on. Singapore, India, Saudi Arabia and Brazil are inside the scope as partners; the UAE is not.",
+        "explorer_path": "/compacts/s/SC-BATTERIES?scn=decoupling"
+      },
+      "alternatives": [
+        "One documented mapping of 'trusted' used everywhere, with the exceptions listed.",
+        "A continuous alignment score instead of hard voting blocs.",
+        "Use sanctions and export-control lists rather than UN voting blocs for the host screen."
+      ],
+      "affected_outputs": [
+        "AIB demand scope and hosts",
+        "Compact cores",
+        "Partner names on posture cells",
+        "Partnership memos"
+      ],
+      "code_refs": [
+        "config/coalition.yml:6-34",
+        "config/aib.yml:54-61",
+        "config/aib.yml:253-254",
+        "config/aib_strategic_layer.yml:102",
+        "config/partnership_memos.yml:26"
+      ],
+      "config_keys": [
+        "config/aib.yml demand_scope.tiers",
+        "config/aib.yml investment.host_screen.exclude_blocs",
+        "config/aib_strategic_layer.yml allied.treat_as_allied",
+        "config/partnership_memos.yml inputs.coercive_suppliers"
+      ],
+      "method_tags": [
+        "geopolitics_alliances",
+        "supply_chain_security"
+      ]
+    }
+  ]
+}

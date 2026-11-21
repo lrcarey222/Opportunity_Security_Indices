@@ -15,6 +15,7 @@ import { ViewErrorBoundary } from './ViewErrorBoundary.tsx';
 import { Redirect } from './Redirect.tsx';
 import { rememberLocation } from './lastLocation.ts';
 import { isSectorProfilePath } from './modules.ts';
+import { ReviewToolbar } from '../review/components/ReviewToolbar.tsx';
 
 /** A one-off notice carried in the location state ({ notice }) by a redirect. */
 function RouteNotice() {
@@ -69,6 +70,8 @@ export function AppRoot() {
             <Outlet />
           </ViewErrorBoundary>
         </main>
+        {/* the expert-review bar: renders nothing unless the review controls are on (review/appInfo.ts) */}
+        <ReviewToolbar />
         <Footer />
       </div>
     </ModuleNavProvider>

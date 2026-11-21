@@ -287,6 +287,12 @@ export interface PageContext {
   displayed_result: string | null;
   metric_ids: string[];
   data_release: string | null;
+  /**
+   * Set when data_release is NOT the full review release: the page's stamps differ from the review manifest's (the
+   * bundles named), or the page loaded none, or the review manifest could not be read (review/release.ts
+   * resolveReportRelease). Null or absent when data_release is the review manifest's release ID.
+   */
+  release_note?: string | null;
   bundle_stamps: Record<string, { created: string | null; git_commit: string | null; bundle_id?: string | null } | null>;
   app_commit: string;
   captured_at: string;

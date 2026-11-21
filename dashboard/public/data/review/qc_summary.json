@@ -1,0 +1,1094 @@
+{
+  "schema": "aib-review-qc-summary",
+  "schema_version": 1,
+  "data_release": "rel-9c8f1877b5c6",
+  "built_at": "2026-11-21T00:00:00Z",
+  "app_commit": "d717db1c",
+  "layer": "bundle",
+  "status": {
+    "pass": 31,
+    "warn": 8,
+    "fail": 0,
+    "info": 5
+  },
+  "checks": [
+    {
+      "check_id": "BQ-PROV-POSTURE-01",
+      "layer": "bundle",
+      "area": "provenance",
+      "status": "pass",
+      "n": 0,
+      "detail": "posture manifest and core stamped 2026-11-17T20:33:31Z @ 0496e7ba",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-PROV-DETAIL-01",
+      "layer": "bundle",
+      "area": "provenance",
+      "status": "warn",
+      "n": 214,
+      "detail": "214 posture detail documents: 214 carry created, 0 carry a git commit (the detail header has none: a detail file cannot be tied to a commit on its own)",
+      "examples": [
+        "posture/posture-detail-ABW.4806eff2.json",
+        "posture/posture-detail-AFG.f92da37c.json",
+        "posture/posture-detail-AGO.6cf2c003.json"
+      ]
+    },
+    {
+      "check_id": "BQ-PROV-AIB-01",
+      "layer": "bundle",
+      "area": "provenance",
+      "status": "warn",
+      "n": 4,
+      "detail": "AIB bundle created 2026-11-17T19:07:29Z; 4 of 4 AIB files carry no git commit (manifest, compacts and scenario documents)",
+      "examples": [
+        "aib/manifest.json",
+        "aib/compacts.c5643da1.json",
+        "aib/scenario-managed.feae9f60.json",
+        "aib/scenario-baseline.2b9a857b.json"
+      ]
+    },
+    {
+      "check_id": "BQ-PROV-MEMO-01",
+      "layer": "bundle",
+      "area": "provenance",
+      "status": "warn",
+      "n": 2,
+      "detail": "2 partnership files read; none carries a git commit (per-memo generated_at only)",
+      "examples": [
+        "partnerships/manifest.json",
+        "partnerships/memo-USA_JPN.d98e5bec.json"
+      ]
+    },
+    {
+      "check_id": "BQ-PROV-OTHER-01",
+      "layer": "bundle",
+      "area": "provenance",
+      "status": "pass",
+      "n": 0,
+      "detail": "country 2026-10-31T15:58:15Z @ 4bb2adc, sector 2026-10-31T15:58:13Z @ 4bb2adc, strategic 2026-10-30T21:17:20Z @ a54a9d3: all stamped",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-PROV-MIX-01",
+      "layer": "bundle",
+      "area": "provenance",
+      "status": "info",
+      "n": 3,
+      "detail": "the bundles come from 3 commits (0496e7ba, 4bb2adc, a54a9d3) and 3 export dates (2026-10-30, 2026-10-31, 2026-11-17); only the data release ID ties them together",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-REL-01",
+      "layer": "bundle",
+      "area": "provenance",
+      "status": "pass",
+      "n": 0,
+      "detail": "data release rel-9c8f1877b5c6: every bundle stamp present",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-LOAD-01",
+      "layer": "bundle",
+      "area": "provenance",
+      "status": "pass",
+      "n": 225,
+      "detail": "225 bundle files read and hashed (sha256)",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-DECODE-01",
+      "layer": "bundle",
+      "area": "schema",
+      "status": "pass",
+      "n": 0,
+      "detail": "every bundle read decodes with the app's own decoders",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-SCHEMA-01",
+      "layer": "bundle",
+      "area": "posture.schema",
+      "status": "pass",
+      "n": 0,
+      "detail": "posture manifest osi-posture v2; core and details decode with the app's own decoders (decodeCore, checkPostureDetail)",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-SCHEMA-02",
+      "layer": "bundle",
+      "area": "posture.schema",
+      "status": "pass",
+      "n": 0,
+      "detail": "posture core: 27 columns, 14124 rows, every column full length",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-CODES-01",
+      "layer": "bundle",
+      "area": "posture.codes",
+      "status": "pass",
+      "n": 0,
+      "detail": "posture codes (p, m, dm, sec, nt, pw, conf, al, yd) are all in their vocabularies",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-NUM-01",
+      "layer": "bundle",
+      "area": "posture.numeric",
+      "status": "pass",
+      "n": 0,
+      "detail": "need, prize, cp, share and io are numbers in [0,1] or null in every row",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-COMPLETE-01",
+      "layer": "bundle",
+      "area": "posture.completeness",
+      "status": "pass",
+      "n": 14124,
+      "detail": "214 economies x 11 technologies x 6 stages = 14124 cells, unique (country, tech, stage), ISO3 and vocabularies valid",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-COMPLETE-02",
+      "layer": "bundle",
+      "area": "posture.completeness",
+      "status": "pass",
+      "n": 14124,
+      "detail": "214 detail documents, 14124 detail cells, one per core cell",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-COUNTS-01",
+      "layer": "bundle",
+      "area": "posture.completeness",
+      "status": "pass",
+      "n": 14124,
+      "detail": "manifest counts.choices equal the core: watch 6574, accelerate 514, not_assessed 4887, partner 1475, secure 212, preserve 111, catch_up 351",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-INV-01",
+      "layer": "bundle",
+      "area": "posture.invariants",
+      "status": "pass",
+      "n": 14124,
+      "detail": "Compete has a mode, Deploy a deploy mode, Secure a rationale; no Compete at Deployment, Accelerate only there; not assessed has no need; yards match the choice; core and detail choices agree",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-NUM-03",
+      "layer": "bundle",
+      "area": "posture.numeric",
+      "status": "pass",
+      "n": 14124,
+      "detail": "core and detail agree on need, prize, cp and share (within half a unit of the 3rd decimal, the export rounding)",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-NUM-02",
+      "layer": "bundle",
+      "area": "posture.numeric",
+      "status": "pass",
+      "n": 14124,
+      "detail": "detail families, shares and trade-benchmark values are in range (0-1 scores and shares, non-negative RCA, exports, imports/GDP)",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-TRACE-01",
+      "layer": "bundle",
+      "area": "posture.trace",
+      "status": "pass",
+      "n": 14124,
+      "detail": "every cell's decision trace ends in its shipped choice",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-TRACE-02",
+      "layer": "bundle",
+      "area": "posture.trace",
+      "status": "pass",
+      "n": 14124,
+      "detail": "trace values and thresholds equal the detail values and the core thresholds",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-TRACE-03",
+      "layer": "bundle",
+      "area": "posture.trace",
+      "status": "pass",
+      "n": 14124,
+      "detail": "every trace result word agrees with the shipped values: need / prize / deployment high iff at or above the bar; the position word with cp against the bar and the measured share against the 0.5% contender line; the large-yard word with its signal count and the node record (meta.yf_nodes, or the economy's own exception); the pathway word with the detail",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-REPRO-01",
+      "layer": "bundle",
+      "area": "posture.reproduction",
+      "status": "pass",
+      "n": 14124,
+      "detail": "the TypeScript port of sp_choice_rule reproduces 14124 of 14124 shipped choices (100.00%) from the shipped values; by path triage 5212/5212, deployment 1683/1683, large_yard 2130/2130, not_assessed 4887/4887, secure_override 212/212. Secure (the engine override, 6 tests not shipped) and the large-yard case itself (its signals) are read from the trace, not recomputed; cp_high reads the trace's position word because the capability lower bound (t3_capability_lo) is not shipped. The test therefore verifies the rule's logic and the need / prize / deployment-need comparisons, not those three inputs.",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-BORDER-01",
+      "layer": "bundle",
+      "area": "posture.trace",
+      "status": "pass",
+      "n": 12742,
+      "detail": "the borderline tags of need, prize and deployment need (which lower the published confidence) reproduce from the shipped values on all 12742 checkable tags (values within rounding of the band edge skipped)",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-CAP-01",
+      "layer": "bundle",
+      "area": "posture.knife_edge",
+      "status": "info",
+      "n": 432,
+      "detail": "432 cells carry a prize of exactly 0.59 (the market-only cap = prize threshold - cap_margin; by rule never high and never borderline, so margin views show a spurious -0.01 cluster); 5350 cells sit in nodes capped market_only (meta.yf_nodes)",
+      "examples": [
+        "ABW|Electric Vehicles|Extraction",
+        "ABW|Solar|Components",
+        "AFG|Electric Vehicles|Extraction",
+        "AFG|Solar|Components",
+        "AGO|Electric Vehicles|Extraction",
+        "AGO|Solar|Components",
+        "ALB|Electric Vehicles|Extraction",
+        "ALB|Solar|Components"
+      ]
+    },
+    {
+      "check_id": "BQ-POST-CAP-02",
+      "layer": "bundle",
+      "area": "posture.knife_edge",
+      "status": "pass",
+      "n": 5350,
+      "detail": "no cell of a market-only capped node carries a prize above 0.59",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-POST-EDGE-01",
+      "layer": "bundle",
+      "area": "posture.knife_edge",
+      "status": "warn",
+      "n": 713,
+      "detail": "713 trace steps sit exactly on their threshold at the shipped 3-decimal precision (the inclusive >= rule decides them): need 0, prize 0, cp 15, deployment 0, large_yard 698",
+      "examples": [
+        "ARE|Oil|Extraction cp_contender_pct = 0.75 -> high (choice preserve)",
+        "BHR|Gas|Components cp_contender_pct = 0.75 -> not_a_contender (choice watch)",
+        "CHN|Electric Grid|Refining cp_contender_pct = 0.75 -> high (choice watch)",
+        "CHN|Nuclear|Refining cp_contender_pct = 0.75 -> high (choice preserve)",
+        "FRA|Solar|Assembly cp_contender_pct = 0.75 -> high (choice preserve)",
+        "IDN|Coal|Refining cp_contender_pct = 0.75 -> high (choice watch)",
+        "IND|Electric Vehicles|Assembly cp_contender_pct = 0.75 -> high (choice preserve)",
+        "IND|Oil|Assembly cp_contender_pct = 0.75 -> high (choice preserve)"
+      ]
+    },
+    {
+      "check_id": "BQ-POST-EDGE-02",
+      "layer": "bundle",
+      "area": "posture.knife_edge",
+      "status": "warn",
+      "n": 1,
+      "detail": "1 nodes carry one prize for every assessed economy within the borderline band of the prize bar: the whole node flips together on a small threshold move",
+      "examples": [
+        "Electric Grid|Assembly: prize 0.613 for all 205 assessed economies (bar 0.6)"
+      ]
+    },
+    {
+      "check_id": "BQ-POST-FALLBACK-01",
+      "layer": "bundle",
+      "area": "posture.thresholds",
+      "status": "warn",
+      "n": 1,
+      "detail": "1 fallback thresholds in posture/contract.ts DEFAULT_THRESHOLDS differ from the shipped meta.thresholds (latent: decodeCore records a missing threshold as a contract problem and throws, so today the fallback never reaches a page; it would if that rule were relaxed)",
+      "examples": [
+        "deployment: DEFAULT_THRESHOLDS 0.67 vs core meta 0.6"
+      ]
+    },
+    {
+      "check_id": "BQ-AIB-SCHEMA-01",
+      "layer": "bundle",
+      "area": "aib.schema",
+      "status": "pass",
+      "n": 0,
+      "detail": "AIB document osi-aib v3: 77 nodes, 35 operational compacts, 10 strategic compacts; checkCompactsDoc reports no problem",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-AIB-CLASS-01",
+      "layer": "bundle",
+      "area": "aib.codes",
+      "status": "pass",
+      "n": 77,
+      "detail": "node classes, variants and growth classes are AIB classes: BUILD 45, LOW INTERVENTION 25, INSUFFICIENT DATA 3, MANAGE SPECIALIZATION 1, COORDINATE 3",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-AIB-PATH-01",
+      "layer": "bundle",
+      "area": "aib.coverage",
+      "status": "pass",
+      "n": 77,
+      "detail": "static <= existing <= optimized <= 1 for every node (Decoupling and Managed), within 1e-9",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-AIB-RESID-01",
+      "layer": "bundle",
+      "area": "aib.coverage",
+      "status": "pass",
+      "n": 77,
+      "detail": "residual = max(1 - optimized, 0) for every node (within 1e-6)",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-AIB-NUM-01",
+      "layer": "bundle",
+      "area": "aib.numeric",
+      "status": "pass",
+      "n": 77,
+      "detail": "AIB shares and coverages are in [0,1], HHIs in (0,1], supplier shares sum <= 1, lost supply non-negative",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-AIB-RULE-01",
+      "layer": "bundle",
+      "area": "aib.reproduction",
+      "status": "pass",
+      "n": 74,
+      "detail": "the AIB class rule (config/aib.yml classification, meta.thresholds) re-run on the exported exposure, residual, largest share, coverage loss at the cap, existing coverage and dividend reproduces all 74 classified nodes",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-AIB-HOST-01",
+      "layer": "bundle",
+      "area": "aib.hosts",
+      "status": "warn",
+      "n": 1,
+      "detail": "1 rank-1 hosts with zero simulated gain (ranked by scale, not gain): never an intervention",
+      "examples": [
+        "managed: blade-core-wood-balsa rank-1 host PNG gain 0 (scaling host first)"
+      ]
+    },
+    {
+      "check_id": "BQ-AIB-PATH-02",
+      "layer": "bundle",
+      "area": "aib.coverage",
+      "status": "pass",
+      "n": 0,
+      "detail": "compact coverage paths are monotone (operational: static <= existing <= trade <= investment; strategic: static <= existing <= coordinated <= postInvestment)",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-AIB-ANCHOR-01",
+      "layer": "bundle",
+      "area": "aib.coverage",
+      "status": "info",
+      "n": 32,
+      "detail": "32 operational compacts show anchor coverage more than 10 points above trade coverage (the \"compact gain\" is largely redistribution within the scope plus simulated capacity)",
+      "examples": [
+        "AIB-C01: anchorCompact 1 vs trade 0.893",
+        "AIB-C02: anchorCompact 0.8297 vs trade 0.3746",
+        "AIB-C03: anchorCompact 1 vs trade 0.7687",
+        "AIB-C04: anchorCompact 1 vs trade 0.6966",
+        "AIB-C05: anchorCompact 1 vs trade 0.7182",
+        "AIB-C06: anchorCompact 1 vs trade 0.3407",
+        "AIB-C07: anchorCompact 1 vs trade 0.7443",
+        "AIB-C08: anchorCompact 1 vs trade 0.6849"
+      ]
+    },
+    {
+      "check_id": "BQ-MEMO-01",
+      "layer": "bundle",
+      "area": "memos",
+      "status": "warn",
+      "n": 1,
+      "detail": "1 of 1 shipped memos are not independently verified (rule-generated; no claim-level provenance shipped)",
+      "examples": [
+        "USA_JPN: verified false, generated 2026-11-06T17:50:45Z, as of 2026-10-30"
+      ]
+    },
+    {
+      "check_id": "BQ-MEMO-02",
+      "layer": "bundle",
+      "area": "memos",
+      "status": "pass",
+      "n": 1,
+      "detail": "every memo the manifest names has its JSON document (1)",
+      "examples": []
+    },
+    {
+      "check_id": "BQ-ROBUST-01",
+      "area": "robustness",
+      "status": "info",
+      "n": 14124,
+      "detail": "posture cells under the bundle-layer specs: stable 7748, sensitive 434, fragile 843, not testable 5099; fence change 1145. Not runnable on the bundle (pipeline layer): market-only gate 0.33 / Unknown counted 0.5 (needs node attributes); need floor 0.05 (needs supply_chain_need_score and the uncapped percentile); deployment needing >= 2 families (the rule for a one-family cell is not defined in the bundle); need-floor-cap-aware need 0.60 (the bundle does not mark capped need); prize family weights (needs the family scores of every cell).",
+      "examples": [
+        "need_plus: 221 cells flip (+14 possible)",
+        "need_minus: 206 cells flip (+4 possible)",
+        "large_min4: 204 cells flip (+66 possible)",
+        "large_min6: 160 cells flip",
+        "deployment_minus: 153 cells flip (+4 possible)",
+        "deployment_fallback: 140 cells flip (+2 possible)",
+        "deployment_plus: 102 cells flip (+2 possible)",
+        "prize_plus: 69 cells flip (+3 possible)",
+        "prize_minus: 30 cells flip",
+        "cp_plus: 27 cells flip",
+        "cp_minus: 17 cells flip (+3 possible)",
+        "cp_strict: 8 cells flip",
+        "position_first_off: 5 cells flip"
+      ],
+      "layer": "bundle"
+    },
+    {
+      "check_id": "BQ-ROBUST-02",
+      "area": "robustness",
+      "status": "info",
+      "n": 77,
+      "detail": "AIB nodes (Decoupling) under the shipped class variants and growth bounds: stable 31, sensitive 17, fragile 26, not testable 3; fence change 41",
+      "examples": [
+        "china_50: 25 nodes change class",
+        "largest_subsector: 20 nodes change class",
+        "largest_stage: 16 nodes change class",
+        "largest_technology: 12 nodes change class",
+        "release: 9 nodes change class",
+        "conservative: 8 nodes change class",
+        "growth_unlimited: 3 nodes change class",
+        "growth_1.25x: 1 nodes change class"
+      ],
+      "layer": "bundle"
+    },
+    {
+      "check_id": "BQ-GOLDEN-00",
+      "area": "golden",
+      "status": "pass",
+      "n": 0,
+      "detail": "36 golden cases, valid",
+      "examples": [],
+      "layer": "bundle"
+    },
+    {
+      "check_id": "BQ-GOLDEN-01",
+      "area": "golden",
+      "status": "pass",
+      "n": 0,
+      "detail": "all 36 golden cases pass",
+      "examples": [],
+      "layer": "bundle"
+    }
+  ],
+  "reproduction": {
+    "cells": 14124,
+    "reproduced": 14124,
+    "rate": 1,
+    "reproduced_from_trace": 14124,
+    "rate_from_trace": 1,
+    "by_category": {
+      "ok": 14124
+    },
+    "by_path": {
+      "triage": {
+        "cells": 5212,
+        "reproduced": 5212
+      },
+      "deployment": {
+        "cells": 1683,
+        "reproduced": 1683
+      },
+      "large_yard": {
+        "cells": 2130,
+        "reproduced": 2130
+      },
+      "not_assessed": {
+        "cells": 4887,
+        "reproduced": 4887
+      },
+      "secure_override": {
+        "cells": 212,
+        "reproduced": 212
+      }
+    },
+    "exceptions": [],
+    "exceptions_total": 0
+  },
+  "robustness": {
+    "posture": {
+      "records": 14124,
+      "by_class": {
+        "stable": 7748,
+        "sensitive": 434,
+        "fragile": 843,
+        "not_testable": 5099
+      },
+      "fence_change": 1145,
+      "by_driver": {
+        "supply_chain_need": 445,
+        "large_yard_min_signals": 430,
+        "deployment_need": 261,
+        "cp_contender_pct": 47,
+        "cp_inclusive_rule": 8,
+        "position_first": 5,
+        "strategic_industrial_value": 102,
+        "deployment_threshold_fallback": 142
+      },
+      "by_spec": {
+        "need_minus": 206,
+        "need_plus": 221,
+        "large_min4": 204,
+        "large_min6": 160,
+        "deployment_minus": 153,
+        "cp_plus": 27,
+        "cp_strict": 8,
+        "position_first_off": 5,
+        "prize_plus": 69,
+        "deployment_plus": 102,
+        "deployment_fallback": 140,
+        "prize_minus": 30,
+        "cp_minus": 17
+      },
+      "indeterminate_by_spec": {
+        "need_plus": 14,
+        "large_min4": 66,
+        "deployment_minus": 4,
+        "cp_minus": 3,
+        "need_minus": 4,
+        "deployment_fallback": 2,
+        "deployment_plus": 2,
+        "prize_plus": 3
+      },
+      "not_testable_by_reason": {
+        "not assessed": 4887,
+        "Secure is the posture engine's security override": 212
+      }
+    },
+    "aib": {
+      "records": 77,
+      "by_class": {
+        "stable": 31,
+        "sensitive": 17,
+        "fragile": 26,
+        "not_testable": 3
+      },
+      "fence_change": 41,
+      "by_driver": {
+        "china_50": 25,
+        "release": 9,
+        "largest_subsector": 20,
+        "largest_stage": 16,
+        "largest_technology": 12,
+        "conservative": 8,
+        "existing_relationship_growth": 4
+      },
+      "by_spec": {
+        "china_50": 25,
+        "release": 9,
+        "largest_subsector": 20,
+        "largest_stage": 16,
+        "largest_technology": 12,
+        "conservative": 8,
+        "growth_unlimited": 3,
+        "growth_1.25x": 1
+      },
+      "indeterminate_by_spec": {},
+      "not_testable_by_reason": {
+        "INSUFFICIENT DATA": 3
+      }
+    },
+    "specs": [
+      {
+        "spec_id": "need_minus",
+        "kind": "local",
+        "label": "Need threshold 0.62 (-0.05)",
+        "driver": "supply_chain_need"
+      },
+      {
+        "spec_id": "need_plus",
+        "kind": "local",
+        "label": "Need threshold 0.72 (+0.05)",
+        "driver": "supply_chain_need"
+      },
+      {
+        "spec_id": "prize_minus",
+        "kind": "local",
+        "label": "Prize threshold 0.55 (-0.05)",
+        "driver": "strategic_industrial_value"
+      },
+      {
+        "spec_id": "prize_plus",
+        "kind": "local",
+        "label": "Prize threshold 0.65 (+0.05)",
+        "driver": "strategic_industrial_value"
+      },
+      {
+        "spec_id": "cp_minus",
+        "kind": "local",
+        "label": "Competitive Position bar 0.7 (-0.05)",
+        "driver": "cp_contender_pct"
+      },
+      {
+        "spec_id": "cp_plus",
+        "kind": "local",
+        "label": "Competitive Position bar 0.8 (+0.05)",
+        "driver": "cp_contender_pct"
+      },
+      {
+        "spec_id": "cp_strict",
+        "kind": "local",
+        "label": "Competitive Position strictly above 0.75 (not at or above)",
+        "driver": "cp_inclusive_rule"
+      },
+      {
+        "spec_id": "deployment_minus",
+        "kind": "local",
+        "label": "Deployment threshold 0.55 (-0.05)",
+        "driver": "deployment_need"
+      },
+      {
+        "spec_id": "deployment_plus",
+        "kind": "local",
+        "label": "Deployment threshold 0.65 (+0.05)",
+        "driver": "deployment_need"
+      },
+      {
+        "spec_id": "large_min4",
+        "kind": "structural",
+        "label": "Large-yard case on 4 of 8 commodity signals (not 5)",
+        "driver": "large_yard_min_signals"
+      },
+      {
+        "spec_id": "large_min6",
+        "kind": "structural",
+        "label": "Large-yard case on 6 of 8 commodity signals (not 5)",
+        "driver": "large_yard_min_signals"
+      },
+      {
+        "spec_id": "position_first_off",
+        "kind": "structural",
+        "label": "Large-yard case before Competitive Position (position_first off)",
+        "driver": "position_first"
+      },
+      {
+        "spec_id": "deployment_fallback",
+        "kind": "structural",
+        "label": "Deployment threshold 0.67 (the value of the TS fallback DEFAULT_THRESHOLDS.deployment, also in the R sensitivity grid)",
+        "driver": "deployment_threshold_fallback"
+      }
+    ],
+    "not_runnable_on_bundle": [
+      "market-only gate 0.33 / Unknown counted 0.5 (needs node attributes)",
+      "need floor 0.05 (needs supply_chain_need_score and the uncapped percentile)",
+      "deployment needing >= 2 families (the rule for a one-family cell is not defined in the bundle)",
+      "need-floor-cap-aware need 0.60 (the bundle does not mark capped need)",
+      "prize family weights (needs the family scores of every cell)"
+    ]
+  },
+  "golden": {
+    "summary": {
+      "pass": 36,
+      "fail": 0,
+      "missing": 0,
+      "not_applicable": 0
+    },
+    "results": [
+      {
+        "id": "GC_001",
+        "status": "pass",
+        "observed": {
+          "choice": "secure",
+          "fence": "high",
+          "need": 0.998
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_002",
+        "status": "pass",
+        "observed": {
+          "choice": "secure",
+          "fence": "high",
+          "need": 0.973
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_003",
+        "status": "pass",
+        "observed": {
+          "choice": "watch",
+          "fence": "low",
+          "need": 0.222,
+          "prize": 0.239,
+          "cp": 0.803
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_004",
+        "status": "pass",
+        "observed": {
+          "choice": "watch",
+          "fence": "low",
+          "need": 0.875,
+          "prize": 0.286
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_005",
+        "status": "pass",
+        "observed": {
+          "choice": "watch",
+          "fence": "low",
+          "need": 0.31,
+          "prize": 0.467,
+          "cp": 0.948
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_006",
+        "status": "pass",
+        "observed": {
+          "choice": "preserve",
+          "fence": "medium",
+          "prize": 0.834,
+          "cp": 0.938,
+          "home_share": 0.848
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_007",
+        "status": "pass",
+        "observed": {
+          "choice": "preserve",
+          "fence": "medium",
+          "need": 0.0616,
+          "prize": 0.814,
+          "cp": 0.921,
+          "home_share": 0.301
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_008",
+        "status": "pass",
+        "observed": {
+          "choice": "partner",
+          "need": 0.993,
+          "cp": 0
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_009",
+        "status": "pass",
+        "observed": {
+          "choice": "catch_up",
+          "fence": "medium",
+          "need": 0.993,
+          "prize": 0.767,
+          "cp": 0
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_010",
+        "status": "pass",
+        "observed": {
+          "choice": "watch",
+          "fence": "low",
+          "need": 0.85,
+          "home_share": 0
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_011",
+        "status": "pass",
+        "observed": {
+          "choice": "secure",
+          "fence": "high",
+          "need": 0.963,
+          "cp": 0
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_012",
+        "status": "pass",
+        "observed": {
+          "choice": "catch_up",
+          "fence": "medium",
+          "need": 0.914,
+          "prize": 0.767,
+          "cp": 0
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_013",
+        "status": "pass",
+        "observed": {
+          "choice": "not_assessed"
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_014",
+        "status": "pass",
+        "observed": {
+          "choice": "preserve",
+          "fence": "medium",
+          "cp": 0.763,
+          "need": 0.732,
+          "prize": 0.787
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_015",
+        "status": "pass",
+        "observed": {
+          "choice": "preserve",
+          "fence": "medium",
+          "cp": 0.75,
+          "need": 0.622,
+          "prize": 0.777
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_016",
+        "status": "pass",
+        "observed": {
+          "choice": "watch",
+          "fence": "low",
+          "deployment_need": 0.597
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_017",
+        "status": "pass",
+        "observed": {
+          "choice": "accelerate",
+          "fence": "medium",
+          "deployment_need": 0.604
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_018",
+        "status": "pass",
+        "observed": {
+          "choice": "catch_up",
+          "fence": "medium",
+          "prize": 0.603,
+          "need": 0.776
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_019",
+        "status": "pass",
+        "observed": {
+          "choice": "catch_up",
+          "fence": "medium",
+          "need": 0.453,
+          "prize": 0.834,
+          "cp": 0.312
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_020",
+        "status": "pass",
+        "observed": {
+          "choice": "preserve",
+          "fence": "medium",
+          "cp": 0.779,
+          "prize": 0.815,
+          "need": 0.134
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_021",
+        "status": "pass",
+        "observed": {
+          "choice": "catch_up",
+          "fence": "medium",
+          "need": 0.685,
+          "prize": 0.613,
+          "cp": 0.703
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_022",
+        "status": "pass",
+        "observed": {
+          "choice": "preserve",
+          "fence": "medium",
+          "need": 0.723,
+          "prize": 1,
+          "cp": 0.921
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_023",
+        "status": "pass",
+        "observed": {
+          "choice": "watch",
+          "fence": "low",
+          "prize": 0.59,
+          "cp": 0.983,
+          "need": 0.0122
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_024",
+        "status": "pass",
+        "observed": {
+          "choice": "watch",
+          "fence": "low",
+          "need": 0.115,
+          "prize": 0.59,
+          "cp": 0.864,
+          "home_share": 0.16
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_025",
+        "status": "pass",
+        "observed": {
+          "choice": "preserve",
+          "fence": "medium",
+          "need": 0.738,
+          "prize": 0.59,
+          "cp": 0.929
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_026",
+        "status": "pass",
+        "observed": {
+          "choice": "partner",
+          "fence": "medium",
+          "cp": 0.948,
+          "need": 0.851,
+          "prize": 0.59
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_027",
+        "status": "pass",
+        "observed": {
+          "choice": "preserve",
+          "fence": "medium",
+          "cp": 0.75,
+          "prize": 0.562,
+          "need": 0.894
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_028",
+        "status": "pass",
+        "observed": {
+          "choice": "watch",
+          "fence": "low",
+          "need": 0.61,
+          "prize": 0.778
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_029",
+        "status": "pass",
+        "observed": {
+          "choice": "BUILD",
+          "exposure": 0.6184,
+          "residual": 0.6068
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_030",
+        "status": "pass",
+        "observed": {
+          "choice": "COORDINATE",
+          "existing": 0.8342,
+          "dividend": 0.0808,
+          "residual": 0.0849
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_031",
+        "status": "pass",
+        "observed": {
+          "choice": "LOW INTERVENTION",
+          "exposure": 0.1166
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_032",
+        "status": "pass",
+        "observed": {
+          "choice": "BUILD",
+          "residual": 0.4562
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_033",
+        "status": "pass",
+        "observed": {
+          "choice": "BUILD",
+          "residual": 0.107,
+          "exposure": 0.1952
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_034",
+        "status": "pass",
+        "observed": {
+          "choice": "sectoral",
+          "exposure": 0.5935,
+          "coverage_coordinated": 0.4204
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_035",
+        "status": "pass",
+        "observed": {
+          "choice": "sectoral",
+          "lost_usd": 8205549363,
+          "exposure": 0.0332
+        },
+        "failures": []
+      },
+      {
+        "id": "GC_036",
+        "status": "pass",
+        "observed": {
+          "choice": "sectoral",
+          "lost_usd": 203427905
+        },
+        "failures": []
+      }
+    ]
+  }
+}

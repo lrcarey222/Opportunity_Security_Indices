@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { checkPostureDetail, checkPostureManifest, decodeCore, POSTURE_DATA_DIR, PostureContractError, type PostureCore, type PostureDetail, type PostureManifest } from './contract.ts';
+import { setPostureBuild } from '../shell/buildInfo.ts';
 
 type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -48,7 +49,11 @@ export class PostureStore {
     }
   }
   manifest(): Promise<PostureManifest> {
-    return this.get('manifest', async () => checkPostureManifest(await this.json('manifest.json', { cache: 'no-cache' })));
+    return this.get('manifest', async () => {
+      const m = checkPostureManifest(await this.json('manifest.json', { cache: 'no-cache' }));
+      setPostureBuild(m);
+      return m;
+    });
   }
   core(): Promise<PostureCore> {
     return this.get('core', async () => decodeCore(await this.json((await this.manifest()).core)));

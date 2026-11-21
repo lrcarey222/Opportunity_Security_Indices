@@ -11,8 +11,12 @@
 import { isShellReservedSegment, isShellStageSlug, isShellTechSlug } from './sectorSlugs.ts';
 
 export type ModuleId = 'sector' | 'country' | 'aib' | 'about';
-/** Where a path belongs: a module, the legacy Strategic views, Home, or nothing (an unknown path, about to redirect). */
-export type Place = ModuleId | 'strategic' | 'home' | null;
+/** Where a path belongs: a module, the legacy Strategic views, Home, the expert review pages (/review: a place
+ *  with no top-level tab, docs/QC_SYSTEM_DESIGN.md 5), or nothing (an unknown path, about to redirect). */
+export type Place = ModuleId | 'strategic' | 'home' | 'review' | null;
+
+/** The first path segment of the expert review pages. */
+export const REVIEW_SEGMENT = 'review';
 
 export interface ModuleInfo {
   id: ModuleId;
@@ -142,15 +146,16 @@ export function placeOf(pathname: string): Place {
   if (s[0] === COUNTRY_SEGMENT) return 'country';
   if (s[0] === AIB_SEGMENT || s[0] === COMPACTS_SEGMENT) return 'aib';
   if (s[0] === 'about' || s[0] === 'glossary') return 'about';
+  if (s[0] === REVIEW_SEGMENT) return 'review';
   if (STRATEGIC_SEGMENTS.includes(s[0])) return 'strategic';
   return null;
 }
 
-/** The tab a pathname shows as current (null on Home and unknown paths). */
+/** The tab a pathname shows as current (null on Home, the expert review pages and unknown paths). */
 export function tabOf(pathname: string): ModuleId | null {
   const p = placeOf(pathname);
   if (p === 'strategic') return STRATEGIC_TAB[segments(pathname)[0]] ?? null;
-  return p === 'home' ? null : p;
+  return p === 'home' || p === 'review' ? null : p;
 }
 
 /** The ISO3 of a Country profile or memo path (/countries/:iso3[/memo]), upper-cased, or null. */

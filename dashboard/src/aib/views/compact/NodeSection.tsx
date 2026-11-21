@@ -46,6 +46,7 @@ import { csvWithRun, Section } from '../common.tsx';
 import { DiversifyBlock, NodeScenarioRows } from '../DiversifyBlock.tsx';
 import { NodeRobustness } from '../NodeRobustness.tsx';
 import { Economy, useCompact } from './shared.tsx';
+import { ReportIssueButton } from '../../../review/components/ReportIssueButton.tsx';
 
 /**
  * The OSI technology x stage cells a node's codes sit in (node.yfCells), each a link to its Sector profile
@@ -115,6 +116,7 @@ function NodeItem({ n }: { n: AibNode }) {
         ) : (
           <ClassChip cls={n.cls} needs={n.policyNeeds} warning={n.warning} />
         )}
+        <ReportIssueButton metric={{ id: 'class', label: `Treatment of ${n.label}`, value: n.cls, display: classInfo(n.cls).label, tech: n.techs.join(', ') || null, stage: n.stage }} displayedResult={classInfo(n.cls).label} />
         <h4 className="text-base font-medium text-paper">{n.label}</h4>
         <span className="text-xs text-paper-mute">{nodeWhere(n)}</span>
       </div>

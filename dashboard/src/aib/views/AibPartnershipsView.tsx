@@ -67,6 +67,7 @@ import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import type { AibBaselineScenarioDoc, AibInvestmentFlows, AibManagedScenarioDoc, AibMeta, AibScenarioId, AibStrategic } from '../contract.ts';
 import { tradeWhen } from '../contract.ts';
 import { ClassChip } from '../charts/ClassChip.tsx';
+import { ReportIssueButton } from '../../review/components/ReportIssueButton.tsx';
 import { useAibScenarioDoc, type ScenarioLoad } from '../data/hooks.ts';
 import { fmtPp, fmtScore, fmtShare, fmtUsd, listWords, plural } from '../derive/format.ts';
 import {
@@ -466,8 +467,11 @@ export default function AibPartnershipsView() {
             headingLevel={2}
             pairHref={pairHref}
           />
+          {/* review only: renders nothing unless the review controls are on (review/appInfo.ts) */}
+          <ReportIssueButton metric={{ id: 'headline', label: `Relationship thesis: ${nameOf(country)}${partner ? ` and ${nameOf(partner)}` : ''}`, value: partner ? `${country}_${partner}` : country, display: 'Relationship thesis' }} />
         </div>
       )}
+      <ReportIssueButton metric={{ id: 'choices_summary', label: `Partnerships, ${mode}: ${[country, tech, stage, node].filter(Boolean).join(', ') || 'all economies'}`, value: null, display: mode }} />
       <div className="mt-6">
         {mode === 'trade' && <TradeTab f={f} onKind={onKind} />}
         {mode === 'investment' && <InvestmentTab f={f} onKind={onKind} />}

@@ -8,6 +8,7 @@
 import { HATCH_STYLE, SIGNAL } from '../../theme/palette.ts';
 import { AIB_CLASSES, AIB_PHYSICAL_WARNING, type AibNode } from '../contract.ts';
 import { classInfo, needsAddToClass, physicalWarningWords, policyNeedsWords } from '../derive/classes.ts';
+import { ReportIssueButton } from '../../review/components/ReportIssueButton.tsx';
 
 export function ClassSwatch({ cls, size = 10 }: { cls: string; size?: number }) {
   const info = classInfo(cls);
@@ -87,6 +88,11 @@ export function NodeClass({ n, always = false }: { n: AibNode; always?: boolean 
       <ClassChip cls={n.cls} needs={n.policyNeeds} warning={n.warning} />
       <PolicyNeeds cls={n.cls} needs={n.policyNeeds} always={always} />
       {n.warning && <PhysicalWarning warning={n.warning} validation={n.physicalValidation} />}
+      {/* review only: renders nothing unless the review controls are on (review/appInfo.ts) */}
+      <ReportIssueButton
+        metric={{ id: 'class', label: `Treatment of ${n.label}`, value: n.cls, display: classInfo(n.cls).label, tech: n.techs.join(', ') || null, stage: n.stage }}
+        displayedResult={classInfo(n.cls).label}
+      />
     </span>
   );
 }
