@@ -156,6 +156,13 @@ describe('the detail document, schema 2', () => {
     expect(() => checkPostureDetail({ ...fixtureDetail(), schema_version: 1 })).toThrow(/retired/);
   });
 
+  it('reads the optional commit stamp, null when a document has none', () => {
+    expect(det.gitCommit).toBeNull();
+    expect(checkPostureDetail({ ...fixtureDetail(), git_commit: 'abc1234' }).gitCommit).toBe('abc1234');
+    expect(checkPostureDetail({ ...fixtureDetail(), git_commit: 'abc1234-dirty' }).gitCommit).toBe('abc1234-dirty');
+    expect(checkPostureDetail({ ...fixtureDetail(), git_commit: null }).gitCommit).toBeNull();
+  });
+
   it('reads the supply-chain families in either spelling, and none at Deployment', () => {
     const ext = node('Batteries|Extraction').supplyChain!;
     expect([ext.importDependence, ext.supplierConcentration, ext.riskyExposure, ext.trustedAlternatives]).toEqual([0.9, 0.7, 0.6, 0.5]);

@@ -662,7 +662,16 @@ aib_check_screened_hosts <- function(doc, p = aib_check_problems()) {
 # Both additive sections, the taxonomy fields, the diversification scenario, the scenario toggle's fields,
 # the alignment screen, the strategic layer and the six stages.
 aib_check_bundle_additions <- function(doc) c(aib_check_network(doc), aib_check_investment_flows(doc), aib_check_taxonomy(doc), aib_check_diversify(doc), aib_check_scenarios(doc),
-                                                aib_check_screened_hosts(doc), aib_check_strategic(doc), aib_check_stages(doc))
+                                                aib_check_screened_hosts(doc), aib_check_strategic(doc), aib_check_stages(doc),
+                                                if (is.list(doc$meta)) aib_check_provenance(doc$meta, "meta"))
+
+# The export's provenance (2026-11-21; aib_dash_provenance(); checkMeta() and checkAibManifest() in contract.ts):
+# created and git_commit in the document's meta or the manifest, each absent, null or a string.
+aib_check_provenance <- function(x, at) {
+  p <- aib_check_problems()
+  for (k in c("created", "git_commit")) if (k %in% names(x)) p$str(x[[k]], sprintf("%s.%s", at, k), nullable = TRUE)
+  p$list
+}
 
 # ---- The strategic layer (2026-10-20) ------------------------------------------------------------------
 # `strategic` (aib_dash_strategic(); docs/aib_methodology.md 16.9): optional, so a bundle without it passes.
