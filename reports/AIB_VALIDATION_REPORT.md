@@ -44,6 +44,7 @@ What was checked: the shipped dashboard bundles (what users and reviewers see), 
 | qc_decision_use.csv | absent |
 | qc_threat_reviews.csv | absent |
 | qc_priority_fixes.csv | absent |
+| qc_evidence_gaps.csv | absent |
 
 **Case audits**: 13 end-to-end audits in qc/audits.
 
@@ -55,7 +56,7 @@ No expert reviews recorded yet.
 
 No expert reviews recorded yet.
 
-Cases in the campaign: 21 (posture_cell 13, aib_node 4, compact 3, partnership 1); anchors: 5.
+Cases in the campaign: 23 (posture_cell 13, aib_node 4, compact 3, sector_chain 2, partnership 1); anchors: 5.
 
 ## 4. Findings
 
@@ -168,7 +169,19 @@ No expert reviews recorded yet.
 
 No expert reviews recorded yet.
 
-## 7. Critical data issues
+## 7. Post-reveal verdicts (taxonomy)
+
+No expert reviews recorded yet.
+
+## 8. Prior, validity and persuasion
+
+No expert reviews recorded yet.
+
+## 9. Evidence gaps
+
+No expert reviews recorded yet.
+
+## 10. Critical data issues
 
 ### Automated
 
@@ -180,7 +193,7 @@ Trade vs production flags: 661 rows; status warn 434, info 227.
 
 No expert reviews recorded yet.
 
-## 8. Sensitive and fragile conclusions
+## 11. Sensitive and fragile conclusions
 
 Fragile: a local spec (a decision threshold moved by the borderline band, 0.05, one at a time, or the strict reading of Competitive Position >= 0.75) changes the choice. Sensitive: only a structural alternative does. A fence change (yard change) is more consequential than a change of mode inside a fence. Robustness is not data quality and not expert agreement.
 
@@ -363,7 +376,7 @@ Fragile and sensitive cells in the NEIS-central economies (spec:alternative choi
 
 _40 more rows in the source file._
 
-## 9. Methodological issues
+## 12. Methodological issues
 
 ### From the automated runs
 
@@ -374,11 +387,11 @@ _40 more rows in the source file._
 
 No expert reviews recorded yet.
 
-## 10. Changes made because of peer review
+## 13. Changes made because of peer review
 
 No expert reviews recorded yet.
 
-## 11. Remaining limitations
+## 14. Remaining limitations
 
 - Passing checks show that outputs are reproducible and internally consistent, not that the analysis is right.
 - Expert results are structured elicitation from a small, non-random set of reviewers; they are not representative polling and no agreement share is a release gate.

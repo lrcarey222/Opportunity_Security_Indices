@@ -2,7 +2,7 @@
   "schema": "aib-review-manifest",
   "schema_version": 1,
   "built_at": "2026-11-21T00:00:00Z",
-  "app_commit": "d717db1c",
+  "app_commit": "f4f344b1",
   "data_release": {
     "id": "rel-9c8f1877b5c6",
     "stamps": {
@@ -37,7 +37,7 @@
       "status": "draft",
       "opens": null,
       "closes": null,
-      "description": "First structured expert review of the published AIB Explorer. Reviewers judge assigned cases blind (posture cells, AIB stress-test nodes, strategic compacts and the US-Japan partnership memo) before they see the Explorer's conclusion, red-team the most consequential method choices, and test whether the framework's terms are read as intended. Results are structured elicitation for NEIS, not a poll: every disagreement is recorded with its cause (data, method, missing context, framework ambiguity or actionability). Nothing is published.",
+      "description": "First structured expert review of the published AIB Explorer. Reviewers judge assigned cases blind (posture cells, AIB stress-test nodes, sector chains, strategic compacts and the US-Japan partnership memo) before they see the Explorer's conclusion, red-team the most consequential method choices, and test whether the framework's terms are read as intended. Results are structured elicitation for NEIS, not a poll: every disagreement is recorded with its cause (data, method, missing context, framework ambiguity or actionability). Nothing is published.",
       "review_types": [
         "case",
         "methodology",
@@ -46,7 +46,7 @@
         "threat",
         "break_model"
       ],
-      "n_cases": 21,
+      "n_cases": 23,
       "case_ids": [
         "CASE_001",
         "CASE_002",
@@ -68,7 +68,9 @@
         "CASE_018",
         "CASE_019",
         "CASE_020",
-        "CASE_021"
+        "CASE_021",
+        "CASE_022",
+        "CASE_023"
       ],
       "anchor_cases": [
         "CASE_001",
@@ -133,18 +135,18 @@
   "files": [
     {
       "file": "cases.aib_qc_2027_round1.json",
-      "sha256": "d5472d7ef8609c8bb21c8eb5d8bd779169bf5d96065dc4bb47048e7848e90bce",
-      "bytes": 347947
+      "sha256": "d14e538133f68f8d7321093d957f729730e10f6a44089b4631733ef0d364974a",
+      "bytes": 605538
     },
     {
       "file": "fixtures/demo_submissions.json",
-      "sha256": "ba37a9782f787e65331a4f3c7271c13a702a42522f283aa81802086715819e04",
-      "bytes": 61264
+      "sha256": "29db63a12431581983b25a832871ed077b2d5e969d548dc0378858d8f562f0aa",
+      "bytes": 101865
     },
     {
       "file": "framework_scenarios.json",
-      "sha256": "798d249f747d251b9666bb01cd8a92ca96c6d182dd2f4cf69c82668da97d10d6",
-      "bytes": 26136
+      "sha256": "fbb5d13d777503544885254d17aa4000eeccd1d52ee8a3e9b113df4aa052055d",
+      "bytes": 26315
     },
     {
       "file": "method_cards.json",
@@ -153,7 +155,7 @@
     },
     {
       "file": "qc_summary.json",
-      "sha256": "e68e0a3a069cc8821052a5c3731d1ceabfde692afbd663d71fa3bc6a519a01f1",
+      "sha256": "b4efca6041f2d4bae2ad479a6a7a53e1e142f951b5000ac0aa01cb6a2836411b",
       "bytes": 32030
     },
     {

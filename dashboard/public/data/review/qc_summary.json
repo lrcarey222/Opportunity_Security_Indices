@@ -3,7 +3,7 @@
   "schema_version": 1,
   "data_release": "rel-9c8f1877b5c6",
   "built_at": "2026-11-21T00:00:00Z",
-  "app_commit": "d717db1c",
+  "app_commit": "f4f344b1",
   "layer": "bundle",
   "status": {
     "pass": 31,

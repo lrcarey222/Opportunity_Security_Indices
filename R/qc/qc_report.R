@@ -7,6 +7,11 @@
 # representative polling. Reviewers appear only as counts: no name, organisation or reviewer code is printed, and
 # any column that could carry a name is dropped before anything is rendered (qc_report_scrub()).
 #
+# UX v2 adds three expert-review sections (7-9): the post-reveal verdict taxonomy, prior x validity x persuasion with
+# the "expert prior differed, the evidence persuaded" group, and evidence gaps (qc_evidence_gaps.csv and the
+# insufficient-evidence answers per case). They read the v2 export columns tolerantly: exports without them make
+# each section say there is no data.
+#
 # Every input is optional: a result file that does not exist is listed as not run, and with no review exports
 # every review section says "No expert reviews recorded yet" while the automated sections still render. Output
 # is deterministic for the same inputs and date (rows are sorted; nothing reads the clock).
@@ -33,7 +38,8 @@ QC_REPORT_RESULT_FILES <- c(
   pipeline_golden_case_status.csv = "pipeline: golden cases on the processed tables"
 )
 QC_REPORT_EXPORT_FILES <- c("qc_review_responses.csv", "qc_case_results.csv", "qc_method_feedback.csv", "qc_data_issues.csv",
-                            "qc_framework_answers.csv", "qc_decision_use.csv", "qc_threat_reviews.csv", "qc_priority_fixes.csv")
+                            "qc_framework_answers.csv", "qc_decision_use.csv", "qc_threat_reviews.csv", "qc_priority_fixes.csv",
+                            "qc_evidence_gaps.csv")
 # Columns never rendered (identity): names, organisations, contact details and the pseudonymous codes.
 QC_REPORT_PRIVATE_COLS <- "(^|_)(name|organization|organisation|email|code|id)$"
 QC_REPORT_PRIVATE_KEEP <- c("case_id", "card_id", "scenario_id", "submission_id", "check_id", "group_id", "metric_id", "campaign_id")
@@ -378,7 +384,7 @@ qc_report_disagreements <- function(exports) {
 }
 
 qc_report_data_issues <- function(results, exports) {
-  out <- c("## 7. Critical data issues", "", "### Automated", "")
+  out <- c("## 10. Critical data issues", "", "### Automated", "")
   fails <- qc_report_check_rows(results, "fail")
   out <- c(out, if (is.null(fails)) "No automated check failed." else qc_report_md_table(fails, 30), "")
   tpf <- results[["pipeline_trade_production_flags.csv"]]
@@ -404,7 +410,7 @@ qc_report_data_issues <- function(results, exports) {
 }
 
 qc_report_robustness <- function(results, neis = QC_REPORT_NEIS) {
-  out <- c("## 8. Sensitive and fragile conclusions", "",
+  out <- c("## 11. Sensitive and fragile conclusions", "",
            paste0("Fragile: a local spec (a decision threshold moved by the borderline band, 0.05, one at a time, or the strict reading of ",
                   "Competitive Position >= 0.75) changes the choice. Sensitive: only a structural alternative does. A fence change (yard ",
                   "change) is more consequential than a change of mode inside a fence. Robustness is not data quality and not expert agreement."), "")
@@ -451,7 +457,7 @@ qc_report_robustness <- function(results, neis = QC_REPORT_NEIS) {
 }
 
 qc_report_method <- function(results, exports) {
-  out <- c("## 9. Methodological issues", "", "### From the automated runs", "")
+  out <- c("## 12. Methodological issues", "", "### From the automated runs", "")
   pr <- results[["pipeline_robustness_summary.csv"]]
   auto <- character()
   if (qc_report_has(pr)) {
@@ -502,7 +508,7 @@ qc_report_method <- function(results, exports) {
 }
 
 qc_report_changes <- function(exports) {
-  out <- c("## 10. Changes made because of peer review", "")
+  out <- c("## 13. Changes made because of peer review", "")
   if (!qc_report_any_review(exports)) return(c(out, QC_REPORT_NO_REVIEWS, ""))
   di <- exports[["qc_data_issues.csv"]]
   rc <- as.character(qc_report_col(di, "resolution_commit"))
@@ -518,7 +524,7 @@ qc_report_changes <- function(exports) {
 
 qc_report_limitations <- function(results, exports, audits) {
   missing <- setdiff(names(QC_REPORT_RESULT_FILES), names(results))
-  out <- c("## 11. Remaining limitations", "",
+  out <- c("## 14. Remaining limitations", "",
            "- Passing checks show that outputs are reproducible and internally consistent, not that the analysis is right.",
            "- Expert results are structured elicitation from a small, non-random set of reviewers; they are not representative polling and no agreement share is a release gate.",
            "- The Secure override (posture engine Tests 1-5) is not re-run by the sensitivity analysis; Secure cells are classed not testable.",
@@ -585,11 +591,176 @@ qc_report_build <- function(results = list(), exports = list(), cases = NULL, au
     qc_report_findings(results, exports, audits),
     qc_report_validations(results, exports, audits),
     qc_report_disagreements(exports),
+    qc_report_taxonomy_v2(exports),
+    qc_report_prior_persuasion(exports),
+    qc_report_evidence_gaps(exports),
     qc_report_data_issues(results, exports),
     qc_report_robustness(results),
     qc_report_method(results, exports),
     qc_report_changes(exports),
     qc_report_limitations(results, exports, audits))
+}
+
+# ---- UX v2 sections ---------------------------------------------------------------------------------------------
+# The post-reveal taxonomy, prior x validity x persuasion and evidence gaps (dashboard/src/review/exports.ts v2
+# columns and qc_evidence_gaps.csv). Read tolerantly: an export written before UX v2 has none of these columns, and
+# each section then says there is no data rather than failing.
+
+QC_REPORT_NO_V2 <- "No data: no review in these exports used the post-reveal taxonomy (the v2 review questions)."
+QC_REPORT_VERDICT_CODES <- c(
+  same_same = "Same conclusion, broadly same reasoning",
+  same_different_reasons = "Same conclusion, but for different reasons",
+  persuaded = "Different initial conclusion, but the Explorer persuaded me",
+  plausible_insufficient = "Plausible, but the evidence is insufficient",
+  wrong_fact = "Disagree: an underlying fact or data point is wrong",
+  missing_factor = "Disagree: an important factor is missing",
+  wrong_weighting = "Disagree: how the evidence is interpreted or weighted",
+  wrong_rule = "Disagree: the decision rule linking evidence to recommendation",
+  too_broad = "The recommendation is too broad or poorly defined",
+  outside_expertise = "Outside my expertise"
+)
+QC_REPORT_DISAGREEING <- c("plausible_insufficient", "wrong_fact", "missing_factor", "wrong_weighting", "wrong_rule", "too_broad")
+QC_REPORT_REVIEWER_STATES <- c(none_of_these = "None of these reflects my recommendation", insufficient_evidence = "Insufficient evidence to judge",
+                               outside_expertise = "Outside my expertise")
+# Insufficient-evidence answers on one case at or above which the case is flagged (a repeated inability to judge).
+QC_REPORT_REPEATED_INABILITY <- 2L
+
+# The latest response per (reviewer, case), as the dashboard counts them; the reviewer code is used to group only.
+qc_report_latest <- function(rr) {
+  if (!qc_report_has(rr)) return(rr)
+  who <- as.character(qc_report_col(rr, "reviewer_code"))
+  if (all(is.na(who))) return(rr)
+  when <- as.character(dplyr::coalesce(as.character(qc_report_col(rr, "submitted_at")), as.character(qc_report_col(rr, "created_at")), ""))
+  key <- paste(who, as.character(qc_report_col(rr, "case_id")), sep = "|")
+  o <- order(key, when, as.character(qc_report_col(rr, "submission_id")))
+  rr <- rr[o, , drop = FALSE]
+  rr[!duplicated(key[o], fromLast = TRUE), , drop = FALSE]
+}
+
+# The latest case reviews that carry a v2 statement (NULL when the exports have none).
+qc_report_v2_rows <- function(exports) {
+  rr <- exports[["qc_review_responses.csv"]]
+  if (!qc_report_has(rr) || !"verdict_code" %in% names(rr)) return(NULL)
+  rr <- qc_report_latest(rr)
+  code <- as.character(rr$verdict_code)
+  rr <- rr[!is.na(code) & nzchar(code), , drop = FALSE]
+  if (nrow(rr)) rr else NULL
+}
+
+qc_report_taxonomy_v2 <- function(exports) {
+  out <- c("## 7. Post-reveal verdicts (taxonomy)", "")
+  if (!qc_report_any_review(exports)) return(c(out, QC_REPORT_NO_REVIEWS, ""))
+  v <- qc_report_v2_rows(exports)
+  if (is.null(v)) return(c(out, QC_REPORT_NO_V2, ""))
+  code <- as.character(v$verdict_code)
+  out <- c(out, paste0("After seeing the Explorer's reasoning, reviewers chose one statement each (latest review per reviewer and case; ",
+                       nrow(v), " reviews). The statement says where a disagreement lies: a fact, a missing factor, the weighting, ",
+                       "the decision rule or the definition of the recommendation."), "")
+  tab <- data.frame(statement = unname(QC_REPORT_VERDICT_CODES), code = names(QC_REPORT_VERDICT_CODES),
+                    reviews = vapply(names(QC_REPORT_VERDICT_CODES), function(k) sum(code == k), integer(1)), stringsAsFactors = FALSE)
+  tab$share <- qc_report_pct(tab$reviews / nrow(v))
+  # 'code' would be scrubbed as an identity column by its name; render it as 'key'
+  names(tab)[names(tab) == "code"] <- "key"
+  out <- c(out, qc_report_md_table(tab, 20), "")
+  unknown <- setdiff(unique(code), names(QC_REPORT_VERDICT_CODES))
+  if (length(unknown)) out <- c(out, paste0("Unrecognised statements (listed, not counted above): ", paste(sort(unknown), collapse = ", "), "."), "")
+  ids <- sort(unique(as.character(v$case_id)))
+  per <- do.call(rbind, lapply(ids, function(id) {
+    d <- v[as.character(v$case_id) == id, , drop = FALSE]
+    k <- as.character(d$verdict_code)
+    data.frame(case_id = id, product = as.character(qc_report_col(d, "product"))[1], reviews = nrow(d), disagreeing = sum(k %in% QC_REPORT_DISAGREEING),
+               statements = qc_report_count(k), stringsAsFactors = FALSE)
+  }))
+  per <- per[order(-per$disagreeing / pmax(per$reviews, 1), per$case_id), , drop = FALSE]
+  out <- c(out, "By case (most disagreement first):", "", qc_report_md_table(per, 60), "")
+  st <- as.character(qc_report_col(v, "blind_state"))
+  st <- st[!is.na(st) & st %in% names(QC_REPORT_REVIEWER_STATES)]
+  out <- c(out, paste0("Blind answers that were a reviewer state (counted here, kept out of every agreement share): ",
+                       if (length(st)) qc_report_count(st) else "none", "."))
+  inc <- sum(as.character(qc_report_col(v, "verdict_consistency")) %in% "inconsistent")
+  if (inc > 0) out <- c(out, paste0(inc, " statement(s) contradict the reviewer's own blind answer (\"same conclusion\" after a different one, or ",
+                                    "\"persuaded\" after the same one); they are kept as given and listed in the exports."))
+  c(out, "")
+}
+
+qc_report_prior_persuasion <- function(exports) {
+  out <- c("## 8. Prior, validity and persuasion", "")
+  if (!qc_report_any_review(exports)) return(c(out, QC_REPORT_NO_REVIEWS, ""))
+  v <- qc_report_v2_rows(exports)
+  if (is.null(v) || !any(c("validity", "persuasion", "prior_differs") %in% names(v))) return(c(out, QC_REPORT_NO_V2, ""))
+  pd <- tolower(as.character(qc_report_col(v, "prior_differs")))
+  st <- as.character(qc_report_col(v, "blind_state"))
+  prior <- ifelse(!is.na(st) & nzchar(st), "reviewer state", ifelse(pd %in% c("true", "t", "1"), "different", ifelse(pd %in% c("false", "f", "0"), "same", "unknown")))
+  val <- dplyr::coalesce(as.character(qc_report_col(v, "validity")), "unanswered")
+  per <- dplyr::coalesce(as.character(qc_report_col(v, "persuasion")), "unanswered")
+  key <- paste(prior, val, per, sep = "\r")
+  t <- table(key)
+  parts <- do.call(rbind, strsplit(names(t), "\r", fixed = TRUE))
+  tab <- data.frame(prior = parts[, 1], validity = parts[, 2], persuasion = parts[, 3], reviews = as.integer(t), stringsAsFactors = FALSE)
+  po <- c("different", "same", "reviewer state", "unknown")
+  tab <- tab[order(match(tab$prior, po), -tab$reviews, tab$validity, tab$persuasion), , drop = FALSE]
+  out <- c(out, paste0("Three separate questions: prior (did the Explorer's conclusion differ from the reviewer's blind answer; computed, not asked), ",
+                       "validity (is the conclusion supported by the evidence) and persuasion (did inspecting the evidence change the reviewer's view)."), "",
+           qc_report_md_table(tab, 40), "")
+  pg <- qc_report_true(qc_report_col(v, "persuaded_by_evidence"))
+  g <- v[pg, , drop = FALSE]
+  out <- c(out, paste0("**Expert prior differed from the Explorer and the evidence persuaded them** (statement \"persuaded\" or persuasion ",
+                       "\"changed\"): ", nrow(g), " review(s)", if (nrow(g)) paste0(" on ", length(unique(g$case_id)), " case(s)") else "", "."))
+  if (nrow(g)) {
+    g <- g[order(as.character(g$case_id)), , drop = FALSE]
+    out <- c(out, "", qc_report_md_table(data.frame(case_id = g$case_id, product = qc_report_col(g, "product"), blind = qc_report_col(g, "blind_choice"),
+                                                    explorer = qc_report_col(g, "model_choice"), validity = qc_report_col(g, "validity"),
+                                                    persuasion = qc_report_col(g, "persuasion"), stringsAsFactors = FALSE), 40))
+  }
+  c(out, "")
+}
+
+qc_report_evidence_gaps <- function(exports) {
+  out <- c("## 9. Evidence gaps", "")
+  if (!qc_report_any_review(exports)) return(c(out, QC_REPORT_NO_REVIEWS, ""))
+  gaps <- exports[["qc_evidence_gaps.csv"]]
+  rr <- qc_report_latest(exports[["qc_review_responses.csv"]])
+  st <- as.character(qc_report_col(rr, "blind_state"))
+  ins <- if (qc_report_has(rr)) rr[!is.na(st) & st == "insufficient_evidence", , drop = FALSE] else NULL
+  has_gaps <- qc_report_has(gaps) && "category" %in% names(gaps)
+  if (!has_gaps && !qc_report_has(ins)) {
+    if (!qc_report_has(rr) || !"blind_state" %in% names(rr)) return(c(out, QC_REPORT_NO_V2, ""))
+    return(c(out, "No evidence gap was recorded: no reviewer answered \"insufficient evidence\" and no red-team answer named missing evidence.", ""))
+  }
+  out <- c(out, paste0("What reviewers said was missing: the categories of \"insufficient evidence to judge\" blind answers and the red-team ",
+                       "\"single piece of evidence that would most help\". A repeated inability to judge a case is itself a finding."), "")
+  if (has_gaps) {
+    src <- as.character(qc_report_col(gaps, "source"))
+    cat <- as.character(gaps$category)
+    lab <- dplyr::coalesce(as.character(qc_report_col(gaps, "category_label")), cat)
+    cats <- sort(unique(cat))
+    tab <- do.call(rbind, lapply(cats, function(k) {
+      i <- cat == k
+      data.frame(category = lab[i][1], insufficient_evidence = sum(i & src == "insufficient_evidence", na.rm = TRUE), red_team = sum(i & src == "red_team", na.rm = TRUE),
+                 total = sum(i), cases = length(unique(as.character(gaps$case_id[i]))), stringsAsFactors = FALSE)
+    }))
+    tab <- tab[order(-tab$total, tab$category), , drop = FALSE]
+    out <- c(out, paste0(nrow(gaps), " gap mention(s):"), "", qc_report_md_table(tab, 30), "")
+    pr <- as.character(qc_report_col(gaps, "product"))
+    if (any(!is.na(pr))) {
+      ps <- sort(unique(pr[!is.na(pr)]))
+      out <- c(out, "By product:", "", qc_report_md_table(data.frame(product = ps, mentions = vapply(ps, function(p) sum(pr == p, na.rm = TRUE), integer(1)),
+                                                                   categories = vapply(ps, function(p) qc_report_count(lab[pr %in% p]), character(1)),
+                                                                   stringsAsFactors = FALSE), 10), "")
+    }
+  }
+  if (qc_report_has(ins)) {
+    ids <- table(as.character(ins$case_id))
+    n_all <- table(as.character(rr$case_id))
+    tab <- data.frame(case_id = names(ids), insufficient_evidence = as.integer(ids), reviews = as.integer(n_all[names(ids)]), stringsAsFactors = FALSE)
+    tab$repeated <- ifelse(tab$insufficient_evidence >= QC_REPORT_REPEATED_INABILITY, "yes", "")
+    tab <- tab[order(-tab$insufficient_evidence, tab$case_id), , drop = FALSE]
+    rep_n <- sum(tab$repeated == "yes")
+    out <- c(out, paste0("\"Insufficient evidence to judge\" answers by case", if (rep_n) paste0(" (", rep_n, " case(s) where it happened ",
+                                                                                              QC_REPORT_REPEATED_INABILITY, " or more times)") else "", ":"), "",
+             qc_report_md_table(tab, 40), "")
+  }
+  out
 }
 
 # One audits row from a parsed audit JSON (build_case_audit.R output): stem, case_id, the summary counts, and the

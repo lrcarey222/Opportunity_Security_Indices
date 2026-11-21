@@ -7,11 +7,26 @@
 // Rules: "I don't know" blind answers and verdict 7 are counted but excluded from every agreement
 // denominator; a case with fewer than 3 interpretable reviews is "too few reviews to summarise" and its
 // shares are null. No kappa, no significance. Expert disagreement is evidence to investigate, not a vote.
+// UX v2 (blind.ux_version === 2, reveal.verdict_code): the three reviewer states (none of these / insufficient
+// evidence / outside expertise) are counted and reported but, like "I don't know", kept out of every agreement
+// denominator; the verdict taxonomy, prior x validity x persuasion, evidence gaps, product questions, notes and
+// drivers are summarised beside the v1 outputs (section "UX v2" below), and v1 submissions aggregate unchanged.
 // Pure: no IO.
 
 import {
+  DISAGREEING_VERDICT_CODES,
   DONT_KNOW,
+  DRIVER_FACTOR_LABEL,
+  EVIDENCE_GAP_LABEL,
+  INSUFFICIENT_EVIDENCE,
   ISSUE_TYPE_LABEL,
+  NONE_OF_THESE,
+  NOTE_CONVERSION_LABEL,
+  OUTSIDE_EXPERTISE,
+  PRODUCT_QUESTIONS,
+  REVIEWER_STATES,
+  REVIEW_VERDICT_CODES,
+  REVIEW_VERDICT_ISSUE_TYPE,
   MATCH_WEIGHT,
   SEVERITY_WEIGHT,
   VERDICT_ISSUE_TYPE,
@@ -21,20 +36,28 @@ import {
   type CaseReviewPayload,
   type DataIssuePayload,
   type DecisionUsePayload,
+  type DriverFactor,
+  type EvidenceGap,
   type ExpertiseMatch,
   type FrameworkAnswerPayload,
   type FrameworkScenario,
   type IssueType,
   type MethodCard,
   type MethodFeedbackPayload,
+  type NoteConversion,
+  type Persuasion,
   type ReviewCase,
+  type ReviewProduct,
+  type ReviewVerdictCode,
   type RobustnessClass,
   type Severity,
   type Submission,
   type SubmissionKind,
   type ThreatReviewPayload,
+  type Validity,
   type Verdict,
 } from './model.ts';
+import { explorerComparisonValue, explorerStageSet, priorDiffers, productOf, stageJaccard, verdictCodeConsistency, type BlindAnswerV2 } from './flow.ts';
 import { caseTags, DEFAULT_MIN_CONFIDENCE, isExpertIn, normaliseCountryTag, normaliseSectorTag, normaliseStageTag, profileMatchesCase, reporterConfidence, tagConfidence } from './tags.ts';
 
 export const MIN_REVIEWS_TO_SUMMARISE = 3;
@@ -92,7 +115,14 @@ export function latestCaseReviews(subs: readonly Submission[]): Sub<'case_review
 }
 
 /** Whether a case review is an outside-expertise answer (counted, never in an agreement denominator). */
-export const isOutsideAnswer = (p: CaseReviewPayload): boolean => p.blind?.choice === DONT_KNOW || p.reveal?.verdict === 7;
+export const isOutsideAnswer = (p: CaseReviewPayload): boolean =>
+  p.blind?.choice === DONT_KNOW || p.blind?.choice === OUTSIDE_EXPERTISE || p.reveal?.verdict === 7 || p.reveal?.verdict_code === 'outside_expertise';
+/** Whether the blind answer is a v2 reviewer state (none of these / insufficient evidence / outside expertise). */
+export const isReviewerStateAnswer = (p: CaseReviewPayload): boolean => typeof p.blind?.choice === 'string' && REVIEWER_STATES.includes(p.blind.choice);
+/** Reviews kept out of every agreement denominator: outside expertise (v1 or v2) and the v2 reviewer states. */
+export const isExcludedFromAgreement = (p: CaseReviewPayload): boolean => isOutsideAnswer(p) || isReviewerStateAnswer(p);
+/** Whether a case review was given with the v2 blind question. */
+export const isV2Review = (p: CaseReviewPayload): boolean => p.blind?.ux_version === 2;
 const isPersuaded = (v: Verdict | undefined) => v === 2;
 const isRejecting = (v: Verdict | undefined) => v === 4 || v === 5 || v === 6;
 
@@ -108,8 +138,13 @@ export interface CaseAgreement {
   n_reviews: number;
   n_dont_know: number;
   n_verdict7: number;
-  /** Reviews outside expertise (DONT_KNOW or verdict 7; a review with both counts once). */
+  /** Reviews outside expertise (DONT_KNOW / OUTSIDE_EXPERTISE or verdict 7; a review with both counts once). */
   n_outside: number;
+  /** v2 reviewer states (reported; not in agreement denominators). */
+  n_none_of_these: number;
+  n_insufficient_evidence: number;
+  /** Every review kept out of the agreement denominators (outside expertise + reviewer states). */
+  n_excluded: number;
   n_interpretable: number;
   /** Blind choices of the interpretable reviews. */
   blind_distribution: Record<string, number>;
@@ -124,6 +159,12 @@ export interface CaseAgreement {
   share_persuaded: number | null;
   share_rejecting: number | null;
   verdict_counts: Record<number, number>;
+  /** v2 verdict statements (reviews without one are v1 and appear only in verdict_counts). */
+  verdict_code_counts: Partial<Record<ReviewVerdictCode, number>>;
+  /** Expert prior differed from the Explorer and the evidence persuaded them (v2; see priorPersuasion). */
+  n_prior_differs_persuaded: number;
+  /** Sector chains: mean Jaccard overlap of the reviewers' stage sets with the Explorer's (null when none). */
+  mean_stage_jaccard: number | null;
   issue_types: Partial<Record<IssueType, number>>;
   suggested_choices: Record<string, number>;
   /** Reviews made against a different snapshot than the current case file (another data release). */
@@ -144,8 +185,8 @@ export function caseAgreement(subs: readonly Submission[], cases: readonly Revie
   return ids.map((id) => {
     const c = caseById.get(id) ?? null;
     const rs = byCase.get(id) ?? [];
-    const model = c?.snapshot?.conclusion?.value ?? null;
-    const interp = rs.filter((r) => !isOutsideAnswer(r.payload));
+    const model = c ? explorerComparisonValue(c.kind, c.snapshot) : null;
+    const interp = rs.filter((r) => !isExcludedFromAgreement(r.payload));
     const dist: Record<string, number> = {};
     for (const r of interp) dist[r.payload.blind.choice] = (dist[r.payload.blind.choice] ?? 0) + 1;
     const order = c?.answer_options?.map((o) => o.value) ?? [];
@@ -155,11 +196,18 @@ export function caseAgreement(subs: readonly Submission[], cases: readonly Revie
     const nPers = interp.filter((r) => isPersuaded(r.payload.reveal?.verdict)).length;
     const nRej = interp.filter((r) => isRejecting(r.payload.reveal?.verdict)).length;
     const verdicts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
+    const codes: Partial<Record<ReviewVerdictCode, number>> = {};
     const issues: Partial<Record<IssueType, number>> = {};
     const suggested: Record<string, number> = {};
+    const stageSet = c ? explorerStageSet(c.kind, c.snapshot) : null;
+    const jac: number[] = [];
     for (const r of rs) {
       const v = r.payload.reveal?.verdict;
       if (v) verdicts[v] = (verdicts[v] ?? 0) + 1;
+      const code = r.payload.reveal?.verdict_code;
+      if (code && REVIEW_VERDICT_CODES.includes(code)) codes[code] = (codes[code] ?? 0) + 1;
+      const set = reviewerStageSet(r.payload);
+      if (stageSet && set) jac.push(stageJaccard(set, stageSet));
       const t = disagreementType(r.payload);
       if (t) issues[t] = (issues[t] ?? 0) + 1;
       const sc = r.payload.reveal?.suggested_choice;
@@ -176,7 +224,10 @@ export function caseAgreement(subs: readonly Submission[], cases: readonly Revie
       n_reviews: rs.length,
       n_dont_know: rs.filter((r) => r.payload.blind?.choice === DONT_KNOW).length,
       n_verdict7: rs.filter((r) => r.payload.reveal?.verdict === 7).length,
-      n_outside: rs.length - interp.length,
+      n_outside: rs.filter((r) => isOutsideAnswer(r.payload)).length,
+      n_none_of_these: rs.filter((r) => r.payload.blind?.choice === NONE_OF_THESE).length,
+      n_insufficient_evidence: rs.filter((r) => r.payload.blind?.choice === INSUFFICIENT_EVIDENCE).length,
+      n_excluded: rs.length - interp.length,
       n_interpretable: interp.length,
       blind_distribution: dist,
       modal,
@@ -188,6 +239,9 @@ export function caseAgreement(subs: readonly Submission[], cases: readonly Revie
       share_persuaded: tooFew ? null : share(nPers, interp.length),
       share_rejecting: tooFew ? null : share(nRej, interp.length),
       verdict_counts: verdicts,
+      verdict_code_counts: codes,
+      n_prior_differs_persuaded: rs.filter((r) => isPersuadedByEvidence(r.payload, c)).length,
+      mean_stage_jaccard: jac.length ? jac.reduce((a, b) => a + b, 0) / jac.length : null,
       issue_types: issues,
       suggested_choices: suggested,
       n_snapshot_mismatch: c ? rs.filter((r) => r.payload.case_snapshot_sha256 !== c.snapshot_sha256).length : 0,
@@ -197,8 +251,19 @@ export function caseAgreement(subs: readonly Submission[], cases: readonly Revie
   });
 }
 
-/** The disagreement type a case review records (verdicts 3-6 only): the stated issue type, else the verdict's. */
+/**
+ * The disagreement type a case review records. v2: the issue type each disagreeing statement maps to
+ * (REVIEW_VERDICT_ISSUE_TYPE), and for "same conclusion, different reasons" the type the reviewer picked (a right
+ * answer for a contested reason is still a finding); agreeing and outside-expertise statements record none.
+ * v1 (verdicts 3-6 only): the stated issue type, else the verdict's.
+ */
 export function disagreementType(p: CaseReviewPayload): IssueType | null {
+  const code = p.reveal?.verdict_code;
+  if (code) {
+    if (DISAGREEING_VERDICT_CODES.includes(code)) return REVIEW_VERDICT_ISSUE_TYPE[code] ?? p.reveal.main_issue?.type ?? null;
+    if (code === 'same_different_reasons') return p.reveal.main_issue?.type ?? null;
+    return null;
+  }
   const v = p.reveal?.verdict;
   if (v !== 3 && v !== 4 && v !== 5 && v !== 6) return null;
   return p.reveal.main_issue?.type ?? VERDICT_ISSUE_TYPE[v] ?? null;
@@ -214,6 +279,7 @@ export type TransitionKind =
   | 'differed_unconvinced'
   | 'differed_rejecting'
   | 'outside'
+  | 'reviewer_state'
   | 'inconsistent'
   | 'no_model';
 
@@ -227,9 +293,9 @@ export interface TransitionSummary {
 
 /** How each blind prior moved after the reveal. */
 export function blindRevealTransitions(subs: readonly Submission[], cases: readonly ReviewCase[]): TransitionSummary {
-  const model = new Map(cases.map((c) => [c.case_id, c.snapshot?.conclusion?.value ?? null]));
+  const model = new Map(cases.map((c) => [c.case_id, explorerComparisonValue(c.kind, c.snapshot)]));
   const counts: Record<TransitionKind, number> = {
-    agreed_confirmed: 0, agreed_doubtful: 0, agreed_rejecting: 0, differed_persuaded: 0, differed_unconvinced: 0, differed_rejecting: 0, outside: 0, inconsistent: 0, no_model: 0,
+    agreed_confirmed: 0, agreed_doubtful: 0, agreed_rejecting: 0, differed_persuaded: 0, differed_unconvinced: 0, differed_rejecting: 0, outside: 0, reviewer_state: 0, inconsistent: 0, no_model: 0,
   };
   const cells = new Map<string, { blind: string; model: string; verdict: number; n: number }>();
   const inconsistent: TransitionSummary['inconsistent'] = [];
@@ -239,6 +305,10 @@ export function blindRevealTransitions(subs: readonly Submission[], cases: reado
     const v = p.reveal?.verdict;
     if (isOutsideAnswer(p)) {
       counts.outside++;
+      continue;
+    }
+    if (isReviewerStateAnswer(p)) {
+      counts.reviewer_state++;
       continue;
     }
     if (m === null) {
@@ -401,6 +471,18 @@ interface Report {
 
 /** A case review's materiality (design 6.6 gives none for verdicts): "probably wrong" 4-6 material, 3 minor. */
 export const VERDICT_SEVERITY: Readonly<Partial<Record<Verdict, Severity>>> = { 3: 'minor', 4: 'material', 5: 'material', 6: 'material' };
+/** A v2 statement's materiality: a wrong fact, a missing factor, the weighting, the rule or a poorly defined
+ *  recommendation "material"; insufficient evidence and "same conclusion, different reasons" minor (the
+ *  conclusion itself is not disputed). */
+export const VERDICT_CODE_SEVERITY: Readonly<Partial<Record<ReviewVerdictCode, Severity>>> = {
+  same_different_reasons: 'minor',
+  plausible_insufficient: 'minor',
+  wrong_fact: 'material',
+  missing_factor: 'material',
+  wrong_weighting: 'material',
+  wrong_rule: 'material',
+  too_broad: 'material',
+};
 /** A method card's materiality answer (1-4) as a severity; unanswered = minor. */
 export const METHOD_MATERIALITY_SEVERITY: Readonly<Record<1 | 2 | 3 | 4, Severity>> = { 1: 'cosmetic', 2: 'minor', 3: 'material', 4: 'critical' };
 
@@ -451,8 +533,8 @@ function reportsOf(subs: readonly Submission[], cases: readonly ReviewCase[], ca
     } else if (s.kind === 'case_review') {
       const p = s.payload as CaseReviewPayload;
       const t = p ? disagreementType(p) : null;
-      // verdict 7 gives no type; a reviewer who answered "I don't know" blind but still judged the result
-      // wrong after the reveal is a report, weighted as outside their expertise
+      // verdict 7 gives no type; a reviewer who answered "I don't know" / "outside my expertise" blind but still
+      // judged the result wrong after the reveal is a report, weighted as outside their expertise
       if (!p || !t) continue;
       const c = caseById.get(p.case_id);
       const ct = c ? caseTags(c) : { sectors: [], countries: [], stage: null };
@@ -464,7 +546,7 @@ function reportsOf(subs: readonly Submission[], cases: readonly ReviewCase[], ca
         group: `case:${p.case_id}:${t}`,
         title: `${c?.title ?? p.case_id}: ${p.reveal.main_issue?.text ?? ISSUE_TYPE_LABEL[t]}`,
         issue_type: t,
-        severity: VERDICT_SEVERITY[p.reveal.verdict] ?? 'minor',
+        severity: (p.reveal.verdict_code ? VERDICT_CODE_SEVERITY[p.reveal.verdict_code] : VERDICT_SEVERITY[p.reveal.verdict]) ?? 'minor',
         confidence: conf * MATCH_WEIGHT[match],
         affected_default: 1,
         case_id: p.case_id,
@@ -780,6 +862,10 @@ export interface Overview {
   n_cases_reviewed: number;
   n_case_reviews: number;
   n_outside_answers: number;
+  /** v2 reviewer-state answers (none of these / insufficient evidence), reported apart from outside expertise. */
+  n_reviewer_state_answers: number;
+  /** Case reviews made with the v2 blind question. */
+  n_v2_reviews: number;
   n_anchor_cases: number;
   n_anchor_met: number;
   sectors_covered: string[];
@@ -815,6 +901,8 @@ export interface Dashboard {
   decision_use: DecisionUseSummary[];
   threat: ThreatSummary[];
   robustness: RobustnessSummary;
+  /** UX v2 summaries (empty when no v2 review is in). */
+  v2: V2Summaries;
 }
 
 /** Everything the admin dashboard shows, from one call. Missing inputs give empty sections, never a throw. */
@@ -849,6 +937,8 @@ export function buildDashboard(input: DashboardInput): Dashboard {
       n_cases_reviewed: reviewed.length,
       n_case_reviews: agreement.reduce((n, a) => n + a.n_reviews, 0),
       n_outside_answers: agreement.reduce((n, a) => n + a.n_outside, 0),
+      n_reviewer_state_answers: agreement.reduce((n, a) => n + a.n_none_of_these + a.n_insufficient_evidence, 0),
+      n_v2_reviews: latestCaseReviews(subs).filter((r) => isV2Review(r.payload)).length,
       n_anchor_cases: anchors.length,
       n_anchor_met: anchors.filter((a) => a.met).length,
       sectors_covered: [...sectors].sort(),
@@ -871,5 +961,533 @@ export function buildDashboard(input: DashboardInput): Dashboard {
     decision_use: decisionUseSummary(subs),
     threat: threatSummary(subs),
     robustness: robustnessSummary(cases),
+    v2: v2Summaries(subs, cases),
   };
 }
+
+// ---- UX v2 --------------------------------------------------------------------------------------------------
+// Outputs beside the v1 ones. All use the latest review per (reviewer, case). A v1 review (no verdict_code) is
+// counted as such and never given v2 fields it did not record.
+
+/** The stage set a sector-chain blind answer names (null for other kinds, reviewer states and v1 answers). */
+export function reviewerStageSet(p: CaseReviewPayload): string[] | null {
+  const ch = p.blind?.choices;
+  if (!Array.isArray(ch) || isReviewerStateAnswer(p) || isOutsideAnswer(p)) return null;
+  return ch.filter((x): x is string => typeof x === 'string');
+}
+
+export type PriorBucket = 'same' | 'different' | 'reviewer_state' | 'unknown';
+
+/** Prior: the stored prior_differs (what the reviewer was compared with at submission), else recomputed from the case. */
+export function priorOf(p: CaseReviewPayload, c: ReviewCase | null | undefined): PriorBucket {
+  if (isExcludedFromAgreement(p) && (isReviewerStateAnswer(p) || p.blind?.choice === DONT_KNOW)) return 'reviewer_state';
+  const stored = p.reveal?.prior_differs;
+  const d = typeof stored === 'boolean' ? stored : c ? priorDiffers(p.blind?.choice, explorerComparisonValue(c.kind, c.snapshot)) : null;
+  return d === null ? 'unknown' : d ? 'different' : 'same';
+}
+
+/** "Expert prior != Explorer, evidence persuaded": a different blind answer and the statement "persuaded" or persuasion "changed". */
+export function isPersuadedByEvidence(p: CaseReviewPayload, c: ReviewCase | null | undefined): boolean {
+  if (!p.reveal?.verdict_code) return false;
+  return priorOf(p, c) === 'different' && (p.reveal.verdict_code === 'persuaded' || p.reveal.persuasion === 'changed');
+}
+
+const bump = <K extends string>(o: Partial<Record<K, number>>, k: K, n = 1) => {
+  o[k] = (o[k] ?? 0) + n;
+};
+const sortedIds = (m: Map<string, unknown>, cases: readonly ReviewCase[]) => {
+  const order = cases.map((c) => c.case_id);
+  return [...m.keys()].sort((a, b) => (order.indexOf(a) + 1 || 1e9) - (order.indexOf(b) + 1 || 1e9) || (a < b ? -1 : 1));
+};
+const groupByCase = (subs: readonly Submission[]) => {
+  const by = new Map<string, Sub<'case_review'>[]>();
+  for (const r of latestCaseReviews(subs)) by.set(r.payload.case_id, [...(by.get(r.payload.case_id) ?? []), r]);
+  return by;
+};
+
+// -- verdict taxonomy
+
+export interface VerdictCodeCaseRow {
+  case_id: string;
+  title: string | null;
+  product: ReviewProduct | null;
+  n_reviews: number;
+  /** Reviews with a v2 statement. */
+  n_coded: number;
+  counts: Partial<Record<ReviewVerdictCode, number>>;
+  n_disagreeing: number;
+}
+export interface VerdictCodeSummary {
+  overall: Record<ReviewVerdictCode, number>;
+  n_coded: number;
+  /** v1 reviews (a 1-7 verdict only). */
+  n_uncoded: number;
+  by_case: VerdictCodeCaseRow[];
+}
+
+export function verdictCodeSummary(subs: readonly Submission[], cases: readonly ReviewCase[]): VerdictCodeSummary {
+  const caseById = new Map(cases.map((c) => [c.case_id, c]));
+  const overall = Object.fromEntries(REVIEW_VERDICT_CODES.map((c) => [c, 0])) as Record<ReviewVerdictCode, number>;
+  const by = groupByCase(subs);
+  let coded = 0;
+  let uncoded = 0;
+  const rows = sortedIds(by, cases).map((id) => {
+    const rs = by.get(id) ?? [];
+    const c = caseById.get(id);
+    const counts: Partial<Record<ReviewVerdictCode, number>> = {};
+    for (const r of rs) {
+      const code = r.payload.reveal?.verdict_code;
+      if (code && REVIEW_VERDICT_CODES.includes(code)) {
+        bump(counts, code);
+        overall[code]++;
+        coded++;
+      } else uncoded++;
+    }
+    return {
+      case_id: id,
+      title: c?.title ?? null,
+      product: c ? productOf(c.kind) : null,
+      n_reviews: rs.length,
+      n_coded: Object.values(counts).reduce((a, b) => a + (b ?? 0), 0),
+      counts,
+      n_disagreeing: DISAGREEING_VERDICT_CODES.reduce((n, k) => n + (counts[k] ?? 0), 0),
+    };
+  });
+  return { overall, n_coded: coded, n_uncoded: uncoded, by_case: rows };
+}
+
+// -- prior x validity x persuasion
+
+export interface PriorPersuasionRow {
+  prior: PriorBucket;
+  validity: Validity | 'unanswered';
+  persuasion: Persuasion | 'unanswered';
+  n: number;
+}
+export interface PersuadedReview {
+  submission_id: string;
+  case_id: string;
+  title: string | null;
+  product: ReviewProduct | null;
+  blind: string;
+  model: string | null;
+  verdict_code: ReviewVerdictCode;
+  validity: Validity | null;
+  persuasion: Persuasion | null;
+}
+export interface PriorPersuasionSummary {
+  /** v2 reviews by prior x validity x persuasion (most frequent first). */
+  table: PriorPersuasionRow[];
+  /** The highlighted group: expert prior differed from the Explorer and the evidence persuaded them. */
+  persuaded_group: PersuadedReview[];
+  /** Prior differed and persuasion "somewhat" (not in the group; shown beside it). */
+  n_partly_persuaded: number;
+  /** Statements that contradict the reviewer's own prior ("same conclusion" after a different blind answer, or "persuaded" after the same one). */
+  inconsistent: { submission_id: string; case_id: string; verdict_code: ReviewVerdictCode; prior: PriorBucket }[];
+  by_case: { case_id: string; n_coded: number; n_prior_same: number; n_prior_different: number; n_reviewer_state: number; n_persuaded_group: number }[];
+}
+
+export function priorPersuasion(subs: readonly Submission[], cases: readonly ReviewCase[]): PriorPersuasionSummary {
+  const caseById = new Map(cases.map((c) => [c.case_id, c]));
+  const cells = new Map<string, PriorPersuasionRow>();
+  const group: PersuadedReview[] = [];
+  const inconsistent: PriorPersuasionSummary['inconsistent'] = [];
+  let partly = 0;
+  const by = groupByCase(subs);
+  const byCase: PriorPersuasionSummary['by_case'] = [];
+  for (const id of sortedIds(by, cases)) {
+    const c = caseById.get(id) ?? null;
+    const row = { case_id: id, n_coded: 0, n_prior_same: 0, n_prior_different: 0, n_reviewer_state: 0, n_persuaded_group: 0 };
+    for (const r of by.get(id) ?? []) {
+      const p = r.payload;
+      const code = p.reveal?.verdict_code;
+      if (!code) continue;
+      row.n_coded++;
+      const prior = priorOf(p, c);
+      if (prior === 'same') row.n_prior_same++;
+      else if (prior === 'different') row.n_prior_different++;
+      else if (prior === 'reviewer_state') row.n_reviewer_state++;
+      const validity = p.reveal.validity ?? 'unanswered';
+      const persuasion = p.reveal.persuasion ?? 'unanswered';
+      const k = `${prior}|${validity}|${persuasion}`;
+      const cell = cells.get(k) ?? { prior, validity, persuasion, n: 0 };
+      cell.n++;
+      cells.set(k, cell);
+      if (isPersuadedByEvidence(p, c)) {
+        row.n_persuaded_group++;
+        group.push({
+          submission_id: r.submission_id,
+          case_id: id,
+          title: c?.title ?? null,
+          product: c ? productOf(c.kind) : null,
+          blind: p.blind.choice,
+          model: c ? explorerComparisonValue(c.kind, c.snapshot) : null,
+          verdict_code: code,
+          validity: p.reveal.validity ?? null,
+          persuasion: p.reveal.persuasion ?? null,
+        });
+      } else if (prior === 'different' && p.reveal.persuasion === 'somewhat') partly++;
+      if (prior === 'same' || prior === 'different') {
+        if (verdictCodeConsistency(code, prior === 'different') === 'inconsistent') inconsistent.push({ submission_id: r.submission_id, case_id: id, verdict_code: code, prior });
+      }
+    }
+    if (row.n_coded) byCase.push(row);
+  }
+  const PRIORS: PriorBucket[] = ['different', 'same', 'reviewer_state', 'unknown'];
+  const table = [...cells.values()].sort((a, b) => b.n - a.n || PRIORS.indexOf(a.prior) - PRIORS.indexOf(b.prior) || (`${a.validity}|${a.persuasion}` < `${b.validity}|${b.persuasion}` ? -1 : 1));
+  return { table, persuaded_group: group, n_partly_persuaded: partly, inconsistent, by_case: byCase };
+}
+
+// -- evidence gaps
+
+export type EvidenceGapSource = 'insufficient_evidence' | 'red_team';
+export interface EvidenceGapMention {
+  submission_id: string;
+  reviewer_id: string;
+  case_id: string;
+  case_kind: string | null;
+  product: ReviewProduct | null;
+  source: EvidenceGapSource;
+  category: EvidenceGap;
+  text: string | null;
+}
+const GAP_KEYS = Object.keys(EVIDENCE_GAP_LABEL) as EvidenceGap[];
+const isGap = (x: unknown): x is EvidenceGap => typeof x === 'string' && (GAP_KEYS as string[]).includes(x);
+const txt = (x: unknown): string | null => (typeof x === 'string' && x.trim() ? x.trim() : null);
+
+/**
+ * One row per evidence-gap mention: each missing-evidence category of an "insufficient evidence" blind answer,
+ * and the red-team "single piece of evidence that would most help" (category 'other' when only text was given).
+ */
+export function evidenceGapMentions(subs: readonly Submission[], cases: readonly ReviewCase[]): EvidenceGapMention[] {
+  const caseById = new Map(cases.map((c) => [c.case_id, c]));
+  const out: EvidenceGapMention[] = [];
+  for (const r of latestCaseReviews(subs)) {
+    const p = r.payload;
+    const c = caseById.get(p.case_id);
+    const base = { submission_id: r.submission_id, reviewer_id: r.reviewer.reviewer_id, case_id: p.case_id, case_kind: c?.kind ?? null, product: c ? productOf(c.kind) : null };
+    if (p.blind?.choice === INSUFFICIENT_EVIDENCE) {
+      const cats = [...new Set((p.blind.missing_evidence ?? []).filter(isGap))];
+      for (const category of cats) out.push({ ...base, source: 'insufficient_evidence', category, text: txt(p.blind.missing_evidence_text) });
+    }
+    const rt = p.reveal?.red_team;
+    if (rt && (isGap(rt.resolving_evidence) || txt(rt.resolving_evidence_text))) {
+      out.push({ ...base, source: 'red_team', category: isGap(rt.resolving_evidence) ? rt.resolving_evidence : 'other', text: txt(rt.resolving_evidence_text) });
+    }
+  }
+  return out;
+}
+
+/** Insufficient-evidence answers on one case at or above which the case is flagged: a repeated inability to judge is a finding. */
+export const REPEATED_INABILITY_MIN = 2;
+
+export interface EvidenceGapCategoryRow {
+  category: EvidenceGap;
+  label: string;
+  n_insufficient_evidence: number;
+  n_red_team: number;
+  total: number;
+  n_cases: number;
+  n_reviewers: number;
+}
+export interface EvidenceGapCaseRow {
+  case_id: string;
+  title: string | null;
+  product: ReviewProduct | null;
+  n_reviews: number;
+  n_insufficient_evidence_answers: number;
+  /** Share of reviews answering "insufficient evidence" (null with fewer than MIN_REVIEWS_TO_SUMMARISE reviews). */
+  share_insufficient: number | null;
+  repeated_inability: boolean;
+  gaps: Partial<Record<EvidenceGap, number>>;
+}
+export interface EvidenceGapSummary {
+  n_mentions: number;
+  n_insufficient_evidence_answers: number;
+  by_category: EvidenceGapCategoryRow[];
+  by_case: EvidenceGapCaseRow[];
+  by_product: { product: ReviewProduct; n_mentions: number; gaps: Partial<Record<EvidenceGap, number>> }[];
+}
+
+export function evidenceGapSummary(subs: readonly Submission[], cases: readonly ReviewCase[]): EvidenceGapSummary {
+  const mentions = evidenceGapMentions(subs, cases);
+  const caseById = new Map(cases.map((c) => [c.case_id, c]));
+  const by = groupByCase(subs);
+  const cats = GAP_KEYS.map((category) => {
+    const ms = mentions.filter((m) => m.category === category);
+    return {
+      category,
+      label: EVIDENCE_GAP_LABEL[category],
+      n_insufficient_evidence: ms.filter((m) => m.source === 'insufficient_evidence').length,
+      n_red_team: ms.filter((m) => m.source === 'red_team').length,
+      total: ms.length,
+      n_cases: new Set(ms.map((m) => m.case_id)).size,
+      n_reviewers: new Set(ms.map((m) => m.reviewer_id)).size,
+    };
+  })
+    .filter((r) => r.total > 0)
+    .sort((a, b) => b.total - a.total || GAP_KEYS.indexOf(a.category) - GAP_KEYS.indexOf(b.category));
+  const caseRows: EvidenceGapCaseRow[] = sortedIds(by, cases)
+    .map((id) => {
+      const rs = by.get(id) ?? [];
+      const c = caseById.get(id);
+      const nIns = rs.filter((r) => r.payload.blind?.choice === INSUFFICIENT_EVIDENCE).length;
+      const gaps: Partial<Record<EvidenceGap, number>> = {};
+      for (const m of mentions) if (m.case_id === id) bump(gaps, m.category);
+      return {
+        case_id: id,
+        title: c?.title ?? null,
+        product: c ? productOf(c.kind) : null,
+        n_reviews: rs.length,
+        n_insufficient_evidence_answers: nIns,
+        share_insufficient: rs.length >= MIN_REVIEWS_TO_SUMMARISE ? nIns / rs.length : null,
+        repeated_inability: nIns >= REPEATED_INABILITY_MIN,
+        gaps,
+      };
+    })
+    .filter((r) => r.n_insufficient_evidence_answers > 0 || Object.keys(r.gaps).length > 0)
+    .sort((a, b) => b.n_insufficient_evidence_answers - a.n_insufficient_evidence_answers || (a.case_id < b.case_id ? -1 : 1));
+  const products: ReviewProduct[] = ['country', 'sector', 'partnership', 'compact'];
+  const byProduct = products
+    .map((product) => {
+      const gaps: Partial<Record<EvidenceGap, number>> = {};
+      const ms = mentions.filter((m) => m.product === product);
+      for (const m of ms) bump(gaps, m.category);
+      return { product, n_mentions: ms.length, gaps };
+    })
+    .filter((r) => r.n_mentions > 0);
+  return {
+    n_mentions: mentions.length,
+    n_insufficient_evidence_answers: caseRows.reduce((n, r) => n + r.n_insufficient_evidence_answers, 0),
+    by_category: cats,
+    by_case: caseRows,
+    by_product: byProduct,
+  };
+}
+
+// -- reviewer states, product questions, notes, drivers
+
+export interface ReviewerStateCounts {
+  n_reviews: number;
+  none_of_these: number;
+  insufficient_evidence: number;
+  outside_expertise: number;
+  /** v1 "I don't know" answers. */
+  dont_know: number;
+}
+export interface ReviewerStateSummary {
+  overall: ReviewerStateCounts;
+  by_case: (ReviewerStateCounts & { case_id: string })[];
+}
+
+/** Reviewer-state answers per case and overall: reported, never in an agreement denominator. */
+export function reviewerStateSummary(subs: readonly Submission[], cases: readonly ReviewCase[]): ReviewerStateSummary {
+  const by = groupByCase(subs);
+  const count = (rs: Sub<'case_review'>[]): ReviewerStateCounts => ({
+    n_reviews: rs.length,
+    none_of_these: rs.filter((r) => r.payload.blind?.choice === NONE_OF_THESE).length,
+    insufficient_evidence: rs.filter((r) => r.payload.blind?.choice === INSUFFICIENT_EVIDENCE).length,
+    outside_expertise: rs.filter((r) => r.payload.blind?.choice === OUTSIDE_EXPERTISE).length,
+    dont_know: rs.filter((r) => r.payload.blind?.choice === DONT_KNOW).length,
+  });
+  const ids = sortedIds(by, cases);
+  return { overall: count(ids.flatMap((id) => by.get(id) ?? [])), by_case: ids.map((case_id) => ({ case_id, ...count(by.get(case_id) ?? []) })) };
+}
+
+export interface ProductQuestionTally {
+  product: ReviewProduct;
+  question_id: string;
+  text: string;
+  n: number;
+  /** Answers by option value (every option listed, zero included). */
+  counts: Record<string, number>;
+  by_case: Record<string, Record<string, number>>;
+}
+
+/** Answers to the tailored product questions, per question and per case. */
+export function productQuestionTallies(subs: readonly Submission[], cases: readonly ReviewCase[]): ProductQuestionTally[] {
+  const caseById = new Map(cases.map((c) => [c.case_id, c]));
+  const reviews = latestCaseReviews(subs);
+  const out: ProductQuestionTally[] = [];
+  for (const product of Object.keys(PRODUCT_QUESTIONS) as ReviewProduct[]) {
+    for (const q of PRODUCT_QUESTIONS[product]) {
+      const counts: Record<string, number> = Object.fromEntries(q.options.map((o) => [o.value, 0]));
+      const byCase: Record<string, Record<string, number>> = {};
+      let n = 0;
+      for (const r of reviews) {
+        const c = caseById.get(r.payload.case_id);
+        if (c && productOf(c.kind) !== product) continue;
+        const v = r.payload.reveal?.product_answers?.[q.id];
+        if (typeof v !== 'string' || !(v in counts)) continue;
+        counts[v]++;
+        n++;
+        byCase[r.payload.case_id] ??= {};
+        bump(byCase[r.payload.case_id], v);
+      }
+      out.push({ product, question_id: q.id, text: q.text, n, counts, by_case: byCase });
+    }
+  }
+  return out;
+}
+
+export interface NoteSummary {
+  n_notes: number;
+  n_reviews_with_notes: number;
+  by_conversion: Record<NoteConversion | 'unconverted', number>;
+  by_case: { case_id: string; n_notes: number; by_conversion: Partial<Record<NoteConversion | 'unconverted', number>> }[];
+}
+const CONVERSION_KEYS = Object.keys(NOTE_CONVERSION_LABEL) as NoteConversion[];
+
+/** Reviewer notes carried with case reviews, by what the reviewer converted them into. */
+export function noteSummary(subs: readonly Submission[], cases: readonly ReviewCase[]): NoteSummary {
+  const by = groupByCase(subs);
+  const overall = { ...Object.fromEntries(CONVERSION_KEYS.map((k) => [k, 0])), unconverted: 0 } as Record<NoteConversion | 'unconverted', number>;
+  let n = 0;
+  let withNotes = 0;
+  const rows: NoteSummary['by_case'] = [];
+  for (const id of sortedIds(by, cases)) {
+    const conv: Partial<Record<NoteConversion | 'unconverted', number>> = {};
+    let nCase = 0;
+    for (const r of by.get(id) ?? []) {
+      const notes = Array.isArray(r.payload.notes) ? r.payload.notes.filter((x) => x && typeof x.text === 'string' && x.text.trim()) : [];
+      if (notes.length) withNotes++;
+      for (const note of notes) {
+        const k = note.converted_to && CONVERSION_KEYS.includes(note.converted_to) ? note.converted_to : 'unconverted';
+        bump(conv, k);
+        overall[k]++;
+        nCase++;
+      }
+    }
+    n += nCase;
+    if (nCase) rows.push({ case_id: id, n_notes: nCase, by_conversion: conv });
+  }
+  return { n_notes: n, n_reviews_with_notes: withNotes, by_conversion: overall, by_case: rows };
+}
+
+export interface DriverSummary {
+  /** Blind answers that named a driver (v2). */
+  n_with_driver: number;
+  overall: Record<DriverFactor, number>;
+  by_case: { case_id: string; counts: Partial<Record<DriverFactor, number>> }[];
+  /** Drivers among reviews whose prior differed from the Explorer: what made experts see it differently. */
+  when_prior_differs: Partial<Record<DriverFactor, number>>;
+}
+const DRIVER_KEYS = Object.keys(DRIVER_FACTOR_LABEL) as DriverFactor[];
+
+export function driverSummary(subs: readonly Submission[], cases: readonly ReviewCase[]): DriverSummary {
+  const caseById = new Map(cases.map((c) => [c.case_id, c]));
+  const by = groupByCase(subs);
+  const overall = Object.fromEntries(DRIVER_KEYS.map((k) => [k, 0])) as Record<DriverFactor, number>;
+  const differs: Partial<Record<DriverFactor, number>> = {};
+  let n = 0;
+  const rows: DriverSummary['by_case'] = [];
+  for (const id of sortedIds(by, cases)) {
+    const counts: Partial<Record<DriverFactor, number>> = {};
+    for (const r of by.get(id) ?? []) {
+      const d = r.payload.blind?.driver;
+      if (!d || !DRIVER_KEYS.includes(d)) continue;
+      n++;
+      overall[d]++;
+      bump(counts, d);
+      if (priorOf(r.payload, caseById.get(id)) === 'different') bump(differs, d);
+    }
+    if (Object.keys(counts).length) rows.push({ case_id: id, counts });
+  }
+  return { n_with_driver: n, overall, by_case: rows, when_prior_differs: differs };
+}
+
+export interface V2Summaries {
+  verdict_codes: VerdictCodeSummary;
+  prior_persuasion: PriorPersuasionSummary;
+  evidence_gaps: EvidenceGapSummary;
+  reviewer_states: ReviewerStateSummary;
+  product_questions: ProductQuestionTally[];
+  notes: NoteSummary;
+  drivers: DriverSummary;
+}
+
+export function v2Summaries(subs: readonly Submission[], cases: readonly ReviewCase[]): V2Summaries {
+  return {
+    verdict_codes: verdictCodeSummary(subs, cases),
+    prior_persuasion: priorPersuasion(subs, cases),
+    evidence_gaps: evidenceGapSummary(subs, cases),
+    reviewer_states: reviewerStateSummary(subs, cases),
+    product_questions: productQuestionTallies(subs, cases),
+    notes: noteSummary(subs, cases),
+    drivers: driverSummary(subs, cases),
+  };
+}
+
+// -- the reviewer's completion summary
+
+export interface ReviewerCompletionSummary {
+  n_cases_reviewed: number;
+  /** The Explorer reached the reviewer's own initial assessment. */
+  n_matched_initial: number;
+  /** The reviewer's view changed after the evidence ("persuaded", or persuasion changed / somewhat; v1: verdict 2). */
+  n_changed_view: number;
+  /** A potential data issue: an underlying fact judged wrong, a note converted to a data issue, or a data report filed from the case. */
+  n_raised_data_issue: number;
+  /** The blind answer was "insufficient evidence to judge". */
+  n_insufficient_evidence: number;
+  n_outside_expertise: number;
+  /** Data and break-the-model reports, whether or not filed from a case. */
+  n_data_reports: number;
+  case_ids: { matched: string[]; changed_view: string[]; data_issue: string[]; insufficient_evidence: string[] };
+}
+
+const CASE_ROUTE_RE = /\/review\/case\/([^/?#]+)/;
+const caseOfReport = (s: Submission): string | null => {
+  const pc = s.page_context;
+  for (const x of [pc?.route, pc?.url]) {
+    const m = typeof x === 'string' ? CASE_ROUTE_RE.exec(x) : null;
+    // the route pattern (/review/case/:caseId) names no case; the URL does
+    if (m && !m[1].startsWith(':')) {
+      try {
+        return decodeURIComponent(m[1]);
+      } catch {
+        return m[1];
+      }
+    }
+  }
+  return null;
+};
+
+/** What the completion screen shows: from the reviewer's own submissions (the latest review per case). */
+export function reviewerSummary(subs: readonly Submission[], cases: readonly ReviewCase[]): ReviewerCompletionSummary {
+  const caseById = new Map(cases.map((c) => [c.case_id, c]));
+  const reviews = latestCaseReviews(subs);
+  const all = dedupeSubmissions(subs);
+  const reports = all.filter((s) => (s.kind === 'data_issue' || s.kind === 'break_model') && !!s.payload);
+  const reportedCases = new Set(reports.map(caseOfReport).filter((x): x is string => !!x));
+  const ids = { matched: new Set<string>(), changed_view: new Set<string>(), data_issue: new Set<string>(), insufficient_evidence: new Set<string>() };
+  let outside = 0;
+  for (const r of reviews) {
+    const p = r.payload;
+    const id = p.case_id;
+    const c = caseById.get(id) ?? null;
+    if (priorOf(p, c) === 'same') ids.matched.add(id);
+    const code = p.reveal?.verdict_code;
+    const changed = code ? code === 'persuaded' || p.reveal.persuasion === 'changed' || p.reveal.persuasion === 'somewhat' : p.reveal?.verdict === 2;
+    if (changed) ids.changed_view.add(id);
+    const dataNote = Array.isArray(p.notes) && p.notes.some((n) => n?.converted_to === 'data_issue' && typeof n.text === 'string' && n.text.trim());
+    const dataVerdict = code ? code === 'wrong_fact' : p.reveal?.verdict === 4;
+    if (dataVerdict || p.reveal?.main_issue?.type === 'data' || dataNote || reportedCases.has(id)) ids.data_issue.add(id);
+    if (p.blind?.choice === INSUFFICIENT_EVIDENCE) ids.insufficient_evidence.add(id);
+    if (isOutsideAnswer(p)) outside++;
+  }
+  const list = (x: Set<string>) => [...x].sort();
+  return {
+    n_cases_reviewed: reviews.length,
+    n_matched_initial: ids.matched.size,
+    n_changed_view: ids.changed_view.size,
+    n_raised_data_issue: ids.data_issue.size,
+    n_insufficient_evidence: ids.insufficient_evidence.size,
+    n_outside_expertise: outside,
+    n_data_reports: reports.length,
+    case_ids: { matched: list(ids.matched), changed_view: list(ids.changed_view), data_issue: list(ids.data_issue), insufficient_evidence: list(ids.insufficient_evidence) },
+  };
+}
+
+/** The v2 blind answer of a payload, typed (own_recommendation is the v2 extension; flow.ts BlindAnswerV2). */
+export const blindV2 = (p: CaseReviewPayload): BlindAnswerV2 => p.blind as BlindAnswerV2;

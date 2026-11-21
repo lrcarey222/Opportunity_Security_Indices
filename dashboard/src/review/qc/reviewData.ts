@@ -12,7 +12,10 @@ import { REVIEW_MANIFEST_SCHEMA, CASES_SCHEMA, DONT_KNOW, type BundleFileStamp, 
 import { validateCampaign, validateCaseCatalogue, validateCasesFile, validateFrameworkScenarios, validateMethodCards } from '../manifest.ts';
 import { canonicalJson, sha256HexSync } from '../privacy.ts';
 import type { ReleaseStamps } from '../release.ts';
-import { answerOptions } from './answerOptions.ts';
+import { answerOptions, conclusionOptions } from './answerOptions.ts';
+import { buildCaseBrief } from './brief.ts';
+import { lintBriefNeutrality } from './briefLint.ts';
+import { buildCaseReasoning } from './reasoning.ts';
 import { cellKey, isObj, type DecodedBundles } from './bundles.ts';
 import { qcSummaryDoc, robustnessMap } from './reports.ts';
 import type { ShippedQcRun } from './run.ts';
@@ -106,7 +109,8 @@ export function caseBundleFiles(def: Pick<CaseDefinition, 'kind' | 'key'>, b: De
       break;
     }
     case 'aib_node':
-    case 'compact': {
+    case 'compact':
+    case 'sector_chain': {
       out.push('aib/manifest.json');
       if (typeof afiles.compacts === 'string') out.push(`aib/${afiles.compacts}`);
       if (def.key.scenario === 'managed' && typeof scen.managed === 'string') out.push(`aib/${scen.managed}`);
@@ -116,6 +120,16 @@ export function caseBundleFiles(def: Pick<CaseDefinition, 'kind' | 'key'>, b: De
       out.push('partnerships/manifest.json');
       const e = b.partnerships && def.key.pair ? (b.partnerships.manifest.pairs[def.key.pair] ?? b.partnerships.manifest.compacts[def.key.pair]) : null;
       if (e?.json) out.push(`partnerships/${e.json}`);
+      // UX v2: the brief's partner sides read both economies' posture cells and the AIB division data
+      const isos = e?.country_a && e?.country_b ? [e.country_a, e.country_b] : (def.key.pair ?? '').split('_');
+      out.push('posture/manifest.json');
+      if (pm && typeof pm.core === 'string') out.push(`posture/${pm.core}`);
+      for (const iso of isos) {
+        const det = pm && isObj(pm.details) ? pm.details[iso] : null;
+        if (typeof det === 'string') out.push(`posture/${det}`);
+      }
+      out.push('aib/manifest.json');
+      if (typeof afiles.compacts === 'string') out.push(`aib/${afiles.compacts}`);
       break;
     }
   }
@@ -131,15 +145,16 @@ export function caseBundleFiles(def: Pick<CaseDefinition, 'kind' | 'key'>, b: De
  * intended answer is one of those; only a scenario whose intended answer is in neither family gets both.
  */
 export function optionSetOptions(set: FrameworkScenario['option_set'], intendedAnswer?: string | null): FrameworkScenario['options'] | null {
-  const strip = (o: FrameworkScenario['options']) => o.filter((x) => x.value !== DONT_KNOW);
+  // the Explorer's conclusions (model states included: a framework answer can be "not assessed"), never a reviewer state
+  const strip = (o: FrameworkScenario['options']) => o.filter((x) => x.value !== DONT_KNOW).map(({ value, label, definition }) => ({ value, label, ...(definition ? { definition } : {}) }));
   switch (set) {
     case 'posture_choice':
-      return strip(answerOptions('posture_cell'));
+      return strip(conclusionOptions('posture_cell'));
     case 'aib_class':
-      return strip(answerOptions('aib_node'));
+      return strip(conclusionOptions('aib_node'));
     case 'compact_decision': {
-      const strategic = strip(answerOptions('compact', { sid: 'SC-' }));
-      const operational = strip(answerOptions('compact', { sid: 'AIB-C' }));
+      const strategic = strip(conclusionOptions('compact', { sid: 'SC-' }));
+      const operational = strip(conclusionOptions('compact', { sid: 'AIB-C' }));
       if (intendedAnswer && strategic.some((o) => o.value === intendedAnswer)) return strategic;
       if (intendedAnswer && operational.some((o) => o.value === intendedAnswer)) return operational;
       return [...strategic, ...operational];
@@ -193,6 +208,12 @@ export function buildReviewData(input: BuildInput): BuiltReviewData {
         continue;
       }
       const snapshot = buildCaseSnapshot(def, decoded, ctx);
+      // UX v2: the neutral brief (pre-blind) and the reasoning reveal (post-blind), both inside the hashed snapshot
+      snapshot.brief = buildCaseBrief(def, decoded, snapshot);
+      snapshot.reasoning = buildCaseReasoning(def, decoded, snapshot);
+      const options = answerOptions(def.kind, def.key);
+      for (const e of lintBriefNeutrality(snapshot.brief, snapshot.conclusion, options)) errors.push(`${id}: brief leak: ${e}`);
+      if (snapshotFound(snapshot) && !snapshot.reasoning) errors.push(`${id}: no reasoning could be built for ${def.kind} ${canonicalJson(def.key)}`);
       if (!snapshotFound(snapshot)) errors.push(`${id}: ${def.kind} ${canonicalJson(def.key)} is not in this release (${snapshot.conclusion.reason ?? 'not found'})`);
       const split = splitFacts(def, snapshot);
       errors.push(...split.errors);
@@ -214,7 +235,7 @@ export function buildReviewData(input: BuildInput): BuiltReviewData {
         data_release: releaseId,
         app_commit: appCommit,
         built_at: builtAt,
-        answer_options: answerOptions(def.kind, def.key),
+        answer_options: options,
       });
     }
     const file: CasesFile = { schema: CASES_SCHEMA, schema_version: 1, campaign_id: camp.campaign_id, data_release: releaseId, built_at: builtAt, app_commit: appCommit, cases };

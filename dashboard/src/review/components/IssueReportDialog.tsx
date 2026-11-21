@@ -78,6 +78,8 @@ export interface IssueReportDialogProps {
   /** Report on this Explorer address instead of the current page (break-the-model from the review pages). */
   target?: string | null;
   campaignId?: string | null;
+  /** Pre-fills "what is wrong" (a reviewer note being converted into a report); the reviewer can edit it. */
+  initialText?: string | null;
   /** Tests: the store, sink and clock (and the review data store whose manifest names the full release). */
   store?: ReviewStorage;
   reviewData?: ReviewStore;
@@ -92,7 +94,7 @@ export function IssueReportDialog(props: IssueReportDialogProps) {
   return createPortal(<DialogBody {...props} />, document.body);
 }
 
-function DialogBody({ onClose, mode = 'data_issue', metric = null, displayedResult = null, target = null, campaignId = null, store, reviewData, sink, now, onSubmitted }: IssueReportDialogProps) {
+function DialogBody({ onClose, mode = 'data_issue', metric = null, displayedResult = null, target = null, campaignId = null, initialText = null, store, reviewData, sink, now, onSubmitted }: IssueReportDialogProps) {
   const routerLoc = useLocation();
   const routerParams = useParams();
   const titleId = useId();
@@ -101,7 +103,7 @@ function DialogBody({ onClose, mode = 'data_issue', metric = null, displayedResu
   const [release, setRelease] = useState<{ id: string; complete: boolean; missing: string[] } | null | undefined>(undefined);
   // the review manifest's release: undefined while loading, null when it could not be read
   const [reviewRelease, setReviewRelease] = useState<{ id: string; stamps: ReleaseStamps } | null | undefined>(undefined);
-  const [whatIsWrong, setWhatIsWrong] = useState('');
+  const [whatIsWrong, setWhatIsWrong] = useState(initialText ?? '');
   const [corrected, setCorrected] = useState('');
   const [citation, setCitation] = useState('');
   const [severity, setSeverity] = useState<Severity | null>(null);

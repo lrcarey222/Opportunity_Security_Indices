@@ -124,7 +124,9 @@ export async function build(o) {
   const built = buildReviewData({ content: v.content, decoded, run, releaseId, appCommit: commit, builtAt });
   if (built.errors.length) throw Object.assign(new Error(`the review data build failed:\n  ${built.errors.join('\n  ')}`), { warnings: [...v.warnings, ...built.warnings] });
   const texts = new Map();
-  for (const f of built.casesFiles) texts.set(`cases.${f.campaign_id}.json`, json(f));
+  // compact JSON (UX v2): the case briefs and reasoning reveals more than doubled the file, and indented JSON
+  // gzips about twice as large as compact JSON at this size (147 kB vs 66 kB for round 1)
+  for (const f of built.casesFiles) texts.set(`cases.${f.campaign_id}.json`, json(f, 0));
   texts.set('method_cards.json', json(built.methodCards));
   texts.set('framework_scenarios.json', json(built.frameworkScenarios));
   texts.set('robustness.json', json(built.robustness, 0));

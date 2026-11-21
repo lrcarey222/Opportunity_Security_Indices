@@ -2,10 +2,19 @@
 // local submissions and (admin) adjudications, under the namespace 'aibx-review:v1:'. Every access is
 // wrapped in try/catch: when localStorage is missing, blocked (private mode, an artifact sandbox) or full,
 // values live in an in-memory map for the page life and `persistent()` says so. Never throws.
+// UX v2 adds keys beside the v1 ones (whose names and formats are unchanged): v2 case drafts under the draft kind
+// 'case_v2' (a v1 draft under 'case' is still read, for migration), per-case reviewer notes, a per-campaign
+// calibration-seen time and the reviewer's review mode.
 
-import type { Adjudication, ReviewerProfile, Submission } from './model.ts';
+import type { Adjudication, ReviewerNote, ReviewerProfile, ReviewMode, Submission } from './model.ts';
+import { sanitizeNotes } from './flow.ts';
 
 export const STORAGE_PREFIX = 'aibx-review:v1:';
+/** The draft kind of a v1 case flow state (unchanged) and of a v2 one. */
+export const CASE_DRAFT_KIND_V1 = 'case';
+export const CASE_DRAFT_KIND_V2 = 'case_v2';
+/** The calibration screen is per campaign; this id stands for "any campaign". */
+export const ANY_CAMPAIGN = '*';
 
 /** The subset of the Web Storage API used here (tests pass a fake). */
 export interface KeyValueBackend {
@@ -39,6 +48,22 @@ export interface ReviewStorage {
   saveAdjudication(a: Adjudication): boolean;
   listAdjudications(): Adjudication[];
   deleteAdjudication(adjudicationId: string): void;
+  /** UX v2: the case draft to restore (the v2 draft, else the v1 one for migration; raw, checked by flow.ts restoreFlowStateV2). */
+  loadCaseDraft(campaignId: string, caseId: string): unknown | null;
+  /** UX v2: save a v2 case draft (never overwrites the v1 draft key). */
+  saveCaseDraftV2(campaignId: string, caseId: string, state: unknown): boolean;
+  /** Remove a case's drafts (v2 and v1), e.g. to start the case again. */
+  deleteCaseDraft(campaignId: string, caseId: string): void;
+  /** UX v2: the reviewer's notes on a case, sanitised ([] when none or unreadable). */
+  loadNotes(campaignId: string, caseId: string): ReviewerNote[];
+  saveNotes(campaignId: string, caseId: string, notes: readonly ReviewerNote[]): boolean;
+  deleteNotes(campaignId: string, caseId: string): void;
+  /** UX v2: when the calibration screen was seen (ISO time), or null. */
+  loadCalibrationSeen(campaignId?: string): string | null;
+  markCalibrationSeen(at: string, campaignId?: string): boolean;
+  /** UX v2: the review mode the reviewer chose (null when never chosen). */
+  loadReviewMode(): ReviewMode | null;
+  saveReviewMode(mode: ReviewMode): boolean;
   /** Remove every key of this namespace (and the memory fallback). */
   clearAll(): void;
 }
@@ -48,6 +73,9 @@ const PROFILE = `${STORAGE_PREFIX}profile`;
 const draftKey = (c: string, k: string, i: string) => `${STORAGE_PREFIX}draft:${enc(c)}:${enc(k)}:${enc(i)}`;
 const subKey = (id: string) => `${STORAGE_PREFIX}sub:${enc(id)}`;
 const adjKey = (id: string) => `${STORAGE_PREFIX}adj:${enc(id)}`;
+const notesKey = (c: string, i: string) => `${STORAGE_PREFIX}notes:${enc(c)}:${enc(i)}`;
+const calibrationKey = (c: string) => `${STORAGE_PREFIX}calibration_seen:${enc(c)}`;
+const REVIEW_MODE = `${STORAGE_PREFIX}review_mode`;
 
 function defaultBackend(): KeyValueBackend | null {
   try {
@@ -162,6 +190,25 @@ export function createReviewStorage(backend: KeyValueBackend | null = defaultBac
         .map((k) => read<Adjudication>(k))
         .filter((a): a is Adjudication => !!a && typeof a === 'object'),
     deleteAdjudication: (id) => del(adjKey(id)),
+    loadCaseDraft: (c, i) => read<unknown>(draftKey(c, CASE_DRAFT_KIND_V2, i)) ?? read<unknown>(draftKey(c, CASE_DRAFT_KIND_V1, i)),
+    saveCaseDraftV2: (c, i, state) => write(draftKey(c, CASE_DRAFT_KIND_V2, i), state),
+    deleteCaseDraft: (c, i) => {
+      del(draftKey(c, CASE_DRAFT_KIND_V2, i));
+      del(draftKey(c, CASE_DRAFT_KIND_V1, i));
+    },
+    loadNotes: (c, i) => sanitizeNotes(read<unknown>(notesKey(c, i))),
+    saveNotes: (c, i, notes) => write(notesKey(c, i), sanitizeNotes(notes)),
+    deleteNotes: (c, i) => del(notesKey(c, i)),
+    loadCalibrationSeen: (c = ANY_CAMPAIGN) => {
+      const v = read<unknown>(calibrationKey(c));
+      return typeof v === 'string' && v ? v : null;
+    },
+    markCalibrationSeen: (at, c = ANY_CAMPAIGN) => write(calibrationKey(c), at),
+    loadReviewMode: () => {
+      const v = read<unknown>(REVIEW_MODE);
+      return v === 'decision' || v === 'technical' ? v : null;
+    },
+    saveReviewMode: (mode) => (mode === 'decision' || mode === 'technical' ? write(REVIEW_MODE, mode) : false),
     clearAll: () => {
       for (const k of keys(STORAGE_PREFIX)) del(k);
       memory.clear();
@@ -175,6 +222,11 @@ export function reviewStorage(): ReviewStorage {
   shared ??= createReviewStorage();
   return shared;
 }
+/** The review mode in force: the stored choice, else the profile's, else decision review. */
+export function effectiveReviewMode(store: Pick<ReviewStorage, 'loadReviewMode'>, profile?: Pick<ReviewerProfile, 'review_mode'> | null): ReviewMode {
+  return store.loadReviewMode() ?? (profile?.review_mode === 'technical' ? 'technical' : 'decision');
+}
+
 /** Tests: replace (or with null, reset) the shared store. */
 export function setReviewStorage(s: ReviewStorage | null): void {
   shared = s;

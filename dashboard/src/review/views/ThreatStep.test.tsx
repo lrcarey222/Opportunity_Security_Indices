@@ -49,7 +49,8 @@ describe('DecisionUseStep', () => {
   it('offers the four scales and optional texts; "I don\'t know" records DONT_KNOW and hides them', () => {
     const onChange = vi.fn();
     const { container, rerender } = render(<DecisionUseStep value={null} onChange={onChange} />);
-    expect(screen.getAllByRole('group')).toHaveLength(4);
+    // four scales (fieldsets); the optional texts fold in a disclosure
+    expect(screen.getAllByRole('group').filter((g) => g.tagName === 'FIELDSET')).toHaveLength(4);
     fireEvent.click(screen.getAllByLabelText(/4 · Fully/)[1]);
     expect(onChange).toHaveBeenLastCalledWith({ identifies_problem: 4 });
     fireEvent.click(dk());

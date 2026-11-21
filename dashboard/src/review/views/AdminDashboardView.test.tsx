@@ -4,6 +4,10 @@
 // Priority fixes put a confirmed critical data issue first and show its three factors; names stay hidden until
 // "show names" is ticked, and an anonymous reviewer's name never shows; the Data QC and Robustness tabs read
 // qc_summary.json and robustness.json; the pure helpers parse packets and count robustness by tech x stage.
+// UX v2: with mixed v1 and v2 demo data (review/demo.ts), the Verdicts tab shows the ten statements, the Prior,
+// validity and persuasion tab highlights "expert prior differed, evidence persuaded", Evidence gaps counts by
+// category, case and product and flags repeated inability, Product questions tallies the tailored questions, and
+// the existing tabs and the privacy default keep working.
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -11,7 +15,9 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { createReviewStorage, type KeyValueBackend, type ReviewStorage } from '../storage.ts';
 import { memoryReviewSource, ReviewStore, setReviewStoreForTests } from '../data/store.ts';
 import { newSubmission } from '../context.ts';
-import { TOO_FEW_LABEL } from '../aggregate.ts';
+import { buildDashboard, TOO_FEW_LABEL } from '../aggregate.ts';
+import { makeDemoSubmissions } from '../demo.ts';
+import { REVIEW_VERDICT_CODES, REVIEW_VERDICT_LABEL } from '../model.ts';
 import { pseudonymReviewerCode } from '../privacy.ts';
 import { answerOptions } from '../qc/answerOptions.ts';
 import type { CaseReviewPayload, DataIssuePayload, PageContext, ReviewCase, ReviewerProfile, Submission } from '../model.ts';
@@ -260,5 +266,139 @@ describe('pure helpers', () => {
     const g = robustnessGrid(ROBUSTNESS as never)!;
     expect(g.counts.Batteries.Extraction).toEqual({ stable: 1, sensitive: 0, fragile: 1, not_testable: 0 });
     expect(g.counts.Solar.Refining).toEqual({ stable: 1, sensitive: 0, fragile: 0, not_testable: 1 });
+  });
+});
+
+// ---- UX v2: the new tabs on mixed v1 + v2 demo data --------------------------------------------------------
+
+const v2Case = (id: string, kind: ReviewCase['kind'], value: string, over: Partial<ReviewCase> = {}): ReviewCase => ({
+  ...mkCase(id, false, 'KOR', 'partner'),
+  kind,
+  title: `${kind} case ${id}`,
+  snapshot: { conclusion: { value, label: value }, facts: {} },
+  answer_options: answerOptions(kind),
+  ...over,
+});
+const V2_CASES = [
+  mkCase('CASE_001', true, 'JPN', 'secure'),
+  mkCase('CASE_002', false, 'KOR', 'partner'),
+  v2Case('CASE_003', 'posture_cell', 'watch'),
+  v2Case('CASE_004', 'partnership', 'partner'),
+  v2Case('CASE_005', 'compact', 'sectoral', { key: { sid: 'SC-SOLAR', scenario: 'decoupling' }, answer_options: answerOptions('compact', { sid: 'SC-SOLAR' }) }),
+];
+const V2_SUBS = makeDemoSubmissions(V2_CASES, [], [], 'admin-v2-test', 'c1');
+const V2_DEMO = { schema: 'aib-review-demo-submissions', synthetic: true, marker: '[synthetic]', submissions: V2_SUBS };
+
+describe('AdminDashboardView: UX v2 tabs', () => {
+  beforeEach(() => {
+    setReviewStoreForTests(
+      new ReviewStore(
+        memoryReviewSource({
+          'manifest.json': { ...MANIFEST, campaigns: [{ ...MANIFEST.campaigns[0], n_cases: V2_CASES.length }] },
+          'cases.c1.json': { ...CASES, cases: V2_CASES },
+          'method_cards.json': { cards: [] },
+          'framework_scenarios.json': { scenarios: [] },
+          'qc_summary.json': QC,
+          'robustness.json': ROBUSTNESS,
+          'fixtures/demo_submissions.json': V2_DEMO,
+        }),
+      ),
+    );
+  });
+
+  const expected = () => buildDashboard({ submissions: V2_SUBS, cases: V2_CASES, campaign: null });
+
+  it('the demo data mix v1 and v2 reviews; the tab list keeps every earlier tab', async () => {
+    const d = expected();
+    expect(d.overview.n_v2_reviews).toBeGreaterThan(0);
+    expect(d.overview.n_case_reviews).toBeGreaterThan(d.overview.n_v2_reviews);
+    const { container } = await loadDemo();
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
+      'Overview',
+      'Agreement',
+      'Verdicts',
+      'Prior, validity and persuasion',
+      'Evidence gaps',
+      'Product questions',
+      'Disagreement taxonomy',
+      'Data QC',
+      'Robustness',
+      'Priority fixes',
+    ]);
+    expect(screen.getByTestId('admin-overview').textContent).toMatch(/with the new questions/);
+    for (const name of ['Verdicts', 'Prior, validity and persuasion', 'Evidence gaps', 'Product questions', 'Agreement']) {
+      fireEvent.click(screen.getByRole('tab', { name }));
+      expect(bareAcronyms(container)).toEqual([]);
+      expect(AVOID_RE.test(container.textContent ?? '')).toBe(false);
+    }
+  });
+
+  it('Verdicts: the ten statements with their counts, the answers kept out of agreement, the drivers', async () => {
+    const d = expected().v2;
+    await loadDemo();
+    fireEvent.click(screen.getByRole('tab', { name: 'Verdicts' }));
+    const table = screen.getByTestId('admin-verdict-codes');
+    const rows = [...table.querySelectorAll('tbody tr')];
+    expect(rows.map((r) => r.getAttribute('data-code'))).toEqual([...REVIEW_VERDICT_CODES]);
+    for (const r of rows) {
+      const code = r.getAttribute('data-code') as (typeof REVIEW_VERDICT_CODES)[number];
+      expect(r.querySelector('td')!.textContent).toContain(REVIEW_VERDICT_LABEL[code]);
+      expect(r.querySelectorAll('td')[1].textContent).toBe(String(d.verdict_codes.overall[code]));
+    }
+    expect(rows.find((r) => r.getAttribute('data-code') === 'wrong_rule')!.getAttribute('data-disagreeing')).toBe('true');
+    expect(screen.getByTestId('admin-verdicts').textContent).toContain(`${d.verdict_codes.n_uncoded} earlier reviews used the 1 to 7 scale`);
+    expect(screen.getByTestId('admin-reviewer-states').textContent).toContain(`Insufficient evidence to judge: ${d.reviewer_states.overall.insufficient_evidence}`);
+    expect(screen.getByTestId('admin-drivers').querySelectorAll('tbody tr').length).toBeGreaterThan(0);
+  });
+
+  it('Prior, validity and persuasion: highlights expert prior differed, evidence persuaded', async () => {
+    const d = expected().v2.prior_persuasion;
+    expect(d.persuaded_group.length).toBeGreaterThan(0);
+    await loadDemo();
+    fireEvent.click(screen.getByRole('tab', { name: 'Prior, validity and persuasion' }));
+    const box = screen.getByTestId('admin-persuaded');
+    expect(box.textContent).toContain('Expert prior differed from the Explorer, and the evidence persuaded them');
+    expect(screen.getByTestId('persuaded-count').textContent).toBe(String(d.persuaded_group.length));
+    expect(box.querySelectorAll('li')).toHaveLength(d.persuaded_group.length);
+    const table = screen.getByTestId('admin-prior-table');
+    expect(table.querySelectorAll('tbody tr')).toHaveLength(d.table.length);
+    expect(table.querySelector('[data-highlight]')!.textContent).toContain('Different from the Explorer');
+  });
+
+  it('Evidence gaps: by category, case and product, with the insufficient-evidence rate and repeated inability flagged', async () => {
+    const g = expected().v2.evidence_gaps;
+    expect(g.by_case.some((r) => r.repeated_inability)).toBe(true);
+    await loadDemo();
+    fireEvent.click(screen.getByRole('tab', { name: 'Evidence gaps' }));
+    const cat = screen.getByTestId('admin-gaps-by-category');
+    expect(cat.querySelectorAll('tbody tr')).toHaveLength(g.by_category.length);
+    expect(cat.querySelector('[data-category="production_capacity"]')!.textContent).toContain('Actual production capacity');
+    const byCase = screen.getByTestId('admin-gaps-by-case');
+    const flagged = byCase.querySelector('[data-repeated]')!;
+    expect(flagged.textContent).toContain('repeatedly could not judge');
+    const row = g.by_case.find((r) => r.repeated_inability)!;
+    expect(flagged.getAttribute('data-case')).toBe(row.case_id);
+    expect(flagged.querySelectorAll('td')[4].textContent).toBe(row.share_insufficient === null ? 'too few reviews' : `${Math.round(row.share_insufficient * 100)}%`);
+    expect(screen.getByTestId('admin-gaps-by-product').querySelectorAll('tbody tr')).toHaveLength(g.by_product.length);
+  });
+
+  it('Product questions: the tailored questions tallied, and the notes', async () => {
+    const t = expected().v2.product_questions.filter((x) => x.n > 0);
+    expect(t.length).toBeGreaterThan(0);
+    await loadDemo();
+    fireEvent.click(screen.getByRole('tab', { name: 'Product questions' }));
+    const panel = screen.getByTestId('admin-product');
+    expect(panel.querySelectorAll('[data-question]')).toHaveLength(t.length);
+    expect(panel.textContent).toContain('Does this compact materially ameliorate the stated threat?');
+    expect(panel.textContent).toContain('Does this relationship represent genuine industrial complementarity or primarily diplomatic compatibility?');
+    expect(screen.getByTestId('admin-notes').textContent).toMatch(/\d+ notes from \d+ reviews/);
+  });
+
+  it('privacy: reviewer codes, never names, on the new tabs', async () => {
+    const { container } = await loadDemo();
+    for (const name of ['Verdicts', 'Prior, validity and persuasion', 'Evidence gaps', 'Product questions']) {
+      fireEvent.click(screen.getByRole('tab', { name }));
+      expect(container.textContent).not.toMatch(/DEMO-\d\d/);
+    }
   });
 });

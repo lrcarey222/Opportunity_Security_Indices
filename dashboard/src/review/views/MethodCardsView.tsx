@@ -83,14 +83,16 @@ interface Loaded {
 /**
  * Why the cards' examples are held back, or null when they may show. The examples quote the Explorer's conclusions
  * for named cells and nodes, several of which are review cases (blind-first, docs/QC_SYSTEM_DESIGN.md 5 step 4):
- * inside the review layout they show only once the reviewer has a profile and has submitted every required
- * assigned case. 'no_profile': no profile yet (the visitor may still become a case reviewer); 'open_cases': a
- * required case is not submitted. Outside the layout (a view on its own) nothing is held.
+ * inside the review layout they show only once the reviewer has a profile and has submitted every assigned case,
+ * optional ones included. 'no_profile': no profile yet (the visitor may still become a case reviewer);
+ * 'open_cases': an assigned case is not submitted. Outside the layout (a view on its own) nothing is held.
  */
 export function exampleHoldReason(ctx: Pick<ReviewCtx, 'profile' | 'assignments' | 'statusOf'> | null): 'no_profile' | 'open_cases' | null {
   if (!ctx) return null;
   if (!ctx.profile) return 'no_profile';
-  return ctx.assignments.some((a) => !a.optional && ctx.statusOf(a.case_id) !== 'submitted') ? 'open_cases' : null;
+  // optional assignments too (an outside or self-selected case): the case brief links each assumption to its card
+  // before the blind answer (components/case/EvidencePanel.tsx), so a visible example would reach an open case
+  return ctx.assignments.some((a) => ctx.statusOf(a.case_id) !== 'submitted') ? 'open_cases' : null;
 }
 
 export const EXAMPLE_HELD_TEXT: Readonly<Record<'no_profile' | 'open_cases', string>> = {

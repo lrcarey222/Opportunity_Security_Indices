@@ -3,7 +3,11 @@
 This guide is for the NEIS staff who run the QC, validation and expert peer review of the published AIB
 Explorer: who configure campaigns and cases, run the automated checks, collect and export expert
 submissions, adjudicate issues and write the validation report. It describes the system as built on
-branch `feat/qc-review`. Where a choice is NEIS's to make, it says so.
+branch `feat/qc-review`, including the reviewer UX v2 of 2026-11-21: the neutral case brief, the reasoning reveal,
+the ten-statement verdict, evidence gaps, notes, calibration, review modes and sector-chain cases. Where a choice is
+NEIS's to make, it says so.
+
+- The UX audit, the walkthrough of real cases and the open UX questions: [QC_UX_REVIEW.md](QC_UX_REVIEW.md).
 
 - Design and rationale: [QC_SYSTEM_DESIGN.md](QC_SYSTEM_DESIGN.md) (including its "As built" section).
 - What reviewers see: [QC_REVIEWER_GUIDE.md](QC_REVIEWER_GUIDE.md).
@@ -25,6 +29,7 @@ branch `feat/qc-review`. Where a choice is NEIS's to make, it says so.
 | `config/qc/golden_cases.yml` | Golden regression cases (`GC_###`) | NEIS, by hand |
 | `dashboard/public/data/review/` | Built, public review data (case snapshots, cards, scenarios, robustness map, QC summary, synthetic demo submissions) | `build-review-data.mjs` only |
 | `dashboard/src/review/` | The reviewer app, its pure logic and the shared types (`model.ts`) | code |
+| `dashboard/src/review/qc/brief.ts`, `briefLint.ts`, `reasoning.ts`, `sectorChain.ts`, `answerOptions.ts` | The case brief (before the blind answer), its leak lint, the reasoning reveal, the sector-chain stage analysis and the answer options | code |
 | `dashboard/scripts/review/` | Node CLIs: `build-review-data.mjs`, `run-bundle-qc.mjs`, `export-review.mjs` | code |
 | `R/qc/`, `scripts/qc/` | Pipeline-layer QC (pure functions / IO scripts) | code |
 | `qc/results/` | Latest automated QC outputs (CSV, committed) | the QC runs |
@@ -123,9 +128,10 @@ always rebuild (section 7).
 | Field | Meaning |
 |---|---|
 | `case_id` | `CASE_###`, stable, **never renumbered and never reused** (submissions, exports and adjudications refer to it). Retire a case by dropping it from a campaign's `case_ids`; it stays in the catalogue. The validator rejects a duplicate ID in the file, but it cannot know about a retired one, so reuse is a human rule |
-| `kind` | `posture_cell`, `aib_node`, `compact`, `partnership` or `sector` |
-| `key` | posture/sector `{iso3, tech, stage}` (tech as the posture display name, e.g. `Electric Vehicles`); AIB node `{node, scenario}` with scenario `decoupling` or `managed`; compact `{sid, scenario}`; partnership `{pair}` |
-| `title`, `question` | What the reviewer is asked, in plain language |
+| `kind` | `posture_cell`, `aib_node`, `compact`, `sector_chain`, `partnership` or `sector` |
+| `key` | posture/sector `{iso3, tech, stage}` (tech as the posture display name, e.g. `Electric Vehicles`); AIB node `{node, scenario}` with scenario `decoupling` or `managed`; compact and sector chain `{sid, scenario}` (`sid` an SC-* strategic compact); partnership `{pair}` |
+| `title`, `question` | What the reviewer is asked, in plain language. Never a choice name, "posture" or a model term: the validator lints them |
+| `brief` | The authored part of the case brief: `decision_question`, `decision_context`, `objective`, optional `time_horizon`, `evidence_ids` (5-8, from `qc/brief.ts` `BRIEF_FACT_IDS_BY_KIND`) and `assumption_ids` (`qc/brief.ts` `ASSUMPTIONS`). All 23 round-1 cases have one |
 | `sector_groups`, `country_groups`, `stage`, `assignment_group` | Expertise tags used for assignment |
 | `anchor` | `true` for an anchor (keep it consistent with the campaign's `anchor_cases`) |
 | `why_selected` | Why NEIS chose it (golden category, threshold margin, centrality) |
@@ -134,14 +140,50 @@ always rebuild (section 7).
 | `reveal_fields` | Facts shown only **after** it |
 | `decision_use`, `threat` | Add the decision-use / threat questions to this case |
 
+**Product.** Each kind maps to the product a reviewer sees (`model.ts` `REVIEW_PRODUCT_OF_KIND`):
+- posture cells: **Country**;
+- AIB nodes and sector chains: **Sector**;
+- compacts: **Compact**;
+- partnerships: **Partnership**.
+
+The product sets the brief's tailored section, the answer prompt and the post-reveal product questions.
+
+**The brief and the reveal (UX v2).** Before the blind answer the case page shows a brief built by `qc/brief.ts`
+from the bundles plus the `brief:` block:
+- the decision question, context, objective, true horizon and scenario;
+- the six-stage strip;
+- computed data warnings;
+- 5-8 facts, each with a plain reading, source, vintage and inline warnings;
+- the analytical assumptions, kept apart from the evidence and linked to method cards;
+- what the data cannot show, and definitions.
+
+After the answer, `qc/reasoning.ts` replays the Explorer's own rule. It shows the conclusion in one sentence, each
+step with its level, value against its bar and drivers, the rule actually applied, and the neighbouring conclusions
+(why not, what would make it right, the decisive margin). `qc/briefLint.ts` fails the build on any leak in a built
+brief:
+- the case's conclusion;
+- any canonical label of any kind;
+- a model score id or name;
+- an outcome-giving model label;
+- a claim about what the Explorer concludes;
+- a banned word.
+
+Authoring rules are in [`config/review/README.md`](../config/review/README.md) ("The case brief (UX v2)").
+
 **Context versus reveal.** Context facts are the evidence an expert would weigh (import mix, supplier
 shares, world share, export strength, market outlook; for AIB nodes the exposure and today's
 suppliers). The model's deciding scores (need, prize, Competitive Position, need-family percentiles,
 pathway, deployment need, coverage after coordination) belong in `reveal_fields`, so the blind answer is
 the reviewer's own reading of the evidence. The build **refuses** these IDs in `context_fields`, because
 they give the answer away: `choice`, `fence`, `posture`, `reason`, `confidence`, `borderline`,
-`partner`, `policy_alignment`, `class`, `decision`, `missions`, `choices_summary`, `headline`. Leave out
-of `reveal_fields` any fact the bundle never carries for that case (it would show as "not available in
+`partner`, `policy_alignment`, `class`, `decision`, `missions`, `choices_summary`, `headline`, `lead_stage`,
+`explorer_stages`, `node_classes`. Model outputs that presuppose the answer also belong after it, and UX v2
+moved them there:
+- `physical_warning`, `purpose`, `non_allied_relied_on`, `critical_external`;
+- the jargon `coercive_top*` and `opposite_bloc_share`;
+- `outlook`, `static`.
+
+Leave out of `reveal_fields` any fact the bundle never carries for that case (it would show as "not available in
 this release").
 
 **`why_selected` is never shown before the reveal.** It often states the conclusion (for example "Preserve
@@ -149,11 +191,39 @@ with Competitive Position 0.763 against the 0.75 bar"). The case page shows it o
 answer is stored, and a test checks this for every committed case. Do not surface it on any other
 pre-answer page.
 
-**Limits as built.** Only the USA_JPN partnership memo can be a case: main's
-`dashboard/public/data/partnerships/` holds only that memo's data (other pairs exist only as static
-documents on the Pages site). Partnership answer options come from the memo choice kinds, which have no
-Catch Up. A `sector` case needs a full `{iso3, tech, stage}` key (it reuses the posture snapshot).
-Numbers quoted in `why_selected` are frozen text: re-check them whenever the bundles change.
+**Answer options.** Reviewers see the case's possible conclusions, each with its one-line definition, and then
+three reviewer states:
+- None of these reflects my recommendation (`NONE_OF_THESE`);
+- Insufficient evidence to judge (`INSUFFICIENT_EVIDENCE`);
+- Outside my expertise (`OUTSIDE_EXPERTISE`).
+
+Two details:
+- `not_assessed` and the AIB class `INSUFFICIENT DATA` can still be Explorer conclusions but are not offered to
+  reviewers.
+- Watch keeps its key and name but is shown as "Watch (keep open)". Compare answers by key (`watch`), never by
+  label.
+
+v1 answers (`DONT_KNOW`, the old option sets) still validate and aggregate.
+
+**Sector chains** (`kind: sector_chain`; round 1: CASE_022 SC-SOLAR decoupling, CASE_023 SC-GRID managed) ask at
+which stages of one chain allied intervention is warranted, then which stage to act on first.
+- Storage: `BlindAnswer.choices` holds the reviewer's set of stage keys and `BlindAnswer.choice` the first stage
+  (or `no_stage`).
+- The Explorer's conclusion is the lead stage, i.e. where the lead mission's largest lost supply sits
+  (`qc/sectorChain.ts`).
+- Agreement compares the first stage; the admin also reports the stage-set overlap (Jaccard).
+
+**Limits as built.**
+- Only the USA_JPN partnership memo can be a case: main's `dashboard/public/data/partnerships/` holds only that
+  memo's data (other pairs exist only as static documents on the Pages site).
+- CASE_021 is re-posed as "what should lead cooperation", with the memo's four boxes as options (keys `preserve`,
+  `partner`, `accelerate`, `watch`, labelled Build together, Trade and standards, Institutions, Stay out). The
+  memo's first box is always its joint-build list, so its Explorer conclusion is Build together for any pair with a
+  joint build; read its agreement accordingly. Stored v1 partnership answers of `secure` are no longer a canonical
+  key.
+- A `sector` case needs a full `{iso3, tech, stage}` key (it reuses the posture snapshot). Round 1 has none; its
+  Sector review uses AIB nodes and sector chains.
+- Numbers quoted in `why_selected` are frozen text: re-check them whenever the bundles change.
 
 ## 5. Anchor cases and target reviews
 
@@ -233,16 +303,25 @@ node scripts/review/build-review-data.mjs --built-at 2026-12-01T00:00:00Z
 | `--no-demo` | | Do not write `fixtures/demo_submissions.json` |
 | `--quiet` | | Less output |
 
-It validates every YAML file (`dashboard/src/review/manifest.ts`), runs the bundle QC, builds each
-case's snapshot (the exact values a reviewer sees), its sha256, the bundle file stamps and the answer
-options, and writes `manifest.json`, `cases.<campaign>.json`, `method_cards.json`,
+It validates every YAML file (`dashboard/src/review/manifest.ts`, which also lints titles, questions and
+`brief:` text), runs the bundle QC and builds each case. A case is:
+- its snapshot, which carries the brief (`snapshot.brief`) and the reasoning reveal (`snapshot.reasoning`) since
+  UX v2, both inside the hash;
+- its sha256;
+- the bundle file stamps;
+- the answer options.
+
+Every built brief is linted, and a leak fails the build. The cases file is compact JSON. It then writes `manifest.json`, `cases.<campaign>.json`, `method_cards.json`,
 `framework_scenarios.json`, `robustness.json`, `qc_summary.json` and the demo fixtures. Any validation or
 build error exits with code 1 and writes nothing. Exit code 2 means a bad command line.
 
 After a rebuild: run `npx vitest run --project ui src/review/views` (the real-case test checks the
 blind-first guarantee on every committed case and lists known wording problems in `KNOWN_WORDING`; update
-that list only when the wording genuinely changed) and `npm run budget` after a production build (the
-review data has its own size limit in `scripts/check-budget.mjs`).
+that list only when the wording genuinely changed) and `npm run budget` after a production build. The
+review data has its own size limit in `scripts/check-budget.mjs`: 125 kB gzipped since UX v2, against 106.7 kB
+measured on 2026-11-21. The case-review screen has its own limit too: 320 kB for the code, the font, the manifest and
+the largest cases file, against 310.5 kB measured. Check both after every case or brief change: the briefs and
+reasoning are most of the cases file.
 
 **Freeze the build for a campaign.** Every case submission records the case's `case_snapshot_sha256`
 and the case file's `data_release`. Rebuilding against new bundles mid-campaign changes snapshots, so
@@ -318,6 +397,19 @@ data_issue, break_model), the reviewer stamp (code, name only if given and not a
 digest, the expertise tags and ratings), the app commit, the data release and, for reports, the page
 context. A **packet** (`schema: aib-review-packet`) holds one reviewer's submissions.
 
+A v2 case review adds these fields to the v1 payload; v1 fields such as `verdict` are still filled, derived from
+the statement:
+- `blind`: `confidence_level` (low / medium / high), `driver` and `driver_text`, `missing_evidence` and its text
+  for an insufficient-evidence answer, the stage set in `choices` for a sector chain, and `own_recommendation` for
+  "None of these";
+- `reveal`: `verdict_code` (the ten statements), `validity`, `persuasion`, `prior_differs` (computed, not asked),
+  the red-team answers and `product_answers`;
+- the case's `notes`, with any conversion, and the `review_mode`.
+
+Reviewer drafts live in the browser under `aibx-review:v1:` keys: `draft:<campaign>:case_v2:<id>`,
+`notes:<campaign>:<id>`, `calibration_seen:<campaign>` and `review_mode`. The v1 `draft:<campaign>:case:<id>`
+key is still read and migrated, never overwritten.
+
 Keep everything received under `qc/private/` (git-ignored), for example `qc/private/submissions/`. How
 submissions arrive depends on the build's storage mode (details and options in
 [QC_DEPLOYMENT.md](QC_DEPLOYMENT.md)):
@@ -349,8 +441,22 @@ node scripts/review/export-review.mjs --submissions ../qc/private/submissions --
 | `--strict` | Write nothing if any submission is invalid (otherwise invalid ones are skipped with a warning) |
 
 Writes `qc_review_responses.csv`, `qc_case_results.csv`, `qc_method_feedback.csv`, `qc_data_issues.csv`,
-`qc_framework_answers.csv`, `qc_decision_use.csv`, `qc_threat_reviews.csv`, `qc_priority_fixes.csv` and
-`export_summary.json`. Reviewers appear as `R-` codes. Text that a spreadsheet would run as a formula is
+`qc_framework_answers.csv`, `qc_decision_use.csv`, `qc_threat_reviews.csv`, `qc_priority_fixes.csv`,
+`qc_evidence_gaps.csv` and `export_summary.json`.
+
+UX v2 appends columns after the unchanged v1 ones (`exports.ts`):
+- `qc_review_responses.csv`:
+  - `ux_version`, `review_mode`, `product`, `blind_state`, `confidence_level`, `driver`, `own_recommendation`;
+  - `blind_choices` and `model_stages`, `stage_jaccard`;
+  - `missing_evidence`;
+  - `verdict_code` and its label, `validity`, `persuasion`, `prior_differs`, `verdict_consistency`,
+    `persuaded_by_evidence`;
+  - the red-team answers, one `product_<question id>` column per product question;
+  - note counts by conversion and `notes_text`.
+- `qc_case_results.csv`: `product`, `n_none_of_these`, `n_insufficient_evidence`, `n_excluded`,
+  `verdict_code_counts`, `n_prior_differs_persuaded`, `mean_stage_jaccard`.
+- `qc_evidence_gaps.csv`: one row per missing-evidence category of an insufficient-evidence answer, and per
+  red-team "single piece of evidence that would most help". Reviewers appear as `R-` codes. Text that a spreadsheet would run as a formula is
 prefixed with an apostrophe.
 
 **Privacy guard.** The output directory must be outside any git work tree, or inside the work tree's
@@ -375,11 +481,27 @@ anonymous reviewers).
 
 - **Overview**: submissions and reviewers, cases reviewed of those in scope, anchor cases at target,
   unresolved critical issues, open data reports, and an anchor table.
-- **Agreement**: per case, anchors first: the distribution of blind answers, the modal answer, the share
-  matching the Explorer, the share persuaded after the reveal, the share rejecting (verdicts 4-6) and the
+- **Agreement**: per case, anchors first. Reviewer states (none of these, insufficient evidence, outside
+  expertise) are counted but kept out of every agreement denominator. The tab shows the distribution of blind
+  answers, the modal answer, the share matching the Explorer, the share persuaded after the reveal, the share rejecting (verdicts 4-6) and the
   reasons; below 3 usable reviews, "too few reviews to summarise". A blind-versus-verdict table counts
   agreed and confirmed, agreed but doubtful or rejecting, differed but persuaded, differed and
   unconvinced or rejecting, outside expertise, and inconsistent answers.
+- **Verdicts**: the ten post-reveal statements overall and by case, the answers kept out of agreement
+  (none of these, insufficient evidence, outside expertise) and the drivers, overall and where the expert's
+  blind answer differed from the Explorer.
+- **Prior, validity and persuasion**:
+  - a highlighted panel for "Expert prior differed from the Explorer, and the evidence persuaded them"
+    (persuasion "changed" or statement 3; "somewhat" is shown beside it);
+  - the prior x validity x persuasion table and a by-case table;
+  - the statements that contradict the reviewer's own stored prior.
+- **Evidence gaps**:
+  - missing-evidence categories by category, case and product;
+  - the insufficient-evidence rate per case ("too few reviews" below three);
+  - cases where two or more reviewers could not judge, flagged as repeated inability. Read these as gaps in the
+    case's evidence or in the Explorer's data, not as reviewer failure.
+- **Product questions**: the tallies of the bottleneck, complementarity and amelioration questions, and the
+  reviewers' notes with their conversions.
 - **Disagreement taxonomy**: counts by type (data, method, missing context, framework ambiguity,
   actionability, insufficient evidence) from case reviews, framework mismatches and decision-use answers.
 - **Data QC**: the bundle-layer summary (`qc_summary.json`: checks failing / warning / passing, choices
@@ -394,7 +516,13 @@ anonymous reviewers).
 
 - *Materiality* (`SEVERITY_WEIGHT`): cosmetic 0.1, minor 0.3, material 0.6, critical 1.0. Data and
   break-the-model reports use the reporter's severity. A case review with verdict 3 counts as minor and
-  4-6 as material. A method card answered modify or reject counts by its materiality answer 1-4
+  4-6 as material. A v2 statement maps to its own severity (`aggregate.ts` `VERDICT_CODE_SEVERITY`):
+  - "same conclusion, different reasons" and "plausible but insufficient" count as minor;
+  - wrong fact, missing factor, interpretation or weighting, decision rule and too broad count as material.
+
+  Its issue type follows the statement: wrong fact is data, missing factor is context, weighting is method,
+  decision rule is `decision_rule`, too broad is framework, plausible but insufficient is insufficient
+  evidence. For "same conclusion, different reasons" the type is the one the reviewer picked. A method card answered modify or reject counts by its materiality answer 1-4
   (cosmetic, minor, material, critical); retain, unsure and outside-expertise answers are not issues. Reports
   on the same issue are grouped (same measure and cell, same case and disagreement type, or same card)
   and the group takes its highest severity.
@@ -417,11 +545,17 @@ Disagreement is evidence to investigate, never an instruction to change the mode
 much-disputed case:
 
 1. Read the Agreement tab with the case's audit (`qc/audits/<CASE_###>.md`) and robustness class open.
-2. Separate the causes using the reviewers' "single most important miss" types: a data problem goes to
-   the data owners, a method problem to a method card or a methodology review, missing context to the
-   case's evidence or the method's scope, framework ambiguity to the wording, actionability to the
-   recommendation text.
-3. Weigh blind answers by expertise match; treat "I don't know" and verdict 7 as abstentions, not votes.
+2. Separate the causes using the reviewers' statements and their "Where exactly does it fail?" answers.
+   These name the facts (brief fact ids), assumptions (`assumption:<id>`) or reasoning steps (`step:<id>`)
+   involved, in `metric_ids`.
+   - A data problem goes to the data owners.
+   - A method or decision-rule problem goes to a method card or a methodology review.
+   - Missing context goes to the case's evidence or the method's scope.
+   - A too-broad recommendation goes to the wording; actionability goes to the recommendation text.
+   - Read the red-team answers ("what would have to be true", "the single piece of evidence") beside them.
+3. Weigh blind answers by expertise match. Treat "I don't know" (v1), outside expertise, none of these and
+   insufficient evidence as abstentions, not votes. Read the insufficient-evidence categories on the Evidence
+   gaps tab.
 4. Record the conclusion as an adjudication (section 13). If the Explorer stays as it is, say why.
 
 ## 13. Adjudicate issues and mark them resolved
@@ -460,9 +594,11 @@ Rscript scripts/qc/write_validation_report.R [--results qc/results] [--exports q
 ```
 
 It reads whatever result and export CSVs exist (a missing one is listed as "not run" or "absent"),
-the case snapshots and the audits, and writes the report: scope and releases, reviewers, coverage,
-findings, strongest validations, unresolved disagreements, critical data issues, sensitive and fragile
-conclusions, methodological issues, changes made because of review and remaining limitations. Reviewer
+the case snapshots and the audits, and writes the report in 14 sections: scope and releases, reviewers,
+coverage, findings, strongest validations, unresolved disagreements, **7. post-reveal verdicts (taxonomy)**,
+**8. prior, validity and persuasion**, **9. evidence gaps**, critical data issues, sensitive and fragile
+conclusions, methodological issues, changes made because of review and remaining limitations. Sections 7-9
+read the v2 columns; exports without them say there is no v2 data. Reviewer
 names never reach it; without review exports every review section says "No expert reviews recorded
 yet." Pass `--date` for a reproducible report. Read it before committing: it is committed, the exports
 are not.
@@ -513,13 +649,14 @@ representative poll.
 - [ ] NEIS chooses the storage mode and, if not packet mode, the backend ([QC_DEPLOYMENT.md](QC_DEPLOYMENT.md)). Packet mode is the recommended default for round 1.
 - [ ] NEIS adds the contact, the privacy notice and the retention period to the campaign `description` and to the placeholders in [QC_REVIEWER_GUIDE.md](QC_REVIEWER_GUIDE.md).
 - [ ] Review `config/review/campaigns/aib_qc_2027_round1.yml`: dates, `case_ids`, `anchor_cases`, `target_reviews_per_anchor`, assignment rules. Keep `status: draft` while testing.
-- [ ] Review the 21 cases, 22 method cards and 12 scenarios for wording and for numbers quoted in `why_selected` / `example` against the current bundles.
+- [ ] Review the 23 cases (including the two sector chains), their `brief:` blocks, 22 method cards and 12 scenarios for wording and for numbers quoted in `why_selected` / `example` against the current bundles. Walk at least one case per product in the browser (see the walkthrough in [QC_UX_REVIEW.md](QC_UX_REVIEW.md)).
+- [ ] Settle the open UX questions in [QC_UX_REVIEW.md](QC_UX_REVIEW.md) ("UX choices that need NEIS judgment").
 - [ ] NEIS approves the golden cases (`approved.by`, `approved.on`, `approved.release`), or records which stay drafts.
 - [ ] The site to be used serves the same bundles as main ([QC_RELEASE_CHECKLIST.md](QC_RELEASE_CHECKLIST.md), release identity); if not, republish before building the review data.
 - [ ] Run `run-bundle-qc.mjs`, `run_data_qc.R`, `run_sensitivity.R`, `build_case_audit.R --all-posture-cases`; read the warnings.
 - [ ] Set `status: active`, rebuild with `build-review-data.mjs --built-at <ISO>`, run the review tests (`npx vitest run --project unit src/review` and `--project ui src/review`), typecheck, build, `npm run budget`.
 - [ ] Deploy with the chosen `VITE_REVIEW_SINK` (and `VITE_REVIEW_ENDPOINT` and the CSP change for http mode). Do not set `VITE_REVIEW_UI=1` on the public build unless NEIS wants every visitor to see the report buttons.
-- [ ] Dry run: one NEIS colleague completes the profile, two cases, a card, a scenario and a report on the deployed site; NEIS receives the packet, loads it in `/review/admin`, exports it with `export-review.mjs` and regenerates the report. Delete the dry-run data afterwards.
+- [ ] Dry run: one NEIS colleague completes the profile (in each review mode once), the "Before you start" screen, two cases (one answered "Insufficient evidence to judge", one with a note converted to a data issue), a card, a scenario and a report on the deployed site, and checks the summary page; NEIS receives the packet, loads it in `/review/admin`, exports it with `export-review.mjs` and regenerates the report. Delete the dry-run data afterwards.
 - [ ] Recruit reviewers so every anchor can reach its target (Overview tab); send the address, the reviewer guide and the return route.
 - [ ] During the campaign: collect packets into `qc/private/submissions/`, check anchor coverage weekly, download adjudications after each session.
 - [ ] At close: set `status: closed`, rebuild, export, adjudicate, regenerate the report, and work through [QC_RELEASE_CHECKLIST.md](QC_RELEASE_CHECKLIST.md).

@@ -3,15 +3,18 @@
 // knows (the shared tags of review/tags.ts), each selected one rated 1-5, familiarity with NEIS and with the
 // Explorer, and whom they have advised. No biography. The form autosaves as a draft on every change and resumes
 // from it; "Save profile" stores the profile (review/storage.ts) with a random reviewer id made here, once,
-// and goes to the cases. Everything stays in this browser; submissions carry only a digest and the tags.
+// and goes to the one-minute calibration (first time) or the cases. UX v2: the review mode, decision review (the
+// default: factual realism, strategic reasoning, an actionable conclusion) or technical review (each measure from
+// raw value to classification), saved on the profile and as the stored mode (storage.ts saveReviewMode).
+// Everything stays in this browser; submissions carry only a digest and the tags (the mode is not in the digest).
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Notice, Segmented, Switch } from '../../components/ui.tsx';
 import { useTitle } from '../../shell/title.ts';
-import { Field, MultiCheck } from '../components/form.tsx';
-import type { AdvisedOn, ReviewerProfile } from '../model.ts';
-import { MODULE, PROFILE_DRAFT_REF, useReviewCtx } from '../ReviewLayout.tsx';
+import { ChoiceGrid, Field, MultiCheck } from '../components/form.tsx';
+import type { AdvisedOn, ReviewerProfile, ReviewMode } from '../model.ts';
+import { MODULE, PROFILE_DRAFT_REF, REVIEW_PATH, useReviewCtx, withQuery } from '../ReviewLayout.tsx';
 import { confidenceKey, METHOD_TAG_LABEL, METHOD_TAGS, normaliseCountryTag, normaliseProfile, SECTOR_TAG_LABEL, SECTOR_TAGS, STAGE_TAGS, tagLabel, type TagKind } from '../tags.ts';
 
 export interface ProfileForm {
@@ -29,6 +32,8 @@ export interface ProfileForm {
   familiarity_neis: 0 | 1 | 2 | 3 | null;
   familiarity_explorer: 0 | 1 | 2 | 3 | null;
   advised_on: AdvisedOn[];
+  /** UX v2: decision review (default) or technical review. */
+  review_mode: ReviewMode;
 }
 
 export const EMPTY_FORM: ProfileForm = {
@@ -45,6 +50,19 @@ export const EMPTY_FORM: ProfileForm = {
   familiarity_neis: null,
   familiarity_explorer: null,
   advised_on: [],
+  review_mode: 'decision',
+};
+
+/** The two review modes, as the profile offers them. */
+export const REVIEW_MODE_OPTION: Readonly<Record<ReviewMode, { label: string; definition: string }>> = {
+  decision: {
+    label: 'Decision review',
+    definition: 'For sector and country experts. Judge factual realism, strategic reasoning and whether the conclusion is one a government could act on.',
+  },
+  technical: {
+    label: 'Technical review',
+    definition: 'For data and methods specialists. Follow each measure: raw value → transformation → normalized indicator → contribution → score → threshold → classification.',
+  },
 };
 
 export const RATING_LABEL: Readonly<Record<1 | 2 | 3 | 4 | 5, string>> = {
@@ -79,6 +97,7 @@ export function formOf(p: ReviewerProfile): ProfileForm {
     familiarity_neis: p.familiarity_neis,
     familiarity_explorer: p.familiarity_explorer,
     advised_on: [...p.advised_on],
+    review_mode: p.review_mode === 'technical' ? 'technical' : 'decision',
   };
 }
 
@@ -137,6 +156,7 @@ export function profileOf(f: ProfileForm, prev: ReviewerProfile | null, now: str
     familiarity_explorer: f.familiarity_explorer ?? 0,
     advised_on: [...f.advised_on],
     created_at: prev?.created_at ?? now,
+    review_mode: f.review_mode === 'technical' ? 'technical' : 'decision',
   };
   return normaliseProfile(p);
 }
@@ -178,9 +198,9 @@ export default function ProfileView() {
   const navigate = useNavigate();
   const [ref0, ref1, ref2] = PROFILE_DRAFT_REF;
   const [initial] = useState<{ form: ProfileForm; fromDraft: boolean }>(() => {
-    const d = ctx.storage.loadDraft<ProfileForm>(ref0, ref1, ref2);
-    if (d && typeof d === 'object') return { form: { ...EMPTY_FORM, ...d }, fromDraft: true };
-    return { form: ctx.profile ? formOf(ctx.profile) : EMPTY_FORM, fromDraft: false };
+    const d = ctx.storage.loadDraft<Partial<ProfileForm>>(ref0, ref1, ref2);
+    if (d && typeof d === 'object') return { form: { ...EMPTY_FORM, review_mode: ctx.reviewMode, ...d }, fromDraft: true };
+    return { form: { ...(ctx.profile ? formOf(ctx.profile) : EMPTY_FORM), review_mode: ctx.reviewMode }, fromDraft: false };
   });
   const [form, setForm] = useState<ProfileForm>(initial.form);
   const [touched, setTouched] = useState(initial.fromDraft);
@@ -208,10 +228,11 @@ export default function ProfileView() {
     if (errors.length) return;
     const p = profileOf(form, ctx.profile, new Date().toISOString());
     const durable = ctx.saveProfile(p);
+    ctx.setReviewMode(p.review_mode ?? 'decision');
     ctx.storage.deleteDraft(ref0, ref1, ref2);
     setTouched(false);
     setSaved(durable ? 'Profile saved in this browser.' : 'Profile kept for this visit only (browser storage is unavailable).');
-    navigate(`/review/cases${ctx.carry}`);
+    navigate(withQuery(ctx.calibrationSeen ? REVIEW_PATH.cases : REVIEW_PATH.calibration, ctx.carry));
   };
 
   return (
@@ -285,6 +306,20 @@ export default function ProfileView() {
           options={(Object.keys(ADVISED_LABEL) as AdvisedOn[]).map((k) => ({ value: k, label: ADVISED_LABEL[k] }))}
           value={form.advised_on}
           onChange={(v) => set({ advised_on: v as AdvisedOn[] })}
+        />
+      </section>
+
+      <section aria-labelledby="mode-h" className="max-w-3xl">
+        <h3 id="mode-h" className="mb-1 text-lg font-medium text-paper">
+          How you would like to review
+        </h3>
+        <p className="mb-3 text-sm text-paper-mute">You can change this at any time. Either way you answer each case before you see the Explorer&rsquo;s conclusion.</p>
+        <ChoiceGrid
+          legend="Review mode"
+          name="review-mode"
+          options={(Object.keys(REVIEW_MODE_OPTION) as ReviewMode[]).map((m) => ({ value: m, label: REVIEW_MODE_OPTION[m].label, definition: REVIEW_MODE_OPTION[m].definition }))}
+          value={form.review_mode}
+          onChange={(v) => set({ review_mode: v === 'technical' ? 'technical' : 'decision' })}
         />
       </section>
 

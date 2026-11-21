@@ -3,10 +3,22 @@
 // 'DEMO-', every name is null, every free-text field starts '[synthetic]'. They exercise each summary:
 // agreement, persuasion, rejection, outside-expertise answers, a too-few case, a critical data issue with
 // cosmetic noise, method feedback, framework mismatches, decision use and threat reviews.
+// UX v2 rows (blind.ux_version 2) come from separate DEMO reviewers and sit beside the v1 rows, so mixed data is
+// exercised: every verdict statement, a persuaded expert, insufficient-evidence answers with evidence gaps (twice
+// on one case: a repeated inability to judge), none-of-these and outside-expertise answers, red-team answers,
+// product answers, notes with conversions and both review modes.
 // THESE ARE NOT EXPERT JUDGEMENTS and must never be quoted as such. Pure: no IO, no clock, no Math.random.
 
 import {
   DONT_KNOW,
+  INSUFFICIENT_EVIDENCE,
+  NONE_OF_THESE,
+  OUTSIDE_EXPERTISE,
+  PRODUCT_QUESTIONS,
+  REVIEWER_STATES,
+  REVIEW_VERDICT_CODES,
+  REVIEW_VERDICT_ISSUE_TYPE,
+  REVIEW_VERDICT_LEGACY,
   SUBMISSION_SCHEMA,
   SUBMISSION_SCHEMA_VERSION,
   type FrameworkScenario,
@@ -14,7 +26,12 @@ import {
   type PageContext,
   type PayloadByKind,
   type ReviewCase,
+  type ReviewerNote,
   type ReviewerStamp,
+  type ReviewVerdictCode,
+  type CaseReviewPayload,
+  type Persuasion,
+  type Validity,
   type Submission,
   type SubmissionKind,
   type Verdict,
@@ -23,6 +40,7 @@ import { hashString, seededRandom } from './assign.ts';
 import { canonicalJson, sha256HexSync } from './privacy.ts';
 import { caseTags } from './tags.ts';
 import { capturePageContext } from './context.ts';
+import { explorerComparisonValue, explorerStageSet, productOf, type BlindAnswerV2 } from './flow.ts';
 
 export const SYNTHETIC = '[synthetic]';
 const BASE_TIME = Date.UTC(2027, 0, 20, 9, 0, 0);
@@ -80,7 +98,7 @@ export function makeDemoSubmissions(cases: readonly ReviewCase[], cards: readonl
   );
 
   const other = (c: ReviewCase, avoid: string): string => {
-    const opts = c.answer_options.map((o) => o.value).filter((v) => v !== avoid && v !== DONT_KNOW);
+    const opts = c.answer_options.map((o) => o.value).filter((v) => v !== avoid && v !== DONT_KNOW && !REVIEWER_STATES.includes(v));
     return opts.length ? opts[Math.floor(rand() * opts.length)] : avoid;
   };
   const review = (r: DemoReviewer, c: ReviewCase, blind: string, verdict: Verdict, issue?: { type: 'data' | 'method' | 'context' | 'insufficient_evidence'; text: string }) => {
@@ -215,5 +233,137 @@ export function makeDemoSubmissions(cases: readonly ReviewCase[], cards: readonl
       stop_point: `${SYNTHETIC} no offtake signed within two years`,
     });
 
+  pushV2Reviews(cases, ordered, first, push, tick, rand);
   return out;
+}
+
+// ---- UX v2 synthetic reviews ----------------------------------------------------------------------------------
+
+type Push = <K extends SubmissionKind>(r: DemoReviewer, kind: K, payload: PayloadByKind[K], page?: PageContext | null) => void;
+
+/** How each statement is demonstrated: the blind answer relative to the Explorer, validity, persuasion, confidence. */
+const V2_PLAN: Readonly<Record<ReviewVerdictCode, { blind: 'model' | 'other' | 'outside'; validity: Validity | null; persuasion: Persuasion | null; low?: boolean }>> = {
+  same_same: { blind: 'model', validity: 'supported', persuasion: 'unchanged' },
+  same_different_reasons: { blind: 'model', validity: 'partly', persuasion: 'unchanged' },
+  persuaded: { blind: 'other', validity: 'supported', persuasion: 'changed' },
+  plausible_insufficient: { blind: 'other', validity: 'partly', persuasion: 'unchanged', low: true },
+  wrong_fact: { blind: 'other', validity: 'not_supported', persuasion: 'unchanged' },
+  missing_factor: { blind: 'other', validity: 'not_supported', persuasion: 'somewhat' },
+  wrong_weighting: { blind: 'other', validity: 'partly', persuasion: 'unchanged' },
+  wrong_rule: { blind: 'other', validity: 'not_supported', persuasion: 'unchanged' },
+  too_broad: { blind: 'other', validity: 'partly', persuasion: 'unchanged', low: true },
+  outside_expertise: { blind: 'outside', validity: null, persuasion: null },
+};
+
+function pushV2Reviews(
+  cases: readonly ReviewCase[],
+  ordered: readonly ReviewCase[],
+  first: { sectors: string[]; countries: string[] },
+  push: Push,
+  tick: () => string,
+  rand: () => number,
+): void {
+  if (!cases.length) return;
+  // spread over one case per product where the campaign has one, away from the v1 anchor rows where possible
+  const pool = ordered.length > 2 ? ordered.slice(2) : [...ordered];
+  const byProduct = (['country', 'sector', 'partnership', 'compact'] as const).map((p) => pool.find((c) => productOf(c.kind) === p)).filter((c): c is ReviewCase => !!c);
+  const targets = byProduct.length ? byProduct : [pool[0]];
+  const reviewers = Array.from({ length: 14 }, (_, i) => demoReviewer(6 + i, first.sectors, first.countries, i % 2 === 0 ? ['trade_data'] : ['industrial_policy']));
+
+  const canonical = (c: ReviewCase) => c.answer_options.map((o) => o.value).filter((v) => v !== DONT_KNOW && !REVIEWER_STATES.includes(v));
+  const modelOf = (c: ReviewCase) => explorerComparisonValue(c.kind, c.snapshot) ?? canonical(c)[0] ?? 'watch';
+  const otherThan = (c: ReviewCase, avoid: string) => {
+    const opts = canonical(c).filter((v) => v !== avoid);
+    return opts.length ? opts[Math.floor(rand() * opts.length)] : avoid;
+  };
+  const productAnswers = (c: ReviewCase, k: number): Record<string, string> | undefined => {
+    const qs = PRODUCT_QUESTIONS[productOf(c.kind)];
+    if (!qs.length) return undefined;
+    return Object.fromEntries(qs.map((q, j) => [q.id, q.options[(k + j) % q.options.length].value]));
+  };
+  const notes = (k: number, answered: string, revealed: string): ReviewerNote[] => {
+    const conv = (['data_issue', 'missing_context', 'method_concern', 'comment', null] as const)[k % 5];
+    return [
+      { id: `note-${k}-a`, text: `${SYNTHETIC} checked the trade year before answering`, created_at: answered, updated_at: answered, converted_to: null },
+      { id: `note-${k}-b`, text: `${SYNTHETIC} the reveal leans on one supplier share`, created_at: revealed, updated_at: revealed, converted_to: conv },
+    ];
+  };
+
+  const caseReview = (r: DemoReviewer, c: ReviewCase, k: number, code: ReviewVerdictCode, blindChoice: string, extra: { blind?: Partial<BlindAnswerV2>; low?: boolean; validity: Validity | null; persuasion: Persuasion | null }) => {
+    const answered = tick();
+    const revealed = tick();
+    const model = modelOf(c);
+    const state = REVIEWER_STATES.includes(blindChoice);
+    const level = state && blindChoice !== NONE_OF_THESE ? null : extra.low ? 'low' : k % 2 ? 'high' : 'medium';
+    const blind: BlindAnswerV2 = {
+      choice: blindChoice,
+      confidence: level === 'low' ? 1 : level === 'medium' ? 3 : level === 'high' ? 5 : null,
+      factors: level ? ['allied_alternatives'] : [],
+      rationale: `${SYNTHETIC} demo rationale`,
+      answered_at: answered,
+      confidence_level: level,
+      driver: level ? (['concentration_security', 'allied_alternatives', 'domestic_capability', 'demand_growth', 'other'] as const)[k % 5] : null,
+      driver_text: level && k % 5 === 4 ? `${SYNTHETIC} stockpile policy` : null,
+      ux_version: 2,
+      ...extra.blind,
+    };
+    if (level) blind.factors = [blind.driver as string];
+    if (c.kind === 'sector_chain' && !state) blind.choices = [...new Set([blindChoice, ...(explorerStageSet(c.kind, c.snapshot) ?? []).slice(0, 1)])];
+    const needsIssue = code === 'same_different_reasons' || (REVIEW_VERDICT_ISSUE_TYPE[code] !== undefined);
+    const disagree = REVIEW_VERDICT_ISSUE_TYPE[code] !== undefined;
+    const payload: CaseReviewPayload = {
+      case_id: c.case_id,
+      case_snapshot_sha256: c.snapshot_sha256,
+      assignment_reason: c.anchor ? 'anchor' : 'assigned',
+      expertise_match: code === 'outside_expertise' ? 'outside' : 'in',
+      blind,
+      reveal: {
+        revealed_at: revealed,
+        verdict: REVIEW_VERDICT_LEGACY[code],
+        main_issue: needsIssue ? { text: `${SYNTHETIC} demo issue for ${code}`, type: REVIEW_VERDICT_ISSUE_TYPE[code] ?? 'method' } : null,
+        suggested_choice: disagree && !state ? blindChoice : null,
+        evidence_wanted: null,
+        verdict_code: code,
+        prior_differs: state ? null : blindChoice !== model,
+        validity: extra.validity,
+        persuasion: extra.persuasion,
+        red_team:
+          disagree || extra.low
+            ? { must_be_true: `${SYNTHETIC} trusted suppliers can qualify within three years`, resolving_evidence: (['production_capacity', 'qualification_constraints', 'allied_spare_capacity', 'cost_competitiveness'] as const)[k % 4], resolving_evidence_text: k % 2 ? `${SYNTHETIC} plant-level capacity` : null }
+            : null,
+        ...(productAnswers(c, k) ? { product_answers: productAnswers(c, k) } : {}),
+      },
+      outside_expertise: blindChoice === OUTSIDE_EXPERTISE || code === 'outside_expertise',
+      time_spent_s: 300 + Math.floor(rand() * 600),
+      notes: k % 3 === 0 ? [] : notes(k, answered, revealed),
+      review_mode: k % 4 === 3 ? 'technical' : 'decision',
+    };
+    push(r, 'case_review', payload);
+  };
+
+  // every statement once
+  REVIEW_VERDICT_CODES.forEach((code, k) => {
+    const c = targets[k % targets.length];
+    const plan = V2_PLAN[code];
+    const model = modelOf(c);
+    const choice = plan.blind === 'model' ? model : plan.blind === 'outside' ? OUTSIDE_EXPERTISE : otherThan(c, model);
+    caseReview(reviewers[k], c, k, code, choice, { low: plan.low, validity: plan.validity, persuasion: plan.persuasion });
+  });
+  // insufficient evidence twice on the first target (a repeated inability to judge), with evidence gaps
+  const c0 = targets[0];
+  caseReview(reviewers[10], c0, 10, 'plausible_insufficient', INSUFFICIENT_EVIDENCE, {
+    blind: { missing_evidence: ['production_capacity', 'firm_capability'], missing_evidence_text: `${SYNTHETIC} no plant list for this stage` },
+    validity: 'unsure',
+    persuasion: 'unchanged',
+  });
+  caseReview(reviewers[11], c0, 11, 'plausible_insufficient', INSUFFICIENT_EVIDENCE, { blind: { missing_evidence: ['production_capacity', 'project_pipeline'] }, validity: 'partly', persuasion: 'unchanged' });
+  // none of these, with the reviewer's own recommendation
+  caseReview(reviewers[12], targets[targets.length - 1], 12, 'missing_factor', NONE_OF_THESE, {
+    blind: { own_recommendation: `${SYNTHETIC} a shared stockpile rather than new capacity` },
+    validity: 'not_supported',
+    persuasion: 'unchanged',
+  });
+  // a second persuaded expert on another target, so the highlighted group spans cases where it can
+  const c1 = targets[1 % targets.length];
+  caseReview(reviewers[13], c1, 13, 'persuaded', otherThan(c1, modelOf(c1)), { validity: 'supported', persuasion: 'changed' });
 }

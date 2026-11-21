@@ -5,7 +5,11 @@
 // shares matching the Explorer, persuaded and rejecting, the reasons; "too few reviews to summarise" below
 // three), Disagreement taxonomy, Data QC (qc_summary.json and the open data-issue reports), Robustness
 // (robustness.json class counts by technology x stage, and the drivers) and Priority fixes (materiality x
-// confidence the issue is real x breadth, the three factors shown, an adjudication editor per issue). Every
+// confidence the issue is real x breadth, the three factors shown, an adjudication editor per issue). UX v2 tabs:
+// Verdicts (the ten post-reveal statements, by case; the answers kept out of agreement; the drivers), Prior,
+// validity and persuasion (the "expert prior differed, evidence persuaded" group highlighted), Evidence gaps (by
+// category, case and product, with the insufficient-evidence rate per case and repeated inability flagged) and
+// Product questions (the tailored post-reveal questions and the reviewer notes). Every
 // number comes from review/aggregate.ts buildDashboard; this file lays it out. Exports: the CSVs of
 // review/exports.ts (a zip) and the adjudications JSON. Reviewer names are never shown unless the admin ticks
 // "show names", and never for an anonymous reviewer.
@@ -15,11 +19,41 @@ import { Checkbox, EmptyState, Loading, Notice, StatTile, Tag } from '../../comp
 import { useTitle } from '../../shell/title.ts';
 import { useOptionalReviewCtx } from '../ReviewLayout.tsx';
 import { downloadBlob, downloadText } from '../../lib/download.ts';
-import { buildDashboard, breadthOf, MIN_REVIEWS_TO_SUMMARISE, TOO_FEW_LABEL, type CaseAgreement, type Dashboard, type PriorityItem } from '../aggregate.ts';
+import { buildDashboard, breadthOf, MIN_REVIEWS_TO_SUMMARISE, REPEATED_INABILITY_MIN, TOO_FEW_LABEL, type CaseAgreement, type Dashboard, type PriorBucket, type PriorityItem } from '../aggregate.ts';
 import { csvFiles } from '../exports.ts';
 import { validateSubmission } from '../manifest.ts';
 import { exportableName, pseudonymReviewerCode } from '../privacy.ts';
-import { ISSUE_TYPE_LABEL, SEVERITY_LABEL, type Adjudication, type AdjudicationStatus, type CasesFile, type FrameworkScenario, type IssueType, type MethodCard, type ReviewCase, type RobustnessClass, type Submission } from '../model.ts';
+import {
+  DISAGREEING_VERDICT_CODES,
+  DRIVER_FACTOR_LABEL,
+  EVIDENCE_GAP_LABEL,
+  INSUFFICIENT_EVIDENCE,
+  ISSUE_TYPE_LABEL,
+  NONE_OF_THESE,
+  NOTE_CONVERSION_LABEL,
+  OUTSIDE_EXPERTISE,
+  PRODUCT_QUESTIONS,
+  REVIEW_VERDICT_CODES,
+  REVIEW_VERDICT_LABEL,
+  REVIEWER_STATE_LABEL,
+  SEVERITY_LABEL,
+  type Adjudication,
+  type AdjudicationStatus,
+  type CasesFile,
+  type DriverFactor,
+  type EvidenceGap,
+  type FrameworkScenario,
+  type IssueType,
+  type MethodCard,
+  type NoteConversion,
+  type Persuasion,
+  type ReviewCase,
+  type ReviewProduct,
+  type ReviewVerdictCode,
+  type RobustnessClass,
+  type Submission,
+  type Validity,
+} from '../model.ts';
 import { reviewStorage, type ReviewStorage } from '../storage.ts';
 import { campaignOf, pickCampaign, reviewStore, type ReviewCampaignEntry, type ReviewManifestDoc } from '../data/store.ts';
 import type { RobustnessMap } from '../qc/reports.ts';
@@ -138,6 +172,10 @@ async function loadAll(): Promise<Loaded> {
 const TABS = [
   ['overview', 'Overview'],
   ['agreement', 'Agreement'],
+  ['verdicts', 'Verdicts'],
+  ['prior', 'Prior, validity and persuasion'],
+  ['gaps', 'Evidence gaps'],
+  ['product', 'Product questions'],
   ['taxonomy', 'Disagreement taxonomy'],
   ['dataqc', 'Data QC'],
   ['robustness', 'Robustness'],
@@ -320,6 +358,10 @@ export default function AdminDashboardView({ storage }: { storage?: ReviewStorag
           <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="mt-5">
             {tab === 'overview' && <OverviewTab dash={dash} subs={subs} showNames={showNames} campaignName={campaign?.name ?? null} />}
             {tab === 'agreement' && <AgreementTab dash={dash} cases={cases} />}
+            {tab === 'verdicts' && <VerdictsTab dash={dash} cases={cases} />}
+            {tab === 'prior' && <PriorTab dash={dash} cases={cases} />}
+            {tab === 'gaps' && <GapsTab dash={dash} cases={cases} />}
+            {tab === 'product' && <ProductTab dash={dash} cases={cases} />}
             {tab === 'taxonomy' && <TaxonomyTab dash={dash} />}
             {tab === 'dataqc' && <DataQcTab qc={data.qc} dash={dash} />}
             {tab === 'robustness' && <RobustnessTab map={data.robustness} qc={data.qc} dash={dash} />}
@@ -351,7 +393,11 @@ function OverviewTab({ dash, subs, showNames, campaignName }: { dash: Dashboard;
       {campaignName && <p className="mb-3 text-sm text-paper-mute">Campaign: {campaignName}</p>}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Submissions" value={o.n_submissions} sub={`${o.n_reviewers} reviewers`} />
-        <StatTile label="Cases reviewed" value={`${o.n_cases_reviewed} of ${o.n_cases_in_scope}`} sub={`${o.n_case_reviews} case reviews · ${o.n_outside_answers} outside expertise`} />
+        <StatTile
+          label="Cases reviewed"
+          value={`${o.n_cases_reviewed} of ${o.n_cases_in_scope}`}
+          sub={`${o.n_case_reviews} case reviews (${o.n_v2_reviews} with the new questions) · ${o.n_outside_answers} outside expertise · ${o.n_reviewer_state_answers} none of these or insufficient evidence`}
+        />
         <StatTile label="Anchor cases at target" value={`${o.n_anchor_met} of ${o.n_anchor_cases}`} />
         <StatTile label="Unresolved critical issues" value={o.n_unresolved_critical} sub={`${o.n_open_data_reports} open data reports of ${o.n_data_reports}`} />
       </div>
@@ -431,7 +477,9 @@ function AgreementCard({ a, c }: { a: CaseAgreement; c: ReviewCase | undefined }
       </div>
       <h3 className="mt-1 text-base font-medium text-paper">{a.title ?? a.case_id}</h3>
       <p className="mt-1 text-sm text-paper-dim">
-        Explorer: <strong className="text-paper">{a.model_label ?? a.model_choice ?? '–'}</strong> · {a.n_reviews} reviews ({a.n_outside} outside expertise or don&apos;t know)
+        Explorer: <strong className="text-paper">{a.model_label ?? a.model_choice ?? '–'}</strong> · {a.n_reviews} reviews ({a.n_outside} outside expertise or don&apos;t know
+        {a.n_none_of_these + a.n_insufficient_evidence > 0 ? `; ${a.n_none_of_these} none of these, ${a.n_insufficient_evidence} insufficient evidence` : ''})
+        {a.mean_stage_jaccard !== null && <> · stage overlap with the Explorer {pct(a.mean_stage_jaccard)}</>}
       </p>
       {a.too_few ? (
         <p className="mt-2 text-sm text-paper-mute" data-testid="too-few">
@@ -533,6 +581,10 @@ function AgreementTab({ dash, cases }: { dash: Dashboard; cases: ReviewCase[] })
               <td className="tabular">{t.outside}</td>
             </tr>
             <tr>
+              <td>None of these, or insufficient evidence to judge</td>
+              <td className="tabular">{t.reviewer_state}</td>
+            </tr>
+            <tr>
               <td>Verdict contradicts the reviewer&apos;s own blind answer</td>
               <td className="tabular">{t.inconsistent}</td>
             </tr>
@@ -570,6 +622,406 @@ function TaxonomyTab({ dash }: { dash: Dashboard }) {
         ))}
       </tbody>
     </table>
+    </div>
+  );
+}
+
+// ---- UX v2 tabs (aggregate.ts v2Summaries) ---------------------------------------------------------------------
+
+export const PRODUCT_LABEL: Readonly<Record<ReviewProduct, string>> = { country: 'Country', sector: 'Sector', partnership: 'Partnership', compact: 'Compact' };
+export const PRIOR_LABEL: Readonly<Record<PriorBucket, string>> = {
+  different: 'Different from the Explorer',
+  same: 'Same as the Explorer',
+  reviewer_state: 'None of these, insufficient evidence or outside expertise',
+  unknown: 'Not known',
+};
+export const VALIDITY_LABEL: Readonly<Record<Validity | 'unanswered', string>> = {
+  supported: 'Supported by the evidence',
+  partly: 'Partly supported',
+  not_supported: 'Not supported',
+  unsure: 'Not sure',
+  unanswered: 'Not answered',
+};
+export const PERSUASION_LABEL: Readonly<Record<Persuasion | 'unanswered', string>> = {
+  changed: 'Changed their view',
+  somewhat: 'Somewhat changed',
+  unchanged: 'Did not change',
+  unanswered: 'Not answered',
+};
+
+function caseTitle(id: string, byId: Map<string, ReviewCase>): string {
+  const c = byId.get(id);
+  return c ? `${id} ${c.title}` : id;
+}
+
+/** The top entries of a count map as "label n · label n". */
+function topCounts<K extends string>(counts: Partial<Record<K, number>>, label: (k: K) => string, n = 3): string {
+  return (Object.entries(counts) as [K, number][])
+    .filter(([, v]) => (v ?? 0) > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([k, v]) => `${label(k)} ${v}`)
+    .join(' · ');
+}
+
+function VerdictsTab({ dash, cases }: { dash: Dashboard; cases: ReviewCase[] }) {
+  const v = dash.v2.verdict_codes;
+  const states = dash.v2.reviewer_states.overall;
+  const drivers = dash.v2.drivers;
+  const byId = new Map(cases.map((c) => [c.case_id, c]));
+  if (!v.n_coded && !v.n_uncoded) return <NoData>No case reviews loaded.</NoData>;
+  return (
+    <div className="space-y-6" data-testid="admin-verdicts">
+      <p className="max-w-3xl text-sm text-paper-dim">
+        What reviewers said after seeing the Explorer&apos;s reasoning, in the ten statements of the review. {v.n_coded} reviews used the statements; {v.n_uncoded} earlier reviews used the 1 to 7 scale
+        only and are counted in the Agreement tab.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="data-table" data-testid="admin-verdict-codes">
+          <thead>
+            <tr>
+              <th>Statement after the reveal</th>
+              <th>Reviews</th>
+              <th>Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            {REVIEW_VERDICT_CODES.map((code) => (
+              <tr key={code} data-code={code} data-disagreeing={DISAGREEING_VERDICT_CODES.includes(code) || undefined}>
+                <td>
+                  {REVIEW_VERDICT_LABEL[code]}
+                  {DISAGREEING_VERDICT_CODES.includes(code) && <span className="text-paper-mute"> (disagrees)</span>}
+                </td>
+                <td className="tabular">{v.overall[code]}</td>
+                <td className="tabular">{pct(v.n_coded ? v.overall[code] / v.n_coded : null)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {v.by_case.some((r) => r.n_coded > 0) && (
+        <div className="overflow-x-auto">
+          <table className="data-table" data-testid="admin-verdicts-by-case">
+            <caption className="label text-left">By case</caption>
+            <thead>
+              <tr>
+                <th>Case</th>
+                <th>Product</th>
+                <th>Reviews</th>
+                <th>With a statement</th>
+                <th>Disagreeing</th>
+                <th>Most frequent statements</th>
+              </tr>
+            </thead>
+            <tbody>
+              {v.by_case
+                .filter((r) => r.n_coded > 0)
+                .map((r) => (
+                  <tr key={r.case_id} data-case={r.case_id}>
+                    <td>{caseTitle(r.case_id, byId)}</td>
+                    <td>{r.product ? PRODUCT_LABEL[r.product] : '–'}</td>
+                    <td className="tabular">{r.n_reviews}</td>
+                    <td className="tabular">{r.n_coded}</td>
+                    <td className="tabular">{r.n_disagreeing}</td>
+                    <td className="text-xs">{topCounts(r.counts, (k) => REVIEW_VERDICT_LABEL[k as ReviewVerdictCode].replace(/\.$/, ''), 2)}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <section>
+        <h3 className="eyebrow mb-2">Answers kept out of agreement</h3>
+        <p className="text-sm text-paper-dim" data-testid="admin-reviewer-states">
+          {REVIEWER_STATE_LABEL[NONE_OF_THESE]}: {states.none_of_these} · {REVIEWER_STATE_LABEL[INSUFFICIENT_EVIDENCE]}: {states.insufficient_evidence} · {REVIEWER_STATE_LABEL[OUTSIDE_EXPERTISE]}:{' '}
+          {states.outside_expertise} · earlier &ldquo;I don&apos;t know&rdquo;: {states.dont_know}
+        </p>
+      </section>
+      {drivers.n_with_driver > 0 && (
+        <section>
+          <h3 className="eyebrow mb-2">What drove the blind answers</h3>
+          <div className="overflow-x-auto">
+            <table className="data-table" data-testid="admin-drivers">
+              <thead>
+                <tr>
+                  <th>Most important factor</th>
+                  <th>All answers</th>
+                  <th>Where the expert&apos;s answer differed from the Explorer</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(Object.keys(DRIVER_FACTOR_LABEL) as DriverFactor[])
+                  .filter((d) => drivers.overall[d] > 0)
+                  .sort((a, b) => drivers.overall[b] - drivers.overall[a])
+                  .map((d) => (
+                    <tr key={d}>
+                      <td>{DRIVER_FACTOR_LABEL[d]}</td>
+                      <td className="tabular">{drivers.overall[d]}</td>
+                      <td className="tabular">{drivers.when_prior_differs[d] ?? 0}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function PriorTab({ dash, cases }: { dash: Dashboard; cases: ReviewCase[] }) {
+  const p = dash.v2.prior_persuasion;
+  const byId = new Map(cases.map((c) => [c.case_id, c]));
+  if (!p.table.length) return <NoData>No review with a post-reveal statement loaded yet.</NoData>;
+  const label = (id: string, v: string | null) => {
+    if (!v) return '–';
+    const c = byId.get(id);
+    return c?.answer_options?.find((o) => o.value === v)?.label ?? (c?.snapshot.conclusion.value === v ? (c.snapshot.conclusion.label ?? v) : v);
+  };
+  return (
+    <div className="space-y-6" data-testid="admin-prior">
+      <p className="max-w-3xl text-sm text-paper-dim">
+        Three separate questions. Prior: was the expert&apos;s blind answer the Explorer&apos;s conclusion? Validity: is the conclusion supported by the evidence? Persuasion: did the evidence change
+        their view? A surprising conclusion the evidence then defends is among the strongest support the Explorer can get.
+      </p>
+      <section className="panel p-4" data-testid="admin-persuaded">
+        <h3 className="text-base font-medium text-paper">Expert prior differed from the Explorer, and the evidence persuaded them</h3>
+        <p className="mt-1 text-sm text-paper-dim">
+          <span className="text-2xl font-medium text-paper tabular" data-testid="persuaded-count">
+            {p.persuaded_group.length}
+          </span>{' '}
+          reviews · {p.n_partly_persuaded} more were partly persuaded (not counted here)
+        </p>
+        {p.persuaded_group.length > 0 && (
+          <ul className="mt-3 space-y-1 text-sm">
+            {p.persuaded_group.map((r) => (
+              <li key={r.submission_id} className="text-paper-dim">
+                <span className="text-paper">{caseTitle(r.case_id, byId)}</span>: blind {label(r.case_id, r.blind)}, Explorer {label(r.case_id, r.model)} ·{' '}
+                {REVIEW_VERDICT_LABEL[r.verdict_code].replace(/\.$/, '')} · {VALIDITY_LABEL[r.validity ?? 'unanswered']}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <div className="overflow-x-auto">
+        <table className="data-table" data-testid="admin-prior-table">
+          <caption className="label text-left">Prior × validity × persuasion</caption>
+          <thead>
+            <tr>
+              <th>Prior (blind answer)</th>
+              <th>Validity</th>
+              <th>Persuasion</th>
+              <th>Reviews</th>
+            </tr>
+          </thead>
+          <tbody>
+            {p.table.map((r) => (
+              <tr key={`${r.prior}|${r.validity}|${r.persuasion}`} data-highlight={(r.prior === 'different' && r.persuasion === 'changed') || undefined}>
+                <td>{PRIOR_LABEL[r.prior]}</td>
+                <td>{VALIDITY_LABEL[r.validity]}</td>
+                <td>{PERSUASION_LABEL[r.persuasion]}</td>
+                <td className="tabular">{r.n}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="data-table" data-testid="admin-prior-by-case">
+          <caption className="label text-left">By case</caption>
+          <thead>
+            <tr>
+              <th>Case</th>
+              <th>With a statement</th>
+              <th>Same prior</th>
+              <th>Different prior</th>
+              <th>Kept out</th>
+              <th>Persuaded</th>
+            </tr>
+          </thead>
+          <tbody>
+            {p.by_case.map((r) => (
+              <tr key={r.case_id}>
+                <td>{caseTitle(r.case_id, byId)}</td>
+                <td className="tabular">{r.n_coded}</td>
+                <td className="tabular">{r.n_prior_same}</td>
+                <td className="tabular">{r.n_prior_different}</td>
+                <td className="tabular">{r.n_reviewer_state}</td>
+                <td className="tabular">{r.n_persuaded_group}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {p.inconsistent.length > 0 && (
+        <section>
+          <h3 className="eyebrow mb-2">Statements that contradict the reviewer&apos;s own blind answer</h3>
+          <ul className="list-disc pl-5 text-sm text-paper-dim" data-testid="admin-prior-inconsistent">
+            {p.inconsistent.map((r) => (
+              <li key={r.submission_id}>
+                {caseTitle(r.case_id, byId)}: &ldquo;{REVIEW_VERDICT_LABEL[r.verdict_code].replace(/\.$/, '')}&rdquo; with a blind answer {r.prior === 'same' ? 'the same as' : 'different from'} the Explorer
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function GapsTab({ dash, cases }: { dash: Dashboard; cases: ReviewCase[] }) {
+  const g = dash.v2.evidence_gaps;
+  const byId = new Map(cases.map((c) => [c.case_id, c]));
+  const flagged = g.by_case.filter((r) => r.repeated_inability);
+  if (!g.n_mentions && !g.n_insufficient_evidence_answers) return <NoData>No evidence gap recorded yet.</NoData>;
+  return (
+    <div className="space-y-6" data-testid="admin-gaps">
+      <p className="max-w-3xl text-sm text-paper-dim">
+        What reviewers said is missing: the categories ticked with &ldquo;{REVIEWER_STATE_LABEL[INSUFFICIENT_EVIDENCE]}&rdquo;, and the single piece of evidence that would most help resolve a case (asked on
+        disagreement or low confidence). A case that several reviewers cannot judge is a finding in itself.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatTile label="Gap mentions" value={g.n_mentions} />
+        <StatTile label="Insufficient-evidence answers" value={g.n_insufficient_evidence_answers} />
+        <StatTile label="Cases reviewers repeatedly could not judge" value={flagged.length} sub={`${REPEATED_INABILITY_MIN} or more insufficient-evidence answers`} />
+      </div>
+      {g.by_category.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="data-table" data-testid="admin-gaps-by-category">
+            <caption className="label text-left">By category</caption>
+            <thead>
+              <tr>
+                <th>Missing evidence</th>
+                <th>Insufficient-evidence answers</th>
+                <th>Would most help resolve the case</th>
+                <th>Total</th>
+                <th>Cases</th>
+                <th>Reviewers</th>
+              </tr>
+            </thead>
+            <tbody>
+              {g.by_category.map((r) => (
+                <tr key={r.category} data-category={r.category}>
+                  <td>{r.label}</td>
+                  <td className="tabular">{r.n_insufficient_evidence}</td>
+                  <td className="tabular">{r.n_red_team}</td>
+                  <td className="tabular">{r.total}</td>
+                  <td className="tabular">{r.n_cases}</td>
+                  <td className="tabular">{r.n_reviewers}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {g.by_case.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="data-table" data-testid="admin-gaps-by-case">
+            <caption className="label text-left">By case</caption>
+            <thead>
+              <tr>
+                <th>Case</th>
+                <th>Product</th>
+                <th>Reviews</th>
+                <th>Insufficient-evidence answers</th>
+                <th>Rate</th>
+                <th>Most named gaps</th>
+              </tr>
+            </thead>
+            <tbody>
+              {g.by_case.map((r) => (
+                <tr key={r.case_id} data-case={r.case_id} data-repeated={r.repeated_inability || undefined}>
+                  <td>
+                    {caseTitle(r.case_id, byId)}
+                    {r.repeated_inability && <span className="text-signal"> · repeatedly could not judge</span>}
+                  </td>
+                  <td>{r.product ? PRODUCT_LABEL[r.product] : '–'}</td>
+                  <td className="tabular">{r.n_reviews}</td>
+                  <td className="tabular">{r.n_insufficient_evidence_answers}</td>
+                  <td className="tabular">{r.share_insufficient === null ? <span className="text-paper-mute">too few reviews</span> : pct(r.share_insufficient)}</td>
+                  <td className="text-xs">{topCounts(r.gaps, (k) => EVIDENCE_GAP_LABEL[k as EvidenceGap])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {g.by_product.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="data-table" data-testid="admin-gaps-by-product">
+            <caption className="label text-left">By product</caption>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Gap mentions</th>
+                <th>Most named gaps</th>
+              </tr>
+            </thead>
+            <tbody>
+              {g.by_product.map((r) => (
+                <tr key={r.product}>
+                  <td>{PRODUCT_LABEL[r.product]}</td>
+                  <td className="tabular">{r.n_mentions}</td>
+                  <td className="text-xs">{topCounts(r.gaps, (k) => EVIDENCE_GAP_LABEL[k as EvidenceGap])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProductTab({ dash, cases }: { dash: Dashboard; cases: ReviewCase[] }) {
+  const tallies = dash.v2.product_questions;
+  const notes = dash.v2.notes;
+  const byId = new Map(cases.map((c) => [c.case_id, c]));
+  const answered = tallies.filter((t) => t.n > 0);
+  return (
+    <div className="space-y-6" data-testid="admin-product">
+      <p className="max-w-3xl text-sm text-paper-dim">The questions asked after the reveal for each kind of review: sector bottlenecks, partnership complementarity and compact impact.</p>
+      {answered.length === 0 ? (
+        <NoData>No product question answered yet.</NoData>
+      ) : (
+        answered.map((t) => {
+          const q = PRODUCT_QUESTIONS[t.product].find((x) => x.id === t.question_id);
+          return (
+            <section key={`${t.product}:${t.question_id}`} className="panel p-4" data-question={t.question_id}>
+              <p className="eyebrow">{PRODUCT_LABEL[t.product]}</p>
+              <h3 className="mt-1 text-base font-medium text-paper">{t.text}</h3>
+              <ul className="mt-2 space-y-1 text-sm">
+                {(q?.options ?? Object.keys(t.counts).map((value) => ({ value, label: value }))).map((o) => (
+                  <li key={o.value} className="flex items-center gap-2">
+                    <span className="w-40 shrink-0 text-paper-dim sm:w-64">{o.label}</span>
+                    <span className="min-w-0 flex-1" aria-hidden="true">
+                      <span className="block h-2 bg-signal" style={{ width: `${(100 * (t.counts[o.value] ?? 0)) / Math.max(1, t.n)}%` }} />
+                    </span>
+                    <span className="tabular text-paper-mute">{t.counts[o.value] ?? 0}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-paper-mute">
+                {t.n} answers ·{' '}
+                {Object.entries(t.by_case)
+                  .map(([id, c]) => `${caseTitle(id, byId)}: ${topCounts(c, (k) => q?.options.find((o) => o.value === k)?.label ?? k)}`)
+                  .join(' | ')}
+              </p>
+            </section>
+          );
+        })
+      )}
+      <section>
+        <h3 className="eyebrow mb-2">Reviewer notes</h3>
+        {notes.n_notes === 0 ? (
+          <p className="text-sm text-paper-mute">No notes came with the reviews.</p>
+        ) : (
+          <p className="text-sm text-paper-dim" data-testid="admin-notes">
+            {notes.n_notes} notes from {notes.n_reviews_with_notes} reviews ·{' '}
+            {(Object.keys(NOTE_CONVERSION_LABEL) as NoteConversion[]).map((k) => `${NOTE_CONVERSION_LABEL[k]} ${notes.by_conversion[k]}`).join(' · ')} · not converted {notes.by_conversion.unconverted}
+          </p>
+        )}
+      </section>
     </div>
   );
 }

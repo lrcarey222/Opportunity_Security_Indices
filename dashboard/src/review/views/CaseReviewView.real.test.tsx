@@ -1,9 +1,14 @@
 // The blind-first guarantee on the committed review data (public/data/review, built by
-// scripts/review/build-review-data.mjs from config/review and the shipped bundles; skipped when absent): for every
-// case of every campaign, the context and blind steps carry none of the conclusion's words (its label outside the
-// answer options, detail, reason), the case's why-selected text, or any revealing fact's display, and pass the
-// bare-acronym and banned-word checks on the context step; after an "I don't know" answer the conclusion shows.
-// The wording of the built texts themselves is checked once, against a list of known upstream findings.
+// scripts/review/build-review-data.mjs from config/review and the shipped bundles; skipped when absent), for every
+// case of every campaign (all 23 of the first round): before the blind answer the page carries none of the
+// conclusion's words (its label outside the answer options, detail, reason), no reasoning text (the summary, the
+// rule, the step sentences and drivers), no alternative ("why not", "what would make it", the margin), no
+// reveal-only fact, no post-reveal remainder (the rest of a compact chain, a partnership's coordination changes and
+// memo boxes, a sector chain's chokepoint note), no robustness class and not why the case was chosen, and it passes
+// the bare-acronym and banned-word checks; after an "Outside my expertise" answer is locked, all of them are there.
+// A reveal text that the neutral brief itself states (the same figure shown as evidence) or that an answer option
+// shows is not a secret. The wording of the built texts themselves is checked once, against a list of known
+// upstream findings.
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -16,10 +21,9 @@ import { bareAcronyms, bareAcronymsInText } from '../../components/testing/acron
 import { AVOID_RE } from '../../content/vocabulary.ts';
 import { resetLastLocations } from '../../shell/lastLocation.ts';
 import { memoryReviewSource, ReviewStore, setReviewStoreForTests, type ReviewManifestDoc } from '../data/store.ts';
-import { DONT_KNOW_LABEL } from '../flow.ts';
 import { REVEALING_FACT_IDS } from '../manifest.ts';
 import { QUOTED_FROM_EXPLORER } from '../qc/snapshot.ts';
-import type { CasesFile } from '../model.ts';
+import type { CasesFile, ReviewCase } from '../model.ts';
 import { createReviewStorage, setReviewStorage } from '../storage.ts';
 import { installDomStubs, koreaBatteriesProfile, memoryBackend } from './__fixtures__/reviewFixture.ts';
 
@@ -53,47 +57,95 @@ afterEach(() => {
 const T = { timeout: 30_000 };
 const main = () => document.querySelector('main') as HTMLElement;
 
-/** Words that give a case's conclusion away (texts long enough not to occur by chance). */
-function secrets(c: CasesFile['cases'][number]): string[] {
+/** The reveal-only texts of a case: the conclusion's words, the reasoning, the alternatives and the remainders. */
+function revealTexts(c: ReviewCase): (string | null | undefined)[] {
   const k = c.snapshot.conclusion;
-  const out = [k.reason, k.detail, c.why_selected].filter((x): x is string => typeof x === 'string' && x.length > 8);
+  const r = c.snapshot.reasoning;
+  const out: (string | null | undefined)[] = [k.reason, k.detail, c.why_selected];
+  // the revealing facts the reveal lists (a value the release does not carry shows as "not available")
   for (const id of REVEALING_FACT_IDS) {
     const f = c.snapshot.facts[id];
-    // a revealing fact that only repeats an option label (the AIB class, the compact decision) is not a secret: every option shows
-    if (f && typeof f.display === 'string' && f.display.length > 8 && !c.answer_options.some((o) => o.label === f.display)) out.push(f.display);
+    if (f && c.reveal_fields.includes(id) && f.value !== null && f.value !== undefined && typeof f.display === 'string') out.push(f.display);
+  }
+  if (r) {
+    out.push(r.conclusion.summary, r.rule);
+    for (const st of r.steps) out.push(st.sentence, ...st.drivers);
+    for (const a of r.alternatives) out.push(a.why_not, a.would_need, a.margin);
+    for (const s of r.compact_chain ?? []) out.push(s.display, s.text);
+    for (const x of r.partnership?.coordination_changes ?? []) out.push(x);
+    for (const m of r.partnership?.memo_choices ?? []) out.push(...m.items);
+    out.push(r.sector?.chokepoint_note);
   }
   return out;
 }
 
+/** Words that give a case's conclusion or the Explorer's reasoning away (texts long enough not to occur by chance). */
+function secrets(c: ReviewCase): string[] {
+  // what every option shows, and what the neutral brief itself states, is not a secret
+  const shown = [JSON.stringify(c.snapshot.brief ?? {}), ...c.answer_options.map((o) => `${o.label} ${o.definition ?? ''}`)].join(' ');
+  return [...new Set(revealTexts(c))].filter((x): x is string => typeof x === 'string' && x.length > 12 && !shown.includes(x));
+}
+
+const AFTER_IDS = ['conclusion', 'reasoning-reveal', 'robustness', 'why-selected', 'level-2', 'level-3'];
+
 describe.skipIf(!have)('the committed cases, blind first', () => {
+  it('holds the 23 cases of the first round, every one with a brief and a reasoning reveal', () => {
+    const all = campaigns.flatMap((c) => c.file.cases);
+    expect(all.length).toBeGreaterThanOrEqual(23);
+    for (const c of all) {
+      expect(c.snapshot.brief, c.case_id).toBeTruthy();
+      expect(c.snapshot.reasoning, c.case_id).toBeTruthy();
+    }
+  });
   for (const { id, file } of campaigns)
     for (const c of file.cases)
-      it(`${id} ${c.case_id}: nothing revealing before the blind answer`, async () => {
+      it(`${id} ${c.case_id} (${c.kind}): nothing revealing before the blind answer, all of it after`, async () => {
         setReviewStoreForTests(new ReviewStore(memoryReviewSource(files)));
         const storage = createReviewStorage(memoryBackend());
         setReviewStorage(storage);
         storage.saveProfile(koreaBatteriesProfile());
+        storage.markCalibrationSeen('2026-11-21T00:00:00Z', id);
         render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [`/review/case/${c.case_id}?campaign=${id}`] })} />);
         await screen.findByTestId('step-context', {}, T);
+        const hidden = secrets(c);
         const labelOutsideOptions = !c.answer_options.some((o) => o.label === c.snapshot.conclusion.label);
-        for (const s of secrets(c)) expect(main().textContent, `context: ${s}`).not.toContain(s);
-        if (labelOutsideOptions) expect(main().textContent).not.toContain(c.snapshot.conclusion.label);
-        expect(screen.queryByTestId('conclusion')).toBeNull();
-        expect(bareAcronyms(main())).toEqual([]);
-        expect(main().textContent).not.toMatch(AVOID_RE);
+        const check = (where: string) => {
+          const t = main().textContent ?? '';
+          for (const s of hidden) expect(t, `${where}: ${s}`).not.toContain(s);
+          if (labelOutsideOptions) expect(t, `${where}: the conclusion label`).not.toContain(c.snapshot.conclusion.label);
+          for (const tid of [...AFTER_IDS, 'alternatives', 'trace', 'reveal-facts']) expect(screen.queryByTestId(tid), `${where}: ${tid}`).toBeNull();
+          expect(screen.queryByRole('link', { name: 'Open in the Explorer' })).toBeNull();
+          expect(bareAcronyms(main()), where).toEqual([]);
+          expect(t, where).not.toMatch(AVOID_RE);
+        };
+        // the brief: its question, horizon, scenario and evidence
+        const b = c.snapshot.brief;
+        if (b) {
+          expect(screen.getByTestId('brief-question').textContent).toBe(b.decision_question);
+          expect(screen.getByTestId('brief-horizon').textContent).toContain(b.time_horizon.label);
+          expect(screen.getByTestId('brief-scenario')).toBeTruthy();
+          expect(screen.getByTestId('brief-evidence').querySelectorAll('[data-fact]').length).toBe(b.evidence.length);
+        }
+        check('brief');
 
-        fireEvent.click(screen.getByRole('button', { name: 'Give your answer' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Give your assessment' }));
         await screen.findByTestId('step-blind', {}, T);
-        // pick the first option so the driving factors (the case's measure labels) render too
-        fireEvent.click(screen.getAllByRole('radio')[0]);
-        await screen.findByRole('group', { name: /What drives your answer/ }, T);
-        for (const s of secrets(c)) expect(main().textContent, `blind: ${s}`).not.toContain(s);
-        expect(screen.queryByTestId('conclusion')).toBeNull();
+        // pick a first answer so the confidence and driver questions render too
+        if (c.kind === 'sector_chain') fireEvent.click(screen.getAllByRole('checkbox')[0]);
+        else fireEvent.click(screen.getAllByRole('radio')[0]);
+        await screen.findByRole('group', { name: 'What is the most important factor driving your judgment?' }, T);
+        check('blind');
 
-        fireEvent.click(screen.getByRole('radio', { name: new RegExp(DONT_KNOW_LABEL.replace(/[/]/g, '.')) }));
+        fireEvent.click(screen.getByRole('radio', { name: /^Outside my expertise/ }));
         fireEvent.click(screen.getByRole('button', { name: /Lock my answer/ }));
         const concl = await screen.findByTestId('conclusion', {}, T);
         expect(concl.textContent).toContain(c.snapshot.conclusion.label);
+        const t = main().textContent ?? '';
+        for (const s of hidden) expect(t, `after: ${s}`).toContain(s);
+        for (const tid of AFTER_IDS) expect(screen.getByTestId(tid), `after: ${tid}`).toBeTruthy();
+        if (c.snapshot.reasoning?.alternatives.length) expect(screen.getByTestId('alternatives')).toBeTruthy();
+        expect(screen.getByRole('link', { name: 'Open in the Explorer' })).toBeTruthy();
+        expect(bareAcronyms(main())).toEqual([]);
       });
 });
 
@@ -101,9 +153,9 @@ describe.skipIf(!have)('the committed cases, blind first', () => {
  * Reviewer-facing texts of the build that use a word of content/vocabulary.ts AVOID_RE because they are QUOTED
  * verbatim from the Explorer's own data (the AIB export's reason for a node's class): they are kept as the Explorer
  * says them and marked as quotes (the reason fact carries snapshot.ts QUOTED_FROM_EXPLORER as its note; the reveal
- * shows the conclusion's reason as "Why, in the Explorer's words"). Every label the review pages write themselves
- * (snapshot.ts fact labels, threat.ts texts) is clean, so a NEW offender anywhere fails, and so does a fixed one
- * (remove it from the list).
+ * shows the conclusion's reason as "In the Explorer's words"). Every label the review pages write themselves
+ * (snapshot.ts fact labels, threat.ts texts, the brief and the reasoning) is clean, so a NEW offender anywhere
+ * fails, and so does a fixed one (remove it from the list).
  */
 const KNOWN_WORDING: Readonly<Record<string, readonly string[]>> = {
   acronym: [],
@@ -141,6 +193,8 @@ describe.skipIf(!have)('the wording of the committed cases', () => {
           ['threat.intervention', s.threat?.intervention],
           ['threat.notes', (s.threat?.notes ?? []).join(' ')],
           ['data_quality', (s.data_quality?.notes ?? []).join(' ')],
+          ['brief', s.brief ? JSON.stringify(s.brief) : null],
+          ['reasoning', revealTexts(c).filter((x) => x !== s.conclusion.reason && x !== s.facts.reason?.display).join(' ')],
         ];
         for (const [where, t] of texts) {
           if (!t) continue;

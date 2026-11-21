@@ -176,10 +176,15 @@ export function capturePageContext(loc: LocationLike, params: Readonly<Record<st
   };
 }
 
-/** sha256 of the canonical profile JSON without the name (and with tags normalised), so exports can join on expertise. */
+/**
+ * sha256 of the canonical profile JSON without the name (and with tags normalised), so exports can join on
+ * expertise. The UX v2 review mode is a working preference, not expertise: it is left out so switching it does
+ * not change the digest (and a v1 profile's digest is unchanged).
+ */
 export function profileDigest(p: ReviewerProfile): string {
-  const { name: _name, ...rest } = normaliseProfile(p);
+  const { name: _name, review_mode: _mode, ...rest } = normaliseProfile(p);
   void _name;
+  void _mode;
   return sha256HexSync(canonicalJson(rest));
 }
 

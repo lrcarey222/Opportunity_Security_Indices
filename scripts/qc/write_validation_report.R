@@ -1,7 +1,9 @@
 # QC: write the validation report (reports/AIB_VALIDATION_REPORT.md; docs/QC_SYSTEM_DESIGN.md 6.5; R/qc/qc_report.R).
 # Reads whatever QC result CSVs exist (the TypeScript bundle layer's and the R pipeline layer's), the review export
 # CSVs if present, the case snapshots and the case-audit JSONs, and renders the Markdown report. Reviewer names
-# never reach the report: the exports are read without any name column.
+# never reach the report: the exports are read without any name column. The export files read are
+# QC_REPORT_EXPORT_FILES: UX v2 adds qc_evidence_gaps.csv, and the v2 columns of qc_review_responses.csv feed the
+# taxonomy, prior / validity / persuasion and evidence-gap sections (exports without them: those sections say no data).
 #
 # Usage:
 #   Rscript scripts/qc/write_validation_report.R [--results qc/results] [--exports qc/private/exports]

@@ -12,8 +12,9 @@ Contact for questions: **[NEIS contact name and email: to be added by NEIS befor
 
 **It is** a structured expert review whose only purpose is to find where the Explorer is wrong: wrong
 data, a wrong method, missing context, a confusing framework, or a conclusion nobody could act on. You
-look at a small number of cases in your own field, give your own judgement first, then see what the
-Explorer concluded and tell us whether and why you agree.
+look at a small number of cases in your own field, read a neutral brief, give your own judgement first, then
+see the Explorer's conclusion and reasoning and tell us exactly where, if anywhere, the evidence, the reasoning,
+the assumptions or the conclusion fail.
 
 **Disagreement is the point.** A clear "this is wrong, and here is why" is the most useful answer you can
 give. Agreement is useful too, but only when it is your honest view.
@@ -22,30 +23,43 @@ give. Agreement is useful too, but only when it is your honest view.
 every disagreement is investigated on its merits, and the methodology is never changed just because
 several reviewers disliked a result. Nothing you write is published.
 
-**Time:** about 10 to 15 minutes per case. Most reviewers are given two to four cases. The other parts
-(methodology cards, framework questions, reporting problems) are optional.
+**Time:** the first page tells you how long your own assignment should take (for example "~20 minutes · 3
+cases"). The estimate is about 6 minutes per case, plus 2 minutes for a partnership case and for each set of extra
+questions. A first case usually takes longer while you get used to the layout. Most reviewers get two to four
+cases. Everything else (methodology cards, framework questions, reporting problems) is optional. The first page
+offers it once your cases are in, and it is always reachable from the quieter "Optional:" row of the menu.
 
 ---
 
-## A few terms
+## What the cases are about
 
-The Explorer recommends a **strategic posture** for each combination of country, technology and
-supply-chain stage (for example "Korea, batteries, component manufacturing"). The possible postures are
-**Secure, Preserve, Catch Up, Partner, Accelerate and Watch** (or **Not assessed** when the data are
-too thin). Each posture comes with a level of government involvement, called the **fence**: high for
-Secure, medium for Preserve, Catch Up, Partner and Accelerate, low for Watch.
+The cases fall into four kinds. Each case states its own question, horizon and scenario, so you do not need to know
+how the Explorer works before you start.
 
-The posture rests on three scores, each between 0 and 1:
+- **Country.** What one country should do about one step of one technology's supply chain (for example
+  "How should Japan manage rare-earth and battery-metal refining for electric vehicles through 2035?"). The possible
+  answers are six broad strategies, each shown with a one-line definition:
+  - **Secure**
+  - **Preserve**
+  - **Catch Up**
+  - **Partner**
+  - **Accelerate**
+  - **Watch**, shown as "Watch (keep open)"
 
-- **Strategic Need**: how exposed the country's supply is (import dependence, concentration among
-  suppliers, reliance on rival countries).
-- **Strategic Industrial Value** (the "prize"): how valuable the activity is to have.
-- **Competitive Position**: how strong the country is in it compared with the other producers.
+  For a deployment case the question is whether the country needs a major push to deploy the technology at home.
+- **Sector.** One product, or one whole supply chain, under a shock to allied supply (China stops supplying the
+  59 allied economies, or no supplier may hold more of the allied market than is normal for comparable products).
+  - For a product: which kind of allied response it needs (build capacity, coordinate trade, manage specialization,
+    or low intervention).
+  - For a chain: at which of the six supply-chain stages allied intervention is warranted, and which you would act
+    on first.
+- **Partnership.** What should lead cooperation between two countries (round 1: the United States and Japan): building
+  capacity together, trade and standards, institutions, or staying out.
+- **Compact.** Whether allied economies need a standing multi-country arrangement for a whole chain, targeted action on
+  a few steps, or no arrangement.
 
-Some cases are about the wider **Allied Industrial Base**: individual products ("nodes") classed as
-BUILD, COORDINATE, MANAGE SPECIALIZATION or LOW INTERVENTION under a supply-shock scenario, and
-**Sectoral Compacts** (whether allies need a formal agreement for a whole sector). One case is about a
-**partnership memo** (the United States and Japan).
+The six supply-chain stages are always named the same way: Extraction, Refining & Processing, Component
+Manufacturing, Final Assembly & Equipment, Deployment & Use, Recovery & Recycling.
 
 ---
 
@@ -53,25 +67,53 @@ BUILD, COORDINATE, MANAGE SPECIALIZATION or LOW INTERVENTION under a supply-shoc
 
 1. Open the review address NEIS sent you (it ends in `/review`). The review pages sit alongside the
    public Explorer but are not linked from its menus.
-2. Read the first page. It says which **storage mode** this copy of the review uses (see below).
-3. Fill in the short **profile** (about two minutes): the countries, technologies, supply-chain stages
-   and methods you know, each rated from 1 to 5. The profile decides which cases you are given. Be
-   honest about your ratings: it is better to be given fewer cases you know well.
-4. You can **stay anonymous**. Your name, organisation and role are all optional. If you choose to stay
+2. The first page has one button: **Review your assigned cases**. It takes you, in turn, to:
+   - your profile, if you have none;
+   - the one-minute **Before you start** page, if you have not read it;
+   - your next case, with any unfinished case first.
+
+   The campaign details, the privacy notes, the storage mode and the answer download are lower down, under
+   "About this review".
+3. **Your profile** (about two minutes):
+   - The countries, technologies, supply-chain stages and methods you know, each rated from 1 to 5. The profile
+     decides which cases you are given. Be honest: it is better to get fewer cases you know well.
+   - A **review mode**:
+     - **Decision review** (the default) is for sector and country experts: judge factual realism, strategic
+       reasoning, and whether a government could act on the conclusion.
+     - **Technical review** is for data and methods specialists. It opens the detailed reasoning by default, so you
+       can follow each measure from raw value to classification.
+
+     You can change the mode at any time.
+4. **Before you start.** Seven short points, read once:
+   - the goal is managed interdependence, not self-sufficiency;
+   - dependence is not automatically a problem;
+   - domestic production is not automatically preferred;
+   - Partner and Watch (keep open) can be successful conclusions;
+   - a surprising result is not necessarily an error;
+   - challenge false alarms and missed risks alike;
+   - your job is to judge the evidence and reasoning, not to agree with NEIS.
+5. You can **stay anonymous**. Your name, organisation and role are all optional. If you choose to stay
    anonymous, your name is never attached to your answers.
+
+The menu has three entries: **Overview**, **Your profile** and **Your cases**. A quieter "Optional:" row links to
+Challenge the methodology, Find a case we got wrong and Review the framework.
 
 ### What is stored, and where
 
-Your profile and your answers are saved in **this browser** on **this computer**, as you go. Each
-answer carries a random reviewer code (for example `R-3F9A1C07`), your expertise tags and self-ratings,
-and your name only if you gave one and did not choose to stay anonymous. Your organisation and role stay
-in your browser.
+Your profile, your answers and your notes are saved in **this browser** on **this computer**, as you go. Each
+answer carries:
+- a random reviewer code (for example `R-3F9A1C07`);
+- your expertise tags and self-ratings;
+- your review mode;
+- your name, only if you gave one and did not choose to stay anonymous.
+
+Your organisation and role stay in your browser.
 
 How your answers reach NEIS depends on the storage mode shown on the first page:
 
 | Mode | What happens |
 |---|---|
-| **Demo** | Nothing is sent anywhere. Answers stay in this browser. When you finish, use "Download your answers" on the first review page and send the file to NEIS. |
+| **Demo** | Nothing is sent anywhere. Answers stay in this browser. When you finish, use "Download your answers" (on the summary page or the first page) and send the file to NEIS. |
 | **Packet** | Each time you submit a case or a report, your browser downloads a small file of your answers (`aib-review-R-....json`). Send these files to NEIS by the route NEIS gives you. A copy also stays in your browser. |
 | **Live** | Each submission is sent to a review service run for NEIS. A copy stays in your browser, so nothing is lost if sending fails. |
 
@@ -82,66 +124,174 @@ the tab.
 
 ---
 
-## Reviewing a case: answer first, then see the Explorer's view
+## Reviewing a case: your answer first, then the Explorer's reasoning
 
-Each case moves through these steps, shown at the top of the page:
+**The rule:** you are blind to the Explorer's conclusion, but not to the information needed to form one. Before
+you answer you see the evidence, the objective, the horizon, the scenario and the definitions. You never see the
+recommendation, the Explorer's scores, its labels or why NEIS chose the case.
 
-1. **The facts.** The evidence about the case: for example import shares, the main suppliers, the
-   country's share of world supply, its export strength and the market outlook. You do **not** see the
-   Explorer's conclusion or its deciding scores yet, and you do not see why NEIS chose the case.
-2. **Your answer.** Pick the posture (or class, or decision) you would recommend, how confident you are
-   (1 to 5), and the one to three facts that drive your view. A short reason is optional. Once you
-   record this answer it cannot be changed.
-3. **The Explorer's conclusion.** Now you see what the Explorer concluded, its scores, the steps of its
-   decision, two separate notes on how robust the result is and on the quality of the data behind it,
-   why NEIS chose the case, and a link that opens the case in the Explorer in a new tab.
-4. **Your verdict**, on a scale of 1 to 7 (below).
-5. **What it misses**: the single most important thing the Explorer gets wrong or leaves out.
-6. **Using it / The threat** (only on some cases): a few questions on decision use and on whether the
-   proposed response would reduce the supply threat.
+A progress line ("Step 2 of 6") and the list of steps sit at the top of each case.
 
-**Why answer first?** If you saw the Explorer's conclusion first, it would anchor your judgement. Your
-blind answer is the only honest measure of whether an expert, looking at the same evidence, reaches the
-same view. Comparing it with your verdict afterwards also tells us when the evidence persuaded you and
-when it did not.
+### 1. The case
 
-### The verdict scale
+The brief, in this order:
 
-| | After seeing the Explorer's conclusion |
+- The **decision question**, and two or three sentences on whose decision it approximates and what the analysis
+  does not cover.
+- The **objective**, for example "Resilient and affordable supply, not maximum national self-sufficiency".
+- The **time horizon** and the data periods behind it.
+- The **scenario**.
+- A strip of the six supply-chain stages, marking where the case sits.
+- **Data warnings**: for example, trade and production evidence that disagree, import shares that mix two periods,
+  part of the evidence missing, or a memo that is rule-generated or older than the data.
+- **Evidence**: five to eight observed facts. Each has its value, a plain reading ("Reading: one large supplier"),
+  its source and its period, and its own warnings. If one of these is wrong, that is a data problem. A value the
+  release does not carry reads "not available in this release".
+- **Analytical assumptions**: the choices the analysis makes, kept apart from the evidence on purpose. For example,
+  who counts as a higher-risk supplier, or that only traded supply counts. If one of these is wrong, that is a
+  method problem. Each links to its methodology card. Three are shown; the rest fold away.
+- **What the data cannot show**, and **definitions**.
+
+Some kinds of case add a section:
+
+| Case kind | Extra section in the brief |
 |---|---|
-| 1 | It matches my prior assessment. |
-| 2 | It is different from my prior, but the evidence persuades me. |
-| 3 | It is plausible, but the evidence is insufficient. |
-| 4 | It is probably wrong because the underlying data appear wrong. |
-| 5 | It is probably wrong because the methodology, weighting or a threshold is wrong. |
-| 6 | It is probably wrong because important context is missing. |
-| 7 | I do not have enough expertise to assess it. |
+| Partnership | "What each side brings": each side's strengths, where each depends on one supplier, and the shared strategic problem. |
+| Compact | "The problem, step by step": the supply at risk, what existing trade can cover (an estimate) and the gap left (an estimate). The rest of the causal chain (new capacity, who could add it, the proposed coalition and the resilience after) is shown after your answer. |
+| Sector chain | "The chain stage by stage": products, allied imports, supply lost and China's share at each stage. |
 
-### The single most important miss
+### 2. Your assessment
 
-For verdicts 3 to 6 we ask for **one** thing, not a list: the single most important reason the result
-is wrong or weak, the kind of problem (data, method, missing context, framework ambiguity, policy or
-actionability, insufficient evidence) and, if you can, the measure it concerns. One precise point is
-worth more to us than several general ones.
+Pick the conclusion you would recommend. Each option has a one-line definition. Below the options are three
+honest alternatives:
 
-### "I don't know" and outside your expertise
+- **None of these reflects my recommendation.** You are asked what you would recommend instead.
+- **Insufficient evidence to judge.** You are asked "What information is missing?" and tick every kind of
+  information you would need:
+  - actual production capacity, market size / demand, firm-level capability, ownership, alternative suppliers;
+  - allied spare capacity, cost competitiveness, project pipeline, capacity expansion feasibility;
+  - qualification constraints / lead times, technology readiness, workforce / infrastructure;
+  - policy environment, policy durability, geopolitical context, other.
 
-Every question that asks for a judgement offers **"I don't know / outside my expertise"**. Use it freely:
-an honest "I don't know" is far more useful than a guess. If you choose it for your blind answer, the
-verdict defaults to 7. Your cases are listed under "Your cases"; one optional case may lie beyond your
-stated expertise, and you may pick one more case you know well from the catalogue.
+  NEIS uses these answers to find which evidence the review lacks.
+- **Outside my expertise.**
 
-### Decision use and threat questions
+For a recommendation (or "None of these"), say how confident you are (**Low, Medium or High**) and the single most
+important factor behind your judgment:
+- concentration / security exposure;
+- domestic capability;
+- allied alternatives;
+- market opportunity;
+- demand growth;
+- technological importance;
+- cost competitiveness;
+- missing information;
+- other.
 
-On some cases we also ask whether the conclusion is specific enough to act on, whether it identifies the
-right problem, whether it keeps the diagnosis apart from the prescription, and whether it points to the
-right countries or partners (each on a 1 to 4 scale), plus what you would do differently.
+A short reason is optional.
 
-On supply-threat cases we show a before-and-after table (how concentrated supply is, the largest
-supplier and its share, allied coverage of demand, the supply lost to the shock and the gap that remains) and ask whether the response would reduce the threat, whether its scale and
-timing are plausible, whether it is commercially plausible, and which constraints the analysis leaves
-out (qualification, infrastructure, workforce, financing, demand, permitting). Anything the model does not
-estimate, such as time to build capacity, is marked "not modelled".
+On a **sector-chain** case, first tick every stage where allied intervention is warranted, then choose the one you
+would act on first, or "No stage needs allied intervention".
+
+"Lock my answer and see the Explorer's reasoning" stores your answer. **It cannot be changed afterwards**: comparing
+it with your verdict is how NEIS learns whether the evidence persuaded you.
+
+### 3. The Explorer's reasoning
+
+You see:
+
+- Whether your answer matches or differs from the Explorer's, its conclusion in one sentence, and the Explorer's own
+  words in quotation marks.
+- **How the Explorer got there**: each step with its level and one sentence. For a country case these are the
+  security test, the commodity test, need, the value of the industry, competitive standing and a credible base to
+  build from.
+- **Therefore**: the rule that was actually applied.
+- For compacts, partnerships and sector chains, the rest of the story: the rest of the causal chain, the memo's four
+  boxes and what coordination changes, or the stages the Explorer would act on.
+- **Why this, not the alternative?** For the nearest other conclusions: "Why X rather than Y?", "What would make Y
+  more appropriate?" and the decisive margin.
+- **Why this result?** (folded in Decision review, open in Technical review): each step's value against its bar and
+  what drives it, the assumptions, sources and years. Analytical robustness (does a small change of threshold change
+  the conclusion?) and data quality are shown as separate badges, together with why NEIS chose the case.
+- **Inspect the analysis** (folded, open in Technical review): the test-by-test trace, every figure the Explorer
+  holds for the case, a provenance chain from raw value to conclusion for country cases, and a link that opens the
+  case in the Explorer in a new tab. The live page may use newer data than the case.
+
+### 4. Your verdict
+
+The site shows whether your initial answer matched the Explorer; you are not asked to restate it. Then three
+separate questions:
+
+1. **Which best describes your view?**
+
+   | | Statement |
+   |---|---|
+   | 1 | Same conclusion, broadly same reasoning. |
+   | 2 | Same conclusion, but for different reasons. |
+   | 3 | Different initial conclusion, but the Explorer persuaded me. |
+   | 4 | The Explorer's conclusion is plausible, but the evidence is insufficient. |
+   | 5 | I disagree because an underlying fact or data point is wrong. |
+   | 6 | I disagree because an important factor is missing. |
+   | 7 | I disagree with how the evidence is interpreted or weighted. |
+   | 8 | I disagree with the decision rule linking the evidence to the recommendation. |
+   | 9 | The recommendation is too broad or poorly defined. |
+   | 10 | Outside my expertise. |
+
+2. **Is the Explorer's conclusion supported by the evidence?** Supported, partly supported, not supported, not sure.
+3. **Did inspecting the evidence change your view?** Yes, somewhat, no.
+
+**Where exactly does it fail?** For statements 2 and 4 to 9, say in a sentence or two where it fails, or which
+reasons differ. Optionally tick the facts, assumptions or reasoning steps involved, and say what you would conclude
+instead. The kind of problem follows from your statement: data, missing context, interpretation or weighting,
+decision rule, a poorly defined recommendation, or insufficient evidence. One precise point is worth more to us
+than several general ones.
+
+### 5. After the verdict (only where it applies)
+
+- **Test the conclusion**, only if you disagreed or were not confident. Two optional questions: what would have to
+  be true for the Explorer's conclusion to be correct, and which single piece of evidence would most help resolve
+  the case.
+- **Questions for this kind of case**:
+
+  | Case kind | Question |
+  |---|---|
+  | Sector | "Has the Explorer located the actual strategic bottleneck in this supply chain?" |
+  | Partnership | "Does this relationship represent genuine industrial complementarity or primarily diplomatic compatibility?" (plus optional questions on incentives, asymmetry, durability and substitution) |
+  | Compact | "Does this compact materially ameliorate the stated threat?" |
+
+  The first question needs an answer; "Not sure" counts.
+- **Using it / The threat** (some cases):
+  - whether the conclusion is specific enough to act on, identifies the right problem, keeps the diagnosis apart
+    from the prescription, and points to the right partners;
+  - for supply-threat cases, a before-and-after table and whether the response would reduce the threat.
+
+  Every question here is optional; longer prompts fold under "Add detail (optional)". Anything the model does not
+  estimate, such as time to build capacity, reads "not modelled".
+
+### Your notes
+
+Every case has a **Your notes** panel, from the brief to the end. It is saved as you type and it is optional. Jot
+down a doubtful number, missing context or a thought on the method. Each note is marked as written before your
+answer or after the reveal. Before you submit, the **Your notes** step lets you turn each note into a data issue,
+missing context, a methodological concern or a general comment. A data issue can also open the full report form.
+Notes travel with your review.
+
+### Done, and your summary
+
+When you submit, the page links to your next case, to all your cases and to your summary. **Your summary** shows,
+for your own submissions only:
+- how many cases you reviewed;
+- how many matched your initial assessment;
+- how many changed your view after you reviewed the evidence;
+- how many raised a potential data issue (plus insufficient-evidence and outside-expertise answers, if you gave any).
+
+It ends with optional next steps (send or download your answers, review another case, challenge the methodology,
+report another problematic case) and "Nothing more is required."
+
+### Cases outside your expertise
+
+Your cases are listed under "Your cases". One optional case may lie beyond your stated expertise, and you may pick
+one more case you know well. "Insufficient evidence to judge" and "Outside my expertise" are useful answers there.
 
 ---
 
@@ -198,11 +348,13 @@ the gap. Those gaps are themselves useful findings.
 
 ## Saving, resuming and sending
 
-- Drafts save automatically as you type. Come back to the same address in the same browser and the
-  first page offers to **resume** where you stopped.
-- A progress bar shows how many of your assigned cases are submitted.
-- In demo mode, and whenever you want a single file of everything, use **Download your answers** on the
-  first page. In packet mode a file is also downloaded each time you submit.
+- Drafts and notes save automatically as you type. Come back to the same address in the same browser:
+  "Review your assigned cases" takes you to an unfinished case first, and the line under the button says
+  where you stand. Drafts saved by the earlier version of the review still open; if you had already locked
+  your answer there, it stays locked and you are asked the new verdict questions.
+- A progress strip shows your profile, "Before you start" and how many of your assigned cases are submitted.
+- In demo mode, and whenever you want a single file of everything, use **Download your answers** on your
+  summary page or under "About this review" on the first page. In packet mode a file is also downloaded each time you submit.
 - Send files to NEIS by the route NEIS gave you (for example a named mailbox or an upload folder). Please
   do not post them anywhere public.
 

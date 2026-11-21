@@ -9,17 +9,19 @@
 import type { AibDoc, AibNode, AibStrategicCompactScenario } from '../../aib/contract.ts';
 import { ALIGNMENT_DEPLOYMENT_GAP, ALIGNMENT_NAME, CHOICE_NAME, FENCE_NAME } from '../../content/vocabulary.ts';
 import type { MemoDoc } from '../../country/contract.ts';
-import { DEPLOYMENT_STAGE } from '../../lib/stages.ts';
+import { DEPLOYMENT_STAGE, STAGE_DISPLAY } from '../../lib/stages.ts';
 import type { PostureCell } from '../../posture/contract.ts';
 import type { NodeDetail } from '../../posture/detail.ts';
 import { FENCE_OF_VERB, POSTURE_LABEL } from '../../posture/grammar.ts';
 import type { AibScenarioKey, CaseConclusion, CaseDefinition, CaseFact, CaseKey, CaseKind, CaseSnapshot, RobustnessRecord } from '../model.ts';
-import { conclusionLabel, isStrategicCompactId, primaryMission, strategicCompactDecision, STRATEGIC_COMPACT_DECISION_LABEL } from './answerOptions.ts';
+import { conclusionLabel, isStrategicCompactId, NO_STAGE, NO_STAGE_LABEL, primaryMission, strategicCompactDecision, STRATEGIC_COMPACT_DECISION_LABEL } from './answerOptions.ts';
 import { canonicalJson as privacyCanonicalJson } from '../privacy.ts';
 import { cellKey, type DecodedBundles } from './bundles.ts';
 import { cappedNodes, extractChoiceInputs, shippedChoice, thresholdsFromCore } from './choiceRule.ts';
 import { aibNodeRobustness, cellRobustness, postureSpecs } from './sensitivity.ts';
 import { deriveCompactThreat, deriveNodeThreat } from './threat.ts';
+import { cleanNote, growthWords, parsePrizeNote, signedPct } from './evidence.ts';
+import { chainAnalysis } from './sectorChain.ts';
 
 // ---- the shared fact ids --------------------------------------------------------------------------------------
 
@@ -28,6 +30,8 @@ export const POSTURE_FACT_IDS = [
   'china_share', 'opposite_bloc_share', 'trusted_share', 'coercive_top', 'coercive_top_share', 'imports_to_gdp', 'benchmark_share', 'benchmark_rca',
   'benchmark_exports', 'outlook', 'prize_note', 'pathway', 'deployment_need', 'large_yard_signals', 'partner', 'policy_alignment', 'confidence', 'borderline',
   'reason', 'choice', 'fence', 'posture',
+  // UX v2: raw evidence the detail cell ships (neutral; usable before the blind answer)
+  'coercive_import_share', 'export_trend', 'demand_outlook', 'maturity', 'deployment_trend', 'deployment_demand_note', 'deployment_target_note', 'deployment_system_note',
 ] as const;
 export const AIB_NODE_FACT_IDS = [
   'class', 'reason', 'exposure', 'lost_usd', 'demand_usd', 'baseline_hhi', 'baseline_largest', 'baseline_largest_share', 'baseline_top3_share', 'static', 'existing',
@@ -39,6 +43,10 @@ export const COMPACT_FACT_IDS = [
   'class_counts', 'missions', 'non_allied_relied_on', 'critical_external', 'build_hosts',
 ] as const;
 export const PARTNERSHIP_FACT_IDS = ['pair', 'choices_summary', 'memo_verified', 'memo_as_of', 'memo_generated_at', 'headline'] as const;
+/** UX v2 sector chain: one strategic compact's chain under one stress (the conclusion is the lead stage). */
+export const SECTOR_CHAIN_FACT_IDS = [
+  'steps', 'demand_usd', 'lost_usd', 'exposure', 'coverage_existing', 'node_classes', 'explorer_stages', 'lead_stage', 'missions', 'chokepoint',
+] as const;
 
 /** The fact ids of each case kind (sector cases reuse the posture ids). */
 export const FACT_IDS: Readonly<Record<CaseKind, readonly string[]>> = {
@@ -47,11 +55,13 @@ export const FACT_IDS: Readonly<Record<CaseKind, readonly string[]>> = {
   aib_node: AIB_NODE_FACT_IDS,
   compact: COMPACT_FACT_IDS,
   partnership: PARTNERSHIP_FACT_IDS,
+  sector_chain: SECTOR_CHAIN_FACT_IDS,
 };
 
 /** Fact ids that give the conclusion away: never in context_fields (the same list review/manifest.ts enforces). */
 export const REVEALING_FACT_IDS: readonly string[] = [
   'choice', 'fence', 'posture', 'reason', 'confidence', 'borderline', 'partner', 'policy_alignment', 'class', 'decision', 'missions', 'choices_summary', 'headline',
+  'lead_stage', 'explorer_stages', 'node_classes',
 ];
 
 const FACT_LABEL: Readonly<Record<string, string>> = {
@@ -68,7 +78,7 @@ const FACT_LABEL: Readonly<Record<string, string>> = {
   top_supplier_share: "Largest supplier's share of imports",
   china_share: 'China (with HKG and MAC) share of imports',
   opposite_bloc_share: 'Opposite-bloc share of imports',
-  trusted_share: "Trusted partners' share of world supply (less own)",
+  trusted_share: 'World supply held by economies in the same UN-voting group (excluding the economy itself)',
   coercive_top: 'Largest coercive supplier (world supply)',
   coercive_top_share: "Largest coercive supplier's share of world supply",
   imports_to_gdp: 'Imports of the stage basket / GDP',
@@ -131,6 +141,18 @@ const FACT_LABEL: Readonly<Record<string, string>> = {
   memo_as_of: 'Memo data as of',
   memo_generated_at: 'Memo generated at',
   headline: "The memo's headline recommendation",
+  coercive_import_share: 'Share of imports from China, Russia and economies on the other side of UN votes',
+  export_trend: 'Exports in the latest 12 months against the previous 12',
+  demand_outlook: 'World demand outlook to 2035',
+  maturity: 'Technology readiness (International Energy Agency scale 1-11)',
+  deployment_trend: 'Installed capacity trend',
+  deployment_demand_note: 'Demand outlook and observed growth (current policies)',
+  deployment_target_note: 'Distance to the 2030 national target',
+  deployment_system_note: 'Power-system constraints',
+  node_classes: 'Each product of the chain and what it needs under the scenario',
+  explorer_stages: 'Stages holding a product that needs allied action',
+  lead_stage: 'Lead stage (the first step of the lead mission)',
+  chokepoint: 'Highest pre-shock concentration in the chain',
 };
 
 /** The note on a fact whose text is copied verbatim from the Explorer's bundle (shown with the fact). */
@@ -256,6 +278,28 @@ function postureSnapshot(key: CaseKey, b: DecodedBundles, ctx: SnapshotContext, 
   const fence = choice && choice !== 'not_assessed' ? FENCE_OF_VERB[choice] : null;
   facts.fence = fence ? fact('fence', fence, FENCE_NAME[fence]) : missing('fence', 'not assessed: no fence');
   facts.posture = fact('posture', c.posture, POSTURE_LABEL[c.posture]);
+  // UX v2 raw evidence (neutral; the brief reads the same paths)
+  facts.coercive_import_share = share('coercive_import_share', sc?.coerciveImportShare ?? null, scMiss, { note: 'bloc assignment from UN General Assembly votes (sessions to 2023), plus China (with HKG and MAC) and Russia' });
+  const exC = nn(tr?.exports_current);
+  const exP = nn(tr?.exports_previous);
+  facts.export_trend =
+    exC !== null && exP !== null && exP > 0
+      ? fact('export_trend', exC / exP - 1, `${fmtUsd(exC)} vs ${fmtUsd(exP)} (${signedPct((exC / exP - 1) * 100)})`, {
+          unit: 'change', source: 'UN Comtrade monthly reports', source_year: `${meta.momentum_period ?? 'latest 12 months'} vs ${meta.momentum_previous_period ?? 'previous 12 months'}`,
+        })
+      : missing('export_trend', dep ? 'no export trend at Deployment & Use' : 'no monthly export series for this node');
+  const outlook = parsePrizeNote(d?.prize.note);
+  facts.demand_outlook = outlook && outlook.totalPct !== null
+    ? fact('demand_outlook', outlook.totalPct / 100, `${signedPct(outlook.totalPct)} ${outlook.fromYear}-${outlook.toYear} (${growthWords(outlook.totalPct, outlook.toYear - outlook.fromYear)})`, { unit: 'change', source: outlook.source, source_year: `${outlook.fromYear}-${outlook.toYear}` })
+    : missing('demand_outlook', dep ? 'no world-demand outlook at Deployment & Use' : 'no world-demand outlook written');
+  const trl = typeof d?.prize.maturity === 'number' ? d.prize.maturity : typeof d?.prize.maturity === 'string' && Number.isFinite(Number(d.prize.maturity)) ? Number(d.prize.maturity) : null;
+  facts.maturity = trl === null ? missing('maturity', dep ? 'not read at Deployment & Use' : 'no technology readiness written') : fact('maturity', trl, trl.toFixed(1), { unit: 'TRL 1-11', source: 'International Energy Agency Clean Energy Technology Guide' });
+  const dpl = d?.deployment ?? null;
+  const dMiss = dep ? 'not written for this economy' : 'read only at Deployment & Use';
+  facts.deployment_trend = text('deployment_trend', dpl && dpl.trend !== null ? String(dpl.trend) : null, dMiss);
+  facts.deployment_demand_note = text('deployment_demand_note', cleanNote(dpl?.demand.note), dMiss);
+  facts.deployment_target_note = text('deployment_target_note', cleanNote(dpl?.policyGap.note), dMiss);
+  facts.deployment_system_note = text('deployment_system_note', cleanNote(dpl?.system.note), dMiss);
 
   // robustness (bundle layer)
   let robustness: RobustnessRecord | null = ctx.postureRobustness?.get(cellKey(c.iso3, c.tech, c.stage)) ?? null;
@@ -270,7 +314,10 @@ function postureSnapshot(key: CaseKey, b: DecodedBundles, ctx: SnapshotContext, 
   if (c.evidenceRaw) notes.push(`stage evidence quality (Competitive Position inputs): ${c.evidenceRaw}`);
   if (c.flag) notes.push(`consistency flag: ${c.flag}`);
   if (ct) notes.push(`import shares blended with current trade (${ct.source ?? 'source not stated'})${ct.flag ? `, flag ${ct.flag}` : ''}`);
-  if (facts.prize.value === 0.59) notes.push('prize sits exactly at the 0.59 market-only cap (a rule, not a measurement near the bar)');
+  // the market-only cap is read from the node record (meta.yf_nodes cap), not from prize === 0.59: a capped node can
+  // sit below 0.59 (IND Batteries/Extraction 0.571)
+  if (!dep && meta.yf_nodes[`${c.tech}|${c.stage}|stage`]?.cap === 'market_only')
+    notes.push(`prize capped as "market size alone" (${fmtScore(nn(facts.prize.value))}): a rule holding it below the bar, not a measurement near it`);
   notes.push('indicator-level source and data year are not shipped in the posture bundle; the trade benchmark period and momentum period are bundle-level only');
   const conclusion: CaseConclusion = choice
     ? {
@@ -530,6 +577,54 @@ function partnershipSnapshot(key: CaseKey, b: DecodedBundles): CaseSnapshot {
   };
 }
 
+// ---- sector chains (UX v2) ----------------------------------------------------------------------------------------
+
+function sectorChainSnapshot(key: CaseKey, b: DecodedBundles): CaseSnapshot {
+  const doc = b.aib?.doc ?? null;
+  const scenario: AibScenarioKey = key.scenario ?? 'decoupling';
+  const a = doc && key.sid ? chainAnalysis(doc, key.sid, scenario) : null;
+  if (!doc || !a) {
+    const note = !doc ? 'no AIB bundle in this release' : `strategic compact ${key.sid} is not in the AIB bundle`;
+    return { conclusion: missingConclusion(note), facts: complete('sector_chain', {}, note), trace: [], threat: null, robustness: null, data_quality: { grade: null, notes: [note] } };
+  }
+  const rec = a.rec;
+  const why = rec ? 'not exported' : `the compact has no ${scenario} record`;
+  const f: Record<string, CaseFact> = {};
+  f.steps = list('steps', a.compact.steps.map((s) => `${s.label}${s.description ? ` (${s.description})` : ''}`), 'no steps');
+  f.demand_usd = usd('demand_usd', nn(rec?.demandUsd), why);
+  f.lost_usd = usd('lost_usd', nn(rec?.lostUsd), why);
+  f.exposure = share('exposure', nn(rec?.exposure), why);
+  f.coverage_existing = share('coverage_existing', nn(rec?.coverage.existing), why, { note: 'a model estimate: existing trade links may at most double (MC_017)' });
+  f.node_classes = list('node_classes', a.nodes.map((n) => `${n.label} (${n.stage ? STAGE_DISPLAY[n.stage] : 'no stage'}): ${n.status}`), why);
+  f.explorer_stages = fact('explorer_stages', a.explorerStages.join(';') || NO_STAGE, a.explorerStages.map((s) => STAGE_DISPLAY[s]).join('; ') || NO_STAGE_LABEL);
+  f.lead_stage = a.leadStage ? fact('lead_stage', a.leadStage, STAGE_DISPLAY[a.leadStage], { note: a.leadNode ? `largest lost supply in the lead mission: ${a.leadNode.label} (${fmtUsd(a.leadNode.lostUsd)})` : null }) : fact('lead_stage', NO_STAGE, NO_STAGE_LABEL);
+  f.missions = rec?.missions.length
+    ? list('missions', rec.missions.map((m) => `${m.targeted ? 'Targeted action' : m.slot}: ${m.cls}: ${m.text}${m.basis ? ` (${m.basis})` : ''}`), why)
+    : rec
+      ? fact('missions', 'none', rec.statement || 'none')
+      : missing('missions', why);
+  const cp = a.chokepoint;
+  f.chokepoint = cp
+    ? fact('chokepoint', cp.share, `${cp.label} (${cp.stage ? STAGE_DISPLAY[cp.stage] : 'no stage'}): ${cp.basis === 'china_share' ? 'China' : (cp.supplier ?? 'largest supplier')} ${fmtShare(cp.share)} of allied supply before the stress`, {
+        note: cp.basis === 'china_share' ? "China's share of supply to the allied market before the shock (node.baseline)" : "the largest supplier's share of supply to the allied market (node.baseline)",
+      })
+    : missing('chokepoint', 'no baseline supplier shares for the chain');
+  const value = a.leadStage ?? NO_STAGE;
+  const conclusion: CaseConclusion = rec
+    ? {
+        value,
+        label: a.leadStage ? STAGE_DISPLAY[a.leadStage] : NO_STAGE_LABEL,
+        detail: a.explorerStages.length ? `Stages needing allied action: ${a.explorerStages.map((s) => STAGE_DISPLAY[s]).join('; ')}` : (rec.statement ?? null),
+        reason: a.mission?.basis ?? null,
+        confidence: null,
+      }
+    : missingConclusion(why);
+  const notes = ['the AIB bundle carries no git commit', 'the Explorer has no single bottleneck-stage output: the set and the lead stage are derived from the node statuses and the primary mission (qc/sectorChain.ts)'];
+  const noPhys = a.nodes.filter((n) => n.physicalData === 'none' || !n.physicalData).length;
+  if (noPhys) notes.push(`${noPhys} of ${a.nodes.length} products have no production data (trade only)`);
+  return { conclusion, facts: complete('sector_chain', f, 'not exported'), trace: [], threat: deriveCompactThreat(doc, a.compact.id, scenario), robustness: null, data_quality: { grade: null, notes } };
+}
+
 // ---- entry point --------------------------------------------------------------------------------------------------
 
 /** True when the snapshot's subject was found in the bundles (the conclusion is not "missing"). */
@@ -548,6 +643,8 @@ export function buildCaseSnapshot(def: Pick<CaseDefinition, 'kind' | 'key'>, b: 
       return compactSnapshot(def.key, b);
     case 'partnership':
       return partnershipSnapshot(def.key, b);
+    case 'sector_chain':
+      return sectorChainSnapshot(def.key, b);
   }
 }
 

@@ -5,29 +5,31 @@
 
 import { describe, expect, it } from 'vitest';
 import { AIB_CLASS_NAME, CHOICE_NAME } from '../../content/vocabulary.ts';
-import { DONT_KNOW, type CaseKind } from '../model.ts';
+import { OUTSIDE_EXPERTISE, REVIEWER_STATES, type CaseKind } from '../model.ts';
 import { FACT_IDS_BY_KIND, REVEALING_FACT_IDS as MANIFEST_REVEALING } from '../manifest.ts';
-import { answerOptions, NOT_ASSESSED_OPTION } from './answerOptions.ts';
+import { answerOptions, conclusionLabel, conclusionOptions, NOT_ASSESSED_OPTION } from './answerOptions.ts';
 import { buildCaseSnapshot, canonicalJson, FACT_IDS, REVEALING_FACT_IDS, splitFacts } from './snapshot.ts';
 import { HAVE_REAL, loadReal, mkAibDoc, mkDecoded, mkNode, mkPosture, triageTrace } from './__tests__/fixtures.ts';
 
-const KINDS: CaseKind[] = ['posture_cell', 'aib_node', 'compact', 'partnership', 'sector'];
+const KINDS: CaseKind[] = ['posture_cell', 'aib_node', 'compact', 'partnership', 'sector', 'sector_chain'];
 
 describe('shared vocabularies', () => {
   it('fact ids and revealing ids equal review/manifest.ts (one vocabulary for builder and validator)', () => {
     for (const k of KINDS) expect([...FACT_IDS[k]]).toEqual([...FACT_IDS_BY_KIND[k]]);
     expect([...REVEALING_FACT_IDS]).toEqual([...MANIFEST_REVEALING]);
   });
-  it('answer options come from the canonical constants and always end with DONT_KNOW', () => {
+  it('answer options come from the canonical constants and always end with the three reviewer states', () => {
     const post = answerOptions('posture_cell');
-    expect(post.map((o) => o.value)).toEqual(['secure', 'preserve', 'catch_up', 'partner', 'accelerate', 'watch', 'not_assessed', DONT_KNOW]);
+    expect(post.map((o) => o.value)).toEqual(['secure', 'preserve', 'catch_up', 'partner', 'accelerate', 'watch', ...REVIEWER_STATES]);
     expect(post.find((o) => o.value === 'catch_up')!.label).toBe(CHOICE_NAME.catch_up);
-    expect(post.find((o) => o.value === 'not_assessed')).toEqual(NOT_ASSESSED_OPTION);
-    expect(NOT_ASSESSED_OPTION.label).toBe('Not assessed: the data cannot support a call');
+    // the model state stays a possible conclusion, never a reviewer option
+    expect(conclusionOptions('posture_cell').find((o) => o.value === 'not_assessed')).toMatchObject(NOT_ASSESSED_OPTION);
+    expect(conclusionLabel('posture_cell', 'not_assessed')).toBe('Not assessed: the data cannot support a call');
     const aib = answerOptions('aib_node');
     expect(aib.find((o) => o.value === 'BUILD')!.label).toBe(AIB_CLASS_NAME.BUILD);
-    expect(answerOptions('compact', { sid: 'SC-BATTERIES' }).map((o) => o.value)).toEqual(['sectoral', 'narrower', 'none', DONT_KNOW]);
-    for (const k of KINDS) expect(answerOptions(k).at(-1)!.value).toBe(DONT_KNOW);
+    expect(aib.map((o) => o.value)).not.toContain('INSUFFICIENT DATA');
+    expect(answerOptions('compact', { sid: 'SC-BATTERIES' }).map((o) => o.value)).toEqual(['sectoral', 'narrower', 'none', ...REVIEWER_STATES]);
+    for (const k of KINDS) expect(answerOptions(k).at(-1)!.value).toBe(OUTSIDE_EXPERTISE);
   });
 });
 

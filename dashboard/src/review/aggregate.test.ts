@@ -166,7 +166,7 @@ describe('transitions and taxonomy', () => {
       env('decision_use', { case_id: 'CASE_001', would_do_differently: 'x', actionable: 4, identifies_problem: 3, separates_diagnosis_from_prescription: 2, right_geography: 4 }, r),
     ];
     const tax = Object.fromEntries(disagreementTaxonomy(subs).map((x) => [x.issue_type, x.total]));
-    expect(tax).toEqual({ data: 1, method: 0, context: 0, framework: 1, actionability: 1, insufficient_evidence: 1 });
+    expect(tax).toEqual({ data: 1, method: 0, context: 0, framework: 1, actionability: 1, insufficient_evidence: 1, decision_rule: 0 });
   });
 });
 

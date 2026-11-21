@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Expert-review exports (docs/QC_SYSTEM_DESIGN.md 6.5): reviewer submissions and packets -> the qc_*.csv
 // files (qc_review_responses, qc_case_results, qc_method_feedback, qc_data_issues, qc_framework_answers,
-// qc_decision_use, qc_threat_reviews, qc_priority_fixes) plus export_summary.json. IO only: the row logic is
+// qc_decision_use, qc_threat_reviews, qc_priority_fixes and, for UX v2 reviews, qc_evidence_gaps; v1 and v2
+// submissions mix freely, the v2 columns of qc_review_responses / qc_case_results follow the v1 ones) plus
+// export_summary.json (which counts the v2 case reviews). IO only: the row logic is
 // src/review/exports.ts and the validation src/review/manifest.ts, imported as TypeScript (Node >= 24 strips
 // the types). Reviewers appear as pseudonymous codes; names only with --include-names, never an anonymous
 // reviewer's.
@@ -242,6 +244,7 @@ export function run(argv, log = console) {
     cases: casesMeta,
     n_adjudications: adjudications.length,
     data_releases: [...new Set(subs.valid.map((s) => s.data_release).filter(Boolean))].sort(),
+    n_case_reviews_v2: subs.valid.filter((s) => s.kind === 'case_review' && s.payload?.blind?.ux_version === 2).length,
     include_names: o.includeNames,
   };
   writeFileSync(join(outAbs, 'export_summary.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');

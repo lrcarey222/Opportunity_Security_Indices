@@ -1,40 +1,53 @@
-# Review case catalogue of the AIB Explorer expert peer review (docs/QC_SYSTEM_DESIGN.md 4.2).
+# Review case catalogue of the AIB Explorer expert peer review (docs/QC_SYSTEM_DESIGN.md 4.2; UX v2,
+# docs/QC_UX_REVIEW.md and docs/qc_audit/QC_EVIDENCE_CATALOGUE.md).
 # Each entry under `cases:` maps 1:1 to CaseDefinition in dashboard/src/review/model.ts. The snapshot a reviewer
-# sees (the exact values), its hash and the answer options are built from the shipped bundles by
-# dashboard/scripts/review/build-review-data.mjs; nothing numeric here is read by the build. Numbers quoted in
-# why_selected were read from main's shipped bundles (posture 2026-11-17T20:33 @0496e7ba, posture-core.f665dc19;
-# AIB 2026-11-17, compacts.c5643da1; partnership memo USA_JPN generated 2026-11-06) to explain the pick only.
+# sees (the exact values), the neutral case brief, the reasoning reveal, the snapshot hash and the answer options
+# are built from the shipped bundles by dashboard/scripts/review/build-review-data.mjs; nothing numeric here is
+# read by the build. Numbers quoted in why_selected were read from main's shipped bundles (posture
+# 2026-11-17T20:33 @0496e7ba, posture-core.f665dc19; AIB 2026-11-17, compacts.c5643da1; partnership memo USA_JPN
+# generated 2026-11-06) to explain the pick only.
 #
 # Rules:
 # - case_id is stable and never reused. Retire a case by dropping it from a campaign's case_ids, never by
-#   renumbering or by reusing its ID for another cell.
-# - context_fields are shown before the blind answer and must never name a revealing fact id (choice, fence,
-#   posture, reason, confidence, borderline, partner, policy_alignment, class, decision, missions,
-#   choices_summary, headline). Model scores that decide the conclusion (need, prize, cp, the need-family
-#   percentiles, pathway, deployment_need, coverage after coordination) are also held back for the reveal so
-#   the blind answer is the reviewer's own reading of the evidence, not of the model's scores. The one
-#   exception is a Deployment cell (CASE_012), whose only context fact is the deployment position (cp), which
-#   the Deployment rule does not read.
-# - reveal_fields name only facts the bundle carries for that case (the builder writes a missing fact as null
-#   with a note, so a fact that is always null for a case, e.g. partner on a Preserve cell, is left out).
+#   renumbering or by reusing its ID for another cell. New cases take the next free number (CASE_022 ...).
+# - brief: (UX v2) the authored part of the neutral case brief shown BEFORE the blind answer:
+#   decision_question (one decision, in plain words, with its horizon), decision_context (2-3 sentences: whose
+#   decision this approximates, the objective, what the analysis does and does not determine), objective, and
+#   optionally time_horizon (overrides the builder's), evidence_ids (5-8 brief fact ids, qc/brief.ts
+#   BRIEF_FACT_IDS_BY_KIND) and assumption_ids (qc/brief.ts ASSUMPTIONS). The builder adds the true horizon and
+#   scenario, the six-stage strip, the evidence facts, warnings, missing evidence and definitions. Brief text,
+#   titles and questions must never name a conclusion (no choice, class, decision or memo-box label, no
+#   "posture", "fence", "coercive", "large yard", no model score): the validator and the build lint them
+#   (qc/briefLint.ts) and fail on a leak.
+# - context_fields are snapshot facts shown before the blind answer and must never name a revealing fact id
+#   (choice, fence, posture, reason, confidence, borderline, partner, policy_alignment, class, decision, missions,
+#   choices_summary, headline, lead_stage, explorer_stages, node_classes). Model scores that decide the
+#   conclusion (need, prize, cp, the need-family percentiles, pathway, deployment_need, coverage after
+#   coordination) and model outputs that presuppose or reveal it (the AIB physical_warning, which fires only for
+#   some classes; the compact purpose, non_allied_relied_on and critical_external) are reveal-only.
+# - reveal_fields name only facts the bundle carries for that case.
 # - sector_groups use the shared sector tags, country_groups ISO3 codes, stage one of the six stage tags.
 # - explorer_path is a deep link into main's app (dashboard/src/routes.tsx and the module routes.tsx):
 #   /countries/:iso3?node=Tech|Stage (Country profile, cell drawer; posture/selection.ts NODE_KEY);
 #   an AIB node opens its operational compact's node list, /compacts/AIB-Cxx[?scn=decoupling]#nodes, as the
 #   Overview's own node links do (aib/views/AibOverviewView.tsx), or the Workstreams node list
 #   /compacts/workstreams[?scn=decoupling]#nodes for a node without a compact, or /aib/diversification for
-#   the Managed Interdependence view; /compacts/s/:sid[?scn=decoupling] for a strategic compact;
-#   /aib/partnerships?country=A&partner=B for a pair (aib/nav.ts pairHref). Managed Interdependence is the
-#   default scenario and is never written to the URL (aib/scenarioUrl.ts); scn=decoupling is.
+#   the Managed Interdependence view; /compacts/s/:sid[?scn=decoupling] for a strategic compact or a sector
+#   chain; /aib/partnerships?country=A&partner=B for a pair (aib/nav.ts pairHref). Managed Interdependence is
+#   the default scenario and is never written to the URL (aib/scenarioUrl.ts); scn=decoupling is.
 
 cases:
   # ------------------------------------------------------------------------------------------------
-  # Posture cells (Country x Technology x Stage)
+  # Posture cells (Country review: Country x Technology x Stage)
   - case_id: CASE_001
     kind: posture_cell
     key: {iso3: KOR, tech: Batteries, stage: Components}
     title: "Korea: battery component manufacturing"
-    question: "Which strategic posture is closest to what you would recommend for Korea's manufacturing of battery components (the Batteries / Component Manufacturing node)?"
+    question: "How should South Korea manage battery component manufacturing through 2035?"
+    brief:
+      decision_question: "How should South Korea manage battery component manufacturing through 2035?"
+      decision_context: "This approximates a call by South Korea's industrial-strategy and economic-security officials about one step of the battery supply chain: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. Relying on partners or leaving supply open can be the best outcome. The analysis does not assess individual firms, programme costs or policy instruments."
+      objective: "Resilient and affordable supply, not maximum national self-sufficiency."
     sector_groups: [batteries, electric-vehicles]
     country_groups: [KOR]
     stage: Components
@@ -42,15 +55,19 @@ cases:
     anchor: true
     why_selected: "Central to NEIS and near a threshold: Preserve with Competitive Position 0.763 against the 0.75 bar (Catch Up is the other possible choice); the node has 19 contenders, so one rank step moves the position by 0.053. Korea holds 6.2% of world supply and an export RCA of 3.48, with China 76.6% of its imports."
     explorer_path: "/countries/KOR?node=Batteries|Components"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, export_trend, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
     decision_use: true
 
   - case_id: CASE_002
     kind: posture_cell
     key: {iso3: JPN, tech: Electric Vehicles, stage: Refining}
     title: "Japan: rare-earth and battery-metal refining for electric vehicles"
-    question: "Which strategic posture is closest to what you would recommend for Japan's rare-earth and battery-metal refining for electric vehicles (the Electric Vehicles / Refining & Processing node)?"
+    question: "How should Japan manage rare-earth and battery-metal refining for electric vehicles through 2035?"
+    brief:
+      decision_question: "How should Japan manage rare-earth and battery-metal refining for electric vehicles through 2035?"
+      decision_context: "This approximates a call by Japan's economic-security and industrial-strategy officials about the refining step of the electric-vehicle supply chain: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. Domestic production is not automatically preferred. The analysis does not assess individual refiners, stockpile levels or the cost of programmes."
+      objective: "Resilient and affordable supply, not maximum national self-sufficiency."
     sector_groups: [electric-vehicles, critical-minerals, batteries]
     country_groups: [JPN]
     stage: Refining
@@ -58,14 +75,18 @@ cases:
     anchor: false
     why_selected: "Obvious-Secure golden case for critical minerals: Secure through the coercive-chokepoint route with need 0.998, China 47.2% of imports and 94.4% of world supply. Japan's Batteries/Refining shares the same world-supply facts (China 94.4%, trusted partners 4.0%) but is Catch Up on a different import mix (China 22.4% of imports), so the pair tests whether shared evidence is read consistently."
     explorer_path: "/countries/JPN?node=Electric%20Vehicles|Refining"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, export_trend, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
 
   - case_id: CASE_003
     kind: posture_cell
     key: {iso3: AUS, tech: Batteries, stage: Extraction}
     title: "Australia: battery mineral mining"
-    question: "Which strategic posture is closest to what you would recommend for Australia's battery mineral mining (the Batteries / Extraction node)?"
+    question: "How should Australia manage battery mineral mining through 2035?"
+    brief:
+      decision_question: "How should Australia manage battery mineral mining through 2035?"
+      decision_context: "This approximates a call by Australia's resources and economic-security officials about the mining step of the battery supply chain: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. A large existing industry does not by itself settle the question. The analysis does not assess individual mines, royalties or downstream processing plans."
+      objective: "Resilient and affordable supply and lasting industrial value, not maximum national self-sufficiency."
     sector_groups: [critical-minerals, batteries]
     country_groups: [AUS]
     stage: Extraction
@@ -73,31 +94,39 @@ cases:
     anchor: true
     why_selected: "Surprising and central to NEIS: Watch although Competitive Position is 0.864 and Australia holds 16% of world supply (RCA 25.2), because need is 0.115 and the prize is capped at 0.59; the same minerals under Electric Vehicles/Extraction are Preserve (need 0.738), because the self-supply guard fires on one and not the other."
     explorer_path: "/countries/AUS?node=Batteries|Extraction"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, export_trend, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
     decision_use: true
 
   - case_id: CASE_004
     kind: posture_cell
     key: {iso3: USA, tech: Batteries, stage: Refining}
     title: "United States: battery-material refining and processing"
-    question: "Which strategic posture is closest to what you would recommend for US battery materials refining (the Batteries / Refining & Processing node)?"
+    question: "How should the United States manage battery-material refining and processing through 2035?"
+    brief:
+      decision_question: "How should the United States manage battery-material refining and processing through 2035?"
+      decision_context: "This approximates a call by US industrial-strategy and economic-security officials about the refining step of the battery supply chain: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. Domestic production is not automatically preferred. The analysis does not assess individual projects, tax-credit design or programme costs."
+      objective: "Resilient and affordable supply, not maximum national self-sufficiency."
     sector_groups: [batteries, critical-minerals]
     country_groups: [USA]
     stage: Refining
     assignment_group: batteries
     anchor: false
-    why_selected: "Central to NEIS: Catch Up on a high prize (0.834) and a credible pathway, with need only 0.453 (below the 0.67 bar) although China, the largest coercive supplier, holds 94.4% of world supply of the node; tests whether a within-node percentile reads US dependence correctly."
+    why_selected: "Central to NEIS: Catch Up on a high prize (0.834) and a credible pathway, with need only 0.453 (below the 0.67 bar) although China, the largest coercive supplier, holds 94.4% of world supply of the node; tests whether a within-node percentile reads US dependence correctly. The pathway rests partly on a 0.51% world-supply share, on the 0.5% anchor line."
     explorer_path: "/countries/USA?node=Batteries|Refining"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, export_trend, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
     decision_use: true
 
   - case_id: CASE_005
     kind: posture_cell
     key: {iso3: IND, tech: Solar, stage: Components}
     title: "India: wafer and PV cell manufacturing"
-    question: "Which strategic posture is closest to what you would recommend for India's manufacturing of wafers and PV cells (the Solar / Component Manufacturing node)?"
+    question: "How should India manage the manufacturing of solar wafers and cells through 2035?"
+    brief:
+      decision_question: "How should India manage the manufacturing of solar wafers and cells through 2035?"
+      decision_context: "This approximates a call by India's industrial-strategy and energy-security officials about the wafer and cell step of the solar supply chain: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. Building at home and relying on others both carry costs. The analysis does not assess individual manufacturers, production-linked incentives or tariff design."
+      objective: "Resilient and affordable supply, not maximum national self-sufficiency."
     sector_groups: [solar]
     country_groups: [IND]
     stage: Components
@@ -105,15 +134,19 @@ cases:
     anchor: false
     why_selected: "Surprising: Partner (with Japan) although Competitive Position is 0.948, because the capability floor is not met (flag review_top_quarter_below_floor) and the Solar Components prize is capped at 0.59 in every economy; need is high (0.851) with China 58.7% of imports."
     explorer_path: "/countries/IND?node=Solar|Components"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, export_trend, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment, coercive_top, coercive_top_share, outlook, prize_note]
     decision_use: true
 
   - case_id: CASE_006
     kind: posture_cell
     key: {iso3: CHN, tech: Solar, stage: Components}
     title: "China: wafer and PV cell manufacturing"
-    question: "Which strategic posture is closest to what you would recommend for China's own manufacturing of wafers and PV cells (the Solar / Component Manufacturing node)?"
+    question: "How should China manage its own manufacturing of solar wafers and cells through 2035?"
+    brief:
+      decision_question: "How should China manage its own manufacturing of solar wafers and cells through 2035?"
+      decision_context: "This applies the same framework to the dominant producer: whether China's own government should protect this step, keep and strengthen it, build it up, rely on others, or leave it to the open market. The question is what the evidence implies for China's own supply and industrial value, not what other economies should do about China. The analysis does not assess overcapacity, prices or individual firms."
+      objective: "Resilient and affordable supply and lasting industrial value, judged from China's own position."
     sector_groups: [solar]
     country_groups: [CHN]
     stage: Components
@@ -121,14 +154,18 @@ cases:
     anchor: true
     why_selected: "Surprising anchor every reviewer group can judge: the dominant producer (25.9% of measured world supply, Competitive Position 0.983, US$37bn of benchmark exports) is Watch because need is 0.012 and the market-only cap holds the prize at 0.59."
     explorer_path: "/countries/CHN?node=Solar|Components"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
 
   - case_id: CASE_007
     kind: posture_cell
     key: {iso3: DEU, tech: Solar, stage: Assembly}
     title: "Germany: solar module and inverter assembly"
-    question: "Which strategic posture is closest to what you would recommend for Germany's assembly of PV modules and inverters (the Solar / Final Assembly & Equipment node)?"
+    question: "How should Germany manage the assembly of solar modules and inverters through 2035?"
+    brief:
+      decision_question: "How should Germany manage the assembly of solar modules and inverters through 2035?"
+      decision_context: "This approximates a call by German (and EU) industrial-strategy officials about the module and inverter step of the solar supply chain: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. Inverters and modules are grouped in one step here. The analysis does not assess individual manufacturers, EU instruments or programme costs."
+      objective: "Resilient and affordable supply, not maximum national self-sufficiency."
     sector_groups: [solar]
     country_groups: [DEU]
     stage: Assembly
@@ -136,14 +173,18 @@ cases:
     anchor: false
     why_selected: "Central to NEIS and near a threshold: Preserve with Competitive Position 0.779 (0.029 over the bar) and low confidence; borderline on both position and the large-yard test (4 of the 5 signals it needs), so Catch Up is also possible."
     explorer_path: "/countries/DEU?node=Solar|Assembly"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, export_trend, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
 
   - case_id: CASE_008
     kind: posture_cell
     key: {iso3: JPN, tech: Electric Grid, stage: Assembly}
     title: "Japan: grid equipment assembly (transformers, switchgear and cables)"
-    question: "Which strategic posture is closest to what you would recommend for Japan's final assembly of grid equipment such as transformers, switchgear and cables (the Electric Grid / Final Assembly & Equipment node)?"
+    question: "How should Japan manage the final assembly of grid equipment (transformers, switchgear and cables) through 2035?"
+    brief:
+      decision_question: "How should Japan manage the final assembly of grid equipment (transformers, switchgear and cables) through 2035?"
+      decision_context: "This approximates a call by Japan's industrial-strategy and energy-security officials about the equipment step of the grid supply chain: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. Grid equipment has long lead times, which the analysis does not measure. It does not assess individual manufacturers or utility procurement rules."
+      objective: "Resilient and affordable supply, not maximum national self-sufficiency."
     sector_groups: [electric-grid]
     country_groups: [JPN]
     stage: Assembly
@@ -151,14 +192,19 @@ cases:
     anchor: true
     why_selected: "Grid anchor and method-sensitive: Catch Up, borderline on need (0.685), prize and position (0.703) at once, with low confidence; the prize is 0.613 for all 214 economies, so the whole node moves together if the prize bar moves."
     explorer_path: "/countries/JPN?node=Electric%20Grid|Assembly"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, export_trend, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
 
   - case_id: CASE_009
     kind: posture_cell
     key: {iso3: KOR, tech: Nuclear, stage: Refining}
     title: "Korea: nuclear fuel conversion and enrichment"
-    question: "Which strategic posture is closest to what you would recommend for Korea's supply of uranium conversion and enrichment (the Nuclear / Refining & Processing node)?"
+    question: "How should South Korea manage its supply of uranium conversion and enrichment through 2035?"
+    brief:
+      decision_question: "How should South Korea manage its supply of uranium conversion and enrichment through 2035?"
+      decision_context: "This approximates a call by South Korea's energy-security and nuclear-policy officials about the fuel conversion and enrichment step: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. Enrichment is subject to non-proliferation commitments the analysis does not model. It does not assess individual contracts, inventories or reactor fleets."
+      objective: "Reliable and affordable fuel supply for the reactor fleet, not maximum national self-sufficiency."
+      evidence_ids: [largest_supplier, rival_group_import_share, own_world_share, export_position, major_supplier_world_share, same_group_world_share, import_scale, demand_outlook]
     sector_groups: [nuclear]
     country_groups: [KOR]
     stage: Refining
@@ -166,14 +212,19 @@ cases:
     anchor: true
     why_selected: "Nuclear anchor and obvious-Secure golden case: Secure through the operational-control route with need 0.973, Russia the top supplier at 44.2% of imports and no measured domestic supply."
     explorer_path: "/countries/KOR?node=Nuclear|Refining"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
 
   - case_id: CASE_010
     kind: posture_cell
     key: {iso3: BEL, tech: Oil, stage: Extraction}
     title: "Belgium: crude oil supply"
-    question: "Which strategic posture is closest to what you would recommend for Belgium's oil production and crude supply (the Oil / Extraction node)?"
+    question: "How should Belgium manage its crude oil supply through 2035?"
+    brief:
+      decision_question: "How should Belgium manage its crude oil supply through 2035?"
+      decision_context: "This approximates a call by Belgium's energy-security officials about crude oil supply, a step where Belgium has essentially no domestic production: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. Crude often reaches Belgium through neighbouring ports. The analysis does not assess emergency oil stocks held under EU and International Energy Agency rules, refinery configurations or prices."
+      objective: "Resilient and affordable supply, not maximum national self-sufficiency."
+      evidence_ids: [largest_supplier, rival_group_import_share, own_world_share, import_scale, major_supplier_world_share, same_group_world_share, demand_outlook]
     sector_groups: [oil]
     country_groups: [BEL]
     stage: Extraction
@@ -181,14 +232,18 @@ cases:
     anchor: false
     why_selected: "Entrepot case: Secure (systemic resilience) with need 0.963, essentially no domestic supply (0.005% of world supply) and the Netherlands recorded as the supplier of 98.4% of imports, which reads Rotterdam transit as Dutch supply."
     explorer_path: "/countries/BEL?node=Oil|Extraction"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
 
   - case_id: CASE_011
     kind: posture_cell
     key: {iso3: IND, tech: Batteries, stage: Extraction}
     title: "India: battery mineral mining and supply"
-    question: "Which strategic posture is closest to what you would recommend for India's battery mineral mining and supply (the Batteries / Extraction node)?"
+    question: "How should India manage its supply of battery minerals through 2035?"
+    brief:
+      decision_question: "How should India manage its supply of battery minerals through 2035?"
+      decision_context: "This approximates a call by India's mines and economic-security officials about the mining step of the battery supply chain, where India has little measured production: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. Domestic exploration and overseas acquisitions are both possible routes. The analysis does not assess individual deposits, licensing or overseas investments."
+      objective: "Resilient and affordable supply, not maximum national self-sufficiency."
     sector_groups: [critical-minerals, batteries]
     country_groups: [IND]
     stage: Extraction
@@ -196,14 +251,18 @@ cases:
     anchor: false
     why_selected: "Import-dependent case: need 0.924, no measured domestic supply, South Africa 49% of imports; Partner with Australia as the named partner, one large-yard signal short of Watch (4 of 5)."
     explorer_path: "/countries/IND?node=Batteries|Extraction"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, export_trend, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, partner, policy_alignment, coercive_top, coercive_top_share, outlook, prize_note]
 
   - case_id: CASE_012
     kind: posture_cell
     key: {iso3: USA, tech: Nuclear, stage: Deployment}
     title: "United States: deployment of nuclear power"
-    question: "Does the United States need a major push to deploy nuclear power at home faster than current policy implies? Choose the posture closest to your view."
+    question: "Does the United States need a major push to deploy nuclear power at home, faster than current policies imply, by 2030-2035?"
+    brief:
+      decision_question: "Does the United States need a major push to deploy nuclear power at home, faster than current policies imply, by 2030-2035?"
+      decision_context: "This approximates a call by US energy planners about the domestic power system: whether it needs much more nuclear power than current policies deliver, or whether current policies and other technologies are enough. It asks only about deployment, not about where reactors or fuel are made. The analysis does not cost programmes, licensing or financing."
+      objective: "An energy system that gets enough firm, clean power, affordably, by 2035."
     sector_groups: [nuclear]
     country_groups: [USA]
     stage: Deployment
@@ -211,14 +270,18 @@ cases:
     anchor: false
     why_selected: "Near a threshold at Deployment and central to NEIS: Watch with deployment need 0.597 against the 0.6 bar on two of three evidence families (the policy-gap family is not assessed for the US), while the US ranks 0.966 on deployment position; the reason text rounds it to 'Deployment need 0.60 is below 0.60'."
     explorer_path: "/countries/USA?node=Nuclear|Deployment"
-    context_fields: [cp]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, deployment_need, policy_alignment]
+    context_fields: [deployment_trend, deployment_demand_note, deployment_target_note, deployment_system_note]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, deployment_need, cp, policy_alignment]
 
   - case_id: CASE_013
     kind: posture_cell
     key: {iso3: DEU, tech: Electric Grid, stage: Components}
     title: "Germany: grid component manufacturing"
-    question: "Which strategic posture is closest to what you would recommend for Germany's manufacturing of grid components (the Electric Grid / Component Manufacturing node)?"
+    question: "How should Germany manage the manufacturing of grid components through 2035?"
+    brief:
+      decision_question: "How should Germany manage the manufacturing of grid components through 2035?"
+      decision_context: "This approximates a call by German (and EU) industrial-strategy officials about the component step of the grid supply chain: protect it, keep and strengthen it, build it up, rely on trusted partners or diversified suppliers, or leave it to the open market. A competitive industry is not automatically a strategic priority. The analysis does not assess individual manufacturers or grid-operator procurement."
+      objective: "Resilient and affordable supply and lasting industrial value, not maximum national self-sufficiency."
     sector_groups: [electric-grid]
     country_groups: [DEU]
     stage: Components
@@ -226,16 +289,20 @@ cases:
     anchor: false
     why_selected: "Globally competitive but not strategically indispensable: Watch with Competitive Position 0.948 and 9.2% of world supply, because need (0.31) and prize (0.467, the same value in every economy) are both low."
     explorer_path: "/countries/DEU?node=Electric%20Grid|Components"
-    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, opposite_bloc_share, trusted_share, coercive_top, coercive_top_share, benchmark_share, benchmark_rca, benchmark_exports, outlook, prize_note]
-    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment]
+    context_fields: [home_share, imports_to_gdp, top_supplier, top_supplier_share, china_share, coercive_import_share, trusted_share, benchmark_share, benchmark_rca, benchmark_exports, export_trend, demand_outlook]
+    reveal_fields: [choice, posture, fence, reason, confidence, borderline, need, prize, market, cp, pathway, large_yard_signals, import_dependence, import_hhi, china_bloc, trusted_alternatives, policy_alignment, coercive_top, coercive_top_share, opposite_bloc_share, outlook, prize_note]
 
   # ------------------------------------------------------------------------------------------------
-  # AIB nodes (stress test of allied supply)
+  # AIB nodes (Sector review: one product under one stress)
   - case_id: CASE_014
     kind: aib_node
     key: {node: rare-earth-permanent-magnets, scenario: decoupling}
     title: "Rare-earth permanent magnets if China's supply is cut off"
-    question: "If China's exports of rare-earth permanent magnets to allied economies stopped, what response would you recommend for the allied economies?"
+    question: "If China stopped supplying rare-earth permanent magnets to allied economies, what kind of allied response would be needed?"
+    brief:
+      decision_question: "If China stopped supplying rare-earth permanent magnets to the 59 allied economies (while still buying from them), what kind of allied response would be needed: new production capacity, coordinated trade, managed reliance on a few suppliers with backup, or little intervention?"
+      decision_context: "This approximates a joint decision by allied economic-security and trade officials about one product group. It asks whether existing trade could absorb the shock, or whether coordination or new capacity is needed. It reads traded supply only and is immediate: it does not model how long new plants take, prices or firm-level constraints."
+      objective: "Allied supply that survives the shock at reasonable cost, using trade before new capacity."
     sector_groups: [critical-minerals, electric-vehicles, wind]
     country_groups: []
     stage: Components
@@ -243,15 +310,19 @@ cases:
     anchor: false
     why_selected: "Central to NEIS: China supplies 61.7% of allied traded demand (US$3.33bn of US$5.39bn is lost); after redistributed trade a 60.7% gap remains, and every variant (China halved, release, conservative, trade-only, every growth bound) gives the same class. There are no physical production data for the node (trade only)."
     explorer_path: "/compacts/AIB-C05?scn=decoupling#nodes"
-    context_fields: [exposure, lost_usd, demand_usd, static, baseline_hhi, baseline_largest, baseline_largest_share, baseline_top3_share, top_suppliers, physical_warning]
-    reveal_fields: [class, reason, existing, optimized, dividend, residual, residual_usd, after_hhi, after_largest, after_largest_share, n1_reoptimized, diversion, hosts]
+    context_fields: [exposure, lost_usd, demand_usd, baseline_hhi, baseline_largest, baseline_largest_share, baseline_top3_share, top_suppliers]
+    reveal_fields: [class, reason, static, existing, optimized, dividend, residual, residual_usd, after_hhi, after_largest, after_largest_share, n1_reoptimized, diversion, hosts, physical_warning]
     threat: true
 
   - case_id: CASE_015
     kind: aib_node
     key: {node: graphite-electrodes, scenario: decoupling}
     title: "Graphite electrodes if China's supply is cut off"
-    question: "If China's exports of graphite electrodes (used in electric-arc steelmaking and furnaces) to allied economies stopped, what response would you recommend for the allied economies?"
+    question: "If China stopped supplying graphite electrodes to allied economies, what kind of allied response would be needed?"
+    brief:
+      decision_question: "If China stopped supplying graphite electrodes (used in electric-arc steelmaking and furnaces) to the 59 allied economies, while still buying from them, what kind of allied response would be needed: new production capacity, coordinated trade, managed reliance on a few suppliers with backup, or little intervention?"
+      decision_context: "This approximates a joint decision by allied economic-security and trade officials about one product group. It asks whether existing trade could absorb the shock, or whether coordination or new capacity is needed. It reads traded supply only and is immediate: it does not model how long new plants take, prices or firm-level constraints."
+      objective: "Allied supply that survives the shock at reasonable cost, using trade before new capacity."
     sector_groups: [critical-minerals]
     country_groups: []
     stage: Components
@@ -259,15 +330,19 @@ cases:
     anchor: false
     why_selected: "Method-sensitive COORDINATE node: existing links restore 83.4% of demand and new or expanded links 91.5% (dividend 8.1 points); it is COORDINATE at 1.25x, 2x and 4x growth of existing links but LOW INTERVENTION when they may grow without limit or China is only halved, and BUILD under the conservative supply scenario; 19.9% of demand is served by supply diverted from buyers outside the allied group."
     explorer_path: "/compacts/AIB-C15?scn=decoupling#nodes"
-    context_fields: [exposure, lost_usd, demand_usd, static, baseline_hhi, baseline_largest, baseline_largest_share, baseline_top3_share, top_suppliers, physical_warning]
-    reveal_fields: [class, reason, existing, optimized, dividend, residual, residual_usd, after_hhi, after_largest, after_largest_share, n1_reoptimized, diversion, hosts]
+    context_fields: [exposure, lost_usd, demand_usd, baseline_hhi, baseline_largest, baseline_largest_share, baseline_top3_share, top_suppliers]
+    reveal_fields: [class, reason, static, existing, optimized, dividend, residual, residual_usd, after_hhi, after_largest, after_largest_share, n1_reoptimized, diversion, hosts, physical_warning]
     threat: true
 
   - case_id: CASE_016
     kind: aib_node
     key: {node: polysilicon, scenario: decoupling}
     title: "Polysilicon if China's supply is cut off"
-    question: "If China's exports of polysilicon to allied economies stopped, what response would you recommend for the allied economies?"
+    question: "If China stopped supplying polysilicon to allied economies, what kind of allied response would be needed?"
+    brief:
+      decision_question: "If China stopped supplying polysilicon to the 59 allied economies (while still buying from them), what kind of allied response would be needed: new production capacity, coordinated trade, managed reliance on a few suppliers with backup, or little intervention?"
+      decision_context: "This approximates a joint decision by allied economic-security and trade officials about one product group. It asks whether existing trade could absorb the shock, or whether coordination or new capacity is needed. It reads traded supply only and is immediate: production that never crosses a border (for example polysilicon turned into wafers in the same country) is not counted as supply at risk."
+      objective: "Allied supply that survives the shock at reasonable cost, using trade before new capacity."
     sector_groups: [solar, semiconductors]
     country_groups: []
     stage: Refining
@@ -275,15 +350,19 @@ cases:
     anchor: false
     why_selected: "Surprising: LOW INTERVENTION because the shock removes only 11.7% of allied traded demand (the US is the largest supplier at 41.6%), while the bundle itself warns PHYSICAL CAPABILITY NOT VALIDATED and flags that China holds 97% of GCIM operational polysilicon capacity against 10% of exports."
     explorer_path: "/compacts/workstreams?scn=decoupling#nodes"
-    context_fields: [exposure, lost_usd, demand_usd, static, baseline_hhi, baseline_largest, baseline_largest_share, baseline_top3_share, top_suppliers, physical_warning]
-    reveal_fields: [class, reason, existing, optimized, dividend, residual, residual_usd, after_hhi, after_largest, after_largest_share, n1_reoptimized, diversion, hosts]
+    context_fields: [exposure, lost_usd, demand_usd, baseline_hhi, baseline_largest, baseline_largest_share, baseline_top3_share, top_suppliers]
+    reveal_fields: [class, reason, static, existing, optimized, dividend, residual, residual_usd, after_hhi, after_largest, after_largest_share, n1_reoptimized, diversion, hosts, physical_warning]
     threat: true
 
   - case_id: CASE_017
     kind: aib_node
     key: {node: li-ion-cells-and-packs, scenario: managed}
     title: "Lithium-ion cells and packs under Managed Interdependence"
-    question: "If no single supplier were allowed to hold more of the allied market for lithium-ion cells and packs than is normal for comparable products, what response would you recommend for the allied economies?"
+    question: "If no single supplier could hold more of the allied market for lithium-ion cells and packs than is normal for comparable products, what kind of allied response would be needed?"
+    brief:
+      decision_question: "If no single supplier could hold more of the allied market for lithium-ion cells and packs than is normal for comparable products, what kind of allied response would be needed: new production capacity, coordinated trade, managed reliance on a few suppliers with backup, or little intervention?"
+      decision_context: "This approximates a joint decision by allied economic-security and trade officials on how far to reduce reliance on the largest supplier of one product without cutting it off. No supplier is banned: only the share above a benchmark taken from comparable products has to move elsewhere. The analysis reads traded supply only and does not model build times, prices or firm-level constraints."
+      objective: "Keep the benefits of specialisation while limiting reliance on any one supplier, at reasonable cost."
     sector_groups: [batteries, electric-vehicles]
     country_groups: []
     stage: Assembly
@@ -291,17 +370,21 @@ cases:
     anchor: false
     why_selected: "Central to NEIS under Managed Interdependence: the node's exporter HHI (0.488) is benchmarked on the other HS6 lines of heading 8507 (HHI 0.103), which caps China at 23.2% of allied demand; 46.4% of demand must shift and a 45.6% gap (US$60.6bn) remains for new capacity. After the cap the HHI of the supply actually served is 0.207 and China still holds 42.3% of it, twice the benchmark."
     explorer_path: "/aib/diversification"
-    context_fields: [exposure, lost_usd, demand_usd, static, baseline_hhi, baseline_largest, baseline_largest_share, baseline_top3_share, top_suppliers, physical_warning]
-    reveal_fields: [class, reason, existing, optimized, dividend, residual, residual_usd, after_hhi, after_largest, after_largest_share, hosts]
+    context_fields: [exposure, lost_usd, demand_usd, baseline_hhi, baseline_largest, baseline_largest_share, baseline_top3_share, top_suppliers]
+    reveal_fields: [class, reason, static, existing, optimized, dividend, residual, residual_usd, after_hhi, after_largest, after_largest_share, hosts, physical_warning]
     threat: true
 
   # ------------------------------------------------------------------------------------------------
-  # Strategic compacts (SC-*)
+  # Strategic compacts (Compact review: SC-*)
   - case_id: CASE_018
     kind: compact
     key: {sid: SC-BATTERIES, scenario: decoupling}
     title: "Battery Materials & Cells compact if China's supply is cut off"
-    question: "If China's battery-chain exports to allied economies stopped, do allied economies need a standing Sectoral Compact across the battery chain, targeted action on a few steps only, or no compact?"
+    question: "If China stopped supplying the battery chain to allied economies, do they need a standing multi-country arrangement across the whole chain, joint action on a few steps only, or no joint arrangement?"
+    brief:
+      decision_question: "If China stopped supplying the battery chain (minerals to cells and packs) to the 59 allied economies, do they need a standing multi-country arrangement across the whole chain, joint action on a few steps only, or no joint arrangement?"
+      decision_context: "This approximates a decision by a group of allied governments on whether to set up a lasting multi-country arrangement (coordinated investment, long-term offtake, stockpiles, common trade rules) for a whole supply chain. Such an arrangement is meant to be warranted only where joint action changes resilience materially compared with what countries would do alone. The analysis does not cost the arrangement or test its politics."
+      objective: "Allied supply that survives the shock at reasonable cost, with joint action only where it changes the outcome."
     sector_groups: [batteries, critical-minerals, electric-vehicles]
     country_groups: [USA, JPN, KOR, DEU, IDN, COD]
     stage: null
@@ -309,8 +392,8 @@ cases:
     anchor: false
     why_selected: "Central to NEIS: the shock removes 59.4% of the chain's allied traded demand (US$108.3bn) and coordinated trade restores only 42.0%; 10 of 14 steps are BUILD. The proposed core lists the United States as a 'Resource supplier' for minerals and recycled feed, and Slovenia, an EU member, appears among the non-allied economies the chain relies on."
     explorer_path: "/compacts/s/SC-BATTERIES?scn=decoupling"
-    context_fields: [purpose, steps, lost_usd, exposure, coverage_static, coverage_existing, non_allied_relied_on, critical_external]
-    reveal_fields: [decision, missions, class_counts, core, coverage_coordinated, coverage_post_investment, build_hosts]
+    context_fields: [steps, lost_usd, exposure, coverage_existing]
+    reveal_fields: [decision, missions, class_counts, core, purpose, coverage_static, coverage_coordinated, coverage_post_investment, build_hosts, non_allied_relied_on, critical_external]
     decision_use: true
     threat: true
 
@@ -318,23 +401,31 @@ cases:
     kind: compact
     key: {sid: SC-NUCLEAR, scenario: managed}
     title: "Nuclear Fuel & Reactor Systems compact under Managed Interdependence"
-    question: "If no supplier were allowed to hold more of the allied market than is normal for comparable products, would the nuclear fuel and reactor chain need a standing Sectoral Compact, targeted action on a few steps only, or no compact?"
+    question: "If no supplier could hold more of the allied market than is normal for comparable products, would the nuclear fuel and reactor chain need a standing multi-country arrangement, joint action on a few steps only, or no joint arrangement?"
+    brief:
+      decision_question: "If no supplier could hold more of the allied market than is normal for comparable products, would the nuclear fuel and reactor chain need a standing multi-country arrangement across the whole chain, joint action on a few steps only, or no joint arrangement?"
+      decision_context: "This approximates a decision by a group of allied governments on whether nuclear fuel and reactor supply needs a lasting multi-country arrangement (coordinated investment, long-term offtake, stockpiles, common rules). No supplier is banned: only supply above a concentration benchmark has to move. The analysis reads traded supply only; long-term fuel contracts, enrichment safeguards and licensing are not modelled."
+      objective: "Allied supply that survives the stress at reasonable cost, with joint action only where it changes the outcome."
     sector_groups: [nuclear]
     country_groups: [USA, FRA, GBR, AUS, IND, SWE]
     stage: null
     assignment_group: nuclear
     anchor: false
-    why_selected: "Method-sensitive: the lead BUILD mission is material on the share arm of the rule (52% of the chain's supply to shift, against a 25% floor) although the whole chain has only US$0.20bn to shift; under Decoupling the same chain needs no compact."
+    why_selected: "Method-sensitive: the lead BUILD mission is material on the share arm of the rule (52% of the chain's supply to shift, against a 25% floor) although the whole chain has only US$0.20bn to shift; under Decoupling the same chain needs no compact. The coalition under Managed Interdependence is empty although the decision is Sectoral."
     explorer_path: "/compacts/s/SC-NUCLEAR"
-    context_fields: [purpose, steps, lost_usd, exposure, coverage_static, coverage_existing, non_allied_relied_on, critical_external]
-    reveal_fields: [decision, missions, class_counts, core, coverage_coordinated, coverage_post_investment, build_hosts]
+    context_fields: [steps, lost_usd, exposure, coverage_existing]
+    reveal_fields: [decision, missions, class_counts, core, purpose, coverage_static, coverage_coordinated, coverage_post_investment, build_hosts, non_allied_relied_on, critical_external]
     threat: true
 
   - case_id: CASE_020
     kind: compact
     key: {sid: SC-GRID, scenario: managed}
     title: "Grid Equipment & Conductors compact under Managed Interdependence"
-    question: "If no supplier were allowed to hold more of the allied market than is normal for comparable products, would grid equipment and conductors need a standing Sectoral Compact, targeted action on a few steps only, or no compact?"
+    question: "If no supplier could hold more of the allied market than is normal for comparable products, would grid equipment and conductors need a standing multi-country arrangement, joint action on a few steps only, or no joint arrangement?"
+    brief:
+      decision_question: "If no supplier could hold more of the allied market than is normal for comparable products, would grid equipment and conductors need a standing multi-country arrangement across the whole chain, joint action on a few steps only, or no joint arrangement?"
+      decision_context: "This approximates a decision by a group of allied governments on whether the grid supply chain (conductor metals, transformer steel, cables, transformers, switchgear and meters) needs a lasting multi-country arrangement. No supplier is banned: only supply above a concentration benchmark has to move. The analysis reads traded supply only and does not model equipment lead times or utility procurement."
+      objective: "Allied supply that survives the stress at reasonable cost, with joint action only where it changes the outcome."
     sector_groups: [electric-grid]
     country_groups: [USA, DEU, IND, CHL, PER, COD]
     stage: null
@@ -342,8 +433,8 @@ cases:
     anchor: false
     why_selected: "Near-threshold compact decision: the only BUILD step (grain-oriented electrical steel) carries 12.5% of the chain's US$8.21bn to shift, below the 25% share floor, but US$1.026bn, 2.6% over the US$1bn floor, so the chain reads as a Potential Sectoral Compact rather than a targeted action."
     explorer_path: "/compacts/s/SC-GRID"
-    context_fields: [purpose, steps, lost_usd, exposure, coverage_static, coverage_existing, non_allied_relied_on, critical_external]
-    reveal_fields: [decision, missions, class_counts, core, coverage_coordinated, coverage_post_investment, build_hosts]
+    context_fields: [steps, lost_usd, exposure, coverage_existing]
+    reveal_fields: [decision, missions, class_counts, core, purpose, coverage_static, coverage_coordinated, coverage_post_investment, build_hosts, non_allied_relied_on, critical_external]
     threat: true
 
   # ------------------------------------------------------------------------------------------------
@@ -351,15 +442,59 @@ cases:
   - case_id: CASE_021
     kind: partnership
     key: {pair: USA_JPN}
-    title: "United States and Japan: where to build together"
-    question: "Where should the United States and Japan build new clean-energy industrial capacity together, where should they rely on trade and common standards, and where should they stay out?"
+    title: "United States and Japan: clean-energy supply-chain cooperation"
+    question: "What should lead cooperation between the United States and Japan on clean-energy supply chains over the next 12 to 36 months?"
+    brief:
+      decision_question: "Over the next 12 to 36 months, what should lead cooperation between the United States and Japan on clean-energy supply chains: new production capacity built jointly on specific steps, recognising each other as trusted suppliers and aligning trade rules, upgrading the agreements they already have, or no new joint commitments?"
+      decision_context: "This approximates the agenda of a bilateral economic-security dialogue. The aim is joint resilience and industrial value where one side's strengths meet the other's needs; diplomatic closeness alone does not count, and two strong competitors are not complementary. The evidence below compares the two economies step by step; the analysis does not assess firms' commercial interest or the politics of a deal."
+      objective: "Joint resilience and industrial value where one side's strengths meet the other's needs, not diplomatic goodwill."
     sector_groups: [batteries, critical-minerals, solar, semiconductors, wind]
     country_groups: [USA, JPN]
     stage: null
     assignment_group: partnerships
     anchor: false
-    why_selected: "Central NEIS pair and the only memo shipped in main's partnership data: rules-generated, not independently verified, generated 2026-11-06 on data as of 2026-10-30 (older than main's posture and AIB bundles of 2026-11-17). Its build-together list includes joint natural graphite, where both economies are Partner in battery-mineral extraction with no measured world share, and polysilicon (US to Japan), a node the AIB stress test rates LOW INTERVENTION while flagging China's 97% of operational capacity."
+    why_selected: "Central NEIS pair and the only memo shipped in main's partnership data: rules-generated, not independently verified, generated 2026-11-06 on data as of 2026-10-30 (older than main's posture and AIB bundles of 2026-11-17). Its build-together list includes joint natural graphite, where both economies are Partner in battery-mineral extraction with no measured world share, and polysilicon (US to Japan), a node the AIB stress test rates LOW INTERVENTION while flagging China's 97% of operational capacity. Re-posed in UX v2 as one question the memo answers (what leads the cooperation), with the memo's four boxes as the options; the memo's headline box is always its joint-build list."
     explorer_path: "/aib/partnerships?country=USA&partner=JPN"
     context_fields: [pair, memo_as_of, memo_generated_at, memo_verified]
     reveal_fields: [choices_summary, headline]
     decision_use: true
+
+  # ------------------------------------------------------------------------------------------------
+  # Sector chains (Sector review: where in one strategic compact's chain is intervention warranted?)
+  - case_id: CASE_022
+    kind: sector_chain
+    key: {sid: SC-SOLAR, scenario: decoupling}
+    title: "Solar manufacturing chain if China's supply is cut off"
+    question: "If China stopped supplying the solar manufacturing chain to allied economies, at which stages is allied intervention warranted, and where would you act first?"
+    brief:
+      decision_question: "If China stopped supplying the solar manufacturing chain (polysilicon, wafers, cells, cover glass and modules) to the 59 allied economies, at which stages is allied intervention warranted? Select every stage that needs it, then the one you would act on first."
+      decision_context: "This approximates a choice by allied economic-security officials about where in one supply chain to concentrate joint effort. The question is where existing trade cannot absorb the shock, which need not be where the market is largest. The analysis reads traded supply only and does not model how long new plants take, prices or firm-level constraints."
+      objective: "Allied supply that survives the shock at reasonable cost, with joint effort where it changes the outcome."
+    sector_groups: [solar]
+    country_groups: [DEU, USA, JPN, IDN, KOR, IND]
+    stage: null
+    assignment_group: solar
+    anchor: false
+    why_selected: "Counter-intuitive and the clearest trade-versus-production divergence: the Explorer's stages needing action are Refining, Components and Assembly, led by modules (US$20.3bn of US$31.7bn lost), while polysilicon is LOW INTERVENTION on trade (China 11.7% of allied traded supply) although China holds 97% of operational polysilicon capacity. Tests whether experts locate the bottleneck upstream."
+    explorer_path: "/compacts/s/SC-SOLAR?scn=decoupling"
+    context_fields: [steps, demand_usd, lost_usd, exposure, coverage_existing]
+    reveal_fields: [lead_stage, explorer_stages, node_classes, missions, chokepoint]
+
+  - case_id: CASE_023
+    kind: sector_chain
+    key: {sid: SC-GRID, scenario: managed}
+    title: "Grid equipment chain under Managed Interdependence"
+    question: "If no supplier could hold more of the allied market than is normal for comparable products, at which stages of the grid equipment chain is allied intervention warranted, and where would you act first?"
+    brief:
+      decision_question: "If no supplier could hold more of the allied market for grid equipment and conductors than is normal for comparable products, at which stages of the chain is allied intervention warranted? Select every stage that needs it, then the one you would act on first."
+      decision_context: "This approximates a choice by allied economic-security officials about where in the grid supply chain to concentrate joint effort to reduce reliance on the largest suppliers, without banning any of them. The question is where trade cannot absorb the shift, which need not be where equipment is scarcest today. The analysis reads traded supply only and does not model equipment lead times."
+      objective: "Keep the benefits of specialisation while limiting reliance on any one supplier, at reasonable cost."
+    sector_groups: [electric-grid]
+    country_groups: [CHL, PER, COD, DEU, IND, USA]
+    stage: null
+    assignment_group: electric-grid
+    anchor: false
+    why_selected: "The obvious case: one product needs action (grain-oriented electrical steel, Refining & Processing; China 37.2% of allied supply, HHI 0.221 against a benchmark of 0.107), while transformers and switchgear are not stressed because their world exports are already as diversified as comparable products. Tests whether experts see transformers rather than transformer steel as the constraint."
+    explorer_path: "/compacts/s/SC-GRID"
+    context_fields: [steps, demand_usd, lost_usd, exposure, coverage_existing]
+    reveal_fields: [lead_stage, explorer_stages, node_classes, missions, chokepoint]

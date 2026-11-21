@@ -6,6 +6,7 @@
 // scale enough, is the timing plausible, is it commercially plausible, which constraints are missing, what
 // success looks like and when to stop. Every question is optional; "I don't know" skips them all.
 
+import { Disclosure } from '../../components/ui.tsx';
 import { DontKnowToggle, Likert4Input, MultiCheck, TextArea } from '../components/form.tsx';
 import { emptyThreat, type ThreatDraft } from '../flow.ts';
 import { DONT_KNOW, type Likert4, type MissingConstraint, type ThreatMetrics, type ThreatSide } from '../model.ts';
@@ -169,8 +170,11 @@ export function ThreatStep({ threat, value, onChange }: { threat: ThreatMetrics 
             value={d.missing_constraints}
             onChange={(v) => onChange({ missing_constraints: v as MissingConstraint[] })}
           />
-          <TextArea label={THREAT_QUESTION.success_looks_like} rows={2} value={d.success_looks_like ?? ''} onChange={(v) => onChange({ success_looks_like: v })} />
-          <TextArea label={THREAT_QUESTION.stop_point} rows={2} value={d.stop_point ?? ''} onChange={(v) => onChange({ stop_point: v })} />
+          {/* the two open questions fold, so the step reads as scales and one checklist (they stay one click away) */}
+          <Disclosure summary="Add detail (optional)">
+            <TextArea label={THREAT_QUESTION.success_looks_like} rows={2} value={d.success_looks_like ?? ''} onChange={(v) => onChange({ success_looks_like: v })} />
+            <TextArea label={THREAT_QUESTION.stop_point} rows={2} value={d.stop_point ?? ''} onChange={(v) => onChange({ stop_point: v })} />
+          </Disclosure>
         </div>
       )}
     </section>

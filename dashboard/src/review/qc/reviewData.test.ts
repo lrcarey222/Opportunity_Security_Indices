@@ -4,7 +4,7 @@
 // filled, a case whose subject is not in the release is an error, and the run reports serialise.
 
 import { describe, expect, it } from 'vitest';
-import { DONT_KNOW, type Campaign, type CaseDefinition, type FrameworkScenario, type MethodCard } from '../model.ts';
+import { OUTSIDE_EXPERTISE, type Campaign, type CaseDefinition, type FrameworkScenario, type MethodCard } from '../model.ts';
 import { canonicalJson, sha256HexSync } from '../privacy.ts';
 import { validateCasesFile, validateFrameworkScenarios } from '../manifest.ts';
 import { buildReviewData, caseBundleFiles, optionSetOptions, reviewManifest, validateReviewContent, type ReviewContentRaw } from './reviewData.ts';
@@ -14,7 +14,7 @@ import { campaignOf } from '../data/store.ts';
 import { mkAibDoc, mkDecoded, mkNode, mkPosture, triageTrace } from './__tests__/fixtures.ts';
 
 const postureCase: CaseDefinition = {
-  case_id: 'CASE_001', kind: 'posture_cell', key: { iso3: 'KOR', tech: 'Batteries', stage: 'Components' }, title: 'Korea batteries', question: 'Which posture?',
+  case_id: 'CASE_001', kind: 'posture_cell', key: { iso3: 'KOR', tech: 'Batteries', stage: 'Components' }, title: 'Korea batteries', question: 'How should Korea manage battery components through 2035?',
   sector_groups: ['batteries'], country_groups: ['KOR'], stage: 'Components', assignment_group: 'batteries', anchor: true, why_selected: 'test', explorer_path: '/countries/KOR',
   context_fields: ['home_share', 'china_share'], reveal_fields: ['choice', 'need', 'cp'],
 };
@@ -81,7 +81,12 @@ describe('buildReviewData', () => {
     expect(c.snapshot_sha256).toBe(sha256HexSync(canonicalJson(c.snapshot)));
     expect(c.bundle.map((x) => x.file)).toEqual(['posture/manifest.json', 'posture/posture-core.x.json', 'posture/posture-detail-KOR.x.json']);
     expect(c).toMatchObject({ data_release: 'rel-000000000001', app_commit: 'abc1234', built_at: '2026-11-20T00:00:00Z' });
-    expect(c.answer_options.at(-1)!.value).toBe(DONT_KNOW);
+    // UX v2: the reviewer states close the options; the brief and the reasoning are inside the hashed snapshot
+    expect(c.answer_options.at(-1)!.value).toBe(OUTSIDE_EXPERTISE);
+    expect(c.answer_options.map((o) => o.value)).not.toContain('not_assessed');
+    expect(c.snapshot.brief!.product).toBe('country');
+    expect(c.snapshot.reasoning!.conclusion.value).toBe(c.snapshot.conclusion.value);
+    expect(f.cases[1].snapshot.brief!.product).toBe('sector');
     expect(c.snapshot.robustness!.layer).toBe('bundle');
     expect(f.cases[1].snapshot.threat).toBeTruthy();
     expect(b.bundleFiles.map((x) => x.file)).toContain('aib/compacts.x.json');

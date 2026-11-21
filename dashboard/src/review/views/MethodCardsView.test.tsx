@@ -169,13 +169,15 @@ describe('MethodCardsView', () => {
     fx.resetReviewFixture();
   });
 
-  it('exampleHoldReason: none outside the layout; no profile; open required case; all required submitted', () => {
+  it('exampleHoldReason: none outside the layout; no profile; open required or optional case; all submitted', () => {
     const a = (id: string, optional = false) => ({ case_id: id, reason: 'assigned' as const, match: 'in' as const, optional });
     const status = (done: string[]) => (id: string) => (done.includes(id) ? ('submitted' as const) : ('not_started' as const));
     expect(exampleHoldReason(null)).toBeNull();
     expect(exampleHoldReason({ profile: null, assignments: [], statusOf: status([]) })).toBe('no_profile');
     expect(exampleHoldReason({ profile: PROFILE, assignments: [a('CASE_001'), a('CASE_009', true)], statusOf: status([]) })).toBe('open_cases');
-    expect(exampleHoldReason({ profile: PROFILE, assignments: [a('CASE_001'), a('CASE_009', true)], statusOf: status(['CASE_001']) })).toBeNull();
+    // an optional (outside / self-selected) case still open holds them too: its brief links to the cards before the blind answer
+    expect(exampleHoldReason({ profile: PROFILE, assignments: [a('CASE_001'), a('CASE_009', true)], statusOf: status(['CASE_001']) })).toBe('open_cases');
+    expect(exampleHoldReason({ profile: PROFILE, assignments: [a('CASE_001'), a('CASE_009', true)], statusOf: status(['CASE_001', 'CASE_009']) })).toBeNull();
   });
 
   it('cardDraftErrors: a stance is required; modify and reject need an alternative or a comment', () => {

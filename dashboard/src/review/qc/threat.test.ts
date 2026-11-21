@@ -89,7 +89,7 @@ describe('deriveCompactThreat', () => {
     expect(t.new_capacity_share).toBeCloseTo(0.1);
     expect(t.before.hhi).toBeNull();
     expect(t.dependence_outcome).toBe('unknown');
-    expect(t.notes.join(' ')).toMatch(/by construction/);
+    expect(t.notes.join(' ')).toMatch(/arithmetic, not a finding/);
     expect(t.notes.join(' ')).toMatch(/CHN/);
   });
   it('a missing scenario record is blank with a note; an unknown compact is null', () => {

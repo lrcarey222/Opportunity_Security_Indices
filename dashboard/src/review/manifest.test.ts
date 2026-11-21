@@ -55,14 +55,16 @@ const campaign = (x: Record<string, unknown> = {}) => ({
 
 describe('shared fact vocabularies', () => {
   it('lists the revealing ids exactly, and every one is a fact id of some kind', () => {
-    expect([...REVEALING_FACT_IDS].sort()).toEqual(['borderline', 'choice', 'choices_summary', 'class', 'confidence', 'decision', 'fence', 'headline', 'missions', 'partner', 'policy_alignment', 'posture', 'reason'].sort());
+    expect([...REVEALING_FACT_IDS].sort()).toEqual(['borderline', 'choice', 'choices_summary', 'class', 'confidence', 'decision', 'fence', 'headline', 'missions', 'partner', 'policy_alignment', 'posture', 'reason', 'lead_stage', 'explorer_stages', 'node_classes'].sort());
     const all = new Set(Object.values(FACT_IDS_BY_KIND).flat());
     for (const r of REVEALING_FACT_IDS) expect(all.has(r)).toBe(true);
   });
   it('reads canonical answer keys from the Explorer constants', () => {
     expect(canonicalAnswerKeys('posture_cell')).toEqual([...Object.keys(CHOICE_NAME), 'not_assessed']);
     expect(canonicalAnswerKeys('aib_node')).toEqual(Object.keys(AIB_CLASS_NAME));
-    expect(canonicalAnswerKeys('partnership')).toEqual(['secure', 'preserve', 'partner', 'accelerate', 'watch']);
+    // the memo's four boxes (R pm_doc_boxes): build together, trade and standards, institutions, stay out
+    expect(canonicalAnswerKeys('partnership')).toEqual(['preserve', 'partner', 'accelerate', 'watch']);
+    expect(canonicalAnswerKeys('sector_chain')).toEqual(['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery', 'no_stage']);
     expect(canonicalAnswerKeys('compact', { sid: 'SC-BATTERIES' })).toEqual(['sectoral', 'narrower', 'none']);
     expect(canonicalAnswerKeys('compact', { sid: 'AIB-C01' })).toEqual([...COMPACT_DECISION_KEYS]);
     for (const k of ['posture_cell', 'aib_node', 'compact', 'partnership', 'sector'] as const) expect(canonicalAnswerKeys(k)).not.toContain('dont_know');
@@ -260,5 +262,41 @@ describe('validateSubmission', () => {
     expect(validateSubmission(di).errors.join()).toMatch(/page_context/);
     expect(validateSubmission({ ...di, page_context: { url: '/' } }).ok).toBe(true);
     expect(validateSubmission({ ...di, page_context: { url: '/' }, payload: { what_is_wrong: 'x', severity: 'huge' } }).ok).toBe(false);
+  });
+});
+
+describe('UX v2: authored briefs and sector chains', () => {
+  const brief = { decision_question: 'How should Korea manage battery components through 2035?', decision_context: 'A neutral context.', objective: 'Resilient and affordable supply.' };
+  it('accepts an authored brief and checks evidence and assumption ids against the kind', () => {
+    expect(validateCaseCatalogue([def({ brief })]).errors).toEqual([]);
+    expect(validateCaseCatalogue([def({ brief: { ...brief, evidence_ids: ['largest_supplier', 'own_world_share', 'export_position', 'export_trend', 'demand_outlook'], assumption_ids: ['need_rank'] } })]).errors).toEqual([]);
+    expect(validateCaseCatalogue([def({ brief: { ...brief, evidence_ids: ['need'] } })]).errors.join()).toMatch(/need is not a brief fact of kind posture_cell/);
+    expect(validateCaseCatalogue([def({ brief: { ...brief, assumption_ids: ['MC_999'] } })]).errors.join()).toMatch(/MC_999 is not an assumption id/);
+    expect(validateCaseCatalogue([def({ brief: { decision_question: 'Q?' } as never })]).errors.join()).toMatch(/brief.decision_context: required/);
+    expect(validateCaseCatalogue([def()]).warnings.join()).toMatch(/no authored brief/);
+  });
+  it('fails on a leak in authored text: a conclusion label, a model label or a claim', () => {
+    expect(validateCaseCatalogue([def({ brief: { ...brief, decision_context: 'Partner or Preserve?' } })]).errors.join()).toMatch(/leak: .*"(Partner|Preserve)"/);
+    expect(validateCaseCatalogue([def({ question: 'Which strategic posture is closest?', brief })]).errors.join()).toMatch(/leak: .*question: uses the model label "posture"/);
+    expect(validateCaseCatalogue([def({ brief: { ...brief, objective: 'The Explorer recommends a build.' } })]).errors.join()).toMatch(/states what the Explorer concludes/);
+  });
+  it('accepts a sector_chain case on a strategic compact, with its own fact ids', () => {
+    const sc = def({ kind: 'sector_chain', key: { sid: 'SC-SOLAR', scenario: 'decoupling' }, country_groups: [], stage: null, context_fields: ['steps', 'lost_usd', 'exposure'], reveal_fields: ['lead_stage', 'explorer_stages'], brief: { ...brief, decision_question: 'At which stages is allied intervention warranted?' } });
+    expect(validateCaseCatalogue([sc]).errors).toEqual([]);
+    expect(validateCaseCatalogue([{ ...sc, key: { sid: 'AIB-C01', scenario: 'decoupling' } }]).errors.join()).toMatch(/strategic compact/);
+    expect(validateCaseCatalogue([{ ...sc, context_fields: ['lead_stage'] }]).errors.join()).toMatch(/lead_stage reveals the conclusion/);
+  });
+  it('a v2 built case must offer the reviewer states and no model state, and its brief must pass the lint', () => {
+    const v2 = (x: Record<string, unknown>) =>
+      built({
+        answer_options: [...OPTIONS.filter((o) => o.value !== 'not_assessed'), { value: 'none_of_these', label: 'n' }, { value: 'insufficient_evidence', label: 'i' }, { value: 'outside_expertise', label: 'o' }],
+        snapshot: { ...built().cases[0].snapshot, brief: { product: 'country', identity: { title: 'Korea', parts: [] }, decision_question: 'Q?', decision_context: 'C.', objective: 'O.', time_horizon: { label: 'Through 2035' }, scenario: null, stage_location: null, evidence: [], assumptions: [], warnings: [], missing_evidence: [], definitions: [] }, reasoning: { conclusion: { value: 'partner', label: 'Partner', summary: 's' }, steps: [], rule: 'r', alternatives: [] } },
+        ...x,
+      });
+    expect(validateCasesFile(v2({})).errors).toEqual([]);
+    expect(validateCasesFile(v2({ answer_options: OPTIONS })).errors.join()).toMatch(/reviewer state none_of_these is missing/);
+    const leaky = v2({});
+    (leaky.cases[0].snapshot as unknown as { brief: { decision_context: string } }).brief.decision_context = 'Partner looks right.';
+    expect(validateCasesFile(leaky).errors.join()).toMatch(/snapshot.brief: .*"Partner"/);
   });
 });

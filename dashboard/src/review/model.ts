@@ -49,8 +49,21 @@ export interface Campaign {
 // ---------------------------------------------------------------------------------------------
 // Cases
 
-export type CaseKind = 'posture_cell' | 'aib_node' | 'compact' | 'partnership' | 'sector';
-export const CASE_KINDS: readonly CaseKind[] = ['posture_cell', 'aib_node', 'compact', 'partnership', 'sector'];
+/** 'sector_chain' (UX v2, docs/QC_UX_REVIEW.md): one strategic compact's value chain under a scenario, asking at
+ *  which stages allied intervention is warranted. 'sector' is the earlier reserved kind (no cases use it). */
+export type CaseKind = 'posture_cell' | 'aib_node' | 'compact' | 'partnership' | 'sector' | 'sector_chain';
+export const CASE_KINDS: readonly CaseKind[] = ['posture_cell', 'aib_node', 'compact', 'partnership', 'sector', 'sector_chain'];
+
+/** The four Explorer products a case reviews; each gets its own tailored brief and reveal. */
+export type ReviewProduct = 'country' | 'sector' | 'partnership' | 'compact';
+export const REVIEW_PRODUCT_OF_KIND: Readonly<Record<CaseKind, ReviewProduct>> = {
+  posture_cell: 'country',
+  aib_node: 'sector',
+  sector: 'sector',
+  sector_chain: 'sector',
+  compact: 'compact',
+  partnership: 'partnership',
+};
 
 export type AibScenarioKey = 'decoupling' | 'managed' | 'baseline';
 
@@ -98,6 +111,159 @@ export interface CaseDefinition {
   reveal_fields: string[];
   decision_use?: boolean;
   threat?: boolean;
+  /** UX v2: the authored parts of the case brief (the builder computes the rest from the bundles). */
+  brief?: BriefAuthoring;
+}
+
+/** Authored brief text in config/review/review_cases.yml. Neutral: it must never name or hint at the conclusion. */
+export interface BriefAuthoring {
+  /** E.g. "How should Japan manage battery component manufacturing through 2035?" */
+  decision_question: string;
+  /** 2-3 sentences: whose decision this approximates, the objective, what the analysis does and does not determine. */
+  decision_context: string;
+  /** The objective being optimised, e.g. "Resilient and affordable supply, not maximum self-sufficiency." */
+  objective?: string | null;
+  /** Overrides the builder's time horizon label when set. */
+  time_horizon?: string | null;
+  /** Ordered evidence fact ids to show (5-8); the builder's default selection when absent. */
+  evidence_ids?: string[];
+  /** Assumption ids (see BriefAssumption) to show; the builder's default for the kind when absent. */
+  assumption_ids?: string[];
+}
+
+// ---------------------------------------------------------------------------------------------
+// Case brief (shown BEFORE the blind answer) and reasoning (shown only AFTER it). UX v2.
+
+export interface BriefIdentityPart {
+  role: 'country' | 'pair' | 'technology' | 'stage' | 'node' | 'chain' | 'compact' | 'scenario';
+  label: string;
+  code?: string | null;
+}
+
+export interface BriefWarning {
+  id: string;
+  level: 'warn' | 'info';
+  /** E.g. "Production evidence limited". */
+  title: string;
+  /** E.g. "Current capability is inferred primarily from trade data." */
+  text: string;
+}
+
+/** One neutral, observed or externally sourced fact. Never a model score, class or outcome-naming label. */
+export interface BriefFact {
+  id: string;
+  label: string;
+  value: number | string | null;
+  display: string;
+  /** Plain-English reading using generic conventions (e.g. DOJ/FTC HHI bands), never the model's thresholds. */
+  interpretation: string | null;
+  source: string | null;
+  /** Source year or period, e.g. "2022-24", "latest 12 months to Aug 2026". */
+  vintage: string | null;
+  /** True for a neutral model estimate shown as evidence (e.g. coverage from existing trade links); labelled so. */
+  estimate?: boolean;
+  warnings?: BriefWarning[];
+}
+
+/** A modelling choice behind this kind of conclusion, worded neutrally; links to a method card when one exists. */
+export interface BriefAssumption {
+  id: string;
+  label: string;
+  text: string;
+  method_card_id?: string | null;
+}
+
+export interface BriefDefinition {
+  term: string;
+  text: string;
+}
+
+/** The six-stage chain with the stage(s) this case is about highlighted. */
+export interface StageLocation {
+  stages: { key: string; label: string }[];
+  highlight: string[];
+}
+
+/** One link of a causal chain (compact: problem -> existing trade -> gap -> ...). */
+export interface ChainStep {
+  id: string;
+  label: string;
+  display: string;
+  text: string;
+  /** A model estimate rather than an observed fact; always labelled as such. */
+  estimate: boolean;
+}
+
+export interface PartnerSide {
+  iso3: string;
+  name: string;
+  /** Observed strengths (e.g. "World export share 11% in battery components, 2022-24"). */
+  brings: string[];
+  /** Observed exposures (e.g. "Largest battery-mineral supplier: Australia, 41% of imports"). */
+  exposed_on: string[];
+}
+
+export interface CaseBrief {
+  product: ReviewProduct;
+  identity: { title: string; parts: BriefIdentityPart[] };
+  decision_question: string;
+  decision_context: string;
+  objective: string;
+  time_horizon: { label: string; note?: string | null };
+  scenario: { key: string; label: string; description: string } | null;
+  stage_location: StageLocation | null;
+  /** 5-8 neutral facts. */
+  evidence: BriefFact[];
+  assumptions: BriefAssumption[];
+  /** Case-level data-quality warnings, shown immediately (not in an appendix). */
+  warnings: BriefWarning[];
+  /** What the data cannot show for this case, stated plainly. */
+  missing_evidence: string[];
+  definitions: BriefDefinition[];
+  /** Tailored pre-blind sections (never the recommendation). */
+  partnership?: { a: PartnerSide; b: PartnerSide; shared_problem: string[] } | null;
+  compact_chain?: ChainStep[] | null;
+  sector_chain?: { stage: string; label: string; facts: BriefFact[] }[] | null;
+}
+
+export interface ReasoningStep {
+  /** need | prize | position | pathway | secure | large_yard | deployment | exposure | gap | concentration | coverage | dividend | materiality | ... */
+  id: string;
+  label: string;
+  /** Plain level word: High / Moderate / Low / Yes / No / Not measured ... */
+  level: string;
+  value: number | null;
+  threshold: number | null;
+  /** One sentence: why this level. */
+  sentence: string;
+  /** The main evidence drivers, in plain words. */
+  drivers: string[];
+}
+
+/** "Why this, not the neighbouring alternative?" */
+export interface AlternativeExplanation {
+  value: string;
+  label: string;
+  /** Why the Explorer did not choose it. */
+  why_not: string;
+  /** What would have to change for it to become the more appropriate conclusion. */
+  would_need: string;
+  /** The decisive input and its distance from the threshold, e.g. "Competitive position 0.763 vs bar 0.75". */
+  margin?: string | null;
+}
+
+export interface CaseReasoning {
+  conclusion: { value: string; label: string; summary: string };
+  steps: ReasoningStep[];
+  /** The "Therefore" sentence: the decision rule that was applied, in plain English. */
+  rule: string;
+  alternatives: AlternativeExplanation[];
+  /** Post-reveal remainder of the compact chain (coordinated trade, new capacity, hosts, coalition, resilience after). */
+  compact_chain?: ChainStep[] | null;
+  partnership?: { coordination_changes: string[]; memo_choices: { kind: string; label: string; items: string[] }[] } | null;
+  sector?: { explorer_stages: string[]; lead_stage: string | null; chokepoint_note?: string | null } | null;
+  /** Level 3: the Explorer deep link that shows this case's analysis. */
+  technical_path?: string | null;
 }
 
 export interface BundleFileStamp {
@@ -136,6 +302,9 @@ export interface CaseSnapshot {
   robustness?: RobustnessRecord | null;
   /** Data-quality notes, kept separate from robustness and from expert validation. */
   data_quality?: { grade: string | null; notes: string[] };
+  /** UX v2: the neutral case brief (pre-blind) and the reasoning reveal (post-blind only). */
+  brief?: CaseBrief | null;
+  reasoning?: CaseReasoning | null;
 }
 
 /** As built into public/data/review/cases.<campaign>.json. */
@@ -210,7 +379,11 @@ export interface ReviewerProfile {
   familiarity_explorer: 0 | 1 | 2 | 3;
   advised_on: AdvisedOn[];
   created_at: string;
+  /** UX v2: decision review (domain experts) or technical review (data / methods); default decision. */
+  review_mode?: ReviewMode;
 }
+
+export type ReviewMode = 'decision' | 'technical';
 
 export type AssignmentReason = 'assigned' | 'anchor' | 'outside' | 'self_selected';
 export type ExpertiseMatch = 'in' | 'adjacent' | 'outside';
@@ -241,14 +414,15 @@ export const VERDICT_LABEL: Readonly<Record<Verdict, string>> = {
 /** Verdicts that require the "single most important miss" explanation. */
 export const VERDICTS_NEEDING_EXPLANATION: readonly Verdict[] = [3, 4, 5, 6];
 
-export type IssueType = 'data' | 'method' | 'context' | 'framework' | 'actionability' | 'insufficient_evidence';
+export type IssueType = 'data' | 'method' | 'context' | 'framework' | 'actionability' | 'insufficient_evidence' | 'decision_rule';
 export const ISSUE_TYPE_LABEL: Readonly<Record<IssueType, string>> = {
   data: 'Data problem',
-  method: 'Method problem',
+  method: 'Method problem (interpretation / weighting)',
   context: 'Missing context',
-  framework: 'Framework ambiguity',
+  framework: 'Framework ambiguity / poorly defined recommendation',
   actionability: 'Policy / actionability issue',
   insufficient_evidence: 'Insufficient evidence',
+  decision_rule: 'Decision rule problem',
 };
 /** The disagreement type a verdict implies (verdicts 1, 2 and 7 imply none). */
 export const VERDICT_ISSUE_TYPE: Readonly<Partial<Record<Verdict, IssueType>>> = {
@@ -269,8 +443,215 @@ export const SEVERITY_LABEL: Readonly<Record<Severity, string>> = {
 export const SEVERITY_WEIGHT: Readonly<Record<Severity, number>> = { cosmetic: 0.1, minor: 0.3, material: 0.6, critical: 1.0 };
 export const MATCH_WEIGHT: Readonly<Record<ExpertiseMatch, number>> = { in: 1.0, adjacent: 0.7, outside: 0.4 };
 
-/** "I don't know / outside my expertise" answer value, valid wherever a choice is asked. */
+/** "I don't know / outside my expertise" answer value, valid wherever a choice is asked. Legacy (v1) answers; v2
+ *  case reviews use the three reviewer states below, and DONT_KNOW is read as OUTSIDE_EXPERTISE. */
 export const DONT_KNOW = 'dont_know';
+
+// ---------------------------------------------------------------------------------------------
+// UX v2 answer vocabulary (docs/QC_UX_REVIEW.md). Stored verbatim in submissions.
+
+/** Reviewer states offered beside the canonical conclusions on every blind question. */
+export const NONE_OF_THESE = 'none_of_these';
+export const INSUFFICIENT_EVIDENCE = 'insufficient_evidence';
+export const OUTSIDE_EXPERTISE = 'outside_expertise';
+export const REVIEWER_STATES: readonly string[] = [NONE_OF_THESE, INSUFFICIENT_EVIDENCE, OUTSIDE_EXPERTISE];
+export const REVIEWER_STATE_LABEL: Readonly<Record<string, string>> = {
+  [NONE_OF_THESE]: 'None of these reflects my recommendation',
+  [INSUFFICIENT_EVIDENCE]: 'Insufficient evidence to judge',
+  [OUTSIDE_EXPERTISE]: 'Outside my expertise',
+};
+
+export type ConfidenceLevel = 'low' | 'medium' | 'high';
+export const CONFIDENCE_LEVEL_LABEL: Readonly<Record<ConfidenceLevel, string>> = { low: 'Low', medium: 'Medium', high: 'High' };
+/** The 1-5 value stored in BlindAnswer.confidence for v1 consumers. */
+export const CONFIDENCE_LEVEL_SCORE: Readonly<Record<ConfidenceLevel, 1 | 3 | 5>> = { low: 1, medium: 3, high: 5 };
+
+export type DriverFactor =
+  | 'concentration_security'
+  | 'domestic_capability'
+  | 'allied_alternatives'
+  | 'market_opportunity'
+  | 'demand_growth'
+  | 'technological_importance'
+  | 'cost_competitiveness'
+  | 'missing_information'
+  | 'other';
+export const DRIVER_FACTOR_LABEL: Readonly<Record<DriverFactor, string>> = {
+  concentration_security: 'Concentration / security exposure',
+  domestic_capability: 'Domestic capability',
+  allied_alternatives: 'Allied alternatives',
+  market_opportunity: 'Market opportunity',
+  demand_growth: 'Demand growth',
+  technological_importance: 'Technological importance',
+  cost_competitiveness: 'Cost competitiveness',
+  missing_information: 'Missing information',
+  other: 'Other',
+};
+
+/** What information is missing (insufficient-evidence branch) / would most help resolve the case (red team). */
+export type EvidenceGap =
+  | 'production_capacity'
+  | 'market_demand'
+  | 'firm_capability'
+  | 'ownership'
+  | 'alternative_suppliers'
+  | 'allied_spare_capacity'
+  | 'cost_competitiveness'
+  | 'project_pipeline'
+  | 'expansion_feasibility'
+  | 'qualification_constraints'
+  | 'technology_readiness'
+  | 'workforce_infrastructure'
+  | 'policy_environment'
+  | 'policy_durability'
+  | 'geopolitical_context'
+  | 'other';
+export const EVIDENCE_GAP_LABEL: Readonly<Record<EvidenceGap, string>> = {
+  production_capacity: 'Actual production capacity',
+  market_demand: 'Market size / demand',
+  firm_capability: 'Firm-level capability',
+  ownership: 'Ownership (firm-level)',
+  alternative_suppliers: 'Alternative suppliers',
+  allied_spare_capacity: 'Allied spare capacity',
+  cost_competitiveness: 'Cost competitiveness / cost curves',
+  project_pipeline: 'Project pipeline',
+  expansion_feasibility: 'Capacity expansion feasibility',
+  qualification_constraints: 'Qualification constraints / lead times',
+  technology_readiness: 'Technology readiness',
+  workforce_infrastructure: 'Workforce / infrastructure',
+  policy_environment: 'Policy environment',
+  policy_durability: 'Policy durability',
+  geopolitical_context: 'Geopolitical context',
+  other: 'Other',
+};
+
+/** The post-reveal taxonomy (stored verbatim; replaces the 1-7 scale for v2 reviews, which keep a derived `verdict`). */
+export type ReviewVerdictCode =
+  | 'same_same'
+  | 'same_different_reasons'
+  | 'persuaded'
+  | 'plausible_insufficient'
+  | 'wrong_fact'
+  | 'missing_factor'
+  | 'wrong_weighting'
+  | 'wrong_rule'
+  | 'too_broad'
+  | 'outside_expertise';
+export const REVIEW_VERDICT_CODES: readonly ReviewVerdictCode[] = [
+  'same_same',
+  'same_different_reasons',
+  'persuaded',
+  'plausible_insufficient',
+  'wrong_fact',
+  'missing_factor',
+  'wrong_weighting',
+  'wrong_rule',
+  'too_broad',
+  'outside_expertise',
+];
+export const REVIEW_VERDICT_LABEL: Readonly<Record<ReviewVerdictCode, string>> = {
+  same_same: 'Same conclusion, broadly same reasoning.',
+  same_different_reasons: 'Same conclusion, but for different reasons.',
+  persuaded: 'Different initial conclusion, but the Explorer persuaded me.',
+  plausible_insufficient: "The Explorer's conclusion is plausible, but the evidence is insufficient.",
+  wrong_fact: 'I disagree because an underlying fact or data point is wrong.',
+  missing_factor: 'I disagree because an important factor is missing.',
+  wrong_weighting: 'I disagree with how the evidence is interpreted or weighted.',
+  wrong_rule: 'I disagree with the decision rule linking the evidence to the recommendation.',
+  too_broad: 'The recommendation is too broad or poorly defined.',
+  outside_expertise: 'Outside my expertise.',
+};
+/** The v1 verdict each code maps to, so v1 aggregation and exports keep working. */
+export const REVIEW_VERDICT_LEGACY: Readonly<Record<ReviewVerdictCode, Verdict>> = {
+  same_same: 1,
+  same_different_reasons: 1,
+  persuaded: 2,
+  plausible_insufficient: 3,
+  wrong_fact: 4,
+  missing_factor: 6,
+  wrong_weighting: 5,
+  wrong_rule: 5,
+  too_broad: 5,
+  outside_expertise: 7,
+};
+export const REVIEW_VERDICT_ISSUE_TYPE: Readonly<Partial<Record<ReviewVerdictCode, IssueType>>> = {
+  plausible_insufficient: 'insufficient_evidence',
+  wrong_fact: 'data',
+  missing_factor: 'context',
+  wrong_weighting: 'method',
+  wrong_rule: 'decision_rule',
+  too_broad: 'framework',
+};
+/** Codes that disagree with the Explorer (they trigger the red-team questions). */
+export const DISAGREEING_VERDICT_CODES: readonly ReviewVerdictCode[] = ['plausible_insufficient', 'wrong_fact', 'missing_factor', 'wrong_weighting', 'wrong_rule', 'too_broad'];
+
+/** "Is the Explorer's conclusion supported by the evidence?" (validity, asked separately from prior and persuasion). */
+export type Validity = 'supported' | 'partly' | 'not_supported' | 'unsure';
+/** "Did inspecting the evidence change your view?" */
+export type Persuasion = 'changed' | 'somewhat' | 'unchanged';
+
+/** Tailored product questions asked after the reveal; answers stored in RevealResponse.product_answers. */
+export const PRODUCT_QUESTIONS: Readonly<Record<ReviewProduct, { id: string; text: string; options: { value: string; label: string }[] }[]>> = {
+  country: [],
+  sector: [
+    {
+      id: 'bottleneck_located',
+      text: 'Has the Explorer located the actual strategic bottleneck in this supply chain?',
+      options: [
+        { value: 'yes', label: 'Yes' },
+        { value: 'partly', label: 'Partly' },
+        { value: 'no', label: 'No' },
+        { value: 'unsure', label: 'Not sure' },
+      ],
+    },
+  ],
+  partnership: [
+    {
+      id: 'complementarity',
+      text: 'Does this relationship represent genuine industrial complementarity or primarily diplomatic compatibility?',
+      options: [
+        { value: 'industrial', label: 'Genuine industrial complementarity' },
+        { value: 'mostly_industrial', label: 'Mostly industrial, partly diplomatic' },
+        { value: 'mostly_diplomatic', label: 'Mostly diplomatic compatibility' },
+        { value: 'diplomatic', label: 'Primarily diplomatic compatibility' },
+        { value: 'unsure', label: 'Not sure' },
+      ],
+    },
+    { id: 'incentives', text: 'Do both partners have the incentive to act?', options: [{ value: 'both', label: 'Both' }, { value: 'one', label: 'Only one' }, { value: 'neither', label: 'Neither' }, { value: 'unsure', label: 'Not sure' }] },
+    { id: 'asymmetry', text: 'Is the benefit roughly mutual, or strongly asymmetric?', options: [{ value: 'mutual', label: 'Roughly mutual' }, { value: 'asymmetric', label: 'Strongly asymmetric' }, { value: 'unsure', label: 'Not sure' }] },
+    { id: 'durability', text: 'Would the arrangement survive a change of government or market cycle?', options: [{ value: 'durable', label: 'Likely durable' }, { value: 'fragile', label: 'Fragile' }, { value: 'unsure', label: 'Not sure' }] },
+    { id: 'substitution', text: 'Could either side easily substitute another partner?', options: [{ value: 'hard', label: 'Hard to substitute' }, { value: 'easy', label: 'Easy to substitute' }, { value: 'unsure', label: 'Not sure' }] },
+  ],
+  compact: [
+    {
+      id: 'ameliorates_threat',
+      text: 'Does this compact materially ameliorate the stated threat?',
+      options: [
+        { value: 'yes', label: 'Yes, materially' },
+        { value: 'partly', label: 'Partly' },
+        { value: 'no', label: 'No' },
+        { value: 'unsure', label: 'Not sure' },
+      ],
+    },
+  ],
+};
+
+export type NoteConversion = 'data_issue' | 'missing_context' | 'method_concern' | 'comment';
+export const NOTE_CONVERSION_LABEL: Readonly<Record<NoteConversion, string>> = {
+  data_issue: 'Data issue',
+  missing_context: 'Missing context',
+  method_concern: 'Methodological concern',
+  comment: 'General comment',
+};
+
+/** The reviewer's scratchpad for one case (autosaved; travels with the case review when submitted). */
+export interface ReviewerNote {
+  id: string;
+  text: string;
+  created_at: string;
+  updated_at: string;
+  converted_to?: NoteConversion | null;
+}
 
 export interface PageContext {
   url: string;
@@ -312,20 +693,45 @@ export interface MetricRef {
 }
 
 export interface BlindAnswer {
-  /** Canonical option value or DONT_KNOW. */
+  /** Canonical option value, a REVIEWER_STATES value (v2) or DONT_KNOW (v1). For a sector_chain case: the lead stage. */
   choice: string;
+  /** v2 stores CONFIDENCE_LEVEL_SCORE[confidence_level] here. */
   confidence: 1 | 2 | 3 | 4 | 5 | null;
+  /** v1: case fact ids. v2: [driver] when a driver is chosen. */
   factors: string[];
   rationale?: string | null;
   answered_at: string;
+  // ---- UX v2 (optional so v1 drafts and submissions stay valid)
+  confidence_level?: ConfidenceLevel | null;
+  /** The single most important factor driving the judgment. */
+  driver?: DriverFactor | null;
+  driver_text?: string | null;
+  /** Sector chain: every stage the reviewer would intervene at (choice holds the one to act on first). */
+  choices?: string[];
+  /** Insufficient-evidence branch: what information is missing. */
+  missing_evidence?: EvidenceGap[];
+  missing_evidence_text?: string | null;
+  /** Answer schema version: absent = 1. */
+  ux_version?: 2;
 }
 
 export interface RevealResponse {
   revealed_at: string;
+  /** v1 scale; for v2 reviews derived from verdict_code via REVIEW_VERDICT_LEGACY. */
   verdict: Verdict;
   main_issue?: { text: string; type: IssueType; metric_ids?: string[] } | null;
   suggested_choice?: string | null;
   evidence_wanted?: string | null;
+  // ---- UX v2
+  verdict_code?: ReviewVerdictCode | null;
+  /** Prior: did the Explorer's conclusion differ from the blind answer (computed; null for reviewer states). */
+  prior_differs?: boolean | null;
+  validity?: Validity | null;
+  persuasion?: Persuasion | null;
+  /** Asked when the reviewer disagrees or had low confidence. */
+  red_team?: { must_be_true?: string | null; resolving_evidence?: EvidenceGap | null; resolving_evidence_text?: string | null } | null;
+  /** Answers to PRODUCT_QUESTIONS for the case's product, keyed by question id. */
+  product_answers?: Record<string, string>;
 }
 
 export interface CaseReviewPayload {
@@ -337,6 +743,9 @@ export interface CaseReviewPayload {
   reveal: RevealResponse;
   outside_expertise: boolean;
   time_spent_s: number | null;
+  // ---- UX v2
+  notes?: ReviewerNote[];
+  review_mode?: ReviewMode | null;
 }
 
 export type Stance = 'retain' | 'modify' | 'reject' | 'unsure';

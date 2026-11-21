@@ -5,7 +5,8 @@
 qr_root <- function() normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 source(file.path(qr_root(), "R", "qc", "qc_report.R"))
 
-QR_SECTIONS <- c("Scope", "Reviewers", "Coverage", "Findings", "Strongest validations", "Unresolved disagreements", "Critical data issues",
+QR_SECTIONS <- c("Scope", "Reviewers", "Coverage", "Findings", "Strongest validations", "Unresolved disagreements",
+                 "Post-reveal verdicts (taxonomy)", "Prior, validity and persuasion", "Evidence gaps", "Critical data issues",
                  "Sensitive and fragile conclusions", "Methodological issues", "Changes made because of peer review", "Remaining limitations")
 
 qr_results <- function() {
@@ -59,7 +60,7 @@ qr_audits <- function() data.frame(stem = "KOR_Batteries_Components", case_id = 
                                    gaps_differs = "2. base import HHI <- partner rows: differs", stringsAsFactors = FALSE)
 
 qr_section <- function(md, title) {
-  i <- which(grepl(paste0("^## [0-9]+\\. ", title, "$"), md))
+  i <- which(grepl("^## [0-9]+\\. ", md) & sub("^## [0-9]+\\. ", "", md) == title)
   j <- which(startsWith(md, "## "))
   nxt <- j[j > i][1]
   md[(i + 1):(if (is.na(nxt)) length(md) else nxt - 1)]
@@ -69,8 +70,9 @@ test_that("with no review data every section renders and the review sections say
   md <- qc_report_build(qr_results(), list(), NULL, qr_audits(), meta = list(date = "2026-11-20"))
   heads <- md[grepl("^## [0-9]+\\. ", md)]
   expect_equal(sub("^## [0-9]+\\. ", "", heads), QR_SECTIONS)
-  expect_equal(sub("^## ([0-9]+)\\..*$", "\\1", heads), as.character(1:11))
-  for (s in c("Reviewers", "Coverage", "Unresolved disagreements", "Changes made because of peer review")) {
+  expect_equal(sub("^## ([0-9]+)\\..*$", "\\1", heads), as.character(seq_along(QR_SECTIONS)))
+  for (s in c("Reviewers", "Coverage", "Unresolved disagreements", "Post-reveal verdicts (taxonomy)", "Prior, validity and persuasion", "Evidence gaps",
+              "Changes made because of peer review")) {
     expect_true(any(qr_section(md, s) == QC_REPORT_NO_REVIEWS), info = s)
   }
   # the automated parts still render
@@ -165,4 +167,66 @@ test_that("golden cases evaluated on several tables are listed once, failures ap
   md <- qc_report_build(c(qr_results(), list(pipeline_golden_case_status.csv = g)), list(), NULL, NULL, meta = list(date = "2026-11-20"))
   line <- md[startsWith(md, "Golden cases (pipeline_golden_case_status.csv)")]
   expect_match(line, "failing: GC_002; not evaluable on some table: GC_003", fixed = TRUE)
+})
+
+# UX v2 exports: the v2 columns of qc_review_responses (after the v1 ones) and qc_evidence_gaps.csv
+qr_v2_exports <- function() {
+  ex <- qr_exports()
+  rr <- data.frame(submission_id = c("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"),
+                   case_id = c("CASE_001", "CASE_001", "CASE_001", "CASE_002", "CASE_002", "CASE_003", "CASE_003", "CASE_001"),
+                   reviewer_code = c("R-AAA", "R-BBB", "R-CCC", "R-AAA", "R-BBB", "R-CCC", "R-AAA", "R-AAA"),
+                   expertise_match = "in",
+                   blind_choice = c("partner", "secure", "watch", "insufficient_evidence", "insufficient_evidence", "secure", "outside_expertise", "partner"),
+                   model_choice = c("partner", "partner", "partner", "secure", "secure", "watch", "watch", "partner"),
+                   verdict = c(1, 2, 5, 3, 3, 4, 7, 1), data_release = "rel-123",
+                   submitted_at = c("2027-01-01", "2027-01-02", "2027-01-03", "2027-01-04", "2027-01-05", "2027-01-06", "2027-01-07", "2026-12-01"),
+                   product = c("country", "country", "country", "country", "country", "sector", "sector", "country"),
+                   blind_state = c(NA, NA, NA, "insufficient_evidence", "insufficient_evidence", NA, "outside_expertise", NA),
+                   verdict_code = c("same_same", "persuaded", "wrong_rule", "plausible_insufficient", "plausible_insufficient", "wrong_fact", "outside_expertise", NA),
+                   validity = c("supported", "supported", "not_supported", "unsure", "partly", "not_supported", NA, NA),
+                   persuasion = c("unchanged", "changed", "unchanged", "unchanged", "unchanged", "unchanged", NA, NA),
+                   prior_differs = c(FALSE, TRUE, TRUE, NA, NA, TRUE, NA, NA),
+                   verdict_consistency = c("consistent", "consistent", "consistent", "unknown", "unknown", "consistent", "unknown", NA),
+                   persuaded_by_evidence = c(FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, NA), stringsAsFactors = FALSE)
+  gaps <- data.frame(submission_id = c("S4", "S4", "S5", "S3"), case_id = c("CASE_002", "CASE_002", "CASE_002", "CASE_001"),
+                     reviewer_code = c("R-AAA", "R-AAA", "R-BBB", "R-CCC"), product = "country",
+                     source = c("insufficient_evidence", "insufficient_evidence", "insufficient_evidence", "red_team"),
+                     category = c("production_capacity", "ownership", "production_capacity", "qualification_constraints"),
+                     category_label = c("Actual production capacity", "Ownership (firm-level)", "Actual production capacity", "Qualification constraints / lead times"),
+                     text = c("plant list", NA, NA, "lead times"), stringsAsFactors = FALSE)
+  ex[["qc_review_responses.csv"]] <- rr
+  ex[["qc_evidence_gaps.csv"]] <- gaps
+  ex
+}
+
+test_that("the v2 sections summarise the taxonomy, prior x validity x persuasion and evidence gaps", {
+  md <- qc_report_build(qr_results(), qr_v2_exports(), qr_cases(), qr_audits(), meta = list(date = "2026-11-20"))
+  heads <- md[grepl("^## [0-9]+\\. ", md)]
+  expect_equal(sub("^## [0-9]+\\. ", "", heads), QR_SECTIONS)
+  txt <- paste(md, collapse = "\n")
+  for (secret in c("R-AAA", "R-BBB", "R-CCC", "Ada Lovelace", "reviewer_code")) expect_false(grepl(secret, txt, fixed = TRUE), info = secret)
+  tx <- qr_section(md, "Post-reveal verdicts (taxonomy)")
+  # the latest review per reviewer and case: S8 (an older row of R-AAA on CASE_001) is not counted
+  expect_true(any(grepl("7 reviews)", tx, fixed = TRUE)))
+  expect_true(any(grepl("| Disagree: the decision rule linking evidence to recommendation | wrong_rule | 1 | 14% |", tx, fixed = TRUE)))
+  expect_true(any(grepl("insufficient_evidence 2, outside_expertise 1", tx, fixed = TRUE)))
+  pp <- qr_section(md, "Prior, validity and persuasion")
+  expect_true(any(grepl("| different | supported | changed | 1 |", pp, fixed = TRUE)))
+  expect_true(any(grepl("\"changed\"): 1 review(s) on 1 case(s).", pp, fixed = TRUE)))
+  expect_true(any(grepl("| CASE_001 | country | secure | partner | supported | changed |", pp, fixed = TRUE)))
+  eg <- qr_section(md, "Evidence gaps")
+  expect_true(any(grepl("| Actual production capacity | 2 | 0 | 2 | 1 |", eg, fixed = TRUE)))
+  expect_true(any(grepl("| CASE_002 | 2 | 2 | yes |", eg, fixed = TRUE)))
+  expect_true(any(grepl("1 case(s) where it happened 2 or more times", eg, fixed = TRUE)))
+})
+
+test_that("exports written before UX v2 make the v2 sections say there is no data; synthetic v2 rows are flagged", {
+  md <- qc_report_build(qr_results(), qr_exports(), qr_cases(), qr_audits(), meta = list(date = "2026-11-20"))
+  for (s in c("Post-reveal verdicts (taxonomy)", "Prior, validity and persuasion", "Evidence gaps")) {
+    expect_true(any(qr_section(md, s) == QC_REPORT_NO_V2), info = s)
+  }
+  demo <- qr_v2_exports()
+  demo[["qc_evidence_gaps.csv"]]$text[1] <- "[synthetic] demo gap"
+  expect_equal(qc_report_synthetic_rows(demo["qc_evidence_gaps.csv"]), 1)
+  expect_identical(qc_report_build(qr_results(), demo, qr_cases(), NULL, meta = list(date = "2026-11-20"))[3], QC_REPORT_SYNTHETIC_BANNER)
 })

@@ -13,6 +13,7 @@ import {
   CASE_KINDS,
   CASES_SCHEMA,
   DONT_KNOW,
+  REVIEWER_STATES,
   REVIEW_TYPES,
   SUBMISSION_SCHEMA,
   SUBMISSION_SCHEMA_VERSION,
@@ -22,7 +23,10 @@ import {
 } from './model.ts';
 import { AIB_COMPACT_TYPES } from '../aib/contract.ts';
 import { compactTypeInfo } from '../aib/derive/types.ts';
-import { answerOptions, STRATEGIC_COMPACT_DECISIONS } from './qc/answerOptions.ts';
+import { conclusionOptions, MODEL_STATE_VALUES, STRATEGIC_COMPACT_DECISIONS } from './qc/answerOptions.ts';
+import { ASSUMPTIONS, BRIEF_FACT_IDS_BY_KIND } from './qc/brief.ts';
+import { lintAuthoredText, lintBriefNeutrality } from './qc/briefLint.ts';
+import type { AnswerOption, CaseBrief, CaseConclusion } from './model.ts';
 import { normaliseCountryTag, normaliseSectorTag, normaliseStageTag, METHOD_TAGS } from './tags.ts';
 
 export interface ValidationResult {
@@ -41,6 +45,7 @@ const POSTURE_FACTS = [
   'china_share', 'opposite_bloc_share', 'trusted_share', 'coercive_top', 'coercive_top_share', 'imports_to_gdp', 'benchmark_share', 'benchmark_rca',
   'benchmark_exports', 'outlook', 'prize_note', 'pathway', 'deployment_need', 'large_yard_signals', 'partner', 'policy_alignment', 'confidence', 'borderline',
   'reason', 'choice', 'fence', 'posture',
+  'coercive_import_share', 'export_trend', 'demand_outlook', 'maturity', 'deployment_trend', 'deployment_demand_note', 'deployment_target_note', 'deployment_system_note',
 ] as const;
 
 /** The snapshot fact ids each case kind may name (shared vocabulary). `sector` cases reuse the posture ids. */
@@ -57,11 +62,13 @@ export const FACT_IDS_BY_KIND: Readonly<Record<CaseKind, readonly string[]>> = {
   ],
   partnership: ['pair', 'choices_summary', 'memo_verified', 'memo_as_of', 'memo_generated_at', 'headline'],
   sector: POSTURE_FACTS,
+  sector_chain: ['steps', 'demand_usd', 'lost_usd', 'exposure', 'coverage_existing', 'node_classes', 'explorer_stages', 'lead_stage', 'missions', 'chokepoint'],
 };
 
 /** Fact ids that give the conclusion away: never allowed in context_fields. */
 export const REVEALING_FACT_IDS: readonly string[] = [
   'choice', 'fence', 'posture', 'reason', 'confidence', 'borderline', 'partner', 'policy_alignment', 'class', 'decision', 'missions', 'choices_summary', 'headline',
+  'lead_stage', 'explorer_stages', 'node_classes',
 ];
 
 /**
@@ -74,14 +81,17 @@ export const COMPACT_DECISION_KEYS: readonly string[] = AIB_COMPACT_TYPES;
 export const compactDecisionLabel = (key: string): string => compactTypeInfo(key).short;
 
 /**
- * The canonical conclusion keys of a case kind (DONT_KNOW excluded). For a compact the key decides the set:
- * a strategic compact (SC-*) has sectoral / narrower / none, an operational one (AIB-Cxx) the bundle's types.
+ * The canonical conclusion keys of a case kind: every conclusion the Explorer can reach, its model states
+ * (not_assessed, INSUFFICIENT DATA) included; no reviewer state and no DONT_KNOW. For a compact the key decides
+ * the set: a strategic compact (SC-*) has sectoral / narrower / none, an operational one (AIB-Cxx) the bundle's
+ * types. Reviewers are offered these minus the model states, plus the three reviewer states (qc/answerOptions.ts).
  */
 export function canonicalAnswerKeys(kind: CaseKind, key: CaseKey = {}): string[] {
-  return answerOptions(kind, key)
-    .map((o) => o.value)
-    .filter((v) => v !== DONT_KNOW);
+  return conclusionOptions(kind, key).map((o) => o.value);
 }
+
+/** The canonical keys a reviewer must be offered (the conclusions minus the model states). */
+export const reviewerConclusionKeys = (kind: CaseKind, key: CaseKey = {}): string[] => canonicalAnswerKeys(kind, key).filter((v) => !MODEL_STATE_VALUES.includes(v));
 
 /** The canonical keys of a framework scenario's option_set (null for custom or absent). */
 export function optionSetKeys(set: unknown): string[] | null {
@@ -105,6 +115,7 @@ export const REQUIRED_KEY_FIELDS: Readonly<Record<CaseKind, readonly string[]>> 
   compact: ['sid', 'scenario'],
   partnership: ['pair'],
   sector: ['tech'],
+  sector_chain: ['sid', 'scenario'],
 };
 
 const SCENARIOS = ['decoupling', 'managed', 'baseline'];
@@ -240,7 +251,45 @@ function checkCaseDefinition(x: unknown, i: number, e: string[], w: string[]): s
   else for (const f of x.reveal_fields) if (kind && !known.includes(f)) e.push(`${where}.reveal_fields: ${f} is not a fact id of kind ${kind}`);
   if (kind === 'posture_cell' && isObj(x.key) && isStrArr(x.country_groups) && isStr(x.key.iso3) && !x.country_groups.includes(x.key.iso3))
     w.push(`${where}: key.iso3 ${x.key.iso3} is not in country_groups (assignment will not match country experts)`);
+  if (kind === 'sector_chain' && isObj(x.key) && isStr(x.key.sid) && !/^SC-/i.test(x.key.sid)) e.push(`${where}.key.sid: a sector chain reads a strategic compact (SC-*)`);
+  checkBriefAuthoring(x, kind, where, e, w);
   return id;
+}
+
+/**
+ * The authored brief (UX v2, CaseDefinition.brief): decision_question and decision_context required, objective
+ * and time_horizon optional strings, evidence_ids naming brief facts of the kind (qc/brief.ts
+ * BRIEF_FACT_IDS_BY_KIND), assumption_ids naming qc/brief.ts ASSUMPTIONS. The authored text, the title and the
+ * question are linted for leaks (qc/briefLint.ts): no canonical conclusion label, model score or model label.
+ */
+function checkBriefAuthoring(x: Record<string, unknown>, kind: CaseKind | null, where: string, e: string[], w: string[]): void {
+  const texts: [string, string][] = [];
+  if (isStr(x.title)) texts.push([`${where}.title`, x.title]);
+  if (isStr(x.question)) texts.push([`${where}.question`, x.question]);
+  const b = x.brief;
+  if (b === undefined || b === null) {
+    w.push(`${where}.brief: no authored brief (the builder's defaults are used)`);
+  } else if (!isObj(b)) {
+    e.push(`${where}.brief: an object`);
+  } else {
+    for (const f of ['decision_question', 'decision_context'] as const) if (!isStr(b[f])) e.push(`${where}.brief.${f}: required`);
+    for (const f of ['objective', 'time_horizon'] as const) if (b[f] !== undefined && b[f] !== null && !isStr(b[f])) e.push(`${where}.brief.${f}: a string or null`);
+    for (const f of ['decision_question', 'decision_context', 'objective', 'time_horizon'] as const) if (isStr(b[f])) texts.push([`${where}.brief.${f}`, b[f] as string]);
+    if (b.evidence_ids !== undefined) {
+      if (!isStrArr(b.evidence_ids)) e.push(`${where}.brief.evidence_ids: a list of brief fact ids`);
+      else {
+        const known = kind ? BRIEF_FACT_IDS_BY_KIND[kind] : [];
+        for (const f of b.evidence_ids) if (kind && !known.includes(f)) e.push(`${where}.brief.evidence_ids: ${f} is not a brief fact of kind ${kind}`);
+        for (const d of dupes(b.evidence_ids)) e.push(`${where}.brief.evidence_ids: ${d} listed twice`);
+        if (b.evidence_ids.length && (b.evidence_ids.length < 5 || b.evidence_ids.length > 8)) w.push(`${where}.brief.evidence_ids: ${b.evidence_ids.length} facts (the brief aims for 5 to 8)`);
+      }
+    }
+    if (b.assumption_ids !== undefined) {
+      if (!isStrArr(b.assumption_ids)) e.push(`${where}.brief.assumption_ids: a list of assumption ids`);
+      else for (const a of b.assumption_ids) if (!ASSUMPTIONS[a]) e.push(`${where}.brief.assumption_ids: ${a} is not an assumption id (qc/brief.ts ASSUMPTIONS)`);
+    }
+  }
+  for (const err of lintAuthoredText(texts)) e.push(`leak: ${err}`);
 }
 
 /** The case catalogue (config/review/review_cases.yml): an array of CaseDefinition with unique, stable CASE_### IDs. */
@@ -303,13 +352,24 @@ export function validateCasesFile(obj: unknown): ValidationResult {
     if (opts.some((o) => !isObj(o) || !isStr(o.value) || !isStr(o.label))) e.push(`${where}.answer_options: every option needs {value, label}`);
     for (const d of dupes(values.filter(isStr))) e.push(`${where}.answer_options: ${d} listed twice`);
     const kind = x.kind as CaseKind;
-    const canon = (CASE_KINDS as readonly string[]).includes(kind) ? canonicalAnswerKeys(kind, isObj(x.key) ? (x.key as CaseKey) : {}) : null;
+    const ck = isObj(x.key) ? (x.key as CaseKey) : {};
+    const canon = (CASE_KINDS as readonly string[]).includes(kind) ? canonicalAnswerKeys(kind, ck) : null;
+    const v2 = isObj(snap.brief);
     if (canon) {
-      for (const k of canon) if (!values.includes(k)) e.push(`${where}.answer_options: the canonical option ${k} is missing (blind options must exclude nothing canonical)`);
-      for (const v of values) if (isStr(v) && v !== DONT_KNOW && !canon.includes(v)) e.push(`${where}.answer_options: ${v} is not a canonical ${kind} key`);
+      for (const k of reviewerConclusionKeys(kind, ck)) if (!values.includes(k)) e.push(`${where}.answer_options: the canonical option ${k} is missing (blind options must exclude nothing canonical)`);
+      for (const v of values) if (isStr(v) && v !== DONT_KNOW && !REVIEWER_STATES.includes(v) && !canon.includes(v)) e.push(`${where}.answer_options: ${v} is not a canonical ${kind} key`);
+      if (v2) {
+        for (const r of REVIEWER_STATES) if (!values.includes(r)) e.push(`${where}.answer_options: the reviewer state ${r} is missing`);
+        for (const v of values) if (isStr(v) && MODEL_STATE_VALUES.includes(v)) e.push(`${where}.answer_options: ${v} is a model state, not a reviewer option`);
+      }
     }
     const concl = snap.conclusion.value;
-    if (!values.includes(concl)) e.push(`${where}.snapshot.conclusion.value: ${concl} is not one of the answer options (a reviewer could never match it)`);
+    if (!values.includes(concl) && !(canon && canon.includes(concl))) e.push(`${where}.snapshot.conclusion.value: ${concl} is not one of the answer options (nor a conclusion of the kind)`);
+    // UX v2: the brief is neutral (the build fails on a leak) and the reasoning is present
+    if (v2) {
+      for (const err of lintBriefNeutrality(snap.brief as unknown as CaseBrief, snap.conclusion as unknown as CaseConclusion, opts.filter(isObj) as unknown as AnswerOption[])) e.push(`${where}.snapshot.brief: ${err}`);
+      if (!isObj(snap.reasoning) && concl !== 'missing') w.push(`${where}.snapshot.reasoning: no reasoning reveal`);
+    }
     // a context fact that names the conclusion leaks it, whatever its id
     const label = isStr(snap.conclusion.label) ? snap.conclusion.label : null;
     if (label && isStrArr(x.context_fields))
@@ -431,7 +491,7 @@ export function validateGoldenCases(obj: unknown): ValidationResult {
 
 export const SUBMISSION_KINDS: readonly SubmissionKind[] = ['case_review', 'method_feedback', 'framework_answer', 'decision_use', 'threat_review', 'data_issue', 'break_model'];
 const SEVERITIES = ['cosmetic', 'minor', 'material', 'critical'];
-const ISSUE_TYPES = ['data', 'method', 'context', 'framework', 'actionability', 'insufficient_evidence'];
+const ISSUE_TYPES = ['data', 'method', 'context', 'framework', 'actionability', 'insufficient_evidence', 'decision_rule'];
 
 /** One reviewer submission envelope and the minimum its payload kind needs (the export CLI skips failures). */
 export function validateSubmission(obj: unknown): ValidationResult {

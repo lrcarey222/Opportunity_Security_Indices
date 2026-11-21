@@ -43,12 +43,12 @@
       },
       "created_at": "2027-01-20T09:21:00.000Z",
       "submitted_at": "2027-01-20T09:21:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_001",
-        "case_snapshot_sha256": "2f78bf71355e43e93dfd78f5bb786d6a0cd3285328cd55c4402d4faa5c51b00b",
+        "case_snapshot_sha256": "d790326a49e81612898ba7604c14a1a3b13ebd4cd7dd5d621dbfaa1b27a37043",
         "assignment_reason": "anchor",
         "expertise_match": "in",
         "blind": {
@@ -104,12 +104,12 @@
       },
       "created_at": "2027-01-20T09:42:00.000Z",
       "submitted_at": "2027-01-20T09:42:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_001",
-        "case_snapshot_sha256": "2f78bf71355e43e93dfd78f5bb786d6a0cd3285328cd55c4402d4faa5c51b00b",
+        "case_snapshot_sha256": "d790326a49e81612898ba7604c14a1a3b13ebd4cd7dd5d621dbfaa1b27a37043",
         "assignment_reason": "anchor",
         "expertise_match": "in",
         "blind": {
@@ -167,12 +167,12 @@
       },
       "created_at": "2027-01-20T10:03:00.000Z",
       "submitted_at": "2027-01-20T10:03:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_001",
-        "case_snapshot_sha256": "2f78bf71355e43e93dfd78f5bb786d6a0cd3285328cd55c4402d4faa5c51b00b",
+        "case_snapshot_sha256": "d790326a49e81612898ba7604c14a1a3b13ebd4cd7dd5d621dbfaa1b27a37043",
         "assignment_reason": "anchor",
         "expertise_match": "in",
         "blind": {
@@ -229,12 +229,12 @@
       },
       "created_at": "2027-01-20T10:24:00.000Z",
       "submitted_at": "2027-01-20T10:24:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_001",
-        "case_snapshot_sha256": "2f78bf71355e43e93dfd78f5bb786d6a0cd3285328cd55c4402d4faa5c51b00b",
+        "case_snapshot_sha256": "d790326a49e81612898ba7604c14a1a3b13ebd4cd7dd5d621dbfaa1b27a37043",
         "assignment_reason": "anchor",
         "expertise_match": "in",
         "blind": {
@@ -293,12 +293,12 @@
       },
       "created_at": "2027-01-20T10:45:00.000Z",
       "submitted_at": "2027-01-20T10:45:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_001",
-        "case_snapshot_sha256": "2f78bf71355e43e93dfd78f5bb786d6a0cd3285328cd55c4402d4faa5c51b00b",
+        "case_snapshot_sha256": "d790326a49e81612898ba7604c14a1a3b13ebd4cd7dd5d621dbfaa1b27a37043",
         "assignment_reason": "anchor",
         "expertise_match": "outside",
         "blind": {
@@ -354,12 +354,12 @@
       },
       "created_at": "2027-01-20T11:06:00.000Z",
       "submitted_at": "2027-01-20T11:06:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_003",
-        "case_snapshot_sha256": "475bafb7c2298927d409d806c0cd637a0641cf43b910ec78aa5cd673360245fe",
+        "case_snapshot_sha256": "ae6e6af4d2011deb01c5536e188bccc0520310c5828059613a5ce7254786d1c2",
         "assignment_reason": "anchor",
         "expertise_match": "in",
         "blind": {
@@ -413,12 +413,12 @@
       },
       "created_at": "2027-01-20T11:27:00.000Z",
       "submitted_at": "2027-01-20T11:27:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_003",
-        "case_snapshot_sha256": "475bafb7c2298927d409d806c0cd637a0641cf43b910ec78aa5cd673360245fe",
+        "case_snapshot_sha256": "ae6e6af4d2011deb01c5536e188bccc0520310c5828059613a5ce7254786d1c2",
         "assignment_reason": "anchor",
         "expertise_match": "in",
         "blind": {
@@ -477,16 +477,16 @@
       },
       "created_at": "2027-01-20T11:48:00.000Z",
       "submitted_at": "2027-01-20T11:48:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_006",
-        "case_snapshot_sha256": "211e450151289176c6214f9b71c2ca71a49a561cbe05c43102d501713f7be9db",
+        "case_snapshot_sha256": "49225056733256f774e3959fd4af6ebb283fa4a026781399bef1d8b956164f69",
         "assignment_reason": "anchor",
         "expertise_match": "in",
         "blind": {
-          "choice": "not_assessed",
+          "choice": "accelerate",
           "confidence": 3,
           "factors": [
             "import_dependence"
@@ -543,7 +543,7 @@
       },
       "created_at": "2027-01-20T12:02:00.000Z",
       "submitted_at": "2027-01-20T12:02:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": {
         "url": "/countries/KOR?node=Batteries|Components",
@@ -570,7 +570,7 @@
           "strategic": null,
           "memos": null
         },
-        "app_commit": "d717db1c",
+        "app_commit": "f4f344b1",
         "captured_at": "2027-01-20T11:55:00.000Z"
       },
       "payload": {
@@ -625,7 +625,7 @@
       },
       "created_at": "2027-01-20T12:09:00.000Z",
       "submitted_at": "2027-01-20T12:09:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": {
         "url": "/countries/KOR?node=Batteries|Components",
@@ -652,7 +652,7 @@
           "strategic": null,
           "memos": null
         },
-        "app_commit": "d717db1c",
+        "app_commit": "f4f344b1",
         "captured_at": "2027-01-20T11:55:00.000Z"
       },
       "payload": {
@@ -708,7 +708,7 @@
       },
       "created_at": "2027-01-20T12:23:00.000Z",
       "submitted_at": "2027-01-20T12:23:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": {
         "url": "/countries/KOR?node=Batteries|Components",
@@ -735,7 +735,7 @@
           "strategic": null,
           "memos": null
         },
-        "app_commit": "d717db1c",
+        "app_commit": "f4f344b1",
         "captured_at": "2027-01-20T12:16:00.000Z"
       },
       "payload": {
@@ -788,7 +788,7 @@
       },
       "created_at": "2027-01-20T12:37:00.000Z",
       "submitted_at": "2027-01-20T12:37:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": {
         "url": "/countries/KOR?node=Batteries|Components",
@@ -815,7 +815,7 @@
           "strategic": null,
           "memos": null
         },
-        "app_commit": "d717db1c",
+        "app_commit": "f4f344b1",
         "captured_at": "2027-01-20T12:30:00.000Z"
       },
       "payload": {
@@ -868,7 +868,7 @@
       },
       "created_at": "2027-01-20T12:51:00.000Z",
       "submitted_at": "2027-01-20T12:51:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": {
         "url": "/countries/KOR?node=Batteries|Components",
@@ -895,7 +895,7 @@
           "strategic": null,
           "memos": null
         },
-        "app_commit": "d717db1c",
+        "app_commit": "f4f344b1",
         "captured_at": "2027-01-20T12:44:00.000Z"
       },
       "payload": {
@@ -946,7 +946,7 @@
       },
       "created_at": "2027-01-20T13:05:00.000Z",
       "submitted_at": "2027-01-20T13:05:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": {
         "url": "/countries/KOR?node=Batteries|Components",
@@ -973,7 +973,7 @@
           "strategic": null,
           "memos": null
         },
-        "app_commit": "d717db1c",
+        "app_commit": "f4f344b1",
         "captured_at": "2027-01-20T12:58:00.000Z"
       },
       "payload": {
@@ -1028,7 +1028,7 @@
       },
       "created_at": "2027-01-20T13:12:00.000Z",
       "submitted_at": "2027-01-20T13:12:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1075,7 +1075,7 @@
       },
       "created_at": "2027-01-20T13:19:00.000Z",
       "submitted_at": "2027-01-20T13:19:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1122,7 +1122,7 @@
       },
       "created_at": "2027-01-20T13:26:00.000Z",
       "submitted_at": "2027-01-20T13:26:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1171,7 +1171,7 @@
       },
       "created_at": "2027-01-20T13:33:00.000Z",
       "submitted_at": "2027-01-20T13:33:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1220,7 +1220,7 @@
       },
       "created_at": "2027-01-20T13:40:00.000Z",
       "submitted_at": "2027-01-20T13:40:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1267,7 +1267,7 @@
       },
       "created_at": "2027-01-20T13:47:00.000Z",
       "submitted_at": "2027-01-20T13:47:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1316,7 +1316,7 @@
       },
       "created_at": "2027-01-20T13:54:00.000Z",
       "submitted_at": "2027-01-20T13:54:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1362,7 +1362,7 @@
       },
       "created_at": "2027-01-20T14:01:00.000Z",
       "submitted_at": "2027-01-20T14:01:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1410,7 +1410,7 @@
       },
       "created_at": "2027-01-20T14:08:00.000Z",
       "submitted_at": "2027-01-20T14:08:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1458,7 +1458,7 @@
       },
       "created_at": "2027-01-20T14:15:00.000Z",
       "submitted_at": "2027-01-20T14:15:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1504,7 +1504,7 @@
       },
       "created_at": "2027-01-20T14:22:00.000Z",
       "submitted_at": "2027-01-20T14:22:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1552,7 +1552,7 @@
       },
       "created_at": "2027-01-20T14:29:00.000Z",
       "submitted_at": "2027-01-20T14:29:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1598,7 +1598,7 @@
       },
       "created_at": "2027-01-20T14:36:00.000Z",
       "submitted_at": "2027-01-20T14:36:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1646,7 +1646,7 @@
       },
       "created_at": "2027-01-20T14:43:00.000Z",
       "submitted_at": "2027-01-20T14:43:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1694,7 +1694,7 @@
       },
       "created_at": "2027-01-20T14:50:00.000Z",
       "submitted_at": "2027-01-20T14:50:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1740,7 +1740,7 @@
       },
       "created_at": "2027-01-20T14:57:00.000Z",
       "submitted_at": "2027-01-20T14:57:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1786,7 +1786,7 @@
       },
       "created_at": "2027-01-20T15:04:00.000Z",
       "submitted_at": "2027-01-20T15:04:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1832,7 +1832,7 @@
       },
       "created_at": "2027-01-20T15:11:00.000Z",
       "submitted_at": "2027-01-20T15:11:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1880,7 +1880,7 @@
       },
       "created_at": "2027-01-20T15:18:00.000Z",
       "submitted_at": "2027-01-20T15:18:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1928,7 +1928,7 @@
       },
       "created_at": "2027-01-20T15:25:00.000Z",
       "submitted_at": "2027-01-20T15:25:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
@@ -1976,12 +1976,12 @@
       },
       "created_at": "2027-01-20T15:32:00.000Z",
       "submitted_at": "2027-01-20T15:32:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_014",
-        "threat_snapshot_sha256": "e7319aec3ee4d2ba87e7af195e8af8a48615d09a76e94a6f81c15626acbcabb4",
+        "threat_snapshot_sha256": "dd13499c4cd06488af104ddcdc3671d08517df85ffe84962ba800dbdb290d6de",
         "reduces_threat": 3,
         "scale_sufficient": 2,
         "timing_plausible": 2,
@@ -2029,12 +2029,12 @@
       },
       "created_at": "2027-01-20T15:39:00.000Z",
       "submitted_at": "2027-01-20T15:39:00.000Z",
-      "app_commit": "d717db1c",
+      "app_commit": "f4f344b1",
       "data_release": "rel-9c8f1877b5c6",
       "page_context": null,
       "payload": {
         "case_id": "CASE_015",
-        "threat_snapshot_sha256": "70bb3d4481755aa07e2075275aaa864d51b4afa9b9058e2b5d757a5e3eed766b",
+        "threat_snapshot_sha256": "d5dc890827f13709758026710793f50658d7bf321aa544c075a7d275e19dd93c",
         "reduces_threat": 3,
         "scale_sufficient": 2,
         "timing_plausible": 2,
@@ -2045,6 +2045,1254 @@
         ],
         "success_looks_like": "[synthetic] two qualified non-dominant suppliers by 2030",
         "stop_point": "[synthetic] no offtake signed within two years"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-ff416ae2-bfa3-44ac-a08e-9fff9c5d0ea5",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-07",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "9b155e5d0ad34e55cb54883b754ad8c5803e2bf62e992dfff654526aeb7ff503",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "trade_data"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:trade_data": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T16:00:00.000Z",
+      "submitted_at": "2027-01-20T16:00:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_006",
+        "case_snapshot_sha256": "49225056733256f774e3959fd4af6ebb283fa4a026781399bef1d8b956164f69",
+        "assignment_reason": "anchor",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "watch",
+          "confidence": 3,
+          "factors": [
+            "concentration_security"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T15:46:00.000Z",
+          "confidence_level": "medium",
+          "driver": "concentration_security",
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T15:53:00.000Z",
+          "verdict": 1,
+          "main_issue": null,
+          "suggested_choice": null,
+          "evidence_wanted": null,
+          "verdict_code": "same_same",
+          "prior_differs": false,
+          "validity": "supported",
+          "persuasion": "unchanged",
+          "red_team": null
+        },
+        "outside_expertise": false,
+        "time_spent_s": 673,
+        "notes": [],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-860d2ab6-4ce7-443c-a338-df07ed96a5c3",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-08",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "c59b8ec0e0a38ec085fdf553669871aab2a1fd188eb20f3629f1a5a5287bb260",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "industrial_policy"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:industrial_policy": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T16:21:00.000Z",
+      "submitted_at": "2027-01-20T16:21:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_014",
+        "case_snapshot_sha256": "bfb05409fcebd0d7911311975662bab0634046663fe63811a0360290d1487bee",
+        "assignment_reason": "assigned",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "BUILD",
+          "confidence": 5,
+          "factors": [
+            "allied_alternatives"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T16:07:00.000Z",
+          "confidence_level": "high",
+          "driver": "allied_alternatives",
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T16:14:00.000Z",
+          "verdict": 1,
+          "main_issue": {
+            "text": "[synthetic] demo issue for same_different_reasons",
+            "type": "method"
+          },
+          "suggested_choice": null,
+          "evidence_wanted": null,
+          "verdict_code": "same_different_reasons",
+          "prior_differs": false,
+          "validity": "partly",
+          "persuasion": "unchanged",
+          "red_team": null,
+          "product_answers": {
+            "bottleneck_located": "partly"
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 834,
+        "notes": [
+          {
+            "id": "note-1-a",
+            "text": "[synthetic] checked the trade year before answering",
+            "created_at": "2027-01-20T16:07:00.000Z",
+            "updated_at": "2027-01-20T16:07:00.000Z",
+            "converted_to": null
+          },
+          {
+            "id": "note-1-b",
+            "text": "[synthetic] the reveal leans on one supplier share",
+            "created_at": "2027-01-20T16:14:00.000Z",
+            "updated_at": "2027-01-20T16:14:00.000Z",
+            "converted_to": "missing_context"
+          }
+        ],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-cd76fa00-2526-4916-a2e6-4f24e188d85c",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-09",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "65612ea3af370e269b269d49cdc7ce4504c50d8238d901fa6218ead9f463bd7a",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "trade_data"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:trade_data": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T16:42:00.000Z",
+      "submitted_at": "2027-01-20T16:42:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_021",
+        "case_snapshot_sha256": "ecb3b4828ef886015d94fe28e2d4b78922b8a9ae202df93b028fb0ba52b8b675",
+        "assignment_reason": "assigned",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "watch",
+          "confidence": 3,
+          "factors": [
+            "domestic_capability"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T16:28:00.000Z",
+          "confidence_level": "medium",
+          "driver": "domestic_capability",
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T16:35:00.000Z",
+          "verdict": 2,
+          "main_issue": null,
+          "suggested_choice": null,
+          "evidence_wanted": null,
+          "verdict_code": "persuaded",
+          "prior_differs": true,
+          "validity": "supported",
+          "persuasion": "changed",
+          "red_team": null,
+          "product_answers": {
+            "complementarity": "mostly_diplomatic",
+            "incentives": "unsure",
+            "asymmetry": "asymmetric",
+            "durability": "unsure",
+            "substitution": "hard"
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 528,
+        "notes": [
+          {
+            "id": "note-2-a",
+            "text": "[synthetic] checked the trade year before answering",
+            "created_at": "2027-01-20T16:28:00.000Z",
+            "updated_at": "2027-01-20T16:28:00.000Z",
+            "converted_to": null
+          },
+          {
+            "id": "note-2-b",
+            "text": "[synthetic] the reveal leans on one supplier share",
+            "created_at": "2027-01-20T16:35:00.000Z",
+            "updated_at": "2027-01-20T16:35:00.000Z",
+            "converted_to": "method_concern"
+          }
+        ],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-50338dda-42b1-436f-a952-0626f19f864c",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-10",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "39e1a9475125e43d78ade0454cd7d7299658e190a7cea6f6ef0e92b2ebb4057e",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "industrial_policy"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:industrial_policy": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T17:03:00.000Z",
+      "submitted_at": "2027-01-20T17:03:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_018",
+        "case_snapshot_sha256": "31cfe0f770699bce6a769e5a154beeba1c8a7b53b73070dcfa171376d6768b0f",
+        "assignment_reason": "assigned",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "none",
+          "confidence": 1,
+          "factors": [
+            "demand_growth"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T16:49:00.000Z",
+          "confidence_level": "low",
+          "driver": "demand_growth",
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T16:56:00.000Z",
+          "verdict": 3,
+          "main_issue": {
+            "text": "[synthetic] demo issue for plausible_insufficient",
+            "type": "insufficient_evidence"
+          },
+          "suggested_choice": "none",
+          "evidence_wanted": null,
+          "verdict_code": "plausible_insufficient",
+          "prior_differs": true,
+          "validity": "partly",
+          "persuasion": "unchanged",
+          "red_team": {
+            "must_be_true": "[synthetic] trusted suppliers can qualify within three years",
+            "resolving_evidence": "cost_competitiveness",
+            "resolving_evidence_text": "[synthetic] plant-level capacity"
+          },
+          "product_answers": {
+            "ameliorates_threat": "unsure"
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 414,
+        "notes": [],
+        "review_mode": "technical"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-f0bcf07c-82f7-4b46-a591-8068777e64e7",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-11",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "bd9c3081c7e262cafdff86fc9d84e4efd64560f106fff84b0741dc02bf535702",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "trade_data"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:trade_data": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T17:24:00.000Z",
+      "submitted_at": "2027-01-20T17:24:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_006",
+        "case_snapshot_sha256": "49225056733256f774e3959fd4af6ebb283fa4a026781399bef1d8b956164f69",
+        "assignment_reason": "anchor",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "accelerate",
+          "confidence": 3,
+          "factors": [
+            "other"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T17:10:00.000Z",
+          "confidence_level": "medium",
+          "driver": "other",
+          "driver_text": "[synthetic] stockpile policy",
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T17:17:00.000Z",
+          "verdict": 4,
+          "main_issue": {
+            "text": "[synthetic] demo issue for wrong_fact",
+            "type": "data"
+          },
+          "suggested_choice": "accelerate",
+          "evidence_wanted": null,
+          "verdict_code": "wrong_fact",
+          "prior_differs": true,
+          "validity": "not_supported",
+          "persuasion": "unchanged",
+          "red_team": {
+            "must_be_true": "[synthetic] trusted suppliers can qualify within three years",
+            "resolving_evidence": "production_capacity",
+            "resolving_evidence_text": null
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 856,
+        "notes": [
+          {
+            "id": "note-4-a",
+            "text": "[synthetic] checked the trade year before answering",
+            "created_at": "2027-01-20T17:10:00.000Z",
+            "updated_at": "2027-01-20T17:10:00.000Z",
+            "converted_to": null
+          },
+          {
+            "id": "note-4-b",
+            "text": "[synthetic] the reveal leans on one supplier share",
+            "created_at": "2027-01-20T17:17:00.000Z",
+            "updated_at": "2027-01-20T17:17:00.000Z",
+            "converted_to": null
+          }
+        ],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-10444a25-2364-4b6a-a44a-28f4bd8ad673",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-12",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "948f6e92c218fc5dd73e8720d7cad28da1157b50bb02cd2d873f2c2bd3908fef",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "industrial_policy"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:industrial_policy": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T17:45:00.000Z",
+      "submitted_at": "2027-01-20T17:45:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_014",
+        "case_snapshot_sha256": "bfb05409fcebd0d7911311975662bab0634046663fe63811a0360290d1487bee",
+        "assignment_reason": "assigned",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "MANAGE SPECIALIZATION",
+          "confidence": 5,
+          "factors": [
+            "concentration_security"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T17:31:00.000Z",
+          "confidence_level": "high",
+          "driver": "concentration_security",
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T17:38:00.000Z",
+          "verdict": 6,
+          "main_issue": {
+            "text": "[synthetic] demo issue for missing_factor",
+            "type": "context"
+          },
+          "suggested_choice": "MANAGE SPECIALIZATION",
+          "evidence_wanted": null,
+          "verdict_code": "missing_factor",
+          "prior_differs": true,
+          "validity": "not_supported",
+          "persuasion": "somewhat",
+          "red_team": {
+            "must_be_true": "[synthetic] trusted suppliers can qualify within three years",
+            "resolving_evidence": "qualification_constraints",
+            "resolving_evidence_text": "[synthetic] plant-level capacity"
+          },
+          "product_answers": {
+            "bottleneck_located": "partly"
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 309,
+        "notes": [
+          {
+            "id": "note-5-a",
+            "text": "[synthetic] checked the trade year before answering",
+            "created_at": "2027-01-20T17:31:00.000Z",
+            "updated_at": "2027-01-20T17:31:00.000Z",
+            "converted_to": null
+          },
+          {
+            "id": "note-5-b",
+            "text": "[synthetic] the reveal leans on one supplier share",
+            "created_at": "2027-01-20T17:38:00.000Z",
+            "updated_at": "2027-01-20T17:38:00.000Z",
+            "converted_to": "data_issue"
+          }
+        ],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-5be33579-963c-402f-a297-8cc16eaa37d6",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-13",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "c038861b3950d5594e910ca720521d8722c7f9720121d4854207aedbdb8f50df",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "trade_data"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:trade_data": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T18:06:00.000Z",
+      "submitted_at": "2027-01-20T18:06:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_021",
+        "case_snapshot_sha256": "ecb3b4828ef886015d94fe28e2d4b78922b8a9ae202df93b028fb0ba52b8b675",
+        "assignment_reason": "assigned",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "accelerate",
+          "confidence": 3,
+          "factors": [
+            "allied_alternatives"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T17:52:00.000Z",
+          "confidence_level": "medium",
+          "driver": "allied_alternatives",
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T17:59:00.000Z",
+          "verdict": 5,
+          "main_issue": {
+            "text": "[synthetic] demo issue for wrong_weighting",
+            "type": "method"
+          },
+          "suggested_choice": "accelerate",
+          "evidence_wanted": null,
+          "verdict_code": "wrong_weighting",
+          "prior_differs": true,
+          "validity": "partly",
+          "persuasion": "unchanged",
+          "red_team": {
+            "must_be_true": "[synthetic] trusted suppliers can qualify within three years",
+            "resolving_evidence": "allied_spare_capacity",
+            "resolving_evidence_text": null
+          },
+          "product_answers": {
+            "complementarity": "mostly_industrial",
+            "incentives": "unsure",
+            "asymmetry": "unsure",
+            "durability": "durable",
+            "substitution": "easy"
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 510,
+        "notes": [],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-306116a4-3b29-49d5-ad84-2c00fa303734",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-14",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "d6b8e8b2e1bac5aa1db89df3e281319a687baa20d516d8cefef2075dfad32994",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "industrial_policy"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:industrial_policy": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T18:27:00.000Z",
+      "submitted_at": "2027-01-20T18:27:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_018",
+        "case_snapshot_sha256": "31cfe0f770699bce6a769e5a154beeba1c8a7b53b73070dcfa171376d6768b0f",
+        "assignment_reason": "assigned",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "narrower",
+          "confidence": 5,
+          "factors": [
+            "domestic_capability"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T18:13:00.000Z",
+          "confidence_level": "high",
+          "driver": "domestic_capability",
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T18:20:00.000Z",
+          "verdict": 5,
+          "main_issue": {
+            "text": "[synthetic] demo issue for wrong_rule",
+            "type": "decision_rule"
+          },
+          "suggested_choice": "narrower",
+          "evidence_wanted": null,
+          "verdict_code": "wrong_rule",
+          "prior_differs": true,
+          "validity": "not_supported",
+          "persuasion": "unchanged",
+          "red_team": {
+            "must_be_true": "[synthetic] trusted suppliers can qualify within three years",
+            "resolving_evidence": "cost_competitiveness",
+            "resolving_evidence_text": "[synthetic] plant-level capacity"
+          },
+          "product_answers": {
+            "ameliorates_threat": "unsure"
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 600,
+        "notes": [
+          {
+            "id": "note-7-a",
+            "text": "[synthetic] checked the trade year before answering",
+            "created_at": "2027-01-20T18:13:00.000Z",
+            "updated_at": "2027-01-20T18:13:00.000Z",
+            "converted_to": null
+          },
+          {
+            "id": "note-7-b",
+            "text": "[synthetic] the reveal leans on one supplier share",
+            "created_at": "2027-01-20T18:20:00.000Z",
+            "updated_at": "2027-01-20T18:20:00.000Z",
+            "converted_to": "method_concern"
+          }
+        ],
+        "review_mode": "technical"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-3e6891b3-cecc-42e8-afbc-65f48d23449d",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-15",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "be466921413077cb695610bc34cb4a0a5892d20caeadc3886f7aa0e73558ef9f",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "trade_data"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:trade_data": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T18:48:00.000Z",
+      "submitted_at": "2027-01-20T18:48:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_006",
+        "case_snapshot_sha256": "49225056733256f774e3959fd4af6ebb283fa4a026781399bef1d8b956164f69",
+        "assignment_reason": "anchor",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "secure",
+          "confidence": 1,
+          "factors": [
+            "demand_growth"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T18:34:00.000Z",
+          "confidence_level": "low",
+          "driver": "demand_growth",
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T18:41:00.000Z",
+          "verdict": 5,
+          "main_issue": {
+            "text": "[synthetic] demo issue for too_broad",
+            "type": "framework"
+          },
+          "suggested_choice": "secure",
+          "evidence_wanted": null,
+          "verdict_code": "too_broad",
+          "prior_differs": true,
+          "validity": "partly",
+          "persuasion": "unchanged",
+          "red_team": {
+            "must_be_true": "[synthetic] trusted suppliers can qualify within three years",
+            "resolving_evidence": "production_capacity",
+            "resolving_evidence_text": null
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 447,
+        "notes": [
+          {
+            "id": "note-8-a",
+            "text": "[synthetic] checked the trade year before answering",
+            "created_at": "2027-01-20T18:34:00.000Z",
+            "updated_at": "2027-01-20T18:34:00.000Z",
+            "converted_to": null
+          },
+          {
+            "id": "note-8-b",
+            "text": "[synthetic] the reveal leans on one supplier share",
+            "created_at": "2027-01-20T18:41:00.000Z",
+            "updated_at": "2027-01-20T18:41:00.000Z",
+            "converted_to": "comment"
+          }
+        ],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-50623a5c-ac73-4bd9-a6c2-5c2b837a9fff",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-16",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "80718d9660787cb282949a73071af859c2b26a244a6407898396483e17cb2f93",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "industrial_policy"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:industrial_policy": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T19:09:00.000Z",
+      "submitted_at": "2027-01-20T19:09:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_014",
+        "case_snapshot_sha256": "bfb05409fcebd0d7911311975662bab0634046663fe63811a0360290d1487bee",
+        "assignment_reason": "assigned",
+        "expertise_match": "outside",
+        "blind": {
+          "choice": "outside_expertise",
+          "confidence": null,
+          "factors": [],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T18:55:00.000Z",
+          "confidence_level": null,
+          "driver": null,
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T19:02:00.000Z",
+          "verdict": 7,
+          "main_issue": null,
+          "suggested_choice": null,
+          "evidence_wanted": null,
+          "verdict_code": "outside_expertise",
+          "prior_differs": null,
+          "validity": null,
+          "persuasion": null,
+          "red_team": null,
+          "product_answers": {
+            "bottleneck_located": "partly"
+          }
+        },
+        "outside_expertise": true,
+        "time_spent_s": 830,
+        "notes": [],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-db3396fb-8663-46bd-a539-be1bef97f98e",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-17",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "f0cbf84587b91603169c3585bc8fac46080888d9b81707fed6051deb61480d12",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "trade_data"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:trade_data": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T19:30:00.000Z",
+      "submitted_at": "2027-01-20T19:30:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_006",
+        "case_snapshot_sha256": "49225056733256f774e3959fd4af6ebb283fa4a026781399bef1d8b956164f69",
+        "assignment_reason": "anchor",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "insufficient_evidence",
+          "confidence": null,
+          "factors": [],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T19:16:00.000Z",
+          "confidence_level": null,
+          "driver": null,
+          "driver_text": null,
+          "ux_version": 2,
+          "missing_evidence": [
+            "production_capacity",
+            "firm_capability"
+          ],
+          "missing_evidence_text": "[synthetic] no plant list for this stage"
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T19:23:00.000Z",
+          "verdict": 3,
+          "main_issue": {
+            "text": "[synthetic] demo issue for plausible_insufficient",
+            "type": "insufficient_evidence"
+          },
+          "suggested_choice": null,
+          "evidence_wanted": null,
+          "verdict_code": "plausible_insufficient",
+          "prior_differs": null,
+          "validity": "unsure",
+          "persuasion": "unchanged",
+          "red_team": {
+            "must_be_true": "[synthetic] trusted suppliers can qualify within three years",
+            "resolving_evidence": "allied_spare_capacity",
+            "resolving_evidence_text": null
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 452,
+        "notes": [
+          {
+            "id": "note-10-a",
+            "text": "[synthetic] checked the trade year before answering",
+            "created_at": "2027-01-20T19:16:00.000Z",
+            "updated_at": "2027-01-20T19:16:00.000Z",
+            "converted_to": null
+          },
+          {
+            "id": "note-10-b",
+            "text": "[synthetic] the reveal leans on one supplier share",
+            "created_at": "2027-01-20T19:23:00.000Z",
+            "updated_at": "2027-01-20T19:23:00.000Z",
+            "converted_to": "data_issue"
+          }
+        ],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-c49c171a-a862-4f14-a7ca-495a4b9840da",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-18",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "677c30ed4f1005d8d3504e1afbb90d6955fbb468d2520d96fe5aab63f5233ad8",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "industrial_policy"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:industrial_policy": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T19:51:00.000Z",
+      "submitted_at": "2027-01-20T19:51:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_006",
+        "case_snapshot_sha256": "49225056733256f774e3959fd4af6ebb283fa4a026781399bef1d8b956164f69",
+        "assignment_reason": "anchor",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "insufficient_evidence",
+          "confidence": null,
+          "factors": [],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T19:37:00.000Z",
+          "confidence_level": null,
+          "driver": null,
+          "driver_text": null,
+          "ux_version": 2,
+          "missing_evidence": [
+            "production_capacity",
+            "project_pipeline"
+          ]
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T19:44:00.000Z",
+          "verdict": 3,
+          "main_issue": {
+            "text": "[synthetic] demo issue for plausible_insufficient",
+            "type": "insufficient_evidence"
+          },
+          "suggested_choice": null,
+          "evidence_wanted": null,
+          "verdict_code": "plausible_insufficient",
+          "prior_differs": null,
+          "validity": "partly",
+          "persuasion": "unchanged",
+          "red_team": {
+            "must_be_true": "[synthetic] trusted suppliers can qualify within three years",
+            "resolving_evidence": "cost_competitiveness",
+            "resolving_evidence_text": "[synthetic] plant-level capacity"
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 772,
+        "notes": [
+          {
+            "id": "note-11-a",
+            "text": "[synthetic] checked the trade year before answering",
+            "created_at": "2027-01-20T19:37:00.000Z",
+            "updated_at": "2027-01-20T19:37:00.000Z",
+            "converted_to": null
+          },
+          {
+            "id": "note-11-b",
+            "text": "[synthetic] the reveal leans on one supplier share",
+            "created_at": "2027-01-20T19:44:00.000Z",
+            "updated_at": "2027-01-20T19:44:00.000Z",
+            "converted_to": "missing_context"
+          }
+        ],
+        "review_mode": "technical"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-99c54a06-15a5-4b89-a0fd-a30eb629088a",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-19",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "6e734223299279a4718f06127e1d59715f4ab53144adafd804d8f1ed0d48a8c9",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "trade_data"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:trade_data": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T20:12:00.000Z",
+      "submitted_at": "2027-01-20T20:12:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_018",
+        "case_snapshot_sha256": "31cfe0f770699bce6a769e5a154beeba1c8a7b53b73070dcfa171376d6768b0f",
+        "assignment_reason": "assigned",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "none_of_these",
+          "confidence": 3,
+          "factors": [
+            "domestic_capability"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T19:58:00.000Z",
+          "confidence_level": "medium",
+          "driver": "domestic_capability",
+          "driver_text": null,
+          "ux_version": 2,
+          "own_recommendation": "[synthetic] a shared stockpile rather than new capacity"
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T20:05:00.000Z",
+          "verdict": 6,
+          "main_issue": {
+            "text": "[synthetic] demo issue for missing_factor",
+            "type": "context"
+          },
+          "suggested_choice": null,
+          "evidence_wanted": null,
+          "verdict_code": "missing_factor",
+          "prior_differs": null,
+          "validity": "not_supported",
+          "persuasion": "unchanged",
+          "red_team": {
+            "must_be_true": "[synthetic] trusted suppliers can qualify within three years",
+            "resolving_evidence": "production_capacity",
+            "resolving_evidence_text": null
+          },
+          "product_answers": {
+            "ameliorates_threat": "yes"
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 423,
+        "notes": [],
+        "review_mode": "decision"
+      }
+    },
+    {
+      "submission_id": "SUB-DEMO-6b6a1e1d-f8e9-4f5c-a267-1d97dc5c3286",
+      "schema": "aib-review-submission",
+      "schema_version": 1,
+      "campaign_id": "aib_qc_2027_round1",
+      "kind": "case_review",
+      "reviewer": {
+        "reviewer_id": "DEMO-20",
+        "name": null,
+        "anonymous": true,
+        "profile_digest": "797cb3d9819af4b2a9520a16a37a2c40e3a87909b30f0029e80a3e8edb4dfe1d",
+        "expertise": {
+          "sectors": [
+            "batteries",
+            "electric-vehicles"
+          ],
+          "countries": [
+            "KOR"
+          ],
+          "stages": [],
+          "methods": [
+            "industrial_policy"
+          ],
+          "confidence": {
+            "sector:batteries": 4,
+            "sector:electric-vehicles": 4,
+            "country:KOR": 4,
+            "method:industrial_policy": 4
+          }
+        }
+      },
+      "created_at": "2027-01-20T20:33:00.000Z",
+      "submitted_at": "2027-01-20T20:33:00.000Z",
+      "app_commit": "f4f344b1",
+      "data_release": "rel-9c8f1877b5c6",
+      "page_context": null,
+      "payload": {
+        "case_id": "CASE_014",
+        "case_snapshot_sha256": "bfb05409fcebd0d7911311975662bab0634046663fe63811a0360290d1487bee",
+        "assignment_reason": "assigned",
+        "expertise_match": "in",
+        "blind": {
+          "choice": "LOW INTERVENTION",
+          "confidence": 5,
+          "factors": [
+            "demand_growth"
+          ],
+          "rationale": "[synthetic] demo rationale",
+          "answered_at": "2027-01-20T20:19:00.000Z",
+          "confidence_level": "high",
+          "driver": "demand_growth",
+          "driver_text": null,
+          "ux_version": 2
+        },
+        "reveal": {
+          "revealed_at": "2027-01-20T20:26:00.000Z",
+          "verdict": 2,
+          "main_issue": null,
+          "suggested_choice": null,
+          "evidence_wanted": null,
+          "verdict_code": "persuaded",
+          "prior_differs": true,
+          "validity": "supported",
+          "persuasion": "changed",
+          "red_team": null,
+          "product_answers": {
+            "bottleneck_located": "partly"
+          }
+        },
+        "outside_expertise": false,
+        "time_spent_s": 838,
+        "notes": [
+          {
+            "id": "note-13-a",
+            "text": "[synthetic] checked the trade year before answering",
+            "created_at": "2027-01-20T20:19:00.000Z",
+            "updated_at": "2027-01-20T20:19:00.000Z",
+            "converted_to": null
+          },
+          {
+            "id": "note-13-b",
+            "text": "[synthetic] the reveal leans on one supplier share",
+            "created_at": "2027-01-20T20:26:00.000Z",
+            "updated_at": "2027-01-20T20:26:00.000Z",
+            "converted_to": "comment"
+          }
+        ],
+        "review_mode": "decision"
       }
     }
   ]

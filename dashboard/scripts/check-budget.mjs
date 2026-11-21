@@ -93,9 +93,11 @@ const LIMITS = {
   // 57 MB once the next four briefs took it to 49.43 MB (2026-11-05; Country 24.08 MB).
   allData: 57 * MB,
   // the expert review pages (2026-11-20; docs/QC_SYSTEM_DESIGN.md 5): lazy route chunks that ordinary visitors
-  // never load. Case view 270.6 kB measured (199.1 kB code), review data 65.7 kB (7 files), 2026-11-20 build: measured + ~15% (design E4)
+  // never load. Case view 270.6 kB measured (199.1 kB code), review data 65.7 kB (7 files), 2026-11-20 build: measured + ~15% (design E4).
+  // Review data 125 kB since 2026-11-21 (UX v2): the neutral case briefs and reasoning reveals took the cases file
+  // from 28 kB to 66 kB gzipped (23 cases, now written as compact JSON) and the data to 110 kB: measured + ~15%.
   reviewCase: 320 * KB,
-  reviewData: 80 * KB,
+  reviewData: 125 * KB,
   // the posture bundle (scripts/91, schema 2, 2026-10-29): manifest + core + 214 drawer documents measured
   // 1.87 MB on the wire; the measured size + ~15% (design E4). 2.4 MB since 2026-10-31: the rebuilt bundle
   // (Atlas 2024, the new basket and method) carries the Yards & Fences drawer evidence and measured 2.28 MB;

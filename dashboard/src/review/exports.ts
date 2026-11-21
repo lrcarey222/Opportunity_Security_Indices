@@ -4,22 +4,47 @@
 // (lib/csv.ts rowsToCsv; no BOM, so R reads the first column name cleanly). Reviewers appear as their
 // pseudonymous code; names only with includeNames, and never an anonymous reviewer's. Rows join on
 // submission_id, case_id, card_id, scenario_id and reviewer_code. Pure: no IO.
+// UX v2: qc_review_responses and qc_case_results keep their v1 columns first, in the v1 order, and append the v2
+// columns (empty for v1 reviews); qc_evidence_gaps lists one row per evidence-gap mention. Reviewer free text
+// (rationales, issues, red-team answers, the none-of-these recommendation and the notes) passes the same formula
+// guard as every other text cell.
 
 import {
   DONT_KNOW,
+  EVIDENCE_GAP_LABEL,
   ISSUE_TYPE_LABEL,
+  NOTE_CONVERSION_LABEL,
+  PRODUCT_QUESTIONS,
+  REVIEWER_STATES,
+  REVIEW_VERDICT_LABEL,
   VERDICT_LABEL,
   type Adjudication,
   type CaseReviewPayload,
   type DataIssuePayload,
   type FrameworkScenario,
   type MethodCard,
+  type NoteConversion,
   type ReviewCase,
+  type ReviewProduct,
   type Submission,
   type SubmissionKind,
 } from './model.ts';
 import { rowsToCsv } from '../lib/csv.ts';
-import { caseAgreement, dedupeSubmissions, isFrameworkMismatch, isLowActionability, isOutsideAnswer, latestAdjudications, priorityFixes, reportMatch } from './aggregate.ts';
+import {
+  blindV2,
+  caseAgreement,
+  dedupeSubmissions,
+  evidenceGapMentions,
+  isFrameworkMismatch,
+  isLowActionability,
+  isOutsideAnswer,
+  isPersuadedByEvidence,
+  latestAdjudications,
+  priorityFixes,
+  reportMatch,
+  reviewerStageSet,
+} from './aggregate.ts';
+import { explorerComparisonValue, explorerStageSet, productOf, stageJaccard, verdictCodeConsistency } from './flow.ts';
 import { exportableName, pseudonymReviewerCode } from './privacy.ts';
 import { DEFAULT_MIN_CONFIDENCE, isExpertIn, normaliseCountryTag, normaliseSectorTag, normaliseStageTag } from './tags.ts';
 
@@ -51,14 +76,75 @@ export const REVIEW_RESPONSE_COLUMNS = [
   'time_spent_s',
 ] as const;
 
+/** One column per tailored product question (every product's, in PRODUCT_QUESTIONS order), e.g. product_complementarity. */
+export const PRODUCT_ANSWER_COLUMNS: readonly string[] = (Object.keys(PRODUCT_QUESTIONS) as ReviewProduct[]).flatMap((p) => PRODUCT_QUESTIONS[p].map((q) => `product_${q.id}`));
+const NOTE_CONVERSIONS = Object.keys(NOTE_CONVERSION_LABEL) as NoteConversion[];
+
+/** The UX v2 columns appended to qc_review_responses (empty for v1 reviews). */
+export const REVIEW_RESPONSE_V2_COLUMNS: readonly string[] = [
+  'ux_version', 'review_mode', 'product', 'blind_state', 'confidence_level', 'driver', 'driver_text', 'own_recommendation', 'blind_choices', 'model_stages',
+  'stage_jaccard', 'missing_evidence', 'missing_evidence_text', 'verdict_code', 'verdict_code_label', 'validity', 'persuasion', 'prior_differs',
+  'verdict_consistency', 'persuaded_by_evidence', 'red_team_must_be_true', 'red_team_resolving_evidence', 'red_team_resolving_evidence_text',
+  ...PRODUCT_ANSWER_COLUMNS,
+  'n_notes', ...NOTE_CONVERSIONS.map((k) => `notes_${k}`), 'notes_unconverted', 'notes_text',
+];
+/** Every qc_review_responses column: v1 first, in the v1 order, then v2. */
+export const REVIEW_RESPONSE_ALL_COLUMNS: readonly string[] = [...REVIEW_RESPONSE_COLUMNS, ...REVIEW_RESPONSE_V2_COLUMNS];
+
+const reviewerStateOf = (choice: string | null | undefined): string | null => (choice === DONT_KNOW ? 'dont_know' : choice && REVIEWER_STATES.includes(choice) ? choice : null);
+
+/** The v2 cells of one case review (empty strings / nulls for a v1 review). */
+function v2Cells(p: CaseReviewPayload, c: ReviewCase | null): Row {
+  const b = blindV2(p);
+  const r = p.reveal ?? ({} as CaseReviewPayload['reveal']);
+  const code = r.verdict_code ?? null;
+  const stages = c ? explorerStageSet(c.kind, c.snapshot) : null;
+  const set = reviewerStageSet(p);
+  const notes = Array.isArray(p.notes) ? p.notes.filter((n) => n && typeof n.text === 'string' && n.text.trim()) : [];
+  const conv = (k: NoteConversion | null) => notes.filter((n) => (n.converted_to ?? null) === k).length;
+  const pa = r.product_answers ?? {};
+  const prior = typeof r.prior_differs === 'boolean' ? r.prior_differs : null;
+  return {
+    ux_version: b?.ux_version ?? null,
+    review_mode: p.review_mode ?? null,
+    product: c ? productOf(c.kind) : null,
+    blind_state: reviewerStateOf(b?.choice),
+    confidence_level: b?.confidence_level ?? null,
+    driver: b?.driver ?? null,
+    driver_text: b?.driver_text ?? null,
+    own_recommendation: b?.own_recommendation ?? null,
+    blind_choices: list(b?.choices),
+    model_stages: stages ? list(stages) : null,
+    stage_jaccard: stages && set ? Number(stageJaccard(set, stages).toFixed(6)) : null,
+    missing_evidence: list(b?.missing_evidence),
+    missing_evidence_text: b?.missing_evidence_text ?? null,
+    verdict_code: code,
+    verdict_code_label: code ? (REVIEW_VERDICT_LABEL[code] ?? null) : null,
+    validity: r.validity ?? null,
+    persuasion: r.persuasion ?? null,
+    prior_differs: prior,
+    verdict_consistency: code ? verdictCodeConsistency(code, prior) : null,
+    persuaded_by_evidence: code ? isPersuadedByEvidence(p, c) : null,
+    red_team_must_be_true: r.red_team?.must_be_true ?? null,
+    red_team_resolving_evidence: r.red_team?.resolving_evidence ?? null,
+    red_team_resolving_evidence_text: r.red_team?.resolving_evidence_text ?? null,
+    ...Object.fromEntries(PRODUCT_ANSWER_COLUMNS.map((col) => [col, typeof pa[col.slice('product_'.length)] === 'string' ? pa[col.slice('product_'.length)] : null])),
+    n_notes: code || notes.length ? notes.length : null,
+    ...Object.fromEntries(NOTE_CONVERSIONS.map((k) => [`notes_${k}`, code || notes.length ? conv(k) : null])),
+    notes_unconverted: code || notes.length ? conv(null) : null,
+    notes_text: notes.length ? notes.map((n) => `[${n.converted_to ?? 'note'}] ${n.text.trim()}`).join(' | ') : null,
+  };
+}
+
 /** One row per case review (every submission, resubmissions included; qc_case_results counts the latest). */
 export function reviewResponseRows(subs: readonly Submission[], cases: readonly ReviewCase[], o: ExportOptions = {}): Row[] {
   const byId = new Map(cases.map((c) => [c.case_id, c]));
   return ofKind(dedupeSubmissions(subs), 'case_review').map((s) => {
     const p: CaseReviewPayload = s.payload;
     const c = byId.get(p.case_id) ?? null;
-    const model = c?.snapshot?.conclusion?.value ?? null;
+    const model = c ? explorerComparisonValue(c.kind, c.snapshot) : null;
     const dk = p.blind?.choice === DONT_KNOW;
+    const state = reviewerStateOf(p.blind?.choice) !== null;
     const v = p.reveal?.verdict ?? null;
     const it = p.reveal?.main_issue?.type ?? null;
     return {
@@ -79,7 +165,7 @@ export function reviewResponseRows(subs: readonly Submission[], cases: readonly 
       blind_rationale: p.blind?.rationale ?? null,
       model_choice: model,
       model_label: c?.snapshot?.conclusion?.label ?? null,
-      blind_matches_model: model === null || dk ? null : p.blind?.choice === model,
+      blind_matches_model: model === null || state ? null : p.blind?.choice === model,
       verdict: v,
       verdict_label: v ? VERDICT_LABEL[v] : null,
       persuaded: v === 2,
@@ -100,6 +186,7 @@ export function reviewResponseRows(subs: readonly Submission[], cases: readonly 
       created_at: s.created_at,
       submitted_at: s.submitted_at,
       time_spent_s: p.time_spent_s ?? null,
+      ...v2Cells(p, c),
     };
   });
 }
@@ -111,6 +198,9 @@ export const CASE_RESULT_COLUMNS = [
   'blind_distribution', 'modal_blind', 'modal_share', 'n_matching_model', 'share_matching_model', 'n_persuaded', 'share_persuaded', 'n_rejecting', 'share_rejecting',
   'verdict_counts', 'issue_types', 'suggested_choices', 'n_snapshot_mismatch', 'too_few_reviews', 'summary_label',
 ] as const;
+/** The UX v2 columns appended to qc_case_results. */
+export const CASE_RESULT_V2_COLUMNS: readonly string[] = ['product', 'n_none_of_these', 'n_insufficient_evidence', 'n_excluded', 'verdict_code_counts', 'n_prior_differs_persuaded', 'mean_stage_jaccard'];
+export const CASE_RESULT_ALL_COLUMNS: readonly string[] = [...CASE_RESULT_COLUMNS, ...CASE_RESULT_V2_COLUMNS];
 
 /** One row per case (latest review per reviewer); shares are empty when there are too few interpretable reviews. */
 export function caseResultRows(subs: readonly Submission[], cases: readonly ReviewCase[]): Row[] {
@@ -144,7 +234,50 @@ export function caseResultRows(subs: readonly Submission[], cases: readonly Revi
     n_snapshot_mismatch: a.n_snapshot_mismatch,
     too_few_reviews: a.too_few,
     summary_label: a.summary_label,
+    product: a.kind ? productOf(a.kind) : null,
+    n_none_of_these: a.n_none_of_these,
+    n_insufficient_evidence: a.n_insufficient_evidence,
+    n_excluded: a.n_excluded,
+    verdict_code_counts: dist(a.verdict_code_counts as Record<string, number>),
+    n_prior_differs_persuaded: a.n_prior_differs_persuaded,
+    mean_stage_jaccard: a.mean_stage_jaccard === null ? null : Number(a.mean_stage_jaccard.toFixed(6)),
   }));
+}
+
+// ---- qc_evidence_gaps (UX v2) -------------------------------------------------------------------------------
+
+export const EVIDENCE_GAP_COLUMNS = [
+  'submission_id', 'campaign_id', 'case_id', 'case_kind', 'case_title', 'product', 'reviewer_code', 'source', 'category', 'category_label', 'text',
+  'data_release', 'created_at', 'submitted_at',
+] as const;
+
+/**
+ * One row per evidence-gap mention (latest review per reviewer and case): each missing-evidence category of an
+ * "insufficient evidence" blind answer (source insufficient_evidence) and the red-team "single piece of evidence
+ * that would most help" (source red_team).
+ */
+export function evidenceGapRows(subs: readonly Submission[], cases: readonly ReviewCase[], o: ExportOptions = {}): Row[] {
+  const byId = new Map(cases.map((c) => [c.case_id, c]));
+  const subById = new Map(dedupeSubmissions(subs).map((s) => [s.submission_id, s]));
+  return evidenceGapMentions(subs, cases).map((m) => {
+    const s = subById.get(m.submission_id) as Submission;
+    return {
+      submission_id: m.submission_id,
+      campaign_id: s.campaign_id,
+      case_id: m.case_id,
+      case_kind: m.case_kind,
+      case_title: byId.get(m.case_id)?.title ?? null,
+      product: m.product,
+      ...reviewer(s, o),
+      source: m.source,
+      category: m.category,
+      category_label: EVIDENCE_GAP_LABEL[m.category],
+      text: m.text,
+      data_release: s.data_release,
+      created_at: s.created_at,
+      submitted_at: s.submitted_at,
+    };
+  });
 }
 
 // ---- qc_method_feedback -------------------------------------------------------------------------------------
@@ -438,14 +571,15 @@ const safeRow = (r: Row): Row => {
 /** Every export as CSV text, in a fixed order with fixed columns (a file with no rows still has its header). */
 export function csvFiles(subs: readonly Submission[], cases: readonly ReviewCase[], adjudications: readonly Adjudication[] = [], o: ExportOptions = {}): CsvFile[] {
   const files: [string, readonly string[], Row[]][] = [
-    ['qc_review_responses.csv', withNames(REVIEW_RESPONSE_COLUMNS, o), reviewResponseRows(subs, cases, o)],
-    ['qc_case_results.csv', CASE_RESULT_COLUMNS, caseResultRows(subs, cases)],
+    ['qc_review_responses.csv', withNames(REVIEW_RESPONSE_ALL_COLUMNS, o), reviewResponseRows(subs, cases, o)],
+    ['qc_case_results.csv', CASE_RESULT_ALL_COLUMNS, caseResultRows(subs, cases)],
     ['qc_method_feedback.csv', withNames(METHOD_FEEDBACK_COLUMNS, o), methodFeedbackRows(subs, o)],
     ['qc_data_issues.csv', withNames(DATA_ISSUE_COLUMNS, o), dataIssueRows(subs, cases, adjudications, o)],
     ['qc_framework_answers.csv', withNames(FRAMEWORK_ANSWER_COLUMNS, o), frameworkAnswerRows(subs, o)],
     ['qc_decision_use.csv', withNames(DECISION_USE_COLUMNS, o), decisionUseRows(subs, cases, o)],
     ['qc_threat_reviews.csv', withNames(THREAT_REVIEW_COLUMNS, o), threatReviewRows(subs, cases, o)],
     ['qc_priority_fixes.csv', PRIORITY_FIX_COLUMNS, priorityFixRows(subs, cases, adjudications, o)],
+    ['qc_evidence_gaps.csv', withNames(EVIDENCE_GAP_COLUMNS, o), evidenceGapRows(subs, cases, o)],
   ];
   return files.map(([name, cols, rows]) => ({ name, text: rowsToCsv(rows.map(safeRow), [...cols]), rows: rows.length }));
 }

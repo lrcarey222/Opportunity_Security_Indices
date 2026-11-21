@@ -9,8 +9,11 @@ import { join, resolve } from 'node:path';
 import { CHOICE_NAME } from '../content/vocabulary.ts';
 import type { FrameworkScenario, MethodCard, ReviewCase } from './model.ts';
 import {
+  CASE_RESULT_ALL_COLUMNS,
   CASE_RESULT_COLUMNS,
   DATA_ISSUE_COLUMNS,
+  EVIDENCE_GAP_COLUMNS,
+  REVIEW_RESPONSE_ALL_COLUMNS,
   REVIEW_RESPONSE_COLUMNS,
   caseResultRows,
   csvFiles,
@@ -20,11 +23,13 @@ import {
   reviewResponseRows,
 } from './exports.ts';
 import { makeDemoSubmissions } from './demo.ts';
+import { canonicalAnswerKeys, validateSubmission } from './manifest.ts';
 import { pseudonymReviewerCode } from './privacy.ts';
 // @ts-expect-error: a plain ES module CLI without type declarations
 import { run, checkOutputDir } from '../../scripts/review/export-review.mjs';
 
-const OPTIONS = [...Object.entries(CHOICE_NAME).map(([value, label]) => ({ value, label })), { value: 'not_assessed', label: 'Not assessed' }];
+// the canonical blind options of a posture cell as the case validator currently defines them (manifest.ts)
+const OPTIONS = canonicalAnswerKeys('posture_cell').map((value) => ({ value, label: CHOICE_NAME[value as keyof typeof CHOICE_NAME] ?? value }));
 const rcase = (id: string, model: string, x: Partial<ReviewCase> = {}): ReviewCase => ({
   case_id: id,
   kind: 'posture_cell',
@@ -66,7 +71,9 @@ describe('row builders', () => {
   it('qc_review_responses: one row per case review, fixed columns, model choice and match joined from the case', () => {
     const rows = reviewResponseRows(SUBS, CASES);
     expect(rows.length).toBe(SUBS.filter((s) => s.kind === 'case_review').length);
-    for (const r of rows) expect(Object.keys(r)).toEqual([...REVIEW_RESPONSE_COLUMNS]);
+    for (const r of rows) expect(Object.keys(r)).toEqual([...REVIEW_RESPONSE_ALL_COLUMNS]);
+    // the v1 columns stay first, in the v1 order
+    expect(REVIEW_RESPONSE_ALL_COLUMNS.slice(0, REVIEW_RESPONSE_COLUMNS.length)).toEqual([...REVIEW_RESPONSE_COLUMNS]);
     const r1 = rows.find((r) => r.case_id === 'CASE_001' && r.verdict === 1)!;
     expect(r1).toMatchObject({ model_choice: 'partner', model_label: 'Partner', blind_matches_model: true, snapshot_matches: true, persuaded: false, rejecting: false });
     const dk = rows.find((r) => r.blind_dont_know === true)!;
@@ -77,7 +84,8 @@ describe('row builders', () => {
   it('qc_case_results joins the responses on case_id and labels too-few cases', () => {
     const res = caseResultRows(SUBS, CASES);
     expect(res.map((r) => r.case_id)).toEqual(['CASE_001', 'CASE_002', 'CASE_003']);
-    for (const r of res) expect(Object.keys(r)).toEqual([...CASE_RESULT_COLUMNS]);
+    for (const r of res) expect(Object.keys(r)).toEqual([...CASE_RESULT_ALL_COLUMNS]);
+    expect(CASE_RESULT_ALL_COLUMNS.slice(0, CASE_RESULT_COLUMNS.length)).toEqual([...CASE_RESULT_COLUMNS]);
     const responses = reviewResponseRows(SUBS, CASES);
     for (const r of res) expect(r.n_reviews).toBe(new Set(responses.filter((x) => x.case_id === r.case_id).map((x) => x.reviewer_code)).size);
     const c1 = res.find((r) => r.case_id === 'CASE_001')!;
@@ -110,8 +118,9 @@ describe('row builders', () => {
 describe('csvFiles', () => {
   it('writes every file with a header even when empty, in a fixed order', () => {
     const files = csvFiles([], [], []);
-    expect(files.map((f) => f.name)).toEqual(['qc_review_responses.csv', 'qc_case_results.csv', 'qc_method_feedback.csv', 'qc_data_issues.csv', 'qc_framework_answers.csv', 'qc_decision_use.csv', 'qc_threat_reviews.csv', 'qc_priority_fixes.csv']);
-    expect(header(files[0].text)).toBe(REVIEW_RESPONSE_COLUMNS.join(','));
+    expect(files.map((f) => f.name)).toEqual(['qc_review_responses.csv', 'qc_case_results.csv', 'qc_method_feedback.csv', 'qc_data_issues.csv', 'qc_framework_answers.csv', 'qc_decision_use.csv', 'qc_threat_reviews.csv', 'qc_priority_fixes.csv', 'qc_evidence_gaps.csv']);
+    expect(header(files[0].text)).toBe(REVIEW_RESPONSE_ALL_COLUMNS.join(','));
+    expect(header(files[8].text)).toBe(EVIDENCE_GAP_COLUMNS.join(','));
     for (const f of files) expect(f.rows).toBe(0);
   });
 
@@ -187,9 +196,13 @@ describe('export-review CLI', () => {
     expect(code).toBe(0);
     expect(warnings.some((w) => w.startsWith('skipped:'))).toBe(true);
     const resp = readFileSync(join(out, 'qc_review_responses.csv'), 'utf8');
-    expect(resp.split('\r\n')[0]).toBe(REVIEW_RESPONSE_COLUMNS.join(','));
+    expect(resp.split('\r\n')[0]).toBe(REVIEW_RESPONSE_ALL_COLUMNS.join(','));
+    expect(existsSync(join(out, 'qc_evidence_gaps.csv'))).toBe(true);
     const summary = JSON.parse(readFileSync(join(out, 'export_summary.json'), 'utf8'));
+    // every demo submission (v1 and v2, each verdict statement included) validates and is exported
+    expect(SUBS.every((x) => validateSubmission(x).ok)).toBe(true);
     expect(summary).toMatchObject({ n_submissions: SUBS.length, n_skipped: 1, include_names: false, cases: { campaign_id: 'round1' } });
+    expect(summary.n_case_reviews_v2).toBeGreaterThan(0);
     expect(run(['--submissions', subsDir, '--out', join(tmp, 'strict'), '--strict'], quiet)).toBe(1);
     expect(existsSync(join(tmp, 'strict'))).toBe(false);
   });

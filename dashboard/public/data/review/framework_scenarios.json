@@ -36,7 +36,7 @@
         },
         {
           "value": "watch",
-          "label": "Watch",
+          "label": "Watch (keep open)",
           "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
         },
         {
@@ -87,7 +87,7 @@
         },
         {
           "value": "watch",
-          "label": "Watch",
+          "label": "Watch (keep open)",
           "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
         },
         {
@@ -220,7 +220,7 @@
         },
         {
           "value": "watch",
-          "label": "Watch",
+          "label": "Watch (keep open)",
           "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
         },
         {
@@ -271,7 +271,7 @@
         },
         {
           "value": "watch",
-          "label": "Watch",
+          "label": "Watch (keep open)",
           "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
         },
         {
@@ -322,7 +322,7 @@
         },
         {
           "value": "watch",
-          "label": "Watch",
+          "label": "Watch (keep open)",
           "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
         },
         {
@@ -422,17 +422,17 @@
         {
           "value": "sectoral",
           "label": "Potential Sectoral Compact",
-          "definition": "The lead (primary) mission clears the materiality floor: a coordinated arrangement across the chain is warranted."
+          "definition": "A standing multi-country arrangement across the whole chain (coordinated investment, offtake, stockpiles, common trade rules), because joint action is needed on a large enough part of it (a quarter of the supply at risk, or US$1bn)."
         },
         {
           "value": "narrower",
           "label": "Targeted action",
-          "definition": "Steps need action, but every mission falls below the materiality floor: act on those steps alone."
+          "definition": "Some steps need joint action, but each is too small to justify a standing arrangement: act on those steps alone."
         },
         {
           "value": "none",
           "label": "No compact needed",
-          "definition": "No step needs action under this scenario (the compact page shows the scenario statement instead of missions)."
+          "definition": "No step needs joint action under this scenario: existing trade and national policy are enough."
         }
       ],
       "option_set": "compact_decision",

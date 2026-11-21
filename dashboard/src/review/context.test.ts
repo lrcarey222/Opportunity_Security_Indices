@@ -110,6 +110,7 @@ describe('newSubmission and the reviewer stamp', () => {
     const d = profileDigest(profile);
     expect(d).toMatch(/^[0-9a-f]{64}$/);
     expect(profileDigest({ ...profile, name: 'Someone Else' })).toBe(d);
+    expect(profileDigest({ ...profile, review_mode: 'technical' })).toBe(d); // a working preference, not expertise
     expect(profileDigest({ ...profile, sectors: ['batteries'], countries: ['KOR'] })).toBe(d);
     expect(profileDigest({ ...profile, confidence: { ...profile.confidence, 'sector:batteries': 2 } })).not.toBe(d);
   });

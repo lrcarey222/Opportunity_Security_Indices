@@ -1,6 +1,6 @@
-// One page title per review page: ReviewLayout holds the only h1 ("Expert review"); the method cards, framework,
-// break-the-model and admin views put their own title in an h2 under it (and read the layout through
-// useOptionalReviewCtx, so they also render on their own).
+// One page title per review page: ReviewLayout holds the only h1 ("Expert review"); the home, calibration,
+// summary, profile, cases, method cards, framework, break-the-model and admin views put their own title in an h2
+// under it (the deeper views read the layout through useOptionalReviewCtx, so they also render on their own).
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -27,6 +27,11 @@ const SCENARIO = {
 };
 
 const PAGES: [string, string][] = [
+  ['/review', 'Help us break the AIB Explorer'],
+  ['/review/start', 'Before you start'],
+  ['/review/summary', 'Your summary'],
+  ['/review/profile', 'Your profile'],
+  ['/review/cases', 'Your cases'],
   ['/review/methods', 'Method cards'],
   ['/review/framework', 'What would the framework say?'],
   ['/review/break', 'Find where the Explorer is wrong'],

@@ -11,7 +11,7 @@ opens: null
 closes: null
 description: >-
   First structured expert review of the published AIB Explorer. Reviewers judge assigned cases blind (posture
-  cells, AIB stress-test nodes, strategic compacts and the US-Japan partnership memo) before they see the
+  cells, AIB stress-test nodes, sector chains, strategic compacts and the US-Japan partnership memo) before they see the
   Explorer's conclusion, red-team the most consequential method choices, and test whether the framework's terms
   are read as intended. Results are structured elicitation for NEIS, not a poll: every disagreement is recorded
   with its cause (data, method, missing context, framework ambiguity or actionability). Nothing is published.
@@ -38,6 +38,9 @@ case_ids:
   - CASE_019
   - CASE_020
   - CASE_021
+  # UX v2 sector chains (where in one chain is allied intervention warranted?)
+  - CASE_022
+  - CASE_023
 # One anchor per sector group: batteries (KOR components), critical minerals (AUS extraction), solar (CHN
 # components), electric grid (JPN assembly), nuclear (KOR fuel refining).
 anchor_cases: [CASE_001, CASE_003, CASE_006, CASE_008, CASE_009]

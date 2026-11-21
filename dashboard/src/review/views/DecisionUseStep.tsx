@@ -6,6 +6,7 @@
 // would_do_differently. Answers go into the case's flow state (review/flow.ts set_decision_use) and are
 // submitted as a separate decision_use record.
 
+import { Disclosure } from '../../components/ui.tsx';
 import { DontKnowToggle, Likert4Input, TextArea } from '../components/form.tsx';
 import { emptyDecisionUse, type DecisionUseDraft } from '../flow.ts';
 import { DONT_KNOW, type Likert4 } from '../model.ts';
@@ -45,9 +46,12 @@ export function DecisionUseStep({ value, onChange }: { value: DecisionUseDraft |
           {LIKERT_KEYS.map((k) => (
             <Likert4Input key={k} legend={DECISION_USE_QUESTION[k]} value={d[k]} onChange={(v: Likert4) => onChange({ [k]: v })} />
           ))}
-          <TextArea label={DECISION_USE_QUESTION.evidence_required} rows={2} value={d.evidence_required ?? ''} onChange={(v) => onChange({ evidence_required: v })} />
-          <TextArea label={DECISION_USE_QUESTION.improvement} rows={2} value={d.improvement ?? ''} onChange={(v) => onChange({ improvement: v })} />
-          <TextArea label={DECISION_USE_QUESTION.decision_use} rows={2} value={d.decision_use ?? ''} onChange={(v) => onChange({ decision_use: v })} />
+          {/* the three open questions fold, so the step reads as four quick scales (they stay one click away) */}
+          <Disclosure summary="Add detail (optional)">
+            <TextArea label={DECISION_USE_QUESTION.evidence_required} rows={2} value={d.evidence_required ?? ''} onChange={(v) => onChange({ evidence_required: v })} />
+            <TextArea label={DECISION_USE_QUESTION.improvement} rows={2} value={d.improvement ?? ''} onChange={(v) => onChange({ improvement: v })} />
+            <TextArea label={DECISION_USE_QUESTION.decision_use} rows={2} value={d.decision_use ?? ''} onChange={(v) => onChange({ decision_use: v })} />
+          </Disclosure>
         </div>
       )}
     </section>

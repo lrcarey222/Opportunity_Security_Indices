@@ -8,7 +8,7 @@
 // largest supplier before and after against the bundle's concentration line (meta.thresholds.manage_largest_share,
 // 0.40). Pure: no IO.
 
-import type { AibCompact, AibDoc, AibInvestmentHost, AibManagedScenarioDoc, AibNode, AibStrategicCompact, AibStrategicCompactScenario } from '../../aib/contract.ts';
+import { tradeWhen, type AibCompact, type AibDoc, type AibInvestmentHost, type AibManagedScenarioDoc, type AibNode, type AibStrategicCompact, type AibStrategicCompactScenario } from '../../aib/contract.ts';
 import { SCENARIO_NAME } from '../../content/vocabulary.ts';
 import type { AibScenarioKey, ThreatMetrics, ThreatSide } from '../model.ts';
 
@@ -17,7 +17,9 @@ const emptySide = (): ThreatSide => ({ hhi: null, largest_supplier: null, larges
 const pct = (v: number | null): string => (v === null ? 'n/a' : `${Math.round(v * 1000) / 10}%`);
 const usd = (v: number | null): string => (v === null ? 'n/a' : v >= 1e9 ? `US$${(v / 1e9).toFixed(1)}bn` : `US$${(v / 1e6).toFixed(0)}m`);
 
-export const TIME_TO_CAPACITY_NOTE = 'time_to_capacity_years: not modelled anywhere in the Explorer (no lead-time data); null, never estimated.';
+export const TIME_TO_CAPACITY_NOTE = 'Time to build new capacity is not modelled anywhere in the Explorer (there are no lead-time data), so it is never estimated.';
+/** Country names from the AIB document (doc.countries), the code where it has none. Lists join with "; ": some names carry a comma ("Korea, Rep."). */
+const namesOf = (doc: Pick<AibDoc, 'countries'>) => (iso3: string): string => doc.countries?.[iso3] ?? iso3;
 
 /** The concentration line of the bundle (meta.thresholds.manage_largest_share); 0.40 when absent (with a note). */
 export function concentrationLine(doc: Pick<AibDoc, 'meta'>, notes?: string[]): number {
@@ -63,7 +65,7 @@ export function deriveNodeThreat(doc: AibDoc, nodeId: string, scenario: AibScena
   before.largest_supplier = bl?.largest ?? node.baseLargest ?? null;
   before.largest_share = nn(bl?.largestShare) ?? nn(node.baseLargestShare);
   before.top3_share = nn(bl?.top3Share);
-  notes.push('before: the observed 2024 supply to the allied demand scope (node.baseline, scope-supply basis); n_credible_suppliers and N-1 coverage before the intervention are not exported (null).');
+  notes.push(`before: the observed ${tradeWhen(doc.meta)} supply to the allied demand scope (node.baseline, scope-supply basis); n_credible_suppliers and N-1 coverage before the intervention are not exported (null).`);
   const after = emptySide();
   const subject = { kind: 'aib_node' as const, id: node.id, scenario, label: node.label };
   const base: Omit<ThreatMetrics, 'threat' | 'intervention' | 'before' | 'after' | 'dependence_outcome'> = {
@@ -193,16 +195,17 @@ export function deriveCompactThreat(doc: AibDoc, sid: string, scenario: AibScena
     before.coverage = stat;
     before.risky_share = scenario === 'decoupling' ? exposure : null;
     after.coverage = coord;
-    notes.push('concentration (HHI, largest supplier) is not exported per strategic compact: before/after concentration and dependence_outcome are null / unknown.');
-    if (post !== null && coord !== null) notes.push(`postInvestment = coordinated + min(increment, gap) by construction (docs/aib_methodology.md 16.3): new_capacity_share ${pct(post - coord)} is arithmetic, not a finding.`);
+    notes.push('Supplier concentration (the Herfindahl-Hirschman index and the largest supplier) is not published for a whole chain, so concentration before and after, and what happens to dependence, are not known.');
+    if (post !== null && coord !== null) notes.push(`The ${pct(post - coord)} met by new capacity is arithmetic, not a finding: the simulated addition at each step, capped at that step's gap, is added to coordinated trade (methodology section 16.3).`);
     const ext = s.criticalExternal ?? [];
     const non = s.nonAlliedReliedOn ?? [];
-    if (ext.length || non.length) notes.push(`after the intervention the coalition still relies on non-allied suppliers: ${[...new Set([...ext, ...non])].join(', ')}`);
+    const name = namesOf(doc);
+    if (ext.length || non.length) notes.push(`After the intervention the coalition still relies on suppliers outside the allied group: ${[...new Set([...ext, ...non])].map(name).join('; ')}.`);
     const gap = coord === null ? null : Math.max(1 - coord, 0);
     return {
       subject,
       threat: `${SCENARIO_NAME[scenario]}: ${pct(exposure)} of the compact's allied demand lost (${usd(nn(s.lostUsd))})`,
-      intervention: `coordinated trade${s.buildHosts?.length ? `; new capacity at ${s.buildHosts.join(', ')}` : ''}${s.buildHostTies ? ` (${s.buildHostTies} BUILD step(s) with tied hosts: none named)` : ''}`,
+      intervention: `coordinated trade${s.buildHosts?.length ? `; new capacity in ${s.buildHosts.map(name).join('; ')}` : ''}${s.buildHostTies ? ` (no host named for ${s.buildHostTies} product${s.buildHostTies === 1 ? '' : 's'} needing new capacity, where hosts tie)` : ''}`,
       before,
       after,
       lost_supply_usd: nn(s.lostUsd),
