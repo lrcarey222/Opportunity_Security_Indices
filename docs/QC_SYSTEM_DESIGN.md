@@ -1,8 +1,13 @@
 # AIB Explorer: Quality Control, Validation and Expert Peer Review system
 
-Status: design, written before implementation (2026-11-20). Branch `feat/qc-review-system`, cut from
-`feat/aib-explorer-redesign` (eabf5591), the product redesign with four ways in (Sector, Country,
-Partnership, Compact) and the Explorers underneath.
+Status: design, written before implementation (2026-11-20). Branch `feat/qc-review`, cut from
+`origin/main` a5b22881: the published AIB Explorer (Sectors / Countries / Allied Industrial Base / About),
+whose data bundles are the ones served by the public GitHub Pages site (posture bundle: see 1.3).
+
+Note on the audit notes in `docs/qc_audit/`: they were written against the unpushed redesign branch,
+which shares main's R pipeline and bundle formats but not its page layout, and whose bundles were the
+2026-10-31 export. Methodology, code references and bundle *formats* carry over; page names, routes and
+bundle *numbers* do not. Section 1 below states main's facts.
 
 The purpose of this system is to find where the Explorer is wrong. It is a validation harness, not a
 satisfaction survey: every piece of it is built to make disagreement specific, traceable and
@@ -16,18 +21,20 @@ attributable to data, method, missing context, framework ambiguity or actionabil
 
 - React 19 + Vite + TypeScript + Tailwind v4 static app in `dashboard/`. Routes in `dashboard/src/routes.tsx`;
   each module has its own `routes.tsx` with lazy chunks (`view(load)` helper) and `errorElement: <RouteError/>`.
-- Conclusion pages: `/sector/:tech`, `/countries/:iso3`, `/partnerships/:pair`, `/compacts` and
-  `/compacts/brief/:sid`. Explorers underneath (`/sector/:tech/:stage`, `/countries/:iso3/evidence`,
-  `/aib/partnerships`, `/compacts/explore`, `/aib`, ...).
-- Hosting: static. The public beta is published by hand to GitHub Pages from a separate repository; a
-  Netlify config with a strict CSP (`connect-src 'self'`, `form-action 'none'`) is also in the repo.
-  **There is no backend anywhere.**
+- Navigation (`shell/modules.ts`): **Sectors** (`/sector`, `/sector/:tech/:stage[/:iso3]`, minerals,
+  advanced explorer), **Countries** (`/countries`, `/countries/:iso3` profile with the posture strategy map
+  and cell drawer), **Allied Industrial Base** (`/aib` overview, `/aib/partnerships`, `/compacts` and
+  `/compacts/s/:sid` Sectoral Compacts, `/compacts/:id` operational compacts, `/aib/roles`,
+  `/aib/diversification`), **About** (`/methods`, `/data`, `/glossary`); plus the legacy Strategic views
+  and Chart of the Day. Partnership and compact memos are published on Pages as static documents
+  (`memos.html`, `data/partnerships/`), outside the app.
+- Hosting: static. The public site is published by hand to GitHub Pages (separate repository
+  `lrcarey222/aib-explorer`) from main; a Netlify config with a strict CSP (`connect-src 'self'`,
+  `form-action 'none'`) is also in the repo. **There is no backend anywhere.**
 - Design system: tokens in `src/styles/globals.css` (`.panel`, `.card`, `.btn*`, `.field`, `.tag`,
   `.disclosure`, `.data-table`, `.eyebrow`, `.label`); React primitives in `src/components/ui.tsx`
-  (`PageHead`, `Select`, `Segmented`, `Notice`, `Tag`, `Disclosure`, `StatTile`, ...) and
-  `src/conclusion/primitives.tsx` (`ConclusionHead`, `BottomLine`, `DecisionCards`, `EvidenceDrawer`,
-  `SourceMeta`, `EvidenceGrade`, `NotAssessed`, `MemoProvenance`). There is no textarea / form-field
-  primitive. Posture colours and names: `posture/grammar.ts` (`VERB_COLOR`, `VERB_LONG`) and
+  (`PageHead`, `Select`, `Segmented`, `Notice`, `Tag`, `Disclosure`, `StatTile`, ...). There is no
+  textarea / form-field primitive. Posture colours and names: `posture/grammar.ts` (`VERB_COLOR`, `VERB_LONG`) and
   `content/vocabulary.ts` (`CHOICE_NAME`, `AIB_CLASS_NAME`, `ALIGNMENT_NAME`, ...).
 - Runtime build stamps: `shell/buildInfo.ts` publishes only the Strategic and Sector bundle stamps.
   Posture, Country, AIB and memo bundles publish none; the app has no code SHA or build date.
@@ -52,15 +59,18 @@ attributable to data, method, missing context, framework ambiguity or actionabil
 
 | Bundle | Stamp | Provenance carried |
 |---|---|---|
-| Posture (`public/data/posture`) | 2026-10-31, git `4bb2adc` (manifest only) | per-cell decision trace, need families, prize parts, CP families, pathway basis, trade benchmark source; **no indicator-level source or year** |
+| Posture (`public/data/posture`) | 2026-11-17T20:33, git `0496e7ba` (manifest only) | per-cell decision trace, need families, prize parts, CP families, pathway basis, trade benchmark source; **no indicator-level source or year** |
 | Country | 2026-10-31, `4bb2adc`, `as_of` 2026-10-30 | `src_map`, source editions (legacy ES/EO corners only) |
 | Sector | 2026-10-31, `4bb2adc` | 75-variable dictionary with source, data year, licence, transform |
 | Strategic engine | 2026-10-30, `a54a9d3` | file md5s, 70 parity checks |
-| AIB | 2026-10-30, **no commit** | thresholds, per-node variants, physical-data warnings |
+| AIB | 2026-11-17, **no commit** | thresholds, per-node variants, physical-data warnings |
 | Partnership / compact memos | per memo, **no commit**, all `verified:false` | evidence register summarised, not shipped |
 
-The shipped posture bundle is **older than the current pipeline outputs** (`osi-worktrees/stages`, run
-2026-11-17): 207 cells change choice between the two. No release ID ties the bundles together.
+Release drift: **the live Pages site serves an earlier posture bundle** (2026-11-17T17:12, `8021770d`:
+Preserve 103 / Catch Up 353 / Partner 1,478 / Watch 6,577) than main (`0496e7ba`: 111 / 351 / 1,475 /
+6,574; regenerated with the innovation family, 6e077a8a). AIB, Country, Sector and Strategic manifests
+are identical on main and Pages. The bundles come from four export dates and no release ID ties them
+together.
 
 ### 1.4 Existing QC
 
@@ -79,8 +89,10 @@ The shipped posture bundle is **older than the current pipeline outputs** (`osi-
 
 ### 1.5 Problems the audit already surfaced (to be verified by the QC suite, not assumed)
 
-1. Shipped posture bundle stale vs current pipeline (207 choice changes; CP volatile between runs, e.g.
-   USA Nuclear/Assembly cp .173 → .904).
+Found on the redesign branch's 2026-10-31 bundles; each must be re-verified on main's bundles.
+
+1. Published posture bundle differs from main's; between the 2026-10-31 and 2026-11-17 exports 207
+   cells changed choice and CP was volatile (e.g. USA Nuclear/Assembly cp .173 → .904).
 2. Threshold-sensitivity diagnostics ignore the need-floor cap (capped need stored as 0.61), so need
    0.60 flips 13 capped Watch cells: an artifact inside the reported counts.
 3. Knife-edges: 432 cells carry prize exactly 0.59 (market-only cap); 165 cells sit exactly on a
