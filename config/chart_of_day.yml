@@ -1,0 +1,212 @@
+# Chart of the Day (scripts/chart_of_day/01_chart_of_day.R; pure code in R/chart_of_day/).
+#
+# Each day draws one chart from a pool of candidates. A candidate is a template x variable x measure x
+# technology x stage x focus country. Its draw weight is the product of the weights below, a data-driven
+# "interest" score from the template (for example, a dominant supplier scores higher than a flat split), and
+# a cooldown for recent picks. The date seeds the draw, so rerunning a day gives the same chart.
+#
+# Variables are raw data (dollars, tonnes, shares of a total, $/MWh), never index scores, so each chart
+# explains itself in its title and one line of subtitle.
+
+version: 1
+
+# How often each kind of chart comes up (relative). Charts about one country's own trade use its latest 12 months
+# of monthly Comtrade reports; world rankings and the trade map stay on 2024 because China, the largest exporter,
+# has published no monthly data since 2024-12.
+# Target mix by source (2026-11-17, user: "over-indexes on trade"): trade ~35%, the rest from the Energy Institute,
+# the Clean Investment Monitor, the Atlas, policy measures and factory FDI.
+templates:
+  # trade (UN Comtrade)
+  suppliers: 2.0          # where the focus country buys one supply-chain step, by partner (latest 12 months)
+  china_shift: 1.8        # how China's share of the focus country's imports moved, 2024 -> latest 12 months
+  china_share: 1.2        # share of the focus country's imports from China, across every tech x stage (latest 12 months)
+  stage_balance: 1.2      # the focus country's exports and imports at each step of one supply chain (latest 12 months)
+  customers: 0.8          # who buys the focus country's exports of one step (latest 12 months)
+  trade_map: 0.3          # exports vs imports of one step across countries (scatter, 2024)
+  # mixed: world rankings on trade, minerals (EI/USGS), investment, power costs
+  leaderboard: 1.5
+  # Energy Institute Statistical Review
+  ei_power_mix: 1.5       # a country's electricity by source, 2005-2025
+  ei_trend: 1.5           # solar/wind/nuclear generation, mineral and fuel output, CO2: focus vs largest, 2005-2025
+  # Clean Investment Monitor (Rhodium Group / MIT)
+  investment_trend: 1.0   # annual investment in one technology x step, 2018-2025
+  gcim_mix: 1.2           # a country's clean investment by sector, 2018-2025
+  gcim_power: 0.8         # clean power capacity added by technology, 2018-2025
+  # Atlas of Economic Complexity
+  export_share_trend: 1.5 # share of world exports of one step, 2005-2024, focus vs largest exporters
+  # industrial policy (Global Trade Alert / NIPO)
+  policy_mix: 1.5         # a country's measures touching one technology since 2020, by type
+  policy_leaders: 1.2     # governments with the most support measures for one technology since 2023
+  # clean-tech factory FDI
+  fdi_projects: 1.5       # foreign-owned factories in a country, or a country's factories abroad
+
+# Fresh data first: a candidate built on 2024 annual trade (a world ranking, or a country with no monthly reports)
+# is multiplied by `annual`; one built on the latest 12 months, or on 2025 data, by `current`.
+vintage:
+  current: 1.0
+  annual: 0.3
+
+# Leaderboard variables (all raw). `measure` is how the variable is expressed.
+leaderboard_variables:
+  trade_exports_level:   {weight: 2.0}
+  trade_exports_share:   {weight: 2.0}
+  trade_imports_level:   {weight: 0.7}
+  trade_net_imports_gdp: {weight: 0.8}
+  mineral_exports_share: {weight: 2.0}
+  mineral_production:    {weight: 1.5}
+  mineral_reserves:      {weight: 0.8}
+  investment_latest:     {weight: 1.5}
+  lcoe_2025:             {weight: 0.7}
+
+# Focus countries. Named weights win; otherwise the coalition tier (data/processed/coalition_tbl.rds) sets it.
+# A country's weight is its share of each kind of chart (it does not grow with how many charts a country could
+# have), so the weights read as relative odds: USA 12 vs MEX 2 means the US is the focus six times as often.
+# Target mix: ~70% the country-brief countries, ~25% memo partners, ~5% everyone else (scripts/chart_of_day/
+# 01_chart_of_day.R --mix prints the mix these weights give before cooldowns). The 2-day same-country cooldown
+# lowers the realised brief-country share to about 63% (150-day simulation, 2026-11-17).
+countries:
+  named:
+    # the country briefs
+    USA: 12
+    JPN: 8
+    KOR: 8
+    DEU: 7
+    AUS: 7
+    IND: 7
+    GBR: 6
+    FRA: 6
+    CAN: 6
+    # partners that recur in the partnership and compact memos
+    MEX: 2.0
+    IDN: 2.0
+    VNM: 1.5
+    BRA: 1.2
+    CHL: 1.2
+    ZAF: 1.2
+    MYS: 1.2
+    THA: 1.2
+    PHL: 1.2
+    ITA: 1.2
+    POL: 1.2
+    TWN: 1.2
+    NLD: 1.0
+    ESP: 1.0
+    SWE: 0.8
+    TUR: 0.8
+    SAU: 0.8
+    ARE: 0.8
+    MAR: 0.8
+    ARG: 0.8
+  tier:
+    core: 0.25
+    partner: 0.15
+    none: 0.0
+  # China is the counterpart in the AIB analysis: it appears in every chart but is never the focus.
+  exclude: [CHN, HKG, MAC]
+  # countries smaller than this (GDP, USD) are never the focus; their data is too thin
+  min_gdp_usd: 3.0e+10
+
+technologies:
+  Batteries: 3.0
+  Electric Grid: 2.5
+  Solar: 2.5
+  Electric Vehicles: 2.0
+  Semiconductors: 1.5
+  Wind: 1.5
+  Nuclear: 1.0
+  Gas: 0.6
+  Oil: 0.5
+  Coal: 0.3
+  Geothermal: 0.4
+  Green Hydrogen: 0.6
+  # minerals (leaderboard mineral variables use the mineral as the "technology")
+  Lithium: 2.5
+  Cobalt: 2.0
+  Nickel: 2.0
+  Graphite: 2.0
+  Rare Earths: 2.5
+  Copper: 1.5
+  Manganese: 1.0
+  Silicon: 1.5
+  PGMs: 0.6
+  Zinc: 0.4
+  Chromium: 0.4
+  Molybdenum: 0.4
+  Silver: 0.5
+  Uranium: 1.0
+
+stages:
+  Extraction: 1.5
+  Refining: 2.0
+  Components: 2.0
+  Assembly: 1.5
+  Recovery: 0.6
+  Deployment: 1.0
+  All: 1.0
+
+# Cells left out of every trade chart, with the reason.
+exclude_cells:
+  - tech: Electric Grid
+    stage: Refining
+    reason: "HS 2812.90 (NF3 as well as SF6) dominates the basket; Korea's #1 rank is NF3 for chips, not grid gear"
+
+# Thresholds that keep tiny or noisy bases out.
+thresholds:
+  suppliers_min_imports_usd: 2.5e+8
+  customers_min_exports_usd: 2.5e+8
+  stage_min_cell_usd: 5.0e+7
+  stage_min_total_usd: 1.0e+9
+  china_share_min_cell_usd: 5.0e+7
+  china_share_min_cells: 8
+  # the headline cell must have at least this much imports, and China must hold 25%+ of it
+  china_share_headline_usd: 5.0e+8
+  leaderboard_max_rank: 15
+  # China-shift charts: both periods need this much imports, and a step must move by this many points to show
+  china_shift_min_usd: 2.0e+8
+  china_shift_min_points: 0.08
+  leaderboard_min_share: 0.02
+  leaderboard_min_countries: 12
+  investment_min_total_bn: 1.0
+  investment_min_years: 4
+  trade_map_min_countries: 25
+
+# Trend charts (investment, EI, export shares) compare the focus country with `n` peers: neighbours (same UN
+# sub-region, else region) and countries of similar size in that metric (one point lost per order of magnitude).
+# When the countries shown still differ in size by more than `index_ratio`, the chart is indexed (base year = 100).
+peers:
+  n: 3
+  subregion_bonus: 1.5
+  region_bonus: 0.5
+  # the market's top `leader_top` within an order of magnitude of the focus country count as direct competitors
+  leader_top: 5
+  leader_bonus: 0.6
+  # when the focus country is itself one of the leaders, the other leaders come first (its competitors)
+  leader_bonus_if_leader: 2.0
+  # re-export hubs are never peers
+  exclude: [HKG, MAC]
+  index_ratio: 4
+  base_year:
+    investment: 2020
+    ei: 2015
+
+# Cooldowns: a recent pick multiplies the weight of a similar candidate by `factor` for `days`.
+cooldown:
+  same_chart: {days: 365, factor: 0.0}
+  same_country: {days: 2, factor: 0.05}
+  same_template: {days: 2, factor: 0.1}
+  same_tech: {days: 3, factor: 0.5}
+
+datawrapper:
+  team_id: tbtM5ZLH
+  theme: neis
+  folder_name: "Chart of the Day"
+  # "Chart of the Day" folder in the NEIS team, created 2026-11-17
+  folder_id: "462075"
+  byline: "NEIS / RMI"
+
+output:
+  # relative to the repo root
+  dir: dashboard/public/data/chart-of-day
+  # PNG exports (--png): 2400 px wide, drawn by the Explorer's export card; gitignored. The environment variable
+  # OPSI_COD_PNG_DIR overrides it (set it to a shared folder rather than putting a personal path here).
+  png_dir: outputs/chart_of_day/png

@@ -1359,6 +1359,86 @@ test_that("clean_nipo_raw records the pairs the codes imply", {
 })
 
 # ==============================================================================
+# iso3 is resolved by code, not by an exact name join
+# ------------------------------------------------------------------------------
+# The October 2026 refresh left four jurisdictions with iso3 = NA because their
+# GTA spellings never matched a WDI name, and WDI has no Taiwan row at all.
+# ==============================================================================
+
+# country_info as scripts/10_build_themes.R builds it: WDI names, no Taiwan.
+wdi_style_country_info <- tibble::tibble(
+  country = c("Bosnia and Herzegovina", "Slovak Republic", "Viet Nam",
+              "United States", "Korea, Rep."),
+  iso3c = c("BIH", "SVK", "VNM", "USA", "KOR")
+)
+
+test_that("country_name_to_iso3 resolves the GTA spellings of the four jurisdictions", {
+  expect_equal(
+    country_name_to_iso3(c("Bosnia & Herzegovina", "Chinese Taipei", "Slovakia", "Vietnam")),
+    c("BIH", "TWN", "SVK", "VNM")
+  )
+  # Other GTA spellings that already matched via the recode map must not move.
+  expect_equal(
+    country_name_to_iso3(c("Republic of Korea", "Türkiye", "Czechia",
+                           "United States of America", "Hong Kong")),
+    c("KOR", "TUR", "CZE", "USA", "HKG")
+  )
+  expect_equal(country_name_to_iso3(c(" Slovakia ", NA, "")), c("SVK", NA, NA))
+  expect_identical(country_name_to_iso3(character(0)), character(0))
+})
+
+test_that("clean_nipo_raw assigns iso3 to the four jurisdictions the name join missed", {
+  raw_nipo <- tibble::tibble(
+    `Product: HS 6-digit (2022)` = "123456",
+    `Implementing Jurisdiction` = c("Bosnia & Herzegovina", "Chinese Taipei",
+                                    "Slovakia", "Vietnam", "Republic of Korea")
+  )
+  subcat_raw <- tibble::tibble(HS6 = "123456", Technology = "Solar",
+                              Value.Chain = "Midstream", Sub.Sector = "PV")
+
+  out <- expect_no_warning(
+    clean_nipo_raw(raw_nipo, subcat_raw, country_info = wdi_style_country_info)
+  )
+
+  expect_equal(out$iso3, c("BIH", "TWN", "SVK", "VNM", "KOR"))
+  # Display names stay the harmonised names: only the code assignment moved.
+  expect_equal(out$country,
+               standardize_country_names(raw_nipo$`Implementing Jurisdiction`))
+  expect_false("iso3c" %in% names(out))
+
+  # Downstream effect: Slovakia is now labelled an EU member.
+  eu <- neis_consolidate_eu(out, mode = "both_flagged")
+  expect_equal(eu$eu_view[eu$iso3 == "SVK"], "eu_member")
+
+  # And it no longer depends on country_info being supplied.
+  expect_equal(clean_nipo_raw(raw_nipo, subcat_raw)$iso3, out$iso3)
+})
+
+test_that("clean_nipo_raw falls back to the name join and warns on what neither resolves", {
+  subcat_raw <- tibble::tibble(HS6 = "123456", Technology = "Solar",
+                              Value.Chain = "Midstream", Sub.Sector = "PV")
+
+  # A name countrycode cannot resolve but country_info carries.
+  known_to_ref <- tibble::tibble(
+    `Product: HS 6-digit (2022)` = "123456",
+    `Implementing Jurisdiction` = "Atlantis"
+  )
+  ref <- dplyr::bind_rows(wdi_style_country_info,
+                          tibble::tibble(country = "Atlantis", iso3c = "atl"))
+  out <- expect_no_warning(clean_nipo_raw(known_to_ref, subcat_raw, country_info = ref))
+  expect_equal(out$iso3, "ATL")
+
+  # A name nothing resolves keeps iso3 = NA, but says so.
+  expect_warning(
+    unresolved <- clean_nipo_raw(known_to_ref, subcat_raw,
+                                 country_info = wdi_style_country_info),
+    "no iso3 code for Implementing Jurisdiction 'Atlantis'",
+    fixed = TRUE
+  )
+  expect_true(is.na(unresolved$iso3))
+})
+
+# ==============================================================================
 # Memory: the allocation table sheds its list-columns
 # ==============================================================================
 

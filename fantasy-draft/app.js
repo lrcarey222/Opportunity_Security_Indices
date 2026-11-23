@@ -5,16 +5,37 @@ const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 /* ---------- difficulty: how much scouting info is visible while drafting ----------
-   easy   → sector scores + home-turf synergies both shown (full info)
-   normal → home-turf synergies shown, sector scores hidden (default)
-   hard   → all numerical info hidden                                              */
+   easy   → card stats + your fence on every card (full info)
+   normal → your fence on every card shown, card stats hidden (default)
+   hard   → no stats and no fences: draft on names and judgement alone          */
 function difficulty() {
   if (STATE.mode === "league") return STATE.difficulty || "normal";
   const el = $("#diffSel"); return el ? el.value : (STATE.difficulty || "normal");
 }
 function showScores()  { return difficulty() === "easy"; }
 function showSynergy() { return difficulty() !== "hard"; }
-function synergyOf(ally, sub) { return (ally.home[sub.cat] || 0) + (ally.picks.includes(sub.n) ? 6 : 0); }
+function synergyOf(ally, sub) { return fitOf(ally, sub); }
+
+/* a draft replayed from a league drafted before the switch holds legacy sub-sectors (ids 1-39) */
+function draftIsLegacy() { return STATE.picks.some(p => p.subN != null && p.subN < 100); }
+function draftPool() { return draftIsLegacy() ? LEGACY_SUBSECTORS : SUBSECTORS; }
+const STAGE_TINT = { EXT: ["#78350f", "#d97706"], REF: ["#7c2d12", "#f97316"], CMP: ["#1e3a8a", "#60a5fa"],
+                     ASM: ["#312e81", "#a78bfa"], DEP: ["#14532d", "#4ade80"], REC: ["#134e4a", "#2dd4bf"] };
+/* the six positions of the current draft: the stages, or the legacy stack categories */
+function draftGroups() {
+  if (draftIsLegacy()) return Object.values(CATEGORIES).map(c => ({ id: c.id, key: c.id, short: c.short, c1: c.c1, c2: c.c2 }));
+  return STAGE_ORDER.map(id => ({ id, key: STAGES[id].short, short: STAGES[id].name, c1: STAGE_TINT[id][0], c2: STAGE_TINT[id][1] }));
+}
+
+/* the fence chip of a country's rating of a card */
+function fenceChip(ally, sub, withPts) {
+  if (!isCard(sub)) return "";
+  const r = ratingOf(ally.id, sub.n);
+  if (!r || !r.choice) return `<span class="fence-chip none" title="This step is not assessed for ${ally.name}">Not rated</span>`;
+  const pts = FENCE_FIT[r.choice] || 0;
+  return `<span class="fence-chip f-${r.fence}" style="--fc:${CHOICE_COLOR[r.choice]}" title="${CHOICE_MEANING[r.choice]}">` +
+    `${CHOICE_LABEL[r.choice]} · ${FENCE_LABEL[r.fence]}${withPts ? ` <b>${pts >= 0 ? "+" : ""}${pts}</b>` : ""}</span>`;
+}
 
 /* ---------- seat helpers (a "seat" is a draft slot: a country in solo, a player in league) ---------- */
 function seatCountry(seatId) {
@@ -100,9 +121,20 @@ function selectAlly(id) {
   const a = ALLY_BY_ID[id];
   const detail = $("#allyDetail");
   const syn = showSynergy();
-  const strengths = Object.entries(a.home).sort((x, y) => y[1] - x[1])
-    .map(([c, v]) => `<span class="chipcat" style="background:${CATEGORIES[c].c2}">${CATEGORIES[c].short}${syn ? " +" + v : ""}</span>`).join(" ");
-  const sigs = a.picks.map(n => SUB_BY_N[n].name).join(" · ");
+  const head = (t) => `<div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);font-family:var(--font-disp);font-style:italic">${t}</div>`;
+  // the fighter's fences: how many cards it rates High / Medium / Low, and its High and Preserve cards by name
+  const rated = SUBSECTORS.map(s => ({ s, r: ratingOf(a.id, s.n) })).filter(x => x.r && x.r.fence);
+  const count = (f) => rated.filter(x => x.r.fence === f).length;
+  const named = (choice) => rated.filter(x => x.r.choice === choice).sort((p, q) => q.s.ovr - p.s.ovr).map(x => x.s.name);
+  const fenceRow = ["high", "medium", "low"].map(f =>
+    `<span class="chipcat fence-${f}">${FENCE_LABEL[f]}${syn ? " · " + count(f) : ""}</span>`).join(" ");
+  const secure = named("secure"), preserve = named("preserve");
+  const fenceDetail = syn
+    ? head("High fence · Secure (+" + FENCE_FIT.secure + ")") +
+      `<div class="bio" style="color:#f58229;font-size:12.5px">${secure.length ? secure.join(" · ") : "None: no step is a security must-have"}</div>` +
+      head("Preserve (+" + FENCE_FIT.preserve + ")") +
+      `<div class="bio" style="color:var(--red-2);font-size:12.5px">${preserve.length ? preserve.slice(0, 6).join(" · ") + (preserve.length > 6 ? " …" : "") : "None yet: build or partner instead"}</div>`
+    : head("Hard mode") + `<div class="bio" style="font-size:12.5px">Fences hidden: draft on names and judgement alone.</div>`;
   detail.style.setProperty("--cc1", a.c1); detail.style.setProperty("--cc2", a.c2);
   detail.innerHTML = `
     <div class="dportrait"><div class="flagbg">${a.flag}</div>${portrait(a, 170)}</div>
@@ -110,10 +142,9 @@ function selectAlly(id) {
       <h3>${a.flag} ${a.name}</h3>
       <div class="dtitle">${a.title} · <span style="color:var(--ink-dim)">${a.mascot}</span></div>
       <p class="bio">${a.bio}</p>
-      <div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);font-family:var(--font-disp);font-style:italic">Home-turf synergies</div>
-      <div class="strengths" style="justify-content:flex-start">${strengths}</div>
-      <div style="margin:10px 0 4px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);font-family:var(--font-disp);font-style:italic">Signature sub-sectors${syn ? " (+6 fit)" : ""}</div>
-      <div class="bio" style="color:var(--red-2);font-size:12.5px">${sigs}</div>
+      ${head("Your fences across the " + SUBSECTORS.length + " supply-chain cards")}
+      <div class="strengths" style="justify-content:flex-start">${fenceRow}</div>
+      ${fenceDetail}
     </div>`;
   detail.style.display = "grid";
   $("#startBtn").disabled = false;
@@ -121,7 +152,7 @@ function selectAlly(id) {
   detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-/* Rounds available depend on ally count (allies × rounds must fit 39 sub-sectors) */
+/* Rounds available depend on ally count (allies × rounds must fit the cards) */
 function populateRounds() {
   const n = parseInt($("#alliesSel").value, 10);
   const maxR = Math.min(6, Math.max(1, Math.floor(SUBSECTORS.length / n)));
@@ -209,7 +240,7 @@ function aiPick(id) {
   const ally = ALLY_BY_ID[id];
   const avail = SUBSECTORS.filter(s => !STATE.drafted[s.n]);
   if (!avail.length) { commitPick(id, null); return; }
-  // AI values: synergy score + slight category-need + a touch of variety
+  // AI values: its own fence fit + spreading across stages + a touch of variety
   const catCount = {};
   team.roster.forEach(n => { const c = SUB_BY_N[n].cat; catCount[c] = (catCount[c] || 0) + 1; });
   let best = null, bestV = -1;
@@ -271,20 +302,20 @@ function updateOnClock(id) {
 /* ========================= RENDER: filters ========================= */
 function renderFilters() {
   const bar = $("#filters");
-  const cats = ["ALL", ...Object.keys(CATEGORIES)];
+  const cats = ["ALL", ...STAGE_ORDER];
   // sort options depend on difficulty — never expose a sort that reveals hidden numbers
   let opts;
   if (showScores()) {
-    opts = [["value", "Best fit for you"], ["ovr", "Overall (OVR)"], ["nat", "National Security"],
-            ["ensc", "Energy &amp; Economic Security"], ["clim", "Climate Salience"], ["opp", "Economic Opportunity"], ["num", "By sector #"]];
+    opts = [["value", "Best fit for you"], ["ovr", "Overall (OVR)"], ["need", "Supply-chain need"],
+            ["prize", "Prize"], ["demand", "Allied demand"], ["tech", "By technology"]];
   } else if (showSynergy()) {
-    opts = [["fit", "Best home-fit for you"], ["num", "By sector #"]];
+    opts = [["fit", "Best fence fit for you"], ["tech", "By technology"], ["num", "By stage"]];
   } else {
-    opts = [["num", "By sector #"], ["cat", "By stack category"]];
+    opts = [["tech", "By technology"], ["num", "By stage"]];
   }
   if (!opts.some(o => o[0] === STATE.sort)) STATE.sort = opts[0][0];
   bar.innerHTML = cats.map(c => {
-    const label = c === "ALL" ? "ALL SECTORS" : `${c} · ${CATEGORIES[c].short}`;
+    const label = c === "ALL" ? "ALL STAGES" : STAGES[c].short;
     return `<button class="fbtn ${c === STATE.filter ? "on" : ""}" data-f="${c}">${label}</button>`;
   }).join("") + `<span class="spacer"></span>
     <select id="sortSel" title="Sort">
@@ -304,43 +335,42 @@ function renderPool() {
   const yourTurn = currentAllyId() === STATE.you && STATE.pickIndex < totalPicks();
 
   let list = SUBSECTORS.filter(s => STATE.filter === "ALL" || s.cat === STATE.filter);
+  const stageIdx = (s) => STAGE_ORDER.indexOf(s.cat);
+  const byTech = (a, b) => (a.tech < b.tech ? -1 : a.tech > b.tech ? 1 : stageIdx(a) - stageIdx(b));
+  const nz = (v) => (v == null ? -1 : v);
   const sorters = {
     value:  (a, b) => scoreFor(you, b) - scoreFor(you, a),
-    fit:    (a, b) => synergyOf(you, b) - synergyOf(you, a) || a.n - b.n,
+    fit:    (a, b) => synergyOf(you, b) - synergyOf(you, a) || byTech(a, b),
     ovr:    (a, b) => b.ovr - a.ovr,
-    nat:    (a, b) => b.NAT - a.NAT,
-    ensc:   (a, b) => b.ENSC - a.ENSC,
-    clim:   (a, b) => b.CLIM - a.CLIM,
-    opp:    (a, b) => b.OPP - a.OPP,
-    num:    (a, b) => a.n - b.n,
-    cat:    (a, b) => (a.cat < b.cat ? -1 : a.cat > b.cat ? 1 : a.n - b.n),
+    need:   (a, b) => nz(b.NEED) - nz(a.NEED),
+    prize:  (a, b) => nz(b.PRIZE) - nz(a.PRIZE),
+    demand: (a, b) => nz(b.DEMAND) - nz(a.DEMAND),
+    tech:   byTech,
+    num:    (a, b) => stageIdx(a) - stageIdx(b) || byTech(a, b),
   };
-  list = [...list].sort(sorters[STATE.sort] || sorters.num);
+  list = [...list].sort(sorters[STATE.sort] || sorters.tech);
   // drafted cards sink to the bottom
   list.sort((a, b) => (STATE.drafted[a.n] ? 1 : 0) - (STATE.drafted[b.n] ? 1 : 0));
 
   const scores = showScores(), syn = showSynergy();
   pool.innerHTML = list.map(s => {
-    const cat = CATEGORIES[s.cat];
+    const cat = catMeta(s);
     const drafted = STATE.drafted[s.n];
-    const fit = synergyOf(you, s);
     const owner = drafted ? seatCountry(drafted) : null;
     const ownerNm = drafted ? seatName(drafted) : "";
     const bars = [
-      ["NAT SEC", s.NAT, "National Security"],
-      ["E&E SEC", s.ENSC, "Energy & Economic Security"],
-      ["CLIMATE", s.CLIM, "Climate Salience"],
-      ["ECON OPP", s.OPP, "Economic Opportunity"],
-    ].map(([k, v, full]) => `<div class="statrow" title="${full}"><span>${k}</span><span class="bar"><i style="width:${v}%"></i></span><b>${v}</b></div>`).join("");
-    const footLeft = syn
-      ? (fit > 0 ? `<div class="synergy">↑ +${fit} home-fit for ${you.flag} ${you.name}</div>` : `<div class="synergy" style="color:var(--ink-faint)">Open pick</div>`)
-      : "";
+      ["NEED", s.NEED, "Supply-chain need: how exposed the 21 countries are here (deployment need at Deployment)"],
+      ["PRIZE", s.PRIZE, "Prize: the strategic industrial value of producing here"],
+      ["DEMAND", s.DEMAND, "Allied demand: share of the 21 countries whose fence is High or Medium"],
+    ].filter(([, v]) => v != null)
+      .map(([k, v, full]) => `<div class="statrow" title="${full}"><span>${k}</span><span class="bar"><i style="width:${v}%"></i></span><b>${v}</b></div>`).join("");
+    const footLeft = syn ? `<div class="synergy">${fenceChip(you, s, true)}</div>` : "";
     return `<div class="pcard ${drafted ? "drafted" : ""} ${scores ? "" : "noscore"}" style="--cc1:${cat.c1};--cc2:${cat.c2}">
       <div class="pcard-top">
         ${iconSVG(s.glyph, cat.c1, cat.c2, 54)}
         <div class="meta">
-          <div class="catline">${s.cat} · ${cat.short}</div>
-          <div class="pname">${s.n}. ${s.name}</div>
+          <div class="catline">${cat.label}</div>
+          <div class="pname">${s.name}</div>
           <div class="tagline">“${s.tagline}”</div>
         </div>
         ${scores ? `<div class="ovr-badge"><div class="num">${s.ovr}</div><div class="lbl">OVR</div><div><span class="tier ${s.tier}">TIER ${s.tier}</span></div></div>` : ""}
@@ -366,13 +396,13 @@ function renderRail() {
   // roster
   const rl = $("#rosterList");
   if (!team.roster.length) {
-    rl.innerHTML = `<div class="roster-empty">Your dynasty is empty.<br>Draft your first sub-sector →</div>`;
+    rl.innerHTML = `<div class="roster-empty">Your dynasty is empty.<br>Draft your first card →</div>`;
   } else {
     rl.innerHTML = team.roster.map(n => {
-      const s = SUB_BY_N[n], cat = CATEGORIES[s.cat];
+      const s = SUB_BY_N[n], cat = catMeta(s);
       return `<li style="border-left:3px solid ${cat.c2}">
-        <span class="ovrmini" ${showScores() ? "" : `style="color:${cat.c2}"`}>${showScores() ? s.ovr : s.cat}</span>
-        <span class="rn"><div class="t">${s.name}</div><div class="c">${s.cat} · ${cat.short}</div></span>
+        <span class="ovrmini" ${showScores() ? "" : `style="color:${cat.c2}"`}>${showScores() ? s.ovr : cat.key}</span>
+        <span class="rn"><div class="t">${s.name}</div><div class="c">${cat.label}</div>${showSynergy() ? fenceChip(you, s, false) : ""}</span>
       </li>`;
     }).join("");
   }
@@ -400,13 +430,19 @@ function finishDraft() {
     if (STATE.league.resultsShown) return;
     STATE.league.resultsShown = true;
   }
+  const legacy = draftIsLegacy();
   const sorted = [...STATE.teams].map(t => {
-    // portfolio bonuses: coverage across categories + a couple of "stack combos"
-    const cats = new Set(t.roster.map(n => SUB_BY_N[n].cat));
-    const coverage = cats.size * 5;
-    const combo = comboBonus(t.roster);
-    t.final = t.points + coverage + combo;
-    t.coverage = coverage; t.combo = combo; t.cats = cats.size;
+    if (legacy) {
+      // leagues drafted before the switch: coverage across stack categories + the hand-written combos
+      const cats = new Set(t.roster.map(n => SUB_BY_N[n].cat));
+      t.coverage = cats.size * 5; t.combo = comboBonus(t.roster); t.partner = 0; t.cats = cats.size;
+    } else {
+      // portfolio bonuses: stage coverage, technology chains, and Partner cards an ally holds for you
+      const others = STATE.teams.filter(o => o !== t).flatMap(o => o.roster);
+      const b = portfolioBonus(seatCountry(t.ally).id, t.roster, others);
+      t.coverage = b.coverage; t.combo = b.combo; t.partner = b.partner; t.cats = b.stages; t.chains = b.chains;
+    }
+    t.final = t.points + t.coverage + t.combo + t.partner;
     return t;
   }).sort((a, b) => b.final - a.final);
 
@@ -420,14 +456,19 @@ function finishDraft() {
   const yourRank = sorted.findIndex(t => t.ally === STATE.you);
   const drafted = STATE.picks.length;
   const top1 = STATE.picks[0] ? SUB_BY_N[STATE.picks[0].subN] : null;
+  // model alignment: the share of picks that were the drafter's own High or Medium fence
+  const fenced = legacy ? [] : STATE.picks.map(p => ratingOf(seatCountry(p.ally).id, p.subN)).filter(Boolean);
+  const aligned = fenced.filter(r => r.fence === "high" || r.fence === "medium").length;
+  STATE.alignPct = fenced.length ? Math.round(100 * aligned / fenced.length) : null;
   $("#resultHead").innerHTML =
-    `The alliance drafted <b>${drafted}</b> of ${SUBSECTORS.length} sub-sectors.` +
+    `The alliance drafted <b>${drafted}</b> of ${draftPool().length} ${legacy ? "sub-sectors" : "supply-chain cards"}.` +
     (top1 ? ` The #1 overall priority was <b>${top1.name}</b>.` : "") +
+    (STATE.alignPct != null ? `<br><span style="font-size:.9em;color:var(--ink-dim)">🧭 Model alignment: <b>${STATE.alignPct}%</b> of picks were the drafter's own High or Medium fence.</span>` : "") +
     `<br><span style="font-size:.9em;color:var(--ink-dim)">🏆 Draft champion: <b style="color:var(--gold)">${seatFlag(champSeat)} ${seatName(champSeat)}</b> · You finished <b>#${yourRank + 1}</b> of ${N} (grade ${gradeFor(yourRank, N)})</span>`;
 
   // Alliance "power": how close the collective draft got to the maximum-OVR stack
   const K = STATE.picks.length;
-  const ovrDesc = SUBSECTORS.map(s => s.ovr).sort((a, b) => b - a);
+  const ovrDesc = draftPool().map(s => s.ovr).sort((a, b) => b - a);
   const maxSum = ovrDesc.slice(0, K).reduce((a, b) => a + b, 0) || 1;
   const minSum = ovrDesc.slice(-K).reduce((a, b) => a + b, 0) || 0;
   const actualSum = STATE.picks.reduce((a, p) => a + SUB_BY_N[p.subN].ovr, 0);
@@ -441,37 +482,39 @@ function finishDraft() {
   renderBossChallenge();
 
   $("#resultsTable").innerHTML = `
-    <tr><th>#</th><th>Ally</th><th>Roster</th><th>Sectors</th><th>Coverage</th><th>Stack combo</th><th>Total</th><th>Grade</th></tr>
+    <tr><th>#</th><th>Ally</th><th>Roster</th><th>${legacy ? "Sectors" : "Stages"}</th><th>Coverage</th><th>${legacy ? "Stack combo" : "Chains"}</th>${legacy ? "" : "<th>Partner</th>"}<th>Total</th><th>Grade</th></tr>
     ${sorted.map((t, i) => {
       const a = seatCountry(t.ally);
       const sub2 = STATE.mode === "league" ? seatName(t.ally) : a.mascot;
-      const top = t.roster.slice(0, 3).map(n => SUB_BY_N[n].name.split(",")[0]).join(", ");
+      const top = t.roster.slice(0, 3).map(n => isCard(SUB_BY_N[n]) ? SUB_BY_N[n].name : SUB_BY_N[n].name.split(",")[0]).join(" · ");
       return `<tr class="${t.ally === STATE.you ? "you" : ""}">
         <td>${i + 1}</td>
         <td><b>${a.flag} ${seatName(t.ally)}</b><br><span style="color:var(--ink-faint);font-size:11px">${STATE.mode === "league" ? a.name : a.mascot}</span></td>
         <td style="color:var(--ink-dim);font-size:12px">${top}${t.roster.length > 3 ? " …" : ""}</td>
         <td>${t.cats}/6</td>
         <td>+${t.coverage}</td>
-        <td style="color:var(--leaf-2)">+${t.combo}</td>
+        <td style="color:var(--leaf-2)" title="${(t.chains || []).map(c => `${c.tech}: ${c.links} link${c.links === 1 ? "" : "s"}${c.full ? " + full chain" : ""}`).join("; ")}">+${t.combo}</td>
+        ${legacy ? "" : `<td style="color:#55c4c5" title="Partner cards another team holds for you">+${t.partner}</td>`}
         <td class="sc">${t.final}</td>
         <td class="grade">${gradeFor(i, N)}</td>
       </tr>`;
     }).join("")}`;
 }
 
-/* Category demand: how much of each stack tier the alliance claimed */
+/* Stage demand: how much of each supply-chain stage the alliance claimed (legacy: stack category) */
 function renderCategoryPriority() {
   const pickMap = {}; STATE.picks.forEach(p => pickMap[p.subN] = p);
-  const rows = Object.values(CATEGORIES).map(cat => {
-    const subs = SUBSECTORS.filter(s => s.cat === cat.id);
+  const pool = draftPool();
+  const rows = draftGroups().map(cat => {
+    const subs = pool.filter(s => s.cat === cat.id);
     const dsubs = subs.filter(s => pickMap[s.n]);
     const first = dsubs.length ? Math.min(...dsubs.map(s => pickMap[s.n].pickNo)) : null;
     const avg = dsubs.length ? dsubs.reduce((a, s) => a + pickMap[s.n].pickNo, 0) / dsubs.length : Infinity;
-    return { cat, cnt: dsubs.length, total: subs.length, first, avg, share: dsubs.length / subs.length };
+    return { cat, cnt: dsubs.length, total: subs.length, first, avg, share: subs.length ? dsubs.length / subs.length : 0 };
   }).sort((a, b) => b.share - a.share || a.avg - b.avg);
   $("#catPriority").innerHTML = rows.map(r => `
     <div class="catprio-item" style="--cc1:${r.cat.c1};--cc2:${r.cat.c2}">
-      <div class="cp-head"><span class="cp-key">${r.cat.id}</span><span class="cp-name">${r.cat.short}</span>
+      <div class="cp-head"><span class="cp-key">${r.cat.key}</span><span class="cp-name">${r.cat.short}</span>
         <span class="cp-count">${r.cnt}/${r.total}</span></div>
       <div class="cp-bar"><i style="width:${Math.round(r.share * 100)}%"></i></div>
       <div class="cp-foot">${r.first ? `first taken at pick #${r.first}` : "not drafted"}</div>
@@ -481,7 +524,7 @@ function renderCategoryPriority() {
 /* Sector priority board: every sub-sector ranked by draft order */
 function renderSectorBoard() {
   const pickMap = {}; STATE.picks.forEach(p => pickMap[p.subN] = p);
-  const listed = [...SUBSECTORS].sort((a, b) => {
+  const listed = [...draftPool()].sort((a, b) => {
     const pa = pickMap[a.n], pb = pickMap[b.n];
     if (pa && pb) return pa.pickNo - pb.pickNo;
     if (pa) return -1; if (pb) return 1;
@@ -489,7 +532,7 @@ function renderSectorBoard() {
   });
   let rank = 0;
   $("#sectorBoard").innerHTML = listed.map(s => {
-    const cat = CATEGORIES[s.cat];
+    const cat = catMeta(s);
     const p = pickMap[s.n];
     const owner = p ? seatCountry(p.ally) : null;
     if (p) rank++;
@@ -499,7 +542,7 @@ function renderSectorBoard() {
       ${iconSVG(s.glyph, cat.c1, cat.c2, 38)}
       <div class="prio-main">
         <div class="prio-name">${s.name}</div>
-        <div class="prio-cat">${s.cat} · ${cat.short} · OVR ${s.ovr}</div>
+        <div class="prio-cat">${cat.label} · OVR ${s.ovr}${owner && isCard(s) ? " · " + fenceChip(owner, s, false) : ""}</div>
       </div>
       ${p
         ? `<div class="prio-pick">PICK ${p.pickNo}<small>Round ${p.round}</small></div>`
@@ -509,23 +552,27 @@ function renderSectorBoard() {
   }).join("");
 }
 
-/* Metric board: every sub-sector ranked by OVR with its four OSI pillar scores,
-   so the group's draft-order priorities can be compared against the raw numbers. */
+/* Metric board: every card ranked by OVR with its stats and how the 21 countries fence it,
+   so the group's draft-order priorities can be compared against the model. */
 function renderMetricBoard() {
   const el = $("#metricBoard"); if (!el) return;
   const pickMap = {}; STATE.picks.forEach(p => pickMap[p.subN] = p);
-  const listed = [...SUBSECTORS].sort((a, b) => b.ovr - a.ovr || a.n - b.n);
+  const listed = [...draftPool()].sort((a, b) => b.ovr - a.ovr || a.n - b.n);
   el.innerHTML = listed.map((s, i) => {
-    const cat = CATEGORIES[s.cat];
+    const cat = catMeta(s);
     const p = pickMap[s.n];
     const isYou = p && p.ally === STATE.you;
-    const bars = [["NAT", s.NAT, "National Security"], ["E&E", s.ENSC, "Energy & Economic Security"], ["CLI", s.CLIM, "Climate Salience"], ["OPP", s.OPP, "Economic Opportunity"]]
-      .map(([k, v, full]) => `<span class="ms-stat" title="${full}: ${v}"><span class="ms-k">${k}</span><span class="ms-bar"><i style="width:${v}%"></i></span><b>${v}</b></span>`).join("");
+    const stats = isCard(s)
+      ? [["NEED", s.NEED, "Supply-chain need"], ["PRIZE", s.PRIZE, "Prize"], ["DEM", s.DEMAND, "Allied demand"]].filter(([, v]) => v != null)
+      : [["NAT", s.NAT, "National Security"], ["E&E", s.ENSC, "Energy & Economic Security"], ["CLI", s.CLIM, "Climate Salience"], ["OPP", s.OPP, "Economic Opportunity"]];
+    const bars = stats
+      .map(([k, v, full]) => `<span class="ms-stat" title="${full}: ${v}"><span class="ms-k">${k}</span><span class="ms-bar"><i style="width:${v}%"></i></span><b>${v}</b></span>`).join("") +
+      (isCard(s) ? `<span class="ms-fences" title="How the 21 countries fence this step">H ${s.nHigh} · M ${s.nMedium} · L ${s.nLow}</span>` : "");
     return `<div class="metric-row ${p ? "" : "undrafted"} ${isYou ? "you" : ""}" style="--cc1:${cat.c1};--cc2:${cat.c2}">
       <div class="mr-rank">${i + 1}</div>
       <div class="mr-main">
         <div class="mr-name">${s.name}<span class="mr-ovr">OVR ${s.ovr}</span></div>
-        <div class="mr-cat">${s.cat} · ${cat.short} · ${p ? `<span class="mr-drafted">drafted #${p.pickNo}</span>` : "undrafted"}</div>
+        <div class="mr-cat">${cat.label} · ${p ? `<span class="mr-drafted">drafted #${p.pickNo}</span>` : "undrafted"}</div>
         <div class="mr-stats">${bars}</div>
       </div>
     </div>`;
@@ -587,7 +634,7 @@ function armTurnTimer() {
     const you = myCountry();
     const avail = SUBSECTORS.filter(s => !STATE.drafted[s.n]);
     if (!avail.length) return;
-    avail.sort((a, b) => (synergyOf(you, b) + b.ovr * 0.01) - (synergyOf(you, a) + a.ovr * 0.01));
+    avail.sort((a, b) => scoreFor(you, b) - scoreFor(you, a));
     draftByYou(avail[0].n);
     toast("Auto-picked (time up)");
   }, secs * 1000);
@@ -673,7 +720,8 @@ function closeFight() {
   document.body.classList.remove("scrolllock");
 }
 
-/* stack-combo synergies: reward vertically-integrated portfolios */
+/* stack-combo synergies of the legacy sub-sectors (leagues drafted before the switch; the cards'
+   chains are computed in cards.js portfolioBonus) */
 const COMBOS = [
   { name: "Full battery stack", cats: [], subs: [2, 14, 16], bonus: 14 },
   { name: "Silicon-to-chip", subs: [7, 8, 10], bonus: 16 },
@@ -735,13 +783,13 @@ function setGameMode(mode) {
   const bt = $("#brandTitle"), bs = $("#brandSub"), bp = $("#brandPill");
   const title = (typeof COORD_DATA !== "undefined") ? COORD_DATA.COORD_CONFIG.title : "Alliance Architect";
   if (bt) bt.textContent = coord ? "Allied Industrial Policy — " + title : "Allied Industrial Policy — Fantasy Draft";
-  if (bs) bs.textContent = coord ? "Coordinative optimisation · negotiated specialization" : "The Electro-Industrial Stack · Season 1";
+  if (bs) bs.textContent = coord ? "Coordinative optimisation · negotiated specialization" : "Six-stage supply chains · Season 2";
   if (bp) {
     const cfg = (typeof COORD_DATA !== "undefined") ? COORD_DATA.COORD_CONFIG : { minPlayers: 3, maxPlayers: 6 };
     const nNodes = (typeof COORD_DATA !== "undefined") ? COORD_DATA.getScenario("batteries").nodes.length : 9;
     bp.innerHTML = coord
       ? `${cfg.minPlayers}–${cfg.maxPlayers} countries · <b>${nNodes}</b> chain nodes`
-      : "21 Fighters · <b>39</b> sub-sectors";
+      : `21 Fighters · <b>${SUBSECTORS.length}</b> supply-chain cards`;
   }
 }
 

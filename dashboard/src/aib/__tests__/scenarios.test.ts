@@ -285,7 +285,7 @@ describe('the scenario in the URL (scn)', () => {
 
   it('the module nav, the static fallback and the header tab carry it', () => {
     expect(aibNavItems('/aib', null, '?scn=decoupling&mode=trade').map((i) => i.to)).toEqual([
-      '/aib?scn=decoupling', '/aib/partnerships?scn=decoupling', '/compacts?scn=decoupling', '/aib/roles?scn=decoupling', '/aib/diversification?scn=decoupling',
+      '/aib?scn=decoupling', '/aib/partnerships?scn=decoupling', '/aib/agreements?scn=decoupling', '/compacts?scn=decoupling', '/aib/roles?scn=decoupling', '/aib/diversification?scn=decoupling',
     ]);
     expect(aibNavItems('/aib').map((i) => i.to)[0]).toBe('/aib');
     expect(aibNavItems('/aib', null, '?scn=managed').map((i) => i.to)[0]).toBe('/aib');

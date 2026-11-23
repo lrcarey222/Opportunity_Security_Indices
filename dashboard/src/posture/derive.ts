@@ -8,7 +8,7 @@ import { rowsToCsv } from '../lib/csv.ts';
 import { DEPLOYMENT_STAGE, isLegacyStage, isProducingStage, legacyStageCorresponds, legacyStageTargetName, stageDisplay, stageRank } from '../lib/stages.ts';
 import type { DivisionNode, PostureCell, PostureCore, PostureMeta } from './contract.ts';
 import {
-  ALIGNMENT_LABEL, choiceWord, DEPLOY_MODE_LABEL, deliveryWords, EVIDENCE_LABEL, flagWords, GAP_LABEL, MODE_LABEL, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE, NEED_TYPE_LABEL,
+  ALIGNMENT_LABEL, choiceWord, deployCaseWords, DEPLOY_MODE_LABEL, deliveryWords, EVIDENCE_LABEL, flagWords, GAP_LABEL, MODE_LABEL, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE, NEED_TYPE_LABEL,
   PATHWAY_LABEL, POSTURE_LABEL, RATIONALE_LABEL, VERB_LABEL, VERB_ORDER, verbOf,
 } from './grammar.ts';
 import { rollupWords } from './yards.ts';
@@ -271,6 +271,8 @@ export interface PostureRow {
   choice: string | null;
   mode: string | null;
   deployMode: string | null;
+  /** the deployment case in words ("energy security and demand growth"; Deployment only) */
+  deployCase: string | null;
   rationale: string | null;
   needType: string | null;
   need: number | null;
@@ -343,6 +345,7 @@ function postureRow(
     choice: c ? choiceWord(c) : null,
     mode: c?.posture === 'C' && c.mode ? MODE_LABEL[c.mode] : null,
     deployMode: c?.posture === 'D' && c.deployMode ? DEPLOY_MODE_LABEL[c.deployMode] : null,
+    deployCase: c?.posture === 'D' && c.deployCase ? (c.deployCase === 'none' ? 'none' : deployCaseWords(c.deployCase)) : null,
     rationale: c?.posture === 'S' && c.rationale ? RATIONALE_LABEL[c.rationale] : null,
     needType: c ? NEED_TYPE_LABEL[c.needType] : null,
     need: c?.need ?? null,
@@ -395,7 +398,7 @@ export function sectorPostureRows(core: PostureCore, tech: string, stage: string
  * the market measure) and industrial_opportunity (the market prize); yards: the node's yards with its layers.
  */
 export const POSTURE_CSV_COLS = [
-  'country', 'iso3', 'coalition_tier', 'technology', 'stage', 'stage_name', 'classified', 'posture', 'compete_mode', 'deploy_mode', 'choice', 'secure_rationale',
+  'country', 'iso3', 'coalition_tier', 'technology', 'stage', 'stage_name', 'classified', 'posture', 'compete_mode', 'deploy_mode', 'deploy_case', 'choice', 'secure_rationale',
   'need_type', 'supply_chain_need', 'deployment_need', 'strategic_industrial_value', 'industrial_opportunity', 'yards', 'competitive_position', 'world_supply_share', 'pathway_credible',
   'policy_alignment', 'alignment_confidence', 'evidence', 'posture_confidence', 'trade_momentum', 'first_partner', 'first_partner_iso3', 'partner_gap',
   'borderline', 'consistency_flag',
@@ -405,7 +408,7 @@ export const POSTURE_CSV_COLS = [
 export function postureCsvRows(rows: PostureRow[]): Record<string, unknown>[] {
   return rows.map((r) => ({
     country: r.country, iso3: r.iso3, coalition_tier: r.tier, technology: r.tech, stage: r.stage, stage_name: r.stageName, classified: r.classified,
-    posture: r.postureWord, compete_mode: r.mode, deploy_mode: r.deployMode, choice: r.choice, secure_rationale: r.rationale, need_type: r.needType,
+    posture: r.postureWord, compete_mode: r.mode, deploy_mode: r.deployMode, deploy_case: r.deployCase, choice: r.choice, secure_rationale: r.rationale, need_type: r.needType,
     supply_chain_need: r.supplyChainNeed, deployment_need: r.deploymentNeed, strategic_industrial_value: r.strategicValue, industrial_opportunity: r.market,
     yards: r.yards, competitive_position: r.cp,
     world_supply_share: r.share, pathway_credible: r.pathway, policy_alignment: r.alignment, alignment_confidence: r.alignmentConfidence, evidence: r.evidence,

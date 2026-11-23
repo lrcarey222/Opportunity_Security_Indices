@@ -14,7 +14,7 @@
 // A failed prefetch is silent: the questions show without facts, the glyph is omitted and the country
 // picker is replaced by a link to all countries.
 
-import { useEffect, useId, useState } from 'react';
+import { lazy, Suspense, useEffect, useId, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { CountrySelect, type CountryOption } from '../components/CountrySelect.tsx';
 import { Select } from '../components/ui.tsx';
@@ -426,7 +426,14 @@ function CountryJump({ options }: { options: CountryOption[] | null | undefined 
 
 // ---- page --------------------------------------------------------------------------------------
 
+// Chart of the Day (2026-11-17): today's chart under the entry points. Like the other prefetches it waits for idle
+// (and never loads under Save-Data), so Home makes no request before idle; its own lazy chunk keeps Observable Plot
+// out of Home's first load; nothing shows when no chart is published.
+const ChartOfDayStrip = lazy(() => import('../chartOfDay/HomeStrip.tsx'));
+
 export default function Home() {
+  const [showChart, setShowChart] = useState(false);
+  useEffect(() => (saveData() ? undefined : onIdle(() => setShowChart(true))), []);
   useTitle('');
   const manifest = useIdleSectorManifest();
   const countries = useIdleCountryOptions();
@@ -450,6 +457,12 @@ export default function Home() {
       <p className="mt-6 max-w-3xl border-l-2 border-signal pl-4 text-sm leading-relaxed text-paper-dim" data-testid="aib-one-line">
         <span className="text-paper">The Allied Industrial Base in one line:</span> {AIB_EXPLAINER_SHORT}
       </p>
+
+      {showChart && (
+        <Suspense fallback={null}>
+          <ChartOfDayStrip />
+        </Suspense>
+      )}
 
       <section aria-labelledby="home-jump" className="mt-12">
         <h2 id="home-jump" className="rule-neis-sm mb-5 text-xl font-medium text-paper">

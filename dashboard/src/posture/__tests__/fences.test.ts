@@ -12,6 +12,7 @@ import { checkPostureDetail, decodeCore } from '../contract.ts';
 import { countryCells } from '../derive.ts';
 import { byPositionOrder, deploymentVars, familyWords, fenceGroups, fenceReason, pathwayWords, positionVars, prizeVars, supplyNeedVars, topDeploymentFamily, tradeMomentumWords, unitCountWords } from '../fences.ts';
 import { FENCE_VERBS, nodeFence, verbOf } from '../grammar.ts';
+import { parseCaseToken } from '../detail.ts';
 import { fixtureCore, fixtureDetail, withCell } from './fixture.ts';
 
 const core = decodeCore(fixtureCore());
@@ -207,5 +208,82 @@ describe('unitCountWords: a fence list counted as the legend counts it', () => {
     expect(unitCountWords([step])).toBe('1 step');
     expect(unitCountWords([step, layer])).toBe('1 step and 1 layer');
     expect(unitCountWords([step, step, step], 'technology', 'technologies')).toBe('3 technologies');
+  });
+});
+
+describe('the deployment case (cells.dc): a tag beside Accelerate, never the choice', () => {
+  // the fixture core with a dc column, the Batteries Deployment cell of AAA tagged
+  const withDc = (code: string | null): ReturnType<typeof decodeCore> => {
+    const doc = fixtureCore();
+    const k = doc.cells as Record<string, unknown[]>;
+    const ti = ((doc.meta as Record<string, unknown>).techs as string[]).indexOf('Batteries');
+    const iso = ((doc.countries as Record<string, unknown>).iso3 as string[]).indexOf('AAA');
+    const i = k.c.findIndex((_, j) => k.c[j] === iso && k.t[j] === ti && k.s[j] === 4);
+    k.dc = k.p.map((_, j) => (j === i ? code : null));
+    return decodeCore(doc);
+  };
+  const reason = (code: string | null) => {
+    const c = withDc(code);
+    const node = fenceGroups(countryCells(c, 'AAA'), detail).accelerate.find((n) => n.key === 'Batteries|Deployment')!;
+    return fenceReason(node, c, names);
+  };
+
+  it('names the main case in words, and says so when none stands out or none is assessed', () => {
+    expect(reason('security+demand')).toBe('Main case: energy security and demand growth');
+    expect(reason('climate')).toBe('Main case: climate');
+    expect(reason('integration+demand')).toBe('Main case: grid integration and demand growth');
+    expect(reason('none')).toBe('No single case stands out');
+    expect(reason(null)).toBe('Case not assessed');
+  });
+
+  it('an older core without cells.dc keeps the highest-family reason', () => {
+    expect(fenceReason(fenceGroups(cells, detail).accelerate.find((n) => n.key === 'Batteries|Deployment')!, core, names)).toBe(
+      'Top need: Demand adequacy 90 · Current policy · national data',
+    );
+  });
+
+  it('refuses an unknown case, or a case outside Deploy at Deployment', () => {
+    expect(() => withDc('weather')).toThrow(/an unknown deployment case/);
+    const doc = fixtureCore();
+    const k = doc.cells as Record<string, unknown[]>;
+    const i = k.s.findIndex((s, j) => s === 0 && k.p[j] === 'C');
+    k.dc = k.p.map((_, j) => (j === i ? 'security' : null));
+    expect(() => decodeCore(doc)).toThrow(/a deployment case outside Deploy at Deployment/);
+  });
+});
+
+describe('the kind of deployment Watch (cells.wk)', () => {
+  const doc = () => fixtureCore();
+  const at = (d: Record<string, unknown>, tech: string, stage: number) => {
+    const k = d.cells as Record<string, unknown[]>;
+    const ti = ((d.meta as Record<string, unknown>).techs as string[]).indexOf(tech);
+    return k.c.findIndex((_, j) => k.c[j] === 0 && k.t[j] === ti && k.s[j] === stage);
+  };
+  it('reads the kind on a Deployment Watch, leaves it undefined on an older core, and refuses it elsewhere', () => {
+    const d = doc();
+    const k = d.cells as Record<string, unknown[]>;
+    const i = at(d, 'Solar', 4);
+    k.wk = k.p.map((_, j) => (j === i ? 'momentum' : null));
+    const c = decodeCore(d).cells.find((x) => x.iso3 === 'AAA' && x.tech === 'Solar' && x.stage === 'Deployment')!;
+    expect(c.watchKind).toBe('momentum');
+    expect(decodeCore(fixtureCore()).cells[0].watchKind).toBeUndefined();
+    const bad = doc();
+    (bad.cells as Record<string, unknown[]>).wk = (bad.cells as Record<string, unknown[]>).p.map((_, j) => (j === at(bad, 'Batteries', 4) ? 'phase_down' : null));
+    expect(() => decodeCore(bad)).toThrow(/a watch kind outside Watch at Deployment/);
+    const odd = doc();
+    (odd.cells as Record<string, unknown[]>).wk = (odd.cells as Record<string, unknown[]>).p.map((_, j) => (j === at(odd, 'Solar', 4) ? 'fading' : null));
+    expect(() => decodeCore(odd)).toThrow(/an unknown watch kind/);
+  });
+});
+
+describe('the compact deployment case string (R posture_case_string)', () => {
+  it('reads percentiles, immaterial cases and the three statuses; rejects junk', () => {
+    expect(parseCaseToken('82')).toEqual({ value: 0.82, material: true, status: 'assessed' });
+    expect(parseCaseToken('66*')).toEqual({ value: 0.66, material: false, status: 'assessed' });
+    expect(parseCaseToken('na')?.status).toBe('not_assessed');
+    expect(parseCaseToken('nm')?.status).toBe('not_measured');
+    expect(parseCaseToken('x')?.status).toBe('not_applicable');
+    expect(parseCaseToken('')).toBeNull();
+    expect(parseCaseToken('high')).toBeNull();
   });
 });

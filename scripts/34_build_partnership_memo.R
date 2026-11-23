@@ -13,7 +13,8 @@
 # development_partnerships.rds; optional: without it Section 6 says so), --reference-dir (data/reference),
 # --out-dir (output/partnerships/<pair>), --tables-only (skip the memo), --no-pdf (Markdown only), --edge <msedge.exe>,
 # --python <python.exe>, --font <roboto .woff2>, --publish-dir <dir> (also write the dashboard set
-# memo-<PAIR>.<h8>.{json,pdf,docx,md} and its entry in <dir>/manifest.json, the country briefs' convention).
+# memo-<PAIR>.<h8>.{json,pdf,docx,md} and its entry in <dir>/manifest.json, the country briefs' convention; since
+# 2026-11-21 the entry carries git_commit, the commit stamp of scripts/utils/git_stamp.R).
 #
 # The print document uses the country strategy briefs' renderer (R/dashboard/country/country_brief_doc.R,
 # scripts/utils/country_memos.R, scripts/utils/country_memo_docx.py): same print style, page geometry, Word
@@ -48,7 +49,7 @@ need_file <- function(p) { if (!file.exists(p)) stop("input not found: ", p); p 
 
 for (f in c("R/utils/supply_chain_stages.R", "R/dashboard/country/country_util.R", "R/dashboard/country/country_memo.R",
             "R/dashboard/country/country_memo_lint.R", "R/dashboard/country/country_brief.R", "R/dashboard/country/country_brief_doc.R",
-            "scripts/utils/country_memos.R", "scripts/utils/partnership_memo_print.R",
+            "scripts/utils/country_memos.R", "scripts/utils/git_stamp.R", "scripts/utils/partnership_memo_print.R",
             list.files(file.path(repo_root, "R", "partnerships"), pattern = "\\.R$", full.names = TRUE)))
   source(if (file.exists(f)) f else file.path(repo_root, f))
 suppressPackageStartupMessages(library(dplyr))

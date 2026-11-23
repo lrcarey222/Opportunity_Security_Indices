@@ -15,8 +15,9 @@
 // choice, variant}]; their names and evidence are the core's meta.yf_nodes, resolved by yards.ts).
 
 import { DEPLOYMENT_STAGE } from '../lib/stages.ts';
+import { DEPLOY_CASE_IDS, parseDeployCase } from './contract.ts';
 import type {
-  Alignment, AlignmentConfidence, CompeteMode, DeployMode, NeedType, Pathway, PostureStage, PostureWord, SecurityRationale, Verb, Yard,
+  Alignment, AlignmentConfidence, CompeteMode, DeployCase, DeployCaseId, DeployMode, NeedType, Pathway, PostureStage, PostureWord, SecurityRationale, Verb, Yard,
 } from './contract.ts';
 
 /**
@@ -78,6 +79,33 @@ export interface SupplyChainNeed {
   inventories: string | null;
   essentiality: string | null;
   operationalControl: string | null;
+  /** the latest 12 months of trade blended into this cell's import exposure; null where the cell stays on the base year */
+  currentTrade: CurrentTrade | null;
+}
+
+/** Where the cell's import shares were refreshed with the latest 12 months of trade (scripts/26 current_trade). */
+export interface CurrentTrade {
+  /** "own_monthly": the importer's own monthly customs reports; "ember_fill": estimated from Ember's China export data and partners' reports */
+  source: 'own_monthly' | 'ember_fill' | null;
+  /** the last month of the 12-month window, as YYYYMM */
+  windowEnd: number | null;
+  /** the blend weight on the latest window (the rest is the base year) */
+  weight: number | null;
+  chinaShareBase: number | null;
+  chinaShareLatest: number | null;
+  coerciveShareBase: number | null;
+  coerciveShareLatest: number | null;
+  /** China's share moved 10+ points on $100m+ of imports */
+  flag: 'china_up' | 'china_down' | null;
+}
+
+/** "Aug 2026" from 202608; null when the value is not a YYYYMM month. */
+export function monthLabel(ym: number | null): string | null {
+  if (ym === null || !Number.isFinite(ym)) return null;
+  const y = Math.floor(ym / 100);
+  const m = ym % 100;
+  if (m < 1 || m > 12 || y < 1900) return null;
+  return `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1]} ${y}`;
 }
 
 export interface DeploymentNeed {
@@ -89,6 +117,71 @@ export interface DeploymentNeed {
   alternative: Family | null;
   /** the current deployment trend, in words or as a growth rate */
   trend: string | number | null;
+  /** why more deployment is needed (R deployment_need.R dn_cases): a descriptive tag; absent from older details */
+  cases?: DeploymentCases | null;
+}
+
+/** One deployment case: its percentile within the technology, whether its absolute gate holds, and its status. */
+export interface DeploymentCase {
+  value: number | null;
+  material: boolean | null;
+  /** assessed; not_assessed (no data for this country); not_measured (no measure for the technology yet); not_applicable (no climate case for fossil technologies) */
+  status: 'assessed' | 'not_assessed' | 'not_measured' | 'not_applicable';
+}
+export interface DeploymentCases {
+  /** the tag the engine wrote (deploy_case), or null */
+  code: DeployCase | null;
+  /** multi_case (two or more cases assessed) or single_case */
+  basis: string | null;
+  /** the cases with no data (uncertainty, never a weak case) */
+  unassessed: DeployCaseId[];
+  byCase: Partial<Record<DeployCaseId, DeploymentCase>>;
+}
+
+/** The deployment case block of a Deployment detail (R posture_export.R need_block), or null where absent. */
+/**
+ * One case from the compact detail string (R posture_case_string): "82" (percentile x 100), "66*" (not material),
+ * "na" not assessed, "nm" not measured for the technology, "x" not applicable; null where empty or unknown.
+ */
+export function parseCaseToken(t: string): DeploymentCase | null {
+  if (t === 'na') return { value: null, material: null, status: 'not_assessed' };
+  if (t === 'nm') return { value: null, material: null, status: 'not_measured' };
+  if (t === 'x') return { value: null, material: null, status: 'not_applicable' };
+  const m = /^(\d{1,3})(\*)?$/.exec(t);
+  return m ? { value: Number(m[1]) / 100, material: m[2] !== '*', status: 'assessed' } : null;
+}
+
+function deploymentCases(r: Record<string, unknown>): DeploymentCases | null {
+  // the compact string (security;climate;demand;integration) or, from older exports and fixtures, an object
+  const compact = str(r.dn_cases);
+  const raw = isObj(r.dn_cases) ? r.dn_cases : null;
+  const code = parseDeployCase(str(r.deploy_case));
+  if (!raw && compact === null && code === null) return null;
+  const byCase: Partial<Record<DeployCaseId, DeploymentCase>> = {};
+  if (compact !== null) {
+    compact.split(';').forEach((t, k) => {
+      const c = parseCaseToken(t);
+      if (c && DEPLOY_CASE_IDS[k]) byCase[DEPLOY_CASE_IDS[k]] = c;
+    });
+  }
+  for (const id of DEPLOY_CASE_IDS) {
+    const c = raw && isObj(raw[id]) ? (raw[id] as Record<string, unknown>) : null;
+    const st = c ? str(c.status) : null;
+    if (!c || (st !== 'assessed' && st !== 'not_assessed' && st !== 'not_measured' && st !== 'not_applicable')) continue;
+    byCase[id] = { value: numOf(c, 'value'), material: typeof c.material === 'boolean' ? c.material : null, status: st };
+  }
+  // the unassessed cases and the basis: written by older exports, else derived from the statuses
+  const un = str(r.dn_case_unassessed);
+  const st = Object.values(byCase);
+  const nAssessed = st.filter((c) => c?.status === 'assessed').length;
+  return {
+    code,
+    basis: str(r.dn_case_basis) ?? (raw || compact !== null ? (nAssessed >= 2 ? 'multi_case' : nAssessed === 1 ? 'single_case' : null) : null),
+    unassessed: un
+      ? (un.split(';').filter((x) => (DEPLOY_CASE_IDS as readonly string[]).includes(x)) as DeployCaseId[])
+      : DEPLOY_CASE_IDS.filter((id) => byCase[id]?.status === 'not_assessed'),
+    byCase,
+  };
 }
 
 export interface Prize {
@@ -271,6 +364,23 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 const first = <T,>(...xs: (T | null)[]): T | null => xs.find((x) => x !== null) ?? null;
 const numOf = (r: Raw, ...keys: string[]): number | null => first(...keys.map((k) => num(r[k])));
 const strOf = (r: Raw, ...keys: string[]): string | null => first(...keys.map((k) => str(r[k])));
+
+/** The cell's current_trade block (R posture_detail_doc); null when absent. */
+function currentTrade(v: unknown): CurrentTrade | null {
+  if (!isObj(v)) return null;
+  const src = strOf(v, 'source');
+  const fl = strOf(v, 'flag');
+  return {
+    source: src === 'own_monthly' || src === 'ember_fill' ? src : null,
+    windowEnd: numOf(v, 'window_end'),
+    weight: numOf(v, 'weight'),
+    chinaShareBase: numOf(v, 'china_share_base'),
+    chinaShareLatest: numOf(v, 'china_share_latest'),
+    coerciveShareBase: numOf(v, 'coercive_share_base'),
+    coerciveShareLatest: numOf(v, 'coercive_share_latest'),
+    flag: fl === 'china_up' || fl === 'china_down' ? fl : null,
+  };
+}
 /** a list as an array of words or a ";"-separated string */
 const listOf = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x !== '') : typeof v === 'string' && v !== '' ? v.split(';').map((x) => x.trim()).filter(Boolean) : [];
@@ -297,6 +407,7 @@ export const CP_FAMILIES: readonly { id: string; label: string }[] = [
   { id: 'production_position', label: 'Production share' },
   { id: 'manufacturing_capacity', label: 'Operating manufacturing capacity' },
   { id: 'investment_position', label: 'Current investment' },
+  { id: 'innovation_position', label: 'Innovation (patents and public R&D)' },
   { id: 'cost_position', label: 'Cost position' },
   { id: 'resource_endowment', label: 'Resource endowment' },
   { id: 'deployment_scale', label: 'Deployment scale' },
@@ -377,6 +488,7 @@ export function nodeDetail(r: Raw): NodeDetail {
           inventories: strOf(r, 'inventories', 'stockpile'),
           essentiality: strOf(r, 'systemic_essentiality', 'essentiality'),
           operationalControl: strOf(r, 'operational_control', 'digitally_active'),
+          currentTrade: currentTrade(r.current_trade),
         };
   const deployment: DeploymentNeed | null =
     needType === 'deployment'
@@ -386,6 +498,7 @@ export function nodeDetail(r: Raw): NodeDetail {
           system: family(r, 'dn_system'),
           alternative: r.dn_climate_aligned !== undefined && r.dn_climate_aligned !== null ? { ...family(r, 'dn_climate_aligned'), scenario: family(r, 'dn_climate_aligned').scenario ?? 'climate_aligned' } : null,
           trend: typeof r.deployment_trend === 'number' && Number.isFinite(r.deployment_trend) ? r.deployment_trend : str(r.deployment_trend),
+          cases: deploymentCases(r),
         }
       : null;
   const pr = isObj(r.prize) ? r.prize : {};

@@ -1,7 +1,8 @@
 # Print and publish a Partnership or Compact memo (IO): the country strategy briefs' renderer, print style, page
 # geometry, Word builder and render checks (docs/partnership_memos.md, "Print document"). Used by
 # scripts/34_build_partnership_memo.R and scripts/35_build_compact_memo.R; expects R/partnerships/pm_document.R,
-# R/dashboard/country/country_brief_doc.R and scripts/utils/country_memos.R to be sourced.
+# R/dashboard/country/country_brief_doc.R, scripts/utils/country_memos.R and scripts/utils/git_stamp.R (the
+# manifest entry's git_commit) to be sourced.
 #
 #   markdown, boxes   the memo text and its summary boxes (pm_memo_sections() / pm_compact_memo_sections())
 #   ev                the evidence layer (sources); doc_cfg: config `document` (with any overrides applied)
@@ -101,8 +102,11 @@ pm_print_publish <- function(markdown, boxes, ev, title_cfg, doc_cfg, id, sectio
     if (is.null(man[[section]])) man[[section]] <- list()
     man[[section]][[id]] <- c(entry, list(title = title_cfg$title, json = nm[["json"]], pdf = nm[["pdf"]], docx = nm[["docx"]], md = nm[["md"]],
                                           words = doc$words, generated_at = doc$generated_at, as_of = as_of, evidence_access = ev_access,
-                                          format = doc$format, verified = FALSE))
-    jsonlite::write_json(man, mf, auto_unbox = TRUE, pretty = TRUE, null = "null")
+                                          format = doc$format, verified = FALSE,
+                                          # the commit of the code that wrote this memo ("-dirty" when R/, scripts/ or
+                                          # config/ had uncommitted changes; null when unknown), 2026-11-21
+                                          git_commit = git_commit_stamp(repo_root)))
+    jsonlite::write_json(man, mf, auto_unbox = TRUE, pretty = TRUE, null = "null", na = "null")
     step("published ", paste(nm, collapse = ", "), " to ", publish_dir)
   }
   invisible(list(pages = pt$pages, checks = checks))

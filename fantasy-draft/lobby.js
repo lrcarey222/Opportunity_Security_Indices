@@ -178,7 +178,7 @@
       const country = seatCountry(cur);
       const avail = SUBSECTORS.filter(s => !STATE.drafted[s.n]);
       if (!avail.length) return;
-      avail.sort((a, b) => (synergyOf(country, b) + b.ovr * 0.01) - (synergyOf(country, a) + a.ovr * 0.01));
+      avail.sort((a, b) => scoreFor(country, b) - scoreFor(country, a));
       ADAPTER.makePick(avail[0].n, { seat: cur, pickIndex: STATE.pickIndex, total: totalPicks(), round: currentRound() });
     }
   }
@@ -294,7 +294,7 @@
         <div class="field">Difficulty
           <select id="lobbyDiff">
             <option value="easy" ${curDiff === "easy" ? "selected" : ""}>Easy — all numbers</option>
-            <option value="normal" ${curDiff === "normal" ? "selected" : ""}>Normal — synergies only</option>
+            <option value="normal" ${curDiff === "normal" ? "selected" : ""}>Normal — your fences only</option>
             <option value="hard" ${curDiff === "hard" ? "selected" : ""}>Hard — no numbers</option>
           </select>
         </div>

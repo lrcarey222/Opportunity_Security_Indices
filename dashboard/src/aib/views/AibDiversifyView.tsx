@@ -29,7 +29,7 @@ import { EmptyState, FilterRow, PageHead, Select, StatTile, Switch } from '../..
 import { DASH } from '../../lib/format.ts';
 import { useTitle } from '../../shell/title.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
-import { diversifyShockIdOf, type AibNode } from '../contract.ts';
+import { tradeWhen, diversifyShockIdOf, type AibNode } from '../contract.ts';
 import { DIVERSIFY_MARK, DiversifyChart, SPLIT_WORDS } from '../charts/DiversifyChart.tsx';
 import { FlaggedClass } from '../charts/ClassChip.tsx';
 import { ScenarioCoverageCompare } from '../charts/ScenarioCompare.tsx';
@@ -202,7 +202,7 @@ export default function AibDiversifyView() {
           <>
             {label}: each supply-chain step&apos;s concentration of world exporters (HHI: {HHI_SHORT}) is compared with {setting ? setting.words : DIVERSIFY_BENCHMARK_WORDS.hs4.words}. A
             step more concentrated than its benchmark, by more than a small tolerance, gets the supplier-share cap that would bring its concentration down to the benchmark, applied to
-            the allied market. A stress test of how the market could be organized, not a forecast; dollar values are {m.tradeYear} trade values.{' '}
+            the allied market. A stress test of how the market could be organized, not a forecast; dollar values are {tradeWhen(m)} trade values.{' '}
           </>
         ) : null}
         <Link className="link" to={href('/compacts/about#diversification')}>

@@ -47,6 +47,14 @@ describe('checkAibManifest', () => {
     expect(checkAibManifest([])).toEqual(['manifest: not an object']);
   });
 
+  it('accepts the optional commit stamp (a string or null) and reports a badly typed one', () => {
+    const m = readManifest(SYNTHETIC_DIR);
+    expect(checkAibManifest({ ...m, git_commit: 'abc1234' })).toEqual([]);
+    expect(checkAibManifest({ ...m, git_commit: 'abc1234-dirty' })).toEqual([]);
+    expect(checkAibManifest({ ...m, git_commit: null })).toEqual([]);
+    expect(checkAibManifest({ ...m, git_commit: 7 })).toContain('manifest.git_commit: expected a string or null');
+  });
+
   it('a newer version needs a newer app', () => {
     const m = { ...readManifest(SYNTHETIC_DIR), version: AIB_VERSION + 1 };
     expect(checkAibManifest(m)).toEqual([`manifest: version ${AIB_VERSION + 1} needs a newer app`]);
@@ -57,6 +65,16 @@ describe('checkAibManifest', () => {
 describe('checkCompactsDoc', () => {
   it('passes the synthetic document', () => {
     expect(checkCompactsDoc(readDoc(SYNTHETIC_DIR))).toEqual([]);
+  });
+
+  it('accepts the optional provenance in meta (created, git_commit) and reports badly typed values', () => {
+    const d = doc();
+    Object.assign(loose(d.meta), { created: '2026-11-21T00:00:00Z', git_commit: 'abc1234' });
+    expect(checkCompactsDoc(d)).toEqual([]);
+    Object.assign(loose(d.meta), { created: null, git_commit: null });
+    expect(checkCompactsDoc(d)).toEqual([]);
+    Object.assign(loose(d.meta), { git_commit: ['abc1234'] });
+    expect(checkCompactsDoc(d)).toContain('meta.git_commit: expected a string or null');
   });
 
   it('reports missing fields with their paths', () => {

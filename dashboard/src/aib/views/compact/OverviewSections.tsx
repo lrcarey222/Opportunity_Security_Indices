@@ -37,7 +37,7 @@ import { compactUnchangedReasonOf } from '../../derive/scenarioPages.ts';
 import { compactScenario, compactSuppliersToday, nodeScenario, runMetaOf, scenarioCsvFields, scenarioInfo, scenarioLabel, type AibScenarioId } from '../../derive/scenarios.ts';
 import { ROLE_ORDER, roleMatrix, type RoleRow } from '../../derive/roles.ts';
 import { additionsNeeded, coalitionMethod, coalitionTiers, replacementWords, tierEconomies, tierName, tierShares, type TierEconomy } from '../../derive/tiers.ts';
-import { AIB_PHYSICAL_WARNING, coalitionMembersOf, type AibCompact, type AibMeta, type AibNode } from '../../contract.ts';
+import { tradeWhen, AIB_PHYSICAL_WARNING, coalitionMembersOf, type AibCompact, type AibMeta, type AibNode } from '../../contract.ts';
 import { cellStagesOfNodes, nodeCellWords, nodeStageRank, nodeStageWords, nodeTechWords, nodeWhere, osiFields, technologiesOfNodes } from '../../derive/taxonomy.ts';
 import { csvWithRun, Section } from '../common.tsx';
 import { Economy, ScenarioGate, useCompact } from './shared.tsx';
@@ -236,7 +236,7 @@ export function OverviewSection({ title = 'Compact overview', policy = true }: {
               <dt className="text-paper-mute">Suppliers today</dt>
               <dd className="text-paper-dim" data-testid="suppliers-today">
                 {listWords(today.map((t) => `${name(t.iso3)} ${fmtShare(t.share, 0)}`))}{' '}
-                <span className="text-paper-mute">(shares of the compact&apos;s allied demand, {meta.tradeYear}, before any disruption)</span>
+                <span className="text-paper-mute">(shares of the compact&apos;s allied demand, {tradeWhen(meta)}, before any disruption)</span>
               </dd>
             </>
           )}

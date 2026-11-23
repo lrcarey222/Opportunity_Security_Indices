@@ -154,6 +154,166 @@ measures:
     techs: [Nuclear, Geothermal, Coal, Gas]
     dispatchable_sources: [Coal, Gas, Other fossil, Nuclear, Hydro, Bioenergy, Other renewables]
     direction: -1
+  # ---- case-only measures: they feed the deployment case tag (cases, below) and never deployment_need ----
+  fuel_supplier_risk:
+    family: case_only
+    unit: share (0-1)
+    label: Imported fuel from risky suppliers the technology's deployment can displace (import displacement with
+      each fuel's import dependence weighted by the coercive share of its imports, UN Comtrade at the fuel stage)
+    # the same attribution as import_displacement
+    techs:
+      Solar: {displaces: [Coal, Gas, Other fossil]}
+      Wind: {displaces: [Coal, Gas, Other fossil]}
+      Nuclear: {displaces: [Coal, Gas, Other fossil]}
+      Geothermal: {displaces: [Coal, Gas, Other fossil]}
+      Coal: {displaces: [Gas, Other fossil], own_fuel: Coal}
+      Gas: {displaces: [Coal, Other fossil], own_fuel: Gas}
+      Electric Vehicles: {fuel: Oil}
+      Green Hydrogen: {fuel: Gas}
+    direction: 1
+  electricity_import_share:
+    family: case_only
+    unit: '% of electricity demand'
+    label: Net electricity imports as a share of demand (Ember; 0 for net exporters)
+    techs: [Solar, Wind, Nuclear, Geothermal, Coal, Gas]
+    direction: 1
+  access_gap:
+    family: case_only
+    unit: '% of the population'
+    label: Population without electricity (100 - World Bank WDI EG.ELC.ACCS.ZS), unmet demand
+    techs: [Solar, Wind, Nuclear, Geothermal, Coal, Gas, Batteries, Electric Grid]
+    direction: 1
+  # climate-aligned projections (user decision 2026-11-17: the climate case reads a climate-aligned pathway as
+  # well as national targets, so a country without targets can still have a climate case; the case is a
+  # descriptive tag and none of these measures enters deployment_need)
+  climate_pathway:
+    family: case_only
+    scenario: climate_aligned
+    unit: '% more under net zero than the economic transition'
+    label: How much more of the technology BloombergNEF's Net Zero Scenario deploys than its Economic Transition
+      Scenario (NEO; national for the modelled economies, else the NEO region). Subscription data, used in the
+      calculation only; raw values are never exported.
+    scenarios: {aligned: NZS, reference: ETS}
+    techs:
+      Solar: {sector: Power & heat, indicator: Installed electric capacity, fuels: [Utility-scale PV, Small-scale PV], year: 2035}
+      Wind: {sector: Power & heat, indicator: Installed electric capacity, fuels: [Onshore wind, Offshore wind], year: 2035}
+      Nuclear: {sector: Power & heat, indicator: Installed electric capacity, fuels: [Nuclear, Small modular nuclear], year: 2035}
+      Geothermal: {sector: Power & heat, indicator: Installed electric capacity, fuels: [Geothermal], year: 2035}
+      Batteries: {sector: Power & heat, indicator: Installed electric capacity, fuels: [Battery storage], year: 2035}
+      # Electric Grid: NEO grid investment covers only two regions, so the grid's climate case reads targets and the
+      # fossil share alone
+      Electric Vehicles: {sector: Road, indicator: Final energy consumption, fuels: [Electricity], year: 2035}
+      Green Hydrogen: {sector: All sectors, indicator: Secondary energy consumption, fuels: [Hydrogen], year: 2035}
+      # fossil technologies: never a climate case (not_applicable); read only by the Watch phase-down signal
+      Coal: {sector: Power & heat, indicator: Installed electric capacity, fuels: [Coal], year: 2035}
+      Gas: {sector: Power & heat, indicator: Installed electric capacity, fuels: [CCGT, Gas peaker], year: 2035}
+      Oil: {sector: All sectors, indicator: Primary energy consumption, fuels: [Oil], year: 2035}
+    # iso3 -> NEO name for the economies NEO models nationally
+    national: {AUS: Australia, BRA: Brazil, CHN: China, FRA: France, DEU: Germany, IND: India, IDN: Indonesia,
+               JPN: Japan, KOR: South Korea, GBR: UK, USA: US, VNM: Vietnam}
+    # the NEO region of every other economy (regional proxy): UN sub-region first, then World Bank region
+    regional:
+      by_un_subregion: {South-eastern Asia: Other Southeast Asia}
+      by_wb_region:
+        Europe & Central Asia: Other Europe
+        Middle East & North Africa: MENAT
+        Middle East, North Africa, Afghanistan & Pakistan: MENAT
+        Sub-Saharan Africa: Sub-Saharan Africa
+        Latin America & Caribbean: Other Latin America
+        South Asia: Other Asia Pacific
+        East Asia & Pacific: Other Asia Pacific
+        North America: Rest of World
+      overrides: {TUR: MENAT, RUS: Rest of World, KAZ: Rest of World, UZB: Rest of World, TKM: Rest of World,
+                  KGZ: Rest of World, TJK: Rest of World, AFG: Other Asia Pacific, PAK: Other Asia Pacific}
+      default: Rest of World
+    direction: 1
+  ev_sales_gap:
+    family: case_only
+    scenario: climate_aligned
+    unit: percentage points of new-car sales
+    label: Distance to all-electric new-car sales (the 2035 milestone of net-zero pathways) - 100 minus the latest
+      EV share of new-car sales (IEA GEVO)
+    techs: [Electric Vehicles]
+    direction: 1
+  fossil_power_share:
+    family: case_only
+    scenario: climate_aligned
+    unit: '% of generation'
+    label: Distance to a decarbonised power system - the fossil share of generation (Ember)
+    techs: [Solar, Wind, Nuclear, Geothermal, Batteries, Electric Grid]
+    direction: 1
+
+# ---- Deployment case (a descriptive tag: R/strategic_position/deployment_need.R dn_cases()) -------------
+# Why a country needs more of a technology: energy security, climate (the country's own targets, and a
+# climate-aligned pathway: user decision 2026-11-17, departing from spec V.B for this descriptive tag only),
+# demand growth or grid integration. It never changes deployment_need, Accelerate or Watch. A case is strong at or above min_pct (its percentile within the technology) and
+# material (at least one of its measures passes its absolute gate); two strong cases within dual_margin are
+# both named. Measures sharing a group count once.
+# Per measure: techs (restrict), group, material (the absolute gate: gt / ge / le on the raw value) and
+# include (enter the case only where the raw value passes: for measures that are zero for most countries).
+# User decisions 2026-11-17: tag first (no posture variants); firm capacity under security; integration (the
+# wind and solar share) a fourth case; approved national-plan capacities (Coal, Gas, Nuclear) are demand, not
+# climate; no climate case for fossil technologies; the climate case reads a climate-aligned pathway too.
+cases:
+  min_pct: 0.5
+  dual_margin: 0.1
+  # anchor: a case that is always named, first, where it is material, whatever its rank (user decision
+  # 2026-11-17: an EV deployment case is a climate case; a percentile across countries ranks the EV leaders lowest
+  # on distance to all-electric sales, so a rank alone would hide it). The strongest other strong case follows it.
+  anchor: {Electric Vehicles: climate}
+  cases:
+    security:
+      label: Energy security
+      measures:
+        import_displacement: {group: fuel_imports, material: {ge: 0.1}}
+        fuel_supplier_risk: {group: fuel_imports, material: {ge: 0.02}}
+        electricity_import_share: {include: {ge: 1}, material: {ge: 10}}
+        # about the tightest tenth of systems (median 2.0 GW dispatchable per GW of average load)
+        firm_capacity_need: {material: {le: 1.4}}
+    climate:
+      label: Climate
+      not_applicable_techs: [Coal, Gas, Oil]
+      measures:
+        # national targets (one group) ...
+        target_shortfall: {group: targets, techs: [Solar, Wind, Batteries], material: {gt: 0}}
+        renewables_target_shortfall: {group: targets, material: {gt: 0}}
+        # ... and the climate-aligned pathway (one group): material where net zero asks for at least 10% more, cars
+        # are not yet all-electric, or fossil fuels make at least a fifth of generation
+        climate_pathway: {group: pathway, material: {ge: 10}}
+        ev_sales_gap: {group: pathway, material: {gt: 0}}
+        fossil_power_share: {group: pathway, material: {ge: 20}}
+    demand:
+      label: Demand growth
+      measures:
+        demand_growth: {material: {gt: 0}}
+        output_growth: {material: {gt: 0}}
+        ev_share_growth: {material: {gt: 0}}
+        oil_demand_growth: {material: {gt: 0}}
+        target_shortfall: {techs: [Coal, Gas, Nuclear], material: {gt: 0}}
+        access_gap: {include: {ge: 1}, material: {ge: 5}}
+    integration:
+      label: Grid integration
+      measures:
+        # a wind and solar share that storage, grids and flexible gas must firm (material at 15% of generation)
+        flexibility_need: {material: {ge: 15}}
+
+# ---- What kind of Watch (R/strategic_position/deployment_need.R dn_watch_kind(); user request 2026-11-17) -----
+# A Watch at Deployment says the need is below the bar; this says why, on evidence only, first match wins:
+#   phase_down  a fossil technology that a climate-aligned pathway deploys at least phase_down_max % less of by
+#               2035 (climate_pathway: BNEF Net Zero vs Economic Transition) - deployment should fall. Fossil only:
+#               NEO's hydrogen series includes today's fossil hydrogen, so a lower Net Zero figure is not a call
+#               to phase green hydrogen down
+#   momentum    deployment is already growing fast: observed growth (deployment_trend_growth) of at least
+#               momentum_min_growth % a year (an absolute bar: a percentile would favour tiny bases), or the national
+#               target met at the recent build rate (clean technologies only)
+#   declining   observed deployment falling by more than decline_max % a year, with no pathway call for it
+#   low_need    none of these (the need is simply below the bar)
+# Missing evidence never makes a kind: a cell without trend or pathway data is low_need.
+watch_kind:
+  phase_down_max: -20
+  momentum_min_growth: 15
+  decline_max: -2
+  fossil_techs: [Coal, Gas, Oil]
 
 # Ember source -> fuel whose import dependence (data/processed/import_dependence_tbl.rds, self-sufficiency)
 # applies. Ember's "Other fossil" is mostly oil products.

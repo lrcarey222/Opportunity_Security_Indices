@@ -2,6 +2,7 @@
 #
 # Usage:
 #   Rscript scripts/84_export_aib_data.R [--in-dir DIR] [--out-dir DIR] [--top-edges N] [--strategic FILE] [--inputs FILE]
+#                                        [--trade-period LABEL] [--trade-note TEXT]
 #
 #   --in-dir     where scripts/32 wrote aib_results.rds (default: <outputs_dir>/aib)
 #   --out-dir    bundle directory (default: dashboard/public/data/aib)
@@ -36,7 +37,9 @@
 # computed here from aib_inputs.rds and the OSI master) and an aggregated node's label names its six-stage
 # stage. Plain JSON, every array field wrapped in I() (R/dashboard/aib/aib_export.R); the additive
 # sections are checked first (R/dashboard/aib/aib_check.R, the mirror of the TypeScript contract) and the
-# script stops on a problem.
+# script stops on a problem. Since 2026-11-21 the manifest and the document's meta carry the export's provenance:
+# created and git_commit (the commit of the code that wrote the bundle, scripts/utils/git_stamp.R; "-dirty" when R/,
+# scripts/ or config/ had uncommitted changes).
 
 source(local({
   resolve_bootstrap_path <- function() {
@@ -83,6 +86,7 @@ source(file.path(repo_root, "R", "aib", "aib_strategic.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_export.R"))
 source(file.path(repo_root, "R", "dashboard", "aib", "aib_check.R"))
 source(file.path(repo_root, "R", "dashboard", "country", "country_util.R"))
+source(file.path(repo_root, "scripts", "utils", "git_stamp.R"))
 
 outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) file.path(repo_root, config$outputs_dir) else file.path(repo_root, config$processed_dir, "outputs")
 in_dir <- abs_path(arg_value("--in-dir", file.path(outputs_dir, "aib")))
@@ -135,6 +139,17 @@ if (!file.exists(inputs_path)) {
 }
 
 bundle <- aib_dash_bundle(res, top_edges = top_edges, strategic = strategic, legacy_cells = legacy_cells)
+# A run on current dyads (scripts/39) keeps its trade-year label: --trade-period names the period the views
+# show in place of the year ("2025-26"), --trade-note says what it is (the About page). Both optional.
+trade_period <- arg_value("--trade-period")
+trade_note <- arg_value("--trade-note")
+if (!is.null(trade_period)) bundle$meta$tradePeriod <- trade_period
+if (!is.null(trade_note)) bundle$meta$tradeNote <- trade_note
+# Provenance (2026-11-21): the export time and the commit of the code that wrote the bundle, in the document's
+# meta and the manifest.
+created <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+git_commit <- git_commit_stamp(repo_root)
+bundle$meta <- aib_dash_provenance(bundle$meta, created, git_commit)
 problems <- aib_check_bundle_additions(bundle)
 if (length(problems)) stop("The AIB bundle does not match the contract:\n  ", paste(utils::head(problems, 20), collapse = "\n  "))
 # The scenario files (Managed Interdependence, Baseline), each checked against the contract, the main
@@ -164,11 +179,16 @@ old <- c(old, setdiff(list.files(out_dir, pattern = "^scenario-(managed|baseline
 if (length(old)) invisible(file.remove(file.path(out_dir, old)))
 files <- list(compacts = fname)
 if (length(scenario_files)) files$scenarios <- scenario_files
-manifest <- list(schema = AIB_DASH_SCHEMA, version = AIB_DASH_VERSION, created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+manifest <- list(schema = AIB_DASH_SCHEMA, version = AIB_DASH_VERSION, created = created,
                  demandScope = res$meta$demand_scope, candidateUniverse = res$meta$candidate_universe,
                  shockSemantics = res$meta$headline_semantics, supplyConstraint = res$meta$headline_constraint,
                  universe = res$meta$universe, headlineShock = res$meta$headline_shock, headlineScenario = res$meta$headline_scenario,
                  files = files)
+manifest <- aib_dash_provenance(manifest, created, git_commit)
+mp <- c(aib_check_scenario_files(manifest$files$scenarios), aib_check_provenance(manifest, "manifest"))
+if (length(mp)) stop("The AIB manifest does not match the contract:
+  ", paste(mp, collapse = "
+  "))
 writeLines(country_json(manifest, pretty = TRUE), file.path(out_dir, "manifest.json"), useBytes = TRUE)
 gz_kb <- function(f) length(memCompress(readBin(file.path(out_dir, f), "raw", file.size(file.path(out_dir, f))), "gzip")) / 1024
 message(sprintf("AIB dashboard bundle: %s (%.0f kB, gzip %.1f kB; %d compacts, %d nodes, %d network countries, %d network edges, %d investment flows) in %s",

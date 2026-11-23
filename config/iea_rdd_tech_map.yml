@@ -1,0 +1,53 @@
+# IEA Energy Technology RD&D Budgets: technology codes for the Innovation prototype (2026-11-17).
+#
+# Each technology is the sum of the listed RDD_TECH codes (public sector = central government plus
+# state, RD&D, USD at constant prices and exchange rates). Codes in one list must not nest, or the
+# parent would count its children twice; R/utils/iea_rdd.R checks this.
+#
+# Source: IEA Energy Technology RD&D Budgets, October 2026 edition (RDDPUBLIC.csv in RDDPUBLIC.zip,
+# downloaded after signing in at
+# https://www.iea.org/data-and-statistics/data-product/energy-technology-rdd-budgets).
+#
+# Coverage caveats: no United States after 2015, no China or India; the EU Commission and the IEA
+# regional aggregates are dropped (the EU's members report on their own).
+
+version: 1
+
+techs:
+  Solar:
+    codes: [C12]
+    note: "Solar photovoltaics; solar heating and thermal power (C11, C13) are not in the solar basket."
+  Wind:
+    codes: [C2]
+  Geothermal:
+    codes: [C5]
+  Nuclear:
+    codes: [D1]
+    note: "Fission, including the fuel cycle; fusion (D2) is left out."
+  Green Hydrogen:
+    codes: [E11]
+    note: "Hydrogen production via electrolysis."
+  Batteries:
+    codes: [F511, A3111]
+    note: "Stationary batteries plus batteries on board road transport."
+  Electric Vehicles:
+    codes: [A311, A312, A314]
+    note: "On-board storage (shares A3111 with Batteries), power electronics and motors, charging infrastructure."
+  Electric Grid:
+    codes: [F2]
+  Coal:
+    codes: [B2]
+  Oil:
+    codes: [B1]
+    note: "Oil and gas are one IEA category (B1); Oil and Gas get the same value."
+  Gas:
+    codes: [B1]
+    note: "Oil and gas are one IEA category (B1); Oil and Gas get the same value."
+
+# Critical-minerals RD&D is reported by stage. It is not one of the index technologies; the prototype
+# emits it as tech "Critical Minerals" at these stages so it can be attached to each technology's
+# mineral stages later.
+critical_minerals:
+  Extraction: [H1, H2]
+  Refining: [H3]
+  Recovery: [H4]

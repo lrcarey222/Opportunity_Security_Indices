@@ -2,35 +2,35 @@
 "Batteries","Refining","bess-anode","material",214,0,2,34,54,0,114,10,0,90,114,10,0
 "Batteries","Refining","bess-cathode","material",214,0,2,34,54,0,114,10,0,90,114,10,0
 "Batteries","Refining","li-chemicals","material",214,0,2,34,54,0,114,10,0,90,114,10,0
-"Batteries","Assembly","bess-cells","hardware",214,0,5,15,56,0,128,10,0,76,128,10,0
-"Batteries","Assembly","bess-comms","control",214,63,1,0,22,0,118,10,63,23,118,10,0
-"Batteries","Assembly","bess-control","control",214,63,1,0,22,0,118,10,63,23,118,10,0
+"Batteries","Assembly","bess-cells","hardware",214,0,5,15,57,0,127,10,0,77,127,10,0
+"Batteries","Assembly","bess-comms","control",214,74,0,0,17,0,113,10,74,17,113,10,0
+"Batteries","Assembly","bess-control","control",214,74,0,0,17,0,113,10,74,17,113,10,0
 "Batteries","Assembly","bess-enclosure","structure",214,0,3,0,0,0,201,10,0,3,201,10,214
-"Electric Grid","Refining","goes","material",214,37,1,25,33,0,109,9,37,59,109,9,0
+"Electric Grid","Refining","goes","material",214,38,1,26,33,0,107,9,38,60,107,9,0
 "Electric Grid","Assembly","bess-pcs","hardware",214,0,8,25,66,0,106,9,0,99,106,9,0
-"Electric Grid","Assembly","grid-ami","control",214,91,1,0,32,0,81,9,91,33,81,9,0
-"Electric Grid","Assembly","grid-cables","hardware",214,0,1,0,0,0,204,9,0,1,204,9,214
-"Electric Grid","Assembly","grid-inverter-firmware","control",214,91,1,0,32,0,81,9,91,33,81,9,0
-"Electric Grid","Assembly","grid-scada","control",214,91,1,0,32,0,81,9,91,33,81,9,0
+"Electric Grid","Assembly","grid-ami","control",214,94,0,0,32,0,79,9,94,32,79,9,0
+"Electric Grid","Assembly","grid-cables","hardware",214,0,0,0,0,0,205,9,0,0,205,9,214
+"Electric Grid","Assembly","grid-inverter-firmware","control",214,94,0,0,32,0,79,9,94,32,79,9,0
+"Electric Grid","Assembly","grid-scada","control",214,94,0,0,32,0,79,9,94,32,79,9,0
 "Electric Grid","Assembly","grid-transformers","hardware",214,24,8,25,42,0,106,9,24,75,106,9,0
 "Electric Grid","Assembly","hvdc-control","control",214,0,8,25,66,0,106,9,0,99,106,9,0
-"Electric Vehicles","Components","ev-motors","hardware",214,0,9,27,56,0,113,9,0,92,113,9,0
-"Electric Vehicles","Components","ree-magnets","material",214,103,4,6,23,0,69,9,103,33,69,9,0
-"Electric Vehicles","Assembly","ev-connected-vehicle","control",214,91,0,0,23,0,91,9,91,23,91,9,0
+"Electric Vehicles","Components","ev-motors","hardware",214,0,9,27,57,0,112,9,0,93,112,9,0
+"Electric Vehicles","Components","ree-magnets","material",214,110,2,5,25,0,63,9,110,32,63,9,0
+"Electric Vehicles","Assembly","ev-connected-vehicle","control",214,94,0,0,26,0,85,9,94,26,85,9,0
 "Electric Vehicles","Deployment","ev-charging-mgmt","control",214,0,0,0,0,33,69,112,0,33,69,112,0
-"Gas","Assembly","gas-ot-control","control",214,61,0,0,31,0,113,9,61,31,113,9,0
+"Gas","Assembly","gas-ot-control","control",214,60,0,0,29,0,116,9,60,29,116,9,0
 "Green Hydrogen","Extraction","h2-pgm","material",214,0,0,0,0,0,0,214,0,0,0,214,214
 "Nuclear","Refining","nuc-haleu","fuel",214,2,3,11,20,0,167,11,2,34,167,11,0
 "Nuclear","Refining","nuc-leu","fuel",214,3,3,10,20,0,167,11,3,33,167,11,0
-"Nuclear","Components","nuc-fuel-fab","fuel",214,11,6,17,50,0,121,9,11,73,121,9,0
-"Nuclear","Assembly","nuc-reactor-controls","control",214,18,1,2,54,0,130,9,18,57,130,9,0
-"Oil","Assembly","oil-ot-control","control",214,80,0,0,30,0,95,9,80,30,95,9,0
-"Solar","Refining","polysilicon","material",214,0,2,19,62,0,120,11,0,83,120,11,0
+"Nuclear","Components","nuc-fuel-fab","fuel",214,9,6,17,53,0,120,9,9,76,120,9,0
+"Nuclear","Assembly","nuc-reactor-controls","control",214,16,2,1,55,0,131,9,16,58,131,9,0
+"Oil","Assembly","oil-ot-control","control",214,83,0,0,29,0,93,9,83,29,93,9,0
+"Solar","Refining","polysilicon","material",214,0,2,19,59,0,123,11,0,80,123,11,0
 "Solar","Components","pv-cells-wafers","hardware",214,0,3,25,61,0,116,9,0,89,116,9,0
 "Solar","Components","pv-nextgen","hardware",214,0,3,25,61,0,116,9,0,89,116,9,0
-"Solar","Assembly","pv-inverter-firmware-dist","control",214,109,2,0,29,0,65,9,109,31,65,9,0
+"Solar","Assembly","pv-inverter-firmware-dist","control",214,107,1,0,31,0,66,9,107,32,66,9,0
 "Solar","Assembly","pv-modules","hardware",214,0,9,0,0,0,196,9,0,9,196,9,214
-"Solar","Assembly","pv-racking","structure",214,0,2,0,0,0,203,9,0,2,203,9,214
-"Wind","Refining","ree-separation","material",214,17,1,21,48,0,116,11,17,70,116,11,0
-"Wind","Components","ree-magnets","material",214,66,6,16,29,0,88,9,66,51,88,9,0
-"Wind","Assembly","wind-turbine-control","control",214,85,0,0,34,0,86,9,85,34,86,9,0
+"Solar","Assembly","pv-racking","structure",214,0,1,0,0,0,204,9,0,1,204,9,214
+"Wind","Refining","ree-separation","material",214,17,1,19,47,0,119,11,17,67,119,11,0
+"Wind","Components","ree-magnets","material",214,73,4,16,28,0,84,9,73,48,84,9,0
+"Wind","Assembly","wind-turbine-control","control",214,89,0,0,34,0,82,9,89,34,82,9,0

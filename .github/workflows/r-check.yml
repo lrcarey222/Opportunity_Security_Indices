@@ -8,12 +8,14 @@ on:
 
 jobs:
   r-check:
-    runs-on: ubuntu-latest
+    # Pinned: the R packages below are Posit binaries built for Ubuntu 24.04 (noble). On the newer
+    # ubuntu-latest image (26.04) they install but stringi cannot load its ICU library, so stringr fails.
+    runs-on: ubuntu-24.04
     env:
       SKIP_DATA_DOWNLOADS: "true"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Matches credential values, not env-var names: Comtrade keys are 32 hex, Datawrapper tokens
       # 64 alphanumerics, the rest fixed provider prefixes. No -i, and prefixes can't follow a base64

@@ -41,7 +41,7 @@ need_file <- function(p) { if (!file.exists(p)) stop("input not found: ", p); p 
 
 for (f in c("R/utils/supply_chain_stages.R", "R/dashboard/country/country_util.R", "R/dashboard/country/country_memo.R",
             "R/dashboard/country/country_memo_lint.R", "R/dashboard/country/country_brief.R", "R/dashboard/country/country_brief_doc.R",
-            "scripts/utils/country_memos.R", "scripts/utils/partnership_memo_print.R",
+            "scripts/utils/country_memos.R", "scripts/utils/git_stamp.R", "scripts/utils/partnership_memo_print.R",
             list.files(file.path(repo_root, "R", "partnerships"), pattern = "\\.R$", full.names = TRUE)))
   source(if (file.exists(f)) f else file.path(repo_root, f))
 suppressPackageStartupMessages(library(dplyr))

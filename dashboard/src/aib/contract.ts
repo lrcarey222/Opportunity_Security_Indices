@@ -314,6 +314,11 @@ export interface AibManifest {
   supplyConstraint?: string | null;
   /** scenarios (additive, 2026-10-19): the lazily loaded scenario files; read them with scenarioFilesOf() */
   files: { compacts: string; scenarios?: Partial<Record<AibScenarioFileId, string | null>> };
+  /**
+   * provenance (additive, 2026-11-21): the commit scripts/84 ran on, "-dirty" when R/, scripts/ or config/ had
+   * uncommitted changes; null when unknown, absent in a bundle written before it
+   */
+  git_commit?: string | null;
 }
 
 // ---- Document ----------------------------------------------------------------------------------------
@@ -467,7 +472,18 @@ export interface AibMeta {
   /** the diversification scenario (additive, 2026-10-19; absent in an older bundle) */
   diversify?: AibDiversifyMeta;
   tradeYear: number;
+  /**
+   * the trade period the views name in place of tradeYear, for a run on current dyads (scripts/39; scripts/84
+   * --trade-period, e.g. "2025–26"); absent: tradeYear. Read through tradeWhen().
+   */
+  tradePeriod?: string;
+  /** what the trade period is (scripts/84 --trade-note), for the About page */
+  tradeNote?: string;
   built: string;
+  /** provenance (additive, 2026-11-21): when scripts/84 wrote the document (the manifest's created) */
+  created?: string | null;
+  /** provenance (additive, 2026-11-21): the manifest's git_commit; null when unknown */
+  git_commit?: string | null;
   shocks: AibShock[];
   /**
    * the supply scenarios (["conservative", "reallocation"]) in an older bundle, or the scenario list
@@ -1554,7 +1570,7 @@ export function checkAibManifest(x: unknown): string[] {
   if (!isNum(x.version)) p.add('manifest.version: not a number');
   else if (Math.floor(x.version) > AIB_VERSION) p.add(`manifest: version ${x.version} needs a newer app`);
   for (const k of ['created', 'universe', 'headlineShock', 'headlineScenario']) p.str(x[k], `manifest.${k}`);
-  for (const k of ['demandScope', 'candidateUniverse', 'shockSemantics', 'supplyConstraint']) p.optStr(x[k], `manifest.${k}`);
+  for (const k of ['demandScope', 'candidateUniverse', 'shockSemantics', 'supplyConstraint', 'git_commit']) p.optStr(x[k], `manifest.${k}`);
   if (!isObj(x.files)) p.add('manifest.files: not an object');
   else {
     if (!isStr(x.files.compacts) || !AIB_DOC_FILE_RE.test(x.files.compacts)) p.add('manifest.files.compacts: not a compacts.<8 hex>.json file name');
@@ -1582,10 +1598,16 @@ function checkScenarioFiles(p: Problems, s: unknown): void {
 /** True when a manifest's version is newer than this app reads (the module asks for a reload). */
 export const needsNewerApp = (problems: readonly string[]): boolean => problems.some((q) => /needs a newer app/.test(q));
 
+/** The trade period the views name: meta.tradePeriod for a run on current dyads, else the trade year. */
+export const tradeWhen = (m?: Pick<AibMeta, 'tradeYear' | 'tradePeriod'> | null): string =>
+  m?.tradePeriod ?? String(m?.tradeYear ?? 2024);
+
 function checkMeta(p: Problems, m: unknown): void {
   if (!isObj(m)) return p.add('meta: not an object');
   for (const k of ['universe', 'headlineShock', 'headlineScenario', 'built']) p.str(m[k], `meta.${k}`);
   p.num(m.tradeYear, 'meta.tradeYear', { int: true });
+  for (const k of ['tradePeriod', 'tradeNote']) if (m[k] !== undefined) p.str(m[k], `meta.${k}`);
+  for (const k of ['created', 'git_commit']) p.optStr(m[k], `meta.${k}`);
   if (p.arr(m.shocks, 'meta.shocks')) {
     m.shocks.forEach((s, i) => {
       if (!isObj(s)) return p.add(`meta.shocks[${i}]: not an object`);

@@ -1,0 +1,48 @@
+"code","hs6","partial_hs6","category","sub_category","tech","stage","n_cells"
+"38180015","381800",TRUE,"Solar PV","Solar wafers","Semiconductors","Components",2
+"38180015","381800",TRUE,"Solar PV","Solar wafers","Solar","Components",2
+"38180019","381800",TRUE,"Solar PV","Solar wafers","Semiconductors","Components",2
+"38180019","381800",TRUE,"Solar PV","Solar wafers","Solar","Components",2
+"850231","850231",FALSE,"Wind","Wind generating set","Wind","Assembly",1
+"85030030","850300",TRUE,"Wind","Wind nacelles","Electric Vehicles","Components",2
+"85030030","850300",TRUE,"Wind","Wind nacelles","Wind","Components",2
+"850421","850421",FALSE,"Grid","Transformers","Electric Grid","Assembly",3
+"850421","850421",FALSE,"Grid","Transformers","Solar","Assembly",3
+"850421","850421",FALSE,"Grid","Transformers","Wind","Assembly",3
+"850422","850422",FALSE,"Grid","Transformers","Electric Grid","Assembly",3
+"850422","850422",FALSE,"Grid","Transformers","Solar","Assembly",3
+"850422","850422",FALSE,"Grid","Transformers","Wind","Assembly",3
+"850423","850423",FALSE,"Grid","Transformers","Electric Grid","Assembly",3
+"850423","850423",FALSE,"Grid","Transformers","Solar","Assembly",3
+"850423","850423",FALSE,"Grid","Transformers","Wind","Assembly",3
+"85044030","850440",TRUE,"Grid","Inverters","Electric Grid","Assembly",3
+"85044030","850440",TRUE,"Grid","Inverters","Electric Vehicles","Assembly",3
+"85044030","850440",TRUE,"Grid","Inverters","Solar","Assembly",3
+"850760","850760",FALSE,"Batteries","Lithium ion batteries","Batteries","Assembly",2
+"850760","850760",FALSE,"Batteries","Lithium ion batteries","Electric Vehicles","Components",2
+"850780","850780",FALSE,"Batteries","Other batteries","Batteries","Assembly",1
+"850790","850790",FALSE,"Batteries","Other batteries","Batteries","Components",2
+"850790","850790",FALSE,"Batteries","Other batteries","Electric Vehicles","Components",2
+"85414200","854142",FALSE,"Solar PV","Solar cells","Solar","Components",1
+"85414300","854143",FALSE,"Solar PV","Solar panels","Solar","Assembly",1
+"854460","854460",FALSE,"Grid","Cables","Electric Grid","Assembly",4
+"854460","854460",FALSE,"Grid","Cables","Electric Vehicles","Assembly",4
+"854460","854460",FALSE,"Grid","Cables","Solar","Assembly",4
+"854460","854460",FALSE,"Grid","Cables","Wind","Assembly",4
+"870124","870124",FALSE,"EVs","Tractors BEVs","Electric Vehicles","Assembly",1
+"870240","870240",FALSE,"EVs","Buses BEVs","Electric Vehicles","Assembly",1
+"870360","870360",FALSE,"EVs","Cars PHEVs","Electric Vehicles","Assembly",1
+"870370","870370",FALSE,"EVs","Cars PHEVs","Electric Vehicles","Assembly",1
+"870380","870380",FALSE,"EVs","Cars BEVs","Electric Vehicles","Assembly",1
+"870460","870460",FALSE,"EVs","Trucks BEVs","Electric Vehicles","Assembly",1
+"871160","871160",FALSE,"EVs","2 wheelers BEVs","Electric Vehicles","Assembly",1
+"850710","850710",FALSE,"Batteries","Other batteries",NA,NA,0
+"850720","850720",FALSE,"Batteries","Other batteries",NA,NA,0
+"850730","850730",FALSE,"Batteries","Other batteries",NA,NA,0
+"850750","850750",FALSE,"Batteries","Other batteries",NA,NA,0
+"841510","841510",FALSE,"Heating and cooling systems","AC units",NA,NA,0
+"841582","841582",FALSE,"Heating and cooling systems","AC units",NA,NA,0
+"841583","841583",FALSE,"Heating and cooling systems","AC units",NA,NA,0
+"841581","841581",FALSE,"Heating and cooling systems","Heat pumps",NA,NA,0
+"841861","841861",FALSE,"Heating and cooling systems","Heat pumps",NA,NA,0
+"85414020","854140",TRUE,"Solar PV","Solar panels",NA,NA,0

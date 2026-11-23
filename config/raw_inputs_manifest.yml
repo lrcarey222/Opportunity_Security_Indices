@@ -96,6 +96,56 @@ inputs:
   required_by:
   - scripts/88_export_country_data.R
   - scripts/99_pull_comtrade_monthly_core.R
+- id: comtrade_monthly_dyads
+  path: comtrade_monthly_dyads.csv.gz
+  source_type: api
+  source_name: UN Comtrade (monthly HS6 basket imports and exports by partner, every monthly reporter)
+  url: https://comtradeplus.un.org/
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: each reporter's latest 12 calendar months in Comtrade's monthly availability listing at pull
+    time (first pull 2026-11-16 UTC; newest month 2026-09; 92 reporters, windows end 2025-12 to 2026-09;
+    3.86M rows)
+  staged_from: pipeline
+  notes: Written by scripts/37_pull_comtrade_monthly_dyads.R (chunked, resumable; requires
+    COMTRADE_API_KEY; 76 calls). Columns reporter_iso, partner_iso, flow_direction, period (YYYYMM),
+    cmd_code, primary_value. Reporters whose latest month trails the newest by more than 9 months are
+    left out - China (no monthly data since 2024-12), Ukraine, Kuwait and others - as are Vietnam, UAE,
+    Taiwan, Austria and Russia, which publish none. Read by scripts/38_build_current_import_exposure.R.
+  required_by:
+  - scripts/37_pull_comtrade_monthly_dyads.R
+  - scripts/38_build_current_import_exposure.R
+- id: comtrade_monthly_dyads_dictionary_extra
+  path: comtrade_monthly_dyads_dictionary_extra.csv.gz
+  source_type: api
+  source_name: UN Comtrade (monthly HS6 imports and exports by partner for the AIB dictionary's core codes
+    outside the OSI basket)
+  url: https://comtradeplus.un.org/
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: first pull 2026-11-17 UTC on the basket pull's reporter windows (92 reporters); 68 codes
+  staged_from: pipeline
+  notes: Written by scripts/37_pull_comtrade_monthly_dyads.R with COMTRADE_MD_CODE_SET=dictionary_extra (27
+    calls). Same layout as comtrade_monthly_dyads.csv.gz. Read by scripts/39_build_current_dyads.R, which sums
+    it to the same 12-month windows so the AIB's copper, silver, rail, cooling and other dictionary-only codes
+    are current rather than carried from 2024.
+  required_by:
+  - scripts/37_pull_comtrade_monthly_dyads.R
+  - scripts/39_build_current_dyads.R
+- id: comtrade_monthly_dyads_windows
+  path: comtrade_monthly_dyads_windows.csv
+  source_type: generated
+  source_name: Per-reporter windows of the monthly dyad pull (reporter_iso, window_start, window_end,
+    months_listed)
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: written with comtrade_monthly_dyads.csv.gz
+  staged_from: pipeline
+  notes: Written by scripts/37_pull_comtrade_monthly_dyads.R; scripts/38 reads window_start for the
+    current exposure rows.
+  required_by:
+  - scripts/37_pull_comtrade_monthly_dyads.R
+  - scripts/38_build_current_import_exposure.R
 - id: comtrade_total_export
   path: comtrade_total_export.csv
   source_type: api
@@ -1350,3 +1400,196 @@ inputs:
     data/raw so far; copy data/raw/ember/ to the SharePoint raw folder.
   required_by:
   - scripts/95_build_deployment_need.R
+- id: gsp_partnership_documents
+  path: gsp_partnership_documents.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Global Strategic Partnership Dataset, partnership documents with full text
+    (Chang-Liao and Fu 2025, Harvard Dataverse)
+  url: https://doi.org/10.7910/DVN/UJD7LW
+  cadence: irregular
+  owner: lcarey@rmi.org
+  vintage: Dataverse V1.0 (2025-09-23), db_world_Dataverse_20250923.csv, 1,949 rows (1,948
+    after the one exact duplicate), documents dated 1992-2023
+  licence: CC0-1.0
+  staged_from: sharepoint
+  notes: Fetched from the Harvard Dataverse API (public, no key) by scripts/fetchers/gsp_partnerships.R
+    (fetcher gsp_partnership_documents), which takes the newest db_world*.csv of the latest
+    released version and writes it in a fixed schema (the 17 upstream columns, fulltext
+    included, plus row_key = doc_id + MD5 of the source URL, source_file, dataset_version,
+    fetched_on). Rows are directed documents (country1 published, country2 is the partner);
+    values are kept as published ("Kosovo", "GE-AB", blank dates, one invalid day) and
+    normalised by R/agreements/adapter_gsp.R. The only exact duplicate (RUSMAR2016315) is
+    dropped. Two fulltexts stop at 32,767 characters (spreadsheet cell limit upstream).
+    dataverse.harvard.edu sometimes fails TLS with schannel SEC_E_WRONG_PRINCIPAL; the fetch
+    retries. Nothing needs staging - staged_from is sharepoint so that scripts/05 runs the
+    fetcher. Standalone - Rscript scripts/fetchers/gsp_partnerships.R [--dest=<path>].
+  required_by:
+  - scripts/41_ingest_agreements.R
+- id: desta_list_of_treaties
+  path: desta_list_of_treaties.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), list of treaties (Dür, Baccini and Elsig)
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 1,410 entries
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/desta.R (fetcher desta_list_of_treaties), which reads the
+    downloads page, takes the newest version of each linked file (falling back to the v2.3 URLs),
+    converts Latin-1 to UTF-8 and adds source_version, source_release and fetched_on. One row
+    per entry (base treaty, accession, withdrawal, protocol, consolidated, negotiation) with
+    parties c1..c91 and membership roles mc1..mc91; R/agreements/adapter_desta.R builds the
+    agreement records and their parties from it. Only derived facts are redistributed.
+  required_by:
+  - scripts/41_ingest_agreements.R
+- id: desta_dyads
+  path: desta_dyads.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), dyadic list of treaties
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 20,569 dyads
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  retain: true
+  notes: Reference only - fetched by scripts/fetchers/desta.R (fetcher desta_dyads) for checks by
+    hand and not read by the pipeline. The dyadic version omits dyads by membership role, so
+    parties are built from desta_list_of_treaties instead; hence retain.
+  required_by:
+  - scripts/41_ingest_agreements.R
+- id: desta_withdrawals
+  path: desta_withdrawals.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), dyadic withdrawals
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 1,650 withdrawal dyads (72 withdrawal entries)
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/desta.R (fetcher desta_withdrawals); iso1 is the
+    withdrawing country. It is the fallback - R/agreements/adapter_desta.R reads withdrawals from
+    the list file (role 1) first, removes the withdrawing country from the agreement and its
+    accession records, and makes a record with fewer than two remaining parties inactive.
+  required_by:
+  - scripts/41_ingest_agreements.R
+- id: desta_provisions
+  path: desta_provisions.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), content coding of provisions
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 781 coded entries
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/desta.R (fetcher desta_provisions; upstream
+    desta_version_*.csv). About 500 provision variables per coded entry; the adapter turns the
+    provisions it maps into sector and instrument codes with basis source_coded, taking the
+    newest consolidated entry of an agreement where one exists.
+  required_by:
+  - scripts/41_ingest_agreements.R
+- id: desta_indices
+  path: desta_indices.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: Design of Trade Agreements (DESTA), depth, flexibility and enforcement indices
+  url: https://www.designoftradeagreements.org/downloads/
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: DESTA v2.3 (September 2025), 692 entries
+  licence: none published; citation requested (Dür, Baccini & Elsig 2014)
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/desta.R (fetcher desta_indices). depth_index (0-7) and its
+    seven components, depth_rasch, flexibility and enforcement; the adapter takes depth_index
+    from here and recomputes it from the provisions where an entry has no index row.
+  required_by:
+  - scripts/41_ingest_agreements.R
+- id: iisd_trade_climate_tracker
+  path: iisd_trade_climate_tracker.csv
+  fetch_policy: never
+  source_type: manual
+  source_name: IISD Trade & Climate Tracker (export shared by IISD)
+  url: https://www.iisd.org/trade-climate-tracker/
+  cadence: ad-hoc
+  owner: lcarey@rmi.org
+  licence: All rights reserved (IISD); staged only with IISD permission
+  staged_from: sharepoint
+  optional: yes
+  notes: IISD's tracker site sits behind a bot challenge and its content is all rights
+    reserved, so it is never fetched. Ask IISD (contact through the tracker page) for a CSV
+    export for research use, record the date and
+    the permission here (vintage), and save it under this name. One row per agreement signed
+    by two or more governments (January 2025 - June 2026; methodology of 1 July 2026) with
+    title, parties, signature date, agreement type, text availability and one coded-summary
+    column per subtopic (or a long-form topics column). Column names are matched loosely
+    (IISD_COLUMN_ALIASES in R/agreements/adapter_iisd.R); the expected schema is in
+    data/reference/partnership_agreements/README.md, section 2. Optional - the layer builds
+    without it.
+  required_by:
+  - scripts/41_ingest_agreements.R
+- id: uspto_y02_patents
+  path: uspto_y02_patents.csv
+  fetch_policy: prefer
+  source_type: api
+  source_name: USPTO Open Data Portal, granted US utility patents by Y02/Y04S technology and inventor
+    country
+  url: https://api.uspto.gov/api/v1/patent/applications/search
+  cadence: annual
+  owner: lcarey@rmi.org
+  licence: US government public data
+  staged_from: sharepoint
+  notes: Fetched by scripts/fetchers/uspto_patents.R (needs a free ODP API key in USPTO_KEY). Grant
+    years 2016-2025, technologies and CPC groups in config/patent_tech_cpc.yml; whole and fractional
+    counts by inventor country, WLD rows are the number of grants and tech _ALL rows all utility grants.
+    Prototype input for the Innovation category (scripts/29_build_innovation_position.R), 2026-11-17.
+  required_by:
+  - scripts/29_build_innovation_position.R
+- id: iea_rdd_public
+  path: iea_rdd/RDDPUBLIC.zip
+  source_type: manual
+  source_name: IEA Energy Technology RD&D Budgets, public sector (RDDPUBLIC)
+  url: https://www.iea.org/data-and-statistics/data-product/energy-technology-rdd-budgets
+  cadence: annual
+  owner: lcarey@rmi.org
+  vintage: October 2026 edition (RDDPUBLIC.csv dated 2026-10-20), downloaded 2026-11-17
+  licence: IEA terms; check before publishing derived figures
+  staged_from: sharepoint
+  notes: Downloaded after signing in on the IEA product page (no public API). One CSV in the zip,
+    SDMX-style long format (COUNTRY, RDD_SECTOR, RDD_TYPE, RDD_TECH, UNIT, TIME_PERIOD, OBS_VALUE).
+    scripts/29_build_innovation_position.R reads public sector RD&D in USD at constant prices plus
+    the units-of-GDP series; technology codes in config/iea_rdd_tech_map.yml. No US data after 2015,
+    no China or India. Prototype input for the Innovation category, 2026-11-17.
+  required_by:
+  - scripts/29_build_innovation_position.R
+- id: ember_china_cleantech_exports
+  path: ember/clean_tech_exports_full_release_monthly_lower.csv
+  source_type: manual
+  source_name: Ember, China Cleantech Export Data (monthly China customs exports by destination and
+    commodity code)
+  url: https://files.ember-energy.org/public-downloads/customs/outputs/clean_tech_exports_full_release_monthly_lower.csv
+  cadence: monthly
+  owner: lcarey@rmi.org
+  vintage: retrieved 2026-11-16 (server Last-Modified 2026-09-30 14:04 GMT); 2018-01 to 2026-08, 237
+    destinations and 13 regions, 31 codes; SHA-256
+    402b973fa0e88662e2ff50192f59bc4dc0943b662a421196d5b551dca329f7dd
+  licence: CC BY 4.0 (https://ember-energy.org/data/china-cleantech-export-data/); cite Ember wherever the
+    figures are shown
+  staged_from: sharepoint
+  notes: Direct download linked from https://ember-energy.org/data/china-cleantech-export-data/ (no form or
+    account); scripts/36 downloads it when missing. Staged only in data/raw so far; copy it to the
+    SharePoint raw folder. One row per area x month x commodity code, Amount (USD)
+    and a 12-month rolling sum. Codes are full HS6 headings or Chinese 8-digit sub-headings (PV inverters
+    85044030, wind nacelles 85030030, wafers 38180015/19), which cover only part of their HS6 heading.
+    Categories Solar PV, Batteries, EVs, Wind, Grid, Heating and cooling (AC units and heat pumps sit
+    outside the basket). Origin is China only.
+  required_by:
+  - scripts/36_build_ember_china_exports.R
+  - scripts/38_build_current_import_exposure.R
