@@ -18,9 +18,11 @@
 #            the family rather than scoring in it, so a candidate whose tests all fail has no option value.
 #            siv_option_n counts the tests observed.
 # siv_score is the weighted mean of the families (config weights; renormalised only where the market prize is
-# missing and require_market is false); strategic_industrial_value is its mid-rank percentile across the
-# assessed producing-stage rows (as the market prize is a percentile across the producing nodes), so the prize
-# threshold keeps its selectivity. A market-only node (neither commons nor option reaches the gate, whether
+# missing and require_market is false). strategic_industrial_value puts it on the prize's 0-1 scale: on the
+# fixed score scale (scale "score", the default in config since 2026-11-17) by sp_siv_score_scale(), high
+# exactly when siv_score reaches score_threshold; on scale "percentile" (the rule until 2026-11-17) as its
+# mid-rank percentile across the assessed producing-stage rows. The percentile made the prize zero-sum: node
+# scores tie across countries, so raising one node's score pushed whole other nodes across the threshold. A market-only node (neither commons nor option reaches the gate, whether
 # their attributes are observed or not) is capped just below the prize threshold (siv_cap "market_only"):
 # market size alone never makes a prize high, and missing evidence never lifts it.
 #
@@ -80,9 +82,13 @@ sp_siv_cfg <- function(cfg = list()) {
   if (!measure %in% SP_PRIZE_MEASURES) {
     stop("sp_siv_cfg(): strategic_value$prize_measure must be one of ", paste(SP_PRIZE_MEASURES, collapse = ", "), call. = FALSE)
   }
+  scale <- s$scale %||% "percentile"
+  if (!scale %in% c("percentile", "score")) stop("sp_siv_cfg(): strategic_value$scale must be percentile or score", call. = FALSE)
+  st <- as.numeric(s$score_threshold %||% 0.3658)
+  if (is.na(st) || st <= 0 || st >= 1) stop("sp_siv_cfg(): strategic_value$score_threshold must lie strictly between 0 and 1", call. = FALSE)
   list(weights = w, gate = s$gate %||% 0.5, cap_margin = s$cap_margin %||% 0.01, prize_measure = measure,
        market_column = s$market_column %||% "industrial_opportunity", require_market = !isFALSE(s$require_market),
-       prize_threshold = cfg$prize_threshold %||% 0.6)
+       prize_threshold = cfg$prize_threshold %||% 0.6, scale = scale, score_threshold = st)
 }
 
 # decision_framework$large_yard with its defaults.
@@ -194,6 +200,18 @@ sp_leap_credible <- function(a) {
   ifelse(lo, TRUE, ifelse(!hi, FALSE, NA))
 }
 
+# The fixed score scale (strategic_value$scale "score"): siv_score mapped onto the prize's 0-1 scale by a
+# monotone piecewise-linear map with 0 -> 0, score_threshold -> prize_threshold and 1 -> 1, so a node is
+# high exactly when its score reaches score_threshold, and the prize threshold, its borderline band, the
+# market-only cap and the threshold sensitivities all keep working on the same 0-1 scale. Unlike the percentile,
+# no row's value depends on any other row's score, so an edit to one node never re-ranks the others.
+sp_siv_score_scale <- function(score, score_threshold, prize_threshold) {
+  t <- score_threshold
+  p <- prize_threshold
+  ifelse(is.na(score), NA_real_,
+         ifelse(score <= t, score / t * p, p + (pmin(score, 1) - t) / (1 - t) * (1 - p)))
+}
+
 # Mid-rank position of each value among a reference set: (below + half of equal) / n.
 sp_siv_ref_pct <- function(v, ref) {
   ref <- ref[!is.na(ref)]
@@ -204,7 +222,8 @@ sp_siv_ref_pct <- function(v, ref) {
 # ---- Strategic industrial value ---------------------------------------------------------------------------
 # tbl: cells or layers (iso3, tech, supply_chain, optional layer_id, the market column); attrs: as for
 # sp_node_attrs(); cfg: the decision_framework list; ref: optional reference siv_score values (the cells')
-# to place these rows among, so layers share the cells' scale; NULL ranks the rows among themselves.
+# to place these rows among, so layers share the cells' scale; NULL ranks the rows among themselves. ref is
+# read only on the percentile scale (the fixed score scale is shared by construction).
 # Adds SP_SIV_COLUMNS. Deployment rows get none (Deployment is decided on deployment_need).
 sp_strategic_value <- function(tbl, attrs = NULL, cfg = list(), ref = NULL) {
   sc <- sp_siv_cfg(cfg)
@@ -220,7 +239,9 @@ sp_strategic_value <- function(tbl, attrs = NULL, cfg = list(), ref = NULL) {
   den <- rowSums(w)
   score <- ifelse(den > 0, rowSums(w * ifelse(is.na(m), 0, m)) / den, NA_real_)
   if (sc$require_market) score[is.na(m[, "market"])] <- NA_real_
-  pct <- if (is.null(ref)) sp_midrank_pct(score) else sp_siv_ref_pct(score, ref)
+  pct <- if (identical(sc$scale, "score")) {
+    sp_siv_score_scale(score, sc$score_threshold, sc$prize_threshold)
+  } else if (is.null(ref)) sp_midrank_pct(score) else sp_siv_ref_pct(score, ref)
   # market only: no non-market family reaches the gate. An unobserved family counts 0 (strict reading), so
   # less evidence never lifts the cap.
   market_only <- !is.na(score) & !(dplyr::coalesce(m[, "commons"] >= sc$gate, FALSE) | dplyr::coalesce(m[, "option"] >= sc$gate, FALSE))

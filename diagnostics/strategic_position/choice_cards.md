@@ -5,36 +5,37 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 ## Japan
 
-4 Secure . 2 Preserve . 12 Catch Up . 3 Partner . 5 Accelerate . 22 Watch (18 not assessed)
+4 Secure . 6 Preserve . 8 Catch Up . 4 Partner . 5 Accelerate . 21 Watch (18 not assessed)
 
 **Secure**
 
-- oil production (Oil, Extraction): An acute vulnerability (systemic resilience): Secure, whatever the prize. [rationale systemic resilience; delivery diversified global; partner USA; AIB gap; policy under prioritized; confidence high]
+- oil production (Oil, Extraction): An acute vulnerability (systemic resilience): Secure, whatever the prize. [rationale systemic resilience; delivery diversified global; partner CAN; AIB gap; policy under prioritized; confidence high]
 - coal mining (Coal, Extraction): An acute vulnerability (systemic resilience): Secure, whatever the prize. [rationale systemic resilience; delivery allied; partner USA; AIB covered; policy under prioritized; confidence moderate]
 - gas production (Gas, Extraction): An acute vulnerability (systemic resilience): Secure, whatever the prize. [rationale systemic resilience; delivery allied; partner NOR; AIB covered; policy under prioritized; confidence moderate]
 
 **Compete . Preserve**
 
-- reactors and steam generators (Nuclear, Assembly): a high strategic industrial value (0.96; market 0.49, commons 1.00, option 0.38) and a top-quarter position among contenders (0.79): Preserve and extend it. [delivery domestic; policy under prioritized; confidence low]
-- coal-plant components (Coal, Components): High supply-chain need (0.71), a low strategic industrial value (0.58; market 0.43, commons 0.67, option 0.00), but a top-quarter position (0.95 among contenders): Preserve, flagged for review rather than handed to partners. [delivery domestic; policy aligned; confidence low]
+- grid components (Electric Grid, Components): a high strategic industrial value (0.64; market 0.46, commons 0.83, option 0.00) and a top-quarter position among contenders (0.84): Preserve and extend it. [delivery domestic; policy aligned; confidence moderate]
+- battery cells and packs (Batteries, Assembly): a high strategic industrial value (0.86; market 0.85, commons 1.00, option 0.50) and a top-quarter position among contenders (0.76): Preserve and extend it. [delivery domestic; policy aligned; confidence moderate]
+- reactors and steam generators (Nuclear, Assembly): a high strategic industrial value (0.76; market 0.49, commons 1.00, option 0.38) and a top-quarter position among contenders (0.83): Preserve and extend it. [delivery domestic; policy under prioritized; confidence moderate]
 
 **Compete . Catch Up**
 
-- uranium conversion and enrichment (Nuclear, Refining): a high strategic industrial value (0.80; market 0.51, commons 0.83, option 0.00), a position below the top quarter (0.20) and a credible pathway (capability anchor: adjacent stage share; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery mixed; policy mixed; confidence high]
-- battery materials refining (Batteries, Refining): a high strategic industrial value (0.78; market 0.66, commons 0.67, option 0.00), a position below the top quarter (0.19) and a credible pathway (capability anchor: direct supply share, direct export share, adjacent stage share; corroborated by feasibility, learning): Catch Up. [delivery domestic; policy aligned; confidence high]
-- wind turbines (Wind, Assembly): a high strategic industrial value (0.88; market 0.66, commons 0.83, option 0.00), a position below the top quarter (0.16) and a credible pathway (capability anchor: direct supply share, direct export share, adjacent stage share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy under prioritized; confidence high]
+- uranium conversion and enrichment (Nuclear, Refining): a high strategic industrial value (0.65; market 0.51, commons 0.83, option 0.00), a position below the top quarter (0.20) and a credible pathway (capability anchor: adjacent stage share; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery mixed; policy mixed; confidence high]
+- battery materials refining (Batteries, Refining): a high strategic industrial value (0.65; market 0.66, commons 0.67, option 0.00), a position below the top quarter (0.19) and a credible pathway (capability anchor: direct supply share, direct export share, adjacent stage share; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery domestic; policy aligned; confidence moderate]
+- wind turbines (Wind, Assembly): a high strategic industrial value (0.68; market 0.66, commons 0.83, option 0.00), a position below the top quarter (0.44) and a credible pathway (capability anchor: direct supply share, direct export share, adjacent stage share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy under prioritized; confidence high]
 
 **Compete . Partner**
 
-- battery mineral mining (Batteries, Extraction): High supply-chain need (0.98) and a strategic industrial value held below the threshold (0.57: the market prize alone; market 0.73, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
-- EV mineral mining (Electric Vehicles, Extraction): High supply-chain need (0.98) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.76, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
-- rare-earth and wind materials refining (Wind, Refining): High supply-chain need (0.69) and a low strategic industrial value (0.52; market 0.51, commons 0.50, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner DEU; AIB gap; policy aligned; confidence moderate]
+- battery mineral mining (Batteries, Extraction): High supply-chain need (0.99) and a strategic industrial value held below the threshold (0.58: the market prize alone; market 0.73, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
+- EV mineral mining (Electric Vehicles, Extraction): High supply-chain need (0.99) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.76, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
+- coal-plant components (Coal, Components): High supply-chain need (0.71) and a low strategic industrial value (0.60; market 0.43, commons 0.67, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery allied; partner USA; AIB covered; policy aligned; confidence low]
 
 **Deploy . Accelerate**
 
-- nuclear power (Nuclear, Deployment): Deployment need 0.78 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
-- gas networks and use (Gas, Deployment): Deployment need 0.63 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence moderate]
-- solar power (Solar, Deployment): Deployment need 0.66 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy deployment gap; confidence high]
+- nuclear power (Nuclear, Deployment): Deployment need 0.78 is at or above 0.60: the energy system needs more of it, mainly for energy security. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- gas networks and use (Gas, Deployment): Deployment need 0.63 is at or above 0.60: the energy system needs more of it, though a climate-aligned pathway deploys substantially less of it by 2035. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence moderate]
+- solar power (Solar, Deployment): Deployment need 0.66 is at or above 0.60: the energy system needs more of it, mainly for energy security. This says nothing about where the equipment is made. [delivery diversified global; policy deployment gap; confidence high]
 
 **Deploy . Watch**
 
@@ -44,7 +45,7 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 ## United States
 
-1 Secure . 8 Preserve . 8 Catch Up . 4 Partner . 2 Accelerate . 25 Watch (18 not assessed)
+1 Secure . 14 Preserve . 3 Catch Up . 4 Partner . 2 Accelerate . 24 Watch (18 not assessed)
 
 **Secure**
 
@@ -52,26 +53,26 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 **Compete . Preserve**
 
-- EV and charger manufacturing (Electric Vehicles, Assembly): a high strategic industrial value (0.95; market 0.74, commons 1.00, option 0.00) and a top-quarter position among contenders (0.95): Preserve and extend it. [delivery domestic; policy aligned; confidence high]
-- battery components (Batteries, Components): a high strategic industrial value (0.81; market 0.89, commons 0.50, option 0.00) and a top-quarter position among contenders (0.92): Preserve and extend it. [delivery domestic; policy mixed; confidence high]
-- PV modules and inverters (Solar, Assembly): a high strategic industrial value (0.81; market 0.85, commons 0.50, option 0.00) and a top-quarter position among contenders (0.93): Preserve and extend it. [delivery domestic; policy mixed; confidence moderate]
+- EV and charger manufacturing (Electric Vehicles, Assembly): a high strategic industrial value (0.74; market 0.74, commons 1.00, option 0.00) and a top-quarter position among contenders (0.95): Preserve and extend it. [delivery domestic; policy aligned; confidence high]
+- battery components (Batteries, Components): a high strategic industrial value (0.66; market 0.89, commons 0.50, option 0.00) and a top-quarter position among contenders (0.92): Preserve and extend it. [delivery domestic; policy mixed; confidence high]
+- gas-turbine and drilling components (Gas, Components): a high strategic industrial value (0.63; market 0.56, commons 0.67, option 0.00) and a top-quarter position among contenders (0.88): Preserve and extend it. [delivery domestic; policy aligned; confidence moderate]
 
 **Compete . Catch Up**
 
-- reactors and steam generators (Nuclear, Assembly): a high strategic industrial value (0.96; market 0.44, commons 1.00, option 0.38), a position below the top quarter (0.17) and a credible pathway (capability anchor: direct supply share, direct export share, adjacent stage share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy aligned; confidence high]
-- battery materials refining (Batteries, Refining): a high strategic industrial value (0.83; market 0.78, commons 0.67, option 0.00), a position below the top quarter (0.31) and a credible pathway (capability anchor: direct supply share, direct export share, operating capacity, committed pipeline, adjacent stage share; corroborated by feasibility, adjacent stage relative, learning, announced pipeline): Catch Up. [delivery domestic; policy mixed; confidence high]
-- uranium conversion and enrichment (Nuclear, Refining): a high strategic industrial value (0.76; market 0.46, commons 0.83, option 0.00), a position below the top quarter (0.50) and a credible pathway (capability anchor: direct export share, adjacent stage share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy aligned; confidence high]
+- battery materials refining (Batteries, Refining): a high strategic industrial value (0.67; market 0.78, commons 0.67, option 0.00), a position below the top quarter (0.31) and a credible pathway (capability anchor: direct supply share, direct export share, operating capacity, committed pipeline, adjacent stage share; corroborated by feasibility, adjacent stage relative, learning, announced pipeline): Catch Up. [delivery domestic; policy mixed; confidence high]
+- uranium conversion and enrichment (Nuclear, Refining): a high strategic industrial value (0.64; market 0.46, commons 0.83, option 0.00), a position below the top quarter (0.50) and a credible pathway (capability anchor: direct export share, adjacent stage share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy aligned; confidence moderate]
+- battery recycling (Batteries, Recovery): a high strategic industrial value (0.67; market 0.94, commons 0.50, option 0.00), Competitive Position not measured and a credible pathway (capability anchor: direct export share; corroborated by feasibility, learning): Catch Up. [delivery domestic; policy under prioritized; confidence moderate]
 
 **Compete . Partner**
 
 - battery mineral mining (Batteries, Extraction): High supply-chain need (0.81) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.83, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
-- waste-oil recovery (Oil, Recovery): High supply-chain need (0.95) and a strategic industrial value held below the threshold (0.17: the market prize alone; market 0.56, commons 0.00, option 0.00), with Competitive Position not measured: a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; AIB gap; policy aligned; confidence low]
-- rare-earth and wind materials refining (Wind, Refining): High supply-chain need (0.96) and a low strategic industrial value (0.58; market 0.58, commons 0.50, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner DEU; AIB gap; policy misaligned; confidence moderate]
+- rare-earth and wind materials refining (Wind, Refining): High supply-chain need (0.94) and a low strategic industrial value (0.59; market 0.58, commons 0.50, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner DEU; AIB gap; policy misaligned; confidence moderate]
+- waste-oil recovery (Oil, Recovery): High supply-chain need (0.89) and a strategic industrial value held below the threshold (0.31: the market prize alone; market 0.56, commons 0.00, option 0.00), with Competitive Position not measured: a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; AIB gap; policy aligned; confidence low]
 
 **Deploy . Accelerate**
 
-- gas networks and use (Gas, Deployment): Deployment need 0.62 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence moderate]
-- battery storage (Batteries, Deployment): Deployment need 0.64 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence moderate]
+- gas networks and use (Gas, Deployment): Deployment need 0.62 is at or above 0.60: the energy system needs more of it, mainly for grid integration, though a climate-aligned pathway deploys substantially less of it by 2035. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence moderate]
+- battery storage (Batteries, Deployment): Deployment need 0.64 is at or above 0.60: the energy system needs more of it, mainly for grid integration. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence moderate]
 
 **Deploy . Watch**
 
@@ -81,47 +82,47 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 ## Germany
 
-4 Secure . 6 Preserve . 10 Catch Up . 3 Partner . 4 Accelerate . 21 Watch (18 not assessed)
+4 Secure . 7 Preserve . 10 Catch Up . 3 Partner . 4 Accelerate . 20 Watch (18 not assessed)
 
 **Secure**
 
 - oil production (Oil, Extraction): An acute vulnerability (systemic resilience): Secure, whatever the prize. [rationale systemic resilience; delivery diversified global; partner CAN; AIB gap; policy under prioritized; confidence high]
-- gas production (Gas, Extraction): An acute vulnerability (systemic resilience): Secure, whatever the prize. [rationale systemic resilience; delivery allied; partner NOR; AIB covered; policy under prioritized; confidence moderate]
 - rare-earth and battery-metal refining (Electric Vehicles, Refining): An acute vulnerability (coercive chokepoint): Secure, whatever the prize. [rationale coercive chokepoint; delivery mixed; partner JPN; AIB covered; policy under prioritized; confidence moderate]
+- gas production (Gas, Extraction): An acute vulnerability (systemic resilience): Secure, whatever the prize. [rationale systemic resilience; delivery allied; partner USA; AIB covered; policy under prioritized; confidence moderate]
 
 **Compete . Preserve**
 
-- reactors and steam generators (Nuclear, Assembly): a high strategic industrial value (0.94; market 0.36, commons 1.00, option 0.38) and a top-quarter position among contenders (0.90): Preserve and extend it. [delivery domestic; policy mixed; confidence high]
-- EV and charger manufacturing (Electric Vehicles, Assembly): a high strategic industrial value (0.96; market 0.80, commons 1.00, option 0.00) and a top-quarter position among contenders (0.82): Preserve and extend it. [delivery domestic; policy under prioritized; confidence high]
-- wind turbines (Wind, Assembly): a high strategic industrial value (0.91; market 0.81, commons 0.83, option 0.00) and a top-quarter position among contenders (0.84): Preserve and extend it. [delivery domestic; policy mixed; confidence high]
+- EV and charger manufacturing (Electric Vehicles, Assembly): a high strategic industrial value (0.75; market 0.80, commons 1.00, option 0.00) and a top-quarter position among contenders (0.92): Preserve and extend it. [delivery domestic; policy under prioritized; confidence high]
+- wind turbines (Wind, Assembly): a high strategic industrial value (0.71; market 0.81, commons 0.83, option 0.00) and a top-quarter position among contenders (0.84): Preserve and extend it. [delivery domestic; policy mixed; confidence high]
+- transformers, switchgear and cables (Electric Grid, Assembly): a high strategic industrial value (0.61; market 0.46, commons 0.67, option 0.00) and a top-quarter position among contenders (0.95): Preserve and extend it. [delivery domestic; policy aligned; confidence moderate]
 
 **Compete . Catch Up**
 
-- battery materials refining (Batteries, Refining): a high strategic industrial value (0.82; market 0.76, commons 0.67, option 0.00), a position below the top quarter (0.06) and a credible pathway (capability anchor: direct supply share, direct export share, operating capacity, committed pipeline; corroborated by feasibility, learning): Catch Up. [delivery domestic; policy aligned; confidence high]
-- rare-earth and wind materials refining (Wind, Refining): a high strategic industrial value (0.64; market 0.66, commons 0.50, option 0.00), a position below the top quarter (0.00) and a credible pathway (capability anchor: direct export share, adjacent stage share; corroborated by feasibility, learning): Catch Up. [delivery domestic; policy under prioritized; confidence moderate]
-- battery cells and packs (Batteries, Assembly): a high strategic industrial value (1.00; market 0.86, commons 1.00, option 0.50), a position below the top quarter (0.50) and a credible pathway (capability anchor: direct supply share, direct export share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy aligned; confidence high]
+- battery materials refining (Batteries, Refining): a high strategic industrial value (0.67; market 0.76, commons 0.67, option 0.00), a position below the top quarter (0.06) and a credible pathway (capability anchor: direct supply share, direct export share, operating capacity, committed pipeline; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery domestic; policy aligned; confidence high]
+- gas turbines and LNG plant (Gas, Assembly): a high strategic industrial value (0.63; market 0.59, commons 0.67, option 0.00), a position below the top quarter (0.35) and a credible pathway (capability anchor: direct supply share, direct export share, adjacent stage share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy aligned; confidence moderate]
+- rare-earth and wind materials refining (Wind, Refining): a high strategic industrial value (0.61; market 0.66, commons 0.50, option 0.00), a position below the top quarter (0.00) and a credible pathway (capability anchor: direct export share, adjacent stage share; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery domestic; policy under prioritized; confidence moderate]
 
 **Compete . Partner**
 
-- EV mineral mining (Electric Vehicles, Extraction): High supply-chain need (0.86) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.86, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
-- battery mineral mining (Batteries, Extraction): High supply-chain need (0.85) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.80, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
-- waste-oil recovery (Oil, Recovery): High supply-chain need (0.88) and a strategic industrial value held below the threshold (0.02: the market prize alone; market 0.14, commons 0.00, option 0.00), with Competitive Position not measured: a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; AIB gap; policy aligned; confidence low]
+- battery mineral mining (Batteries, Extraction): High supply-chain need (0.87) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.80, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner CAN; AIB covered; policy aligned; confidence moderate]
+- EV mineral mining (Electric Vehicles, Extraction): High supply-chain need (0.87) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.86, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner CAN; AIB covered; policy aligned; confidence moderate]
+- waste-oil recovery (Oil, Recovery): High supply-chain need (0.85) and a strategic industrial value held below the threshold (0.07: the market prize alone; market 0.14, commons 0.00, option 0.00), with Competitive Position not measured: a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; AIB gap; policy aligned; confidence low]
 
 **Deploy . Accelerate**
 
-- EV adoption and charging (Electric Vehicles, Deployment): Deployment need 0.65 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
-- battery storage (Batteries, Deployment): Deployment need 0.66 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
-- solar power (Solar, Deployment): Deployment need 0.63 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence moderate]
+- EV adoption and charging (Electric Vehicles, Deployment): Deployment need 0.65 is at or above 0.60: the energy system needs more of it, mainly for climate and energy security. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- battery storage (Batteries, Deployment): Deployment need 0.66 is at or above 0.60: the energy system needs more of it, mainly for grid integration. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- solar power (Solar, Deployment): Deployment need 0.63 is at or above 0.60: the energy system needs more of it, mainly for energy security. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence moderate]
 
 **Deploy . Watch**
 
-- drilling and pump components (Oil, Components): Low supply-chain need (0.37) and a strategic industrial value held below the threshold (0.12: the market prize alone; market 0.09, commons 0.33, option 0.00): Watch. Domestic industrial priority is low. [delivery diversified global; policy mixed; confidence high]
-- uranium mining (Nuclear, Extraction): Large yard with a capability floor: mature, passive, and 5 of 8 commodity signals (standardized, quick to qualify, diversified world supply, little cross-sector spillover, little product differentiation); moderate industrial learning (1.0 of 3: process knowledge partly, workforce and suppliers partly, adjacent innovation no) is worth a capability floor, not a domestic industrial priority: affordable, diversified access should dominate whatever the size of the market. Watch: keep it open. [delivery diversified global; policy aligned; confidence moderate]
 - PV mineral mining (Solar, Extraction): Large yard: mature, passive, and 6 of 8 commodity signals (substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation), with no Medium-yard rationale: affordable, diversified access should dominate whatever the size of the market. Watch: keep it open. [delivery diversified global; policy aligned; confidence high]
+- uranium mining (Nuclear, Extraction): Large yard with a capability floor: mature, passive, and 5 of 8 commodity signals (standardized, quick to qualify, diversified world supply, little cross-sector spillover, little product differentiation); moderate industrial learning (1.0 of 3: process knowledge partly, workforce and suppliers partly, adjacent innovation no) is worth a capability floor, not a domestic industrial priority: affordable, diversified access should dominate whatever the size of the market. Watch: keep it open. [delivery diversified global; policy aligned; confidence moderate]
+- drilling rigs, tankers and oil equipment (Oil, Assembly): Low supply-chain need (0.11) and a low strategic industrial value (0.41; market 0.09, commons 0.67, option 0.00): Watch. Domestic industrial priority is low. [delivery diversified global; policy aligned; confidence high]
 
 ## South Korea
 
-5 Secure . 9 Preserve . 8 Catch Up . 5 Partner . 6 Accelerate . 15 Watch (18 not assessed)
+5 Secure . 9 Preserve . 9 Catch Up . 4 Partner . 6 Accelerate . 15 Watch (18 not assessed)
 
 **Secure**
 
@@ -131,27 +132,27 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 **Compete . Preserve**
 
-- EV and charger manufacturing (Electric Vehicles, Assembly): a high strategic industrial value (0.93; market 0.65, commons 1.00, option 0.00) and a top-quarter position among contenders (0.88): Preserve and extend it. [delivery domestic; policy aligned; confidence high]
-- EV drivetrain components (Electric Vehicles, Components): a high strategic industrial value (0.93; market 0.65, commons 1.00, option 0.00) and a top-quarter position among contenders (0.88): Preserve and extend it. [delivery domestic; policy aligned; confidence high]
-- gas turbines and LNG plant (Gas, Assembly): a high strategic industrial value (0.73; market 0.61, commons 0.67, option 0.00) and a top-quarter position among contenders (0.98): Preserve and extend it. [delivery domestic; policy aligned; confidence high]
+- PV modules and inverters (Solar, Assembly): a high strategic industrial value (0.66; market 0.89, commons 0.50, option 0.00) and a top-quarter position among contenders (0.84): Preserve and extend it. [delivery domestic; policy aligned; confidence moderate]
+- EV drivetrain components (Electric Vehicles, Components): a high strategic industrial value (0.72; market 0.65, commons 1.00, option 0.00) and a top-quarter position among contenders (0.90): Preserve and extend it. [delivery domestic; policy aligned; confidence high]
+- EV and charger manufacturing (Electric Vehicles, Assembly): a high strategic industrial value (0.72; market 0.65, commons 1.00, option 0.00) and a top-quarter position among contenders (0.85): Preserve and extend it. [delivery domestic; policy aligned; confidence high]
 
 **Compete . Catch Up**
 
-- battery materials refining (Batteries, Refining): a high strategic industrial value (0.77; market 0.63, commons 0.67, option 0.00), a position below the top quarter (0.00) and a credible pathway (capability anchor: direct export share, adjacent stage share; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery domestic; policy under prioritized; confidence high]
-- blades, towers and nacelle parts (Wind, Components): a high strategic industrial value (0.89; market 0.73, commons 0.83, option 0.00), a position below the top quarter (0.20) and a credible pathway (capability anchor: direct supply share, direct export share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy aligned; confidence high]
-- gas-turbine and drilling components (Gas, Components): a high strategic industrial value (0.73; market 0.61, commons 0.67, option 0.00), a position below the top quarter (0.23) and a credible pathway (capability anchor: direct supply share, direct export share, adjacent stage share; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery mixed; policy aligned; confidence high]
+- battery materials refining (Batteries, Refining): a high strategic industrial value (0.64; market 0.63, commons 0.67, option 0.00), a position below the top quarter (0.00) and a credible pathway (capability anchor: direct export share, adjacent stage share; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery domestic; policy under prioritized; confidence moderate]
+- gas-turbine and drilling components (Gas, Components): a high strategic industrial value (0.64; market 0.61, commons 0.67, option 0.00), a position below the top quarter (0.16) and a credible pathway (capability anchor: direct supply share, direct export share, adjacent stage share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy aligned; confidence moderate]
+- drilling rigs, tankers and oil equipment (Oil, Assembly): a high strategic industrial value (0.60; market 0.43, commons 0.67, option 0.00), a position below the top quarter (0.51) and a credible pathway (capability anchor: direct supply share, direct export share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy aligned; confidence moderate]
 
 **Compete . Partner**
 
-- battery mineral mining (Batteries, Extraction): High supply-chain need (1.00) and a strategic industrial value held below the threshold (0.57: the market prize alone; market 0.73, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner USA; AIB covered; policy aligned; confidence moderate]
+- battery mineral mining (Batteries, Extraction): High supply-chain need (1.00) and a strategic industrial value held below the threshold (0.58: the market prize alone; market 0.73, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner USA; AIB covered; policy aligned; confidence moderate]
 - EV mineral mining (Electric Vehicles, Extraction): High supply-chain need (1.00) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.76, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner USA; AIB covered; policy aligned; confidence moderate]
-- drilling and pump components (Oil, Components): High supply-chain need (0.71) and a strategic industrial value held below the threshold (0.32: the market prize alone; market 0.43, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery allied; partner USA; AIB covered; policy aligned; confidence low]
+- drilling and pump components (Oil, Components): High supply-chain need (0.72) and a strategic industrial value held below the threshold (0.42: the market prize alone; market 0.43, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery allied; partner USA; AIB covered; policy aligned; confidence moderate]
 
 **Deploy . Accelerate**
 
-- nuclear power (Nuclear, Deployment): Deployment need 0.80 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
-- EV adoption and charging (Electric Vehicles, Deployment): Deployment need 0.80 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
-- clean hydrogen production and use (Green Hydrogen, Deployment): Deployment need 0.93 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- nuclear power (Nuclear, Deployment): Deployment need 0.80 is at or above 0.60: the energy system needs more of it, mainly for energy security. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- EV adoption and charging (Electric Vehicles, Deployment): Deployment need 0.80 is at or above 0.60: the energy system needs more of it, mainly for climate and energy security. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- clean hydrogen production and use (Green Hydrogen, Deployment): Deployment need 0.93 is at or above 0.60: the energy system needs more of it, mainly for energy security. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
 
 **Deploy . Watch**
 
@@ -161,7 +162,7 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 ## India
 
-1 Secure . 8 Preserve . 9 Catch Up . 5 Partner . 9 Accelerate . 16 Watch (18 not assessed)
+1 Secure . 11 Preserve . 7 Catch Up . 4 Partner . 9 Accelerate . 16 Watch (18 not assessed)
 
 **Secure**
 
@@ -169,37 +170,37 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 **Compete . Preserve**
 
-- wind turbines (Wind, Assembly): a high strategic industrial value (0.89; market 0.77, commons 0.83, option 0.00) and a top-quarter position among contenders (0.96): Preserve and extend it. [delivery domestic; policy aligned; confidence high]
-- EV and charger manufacturing (Electric Vehicles, Assembly): a high strategic industrial value (0.93; market 0.65, commons 1.00, option 0.00) and a top-quarter position among contenders (0.75): Preserve and extend it. [delivery domestic; policy aligned; confidence moderate]
-- PV modules and inverters (Solar, Assembly): a high strategic industrial value (0.81; market 0.88, commons 0.50, option 0.00) and a top-quarter position among contenders (0.96): Preserve and extend it. [delivery domestic; policy aligned; confidence moderate]
+- wind turbines (Wind, Assembly): a high strategic industrial value (0.71; market 0.77, commons 0.83, option 0.00) and a top-quarter position among contenders (0.96): Preserve and extend it. [delivery domestic; policy aligned; confidence high]
+- drilling rigs, tankers and oil equipment (Oil, Assembly): a high strategic industrial value (0.62; market 0.53, commons 0.67, option 0.00) and a top-quarter position among contenders (0.75): Preserve and extend it. [delivery domestic; policy aligned; confidence low]
+- PV modules and inverters (Solar, Assembly): a high strategic industrial value (0.66; market 0.88, commons 0.50, option 0.00) and a top-quarter position among contenders (0.93): Preserve and extend it. [delivery domestic; policy aligned; confidence moderate]
 
 **Compete . Catch Up**
 
-- battery materials refining (Batteries, Refining): a high strategic industrial value (0.77; market 0.63, commons 0.67, option 0.00), a position below the top quarter (0.00) and a credible pathway (capability anchor: direct export share; corroborated by feasibility, learning): Catch Up. [delivery domestic; policy aligned; confidence high]
+- battery materials refining (Batteries, Refining): a high strategic industrial value (0.64; market 0.63, commons 0.67, option 0.00), a position below the top quarter (0.00) and a credible pathway (capability anchor: direct export share; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery domestic; policy aligned; confidence moderate]
 - rare-earth and wind materials refining (Wind, Refining): a high strategic industrial value (0.60; market 0.62, commons 0.50, option 0.00), a position below the top quarter (0.00) and a credible pathway (capability anchor: direct export share; corroborated by feasibility, adjacent stage relative, learning): Catch Up. [delivery domestic; policy under prioritized; confidence moderate]
-- drilling rigs, tankers and oil equipment (Oil, Assembly): a high strategic industrial value (0.65; market 0.53, commons 0.67, option 0.00), a position below the top quarter (0.60) and a credible pathway (capability anchor: direct supply share, direct export share; corroborated by feasibility, learning): Catch Up. [delivery mixed; policy aligned; confidence moderate]
+- battery cells and packs (Batteries, Assembly): a high strategic industrial value (0.86; market 0.85, commons 1.00, option 0.50), a top-quarter score (0.79) without a contender share and a credible pathway (capability anchor: committed pipeline; corroborated by feasibility, adjacent stage relative, learning, announced pipeline): Catch Up. [delivery mixed; policy mixed; confidence high]
 
 **Compete . Partner**
 
-- battery mineral mining (Batteries, Extraction): High supply-chain need (0.90) and a strategic industrial value held below the threshold (0.57: the market prize alone; market 0.73, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
-- EV mineral mining (Electric Vehicles, Extraction): High supply-chain need (0.90) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.76, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
-- waste-oil recovery (Oil, Recovery): High supply-chain need (0.91) and a strategic industrial value held below the threshold (0.17: the market prize alone; market 0.55, commons 0.00, option 0.00), with Competitive Position not measured: a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; AIB gap; policy misaligned; confidence low]
+- battery mineral mining (Batteries, Extraction): High supply-chain need (0.92) and a strategic industrial value held below the threshold (0.58: the market prize alone; market 0.73, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
+- EV mineral mining (Electric Vehicles, Extraction): High supply-chain need (0.92) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.76, commons 0.33, option 0.00): a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; partner AUS; AIB covered; policy aligned; confidence moderate]
+- waste-oil recovery (Oil, Recovery): High supply-chain need (0.96) and a strategic industrial value held below the threshold (0.30: the market prize alone; market 0.55, commons 0.00, option 0.00), with Competitive Position not measured: a security problem without a domestic industrial prize. Partner with trusted suppliers. [delivery diversified global; AIB gap; policy misaligned; confidence low]
 
 **Deploy . Accelerate**
 
-- nuclear power (Nuclear, Deployment): Deployment need 0.81 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
-- solar power (Solar, Deployment): Deployment need 0.79 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
-- battery storage (Batteries, Deployment): Deployment need 0.80 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- nuclear power (Nuclear, Deployment): Deployment need 0.81 is at or above 0.60: the energy system needs more of it, mainly for demand growth and energy security. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- solar power (Solar, Deployment): Deployment need 0.79 is at or above 0.60: the energy system needs more of it, mainly for demand growth. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- battery storage (Batteries, Deployment): Deployment need 0.80 is at or above 0.60: the energy system needs more of it, mainly for demand growth. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
 
 **Deploy . Watch**
 
 - gas liquids processing (Gas, Refining): Large yard: mature, passive, and 8 of 8 commodity signals (standardized, substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation, commoditized), with no Medium-yard rationale: affordable, diversified access should dominate whatever the size of the market. Watch: keep it open. [delivery allied; policy aligned; confidence high]
-- uranium conversion and enrichment (Nuclear, Refining): Low supply-chain need (0.39) and a high strategic industrial value (0.83; market 0.63, commons 0.83, option 0.00), but no top-quarter position and no capability anchor (only feasibility, learning): Watch (keep R&D options open). [delivery diversified global; policy aligned; confidence high]
 - PV mineral mining (Solar, Extraction): Large yard: mature, passive, and 6 of 8 commodity signals (substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation), with no Medium-yard rationale: affordable, diversified access should dominate whatever the size of the market. Watch: keep it open. [delivery allied; policy aligned; confidence high]
+- uranium conversion and enrichment (Nuclear, Refining): Low supply-chain need (0.39) and a high strategic industrial value (0.68; market 0.63, commons 0.83, option 0.00), but no top-quarter position and no capability anchor (only feasibility, learning): Watch (keep R&D options open). [delivery diversified global; policy aligned; confidence high]
 
 ## Brazil
 
-2 Secure . 0 Preserve . 2 Catch Up . 4 Partner . 3 Accelerate . 37 Watch (18 not assessed)
+2 Secure . 0 Preserve . 3 Catch Up . 5 Partner . 3 Accelerate . 35 Watch (18 not assessed)
 
 **Secure**
 
@@ -208,24 +209,25 @@ the six choices with counts, and up to three clear examples of each with the rea
 
 **Compete . Catch Up**
 
-- wind turbines (Wind, Assembly): a high strategic industrial value (0.88; market 0.65, commons 0.83, option 0.00), a top-quarter score (0.79) below the capability floor and a credible pathway (capability anchor: direct supply share, operating capacity; corroborated by adjacent stage relative): Catch Up. [delivery mixed; policy aligned; confidence moderate]
-- blades, towers and nacelle parts (Wind, Components): a high strategic industrial value (0.88; market 0.65, commons 0.83, option 0.00), a top-quarter score (0.78) without a contender share and a credible pathway (capability anchor: operating capacity; corroborated by adjacent stage relative, learning): Catch Up. [delivery mixed; policy aligned; confidence high]
+- gas turbines and LNG plant (Gas, Assembly): a high strategic industrial value (0.60; market 0.45, commons 0.67, option 0.00), a top-quarter score (0.86) below the capability floor and a credible pathway (capability anchor: direct supply share, direct export share; corroborated by adjacent stage relative): Catch Up. [delivery mixed; policy mixed; confidence low]
+- wind turbines (Wind, Assembly): a high strategic industrial value (0.68; market 0.65, commons 0.83, option 0.00), a top-quarter score (0.76) below the capability floor and a credible pathway (capability anchor: direct supply share, operating capacity; corroborated by adjacent stage relative): Catch Up. [delivery mixed; policy aligned; confidence moderate]
+- blades, towers and nacelle parts (Wind, Components): a high strategic industrial value (0.68; market 0.65, commons 0.83, option 0.00), a top-quarter score (0.78) without a contender share and a credible pathway (capability anchor: operating capacity; corroborated by adjacent stage relative, learning): Catch Up. [delivery mixed; policy aligned; confidence high]
 
 **Compete . Partner**
 
-- battery cells and packs (Batteries, Assembly): High supply-chain need (0.75) and a high strategic industrial value (0.97; market 0.85, commons 1.00, option 0.50), but no top-quarter position and no capability anchor: Partner with trusted suppliers. [delivery allied; partner USA; AIB gap; policy misaligned; confidence high]
-- PV modules and inverters (Solar, Assembly): High supply-chain need (0.84) and a high strategic industrial value (0.80; market 0.85, commons 0.50, option 0.00), but no top-quarter position and no capability anchor: Partner with trusted suppliers. [delivery allied; partner USA; AIB covered; policy misaligned; confidence moderate]
-- EV and charger manufacturing (Electric Vehicles, Assembly): High supply-chain need (0.78) and a high strategic industrial value (0.94; market 0.70, commons 1.00, option 0.00), but no top-quarter position and no capability anchor (only adjacent stage relative, learning): Partner with trusted suppliers. [delivery allied; partner DEU; AIB covered; policy aligned; confidence high]
+- battery cells and packs (Batteries, Assembly): High supply-chain need (0.75) and a high strategic industrial value (0.86; market 0.85, commons 1.00, option 0.50), but no top-quarter position and no capability anchor: Partner with trusted suppliers. [delivery allied; partner USA; AIB gap; policy misaligned; confidence high]
+- PV modules and inverters (Solar, Assembly): High supply-chain need (0.76) and a high strategic industrial value (0.65; market 0.85, commons 0.50, option 0.00), but no top-quarter position and no capability anchor: Partner with trusted suppliers. [delivery allied; partner USA; AIB covered; policy misaligned; confidence moderate]
+- battery components (Batteries, Components): High supply-chain need (0.69) and a high strategic industrial value (0.65; market 0.85, commons 0.50, option 0.00), but no top-quarter position and a capability anchor (direct export share) without independent corroboration: Partner with trusted suppliers. [delivery allied; partner KOR; AIB covered; policy aligned; confidence moderate]
 
 **Deploy . Accelerate**
 
 - coal power and use (Coal, Deployment): Deployment need 0.61 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence moderate]
-- nuclear power (Nuclear, Deployment): Deployment need 0.68 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
-- gas networks and use (Gas, Deployment): Deployment need 0.72 is at or above 0.60: the energy system needs more of it. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- nuclear power (Nuclear, Deployment): Deployment need 0.68 is at or above 0.60: the energy system needs more of it, mainly for demand growth. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
+- gas networks and use (Gas, Deployment): Deployment need 0.72 is at or above 0.60: the energy system needs more of it, mainly for grid integration, though a climate-aligned pathway deploys substantially less of it by 2035. This says nothing about where the equipment is made. [delivery diversified global; policy aligned; confidence high]
 
 **Deploy . Watch**
 
 - PV mineral mining (Solar, Extraction): Large yard: mature, passive, and 6 of 8 commodity signals (substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation), with no Medium-yard rationale: affordable, diversified access should dominate whatever the size of the market. Watch: keep it open. [delivery diversified global; policy aligned; confidence high]
 - coke and coal processing (Coal, Refining): Large yard with a capability floor: mature, passive, and 5 of 8 commodity signals (substitutable, quick to qualify, diversified world supply, little cross-sector spillover, little product differentiation); moderate industrial learning (1.0 of 3: process knowledge partly, workforce and suppliers partly, adjacent innovation no) is worth a capability floor, not a domestic industrial priority: affordable, diversified access should dominate whatever the size of the market. Watch: keep it open. [delivery diversified global; policy aligned; confidence moderate]
-- uranium mining (Nuclear, Extraction): Large yard with a capability floor: mature, passive, and 5 of 8 commodity signals (standardized, quick to qualify, diversified world supply, little cross-sector spillover, little product differentiation); moderate industrial learning (1.0 of 3: process knowledge partly, workforce and suppliers partly, adjacent innovation no) is worth a capability floor, not a domestic industrial priority: affordable, diversified access should dominate whatever the size of the market. Watch: keep it open. [delivery diversified global; policy aligned; confidence moderate]
+- gas liquids processing (Gas, Refining): Large yard: mature, passive, and 8 of 8 commodity signals (standardized, substitutable, quick to qualify, diversified world supply, little process learning, little cross-sector spillover, little product differentiation, commoditized), with no Medium-yard rationale: affordable, diversified access should dominate whatever the size of the market. Watch: keep it open. [delivery allied; policy aligned; confidence high]
 

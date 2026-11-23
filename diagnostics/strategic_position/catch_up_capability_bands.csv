@@ -1,7 +1,7 @@
 "rule","measure","catch_up","eq_0","lt_0.10","lt_0.25","na","without_anchor"
-"legs_1","cp_contender_pct",1942,1150,1367,1481,160,1589
-"legs_1","competitive_position_percentile",1942,0,70,266,160,1589
-"legs_2","cp_contender_pct",919,370,498,591,55,588
-"legs_2","competitive_position_percentile",919,0,6,35,55,588
-"anchor","cp_contender_pct",351,39,73,127,20,0
-"anchor","competitive_position_percentile",351,0,0,0,20,0
+"legs_1","cp_contender_pct",2106,1251,1492,1619,160,1729
+"legs_1","competitive_position_percentile",2106,0,85,297,160,1729
+"legs_2","cp_contender_pct",988,396,539,639,55,633
+"legs_2","competitive_position_percentile",988,0,8,40,55,633
+"anchor","cp_contender_pct",375,41,78,136,20,0
+"anchor","competitive_position_percentile",375,0,0,1,20,0
