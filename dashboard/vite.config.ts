@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 
@@ -54,9 +55,28 @@ function fixtureData(): Plugin {
   };
 }
 
+// The app build's identity (docs/QC_SYSTEM_DESIGN.md 3.1): the code SHA and build time every review
+// submission records. An existing VITE_APP_COMMIT / VITE_BUILD_DATE in the environment wins (CI, Pages);
+// otherwise `git rev-parse --short HEAD`, and 'unknown' when git is not available. Tests do not load this
+// file, so the review code reads 'unknown' there.
+function appCommit(): string {
+  const env = process.env.VITE_APP_COMMIT?.trim();
+  if (env) return env;
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: here, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+const buildDate = process.env.VITE_BUILD_DATE?.trim() || new Date().toISOString();
+
 export default defineConfig(({ mode }) => ({
   base: process.env.VITE_BASE ?? '/',
   plugins: [react(), tailwindcss(), ...(mode === 'fixture' ? [fixtureData()] : [])],
+  define: {
+    'import.meta.env.VITE_APP_COMMIT': JSON.stringify(appCommit()),
+    'import.meta.env.VITE_BUILD_DATE': JSON.stringify(buildDate),
+  },
   worker: { format: 'es' },
   // the world map's TopoJSON (~0.76 MB, 0.23 MB gz) is its own lazy chunk; nothing else comes close
   build: { target: 'es2022', sourcemap: true, manifest: true, chunkSizeWarningLimit: 800 },

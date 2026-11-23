@@ -8,6 +8,7 @@ import {
   checkTradeMonthlyDoc, type CountryEntry, type CountryManifest, type DriversDoc, type FactSheet, type MemoDoc, type TradeMonthlyDoc,
 } from '../contract.ts';
 import { checkDevpartDoc, type DevpartDoc } from '../devpart.ts';
+import { setCountryBuild } from '../../shell/buildInfo.ts';
 
 export type CountryLoadCode = 'NO_DATA' | 'NEWER' | 'CONTRACT' | 'NETWORK';
 
@@ -110,6 +111,7 @@ export class CountryStore {
         const m = x as CountryManifest;
         if (Math.floor(m.schema_version) > COUNTRY_SCHEMA_VERSION) throw new CountryLoadError('NEWER', 'This data was exported for a newer version of the explorer; reload.');
         this.done.set('manifest', m);
+        setCountryBuild(m);
         return m;
       });
       this.manifestP = p.catch((e) => {

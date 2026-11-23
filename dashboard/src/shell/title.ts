@@ -15,6 +15,8 @@ const MODULE_LABEL: Record<string, string> = {
   country: 'Countries',
   aib: 'Allied Industrial Base',
   about: 'About',
+  // the expert review pages (/review): a place without a tab
+  review: 'Expert review',
   'Sector Insights': 'Sectors',
   'Country Insights': 'Countries',
   'Sectoral Compacts': 'Allied Industrial Base',

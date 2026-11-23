@@ -36,6 +36,7 @@ import { sectorRoute } from './sector/routes.tsx';
 import { LEGACY_SECTOR_ROUTES } from './shell/legacySector.tsx';
 import { COUNTRY_ALIASES, countryRoute } from './country/routes.tsx';
 import { AIB_ALIASES, aibHubRoute, aibRoute } from './aib/routes.tsx';
+import { reviewRoute } from './review/routes.tsx';
 
 const view = (load: () => Promise<{ default: React.ComponentType }>) => async () => ({ Component: (await load()).default });
 
@@ -109,6 +110,8 @@ export const routes: RouteObject[] = [
       ...LEGACY_PROFILE_LINKS.map((l) => ({ path: l.path, element: <ToProfile section={l.section} /> })),
       ...COUNTRY_ALIASES.map((a) => ({ path: a.path, element: <Alias to={a.to} /> })),
       ...AIB_ALIASES.map((a) => ({ path: a.path, element: <Alias to={a.to} /> })),
+      // Expert review (docs/QC_SYSTEM_DESIGN.md 5): a place, no tab; its own layout and lazy chunks
+      { errorElement: <RouteError />, ...reviewRoute },
       { path: '*', element: <ToHome notice="That page does not exist; showing the home page." /> },
     ],
   },

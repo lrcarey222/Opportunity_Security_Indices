@@ -70,3 +70,7 @@ paper/*.synctex.gz
 paper/main.pdf
 paper/*_PREVIEW.pdf
 paper/notes/
+
+# QC / expert review: reviewer submissions and private exports never enter git
+qc/private/
+**/review_submissions/

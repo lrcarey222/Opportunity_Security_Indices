@@ -1,0 +1,1344 @@
+{
+  "schema": "aib-qc-case-audit",
+  "schema_version": 1,
+  "case_id": "CASE_012",
+  "case_title": "United States: deployment of nuclear power",
+  "key": {
+    "iso3": "USA",
+    "tech": "Nuclear",
+    "stage": "Deployment"
+  },
+  "country": "United States",
+  "generated_at": "2026-11-20T00:00:00Z",
+  "inputs": {
+    "pipeline_table": "<processed-dir>/outputs/strategic_position_tbl.rds",
+    "pipeline_release": "pipeline-5882f35f044e",
+    "sp_config": "config/strategic_position.yml",
+    "bundle_created": "2026-11-17T20:33:31Z",
+    "bundle_git_commit": "0496e7ba"
+  },
+  "summary": {
+    "n_links": 19,
+    "reproduced": 8,
+    "differs": 0,
+    "not_reproducible": 6,
+    "provenance_gaps": 1,
+    "recorded": 3,
+    "choice_pipeline": "watch",
+    "choice_bundle": "watch",
+    "bundle_differences": 0
+  },
+  "sections": [
+    {
+      "n": 1,
+      "id": "source_datasets",
+      "title": "Source datasets",
+      "items": [
+        {
+          "item": "families_applicable",
+          "value": "3",
+          "detail": null,
+          "_row": "families_applicable"
+        },
+        {
+          "item": "candidate_raw_inputs",
+          "value": "48",
+          "detail": "raw_inputs_manifest.yml entries whose required_by names a script that builds a family's processed table (an upper bound: the manifest records inputs per script, not per cell)",
+          "_row": "candidate_raw_inputs"
+        }
+      ],
+      "links": [
+        {
+          "link": "position: CP families: raw rows -> this cell",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "46",
+          "detail": "the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded"
+        },
+        {
+          "link": "deployment need: raw rows -> this cell",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "2",
+          "detail": "the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded"
+        },
+        {
+          "link": "Secure engine (Tests 1-5) and capability floor: raw inputs",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded"
+        },
+        {
+          "link": "candidate raw inputs: vintage and licence recorded",
+          "status": "provenance_gap",
+          "expected": "48",
+          "observed": "11",
+          "detail": "37 of 48 lack a vintage or a licence in config/raw_inputs_manifest.yml: comtrade_energy_trade, comtrade_total_export, critmin_export, critmin_import, critmin_mirror_import, critmin_total_export, ilo_earnings_by_activity, imf_commodity_prices, imf_lending_rates, imf_ppi, wdi_country_info, wdi_gdp, consolidated_hs6_energy_tech_long, dual_use_scores, hs6_categories_with_essential, hts_codes_categories_bolstered_final, comtrade_vintage, bcg_market_size, cat_country_ratings, ei_stat_review, ei_stat_review_wide, ev_midstream_capacity, gcim_investment_capacity, geothermal_lcoe, hs92_country_product_year_4, hs92_country_product_year_6, iea_clean_tech_guide, iea_cleantech_midstream, iea_ev_outlook, iea_pams, iea_relative_costs, ipcc_ghg_intensity, solar_potential, uranium_production, uranium_resources, wb_wind_country, uspto_y02_patents"
+        }
+      ],
+      "tables": {
+        "families": [
+          {
+            "family": "position: CP families",
+            "processed_table": "outputs/index_outputs.rds (economic_opportunity / energy_security variable contributions); outputs/innovation/innovation_theme.csv (innovation_position)",
+            "scripts": "scripts/20_build_indices.R;scripts/10_build_themes.R;scripts/29_build_innovation_position.R",
+            "stages": "all",
+            "raw_inputs": "comtrade_energy_trade, comtrade_total_export, critmin_export, critmin_import, critmin_mirror_import, critmin_total_export, eia_intl_fossil_production, ilo_earnings_by_activity, imf_commodity_prices, imf_lending_rates, imf_ppi, wdi_country_info, wdi_gdp, consolidated_hs6_energy_tech_long, dual_use_scores, hs6_categories_with_essential, hts_codes_categories_bolstered_final, comtrade_vintage, bcg_market_size, bnef_lcoe_viewer, bnef_neo, bnef_supply_chains, cat_country_ratings, ei_stat_review, ei_stat_review_wide, ev_midstream_capacity, gcim_investment_capacity, geothermal_lcoe, gta_nipo, hs92_country_product_year_4, hs92_country_product_year_6, iea_clean_tech_guide, iea_cleantech_midstream, iea_critical_minerals, iea_ev_outlook, iea_pams, iea_relative_costs, ipcc_ghg_intensity, solar_potential, uranium_production, uranium_resources, usgs_mcs_world_data, wb_wind_country, weo_annex_a, uspto_y02_patents, iea_rdd_public",
+            "n_raw_inputs": 46
+          },
+          {
+            "family": "deployment need",
+            "processed_table": "deployment_need_tbl.rds",
+            "scripts": "scripts/95_build_deployment_need.R",
+            "stages": "Deployment",
+            "raw_inputs": "ember_yearly_electricity, ember_renewable_targets_2030",
+            "n_raw_inputs": 2
+          },
+          {
+            "family": "Secure engine (Tests 1-5) and capability floor",
+            "processed_table": "outputs/strategic_position_inputs.rds (posture inputs)",
+            "scripts": "scripts/26_build_strategic_position.R",
+            "stages": "all",
+            "raw_inputs": null,
+            "n_raw_inputs": 0
+          }
+        ],
+        "raw_inputs": [
+          {
+            "id": "comtrade_energy_trade",
+            "source_name": "UN Comtrade (energy-tech HS6 exports and imports)",
+            "vintage": "2024; World rows of the all-reporter dyad pull (main 2026-10-07/08, Electric Grid Upstream supplement 2026-10-09, Upstream-basket supplement 2026-10-12 UTC), derived 2026-10-09 and extended 2026-10-12 UTC",
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "comtrade_total_export",
+            "source_name": "UN Comtrade (total exports, TOTAL commodity code)",
+            "vintage": "2024; pulled 2026-10-09",
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "critmin_export",
+            "source_name": "UN Comtrade (critical minerals exports)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "critmin_import",
+            "source_name": "UN Comtrade (critical minerals imports)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "critmin_mirror_import",
+            "source_name": "UN Comtrade (partner-reported imports from non-reporting economies, mirror exports)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS"
+          },
+          {
+            "id": "critmin_total_export",
+            "source_name": "UN Comtrade (critical minerals total exports)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "eia_intl_fossil_production",
+            "source_name": "U.S. Energy Information Administration, International Energy Statistics (bulk file INTL.zip), fossil fuel production and consumption by country",
+            "vintage": "downloaded (accessed) 2026-10-11; INTL.txt dated 2026-10-03 (24,153,479-byte zip); oil production to 2025, gas and coal to 2024, oil consumption to 2024 (2025 for a few economies)",
+            "licence": "US government work, public domain (no API key)",
+            "url": "https://www.eia.gov/opendata/bulk/INTL.zip"
+          },
+          {
+            "id": "ilo_earnings_by_activity",
+            "source_name": "ILOSTAT, average monthly earnings of employees by sex, economic activity and currency (EAR_EMTA_SEX_ECO_CUR_NB_A)",
+            "vintage": "downloaded 2026-09-30 (the copy scripts/40 cached as data/processed/vintages/_cache_ilo_earnings.csv)",
+            "licence": null,
+            "url": "https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat"
+          },
+          {
+            "id": "imf_commodity_prices",
+            "source_name": "IMF Primary Commodity Price System (wide export, includes annual YoY series)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.imf.org/en/research/commodity-prices"
+          },
+          {
+            "id": "imf_lending_rates",
+            "source_name": "IMF lending rates (MFS_IR)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://data.imf.org/en/Data-Explorer"
+          },
+          {
+            "id": "imf_ppi",
+            "source_name": "IMF producer price indices (PPI)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://data.imf.org/en/Data-Explorer"
+          },
+          {
+            "id": "wdi_country_info",
+            "source_name": "World Bank WDI country reference table",
+            "vintage": null,
+            "licence": null,
+            "url": "https://databank.worldbank.org/source/world-development-indicators"
+          },
+          {
+            "id": "wdi_gdp",
+            "source_name": "World Bank World Development Indicators (NY.GDP.MKTP.CD)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://databank.worldbank.org/source/world-development-indicators"
+          },
+          {
+            "id": "consolidated_hs6_energy_tech_long",
+            "source_name": "HS6 to technology / supply-chain view (tech, supply_chain, sub_sector, HS6)",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "dual_use_scores",
+            "source_name": "Dual-use scoring by primary/secondary/tertiary category",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "hs6_categories_with_essential",
+            "source_name": "HS6 view carrying the essential-goods flag (Technology, Value Chain, Sub.Sector, HS6, essential)",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "hts_codes_categories_bolstered_final",
+            "source_name": "HS6 to technology / supply-chain view (Technology, Value Chain, Sub.Sector, HS6)",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "comtrade_vintage",
+            "source_name": "Comtrade retrieval vintage stamp",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "bcg_market_size",
+            "source_name": "BCG market sizing for technology and supply chain",
+            "vintage": null,
+            "licence": "proprietary",
+            "url": null
+          },
+          {
+            "id": "bnef_lcoe_viewer",
+            "source_name": "BloombergNEF LCOE Data Viewer",
+            "vintage": "2026-08-11",
+            "licence": "subscription",
+            "url": "https://about.bnef.com/insights/clean-energy/new-energy-outlook/"
+          },
+          {
+            "id": "bnef_neo",
+            "source_name": "BloombergNEF New Energy Outlook",
+            "vintage": "2024-10-29",
+            "licence": "subscription",
+            "url": "https://about.bnef.com/insights/clean-energy/new-energy-outlook/"
+          },
+          {
+            "id": "bnef_supply_chains",
+            "source_name": "BloombergNEF Energy Transition Supply Chains",
+            "vintage": "2025",
+            "licence": "subscription",
+            "url": "https://about.bnef.com/insights/clean-energy/new-energy-outlook/"
+          },
+          {
+            "id": "cat_country_ratings",
+            "source_name": "Climate Action Tracker country ratings",
+            "vintage": null,
+            "licence": null,
+            "url": "https://climateactiontracker.org/countries/"
+          },
+          {
+            "id": "ei_stat_review",
+            "source_name": "Energy Institute Statistical Review of World Energy (long format)",
+            "vintage": "2026 edition (data 1965-2025)",
+            "licence": null,
+            "url": "https://www.energyinst.org/statistical-review"
+          },
+          {
+            "id": "ei_stat_review_wide",
+            "source_name": "Energy Institute Statistical Review of World Energy (workbook)",
+            "vintage": "2026 edition (Contents sheet; fuel reserve sheets at end-2020)",
+            "licence": null,
+            "url": "https://www.energyinst.org/statistical-review"
+          },
+          {
+            "id": "ev_midstream_capacity",
+            "source_name": "IEA EV midstream manufacturing capacity extract",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer"
+          },
+          {
+            "id": "gcim_investment_capacity",
+            "source_name": "Clean Investment Monitor investment and capacity (aggregated)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.cleaninvestmentmonitor.org/"
+          },
+          {
+            "id": "geothermal_lcoe",
+            "source_name": "Geothermal LCOE and capacity potential extract",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "gta_nipo",
+            "source_name": "Global Trade Alert New Industrial Policy Observatory",
+            "vintage": "February 2026",
+            "licence": "subscription",
+            "url": "https://www.globaltradealert.org/"
+          },
+          {
+            "id": "hs92_country_product_year_4",
+            "source_name": "Harvard Atlas of Economic Complexity (HS92, 4-digit)",
+            "vintage": "1995-2024; Dataverse \"International Trade Data (HS, 92)\" V18, 2026-04-22",
+            "licence": null,
+            "url": "https://atlas.hks.harvard.edu/"
+          },
+          {
+            "id": "hs92_country_product_year_6",
+            "source_name": "Harvard Atlas of Economic Complexity (HS92, 6-digit)",
+            "vintage": "1995-2024; Dataverse \"International Trade Data (HS, 92)\" V18, 2026-04-22",
+            "licence": null,
+            "url": "https://atlas.hks.harvard.edu/"
+          },
+          {
+            "id": "iea_clean_tech_guide",
+            "source_name": "IEA ETP Clean Energy Technology Guide",
+            "vintage": "2026",
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide"
+          },
+          {
+            "id": "iea_cleantech_midstream",
+            "source_name": "IEA clean technology midstream manufacturing capacity",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide"
+          },
+          {
+            "id": "iea_critical_minerals",
+            "source_name": "IEA Critical Minerals Dataset",
+            "vintage": "2026",
+            "licence": "CC BY 4.0 (the workbook's Notice sheet); cite the IEA Critical Minerals Dataset wherever the figures are shown",
+            "url": "https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset"
+          },
+          {
+            "id": "iea_ev_outlook",
+            "source_name": "IEA Global EV Outlook",
+            "vintage": "2026",
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics/data-product/global-ev-outlook-2026"
+          },
+          {
+            "id": "iea_pams",
+            "source_name": "IEA Policies and Measures database export",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.iea.org/policies"
+          },
+          {
+            "id": "iea_relative_costs",
+            "source_name": "IEA relative technology cost extract",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics"
+          },
+          {
+            "id": "ipcc_ghg_intensity",
+            "source_name": "IPCC lifecycle GHG intensity of electricity supply technologies (AR5 WGIII Annex III, Table A.III.2)",
+            "vintage": "AR5 (2014)",
+            "licence": null,
+            "url": "https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf"
+          },
+          {
+            "id": "solar_potential",
+            "source_name": "Global Solar Atlas country potential",
+            "vintage": null,
+            "licence": null,
+            "url": "https://globalsolaratlas.info"
+          },
+          {
+            "id": "uranium_production",
+            "source_name": "OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.18 historical uranium production",
+            "vintage": "Uranium 2026 (NEA No. 7770) for 2022-2024, Uranium 2024 (NEA No. 7683) for 2020-2021, Uranium 2022 (NEA No. 7634) for 2019; accessed 2026-10-07",
+            "licence": null,
+            "url": "https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand"
+          },
+          {
+            "id": "uranium_resources",
+            "source_name": "OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.2a identified recoverable resources",
+            "vintage": "Uranium 2026 (NEA No. 7770), resources as of 1 January 2025; accessed 2026-10-07",
+            "licence": null,
+            "url": "https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand"
+          },
+          {
+            "id": "usgs_mcs_world_data",
+            "source_name": "USGS Mineral Commodity Summaries 2026 data release, Commodity Salient U.S. and World Statistics (world mine production and reserves)",
+            "vintage": "MCS 2026 (reserves at end-2025); ScienceBase file MCS2026_Commodities_Data.csv, 3,189,010 bytes, uploaded 2026-02-06 (MD5 36185ff3..., ScienceBase's checksum); accessed 2026-10-09",
+            "licence": "CC0-1.0",
+            "url": "https://doi.org/10.5066/P1WKQ63T"
+          },
+          {
+            "id": "wb_wind_country",
+            "source_name": "Global Wind Atlas country potential",
+            "vintage": null,
+            "licence": null,
+            "url": "https://globalwindatlas.info/"
+          },
+          {
+            "id": "weo_annex_a",
+            "source_name": "IEA World Energy Outlook Annex A free dataset",
+            "vintage": "2025",
+            "licence": "CC BY-NC-SA 4.0 (the IEA dataset page, checked 2026-10-17; earlier recorded as CC BY 4.0); cite IEA (2025), World Energy Outlook 2025, wherever the figures are shown",
+            "url": "https://www.iea.org/reports/world-energy-outlook-2025"
+          },
+          {
+            "id": "uspto_y02_patents",
+            "source_name": "USPTO Open Data Portal, granted US utility patents by Y02/Y04S technology and inventor country",
+            "vintage": null,
+            "licence": "US government public data",
+            "url": "https://api.uspto.gov/api/v1/patent/applications/search"
+          },
+          {
+            "id": "iea_rdd_public",
+            "source_name": "IEA Energy Technology RD&D Budgets, public sector (RDDPUBLIC)",
+            "vintage": "October 2026 edition (RDDPUBLIC.csv dated 2026-10-20), downloaded 2026-11-17",
+            "licence": "IEA terms; check before publishing derived figures",
+            "url": "https://www.iea.org/data-and-statistics/data-product/energy-technology-rdd-budgets"
+          },
+          {
+            "id": "ember_yearly_electricity",
+            "source_name": "Ember, Yearly Electricity Data (global; generation, capacity, demand and net imports by area, year and electricity source)",
+            "vintage": "retrieved 2026-10-29 (server Last-Modified 2026-10-26 12:24 GMT); years 2000-2025, 2025 for about 90 economies; SHA-256 afe1e315ce8fef7ddb2e2569243b3ac4e93cfe8146ac1be5392e362bd6afbe72",
+            "licence": "CC BY 4.0 (the Ember dataset page, https://ember-energy.org/data/yearly-electricity-data/); cite Ember wherever the figures are shown",
+            "url": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv"
+          },
+          {
+            "id": "ember_renewable_targets_2030",
+            "source_name": "Ember, 2030 Global Renewable Target Tracker (Global Renewable Power Sector Targets 2030) data download",
+            "vintage": "retrieved 2026-10-29 (server Last-Modified 2026-10-13 13:00 GMT); 2030 capacity targets for 85 countries and the EU (capacity_target_wide), national-plan rows to 2050 (raw_data_long); SHA-256 281377059def3954888e01a12253c74844e90e39edf87a99616dc528dad4c9bc",
+            "licence": "CC BY 4.0 (the Ember dataset page, https://ember-energy.org/data/global-renewable-power-sector-targets-2030/); cite Ember wherever the figures are shown",
+            "url": "https://files.ember-energy.org/public-downloads/res_tracker/outputs/targets_download.xlsx"
+          }
+        ]
+      },
+      "notes": []
+    },
+    {
+      "n": 2,
+      "id": "source_rows",
+      "title": "Source rows",
+      "items": [],
+      "links": [
+        {
+          "link": "deployment_need <- deployment_need_tbl",
+          "status": "reproduced",
+          "expected": "0.5972",
+          "observed": "0.5972",
+          "detail": null
+        }
+      ],
+      "tables": {
+        "deployment_need": [
+          {
+            "deployment_need": 0.597241756524457,
+            "dn_families_observed": 2,
+            "dn_confidence": "moderate",
+            "dn_demand": 0.817901234567901,
+            "dn_policy_gap": null,
+            "dn_system": 0.376582278481013,
+            "dn_demand_source": "IEA WEO 2025 Current Policies (single-country region): electricity generation | IEA WEO 2025 Current Policies (single-country region): generation (gen_nuclear)",
+            "dn_policy_gap_source": null,
+            "dn_system_source": "Ember generation shares x EI Statistical Review / EIA import dependence | Ember yearly electricity data: dispatchable capacity and demand"
+          }
+        ]
+      },
+      "notes": []
+    },
+    {
+      "n": 3,
+      "id": "cleaning",
+      "title": "Cleaning and exclusions",
+      "items": [
+        {
+          "item": "entrepot_or_registry",
+          "value": "FALSE",
+          "detail": "exclude_iso3: HKG, MAC, MHL, LBR, PAN",
+          "_row": "entrepot_or_registry"
+        },
+        {
+          "item": "sn_exclusion",
+          "value": null,
+          "detail": null,
+          "_row": "sn_exclusion"
+        },
+        {
+          "item": "posture_exclusion",
+          "value": null,
+          "detail": null,
+          "_row": "posture_exclusion"
+        },
+        {
+          "item": "thin_need_cell",
+          "value": "FALSE",
+          "detail": null,
+          "_row": "thin_need_cell"
+        },
+        {
+          "item": "thin_reason",
+          "value": null,
+          "detail": null,
+          "_row": "thin_reason"
+        },
+        {
+          "item": "material_importers_in_cell",
+          "value": "124",
+          "detail": "thin below 5",
+          "_row": "material_importers_in_cell"
+        },
+        {
+          "item": "import_material",
+          "value": "TRUE",
+          "detail": "immaterial below USD 1,000,000",
+          "_row": "import_material"
+        },
+        {
+          "item": "self_supplied",
+          "value": null,
+          "detail": "self-supply guard at home_share >= 0.1",
+          "_row": "self_supplied"
+        },
+        {
+          "item": "cp_thin_cell",
+          "value": "FALSE",
+          "detail": null,
+          "_row": "cp_thin_cell"
+        },
+        {
+          "item": "current_trade_flag",
+          "value": null,
+          "detail": null,
+          "_row": "current_trade_flag"
+        },
+        {
+          "item": "opposite_bloc_basis",
+          "value": "bloc",
+          "detail": null,
+          "_row": "opposite_bloc_basis"
+        }
+      ],
+      "links": [
+        {
+          "link": "supply-chain cleaning rules",
+          "status": "not_applicable",
+          "expected": null,
+          "observed": null,
+          "detail": "Deployment is decided on deployment need"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 4,
+      "id": "transformations",
+      "title": "Transformations",
+      "items": [
+        {
+          "item": "percentile_rule",
+          "value": "mid-rank (rank - 0.5) / n, ties averaged (sp_helpers.R sp_midrank_pct)",
+          "detail": null,
+          "_row": "percentile_rule"
+        },
+        {
+          "item": "thresholds_inclusive",
+          "value": "TRUE",
+          "detail": null,
+          "_row": "thresholds_inclusive"
+        }
+      ],
+      "links": [
+        {
+          "link": "CP families in the table are defined in the configuration",
+          "status": "reproduced",
+          "expected": null,
+          "observed": "investment_position, deployment_scale",
+          "detail": null
+        },
+        {
+          "link": "measure-level percentiles (raw value -> measure percentile)",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "measure values other than import HHI, China and opposite-bloc shares are not stored per cell (index_outputs contributions)"
+        }
+      ],
+      "tables": {
+        "recipes": [
+          {
+            "component": "position: investment_position",
+            "variable": "Annual Investment Index",
+            "source": "EO Investment",
+            "orient": "fill structural_zero",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "position: cost_position",
+            "variable": "LCOE Index",
+            "source": "EO Cost Competitiveness",
+            "orient": "fill na",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "position: resource_endowment",
+            "variable": " Reserves$",
+            "source": "ES Reserves",
+            "orient": "fill structural_zero",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "position: resource_endowment",
+            "variable": "Potential Index$",
+            "source": "ES Reserves",
+            "orient": "fill na",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "position: deployment_scale",
+            "variable": "size",
+            "source": "EO Production",
+            "orient": "fill na",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "deployment need",
+            "variable": "dn_demand; dn_policy_gap; dn_system",
+            "source": "deployment_need_tbl",
+            "orient": "config/deployment_need.yml",
+            "rule": "family = percentile of the mean of its measure percentiles; deployment_need = mean of observed families"
+          }
+        ]
+      },
+      "notes": []
+    },
+    {
+      "n": 5,
+      "id": "indicators",
+      "title": "Normalized indicators",
+      "items": [
+        {
+          "item": "dn_demand",
+          "value": "0.8179",
+          "detail": null,
+          "_row": "dn_demand"
+        },
+        {
+          "item": "dn_policy_gap",
+          "value": null,
+          "detail": null,
+          "_row": "dn_policy_gap"
+        },
+        {
+          "item": "dn_system",
+          "value": "0.3766",
+          "detail": null,
+          "_row": "dn_system"
+        },
+        {
+          "item": "dn_families_observed",
+          "value": "2",
+          "detail": null,
+          "_row": "dn_families_observed"
+        },
+        {
+          "item": "cp_investment_position",
+          "value": "0.3586",
+          "detail": null,
+          "_row": "cp_investment_position"
+        },
+        {
+          "item": "cp_deployment_scale",
+          "value": "1",
+          "detail": null,
+          "_row": "cp_deployment_scale"
+        }
+      ],
+      "links": [
+        {
+          "link": "CP family values <- pillar variable contributions",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "variable contributions live in index_outputs.rds, not in the cell table"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 6,
+      "id": "weights",
+      "title": "Weights",
+      "items": [
+        {
+          "item": "cp_families",
+          "value": "equal over observed families (2 of 4 applicable)",
+          "detail": null,
+          "_row": "cp_families"
+        },
+        {
+          "item": "export_position_momentum_weight",
+          "value": "0",
+          "detail": null,
+          "_row": "export_position_momentum_weight"
+        },
+        {
+          "item": "siv_weights",
+          "value": "market 1, commons 1, option 1",
+          "detail": null,
+          "_row": "siv_weights"
+        },
+        {
+          "item": "io_investment_momentum_weight",
+          "value": "0.25",
+          "detail": null,
+          "_row": "io_investment_momentum_weight"
+        },
+        {
+          "item": "deployment_need",
+          "value": "equal over observed families",
+          "detail": null,
+          "_row": "deployment_need"
+        }
+      ],
+      "links": [
+        {
+          "link": "weights",
+          "status": "recorded",
+          "expected": null,
+          "observed": null,
+          "detail": "read from config/strategic_position.yml; no sensitivity of the SIV weights exists"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 7,
+      "id": "scores",
+      "title": "Intermediate scores",
+      "items": [
+        {
+          "item": "deployment_need",
+          "value": "0.5972",
+          "detail": null,
+          "_row": "deployment_need"
+        },
+        {
+          "item": "dn_confidence",
+          "value": "moderate",
+          "detail": null,
+          "_row": "dn_confidence"
+        },
+        {
+          "item": "competitive_position_score",
+          "value": "0.6793",
+          "detail": null,
+          "_row": "competitive_position_score"
+        },
+        {
+          "item": "competitive_position_percentile",
+          "value": "0.9656",
+          "detail": null,
+          "_row": "competitive_position_percentile"
+        },
+        {
+          "item": "cp_contender_pct",
+          "value": "0.9656",
+          "detail": null,
+          "_row": "cp_contender_pct"
+        },
+        {
+          "item": "cp_contender_basis",
+          "value": "all_countries",
+          "detail": null,
+          "_row": "cp_contender_basis"
+        },
+        {
+          "item": "cp_n_contenders",
+          "value": "0",
+          "detail": null,
+          "_row": "cp_n_contenders"
+        },
+        {
+          "item": "cp_is_contender",
+          "value": "FALSE",
+          "detail": null,
+          "_row": "cp_is_contender"
+        },
+        {
+          "item": "home_share_measured",
+          "value": null,
+          "detail": null,
+          "_row": "home_share_measured"
+        },
+        {
+          "item": "t3_capability_lo",
+          "value": "n_a",
+          "detail": null,
+          "_row": "t3_capability_lo"
+        }
+      ],
+      "links": [
+        {
+          "link": "deployment_need = mean of observed family percentiles",
+          "status": "reproduced",
+          "expected": "0.5972",
+          "observed": "0.5972",
+          "detail": null
+        },
+        {
+          "link": "dn_families_observed",
+          "status": "reproduced",
+          "expected": "2",
+          "observed": "2",
+          "detail": null
+        },
+        {
+          "link": "CP score = mean of observed CP families",
+          "status": "reproduced",
+          "expected": "0.6793",
+          "observed": "0.6793",
+          "detail": "families: investment_position, deployment_scale"
+        },
+        {
+          "link": "cp_contender_pct = cross-country percentile (fewer than min_n contenders)",
+          "status": "reproduced",
+          "expected": "0.9656",
+          "observed": "0.9656",
+          "detail": null
+        },
+        {
+          "link": "capability lower bound (Secure engine Test 3)",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "n_a",
+          "detail": "the posture engine is not rerun by the audit (its inputs are in strategic_position_inputs.rds)"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 8,
+      "id": "thresholds",
+      "title": "Threshold decisions",
+      "items": [
+        {
+          "item": "decision_step",
+          "value": "deployment_need",
+          "detail": null,
+          "_row": "decision_step"
+        },
+        {
+          "item": "borderline",
+          "value": "deployment_need",
+          "detail": null,
+          "_row": "borderline"
+        }
+      ],
+      "links": [],
+      "tables": {
+        "steps": [
+          {
+            "step": "secure_engine",
+            "test": "t1_consequence",
+            "value": "yes",
+            "threshold": null,
+            "margin": null,
+            "result": "yes",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t2_vulnerability",
+            "value": "no",
+            "threshold": null,
+            "margin": null,
+            "result": "no",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t2_path",
+            "value": "none",
+            "threshold": null,
+            "margin": null,
+            "result": "none",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t3_capability",
+            "value": "none",
+            "threshold": null,
+            "margin": null,
+            "result": "none",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t3_position",
+            "value": "n_a",
+            "threshold": null,
+            "margin": null,
+            "result": "n_a",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t4_strategy",
+            "value": "n_a",
+            "threshold": null,
+            "margin": null,
+            "result": "n_a",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t5_proportionality",
+            "value": "n_a",
+            "threshold": null,
+            "margin": null,
+            "result": "n_a",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure",
+            "test": "secure_override (posture engine)",
+            "value": "deploy",
+            "threshold": "secure",
+            "margin": null,
+            "result": "no",
+            "note": null
+          },
+          {
+            "step": "deployment",
+            "test": "deployment_need",
+            "value": "0.5972",
+            "threshold": "0.6",
+            "margin": "-0.0028",
+            "result": "low",
+            "note": "2 families observed"
+          },
+          {
+            "step": "position",
+            "test": "cp_contender_pct",
+            "value": "0.9656",
+            "threshold": "0.75",
+            "margin": "0.2156",
+            "result": "not_top_quarter",
+            "note": "contender FALSE, capability lower bound n_a (floor moderate/strong)"
+          }
+        ]
+      },
+      "notes": []
+    },
+    {
+      "n": 9,
+      "id": "classification",
+      "title": "Final classification",
+      "items": [
+        {
+          "item": "strategic_choice",
+          "value": "watch",
+          "detail": null,
+          "_row": "strategic_choice"
+        },
+        {
+          "item": "choice_label",
+          "value": "Watch",
+          "detail": null,
+          "_row": "choice_label"
+        },
+        {
+          "item": "strategic_posture",
+          "value": "deploy",
+          "detail": null,
+          "_row": "strategic_posture"
+        },
+        {
+          "item": "compete_mode",
+          "value": null,
+          "detail": null,
+          "_row": "compete_mode"
+        },
+        {
+          "item": "deploy_mode",
+          "value": "watch",
+          "detail": null,
+          "_row": "deploy_mode"
+        },
+        {
+          "item": "decision_step",
+          "value": "deployment_need",
+          "detail": null,
+          "_row": "decision_step"
+        },
+        {
+          "item": "posture_variant",
+          "value": "deploy",
+          "detail": null,
+          "_row": "posture_variant"
+        },
+        {
+          "item": "posture_confidence",
+          "value": "moderate",
+          "detail": null,
+          "_row": "posture_confidence"
+        },
+        {
+          "item": "choice_possible",
+          "value": "accelerate|watch",
+          "detail": null,
+          "_row": "choice_possible"
+        },
+        {
+          "item": "pivotal_inputs",
+          "value": "deployment_need",
+          "detail": null,
+          "_row": "pivotal_inputs"
+        },
+        {
+          "item": "consistency_flag",
+          "value": null,
+          "detail": null,
+          "_row": "consistency_flag"
+        },
+        {
+          "item": "robustness_class",
+          "value": "fragile",
+          "detail": null,
+          "_row": "robustness_class"
+        },
+        {
+          "item": "robustness_local_flips",
+          "value": "deployment_minus:accelerate",
+          "detail": null,
+          "_row": "robustness_local_flips"
+        },
+        {
+          "item": "robustness_structural_flips",
+          "value": null,
+          "detail": null,
+          "_row": "robustness_structural_flips"
+        },
+        {
+          "item": "robustness_fence_change",
+          "value": "TRUE",
+          "detail": null,
+          "_row": "robustness_fence_change"
+        }
+      ],
+      "links": [
+        {
+          "link": "choice = canonical rule rerun from the stored inputs",
+          "status": "reproduced",
+          "expected": "watch",
+          "observed": "watch",
+          "detail": null
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 10,
+      "id": "recommendation",
+      "title": "Resulting recommendation",
+      "items": [
+        {
+          "item": "choice",
+          "value": "watch",
+          "detail": null,
+          "_row": "choice"
+        },
+        {
+          "item": "choice_label",
+          "value": "Watch",
+          "detail": null,
+          "_row": "choice_label"
+        },
+        {
+          "item": "choice_action",
+          "value": "Keep open: buy competitively, do not force localization",
+          "detail": null,
+          "_row": "choice_action"
+        },
+        {
+          "item": "yard",
+          "value": "large",
+          "detail": null,
+          "_row": "yard"
+        },
+        {
+          "item": "yard_and_fence",
+          "value": "Large yard / Low fence",
+          "detail": null,
+          "_row": "yard_and_fence"
+        },
+        {
+          "item": "fence",
+          "value": "Low fence",
+          "detail": null,
+          "_row": "fence"
+        },
+        {
+          "item": "yard_rollup",
+          "value": "large",
+          "detail": null,
+          "_row": "yard_rollup"
+        },
+        {
+          "item": "fence_level",
+          "value": "low",
+          "detail": null,
+          "_row": "fence_level"
+        },
+        {
+          "item": "fence_posture",
+          "value": "A low fence: cross-cutting safeguards only (genuine trade remedies, forced-labour restrictions, basic security and safety standards).",
+          "detail": null,
+          "_row": "fence_posture"
+        },
+        {
+          "item": "gate_level",
+          "value": "wide_open",
+          "detail": null,
+          "_row": "gate_level"
+        },
+        {
+          "item": "build_posture",
+          "value": "Build what enables deployment (infrastructure, permitting, interoperability, procurement efficiency, supply-chain transparency), not domestic production. Delivery (diversified global): Supply comes from a diversified global base; the build is enabling infrastructure, not production.",
+          "detail": null,
+          "_row": "build_posture"
+        },
+        {
+          "item": "benchmark",
+          "value": "Delivered cost and deployment pace match or beat peers, with diversified supply and adequate resilience. Domestic production share is not a benchmark.",
+          "detail": null,
+          "_row": "benchmark"
+        },
+        {
+          "item": "success_metrics",
+          "value": "Delivered cost and pace of deployment; Supplier diversity (HHI) and the share held by any potentially coercive supplier; Compliance with cross-cutting safeguards (forced labour, safety, trade law)",
+          "detail": null,
+          "_row": "success_metrics"
+        },
+        {
+          "item": "exit_condition",
+          "value": "Re-test if concentration rises (the largest coercive supplier or the import HHI crosses its watch line), a control layer or physical chokepoint is identified, or a credible capability case emerges.",
+          "detail": null,
+          "_row": "exit_condition"
+        },
+        {
+          "item": "review_interval_years",
+          "value": "5",
+          "detail": null,
+          "_row": "review_interval_years"
+        },
+        {
+          "item": "reason",
+          "value": "Deployment need 0.60 is below 0.60: no major acceleration is required.",
+          "detail": null,
+          "_row": "reason"
+        },
+        {
+          "item": "watch_reasons",
+          "value": "low_deployment_need",
+          "detail": null,
+          "_row": "watch_reasons"
+        },
+        {
+          "item": "policy_alignment",
+          "value": "over_prioritized",
+          "detail": null,
+          "_row": "policy_alignment"
+        },
+        {
+          "item": "policy_alignment_label",
+          "value": "Too much intervention",
+          "detail": null,
+          "_row": "policy_alignment_label"
+        }
+      ],
+      "links": [
+        {
+          "link": "yard = yard of the choice (yard_rollup.R)",
+          "status": "reproduced",
+          "expected": "large",
+          "observed": "large",
+          "detail": null
+        },
+        {
+          "link": "policy-design text <- config/posture_policy_design.csv by posture variant",
+          "status": "recorded",
+          "expected": null,
+          "observed": "deploy",
+          "detail": null
+        },
+        {
+          "link": "policy alignment",
+          "status": "recorded",
+          "expected": null,
+          "observed": "over_prioritized",
+          "detail": "after the choice; never an input to it"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    }
+  ],
+  "bundle_comparison": {
+    "available": true,
+    "bundle_created": "2026-11-17T20:33:31Z",
+    "bundle_git_commit": "0496e7ba",
+    "detail_file": "posture/posture-detail-USA.b26e3b4b.json",
+    "core_file": "posture/posture-core.f665dc19.json",
+    "fields": [
+      {
+        "field": "choice (core)",
+        "pipeline": "watch",
+        "bundle": "watch",
+        "status": "same"
+      },
+      {
+        "field": "yard roll-up (core yd)",
+        "pipeline": "L",
+        "bundle": "L",
+        "status": "same"
+      },
+      {
+        "field": "posture",
+        "pipeline": "deploy",
+        "bundle": "deploy",
+        "status": "same"
+      },
+      {
+        "field": "variant",
+        "pipeline": "deploy",
+        "bundle": "deploy",
+        "status": "same"
+      },
+      {
+        "field": "deploy_mode",
+        "pipeline": "watch",
+        "bundle": "watch",
+        "status": "same"
+      },
+      {
+        "field": "confidence",
+        "pipeline": "moderate",
+        "bundle": "moderate",
+        "status": "same"
+      },
+      {
+        "field": "need",
+        "pipeline": "0.5972",
+        "bundle": "0.597",
+        "status": "same"
+      },
+      {
+        "field": "pivotal",
+        "pipeline": "deployment_need",
+        "bundle": "deployment_need",
+        "status": "same"
+      },
+      {
+        "field": "cp",
+        "pipeline": "0.9656",
+        "bundle": "0.966",
+        "status": "same"
+      },
+      {
+        "field": "borderline",
+        "pipeline": "deployment_need",
+        "bundle": "deployment_need",
+        "status": "same"
+      },
+      {
+        "field": "choice_possible",
+        "pipeline": "accelerate|watch",
+        "bundle": "accelerate|watch",
+        "status": "same"
+      },
+      {
+        "field": "reason",
+        "pipeline": "Deployment need 0.60 is below 0.60: no major acceleration is required.",
+        "bundle": "Deployment need 0.60 is below 0.60: no major acceleration is required.",
+        "status": "same"
+      },
+      {
+        "field": "policy.alignment",
+        "pipeline": "over_prioritized",
+        "bundle": "over_prioritized",
+        "status": "same"
+      },
+      {
+        "field": "dn_demand.value",
+        "pipeline": "0.8179",
+        "bundle": "0.818",
+        "status": "same"
+      },
+      {
+        "field": "dn_system.value",
+        "pipeline": "0.3766",
+        "bundle": "0.377",
+        "status": "same"
+      },
+      {
+        "field": "dn_families_observed",
+        "pipeline": "2",
+        "bundle": "2",
+        "status": "same"
+      },
+      {
+        "field": "cp_families.investment_position",
+        "pipeline": "0.3586",
+        "bundle": "0.359",
+        "status": "same"
+      },
+      {
+        "field": "cp_families.deployment_scale",
+        "pipeline": "1",
+        "bundle": "1",
+        "status": "same"
+      }
+    ],
+    "n_differences": 0,
+    "choice_pipeline": "watch",
+    "choice_bundle": "watch"
+  },
+  "gaps": ["1. position: CP families: raw rows -> this cell: not reproducible from shipped/pipeline data (the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded)", "1. deployment need: raw rows -> this cell: not reproducible from shipped/pipeline data (the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded)", "1. Secure engine (Tests 1-5) and capability floor: raw inputs: not reproducible from shipped/pipeline data (no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded)", "1. candidate raw inputs: vintage and licence recorded: provenance_gap (37 of 48 lack a vintage or a licence in config/raw_inputs_manifest.yml: comtrade_energy_trade, comtrade_total_export, critmin_export, critmin_import, critmin_mirror_import, critmin_total_export, ilo_earnings_by_activity, imf_commodity_prices, imf_lending_rates, imf_ppi, wdi_country_info, wdi_gdp, consolidated_hs6_energy_tech_long, dual_use_scores, hs6_categories_with_essential, hts_codes_categories_bolstered_final, comtrade_vintage, bcg_market_size, cat_country_ratings, ei_stat_review, ei_stat_review_wide, ev_midstream_capacity, gcim_investment_capacity, geothermal_lcoe, hs92_country_product_year_4, hs92_country_product_year_6, iea_clean_tech_guide, iea_cleantech_midstream, iea_ev_outlook, iea_pams, iea_relative_costs, ipcc_ghg_intensity, solar_potential, uranium_production, uranium_resources, wb_wind_country, uspto_y02_patents)", "4. measure-level percentiles (raw value -> measure percentile): not reproducible from shipped/pipeline data (measure values other than import HHI, China and opposite-bloc shares are not stored per cell (index_outputs contributions))", "5. CP family values <- pillar variable contributions: not reproducible from shipped/pipeline data (variable contributions live in index_outputs.rds, not in the cell table)", "7. capability lower bound (Secure engine Test 3): not reproducible from shipped/pipeline data (the posture engine is not rerun by the audit (its inputs are in strategic_position_inputs.rds))"]
+}

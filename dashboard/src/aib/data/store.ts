@@ -12,6 +12,7 @@ import {
   AIB_DATA_DIR, AIB_MANIFEST_FILE, AIB_VERSION, AibContractError, checkAibManifest, checkCompactsDoc, checkScenarioDoc, needsNewerApp, normalizeScenarioDoc,
   scenarioFilesOf, type AibDoc, type AibManifest, type AibScenarioDoc, type AibScenarioDocOf, type AibScenarioFileId,
 } from '../contract.ts';
+import { setAibBuild } from '../../shell/buildInfo.ts';
 
 export type AibLoadCode = 'NO_DATA' | 'NEWER' | 'CONTRACT' | 'NETWORK';
 
@@ -112,6 +113,7 @@ export class AibStore {
         const m = x as AibManifest;
         if (Math.floor(m.version) > AIB_VERSION) throw new AibLoadError('NEWER', NEWER_MESSAGE);
         this.done.set('manifest', m);
+        setAibBuild(m);
         return m;
       });
       this.manifestP = p.catch((e) => {

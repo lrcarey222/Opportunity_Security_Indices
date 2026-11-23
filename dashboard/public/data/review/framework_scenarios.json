@@ -1,0 +1,513 @@
+{
+  "schema": "aib-review-framework-scenarios",
+  "schema_version": 1,
+  "data_release": "rel-9c8f1877b5c6",
+  "built_at": "2026-11-21T00:00:00Z",
+  "scenarios": [
+    {
+      "scenario_id": "FS_001",
+      "concept": "Import dependence with trusted suppliers",
+      "prompt": "A country imports almost all of a refined material it needs. Its supply-chain need ranks 0.85 (above the 0.67 bar) because imports are large and concentrated, although most come from trusted partners. The prize for producing it at home is low (0.45), the country is not among the top quarter of producers, the node is not a commodity (large-yard) case and the security screen did not flag it. What does the framework recommend?",
+      "options": [
+        {
+          "value": "secure",
+          "label": "Secure",
+          "definition": "Protect an acute vulnerability. The answer may be domestic capacity, trusted allied supply, stockpiles, substitution or redundancy, not necessarily self-sufficiency."
+        },
+        {
+          "value": "preserve",
+          "label": "Preserve",
+          "definition": "Keep and strengthen a capability the country already does well and that still has strategic value."
+        },
+        {
+          "value": "catch_up",
+          "label": "Catch Up",
+          "definition": "Build capability where the strategic prize is high and the country has a credible base to build from. Catch Up means there is something real to build on, not a greenfield ambition."
+        },
+        {
+          "value": "partner",
+          "label": "Partner",
+          "definition": "The capability matters, but duplicating it at home is not the best answer. Rely on trusted partners or diversified supply, and make that reliance durable."
+        },
+        {
+          "value": "accelerate",
+          "label": "Accelerate",
+          "definition": "Deploy a technology faster because the domestic energy system needs more of it. It says nothing about making the equipment at home."
+        },
+        {
+          "value": "watch",
+          "label": "Watch (keep open)",
+          "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
+        },
+        {
+          "value": "not_assessed",
+          "label": "Not assessed: the data cannot support a call",
+          "definition": "The Explorer makes no strategic call when the need, the prize or the deployment need is not measured."
+        }
+      ],
+      "option_set": "posture_choice",
+      "intended_answer": "partner",
+      "explanation": "High need with a low prize and no strong position is Partner: the dependence matters, but duplicating the capability at home is not the best answer, so the response is reliable, diversified supply from trusted partners. Import dependence alone never makes a cell Secure.",
+      "terms": [
+        "Strategic Need",
+        "Partner",
+        "Strategic Industrial Value",
+        "trusted alternatives"
+      ]
+    },
+    {
+      "scenario_id": "FS_002",
+      "concept": "Globally competitive but not strategically indispensable",
+      "prompt": "A country is one of the world's leading producers of a component (Competitive Position 0.88, top quarter, with established capability). Its supply-chain need is low (0.30) and the prize is low (0.45). The node is not a commodity (large-yard) case and the security screen did not flag it. What does the framework recommend?",
+      "options": [
+        {
+          "value": "secure",
+          "label": "Secure",
+          "definition": "Protect an acute vulnerability. The answer may be domestic capacity, trusted allied supply, stockpiles, substitution or redundancy, not necessarily self-sufficiency."
+        },
+        {
+          "value": "preserve",
+          "label": "Preserve",
+          "definition": "Keep and strengthen a capability the country already does well and that still has strategic value."
+        },
+        {
+          "value": "catch_up",
+          "label": "Catch Up",
+          "definition": "Build capability where the strategic prize is high and the country has a credible base to build from. Catch Up means there is something real to build on, not a greenfield ambition."
+        },
+        {
+          "value": "partner",
+          "label": "Partner",
+          "definition": "The capability matters, but duplicating it at home is not the best answer. Rely on trusted partners or diversified supply, and make that reliance durable."
+        },
+        {
+          "value": "accelerate",
+          "label": "Accelerate",
+          "definition": "Deploy a technology faster because the domestic energy system needs more of it. It says nothing about making the equipment at home."
+        },
+        {
+          "value": "watch",
+          "label": "Watch (keep open)",
+          "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
+        },
+        {
+          "value": "not_assessed",
+          "label": "Not assessed: the data cannot support a call",
+          "definition": "The Explorer makes no strategic call when the need, the prize or the deployment need is not measured."
+        }
+      ],
+      "option_set": "posture_choice",
+      "intended_answer": "watch",
+      "explanation": "Preserve needs a strong position together with a high prize or a high need. With both low, the choice is Watch: the country keeps access open and stays competitive without industrial policy to protect the position.",
+      "terms": [
+        "Competitive Position",
+        "Watch",
+        "Preserve",
+        "Keep open"
+      ]
+    },
+    {
+      "scenario_id": "FS_003",
+      "concept": "Trade can replace a disrupted supplier without new investment",
+      "prompt": "If China's exports to allied economies stopped, allied importers of a product would lose 30% of their supply. Their existing trade links, each allowed to at most double, restore 86% of demand. With new or expanded links to other suppliers they restore 96%, leaving a 4% gap. After that redistribution no supplier holds more than 18% of allied supply and capping suppliers at 40% would cost no coverage. Which response does the AIB stress test assign?",
+      "options": [
+        {
+          "value": "COORDINATE",
+          "label": "Coordinate trade",
+          "definition": "Existing supplier capacity is enough, but countries need new or expanded trade relationships to use it."
+        },
+        {
+          "value": "BUILD",
+          "label": "Build capacity",
+          "definition": "Even the best coordinated trade response leaves a material gap. New production or processing capacity is required."
+        },
+        {
+          "value": "MANAGE SPECIALIZATION",
+          "label": "Manage specialization",
+          "definition": "Specialization creates economic value, but too much supply sits with one supplier. Keep the specialization while adding enough redundancy to reduce the risk."
+        },
+        {
+          "value": "LOW INTERVENTION",
+          "label": "Low intervention",
+          "definition": "The existing network is already resilient enough that major coordination is unlikely to add much."
+        },
+        {
+          "value": "INSUFFICIENT DATA",
+          "label": "Not enough evidence",
+          "definition": "The data are too thin to make a confident recommendation."
+        }
+      ],
+      "option_set": "aib_class",
+      "intended_answer": "COORDINATE",
+      "explanation": "The gap left after redistributed trade (4%) is under the 10% BUILD bar, supply is not concentrated, existing links alone fall short of 90%, and new or expanded links add 10 points (the coordination dividend, above the 5-point bar). Trade coordination, not new capacity, fills the gap.",
+      "terms": [
+        "COORDINATE",
+        "coordination dividend",
+        "existing network",
+        "residual gap"
+      ]
+    },
+    {
+      "scenario_id": "FS_004",
+      "concept": "Allied supply is insufficient even after redistribution",
+      "prompt": "If China's exports to allied economies stopped, allied importers would lose 52% of their supply of a product. Even when every other supplier redirects all the exports it can to allied buyers, coverage reaches only 49% of demand. Which response does the AIB stress test assign?",
+      "options": [
+        {
+          "value": "COORDINATE",
+          "label": "Coordinate trade",
+          "definition": "Existing supplier capacity is enough, but countries need new or expanded trade relationships to use it."
+        },
+        {
+          "value": "BUILD",
+          "label": "Build capacity",
+          "definition": "Even the best coordinated trade response leaves a material gap. New production or processing capacity is required."
+        },
+        {
+          "value": "MANAGE SPECIALIZATION",
+          "label": "Manage specialization",
+          "definition": "Specialization creates economic value, but too much supply sits with one supplier. Keep the specialization while adding enough redundancy to reduce the risk."
+        },
+        {
+          "value": "LOW INTERVENTION",
+          "label": "Low intervention",
+          "definition": "The existing network is already resilient enough that major coordination is unlikely to add much."
+        },
+        {
+          "value": "INSUFFICIENT DATA",
+          "label": "Not enough evidence",
+          "definition": "The data are too thin to make a confident recommendation."
+        }
+      ],
+      "option_set": "aib_class",
+      "intended_answer": "BUILD",
+      "explanation": "The residual gap after redistributed trade (51%) is above the 10% bar, so only new capacity can close it. BUILD is tested before concentration and before the coordination dividend.",
+      "terms": [
+        "BUILD",
+        "residual gap",
+        "exposure",
+        "reallocation"
+      ]
+    },
+    {
+      "scenario_id": "FS_005",
+      "concept": "Strong industrial capability, weak domestic deployment need",
+      "prompt": "At the Deployment & Use stage, a country is one of the strongest manufacturers of a technology (position 0.94). Its deployment need (current demand, the gap to its own targets and system need, averaged) is 0.50. The security screen did not flag it. What does the framework recommend for deploying the technology at home?",
+      "options": [
+        {
+          "value": "secure",
+          "label": "Secure",
+          "definition": "Protect an acute vulnerability. The answer may be domestic capacity, trusted allied supply, stockpiles, substitution or redundancy, not necessarily self-sufficiency."
+        },
+        {
+          "value": "preserve",
+          "label": "Preserve",
+          "definition": "Keep and strengthen a capability the country already does well and that still has strategic value."
+        },
+        {
+          "value": "catch_up",
+          "label": "Catch Up",
+          "definition": "Build capability where the strategic prize is high and the country has a credible base to build from. Catch Up means there is something real to build on, not a greenfield ambition."
+        },
+        {
+          "value": "partner",
+          "label": "Partner",
+          "definition": "The capability matters, but duplicating it at home is not the best answer. Rely on trusted partners or diversified supply, and make that reliance durable."
+        },
+        {
+          "value": "accelerate",
+          "label": "Accelerate",
+          "definition": "Deploy a technology faster because the domestic energy system needs more of it. It says nothing about making the equipment at home."
+        },
+        {
+          "value": "watch",
+          "label": "Watch (keep open)",
+          "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
+        },
+        {
+          "value": "not_assessed",
+          "label": "Not assessed: the data cannot support a call",
+          "definition": "The Explorer makes no strategic call when the need, the prize or the deployment need is not measured."
+        }
+      ],
+      "option_set": "posture_choice",
+      "intended_answer": "watch",
+      "explanation": "At Deployment & Use the choice reads only deployment need: Accelerate at 0.6 or more, otherwise Watch. Manufacturing strength does not enter the deployment choice, and Accelerate says nothing about making the equipment at home.",
+      "terms": [
+        "Deployment need",
+        "Accelerate",
+        "Watch",
+        "Deployment & Use"
+      ]
+    },
+    {
+      "scenario_id": "FS_006",
+      "concept": "High need and high prize, no strong position, credible pathway",
+      "prompt": "A country has high supply-chain need (0.80) and a high prize (0.75) for a processing step but is not among the top quarter of producers (position 0.40). It already holds 2% of world supply and has a committed investment pipeline, so its pathway to scale is credible. It is not a commodity case and the security screen did not flag it. What does the framework recommend?",
+      "options": [
+        {
+          "value": "secure",
+          "label": "Secure",
+          "definition": "Protect an acute vulnerability. The answer may be domestic capacity, trusted allied supply, stockpiles, substitution or redundancy, not necessarily self-sufficiency."
+        },
+        {
+          "value": "preserve",
+          "label": "Preserve",
+          "definition": "Keep and strengthen a capability the country already does well and that still has strategic value."
+        },
+        {
+          "value": "catch_up",
+          "label": "Catch Up",
+          "definition": "Build capability where the strategic prize is high and the country has a credible base to build from. Catch Up means there is something real to build on, not a greenfield ambition."
+        },
+        {
+          "value": "partner",
+          "label": "Partner",
+          "definition": "The capability matters, but duplicating it at home is not the best answer. Rely on trusted partners or diversified supply, and make that reliance durable."
+        },
+        {
+          "value": "accelerate",
+          "label": "Accelerate",
+          "definition": "Deploy a technology faster because the domestic energy system needs more of it. It says nothing about making the equipment at home."
+        },
+        {
+          "value": "watch",
+          "label": "Watch (keep open)",
+          "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
+        },
+        {
+          "value": "not_assessed",
+          "label": "Not assessed: the data cannot support a call",
+          "definition": "The Explorer makes no strategic call when the need, the prize or the deployment need is not measured."
+        }
+      ],
+      "option_set": "posture_choice",
+      "intended_answer": "catch_up",
+      "explanation": "A high prize without a top-quarter position goes to the pathway test: a capability anchor (2% of world supply) corroborated by a second evidence family (the pipeline) is credible, so the choice is Catch Up: build from a real base.",
+      "terms": [
+        "Catch Up",
+        "credible pathway",
+        "capability anchor",
+        "Strategic Industrial Value"
+      ]
+    },
+    {
+      "scenario_id": "FS_007",
+      "concept": "High need and high prize, no strong position, no pathway",
+      "prompt": "Same as before (need 0.80, prize 0.75, position 0.40), but the country has no production, no capacity, no exports and no pipeline in the step or the adjacent ones, so it has no credible pathway. What does the framework recommend?",
+      "options": [
+        {
+          "value": "secure",
+          "label": "Secure",
+          "definition": "Protect an acute vulnerability. The answer may be domestic capacity, trusted allied supply, stockpiles, substitution or redundancy, not necessarily self-sufficiency."
+        },
+        {
+          "value": "preserve",
+          "label": "Preserve",
+          "definition": "Keep and strengthen a capability the country already does well and that still has strategic value."
+        },
+        {
+          "value": "catch_up",
+          "label": "Catch Up",
+          "definition": "Build capability where the strategic prize is high and the country has a credible base to build from. Catch Up means there is something real to build on, not a greenfield ambition."
+        },
+        {
+          "value": "partner",
+          "label": "Partner",
+          "definition": "The capability matters, but duplicating it at home is not the best answer. Rely on trusted partners or diversified supply, and make that reliance durable."
+        },
+        {
+          "value": "accelerate",
+          "label": "Accelerate",
+          "definition": "Deploy a technology faster because the domestic energy system needs more of it. It says nothing about making the equipment at home."
+        },
+        {
+          "value": "watch",
+          "label": "Watch (keep open)",
+          "definition": "Do not make domestic production a major policy priority. Keep access affordable and diversified, and watch for changes in risk or opportunity."
+        },
+        {
+          "value": "not_assessed",
+          "label": "Not assessed: the data cannot support a call",
+          "definition": "The Explorer makes no strategic call when the need, the prize or the deployment need is not measured."
+        }
+      ],
+      "option_set": "posture_choice",
+      "intended_answer": "partner",
+      "explanation": "With a high prize but no credible pathway, high need makes the choice Partner (with low need it would be Watch). Catch Up requires something real to build on; a greenfield ambition is not enough.",
+      "terms": [
+        "Partner",
+        "Catch Up",
+        "credible pathway",
+        "greenfield"
+      ]
+    },
+    {
+      "scenario_id": "FS_008",
+      "concept": "Security is narrower than self-sufficiency",
+      "prompt": "A country imports 95% of a material and its supply-chain need ranks 0.95. What else must hold for the Explorer to recommend Secure rather than another choice?",
+      "options": [
+        {
+          "value": "need_enough",
+          "label": "Nothing else; need above the bar is enough for Secure."
+        },
+        {
+          "value": "route",
+          "label": "The node's rule allows a security route and the country meets it: control-system risk, a coercive chokepoint, or the resilience of an essential function that takes years to rebuild."
+        },
+        {
+          "value": "self_sufficiency",
+          "label": "The country could become self-sufficient in the material within a few years."
+        },
+        {
+          "value": "china_majority",
+          "label": "China supplies more than half of the country's imports."
+        }
+      ],
+      "option_set": "custom",
+      "intended_answer": "route",
+      "explanation": "Secure is an override reached only through one of three curated routes (operational control, coercive chokepoint, systemic resilience), each allowed node by node; dependence or concentration alone is not enough. Secure does not mean reshoring: the answer may be trusted allied supply, stockpiles or redundancy.",
+      "terms": [
+        "Secure",
+        "security route",
+        "coercive chokepoint",
+        "systemic resilience",
+        "operational control"
+      ]
+    },
+    {
+      "scenario_id": "FS_009",
+      "concept": "Specialization that needs managing, not replacing",
+      "prompt": "If China's exports stopped, allied importers would lose 25% of their supply of a product. Redistributed trade restores 94% of demand (a 6% gap), but in that solution one supplier would hold 45% of allied supply. Which response does the AIB stress test assign?",
+      "options": [
+        {
+          "value": "COORDINATE",
+          "label": "Coordinate trade",
+          "definition": "Existing supplier capacity is enough, but countries need new or expanded trade relationships to use it."
+        },
+        {
+          "value": "BUILD",
+          "label": "Build capacity",
+          "definition": "Even the best coordinated trade response leaves a material gap. New production or processing capacity is required."
+        },
+        {
+          "value": "MANAGE SPECIALIZATION",
+          "label": "Manage specialization",
+          "definition": "Specialization creates economic value, but too much supply sits with one supplier. Keep the specialization while adding enough redundancy to reduce the risk."
+        },
+        {
+          "value": "LOW INTERVENTION",
+          "label": "Low intervention",
+          "definition": "The existing network is already resilient enough that major coordination is unlikely to add much."
+        },
+        {
+          "value": "INSUFFICIENT DATA",
+          "label": "Not enough evidence",
+          "definition": "The data are too thin to make a confident recommendation."
+        }
+      ],
+      "option_set": "aib_class",
+      "intended_answer": "MANAGE SPECIALIZATION",
+      "explanation": "The gap (6%) is under the 10% BUILD bar, but the solution relies on one supplier for 45%, at or above the 40% concentration bar, so the class is MANAGE SPECIALIZATION: keep the specialization and manage the dependence on that supplier.",
+      "terms": [
+        "MANAGE SPECIALIZATION",
+        "concentration",
+        "residual gap"
+      ]
+    },
+    {
+      "scenario_id": "FS_010",
+      "concept": "Sectoral Compact or a targeted action",
+      "prompt": "Under a scenario, a supply chain's lead mission is to build missing capacity in one step. That step carries 12.5% of the chain's supply to shift, US$1.026bn of US$8.21bn. No other mission is larger. What does the framework recommend for the chain?",
+      "options": [
+        {
+          "value": "sectoral",
+          "label": "Potential Sectoral Compact",
+          "definition": "A standing multi-country arrangement across the whole chain (coordinated investment, offtake, stockpiles, common trade rules), because joint action is needed on a large enough part of it (a quarter of the supply at risk, or US$1bn)."
+        },
+        {
+          "value": "narrower",
+          "label": "Targeted action",
+          "definition": "Some steps need joint action, but each is too small to justify a standing arrangement: act on those steps alone."
+        },
+        {
+          "value": "none",
+          "label": "No compact needed",
+          "definition": "No step needs joint action under this scenario: existing trade and national policy are enough."
+        }
+      ],
+      "option_set": "compact_decision",
+      "intended_answer": "sectoral",
+      "explanation": "A mission is material when its steps carry at least 25% of the chain's lost supply OR at least US$1bn (R/aib/aib_strategic.R aib_strategic_missions). 12.5% misses the share bar, but US$1.026bn clears the dollar bar, so the lead mission is material and the chain reads as a Potential Sectoral Compact rather than a targeted action. This is Grid Equipment & Conductors under Managed Interdependence today.",
+      "terms": [
+        "Sectoral Compact",
+        "Targeted action",
+        "materiality",
+        "mission"
+      ]
+    },
+    {
+      "scenario_id": "FS_011",
+      "concept": "Smallest useful coalition",
+      "prompt": "A compact page reports the smallest useful coalition for a chain. What does that number mean?",
+      "options": [
+        {
+          "value": "min_members",
+          "label": "The fewest economies whose coordination brings every supply-chain step of the compact to at least 95% of the demand anchors' demand after a shock, counting the new capacity (up to 10% of demand) that an eligible member host could add."
+        },
+        {
+          "value": "all_allies",
+          "label": "Every economy in the 59-economy allied demand scope that trades in the chain."
+        },
+        {
+          "value": "agreements",
+          "label": "The economies already linked to the anchors by trade or investment agreements."
+        },
+        {
+          "value": "top_producers",
+          "label": "The economies with a top-quarter Competitive Position in the chain."
+        }
+      ],
+      "option_set": "custom",
+      "intended_answer": "min_members",
+      "explanation": "The coalition is an exact minimum: the smallest set of members that reaches the coverage target (95% headline; 90% and 99% are also reported, config/aib.yml coverage_targets) of the anchors' demand, with the new capacity an eligible member host may add (config/aib.yml coalition_increment, 10%) counting toward it.",
+      "terms": [
+        "smallest useful coalition",
+        "coverage target",
+        "anchors",
+        "prospective hosts"
+      ]
+    },
+    {
+      "scenario_id": "FS_012",
+      "concept": "Keep open versus Watch",
+      "prompt": "A Country page lists a technology step under \"Low fence · Keep open\". What does that mean in the framework?",
+      "options": [
+        {
+          "value": "separate_choice",
+          "label": "It is a seventh strategic choice, between Partner and Watch."
+        },
+        {
+          "value": "watch_action",
+          "label": "It is the action wording for Watch: buy competitively and keep access diversified, without forcing domestic production."
+        },
+        {
+          "value": "free_trade",
+          "label": "It recommends removing all tariffs and trade measures on the step."
+        },
+        {
+          "value": "secure_route",
+          "label": "It is a Secure route for steps with open, diversified supply."
+        }
+      ],
+      "option_set": "custom",
+      "intended_answer": "watch_action",
+      "explanation": "The six choices are Secure, Preserve, Catch Up, Partner, Accelerate and Watch. \"Keep open\" is never a choice name: it is how Watch and its low fence are worded as an action. It is not a free-trade prescription.",
+      "terms": [
+        "Watch",
+        "Keep open",
+        "low fence",
+        "large yard"
+      ]
+    }
+  ]
+}
