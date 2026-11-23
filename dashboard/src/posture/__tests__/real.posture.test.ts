@@ -125,7 +125,14 @@ describe.skipIf(!existsSync(join(DIR, 'manifest.json')))('real posture bundle (p
         }
         expect(n.watchReasons.length, at).toBeGreaterThan(0);
         for (const r of n.watchReasons) expect(Object.keys(WATCH_REASON_LABEL), at).toContain(r);
-        if (n.stage === DEPLOYMENT_STAGE) expect(n.watchReasons, at).toEqual(['low_deployment_need']);
+        // at Deployment: below the bar, and (R decision_engine.R, 2026-11-17) a strong deployment case where one holds
+        if (n.stage === DEPLOYMENT_STAGE) {
+          expect(n.watchReasons[0], at).toBe('low_deployment_need');
+          const extra = new Set(['strong_deployment_case', 'phase_down', 'strong_momentum', 'declining']);
+          expect(n.watchReasons.slice(1).every((r) => extra.has(r)), at).toBe(true);
+          // one kind of Watch at most (R deployment_need.R dn_watch_kind)
+          expect(n.watchReasons.filter((r) => r === 'phase_down' || r === 'strong_momentum' || r === 'declining').length, at).toBeLessThanOrEqual(1);
+        }
         else expect(n.watchReasons, at).not.toContain('low_deployment_need');
       }
     }

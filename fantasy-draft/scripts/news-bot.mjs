@@ -20,9 +20,19 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { COUNTRY, SECTOR, TYPE, POS, NEG, PILLAR, BIGNUM } from "./lexicon.mjs";
+import { COUNTRY, SECTOR, TYPE, POS, NEG, PILLAR, BIGNUM, CARD_TECH, CARD_STAGE, CARD_DEFAULT_STAGE } from "./lexicon.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+
+/* the six-stage cards (tech|stage -> card id) from the generated data-osi.js */
+export function loadCardIds(file = join(HERE, "..", "data-osi.js")) {
+  try {
+    const txt = readFileSync(file, "utf8");
+    const json = txt.slice(txt.indexOf("window.FD_OSI = ") + "window.FD_OSI = ".length).replace(/;\s*$/, "");
+    return Object.fromEntries(JSON.parse(json).cards.map(c => [c.tech + "|" + c.stage, c.n]));
+  } catch (e) { console.warn("could not read data-osi.js cards:", e.message); return {}; }
+}
+const CARD_IDS = loadCardIds();
 
 /* ---------- feeds ---------- */
 const FEEDS = [
@@ -45,11 +55,33 @@ function phraseRe(p) {
 const has = (text, phrases) => phrases.some(p => phraseRe(p).test(text));
 function countHits(text, phrases) { let n = 0; for (const p of phrases) if (phraseRe(p).test(text)) n++; return n; }
 
+/* ---------- six-stage cards a headline is about ---------- */
+/* t: the lowercased, space-padded headline. A technology phrase that names its stage scores that card;
+   otherwise the headline's stage words pick the stage(s), else the technology's default stage. */
+export function cardsFor(t, ids = CARD_IDS) {
+  const stagesHit = Object.keys(CARD_STAGE).filter(st => has(t, CARD_STAGE[st]));
+  const out = new Set();
+  const techs = new Set();
+  for (const rule of CARD_TECH) {
+    if (!has(t, rule.phrases)) continue;
+    if (rule.stage) { if (ids[rule.tech + "|" + rule.stage]) out.add(ids[rule.tech + "|" + rule.stage]); techs.add(rule.tech + "!"); }
+    else techs.add(rule.tech);
+  }
+  for (const tech of techs) {
+    if (tech.endsWith("!")) continue;
+    if (techs.has(tech + "!")) continue;          // the stage-naming phrase already decided
+    const cand = stagesHit.map(st => ids[tech + "|" + st]).filter(Boolean);
+    if (cand.length) cand.forEach(n => out.add(n));
+    else if (ids[tech + "|" + CARD_DEFAULT_STAGE[tech]]) out.add(ids[tech + "|" + CARD_DEFAULT_STAGE[tech]]);
+  }
+  return [...out];
+}
+
 /* ---------- tag one headline (rules) ---------- */
 export function tagHeadline(title) {
   const t = " " + title.toLowerCase() + " ";
   const countries = Object.keys(COUNTRY).filter(id => has(t, COUNTRY[id]));
-  const sectors = Object.keys(SECTOR).map(Number).filter(n => has(t, SECTOR[n]));
+  const sectors = [...Object.keys(SECTOR).map(Number).filter(n => has(t, SECTOR[n])), ...cardsFor(t)];
   if (!sectors.length && !countries.length) return null;
 
   let type = "other";
@@ -165,6 +197,11 @@ function leagueTargets(lg) {
   Object.values(seq).forEach(e => sectors.add(Number(e.subN)));
   return { countries, sectors, leagueCountries: [...countries] };
 }
+/* a season whose last week has ended takes no more events (they used to pile into its final week) */
+export function seasonOver(lg, now = Date.now()) {
+  const s = lg && lg.season; if (!s || !s.startTs) return false;
+  return now >= s.startTs + (s.weeks || 12) * 7 * 864e5;
+}
 function currentWeek(lg) {
   const s = lg.season; if (!s || !s.startTs) return 0;
   const wk = Math.floor((Date.now() - s.startTs) / (7 * 864e5));
@@ -196,7 +233,8 @@ async function main() {
     try {
       const cand = tags.filter(x => x.tag);              // AI-refine only the shortlisted ones
       const ai = await aiTag(cand.map(x => x.it.title), key);
-      ai.forEach(a => { if (cand[a.i]) cand[a.i].tag = { countries: a.countries || [], sectors: (a.sectors || []).map(Number), type: a.type || "other", sentiment: a.sentiment < 0 ? -1 : 1, magnitude: a.magnitude || 1, pillar: a.pillar || "ENSC" }; });
+      // the AI tags the legacy sub-sectors; the six-stage cards always come from the rules
+      ai.forEach(a => { if (cand[a.i]) cand[a.i].tag = { countries: a.countries || [], sectors: [...(a.sectors || []).map(Number).filter(n => n < 100), ...cardsFor(" " + cand[a.i].it.title.toLowerCase() + " ")], type: a.type || "other", sentiment: a.sentiment < 0 ? -1 : 1, magnitude: a.magnitude || 1, pillar: a.pillar || "ENSC" }; });
       console.log(`AI-tagged ${ai.length} headlines`);
     } catch (e) { console.warn("AI tagging failed, using rules:", e.message); }
   }
@@ -223,6 +261,7 @@ async function main() {
   let written = 0, skipped = 0;
   for (const [id, lg] of Object.entries(leagues)) {
     if (!lg || !lg.players) continue;
+    if (seasonOver(lg)) continue;
     const { countries, sectors } = leagueTargets(lg);
     if (!countries.size && !sectors.size) continue;
     const week = currentWeek(lg);

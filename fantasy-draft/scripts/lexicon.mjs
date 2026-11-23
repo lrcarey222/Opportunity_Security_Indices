@@ -73,6 +73,57 @@ export const SECTOR = {
   39: ["green steel", "carbon capture", " ccs ", "low-carbon cement", "direct air capture"],
 };
 
+/* ---------------------------------------------------------------------------
+   SIX-STAGE CARDS (2026-11-18): a headline scores the card of its technology at
+   its stage. Card ids come from data-osi.js (tech|stage -> id), so they are not
+   repeated here. A technology phrase may name its stage outright (stage), else the
+   headline's stage words decide, else the technology's default stage (if that
+   card exists). Leagues drafted before the switch keep scoring the legacy SECTOR
+   numbers above.
+   --------------------------------------------------------------------------- */
+export const CARD_TECH = [
+  { tech: "Batteries", phrases: ["battery", "batteries", "gigafactory", "energy storage", "battery storage", "bess"] },
+  { tech: "Batteries", stage: "Refining", phrases: ["cathode", "anode", "lithium hydroxide", "lithium carbonate", "lithium refining", "battery materials", "nickel refining", "cobalt refining", "precursor"] },
+  { tech: "Batteries", stage: "Extraction", phrases: ["lithium mine", "nickel mine", "cobalt mine", "lithium mining"] },
+  { tech: "Batteries", stage: "Recovery", phrases: ["battery recycling", "black mass"] },
+  { tech: "Coal", phrases: ["coal", "lignite", "coking coal"] },
+  { tech: "Electric Grid", phrases: ["power grid", "electric grid", "the grid", "transmission line", "transformer", "switchgear", "substation", "hvdc", "interconnector", "power cable", "grid upgrade"] },
+  { tech: "Electric Grid", stage: "Refining", phrases: ["electrical steel", "grain-oriented steel", "copper smelter", "aluminium smelter", "aluminum smelter"] },
+  { tech: "Electric Grid", stage: "Extraction", phrases: ["copper mine", "bauxite"] },
+  { tech: "Electric Vehicles", phrases: ["electric vehicle", " ev ", "evs", "electric car", "electric truck", "ev charging", "charging station", "charging network"] },
+  { tech: "Electric Vehicles", stage: "Refining", phrases: ["rare earth", "rare-earth", "rare earths", "neodymium", "dysprosium"] },
+  { tech: "Electric Vehicles", stage: "Components", phrases: ["permanent magnet", "magnet", "traction motor", "drive unit", "e-axle"] },
+  { tech: "Electric Vehicles", stage: "Extraction", phrases: ["spodumene", "graphite mine", "monazite", "manganese ore"] },
+  { tech: "Gas", phrases: ["natural gas", "lng", "gas field", "gas pipeline", "shale gas", "gas supply", "gas exports", "gas imports"] },
+  { tech: "Gas", stage: "Deployment", phrases: ["gas-fired", "gas power plant", "gas turbine"] },
+  { tech: "Geothermal", phrases: ["geothermal"] },
+  { tech: "Green Hydrogen", phrases: ["green hydrogen", "hydrogen", "electrolyser", "electrolyzer", "green ammonia"] },
+  { tech: "Nuclear", phrases: ["nuclear", "reactor", "small modular reactor", " smr "] },
+  { tech: "Nuclear", stage: "Extraction", phrases: ["uranium mine", "uranium mining", "uranium"] },
+  { tech: "Nuclear", stage: "Refining", phrases: ["enrichment", "haleu", "nuclear fuel", "conversion plant"] },
+  { tech: "Oil", phrases: ["crude", "oil price", "oil prices", "oil field", "oilfield", "oil output", "oil production", "oil exports", "oil imports", "petroleum", "barrel"] },
+  { tech: "Oil", stage: "Refining", phrases: ["oil refinery", "refinery", "refineries"] },
+  { tech: "Solar", phrases: ["solar", "photovoltaic", " pv "] },
+  { tech: "Solar", stage: "Refining", phrases: ["polysilicon", "silicon metal"] },
+  { tech: "Solar", stage: "Components", phrases: ["solar cell", "solar wafer", "wafer"] },
+  { tech: "Solar", stage: "Assembly", phrases: ["solar module", "solar panel", "solar factory"] },
+  { tech: "Wind", phrases: ["wind farm", "wind power", "wind turbine", "offshore wind", "onshore wind", "floating wind", "wind energy"] },
+  { tech: "Wind", stage: "Components", phrases: ["turbine blade", "nacelle"] },
+];
+export const CARD_STAGE = {
+  Extraction: ["mine", "mining", "miner", "ore", "deposit", "drilling", "exploration", "upstream", "production field"],
+  Refining: ["refining", "refinery", "processing plant", "processing", "smelter", "smelting", "conversion", "enrichment"],
+  Components: ["component", "components", "parts", "supplier"],
+  Assembly: ["factory", "manufacturing", "manufacturer", "maker", "assembly", "production line", "gigafactory", "made in"],
+  Deployment: ["installation", "installed", "install", "deploy", "deployment", "wind farm", "solar farm", "power plant", "capacity", "auction", "sales", "adoption", "grid connection", "fleet", "rollout"],
+  Recovery: ["recycling", "recycle", "recycled", "recycler", "scrap", "second-life", "black mass", "waste oil"],
+};
+export const CARD_DEFAULT_STAGE = {
+  "Batteries": "Assembly", "Coal": "Extraction", "Electric Grid": "Deployment", "Electric Vehicles": "Assembly",
+  "Gas": "Extraction", "Geothermal": "Deployment", "Green Hydrogen": "Deployment", "Nuclear": "Assembly",
+  "Oil": "Extraction", "Solar": "Deployment", "Wind": "Deployment",
+};
+
 export const TYPE = {
   partnership: ["partnership", "agreement", "deal", "pact", "alliance", "mou", "memorandum", "cooperation", "joint venture", "treaty", "accord", "sign", "signed", "bilateral"],
   policy: ["policy", "subsidy", "subsidies", "tariff", "tariffs", "export control", "sanction", "sanctions", "ban", "regulation", "act", "bill", "mandate", "incentive", "tax credit", "grant", "permit", "law", "ruling"],

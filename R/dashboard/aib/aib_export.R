@@ -1069,3 +1069,13 @@ aib_dash_strategic_codes <- function(s) {
                                                                                        unlist(x$coalition), unlist(x$buildHosts),
                                                                                        unlist(lapply(x$nodes, `[[`, 4)))))))))
 }
+
+# The export's provenance (2026-11-21): when scripts/84 wrote the bundle (created, ISO 8601 UTC) and the commit
+# stamp of the code that wrote it (git_commit: scripts/utils/git_stamp.R, "-dirty" when R/, scripts/ or config/
+# had uncommitted changes; NA, written as null, when unknown). scripts/84 adds both to the main document's meta
+# and to the manifest (contract.ts AibMeta / AibManifest, optional fields).
+aib_dash_provenance <- function(x, created, git_commit = NA_character_) {
+  x$created <- created
+  x$git_commit <- if (is.null(git_commit) || !length(git_commit) || is.na(git_commit[1]) || !nzchar(git_commit[1])) NA_character_ else as.character(git_commit[1])
+  x
+}

@@ -28,6 +28,7 @@ import type { PostureCell, PostureCore, PostureDetail } from './contract.ts';
 import { MEASURE_PLAIN, TERMS } from '../content/vocabulary.ts';
 import { cellKey, score100 } from './derive.ts';
 import {
+  DEPLOY_CASE_COLOR, deployCaseParts, deployCaseWords,
   ALIGNMENT_LABEL, borderlineWords, EVIDENCE_LABEL, FENCE_LABEL, fenceChoiceWord, flagWords, nodeFence, nodeFill, NOT_ASSESSED_BORDER, RATIONALE_LABEL, stageDisplay,
   stageShort, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
@@ -65,6 +66,8 @@ export function cellLabel(c: PostureCell, parts: readonly StepPart[] = []): stri
   if (c.posture === 'S' && c.rationale) bits.push(RATIONALE_LABEL[c.rationale]);
   if (parts.length) bits.push(partsFenceWords(parts, MAX_TIP_PARTS));
   else if (mixedYards(c)) bits.push((rollupWords(c) ?? '').replace(/^Mixed: /, 'mixed yards: '));
+  const caseW = deployCaseWords(c.deployCase);
+  if (caseW) bits.push(`deployment case: ${caseW}`);
   if (c.need !== null) bits.push(`${NEED_WORD[c.needType].toLowerCase()} ${score100(c.need)}`);
   if (c.prize !== null) bits.push(`prize ${score100(c.prize)}`);
   if (c.cp !== null) bits.push(`position ${score100(c.cp)}`);
@@ -160,6 +163,14 @@ function Tip({ c, partnerName, parts, anchor, id }: { c: PostureCell; partnerNam
         {fence && <span>· {FENCE_LABEL[fence]}</span>}
       </p>
       {c.posture === 'S' && c.rationale && <p>{RATIONALE_LABEL[c.rationale]}</p>}
+      {deployCaseParts(c.deployCase).length > 0 && (
+        <p className="mt-1 flex items-center gap-1.5" data-testid="strategy-map-tip-case">
+          <CaseStrip parts={deployCaseParts(c.deployCase)} width={16} />
+          <span>
+            Case: <span className="text-paper">{deployCaseWords(c.deployCase)}</span>
+          </span>
+        </p>
+      )}
       {lead && parts.length > 0 && <TipParts parts={parts} lead />}
       {!parts.length && mixedYards(c) && (
         <p className="mt-1 text-paper" data-testid="strategy-map-tip-yards">
@@ -181,6 +192,17 @@ function Tip({ c, partnerName, parts, anchor, id }: { c: PostureCell; partnerNam
       {c.flag && <p className="text-signal">{flagWords(c.flag)}</p>}
       {!lead && parts.length > 0 && <TipParts parts={parts} lead={false} />}
     </div>
+  );
+}
+
+/** The deployment case as a strip of one or two colour segments (the map cell's foot, the tooltip, the legend). */
+export function CaseStrip({ parts, width, height = 6 }: { parts: readonly string[]; width?: number; height?: number }) {
+  return (
+    <span aria-hidden="true" className="inline-flex shrink-0 gap-[2px]" style={{ width, height }} data-testid="case-strip">
+      {parts.map((p) => (
+        <span key={p} className="flex-1 rounded-[1px]" style={{ background: DEPLOY_CASE_COLOR[p as keyof typeof DEPLOY_CASE_COLOR] }} data-case-part={p} />
+      ))}
+    </span>
   );
 }
 
@@ -318,6 +340,20 @@ export function PostureMatrix({ core, cells, selected, onSelect, names = {}, det
                       data-mixed={split ? 'true' : undefined}
                       data-parts={parts.length || undefined}
                     />
+                    {isDep && deployCaseParts(c.deployCase).length > 0 && (
+                      // the deployment case: a strip along the cell's foot, ringed in the card colour so it reads on any fill
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-[4px] bottom-[4px] flex h-[5px] gap-[2px] rounded-[2px]"
+                        style={{ boxShadow: '0 0 0 2px #1f2937', background: '#1f2937' }}
+                        data-testid="map-case"
+                        data-case={c.deployCase ?? undefined}
+                      >
+                        {deployCaseParts(c.deployCase).map((p) => (
+                          <span key={p} className="flex-1 rounded-[1px]" style={{ background: DEPLOY_CASE_COLOR[p] }} data-case-part={p} />
+                        ))}
+                      </span>
+                    )}
                     {shown && hover && <Tip c={c} partnerName={c.partner1 ? (names[c.partner1] ?? c.partner1) : null} parts={parts} anchor={hover.el} id={tipId} />}
                   </span>
                 );

@@ -39,7 +39,7 @@ const CATEGORIES = {
    ovr is the mean of the four pillars. cost is a salary-cap value (credits).
    glyph = key into the icon art library.
    --------------------------------------------------------------------------- */
-const SUBSECTORS = [
+const LEGACY_SUBSECTORS = [
   // A — Upstream materials and processed inputs
   { n: 1,  cat: "A", name: "Critical-Mineral Extraction", glyph: "pickaxe",
     tagline: "Dig where the future is buried.", NAT: 80, ENSC: 85, CLIM: 75, OPP: 75 },
@@ -132,7 +132,7 @@ const SUBSECTORS = [
 ];
 
 // Derive OVR + cost + tier for each sub-sector (OVR = mean of the four pillars).
-SUBSECTORS.forEach(s => {
+LEGACY_SUBSECTORS.forEach(s => {
   s.ovr = Math.round((s.NAT + s.ENSC + s.CLIM + s.OPP) / 4);
   s.cost = Math.max(6, Math.round((s.ovr - 62) * 3.4));   // salary-cap credits
   s.tier = s.ovr >= 93 ? "S" : s.ovr >= 88 ? "A" : s.ovr >= 80 ? "B" : "C";
@@ -253,14 +253,3 @@ const ALLIES = [
     bio: "Steel, transformers, EVs and solar spanning two continents. The bridge between the blocs." },
 ];
 
-/* Fast lookup helpers */
-const ALLY_BY_ID = Object.fromEntries(ALLIES.map(a => [a.id, a]));
-const SUB_BY_N = Object.fromEntries(SUBSECTORS.map(s => [s.n, s]));
-
-/* Fantasy score of a sub-sector for a given ally (OVR + home synergy + signature) */
-function scoreFor(ally, sub) {
-  let score = sub.ovr;
-  score += (ally.home[sub.cat] || 0);
-  if (ally.picks.includes(sub.n)) score += 6;   // signature-fit bonus
-  return score;
-}

@@ -1,0 +1,41 @@
+# Fantasy Draft cards (fantasy-draft/, scripts/41_export_fantasy_draft_cards.R): the draft's cards are the
+# canonical decision's technology x six-stage cells (dashboard/public/data/posture), rated per game country
+# with the Country page's High / Medium / Low fences (High = Secure; Medium = Preserve, Catch Up, Partner,
+# Accelerate; Low = Watch).
+
+# The posture bundle the cards are read from, relative to the repo root (its manifest names the core file).
+posture_dir: dashboard/public/data/posture
+# The generated file the game loads (a plain script: the game has no build step and no network calls).
+output: fantasy-draft/data-osi.js
+
+# Game country id -> ISO3. The game's 21 fighters; the card statistics are their means.
+allies:
+  US: USA
+  CA: CAN
+  MX: MEX
+  UK: GBR
+  DE: DEU
+  FR: FRA
+  IT: ITA
+  JP: JPN
+  KR: KOR
+  AU: AUS
+  IN: IND
+  TW: TWN
+  NL: NLD
+  ES: ESP
+  SE: SWE
+  FI: FIN
+  PL: POL
+  "NO": NOR   # quoted: a bare NO key parses as FALSE
+  NZ: NZL
+  SG: SGP
+  TR: TUR
+
+# Card id = 100 + 10 x (technology position, 0-based) + (stage position, 1-6). Append new technologies at the
+# end so the ids of drafted cards never change.
+techs: [Batteries, Coal, Electric Grid, Electric Vehicles, Gas, Geothermal, Green Hydrogen, Nuclear, Oil, Solar, Wind]
+
+# A cell is a card when at least one game country has it assessed, and (drop_all_low) not when every game
+# country rates it Low (Watch): a card no country should draft.
+drop_all_low: true

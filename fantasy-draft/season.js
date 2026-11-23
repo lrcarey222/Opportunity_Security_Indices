@@ -135,7 +135,7 @@
   const PILL = { NAT: "Nat. security", ENSC: "Energy/econ", CLIM: "Climate", OPP: "Economic opp." };
   function evTags(ev) {
     const cs = (ev.countries || []).map(id => (ALLY_BY_ID[id] || { flag: id === "CN" ? "🇨🇳" : "🏳️" }).flag).join(" ");
-    const secs = (ev.sectors || []).slice(0, 3).map(n => SUB_BY_N[n] ? (n + "·" + CATEGORIES[SUB_BY_N[n].cat].short) : n).join(", ");
+    const secs = (ev.sectors || []).filter(n => SUB_BY_N[n] && (isCard(SUB_BY_N[n]) || !(ev.sectors || []).some(m => m >= 100))).slice(0, 3).map(n => SUB_BY_N[n].name).join(", ");
     return `<span class="ev-tag">${ev.sentiment < 0 ? "▼" : "▲"} ${ev.type}</span>${cs ? `<span class="ev-tag">${cs}</span>` : ""}${secs ? `<span class="ev-tag">${secs}</span>` : ""}<span class="ev-tag">${PILL[ev.pillar] || ev.pillar}</span>`;
   }
   function feedRow(ev, pts, touch) {
@@ -211,7 +211,7 @@
       <div class="hero">
         <div class="kicker">${escHtml(snap.name || "League")} · Week ${wk + 1} of ${weeks}</div>
         <div class="player-select">League Home</div>
-        <p class="lede">Every player's country and drafted sub-sectors earn fantasy points from real headlines all season. Leader takes the crown after week ${weeks}. Current leader: <b>${seatFlag(leader.uid)} ${escHtml(seatName(leader.uid))}</b>.</p>
+        <p class="lede">Every player's country and drafted cards earn fantasy points from real headlines all season. Leader takes the crown after week ${weeks}. Current leader: <b>${seatFlag(leader.uid)} ${escHtml(seatName(leader.uid))}</b>.</p>
       </div>
       ${myMatch}
       <div class="section-title"><h3>Standings</h3><div class="rule"></div><span class="hint">Season points + weekly head-to-head record</span></div>
@@ -252,9 +252,9 @@
     const ptsCell = (pts, side) => `<td class="mb-pts ${side} ${pts < 0 ? "neg" : pts > 0 ? "pos" : "zero"}">${sgn(pts)}</td>`;
     const playerCell = (subN, side, uid) => {
       if (subN == null) return `<td class="mb-player ${side} empty"></td>`;
-      const sub = SUB_BY_N[subN], cat = sub ? CATEGORIES[sub.cat] : null;
+      const sub = SUB_BY_N[subN], cat = sub ? catMeta(sub) : null;
       return `<td class="mb-player ${side}" data-sec="${subN}" data-uid="${uid}" style="--cc2:${cat ? cat.c2 : "#888"}">
-        <span class="mb-nm">${sub ? escHtml(sub.name) : "Sector " + subN}</span><span class="mb-cat">${sub ? sub.cat + " · " + cat.short : ""}</span></td>`;
+        <span class="mb-nm">${sub ? escHtml(sub.name) : "Sector " + subN}</span><span class="mb-cat">${sub ? cat.label : ""}</span></td>`;
     };
     const natCell = (uid, c, side) => c
       ? `<td class="mb-player ${side}" data-sec="country" data-uid="${uid}" style="--cc2:${c.c2}"><span class="mb-nm">National news</span><span class="mb-cat">${c.flag} ${c.name}</span></td>`
@@ -277,10 +277,10 @@
       <div class="hero">
         <div class="kicker">${escHtml(snap.name || "League")} · Week ${wk + 1} of ${weeks}</div>
         <div class="player-select">Matchup</div>
-        <p class="lede">Head-to-head box score — every sub-sector you drafted and the points it scored this week. Higher total wins the week. Tap any sub-sector for the headlines behind its points.</p>
+        <p class="lede">Head-to-head box score — every card you drafted and the points it scored this week. Higher total wins the week. Tap any card for the headlines behind its points.</p>
       </div>
       <div class="matchup">${matchPortrait(me, myPts, myPts >= oppPts)}<div class="mu-vs">VS</div>${oppSide}</div>
-      <div class="section-title"><h3>Box score — week ${wk + 1}</h3><div class="rule"></div><span class="hint">Points scored per drafted sub-sector</span></div>
+      <div class="section-title"><h3>Box score — week ${wk + 1}</h3><div class="rule"></div><span class="hint">Points scored per drafted card</span></div>
       <div class="mbox-wrap"><table class="mbox">
         <thead><tr><th class="mb-team left" colspan="2">${meC.flag} ${escHtml(seatName(me))}</th><th class="mb-slot">SLOT</th><th class="mb-team right" colspan="2">${opp != null ? (opC.flag + " " + escHtml(seatName(opp))) : "Bye week"}</th></tr></thead>
         <tbody>${body}</tbody>
@@ -311,13 +311,13 @@
       title = "National news — " + c.name;
       subtitle = bd.country.scale < 1
         ? `Country + ally-partnership news. Volume-normalized for a fair matchup: raw ${sgn(bd.country.raw)} from ${bd.country.vol} stories × ${bd.country.scale.toFixed(2)} → ${sgn(bd.country.pts)} counted. Stories below show raw points.`
-        : `Country-wide news across all sub-sectors, plus double-points for partnerships with league allies (${bd.country.vol} ${bd.country.vol === 1 ? "story" : "stories"}).`;
+        : `Country-wide news across all cards, plus double-points for partnerships with league allies (${bd.country.vol} ${bd.country.vol === 1 ? "story" : "stories"}).`;
       c1 = c.c1; c2 = c.c2; ico = `<div class="sd-flag">${c.flag}</div>`;
       pts = bd.country.pts; list = bd.country.events;
     } else {
-      const subN = parseInt(key, 10), sub = SUB_BY_N[subN], cat = sub ? CATEGORIES[sub.cat] : null;
+      const subN = parseInt(key, 10), sub = SUB_BY_N[subN], cat = sub ? catMeta(sub) : null;
       const row = bd.sectors.find(s => s.subN === subN) || { pts: 0, events: [] };
-      title = sub ? sub.name : "Sector " + subN; subtitle = sub ? `${sub.cat} · ${cat.short} — “${sub.tagline}”` : "";
+      title = sub ? sub.name : "Sector " + subN; subtitle = sub ? `${cat.label} — “${sub.tagline}”` : "";
       if (cat) { c1 = cat.c1; c2 = cat.c2; ico = iconSVG(sub.glyph, cat.c1, cat.c2, 46); }
       pts = row.pts; list = row.events;
     }
