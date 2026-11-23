@@ -35,6 +35,11 @@
 //   Review data             public/data/review/** (manifest, cases, method cards, framework
 //                           scenarios, robustness, QC summary, synthetic demo fixtures)         <= 80 kB
 //   All data                Strategic + Sector + Country + Compacts + Posture + Review          <= 57 MB
+//   Agreements page         /aib/agreements (2026-11-06): entry + AibLayout + the agreements view + world
+//                           atlas + compacts manifest + document (the layout's) + country manifest (the map's
+//                           join) + agreements manifest + the global file; the economy view counts the largest
+//                           economy file instead of the global file                            <= 1 MB
+//   each Agreements file    global 400 kB, an economy's file 120 kB
 //
 // Fails above a limit, when a manifest lists a chunk file that does not exist, or when a route chunk
 // the figures need cannot be found in the build. A data bundle that is absent (CI without the
@@ -56,6 +61,8 @@ const sectorDir = process.env.BUDGET_SECTOR_DIR ? resolve(root, process.env.BUDG
 const countryDir = process.env.BUDGET_COUNTRY_DIR ? resolve(root, process.env.BUDGET_COUNTRY_DIR) : join(dataDir, 'country');
 // BUDGET_AIB_DIR: another Sectoral Compacts bundle (e.g. src/aib/__fixtures__/synthetic/data/aib)
 const aibDir = process.env.BUDGET_AIB_DIR ? resolve(root, process.env.BUDGET_AIB_DIR) : join(dataDir, 'aib');
+// BUDGET_AGREEMENTS_DIR: another partnership-agreements bundle (e.g. src/agreements/__fixtures__/synthetic/data/agreements)
+const agreementsDir = process.env.BUDGET_AGREEMENTS_DIR ? resolve(root, process.env.BUDGET_AGREEMENTS_DIR) : join(dataDir, 'agreements');
 
 const KB = 1024;
 const MB = 1024 * 1024;
@@ -101,9 +108,14 @@ const LIMITS = {
   // the posture bundle (scripts/91, schema 2, 2026-10-29): manifest + core + 214 drawer documents measured
   // 1.87 MB on the wire; the measured size + ~15% (design E4). 2.4 MB since 2026-10-31: the rebuilt bundle
   // (Atlas 2024, the new basket and method) carries the Yards & Fences drawer evidence and measured 2.28 MB;
-  // each of the 214 drawer documents still loads only when its economy's drawer opens
-  postureData: 2.4 * MB,
+  // each of the 214 drawer documents still loads only when its economy's drawer opens. 2.6 MB since 2026-11-17:
+  // current trade and innovation took main's bundle to 2.36 MB (98.5% of 2.4) and the deployment case and Watch
+  // kinds (compact case strings) to 2.43 MB; a page still loads only the core and one drawer (per-file limits in
+  // src/posture/__tests__/budget.test.ts and the R exporter are unchanged)
+  postureData: 2.6 * MB,
 };
+// each file of the agreements bundle (gzipped): the columnar global file and an economy's file
+const AGREEMENTS_FILE_LIMIT = { global: 400 * KB, country: 120 * KB };
 // spec_country.md A10 (the same numbers as COUNTRY_BUDGET_GZ in src/country/contract.ts)
 // manifest: 15 kB until 2026-10-14; 20 kB once the 31 memo entries (2.8 kB gz) were added (16.9 kB);
 // 21 kB at six stages (2026-10-28: 18,560 B); 25 kB once the first five brief entries (their figure lists)
@@ -230,6 +242,8 @@ const keys = {
   reviewCase: routeKey('the case review view', /src\/review\/views\/CaseReviewView\.tsx$/, 'CaseReviewView', false),
   aibCompact: routeKey('the compact view', /src\/aib\/views\/CompactView\.tsx$/, 'CompactView', false),
   aibAbout: routeKey('the compacts about view', /src\/aib\/views\/AibAboutView\.tsx$/, 'AibAboutView', false),
+  // the partnership agreements page (/aib/agreements, 2026-11-06); optional in a build without it
+  aibAgreements: routeKey('the agreements view', /src\/agreements\/views\/AgreementsView\.tsx$/, 'AgreementsView', false),
 };
 
 const codeSize = (files) => [...files].reduce((s, f) => s + gz(join(dist, f)), 0);
@@ -470,6 +484,36 @@ figure(
 for (const s of aibScenarios) figure(`Compacts scenario ${s.id}`, [[s.name, s.size]], LIMITS.aibScenario, 'lazy');
 const aibData = aibManifestSize + aibDocSize + aibScenarioSize;
 if (aibManifest) figure('Compacts data', [['manifest + document', aibManifestSize + aibDocSize], ...aibScenarios.map((s) => [`scenario ${s.id}`, s.size])], LIMITS.aibData);
+// the partnership agreements (scripts/43): JSON files, gzipped on the wire; absent: code only
+const agreementsManifest = readManifest(join(agreementsDir, 'manifest.json'));
+const agreementsManifestSize = agreementsManifest ? gz(join(agreementsDir, 'manifest.json')) : 0;
+const agreementsListed = (name) => {
+  if (!name) return 0;
+  const file = join(agreementsDir, name);
+  if (!existsSync(file)) {
+    fail(`Agreements file ${name} is listed in its manifest but missing`);
+    return 0;
+  }
+  return gz(file);
+};
+const agreementsGlobalSize = agreementsManifest ? agreementsListed(agreementsManifest.files?.global) : 0;
+const agreementsCountries = agreementsManifest ? Object.entries(agreementsManifest.files?.countries ?? {}).map(([iso3, f]) => [iso3, f, agreementsListed(f)]) : [];
+const agreementsMaxCountry = maxOf(agreementsCountries.map(([, , n]) => n));
+const agreementsData = agreementsManifest ? walkFiles(agreementsDir).reduce((s, f) => s + gz(f), 0) : 0;
+const agreementsNote = agreementsManifest ? '' : 'Agreements data absent (scripts/43): code only';
+if (keys.aibAgreements) {
+  const code = closure([entryKey, keys.aibLayout, keys.aibAgreements].filter(Boolean));
+  if (atlasKey) code.add(vm[atlasKey].file);
+  const shared = [['code + atlas', codeSize(code)], ['font', fontSize], ['compacts manifest + document', aibManifestSize + aibDocSize], ['country manifest', countryManifestSize], ['agreements manifest', agreementsManifestSize]];
+  figure('Agreements page /aib/agreements', [...shared, ['agreements global file', agreementsGlobalSize]], LIMITS.agreementsPage, [agreementsNote, aibNote].filter(Boolean).join('; '));
+  if (agreementsCountries.length) figure('Agreements economy view', [...shared, ['largest economy file', agreementsMaxCountry]], LIMITS.agreementsPage);
+}
+if (agreementsManifest) {
+  figure('Agreements global file', [[agreementsManifest.files?.global ?? '(none)', agreementsGlobalSize]], AGREEMENTS_FILE_LIMIT.global, 'lazy');
+  for (const [iso3, f, n] of agreementsCountries) if (n > AGREEMENTS_FILE_LIMIT.country) fail(`Agreements file of ${iso3} (${f}) ${size(n)} > ${size(AGREEMENTS_FILE_LIMIT.country)}`);
+  if (agreementsCountries.length) figure('Agreements largest economy file', [[agreementsCountries.reduce((m, x) => (x[2] > m[2] ? x : m))[1], agreementsMaxCountry]], AGREEMENTS_FILE_LIMIT.country, 'lazy');
+  figure('Agreements data', [['manifest + global + economy files', agreementsData]], LIMITS.agreementsData, 'not counted in All data');
+}
 if (postureManifest) figure('Posture data', [['manifest + core', postureManifestSize + postureCoreSize], [`${postureDetails.length} drawer documents`, postureData - postureManifestSize - postureCoreSize]], LIMITS.postureData);
 // the expert review data (scripts/review/build-review-data.mjs): JSON, gzipped on the wire; every file under
 // public/data/review counts. The case view loads the manifest and one campaign's cases file. BUDGET_REVIEW_DIR: another set.
@@ -529,6 +573,8 @@ if (aibManifest) console.log(`  data/aib/: manifest ${size(aibManifestSize)}, ${
 else console.log('  (public/data/aib/manifest.json not found: export the Sectoral Compacts bundle with scripts/84)');
 if (postureManifest) console.log(`  data/posture/: manifest ${size(postureManifestSize)}, ${postureManifest.core} ${size(postureCoreSize)}; ${postureDetails.length} drawer documents (largest ${size(postureMaxDetail)}), ${size(postureData)} in all`);
 else console.log('  (public/data/posture/manifest.json not found: export the posture bundle with scripts/91)');
+if (agreementsManifest) console.log(`  data/agreements/: manifest ${size(agreementsManifestSize)}, global ${size(agreementsGlobalSize)}; ${agreementsCountries.length} economy files (largest ${size(agreementsMaxCountry)}), ${size(agreementsData)} in all`);
+else console.log('  (public/data/agreements/manifest.json not found: export the partnership agreements with scripts/43)');
 console.log('');
 console.log('Figures');
 for (const f of figures) {
@@ -546,6 +592,7 @@ const aibRoutes = [
   ['compacts index view', keys.aibIndex],
   ['compact view', keys.aibCompact],
   ['about view', keys.aibAbout],
+  ['agreements view', keys.aibAgreements],
 ].filter(([, k]) => k);
 if (aibRoutes.length) {
   const own = (k) => codeSize(new Set([vm[k].file, ...(vm[k].css ?? [])]));

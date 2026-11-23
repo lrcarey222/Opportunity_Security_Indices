@@ -26,6 +26,8 @@ const SPEC_IDS = [
   'allied_industrial_base', 'managed_interdependence', 'aib_scenario', 'aib_treatment', 'sectoral_compact', 'strategic_compact', 'allied_coverage',
   'coordination_dividend', 'remaining_gap', 'workstream', 'compact_tiers', 'minimum_coalition', 'n1_resilience', 'concentration_cap', 'demand_anchor', 'scaling_host', 'specialty_host',
   'development_host',
+  // the partnership agreements (/aib/agreements, 2026-11-06)
+  'partnership_depth', 'agreement_gap', 'electro_industrial_agreement', 'delivery_evidence', 'coding_basis',
 ];
 
 describe('glossary content (C3.2)', () => {

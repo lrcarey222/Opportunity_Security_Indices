@@ -1,5 +1,5 @@
 // The Allied Industrial Base tier-2 links (IA refactor, 2026-10-16): Overview (/aib), Partnerships
-// (/aib/partnerships), Sectoral Compacts (/compacts and everything under it), Country roles (/aib/roles)
+// (/aib/partnerships), Agreements (/aib/agreements, 2026-11-06: the partnership agreements), Sectoral Compacts (/compacts and everything under it), Country roles (/aib/roles)
 // and Managed Interdependence (/aib/diversification, 2026-10-19: the diversification scenario, the
 // explainer of the toggle's Managed Interdependence; the path is kept). /compacts/about keeps its path
 // (About lists it). AibLayout registers them with the shell; the shell's static AIB_NAV (shell/modules.ts)
@@ -18,6 +18,8 @@ export { withScenario } from './scenarioUrl.ts';
 
 /** The nav label of the Managed Interdependence explainer (/aib/diversification). */
 export const MI_NAV_LABEL = 'Managed Interdependence';
+/** The nav label of the partnership agreements page (/aib/agreements, 2026-11-06; src/agreements/). */
+export const AGREEMENTS_NAV_LABEL = 'Agreements';
 /** The nav label of the Sectoral Compacts (the strategic compacts, their workstreams and every compact page). */
 export const COMPACTS_NAV_LABEL = 'Sectoral Compacts';
 /** What the compact candidates are called in the pages since 2026-10-20 (/compacts/workstreams). */
@@ -27,7 +29,7 @@ export const WORKSTREAMS_LABEL = 'Workstreams';
 export const WORKSTREAMS_SEGMENT = 'workstreams';
 export const STRATEGIC_SEGMENT = 's';
 
-export type AibNavKey = 'overview' | 'partnerships' | 'compacts' | 'roles' | 'diversification' | 'about';
+export type AibNavKey = 'overview' | 'partnerships' | 'agreements' | 'compacts' | 'roles' | 'diversification' | 'about';
 
 /** Which Sectoral Compacts page a pathname shows: the strategic landing, a strategic compact, the Workstreams index, a workstream (AIB-Cxx) or About. */
 export type CompactsPage = 'strategic' | 'strategic-compact' | 'workstreams' | 'workstream' | 'about';
@@ -68,7 +70,7 @@ export function aibNavKeyOf(pathname: string): AibNavKey | null {
   if (s[0] === 'aib') {
     if (s.length === 1) return 'overview';
     const v = s[1].toLowerCase();
-    return v === 'partnerships' ? 'partnerships' : v === 'roles' ? 'roles' : v === 'diversification' ? 'diversification' : null;
+    return v === 'partnerships' ? 'partnerships' : v === 'agreements' ? 'agreements' : v === 'roles' ? 'roles' : v === 'diversification' ? 'diversification' : null;
   }
   if (s[0] !== 'compacts') return null;
   return s.length > 1 && s[1].toLowerCase() === 'about' ? 'about' : 'compacts';
@@ -136,6 +138,7 @@ export function aibNavItems(pathname: string, _firstId?: string | null, search =
   return [
     { key: 'overview', label: 'Overview', to: `/aib${q}`, active: active === 'overview' },
     { key: 'partnerships', label: 'Partnerships', to: `/aib/partnerships${q}`, active: active === 'partnerships' },
+    { key: 'agreements', label: AGREEMENTS_NAV_LABEL, to: `/aib/agreements${q}`, active: active === 'agreements' },
     { key: 'compacts', label: COMPACTS_NAV_LABEL, to: `/compacts${q}`, active: active === 'compacts' },
     { key: 'roles', label: 'Country roles', to: `/aib/roles${q}`, active: active === 'roles' },
     { key: 'diversification', label: MI_NAV_LABEL, to: `/aib/diversification${q}`, active: active === 'diversification' },
