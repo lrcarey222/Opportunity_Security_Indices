@@ -740,10 +740,11 @@ describe('formats', () => {
 });
 
 describe('nav and the shell', () => {
-  it('the module nav (IA refactor): Overview, Partnerships, Sectoral Compacts (every compact page), Country roles, Diversification', () => {
+  it('the module nav (IA refactor): Overview, Partnerships, Agreements (2026-11-06), Sectoral Compacts (every compact page), Country roles, Diversification', () => {
     expect(aibNavItems('/aib', 'AIB-C01')).toEqual([
       { key: 'overview', label: 'Overview', to: '/aib', active: true },
       { key: 'partnerships', label: 'Partnerships', to: '/aib/partnerships', active: false },
+      { key: 'agreements', label: 'Agreements', to: '/aib/agreements', active: false },
       { key: 'compacts', label: 'Sectoral Compacts', to: '/compacts', active: false },
       { key: 'roles', label: 'Country roles', to: '/aib/roles', active: false },
       { key: 'diversification', label: 'Managed Interdependence', to: '/aib/diversification', active: false },
@@ -760,6 +761,8 @@ describe('nav and the shell', () => {
     expect(compactIdOfPath('/countries/JPN')).toBeNull();
     expect(aibNavKeyOf('/compacts/About')).toBe('about');
     expect(aibNavKeyOf('/aib/roles')).toBe('roles');
+    expect(aibNavKeyOf('/aib/agreements')).toBe('agreements');
+    expect(aibNavItems('/aib/agreements', null, '?country=JPN&scn=decoupling').filter((i) => i.active).map((i) => [i.key, i.to])).toEqual([['agreements', '/aib/agreements?scn=decoupling']]);
     expect(aibNavKeyOf('/overview')).toBeNull();
   });
 
@@ -767,8 +770,10 @@ describe('nav and the shell', () => {
     expect(MODULES.find((m) => m.id === 'aib')).toMatchObject({ id: 'aib', label: 'Allied Industrial Base', home: '/aib' });
     for (const p of ['/compacts', '/compacts/about', '/compacts/AIB-C01', '/aib', '/aib/roles', '/aib/diversification']) expect(placeOf(p)).toBe('aib');
     expect(placeOf('/compact')).toBeNull();
-    expect(AIB_NAV.map((n) => n.label)).toEqual(['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles', 'Managed Interdependence']);
+    expect(AIB_NAV.map((n) => n.label)).toEqual(['Overview', 'Partnerships', 'Agreements', 'Sectoral Compacts', 'Country roles', 'Managed Interdependence']);
     expect(AIB_NAV.find((n) => n.key === 'diversification')!.to).toBe('/aib/diversification');
+    expect(AIB_NAV.find((n) => n.key === 'agreements')!.to).toBe('/aib/agreements');
+    expect(shellAibNavKeyOf('/aib/agreements')).toBe('agreements');
     expect(shellAibNavKeyOf('/aib/diversification')).toBe('diversification');
     expect(shellAibNavKeyOf('/compacts/AIB-C01')).toBe('compacts');
     expect(shellAibNavKeyOf('/compacts')).toBe('compacts');

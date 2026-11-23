@@ -122,7 +122,7 @@ const main = () => document.querySelector('main') as HTMLElement;
 const noAcronyms = () => expect(bareAcronyms(document.body)).toEqual([]);
 const tabs = () => screen.getByRole('navigation', { name: 'Modules' });
 const views = () => screen.getByRole('navigation', { name: 'Allied Industrial Base views' });
-const AIB_VIEWS = ['Overview', 'Partnerships', 'Sectoral Compacts', 'Country roles', 'Managed Interdependence'];
+const AIB_VIEWS = ['Overview', 'Partnerships', 'Agreements', 'Sectoral Compacts', 'Country roles', 'Managed Interdependence'];
 
 /** Open every table twin of the page; the number of cards that have one. */
 function openTwins(): number {
