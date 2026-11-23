@@ -45,17 +45,22 @@ source(local({
 #   Current Policies and Stated Policies projections for CHN, IND, JPN, KOR, USA).
 # - ei_stat_review_world_energy.csv  Energy Institute Statistical Review 2026: oil use (oil_tes_ej, EJ).
 # - ei_stat_review_world_energy_wide.xlsx, sheet "Grid Scale BESS Capacity": stationary battery capacity.
+# - wb_wdi.csv  World Bank WDI (CC BY 4.0): access to electricity, EG.ELC.ACCS.ZS (deployment case only).
+# and data/processed/import_exposure_tbl.rds (fuel supplier risk, deployment case only; optional).
 # and (data/processed) import_dependence_tbl.rds (scripts/10), climate_src_weo_values_tbl.rds and
 # climate_src_weo_geo_tbl.rds (scripts/18), iea_pathways_values_tbl.rds (scripts/17),
 # outputs/index_outputs.rds (scripts/20; the country universe, as scripts/26 builds it).
-# BNEF (subscription) is never read here (D13).
+# BNEF (subscription) never enters deployment_need or the home market (D13). Since 2026-11-17 (user decision) the
+# BNEF New Energy Outlook feeds the climate case of the descriptive deployment case tag only; its raw values are
+# not written to diagnostics or exports, only the case percentiles derived from them.
 #
 # Outputs:
 # - data/processed/deployment_need_tbl.rds  one row per universe country x technology at Deployment:
 #   deployment_need (0-1), deployment_need_pct, dn_families_observed, dn_confidence, dn_basis,
 #   dn_scenarios; per family dn_<f> (family percentile), dn_<f>_score, _basis, _scenario, _measures,
 #   _source, _note; dn_climate_aligned* (World, never in the score); dn_regional_proxy_* (context);
-#   dn_target_* / dn_re_* (target detail); deployment_trend*; dnm_<measure>* (each measure's raw value,
+#   dn_target_* / dn_re_* (target detail); dn_case* (the deployment case tag: security, commitment, demand;
+#   descriptive, never in deployment_need); deployment_trend*; dnm_<measure>* (each measure's raw value,
 #   percentile, basis, years, source, context).
 # - data/processed/deployment_need_measures_tbl.rds  the long measure table (one row per country x
 #   technology x measure).
@@ -82,6 +87,9 @@ outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
   file.path(processed_dir, "outputs")
 }
 diagnostics_dir <- file.path(repo_root, "diagnostics", "strategic_position")
+# OPSI_DN_OUT_DIR: write the tables and diagnostics there instead (sensitivity runs with OPSI_DEPLOYMENT_NEED)
+dn_out_dir <- Sys.getenv("OPSI_DN_OUT_DIR", "")
+if (nzchar(dn_out_dir)) diagnostics_dir <- dn_out_dir
 dir.create(diagnostics_dir, recursive = TRUE, showWarnings = FALSE)
 cfg <- yaml::read_yaml(Sys.getenv("OPSI_DEPLOYMENT_NEED", file.path(repo_root, "config", "deployment_need.yml")))
 
@@ -149,13 +157,49 @@ bess <- if (length(bess_sheet)) {
 }
 message("EI BESS: ", if (is.null(bess)) 0 else length(unique(bess$iso3)), " countries.")
 
+# Case-only inputs (the deployment case tag; optional: absent -> those measures are not assessed)
+ie_path <- file.path(processed_dir, "import_exposure_tbl.rds")
+fuel_risk <- if (file.exists(ie_path)) dn_fuel_supplier_risk(readRDS(ie_path)) else {
+  warning(ie_path, " not found (scripts/26 trade inputs); fuel supplier risk not assessed.")
+  NULL
+}
+message("Fuel supplier risk: ", if (is.null(fuel_risk)) 0 else length(unique(fuel_risk$iso3)), " importers.")
+wdi_path <- file.path(raw_data_path, "wb_wdi.csv")
+access <- if (file.exists(wdi_path)) {
+  dn_wdi_latest(utils::read.csv(wdi_path, stringsAsFactors = FALSE, check.names = TRUE), "EG.ELC.ACCS.ZS",
+                is_country = function(iso3) iso3 %in% universe$iso3)
+} else {
+  warning(wdi_path, " not found; electricity access gap not assessed.")
+  NULL
+}
+message("Electricity access: ", if (is.null(access)) 0 else nrow(access), " countries.")
+# BloombergNEF New Energy Outlook (subscription; the climate case only, never deployment_need; raw values are
+# never written to diagnostics or exports): the newest staged release.
+neo_files <- sort(list.files(raw_data_path, pattern = "^\\d{4}-\\d{2}-\\d{2} - New Energy Outlook \\d{4}\\.csv$", full.names = TRUE))
+neo <- if (length(neo_files)) dn_neo_prepare(utils::read.csv(neo_files[length(neo_files)], skip = 2, check.names = FALSE,
+                                                             stringsAsFactors = FALSE)) else {
+  warning("No BNEF New Energy Outlook file in ", raw_data_path, "; the climate pathway is not assessed.")
+  NULL
+}
+neo_region <- if (!is.null(neo)) {
+  dn_neo_region_of(data.frame(iso3 = universe$iso3,
+                              wb_region = suppressWarnings(countrycode::countrycode(universe$iso3, "iso3c", "region")),
+                              un_subregion = suppressWarnings(countrycode::countrycode(universe$iso3, "iso3c", "un.regionsub.name")),
+                              stringsAsFactors = FALSE), cfg)
+} else NULL
+message("BNEF NEO: ", if (is.null(neo)) "absent" else paste0(basename(neo_files[length(neo_files)]), "; ",
+        sum(neo_region$basis == "national"), " national, ", sum(neo_region$basis == "regional_proxy"), " regional proxies."))
+
 inp <- list(ember = ember, weo_national = weo_national, import_dep = import_dep, gevo_share = gevo_share,
-            gevo_stock = gevo_stock, gevo_sales = gevo_sales, oil = oil, targets = targets, bess = bess)
+            gevo_stock = gevo_stock, gevo_sales = gevo_sales, oil = oil, targets = targets, bess = bess,
+            fuel_risk = fuel_risk, access = access, neo = neo, neo_region = neo_region)
 
 # ---- Deployment Need -------------------------------------------------------------------------------------
 built <- dn_build_measures(inp, cfg)
 dn_tbl <- dn_assemble(built$measures, universe, cfg)
 scored <- dn_score_measures(built$measures, universe$iso3, cfg)
+# the deployment case tag (descriptive; deployment_need is unchanged)
+dn_tbl <- dn_cases(scored, dn_tbl, cfg)
 
 # ---- Home market -----------------------------------------------------------------------------------------
 hm_measures <- hm_build_measures(inp, built, cfg)
@@ -174,6 +218,8 @@ td <- if (!is.null(built$shortfall)) dn_target_detail(built$shortfall, cfg) else
 if (!is.null(td$own)) dn_tbl <- join_by_key(dn_tbl, td$own, c("iso3", "tech"))
 if (!is.null(td$renewables)) dn_tbl <- join_by_key(dn_tbl, td$renewables, c("iso3", "tech"))
 dn_tbl <- join_by_key(dn_tbl, dn_deployment_trend(hm_measures), c("iso3", "tech"))
+# what kind of Watch each cell would be (phase_down / momentum / declining / low_need; needs the trend above)
+dn_tbl <- dn_watch_kind(scored, dn_tbl, cfg)
 dn_tbl <- join_by_key(dn_tbl, dn_measures_wide(scored, cfg), c("iso3", "tech"))
 
 meta <- list(
@@ -192,9 +238,10 @@ meta <- list(
 attr(dn_tbl, "meta") <- meta
 attr(hm_tbl, "meta") <- meta
 
-saveRDS(dn_tbl, file.path(processed_dir, "deployment_need_tbl.rds"))
-saveRDS(built$measures, file.path(processed_dir, "deployment_need_measures_tbl.rds"))
-saveRDS(hm_tbl, file.path(processed_dir, "home_market_tbl.rds"))
+out_tbl_dir <- if (nzchar(dn_out_dir)) dn_out_dir else processed_dir
+saveRDS(dn_tbl, file.path(out_tbl_dir, "deployment_need_tbl.rds"))
+saveRDS(built$measures, file.path(out_tbl_dir, "deployment_need_measures_tbl.rds"))
+saveRDS(hm_tbl, file.path(out_tbl_dir, "home_market_tbl.rds"))
 
 # ---- Diagnostics ---------------------------------------------------------------------------------------
 write_diag <- function(x, name) {
@@ -208,6 +255,12 @@ diag_main <- dn_tbl[dn_tbl$dn_families_observed > 0, main_cols]
 diag_main[] <- lapply(diag_main, r3)
 write_diag(diag_main[order(diag_main$tech, -diag_main$deployment_need), ], "deployment_need.csv")
 write_diag(dn_coverage(dn_tbl, scored), "deployment_need_coverage.csv")
+case_cols <- c("Country", "iso3", "tech", "deployment_need", "dn_case", "dn_case_basis", "dn_case_unassessed", "dn_watch_kind",
+               "dn_momentum", "dn_declining", "dn_phase_down", "deployment_trend",
+               unlist(lapply(DN_CASES, function(cs) paste0("dn_case_", cs, c("", "_material", "_status")))), "dn_case_note")
+diag_case <- dn_tbl[!is.na(dn_tbl$dn_case), intersect(case_cols, names(dn_tbl))]
+diag_case[] <- lapply(diag_case, r3)
+write_diag(diag_case[order(diag_case$tech, diag_case$iso3), ], "deployment_case.csv")
 
 rv <- cfg$review
 review <- dn_tbl[dn_tbl$iso3 %in% unlist(rv$countries) & dn_tbl$tech %in% unlist(rv$techs),

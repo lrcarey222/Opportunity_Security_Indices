@@ -91,8 +91,11 @@ const LIMITS = {
   // the posture bundle (scripts/91, schema 2, 2026-10-29): manifest + core + 214 drawer documents measured
   // 1.87 MB on the wire; the measured size + ~15% (design E4). 2.4 MB since 2026-10-31: the rebuilt bundle
   // (Atlas 2024, the new basket and method) carries the Yards & Fences drawer evidence and measured 2.28 MB;
-  // each of the 214 drawer documents still loads only when its economy's drawer opens
-  postureData: 2.4 * MB,
+  // each of the 214 drawer documents still loads only when its economy's drawer opens. 2.6 MB since 2026-11-17:
+  // current trade and innovation took main's bundle to 2.36 MB (98.5% of 2.4) and the deployment case and Watch
+  // kinds (compact case strings) to 2.43 MB; a page still loads only the core and one drawer (per-file limits in
+  // src/posture/__tests__/budget.test.ts and the R exporter are unchanged)
+  postureData: 2.6 * MB,
 };
 // spec_country.md A10 (the same numbers as COUNTRY_BUDGET_GZ in src/country/contract.ts)
 // manifest: 15 kB until 2026-10-14; 20 kB once the 31 memo entries (2.8 kB gz) were added (16.9 kB);

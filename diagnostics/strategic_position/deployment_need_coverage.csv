@@ -43,6 +43,24 @@
 "family","dn_system","Oil",0,,219,0
 "family","dn_system","Solar",108,,219,0.493
 "family","dn_system","Wind",108,,219,0.493
+"measure","access_gap","Batteries",215,215,219,0.982
+"measure","access_gap","Coal",215,215,219,0.982
+"measure","access_gap","Electric Grid",215,215,219,0.982
+"measure","access_gap","Gas",215,215,219,0.982
+"measure","access_gap","Geothermal",215,215,219,0.982
+"measure","access_gap","Nuclear",215,215,219,0.982
+"measure","access_gap","Solar",215,215,219,0.982
+"measure","access_gap","Wind",215,215,219,0.982
+"measure","climate_pathway","Batteries",219,12,219,1
+"measure","climate_pathway","Coal",216,9,219,0.986
+"measure","climate_pathway","Electric Vehicles",219,12,219,1
+"measure","climate_pathway","Gas",219,12,219,1
+"measure","climate_pathway","Geothermal",211,4,219,0.963
+"measure","climate_pathway","Green Hydrogen",219,12,219,1
+"measure","climate_pathway","Nuclear",206,8,219,0.941
+"measure","climate_pathway","Oil",219,12,219,1
+"measure","climate_pathway","Solar",219,12,219,1
+"measure","climate_pathway","Wind",219,12,219,1
 "measure","demand_growth","Batteries",162,6,219,0.74
 "measure","demand_growth","Coal",162,6,219,0.74
 "measure","demand_growth","Electric Grid",162,6,219,0.74
@@ -51,6 +69,13 @@
 "measure","demand_growth","Nuclear",162,6,219,0.74
 "measure","demand_growth","Solar",162,6,219,0.74
 "measure","demand_growth","Wind",162,6,219,0.74
+"measure","electricity_import_share","Coal",163,163,219,0.744
+"measure","electricity_import_share","Gas",163,163,219,0.744
+"measure","electricity_import_share","Geothermal",163,163,219,0.744
+"measure","electricity_import_share","Nuclear",163,163,219,0.744
+"measure","electricity_import_share","Solar",163,163,219,0.744
+"measure","electricity_import_share","Wind",163,163,219,0.744
+"measure","ev_sales_gap","Electric Vehicles",61,61,219,0.279
 "measure","ev_share_growth","Electric Vehicles",55,5,219,0.251
 "measure","firm_capacity_need","Coal",138,138,219,0.63
 "measure","firm_capacity_need","Gas",138,138,219,0.63
@@ -59,6 +84,20 @@
 "measure","flexibility_need","Batteries",202,202,219,0.922
 "measure","flexibility_need","Electric Grid",202,202,219,0.922
 "measure","flexibility_need","Gas",202,202,219,0.922
+"measure","fossil_power_share","Batteries",202,202,219,0.922
+"measure","fossil_power_share","Electric Grid",202,202,219,0.922
+"measure","fossil_power_share","Geothermal",202,202,219,0.922
+"measure","fossil_power_share","Nuclear",202,202,219,0.922
+"measure","fossil_power_share","Solar",202,202,219,0.922
+"measure","fossil_power_share","Wind",202,202,219,0.922
+"measure","fuel_supplier_risk","Coal",84,84,219,0.384
+"measure","fuel_supplier_risk","Electric Vehicles",99,99,219,0.452
+"measure","fuel_supplier_risk","Gas",91,91,219,0.416
+"measure","fuel_supplier_risk","Geothermal",108,108,219,0.493
+"measure","fuel_supplier_risk","Green Hydrogen",91,91,219,0.416
+"measure","fuel_supplier_risk","Nuclear",108,108,219,0.493
+"measure","fuel_supplier_risk","Solar",108,108,219,0.493
+"measure","fuel_supplier_risk","Wind",108,108,219,0.493
 "measure","import_displacement","Coal",84,84,219,0.384
 "measure","import_displacement","Electric Vehicles",99,99,219,0.452
 "measure","import_displacement","Gas",91,91,219,0.416
