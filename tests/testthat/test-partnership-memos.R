@@ -245,3 +245,75 @@ test_that("the print document follows the brief format and cites external eviden
   txt <- unlist(lapply(doc$sections, function(s) lapply(s$blocks, function(b) if (!is.null(b$items)) lapply(b$items, function(i) vapply(i$inlines, function(z) z$v, "")) else if (!is.null(b$inlines)) vapply(b$inlines, function(z) z$v, ""))))
   expect_false(any(grepl("[External", txt, fixed = TRUE)))
 })
+
+test_that("a cell whose products are assessed node by node is context only", {
+  r <- run_pair()
+  cov <- r$d[r$d$node_grain_covered %in% TRUE, ]
+  expect_gt(nrow(cov), 0)
+  expect_true(all(cov$priority_tier %in% c(0L, 5L, 6L)))
+  expect_false(any(cov$unit_id %in% r$trade$unit_id))
+  expect_false(any(cov$unit_id %in% r$nonp$unit_id))
+  expect_false(any(cov$unit_id %in% r$deals$unit_id))
+})
+
+test_that("a material net importer with high need is never a node supplier", {
+  inp <- mk_inputs(dol_over = function(dol) { i <- dol$node_id == "n-comp" & dol$iso3 == "BBB"; dol$net_import_share[i] <- 0.3; dol$scope_demand_share[i] <- 0.3; dol })
+  inp$sp$supply_chain_need[inp$sp$iso3 == "BBB" & inp$sp$supply_chain == "Components"] <- 0.9
+  d <- run_pair(inp)$d
+  r <- d[d$unit_id == "n-comp", ]
+  expect_equal(r$need_band_b, "high")
+  expect_false(r$supplier %in% "BBB")
+})
+
+# ---- Review fixes of 2026-11-16 ---------------------------------------------------------------------------
+
+test_that("a node without score cells links to no cell, so cells it does not cover stay outside node grain", {
+  inp <- mk_inputs()
+  inp$nodes$score_cells[inp$nodes$node_id == "n-ext"] <- NA
+  d <- run_pair(inp)$d
+  expect_false(any(is.na(unlist(d$nodes_of_cell))))
+  expect_false(d$node_grain_covered[d$unit_id == "T1|Extraction"])
+})
+
+test_that("labels lose a capital only before a lower-case letter, so acronyms survive", {
+  expect_equal(pm_lc(c("Grain-oriented electrical steel (GOES)", "AC generators", "Li-ion cells & packs", "Electric Grid refining", NA)),
+               c("grain-oriented electrical steel (GOES)", "AC generators", "li-ion cells & packs", "electric grid refining", NA))
+})
+
+test_that("institutions are named only for the compacts in their scope", {
+  inst <- data.frame(abbreviation = c("ALL", "REG", "OIL"), scope_compacts = c("", "SC-NUCLEAR", "fuel"), stringsAsFactors = FALSE)
+  expect_equal(pm_inst_scope_ok(inst, "SC-X"), c(TRUE, FALSE, FALSE))
+  expect_equal(pm_inst_scope_ok(inst, NA_character_), c(TRUE, FALSE, TRUE))
+  expect_equal(pm_inst_scope_ok(inst, c("SC-X", "SC-NUCLEAR")), c(TRUE, TRUE, FALSE))
+  expect_equal(pm_inst_scope_ok(inst[, "abbreviation", drop = FALSE], "SC-X"), c(TRUE, TRUE, TRUE))
+})
+
+test_that("an already-committed line cites only the committed items", {
+  ev <- data.frame(evidence_id = c("X1", "X3", "X4"), item_type = c("project", "project", "market_fact"),
+                   status = c("announced", "operating", "operating"), stringsAsFactors = FALSE)
+  expect_equal(pm_committed_ids(c("X1", "X3", "X4"), ev), "X3")
+  expect_equal(pm_committed_ids(c("X1", "X4"), ev), c("X1", "X4"))
+})
+
+test_that("a bracketed process note is dropped without the substantive clause around it", {
+  expect_equal(pm_claim_clean("A plant is producing and expansion is expected Sep 2026 (not confirmed done); the figure is from a filing."),
+               "A plant is producing and expansion is expected Sep 2026; the figure is from a filing.")
+  expect_equal(pm_claim_clean("The ministry signed a plan (2025); the page could not be opened."), "The ministry signed a plan (2025).")
+})
+
+test_that("open sourcing never names a chokepoint or an unclassifiable node, and no do-not-defend line sits in a recommended compact", {
+  inp <- mk_inputs(dol_over = function(dol) {
+    i <- dol$node_id == "n-low"
+    dol$position_share[i & dol$iso3 == "CCC"] <- 0.7; dol$world_share[i & dol$iso3 == "CCC"] <- 0.7
+    dol$net_import_share[i & dol$iso3 == "AAA"] <- 0.3; dol$scope_demand_share[i & dol$iso3 == "AAA"] <- 0.3
+    dol })
+  r <- run_pair(inp)
+  op <- r$d[r$d$unit_id %in% r$trade$unit_id[r$trade$action_type == "open_sourcing"], ]
+  expect_false(any(op$chokepoint %in% TRUE))
+  expect_false(any(op$aib_class %in% "INSUFFICIENT DATA"))
+  nd <- r$nonp[r$nonp$kind == "do_not_defend", ]
+  expect_false(any(r$d$compact[match(nd$unit_id, r$d$unit_id)] %in% r$cc$strategic_compact_id[r$cc$recommended]))
+  inp$nclass$node_classification[inp$nclass$node_id == "n-low"] <- "INSUFFICIENT DATA"
+  d2 <- run_pair(inp)$d
+  expect_false(grepl("adequate_trusted_supply", d2$state_reason[d2$unit_id == "n-low"]))
+})

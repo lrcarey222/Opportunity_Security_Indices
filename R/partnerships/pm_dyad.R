@@ -102,8 +102,8 @@ pm_classify_dyad <- function(d, cfg) {
   pres <- cfg$thresholds$node$presence_share
   share_ok_a <- d$unit_type == "cell" | (!is.na(d$world_share_a) & d$world_share_a >= pres)
   share_ok_b <- d$unit_type == "cell" | (!is.na(d$world_share_b) & d$world_share_b >= pres)
-  cap_a <- pa == "strong" | (pa == "moderate" & d$a_named_by_b & share_ok_a)
-  cap_b <- pb == "strong" | (pb == "moderate" & d$b_named_by_a & share_ok_b)
+  cap_a <- (pa == "strong" | (pa == "moderate" & d$a_named_by_b & share_ok_a)) & !(d$unit_type == "node" & na %in% "high")
+  cap_b <- (pb == "strong" | (pb == "moderate" & d$b_named_by_a & share_ok_b)) & !(d$unit_type == "node" & nb %in% "high")
   sup_a <- cap_a & rk(pa) > rk(pb)
   sup_b <- cap_b & rk(pb) > rk(pa)
   state <- character(nrow(d)); supplier <- rep(NA_character_, nrow(d)); reason <- character(nrow(d))
@@ -129,7 +129,7 @@ pm_classify_dyad <- function(d, cfg) {
     }
     if (!sup_a[i] && !sup_b[i] && na[i] == "high" && nb[i] == "high" && (d$chokepoint[i] || d$both_dependent[i])) {
       state[i] <- "shared_vulnerability"
-      reason[i] <- if (d$chokepoint[i]) sprintf("both need the node and neither is a strong supplier; %s holds %.0f%% of world supply", d$coercive_top_iso3[i], 100 * d$coercive_world_share[i]) else "both need the node and both import heavily from coercive suppliers"
+      reason[i] <- if (d$chokepoint[i]) sprintf("both need the node and neither is a capable supplier (a high-need importer is not cast as one); %s holds %.0f%% of world supply", d$coercive_top_iso3[i], 100 * d$coercive_world_share[i]) else "both need the node and both import heavily from coercive suppliers"
       next
     }
     ab <- sup_a[i] && need_bv[i]; ba <- sup_b[i] && need_av[i]
@@ -145,8 +145,8 @@ pm_classify_dyad <- function(d, cfg) {
       }
       next
     }
-    ca <- pa[i] == "strong" && d$b_strong_elsewhere_in_chain[i] && d$chain_stressed[i]
-    cb <- pb[i] == "strong" && d$a_strong_elsewhere_in_chain[i] && d$chain_stressed[i]
+    ca <- pa[i] == "strong" && !(d$unit_type[i] == "node" && na[i] %in% "high") && d$b_strong_elsewhere_in_chain[i] && d$chain_stressed[i]
+    cb <- pb[i] == "strong" && !(d$unit_type[i] == "node" && nb[i] %in% "high") && d$a_strong_elsewhere_in_chain[i] && d$chain_stressed[i]
     if (ca || cb) {
       state[i] <- "complementary_specialization"
       supplier[i] <- if (ca) a[i] else b[i]
@@ -157,7 +157,8 @@ pm_classify_dyad <- function(d, cfg) {
     r <- character()
     if (!need_av[i] && !need_bv[i]) r <- c(r, "no_high_need")
     if (need_av[i] || need_bv[i]) if (!cap_a[i] && !cap_b[i]) r <- c(r, "neither_capable") else r <- c(r, "need_without_partner_capability")
-    if (d$aib_low[i] %in% TRUE || (!more_cap[i])) r <- c(r, "adequate_trusted_supply")
+    # a node the AIB cannot classify is never read as adequately supplied (2026-11-16)
+    if ((d$aib_low[i] %in% TRUE || (!more_cap[i])) && !(d$unit_type[i] == "node" && d$aib_class[i] %in% "INSUFFICIENT DATA")) r <- c(r, "adequate_trusted_supply")
     if (isTRUE(d$large_yard_a[i]) || isTRUE(d$large_yard_b[i])) r <- c(r, "large_yard")
     if ((pa[i] == "strong") != (pb[i] == "strong")) r <- c(r, "supplier_without_buyer_need")
     reason[i] <- paste(unique(r), collapse = ";")
