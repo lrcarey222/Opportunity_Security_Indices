@@ -163,10 +163,10 @@ const METHOD: { step: string; text: string }[] = [
     text: 'A linear program reallocates the candidate partners’ observed exports to restore as much of the demand scope’s demand as possible, then favours revealed specialization, Partnership Opportunity and policy compatibility among equally good solutions. Under the production-constrained headline, where credible production or capacity data exist they decide who can supply: an exporter the data list as a producer keeps its full trade response, and one they do not list keeps its current shipments to the demand scope but cannot expand or redirect supply.',
   },
   {
-    step: 'Coordination dividend and frontier',
+    step: 'Extra supply from acting together (coordination dividend) and frontier',
     text: 'The dividend is the extra coverage the optimized solution adds over existing relationships; the frontier re-solves with a limit on any one supplier’s share and reports, at each limit, the coverage, the true N-1 coverage (the largest remaining supplier removed and the trade re-optimized), the instantaneous N-1 retained coverage (coverage × (1 − largest share)) and how specialized its suppliers are: what diversification costs and what resilience it buys.',
   },
-  { step: 'Residual gaps', text: 'What even the optimized trade cannot restore: supply that does not exist outside the shocked economy.' },
+  { step: 'Remaining supply gaps', text: 'What even the optimized trade cannot restore: supply that does not exist outside the shocked economy.' },
   { step: 'Marginal investment', text: 'Where a gap remains, an increment of capacity is added at each eligible host in turn (a host must show revealed capability): a fixed share of node demand, but never more than the host’s current output in the node, so a small producer is not credited with a plant many times its size. The hosts come in three types, each ranked on its own: scaling hosts (established producers that can carry the increment or hold at least 5% of world exports or production), ranked by the resilience the increment buys, then by how little it concentrates supply, then by capability at scale; specialty hosts (high-income specialists below scale), ranked by revealed specialization; and development hosts (middle-income economies below scale), ranked by the Development Potential Index. Scaling and specialty hosts can count in a compact’s coalition test, each at most at its own scale; development hosts are future capacity and never do. The new supply goes to the economies that lost it: each is shown as an investor in that host (investor-to-host flows). Each ranked host is a separate simulation, so only the best-ranked host counts and the alternatives are never added up.' },
   { step: 'Emergent network', text: 'The trade and investment relationships of every node together form the allied industrial base network the model finds, not one fixed in advance. Each economy’s roles in it (supplier, buyer, investment host, investor) are kept apart and measured by the share of node demand its relationships serve; the Country roles page names a role only at 1 point of node demand or more under the headline shock.' },
   {
@@ -175,21 +175,21 @@ const METHOD: { step: string; text: string }[] = [
   },
   {
     step: 'Node treatments',
-    text: 'Each node keeps its own headline treatment inside a compact (COORDINATE, BUILD, MANAGE SPECIALIZATION, LOW INTERVENTION or INSUFFICIENT DATA) and a profile of policy needs that can combine COORDINATE, BUILD and MANAGE SPECIALIZATION.',
+    text: 'Each node keeps its own headline treatment inside a compact (Coordinate trade, Build capacity, Manage specialization, Low intervention or Not enough evidence) and a profile of policy needs that can combine Coordinate trade, Build capacity and Manage specialization.',
   },
 ];
 
 /** Plain words for the classification settings (config/aib.yml `classification`); unknown keys print as they are. */
 const THRESHOLD_WORDS: Record<string, { label: string; share: boolean }> = {
-  low_exposure: { label: 'Shock exposure below which a node is LOW INTERVENTION', share: true },
-  adequate_coverage: { label: 'Existing coverage at or above which a node is LOW INTERVENTION', share: true },
-  build_gap: { label: 'Residual gap after optimized trade at or above which a node is BUILD', share: true },
-  coordinate_dividend: { label: 'Coordination dividend at or above which a node is COORDINATE', share: true },
-  manage_largest_share: { label: 'Largest optimized supplier share at or above which a node is MANAGE SPECIALIZATION', share: true },
-  manage_top3_share: { label: 'Share of the three largest optimized suppliers at or above which a node is MANAGE SPECIALIZATION', share: true },
+  low_exposure: { label: 'Supply exposed to the disruption below which a step needs Low intervention', share: true },
+  adequate_coverage: { label: 'Existing coverage at or above which a step needs Low intervention', share: true },
+  build_gap: { label: 'Remaining supply gap after optimized trade at or above which a step needs Build capacity', share: true },
+  coordinate_dividend: { label: 'Extra supply from acting together (coordination dividend) at or above which a step needs Coordinate trade', share: true },
+  manage_largest_share: { label: 'Largest optimized supplier share at or above which a step needs Manage specialization', share: true },
+  manage_top3_share: { label: 'Share of the three largest optimized suppliers at or above which a step needs Manage specialization', share: true },
   manage_cap: { label: 'Supplier-share limit used to test the cost of diversifying', share: true },
-  manage_coverage_loss: { label: 'Coverage lost under that limit at or above which a node is MANAGE SPECIALIZATION', share: true },
-  high_severity: { label: 'Shock exposure counted as high severity', share: true },
+  manage_coverage_loss: { label: 'Coverage lost under that limit at or above which a step needs Manage specialization', share: true },
+  high_severity: { label: 'Supply exposed to the disruption counted as high severity', share: true },
 };
 
 /** "Production-constrained (headline), trade-only". */
@@ -486,13 +486,13 @@ export default function AibAboutView() {
 
       <H id="needs">Actions needed and the weak-production-evidence warning</H>
       <p className={P}>
-        The headline class is one label per node. Beside it each node carries the policy needs its results show, in any combination: COORDINATE (the coordination dividend reaches its
-        threshold), BUILD (the residual gap after optimized trade reaches its threshold) and MANAGE SPECIALIZATION (the optimized supply is concentrated, or diversifying it costs coverage),
-        for nodes whose shock exposure is at least {fmtShare(m.thresholds.low_exposure ?? null, 0)}. A node classified LOW INTERVENTION because existing relationships already restore most of its
-        demand can still show a COORDINATE need, and a BUILD node can also need specialization managed.
+        The headline class is one label per node. Beside it each node carries the policy needs its results show, in any combination: Coordinate trade (the coordination dividend reaches its
+        threshold), Build capacity (the remaining gap after optimized trade reaches its threshold) and Manage specialization (the optimized supply is concentrated, or diversifying it costs coverage),
+        for nodes whose supply exposed to the disruption is at least {fmtShare(m.thresholds.low_exposure ?? null, 0)}. A node classified Low intervention because existing relationships already restore most of its
+        demand can still show a Coordinate trade need, and a Build capacity node can also need specialization managed.
       </p>
       <p className={P} data-testid="about-warning">
-        <strong className="font-medium text-paper">PHYSICAL CAPABILITY NOT VALIDATED</strong> marks a LOW INTERVENTION or COORDINATE class that physical data do not back: the node&apos;s physical
+        <strong className="font-medium text-paper">PHYSICAL CAPABILITY NOT VALIDATED</strong> marks a Low intervention or Coordinate trade class that physical data do not back: the node&apos;s physical
         data are incomplete, or physical and trade concentration diverge and either the physical rule was not applied or the class rests on low trade exposure (a dependence that can arrive
         embodied in assembled goods). The warning does not change the class; it is computed for every variant and growth bound too, and shown beside every class shown.
         {nodes.some((n) => n.warning !== undefined) ? ` In this export it marks ${plural(nWarned, 'node')}.` : ''}
@@ -533,10 +533,10 @@ export default function AibAboutView() {
       <H id="growth">How far existing trade can grow</H>
       <p className={P}>
         Existing relationships cannot grow without limit: in the headline each may grow to at most twice its observed size (2x). Without a bound a small relationship could carry any volume,
-        existing relationships would be as flexible as new ones and no coordination dividend could appear. Because the COORDINATE class rests on the gap between existing and optimized coverage,
+        existing relationships would be as flexible as new ones and no coordination dividend could appear. Because the Coordinate trade class rests on the gap between existing and optimized coverage,
         each node shows its existing coverage, dividend and class (with its physical-capability warning) with relationships allowed to grow to about 1.25x, 2x, 4x and without bound: on its
-        compact&apos;s page, or in place on the landing for a node outside every compact. A node that is COORDINATE under some bounds and another class under others is flagged on the landing
-        and on its compact&apos;s page, whatever its headline class: a LOW INTERVENTION node that is COORDINATE only at 1.25x is flagged too, and the flag starts from the headline class.
+        compact&apos;s page, or in place on the landing for a node outside every compact. A node that is Coordinate trade under some bounds and another class under others is flagged on the landing
+        and on its compact&apos;s page, whatever its headline class: a Low intervention node that is Coordinate trade only at 1.25x is flagged too, and the flag starts from the headline class.
         {nodes.some((n) => n.coordinateSensitiveToGrowth !== undefined) ? ` In this export ${plural(nSensitive, 'node is', 'nodes are')} flagged.` : ''}
       </p>
 

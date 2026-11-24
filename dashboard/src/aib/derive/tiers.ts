@@ -277,11 +277,11 @@ export function coalitionMethod(c: AibCompact, targets: readonly number[]): Coal
   const greedy = co.greedy ?? null;
   const greedyDiffers = greedy !== null && greedy.length > 0 && !sameSet(greedy, members);
   const label = exact
-    ? 'Exact minimum coalition'
+    ? 'Smallest group that meets the target (exact minimum coalition)'
     : reached
       ? isExact && !proven
         ? 'Best coalition found (minimality not proven)'
-        : 'Minimum coalition'
+        : 'Smallest group that meets the target (minimum coalition)'
       : `Widest coalition found (the ${targetLabel(mid)} target is not reached)`;
   const tieBreakSolved = typeof co.robustTieBreakSolved === 'boolean' ? co.robustTieBreakSolved : null;
   return { method, exact, proven, reached, widest, mid, members, greedy, greedyDiffers, tieBreakSolved, label };

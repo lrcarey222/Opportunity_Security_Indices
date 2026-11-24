@@ -377,7 +377,7 @@ describe('coalition curve', () => {
   it('one point per step, members counted, names resolved, step 0 the anchors', () => {
     const pts = coalitionCurve(c01, names);
     expect(pts.map((p) => [p.step, p.n, p.addedName])).toEqual([
-      [0, 2, 'Demand anchors'],
+      [0, 2, 'Major buyers (demand anchors)'],
       [1, 3, 'Carpania'],
       [2, 4, 'Dorvalia'],
       [3, 5, 'Elbonia'],
@@ -413,7 +413,7 @@ describe('coalition: exact, greedy and tiers', () => {
   it('the method: exact when the middle target is reached, the greedy coalition beside it only when it differs', () => {
     expect(coalitionTargets(doc.meta.targets)).toEqual({ mid: 0.95, top: 0.99 });
     const m1 = coalitionMethod(c01, doc.meta.targets);
-    expect(m1).toMatchObject({ exact: true, reached: true, greedyDiffers: false, label: 'Exact minimum coalition' });
+    expect(m1).toMatchObject({ exact: true, reached: true, greedyDiffers: false, label: 'Smallest group that meets the target (exact minimum coalition)' });
     expect(m1.method).toMatch(/^exact \(binary program/);
     const m2 = coalitionMethod(c02, doc.meta.targets);
     expect(m2).toMatchObject({ exact: true, greedyDiffers: true, greedy: ['AAA', 'BBB', 'CCC'] });
@@ -430,7 +430,7 @@ describe('coalition: exact, greedy and tiers', () => {
     const timed = { ...c01, coalition: { ...c01.coalition, method: `${c01.coalition.method}; the solver hit its time limit: best coalition found, minimality not proven` } };
     expect(coalitionMethod(timed, doc.meta.targets)).toMatchObject({ exact: false, proven: false, reached: true, label: 'Best coalition found (minimality not proven)' });
     // an older bundle: no method, no greedy coalition, no tie-break flag
-    expect(coalitionMethod(older.compacts[0], older.meta.targets)).toMatchObject({ method: null, exact: false, reached: true, greedy: null, tieBreakSolved: null, label: 'Minimum coalition' });
+    expect(coalitionMethod(older.compacts[0], older.meta.targets)).toMatchObject({ method: null, exact: false, reached: true, greedy: null, tieBreakSolved: null, label: 'Smallest group that meets the target (minimum coalition)' });
   });
 
   it('an export that left the members of an unreached target empty: the members are the roles with member = true', () => {

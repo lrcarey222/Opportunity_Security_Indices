@@ -38,7 +38,7 @@ export const ROLE_READING: Record<MatrixRole, { short: string; meaning: string; 
     named: 'named when it is the largest supplier after coordinated trade at one step or more, or a compact names it a specialized supplier',
   },
   host: {
-    short: 'Investment host',
+    short: 'Could add capacity (investment host)',
     meaning: 'is the best-placed country to add new capacity that closes other countries’ gaps',
     named: 'named when the new capacity it hosts serves at least 1 point of step demand under the headline disruption, or a compact names it a scaling host',
   },
@@ -48,7 +48,7 @@ export const ROLE_READING: Record<MatrixRole, { short: string; meaning: string; 
     named: 'named when the new capacity that serves it is at least 1 point of step demand under the headline disruption',
   },
   buyer: {
-    short: 'Demand anchor / Buyer',
+    short: 'Major buyer (demand anchor)',
     meaning: 'imports the supply that coordination recovers (a demand anchor imports most of a compact’s lost supply, and gives suppliers a reason to invest)',
     named: 'named when the trade it receives is at least 1 point of step demand under the headline disruption, or a compact names it a demand anchor',
   },

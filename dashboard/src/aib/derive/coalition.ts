@@ -39,7 +39,7 @@ export function coalitionCurve(c: AibCompact, names: Readonly<Record<string, str
       step: s.step,
       n: s.members.length,
       added: s.added,
-      addedName: s.added ? nameOf(names, s.added) : 'Demand anchors',
+      addedName: s.added ? nameOf(names, s.added) : 'Major buyers (demand anchors)',
       members: s.members,
       min: isNum(s.minCoverage) ? s.minCoverage : null,
       mean: isNum(s.meanCoverage) ? s.meanCoverage : null,

@@ -295,3 +295,73 @@ export function thesisPartners(s: AibStrategic | null | undefined, iso3: string 
     .slice(0, n)
     .map((t) => t.b);
 }
+
+// ---- The pair at a glance (external review readiness, 2026-11-23) ------------------------------------
+
+/** What each logic label adds to the pair, in a few plain words (the summary's "What working together adds"). */
+export const LOGIC_ADDS: Readonly<Record<string, string>> = {
+  trade: 'coordinated trade between them',
+  investment: 'new capacity in one serving the other',
+  technology: 'technology from a specialized supplier',
+  'development / capacity building': 'capacity building backed by investment',
+  'market access': 'a large buyer for the other side',
+  'resilience / second sourcing': 'a second source for a major buyer',
+};
+
+export interface PairSummarySide {
+  iso3: string;
+  /** its Strategic AIB Roles (primary; else secondary), by name */
+  roles: string[];
+  /** the roles are secondary ones (it holds no primary role) */
+  secondary: boolean;
+  /** its largest position in the priority compacts ("Reactor components, 29% of world exports or production"), or null */
+  position: string | null;
+}
+
+export interface PairSummary {
+  a: PairSummarySide;
+  b: PairSummarySide;
+  /** the priority compacts where their lead compact roles differ, in words */
+  complement: string[];
+  /** what the thesis's logic labels add, in plain words, in the export's order */
+  adds: string[];
+  /** the first mission of each priority compact that has one under the scenario */
+  action: { compact: AibStrategicCompact; text: string }[];
+}
+
+function positionOf(rows: readonly ContributionRow[], side: 'a' | 'b'): string | null {
+  let best: AibCompactRole | null = null;
+  for (const r of rows) {
+    const x = r[side];
+    if (x && x.leadStep && typeof x.leadShare === 'number' && (!best || x.leadShare > (best.leadShare ?? -1))) best = x;
+  }
+  if (!best || best.leadShare === null) return null;
+  const basis = best.leadBasis ? ` of ${best.leadBasis.replace(/^share of /, '')}` : '';
+  return `${best.leadStep}, ${fmtShare(best.leadShare, 0)}${basis}`;
+}
+
+/**
+ * The pair at a glance, only for a pair the analysis writes a thesis for (any other pair returns null: the
+ * strategic layer has no relationship to summarize). Every part is read from the thesis already built
+ * (roles, priority compacts, logic) and the priority compacts' missions under `scenario`; nothing is scored.
+ */
+export function pairSummary(t: PairThesis, scenario: string | null | undefined, name: Namer): PairSummary | null {
+  if (t.state !== 'thesis') return null;
+  const side = (x: ThesisSide, k: 'a' | 'b'): PairSummarySide => ({
+    iso3: x.iso3,
+    roles: (x.primary.length ? x.primary : x.secondary).map((r) => r.name),
+    secondary: !x.primary.length && x.secondary.length > 0,
+    position: positionOf(t.compacts, k),
+  });
+  const complement = t.compacts
+    .filter((r) => r.a && r.b && leadRole(r.a) !== leadRole(r.b))
+    .map((r) => `${r.compact.name}: ${name(t.a.iso3)} as ${lower(leadRole(r.a) ?? '')}, ${name(t.b.iso3)} as ${lower(leadRole(r.b) ?? '')}`);
+  const adds = t.logic.map((l) => LOGIC_ADDS[l.label] ?? l.title.toLowerCase());
+  const action: PairSummary['action'] = [];
+  for (const r of t.compacts) {
+    const sc = scenario ? r.compact.scenarios[scenario as keyof typeof r.compact.scenarios] : undefined;
+    const m = sc?.missions?.[0];
+    if (m?.text) action.push({ compact: r.compact, text: cap(m.text) });
+  }
+  return { a: side(t.a, 'a'), b: side(t.b, 'b'), complement, adds, action };
+}

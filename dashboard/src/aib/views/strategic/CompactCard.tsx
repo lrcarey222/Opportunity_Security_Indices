@@ -30,7 +30,7 @@ export function StrategicCompactCard({ s, c, sid }: { s: AibStrategic; c: AibStr
           <Fact term="Supply chain">
             <SpanList c={c} />
           </Fact>
-          <Fact term="Core partners">
+          <Fact term="Countries it is built around (core partners)">
             <CoreCountries core={c.core} name={name} href={null} label={`Core countries of ${c.name} and their roles`} />
           </Fact>
         </dl>

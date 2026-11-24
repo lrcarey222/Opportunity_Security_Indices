@@ -12,6 +12,7 @@ import { bareAcronyms } from '../../components/testing/acronyms.ts';
 import { strategicOf, type AibStrategic } from '../../aib/contract.ts';
 import { readDoc, SYNTHETIC_DIR } from '../../aib/__tests__/fixture.ts';
 import { RelationshipThesis, type RelationshipThesisProps } from '../RelationshipThesis.tsx';
+import { LOGIC_ADDS, pairSummary, pairThesis } from '../thesis.ts';
 import { PARTNERSHIP } from '../../content/vocabulary.ts';
 
 afterEach(cleanup);
@@ -81,6 +82,33 @@ describe('RelationshipThesis', () => {
     expect(within(card).getAllByRole('heading', { level: 4 }).map((h) => h.textContent)).toEqual(['Complementarity: what each side brings', 'Compacts both take part in']);
     expect(within(card).queryByTestId('thesis-logic')).toBeNull();
     expect(bareAcronyms(document.body)).toEqual([]);
+  });
+
+  it('a pair with a thesis opens with the pair at a glance, built from the thesis and its priority compacts only', () => {
+    const card = renderCard({ a: 'AAA', b: 'CCC', scenario: 'decoupling' });
+    const sum = within(card).getByTestId('thesis-summary');
+    // it sits right under the headline, before the detail
+    expect(within(card).getByTestId('thesis-headline').nextElementSibling).toBe(sum);
+    const t = pairThesis(s, 'AAA', 'CCC', name)!;
+    const want = pairSummary(t, 'decoupling', name)!;
+    const keys = [...sum.querySelectorAll('[data-summary]')].map((e) => e.getAttribute('data-summary'));
+    expect(keys.slice(0, 2)).toEqual(['a', 'b']);
+    expect(keys.includes('complement')).toBe(want.complement.length > 0);
+    expect(keys.includes('adds')).toBe(want.adds.length > 0);
+    expect(keys.includes('action')).toBe(want.action.length > 0);
+    expect(sum.querySelector('[data-summary="a"] dt')?.textContent).toBe('Avalon brings');
+    expect(sum.querySelector('[data-summary="a"] dd')?.textContent).toMatch(/^Demand & Market Anchor and Capital & Investment Anchor/);
+    // what working together adds: one plain phrase per logic label, in the export's order
+    expect(want.adds).toEqual(t.logic.map((l) => LOGIC_ADDS[l.label]));
+    // compact names are plain text here (the links stay in the detail)
+    expect(within(sum).queryAllByRole('link')).toEqual([]);
+    expect(bareAcronyms(document.body)).toEqual([]);
+  });
+
+  it('a pair without a thesis has no summary: the analysis has no relationship to sum up', () => {
+    const card = renderCard({ a: 'AAA', b: 'FFF' });
+    expect(within(card).queryByTestId('thesis-summary')).toBeNull();
+    expect(pairSummary(pairThesis(s, 'AAA', 'FFF', name)!, 'managed', name)).toBeNull();
   });
 
   it('no partner: what to do, and the partners with the most priority compacts as links', () => {

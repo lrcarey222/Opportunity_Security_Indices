@@ -33,7 +33,7 @@ import { COALITION_TITLE, COMPACT_VS_TODAY, NO_COMPACT_NEEDED, ROLES_TITLE } fro
 import { COVERAGE_SECTION_TITLE } from '../views/compact/ResilienceSections.tsx';
 import { NODE_SECTION_TITLE } from '../views/compact/NodeSection.tsx';
 import { ROLES_PAGE_TITLE } from '../views/AibRolesView.tsx';
-import { AIB_CLASS_HEADING, AIB_MEASURE_DEFINITION, COMPACT, STATE } from '../../content/vocabulary.ts';
+import { AIB_CLASS_HEADING, AIB_MEASURE_DEFINITION, AIB_MEASURE_LABEL, COMPACT, STATE } from '../../content/vocabulary.ts';
 import { cellLabel } from '../../lib/format.ts';
 import { SUPPLY_STAGES } from '../../lib/stages.ts';
 import { AibLoadError, AibStore, setAibStoreForTests, type AibSource } from '../data/store.ts';
@@ -365,7 +365,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(within(roles).getAllByRole('link').some((a) => a.getAttribute('href') === `/countries/${iso}?scn=decoupling#aib-role`)).toBe(true);
     // why it exists: the five tiles
     const why = screen.getByRole('region', { name: 'The case for coordination' });
-    for (const t of ['Supply exposed to the disruption', 'Gain from acting together', 'Remaining gap after trade', 'Remaining gap after new capacity', 'Concentration']) expect(within(why).getByText(t)).toBeTruthy();
+    for (const t of ['Supply exposed to the disruption', AIB_MEASURE_LABEL.dividend, 'Remaining gap after trade', 'Remaining gap after new capacity', 'Concentration']) expect(within(why).getByText(t)).toBeTruthy();
     // node by node: one item per node, its class, the data-quality disclosure
     const nodes = screen.getByRole('region', { name: "What each step needs and how much demand can be met" });
     expect(within(nodes).getAllByRole('heading', { level: 4 }).map((h) => h.textContent)).toEqual(first.nodes.map((id) => doc.nodes.find((n) => n.id === id)!.label));
@@ -482,7 +482,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(await h1(titleOf(first))).toBeTruthy();
     const card = screen.getByRole('region', { name: COALITION_TITLE });
     if (!first.coalition.method) return;
-    expect(within(card).getByText(`Exact minimum coalition: ${first.coalition.members.length} countries. ${AIB_MEASURE_DEFINITION.minimumCoalition} Method: ${first.coalition.method}.`)).toBeTruthy();
+    expect(within(card).getByText(`Smallest group that meets the target (exact minimum coalition): ${first.coalition.members.length} countries. ${AIB_MEASURE_DEFINITION.minimumCoalition} Method: ${first.coalition.method}.`)).toBeTruthy();
     const lead = within(card).getByTestId('coalition-method').textContent ?? '';
     expect(lead).toMatch(/^The members are the smallest group of partners that meets the target: the fewest countries/);
     // the tie-break among minimum-size coalitions, and whether it was solved
@@ -773,7 +773,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(screen.getByText('Production-constrained (headline)')).toBeTruthy();
     expect(screen.getByText('Trade-only (sensitivity)')).toBeTruthy();
     const nWarned = doc.nodes.filter((n) => n.warning).length;
-    expect(screen.getByTestId('about-warning').textContent).toMatch(new RegExp(`marks a LOW INTERVENTION or COORDINATE class .* In this export it marks ${nWarned} node`));
+    expect(screen.getByTestId('about-warning').textContent).toMatch(new RegExp(`marks a Low intervention or Coordinate trade class .* In this export it marks ${nWarned} node`));
     for (const t of ['Core coordinating members', 'Critical supply partners', 'Prospective hosts', 'Associate partners', 'Critical external dependencies', 'Critical external dependencies (marginal)', 'External dependencies']) {
       expect(screen.getByText(t)).toBeTruthy();
     }
@@ -783,7 +783,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(page).not.toMatch(/production share × world trade|larger of what it already ships/);
     expect(page).toContain('the widest margin over the target in its weakest node, then the one that adds the most supply');
     expect(page).toContain("A member's substitutes are single substitutes: any one of them");
-    expect(page).toMatch(/A node that is COORDINATE under some bounds and another class under others is flagged on the landing/);
+    expect(page).toMatch(/A node that is Coordinate trade under some bounds and another class under others is flagged on the landing/);
     const nOut = doc.nodes.filter((n) => n.inStrategicScope === false).length;
     expect(screen.getByTestId('about-strategic').textContent).toContain(`In this export ${nOut} of ${doc.nodes.length} nodes are outside the scope`);
     noAcronyms();
@@ -1056,7 +1056,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     expect(link).toBeTruthy();
     const matrix = screen.getByRole('region', { name: 'Roles by economy' });
     expect(within(matrix).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
-      'Economy', 'Resource / Supplier', 'Specialized supplier', 'Investment host', 'Investor', 'Demand anchor / Buyer', 'Bridge', 'Compact participation',
+      'Economy', 'Resource / Supplier', 'Specialized supplier', 'Could add capacity (investment host)', 'Investor', 'Major buyer (demand anchor)', 'Bridge', 'Compact participation',
     ]);
     expect(screen.getByRole('heading', { level: 2, name: 'How roles are read' })).toBeTruthy();
     expect(within(main()).getAllByTestId('modelled-note')[0].textContent).toMatch(/does not move with the Perspective dials/);

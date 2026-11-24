@@ -116,7 +116,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('the Strategic Sectoral Compacts la
     // only: name, supply chain, core countries, and under the scenario mission, policy mix, workstreams, result
     const mag = cards[0];
     expect(within(mag).getAllByRole('heading').map((h) => h.textContent)).toEqual(['Permanent Magnets & Drive Systems']);
-    expect(within(mag).getAllByRole('term').map((t) => t.textContent)).toEqual(['Supply chain', 'Core partners', 'Mission', 'Actions needed', 'Workstreams', 'Result']);
+    expect(within(mag).getAllByRole('term').map((t) => t.textContent)).toEqual(['Supply chain', 'Countries it is built around (core partners)', 'Mission', 'Actions needed', 'Workstreams', 'Result']);
     expect(within(mag).getByRole('list', { name: 'Supply chain of Permanent Magnets & Drive Systems, in order' }).textContent).toBe('Separated oxides→Magnets');
     expect(within(within(mag).getByRole('list', { name: /^Core countries of Permanent Magnets/ })).getAllByRole('listitem').map(text)).toEqual([
       'Avalon — demand anchor', 'Carpania — processing anchor', 'Dorvalia — capacity-building host', 'Elbonia — bridge / coordination partner',
