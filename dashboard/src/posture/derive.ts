@@ -174,7 +174,7 @@ export interface PostureTile {
 export function aibHeaderTiles(core: PostureCore): PostureTile[] {
   const h = aibHeader(core);
   return [
-    { id: 'core', label: 'Core coalition members', value: String(h.coreMembers), sub: `${core.aibHeader.members} coalition members in all (the demand scope); the trusted network adds Taiwan and Switzerland` },
+    { id: 'core', label: 'Core coalition members', value: String(h.coreMembers), sub: `${core.aibHeader.members} coalition members in all (the demand scope); the trusted network adds five economies treated as allied` },
     { id: 'covered', label: 'Priority steps with a credible trusted supplier and backup', value: pct(h.coveredShare), sub: `of ${plural(h.priorityNodes, 'supply-chain step')} coalition members rely on partners to supply or secure` },
     { id: 'gaps', label: 'Remaining allied gaps', value: String(h.unresolvedGaps), sub: 'priority steps that still have a gap' },
   ];

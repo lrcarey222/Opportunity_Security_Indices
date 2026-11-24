@@ -38,7 +38,7 @@ import { tradeWhen, scenarioNamesOf } from '../contract.ts';
 import { plural } from '../derive/format.ts';
 import { strategicScopeShort } from '../derive/settings.ts';
 import {
-  countryRoleMatrix, decoupledEconomy, everyShock, everyShockLabel, fmtPts, MATRIX_ROLES, roleChanges, roleHolders, roleNamedWords, ROLE_FLOOR, ROLE_READING,
+  countryRoleMatrix, decoupledEconomy, trustedOf, everyShock, everyShockLabel, fmtPts, MATRIX_ROLES, roleChanges, roleHolders, roleNamedWords, ROLE_FLOOR, ROLE_READING,
   scenarioRoleSource, type CountryRoles, type MatrixRole, type RoleCell,
 } from '../derive/network.ts';
 import { runMetaOf, scenarioCaveat, scenarioCsvFields, scenarioFileTag, scenarioInfo, scenarioShockLabel } from '../derive/scenarios.ts';
@@ -74,7 +74,9 @@ export default function AibRolesView() {
     () => ({ ...(today.doc ? scenarioNamesOf(today.doc) : {}), ...(scenario === 'managed' && mi.doc ? scenarioNamesOf(mi.doc) : {}), ...names }),
     [today.doc, scenario, mi.doc, names],
   );
-  const rows = useMemo(() => (src ? countryRoleMatrix(doc, nm, src) : []), [doc, nm, src]);
+  // only trusted-network economies hold a role (2026-11-23)
+  const trusted = useMemo(() => trustedOf(doc), [doc]);
+  const rows = useMemo(() => (src ? countryRoleMatrix(doc, nm, src, trusted) : []), [doc, nm, src, trusted]);
   const [show, setShow] = useState<MatrixRole | ''>('');
   const shown = useMemo(() => (show ? roleHolders(rows, show) : rows), [rows, show]);
   const target = loc.hash.startsWith('#role-') ? loc.hash.slice(6).toUpperCase() : null;
@@ -95,8 +97,8 @@ export default function AibRolesView() {
   const everyHeader = hasScenarios ? label.header : 'every stress test';
   const removed = useMemo(() => (scenario === 'decoupling' ? decoupledEconomy(meta, names) : null), [scenario, meta, names]);
   const changes = useMemo(
-    () => (src && today.doc?.network ? roleChanges({ scenario, today: today.doc.network, network: src.network, nodes: doc.nodes, names: nm, removed }) : null),
-    [src, today.doc, scenario, doc.nodes, nm, removed],
+    () => (src && today.doc?.network ? roleChanges({ scenario, today: today.doc.network, network: src.network, nodes: doc.nodes, names: nm, removed, trusted }) : null),
+    [src, today.doc, scenario, doc.nodes, nm, removed, trusted],
   );
 
   // follow #role-ISO3 (from a Country profile or a compact page)

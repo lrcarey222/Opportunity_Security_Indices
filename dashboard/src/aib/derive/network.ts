@@ -175,12 +175,28 @@ function largestByEconomy(doc: Pick<AibDoc, 'nodes'>): Map<string, string[]> {
  * participation, then by name (no ranking of roles). `src` (scenarioRoleSource()): the network, compacts
  * and largest suppliers of a scenario in place of the document's own, read on the headline only.
  */
-export function countryRoleMatrix(doc: Pick<AibDoc, 'compacts' | 'nodes' | 'network'>, names: Readonly<Record<string, string>>, src?: RoleSource | null): CountryRoles[] {
+/**
+ * The trusted network as the AIB bundle states it (2026-11-23): the allied economies of the strategic layer
+ * (`strategic.countries[].allied`: the coalition tiers plus config/aib_strategic_layer.yml treat_as_allied). Only
+ * these economies hold a role; null for an older bundle without the strategic layer (no filter).
+ */
+export function trustedOf(doc: { strategic?: { countries?: readonly { iso3: string; allied: boolean }[] } | null }): ReadonlySet<string> | null {
+  const cs = doc.strategic?.countries;
+  if (!cs || !cs.length) return null;
+  return new Set(cs.filter((c) => c.allied).map((c) => c.iso3));
+}
+
+/**
+ * Every economy's operational roles. `trusted` (trustedOf()): only trusted-network economies hold a role; others
+ * may still supply in the scenario's trade (any economy may supply) and are shown as suppliers elsewhere, never with
+ * a role (user decision 2026-11-23).
+ */
+export function countryRoleMatrix(doc: Pick<AibDoc, 'compacts' | 'nodes' | 'network'>, names: Readonly<Record<string, string>>, src?: RoleSource | null, trusted?: ReadonlySet<string> | null): CountryRoles[] {
   const compacts: readonly AibCompact[] = src ? src.compacts.map(asRoleCompact) : doc.compacts;
   const cr = new Map(countryRoleRows({ compacts: compacts as AibCompact[] }, names).map((r) => [r.iso3, r]));
   const net = new Map(((src ? src.network : doc.network)?.countries ?? []).map((c) => [c.iso3, c]));
   const largest = src ? src.largestOf : largestByEconomy(doc);
-  const isos = new Set([...cr.keys(), ...net.keys(), ...largest.keys()]);
+  const isos = new Set([...cr.keys(), ...net.keys(), ...largest.keys()].filter((iso) => !trusted || trusted.has(iso)));
   const hp = src?.partnersOf;
   const rows = [...isos].map((iso) =>
     rolesOf(iso, nameOf(names, iso), net.get(iso) ?? null, cr.get(iso) ?? null, largest.get(iso) ?? [], src?.headlineOnly ?? false, hp ? (hp.get(iso) ?? null) : undefined),
@@ -192,9 +208,9 @@ export function countryRoleMatrix(doc: Pick<AibDoc, 'compacts' | 'nodes' | 'netw
 }
 
 /** One economy's roles (every cell 'none' when it holds nothing); `src`: under a scenario (scenarioRoleSource()). */
-export function countryRolesOf(doc: Pick<AibDoc, 'compacts' | 'nodes' | 'network'>, names: Readonly<Record<string, string>>, iso3: string, src?: RoleSource | null): CountryRoles {
+export function countryRolesOf(doc: Pick<AibDoc, 'compacts' | 'nodes' | 'network'>, names: Readonly<Record<string, string>>, iso3: string, src?: RoleSource | null, trusted?: ReadonlySet<string> | null): CountryRoles {
   const iso = iso3.toUpperCase();
-  const row = countryRoleMatrix(doc, names, src).find((r) => r.iso3 === iso);
+  const row = countryRoleMatrix(doc, names, src, trusted).find((r) => r.iso3 === iso);
   if (row) return row;
   const cells = Object.fromEntries(MATRIX_ROLES.map((k) => [k, EMPTY])) as Record<MatrixRole, RoleCell>;
   return { iso3: iso, name: nameOf(names, iso), cells, member: [], associate: [], net: null };
@@ -520,6 +536,8 @@ export function roleChanges(input: {
   names: Readonly<Record<string, string>>;
   /** Decoupling: the economy its shock removes (decoupledEconomy()) */
   removed?: string | null;
+  /** trustedOf(): only trusted-network economies hold, gain or lose a role */
+  trusted?: ReadonlySet<string> | null;
 }): RoleComparison {
   const { scenario, names } = input;
   const scope = input.nodes.filter(inStrategicScope);
@@ -543,6 +561,7 @@ export function roleChanges(input: {
   const pts = (x: AibNetworkSide | null | undefined) => (x ? x.headline : null);
   const rows: RoleChange[] = [];
   for (const iso of isos) {
+    if (input.trusted && !input.trusted.has(iso)) continue;
     const tc = t.get(iso) ?? null;
     const sc = s.get(iso) ?? null;
     const tl = todayLargest.get(iso) ?? [];

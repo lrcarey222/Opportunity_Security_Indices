@@ -38,15 +38,17 @@ const LKA = {
 const USA = { 'Batteries|Extraction': P('AUS', 'CAN'), 'Electric Vehicles|Refining': P('JPN', 'AUS'), 'Wind|Refining': P('DEU') };
 
 describe('splitPartners', () => {
-  it('Sri Lanka: China, Russia, Kazakhstan and the Emirates are never eligible, and never dropped', () => {
+  it('Sri Lanka: China, Russia and Kazakhstan are never eligible, and never dropped', () => {
     for (const [k, ps] of Object.entries(LKA)) {
       const { eligible, outside } = splitPartners(ps, net);
       expect(eligible.length + outside.length, k).toBe(ps.length);
-      for (const p of eligible) expect(['CHN', 'RUS', 'KAZ', 'ARE'], k).not.toContain(p.iso3);
+      for (const p of eligible) expect(['CHN', 'RUS', 'KAZ'], k).not.toContain(p.iso3);
       for (const p of outside) expect(net.has(p.iso3), k).toBe(false);
     }
     expect(splitPartners(LKA['Electric Grid|Assembly'], net)).toEqual({ eligible: [LKA['Electric Grid|Assembly'][0]], outside: [LKA['Electric Grid|Assembly'][1]] });
-    expect(splitPartners(LKA['Oil|Refining'], net).outside.map((p) => p.iso3)).toEqual(['CHN', 'RUS', 'ARE']);
+    expect(splitPartners(LKA['Oil|Refining'], net).outside.map((p) => p.iso3)).toEqual(['CHN', 'RUS']);
+    // the Emirates are treated as allied (config/aib_strategic_layer.yml treat_as_allied, 2026-11-23)
+    expect(splitPartners(LKA['Oil|Refining'], net).eligible.map((p) => p.iso3)).toEqual(['ARE']);
   });
 
   it('United States: every partner is eligible, in the engine order', () => {

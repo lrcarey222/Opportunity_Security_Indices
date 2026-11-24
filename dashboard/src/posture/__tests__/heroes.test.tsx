@@ -657,7 +657,7 @@ describe('the AIB division card (schema 2)', () => {
     expect(within(m).getByRole('button', { name: /^Solar Assembly: no allied holder/ }).getAttribute('data-gap')).toBe('no_trusted_supplier');
     const stats = screen.getByRole('list', { name: 'The allied base at a glance' });
     expect(within(stats).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Core coalition members23 coalition members in all (the demand scope); the trusted network adds Taiwan and Switzerland',
+      'Core coalition members23 coalition members in all (the demand scope); the trusted network adds five economies treated as allied',
       'Priority steps with a credible trusted supplier and backup25%of 4 supply-chain steps coalition members rely on partners to supply or secure',
       'Remaining allied gaps3priority steps that still have a gap',
     ]);
