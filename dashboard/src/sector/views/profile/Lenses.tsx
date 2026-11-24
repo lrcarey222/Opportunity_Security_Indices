@@ -32,7 +32,8 @@ import { concentration, growth, growthKindWords, growthWords, isWorldBasis, type
 import { countsByCountry, instrumentOf, policyRecords, scopePolicies, statusClass, tagBit } from '../../derive/policy.ts';
 import { hasSubTrade, subComponents, subLatestYear, subSlice, validSub } from '../../derive/subs.ts';
 import { concentrationSummary, theName } from '../../derive/text.ts';
-import { fmtHhi, fmtShare, lc, listText } from '../../format.ts';
+import { DASH, fmtHhi, fmtShare, lc, listText, NO_DATA_TITLE } from '../../format.ts';
+import { hhiBand } from '../HhiExplainer.tsx';
 import { useAibDoc } from '../aibData.ts';
 import { AIB_COLUMN, SECTOR_SECTION } from '../../copy.ts';
 import { climateLensFigures, ClimateEmissions } from './Climate.tsx';
@@ -126,11 +127,16 @@ export function catRatings(model: SectorModel, chunk: SectorPolicyChunk | null):
 }
 
 function Metric({ label, value, sub }: { label: ReactNode; value: ReactNode; sub?: ReactNode }) {
+  // a missing value prints the dash: say so to the pointer and the screen reader (a true zero prints "0")
+  const missing = value === DASH;
   return (
     <div className="flex items-baseline justify-between gap-3 border-t hairline pt-1.5">
       <dt className="text-xs text-paper-mute">{label}</dt>
       <dd className="min-w-0 text-right text-sm font-medium text-paper">
-        <span className="tabular">{value}</span>
+        <span className="tabular" title={missing ? NO_DATA_TITLE : undefined}>
+          {missing ? <span aria-hidden="true">{value}</span> : value}
+          {missing && <span className="sr-only">{NO_DATA_TITLE}</span>}
+        </span>
         {sub && <span className="block text-xs font-normal text-paper-mute">{sub}</span>}
       </dd>
     </div>
@@ -216,6 +222,8 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
   const shock = doc ? (doc.meta.shocks.find((s) => s.id === doc.meta.headlineShock)?.label ?? null) : null;
   const c = basis?.conc ?? null;
   const top = c?.top1 ? model.geos[c.top1.geo] : null;
+  // what the index means in one plain line (bands from dict.hhi_refs; the thresholds in the tooltip)
+  const band = c && c.W !== null ? hhiBand(c.hhi, c.hhi_lower_bound, model.hhiRefs) : null;
   // export shares read easily as production shares: say which one this is
   const byExports = basis?.v.family === 'exports';
   const holds = basis && c && top ? `${theName(top)} holds ${fmtShare(c.top1?.share)} of ${basis.what}; the three largest ${actorNoun(basis.v)} hold ${fmtShare(c.top3_share)}.` : '';
@@ -233,7 +241,22 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
         basis && c && c.W !== null ? (
           <>
             <Metric label="China’s share" value={fmtShare(c.split.china)} />
-            <Metric label="Concentration (HHI)" value={fmtHhi(c.hhi, c.hhi_lower_bound)} sub={Number.isFinite(c.eff_n) ? `like ${c.eff_n.toFixed(1)} equal-sized ${actorNoun(basis.v)}` : undefined} />
+            <Metric
+              label="Concentration (HHI)"
+              value={fmtHhi(c.hhi, c.hhi_lower_bound)}
+              sub={
+                Number.isFinite(c.eff_n) || band ? (
+                  <>
+                    {Number.isFinite(c.eff_n) ? `like ${c.eff_n.toFixed(1)} equal-sized ${actorNoun(basis.v)}` : null}
+                    {band && (
+                      <span className="block text-paper-dim" title={band.title} data-testid="lens-hhi-band">
+                        {band.text}.
+                      </span>
+                    )}
+                  </>
+                ) : undefined
+              }
+            />
           </>
         ) : null
       }
