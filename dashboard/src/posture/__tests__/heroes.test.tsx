@@ -435,7 +435,7 @@ describe('the Country Strategy Map', () => {
     const table = screen.getByRole('table', { name: 'Aland: choice by technology and stage' });
     expect(within(table).getAllByRole('columnheader').map((h) => h.textContent?.replace(/[▲▼]/g, ''))).toEqual([
       'Technology', 'Stage', 'Choice', 'Secure rationale', 'Yards (with its layers)', 'Need type', 'Need', 'Strategic Industrial Value', 'Market prize', 'Competitive Position', 'World supply share', 'Credible pathway',
-      'Policy alignment', 'Evidence', 'Trade momentum', 'First trusted partner', 'Borderline on', 'Consistency review',
+      'Policy alignment', 'Evidence', 'Trade momentum', 'First-ranked partner', 'Borderline on', 'Consistency review',
     ]);
     const rows = within(table).getAllByRole('row').slice(1) as HTMLTableRowElement[];
     expect(rows).toHaveLength(12);

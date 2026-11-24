@@ -69,6 +69,7 @@ import { agreementsText, alignmentText, matchText, partnerReason, proseName, pos
 import { csvWithSource, Fold, LinkRow, Section, useProfile } from './common.tsx';
 import { PartnersBySector } from './PartnersBySector.tsx';
 import { DevelopmentPartnershipsSummary } from './DevelopmentPartnerships.tsx';
+import { networkOf, OUTSIDE_NETWORK } from '../../../posture/partnerEligibility.ts';
 
 const OdaToday = lazy(() => import('../../../partnerships/OdaToday.tsx'));
 
@@ -122,6 +123,21 @@ export function PartnerName({ iso3, name }: { iso3: string; name: string }) {
   );
 }
 
+/**
+ * "outside the trusted network" beside a partner that is not a member (external review readiness, 2026-11-23):
+ * the Legacy scores rank every economy, China and Russia included; they stay listed with their scores, tagged.
+ * Membership is the trusted network's (posture/trustedNetwork.ts) over the fact sheet's own tiers.
+ */
+function OutsideTag({ row, rows }: { row: PartnerRow; rows: readonly PartnerRow[] }) {
+  if (networkOf(rows).has(row.iso3)) return null;
+  return (
+    <span className="text-xs text-paper-mute" data-testid="outside-network">
+      {' '}
+      · {OUTSIDE_NETWORK}
+    </span>
+  );
+}
+
 function ScoreList({ rows, k, label }: { rows: PartnerRow[]; k: 'po' | 'fs' | 'dp'; label: string }) {
   const { sheet } = useProfile();
   if (!rows.length) return <p className="text-paper-mute">No partner has a {label} score for {proseName(sheet.meta.country)}.</p>;
@@ -133,6 +149,7 @@ function ScoreList({ rows, k, label }: { rows: PartnerRow[]; k: 'po' | 'fs' | 'd
             <span className="tabular text-paper-mute">{i + 1}. </span>
             <PartnerName iso3={r.iso3} name={r.name} />
             {r.income_group && k === 'dp' && <span className="text-xs text-paper-mute"> · {r.income_group}</span>}
+            <OutsideTag row={r} rows={sheet.partners.rows} />
           </span>
           <span className="tabular text-xs text-paper-mute">{r[k].d}</span>
         </li>
@@ -267,7 +284,7 @@ export function PartnershipsSection({
         <p className="max-w-3xl text-sm leading-relaxed text-paper-dim">
           Who {name} could trade, invest, build and align with, read three ways: the ties it has today (observed data), what the partner scores suggest (the{' '}
           <Term id="psi" />, with <Term id="fs" /> and <Term id="dp" />, weigh preferences and are shown at the default weights) and how the Allied Industrial Base analysis would divide
-          the work under the chosen scenario. Select a Partner step above for its best-placed partners.
+          the work under the chosen scenario. Select a Partner step above for its eligible trusted partners.
           First, the strategic case for a partnership between {name} and the partner you choose.
         </p>
       </div>
@@ -941,7 +958,21 @@ function PartnerTable() {
   const name = proseName(sheet.meta.country);
   const rows = useMemo(() => partnerTableRows(sheet), [sheet]);
   const cols: Col<Row>[] = [
-    { id: 'partner', header: 'Partner', value: (r) => r.name, cell: (r) => <span>{r.name} <span className="text-xs text-paper-mute">({GROUP_WORD[r.group]}){r.extra ? ' · trade partner' : ''}</span></span>, minWidth: 150 },
+    {
+      id: 'partner',
+      header: 'Partner',
+      value: (r) => r.name,
+      cell: (r) => (
+        <span>
+          {r.name}{' '}
+          <span className="text-xs text-paper-mute">
+            ({GROUP_WORD[r.group]}){r.extra ? ' · trade partner' : ''}
+          </span>
+          <OutsideTag row={r} rows={sheet.partners.rows} />
+        </span>
+      ),
+      minWidth: 150,
+    },
     { id: 'rank', header: 'Rank', value: (r) => (r.rankable ? r.rank.v : null), cell: (r) => (r.rankable ? r.rank.d : `not ranked${r.rank_reason ? `: ${r.rank_reason}` : ''}`), num: true },
     { id: 'psi', header: 'Partnership Strength', value: (r) => r.psi.v, cell: (r) => r.psi.d, num: true },
     { id: 'reason', header: 'Main reason', value: (r) => partnerReason(sheet, r), minWidth: 200 },
@@ -959,7 +990,7 @@ function PartnerTable() {
     name: `${sheet.meta.country} partners`,
     text: csvWithSource(
       rows.map((r) => ({
-        partner: r.name, iso3: r.iso3, group: GROUP_WORD[r.group], rank: r.rankable ? r.rank.v : null, partnership_strength: r.psi.v, main_reason: partnerReason(sheet, r),
+        partner: r.name, iso3: r.iso3, group: GROUP_WORD[r.group], trusted_network: networkOf(sheet.partners.rows).has(r.iso3) ? 'member' : OUTSIDE_NETWORK, rank: r.rankable ? r.rank.v : null, partnership_strength: r.psi.v, main_reason: partnerReason(sheet, r),
         friendshore: r.fs.v, partnership_opportunity: r.po.v, development_potential: r.dp.v, imports_share_average: r.ties.imp_mean.v, exports_share_average: r.ties.exp_mean.v,
         top3_supplier_in: r.ties.top3_import_cells.v, import_baskets: r.ties.n_import_cells.v, trade_rank: r.ties.tie_rank.v, factory_projects_in: r.ties.fdi_in.v,
         factory_projects_out: r.ties.fdi_out.v, agreements: agreementsText(sheet, r.ties.agreements), un_votes: alignmentText(r), match: r.match,

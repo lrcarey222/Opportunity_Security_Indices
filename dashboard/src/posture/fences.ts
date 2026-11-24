@@ -18,7 +18,6 @@
 // opens its node's drawer focused on the layer. A layer that shares its node's choice is the node's own row
 // (the drawer lists every layer). Layers come from the economy's detail document, so they join once it is in.
 
-import { TERMS } from '../content/vocabulary.ts';
 import { isProducingStage, stageRank } from '../lib/stages.ts';
 import type { PostureCell, PostureCore, PostureDetail, PostureMeta, PostureThresholds, Verb, Yard } from './contract.ts';
 import { pct, score100 } from './derive.ts';
@@ -26,6 +25,7 @@ import { ratioVsCurrentWords, type Family, type NodeDetail } from './detail.ts';
 import { basisWords, deployCaseWords, EVIDENCE_LABEL, MOMENTUM_LABEL, nodeFence, PATHWAY_LABEL, pathwayEvidenceWords, RATIONALE_LABEL, verbOf } from './grammar.ts';
 import { postureMomentum } from './momentum.ts';
 import { cellKeyOf, detailByKey, watchReasons } from './sections.ts';
+import { networkOf, partnerLead, partnerLeadWords } from './partnerEligibility.ts';
 import { layerUnits, sivFamilies } from './yards.ts';
 
 /** A layer unit's layer: its id, name, yard, engine variant and one-line reason (yards.ts layerReason). */
@@ -314,10 +314,11 @@ export function topDeploymentFamily(n: FenceNode): { label: string; family: Fami
 /**
  * The field of a top-list entry that explains its choice (what the Strategic Choices showed, compactly):
  * Secure the security rationale (and the routes met, where more than one); Preserve its position; Catch Up the
- * pathway and its legs; Partner the leading recommended partner (or no credible allied solution yet);
+ * pathway and its legs; Partner the first eligible trusted partner (or no eligible partner, naming the suppliers
+ * outside the trusted network; or no credible allied solution yet);
  * Accelerate the top deployment family; Watch the engine's reasons. Null when the data do not carry it.
  */
-export function fenceReason(n: FenceNode, core: Pick<PostureCore, 'meta'>, names: Readonly<Record<string, string>>): string | null {
+export function fenceReason(n: FenceNode, core: Pick<PostureCore, 'meta' | 'countries'>, names: Readonly<Record<string, string>>): string | null {
   const c = n.cell;
   const d = n.detail;
   const t: PostureThresholds = core.meta.thresholds;
@@ -336,9 +337,10 @@ export function fenceReason(n: FenceNode, core: Pick<PostureCore, 'meta'>, names
       return w ? `Pathway: ${w}` : null;
     }
     case 'partner': {
-      if (c.partnerGap || d?.partnerGap) return 'No credible allied solution yet';
-      const lead = d?.partners[0]?.iso3 ?? c.partner1;
-      return lead ? `${TERMS.bestPlacedPartner}: ${names[lead] ?? lead}` : null;
+      // only a trusted-network member is named as a partner (partnerEligibility.ts); suppliers outside it are
+      // named as such, never dropped
+      const lead = partnerLead(d ? d.partners : null, c.partner1, !!(c.partnerGap || d?.partnerGap), networkOf(core.countries));
+      return partnerLeadWords(lead, names);
     }
     case 'accelerate': {
       // the engine's deployment case (R deployment_need.R dn_cases) where the core carries it; an older core

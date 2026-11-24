@@ -30,13 +30,14 @@
 // PostureNodeDrawer is the connected one the pages mount once, for every entry point (spec XIX).
 // The NEIS copy refresh (2026-10-30): the questions are the strategy steps' own (vocabulary STRATEGY_STEP); each
 // choice is explained as an action (CHOICE_DEFINITION; Watch as "Low domestic priority", a deployment Watch
-// below the bar for acceleration); a Partner step lists its best-placed partners; "step", never "node".
+// below the bar for acceleration); a Partner step lists its eligible trusted partners and,
+// apart, the ranked suppliers outside the trusted network (PartnerEligibilityList); "step", never "node".
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { isProducingStage, stageDisplay } from '../lib/stages.ts';
 import { Term } from '../components/Term.tsx';
-import { CHOICE_DEFINITION, CONTROL_LAYER_NOTE, STRATEGY_STEP, TERMS, WATCH_DEPLOYMENT_DEFINITION, WATCH_PROSE_LABEL } from '../content/vocabulary.ts';
+import { CHOICE_DEFINITION, CONTROL_LAYER_NOTE, STRATEGY_STEP, WATCH_DEPLOYMENT_DEFINITION, WATCH_PROSE_LABEL } from '../content/vocabulary.ts';
 import { POSTURE_TERMS } from './basis.tsx';
 import { DEPLOY_CASE_IDS, type DeployCaseId, type PostureCell, type PostureCore, type Verb } from './contract.ts';
 import { cellKey, cellKeyParts, countryCells, countryNames, pct } from './derive.ts';
@@ -50,6 +51,7 @@ import { chinaShareWords, currentTradeSourceWords } from './currentTrade.ts';
 import { postureMomentum } from './momentum.ts';
 import { catchUpPositionWords, countryRankWords, manufacturingPriority, manufacturingPriorityWord, policyMomentumWords, protectionWords, remoteCommandWords, watchReasons } from './sections.ts';
 import { Swatch } from './PostureLegend.tsx';
+import { PartnerEligibilityList } from './PartnerEligibilityList.tsx';
 import { LAYER_KEY, NODE_KEY } from './selection.ts';
 import { usePostureCore, usePostureDetail } from './store.ts';
 import type { MetricRef } from '../review/model.ts';
@@ -363,25 +365,15 @@ function ChoiceAnswer({
       {v === 'partner' && (
         <div className="mt-1 text-sm text-paper-dim">
           <p>{CHOICE_DEFINITION.partner}</p>
-          {cell.partnerGap || d?.partnerGap ? (
-            <p className="mt-1 text-signal">No credible allied solution yet: no trusted supplier can cover it.</p>
-          ) : d?.partners.length ? (
-            <ol className="mt-1 space-y-1" aria-label="Best-placed partners">
-              {d.partners.map((p, i) => (
-                <li key={p.iso3} className="flex justify-between gap-2">
-                  <span className="text-paper">
-                    {i + 1}. {names[p.iso3] ?? p.iso3}
-                  </span>
-                  <span className="tabular text-xs text-paper-mute">
-                    holds {pct(p.capability)} · position {pct(p.cp)} · relationship {p.relationship !== undefined ? p.relationship.toFixed(2) : '—'}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          ) : cell.partner1 ? (
-            <p className="mt-1">{TERMS.bestPlacedPartner}: {names[cell.partner1] ?? cell.partner1}</p>
-          ) : null}
-          {d?.partnerReason && <p className="mt-1 text-xs text-paper-mute">{d.partnerReason}</p>}
+          {/* eligible trusted partners, then suppliers outside the trusted network (partnerEligibility.ts) */}
+          <PartnerEligibilityList
+            core={core}
+            partners={d ? d.partners : null}
+            partner1={cell.partner1}
+            gap={!!(cell.partnerGap || d?.partnerGap)}
+            reason={d?.partnerReason ?? null}
+            names={names}
+          />
         </div>
       )}
       {v === 'accelerate' && (

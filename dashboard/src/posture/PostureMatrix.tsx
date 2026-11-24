@@ -32,6 +32,7 @@ import {
   ALIGNMENT_LABEL, borderlineWords, EVIDENCE_LABEL, FENCE_LABEL, fenceChoiceWord, flagWords, nodeFence, nodeFill, NOT_ASSESSED_BORDER, RATIONALE_LABEL, stageDisplay,
   stageShort, VERB_LABEL, VERB_OUTLINE, verbOf,
 } from './grammar.ts';
+import { networkOf, partnerLead, partnerLeadWords } from './partnerEligibility.ts';
 import { Swatch } from './PostureLegend.tsx';
 import { detailByKey } from './sections.ts';
 import { mixedFill, mixedYards, partChoiceWords, partsFenceWords, partsMixed, rollupWords, rollupYards, showsLargeYard, stepParts, type StepPart } from './yards.ts';
@@ -138,7 +139,7 @@ function useTipPlace(anchor: HTMLElement | null, tip: React.RefObject<HTMLDivEle
   return pos;
 }
 
-function Tip({ c, partnerName, parts, anchor, id }: { c: PostureCell; partnerName: string | null; parts: readonly StepPart[]; anchor: HTMLElement | null; id: string }) {
+function Tip({ c, partnerWords, parts, anchor, id }: { c: PostureCell; partnerWords: string | null; parts: readonly StepPart[]; anchor: HTMLElement | null; id: string }) {
   const v = verbOf(c);
   const fence = nodeFence(v, c.stage);
   const ref = useRef<HTMLDivElement>(null);
@@ -187,7 +188,7 @@ function Tip({ c, partnerName, parts, anchor, id }: { c: PostureCell; partnerNam
       )}
       {c.alignment && <p>Policy: {ALIGNMENT_LABEL[c.alignment]}</p>}
       {c.evidence && <p>Evidence: {EVIDENCE_LABEL[c.evidence]}</p>}
-      {c.mode === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `${TERMS.bestPlacedPartner}: ${partnerName ?? '—'}`}</p>}
+      {c.mode === 'partner' && <p>{partnerWords ?? `${TERMS.bestPlacedPartner}: —`}</p>}
       {c.borderline && <p className="text-signal">Borderline on {borderlineWords(c.borderline)}</p>}
       {c.flag && <p className="text-signal">{flagWords(c.flag)}</p>}
       {!lead && parts.length > 0 && <TipParts parts={parts} lead={false} />}
@@ -229,10 +230,17 @@ export interface PostureMatrixProps {
 export function PostureMatrix({ core, cells, selected, onSelect, names = {}, detail = null }: PostureMatrixProps) {
   const byKey = useMemo(() => new Map(cells.map((c) => [cellKey(c.tech, c.stage), c])), [cells]);
   // the parts of each step with layers, from the economy's detail (none until it is in)
-  const partsByKey = useMemo(() => {
-    const d = detailByKey(detail);
-    return new Map(cells.map((c) => [cellKey(c.tech, c.stage), stepParts(core.meta, c, d.get(cellKey(c.tech, c.stage)) ?? null)]));
-  }, [cells, detail, core.meta]);
+  const dByKey = useMemo(() => detailByKey(detail), [detail]);
+  const partsByKey = useMemo(
+    () => new Map(cells.map((c) => [cellKey(c.tech, c.stage), stepParts(core.meta, c, dByKey.get(cellKey(c.tech, c.stage)) ?? null)])),
+    [cells, dByKey, core.meta],
+  );
+  // a Partner step's lead: only a trusted-network member is named as a partner (partnerEligibility.ts)
+  const net = networkOf(core.countries);
+  const partnerWordsOf = (c: PostureCell): string | null => {
+    const d = dByKey.get(cellKey(c.tech, c.stage)) ?? null;
+    return partnerLeadWords(partnerLead(d ? d.partners : null, c.partner1, !!(c.partnerGap || d?.partnerGap), net), names);
+  };
   const [hover, setHover] = useState<{ key: string; el: HTMLElement } | null>(null);
   const helperId = useId();
   const tipId = useId();
@@ -354,7 +362,7 @@ export function PostureMatrix({ core, cells, selected, onSelect, names = {}, det
                         ))}
                       </span>
                     )}
-                    {shown && hover && <Tip c={c} partnerName={c.partner1 ? (names[c.partner1] ?? c.partner1) : null} parts={parts} anchor={hover.el} id={tipId} />}
+                    {shown && hover && <Tip c={c} partnerWords={partnerWordsOf(c)} parts={parts} anchor={hover.el} id={tipId} />}
                   </span>
                 );
               }
