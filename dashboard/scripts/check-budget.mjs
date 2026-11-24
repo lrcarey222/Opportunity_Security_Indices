@@ -40,6 +40,7 @@
 //                           join) + agreements manifest + the global file; the economy view counts the largest
 //                           economy file instead of the global file                            <= 1 MB
 //   each Agreements file    global 400 kB, an economy's file 120 kB
+//   Agreements data         public/data/agreements/** (every file; not in All data)            <= 4 MB
 //
 // Fails above a limit, when a manifest lists a chunk file that does not exist, or when a route chunk
 // the figures need cannot be found in the build. A data bundle that is absent (CI without the

@@ -1,13 +1,13 @@
 {
   "schema": "aib-review-qc-summary",
   "schema_version": 1,
-  "data_release": "rel-9c8f1877b5c6",
-  "built_at": "2026-11-21T00:00:00Z",
-  "app_commit": "f4f344b1",
+  "data_release": "rel-f07fe2fb9554",
+  "built_at": "2026-11-23T12:00:00Z",
+  "app_commit": "c300f0c5",
   "layer": "bundle",
   "status": {
-    "pass": 31,
-    "warn": 8,
+    "pass": 32,
+    "warn": 7,
     "fail": 0,
     "info": 5
   },
@@ -18,34 +18,29 @@
       "area": "provenance",
       "status": "pass",
       "n": 0,
-      "detail": "posture manifest and core stamped 2026-11-17T20:33:31Z @ 0496e7ba",
+      "detail": "posture manifest and core stamped 2026-11-21T17:46:30Z @ 17f0737e",
       "examples": []
     },
     {
       "check_id": "BQ-PROV-DETAIL-01",
       "layer": "bundle",
       "area": "provenance",
-      "status": "warn",
-      "n": 214,
-      "detail": "214 posture detail documents: 214 carry created, 0 carry a git commit (the detail header has none: a detail file cannot be tied to a commit on its own)",
-      "examples": [
-        "posture/posture-detail-ABW.4806eff2.json",
-        "posture/posture-detail-AFG.f92da37c.json",
-        "posture/posture-detail-AGO.6cf2c003.json"
-      ]
+      "status": "pass",
+      "n": 0,
+      "detail": "214 posture detail documents: 214 carry created, 214 carry a git commit (the detail header has none: a detail file cannot be tied to a commit on its own)",
+      "examples": []
     },
     {
       "check_id": "BQ-PROV-AIB-01",
       "layer": "bundle",
       "area": "provenance",
       "status": "warn",
-      "n": 4,
-      "detail": "AIB bundle created 2026-11-17T19:07:29Z; 4 of 4 AIB files carry no git commit (manifest, compacts and scenario documents)",
+      "n": 3,
+      "detail": "AIB bundle created 2026-11-21T14:34:52Z; 3 of 4 AIB files carry no git commit (manifest, compacts and scenario documents)",
       "examples": [
-        "aib/manifest.json",
-        "aib/compacts.c5643da1.json",
-        "aib/scenario-managed.feae9f60.json",
-        "aib/scenario-baseline.2b9a857b.json"
+        "aib/compacts.be93214e.json",
+        "aib/scenario-managed.30ee124b.json",
+        "aib/scenario-baseline.7416dbc4.json"
       ]
     },
     {
@@ -75,7 +70,7 @@
       "area": "provenance",
       "status": "info",
       "n": 3,
-      "detail": "the bundles come from 3 commits (0496e7ba, 4bb2adc, a54a9d3) and 3 export dates (2026-10-30, 2026-10-31, 2026-11-17); only the data release ID ties them together",
+      "detail": "the bundles come from 3 commits (17f0737e, 4bb2adc, a54a9d3) and 3 export dates (2026-10-30, 2026-10-31, 2026-11-21); only the data release ID ties them together",
       "examples": []
     },
     {
@@ -84,7 +79,7 @@
       "area": "provenance",
       "status": "pass",
       "n": 0,
-      "detail": "data release rel-9c8f1877b5c6: every bundle stamp present",
+      "detail": "data release rel-f07fe2fb9554: every bundle stamp present",
       "examples": []
     },
     {
@@ -120,7 +115,7 @@
       "area": "posture.schema",
       "status": "pass",
       "n": 0,
-      "detail": "posture core: 27 columns, 14124 rows, every column full length",
+      "detail": "posture core: 28 columns, 14124 rows, every column full length",
       "examples": []
     },
     {

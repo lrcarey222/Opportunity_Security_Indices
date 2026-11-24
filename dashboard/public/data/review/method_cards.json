@@ -1,8 +1,8 @@
 {
   "schema": "aib-review-method-cards",
   "schema_version": 1,
-  "data_release": "rel-9c8f1877b5c6",
-  "built_at": "2026-11-21T00:00:00Z",
+  "data_release": "rel-f07fe2fb9554",
+  "built_at": "2026-11-23T12:00:00Z",
   "cards": [
     {
       "card_id": "MC_001",
