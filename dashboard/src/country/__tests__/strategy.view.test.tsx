@@ -706,7 +706,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(nav.className).toMatch(/sticky/);
     expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(STRATEGY_SECTIONS.map((s) => s.nav ?? s.label));
     expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual([
-      'Strategy map', 'High fence · Secure', 'Medium fence · Build, partner, deploy', 'Low fence · Keep open', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
+      'Strategy map', 'Secure (high fence)', 'Build, partner, deploy (medium fence)', 'Keep open (low fence)', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
     ]);
     // the matrix scrolls inside its card, never the page; the short stage names are there for phones
     expect(nav.className).toMatch(/\bbg-ink-900\b/);

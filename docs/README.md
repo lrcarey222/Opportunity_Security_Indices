@@ -52,7 +52,8 @@ Pilot records: [country_briefs_pilot_report.md](country_briefs_pilot_report.md),
 | [QC_RELEASE_CHECKLIST.md](QC_RELEASE_CHECKLIST.md) | Gate a release passes before publication (draft) |
 | [QC_UX_REVIEW.md](QC_UX_REVIEW.md) | Review-flow UX notes and open decisions |
 | [qc_audit/](qc_audit/QC_EVIDENCE_CATALOGUE.md) | Audit notes behind the QC design |
-| [EXTERNAL_REVIEW_READINESS_AUDIT.md](EXTERNAL_REVIEW_READINESS_AUDIT.md) | State of the Explorer before external review (2026-11-23) |
+| [PARTNER_ELIGIBILITY_AND_FRAMING.md](PARTNER_ELIGIBILITY_AND_FRAMING.md) | Who may be named as a partner (trusted network) vs current suppliers; the China/Russia partner fix |
+| [EXTERNAL_REVIEW_READINESS_AUDIT.md](EXTERNAL_REVIEW_READINESS_AUDIT.md), [EXTERNAL_REVIEW_CASE_AUDIT.md](EXTERNAL_REVIEW_CASE_AUDIT.md), [EXTERNAL_REVIEW_READINESS_REPORT.md](EXTERNAL_REVIEW_READINESS_REPORT.md) | The 2026-11 external-review readiness sprint: audit, representative cases, final report |
 
 Review content (cases, method cards, campaigns) lives in `config/review/` ([its README](../config/review/README.md)).
 

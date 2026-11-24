@@ -32,6 +32,7 @@ import {
 import { TradeFreshness } from '../../posture/PostureLegend.tsx';
 import { usePostureCore } from '../../posture/store.ts';
 import { sectorPostureCols } from '../../posture/tables.tsx';
+import { networkOf } from '../../posture/partnerEligibility.ts';
 import {
   alliedSides, decisionWords, fenceCountsText, mixedLayersNote, nodePrize, notPlottedReason, prizeWords, regionLabels, sectorStrategyTakeaway, sectorStrategyTitle, strategyHref, strategyPoints,
   verbRank, verbsOfStage,
@@ -120,14 +121,14 @@ export function SectorStrategyCard({
   const open = (iso: string) => nav(countryHref(iso, tech, stage));
   const byIso = new Map(cells.map((x) => [x.iso3, x]));
   const plottedCol: Col<PostureRow> = { id: 'plotted', header: 'On the chart', value: (r) => (notPlottedReason(byIso.get(r.iso3) ?? null) ? `no: ${notPlottedReason(byIso.get(r.iso3) ?? null)}` : 'yes') };
-  const cols = [...sectorPostureCols(c.meta).filter((x) => x.id !== 'plotted'), plottedCol];
+  const cols = [...sectorPostureCols(c.meta, networkOf(c.countries)).filter((x) => x.id !== 'plotted'), plottedCol];
   const tools = node ? undefined : (
     <>
       <Select label="Technology" value={tech} options={c.meta.techs.map((x) => ({ value: x, label: x }))} onChange={(x) => set(x, stage)} />
       <Select label="Stage" value={stage} options={c.meta.stages.map((s) => ({ value: s, label: stageDisplay(s) }))} onChange={(s) => set(tech, s)} className="min-w-[12rem]" />
     </>
   );
-  const csv = () => ({ name: `${tech} ${stage} strategic choice by economy`, text: postureCsvText(postureCsvRows(rows), POSTURE_CSV_COLS, postureProvenance(c)) });
+  const csv = () => ({ name: `${tech} ${stage} strategic choice by economy`, text: postureCsvText(postureCsvRows(rows, networkOf(c.countries)), POSTURE_CSV_COLS, postureProvenance(c)) });
   return (
     <div className={className} data-testid="sector-posture-hero">
       {problem && reportIgnored && dismissed !== raw && (
@@ -208,6 +209,7 @@ export function SectorStrategyCard({
             regions={regionLabels(stage, prize?.kind ?? null, t)}
             onOpen={open}
             tierOf={(iso) => TIER_WORD[tiers[iso] ?? ''] ?? null}
+            isTrusted={networkOf(c.countries).has}
             nameOf={(iso) => names[iso] ?? iso}
           />
         </div>

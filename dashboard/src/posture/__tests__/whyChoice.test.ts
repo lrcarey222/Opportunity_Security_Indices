@@ -8,7 +8,7 @@ import { AVOID_RE } from '../../content/vocabulary.ts';
 import { shippedChoice, whyChoice } from '../whyChoice.ts';
 import type { NodeDetail, TraceStep } from '../detail.ts';
 
-const META = { thresholds: { need: 0.67, prize: 0.6, cp: 0.75, deployment: 0.6 } };
+const META = { thresholds: { need: 0.67, prize: 0.6, cp: 0.75, deployment: 0.6, borderline_band: 0.05 } };
 
 type D = Parameters<typeof whyChoice>[0];
 function cell(stage: NodeDetail['stage'], trace: TraceStep[], extra: Partial<D> = {}): D {

@@ -31,9 +31,9 @@ export interface ProfileSection {
  */
 export const STRATEGY_SECTIONS: readonly ProfileSection[] = [
   { id: 'strategy', label: TERMS.postureClassification, nav: 'Strategy map', aliases: ['posture', 'glance'] },
-  { id: 'high-fence', label: FENCE_TITLE.high, nav: 'High fence · Secure', aliases: ['need'] },
-  { id: 'medium-fence', label: FENCE_TITLE.medium, nav: 'Medium fence · Build, partner, deploy', aliases: ['prize-position', 'choices'] },
-  { id: 'low-fence', label: FENCE_TITLE.low, nav: 'Low fence · Keep open', aliases: [] },
+  { id: 'high-fence', label: FENCE_TITLE.high, nav: 'Secure (high fence)', aliases: ['need'] },
+  { id: 'medium-fence', label: FENCE_TITLE.medium, nav: 'Build, partner, deploy (medium fence)', aliases: ['prize-position', 'choices'] },
+  { id: 'low-fence', label: FENCE_TITLE.low, nav: 'Keep open (low fence)', aliases: [] },
   { id: 'policy-alignment', label: POLICY_ALIGNMENT_TITLE, nav: 'Policy alignment', aliases: ['policy', 'priorities'] },
   { id: 'allied', label: 'Where this country fits in the Allied Industrial Base', nav: 'Allied strategy', aliases: ['aib-role', 'allied-aib-role', 'allies'] },
   { id: 'evidence', label: EVIDENCE_TITLE, aliases: ['notes', 'methods'] },

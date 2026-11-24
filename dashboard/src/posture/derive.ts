@@ -174,7 +174,7 @@ export interface PostureTile {
 export function aibHeaderTiles(core: PostureCore): PostureTile[] {
   const h = aibHeader(core);
   return [
-    { id: 'core', label: 'Core coalition members', value: String(h.coreMembers), sub: `${core.aibHeader.members} members in all` },
+    { id: 'core', label: 'Core coalition members', value: String(h.coreMembers), sub: `${core.aibHeader.members} coalition members in all (the demand scope); the trusted network adds Taiwan and Switzerland` },
     { id: 'covered', label: 'Priority steps with a credible trusted supplier and backup', value: pct(h.coveredShare), sub: `of ${plural(h.priorityNodes, 'supply-chain step')} coalition members rely on partners to supply or secure` },
     { id: 'gaps', label: 'Remaining allied gaps', value: String(h.unresolvedGaps), sub: 'priority steps that still have a gap' },
   ];
@@ -400,19 +400,20 @@ export function sectorPostureRows(core: PostureCore, tech: string, stage: string
 export const POSTURE_CSV_COLS = [
   'country', 'iso3', 'coalition_tier', 'technology', 'stage', 'stage_name', 'classified', 'posture', 'compete_mode', 'deploy_mode', 'deploy_case', 'choice', 'secure_rationale',
   'need_type', 'supply_chain_need', 'deployment_need', 'strategic_industrial_value', 'industrial_opportunity', 'yards', 'competitive_position', 'world_supply_share', 'pathway_credible',
-  'policy_alignment', 'alignment_confidence', 'evidence', 'posture_confidence', 'trade_momentum', 'first_partner', 'first_partner_iso3', 'partner_gap',
+  'policy_alignment', 'alignment_confidence', 'evidence', 'posture_confidence', 'trade_momentum', 'first_partner', 'first_partner_iso3', 'first_partner_in_trusted_network', 'partner_gap',
   'borderline', 'consistency_flag',
 ] as const;
 
 /** The posture rows as CSV records (POSTURE_CSV_COLS; shares and percentiles as fractions, 0 to 1). */
-export function postureCsvRows(rows: PostureRow[]): Record<string, unknown>[] {
+export function postureCsvRows(rows: PostureRow[], net?: { has: (iso3: string | null | undefined) => boolean } | null): Record<string, unknown>[] {
   return rows.map((r) => ({
     country: r.country, iso3: r.iso3, coalition_tier: r.tier, technology: r.tech, stage: r.stage, stage_name: r.stageName, classified: r.classified,
     posture: r.postureWord, compete_mode: r.mode, deploy_mode: r.deployMode, deploy_case: r.deployCase, choice: r.choice, secure_rationale: r.rationale, need_type: r.needType,
     supply_chain_need: r.supplyChainNeed, deployment_need: r.deploymentNeed, strategic_industrial_value: r.strategicValue, industrial_opportunity: r.market,
     yards: r.yards, competitive_position: r.cp,
     world_supply_share: r.share, pathway_credible: r.pathway, policy_alignment: r.alignment, alignment_confidence: r.alignmentConfidence, evidence: r.evidence,
-    posture_confidence: r.confidence, trade_momentum: r.momentum, first_partner: r.partner1Name, first_partner_iso3: r.partner1, partner_gap: r.partnerGap,
+    posture_confidence: r.confidence, trade_momentum: r.momentum, first_partner: r.partner1Name, first_partner_iso3: r.partner1,
+    first_partner_in_trusted_network: r.partner1 && net ? net.has(r.partner1) : null, partner_gap: r.partnerGap,
     borderline: r.borderline, consistency_flag: r.flag,
   }));
 }

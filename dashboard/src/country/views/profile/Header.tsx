@@ -19,6 +19,7 @@ import { DATA_FRESHNESS_NOTE, MODULE_QUESTION } from '../../../content/vocabular
 import { downloadText, fileSlug } from '../../../lib/download.ts';
 import { countryPostureRows, postureCsvText, postureProvenance, strategySentence } from '../../../posture/index.ts';
 import { POSTURE_CSV_COLS, postureCsvRows } from '../../../posture/derive.ts';
+import { networkOf } from '../../../posture/partnerEligibility.ts';
 import type { CountryManifest } from '../../contract.ts';
 import { sectorCountryLink } from '../../derive/links.ts';
 import { countryOptions } from '../../derive/model.ts';
@@ -104,7 +105,7 @@ export function ProfileHead({ manifest }: { manifest: CountryManifest }) {
   const fresh = freshnessItems({ created: core?.created ?? null, benchmark: core?.meta.benchmark_period ?? null, momentumThrough: core?.meta.momentum_through ?? null, asOfLabel: m.as_of_label });
   const csv = () => {
     if (!core) return;
-    const rows = postureCsvRows(countryPostureRows(core, sheet.iso3));
+    const rows = postureCsvRows(countryPostureRows(core, sheet.iso3), networkOf(core.countries));
     downloadText(postureCsvText(rows, POSTURE_CSV_COLS, postureProvenance(core)), `${fileSlug(m.country)}-strategy-map.csv`);
   };
   return (

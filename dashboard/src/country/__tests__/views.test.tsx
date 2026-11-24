@@ -202,7 +202,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     const links = within(nav).getAllByRole('link');
     expect(links.map((a) => a.getAttribute('href'))).toEqual(['#strategy', '#high-fence', '#medium-fence', '#low-fence', '#policy-alignment', '#allied', '#evidence']);
     expect(links.map((a) => a.textContent)).toEqual([
-      'Strategy map', 'High fence · Secure', 'Medium fence · Build, partner, deploy', 'Low fence · Keep open', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
+      'Strategy map', 'Secure (high fence)', 'Build, partner, deploy (medium fence)', 'Keep open (low fence)', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
     ]);
     for (const s of STRATEGY_SECTIONS) {
       const el = document.getElementById(s.id)!;

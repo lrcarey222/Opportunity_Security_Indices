@@ -331,7 +331,7 @@ describe('Explore', () => {
   it('default theme: chips, the filter row, key figures, map and ranking, table and notes', async () => {
     const r = renderAt('/sector/explore?c=USA');
     expect(await h1('Trade')).toBeTruthy();
-    expect(document.title).toMatch(/^Explore Trade \| Sectors \| /);
+    expect(document.title).toMatch(/^Advanced explorer: Trade \| Sectors \| /);
     const chips = screen.getByRole('navigation', { name: 'Themes' });
     expect(within(chips).getByRole('link', { name: 'Trade' }).getAttribute('aria-current')).toBe('page');
     expect(within(chips).getByRole('link', { name: 'Policy' }).getAttribute('href')).toBe('/sector/explore/policy?c=USA');

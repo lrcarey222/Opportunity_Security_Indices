@@ -74,9 +74,11 @@ export interface SectorStrategyScatterProps {
   tierOf?: (iso3: string) => string | null;
   /** an economy's name (the first trusted partner in the tooltip) */
   nameOf?: (iso3: string) => string;
+  /** trusted-network membership: a first partner outside it is shown as a supplier, not a partner */
+  isTrusted?: (iso3: string) => boolean;
 }
 
-export function SectorStrategyScatter({ points, stage, thresholds, regions, onOpen, tierOf, nameOf }: SectorStrategyScatterProps) {
+export function SectorStrategyScatter({ points, stage, thresholds, regions, onOpen, tierOf, nameOf, isTrusted }: SectorStrategyScatterProps) {
   const [hover, setHover] = useState<string | null>(null);
   const dep = stage === DEPLOYMENT_STAGE;
   // no measured position anywhere in the node: spread the economies out (x carries no value)
@@ -193,7 +195,15 @@ export function SectorStrategyScatter({ points, stage, thresholds, regions, onOp
           </p>
           <p className="tabular">World supply share {pct(c.share, 1)}</p>
           {(hov.p.verb === 'catch_up' || hov.p.verb === 'partner') && c.pathway && <p>Credible pathway: {PATHWAY_LABEL[c.pathway].toLowerCase()}</p>}
-          {hov.p.verb === 'partner' && <p>{c.partnerGap ? 'No credible allied solution yet' : `${TERMS.bestPlacedPartner}: ${c.partner1 ? (nameOf?.(c.partner1) ?? c.partner1) : '—'}`}</p>}
+          {hov.p.verb === 'partner' && (
+            <p>
+              {c.partnerGap
+                ? 'No credible allied solution yet'
+                : c.partner1 && isTrusted && !isTrusted(c.partner1)
+                  ? `First-ranked supplier: ${nameOf?.(c.partner1) ?? c.partner1}, outside the trusted network`
+                  : `${TERMS.bestPlacedPartner}: ${c.partner1 ? (nameOf?.(c.partner1) ?? c.partner1) : '—'}`}
+            </p>
+          )}
           {mixedYards(c) && <p data-testid="scatter-tip-mixed">{rollupWords(c)}</p>}
           {c.momentum && <p>Trade momentum: {MOMENTUM_LABEL[c.momentum]}</p>}
           {c.alignment && <p>Policy: {ALIGNMENT_LABEL[c.alignment].toLowerCase()}</p>}

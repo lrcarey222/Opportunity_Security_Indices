@@ -226,7 +226,7 @@ describe('the counts of a page tile and the AIB header tiles', () => {
   });
   it('the three AIB metrics as tiles', () => {
     expect(aibHeaderTiles(core)).toEqual([
-      { id: 'core', label: 'Core coalition members', value: '2', sub: '3 members in all' },
+      { id: 'core', label: 'Core coalition members', value: '2', sub: '3 coalition members in all (the demand scope); the trusted network adds Taiwan and Switzerland' },
       { id: 'covered', label: 'Priority steps with a credible trusted supplier and backup', value: '25%', sub: 'of 4 supply-chain steps coalition members rely on partners to supply or secure' },
       { id: 'gaps', label: 'Remaining allied gaps', value: '3', sub: 'priority steps that still have a gap' },
     ]);
@@ -315,14 +315,14 @@ describe('the table twins and CSVs', () => {
     expect(lines).toHaveLength(14); // header, 12 nodes, the final line break
     // the prize: the Strategic Industrial Value and the market prize (Industrial Opportunity) beside it; the node's yards
     expect(lines[1]).toBe(
-      `Aland,AAA,core,Batteries,Extraction,Extraction,TRUE,Compete,Partner,,,Partner · Medium fence,,Supply-chain need,0.8,,0.3,0.3,Medium yard,0.2,0.004,Not credible,Wrong tool for the problem,high,Strong,high,rising,Bland,BBB,FALSE,,,${source},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Extraction,Extraction,TRUE,Compete,Partner,,,Partner · Medium fence,,Supply-chain need,0.8,,0.3,0.3,Medium yard,0.2,0.004,Not credible,Wrong tool for the problem,high,Strong,high,rising,Bland,BBB,,FALSE,,,${source},2026-10-29,abc1234`,
     );
     expect(lines[2]).toBe(
-      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,,Secure · High fence,Chokepoint risk,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Needs more attention,medium,Strong,high,,,,,,,${source},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,,Secure · High fence,Chokepoint risk,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Needs more attention,medium,Strong,high,,,,,,,,${source},2026-10-29,abc1234`,
     );
     // Batteries Components: a value of 0.8 on a market prize of 0.7
     expect(lines[3]).toContain(',Supply-chain need,0.5,,0.8,0.7,Medium yard,0.4,');
-    expect(lines[12]).toBe(['Aland', 'AAA', 'core', 'Solar', 'Recovery', 'Recovery & Recycling', 'FALSE', ...Array(25).fill(''), source, '2026-10-29', 'abc1234'].join(','));
+    expect(lines[12]).toBe(['Aland', 'AAA', 'core', 'Solar', 'Recovery', 'Recovery & Recycling', 'FALSE', ...Array(26).fill(''), source, '2026-10-29', 'abc1234'].join(','));
     // an empty table still names its columns
     expect(postureCsvText([], POSTURE_CSV_COLS, prov).split('\r\n')[0]).toBe(lines[0]);
     // an older core (its prize the market measure, no yards): no strategic value, the market prize where it was, no yards

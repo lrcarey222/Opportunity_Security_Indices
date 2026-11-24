@@ -227,7 +227,7 @@ describe.skipIf(!haveFixture())('Country page helpers (derive/strategyPage.ts, d
     ]);
     // the section nav keeps short words
     expect(STRATEGY_SECTIONS.map((s) => s.nav ?? s.label)).toEqual([
-      'Strategy map', 'High fence · Secure', 'Medium fence · Build, partner, deploy', 'Low fence · Keep open', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
+      'Strategy map', 'Secure (high fence)', 'Build, partner, deploy (medium fence)', 'Keep open (low fence)', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
     ]);
     expect(STRATEGY_SECTIONS.map((s) => s.id)).toEqual(['strategy', 'high-fence', 'medium-fence', 'low-fence', 'policy-alignment', 'allied', 'evidence']);
     // the Medium fence's sub-sections, in order, with their anchors: each named by its step and the question it answers

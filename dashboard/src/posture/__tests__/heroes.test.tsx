@@ -460,7 +460,7 @@ describe('the Country Strategy Map', () => {
     expect(lines[0].split(',').slice(0, 8)).toEqual(['country', 'iso3', 'coalition_tier', 'technology', 'stage', 'stage_name', 'classified', 'posture']);
     expect(lines).toHaveLength(14);
     expect(lines[2]).toBe(
-      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,,Secure · High fence,Chokepoint risk,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Needs more attention,medium,Strong,high,,,,,,,${SOURCE},2026-10-29,abc1234`,
+      `Aland,AAA,core,Batteries,Refining,Refining & Processing,TRUE,Secure,,,,Secure · High fence,Chokepoint risk,Supply-chain need,0.95,,0.4,0.4,Small yard,0.1,0.002,,Needs more attention,medium,Strong,high,,,,,,,,${SOURCE},2026-10-29,abc1234`,
     );
     expect(lines[12].startsWith('Aland,AAA,core,Solar,Recovery,Recovery & Recycling,FALSE,,')).toBe(true);
   });
@@ -657,7 +657,7 @@ describe('the AIB division card (schema 2)', () => {
     expect(within(m).getByRole('button', { name: /^Solar Assembly: no allied holder/ }).getAttribute('data-gap')).toBe('no_trusted_supplier');
     const stats = screen.getByRole('list', { name: 'The allied base at a glance' });
     expect(within(stats).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Core coalition members23 members in all',
+      'Core coalition members23 coalition members in all (the demand scope); the trusted network adds Taiwan and Switzerland',
       'Priority steps with a credible trusted supplier and backup25%of 4 supply-chain steps coalition members rely on partners to supply or secure',
       'Remaining allied gaps3priority steps that still have a gap',
     ]);
