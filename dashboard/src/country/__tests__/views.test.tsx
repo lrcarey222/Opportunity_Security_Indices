@@ -17,7 +17,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { routes } from '../../routes.tsx';
 import { bareAcronyms } from '../../components/testing/acronyms.ts';
 import { SUPPLY_STAGES } from '../../lib/stages.ts';
-import { setPostureStore } from '../../posture/store.ts';
+import { PostureStore, setPostureStore } from '../../posture/store.ts';
 import { fixtureStore } from '../../posture/__tests__/fixture.ts';
 import { setEngineClient } from '../../state/EngineProvider.tsx';
 import { EngineClient } from '../../worker/client.ts';
@@ -189,9 +189,10 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(document.getElementById('glance')?.tagName).toBe('SPAN');
     const actions = screen.getByTestId('profile-actions');
     expect(actions.id).toBe('memo');
-    const memo = screen.getAllByRole('link', { name: 'GENERATE MEMO' });
+    // a core member's memo is read on its page (nothing is generated on click; a decision brief says "Download decision brief")
+    const memo = screen.getAllByRole('link', { name: 'Read the policy memo' });
     expect(memo).toHaveLength(1); // the header action only: the memo is not a section any more
-    expect(within(actions).getByRole('link', { name: 'GENERATE MEMO' }).getAttribute('href')).toBe('/countries/USA/memo');
+    expect(within(actions).getByRole('link', { name: 'Read the policy memo' }).getAttribute('href')).toBe('/countries/USA/memo');
     expect(within(actions).getByText(/AI-generated from the data and checked against it; baseline as of 12 October 2026\. It reads the security and opportunity scores, not the strategy above\./)).toBeTruthy();
     await waitFor(() => expect((within(actions).getByRole('button', { name: 'DOWNLOAD STRATEGY (CSV)' }) as HTMLButtonElement).disabled).toBe(false));
     expect(within(actions).getByRole('link', { name: /All data and downloads/ }).getAttribute('href')).toBe('#downloads');
@@ -314,7 +315,8 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     renderAt('/countries/DEU');
     expect(await h1('Germany')).toBeTruthy();
     const actions = await screen.findByTestId('profile-actions', {}, { timeout: 30_000 });
-    expect(screen.queryByRole('link', { name: 'GENERATE MEMO' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Read the policy memo' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Download decision brief' })).toBeNull();
     expect(within(actions).getByText('The memo for Germany is being prepared.')).toBeTruthy();
     expect(screen.getByText('EU MEMBER')).toBeTruthy();
     // the EU's climate rating, in the observed-policy evidence under Policy Alignment
@@ -322,12 +324,12 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     noAcronyms();
   });
 
-  it('coalition partner (Brazil): the core-only memo text with a link to the list', async () => {
+  it('coalition partner (Brazil): no decision brief yet, said plainly', async () => {
     renderAt('/countries/BRA');
     expect(await h1('Brazil')).toBeTruthy();
     const actions = await screen.findByTestId('profile-actions', {}, { timeout: 30_000 });
-    expect(within(actions).getByText(/Memos are available for the 5 core coalition members for now\./)).toBeTruthy();
-    expect(within(actions).getByRole('link', { name: /See the list/ }).getAttribute('href')).toBe('/countries#core');
+    expect(within(actions).getByTestId('memo-none').textContent).toBe('No decision brief yet for Brazil.'); // the fixture has no brief to list
+    expect(within(actions).queryByText(/core coalition members for now/)).toBeNull();
     expect(screen.getByText('PARTNER')).toBeTruthy();
     noAcronyms();
   });
@@ -411,7 +413,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
   it('memo routes of a partner and of a core member without a memo go to the profile with a notice', async () => {
     const r = renderAt('/countries/BRA/memo');
     expect(await h1('Brazil')).toBeTruthy();
-    expect(screen.getAllByText(/Memos are available for the 5 core coalition members for now\./).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('No decision brief yet for Brazil.').length).toBeGreaterThan(0);
     expect(r.state.location.pathname).toBe('/countries/BRA');
     cleanup();
     const r2 = renderAt('/countries/DEU/memo');
@@ -432,9 +434,9 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     renderAt('/countries/USA');
     expect(await h1('United States')).toBeTruthy();
     const actions = await screen.findByTestId('profile-actions', {}, { timeout: 30_000 });
-    expect(screen.queryByRole('link', { name: 'GENERATE MEMO' })).toBeNull();
-    // GENERATE MEMO is there, disabled, and says why (the header action, the only memo control on the page)
-    const buttons = screen.getAllByRole('button', { name: 'GENERATE MEMO' }) as HTMLButtonElement[];
+    expect(screen.queryByRole('link', { name: 'Read the policy memo' })).toBeNull();
+    // the memo action is there, disabled, and says why (the header action, the only memo control on the page)
+    const buttons = screen.getAllByRole('button', { name: 'Read the policy memo' }) as HTMLButtonElement[];
     expect(buttons.length).toBe(1);
     expect(buttons[0].disabled).toBe(true);
     expect(within(actions).getByText('The memo for the United States is being revised. It will be available again once it has been rewritten.')).toBeTruthy();
@@ -453,8 +455,53 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     renderAt('/countries/USA');
     expect(await h1('United States')).toBeTruthy();
     const actions = await screen.findByTestId('profile-actions', {}, { timeout: 30_000 });
-    expect(screen.getAllByRole('link', { name: 'GENERATE MEMO' }).length).toBe(1);
+    expect(screen.getAllByRole('link', { name: 'Read the policy memo' }).length).toBe(1);
     expect(within(actions).getByTestId('memo-rule-note').textContent).toBe(note);
+  });
+
+  it('a decision brief written before the current data release: "Download decision brief", with a notice in the head and on the brief page', async () => {
+    // the posture fixture's strategy was built 29 October 2026; this brief was written on 20 October
+    useSource((m) => {
+      const e = m.countries.find((c) => c.iso3 === 'USA')!;
+      e.memo = { ...e.memo!, stale: false, format: 'brief', figures: ['memo-USA-f1.0123abcd.svg', 'memo-USA-f1.89abcdef.png'], generated_at: '2026-10-20T10:00:00Z', verified_at: '2026-10-20T11:00:00Z' };
+    });
+    renderAt('/countries/USA');
+    expect(await h1('United States')).toBeTruthy();
+    const actions = await screen.findByTestId('profile-actions', {}, { timeout: 30_000 });
+    const link = within(actions).getByRole('link', { name: 'Download decision brief' });
+    expect(link.getAttribute('href')).toBe('/countries/USA/memo');
+    expect(within(actions).getByText(/^A short decision brief written 20 October 2026 from the Explorer data/)).toBeTruthy();
+    expect((await within(actions).findByTestId('memo-stale-note', {}, { timeout: 30_000 })).textContent).toBe(
+      'This brief was written on 20 October 2026, before the current data release (29 October 2026); some counts may differ from this page.',
+    );
+    expect(screen.queryByRole('link', { name: 'Read the policy memo' })).toBeNull();
+    cleanup();
+    // the brief page reads the release date from the posture manifest
+    setPostureStore(
+      new PostureStore('/x/', async (url: string) =>
+        url.endsWith('manifest.json')
+          ? new Response(JSON.stringify({ schema: 'osi-posture', schema_version: 2, created: '2026-11-21T17:46:30Z', core: 'c.json', details: {}, counts: {} }), { status: 200 })
+          : new Response('', { status: 404 }),
+      ),
+    );
+    renderAt('/countries/USA/memo');
+    const note = await screen.findByTestId('memo-stale-note', {}, { timeout: 30_000 });
+    expect(note.textContent).toContain('Written before the current data release');
+    expect(note.textContent).toContain('This brief was written on 20 October 2026, before the current data release (21 November 2026); some counts may differ from the Country page.');
+    expect(within(note).getByRole('link', { name: /See the current choices/ }).getAttribute('href')).toBe('/countries/USA');
+  });
+
+  it('a brief as recent as the data carries no notice; a core memo never does', async () => {
+    useSource((m) => {
+      const e = m.countries.find((c) => c.iso3 === 'USA')!;
+      e.memo = { ...e.memo!, stale: false, format: 'brief', figures: ['memo-USA-f1.0123abcd.svg', 'memo-USA-f1.89abcdef.png'], generated_at: '2026-10-29T10:00:00Z' };
+    });
+    renderAt('/countries/USA');
+    expect(await h1('United States')).toBeTruthy();
+    const actions = await screen.findByTestId('profile-actions', {}, { timeout: 30_000 });
+    await waitFor(() => expect(screen.getByTestId('data-freshness').textContent).toMatch(/Strategy built 29 October 2026/), { timeout: 30_000 });
+    expect(within(actions).getByRole('link', { name: 'Download decision brief' })).toBeTruthy();
+    expect(within(actions).queryByTestId('memo-stale-note')).toBeNull();
   });
 
   it('about: the framework first, the Legacy OSI sections after it, the glossary and the sources', async () => {

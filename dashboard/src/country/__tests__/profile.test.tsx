@@ -373,7 +373,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: no monthly trade
    * intro names the Preserve bar); without one (`framework` false) the sub-section alone, with its heading.
    */
   const position = async (framework = true) => {
-    await h2('Medium fence · Build, preserve, partner and deploy');
+    await h2('Build, preserve, partner and deploy (medium fence)');
     const pos = document.getElementById('medium-position') as HTMLElement;
     expect(pos).toBeTruthy();
     if (framework) await waitFor(() => expect(pos.textContent).toMatch(/A strong position, the bar for Preserve, is/), { timeout: 30_000 });
@@ -414,7 +414,7 @@ describe.skipIf(!haveFixture() || !haveAib())('Country profile: no monthly trade
       expect(screen.queryByText(/publishes no monthly data there/)).toBeNull();
       cleanup();
       renderAt('/countries/BRA#prize-position');
-      await h2('Medium fence · Build, preserve, partner and deploy');
+      await h2('Build, preserve, partner and deploy (medium fence)');
       noCard();
     } finally {
       setEngineClient(null);

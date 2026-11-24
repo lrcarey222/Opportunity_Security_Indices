@@ -4,9 +4,11 @@
 // section with a notice; a stale memo (a later fact sheet changed a claim, or the memo is under revision:
 // config memo_revision, 2026-10-17) -> not shown, with a notice that it is being revised; a
 // memo kept under an earlier rule (memo.rule_note, e.g. the quadrant rule of 2026-10-15) -> shown with its
-// notice (memo.rule_note_d).
+// notice (memo.rule_note_d). An economy with neither a core memo nor a brief -> the profile with "No decision
+// brief yet". A decision brief written before the current data release (posture manifest created) -> shown with
+// a notice that some counts may differ from the Country page (external review readiness, 2026-11-23).
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Loading, Notice, PageHead, Switch } from '../../components/ui.tsx';
 import { useTitle } from '../../shell/title.ts';
@@ -18,7 +20,26 @@ import { memoDownloadName } from '../derive/model.ts';
 import { MemoDocument } from '../memo/MemoDocument.tsx';
 import { isBrief } from '../contract.ts';
 import { rememberCountry } from '../nav.ts';
-import { MEMO_REVISED_TEXT } from './profile/Header.tsx';
+import { postureStore } from '../../posture/store.ts';
+import { briefPredatesData, briefStaleLine, MEMO_REVISED_TEXT, noBriefLine } from './profile/Header.tsx';
+
+/** The current data release's date (the posture manifest's created; small, no-cache), or null until it is in or when it fails. */
+function usePostureRelease(): string | null {
+  const [created, setCreated] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    postureStore()
+      .manifest()
+      .then(
+        (m) => alive && setCreated(typeof m.created === 'string' ? m.created : null),
+        () => undefined,
+      );
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return created;
+}
 
 const when = (iso: string | null | undefined): string => {
   if (!iso) return '–';
@@ -31,17 +52,18 @@ const when = (iso: string | null | undefined): string => {
 export default function MemoView() {
   const params = useParams();
   const raw = (params.iso3 ?? '').toUpperCase();
-  const { manifest, entryOf } = useCountryCtx();
+  const { entryOf } = useCountryCtx();
   const entry = entryOf(raw);
   useTitle(entry ? `${entry.name} memo` : 'Countries', 'country');
   const memo = useMemoDoc(entry);
   const [trace, setTrace] = useState(false);
   const [copied, setCopied] = useState(false);
+  const release = usePostureRelease();
   if (!entry) return <Redirect to="/countries" notice={`No country with the code '${raw}'; showing all countries.`} />;
   rememberCountry(entry.iso3);
   // legacy memos are for core members; a brief can be for any economy (config/country_brief.yml beyond_core)
   if (entry.tier !== 'core' && entry.memo?.format !== 'brief') {
-    return <Redirect to={`/countries/${entry.iso3}`} notice={`Memos are available for the ${manifest.counts.core} core coalition members for now.`} />;
+    return <Redirect to={`/countries/${entry.iso3}`} notice={noBriefLine(entry.name)} />;
   }
   if (!entry.memo) {
     return <Redirect to={`/countries/${entry.iso3}#memo`} notice={`The memo for ${entry.name} is being prepared.`} />;
@@ -84,6 +106,7 @@ export default function MemoView() {
   }
   const url = (f: string | null) => (f ? countryStore().url(f) : null);
   const brief = isBrief(doc);
+  const old = briefPredatesData(brief ? { ...entry.memo, format: 'brief' } : entry.memo, release);
   const pdf = url(entry.memo.pdf);
   const docx = url(entry.memo.docx);
   const copy = async () => {
@@ -106,6 +129,13 @@ export default function MemoView() {
           </span>
         </Notice>
       </div>
+      {old && (
+        <div className="mb-6 max-w-3xl" data-testid="memo-stale-note">
+          <Notice kind="warning" title="Written before the current data release">
+            {briefStaleLine(old, 'the Country page')} <Link className="link" to={`/countries/${entry.iso3}`}>See the current choices &rarr;</Link>
+          </Notice>
+        </div>
+      )}
       {entry.memo.rule_note && entry.memo.rule_note_d && (
         <div className="mb-6 max-w-3xl" data-testid="memo-rule-note">
           <Notice kind="warning" title="Written under an earlier corner rule">

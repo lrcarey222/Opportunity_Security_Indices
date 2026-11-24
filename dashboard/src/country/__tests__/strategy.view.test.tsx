@@ -216,7 +216,7 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     const ids = STRATEGY_SECTIONS.map((x) => x.id);
     expect(ids.slice(0, 4)).toEqual(['strategy', 'high-fence', 'medium-fence', 'low-fence']);
     expect(['high-fence', 'medium-fence', 'low-fence'].map((id) => sec(id).querySelector('h2')?.textContent)).toEqual([
-      'High fence · Secure', 'Medium fence · Build, preserve, partner and deploy', 'Low fence · Keep open',
+      'Secure what is critical (high fence)', 'Build, preserve, partner and deploy (medium fence)', 'Keep open (low fence)',
     ]);
     // each fence's one-line definition, then its opening paragraph (the shared vocabulary's FENCE_DEFINITION, FENCE_INTRO)
     expect(sec('high-fence').textContent).toContain('Protect the capabilities where dependence could create an unacceptable security or resilience risk.');
@@ -741,6 +741,40 @@ describe.skipIf(!haveFixture())('Country page: the canonical framework (spec XXI
     expect(d.className).toMatch(/max-h-\[75vh\] overflow-y-auto/);
     fireEvent.keyDown(d, { key: 'Escape' });
     await waitFor(() => expect(nodeOf(r)).toBeNull());
+  });
+});
+
+describe.skipIf(!haveFixture())('Country page: "What should [COUNTRY] do?" (external review readiness, 2026-11-23)', () => {
+  it('answers first, above the map: top steps per choice, flagged steps held back, Watch and Not assessed apart, the caveat; a step opens the drawer', async () => {
+    const r = await usa();
+    const strategy = sec('strategy');
+    const block = await within(strategy).findByTestId('bottom-line', {}, { timeout: 30_000 });
+    expect(within(block).getByRole('heading', { level: 3 }).textContent).toBe('What should the United States do?');
+    // above the map, inside the Strategy section (the column's children stay the section ids)
+    expect(block.compareDocumentPosition(within(strategy).getByRole('region', { name: 'Country Strategy Map' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // the choices in the page's order; Watch is never a list
+    expect([...block.querySelectorAll('[data-verb]')].map((e) => e.getAttribute('data-verb'))).toEqual(['secure', 'preserve', 'catch_up', 'partner', 'accelerate']);
+    // the counts agree with the map's legend (Secure 3, Preserve 2, Catch Up 1, Partner 1, Accelerate 1, Watch 3, Not assessed 1)
+    expect(within(block).getByTestId('bottom-line-synthesis').textContent).toMatch(/^Of 11 assessed steps, 3 need a high fence \(Secure\), 5 a medium fence \(Preserve, Catch Up, Partner or Accelerate\) and 3 can stay open \(Watch\)\./);
+    expect(within(block).getByTestId('bottom-line-watch').textContent).toBe('Keep open: 3 steps (buy competitively, do not force localization) · Not assessed: 1');
+    // Secure lists its top three by need; the flagged Preserve step is counted, not offered as an answer
+    expect(within(block).getByTestId('bottom-line-secure').querySelectorAll('li[data-key]')).toHaveLength(3);
+    const preserve = within(block).getByTestId('bottom-line-preserve');
+    expect([...preserve.querySelectorAll('li[data-key]')].map((li) => li.getAttribute('data-key'))).toEqual(['Batteries|Assembly']);
+    expect(preserve.textContent).toContain('1 step flagged for review or low confidence, not listed');
+    // Partner names only a partner in the trusted network, and the network is one control in the block
+    expect(within(within(block).getByTestId('bottom-line-partner')).getByTestId('bottom-line-why').textContent).toBe('Best-placed partner: Bland');
+    expect(within(block).getAllByTestId('trusted-network')).toHaveLength(1);
+    expect(within(block).getByTestId('bottom-line-feasibility').textContent).toBe(
+      'Strategic case, not an investment recommendation. The Explorer identifies where capability may be strategically valuable; it does not estimate fiscal cost, consumer-price premium, policy durability or the odds that intervention succeeds. Feasibility evidence: Not assessed.',
+    );
+    // "Why this result?" is collapsed, one per listed step once the detail document is in
+    await waitFor(() => expect(within(block).getAllByTestId('why-this-result').length).toBeGreaterThan(0), { timeout: 30_000 });
+    expect(within(block).getAllByTestId('why-this-result').every((d) => !d.hasAttribute('open'))).toBe(true);
+    // a step opens the page's one drawer
+    fireEvent.click(within(within(block).getByTestId('bottom-line-catch_up')).getByRole('button'));
+    await waitFor(() => expect(nodeOf(r)).toBe('Batteries|Components'));
+    expect(bareAcronyms(block)).toEqual([]);
   });
 });
 

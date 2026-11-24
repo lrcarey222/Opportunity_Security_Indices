@@ -26,6 +26,7 @@ import { STRATEGY_SECTIONS } from '../../derive/strategyPage.ts';
 import { policyBehaviour } from '../../derive/framing.ts';
 import { cap, poss, proseName } from '../../derive/text.ts';
 import { AlliedCompactsSection } from './AlliedCompacts.tsx';
+import { BottomLine } from './BottomLine.tsx';
 import { DevelopmentPartnershipsSection } from './DevelopmentPartnerships.tsx';
 import { BasisTag, Fold, Section, useProfile } from './common.tsx';
 import { NipoCard, PolicyCoverage } from './PrioritiesSection.tsx';
@@ -86,10 +87,11 @@ export function StrategySection() {
   const name = proseName(sheet.meta.country);
   const iso = sheet.iso3;
   const node = posture?.node;
-  // spec XI.3: the map is the dominant above-the-fold visual, so the section opens on it (its own footnote says
-  // to select a node) and the full reading of how the map is built follows it
+  // the answer first (external review readiness, 2026-11-23): "What should [COUNTRY] do?" (BottomLine.tsx), then
+  // the map, the dominant visual (spec XI.3; its own footnote says to select a node), then how the map is built
   return (
     <Section id="strategy" aliases={SEC.strategy.aliases} title={SEC.strategy.label} basis={<Basis />}>
+      <BottomLine />
       <CountryStrategyMap
         iso3={iso}
         name={cap(name)}

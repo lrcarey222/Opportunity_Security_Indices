@@ -218,9 +218,9 @@ describe.skipIf(!haveFixture())('Country page helpers (derive/strategyPage.ts, d
     // the h2s state each section's strategic question or its plain fence title (the NEIS copy refresh, 2026-10-30)
     expect(STRATEGY_SECTIONS.map((s) => s.label)).toEqual([
       'What should this country do?',
-      'High fence · Secure',
-      'Medium fence · Build, preserve, partner and deploy',
-      'Low fence · Keep open',
+      'Secure what is critical (high fence)',
+      'Build, preserve, partner and deploy (medium fence)',
+      'Keep open (low fence)',
       'Is policy focused on the right places?',
       'Where this country fits in the Allied Industrial Base',
       'Evidence & methodology',
