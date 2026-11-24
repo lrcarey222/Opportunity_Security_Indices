@@ -139,7 +139,13 @@ describe('Methods placeholders', () => {
     expect(md).not.toMatch(/Competitive Position is a consistency check|high need and high opportunity, \*\*catch up\*\*|## Four steps/);
     expect(at('<h2 id="legacy-osi">')).toBeGreaterThan(at('**Policy alignment: is policy focused'));
     expect(md).toContain('These scores describe relative security and opportunity; the strategic choices above are the recommendation.');
-    expect(md).toContain('<h2 id="legacy-osi">Security and opportunity scores</h2>');
+    // demoted (external review readiness, 2026-11-23): marked as descriptive, the decision rule named, the detail collapsed
+    expect(md).toContain('<h2 id="legacy-osi">Security and opportunity scores (descriptive, not the decision rule)</h2>');
+    expect(md).toContain('the decision rule is Need → Prize → Position → Choice → Policy alignment');
+    expect(at('<details')).toBeGreaterThan(at('<h2 id="legacy-osi">'));
+    expect(at('<details')).toBeLessThan(at('## The indices in plain words'));
+    expect(at('</details>')).toBeGreaterThan(at('## Exactness'));
+    for (const doc of ['docs/strategic_position.md', 'docs/aib_methodology.md', 'docs/supply_chain_stages.md']) expect(at(doc), doc).toBeLessThan(at('**Need: what problem'));
     expect(at('<h2 id="legacy-osi">')).toBeLessThan(at('## The indices in plain words'));
     expect(md).toContain('Grow ≈ Preserve, Upgrade ≈ Catch Up, Exposed ≈ Partner, Stable ≈ Watch');
     expect(md).toContain('mixes capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment');

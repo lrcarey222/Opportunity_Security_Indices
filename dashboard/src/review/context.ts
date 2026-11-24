@@ -149,7 +149,7 @@ export function capturePageContext(loc: LocationLike, params: Readonly<Record<st
     posture: info?.posture ? { created: info.posture.created, git_commit: info.posture.git_commit } : null,
     country: info?.country ? { created: info.country.created, git_commit: info.country.git_commit } : null,
     sector: info?.sector ? { created: info.sector.created, git_commit: info.sector.git_commit, bundle_id: info.sector.bundle_id } : null,
-    aib: info?.aib ? { created: info.aib.created, git_commit: null } : null,
+    aib: info?.aib ? { created: info.aib.created, git_commit: info.aib.git_commit ?? null } : null,
     strategic: info?.strategic ? { created: info.strategic.created, git_commit: info.strategic.git_commit, bundle_id: info.strategic.bundle_id } : null,
     memos: info?.memos ? { created: null, git_commit: null, bundle_id: info.memos.manifest_sha256 } : null,
   };

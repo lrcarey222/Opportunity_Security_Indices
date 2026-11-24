@@ -30,8 +30,9 @@ export interface BuildInfo {
   posture: CreatedStamp | null;
   /** data/country/manifest.json */
   country: CreatedStamp | null;
-  /** data/aib/manifest.json (it carries no git commit) */
-  aib: { created: string | null } | null;
+  /** data/aib/manifest.json: its export time and (since PR #370) the pipeline's git commit. `git_commit` is
+   *  optional so older callers that build the shape by hand stay valid; setAibBuild always records it. */
+  aib: { created: string | null; git_commit?: string | null } | null;
   /** sha256 of the partnership memos manifest text (null until a memo manifest is loaded) */
   memos: { manifest_sha256: string | null } | null;
 }
@@ -83,11 +84,11 @@ export function setCountryBuild(m: unknown): void {
   emit({ ...state, country: next });
 }
 
-/** Publish the AIB (Sectoral Compacts) manifest's stamp: its export time (the manifest has no commit). */
+/** Publish the AIB (Sectoral Compacts) manifest's stamp: its export time and git commit. */
 export function setAibBuild(m: unknown): void {
-  const created = createdStamp(m).created;
-  if (state.aib && state.aib.created === created) return;
-  emit({ ...state, aib: { created } });
+  const next = createdStamp(m);
+  if (state.aib && state.aib.created === next.created && (state.aib.git_commit ?? null) === next.git_commit) return;
+  emit({ ...state, aib: next });
 }
 
 /** Publish the partnership memos manifest's hash (sha256 hex of its text; null when it could not be read). */

@@ -1,4 +1,5 @@
-// View 7: Methods (spec_react.md 8.6). Since 2026-10-29 it opens with the canonical strategic decision
+// View 7: Methods (spec_react.md 8.6). Since 2026-11-23 (external review readiness) the aside leads with the shared
+// data-release stamp (shell/ReleaseStamp.tsx) and the scores' build sits in a disclosure. Since 2026-10-29 it opens with the canonical strategic decision
 // framework (need, prize, position, choice, policy alignment; #framework; since the NEIS copy refresh of
 // 2026-10-30 it leads with what the strategy is for, and the build details sit in a disclosure), then the Legacy OSI framework
 // (the paper baseline; #legacy-osi): the indices, the dials in plain language and the exact formulas
@@ -17,6 +18,8 @@ import { GlossaryList } from '../../components/GlossaryList.tsx';
 import { Disclosure, KeyValue, PageHead } from '../../components/ui.tsx';
 import { MODULE_QUESTION } from '../../content/vocabulary.ts';
 import { DASH, fmtDate, yesNo } from '../../lib/format.ts';
+import { useBuildInfo } from '../../shell/buildInfo.ts';
+import { releaseRows, useReleaseManifests } from '../../shell/ReleaseStamp.tsx';
 import { useApp, useEngine } from '../../state/EngineProvider.tsx';
 import { buildFacts, fillPlaceholders, methodsValues, renderMath } from './methodsFill.ts';
 
@@ -24,6 +27,8 @@ export default function MethodsView() {
   useTitle('Methods');
   const app = useApp();
   const { state } = useEngine();
+  const info = useBuildInfo();
+  useReleaseManifests();
   const m = app.manifest;
   const html = useMemo(() => {
     const facts = buildFacts({
@@ -52,7 +57,7 @@ export default function MethodsView() {
       <PageHead
         eyebrow="About · Methods"
         title="Methods"
-        lede={`${MODULE_QUESTION.methods}: what the country needs, how valuable the capability is, how strong its current position is, what action follows, and whether policy matches. Then the security and opportunity scores, a descriptive view beside the choices, with their indices, dials and formulas, and a glossary.`}
+        lede={`${MODULE_QUESTION.methods}: what the country needs, how valuable the capability is, how strong its current position is, what action follows, and whether policy matches. Then the security and opportunity scores (descriptive, not the decision rule) and a glossary.`}
       />
       <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {/* the content is this app's own Markdown, filled with numbers from the data build */}
@@ -74,12 +79,14 @@ export default function MethodsView() {
         </div>
         <aside className="flex flex-col gap-6 self-start">
           <section className="card p-5">
-            <h2 className="rule-neis-sm mb-3 text-base font-medium text-paper">Data vintage</h2>
-            <KeyValue rows={[['Exported', fmtDate(m.created)]]} />
-            {/* build identifiers stay out of the first read (the NEIS copy refresh): one click away */}
-            <Disclosure summary="Build details">
+            <h2 className="rule-neis-sm mb-3 text-base font-medium text-paper">Data release</h2>
+            {/* the same stamp as the footer and the Data page (shell/ReleaseStamp.tsx) */}
+            <KeyValue rows={releaseRows(info)} />
+            {/* the scores' build stays out of the first read (the NEIS copy refresh): one click away */}
+            <Disclosure summary="Security and opportunity scores: build details">
               <KeyValue
                 rows={[
+                  ['Exported', fmtDate(m.created)],
                   ['Build', m.bundle_id.slice(0, 8)],
                   ['Git commit', m.git_commit ? m.git_commit.slice(0, 10) : DASH],
                   ['Branch', m.osi_branch ?? DASH],

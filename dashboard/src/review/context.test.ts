@@ -12,7 +12,7 @@ const INFO: BuildInfo = {
   sector: { bundle_id: 'sec1', created: '2026-10-31', git_commit: '4bb2adc' },
   posture: { created: '2026-11-17T20:33:31Z', git_commit: '0496e7ba' },
   country: { created: '2026-10-31T15:58:15Z', git_commit: '4bb2adc' },
-  aib: { created: '2026-11-17T19:07:29Z' },
+  aib: { created: '2026-11-17T19:07:29Z', git_commit: '03560172' },
   memos: null,
 };
 const AT = { captured_at: '2027-01-20T09:00:00.000Z' };
@@ -57,7 +57,9 @@ describe('capturePageContext on main routes', () => {
   it('records the bundle stamps, the release, the result shown and the metrics', () => {
     const c = capturePageContext({ pathname: '/countries/USA' }, {}, INFO, { ...AT, app_commit: 'abc1234', data_release: 'rel-0123456789ab', displayed_result: 'Partner · Medium fence', metric_ids: ['cp', 'need'], view: 'cell-drawer' });
     expect(c.bundle_stamps.posture).toEqual({ created: '2026-11-17T20:33:31Z', git_commit: '0496e7ba' });
-    expect(c.bundle_stamps.aib).toEqual({ created: '2026-11-17T19:07:29Z', git_commit: null });
+    expect(c.bundle_stamps.aib).toEqual({ created: '2026-11-17T19:07:29Z', git_commit: '03560172' });
+    // a stamp built without a commit (an older page) records null, never undefined
+    expect(capturePageContext({ pathname: '/aib' }, {}, { ...INFO, aib: { created: 'x' } }, AT).bundle_stamps.aib).toEqual({ created: 'x', git_commit: null });
     expect(c.bundle_stamps.memos).toBeNull();
     expect(c).toMatchObject({ app_commit: 'abc1234', data_release: 'rel-0123456789ab', displayed_result: 'Partner · Medium fence', metric_ids: ['cp', 'need'], view: 'cell-drawer', captured_at: AT.captured_at });
     const none = capturePageContext({ pathname: '/countries/USA' }, {}, null, AT);

@@ -320,9 +320,10 @@ export const YARD_CHOICES: Record<Yard, string> = {
 };
 /** The section title of each fence on a Country profile. */
 export const FENCE_TITLE: Record<FenceKey, string> = {
-  high: 'High fence · Secure',
-  medium: 'Medium fence · Build, preserve, partner and deploy',
-  low: 'Low fence · Keep open',
+  // plain meaning first, the fence in brackets (external review readiness, 2026-11-23)
+  high: 'Secure what is critical (high fence)',
+  medium: 'Build, preserve, partner and deploy (medium fence)',
+  low: 'Keep open (low fence)',
 };
 /** Each fence in one line (guide). */
 export const FENCE_DEFINITION: Record<FenceKey, string> = {
@@ -495,10 +496,11 @@ export const MANAGED_INTERDEPENDENCE = {
 
 /** The three AIB results of a supply-chain step as column and KPI labels (Sector tables, compact KPIs, step figures). */
 export const AIB_MEASURE_LABEL = {
-  exposure: 'Supply exposed',
+  // plain meaning first; the technical name in brackets where reviewers meet it in the review cases (2026-11-23)
+  exposure: 'Supply exposed to the disruption',
   exposureLong: 'Supply exposed to the disruption',
-  dividend: 'Gain from acting together',
-  residual: 'Remaining gap',
+  dividend: 'Extra supply recovered by acting together (coordination dividend)',
+  residual: 'Remaining supply gap',
 } as const;
 
 /** Scenario chart labels (guide). */

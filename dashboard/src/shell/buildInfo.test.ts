@@ -25,12 +25,12 @@ describe('buildInfo', () => {
   it('reads created and git_commit structurally from a manifest, null when absent or malformed', () => {
     setPostureBuild({ schema: 'osi-posture', created: '2026-11-17T20:33:31Z', git_commit: '0496e7ba', core: 'c.json' });
     setCountryBuild({ created: '2026-10-31T15:58:15Z' });
-    setAibBuild({ created: '2026-11-17T19:07:29Z', git_commit: 'ignored' });
+    setAibBuild({ created: '2026-11-17T19:07:29Z', git_commit: '03560172' });
     setMemosBuild('');
     const b = getBuildInfo();
     expect(b.posture).toEqual({ created: '2026-11-17T20:33:31Z', git_commit: '0496e7ba' });
     expect(b.country).toEqual({ created: '2026-10-31T15:58:15Z', git_commit: null });
-    expect(b.aib).toEqual({ created: '2026-11-17T19:07:29Z' });
+    expect(b.aib).toEqual({ created: '2026-11-17T19:07:29Z', git_commit: '03560172' });
     expect(b.memos).toEqual({ manifest_sha256: null });
     setPostureBuild(null);
     expect(getBuildInfo().posture).toEqual({ created: null, git_commit: null });

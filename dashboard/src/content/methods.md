@@ -2,6 +2,8 @@
 
 The strategy starts with evidence, not policy. Need asks whether dependence or deployment creates a real problem. Prize asks whether productive capability has strategic industrial value. Position asks how strong the country already is. Those three determine the choice. Only then do we compare the recommendation with what government is actually doing.
 
+**Where is the current methodology documented?** `docs/strategic_position.md` (the decision framework), `docs/aib_methodology.md` (Allied Industrial Base) and `docs/supply_chain_stages.md` (the six stages), in the project repository.
+
 No country needs to make everything, so "rely on trusted partners" and "keep it open" are answers in their own right, not failures to build at home. The same framework runs for every country, each of 11 technologies and each of six supply-chain stages (Extraction, Refining & Processing, Component Manufacturing, Final Assembly & Equipment, Deployment & Use, Recovery & Recycling), at fixed thresholds and with no overall score. One technology at one stage is a supply-chain step (a *node* in the data).
 
 1. **Need: what problem has to be solved?** At the five producing stages, Need means supply-chain vulnerability; at Deployment & Use, how urgently the domestic energy system needs more deployment. Two separate measures, never combined into one score. *Supply-chain need* reads import dependence, supplier concentration, exposure to China and opposite-bloc suppliers and the lack of trusted alternatives, each a percentile among the countries at the step; a high percentile counts only where the need score itself reaches 0.10, so a tiny exposure in a thinly traded step does not read as high need. *Deployment need* reads demand adequacy (current policy), the gap to national targets (national commitments: Ember's 2030 targets) and system requirements. Each family names its scenario and its basis (national data, a regional proxy, an observed trend or global context); a climate-aligned value is shown only as a labelled alternative, and a missing family is not assessed, never zero.
@@ -24,9 +26,14 @@ A technology can sit in more than one yard. Capability layers, such as grid-cont
 
 Partner steps name up to three best-placed trusted partners from the Allied Industrial Base (or world supply where the base does not cover the step), ranked on capability, relationship strength and how much they would diversify the country's supply; a step with no credible allied solution is a *partner gap*, reported rather than forced into a solution. The allied division of labor counts, per step, the countries whose choice is Partner (and Secure): the partner demand that allied supply has to meet. Accelerate is a deployment priority and is not counted. How allies divide the work, and where coordinated trade or new capacity closes the remaining gaps, is set out under Allied Industrial Base, Sectoral Compacts, About.
 
-<h2 id="legacy-osi">Security and opportunity scores</h2>
+<h2 id="legacy-osi">Security and opportunity scores (descriptive, not the decision rule)</h2>
 
-Beside the strategic choices, the Explorer shows a descriptive view built from indices: the Energy Security and Economic Opportunity scores, the Strategic Index built on them, the partner scores and the four corners of the Security and opportunity chart. These scores describe relative security and opportunity; the strategic choices above are the recommendation. The corners map loosely onto the choices: Grow ≈ Preserve, Upgrade ≈ Catch Up, Exposed ≈ Partner, Stable ≈ Watch. The results differ because each index mixes capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment in one score, which the framework above separates into need, prize and position. On a Country profile the scores sit under Evidence & Methodology, with the dials as scenarios to explore; the pages that show them for every economy (Overview, Country scores, Security vs opportunity, Strategic Index and Partners) are labelled "Security and opportunity scores". The rest of this page describes those indices (Energy Security, Economic Opportunity, the Strategic Index and the partnership measures) and their four dials. The dials never change the strategic choices.
+These scores describe relative security and opportunity; the strategic choices above are the recommendation. The indices remain a descriptive view: the decision rule is Need → Prize → Position → Choice → Policy alignment, and the dials never change a strategic choice.
+
+The corners map loosely onto the choices: Grow ≈ Preserve, Upgrade ≈ Catch Up, Exposed ≈ Partner, Stable ≈ Watch. The results differ because each index mixes capability, vulnerability, production, trade, investment, demand, reserves, concentration and deployment in one score, which the framework above separates into need, prize and position. On a Country profile the scores sit under Evidence & Methodology; the pages that show them for every economy are labelled "Security and opportunity scores".
+
+<details class="disclosure">
+<summary>The indices, the dials and the formulas</summary>
 
 ## The indices in plain words
 
@@ -166,6 +173,8 @@ $$PSI_j = \frac{\sum_{k \in K_j} w_k\, C^k_j}{\sum_{k \in K_j} w_k}, \qquad (w_{
 * Development Potential is held at the pipeline's value under every scenario.
 * When you change the ES or EO category weights, the pillars and the Strategic Index are recomputed exactly; unless the build supports it, the partnership measures keep the baseline's pillar-derived components, and the page says so.
 * A partnership's rankability uses the imputed share of its best-five cells at the baseline settings; when a scenario changes which cells form the best five, this is an approximation.
+
+</details>
 
 ## Read more
 
