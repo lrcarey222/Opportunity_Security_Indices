@@ -1,9 +1,9 @@
 {
   "schema": "aib-review-qc-summary",
   "schema_version": 1,
-  "data_release": "rel-f07fe2fb9554",
-  "built_at": "2026-11-23T12:00:00Z",
-  "app_commit": "c300f0c5",
+  "data_release": "rel-b3990d6f5765",
+  "built_at": "2026-11-24T05:00:00Z",
+  "app_commit": "842a3d15",
   "layer": "bundle",
   "status": {
     "pass": 32,
@@ -36,9 +36,9 @@
       "area": "provenance",
       "status": "warn",
       "n": 3,
-      "detail": "AIB bundle created 2026-11-21T14:34:52Z; 3 of 4 AIB files carry no git commit (manifest, compacts and scenario documents)",
+      "detail": "AIB bundle created 2026-11-24T04:50:12Z; 3 of 4 AIB files carry no git commit (manifest, compacts and scenario documents)",
       "examples": [
-        "aib/compacts.be93214e.json",
+        "aib/compacts.2518b2de.json",
         "aib/scenario-managed.30ee124b.json",
         "aib/scenario-baseline.7416dbc4.json"
       ]
@@ -70,7 +70,7 @@
       "area": "provenance",
       "status": "info",
       "n": 3,
-      "detail": "the bundles come from 3 commits (17f0737e, 4bb2adc, a54a9d3) and 3 export dates (2026-10-30, 2026-10-31, 2026-11-21); only the data release ID ties them together",
+      "detail": "the bundles come from 3 commits (17f0737e, 4bb2adc, a54a9d3) and 4 export dates (2026-10-30, 2026-10-31, 2026-11-21, 2026-11-24); only the data release ID ties them together",
       "examples": []
     },
     {
@@ -79,7 +79,7 @@
       "area": "provenance",
       "status": "pass",
       "n": 0,
-      "detail": "data release rel-f07fe2fb9554: every bundle stamp present",
+      "detail": "data release rel-b3990d6f5765: every bundle stamp present",
       "examples": []
     },
     {

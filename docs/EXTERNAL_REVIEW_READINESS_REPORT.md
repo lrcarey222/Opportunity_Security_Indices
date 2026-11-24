@@ -53,6 +53,17 @@ still shown, never dropped. 643 steps in 72 economies had a non-member lead part
 Russia 4 -> Viet Nam 4 / Indonesia 1 / none 15. United States unchanged. CSV exports gain trusted-network
 flags. Regression tests on the real bundle. Recommended R follow-up in the partner document.
 
+**AIB roles are trusted-only (R rule change, user decision 2026-11-23).** `config/aib_strategic_layer.yml`
+`roles.non_allied_roles: false`: only trusted-network economies hold Strategic AIB Roles or compact-specific
+roles, and supply-role percentiles are taken among them. AIB bundle re-exported (scripts/33 -> 84, stamp
+`842a3d15`). China (primary Resource & Processing, Scale Manufacturing, Specialized Technology; 10 compact
+roles), Russia, Kazakhstan, Myanmar and Bahrain lose their roles; 11 other non-allied economies lose compact
+roles only. Spain and the UK gain a secondary Resource & Processing Anchor role. Nodes, classes, compacts,
+coalitions, scenarios, investment flows and theses are unchanged; compact pages still name the largest
+non-allied suppliers, by share only. Setting the switch to true reproduces the old bundle exactly. Slovenia,
+Iceland and the UAE are outside the coalition tiers and so hold no roles either: add them to
+`treat_as_allied` if they should.
+
 ## 7. Missing-data UX
 Tech pages no longer show an empty card per no-data stage; one line names the stages and says the page
 focuses on the rest. True zero prints 0; missing prints "–" with "No data" for screen readers on the risk card;
@@ -80,7 +91,7 @@ dashboard/README deploy (GitHub Pages) and budget sections corrected.
 ## 11. Provenance / version
 Footer, Methods and Data show the data release, method version, app commit and posture / AIB / sector /
 country stamps. AIB `git_commit` now kept by `buildInfo` and recorded in `/review` submissions. Review release
-rebuilt: `rel-f07fe2fb9554` (bundle QC 32 pass / 7 warn / 0 fail; 14,124 of 14,124 choices reproduced; 36 of
+rebuilt: `rel-b3990d6f5765` (bundle QC 32 pass / 7 warn / 0 fail; 14,124 of 14,124 choices reproduced; 36 of
 36 golden cases pass). No bundle values changed.
 
 ## 12. Tests

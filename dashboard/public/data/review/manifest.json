@@ -1,10 +1,10 @@
 {
   "schema": "aib-review-manifest",
   "schema_version": 1,
-  "built_at": "2026-11-23T12:00:00Z",
-  "app_commit": "c300f0c5",
+  "built_at": "2026-11-24T05:00:00Z",
+  "app_commit": "842a3d15",
   "data_release": {
-    "id": "rel-f07fe2fb9554",
+    "id": "rel-b3990d6f5765",
     "stamps": {
       "posture": {
         "created": "2026-11-21T17:46:30Z",
@@ -18,7 +18,7 @@
         "bundle_id": "8f4910df5216fbdbcf73b0be919043a7"
       },
       "aib": {
-        "created": "2026-11-21T14:34:52Z"
+        "created": "2026-11-24T04:50:12Z"
       },
       "strategic": {
         "bundle_id": "c1736c4a25c7a33e73d56466eac415e6"
@@ -135,47 +135,47 @@
   "files": [
     {
       "file": "cases.aib_qc_2027_round1.json",
-      "sha256": "0451bf4df93183cfc9e847ec0b511f6c48f9b0e87958f046e6b3a2f77ac9d924",
+      "sha256": "dd6be718738907978257527d7fbf85be46188ffe53a05a80c0c202084e8214e0",
       "bytes": 605688
     },
     {
       "file": "fixtures/demo_submissions.json",
-      "sha256": "deeb941ba203399c0ff64e00923a648ce90a96c90cfa07bc3af4480c843ca527",
+      "sha256": "d1cfd602367fa0f35937a1ef3cfb0b0c87db5b2ecf37d7280140311167ec89c3",
       "bytes": 101865
     },
     {
       "file": "framework_scenarios.json",
-      "sha256": "237512fd4794969b3353578d0878ef8acdc3a97c072b3182af4b38e6eb5b925a",
+      "sha256": "a566e81390a9a22b52b44e3bf85161ecd3bf041fcb932f13944d511070f9ac06",
       "bytes": 26315
     },
     {
       "file": "method_cards.json",
-      "sha256": "2a064092d52271576dd61e76e7dbbdd3f7b1f1b631c169849483306302ab85db",
+      "sha256": "6eca70bfc9eca2c93e40ead459478d6f8975b894bd58ad89107fd20b105b700f",
       "bytes": 44143
     },
     {
       "file": "qc_summary.json",
-      "sha256": "2fdf5b3937312f95c7f7d8c06ff7eb4a305cf785272baf9c4d865897dad3382f",
-      "bytes": 31839
+      "sha256": "fc3588e8e29eb44cff3f1acc12d34ca1f402e8ed35c8bf8197a196efd610f407",
+      "bytes": 31851
     },
     {
       "file": "robustness.json",
-      "sha256": "babd51ff172b5638487299a3ca649bac29ab1eeb9557feb022464aa2e51fdf47",
+      "sha256": "c1f9dde94cf3faa3045fab535ea5c02aa54683fa54acb18b5e7d3e1912d2b87b",
       "bytes": 48842
     }
   ],
   "bundle_files": [
     {
-      "file": "aib/compacts.be93214e.json",
-      "sha256": "a9c491df9aa2d5287f47fb2ecc9cc2b74877d84b19d40a248019712fed83bf67",
+      "file": "aib/compacts.2518b2de.json",
+      "sha256": "c0813eee3385522fe14040372956b30500779b0410f9338be179aee9fa4b606f",
       "created": "2026-11-21T06:34:04",
       "git_commit": null
     },
     {
       "file": "aib/manifest.json",
-      "sha256": "91b17fad021418a0d636dd75c792d49335c77c26994d4690afd7865857b200b6",
-      "created": "2026-11-21T14:34:52Z",
-      "git_commit": "03560172"
+      "sha256": "4c8843045fbe5dd7d34f65157afa3c70ba229a968996a55b656f9f297f00a5d8",
+      "created": "2026-11-24T04:50:12Z",
+      "git_commit": "842a3d15"
     },
     {
       "file": "aib/scenario-managed.30ee124b.json",

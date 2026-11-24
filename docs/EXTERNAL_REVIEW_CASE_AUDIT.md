@@ -1,7 +1,7 @@
 # External review: representative case audit
 
 Date: 2026-11-23. Branch `feat/external-review-readiness`. Bundles: posture 2026-11-21 (`17f0737e`),
-AIB 2026-11-21 (`03560172`), country and sector 2026-10-31 (`4bb2adc`). Review release `rel-f07fe2fb9554`.
+AIB 2026-11-24 (`842a3d15`, roles trusted-only), country and sector 2026-10-31 (`4bb2adc`). Review release `rel-b3990d6f5765`.
 
 Method: outputs read from the shipped bundles with small read-only scripts (posture core and detail
 documents, AIB compacts document, sector manifest), plus the components' unit and UI tests on the
