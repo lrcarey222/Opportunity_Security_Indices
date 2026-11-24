@@ -1,9 +1,9 @@
 {
   "schema": "aib-review-qc-summary",
   "schema_version": 1,
-  "data_release": "rel-b3990d6f5765",
-  "built_at": "2026-11-24T05:00:00Z",
-  "app_commit": "842a3d15",
+  "data_release": "rel-4a271ac2b550",
+  "built_at": "2026-11-24T06:00:00Z",
+  "app_commit": "acbc3805",
   "layer": "bundle",
   "status": {
     "pass": 32,
@@ -36,9 +36,9 @@
       "area": "provenance",
       "status": "warn",
       "n": 3,
-      "detail": "AIB bundle created 2026-11-24T04:50:12Z; 3 of 4 AIB files carry no git commit (manifest, compacts and scenario documents)",
+      "detail": "AIB bundle created 2026-11-24T05:01:17Z; 3 of 4 AIB files carry no git commit (manifest, compacts and scenario documents)",
       "examples": [
-        "aib/compacts.2518b2de.json",
+        "aib/compacts.9cc61b46.json",
         "aib/scenario-managed.30ee124b.json",
         "aib/scenario-baseline.7416dbc4.json"
       ]
@@ -79,7 +79,7 @@
       "area": "provenance",
       "status": "pass",
       "n": 0,
-      "detail": "data release rel-b3990d6f5765: every bundle stamp present",
+      "detail": "data release rel-4a271ac2b550: every bundle stamp present",
       "examples": []
     },
     {

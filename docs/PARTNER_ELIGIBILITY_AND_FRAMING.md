@@ -30,7 +30,8 @@ The Explorer uses three different "trusted / allied" sets:
 1. **Coalition: 59 economies.** 31 core and 28 partner, from `config/coalition.yml` via scripts/13. This is
    `countries.tier` in the posture core and `tier` in the Country fact sheets. The two agree on every row
    checked.
-2. **AIB strategic "allied": 61 economies.** The coalition plus `treat_as_allied: [TWN, CHE]`
+2. **AIB strategic "allied": 64 economies** (61 until 2026-11-23, when Slovenia, Iceland and the UAE were added by
+   user decision). The coalition plus `treat_as_allied: [TWN, CHE, SVN, ISL, ARE]`
    (`config/aib_strategic_layer.yml:102`). This is the set `src/posture/trustedNetwork.ts` uses (core 31,
    partner 28, allied 2) and that the "Trusted network" control lists.
 3. **AIB candidate suppliers: global.** Any exporter may add or redirect supply in coordinated trade
@@ -81,6 +82,13 @@ Counted by a node script over `public/data/posture/posture-detail-*.json` and `p
 
 - Steps with an engine partner list: 1,656 in 195 economies. 1,444 are Partner choices; the rest are Secure
   steps delivered with allies.
+> **Update 2026-11-23 (trusted network of 64, with Slovenia, Iceland and the UAE):** the named lead partner is
+> outside the network in 601 steps (544 Partner choices) across 67 economies (China 468, Russia 100, Myanmar 14,
+> Kazakhstan 14, Nigeria 3, Iraq 1, Algeria 1); 451 steps (438 Partner choices) in 47 economies have no eligible
+> partner. Sri Lanka after: UAE 2, Viet Nam 4, Indonesia 1, none 13; Kenya: UAE 3, Viet Nam 4, Indonesia 1,
+> none 12; Bangladesh: UAE 2, Viet Nam 5, Indonesia 1, none 12; United States unchanged. The figures below are
+> for the first version (61 economies) and are kept as the record of that step.
+
 - The named lead partner is outside the network in 643 steps (568 Partner choices) across 72 economies.
 - Steps with no eligible partner at all: 528 (477 Partner choices) in 48 economies.
 
@@ -163,7 +171,7 @@ A real-data regression test pins this behaviour:
 
 **Decision (user, 2026-11-23):** China, and every other economy outside the allied set, holds no role in the
 Allied Industrial Base. The allied set is the model's demand scope (the coalition tiers) plus
-`allied.treat_as_allied` (TWN, CHE).
+`allied.treat_as_allied` (TWN, CHE; SVN, ISL and ARE added 2026-11-23).
 
 **Rule change (R, not client side).** `config/aib_strategic_layer.yml` `roles: non_allied_roles: false`
 (default `FALSE` in `aib_strategic_default_params()`; `true` restores the earlier rule):
@@ -216,3 +224,19 @@ Zero roles for CHN, RUS and every other non-allied economy, in `strategic.countr
 **Worth a look.** SVN (Slovenia, scale manufacturer in Wind), ISL (Iceland, scale manufacturer in Grid) and
 ARE lose compact roles because they are outside the coalition tiers. If they should count as allied, add
 them to `allied.treat_as_allied`.
+
+### 8.1 Slovenia, Iceland and the UAE added to the trusted network (2026-11-23)
+
+User decision after the roles change: `treat_as_allied: [TWN, CHE, SVN, ISL, ARE]` (64 trusted economies). AIB bundle
+re-exported (scripts/33 -> 84, stamp `acbc3805`); review release `rel-4a271ac2b550`.
+
+- `strategic.countries` 61 -> 64; compact roles 225 -> 230 (new: SC-BATTERIES Slovenia diversification partner,
+  SC-WIND Slovenia scale manufacturer, SC-GRID UAE and Iceland scale manufacturers, SC-GRID Slovenia
+  capacity-building host); theses 1,085 -> 1,152 (pairs with the three new members).
+- The three hold no Strategic AIB Role at the bars. The larger allied pool shifts some allied secondary roles:
+  Australia gains Capital & Investment Anchor; Argentina and the UK lose Development & Scale-Up Platform; Japan's
+  primary roles reorder.
+- Nodes, compacts, strategic compact cores and investment flows are unchanged.
+- The Country roles page's operational network roles (supplier, specialist, host, investor, roles gained or lost)
+  now list trusted-network economies only (`trustedOf()` in `dashboard/src/aib/derive/network.ts`). Russia and Iran,
+  which supply in the scenario trade (the candidate universe is global), appear in "Who supplies whom" only.

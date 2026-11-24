@@ -1,8 +1,8 @@
 {
   "schema": "aib-review-framework-scenarios",
   "schema_version": 1,
-  "data_release": "rel-b3990d6f5765",
-  "built_at": "2026-11-24T05:00:00Z",
+  "data_release": "rel-4a271ac2b550",
+  "built_at": "2026-11-24T06:00:00Z",
   "scenarios": [
     {
       "scenario_id": "FS_001",

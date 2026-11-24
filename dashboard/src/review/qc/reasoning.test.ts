@@ -196,7 +196,8 @@ describe.skipIf(!HAVE_REAL)('reasoning of the shipped campaign', () => {
     // the compact threat notes a reviewer reads after the reveal: plain words and country names, no field names
     const t = deriveCompactThreat(decoded.aib!.doc, 'SC-BATTERIES', 'decoupling')!;
     expect(t.notes.join(' ')).not.toMatch(/postInvestment|time_to_capacity_years|dependence_outcome|BUILD step/);
-    expect(t.notes.join(' ')).toMatch(/suppliers outside the allied group: Mozambique; Slovenia\./);
+    // Slovenia is treated as allied since 2026-11-23 (config/aib_strategic_layer.yml treat_as_allied)
+    expect(t.notes.join(' ')).toMatch(/suppliers outside the allied group: Mozambique\./);
     expect(t.intervention).toMatch(/new capacity in Japan; Argentina; /);
   });
   it('partnership: the four boxes, the coordination changes and the box-consistency check', () => {

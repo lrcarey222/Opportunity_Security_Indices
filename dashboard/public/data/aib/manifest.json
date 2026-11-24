@@ -1,7 +1,7 @@
 {
   "schema": "osi-aib",
   "version": 3,
-  "created": "2026-11-24T04:50:12Z",
+  "created": "2026-11-24T05:01:17Z",
   "demandScope": "coalition",
   "candidateUniverse": "global",
   "shockSemantics": "hold",
@@ -10,11 +10,11 @@
   "headlineShock": "china_100",
   "headlineScenario": "reallocation",
   "files": {
-    "compacts": "compacts.2518b2de.json",
+    "compacts": "compacts.9cc61b46.json",
     "scenarios": {
       "managed": "scenario-managed.30ee124b.json",
       "baseline": "scenario-baseline.7416dbc4.json"
     }
   },
-  "git_commit": "842a3d15"
+  "git_commit": "acbc3805"
 }

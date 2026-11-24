@@ -86,9 +86,10 @@ fixed alliance ([docs/aib_methodology.md](docs/aib_methodology.md); code `R/aib/
 - **Managed interdependence.** Specialization creates value, so the aim is not maximum diversification. The question
   is which dependencies are worth keeping and how much backup is enough. Concentration is weighed against
   resilience at each step: a supplier cap shows what it costs to spread supply.
-- **Trusted network.** 61 economies: the 31 core members and 28 partners of the two-tier coalition
-  (`config/coalition.yml`, built by `scripts/13`), plus Taiwan and Switzerland, which are treated as allied
-  (`config/aib_strategic_layer.yml` `treat_as_allied`). The 59 coalition members are the demand the stress tests
+- **Trusted network.** 64 economies: the 31 core members and 28 partners of the two-tier coalition
+  (`config/coalition.yml`, built by `scripts/13`), plus Taiwan, Switzerland, Slovenia, Iceland and the United Arab
+  Emirates, which are treated as allied (`config/aib_strategic_layer.yml` `treat_as_allied`). Only these economies
+  are named as partners or hold an AIB role. The 59 coalition members are the demand the stress tests
   protect. Any economy may supply them. The app derives the list from data in
   `dashboard/src/posture/trustedNetwork.ts`.
 - **Scenarios.** *Today's network* (observed 2024 relationships, no disruption); *Managed Interdependence* (no

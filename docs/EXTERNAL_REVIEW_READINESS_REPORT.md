@@ -46,11 +46,11 @@ remaining supply gap, supply exposed. VOCABULARY.md rule 12 records the pattern.
 
 ## 6. Partner-logic changes
 Client-side only (no R or data change): every partner list is split into **eligible trusted partners**
-(trusted network = coalition core 31 + partners 28 + Taiwan and Switzerland per
-`config/aib_strategic_layer.yml`, 61 economies) and **major suppliers outside the trusted network**, which are
-still shown, never dropped. 643 steps in 72 economies had a non-member lead partner (China 468, Russia 100);
-528 steps in 48 economies now say "No eligible trusted partner identified". Sri Lanka: lead partner China 10 /
-Russia 4 -> Viet Nam 4 / Indonesia 1 / none 15. United States unchanged. CSV exports gain trusted-network
+(trusted network = coalition core 31 + partners 28 + Taiwan, Switzerland, Slovenia, Iceland and the UAE per
+`config/aib_strategic_layer.yml`, 64 economies) and **major suppliers outside the trusted network**, which are
+still shown, never dropped. 601 steps in 67 economies had a non-member lead partner (China 468, Russia 100);
+451 steps in 47 economies now say "No eligible trusted partner identified". Sri Lanka: lead partner China 10 /
+Russia 4 -> UAE 2 / Viet Nam 4 / Indonesia 1 / none 13. United States unchanged. CSV exports gain trusted-network
 flags. Regression tests on the real bundle. Recommended R follow-up in the partner document.
 
 **AIB roles are trusted-only (R rule change, user decision 2026-11-23).** `config/aib_strategic_layer.yml`
@@ -61,8 +61,9 @@ roles), Russia, Kazakhstan, Myanmar and Bahrain lose their roles; 11 other non-a
 roles only. Spain and the UK gain a secondary Resource & Processing Anchor role. Nodes, classes, compacts,
 coalitions, scenarios, investment flows and theses are unchanged; compact pages still name the largest
 non-allied suppliers, by share only. Setting the switch to true reproduces the old bundle exactly. Slovenia,
-Iceland and the UAE are outside the coalition tiers and so hold no roles either: add them to
-`treat_as_allied` if they should.
+Iceland and the UAE were then added to `treat_as_allied` (user decision), so they count as trusted and hold roles. The
+Country roles page's network roles (supplier, specialist, host, investor, roles gained or lost) are trusted-only
+too: Russia and Iran, which supply in the scenario trade, appear there as suppliers only.
 
 ## 7. Missing-data UX
 Tech pages no longer show an empty card per no-data stage; one line names the stages and says the page
@@ -91,7 +92,7 @@ dashboard/README deploy (GitHub Pages) and budget sections corrected.
 ## 11. Provenance / version
 Footer, Methods and Data show the data release, method version, app commit and posture / AIB / sector /
 country stamps. AIB `git_commit` now kept by `buildInfo` and recorded in `/review` submissions. Review release
-rebuilt: `rel-b3990d6f5765` (bundle QC 32 pass / 7 warn / 0 fail; 14,124 of 14,124 choices reproduced; 36 of
+rebuilt: `rel-4a271ac2b550` (bundle QC 32 pass / 7 warn / 0 fail; 14,124 of 14,124 choices reproduced; 36 of
 36 golden cases pass). No bundle values changed.
 
 ## 12. Tests
@@ -164,7 +165,7 @@ scenario toggle.
 # Questions we should deliberately leave for external reviewers to test
 1. Is "Partner" the right call where no trusted partner has the capability, or should it become Catch Up /
    Secure / Keep open?
-2. Is the trusted network (coalition + Taiwan + Switzerland) the right eligibility set, and should it be
+2. Is the trusted network (coalition + Taiwan, Switzerland, Slovenia, Iceland, UAE) the right eligibility set, and should it be
    scenario-dependent?
 3. Should Secure be broader for the U.S. (one step) and should fossil extraction for importers be Secure?
 4. Is a China-only disruption the right stress test, and does it make bottleneck lists a China-share ranking?

@@ -1,7 +1,7 @@
 # External review: representative case audit
 
 Date: 2026-11-23. Branch `feat/external-review-readiness`. Bundles: posture 2026-11-21 (`17f0737e`),
-AIB 2026-11-24 (`842a3d15`, roles trusted-only), country and sector 2026-10-31 (`4bb2adc`). Review release `rel-b3990d6f5765`.
+AIB 2026-11-24 (`acbc3805`, roles trusted-only, 64-economy trusted network), country and sector 2026-10-31 (`4bb2adc`). Review release `rel-4a271ac2b550`.
 
 Method: outputs read from the shipped bundles with small read-only scripts (posture core and detail
 documents, AIB compacts document, sector manifest), plus the components' unit and UI tests on the
@@ -56,11 +56,11 @@ Counts are steps (technology x stage) by choice, from the posture core.
 ### Sri Lanka (known problematic case)
 - Before: lead partner China 10, Russia 4, Viet Nam 4, Indonesia 1, UAE 1; pages read "Best-placed partner:
   China" and the engine called China a "credible trusted supplier".
-- After (FIXED, presentation): eligible lead partner Viet Nam 4, Indonesia 1; 15 steps say "No eligible
+- After (FIXED, presentation; UAE trusted since 2026-11-23): eligible lead partner UAE 2, Viet Nam 4, Indonesia 1; 13 steps say "No eligible
   trusted partner identified; the leading suppliers ... are outside the trusted network". China and Russia
   still appear, labelled as suppliers outside the trusted network. Regression test:
   `dashboard/src/posture/__tests__/real.partnerEligibility.test.ts`.
-- FLAG (method): those 15 steps remain **Partner** choices ("better solved through allies") with no eligible
+- FLAG (method): those 13 steps remain **Partner** choices ("better solved through allies") with no eligible
   ally. The choice rule does not depend on partner identity, so this is a real tension between the rule and
   the framing. Left for reviewers.
 - FLAG: Nuclear Assembly is a Partner step with need 0.95 for an economy with no nuclear programme; need is
