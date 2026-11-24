@@ -1,5 +1,18 @@
 # Allied Industrial Base (AIB): trade partnerships, investment prioritization and Sectoral Compacts
 
+> **Known drift (checked 2026-11-23 against the shipped bundle `dashboard/public/data/aib/`, created
+> 2026-11-21, git `03560172`).** This is the canonical AIB method (index: [README.md](README.md)), but some run
+> figures below predate that bundle. Where they differ, the bundle is current:
+> - **Demand scope:** the text says 57 economies; the bundle protects 59 (`meta.nDemandScope`: the 31 core
+>   members and 28 partners of `config/coalition.yml`).
+> - **Nodes:** section 2 says 78 nodes (74 optimized); sections 2 and 14 and the bundle have 77.
+> - **Schema:** section 13 says `osi-aib` v2; the bundle is version 3.
+> - **Hosts (section 16.3):** the text says ranked hosts almost always tie, so no compact names a host; in the
+>   bundle, `strategic.compacts[].scenarios.*.buildHosts` names a host in 17 of 40 compact scenarios (with
+>   `buildHostTies` beside it), and `investmentFlows.hosts` ranks hosts per node.
+> - **Allied network design:** the "sibling" design (`scripts/30`, section 10 of `docs/methodology.md`) was retired
+>   on 2026-10-17 and is not run.
+
 (`config/aib.yml`; pure functions in `R/aib/`; IO in `scripts/31_build_aib_trade_network.R`,
 `scripts/32_build_aib_partnerships.R`, `scripts/33_build_aib_strategic_layer.R` (the strategic layer,
 section 16) and `scripts/84_export_aib_data.R`; tests `tests/testthat/test-aib-*.R`; dashboard view

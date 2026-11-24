@@ -1,5 +1,7 @@
 # Package Selection Visualization
 
+> **Legacy:** a February 2026 visualization module built on the legacy index outputs. The current methodology is in [strategic_position.md](strategic_position.md) (see [README.md](README.md)).
+
 ## What this module does
 
 This module creates a country-specific **Package Selection Visualization** bundle from `index_outputs.rds`:

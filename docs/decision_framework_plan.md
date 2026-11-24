@@ -1,5 +1,7 @@
 # Decision framework: implementation plan (Phase 1 audit, 2026-10-29)
 
+> **Legacy (historical audit):** the 2026-10-29 implementation plan; its counts and status are not current. The current methodology is in [strategic_position.md](strategic_position.md) (see [README.md](README.md)).
+
 The canonical framework is Need -> Prize -> Position -> Choice -> Policy alignment. The legacy OSI framework
 (Energy Security Index, Economic Opportunity Index, Strategic Index, Grow / Upgrade / Exposed / Stable corners)
 stays for replication and comparison only. This note records what the audit found and what changes. The

@@ -17,8 +17,15 @@ comparison: see [Legacy OSI framework](#legacy-osi-framework) at the end.
 (market, industrial-commons and future-option value, with a market-only cap); a **large-yard case** (mature,
 passive, commodity nodes) is tested before the prize; **sensitive layers are yard units of their own**, rolled up
 to technology x stage (mixed where they differ); and the policy-design fence height follows the yard. See sections
-2, 4 and 7. Current run: Secure 206, Preserve 103, Catch Up 355, Partner 1,474, Accelerate 514, Watch 6,585, not
-assessed 4,887; yards by cell small 181, medium 1,809, large 6,051, mixed 1,196.
+2, 4 and 7. 2026-10-30 run: Secure 206, Preserve 103, Catch Up 355, Partner 1,474, Accelerate 514, Watch 6,585,
+not assessed 4,887; yards by cell small 181, medium 1,809, large 6,051, mixed 1,196.
+
+**Shipped counts (checked 2026-11-23).** The posture bundle the Explorer ships
+(`dashboard/public/data/posture/manifest.json` `counts.choices`, created 2026-11-21T17:46Z, git `17f0737e`;
+built after the 2026-10-30 run, with later additions such as current trade, innovation evidence and the
+deployment case tag): Secure 212,
+Preserve 111, Catch Up 351, Partner 1,475, Accelerate 514, Watch 6,574, not assessed 4,887 (14,124 cells, 214
+economies). The other counts in this document are from the 2026-10-30 run unless labelled otherwise.
 
 The unifying question:
 
@@ -982,7 +989,8 @@ behind them (`choice_by_country.csv`, `choice_threshold_sensitivity.csv`, `consi
 `io_node_prize.csv`, `pathway_by_stage.csv`, `secure_selectivity.csv`, `deployment_review.csv`,
 `manufacturing_vs_deployment.csv`, `watch_high_policy_intensity.csv`, `choice_policy_alignment.csv`).
 
-Current run, 14,124 classified cells (`choice_overall.csv`): Secure 206, Preserve 103, Catch Up 355, Partner
+2026-10-30 run, 14,124 classified cells (`choice_overall.csv`; the shipped counts of 2026-11-21 are at the top of
+this document): Secure 206, Preserve 103, Catch Up 355, Partner
 1,474, Accelerate 514, Watch 6,585 (1,169 of them at Deployment, 2,133 decided by the large-yard case), not assessed
 4,887 (4,216 producing cells without a measured supply-chain need, the same 18 nodes in every economy plus thin
 cells; 671 Deployment cells without deployment need). Two-leg run (old data): Secure 174, Preserve 86, Catch Up 748,
@@ -1022,7 +1030,7 @@ co-investment and shared stockpiles, not at home).
 **The fence height follows the yard** (user decision 2026-10-30, as in the Yards & Fences paper):
 small yard (Secure) high, medium yard (Preserve, Catch Up, Partner, Accelerate) medium, large yard (Watch) low.
 `policy_design.R::ppd_read_check()` refuses a `fence_level` that does not follow the yard (secure_* high;
-compete_* and deploy_accelerate moderate; deploy, deploy_floor and deploy_diversify low). Current run: high 206,
+compete_* and deploy_accelerate moderate; deploy, deploy_floor and deploy_diversify low). 2026-10-30 run: high 206,
 medium 2,446 (compete 1,932, deploy_accelerate 514), low 6,585.
 
 - **Secure** (high fence): a fence targeted at the vulnerable node (trusted-source and cybersecurity

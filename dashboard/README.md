@@ -1,74 +1,40 @@
 # Allied Industrial Base Explorer
 
-An interactive companion to the NEIS Center paper *Opportunity, Security, and the Allied Industrial
-Base: A Quantitative Network Approach to Coalition Supply Chains for Energy Technologies*. Since the
-October 2026 refactor it is organised around three questions. Home (`/`) has one entry card for each,
-and every page shares one header with four tabs:
+The NEIS Center's public Explorer. For each economy, energy technology and supply-chain stage it shows what a
+country should do (Secure, Preserve, Catch Up, Partner, Accelerate or Watch), why, and where allies gain by
+coordinating supply chains. The method is documented outside this folder: start at
+[../docs/README.md](../docs/README.md) (decision framework `docs/strategic_position.md`, Allied Industrial Base
+`docs/aib_methodology.md`, stages `docs/supply_chain_stages.md`).
 
-| Tab | Main paths | The question |
+It is a static site: Vite + React + TypeScript, Tailwind v4 with the NEIS design tokens, Observable Plot and d3
+for the charts. There is no server; the data are files in `public/data/`, exported by the R pipeline.
+
+| Area | Main paths | The question |
 |---|---|---|
-| **Sectors** | `/sector` (all sectors), `/sector/:tech` (the supply chain, Extraction -> Refining -> Components -> Assembly -> Deployment -> Recovery), `/sector/:tech/:stage` (the Sector profile: Economic Opportunity, Energy Security, Policy and Climate at the top, the strategic posture of the node, the detail below), `/sector/minerals`, `/sector/explore` (advanced explorer) | What matters about this sector? Measured values in their sources' own units and years; no indices, no weights, no dials (the strategic posture sections are the one recommendation, at fixed thresholds) |
-| **Countries** | `/countries`, `/countries/:iso3` (the Country profile: strategic posture, security and opportunity, opportunities and risks, sector position, policy and climate, partnerships, role in the Allied Industrial Base), `/countries/:iso3/memo`, `/countries/about` | What is this country's strategic position? The only place with the preference dials |
-| **Allied Industrial Base** | `/aib` (overview), `/aib/partnerships` (trade, investment, development), `/compacts` and `/compacts/:id` (Sectoral Compacts), `/aib/roles` (country roles), `/compacts/about` | Where does international coordination add value, who needs to coordinate, and in what form? The AIB trade and investment model (scripts/31, 32, 84) |
-| **About** (secondary) | `/about`, `/methods`, `/data` (Data & sources), `/glossary` | the methods, the data and their sources, the glossary |
+| Home | `/` | Entry points to the three questions |
+| **Sectors** | `/sector`, `/sector/:tech` (the chain, Extraction -> Refining -> Components -> Assembly -> Deployment -> Recovery), `/sector/:tech/:stage`, `/sector/minerals`, `/sector/explore` (Advanced explorer) | Where are the bottlenecks and opportunities? Measured values in their sources' own units and years, plus the recommended choices at fixed thresholds |
+| **Countries** | `/countries`, `/countries/:iso3` (the Country profile, led by the country's choices), `/countries/:iso3/memo` (country strategy briefs: AUS, CAN, DEU, FRA, GBR, IND, JPN, KOR, USA) | What should this country do, and why? |
+| **Allied Industrial Base** | `/aib`, `/aib/partnerships`, `/aib/roles`, `/aib/diversification`, `/aib/agreements`, `/compacts`, `/compacts/:id` | Where does coordination change the outcome, who should work together, and in what form? |
+| **About** (secondary) | `/about`, `/methods`, `/data`, `/glossary` | Methods, data and sources, glossary |
+| Expert review (no tab) | `/review`, `/review/admin` | Blind-first expert review of selected cases (`src/review/`; [../docs/QC_REVIEWER_GUIDE.md](../docs/QC_REVIEWER_GUIDE.md), [../docs/QC_ADMIN_GUIDE.md](../docs/QC_ADMIN_GUIDE.md)) |
 
-In the Country profile readers open **Perspective: NEIS baseline** and move four preference dials (an
-advanced panel sits behind its own disclosure); the explorer recomputes, in their browser, the Policy
-and Strategic indices and the bilateral partnership indices (Friendshore, Partnership Opportunity, the
-PSI). The dials change priorities, rankings and partner attractiveness; they
-never change observed or modelled facts (trade flows, production, concentration, the Energy Security and
-Economic Opportunity values, and the whole AIB bundle: shock coverage, residual gaps, coordination
-dividend, classes, compacts and roles). Pages label the two "Observed / modelled facts" and
-"Preference-adjusted priorities". (Only the advanced panel's category weights move the two pillars.)
+The recommendations come from the posture bundle (`public/data/posture/`, `scripts/91`) and the Allied Industrial
+Base bundle (`public/data/aib/`, `scripts/84`). They use fixed thresholds and are the same for every reader. Every
+page reads the six stages (`src/lib/stages.ts`): 11 technologies x 6 stages = 66 steps.
 
-| Dial | Weighs up |
-|---|---|
-| Hawkishness | security: supply need, aligned partners |
-| Bullishness | opportunity: economic opportunity, export markets |
-| Populism | policy signals and manufacturing: industrial policy, the components and assembly stages |
-| Climate (URL key `g`, engine key `greenness`) | clean technologies and climate ambition (coal, oil and gas dropped at 90+) |
+**Legacy index views.** The Energy Security, Economic Opportunity and Strategic Index scores (descriptive and
+historical, not the decision rule) remain on the pages without a tab (`/overview`, `/country`, `/space`,
+`/strategic`, `/partners`) and behind "Perspective: NEIS baseline" in the Country profile. There, four preference
+dials (Hawkishness, Bullishness, Populism, Climate) recompute those indices in a Web Worker (`src/engine/`, a
+parity-tested port of `R/dashboard/`). The dials never change the recommended choices, observed facts or the
+Allied Industrial Base results. A custom perspective lives in the page address.
 
-Every dial runs from 0 to 100; 50 is the NEIS baseline (the pipeline's default weights at the six
-supply-chain stages). With every dial at 50 and the advanced settings at their defaults, every page
-shows the pipeline's exported values exactly. Any other
-setting is a custom perspective, recomputed in a Web Worker; it lives in the page address, so a copied
-link reproduces it.
-
-Since 28 October 2026 every page reads the six supply-chain stages (Extraction, Refining, Components,
-Assembly, Deployment, Recovery; `src/lib/stages.ts`, R `SUPPLY_CHAIN_STAGES`): 11 technologies x 6
-stages = 66 cells (the Sector pages add Semiconductors' Refining, Components and Assembly). The model
-is the paper's method run at six stages: a coalition of 60 economies (31 core members and 29 partners,
-Brazil among them through its mineral reserves); the Policy index from IEA Policies and Measures
-(required) plus Climate Action Tracker ratings where CAT rates the economy; critical-mineral reserves
-from USGS Mineral Commodity Summaries 2026; the Strategic Index stage weights 0.375 for Components and
-Assembly, 0.25 for Deployment and 0.167 for Extraction, Refining and Recovery; allied picks at every
-stage but Deployment; and an endowment screen on them (an Extraction sector with no recorded reserves
-or production is not picked; a switch in the advanced panel). The paper's own figures come from an
-earlier build. The Methods page has the details. The original allied network design (a
-lambda-calibrated production design) is retired (2026-10-17): the Allied Industrial Base pages replace
-it, the Strategic bundle no longer has a network chunk, the engine no longer recomputes it and
-`/network` redirects to `/aib` with a notice.
-
-It is a static site: Vite + React + TypeScript, Tailwind v4 with the NEIS design tokens, Observable
-Plot and d3 for the charts. There is no server; the data are files next to the app.
-
-Old links keep working. The former Strategic Insights views keep their bare paths as advanced pages
-with the dial panel (`/overview`, `/country`, `/space`, `/strategic`, `/partners`; the
-header files them under Countries or Allied Industrial Base); their one-economy links open the
-matching section of the Country profile, which embeds the same views (`/country/:iso3` -> `#sectors`,
-`/strategic/:iso3` -> `#opportunities`, `/partners/:iso3` -> `#partnerships`, query string kept). The
-old module paths are aliases (`/strategic-insights` and `/country-insights` -> `/countries`,
-`/sector-insights` and `/sectors` -> `/sector`, `/sectoral-compacts` -> `/compacts`,
-`/allied-industrial-base` -> `/aib`), and a bare `/` carrying a scenario key (`/?h=80&tech=Solar`) still
-redirects to `/overview?h=80&tech=Solar`. Links made before the six stages still open (client-side,
-`src/shell/legacySector.tsx`): `/sector/:tech/downstream[/:iso3]` opens the Deployment page with the
-query and hash kept; `/sector/:tech/upstream` and `/midstream` open the technology's chain page
-(`?c=` for an economy segment), each with a notice naming the stages that replaced the old one; a
-Strategic `?stage=Downstream` becomes Deployment and `?stage=Upstream|Midstream` is dropped, with a
-notice. Home, Sectors, the AIB pages and a Country profile at the
-NEIS baseline never start the model's Web Worker; it starts when a page needs it (a custom
-perspective, AIB development partnerships, Methods and Data, a legacy Strategic page) and survives
-switching tabs. The tabs remember the last page of each for the session.
+**Old links keep working.** One-economy legacy links open the matching Country profile section (`/country/:iso3`
+-> `#sectors`, `/strategic/:iso3` -> `#opportunities`, `/partners/:iso3` -> `#partnerships`); old module paths
+are aliases (`/strategic-insights`, `/country-insights`, `/sector-insights`, `/sectors`, `/sectoral-compacts`,
+`/allied-industrial-base`); three-stage links (`/sector/:tech/downstream`, `/upstream`, `/midstream`,
+`?stage=Upstream`) open the six-stage pages with a notice (`src/shell/legacySector.tsx`); `/network` (the
+retired allied network design) redirects to `/aib`.
 
 ## How the numbers are produced
 
@@ -84,7 +50,16 @@ R pipeline (scripts/0x-4x)                 data/processed/...
   -> scripts/88_export_country_data.R      dashboard/public/data/country/  Country Insights: manifest.json,
                                            a fact sheet per economy, drivers files and the policy memos
                                            (pure helpers in R/dashboard/country/; config/country_insights.yml)
+  -> scripts/91_export_posture_data.R      dashboard/public/data/posture/  the six choices per cell (manifest,
+                                           core, one drawer file per economy)
+  -> scripts/84_export_aib_data.R          dashboard/public/data/aib/  Allied Industrial Base
+  -> scripts/93, scripts/92, scripts/43    development partnerships, country strategy briefs, agreements
+node scripts/review/build-review-data.mjs  dashboard/public/data/review/  expert-review data and release id
 ```
+
+Run order and the full list of steps: the repository [README](../README.md) ("Reproducibility"). Each
+manifest records `created` and `git_commit` (`src/shell/buildInfo.ts` reads them); every review submission
+carries the review release id built from them.
 
 * `R/dashboard/` is the reference engine: at the baseline it reproduces the pipeline bit for bit.
 * `src/engine/` is its TypeScript port (no dependencies), run in a Web Worker (`src/worker/`). It
@@ -182,7 +157,7 @@ scripts/32's `aib_results.rds`: plain JSON, every array field wrapped in `I()`, 
 
 | File | Loaded | Content |
 |---|---|---|
-| `manifest.json` | every Sectoral Compacts page (no-cache) | schema `osi-aib` v1, created, universe, headline shock and scenario, the document's file name |
+| `manifest.json` | every Sectoral Compacts page (no-cache) | schema `osi-aib` (version 3 in the shipped bundle), created, git commit, universe, headline shock and scenario, the document's and the scenario files' names |
 | `compacts.<md5_8>.json` | every Sectoral Compacts page (immutable) | meta (trade year, shocks, scenarios, classes, coverage targets, classification thresholds), country names, the compacts (nodes, coalition and its path, roles, metrics with the global optimum and the demand anchors' coverage under fragmented action and under the compact, class mix, policy needs, trade and investment relationships) and every classified sub-sector node (with its supplier-limit frontier: coverage, coverage after a second shock, specialization) |
 
 The contract (types and the runtime checks `checkAibManifest()` / `checkCompactsDoc()`) is
@@ -241,6 +216,10 @@ src/
   sector/      Sector Insights: contract.ts (the data contract with scripts/87), data/ (store),
                derive/ (pure derivations), views/, charts/ (the Sector chart kit), chrome/
                (SectorBar, SectionRail, BottomSheet, ThemeChips), url.ts, format.ts
+  country/     Countries: the Country profile, briefs (memo view), contract with scripts/88
+  posture/     the six choices (contract with scripts/91), the trusted network, the cell drawer
+  agreements/  partnership agreements (contract with scripts/43)
+  review/      the expert review pages (/review, /review/admin)
   charts/      PlotFigure (Observable Plot + HTML tooltips), ChartCard (table twin, CSV), maps, Sankey
   components/  Strategic chrome (status strip, dials), tables, NEIS controls, Logo
   content/     methods.md (the Methods page), questions.ts (Home's questions), sector.md
@@ -261,6 +240,7 @@ npm run test:sector-real  # the decoded real Sector bundle: the reference values
                           # budgets (skipped without public/data/sector/manifest.json)
 npm run test:aib-real     # the real Sectoral Compacts bundle against its contract (skipped without
                           # public/data/aib/manifest.json)
+npm run test:country-real # the real Country bundle (skipped without public/data/country/manifest.json)
 ```
 
 The Sector route smoke tests and the summary parity also run on any Sector bundle directory:
@@ -275,42 +255,36 @@ npm run budget        # first-visit download and data sizes against the limits
 npm run preview       # serve dist/ locally
 ```
 
-Budget (`npm run budget`, gzip sizes; it also fails when a manifest lists a missing chunk):
-
-| Figure | Contents | Limit |
-|---|---|---|
-| Home first visit | entry JS + CSS, the Latin Roboto face, the Home chunk (no data, no worker, no map) | 400 kB |
-| Strategic deep link `/overview` | entry, StrategicLayout, Overview, world map, engine worker, manifest, core chunk | 3 MB |
-| Sector landing `/sector` | entry, SectorLayout, the Sector home view, sector manifest, meta | 700 kB |
-| Sector profile first view | the landing, the profile view, facts | 1.3 MB |
-| Each Sector chunk | meta 150 kB, facts 670 kB, trade 520 kB each, policy 250 kB, policy text 700 kB, series 900 kB | |
-| Each Country file | fact sheet 59 kB, manifest 21 kB, memo JSON 25 kB / PDF 400 kB / Word 100 kB | |
-| Sector data / Country data | `public/data/sector/` / `public/data/country/` | 9 MB / 16 MB |
-| All data | Strategic + Sector + Country + Compacts | 42.5 MB |
-
-On 11 Oct 2026 (Strategic export of 10 Oct, Sector export of 11 Oct on the final data): Home
-181 kB, `/overview` 1.27 MB, Sector landing 395 kB (278 kB of code, 75 kB of manifest and meta),
-Sector profile 703 kB (344 kB of code, 317 kB of data), Sector data 2.91 MB, all data 7.95 MB
-(Strategic 5.04 MB).
+Budget (`npm run budget`, gzip sizes; it also fails when a manifest lists a missing chunk). The limits, with
+the measured size behind each, are in `scripts/check-budget.mjs` (`LIMITS`), the single source of truth; do not
+copy the numbers here. It checks the first visit to Home, each module's landing and profile, the expert review
+pages and data, the posture data, each data folder and all data together, and fails any route chunk over its
+limit. Raise a limit only to the measured size plus about 15%, with a dated comment.
 `BUDGET_DIST=<dir>` checks a build made with `vite build --outDir <dir>`; `BUDGET_SECTOR_DIR=<dir>`
 checks another Sector bundle (e.g. `tests/fixtures/sector/synthetic`). Nothing is quantised.
 
-## Deploy (Netlify)
+## Deploy (GitHub Pages)
 
-Not done by the builders; the custom domain and the publication of the data are NEIS decisions.
+The public build is <https://lrcarey222.github.io/aib-explorer/>, served by GitHub Pages from the separate
+repository `lrcarey222/aib-explorer`, which holds build output only. It is published by hand from main; no
+workflow in this repository deploys it.
 
-* **From git:** connect the repository in Netlify and set the site's *Base directory* to
-  `dashboard`; the build command, publish directory, Node version, redirects and headers come from
-  `netlify.toml`. `public/data/` must then be committed (about 5 MB of derived data).
-* **From a local build:** `npm run build`, then `npx netlify deploy --dir=dist` (a draft URL) and,
-  once checked, `npx netlify deploy --dir=dist --prod`.
-* **Under a sub-path** (e.g. `neiscenter.org/explorer/`): build with `VITE_BASE=/explorer/` and
-  adjust the redirects in `netlify.toml` to that prefix.
+```bash
+VITE_BASE=/aib-explorer/ npm run build   # Git Bash on Windows: prefix with MSYS_NO_PATHCONV=1
+npm run budget
+```
 
-`netlify.toml` serves missing data files as 404s (not the app), caches `assets/` and the data chunks
-as immutable (`/data/*.osb` and, explicitly, `/data/sector/*.osb`), revalidates both `manifest.json`
-files, and sets a Content-Security-Policy with no third-party origins (fonts and the world map are
-self-hosted; the IEA policy links are navigations, not requests).
+Then assemble the site in a checkout of the Pages repository and push it. The assembly script is not yet tracked in
+this repository; it empties the site (keeping `.git` and `README.md`), copies `dist/` without source maps, adds
+`.nojekyll`, a `404.html` copy of the app page (so deep links boot the app) and a no-index robots tag, ships
+only the current country strategy briefs (not the hidden legacy memos) and the partnership memos. Publishing is an outward-facing step: check the
+bundle stamps and the review release id first ([../docs/QC_RELEASE_CHECKLIST.md](../docs/QC_RELEASE_CHECKLIST.md)).
+GitHub Pages cannot set response headers, so the Pages copy runs without the Content-Security-Policy
+([../docs/QC_DEPLOYMENT.md](../docs/QC_DEPLOYMENT.md)).
+
+**Legacy: Netlify.** `netlify.toml` is kept from an earlier plan and is not used by the public build. It sets the
+base directory, caching (immutable chunks, revalidated manifests), 404s for missing data files and a strict
+Content-Security-Policy with no third-party origins.
 
 Browsers: current Chrome, Edge, Firefox and Safari. Gzip is decoded natively where
 `DecompressionStream` exists (Safari 16.4+, Firefox 113+), with a small fallback otherwise.
@@ -319,7 +293,9 @@ Browsers: current Chrome, Edge, Firefox and Safari. Gzip is decoded natively whe
 
 | Path | Made by | Committed |
 |---|---|---|
-| `public/data/` | `scripts/85` | needed for Netlify builds from git (the maintainers' decision) |
+| `public/data/` | `scripts/85` | yes (the maintainers' decision; the Pages build and the real-data tests read it) |
+| `public/data/posture/` | `scripts/91` | as `public/data/` |
+| `public/data/review/` | `node scripts/review/build-review-data.mjs` | as `public/data/` |
 | `public/data/sector/` | `scripts/87` | as `public/data/` |
 | `tests/fixtures/sector/synthetic/` | `scripts/87 --synthetic` | yes (small; the Sector tests and `dev:fixture`) |
 | `src/engine/__fixtures__/synthetic/` | `scripts/86` | yes (CI parity tests) |
