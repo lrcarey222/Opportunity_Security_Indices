@@ -12,6 +12,12 @@ strat_layer_cfg <- function() {
   cfg$capital$cmfdi_sectors <- list(Battery = "SC-B", EV = "SC-B")
   cfg
 }
+# the earlier rule (before 2026-11-23): non-allied major suppliers hold the supply roles and compact roles
+strat_layer_cfg_non_allied <- function() {
+  cfg <- strat_layer_cfg()
+  cfg$roles$non_allied_roles <- TRUE
+  cfg
+}
 strat_run <- function(inputs = strat_fx_inputs(), res = strat_fx_res(), yml = strat_fx_compacts_yml(), nf = strat_fx_node_functions(),
                       cfg = strat_layer_cfg(), capital = TRUE) {
   cap <- strat_fx_capital()
@@ -217,15 +223,75 @@ test_that("role assignments are deterministic and respect the caps and both gate
   expect_true(all(asg$gate1_pct >= P$p_secondary & asg$gate2_pct >= P$p_secondary))
   pr <- asg[asg$primary_or_secondary == "primary", ]
   expect_true(all(pr$gate1_pct >= P$p_primary & pr$gate2_pct >= P$p_primary))
-  # non-allied economies: the three supply roles only
-  expect_true(all(r1$role_code[!r1$allied] %in% aib_strategic_supply_roles()))
+  # 2026-11-23 (non_allied_roles false, the tracked config): no role row for a non-allied economy
+  expect_false(isTRUE(P$non_allied_roles))
+  expect_true(all(r1$allied))
+  expect_false("CHN" %in% r1$iso3)
   # CIA: NA (not assessed) for an economy without a DIP position, never 0
   cia <- r1[r1$role_code == "CIA", ]
   expect_true(is.na(cia$gate2_value[cia$iso3 == "VNM"]))
   expect_true(is.na(cia$primary_or_secondary[cia$iso3 == "VNM"]) || cia$primary_or_secondary[cia$iso3 == "VNM"] == "not assigned")
-  # the results on the synthetic run
-  expect_equal(asg$iso3[asg$primary_or_secondary == "primary"], "USA")
+  # the results on the synthetic run (2026-11-23: CHN out of the supply roles' pool, AUS leads resources &
+  # processing among allied economies; under the earlier rule only USA held a primary role)
+  expect_equal(asg$iso3[asg$primary_or_secondary == "primary"], c("AUS", "USA"))
   expect_equal(asg$role_code[asg$iso3 == "USA"], "DMA")
+  expect_equal(asg$role_code[asg$iso3 == "AUS"], "RPA")
+  rn <- strat_run(cfg = strat_layer_cfg_non_allied())$roles
+  expect_equal(rn$iso3[rn$primary_or_secondary %in% "primary"], "USA")
+  expect_true(all(rn$role_code[!rn$allied] %in% aib_strategic_supply_roles()))
+})
+
+test_that("non-allied economies hold no role and do not enter the allied percentile pool unless non_allied_roles is true", {
+  # five allied economies and one dominant non-allied supplier (X), gates rising with the row
+  mk <- function() {
+    cty <- tibble::tibble(iso3 = c("A1", "A2", "A3", "A4", "A5", "X"), allied = c(rep(TRUE, 5), FALSE))
+    for (g in unique(unlist(aib_strategic_gates()))) cty[[g]] <- c(1, 2, 3, 4, 5, 100)
+    for (g in unlist(aib_strategic_support())) cty[[g]] <- 0
+    cty
+  }
+  cty <- mk()
+  # the default (and the tracked config): allied only
+  expect_false(aib_strategic_default_params()$non_allied_roles)
+  P0 <- aib_strategic_params()
+  r0 <- aib_assign_strategic_roles(cty, P0)
+  expect_false("X" %in% r0$iso3)
+  expect_setequal(unique(r0$iso3), paste0("A", 1:5))
+  # percentiles among the five allied economies: A5 tops every gate, the supply roles included
+  a5 <- r0[r0$iso3 == "A5", ]
+  expect_true(all(a5$gate1_pct == 1 & a5$gate2_pct == 1))
+  expect_equal(r0$gate1_pct[r0$iso3 == "A1" & r0$role_code == "RPA"], 0)
+  expect_equal(sort(a5$role_code[a5$primary_or_secondary %in% "primary"]), sort(c("RPA", "STM", "SMI")))
+  # the same economies with the earlier rule: X holds the supply roles and is in their pool (A5 second of six)
+  P1 <- aib_strategic_params(list(non_allied_roles = TRUE))
+  r1 <- aib_assign_strategic_roles(cty, P1)
+  x <- r1[r1$iso3 == "X", ]
+  expect_setequal(x$role_code, aib_strategic_supply_roles())
+  expect_true(all(x$primary_or_secondary %in% "primary"))
+  a5b <- r1[r1$iso3 == "A5", ]
+  expect_equal(a5b$gate1_pct[a5b$role_code == "RPA"], 0.8)
+  expect_equal(a5b$gate1_pct[a5b$role_code == "DMA"], 1)          # an allied-only role: X is never in its pool
+  expect_false(any(a5b$primary_or_secondary[a5b$role_code %in% aib_strategic_supply_roles()] %in% "primary"))
+  # a params list without the key reads the new rule
+  P2 <- P0
+  P2$non_allied_roles <- NULL
+  expect_identical(aib_assign_strategic_roles(cty, P2), r0)
+  # the whole layer: CHN (a non-allied major supplier) keeps its metrics and flag, but holds no role, compact
+  # role, narrative or core place; with non_allied_roles true it is back on the supply roles
+  st <- strat_st
+  expect_true(st$metrics$major_supplier[st$metrics$iso3 == "CHN"])
+  expect_false(st$metrics$allied[st$metrics$iso3 == "CHN"])
+  expect_false("CHN" %in% st$roles$iso3)
+  expect_false("CHN" %in% st$compact_roles$iso3)
+  expect_false("CHN" %in% st$narratives$iso3)
+  expect_false(any(grepl("non-allied supplier", st$narratives$narrative, fixed = TRUE)))
+  expect_false(any(st$core_long$allied %in% FALSE))
+  expect_true(all(st$core$non_allied_suppliers %in% ""))
+  stn <- strat_run(cfg = strat_layer_cfg_non_allied())
+  expect_setequal(stn$roles$role_code[stn$roles$iso3 == "CHN"], aib_strategic_supply_roles())
+  expect_true("CHN" %in% stn$compact_roles$iso3)
+  expect_true("CHN" %in% stn$core_long$iso3[!stn$core_long$allied])
+  # the stress lens still names the leading non-allied supplier (exposure, not a role)
+  expect_identical(st$stress_lens$leading_non_allied, stn$stress_lens$leading_non_allied)
 })
 
 test_that("capital evidence drops conduit reporters and counterparts, and reads the latest configured year", {
@@ -299,7 +365,10 @@ test_that("compact roles are supported by the node evidence of their own compact
   jpn <- cr[cr$iso3 == "JPN", ]
   expect_equal(jpn$compact_role[jpn$strategic_compact_id == "SC-A"], "Specialized technology supplier")
   expect_equal(cr$compact_role[cr$iso3 == "AUS" & cr$strategic_compact_id == "SC-A"], "Resource supplier")
-  expect_equal(cr$compact_role[cr$iso3 == "CHN" & cr$strategic_compact_id == "SC-A"], "Processing anchor (non-allied supplier)")
+  expect_false("CHN" %in% cr$iso3)                                  # 2026-11-23: no compact role for a non-allied economy
+  expect_true(all(cr$allied))
+  cr_na <- strat_run(cfg = strat_layer_cfg_non_allied())$compact_roles
+  expect_equal(cr_na$compact_role[cr_na$iso3 == "CHN" & cr_na$strategic_compact_id == "SC-A"], "Processing anchor (non-allied supplier)")
   # the investment function needs CM-FDI capital in the compact's sectors (SC-B here)
   kor <- cr[cr$iso3 == "KOR" & cr$strategic_compact_id == "SC-B", ]
   expect_true(kor$f_investment)
@@ -494,7 +563,11 @@ test_that("the institutional slots keep to the allied set and to economies that 
   cr <- st$compact_roles
   expect_equal(cr$criticality[cr$iso3 == "IND" & cr$strategic_compact_id == "SC-A"],
                if ("IND" %in% core_a) "" else "allied supplier outside the core coalition")
-  expect_equal(cr$criticality[cr$iso3 == "CHN" & cr$strategic_compact_id == "SC-A"], "critical external dependency")
+  # CHN holds no compact role (2026-11-23) but stays a critical external dependency of the compact (above); under
+  # the earlier rule its compact role carried the label
+  expect_false("CHN" %in% cr$iso3)
+  cr_na <- strat_run(res = res, cfg = strat_layer_cfg_non_allied())$compact_roles
+  expect_equal(cr_na$criticality[cr_na$iso3 == "CHN" & cr_na$strategic_compact_id == "SC-A"], "critical external dependency")
   # an allied economy with a compact role, outside the core countries and every SC-A coalition, that a workstream
   # lists as a critical external dependency: an allied supplier outside the core coalition
   # (the economy is any allied one with an SC-A compact role that is not a core country: the core is structural,
@@ -607,7 +680,8 @@ test_that("narratives and theses are filled from templates, and the core countri
   n <- strat_st$narratives
   expect_true(all(strat_fx_allied() %in% n$iso3))
   expect_match(n$narrative[n$iso3 == "USA"], "^United States: Demand & Market Anchor\\.")
-  expect_match(n$narrative[n$iso3 == "DEU"], "No strategic AIB role at the current thresholds")
+  expect_match(n$narrative[n$iso3 == "DEU"], "^Germany: No primary strategic role at the current thresholds; secondary scale manufacturing role[.]")
+  expect_match(n$narrative[n$iso3 == "IND"], "No strategic AIB role at the current thresholds")
   core <- unique(strat_st$compacts[, c("strategic_compact_id", "core_countries")])
   expect_equal(nrow(core), length(unique(strat_st$compacts$strategic_compact_id)))
   th <- strat_st$theses

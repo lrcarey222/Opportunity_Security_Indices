@@ -158,3 +158,61 @@ A real-data regression test pins this behaviour:
 3. Export `trust_basis` and the member flag in the posture detail.
 4. Rerun scripts/26 -> scripts/91, re-run the real-data tests, re-approve the golden QC cases (choice counts
    and partner fields will move), then simplify the client split to a check.
+
+## 8. AIB roles: allied only (2026-11-23)
+
+**Decision (user, 2026-11-23):** China, and every other economy outside the allied set, holds no role in the
+Allied Industrial Base. The allied set is the model's demand scope (the coalition tiers) plus
+`allied.treat_as_allied` (TWN, CHE).
+
+**Rule change (R, not client side).** `config/aib_strategic_layer.yml` `roles: non_allied_roles: false`
+(default `FALSE` in `aib_strategic_default_params()`; `true` restores the earlier rule):
+
+- Strategic AIB Roles: every role, the three supply roles (RPA, STM, SMI) included, is assessed among
+  allied economies only. Non-allied economies are no longer in the percentile pool that allied economies are
+  ranked against.
+- Compact-specific roles: none for a non-allied economy (no more "... (non-allied supplier)" roles), so
+  the compact cores list no non-allied lead suppliers (`nonAllied` is empty in every compact).
+- Kept as supplier and exposure information: the non-allied major suppliers' metrics and `major_supplier`
+  flag in `aib_country_strategic_role_metrics.csv`; the division of labour; the workstreams' critical external
+  dependencies and non-allied suppliers the coalition relies on; the stress lens's leading non-allied
+  supplier; the nodes' supplier lists. The bundle's `strategic.countries` now lists allied economies only
+  (an economy is listed when allied or when it holds a role). The Explorer's "Leading suppliers outside the
+  alliance" now reads each compact's division of labour (largest anchor or specialist position, at least 10%
+  of world supply of a node) and names suppliers by share, with no role.
+
+**Rerun.** scripts/33 and scripts/84 on a copy of the 2026-11-21 current-trade run (stamps
+`outputs/aib_current`), same recipe as commit 43e035c7. A control rerun with `non_allied_roles: true`
+reproduced the committed bundle (compacts.be93214e) exactly apart from the provenance stamp.
+
+**What changed (compacts.be93214e -> compacts.312f5bc4).** Nodes, classes, operational compacts,
+coalitions, scenario files (byte-identical), investment flows, strategic compacts' spines and coverage,
+allied cores, workstreams and all 1,085 theses are unchanged.
+
+| | before | after |
+|---|---|---|
+| economies in `strategic.countries` | 74 (61 allied + 13 non-allied) | 61 (allied only) |
+| economies with a primary or secondary role | 29 | 24 |
+| compact-specific roles | 253 (225 allied + 28 non-allied) | 225 (the same 225 allied rows) |
+| non-allied lead suppliers listed in compact cores | 23 across the 10 compacts | 0 |
+
+Non-allied roles removed: CHN (primary RPA, SMI, STM; 10 compact roles), RUS (primary RPA, secondary STM;
+3), KAZ (secondary RPA; 1), MMR (secondary RPA; 1), BHR (secondary STM; 1); compact roles only: LAO (2),
+NGA, ZWE, MOZ, SVN, ECU, PNG, IRN, ARE, ISL, TTO (1 each).
+
+Allied economies whose roles changed (the supply-role percentiles are now taken among allied economies):
+
+- **ESP** gains a secondary Resource & Processing Anchor (secondary CIA -> CIA, RPA).
+- **GBR** gains a secondary Resource & Processing Anchor (primary DMA; secondary DSP -> RPA, DSP).
+- Order only, same set: JPN primary CIA, STM, SMI -> STM, CIA, SMI; FRA secondary SMI, CIA -> CIA, SMI;
+  MEX secondary SMI, CBH -> CBH, SMI; NLD secondary DMA, STM -> STM, DMA; MYS beyond the cap DMA, RPA, SMI ->
+  RPA, DMA, SMI.
+- KOR keeps its roles; its headline now leads with Scale Manufacturing & Integration Platform (its first
+  primary role is now 3+ points ahead of the next) instead of "Combines ... roles".
+- Every other allied economy keeps its roles; the gate percentiles of the supply roles move slightly.
+
+Zero roles for CHN, RUS and every other non-allied economy, in `strategic.countries` and `compactRoles`.
+
+**Worth a look.** SVN (Slovenia, scale manufacturer in Wind), ISL (Iceland, scale manufacturer in Grid) and
+ARE lose compact roles because they are outside the coalition tiers. If they should count as allied, add
+them to `allied.treat_as_allied`.

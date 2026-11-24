@@ -556,9 +556,11 @@ test_that("the R mirror names each broken field of a scenario file, and the mani
 source(file.path(repo_root, "R", "aib", "aib_compacts.R"))
 source(file.path(repo_root, "R", "aib", "aib_strategic.R"))
 
-strat_dash_doc <- function() {
+# non_allied_roles: NULL keeps the tracked config (false since 2026-11-23); TRUE the earlier rule
+strat_dash_doc <- function(non_allied_roles = NULL) {
   cfg <- yaml::read_yaml(file.path(repo_root, "config", "aib_strategic_layer.yml"))
   cfg$capital$cmfdi_sectors <- list(Battery = "SC-B", EV = "SC-B")
+  if (!is.null(non_allied_roles)) cfg$roles$non_allied_roles <- non_allied_roles
   cap <- strat_fx_capital()
   st <- aib_strategic_layer(strat_fx_inputs(), strat_fx_res(), strat_fx_compacts_yml(), strat_fx_node_functions(), cfg,
                             capital = list(dip = cap$dip, cmfdi = cap$cmfdi), conduits = cap$conduits, iso_of = cap$iso_of)
@@ -598,7 +600,17 @@ test_that("the strategic section is optional, persistent across scenarios, and a
   expect_match(as.character(country_json(usa)), '"primary":["DMA"]', fixed = TRUE)
   expect_equal(usa$roles[[1]][[1]], "DMA")
   expect_length(usa$roles, 7)
-  expect_length(s$countries[[which(vapply(s$countries, `[[`, "", "iso3") == "CHN")]]$roles, 3)
+  # 2026-11-23: a non-allied major supplier holds no role, so it is not a strategic country, has no compact role
+  # and is no compact's non-allied core entry; it stays in the division of labour
+  isos <- vapply(s$countries, `[[`, "", "iso3")
+  expect_false("CHN" %in% isos)
+  expect_true(all(vapply(s$countries, function(x) isTRUE(x$allied), logical(1))))
+  expect_false("CHN" %in% vapply(s$compactRoles, `[[`, "", "iso3"))
+  expect_true(all(vapply(s$compacts, function(k) length(k$nonAllied) == 0L, logical(1))))
+  expect_true("CHN" %in% unlist(lapply(s$compacts[[1]]$division, `[[`, 1)))
+  # the earlier rule: CHN on the three supply roles
+  s1 <- strat_dash_doc(non_allied_roles = TRUE)$strategic
+  expect_length(s1$countries[[which(vapply(s1$countries, `[[`, "", "iso3") == "CHN")]]$roles, 3)
   ws <- s$workstreams[[which(vapply(s$workstreams, `[[`, "", "id") == "AIB-C02")]]
   expect_equal(ws$basis, "override")
   expect_equal(ws$split[[1]], list("SC-B", 0.57))
@@ -615,7 +627,7 @@ test_that("the strategic section is optional, persistent across scenarios, and a
 })
 
 test_that("the R mirror names each broken strategic field", {
-  doc <- strat_dash_doc()
+  doc <- strat_dash_doc(non_allied_roles = TRUE)   # with a non-allied supplier among the countries
   s <- doc$strategic
   s$defaultScenario <- "stress"
   s$compacts[[1]]$steps[[2]]$order <- 1L

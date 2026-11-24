@@ -665,6 +665,39 @@ export function compactRoleOf(s: AibStrategic, compactId: string | null | undefi
   return c && iso3 ? (indexOf(s).roleByPair.get(`${c.id}|${iso3.toUpperCase()}`) ?? null) : null;
 }
 
+/**
+ * The leading suppliers of a compact outside the allied economies, as suppliers (exposure), never as role holders.
+ * Since 2026-11-23 (config roles: non_allied_roles false) the export lists no non-allied economy in a compact's
+ * `nonAllied` and gives none a compact role, so they are read from the compact's division of labour: each
+ * non-allied economy's largest anchor or specialist position (flags a / s: at least 10% of world supply of a
+ * node, re-export hubs excluded), the largest first, at most `k`. A bundle written under the earlier rule keeps
+ * its `nonAllied` entries (role: their compact role, without the non-allied mark).
+ */
+export interface OutsideSupplier {
+  iso3: string;
+  /** the compact role of a bundle written under the earlier rule; null when read from the division of labour */
+  role: string | null;
+  step: string | null;
+  /** the node of its largest position and its share of world supply (null under the earlier rule) */
+  node: string | null;
+  share: number | null;
+}
+
+export function leadingOutsideSuppliers(s: AibStrategic, c: AibStrategicCompact, k = 3): OutsideSupplier[] {
+  if (c.nonAllied.length) return c.nonAllied.map((x) => ({ iso3: x.iso3, role: x.role.replace(/ \(non-allied supplier\)$/, ''), step: x.step, node: null, share: null }));
+  const allied = new Set([...s.countries.filter((x) => x.allied).map((x) => x.iso3), ...s.compactRoles.filter((r) => r.allied).map((r) => r.iso3)]);
+  const best = new Map<string, { node: string; share: number }>();
+  for (const [iso3, node, share, , , flags] of c.division) {
+    if (allied.has(iso3) || share === null || !/[as]/.test(flags)) continue;
+    const b = best.get(iso3);
+    if (!b || share > b.share || (share === b.share && node < b.node)) best.set(iso3, { node, share });
+  }
+  return [...best.entries()]
+    .sort((a, b) => b[1].share - a[1].share || a[0].localeCompare(b[0]))
+    .slice(0, k)
+    .map(([iso3, b]) => ({ iso3, role: null, step: null, node: b.node, share: b.share }));
+}
+
 /** The strategic compacts where a country is a core (allied) or leading non-allied country, with its core entry. */
 export interface CoreCompact {
   compact: AibStrategicCompact;

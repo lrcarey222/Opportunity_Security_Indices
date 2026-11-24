@@ -65,7 +65,7 @@ const an = (w: string): string => (/^[aeiou]/i.test(w) ? 'an' : 'a');
 
 export interface ThesisSide {
   iso3: string;
-  /** the strategic layer assesses it (every allied economy, and the major non-allied suppliers) */
+  /** the strategic layer assesses it (every allied economy; before 2026-11-23 also the major non-allied suppliers) */
   assessed: boolean;
   allied: boolean;
   primary: StrategicRole[];

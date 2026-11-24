@@ -90,6 +90,11 @@ roles:
   major_supplier_single: 0.10   # non-allied economies assessed on the supply roles: >= 10% of one node,
   major_supplier_multi: 0.05    #   or >= 5% of `major_supplier_n` nodes
   major_supplier_n: 3
+  non_allied_roles: false       # 2026-11-23 (user decision): only allied economies (the coalition tiers + treat_as_allied)
+                                #   hold Strategic AIB Roles or compact-specific roles, and role percentiles rank allied
+                                #   economies only; non-allied major suppliers stay in the data as suppliers / exposure
+                                #   (division of labour, external dependencies, node suppliers), never with a role.
+                                #   true restores the earlier rule (non-allied major suppliers on the 3 supply roles).
 
 # ---- The allied set -------------------------------------------------------------------------------------
 # The strategic layer's allied economies are the model's demand scope (the coalition tiers of
