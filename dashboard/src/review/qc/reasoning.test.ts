@@ -205,7 +205,8 @@ describe.skipIf(!HAVE_REAL)('reasoning of the shipped campaign', () => {
     expect(r.conclusion.label).toBe('Build together');
     expect(r.partnership!.memo_choices.map((m) => m.label)).toEqual(['Build together', 'Trade and standards', 'Institutions', 'Stay out']);
     expect(r.partnership!.coordination_changes.join(' ')).toMatch(/Rare-earth permanent magnets/);
-    expect(r.steps.find((s) => s.id === 'consistency')!.sentence).toMatch(/Natural graphite/);
+    // the 2026-11-17 US-Japan memo (PR #352) names magnets in both the first and the second box
+    expect(r.steps.find((s) => s.id === 'consistency')!.sentence).toMatch(/in both the first and the second box: .*Rare-earth permanent magnets/);
     wellFormed({ ...r, technical_path: '/x' });
   });
 });
