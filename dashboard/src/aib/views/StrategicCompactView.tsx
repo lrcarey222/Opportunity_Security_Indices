@@ -22,6 +22,8 @@ import { compactNodeIds, strategicCompactOf } from '../derive/strategic.ts';
 import { ChainSection } from './strategic/ChainSection.tsx';
 import { PolicySection, ScenarioChangeSection, VulnerabilitySection, WhoSection, WhySection, WorkstreamsSection } from './strategic/sections.tsx';
 import { STRATEGIC_SECTION_TITLE } from './strategic/shared.tsx';
+import { ReportIssueButton } from '../../review/components/ReportIssueButton.tsx';
+import { STRATEGIC_COMPACT_DECISION_LABEL, strategicCompactDecision } from '../../review/qc/answerOptions.ts';
 
 /** The page's sections, in order: [anchor, title]. */
 export const STRATEGIC_SECTIONS = (['why', 'chain', 'vulnerabilities', 'policy', 'who', 'workstreams', 'scenarios'] as const).map(
@@ -52,6 +54,9 @@ function Compact({ s, c, sid }: { s: AibStrategic; c: AibStrategicCompact; sid: 
     plural(compactNodeIds(c).length, 'supply-chain step'),
     c.workstreams.length ? plural(c.workstreams.length, 'workstream') : 'no workstream',
   ].filter(Boolean);
+  // review only (the buttons render nothing unless the review controls are on): the compact's conclusion under the scenario
+  const decision = strategicCompactDecision(c.scenarios[sid]);
+  const decisionMetric = { id: 'decision', label: `${c.name}: conclusion`, value: decision, display: decision ? STRATEGIC_COMPACT_DECISION_LABEL[decision] : 'not in the export' };
   return (
     <div className={PAGE}>
       <p className="mb-4 text-sm">
@@ -63,6 +68,7 @@ function Compact({ s, c, sid }: { s: AibStrategic; c: AibStrategicCompact; sid: 
         <p className="mt-2 text-sm text-paper-mute" data-testid="compact-facts">
           {facts.join(' · ')}
         </p>
+        <ReportIssueButton metric={decisionMetric} displayedResult={decisionMetric.display} />
         <nav aria-label="Sections of this compact" className="mt-4">
           <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
             {STRATEGIC_SECTIONS.map(([id, label]) => (
@@ -76,9 +82,11 @@ function Compact({ s, c, sid }: { s: AibStrategic; c: AibStrategicCompact; sid: 
         </nav>
       </PageHead>
       <div className="space-y-14">
+        <ReportIssueButton metric={{ id: 'missions', label: `${c.name}: why it exists and its missions`, value: null, display: decisionMetric.display }} />
         <WhySection s={s} c={c} sid={sid} />
         <ChainSection s={s} c={c} sid={sid} node={node} onNode={setNode} />
         <VulnerabilitySection s={s} c={c} sid={sid} />
+        <ReportIssueButton metric={{ id: 'class_counts', label: `${c.name}: what the steps need`, value: null, display: decisionMetric.display }} />
         <PolicySection s={s} c={c} sid={sid} />
         <WhoSection s={s} c={c} node={node} onNode={setNode} />
         <WorkstreamsSection s={s} c={c} sid={sid} />

@@ -1,8 +1,9 @@
 // Home (IA refactor 2026-10-16; before it spec_sector.md 2.1, spec_country.md A2.3; the NEIS copy refresh
 // 2026-10-30): the Explorer's strategic question ("Where should countries build, partner and rely on allies?",
 // content/vocabulary.ts MODULE_QUESTION.home) and three entry points (a Sector, a Country, the Allied Industrial
-// Base), each led by the question it answers; the Allied Industrial Base in one line; a quick way straight to a
-// sector, a mineral or a country, and the sector questions below the fold. Every sentence another page also says
+// Base), each led by the question it answers; the Allied Industrial Base in one line; the strategic questions; then
+// (demoted below them, 2026-11-23) a quick way straight to a sector, a mineral or a country, and one quiet line to the
+// Sector Advanced explorer. Every sentence another page also says
 // comes from the shared vocabulary.
 // It renders with no data request before idle and never touches the engine:
 //   * on idle (1.5 s fallback; skipped under Save-Data) it fetches data/sector/manifest.json (the
@@ -226,7 +227,7 @@ const AIB_CARD: CardSpec = {
   title: 'Explore the Allied Industrial Base',
   question: MODULE_QUESTION.aib,
   lede: 'See which dependencies need trusted alternatives, which countries are best placed to specialize, where trade can solve the problem, and where partners still need to build new capacity.',
-  glyphNote: 'Allied specialization, Sectoral Compacts and country roles',
+  glyphNote: "Who supplies what, where allies should act together, and each country's role",
   links: [
     { to: '/aib/partnerships', label: 'Who should work with whom?' },
     { to: '/compacts', label: 'Which bottlenecks justify a Sectoral Compact?' },
@@ -276,7 +277,7 @@ function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManife
             <>
               <CoverageGlyph glyph={manifest.coverage_glyph} />
               <span className="text-xs text-paper-mute">
-                Country data for {nCells} of {manifest.coverage_glyph.length} technology-stage cells
+                Country-level data for {nCells} of {manifest.coverage_glyph.length} technology-and-stage combinations
               </span>
             </>
           )
@@ -443,8 +444,8 @@ export default function Home() {
         <div className="eyebrow mb-3">{PRODUCT_EYEBROW}</div>
         <h1 className="rule-neis text-3xl font-medium text-paper sm:text-[2.25rem] sm:leading-tight">{MODULE_QUESTION.home}</h1>
         <p className="mt-3 max-w-3xl text-[0.9375rem] leading-relaxed text-paper-dim">
-          The Explorer maps the capabilities behind the energy system, from minerals and manufacturing to deployment. It shows where dependence creates risk,
-          where countries have a credible industrial opportunity, and where trusted partners can build a stronger system together. {FRAMING.noCountryMakesEverything}
+          From minerals to deployment: where dependence creates risk, where countries have a real industrial opportunity, and where trusted partners can
+          build together. {FRAMING.noCountryMakesEverything}
         </p>
       </header>
 
@@ -464,16 +465,6 @@ export default function Home() {
         </Suspense>
       )}
 
-      <section aria-labelledby="home-jump" className="mt-12">
-        <h2 id="home-jump" className="rule-neis-sm mb-5 text-xl font-medium text-paper">
-          Go straight to a sector or a country
-        </h2>
-        <div className="flex flex-wrap items-end gap-x-8 gap-y-5 border-b hairline pb-5">
-          <JumpPicker />
-          <CountryJump options={countries} />
-        </div>
-      </section>
-
       <section aria-labelledby="home-questions" className="mt-12">
         <h2 id="home-questions" className="rule-neis-sm mb-5 text-xl font-medium text-paper">
           Or start with a strategic question
@@ -486,6 +477,23 @@ export default function Home() {
           ))}
         </ul>
       </section>
+
+      <section aria-labelledby="home-jump" className="mt-12">
+        <h2 id="home-jump" className="rule-neis-sm mb-5 text-xl font-medium text-paper">
+          Or go straight to a sector, a mineral or a country
+        </h2>
+        <div className="flex flex-wrap items-end gap-x-8 gap-y-5 border-b hairline pb-5">
+          <JumpPicker />
+          <CountryJump options={countries} />
+        </div>
+      </section>
+
+      <p className="mt-6 text-sm text-paper-mute" data-testid="advanced-explorer-line">
+        Want to inspect the underlying data?{' '}
+        <Link className="link" to="/sector/explore">
+          Advanced explorer &rarr;
+        </Link>
+      </p>
 
       <p className="mt-12 text-sm text-paper-mute">
         New to the terms? The{' '}

@@ -417,13 +417,19 @@ describe('home and the shell', () => {
       expect(screen.getByRole('link', { name: 'Where are the reserves?' }).getAttribute('aria-describedby')).toBeNull();
       const n = manifest.coverage_glyph.filter((g) => g.country_data).length;
       // 11 headline technologies x 6 stages, one row per technology, the stages across
-      expect(screen.getByText(`Country data for ${n} of 66 technology-stage cells`)).toBeTruthy();
+      expect(screen.getByText(`Country-level data for ${n} of 66 technology-and-stage combinations`)).toBeTruthy();
       const glyph = screen.getByTestId('coverage-glyph');
       expect(glyph.children.length).toBe(66);
       expect(glyph.className).toContain('grid-cols-6');
       expect([...glyph.children].filter((c) => c.className.includes('bg-ink-500')).length).toBe(n);
       expect(create).not.toHaveBeenCalled();
-      expect(screen.getByText(/Sector data: export 2026-10-10 18:00 UTC/)).toBeTruthy();
+      // the footer's version stamp (2026-11-23): the method version and the builds this page knows (the sector
+      // manifest here); no data release until a posture or Allied Industrial Base stamp is known
+      const stamp = screen.getByTestId('version-stamp');
+      expect(stamp.querySelector('summary')?.textContent).toBe('Version');
+      expect(stamp.textContent).toContain('Method version: decision framework (2026-10-30)');
+      expect(stamp.textContent).toContain(`sector ${manifest.bundle_id.slice(0, 8)}`);
+      expect(screen.getByRole('link', { name: /Advanced explorer/ }).getAttribute('href')).toBe('/sector/explore');
     } finally {
       globalThis.fetch = realFetch;
       delete w.requestIdleCallback;

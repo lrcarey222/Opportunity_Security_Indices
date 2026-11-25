@@ -13,7 +13,7 @@ import { AIB_STRATEGIC_ROLE_CODES, AIB_STRATEGIC_SCENARIO_IDS, type AibDoc, type
 import { STRATEGIC_FRAMING } from '../derive/scenarios.ts';
 import {
   activeWorkstreamsOf, alsoTouchingOf, compactNodeIds, compactRoleOf, compactRolesOfCompact, compactRolesOfCountry, compactScenarioOf, coreCompactsOf, countryStrategicOf,
-  divisionCells, divisionIntensity, divisionLegend, divisionMatrix, divisionValueText, hostTieWords, missionsOf, narrativeOf, nodeHomeOf, nodeStatusAcross, policyMixWords, roleDefOf, roleHoldersOf,
+  leadingOutsideSuppliers, divisionCells, divisionIntensity, divisionLegend, divisionMatrix, divisionValueText, hostTieWords, missionsOf, narrativeOf, nodeHomeOf, nodeStatusAcross, policyMixWords, roleDefOf, roleHoldersOf,
   roleName, scenarioHasCoalitions, scenarioHasInvestment, spanWords, spineOf, spineStatusInfo, statusCounts, strategicCompactOf, strategicCompacts, strategicCountries, strategicFraming,
   strategicScenarioDef, strategicScenarioFor, strategicScenarios, thesesOf, thesisOf, workstreamHomeOf, workstreamOf, workstreamsOf, type DivisionCell,
 } from '../derive/strategic.ts';
@@ -343,6 +343,28 @@ describe('the strategic layer: countries, compact roles, narratives and theses',
       ['SC-GRID', false],
     ]);
     expect(coreCompactsOf(s, 'AAA')).toHaveLength(5);
+  });
+
+  it('leading suppliers outside the alliance: compact roles in an older bundle, the division of labour once non-allied economies hold no role (2026-11-23)', () => {
+    const c = strategicCompactOf(s, 'SC-MAGNETS')!;
+    // a bundle written under the earlier rule: the core's non-allied entries, without the non-allied mark
+    expect(leadingOutsideSuppliers(s, c)).toEqual([{ iso3: 'ZZZ', role: 'Processing anchor', step: 'Separated oxides', node: null, share: null }]);
+    // the rule since 2026-11-23: no non-allied country, compact role or core entry; ZZZ is read from the division
+    // of labour as a supplier (its largest anchor position), with no role
+    const s2: AibStrategic = {
+      ...s,
+      countries: s.countries.filter((x) => x.allied),
+      compactRoles: s.compactRoles.filter((r) => r.allied),
+      compacts: s.compacts.map((k) => ({ ...k, nonAllied: [] })),
+    };
+    const c2 = strategicCompactOf(s2, 'SC-MAGNETS')!;
+    expect(leadingOutsideSuppliers(s2, c2)).toEqual([{ iso3: 'ZZZ', role: null, step: null, node: 'ev-wind-mid-ree-compounds', share: 0.7 }]);
+    // allied economies are never listed, and at most k
+    for (const k of s2.compacts) {
+      const out = leadingOutsideSuppliers(s2, k, 2);
+      expect(out.length).toBeLessThanOrEqual(2);
+      for (const x of out) expect(s2.countries.some((y) => y.iso3 === x.iso3)).toBe(false);
+    }
   });
 
   it('narratives from their slots; none for an economy without roles', () => {

@@ -1,0 +1,278 @@
+{
+  "schema": "aib-review-manifest",
+  "schema_version": 1,
+  "built_at": "2026-11-24T06:00:00Z",
+  "app_commit": "acbc3805",
+  "data_release": {
+    "id": "rel-4a271ac2b550",
+    "stamps": {
+      "posture": {
+        "created": "2026-11-21T17:46:30Z",
+        "git_commit": "17f0737e"
+      },
+      "country": {
+        "created": "2026-10-31T15:58:15Z",
+        "git_commit": "4bb2adc"
+      },
+      "sector": {
+        "bundle_id": "8f4910df5216fbdbcf73b0be919043a7"
+      },
+      "aib": {
+        "created": "2026-11-24T05:01:17Z"
+      },
+      "strategic": {
+        "bundle_id": "c1736c4a25c7a33e73d56466eac415e6"
+      },
+      "memos": {
+        "manifest_sha256": "afbccf4e0eaaa07cad3219618b5f88b176d85d416f04f50de5fee2fd983a9b8c"
+      }
+    },
+    "complete": true,
+    "missing": []
+  },
+  "campaigns": [
+    {
+      "campaign_id": "aib_qc_2027_round1",
+      "name": "AIB Explorer Expert Validation - Round 1",
+      "status": "draft",
+      "opens": null,
+      "closes": null,
+      "description": "First structured expert review of the published AIB Explorer. Reviewers judge assigned cases blind (posture cells, AIB stress-test nodes, sector chains, strategic compacts and the US-Japan partnership memo) before they see the Explorer's conclusion, red-team the most consequential method choices, and test whether the framework's terms are read as intended. Results are structured elicitation for NEIS, not a poll: every disagreement is recorded with its cause (data, method, missing context, framework ambiguity or actionability). Nothing is published.",
+      "review_types": [
+        "case",
+        "methodology",
+        "framework",
+        "decision_use",
+        "threat",
+        "break_model"
+      ],
+      "n_cases": 23,
+      "case_ids": [
+        "CASE_001",
+        "CASE_002",
+        "CASE_003",
+        "CASE_004",
+        "CASE_005",
+        "CASE_006",
+        "CASE_007",
+        "CASE_008",
+        "CASE_009",
+        "CASE_010",
+        "CASE_011",
+        "CASE_012",
+        "CASE_013",
+        "CASE_014",
+        "CASE_015",
+        "CASE_016",
+        "CASE_017",
+        "CASE_018",
+        "CASE_019",
+        "CASE_020",
+        "CASE_021",
+        "CASE_022",
+        "CASE_023"
+      ],
+      "anchor_cases": [
+        "CASE_001",
+        "CASE_003",
+        "CASE_006",
+        "CASE_008",
+        "CASE_009"
+      ],
+      "cases_file": "cases.aib_qc_2027_round1.json",
+      "target_reviews_per_anchor": 4,
+      "assignment": {
+        "assigned_per_reviewer": {
+          "min": 2,
+          "max": 4
+        },
+        "anchors_per_reviewer": 1,
+        "out_of_specialty": "optional",
+        "allow_self_selected": true,
+        "min_domain_confidence": 3
+      },
+      "reviewers": [],
+      "method_card_ids": [
+        "MC_001",
+        "MC_002",
+        "MC_003",
+        "MC_004",
+        "MC_005",
+        "MC_006",
+        "MC_007",
+        "MC_008",
+        "MC_009",
+        "MC_010",
+        "MC_011",
+        "MC_012",
+        "MC_013",
+        "MC_014",
+        "MC_015",
+        "MC_016",
+        "MC_017",
+        "MC_018",
+        "MC_019",
+        "MC_020",
+        "MC_021",
+        "MC_022"
+      ],
+      "framework_scenario_ids": [
+        "FS_001",
+        "FS_002",
+        "FS_003",
+        "FS_004",
+        "FS_005",
+        "FS_006",
+        "FS_007",
+        "FS_008",
+        "FS_009",
+        "FS_010",
+        "FS_011",
+        "FS_012"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "file": "cases.aib_qc_2027_round1.json",
+      "sha256": "8e87b096f7b5bd8a90ea03d1d04f29c74cd4c4182e721c454c61ee34b8abedc7",
+      "bytes": 605668
+    },
+    {
+      "file": "fixtures/demo_submissions.json",
+      "sha256": "e90964c099a6c019076401637229144349b8f8977bd81a8f21d21b34d7ce49fc",
+      "bytes": 101865
+    },
+    {
+      "file": "framework_scenarios.json",
+      "sha256": "15595955db5c7c1d96138f516ae18ceb57e16f203a87c7ad38d39b378785c84d",
+      "bytes": 26315
+    },
+    {
+      "file": "method_cards.json",
+      "sha256": "530fb37e436dd2fc9c10351018f40515fb0adb159925129c3e6c2ce032fadbf3",
+      "bytes": 44143
+    },
+    {
+      "file": "qc_summary.json",
+      "sha256": "dddbcd6f5197b8338d5552dd95d00afdef8383e32e28cf77ca7d2f267b043b9b",
+      "bytes": 31851
+    },
+    {
+      "file": "robustness.json",
+      "sha256": "91a41494c8e10a1802a2f6d09dd0df01133adbf23e5faa2156e85d5b5da53227",
+      "bytes": 48842
+    }
+  ],
+  "bundle_files": [
+    {
+      "file": "aib/compacts.9cc61b46.json",
+      "sha256": "16ece81f7e3e06181c9a0b217c9ed07da4b5925c662a301580c274d4a468f69e",
+      "created": "2026-11-21T06:34:04",
+      "git_commit": null
+    },
+    {
+      "file": "aib/manifest.json",
+      "sha256": "a6544e7b243ca9e555c1df2b9053452a49e93265ae757a496ded276f649ba38c",
+      "created": "2026-11-24T05:01:17Z",
+      "git_commit": "acbc3805"
+    },
+    {
+      "file": "aib/scenario-managed.30ee124b.json",
+      "sha256": "18000b1bb69a018c2ded8e3d10c810f605708bc3e54293e00357c7f139bdd96c",
+      "created": "2026-11-21T06:34:04",
+      "git_commit": null
+    },
+    {
+      "file": "partnerships/manifest.json",
+      "sha256": "e3f0496826ad25eeecc5cc60af0f08d563d9f4d13c614fc6e5e5d6f071d5057f",
+      "created": null,
+      "git_commit": null
+    },
+    {
+      "file": "partnerships/memo-USA_JPN.d98e5bec.json",
+      "sha256": "bca74344348ef062d83ff6a03dd36d960a5f69980e67a9c29a47c9d61537784d",
+      "created": "2026-11-06T17:50:45Z",
+      "git_commit": null
+    },
+    {
+      "file": "posture/manifest.json",
+      "sha256": "a5b44b8c47cbd9e36d926972d13ae99df3e63acee4b2a98a18b6ae68a279990a",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    },
+    {
+      "file": "posture/posture-core.07b6f4bd.json",
+      "sha256": "f07d227b1b76eb9624d547b86e7b053177f64c1c9040ec2fc17feebfe4124367",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    },
+    {
+      "file": "posture/posture-detail-AUS.c8e21568.json",
+      "sha256": "8e9e2095c0d94b03094c0846ad507c94611fe38b2976e817da875629a1662fe2",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    },
+    {
+      "file": "posture/posture-detail-BEL.c9a291b2.json",
+      "sha256": "03f3d0c9a82ac6e06d893806c9eddc282af1a6ca899d2ca9557be597843551a8",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    },
+    {
+      "file": "posture/posture-detail-CHN.7a6e7443.json",
+      "sha256": "d0dbed24c1e0f535be187f8fc0f4b6c4aacd338aea0d0c821d0b0c3b77d69c83",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    },
+    {
+      "file": "posture/posture-detail-DEU.2dd2a930.json",
+      "sha256": "c9fd9250212966fa4e82b813d296f78360f58b98b434a43f4c7ec49eaff7c3b7",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    },
+    {
+      "file": "posture/posture-detail-IND.14b999fb.json",
+      "sha256": "4f5de71af635817023afc1d9b2f12529571a177e4222e27e19a4ffb8d1671b2f",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    },
+    {
+      "file": "posture/posture-detail-JPN.407b0ab2.json",
+      "sha256": "d60bc93009748debd66754c1ce642eeadfa3d09093a0503fff3473a4b011e436",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    },
+    {
+      "file": "posture/posture-detail-KOR.d1ed7c09.json",
+      "sha256": "73daee70c5160ce04999c8feac4ad739c2c0432932853c52457ec9caa4f553f2",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    },
+    {
+      "file": "posture/posture-detail-USA.41065b83.json",
+      "sha256": "32b81db085fedd91df7b4ea17d26f92542be950f6dab4f7a500c3c4b2747f847",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e"
+    }
+  ],
+  "qc": {
+    "status": {
+      "pass": 32,
+      "warn": 7,
+      "fail": 0,
+      "info": 5
+    },
+    "reproduction": {
+      "cells": 14124,
+      "reproduced": 14124,
+      "rate": 1
+    },
+    "golden": {
+      "pass": 36,
+      "fail": 0,
+      "missing": 0,
+      "not_applicable": 0
+    }
+  }
+}

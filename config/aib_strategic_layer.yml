@@ -90,6 +90,11 @@ roles:
   major_supplier_single: 0.10   # non-allied economies assessed on the supply roles: >= 10% of one node,
   major_supplier_multi: 0.05    #   or >= 5% of `major_supplier_n` nodes
   major_supplier_n: 3
+  non_allied_roles: false       # 2026-11-23 (user decision): only allied economies (the coalition tiers + treat_as_allied)
+                                #   hold Strategic AIB Roles or compact-specific roles, and role percentiles rank allied
+                                #   economies only; non-allied major suppliers stay in the data as suppliers / exposure
+                                #   (division of labour, external dependencies, node suppliers), never with a role.
+                                #   true restores the earlier rule (non-allied major suppliers on the 3 supply roles).
 
 # ---- The allied set -------------------------------------------------------------------------------------
 # The strategic layer's allied economies are the model's demand scope (the coalition tiers of
@@ -98,8 +103,11 @@ roles:
 # partners, core countries, theses). A judgement, reviewable here (2026-10-21 review: Taiwan, 29.5% of allied
 # integrated-circuit supply, and Switzerland read as "outside the alliance"). Their own demand stays
 # outside the scope: the stress tests do not protect it, so they hold no demand role.
+# 2026-11-23 (user decision): Slovenia, Iceland and the United Arab Emirates added; they sit outside the coalition
+# tiers (below the GDP floor of the agreement route, or no partner route) and so lost their roles when roles
+# became trusted-only (roles.non_allied_roles: false).
 allied:
-  treat_as_allied: [TWN, CHE]
+  treat_as_allied: [TWN, CHE, SVN, ISL, ARE]
 
 # ---- Capital evidence (Capital & Investment Anchor; compact investment contribution) ---------------------
 # CM-FDI: cm_fdi_projects_tbl.rds of the partner bundle (scripts/15), rows with index_use and a foreign

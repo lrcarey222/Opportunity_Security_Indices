@@ -1,0 +1,55 @@
+# Campaign definition: the first expert validation round of the published AIB Explorer (main), per
+# docs/QC_SYSTEM_DESIGN.md 4.1. Maps 1:1 to Campaign in dashboard/src/review/model.ts. Status stays draft until
+# NEIS sets the dates and opens it. case_ids must exist in config/review/review_cases.yml and anchor_cases must be
+# a subset of them. Empty method_card_ids / framework_scenario_ids mean every card and every scenario.
+# reviewers (optional) pre-registers reviewer codes only (R-XXXX); never names, emails or organizations.
+
+campaign_id: aib_qc_2027_round1
+name: AIB Explorer Expert Validation - Round 1
+status: draft
+opens: null
+closes: null
+description: >-
+  First structured expert review of the published AIB Explorer. Reviewers judge assigned cases blind (posture
+  cells, AIB stress-test nodes, sector chains, strategic compacts and the US-Japan partnership memo) before they see the
+  Explorer's conclusion, red-team the most consequential method choices, and test whether the framework's terms
+  are read as intended. Results are structured elicitation for NEIS, not a poll: every disagreement is recorded
+  with its cause (data, method, missing context, framework ambiguity or actionability). Nothing is published.
+review_types: [case, methodology, framework, decision_use, threat, break_model]
+case_ids:
+  - CASE_001
+  - CASE_002
+  - CASE_003
+  - CASE_004
+  - CASE_005
+  - CASE_006
+  - CASE_007
+  - CASE_008
+  - CASE_009
+  - CASE_010
+  - CASE_011
+  - CASE_012
+  - CASE_013
+  - CASE_014
+  - CASE_015
+  - CASE_016
+  - CASE_017
+  - CASE_018
+  - CASE_019
+  - CASE_020
+  - CASE_021
+  # UX v2 sector chains (where in one chain is allied intervention warranted?)
+  - CASE_022
+  - CASE_023
+# One anchor per sector group: batteries (KOR components), critical minerals (AUS extraction), solar (CHN
+# components), electric grid (JPN assembly), nuclear (KOR fuel refining).
+anchor_cases: [CASE_001, CASE_003, CASE_006, CASE_008, CASE_009]
+target_reviews_per_anchor: 4
+assignment:
+  assigned_per_reviewer: {min: 2, max: 4}
+  anchors_per_reviewer: 1
+  out_of_specialty: optional
+  allow_self_selected: true
+  min_domain_confidence: 3
+method_card_ids: []
+framework_scenario_ids: []

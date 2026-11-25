@@ -8,6 +8,7 @@ import { stageRank } from '../lib/stages.ts';
 import type { PostureMeta } from './contract.ts';
 import { pct, type DivisionRow, type PostureRow } from './derive.ts';
 import { borderlineWords, prizeLabel } from './grammar.ts';
+import { OUTSIDE_NETWORK, type Membership } from './partnerEligibility.ts';
 
 const pctCol = <R,>(id: string, header: string, v: (r: R) => number | null, digits = 0): Col<R> => ({ id, header, value: v, cell: (r) => pct(v(r), digits), num: true });
 
@@ -16,11 +17,21 @@ const choiceCol: Col<PostureRow> = {
   id: 'choice', header: 'Choice', value: (r) => r.choice, cell: (r) => r.choice ?? 'No data', sortValue: (r) => (r.posture ? FAMILY_SORT[r.posture] : 4),
 };
 const rationaleCol: Col<PostureRow> = { id: 'rationale', header: 'Secure rationale', value: (r) => r.rationale };
-const partnerCol: Col<PostureRow> = {
+/**
+ * The engine's first-ranked partner (core `p1`). With the trusted network (`net`, partnerEligibility.ts), a
+ * first-ranked partner outside it is marked so ("China (outside the trusted network)"), never shown as trusted;
+ * the drawer lists the eligible partners in full.
+ */
+const partnerCol = (net?: Membership | null): Col<PostureRow> => ({
   id: 'partner',
-  header: 'First trusted partner',
-  value: (r) => (r.mode === 'Partner' && r.partnerGap ? 'No credible allied solution yet' : r.partner1Name),
-};
+  header: 'First-ranked partner',
+  value: (r) =>
+    r.mode === 'Partner' && r.partnerGap
+      ? 'No credible allied solution yet'
+      : r.partner1 && net && !net.has(r.partner1)
+        ? `${r.partner1Name ?? r.partner1} (${OUTSIDE_NETWORK})`
+        : r.partner1Name,
+});
 const borderlineCol: Col<PostureRow> = { id: 'borderline', header: 'Borderline on', value: (r) => borderlineWords(r.borderline) };
 type MeasureMeta = Pick<PostureMeta, 'prize_measure'> | null | undefined;
 /**
@@ -37,7 +48,7 @@ const measures = (meta: MeasureMeta): Col<PostureRow>[] => [
 ];
 
 /** One economy's nodes: technology, stage (chain order), the choice and its reasons, its yards, the three dimensions, policy, evidence, momentum, partner. */
-export const countryPostureCols = (meta?: MeasureMeta): Col<PostureRow>[] => [
+export const countryPostureCols = (meta?: MeasureMeta, net?: Membership | null): Col<PostureRow>[] => [
   { id: 'tech', header: 'Technology', value: (r) => r.tech },
   { id: 'stage', header: 'Stage', value: (r) => r.stageName, sortValue: (r) => stageRank(r.stage) },
   choiceCol,
@@ -48,7 +59,7 @@ export const countryPostureCols = (meta?: MeasureMeta): Col<PostureRow>[] => [
   { id: 'alignment', header: 'Policy alignment', value: (r) => r.alignment },
   { id: 'evidence', header: 'Evidence', value: (r) => r.evidence },
   { id: 'momentum', header: 'Trade momentum', value: (r) => r.momentum },
-  partnerCol,
+  partnerCol(net),
   borderlineCol,
   { id: 'flag', header: 'Consistency review', value: (r) => r.flag },
 ];
@@ -58,13 +69,13 @@ export const COUNTRY_POSTURE_COLS: Col<PostureRow>[] = countryPostureCols();
 const TIER_WORD: Record<string, string> = { core: 'Core member', partner: 'Partner' };
 
 /** One node's economies: country, coalition tier, the choice and its reasons, the dimensions, partner, and whether the scatter places it. */
-export const sectorPostureCols = (meta?: MeasureMeta): Col<PostureRow>[] => [
+export const sectorPostureCols = (meta?: MeasureMeta, net?: Membership | null): Col<PostureRow>[] => [
   { id: 'country', header: 'Economy', value: (r) => r.country },
   { id: 'tier', header: 'Coalition', value: (r) => (r.tier ? TIER_WORD[r.tier] : null) },
   choiceCol,
   rationaleCol,
   ...measures(meta),
-  partnerCol,
+  partnerCol(net),
   borderlineCol,
   { id: 'plotted', header: 'On the chart', value: (r) => (r.plotted ? 'yes' : 'no: need or prize not measured') },
 ];

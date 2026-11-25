@@ -11,9 +11,10 @@
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { AibStrategic } from '../aib/contract.ts';
-import { PARTNERSHIP } from '../content/vocabulary.ts';
+import { PARTNERSHIP, SCENARIO_NAME } from '../content/vocabulary.ts';
 import { proseName } from '../country/derive/text.ts';
-import { contributionWords, pairThesis, strategicRoleWords, thesisPartners, type ContributionRow, type ThesisSide } from './thesis.ts';
+import { listWords } from '../aib/derive/format.ts';
+import { contributionWords, pairSummary, pairThesis, strategicRoleWords, thesisPartners, type ContributionRow, type PairSummary, type ThesisSide } from './thesis.ts';
 
 export interface RelationshipThesisProps {
   /** element ids start with it (unique on the page) */
@@ -37,6 +38,8 @@ export interface RelationshipThesisProps {
   pairHref?: (iso3: string) => string | null;
   /** shown under the card (a link to every thesis of the economy) */
   footer?: ReactNode;
+  /** the strategic scenario the summary's remaining actions read (absent: the layer's default scenario) */
+  scenario?: string | null;
 }
 
 /** How many suggested partners the card lists when none is chosen. */
@@ -134,9 +137,45 @@ function Suggestions({ strategic, a, name, pairHref }: { strategic: AibStrategic
   );
 }
 
-export function RelationshipThesis({ id, strategic, a, b, name, compactHref, countryHref, headingLevel, tools, pairHref, footer }: RelationshipThesisProps) {
+/**
+ * The pair at a glance (only for a pair with a thesis): what each side brings, where they complement, what
+ * working together adds and where their priority compacts still need action. Compact names are plain text
+ * here; the links are in the detail below.
+ */
+function Summary({ sum, scenarioLabel, name }: { sum: PairSummary; scenarioLabel: string | null; name: (iso3: string) => string }) {
+  const row = (k: string, dt: string, dd: ReactNode) => (
+    <div key={k} className="contents" data-summary={k}>
+      <dt className="text-paper-mute">{dt}</dt>
+      <dd className="text-paper-dim">{dd}</dd>
+    </div>
+  );
+  const brings = (x: PairSummary['a']) =>
+    `${x.roles.length ? `${listWords(x.roles)}${x.secondary ? ' (secondary roles)' : ''}` : 'No Strategic AIB Role above the thresholds'}${x.position ? `. Largest position in the priority compacts: ${x.position}` : ''}.`;
+  return (
+    <dl className="grid gap-x-4 gap-y-1.5 border-l-2 border-white/10 pl-3 text-sm sm:grid-cols-[11rem_minmax(0,1fr)]" data-testid="thesis-summary">
+      {row('a', `${cap(name(sum.a.iso3))} brings`, brings(sum.a))}
+      {row('b', `${cap(name(sum.b.iso3))} brings`, brings(sum.b))}
+      {sum.complement.length > 0 && row('complement', 'Where they complement', <>{sum.complement.join('; ')}.</>)}
+      {sum.adds.length > 0 && row('adds', 'What working together adds', <>{cap(listWords(sum.adds))}.</>)}
+      {sum.action.length > 0 &&
+        row(
+          'action',
+          'Where action is still needed',
+          <>
+            {sum.action.map((x) => `${x.compact.name}: ${x.text.replace(/\.$/, '')}`).join('; ')}.
+            {scenarioLabel && <span className="text-paper-mute"> (their priority compacts under {scenarioLabel})</span>}
+          </>,
+        )}
+    </dl>
+  );
+}
+
+export function RelationshipThesis({ id, strategic, a, b, name, compactHref, countryHref, headingLevel, tools, pairHref, footer, scenario }: RelationshipThesisProps) {
   const prose = useMemo(() => (x: string) => proseName(name(x)), [name]);
   const t = useMemo(() => pairThesis(strategic, a, b, prose), [strategic, a, b, prose]);
+  const scn = scenario ?? strategic.defaultScenario ?? null;
+  const sum = useMemo(() => (t ? pairSummary(t, scn, prose) : null), [t, scn, prose]);
+  const scenarioLabel = scn ? ((SCENARIO_NAME as Record<string, string>)[scn] ?? strategic.scenarios.find((x) => x.id === scn)?.label ?? null) : null;
   const H = headingLevel === 3 ? 'h3' : 'h2';
   const sub = (headingLevel + 1) as 3 | 4;
   const title = t ? `Relationship thesis: ${prose(a)} and ${prose(t.b.iso3)}` : 'Relationship thesis';
@@ -160,6 +199,7 @@ export function RelationshipThesis({ id, strategic, a, b, name, compactHref, cou
             <p className="text-sm leading-relaxed text-paper" data-testid="thesis-headline">
               {t.headline}
             </p>
+            {sum && <Summary sum={sum} scenarioLabel={scenarioLabel} name={name} />}
             <Part id={`${id}-roles`} level={sub} title="Complementarity: what each side brings" testId="thesis-roles">
               <Roles sides={[t.a, t.b]} name={name} href={countryHref} />
             </Part>

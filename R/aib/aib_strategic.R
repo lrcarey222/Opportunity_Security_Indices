@@ -28,7 +28,9 @@ aib_strategic_role_nouns <- function() {
   c(RPA = "resource & processing", STM = "specialized technology", SMI = "scale manufacturing", DMA = "demand & market",
     CIA = "capital & investment", DSP = "development & scale-up", CBH = "coordination / bridge")
 }
-# The roles a non-allied major supplier is assessed on (it appears as a supplier and a dependency, never as a member).
+# The roles a non-allied major supplier is assessed on when `non_allied_roles` is TRUE (it appears as a supplier
+# and a dependency, never as a member). Since 2026-11-23 (`non_allied_roles: false`, the default) no non-allied
+# economy holds a Strategic AIB Role or a compact-specific role: only the allied set is assessed.
 aib_strategic_supply_roles <- function() c("RPA", "STM", "SMI")
 # Each role's two gate metrics: size first, then breadth / depth. Both must clear the bar; never averaged.
 aib_strategic_gates <- function() {
@@ -79,8 +81,12 @@ aib_strategic_default_params <- function() {
   list(p_primary = 0.90, p_secondary = 0.75, max_primary = 3L, max_secondary = 2L, lead_margin = 0.03,
        position_min = 0.10, spec_rca = 1.5, presence_min = 0.05, demand_node_min = 0.10,
        host_scale_min = 0.02, momentum_gain = 0.01, momentum_floor = 0.02, momentum_ratio = 1.25,
-       major_supplier_single = 0.10, major_supplier_multi = 0.05, major_supplier_n = 3L)
+       major_supplier_single = 0.10, major_supplier_multi = 0.05, major_supplier_n = 3L,
+       non_allied_roles = FALSE)
 }
+# Whether non-allied economies hold roles (config roles: non_allied_roles; 2026-11-23 user decision: FALSE, only the
+# allied set holds Strategic AIB Roles and compact-specific roles; a params list without the key reads FALSE).
+aib_strategic_non_allied_roles <- function(params) isTRUE(params$non_allied_roles)
 aib_strategic_params <- function(cfg = NULL) {
   p <- aib_strategic_default_params()
   for (k in names(cfg)) p[[k]] <- cfg[[k]]
@@ -942,7 +948,8 @@ aib_capital_cmfdi_outward <- function(p) {
 # ---- Strategic roles: metrics and assignment -----------------------------------------------------------------
 
 # Country metrics (docs/aib_methodology.md 16.4): one row per assessed economy, the allied demand scope plus
-# the non-allied major suppliers (>= 10% of world supply of one mapped node, or >= 5% of three). capital:
+# the non-allied major suppliers (>= 10% of world supply of one mapped node, or >= 5% of three; kept as supplier
+# evidence with the major_supplier flag, and assessed for roles only when non_allied_roles is TRUE). capital:
 # list(dip = aib_capital_dip_outward() or NULL, cmfdi = aib_capital_cmfdi_outward() or NULL); a missing input
 # leaves its metric NA (the role is not assessed).
 aib_country_role_metrics <- function(cn, nodes, ws_country, capital, allied, params) {
@@ -1011,15 +1018,18 @@ aib_strategic_prank <- function(x, elig) {
 # The seven roles (docs/aib_methodology.md 16.5): qualify (both gates > 0 and >= the bar), order (primary-
 # qualifying first, role_strength in whole percentile points, the other gate, the fixed role order), cap
 # (3 primary, a 4th demoted; 2 secondary; any further qualifying role "qualifies beyond the cap"). One row
-# per assessed economy x role it is eligible for (allied: 7; non-allied supplier: the 3 supply roles).
+# per assessed economy x role it is eligible for (allied: 7; non-allied supplier: the 3 supply roles when
+# non_allied_roles is TRUE, none otherwise). Eligibility is also the percentile pool: with non_allied_roles FALSE
+# (the default since 2026-11-23) every role, the supply roles included, ranks allied economies among themselves.
 aib_assign_strategic_roles <- function(cty, params) {
   P <- params
   ROLES <- aib_strategic_roles()
   GATES <- aib_strategic_gates()
   SUPPORT <- aib_strategic_support()
+  non_allied <- aib_strategic_non_allied_roles(P)
   long <- list()
   for (r in names(GATES)) {
-    elig <- if (r %in% aib_strategic_supply_roles()) rep(TRUE, nrow(cty)) else cty$allied
+    elig <- if (non_allied && r %in% aib_strategic_supply_roles()) rep(TRUE, nrow(cty)) else cty$allied
     g <- GATES[[r]]
     pc <- vapply(g, function(m) aib_strategic_prank(cty[[m]], elig), numeric(nrow(cty)))
     val <- vapply(g, function(m) as.numeric(cty[[m]]), numeric(nrow(cty)))
@@ -1278,6 +1288,9 @@ aib_compact_country_roles <- function(cn, nodes, mem, cmfdi, partnerships, allie
     # a buyer, the larger); the unweighted step means stay as evidence (2026-10-21 review)
     compact_relevance = pmax(dplyr::coalesce(supplier_contribution, 0), dplyr::coalesce(demand_contribution, 0))) |>
     dplyr::filter(!is.na(compact_role))
+  # 2026-11-23 (non_allied_roles FALSE, the default): no compact-specific role for a non-allied economy; its
+  # supply stays in the division of labour (steps, node evidence) and in the workstreams' external dependencies
+  if (!aib_strategic_non_allied_roles(P)) ccr <- ccr[ccr$allied, , drop = FALSE]
   steps_out <- steps |> dplyr::left_join(dplyr::select(step_level, iso3, sc_id, vc_order, step_demand_share, step_world_demand_share),
                                         by = c("iso3", "sc_id", "vc_order"))
   list(compact_roles = ccr, steps = steps_out)
@@ -1291,7 +1304,9 @@ aib_compact_country_roles <- function(cn, nodes, mem, cmfdi, partnerships, allie
 # position is at least `upstream_min` of world supply and the economy is not already in; then the next most
 # relevant allied economies, up to k in all. Listed in chain (function) order. Non-allied lead suppliers apart.
 # One row per compact x listed country (core: allied, rank 1..k; non-allied lead suppliers: rank 1..3 among
-# those whose lead role is a supply role), with the lead role (without the non-allied suffix).
+# those whose lead role is a supply role), with the lead role (without the non-allied suffix). With
+# non_allied_roles FALSE (the default since 2026-11-23) compact_roles holds no non-allied row, so no non-allied
+# lead supplier is listed.
 AIB_CORE_FUNCTION_ORDER <- c("Resource supplier", "Processing anchor", "Specialized technology supplier", "Scale manufacturer", "Demand anchor")
 aib_strategic_core_long <- function(compact_roles, k = 6L, k_value = 3L, upstream_min = 0.10) {
   x <- compact_roles[order(compact_roles$sc_id, -compact_roles$compact_relevance, compact_roles$iso3), , drop = FALSE]

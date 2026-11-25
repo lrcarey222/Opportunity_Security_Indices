@@ -67,6 +67,7 @@ import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import type { AibBaselineScenarioDoc, AibInvestmentFlows, AibManagedScenarioDoc, AibMeta, AibScenarioId, AibStrategic } from '../contract.ts';
 import { tradeWhen } from '../contract.ts';
 import { ClassChip } from '../charts/ClassChip.tsx';
+import { ReportIssueButton } from '../../review/components/ReportIssueButton.tsx';
 import { useAibScenarioDoc, type ScenarioLoad } from '../data/hooks.ts';
 import { fmtPp, fmtScore, fmtShare, fmtUsd, listWords, plural } from '../derive/format.ts';
 import {
@@ -378,7 +379,7 @@ const csvScenario = (rows: Record<string, unknown>[], meta: AibMeta, id: AibScen
 
 export default function AibPartnershipsView() {
   useTitle('Partnerships', 'aib');
-  const { doc, tx, strategic, name: nameOf, href } = useAibCtx();
+  const { doc, tx, strategic, strategicScenario, name: nameOf, href } = useAibCtx();
   const [params, setParams] = useSearchParams();
   const mode = modeOf(params.get('mode'));
   const raw: PartnershipFilter = { country: params.get('country'), tech: params.get('tech'), stage: params.get('stage'), node: params.get('node') };
@@ -465,9 +466,13 @@ export default function AibPartnershipsView() {
             countryHref={(iso) => href(`/countries/${iso}#aib-role`)}
             headingLevel={2}
             pairHref={pairHref}
+            scenario={strategicScenario}
           />
+          {/* review only: renders nothing unless the review controls are on (review/appInfo.ts) */}
+          <ReportIssueButton metric={{ id: 'headline', label: `Relationship thesis: ${nameOf(country)}${partner ? ` and ${nameOf(partner)}` : ''}`, value: partner ? `${country}_${partner}` : country, display: 'Relationship thesis' }} />
         </div>
       )}
+      <ReportIssueButton metric={{ id: 'choices_summary', label: `Partnerships, ${mode}: ${[country, tech, stage, node].filter(Boolean).join(', ') || 'all economies'}`, value: null, display: mode }} />
       <div className="mt-6">
         {mode === 'trade' && <TradeTab f={f} onKind={onKind} />}
         {mode === 'investment' && <InvestmentTab f={f} onKind={onKind} />}

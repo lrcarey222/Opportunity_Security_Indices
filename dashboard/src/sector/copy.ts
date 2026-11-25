@@ -87,3 +87,36 @@ export const AIB_COLUMN = {
 
 /** The control-layer note said of one economy among many (the Sector card shows every economy of a step): content/vocabulary.ts. */
 export const CONTROL_LAYER_ECONOMY_NOTE = CONTROL_LAYER_NOTE_ECONOMY;
+
+/**
+ * "Where are the real bottlenecks?" on a technology's chain page (external review readiness, 2026-11-23):
+ * the supply-chain steps the Allied Industrial Base stress test says need action, largest remaining gap
+ * first, or, without such a step, the most concentrated measures (concentration only). Words only; the
+ * figures come from the shipped AIB nodes and the chain ladder (views/Bottlenecks.tsx).
+ */
+export const BOTTLENECKS = {
+  title: 'Where are the real bottlenecks?',
+  /** the fallback list's label: concentration says who holds supply, not whether it could be replaced */
+  concentrationOnly: 'Most concentrated measures (concentration only: who holds the most supply, not whether it could be replaced):',
+  loading: 'Loading the stress-test results…',
+} as const;
+
+/**
+ * One plain line on what a concentration index value means (HHI bands; views/HhiExplainer.tsx hhiBand reads
+ * the thresholds from dict.hhi_refs). Technical detail (the thresholds and their source) stays in the tooltip.
+ */
+export const HHI_BAND_WORDS = {
+  high: 'Highly concentrated: a few suppliers hold most of this market',
+  moderate: 'Moderately concentrated: a handful of suppliers hold a large share',
+  low: 'Not concentrated: supply is spread across many suppliers',
+  /** a lower bound below the bands: the unattributed part could hide a larger holder */
+  lowerBoundLow: 'Possibly more concentrated than shown: part of the market is not attributed to any economy',
+} as const;
+
+/** Stages without comparable country-level evidence, said once under the stage grid instead of one empty card each. */
+export const NO_EVIDENCE = {
+  lead: 'Comparable country-level evidence is not currently available for',
+  /** "This page therefore focuses on the 2 stages for which comparable evidence is available." */
+  focus: (n: number): string => `This page therefore focuses on ${n === 1 ? 'the one stage' : `the ${n} stages`} for which comparable evidence is available.`,
+  none: 'No stage of this technology has comparable country-level evidence yet; each stage profile lists what data exist.',
+} as const;

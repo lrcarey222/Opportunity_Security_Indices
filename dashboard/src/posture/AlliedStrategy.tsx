@@ -22,6 +22,7 @@ import type { PostureCell, PostureCore, PostureDetail } from './contract.ts';
 import { countryNames, pct, postureCsvText, postureProvenance } from './derive.ts';
 import { deliveryWords, RATIONALE_LABEL, stageDisplay } from './grammar.ts';
 import { Swatch } from './PostureLegend.tsx';
+import { networkOf, noEligibleWords, OUTSIDE_NETWORK, OUTSIDE_SUPPLIERS_LABEL } from './partnerEligibility.ts';
 import { alliedRows, alliedSentence, type AlliedRow } from './sections.ts';
 
 export const ALLIED_STRATEGY_TITLE = 'Allied Strategy';
@@ -60,13 +61,14 @@ export function alliedStatusWords(r: AlliedRow): string {
   return 'Not mapped in the allied division';
 }
 
-type Row = AlliedRow & { node: string; choice: string; partnersWords: string; whyWords: string; statusWords: string };
+type Row = AlliedRow & { node: string; choice: string; partnersWords: string; outsideWords: string; whyWords: string; statusWords: string };
 
 const COLS: Col<Row>[] = [
   { id: 'node', header: 'Node', value: (r) => r.node, sortValue: (r) => stageRank(r.stage) },
   { id: 'choice', header: 'Choice', value: (r) => r.choice },
   { id: 'need', header: 'Supply-chain need', value: (r) => r.need, cell: (r) => pct(r.need), num: true },
-  { id: 'partners', header: 'Recommended partners', value: (r) => r.partnersWords },
+  { id: 'partners', header: 'Recommended trusted partners', value: (r) => r.partnersWords },
+  { id: 'outside', header: OUTSIDE_SUPPLIERS_LABEL, value: (r) => r.outsideWords || null },
   { id: 'why', header: 'Why', value: (r) => r.whyWords || null },
   { id: 'status', header: 'AIB status', value: (r) => r.statusWords },
 ];
@@ -75,13 +77,14 @@ export function AlliedStrategy({
   core, cells, detail, name, rows: rowsIn, selected = null, onOpen, partnerHref, aibHref, explore, title = ALLIED_STRATEGY_TITLE, headingLevel = 3, showBasis = false, className,
 }: AlliedStrategyProps) {
   const names = countryNames(core);
-  const base = rowsIn ?? alliedRows(cells, detail, core.division, names);
+  const base = rowsIn ?? alliedRows(cells, detail, core.division, names, networkOf(core.countries));
   const sentence = alliedSentence(name, cells, base);
   const rows: Row[] = base.map((r) => ({
     ...r,
     node: `${r.tech} · ${stageDisplay(r.stage)}`,
     choice: r.verb === 'secure' ? `Secure${r.rationale ? ` (${RATIONALE_LABEL[r.rationale].toLowerCase()})` : ''}` : 'Compete · Partner',
-    partnersWords: r.partners.length ? r.partners.map((p) => p.name).join(', ') : r.noSolution ? 'none yet' : 'not stated',
+    partnersWords: r.partners.length ? r.partners.map((p) => p.name).join(', ') : r.noSolution ? 'none yet' : r.noEligible ? 'none in the trusted network' : 'not stated',
+    outsideWords: r.outside.map((p) => p.name).join(', '),
     whyWords: r.partners.map((p) => (p.why.length ? `${p.name}: ${p.why.join(', ')}` : '')).filter(Boolean).join('; '),
     statusWords: alliedStatusWords(r),
   }));
@@ -101,16 +104,18 @@ export function AlliedStrategy({
           text: postureCsvText(
             rows.map((r) => ({
               technology: r.tech, stage: r.stage, stage_name: stageDisplay(r.stage), choice: r.choice, supply_chain_need: r.need, delivery_mode: r.delivery,
-              recommended_partners: r.partnersWords, recommended_partners_iso3: r.partners.map((p) => p.iso3).join(';') || null, why: r.whyWords || null,
+              recommended_partners: r.partnersWords, recommended_partners_iso3: r.partners.map((p) => p.iso3).join(';') || null,
+              suppliers_outside_trusted_network: r.outsideWords || null, suppliers_outside_trusted_network_iso3: r.outside.map((p) => p.iso3).join(';') || null, why: r.whyWords || null,
               aib_status: r.status, gap_reasons: r.gaps.join(';') || null, no_credible_allied_solution: r.noSolution,
             })),
-            ['technology', 'stage', 'stage_name', 'choice', 'supply_chain_need', 'delivery_mode', 'recommended_partners', 'recommended_partners_iso3', 'why', 'aib_status', 'gap_reasons', 'no_credible_allied_solution'],
+            ['technology', 'stage', 'stage_name', 'choice', 'supply_chain_need', 'delivery_mode', 'recommended_partners', 'recommended_partners_iso3', 'suppliers_outside_trusted_network', 'suppliers_outside_trusted_network_iso3', 'why', 'aib_status', 'gap_reasons', 'no_credible_allied_solution'],
             prov,
           ),
         })}
         notes={
           <p>
-            Rows: every Partner node, and every Secure node whose delivery leans on trusted foreign capacity (allied or mixed). AIB status is the{' '}
+            Rows: every Partner node, and every Secure node whose delivery leans on trusted foreign capacity (allied or mixed). Only members of the trusted network are recommended;
+            other suppliers the model ranks are listed as {OUTSIDE_NETWORK}. AIB status is the{' '}
             <Term id={POSTURE_TERMS.aibGap}>allied division&apos;s</Term> coverage of the node: covered when a credible trusted holder and backups exist.
           </p>
         }
@@ -143,8 +148,15 @@ export function AlliedStrategy({
                             return <li key={p.iso3}>{ph ? <Link className="link" to={ph}>{p.name}</Link> : p.name}</li>;
                           })}
                         </ul>
+                      ) : r.noEligible ? (
+                        <p className="text-sm text-paper" data-testid="allied-none-eligible">{noEligibleWords(r.outside.map((p) => p.name))}</p>
                       ) : (
                         <p className="text-sm text-paper-mute">{r.noSolution ? 'No credible allied solution yet' : detail ? 'Not stated' : '…'}</p>
+                      )}
+                      {r.outside.length > 0 && !r.noEligible && (
+                        <p className="text-xs text-paper-mute" data-testid="allied-outside">
+                          Also ranked, {OUTSIDE_NETWORK}: {r.outside.map((p) => p.name).join(', ')}
+                        </p>
                       )}
                     </div>
                     <div>
@@ -161,7 +173,7 @@ export function AlliedStrategy({
                             ))}
                         </ul>
                       ) : (
-                        <p className="text-xs text-paper-mute">{r.noSolution ? 'No trusted supplier can cover it yet.' : 'not stated'}</p>
+                        <p className="text-xs text-paper-mute">{r.noSolution ? 'No trusted supplier can cover it yet.' : r.noEligible ? 'No member of the trusted network is ranked here.' : 'not stated'}</p>
                       )}
                     </div>
                     <div>

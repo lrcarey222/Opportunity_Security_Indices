@@ -28,6 +28,8 @@ const SPEC_IDS = [
   'development_host',
   // the partnership agreements (/aib/agreements, 2026-11-06)
   'partnership_depth', 'agreement_gap', 'electro_industrial_agreement', 'delivery_evidence', 'coding_basis',
+  // terms reviewers meet everywhere (external review readiness, 2026-11-23)
+  'supply_chain_step', 'trusted_network', 'supply_exposed', 'data_release',
 ];
 
 describe('glossary content (C3.2)', () => {

@@ -36,7 +36,7 @@ export default function ExploreView() {
   const phone = !useMediaQuery('(min-width: 768px)');
   const themeInfo = rawTheme ? model.themes.find((t) => t.slug === rawTheme) : (model.themes.find((t) => t.slug === 'trade') ?? model.themes[0]);
   const theme = themeInfo?.slug ?? 'trade';
-  useTitle(themeInfo ? `Explore ${themeInfo.label}` : 'Explore', 'Sector Insights');
+  useTitle(themeInfo ? `Advanced explorer: ${themeInfo.label}` : 'Advanced explorer', 'Sectors');
   const highlight = useHighlight(model);
   const v = pickVar(model, theme, state.m);
   const layout = v ? layoutOf(v) : null;
@@ -121,7 +121,7 @@ export default function ExploreView() {
 
   return (
     <div className="space-y-6">
-      <PageHead eyebrow="SECTORS · EXPLORE" title={themeInfo?.label ?? 'Explore'} lede={`How does one measure compare across every economy and every sector? A map, a ranking, the spread of values and the trend, in the source's own units. Pick a theme and a measure.${themeInfo?.description ? ` This theme: ${themeInfo.description.charAt(0).toLowerCase()}${themeInfo.description.slice(1)}` : ''}`}>
+      <PageHead eyebrow="SECTORS · ADVANCED EXPLORER" title={themeInfo?.label ?? 'Advanced explorer'} lede={`How does one measure compare across every economy and every sector? A map, a ranking, the spread of values and the trend, in the source's own units. Pick a theme and a measure.${themeInfo?.description ? ` This theme: ${themeInfo.description.charAt(0).toLowerCase()}${themeInfo.description.slice(1)}` : ''}`}>
         <div className="mt-4">
           <ThemeChips themes={model.themes.map((t) => ({ slug: t.slug, label: t.label, href: link(`/sector/explore/${t.slug}`) }))} active={theme} />
         </div>

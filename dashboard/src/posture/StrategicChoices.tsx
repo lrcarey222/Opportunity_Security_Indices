@@ -2,10 +2,10 @@
 // each with the subtitle and fields of spec XIV, plus the consistency-review list (design D2) and the count
 // of nodes not assessed (design D1). Watch is a positive conclusion, shown in full ("Domestic industrial
 // priority: low" and why), not a failure state. Accelerate states the deployment priority apart from the
-// technology's domestic manufacturing priority. Partner names the recommended partners, the diversification
-// value and the AIB status (covered, gap with its reasons, or no credible allied solution yet) and links to
-// the AIB partner recommendations (aibHref; posture/ knows no AIB routes). Each node's name is a button that
-// opens the shared drawer (onOpen, spec XIX). A table twin and a CSV list every node with its group.
+// technology's domestic manufacturing priority. Partner names the recommended partners (trusted-network
+// members only: partnerEligibility.ts), the diversification value and the AIB status (covered, gap with its
+// reasons, or no credible allied solution yet) and links to the AIB partner recommendations
+// (aibHref; posture/ knows no AIB routes). Each node's name is a button that opens the shared drawer (onOpen, spec XIX). A table twin and a CSV list every node with its group.
 
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -21,6 +21,7 @@ import {
   ALIGNMENT_LABEL, basisWords, choiceWord, deliveryWords, flagWords, PATHWAY_LABEL, pathwayEvidenceWords, RATIONALE_LABEL, stageDisplay, VERB_LONG, VERB_ORDER,
   VERB_SUBTITLE,
 } from './grammar.ts';
+import { networkOf, noEligibleWords, splitPartners } from './partnerEligibility.ts';
 import { Swatch } from './PostureLegend.tsx';
 import {
   alliedRows, catchUpPositionWords, choiceGroups, detailByKey, diversificationWords, domesticCase, manufacturingPriority, manufacturingPriorityWord, secureRisk, secureTreatment, watchReasons,
@@ -115,7 +116,8 @@ export function StrategicChoices({
   const names = countryNames(core);
   const g = choiceGroups(cells);
   const dk = detailByKey(detail);
-  const allied = new Map(alliedRows(cells, detail, core.division, names).map((a) => [a.key, a]));
+  const net = networkOf(core.countries);
+  const allied = new Map(alliedRows(cells, detail, core.division, names, net).map((a) => [a.key, a]));
   const keyOf = (c: PostureCell) => `${c.tech}|${c.stage}`;
   const det = (c: PostureCell): NodeDetail | null => dk.get(keyOf(c)) ?? null;
 
@@ -147,12 +149,19 @@ export function StrategicChoices({
       }
       case 'partner': {
         const a = allied.get(keyOf(c));
-        const partners = a?.partners.length ? a.partners.map((p) => p.name).join(', ') : a?.noSolution ? 'none: no credible allied solution yet' : 'not stated';
+        // trusted-network members only; with none, the suppliers outside the network are named as such
+        const partners = a?.partners.length
+          ? a.partners.map((p) => p.name).join(', ')
+          : a?.noSolution
+            ? 'none: no credible allied solution yet'
+            : a?.noEligible
+              ? noEligibleWords(a.outside.map((p) => p.name))
+              : 'not stated';
         return [
           { label: 'Need', term: POSTURE_TERMS.supplyChainNeed, words: pct(c.need) },
           { label: 'Domestic case', words: domesticCase(c, t) },
           { label: 'Recommended partners', words: partners },
-          { label: 'Diversification value', words: d ? (diversificationWords(d.partners) ?? 'not measured') : '…' },
+          { label: 'Diversification value', words: d ? (diversificationWords(splitPartners(d.partners, net).eligible) ?? 'not measured') : '…' },
           { label: 'AIB status', term: POSTURE_TERMS.partnerGap, words: aibStatusWords(a) },
         ];
       }

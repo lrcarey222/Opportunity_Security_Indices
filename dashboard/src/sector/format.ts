@@ -17,6 +17,11 @@
 //   signed        arrow + sign: "▲ 12.4%", "▼ 3.1 EJ"
 
 export const DASH = '–';
+/**
+ * The accessible words of the dash (a title and screen-reader text where a view prints DASH alone): the dash
+ * means no value, never zero; a true zero prints "0" or "0.0%" (every formatter below).
+ */
+export const NO_DATA_TITLE = 'No data';
 export const MINUS = '−';
 export const UP = '▲';
 export const DOWN = '▼';

@@ -24,6 +24,7 @@ import { Section } from '../common.tsx';
 import { NodeRobustness } from '../NodeRobustness.tsx';
 import { classInfo } from '../../derive/classes.ts';
 import { Fact, scenarioLabelOf, STRATEGIC_SECTION_TITLE } from './shared.tsx';
+import { ReportIssueButton } from '../../../review/components/ReportIssueButton.tsx';
 
 const FN_WORDS: Readonly<Record<string, string>> = {
   resource: 'resource step',
@@ -126,6 +127,7 @@ export function NodeEvidence({ s, c, nodeId, sid, onClose }: { s: AibStrategic; 
               {cls && (
                 <p className="flex flex-wrap items-center gap-2">
                   <ClassChip cls={cls} needs={mi ? null : n.policyNeeds} warning={mi ? null : n.warning} />
+                  <ReportIssueButton metric={{ id: 'class', label: `Treatment of ${n.label}`, value: cls, display: classInfo(cls).label, tech: n.techs.join(', ') || null, stage: n.stage }} displayedResult={classInfo(cls).label} />
                   {!mi && <PolicyNeeds cls={cls} needs={n.policyNeeds} />}
                   {!mi && n.warning && <PhysicalWarning warning={n.warning} validation={n.physicalValidation} />}
                 </p>

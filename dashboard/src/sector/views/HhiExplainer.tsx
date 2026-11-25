@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { Term } from '../../components/Term.tsx';
-import { HHI_PLAIN } from '../copy.ts';
+import { HHI_BAND_WORDS, HHI_PLAIN } from '../copy.ts';
 import type { SectorModel } from '../data/model.ts';
 import { groupColor, HATCH_URL } from '../charts/color.ts';
 import type { GroupKey } from '../charts/types.ts';
@@ -154,6 +154,40 @@ function ReferenceScale({ hhi, lowerBound }: { hhi: number | null; lowerBound: b
       )}
     </svg>
   );
+}
+
+export type HhiBandKey = 'high' | 'moderate' | 'low';
+
+/** The thresholds the band line uses when dict.hhi_refs has no "moderately concentrated" pair (US Horizontal Merger Guidelines 2010). */
+const HHI_BAND_DEFAULT = { moderate: 0.15, high: 0.25, source: 'US Horizontal Merger Guidelines (2010)' };
+
+/**
+ * The thresholds of the band line, read from dict.hhi_refs: the "moderately concentrated" yardstick and the
+ * highest "above" yardstick of the same guidelines (same authority and year), so the two bounds always come
+ * from one document; the 2010 US values when the dictionary has no such pair.
+ */
+export function hhiBandThresholds(refs: SectorModel['hhiRefs']): { moderate: number; high: number; source: string } {
+  const mod = refs.find((r) => r.side === 'above' && /moderately/i.test(r.label));
+  if (!mod) return HHI_BAND_DEFAULT;
+  const high = refs.filter((r) => r.side === 'above' && r.authority === mod.authority && r.year === mod.year && r.value > mod.value).sort((a, z) => z.value - a.value)[0];
+  if (!high) return HHI_BAND_DEFAULT;
+  return { moderate: mod.value, high: high.value, source: `${mod.authority}, ${mod.year}` };
+}
+
+/**
+ * One plain line on what an index value means ("Highly concentrated: a few suppliers hold most of this
+ * market"), with the thresholds for the tooltip; null without a finite value. A lower bound ("at least")
+ * says "At least" when the value is not already in the top band.
+ */
+export function hhiBand(hhi: number | null | undefined, lowerBound: boolean, refs: SectorModel['hhiRefs']): { key: HhiBandKey; text: string; title: string } | null {
+  if (typeof hhi !== 'number' || !Number.isFinite(hhi)) return null;
+  const t = hhiBandThresholds(refs);
+  const key: HhiBandKey = hhi >= t.high ? 'high' : hhi >= t.moderate ? 'moderate' : 'low';
+  const words = HHI_BAND_WORDS[key];
+  // a lower bound can only move up a band: "at least moderately"; below the bands it says nothing firm
+  const text = !lowerBound || key === 'high' ? words : key === 'moderate' ? `At least ${words.charAt(0).toLowerCase()}${words.slice(1)}` : HHI_BAND_WORDS.lowerBoundLow;
+  const title = `Concentration index ${hhiText(hhi, lowerBound)}. Bands: ${t.high.toFixed(2)} and above highly concentrated, ${t.moderate.toFixed(2)} to ${t.high.toFixed(2)} moderately, below ${t.moderate.toFixed(2)} not concentrated (merger yardstick: ${t.source}; a yardstick, not a verdict).`;
+  return { key, text, title };
 }
 
 /** The competition-authority thresholds as one context sentence (never a verdict). */

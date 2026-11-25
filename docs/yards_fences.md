@@ -1,5 +1,7 @@
 # Draw the Fence: the Yards & Fences decision tool
 
+> **Legacy for the Explorer:** this documents the separate Draw the Fence site, not the Allied Industrial Base Explorer method. The current methodology is in [strategic_position.md](strategic_position.md) (see [README.md](README.md)).
+
 *Draw the Fence* is a standalone NEIS Center site, separate from the Allied Industrial Base Explorer
 but built from the same package (`dashboard/`), so it shares the Explorer's look, design tokens, UI
 primitives, fonts and data without copying them. It turns the NEIS Center paper *Clean Energy

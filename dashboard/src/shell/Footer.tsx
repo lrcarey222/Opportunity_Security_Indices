@@ -1,15 +1,16 @@
-// The shared footer (spec_sector.md 2.1 item 6, 2.5): citation, the data vintage of each module
-// when known (from buildInfo; never forces a load), and the links to Methods (Strategic), Sources
+// The shared footer (spec_sector.md 2.1 item 6, 2.5): citation, the version stamp (ReleaseStamp.tsx: the data
+// release and, one click away, the method version and the app and bundle builds known to this page; from
+// buildInfo, never forcing a load), and the links to Methods (Strategic), Sources
 // & data (Sector), the country data notes, how compacts are derived, the shared Glossary and neiscenter.org. Methods / Data
 // carry the scenario of the last Strategic location, as the old footer carried navQuery.
 // How compacts are derived carries the AIB scenario toggle (scn) of the current page.
 
 import { Link, useLocation } from 'react-router';
 import { scenarioCarry } from '../aib/scenarioUrl.ts';
-import { fmtDate } from '../lib/format.ts';
 import { useBuildInfo } from './buildInfo.ts';
 import { lastLocations, sectorCarry, strategicCarry } from './lastLocation.ts';
 import { placeOf } from './modules.ts';
+import { dataReleaseDate, VersionLine, versionParts } from './ReleaseStamp.tsx';
 
 const PAPER_TITLE = 'Opportunity, Security, and the Allied Industrial Base';
 
@@ -19,7 +20,10 @@ const searchOf = (href: string | null): string => {
 };
 
 export function Footer() {
-  const { strategic, sector } = useBuildInfo();
+  const info = useBuildInfo();
+  const { strategic, sector } = info;
+  const release = dataReleaseDate(info);
+  const parts = versionParts(info);
   const loc = useLocation();
   const place = placeOf(loc.pathname);
   const sq = strategicCarry(place === 'strategic' ? loc.search : searchOf(lastLocations().strategic));
@@ -41,21 +45,18 @@ export function Footer() {
               </>
             )}
           </p>
-          {(sector || strategic) && (
-            <p className="tabular">
-              {sector && <>Sector data: export {fmtDate(sector.created)}, build {sector.bundle_id.slice(0, 8)}. </>}
-              {strategic && (
-                <>
-                  Strategic data: export {fmtDate(strategic.created)}, build {strategic.bundle_id.slice(0, 8)}
-                  {strategic.git_commit ? `, git ${strategic.git_commit.slice(0, 10)}` : ''}.
-                </>
-              )}
+          {/* the version stamp (external review readiness, 2026-11-23): the data release, and the method and builds one click away */}
+          <details className="text-xs" data-testid="version-stamp">
+            <summary className="cursor-pointer tabular">
+              {release ? <>Data release {release}</> : <>Version</>}
+            </summary>
+            <p className="mt-1 tabular">
+              <VersionLine parts={parts} />
             </p>
-          )}
+          </details>
           <p>
             Sector pages show measured values in their sources&rsquo; own units and years. The strategic choices, partner rankings and Allied Industrial Base
-            results are analysis for exploring options, not forecasts. The Strategic Index priorities and the partner scores are shown at the baseline unless you change the
-            perspective on a country&rsquo;s profile.
+            results are analysis for exploring options, not forecasts.
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-x-5 gap-y-2 lg:justify-end">

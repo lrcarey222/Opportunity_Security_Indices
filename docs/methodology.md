@@ -1,5 +1,7 @@
 # Methodology
 
+> **Legacy:** the Opportunity Security Indices method (Energy Security, Economic Opportunity, Strategic Index; three-stage in places; section 10 is the retired allied network design). These indices are descriptive and historical, not the decision rule. The current methodology is in [strategic_position.md](strategic_position.md) (see [README.md](README.md)).
+
 This document states the method of the Opportunity Security Indices as the code implements it (the code is the specification; file references point to it). The README has category-by-category notes, run instructions and the changelog of the October 2026 corrections.
 
 Outputs:

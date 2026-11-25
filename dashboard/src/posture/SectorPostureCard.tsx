@@ -28,6 +28,7 @@ import { ChoiceLegend, TradeFreshness } from './PostureLegend.tsx';
 import { PostureScatter } from './PostureScatter.tsx';
 import { usePostureCore } from './store.ts';
 import { sectorPostureCols } from './tables.tsx';
+import { networkOf } from './partnerEligibility.ts';
 
 /** The URL key of the Sector home's node: ?pnode=Tech|Stage (stage and technology labels, not slugs). */
 export const SECTOR_NODE_KEY = 'pnode';
@@ -108,7 +109,7 @@ export function SectorPostureCard({
       />
     </>
   );
-  const csv = () => ({ name: `${tech} ${stage} strategic posture by economy`, text: postureCsvText(postureCsvRows(rows), POSTURE_CSV_COLS, postureProvenance(c)) });
+  const csv = () => ({ name: `${tech} ${stage} strategic posture by economy`, text: postureCsvText(postureCsvRows(rows, networkOf(c.countries)), POSTURE_CSV_COLS, postureProvenance(c)) });
   return (
     <div className={className} data-testid="sector-posture-hero">
       {problem && reportIgnored && dismissed !== raw && (
@@ -137,7 +138,7 @@ export function SectorPostureCard({
         table={() => (
           <TableView
             rows={rows}
-            cols={sectorPostureCols(c.meta)}
+            cols={sectorPostureCols(c.meta, networkOf(c.countries))}
             caption={`${tech} — ${stage}: strategic posture by economy`}
             rowKey={(r) => r.key}
             onRowClick={(r) => open(r.iso3)}

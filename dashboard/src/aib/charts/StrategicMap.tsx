@@ -51,7 +51,7 @@ export function mapPoints(nodes: readonly AibNode[]): MapPoint[] {
 }
 
 export function StrategicMap({
-  points, highSeverity, dividendRule, ariaLabel, onSelect, height = 380, where, xWords = 'Shock exposure', lostWord = 'lost',
+  points, highSeverity, dividendRule, ariaLabel, onSelect, height = 380, where, xWords = 'Supply exposed to the disruption', lostWord = 'lost',
 }: {
   points: MapPoint[];
   highSeverity: number | null;
@@ -61,7 +61,7 @@ export function StrategicMap({
   height?: number;
   /** where a node sits in words (default nodeWhere(): its OSI cells, "Electric Vehicles · Components") */
   where?: (n: MapPoint['node']) => string;
-  /** what the horizontal axis measures ("Shock exposure"; "Share shifted" under Managed Interdependence) */
+  /** what the horizontal axis measures ("Supply exposed to the disruption"; "Share shifted" under Managed Interdependence) */
   xWords?: string;
   /** the word for the bubble's supply ("lost"; "shifted") */
   lostWord?: string;
@@ -81,7 +81,7 @@ export function StrategicMap({
         marginLeft: 44,
         marginBottom: 40,
         x: { domain: [0, 1], label: `${xWords}: share of demand ${lostWord} →`, tickFormat: (d: number) => `${Math.round(d * 100)}%`, grid: true, ticks: small ? 4 : 10 },
-        y: { domain: [yMin, yMax], label: '↑ Coordination dividend (percentage points)', tickFormat: (d: number) => `${Math.round(d * 100)}`, grid: true },
+        y: { domain: [yMin, yMax], label: '↑ Extra supply recovered by acting together (pp)', tickFormat: (d: number) => `${Math.round(d * 100)}`, grid: true },
         r: { range: [2.5, small ? 14 : 20] },
         marks: [
           isNum(highSeverity) ? Plot.ruleX([highSeverity], { stroke: 'rgb(255 255 255 / 0.35)', strokeDasharray: '2,4' }) : null,
@@ -109,7 +109,7 @@ export function StrategicMap({
           title={`${where ? where(p.node) : nodeWhere(p.node)}: ${classInfo(clsOf(p)).label}`}
           lines={[
             `${xWords} ${fmtShare(p.x, 0)} (${fmtUsd(p.r)} ${lostWord})`,
-            `Coordination dividend ${fmtPp(p.y)}`,
+            `Extra supply from acting together (coordination dividend) ${fmtPp(p.y)}`,
             `Remaining gap after trade ${fmtShare(p.residual !== undefined ? p.residual : p.node.residual, 0)}`,
             p.node.compact ? `Compact ${p.node.compact} (click to open)` : 'No compact',
           ]}

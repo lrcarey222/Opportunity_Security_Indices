@@ -224,9 +224,15 @@ describe('Technology chain', () => {
     renderAt('/sector/batteries');
     expect(await h1('Batteries: the supply chain')).toBeTruthy();
     expect(screen.getByText('Where concentration sits along the chain')).toBeTruthy();
-    // six stage cards in chain order
-    const cards = screen.getAllByRole('heading', { level: 3 }).map((x) => x.textContent).filter((t) => ['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery'].includes(t ?? ''));
-    expect(cards).toEqual(['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery']);
+    // every stage once, in chain order: a card where comparable country-level evidence exists, the others
+    // named in one line under the grid (external review readiness 2026-11-23: no empty stage card)
+    const SIX = ['Extraction', 'Refining', 'Components', 'Assembly', 'Deployment', 'Recovery'];
+    const line = await screen.findByTestId('no-evidence-stages', {}, { timeout: 10_000 });
+    const named = within(line).getAllByRole('link').map((a) => a.textContent ?? '');
+    const cards = screen.getAllByRole('heading', { level: 3 }).map((x) => x.textContent ?? '').filter((t) => SIX.includes(t));
+    expect(cards).toEqual(SIX.filter((s) => cards.includes(s)));
+    expect(cards.filter((c) => named.includes(c))).toEqual([]);
+    expect(SIX.filter((s) => cards.includes(s) || named.includes(s))).toEqual(SIX);
     expect(screen.getByText('Minerals Batteries uses')).toBeTruthy();
     // the minerals: mined under Extraction, refined under Refining (design C3)
     expect(screen.getAllByText('Lithium mining').length).toBeGreaterThan(0);
@@ -325,7 +331,7 @@ describe('Explore', () => {
   it('default theme: chips, the filter row, key figures, map and ranking, table and notes', async () => {
     const r = renderAt('/sector/explore?c=USA');
     expect(await h1('Trade')).toBeTruthy();
-    expect(document.title).toMatch(/^Explore Trade \| Sectors \| /);
+    expect(document.title).toMatch(/^Advanced explorer: Trade \| Sectors \| /);
     const chips = screen.getByRole('navigation', { name: 'Themes' });
     expect(within(chips).getByRole('link', { name: 'Trade' }).getAttribute('aria-current')).toBe('page');
     expect(within(chips).getByRole('link', { name: 'Policy' }).getAttribute('href')).toBe('/sector/explore/policy?c=USA');

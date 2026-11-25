@@ -195,7 +195,8 @@ export function coverageChips(model: SectorModel, item: ItemInfo): Chip[] {
     const src = c.sources.length ? c.sources.map((s) => model.sources.get(s)?.short ?? s).join(', ') : '';
     const hasData = c.status === 'country' || c.status === 'region' || c.status === 'global';
     const icon = c.status === 'country' ? '✓' : c.status === 'region' ? '◐' : c.status === 'global' ? '○' : c.status === 'licensed' ? '' : '—';
-    const iconWords = c.status === 'country' ? 'country data' : c.status === 'region' ? 'region or entity data' : c.status === 'global' ? 'global value only' : c.status === 'licensed' ? 'licensed' : 'not available';
+    // "not applicable" (the measure does not apply to this stage) is not "not available" (no source has it)
+    const iconWords = c.status === 'country' ? 'country data' : c.status === 'region' ? 'region or entity data' : c.status === 'global' ? 'global value only' : c.status === 'licensed' ? 'licensed' : c.reason === 'not_applicable' ? 'not applicable' : 'not available';
     const text =
       c.status === 'country'
         ? `${src}${c.n_geo ? `, ${c.n_geo} economies` : ''}`

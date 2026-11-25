@@ -1,0 +1,109 @@
+"layer","data_release","group_type","group","n_cells","stable","sensitive","fragile","not_testable","fence_change","spec_kind","status","n_changed","n_fence_changed","note"
+"pipeline","pipeline-5882f35f044e","overall","all",14454,7546,643,836,5429,1426,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Batteries|Assembly",219,179,4,21,15,23,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Batteries|Components",219,186,2,15,16,15,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Batteries|Deployment",219,154,11,33,21,44,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Batteries|Extraction",219,128,64,12,15,76,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Batteries|Recovery",219,179,4,21,15,25,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Batteries|Refining",219,181,3,20,15,23,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Coal|Assembly",219,174,5,25,15,29,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Coal|Components",219,177,5,23,14,28,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Coal|Deployment",219,134,0,27,58,27,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Coal|Extraction",219,176,0,1,42,1,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Coal|Recovery",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Coal|Refining",219,136,67,0,16,67,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Grid|Assembly",219,126,4,51,38,53,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Grid|Components",219,179,4,22,14,25,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Grid|Deployment",219,149,11,38,21,49,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Grid|Extraction",219,203,0,0,16,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Grid|Recovery",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Grid|Refining",219,205,0,0,14,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Vehicles|Assembly",219,181,4,20,14,21,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Vehicles|Components",219,182,2,21,14,19,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Vehicles|Deployment",219,83,8,11,117,19,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Vehicles|Extraction",219,130,61,13,15,74,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Vehicles|Recovery",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Electric Vehicles|Refining",219,166,0,17,36,17,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Gas|Assembly",219,169,5,31,14,35,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Gas|Components",219,170,6,29,14,33,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Gas|Deployment",219,151,13,34,21,47,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Gas|Extraction",219,162,0,0,57,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Gas|Recovery",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Gas|Refining",219,185,1,0,33,1,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Geothermal|Assembly",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Geothermal|Components",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Geothermal|Deployment",219,140,1,24,54,25,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Geothermal|Extraction",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Geothermal|Recovery",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Geothermal|Refining",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Green Hydrogen|Assembly",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Green Hydrogen|Components",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Green Hydrogen|Deployment",219,50,31,9,129,40,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Green Hydrogen|Extraction",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Green Hydrogen|Recovery",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Green Hydrogen|Refining",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Nuclear|Assembly",219,181,4,20,14,21,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Nuclear|Components",219,171,4,27,17,27,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Nuclear|Deployment",219,144,0,21,54,21,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Nuclear|Extraction",219,169,34,0,16,34,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Nuclear|Recovery",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Nuclear|Refining",219,190,9,1,19,9,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Oil|Assembly",219,164,6,35,14,37,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Oil|Components",219,124,59,22,14,80,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Oil|Deployment",219,42,28,8,141,36,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Oil|Extraction",219,167,1,1,50,2,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Oil|Recovery",219,203,0,0,16,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Oil|Refining",219,120,41,2,56,43,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Solar|Assembly",219,99,82,24,14,104,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Solar|Components",219,156,28,21,14,45,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Solar|Deployment",219,123,10,31,55,41,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Solar|Extraction",219,203,1,0,15,1,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Solar|Recovery",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Solar|Refining",219,201,0,2,16,2,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Wind|Assembly",219,178,4,23,14,24,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Wind|Components",219,180,3,22,14,21,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Wind|Deployment",219,134,9,21,55,30,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Wind|Extraction",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Wind|Recovery",219,0,0,0,219,0,,,,,
+"pipeline","pipeline-5882f35f044e","tech_stage","Wind|Refining",219,162,4,37,16,32,,,,,
+"pipeline","pipeline-5882f35f044e","choice","secure",212,0,0,0,212,0,,,,,
+"pipeline","pipeline-5882f35f044e","choice","preserve",111,62,10,39,0,30,,,,,
+"pipeline","pipeline-5882f35f044e","choice","catch_up",351,255,26,70,0,70,,,,,
+"pipeline","pipeline-5882f35f044e","choice","partner",1475,1026,214,235,0,441,,,,,
+"pipeline","pipeline-5882f35f044e","choice","accelerate",514,290,122,102,0,224,,,,,
+"pipeline","pipeline-5882f35f044e","choice","watch",6574,5913,271,390,0,661,,,,,
+"pipeline","pipeline-5882f35f044e","choice","not_assessed",4887,0,0,0,4887,0,,,,,
+"pipeline","pipeline-5882f35f044e","choice","excluded",330,0,0,0,330,0,,,,,
+"pipeline","pipeline-5882f35f044e","neis_economy","USA",66,31,8,8,19,15,,,,,
+"pipeline","pipeline-5882f35f044e","neis_economy","JPN",66,28,7,9,22,11,,,,,
+"pipeline","pipeline-5882f35f044e","neis_economy","KOR",66,24,8,11,23,15,,,,,
+"pipeline","pipeline-5882f35f044e","neis_economy","AUS",66,39,4,4,19,7,,,,,
+"pipeline","pipeline-5882f35f044e","neis_economy","IND",66,32,8,7,19,12,,,,,
+"pipeline","pipeline-5882f35f044e","neis_economy","DEU",66,30,6,8,22,12,,,,,
+"pipeline","pipeline-5882f35f044e","spec","need_minus",,,,,,,"local","run",210,210,"Need threshold 0.62 (cap-aware)"
+"pipeline","pipeline-5882f35f044e","spec","need_plus",,,,,,,"local","run",235,235,"Need threshold 0.72 (cap-aware)"
+"pipeline","pipeline-5882f35f044e","spec","prize_minus",,,,,,,"local","run",30,25,"Prize threshold 0.55"
+"pipeline","pipeline-5882f35f044e","spec","prize_plus",,,,,,,"local","run",71,58,"Prize threshold 0.65"
+"pipeline","pipeline-5882f35f044e","spec","cp_minus",,,,,,,"local","run",18,0,"Position threshold 0.70"
+"pipeline","pipeline-5882f35f044e","spec","cp_plus",,,,,,,"local","run",27,2,"Position threshold 0.80"
+"pipeline","pipeline-5882f35f044e","spec","cp_strict",,,,,,,"local","run",8,2,"Position strictly above 0.75 (configured: at or above)"
+"pipeline","pipeline-5882f35f044e","spec","deployment_minus",,,,,,,"local","run",155,155,"Deployment-need threshold 0.55"
+"pipeline","pipeline-5882f35f044e","spec","deployment_plus",,,,,,,"local","run",102,102,"Deployment-need threshold 0.65"
+"pipeline","pipeline-5882f35f044e","spec","ly_min_signals_4",,,,,,,"structural","run",270,270,"Large-yard case on 4 commodity signals"
+"pipeline","pipeline-5882f35f044e","spec","ly_min_signals_6",,,,,,,"structural","run",160,160,"Large-yard case on 6 commodity signals"
+"pipeline","pipeline-5882f35f044e","spec","position_first_off",,,,,,,"structural","run",5,5,"Large-yard case decides before Competitive Position"
+"pipeline","pipeline-5882f35f044e","spec","siv_gate_033",,,,,,,"structural","run",36,24,"Market-only gate 0.33 (configured 0.5)"
+"pipeline","pipeline-5882f35f044e","spec","siv_unknown_half",,,,,,,"structural","run",111,89,"Unknown commons / leap-test attributes counted 0.5 (configured 0)"
+"pipeline","pipeline-5882f35f044e","spec","need_floor_005",,,,,,,"structural","run",9,9,"Need score floor 0.05 (configured 0.1)"
+"pipeline","pipeline-5882f35f044e","spec","prize_065",,,,,,,"structural","run",71,58,"gives the same choices as the local spec prize_plus: it cannot make a cell sensitive on its own"
+"pipeline","pipeline-5882f35f044e","spec","dn_min_families_2",,,,,,,"structural","run",137,137,"Accelerate requires at least 2 deployment-need families"
+"pipeline","pipeline-5882f35f044e","spec","need_060",,,,,,,"structural","run",292,292,"Need threshold 0.60 (cap-aware: uncapped percentile and cap rule)"
+"pipeline","pipeline-5882f35f044e","spec","need_060_naive",,,,,,,"diagnostic","run",308,308,"Need threshold 0.60 over the stored capped need (the engine sensitivity's reading; artifact check, never classifies)"
+"pipeline","pipeline-5882f35f044e","reproduction","choice_rule_rerun",14124,,,,,,,"reproduced",0,,
+"pipeline","pipeline-5882f35f044e","reproduction","choice_rule_rerun_stored_need",14124,,,,,,,"reproduced",0,,
+"pipeline","pipeline-5882f35f044e","reproduction","need_cap_aware",7554,,,,,,,"reproduced",0,,
+"pipeline","pipeline-5882f35f044e","reproduction","need_cap_aware_060_vs_engine",7554,,,,,,,"reproduced",0,,
+"pipeline","pipeline-5882f35f044e","reproduction","strategic_industrial_value",12045,,,,,,,"reproduced",0,,
+"pipeline","pipeline-5882f35f044e","reproduction","siv_cap",5475,,,,,,,"reproduced",0,,
+"pipeline","pipeline-5882f35f044e","reproduction","large_yard_case",10293,,,,,,,"reproduced",0,,
+"pipeline","pipeline-5882f35f044e","diagnostic","need_cap_artifact_at_060",,,,,,,,"artifact_present",16,,"cells the engine's own sensitivity flips at need 0.60 only because the capped need is stored as need - band - 0.01; the cap-aware reading keeps them: ARG|Nuclear|Refining; CAN|Nuclear|Extraction; COL|Electric Vehicles|Refining; CUB|Electric Vehicles|Refining; GRC|Nuclear|Refining; ISR|Nuclear|Refining; ITA|Nuclear|Refining; KAZ|Nuclear|Extraction; LTU|Nuclear|Refining; NAM|Nuclear|Extraction; NOR|Nuclear|Refining; SGP|Nuclear|Refining; CHE|Nuclear|Refining; TZA|Nuclear|Refining; THA|Nuclear|Refining; URY|Electric Vehicles|Refining"

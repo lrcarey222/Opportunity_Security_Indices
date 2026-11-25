@@ -1,6 +1,7 @@
 // View 8: Data (spec_react.md 8.6). Download the current scenario (a zip of CSVs built in the
 // browser, or one table), share or reload a scenario (link, parameter file), the export's validation
-// and the worker's self-check, sources and build information.
+// and the worker's self-check, sources and build information (the shared data-release stamp first, then the
+// security and opportunity scores build; 2026-11-23).
 
 import { useMemo, useRef, useState } from 'react';
 import { useTitle } from '../../App.tsx';
@@ -12,6 +13,8 @@ import type { Table } from '../../engine/types.ts';
 import { tableToCsv, withBom } from '../../lib/csv.ts';
 import { downloadBlob, downloadText } from '../../lib/download.ts';
 import { DASH, fmtBytes, fmtDate, fmtMs, isNum } from '../../lib/format.ts';
+import { useBuildInfo } from '../../shell/buildInfo.ts';
+import { releaseRows, useReleaseManifests } from '../../shell/ReleaseStamp.tsx';
 import { useApp, useEngine, useScenario } from '../../state/EngineProvider.tsx';
 import { toSpec, writeSearch, VIEW_DEFAULTS } from '../../state/url.ts';
 import { DIAL_SPECS } from '../../components/DialPanel.tsx';
@@ -37,6 +40,8 @@ export default function DataView() {
   useTitle('Data');
   const app = useApp();
   const { client, state } = useEngine();
+  const info = useBuildInfo();
+  useReleaseManifests();
   const { scenario, isBaseline, setScenario, key } = useScenario();
   const [one, setOne] = useState('strategic_index');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
@@ -282,7 +287,12 @@ export default function DataView() {
         <div className="grid gap-6 2xl:grid-cols-2">
           <section className="card p-5">
             <h2 className="rule-neis-sm text-base font-medium text-paper lg:text-lg">Build information</h2>
+            {/* the same stamp as the footer and the Methods page (shell/ReleaseStamp.tsx), then the security and opportunity scores build */}
             <div className="mt-3">
+              <KeyValue rows={releaseRows(info)} />
+            </div>
+            <h3 className="mt-5 text-sm font-medium text-paper">Security and opportunity scores build (descriptive, not the decision rule)</h3>
+            <div className="mt-2">
               <KeyValue
                 rows={[
                   ['Data build', m.bundle_id],

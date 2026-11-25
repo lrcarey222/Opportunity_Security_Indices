@@ -1,6 +1,9 @@
-// What each module's data build is (spec_sector.md 2.5): a tiny module-level store both modules
-// publish into once their manifest is loaded (setStrategicBuild from StrategicLayout, setSectorBuild
-// from the Sector data provider or Home's idle prefetch). The footer reads it; it never forces a load.
+// What each module's data build is (spec_sector.md 2.5): a tiny module-level store the modules publish
+// into once their manifest is loaded (setStrategicBuild from StrategicLayout, setSectorBuild from the Sector
+// data provider or Home's idle prefetch; setPostureBuild, setCountryBuild and setAibBuild from their stores,
+// docs/QC_SYSTEM_DESIGN.md 3.1; setMemosBuild for a memo manifest, which main does not load yet). The footer
+// reads it, and the review system computes the page's data-release ID from it (review/appInfo.ts); it never
+// forces a load.
 
 import { useSyncExternalStore } from 'react';
 
@@ -14,12 +17,29 @@ export interface StrategicBuild extends BuildStamp {
   paper: { title: string | null; url: string | null } | null;
 }
 
+/** A bundle stamped by export time and (where the manifest has one) the pipeline's git commit. */
+export interface CreatedStamp {
+  created: string | null;
+  git_commit: string | null;
+}
+
 export interface BuildInfo {
   strategic: StrategicBuild | null;
   sector: BuildStamp | null;
+  /** data/posture/manifest.json */
+  posture: CreatedStamp | null;
+  /** data/country/manifest.json */
+  country: CreatedStamp | null;
+  /** data/aib/manifest.json: its export time and (since PR #370) the pipeline's git commit. `git_commit` is
+   *  optional so older callers that build the shape by hand stay valid; setAibBuild always records it. */
+  aib: { created: string | null; git_commit?: string | null } | null;
+  /** sha256 of the partnership memos manifest text (null until a memo manifest is loaded) */
+  memos: { manifest_sha256: string | null } | null;
 }
 
-let state: BuildInfo = { strategic: null, sector: null };
+const EMPTY: BuildInfo = { strategic: null, sector: null, posture: null, country: null, aib: null, memos: null };
+
+let state: BuildInfo = EMPTY;
 const listeners = new Set<() => void>();
 
 function emit(next: BuildInfo) {
@@ -43,9 +63,47 @@ export function setSectorBuild(m: { bundle_id: string; created: string; git_comm
   emit({ ...state, sector: next });
 }
 
-/** Forget both stamps (tests). */
+const str = (x: unknown): string | null => (typeof x === 'string' && x.trim() ? x : null);
+
+function createdStamp(m: unknown): CreatedStamp {
+  const o = (typeof m === 'object' && m !== null ? m : {}) as { created?: unknown; git_commit?: unknown };
+  return { created: str(o.created), git_commit: str(o.git_commit) };
+}
+
+/** Publish the Posture manifest's stamp (structural: reads `created` and, when present, `git_commit`). */
+export function setPostureBuild(m: unknown): void {
+  const next = createdStamp(m);
+  if (state.posture && state.posture.created === next.created && state.posture.git_commit === next.git_commit) return;
+  emit({ ...state, posture: next });
+}
+
+/** Publish the Country manifest's stamp. */
+export function setCountryBuild(m: unknown): void {
+  const next = createdStamp(m);
+  if (state.country && state.country.created === next.created && state.country.git_commit === next.git_commit) return;
+  emit({ ...state, country: next });
+}
+
+/** Publish the AIB (Sectoral Compacts) manifest's stamp: its export time and git commit. */
+export function setAibBuild(m: unknown): void {
+  const next = createdStamp(m);
+  if (state.aib && state.aib.created === next.created && (state.aib.git_commit ?? null) === next.git_commit) return;
+  emit({ ...state, aib: next });
+}
+
+/** Publish the partnership memos manifest's hash (sha256 hex of its text; null when it could not be read). */
+export function setMemosBuild(manifestSha256: string | null): void {
+  const v = str(manifestSha256);
+  if (state.memos && state.memos.manifest_sha256 === v) return;
+  emit({ ...state, memos: { manifest_sha256: v } });
+}
+
+/** The current stamps, outside React (the review system's submission envelope). */
+export const getBuildInfo = (): BuildInfo => state;
+
+/** Forget every stamp (tests). */
 export function resetBuildInfo(): void {
-  emit({ strategic: null, sector: null });
+  emit(EMPTY);
 }
 
 const subscribe = (l: () => void) => {

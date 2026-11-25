@@ -20,12 +20,14 @@ import { diversifyTotals } from '../derive/diversify.ts';
 import { compactTitle, fmtUsd } from '../derive/format.ts';
 import { overviewRows } from '../derive/scenarioPages.ts';
 import { nodeScenario } from '../derive/scenarios.ts';
+import { coordinationBottomLine } from '../derive/bottomLine.ts';
 import { resetLastCompact } from '../nav.ts';
 import { fixtureSource, readDoc, readScenarioDoc, stripScenarios, SYNTHETIC_DIR, type FixtureSourceOpts } from './fixture.ts';
 import { setPostureStore } from '../../posture/store.ts';
 import { fixtureStore } from '../../posture/__tests__/fixture.ts';
 import { AIB_CLASS_HEADING, AIB_SIDES, MANAGED_INTERDEPENDENCE, MODULE_QUESTION, SCENARIO_DEFINITION, SCENARIO_SECTION_TITLE } from '../../content/vocabulary.ts';
 import { MAP_CARD_TITLE } from '../views/CompactsIndexView.tsx';
+import { BOTTOM_LINE_TITLE } from '../views/OverviewBottomLine.tsx';
 import { COALITION_TITLE, ROLES_TITLE } from '../views/compact/OverviewSections.tsx';
 
 const restore: (() => void)[] = [];
@@ -99,13 +101,44 @@ const titleOf = (c: AibDoc['compacts'][number], d: AibDoc = doc) => compactTitle
 const names = doc.countries as Record<string, string>;
 const three = overviewRows(doc.nodes, doc.meta);
 
+describe('the Overview opens with its bottom line and the compare control', () => {
+  it('Decoupling: three short lists from the scenario rows, each step linked, the low-intervention count of the class tile; compare opens the pair view', async () => {
+    renderAt('/aib?scn=decoupling');
+    expect(await h1('Allied Industrial Base')).toBeTruthy();
+    const bl = screen.getByTestId('overview-bottom-line');
+    // it comes before the division Section
+    expect(bl.compareDocumentPosition(screen.getByRole('region', { name: MODULE_QUESTION.coverage })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const want = coordinationBottomLine(doc.nodes.map((n) => nodeScenario(n, 'decoupling')))!;
+    const ids = (id: string) => [...within(bl).getByTestId(id).querySelectorAll('li[data-node]')].map((li) => li.getAttribute('data-node'));
+    expect(ids('bl-dividend')).toEqual(want.dividend.map((r) => r.node.id));
+    expect(ids('bl-trade')).toEqual(want.trade.map((r) => r.node.id));
+    expect(ids('bl-build')).toEqual(want.build.map((r) => r.node.id));
+    for (const li of bl.querySelectorAll('li[data-node]')) expect(li.querySelector('a')?.getAttribute('href')).toMatch(/^\/compacts\/.+#nodes$|^\/compacts\/workstreams/);
+    const nLow = doc.nodes.filter((n) => n.cls === 'LOW INTERVENTION').length;
+    expect(within(bl).getByTestId('bl-low').textContent).toMatch(new RegExp(`^${nLow} steps? of ${doc.nodes.length} needs? low intervention`));
+    // compare two countries: two pickers, then a link to the pair view
+    const cmp = screen.getByTestId('compare-two');
+    expect(within(cmp).getByTestId('compare-hint')).toBeTruthy();
+    const [first, second] = within(cmp).getAllByRole('combobox');
+    fireEvent.focus(first);
+    fireEvent.mouseDown(within(cmp).getAllByRole('option')[0]);
+    const a = within(cmp).getAllByRole('combobox')[0] as HTMLInputElement;
+    fireEvent.focus(second);
+    fireEvent.mouseDown(within(cmp).getAllByRole('option')[1]);
+    const go = await within(cmp).findByTestId('compare-go');
+    expect(go.getAttribute('href')).toMatch(/^\/aib\/partnerships\?country=[A-Z]{3}&partner=[A-Z]{3}&scn=decoupling$/);
+    expect(a.value).not.toBe('');
+    noAcronyms();
+  });
+});
+
 describe('the Overview leads with the three scenarios', () => {
   it('Decoupling: the three side by side in order, Decoupling current, values in text and a table twin; the rest as before', async () => {
     renderAt('/aib?scn=decoupling');
     expect(await h1('Allied Industrial Base')).toBeTruthy();
     const region = screen.getByRole('region', { name: SCENARIO_SECTION_TITLE });
     // it comes first after "Who can cover each supply-chain step?" (2026-10-29, design L4: the division Section opens the page)
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent).slice(0, 2)).toEqual([MODULE_QUESTION.coverage, SCENARIO_SECTION_TITLE]);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent).slice(0, 3)).toEqual([BOTTOM_LINE_TITLE, MODULE_QUESTION.coverage, SCENARIO_SECTION_TITLE]);
     expect(within(region).getByTestId('overview-scenario-words').textContent).toMatch(new RegExp(`^Today's network${SCENARIO_DEFINITION.baseline.replace(/\./g, '\\.')}Managed Interdependence`));
     expect(within(region).getByTestId('overview-mi-question').textContent).toBe(MANAGED_INTERDEPENDENCE.question);
     const cov = within(region).getByRole('figure', { name: 'How much allied demand can be met under each scenario' });
@@ -169,7 +202,7 @@ describe('the Overview leads with the three scenarios', () => {
       expect(within(screen.getByTestId('overview-run')).getByRole('link', { name: 'who can cover each supply-chain step' }).getAttribute('href')).toBe('#division');
       expect(document.body.textContent).not.toMatch(/chart (above|below)|Upstream|Midstream|Downstream|three-stage/);
       // the partnerships card names the partner scores without three stages
-      expect(document.body.textContent).toContain('the best-placed partners by technology and stage (Friendshore, Partnership Opportunity, Development Potential)');
+      expect(document.body.textContent).toContain('partner scores by technology and stage: the best export markets, the best partners to build with, and development potential');
       noAcronyms();
     } finally {
       setPostureStore(null);
@@ -336,7 +369,7 @@ describe("a compact's page follows the toggle", () => {
     expect(await h1(titleOf(c))).toBeTruthy();
     // (the card is drawn anew once the scenario's file is loaded: query it again)
     const coalitionCard = () => screen.getByRole('region', { name: COALITION_TITLE });
-    await waitFor(() => expect(within(coalitionCard()).getByText(new RegExp(`^Exact minimum coalition: ${m.coalition!.members.length} countries\\.`))).toBeTruthy(), { timeout: 10_000 });
+    await waitFor(() => expect(within(coalitionCard()).getByText(new RegExp(`^Smallest group that meets the target \\(exact minimum coalition\\): ${m.coalition!.members.length} countries\\.`))).toBeTruthy(), { timeout: 10_000 });
     expect(coalitionCard().querySelector('[data-scenario-tag="managed"]')).toBeTruthy();
     // the roles of the scenario's coalition; the Country profile links carry the choice
     const roles = screen.getByRole('region', { name: ROLES_TITLE });

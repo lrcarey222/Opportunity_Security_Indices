@@ -1,7 +1,7 @@
 # Shared vocabulary: rules for page copy
 
 The single source is `src/content/vocabulary.ts` (NEIS copy refresh, 2026-10-30; editorial guide
-`NEIS_dashboard_copy_redraft.txt`). Import the constant; do not retype the sentence. If a page needs a new
+`NEIS_dashboard_copy_redraft.txt`, which is not in the repository: this file is the guide in force). Import the constant; do not retype the sentence. If a page needs a new
 shared phrase, add it there first.
 
 ## Rules
@@ -45,6 +45,11 @@ shared phrase, add it there first.
     **Security and opportunity scores** (`SCORES_VIEW_NAME`): a secondary, descriptive view beside the strategic
     choices (`LEGACY_OSI_NOTE`), whose quadrant names never appear on strategy pages. NEIS appears only as the
     organization's name. A paper may be cited as a source by its full title.
+12. **Plain meaning first, technical term second** (external review readiness, 2026-11-23). Where reviewers meet
+    the technical term (the review cases, the methods), keep it in brackets after the plain words:
+    "Remaining supply gap", "Extra supply recovered by acting together (coordination dividend)", "Secure what is
+    critical (high fence)" (`AIB_MEASURE_LABEL`, `FENCE_TITLE`). Short labels, no explanatory paragraph: put the
+    detail in the glossary entry and its `InfoTip`.
 
 ## Terms (technical -> visible copy)
 
@@ -60,7 +65,10 @@ shared phrase, add it there first.
 | demand scope | countries whose supply needs to be replaced |
 | investment host; marginal investment | country that could add capacity; where new capacity would help most |
 | frontier | trade-off between resilience and concentration |
-| coordination dividend | extra supply allies can recover by acting together |
+| coordination dividend | extra supply allies can recover by acting together; as a label "Extra supply recovered by acting together (coordination dividend)" |
+| High / Medium / Low fence (section titles) | Secure what is critical (high fence) / Build, preserve, partner and deploy (medium fence) / Keep open (low fence) |
+| allied set; coalition plus treat-as-allied | trusted network ("Trusted network: N economies"; `posture/trustedNetwork.ts`) |
+| bundle stamp; release id | data release (the date) and version (method, app and bundle builds; `shell/ReleaseStamp.tsx`) |
 | minimum coalition | smallest group of partners that meets the resilience target |
 | coalition tier | role in the compact |
 | candidate compact; compact unnecessary | potential Sectoral Compact; no compact needed |

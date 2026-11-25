@@ -30,7 +30,11 @@
 //                           page that shows the scenario; never on the landing)                <= 250 kB
 //   Compacts data           public/data/aib/* (manifest + the compacts document + the scenario
 //                           files)                                                             <= 2 MB
-//   All data                Strategic + Sector + Country + Compacts                            <= 52 MB
+//   Review case view        (2026-11-20, /review/case/:id; reviewers only) entry + ReviewLayout + the case
+//                           review view + data/review/manifest.json + the largest cases file   <= 320 kB
+//   Review data             public/data/review/** (manifest, cases, method cards, framework
+//                           scenarios, robustness, QC summary, synthetic demo fixtures)         <= 80 kB
+//   All data                Strategic + Sector + Country + Compacts + Posture + Review          <= 57 MB
 //   Agreements page         /aib/agreements (2026-11-06): entry + AibLayout + the agreements view + world
 //                           atlas + compacts manifest + document (the layout's) + country manifest (the map's
 //                           join) + agreements manifest + the global file; the economy view counts the largest
@@ -96,6 +100,12 @@ const LIMITS = {
   // first five country strategy briefs took it to 45.22 MB (2026-11-04; Country 19.87 MB): measured + ~15%;
   // 57 MB once the next four briefs took it to 49.43 MB (2026-11-05; Country 24.08 MB).
   allData: 57 * MB,
+  // the expert review pages (2026-11-20; docs/QC_SYSTEM_DESIGN.md 5): lazy route chunks that ordinary visitors
+  // never load. Case view 270.6 kB measured (199.1 kB code), review data 65.7 kB (7 files), 2026-11-20 build: measured + ~15% (design E4).
+  // Review data 125 kB since 2026-11-21 (UX v2): the neutral case briefs and reasoning reveals took the cases file
+  // from 28 kB to 66 kB gzipped (23 cases, now written as compact JSON) and the data to 110 kB: measured + ~15%.
+  reviewCase: 320 * KB,
+  reviewData: 125 * KB,
   // the posture bundle (scripts/91, schema 2, 2026-10-29): manifest + core + 214 drawer documents measured
   // 1.87 MB on the wire; the measured size + ~15% (design E4). 2.4 MB since 2026-10-31: the rebuilt bundle
   // (Atlas 2024, the new basket and method) carries the Yards & Fences drawer evidence and measured 2.28 MB;
@@ -228,6 +238,9 @@ const keys = {
   // the strategic layer (2026-10-20): /compacts lands on the strategic compacts; /compacts/s/:sid
   aibStrategic: routeKey('the strategic compacts view', /src\/aib\/views\/StrategicCompactsView\.tsx$/, 'StrategicCompactsView', false),
   aibStrategicCompact: routeKey('the strategic compact view', /src\/aib\/views\/StrategicCompactView\.tsx$/, 'StrategicCompactView', false),
+  // the expert review pages (src/review/); optional, so a build without them still checks the others
+  reviewLayout: routeKey('ReviewLayout', /src\/review\/ReviewLayout\.tsx$/, 'ReviewLayout', false),
+  reviewCase: routeKey('the case review view', /src\/review\/views\/CaseReviewView\.tsx$/, 'CaseReviewView', false),
   aibCompact: routeKey('the compact view', /src\/aib\/views\/CompactView\.tsx$/, 'CompactView', false),
   aibAbout: routeKey('the compacts about view', /src\/aib\/views\/AibAboutView\.tsx$/, 'AibAboutView', false),
   // the partnership agreements page (/aib/agreements, 2026-11-06); optional in a build without it
@@ -503,7 +516,36 @@ if (agreementsManifest) {
   figure('Agreements data', [['manifest + global + economy files', agreementsData]], LIMITS.agreementsData, 'not counted in All data');
 }
 if (postureManifest) figure('Posture data', [['manifest + core', postureManifestSize + postureCoreSize], [`${postureDetails.length} drawer documents`, postureData - postureManifestSize - postureCoreSize]], LIMITS.postureData);
-figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData], ['Compacts', aibData], ['Posture', postureData]], LIMITS.allData);
+// the expert review data (scripts/review/build-review-data.mjs): JSON, gzipped on the wire; every file under
+// public/data/review counts. The case view loads the manifest and one campaign's cases file. BUDGET_REVIEW_DIR: another set.
+const reviewDir = process.env.BUDGET_REVIEW_DIR ? resolve(root, process.env.BUDGET_REVIEW_DIR) : join(dataDir, 'review');
+const reviewManifest = readManifest(join(reviewDir, 'manifest.json'));
+const reviewFiles = reviewManifest ? walkFiles(reviewDir) : [];
+const reviewData = reviewFiles.reduce((s, f) => s + gz(f), 0);
+const reviewCasesMax = maxOf(
+  (reviewManifest?.campaigns ?? []).map((c) => {
+    const file = c.cases_file ? join(reviewDir, c.cases_file) : null;
+    if (!file || !existsSync(file)) {
+      fail(`review cases file ${c.cases_file ?? '(none)'} is listed in its manifest but missing`);
+      return 0;
+    }
+    return gz(file);
+  }),
+);
+if (keys.reviewCase) {
+  figure(
+    'Review case view',
+    [
+      ['code', codeSize(closure([entryKey, keys.reviewLayout, keys.reviewCase].filter(Boolean)))],
+      ['font', fontSize],
+      ['review manifest + largest cases file', (reviewManifest ? gz(join(reviewDir, 'manifest.json')) : 0) + reviewCasesMax],
+    ],
+    LIMITS.reviewCase,
+    reviewManifest ? 'lazy, reviewers only' : 'review data absent (scripts/review/build-review-data.mjs): code only',
+  );
+}
+if (reviewManifest) figure('Review data', [[`${reviewFiles.length} files`, reviewData]], LIMITS.reviewData);
+figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData], ['Compacts', aibData], ['Posture', postureData], ['Review', reviewData]], LIMITS.allData);
 
 // ---- report ------------------------------------------------------------------------------------------
 console.log('Data chunks');

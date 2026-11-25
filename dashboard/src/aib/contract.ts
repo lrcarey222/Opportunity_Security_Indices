@@ -1352,7 +1352,11 @@ export interface AibStrategicCompact {
   alsoTouching: string[];
   /** the core allied countries (the same in every scenario: structural) */
   core: AibStrategicCoreEntry[];
-  /** the leading non-allied suppliers */
+  /**
+   * the leading non-allied suppliers with a compact role; empty since 2026-11-23 (config roles: non_allied_roles
+   * false: no non-allied economy holds a role), when the leading suppliers outside the alliance are read from
+   * `division` (leadingOutsideSuppliers())
+   */
   nonAllied: AibStrategicCoreEntry[];
   /** every listed scenario (a compact persists in each) */
   scenarios: Partial<Record<AibStrategicScenarioId, AibStrategicCompactScenario>>;
@@ -1405,7 +1409,10 @@ export interface AibStrategicItems {
   capacityUsdBn: number | null;
 }
 
-/** A country's Strategic AIB Roles: allied economies on all seven, major non-allied suppliers on the three supply roles. */
+/**
+ * A country's Strategic AIB Roles: allied economies on all seven. Major non-allied suppliers were listed on the three
+ * supply roles until 2026-11-23; since then (config roles: non_allied_roles false) only allied economies are listed.
+ */
 export interface AibStrategicCountry {
   iso3: string;
   allied: boolean;

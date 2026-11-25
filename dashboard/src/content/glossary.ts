@@ -14,6 +14,7 @@
 // or from the values a module's manifest provides (GlossaryVarsProvider in components/glossaryVars.tsx).
 
 import { AIB_CLASS_DEFINITION, AIB_EXPLAINER, AIB_MEASURE_DEFINITION, CHOICE_DEFINITION, COMPACT, MANAGED_INTERDEPENDENCE, YARD_DEFINITION } from './vocabulary.ts';
+import { TRUSTED_NETWORK_METHOD } from '../posture/trustedNetwork.ts';
 
 /** Where a term is used: the Sector, Country and Allied Industrial Base pages, and 'strategic' (the Methods page and the Legacy OSI views). */
 export type GlossaryModule = 'sector' | 'strategic' | 'country' | 'aib';
@@ -264,7 +265,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     id: 'hhi',
     term: 'Concentration (HHI)',
     abbr: 'HHI',
-    short: "How concentrated a market is: square each supplier's share and add them up. 1 means one supplier has everything; 0.25 is like four equal suppliers; lower is more spread out.",
+    short: "How concentrated a market is, and so how exposed buyers are if one supplier stops: square each supplier's share and add them up. 1 means a single supplier; 0.25 is like four equal suppliers.",
     more: 'The Herfindahl-Hirschman Index. Its inverse is the effective number of suppliers. Where a source leaves part of the market unattributed, the value shown is a lower bound ("at least").',
     modules: ALL,
     related: ['effective_n'],
@@ -842,14 +843,16 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'coordination_dividend',
     term: 'Coordination dividend',
-    short: AIB_MEASURE_DEFINITION.coordinationDividend,
+    short: `${AIB_MEASURE_DEFINITION.coordinationDividend} Where it is large, coordinating trade can solve much of the problem without new capacity.`,
+    more: 'Shown as the extra supply recovered by acting together, in percentage points of the demand at stake.',
     modules: AIB,
     related: ['allied_coverage', 'aib_treatment'],
   },
   {
     id: 'remaining_gap',
     term: 'Remaining supply gap',
-    short: AIB_MEASURE_DEFINITION.remainingGap,
+    short: `${AIB_MEASURE_DEFINITION.remainingGap} The larger it is, the stronger the case for building capacity.`,
+    more: 'Also called the residual gap.',
     modules: AIB,
     related: ['allied_coverage', 'scaling_host', 'development_host'],
   },
@@ -963,6 +966,39 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     more: 'A mention is shown, marked "mentioned in text", but never counts as established: it cannot make a partnership operational, and a technology that is only mentioned stays an agreement gap. A keyword in the title establishes a sector, never an instrument.',
     modules: AIB,
     related: ['partnership_depth', 'agreement_gap', 'delivery_evidence'],
+  },
+  // ---- terms reviewers meet everywhere (external review readiness, 2026-11-23) --------------------------------
+  {
+    id: 'supply_chain_step',
+    term: 'Supply-chain step',
+    short: 'One technology at one supply-chain stage, for example Batteries at Refining: the unit every strategic choice and every Allied Industrial Base result is given for. Called a node in the data.',
+    more: 'The security and opportunity scores call the same unit a sector.',
+    modules: EVERY,
+    related: ['stage', 'sector'],
+  },
+  {
+    id: 'trusted_network',
+    term: 'Trusted network',
+    short: "The economies the Explorer treats as eligible partners for the Allied Industrial Base strategy: the allied coalition's core members and partners, plus the economies the allied analysis treats as allied.",
+    more: TRUSTED_NETWORK_METHOD,
+    modules: AIB,
+    related: ['coalition', 'allied_industrial_base'],
+  },
+  {
+    id: 'supply_exposed',
+    term: 'Supply exposed to the disruption',
+    short: 'The share of demand at a supply-chain step that loses its supplier under the stress test. It sizes the problem: the larger it is, the more supply allies have to replace.',
+    more: "Also called shock exposure. It is measured against the demand of the countries whose supply needs to be replaced, before any response.",
+    modules: AIB,
+    related: ['aib_scenario', 'coordination_dividend', 'remaining_gap'],
+  },
+  {
+    id: 'data_release',
+    term: 'Data release',
+    short: 'The set of data a page was built from, dated by its newest strategic-choice or Allied Industrial Base export. Quote it with a result so others can check the same numbers.',
+    more: "The footer shows it; its version details add the method version, the app build and each data bundle's commit. The Methods and Data pages list every bundle.",
+    modules: EVERY,
+    related: ['supply_chain_step'],
   },
 ];
 

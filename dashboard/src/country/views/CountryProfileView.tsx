@@ -38,6 +38,7 @@ import { countryStore } from '../data/store.ts';
 import { SectionNav } from '../chrome/SectionNav.tsx';
 import { defaultCell } from '../derive/model.ts';
 import { postureSectorLink, sectorCountryLink } from '../derive/links.ts';
+import { TREAT_AS_ALLIED } from '../../posture/trustedNetwork.ts';
 import { hashPlan, LEGACY_FOLD } from '../derive/strategyPage.ts';
 import { cap, proseName } from '../derive/text.ts';
 import { rememberCountry } from '../nav.ts';
@@ -159,7 +160,17 @@ function Profile({ iso3 }: { iso3: string }) {
   const aibDoc = aibD.data;
   const aib = useMemo(() => ({ doc: aibDoc, status: aibStatus, names: aibDoc?.countries ?? {} }), [aibDoc, aibStatus]);
   const cell = sheet ? (state.cell ?? defaultCell(sheet)) : null;
-  const partner = sheet ? (state.partner ?? sheet.partners.psi_order[0] ?? sheet.partners.rows[0]?.iso3 ?? null) : null;
+  // default partner: the first in priority order that is in the trusted network (never China or Russia by default)
+  const partner = sheet
+    ? (state.partner ??
+      sheet.partners.psi_order.find((iso) => {
+        const t = sheet.partners.rows.find((r) => r.iso3 === iso)?.tier;
+        return t === 'core' || t === 'partner' || TREAT_AS_ALLIED.includes(iso);
+      }) ??
+      sheet.partners.psi_order[0] ??
+      sheet.partners.rows[0]?.iso3 ??
+      null)
+    : null;
   const sel = sheet ? cellOf(sheet, cell) : null;
   const needDrivers = !!sel && sel.drivers_in_sheet === false;
   const drv = useDriversDoc(entry, sheet, needDrivers);

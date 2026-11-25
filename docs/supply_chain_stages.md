@@ -5,8 +5,11 @@ Security and Partnership indices. Since 2026-10-26 the Energy Security and Econo
 theme tables, the Policy index and the Strategic Index are scored at six stages (scripts/10 and
 scripts/20); since 2026-10-27 so are the partner indices (scripts/15, 25), the coalition
 (scripts/13), the allied network design (scripts/30, code only: not rerun or recalibrated) and the
-AIB module (scripts/31-33). NIPO, the dashboard exports and the paper figures still read three
-stages and are the next step (see "Status" at the end).
+AIB module (scripts/31-33). Since 2026-10-28 the dashboard exports and the Explorer read six stages,
+and the decision framework (scripts/26, the posture bundle of scripts/91) and its NIPO layer
+(scripts/11) are six-stage. The legacy three-stage NIPO tables of scripts/10, the paper figures
+(`scripts/paper/`), the retired allied network design (scripts/30) and the separate Draw the Fence site
+still read three stages (see "Status" at the end; status checked 2026-11-23).
 
 | File | What it holds |
 |---|---|
@@ -396,6 +399,13 @@ Assembly, stays out of the index as before.
   endowment screen stops only economies with no recorded resource base at all.
 
 ## Status
+
+**Update 2026-11-23.** The lists below are the 2026-10-27/28 record. Since then the Allied Industrial Base
+views (`dashboard/src/aib`: `AIB_STAGES` is the six-stage list since 2026-10-28) and their synthetic
+fixtures moved too (the `aib_fx_six_stage()` test shim is gone), and NIPO by six-stage cell is built by
+`scripts/11_build_nipo_stage_policy.R` for Policy alignment. Still three-stage: the legacy NIPO tables of
+scripts/10 (not in any composite), the paper figures, the dormant allied network design and the Draw the
+Fence site (by decision).
 
 Moved to six stages on 2026-10-28 (branch feat/supply-chain-stages; design and handoffs of the
 dashboard migration, "six stages across the whole dashboard"):

@@ -8,6 +8,7 @@
 import { isProducingStage, stageDisplay, stageRank } from '../lib/stages.ts';
 import type { AibGap, Alignment, DivisionNode, PostureCell, PostureDetail, PostureThresholds, SecurityRationale, Verb } from './contract.ts';
 import type { DeploymentNeed, DetailPartner, NodeDetail } from './detail.ts';
+import { splitPartners, type Membership } from './partnerEligibility.ts';
 import {
   ALIGNMENT_ATTENTION, ALLIED_GAP_WORDS, DEPLOY_MODE_LABEL, GAP_ORDER, MODE_LABEL, PARTNER_GAP_REASON_ORDER, partnerGapReasonWords, RATIONALE_TAG, RATIONALE_WORDS, type NeedTag, VERB_LABEL,
   verbOf, watchReasonWords,
@@ -362,7 +363,12 @@ export interface AlliedRow {
   need: number | null;
   rationale: SecurityRationale | null;
   delivery: string | null;
+  /** the eligible trusted partners (trusted-network members, partnerEligibility.ts), in the engine's order */
   partners: AlliedPartner[];
+  /** the engine's other partners: major suppliers outside the trusted network, shown as suppliers, never as partners */
+  outside: AlliedPartner[];
+  /** the engine named partners but none is in the trusted network (known only once the detail is in) */
+  noEligible: boolean;
   /** covered: the allied division has a credible trusted holder and backups; gap: it has a gap; not_mapped: no division node */
   status: AlliedStatus;
   /** the gap logic in words (spec XVI.1), worst first */
@@ -403,9 +409,11 @@ function gapWords(node: DivisionNode | undefined): string[] {
  * The Allied Strategy rows (country need -> recommended partners -> why -> AIB status): every Partner node,
  * and every Secure node whose delivery leans on trusted foreign capacity (allied or mixed, from the detail
  * document). The AIB status is the allied division's: covered when its node has no gap, gap otherwise; a
- * Partner node with the economy's partner gap says "no credible allied solution yet".
+ * Partner node with the economy's partner gap says "no credible allied solution yet". Partners are split by the
+ * trusted network (`net`, partnerEligibility.ts): members are the recommended partners, the others are listed
+ * as suppliers outside the network.
  */
-export function alliedRows(cells: readonly PostureCell[], detail: PostureDetail | null, division: readonly DivisionNode[], names: Record<string, string>): AlliedRow[] {
+export function alliedRows(cells: readonly PostureCell[], detail: PostureDetail | null, division: readonly DivisionNode[], names: Record<string, string>, net: Membership): AlliedRow[] {
   const d = detailByKey(detail);
   const div = new Map(division.map((n) => [`${n.tech}|${n.stage}`, n]));
   const rows: AlliedRow[] = [];
@@ -420,12 +428,17 @@ export function alliedRows(cells: readonly PostureCell[], detail: PostureDetail 
     // the economy's own gap reasons (R partner_gap_reasons) where the detail writes them, else the allied division's
     const own = (det?.partnerGapReasons ?? []).slice().sort((a, b) => reasonRank(a) - reasonRank(b));
     const gaps = own.length ? [...new Set(own.map(partnerGapReasonWords))] : gapWords(node);
-    const partners: AlliedPartner[] = (det?.partners ?? []).map((p) => ({ iso3: p.iso3, name: names[p.iso3] ?? p.iso3, why: partnerWhy(p) }));
-    if (!partners.length && c.partner1 && !noSolution) partners.push({ iso3: c.partner1, name: names[c.partner1] ?? c.partner1, why: [] });
+    const all: AlliedPartner[] = (det?.partners ?? []).map((p) => ({ iso3: p.iso3, name: names[p.iso3] ?? p.iso3, why: partnerWhy(p) }));
+    if (!all.length && c.partner1 && !noSolution) all.push({ iso3: c.partner1, name: names[c.partner1] ?? c.partner1, why: [] });
+    // only trusted-network members are recommended; the rest stay listed as suppliers outside the network
+    const split = splitPartners(all, net);
+    const partners = split.eligible;
+    const outside = split.outside.map((p) => ({ ...p, why: [] }));
+    const noEligible = !noSolution && !!det?.partners.length && !partners.length;
     const status: AlliedStatus = det?.aibStatus
       ? noSolution ? 'gap' : det.aibStatus
       : noSolution || (node && node.gap !== 'none') ? 'gap' : node ? 'covered' : 'not_mapped';
-    rows.push({ key, tech: c.tech, stage: c.stage, verb: v, need: c.need, rationale: c.rationale, delivery, partners, status, gaps, noSolution });
+    rows.push({ key, tech: c.tech, stage: c.stage, verb: v, need: c.need, rationale: c.rationale, delivery, partners, outside, noEligible, status, gaps, noSolution });
   }
   return rows.sort((a, b) => Number(a.verb === 'secure') - Number(b.verb === 'secure') || (b.need ?? -1) - (a.need ?? -1) || stageRank(a.stage) - stageRank(b.stage));
 }
@@ -442,5 +455,7 @@ export function alliedSentence(name: string, cells: readonly PostureCell[], rows
     : `None of ${owner} ${priority} priority ${priority === 1 ? 'node is' : 'nodes are'} a Partner choice`;
   const second = secure ? `${secure} Secure ${secure === 1 ? 'node also depends' : 'nodes also depend'} on trusted foreign capacity` : null;
   const third = gaps ? `${gaps} ${gaps === 1 ? 'has' : 'have'} no credible allied solution yet` : null;
-  return `${[first, second, third].filter(Boolean).join('; ')}.`;
+  const none = rows.filter((r) => r.noEligible).length;
+  const fourth = none ? `${none} ${none === 1 ? 'has' : 'have'} no eligible trusted partner identified` : null;
+  return `${[first, second, third, fourth].filter(Boolean).join('; ')}.`;
 }

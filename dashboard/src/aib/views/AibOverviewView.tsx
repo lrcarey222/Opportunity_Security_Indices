@@ -43,7 +43,9 @@ import { nodeScenario, scenarioCaveat, scenarioCsvFields, scenarioInfo, scenario
 import { cellsInFilter, nodeWhere } from '../derive/taxonomy.ts';
 import { compactHref, workstreamsHref } from '../nav.ts';
 import { COVERAGE_WORDS } from '../charts/ScenarioCompare.tsx';
+import { TrustedNetworkControl } from '../../posture/TrustedNetworkControl.tsx';
 import { csvWithRun, QuestionLede, Section } from './common.tsx';
+import { CompareTwoCountries, CoordinationBottomLine } from './OverviewBottomLine.tsx';
 import { BasisTag, QuestionCard } from './basis.tsx';
 
 export const AIB_EYEBROW = 'ALLIED INDUSTRIAL BASE';
@@ -222,7 +224,7 @@ function ThreeWay({ rows }: { rows: OverviewRow[] }) {
           />
         </div>
         <div>
-          <H sub="Coverage: what stays supplied, what existing relationships and coordinated trade recover, and what only new capacity can fill.">How much allied demand can be met</H>
+          <H sub="Share of allied demand that can be met: what stays supplied, what existing relationships and coordinated trade recover, and what only new capacity can fill.">How much allied demand can be met</H>
           <ScenarioCoverageCompare rows={rows} highlight={scenario} label="How much allied demand can be met under each scenario" meta={meta} legend={false} />
         </div>
         <div>
@@ -332,9 +334,12 @@ export default function AibOverviewView() {
             How the analysis works &rarr;
           </Link>
         </p>
+        <TrustedNetworkControl className="mt-3" />
+        <CompareTwoCountries />
       </PageHead>
 
       <div className="space-y-14">
+        <CoordinationBottomLine rows={rows} low={byCls.get('LOW INTERVENTION')?.nodes.length ?? 0} of={ranNodes} managed={mi} />
         <DivisionSection />
 
         {hasScenarios && three.length > 0 && (
@@ -441,7 +446,7 @@ export default function AibOverviewView() {
                 Where acting together recovers most
               </h3>
               <p className="mb-2 mt-1 text-sm text-paper-mute">
-                The extra share of allied demand that coordinated trade recovers over existing relationships{mi ? ', with the cap holding' : ''} (the coordination dividend).
+                Extra supply recovered by acting together (coordination dividend): the share of allied demand coordinated trade recovers over existing relationships{mi ? ', with the cap holding' : ''}.
               </p>
               <NodeList rows={dividends} value={(r) => fmtPp(r.dividend, 0)} label="Steps where coordination recovers most" />
             </section>
@@ -475,8 +480,8 @@ export default function AibOverviewView() {
               question={MODULE_QUESTION.partnerships}
               answer={
                 trade
-                  ? `${plural(trade.length, 'coordinated trade relationship')} across the compacts; countries that could add capacity at ${plural(hostNodes, 'supply-chain step')}; the best-placed partners by technology and stage (Friendshore, Partnership Opportunity, Development Potential).`
-                  : `Coordinated trade relationships across the compacts; countries that could add capacity at ${plural(hostNodes, 'supply-chain step')}; the best-placed partners by technology and stage (Friendshore, Partnership Opportunity, Development Potential).`
+                  ? `${plural(trade.length, 'coordinated trade relationship')} across the compacts; countries that could add capacity at ${plural(hostNodes, 'supply-chain step')}; partner scores by technology and stage: the best export markets, the best partners to build with, and development potential.`
+                  : `Coordinated trade relationships across the compacts; countries that could add capacity at ${plural(hostNodes, 'supply-chain step')}; partner scores by technology and stage: the best export markets, the best partners to build with, and development potential.`
               }
               to={href('/aib/partnerships')}
               cta="Partnerships"
@@ -497,8 +502,8 @@ export default function AibOverviewView() {
               question={MODULE_QUESTION.roles}
               answer={
                 roleRows
-                  ? `${plural(roleRows.length, 'economy', 'economies')} hold a role in at least one compact: demand anchors, specialized and resource suppliers, countries that could add capacity, technology and bridge partners.`
-                  : 'Demand anchors, specialized and resource suppliers, countries that could add capacity, technology and bridge partners, compact by compact.'
+                  ? `${plural(roleRows.length, 'economy', 'economies')} hold a role in at least one compact: major buyers (demand anchors), specialized and resource suppliers, countries that could add capacity, technology and bridge partners.`
+                  : 'Major buyers (demand anchors), specialized and resource suppliers, countries that could add capacity, technology and bridge partners, compact by compact.'
               }
               to={href('/aib/roles')}
               cta="Country roles"

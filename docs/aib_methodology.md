@@ -1,5 +1,18 @@
 # Allied Industrial Base (AIB): trade partnerships, investment prioritization and Sectoral Compacts
 
+> **Known drift (checked 2026-11-23 against the shipped bundle `dashboard/public/data/aib/`, created
+> 2026-11-21, git `03560172`).** This is the canonical AIB method (index: [README.md](README.md)), but some run
+> figures below predate that bundle. Where they differ, the bundle is current:
+> - **Demand scope:** the text says 57 economies; the bundle protects 59 (`meta.nDemandScope`: the 31 core
+>   members and 28 partners of `config/coalition.yml`).
+> - **Nodes:** section 2 says 78 nodes (74 optimized); sections 2 and 14 and the bundle have 77.
+> - **Schema:** section 13 says `osi-aib` v2; the bundle is version 3.
+> - **Hosts (section 16.3):** the text says ranked hosts almost always tie, so no compact names a host; in the
+>   bundle, `strategic.compacts[].scenarios.*.buildHosts` names a host in 17 of 40 compact scenarios (with
+>   `buildHostTies` beside it), and `investmentFlows.hosts` ranks hosts per node.
+> - **Allied network design:** the "sibling" design (`scripts/30`, section 10 of `docs/methodology.md`) was retired
+>   on 2026-10-17 and is not run.
+
 (`config/aib.yml`; pure functions in `R/aib/`; IO in `scripts/31_build_aib_trade_network.R`,
 `scripts/32_build_aib_partnerships.R`, `scripts/33_build_aib_strategic_layer.R` (the strategic layer,
 section 16) and `scripts/84_export_aib_data.R`; tests `tests/testthat/test-aib-*.R`; dashboard view
@@ -1266,13 +1279,26 @@ model's rank where it is credited (evidence; inside a tie it is the capability t
 of world supply of one mapped node, or >= 5% of three): 73 in the run. Non-allied economies are
 assessed on the three supply roles only; they appear as suppliers and dependencies, never as members.
 
+**Role eligibility: allied only (2026-11-23, user decision).** `roles: non_allied_roles: false` (the default):
+only allied economies (the demand scope plus `allied.treat_as_allied`) hold Strategic AIB Roles or
+compact-specific roles. Every role, the supply roles included, is assessed among allied economies, so the
+percentiles below rank allied economies against each other only. The non-allied major suppliers keep their
+metrics and `major_supplier` flag (supplier evidence) and stay in the division of labour, the workstreams'
+external dependencies, the stress lens and the nodes' supplier lists, but get no role row, no compact role
+and no place among a compact's lead suppliers (`core_long`); the bundle lists allied economies only in
+`strategic.countries`. `non_allied_roles: true` restores the earlier rule described in this section (non-allied
+major suppliers on the three supply roles, "(non-allied supplier)" compact roles). Effect on the 2026-11-21
+current-trade run: 74 -> 61 assessed economies in the bundle, 29 -> 24 with a role, 253 -> 225 compact roles
+(all 28 non-allied removed, the allied 225 unchanged); ESP and GBR gain a secondary RPA
+(docs/PARTNER_ELIGIBILITY_AND_FRAMING.md section 8).
+
 ### 16.5 The seven roles: two gates each
 
 | code | role | gate 1 (size) | gate 2 (breadth / depth) | assessed among |
 |---|---|---|---|---|
-| RPA | Resource & Processing Anchor | anchor positions in resource and processing nodes | mean position share over those nodes | allied + major suppliers |
-| STM | Specialized Technology & Manufacturing Anchor | exports in specialist positions / world trade of the manufacturing nodes | compacts with a specialist position | allied + major suppliers |
-| SMI | Scale Manufacturing & Integration Platform | manufacturing exports / world trade of the manufacturing nodes | compacts with >= 5% of world exports in >= 2 manufacturing nodes (nodes, not steps, since 2026-10-21: a one-step chain such as EVs could never count) | allied + major suppliers |
+| RPA | Resource & Processing Anchor | anchor positions in resource and processing nodes | mean position share over those nodes | allied (allied + major suppliers before 2026-11-23) |
+| STM | Specialized Technology & Manufacturing Anchor | exports in specialist positions / world trade of the manufacturing nodes | compacts with a specialist position | allied (allied + major suppliers before 2026-11-23) |
+| SMI | Scale Manufacturing & Integration Platform | manufacturing exports / world trade of the manufacturing nodes | compacts with >= 5% of world exports in >= 2 manufacturing nodes (nodes, not steps, since 2026-10-21: a one-step chain such as EVs could never count) | allied (allied + major suppliers before 2026-11-23) |
 | DMA | Demand & Market Anchor | mean share of allied demand | mean net-import share of end-use goods (the nodes of each compact's last step; manufactured goods before 2026-10-21, which counted input buying) | allied |
 | CIA | Capital & Investment Anchor | outward CM-FDI capital | outward IMF DIP position (conduit-free) | allied, not conduits |
 | DSP | Development & Scale-Up Platform | its credited share of new capacity on nodes that need it (US$) | scale-up rate (momentum nodes / presence nodes) | allied |
@@ -1348,8 +1374,8 @@ the division-of-labour matrix are `aib_compact_division_of_labour.csv` and `step
 
 ### 16.7 Narratives and bilateral theses
 
-**Narratives** (`aib_country_role_narratives()`): one per allied economy and per non-allied supplier
-with a role, assembled from slots so the dashboard can show them separately; no text is written for a
+**Narratives** (`aib_country_role_narratives()`): one per allied economy and (with `non_allied_roles: true`
+only) per non-allied supplier with a role, assembled from slots so the dashboard can show them separately; no text is written for a
 particular country. `headline` (no role / no primary role / the one primary role / "{Role 1} with ...
 roles" when it leads the second by >= 3 points / otherwise "Combines ... roles"), `secondary`, `first_on`
 (gate metrics where it ranks first among allied economies), `contributes` (its three anchor or

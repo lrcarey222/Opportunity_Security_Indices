@@ -118,9 +118,11 @@ describe('the Country roles page under the toggle', () => {
     fireEvent.change(within(pairs).getByRole('combobox', { name: 'Economy' }), { target: { value: 'DDD' } });
     await waitFor(() => expect(within(within(pairs).getByRole('list', { name: 'Largest relationships under Major-supplier disruption' })).getAllByRole('listitem').every((li) => li.textContent!.includes('Dorvalia'))).toBe(true));
     const roles = await region('Roles gained or lost');
-    const lost = within(roles).getByRole('region', { name: 'Roles lost or reduced under Major-supplier disruption' });
-    expect(within(lost).getByText(/Stop supplying the allied market/)).toBeTruthy();
-    expect(within(lost).getAllByRole('link', { name: 'Zembla' })[0].getAttribute('href')).toBe('/countries/ZZZ?scn=decoupling#aib-role');
+    // only trusted-network economies hold, gain or lose a role (2026-11-23): Zembla, the non-allied supplier the
+    // disruption removes, is never listed
+    const lost = within(roles).queryByRole('region', { name: 'Roles lost or reduced under Major-supplier disruption' });
+    expect(lost ? within(lost).queryAllByRole('link', { name: 'Zembla' }) : []).toHaveLength(0);
+    expect(document.getElementById('role-ZZZ')).toBeNull();
     const gained = within(roles).getByRole('region', { name: 'Roles gained under Major-supplier disruption' });
     expect(within(gained).getByText(/New suppliers/).parentElement!.textContent).toContain('Dorvalia');
     noAcronyms();
@@ -149,7 +151,8 @@ describe('the Country roles page under the toggle', () => {
     expect(within(fff).getAllByRole('link').map((a) => a.getAttribute('href'))).toContain('/compacts/AIB-C03');
     const roles = await region('Roles gained or lost');
     const lost = within(roles).getByRole('region', { name: 'Roles lost or reduced under Managed Interdependence' });
-    expect(within(lost).getByText(/Supply less: held to the cap/).parentElement!.textContent).toMatch(/Zembla in 2 steps/);
+    // capped suppliers: trusted-network economies only (Zembla, non-allied, holds no role since 2026-11-23)
+    expect(within(lost).getByText(/Supply less: held to the cap/).parentElement!.textContent).not.toMatch(/Zembla/);
     expect(within(lost).queryByText(/Stop supplying/)).toBeNull();
     // the matrix's table: no every-shock columns under Managed Interdependence
     const matrix = screen.getByRole('region', { name: 'Roles by economy' });

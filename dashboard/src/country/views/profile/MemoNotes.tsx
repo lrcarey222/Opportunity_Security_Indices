@@ -8,6 +8,7 @@ import { rowsToCsv, withBom } from '../../../lib/csv.ts';
 import { downloadBlob } from '../../../lib/download.ts';
 import { countryPostureRows } from '../../../posture/index.ts';
 import { POSTURE_CSV_COLS, postureCsvRows } from '../../../posture/derive.ts';
+import { networkOf } from '../../../posture/partnerEligibility.ts';
 import { factSheetDownloadName, supplierModel } from '../../derive/model.ts';
 import { caveatText, editionSuffix, legacyCornerWord, proseName } from '../../derive/text.ts';
 import { Section, useProfile } from './common.tsx';
@@ -51,7 +52,7 @@ export function DataNotes() {
         }))
       : [];
     const core = posture?.core ?? null;
-    const strategy = core && posture?.cells.length ? postureCsvRows(countryPostureRows(core, sheet.iso3)) : [];
+    const strategy = core && posture?.cells.length ? postureCsvRows(countryPostureRows(core, sheet.iso3), networkOf(core.countries)) : [];
     const strategyCsv = strategy.length ? withBom(rowsToCsv(strategy.map((r) => Object.fromEntries(POSTURE_CSV_COLS.map((k) => [k, r[k] ?? null]))))) : null;
     const readme = [
       `Country profile tables for ${name} (baseline as of ${m.as_of_label}).`,

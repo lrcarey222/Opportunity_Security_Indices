@@ -1,5 +1,7 @@
 # Geopolitical Distance Replication Log
 
+> **Legacy:** the March 2026 log of the UN General Assembly ideal-point replication. The current methodology is in [strategic_position.md](strategic_position.md) (see [README.md](README.md)).
+
 ## Status
 This repository now contains a full R pipeline scaffold for the UNGA ideal-point-distance replication in `R/geopolitical_distance/` only (including pipeline orchestration files).
 

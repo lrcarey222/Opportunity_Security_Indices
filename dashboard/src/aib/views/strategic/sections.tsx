@@ -33,7 +33,7 @@ import { demandSplit } from '../../derive/diversify.ts';
 import { fmtShare, fmtUsd, listWords, plural } from '../../derive/format.ts';
 import { nodeScenario, type AibScenarioId } from '../../derive/scenarios.ts';
 import {
-  activeWorkstreamsOf, alsoTouchingOf, compactNodeIds, compactRoleOf, compactRolesOfCompact, compactScenarioOf, countryStrategicOf, divisionMatrix, missionsOf, nodeHomeOf,
+  activeWorkstreamsOf, alsoTouchingOf, compactNodeIds, compactRoleOf, compactRolesOfCompact, compactScenarioOf, countryStrategicOf, divisionMatrix, leadingOutsideSuppliers, missionsOf, nodeHomeOf,
   policyMixWords, spineStatusInfo, strategicScenarioDef, strategicScenarios, workstreamsOf, type DivisionMeasure, type WorkstreamRow,
 } from '../../derive/strategic.ts';
 import { compactHref, strategicCompactHref, workstreamsHref } from '../../nav.ts';
@@ -135,7 +135,8 @@ export function VulnerabilitySection({ s, c, sid }: { s: AibStrategic; c: AibStr
     { id: 'existing', header: 'Met by existing relationships', value: (x) => x.r?.existing ?? null, cell: (x) => fmtShare(x.r?.existing, 0), num: true },
     { id: 'optimized', header: 'Met with coordinated trade', value: (x) => x.r?.optimized ?? null, cell: (x) => fmtShare(x.r?.optimized, 0), num: true },
   ];
-  const nonAllied = c.nonAllied.map((x) => ({ x, role: compactRoleOf(s, c.id, x.iso3) }));
+  // the largest suppliers outside the allied economies: suppliers (exposure), never role holders (2026-11-23)
+  const nonAllied = leadingOutsideSuppliers(s, c).map((x) => ({ x, role: x.role ? compactRoleOf(s, c.id, x.iso3) : null }));
   return (
     <Section id="vulnerabilities" title={STRATEGIC_SECTION_TITLE.vulnerabilities} intro={<p>{summary}</p>}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
@@ -209,14 +210,28 @@ export function VulnerabilitySection({ s, c, sid }: { s: AibStrategic; c: AibStr
                 <ul className="space-y-1">
                   {nonAllied.map(({ x, role }) => (
                     <li key={x.iso3}>
-                      <span className="text-paper">{name(x.iso3)}</span> — {lowerFirst(x.role.replace(/ \(non-allied supplier\)$/, ''))}
-                      {role?.leadShare !== null && role?.leadShare !== undefined && role.leadNode ? (
-                        <span className="text-paper-mute">
-                          : {fmtShare(role.leadShare, 0)} {role.leadBasis ?? 'share'} of {lowerFirst(nodeLabel(role.leadNode))}
-                        </span>
-                      ) : x.step ? (
-                        <span className="text-paper-mute"> ({lowerFirst(x.step)})</span>
-                      ) : null}
+                      {x.role === null ? (
+                        <>
+                          <span className="text-paper">{name(x.iso3)}</span>
+                          {x.node && x.share !== null ? (
+                            <span className="text-paper-mute">
+                              {' '}
+                              — {fmtShare(x.share, 0)} of world supply of {lowerFirst(nodeLabel(x.node))}
+                            </span>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-paper">{name(x.iso3)}</span> — {lowerFirst(x.role)}
+                          {role?.leadShare !== null && role?.leadShare !== undefined && role.leadNode ? (
+                            <span className="text-paper-mute">
+                              : {fmtShare(role.leadShare, 0)} {role.leadBasis ?? 'share'} of {lowerFirst(nodeLabel(role.leadNode))}
+                            </span>
+                          ) : x.step ? (
+                            <span className="text-paper-mute"> ({lowerFirst(x.step)})</span>
+                          ) : null}
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>

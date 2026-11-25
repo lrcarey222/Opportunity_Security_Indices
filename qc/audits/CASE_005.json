@@ -1,0 +1,2393 @@
+{
+  "schema": "aib-qc-case-audit",
+  "schema_version": 1,
+  "case_id": "CASE_005",
+  "case_title": "India: wafer and PV cell manufacturing",
+  "key": {
+    "iso3": "IND",
+    "tech": "Solar",
+    "stage": "Components"
+  },
+  "country": "India",
+  "generated_at": "2026-11-20T00:00:00Z",
+  "inputs": {
+    "pipeline_table": "<processed-dir>/outputs/strategic_position_tbl.rds",
+    "pipeline_release": "pipeline-5882f35f044e",
+    "sp_config": "config/strategic_position.yml",
+    "bundle_created": "2026-11-17T20:33:31Z",
+    "bundle_git_commit": "0496e7ba"
+  },
+  "summary": {
+    "n_links": 67,
+    "reproduced": 41,
+    "differs": 1,
+    "not_reproducible": 18,
+    "provenance_gaps": 1,
+    "recorded": 6,
+    "choice_pipeline": "partner",
+    "choice_bundle": "partner",
+    "bundle_differences": 0
+  },
+  "sections": [
+    {
+      "n": 1,
+      "id": "source_datasets",
+      "title": "Source datasets",
+      "items": [
+        {
+          "item": "families_applicable",
+          "value": "10",
+          "detail": null,
+          "_row": "families_applicable"
+        },
+        {
+          "item": "candidate_raw_inputs",
+          "value": "64",
+          "detail": "raw_inputs_manifest.yml entries whose required_by names a script that builds a family's processed table (an upper bound: the manifest records inputs per script, not per cell)",
+          "_row": "candidate_raw_inputs"
+        }
+      ],
+      "links": [
+        {
+          "link": "need: import dependence: raw rows -> this cell",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "44",
+          "detail": "the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded"
+        },
+        {
+          "link": "need: supplier concentration and risky suppliers: raw rows -> this cell",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "16",
+          "detail": "the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded"
+        },
+        {
+          "link": "need: current-trade blend: raw rows -> this cell",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "4",
+          "detail": "the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded"
+        },
+        {
+          "link": "need: trusted alternatives and world supply structure: raw rows -> this cell",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "44",
+          "detail": "the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded"
+        },
+        {
+          "link": "position: CP families: raw rows -> this cell",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "46",
+          "detail": "the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded"
+        },
+        {
+          "link": "position: trade benchmark and momentum: raw inputs",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded"
+        },
+        {
+          "link": "prize: market (demand growth, investment momentum, home market): raw rows -> this cell",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "46",
+          "detail": "the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded"
+        },
+        {
+          "link": "prize: commons and option; large-yard signals: raw inputs",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded"
+        },
+        {
+          "link": "Secure engine (Tests 1-5) and capability floor: raw inputs",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded"
+        },
+        {
+          "link": "pathway (Catch Up anchors): raw inputs",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded"
+        },
+        {
+          "link": "candidate raw inputs: vintage and licence recorded",
+          "status": "provenance_gap",
+          "expected": "64",
+          "observed": "13",
+          "detail": "51 of 64 lack a vintage or a licence in config/raw_inputs_manifest.yml: comtrade_energy_trade, comtrade_total_export, critmin_export, critmin_import, critmin_mirror_import, critmin_total_export, ilo_earnings_by_activity, imf_commodity_prices, imf_lending_rates, imf_ppi, wdi_country_info, wdi_gdp, consolidated_hs6_energy_tech_long, dual_use_scores, hs6_categories_with_essential, hts_codes_categories_bolstered_final, comtrade_vintage, bcg_market_size, cat_country_ratings, ei_stat_review, ei_stat_review_wide, ev_midstream_capacity, gcim_investment_capacity, geothermal_lcoe, hs92_country_product_year_4, hs92_country_product_year_6, iea_clean_tech_guide, iea_cleantech_midstream, iea_ev_outlook, iea_pams, iea_relative_costs, ipcc_ghg_intensity, solar_potential, uranium_production, uranium_resources, wb_wind_country, allied_comtrade_energy_data, comtrade_energy_dyads_all, wb_doingbusiness, wb_wdi, energy_hs6_master, imf_dip, oecd_crs_purpose, oci_energy_finance, oci_energy_finance_institutions, oci_energy_finance_crosswalk, oecd_crs_purpose_crosswalk, comtrade_monthly_dyads, comtrade_monthly_dyads_dictionary_extra, comtrade_monthly_dyads_windows, uspto_y02_patents"
+        }
+      ],
+      "tables": {
+        "families": [
+          {
+            "family": "need: import dependence",
+            "processed_table": "outputs/index_outputs.rds (energy_security_variable_contributions: deficit_gdp, Production surplus/deficit)",
+            "scripts": "scripts/20_build_indices.R;scripts/10_build_themes.R",
+            "stages": "producing",
+            "raw_inputs": "comtrade_energy_trade, comtrade_total_export, critmin_export, critmin_import, critmin_mirror_import, critmin_total_export, eia_intl_fossil_production, ilo_earnings_by_activity, imf_commodity_prices, imf_lending_rates, imf_ppi, wdi_country_info, wdi_gdp, consolidated_hs6_energy_tech_long, dual_use_scores, hs6_categories_with_essential, hts_codes_categories_bolstered_final, comtrade_vintage, bcg_market_size, bnef_lcoe_viewer, bnef_neo, bnef_supply_chains, cat_country_ratings, ei_stat_review, ei_stat_review_wide, ev_midstream_capacity, gcim_investment_capacity, geothermal_lcoe, gta_nipo, hs92_country_product_year_4, hs92_country_product_year_6, iea_clean_tech_guide, iea_cleantech_midstream, iea_critical_minerals, iea_ev_outlook, iea_pams, iea_relative_costs, ipcc_ghg_intensity, solar_potential, uranium_production, uranium_resources, usgs_mcs_world_data, wb_wind_country, weo_annex_a",
+            "n_raw_inputs": 44
+          },
+          {
+            "family": "need: supplier concentration and risky suppliers",
+            "processed_table": "import_exposure_tbl.rds; import_partner_cells_tbl.rds",
+            "scripts": "scripts/15_build_partner_themes.R",
+            "stages": "producing",
+            "raw_inputs": "allied_comtrade_energy_data, comtrade_energy_dyads_all, wb_doingbusiness, wb_wdi, wdi_country_info, wdi_gdp, energy_hs6_master, cat_country_ratings, cm_fdi_projects, imf_dip, ipcc_ghg_intensity, oecd_crs_purpose, oci_energy_finance, oci_energy_finance_institutions, oci_energy_finance_crosswalk, oecd_crs_purpose_crosswalk",
+            "n_raw_inputs": 16
+          },
+          {
+            "family": "need: current-trade blend",
+            "processed_table": "current_import_exposure_tbl.rds",
+            "scripts": "scripts/38_build_current_import_exposure.R;scripts/37_pull_comtrade_monthly_dyads.R",
+            "stages": "producing",
+            "raw_inputs": "comtrade_monthly_dyads, comtrade_monthly_dyads_dictionary_extra, comtrade_monthly_dyads_windows, ember_china_cleantech_exports",
+            "n_raw_inputs": 4
+          },
+          {
+            "family": "need: trusted alternatives and world supply structure",
+            "processed_table": "trade_concentration_tbl.rds; major_supplier_shares_tbl.rds; critical_minerals_production_tbl.rds",
+            "scripts": "scripts/10_build_themes.R",
+            "stages": "producing",
+            "raw_inputs": "comtrade_energy_trade, comtrade_total_export, critmin_export, critmin_import, critmin_mirror_import, critmin_total_export, eia_intl_fossil_production, ilo_earnings_by_activity, imf_commodity_prices, imf_lending_rates, imf_ppi, wdi_country_info, wdi_gdp, consolidated_hs6_energy_tech_long, dual_use_scores, hs6_categories_with_essential, hts_codes_categories_bolstered_final, comtrade_vintage, bcg_market_size, bnef_lcoe_viewer, bnef_neo, bnef_supply_chains, cat_country_ratings, ei_stat_review, ei_stat_review_wide, ev_midstream_capacity, gcim_investment_capacity, geothermal_lcoe, gta_nipo, hs92_country_product_year_4, hs92_country_product_year_6, iea_clean_tech_guide, iea_cleantech_midstream, iea_critical_minerals, iea_ev_outlook, iea_pams, iea_relative_costs, ipcc_ghg_intensity, solar_potential, uranium_production, uranium_resources, usgs_mcs_world_data, wb_wind_country, weo_annex_a",
+            "n_raw_inputs": 44
+          },
+          {
+            "family": "position: CP families",
+            "processed_table": "outputs/index_outputs.rds (economic_opportunity / energy_security variable contributions); outputs/innovation/innovation_theme.csv (innovation_position)",
+            "scripts": "scripts/20_build_indices.R;scripts/10_build_themes.R;scripts/29_build_innovation_position.R",
+            "stages": "all",
+            "raw_inputs": "comtrade_energy_trade, comtrade_total_export, critmin_export, critmin_import, critmin_mirror_import, critmin_total_export, eia_intl_fossil_production, ilo_earnings_by_activity, imf_commodity_prices, imf_lending_rates, imf_ppi, wdi_country_info, wdi_gdp, consolidated_hs6_energy_tech_long, dual_use_scores, hs6_categories_with_essential, hts_codes_categories_bolstered_final, comtrade_vintage, bcg_market_size, bnef_lcoe_viewer, bnef_neo, bnef_supply_chains, cat_country_ratings, ei_stat_review, ei_stat_review_wide, ev_midstream_capacity, gcim_investment_capacity, geothermal_lcoe, gta_nipo, hs92_country_product_year_4, hs92_country_product_year_6, iea_clean_tech_guide, iea_cleantech_midstream, iea_critical_minerals, iea_ev_outlook, iea_pams, iea_relative_costs, ipcc_ghg_intensity, solar_potential, uranium_production, uranium_resources, usgs_mcs_world_data, wb_wind_country, weo_annex_a, uspto_y02_patents, iea_rdd_public",
+            "n_raw_inputs": 46
+          },
+          {
+            "family": "position: trade benchmark and momentum",
+            "processed_table": "Comtrade energy trade (read inside scripts/26; no processed table)",
+            "scripts": "scripts/26_build_strategic_position.R",
+            "stages": "traded",
+            "raw_inputs": null,
+            "n_raw_inputs": 0
+          },
+          {
+            "family": "prize: market (demand growth, investment momentum, home market)",
+            "processed_table": "iea_pathways_*_tbl.rds; investment_momentum_tbl.rds; home_market_tbl.rds",
+            "scripts": "scripts/17_build_iea_pathways.R;scripts/10_build_themes.R;scripts/95_build_deployment_need.R",
+            "stages": "producing",
+            "raw_inputs": "comtrade_energy_trade, comtrade_total_export, critmin_export, critmin_import, critmin_mirror_import, critmin_total_export, eia_intl_fossil_production, ilo_earnings_by_activity, imf_commodity_prices, imf_lending_rates, imf_ppi, wdi_country_info, wdi_gdp, consolidated_hs6_energy_tech_long, dual_use_scores, hs6_categories_with_essential, hts_codes_categories_bolstered_final, comtrade_vintage, bcg_market_size, bnef_lcoe_viewer, bnef_neo, bnef_supply_chains, cat_country_ratings, ei_stat_review, ei_stat_review_wide, ev_midstream_capacity, gcim_investment_capacity, geothermal_lcoe, gta_nipo, hs92_country_product_year_4, hs92_country_product_year_6, iea_clean_tech_guide, iea_cleantech_midstream, iea_critical_minerals, iea_ev_outlook, iea_pams, iea_relative_costs, ipcc_ghg_intensity, solar_potential, uranium_production, uranium_resources, usgs_mcs_world_data, wb_wind_country, weo_annex_a, ember_yearly_electricity, ember_renewable_targets_2030",
+            "n_raw_inputs": 46
+          },
+          {
+            "family": "prize: commons and option; large-yard signals",
+            "processed_table": "data/reference/posture_node_attributes.csv; data/reference/yards_fences_assessments.csv",
+            "scripts": "",
+            "stages": "producing",
+            "raw_inputs": null,
+            "n_raw_inputs": 0
+          },
+          {
+            "family": "Secure engine (Tests 1-5) and capability floor",
+            "processed_table": "outputs/strategic_position_inputs.rds (posture inputs)",
+            "scripts": "scripts/26_build_strategic_position.R",
+            "stages": "all",
+            "raw_inputs": null,
+            "n_raw_inputs": 0
+          },
+          {
+            "family": "pathway (Catch Up anchors)",
+            "processed_table": "GCIM pipeline and capacity side tables (read inside scripts/26; not saved)",
+            "scripts": "scripts/26_build_strategic_position.R",
+            "stages": "producing",
+            "raw_inputs": null,
+            "n_raw_inputs": 0
+          }
+        ],
+        "raw_inputs": [
+          {
+            "id": "comtrade_energy_trade",
+            "source_name": "UN Comtrade (energy-tech HS6 exports and imports)",
+            "vintage": "2024; World rows of the all-reporter dyad pull (main 2026-10-07/08, Electric Grid Upstream supplement 2026-10-09, Upstream-basket supplement 2026-10-12 UTC), derived 2026-10-09 and extended 2026-10-12 UTC",
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "comtrade_total_export",
+            "source_name": "UN Comtrade (total exports, TOTAL commodity code)",
+            "vintage": "2024; pulled 2026-10-09",
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "critmin_export",
+            "source_name": "UN Comtrade (critical minerals exports)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "critmin_import",
+            "source_name": "UN Comtrade (critical minerals imports)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "critmin_mirror_import",
+            "source_name": "UN Comtrade (partner-reported imports from non-reporting economies, mirror exports)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS"
+          },
+          {
+            "id": "critmin_total_export",
+            "source_name": "UN Comtrade (critical minerals total exports)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "eia_intl_fossil_production",
+            "source_name": "U.S. Energy Information Administration, International Energy Statistics (bulk file INTL.zip), fossil fuel production and consumption by country",
+            "vintage": "downloaded (accessed) 2026-10-11; INTL.txt dated 2026-10-03 (24,153,479-byte zip); oil production to 2025, gas and coal to 2024, oil consumption to 2024 (2025 for a few economies)",
+            "licence": "US government work, public domain (no API key)",
+            "url": "https://www.eia.gov/opendata/bulk/INTL.zip"
+          },
+          {
+            "id": "ilo_earnings_by_activity",
+            "source_name": "ILOSTAT, average monthly earnings of employees by sex, economic activity and currency (EAR_EMTA_SEX_ECO_CUR_NB_A)",
+            "vintage": "downloaded 2026-09-30 (the copy scripts/40 cached as data/processed/vintages/_cache_ilo_earnings.csv)",
+            "licence": null,
+            "url": "https://rplumber.ilo.org/data/indicator/?id=EAR_EMTA_SEX_ECO_CUR_NB_A&lang=en&type=label&format=.csv&channel=ilostat"
+          },
+          {
+            "id": "imf_commodity_prices",
+            "source_name": "IMF Primary Commodity Price System (wide export, includes annual YoY series)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.imf.org/en/research/commodity-prices"
+          },
+          {
+            "id": "imf_lending_rates",
+            "source_name": "IMF lending rates (MFS_IR)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://data.imf.org/en/Data-Explorer"
+          },
+          {
+            "id": "imf_ppi",
+            "source_name": "IMF producer price indices (PPI)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://data.imf.org/en/Data-Explorer"
+          },
+          {
+            "id": "wdi_country_info",
+            "source_name": "World Bank WDI country reference table",
+            "vintage": null,
+            "licence": null,
+            "url": "https://databank.worldbank.org/source/world-development-indicators"
+          },
+          {
+            "id": "wdi_gdp",
+            "source_name": "World Bank World Development Indicators (NY.GDP.MKTP.CD)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://databank.worldbank.org/source/world-development-indicators"
+          },
+          {
+            "id": "consolidated_hs6_energy_tech_long",
+            "source_name": "HS6 to technology / supply-chain view (tech, supply_chain, sub_sector, HS6)",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "dual_use_scores",
+            "source_name": "Dual-use scoring by primary/secondary/tertiary category",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "hs6_categories_with_essential",
+            "source_name": "HS6 view carrying the essential-goods flag (Technology, Value Chain, Sub.Sector, HS6, essential)",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "hts_codes_categories_bolstered_final",
+            "source_name": "HS6 to technology / supply-chain view (Technology, Value Chain, Sub.Sector, HS6)",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "comtrade_vintage",
+            "source_name": "Comtrade retrieval vintage stamp",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "bcg_market_size",
+            "source_name": "BCG market sizing for technology and supply chain",
+            "vintage": null,
+            "licence": "proprietary",
+            "url": null
+          },
+          {
+            "id": "bnef_lcoe_viewer",
+            "source_name": "BloombergNEF LCOE Data Viewer",
+            "vintage": "2026-08-11",
+            "licence": "subscription",
+            "url": "https://about.bnef.com/insights/clean-energy/new-energy-outlook/"
+          },
+          {
+            "id": "bnef_neo",
+            "source_name": "BloombergNEF New Energy Outlook",
+            "vintage": "2024-10-29",
+            "licence": "subscription",
+            "url": "https://about.bnef.com/insights/clean-energy/new-energy-outlook/"
+          },
+          {
+            "id": "bnef_supply_chains",
+            "source_name": "BloombergNEF Energy Transition Supply Chains",
+            "vintage": "2025",
+            "licence": "subscription",
+            "url": "https://about.bnef.com/insights/clean-energy/new-energy-outlook/"
+          },
+          {
+            "id": "cat_country_ratings",
+            "source_name": "Climate Action Tracker country ratings",
+            "vintage": null,
+            "licence": null,
+            "url": "https://climateactiontracker.org/countries/"
+          },
+          {
+            "id": "ei_stat_review",
+            "source_name": "Energy Institute Statistical Review of World Energy (long format)",
+            "vintage": "2026 edition (data 1965-2025)",
+            "licence": null,
+            "url": "https://www.energyinst.org/statistical-review"
+          },
+          {
+            "id": "ei_stat_review_wide",
+            "source_name": "Energy Institute Statistical Review of World Energy (workbook)",
+            "vintage": "2026 edition (Contents sheet; fuel reserve sheets at end-2020)",
+            "licence": null,
+            "url": "https://www.energyinst.org/statistical-review"
+          },
+          {
+            "id": "ev_midstream_capacity",
+            "source_name": "IEA EV midstream manufacturing capacity extract",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer"
+          },
+          {
+            "id": "gcim_investment_capacity",
+            "source_name": "Clean Investment Monitor investment and capacity (aggregated)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.cleaninvestmentmonitor.org/"
+          },
+          {
+            "id": "geothermal_lcoe",
+            "source_name": "Geothermal LCOE and capacity potential extract",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "gta_nipo",
+            "source_name": "Global Trade Alert New Industrial Policy Observatory",
+            "vintage": "February 2026",
+            "licence": "subscription",
+            "url": "https://www.globaltradealert.org/"
+          },
+          {
+            "id": "hs92_country_product_year_4",
+            "source_name": "Harvard Atlas of Economic Complexity (HS92, 4-digit)",
+            "vintage": "1995-2024; Dataverse \"International Trade Data (HS, 92)\" V18, 2026-04-22",
+            "licence": null,
+            "url": "https://atlas.hks.harvard.edu/"
+          },
+          {
+            "id": "hs92_country_product_year_6",
+            "source_name": "Harvard Atlas of Economic Complexity (HS92, 6-digit)",
+            "vintage": "1995-2024; Dataverse \"International Trade Data (HS, 92)\" V18, 2026-04-22",
+            "licence": null,
+            "url": "https://atlas.hks.harvard.edu/"
+          },
+          {
+            "id": "iea_clean_tech_guide",
+            "source_name": "IEA ETP Clean Energy Technology Guide",
+            "vintage": "2026",
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide"
+          },
+          {
+            "id": "iea_cleantech_midstream",
+            "source_name": "IEA clean technology midstream manufacturing capacity",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics/data-tools/etp-clean-energy-technology-guide"
+          },
+          {
+            "id": "iea_critical_minerals",
+            "source_name": "IEA Critical Minerals Dataset",
+            "vintage": "2026",
+            "licence": "CC BY 4.0 (the workbook's Notice sheet); cite the IEA Critical Minerals Dataset wherever the figures are shown",
+            "url": "https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset"
+          },
+          {
+            "id": "iea_ev_outlook",
+            "source_name": "IEA Global EV Outlook",
+            "vintage": "2026",
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics/data-product/global-ev-outlook-2026"
+          },
+          {
+            "id": "iea_pams",
+            "source_name": "IEA Policies and Measures database export",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.iea.org/policies"
+          },
+          {
+            "id": "iea_relative_costs",
+            "source_name": "IEA relative technology cost extract",
+            "vintage": null,
+            "licence": null,
+            "url": "https://www.iea.org/data-and-statistics"
+          },
+          {
+            "id": "ipcc_ghg_intensity",
+            "source_name": "IPCC lifecycle GHG intensity of electricity supply technologies (AR5 WGIII Annex III, Table A.III.2)",
+            "vintage": "AR5 (2014)",
+            "licence": null,
+            "url": "https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf"
+          },
+          {
+            "id": "solar_potential",
+            "source_name": "Global Solar Atlas country potential",
+            "vintage": null,
+            "licence": null,
+            "url": "https://globalsolaratlas.info"
+          },
+          {
+            "id": "uranium_production",
+            "source_name": "OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.18 historical uranium production",
+            "vintage": "Uranium 2026 (NEA No. 7770) for 2022-2024, Uranium 2024 (NEA No. 7683) for 2020-2021, Uranium 2022 (NEA No. 7634) for 2019; accessed 2026-10-07",
+            "licence": null,
+            "url": "https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand"
+          },
+          {
+            "id": "uranium_resources",
+            "source_name": "OECD-NEA/IAEA Uranium Resources, Production and Demand (Red Book), Table 1.2a identified recoverable resources",
+            "vintage": "Uranium 2026 (NEA No. 7770), resources as of 1 January 2025; accessed 2026-10-07",
+            "licence": null,
+            "url": "https://www.oecd-nea.org/jcms/pl_121658/uranium-2026-resources-production-and-demand"
+          },
+          {
+            "id": "usgs_mcs_world_data",
+            "source_name": "USGS Mineral Commodity Summaries 2026 data release, Commodity Salient U.S. and World Statistics (world mine production and reserves)",
+            "vintage": "MCS 2026 (reserves at end-2025); ScienceBase file MCS2026_Commodities_Data.csv, 3,189,010 bytes, uploaded 2026-02-06 (MD5 36185ff3..., ScienceBase's checksum); accessed 2026-10-09",
+            "licence": "CC0-1.0",
+            "url": "https://doi.org/10.5066/P1WKQ63T"
+          },
+          {
+            "id": "wb_wind_country",
+            "source_name": "Global Wind Atlas country potential",
+            "vintage": null,
+            "licence": null,
+            "url": "https://globalwindatlas.info/"
+          },
+          {
+            "id": "weo_annex_a",
+            "source_name": "IEA World Energy Outlook Annex A free dataset",
+            "vintage": "2025",
+            "licence": "CC BY-NC-SA 4.0 (the IEA dataset page, checked 2026-10-17; earlier recorded as CC BY 4.0); cite IEA (2025), World Energy Outlook 2025, wherever the figures are shown",
+            "url": "https://www.iea.org/reports/world-energy-outlook-2025"
+          },
+          {
+            "id": "allied_comtrade_energy_data",
+            "source_name": "UN Comtrade (allied reporter-partner dyads)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "comtrade_energy_dyads_all",
+            "source_name": "UN Comtrade (all-reporter energy HS6 reporter-partner dyads)",
+            "vintage": "2020 and 2024; main pull 2026-10-07/08 (298 codes), supplements 2026-10-09 (740200 740311 760110 760120) and 2026-10-12 UTC (261210 261220 280469 811291)",
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "wb_doingbusiness",
+            "source_name": "World Bank Doing Business indicators (historical)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://archive.doingbusiness.org/en/data"
+          },
+          {
+            "id": "wb_wdi",
+            "source_name": "World Bank WDI development indicator panel",
+            "vintage": null,
+            "licence": null,
+            "url": "https://databank.worldbank.org/source/world-development-indicators"
+          },
+          {
+            "id": "energy_hs6_master",
+            "source_name": "Master energy HS6 catalogue",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "cm_fdi_projects",
+            "source_name": "Cleantech Manufacturing FDI Dataset (CM-FDI), Net Zero Industrial Policy Lab, Johns Hopkins University; project-level CSV export",
+            "vintage": "edition 2026.10.05; downloaded 2026-10-11 (cm-fdi-projects.csv, 861,911 bytes, 1,042 projects)",
+            "licence": "CC-BY-4.0",
+            "url": "https://cmfdi.netzeropolicylab.com/"
+          },
+          {
+            "id": "imf_dip",
+            "source_name": "IMF Coordinated Direct Investment Survey positions",
+            "vintage": null,
+            "licence": null,
+            "url": "https://data.imf.org/en/Data-Explorer"
+          },
+          {
+            "id": "oecd_crs_purpose",
+            "source_name": "OECD Creditor Reporting System, bilateral official finance by purpose code",
+            "vintage": null,
+            "licence": null,
+            "url": "https://webfs-dcd.oecd.org/files/dotStat/DSD_CRS/CRS-reduced.parquet"
+          },
+          {
+            "id": "oci_energy_finance",
+            "source_name": "Oil Change International, Public Finance for Energy Database (international transactions)",
+            "vintage": null,
+            "licence": null,
+            "url": "https://energyfinance.org/"
+          },
+          {
+            "id": "oci_energy_finance_institutions",
+            "source_name": "OCI institutions counted in Development Potential (CRS overlap table)",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "oci_energy_finance_crosswalk",
+            "source_name": "OCI sector and stage to technology and supply-chain stage crosswalk",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "oecd_crs_purpose_crosswalk",
+            "source_name": "CRS purpose code to technology and supply-chain stage crosswalk",
+            "vintage": null,
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "comtrade_monthly_dyads",
+            "source_name": "UN Comtrade (monthly HS6 basket imports and exports by partner, every monthly reporter)",
+            "vintage": "each reporter's latest 12 calendar months in Comtrade's monthly availability listing at pull time (first pull 2026-11-16 UTC; newest month 2026-09; 92 reporters, windows end 2025-12 to 2026-09; 3.86M rows)",
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "comtrade_monthly_dyads_dictionary_extra",
+            "source_name": "UN Comtrade (monthly HS6 imports and exports by partner for the AIB dictionary's core codes outside the OSI basket)",
+            "vintage": "first pull 2026-11-17 UTC on the basket pull's reporter windows (92 reporters); 68 codes",
+            "licence": null,
+            "url": "https://comtradeplus.un.org/"
+          },
+          {
+            "id": "comtrade_monthly_dyads_windows",
+            "source_name": "Per-reporter windows of the monthly dyad pull (reporter_iso, window_start, window_end, months_listed)",
+            "vintage": "written with comtrade_monthly_dyads.csv.gz",
+            "licence": null,
+            "url": null
+          },
+          {
+            "id": "ember_china_cleantech_exports",
+            "source_name": "Ember, China Cleantech Export Data (monthly China customs exports by destination and commodity code)",
+            "vintage": "retrieved 2026-11-16 (server Last-Modified 2026-09-30 14:04 GMT); 2018-01 to 2026-08, 237 destinations and 13 regions, 31 codes; SHA-256 402b973fa0e88662e2ff50192f59bc4dc0943b662a421196d5b551dca329f7dd",
+            "licence": "CC BY 4.0 (https://ember-energy.org/data/china-cleantech-export-data/); cite Ember wherever the figures are shown",
+            "url": "https://files.ember-energy.org/public-downloads/customs/outputs/clean_tech_exports_full_release_monthly_lower.csv"
+          },
+          {
+            "id": "uspto_y02_patents",
+            "source_name": "USPTO Open Data Portal, granted US utility patents by Y02/Y04S technology and inventor country",
+            "vintage": null,
+            "licence": "US government public data",
+            "url": "https://api.uspto.gov/api/v1/patent/applications/search"
+          },
+          {
+            "id": "iea_rdd_public",
+            "source_name": "IEA Energy Technology RD&D Budgets, public sector (RDDPUBLIC)",
+            "vintage": "October 2026 edition (RDDPUBLIC.csv dated 2026-10-20), downloaded 2026-11-17",
+            "licence": "IEA terms; check before publishing derived figures",
+            "url": "https://www.iea.org/data-and-statistics/data-product/energy-technology-rdd-budgets"
+          },
+          {
+            "id": "ember_yearly_electricity",
+            "source_name": "Ember, Yearly Electricity Data (global; generation, capacity, demand and net imports by area, year and electricity source)",
+            "vintage": "retrieved 2026-10-29 (server Last-Modified 2026-10-26 12:24 GMT); years 2000-2025, 2025 for about 90 economies; SHA-256 afe1e315ce8fef7ddb2e2569243b3ac4e93cfe8146ac1be5392e362bd6afbe72",
+            "licence": "CC BY 4.0 (the Ember dataset page, https://ember-energy.org/data/yearly-electricity-data/); cite Ember wherever the figures are shown",
+            "url": "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv"
+          },
+          {
+            "id": "ember_renewable_targets_2030",
+            "source_name": "Ember, 2030 Global Renewable Target Tracker (Global Renewable Power Sector Targets 2030) data download",
+            "vintage": "retrieved 2026-10-29 (server Last-Modified 2026-10-13 13:00 GMT); 2030 capacity targets for 85 countries and the EU (capacity_target_wide), national-plan rows to 2050 (raw_data_long); SHA-256 281377059def3954888e01a12253c74844e90e39edf87a99616dc528dad4c9bc",
+            "licence": "CC BY 4.0 (the Ember dataset page, https://ember-energy.org/data/global-renewable-power-sector-targets-2030/); cite Ember wherever the figures are shown",
+            "url": "https://files.ember-energy.org/public-downloads/res_tracker/outputs/targets_download.xlsx"
+          }
+        ]
+      },
+      "notes": []
+    },
+    {
+      "n": 2,
+      "id": "source_rows",
+      "title": "Source rows",
+      "items": [
+        {
+          "item": "exposure_basis",
+          "value": "blend",
+          "detail": null,
+          "_row": "exposure_basis"
+        },
+        {
+          "item": "exposure_weight",
+          "value": "0.5",
+          "detail": null,
+          "_row": "exposure_weight"
+        },
+        {
+          "item": "import_partners_n",
+          "value": "100",
+          "detail": null,
+          "_row": "import_partners_n"
+        },
+        {
+          "item": "import_partners_total_usd",
+          "value": "4,956,550,554",
+          "detail": null,
+          "_row": "import_partners_total_usd"
+        },
+        {
+          "item": "trade_benchmark_source",
+          "value": "comtrade",
+          "detail": null,
+          "_row": "trade_benchmark_source"
+        },
+        {
+          "item": "trade_benchmark_period",
+          "value": "2022-2024",
+          "detail": null,
+          "_row": "trade_benchmark_period"
+        },
+        {
+          "item": "trade_benchmark_exports_usd",
+          "value": "1,147,448,400",
+          "detail": null,
+          "_row": "trade_benchmark_exports_usd"
+        },
+        {
+          "item": "trade_benchmark_share",
+          "value": "0.007585",
+          "detail": null,
+          "_row": "trade_benchmark_share"
+        },
+        {
+          "item": "trade_benchmark_rca",
+          "value": "0.3729",
+          "detail": null,
+          "_row": "trade_benchmark_rca"
+        }
+      ],
+      "links": [
+        {
+          "link": "imports_usd <- import exposure (base/current blend)",
+          "status": "reproduced",
+          "expected": "7,367,532,910",
+          "observed": "7,367,532,910",
+          "detail": "(1 - 0.5) x base 4,956,550,554 + 0.5 x current 9,778,515,267"
+        },
+        {
+          "link": "import_hhi <- import exposure (base/current blend)",
+          "status": "reproduced",
+          "expected": "0.3616",
+          "observed": "0.3616",
+          "detail": "(1 - 0.5) x base 0.4365 + 0.5 x current 0.2867"
+        },
+        {
+          "link": "china_share <- import exposure (base/current blend)",
+          "status": "reproduced",
+          "expected": "0.5871",
+          "observed": "0.5871",
+          "detail": "(1 - 0.5) x base 0.6598 + 0.5 x current 0.5143"
+        },
+        {
+          "link": "opposite_bloc_share <- not applicable for a nonaligned importer (strategic_need.R rule 6)",
+          "status": "reproduced",
+          "expected": null,
+          "observed": null,
+          "detail": "import exposure 0"
+        },
+        {
+          "link": "top_supplier_share <- import exposure (base/current blend)",
+          "status": "reproduced",
+          "expected": "0.5822",
+          "observed": "0.5822",
+          "detail": "(1 - 0.5) x base 0.6536 + 0.5 x current 0.5109"
+        },
+        {
+          "link": "imports_to_gdp <- import exposure (base/current blend)",
+          "status": "reproduced",
+          "expected": "0.001895",
+          "observed": "0.001895",
+          "detail": "(1 - 0.5) x base 0.001318 + 0.5 x current 0.002472"
+        },
+        {
+          "link": "top supplier <- import exposure",
+          "status": "reproduced",
+          "expected": "CHN",
+          "observed": "CHN",
+          "detail": null
+        },
+        {
+          "link": "partner rows: self-trade (re-import) imports, USD",
+          "status": "differs",
+          "expected": "0",
+          "observed": "8,862,637",
+          "detail": "import_partner_cells_tbl.rds lists the importer as its own supplier (0.001785 of its partner rows); import_exposure_tbl.rds leaves these out, but sp_partner_recs() diversification and the partnership memo read the partner table as it is"
+        },
+        {
+          "link": "base import HHI <- partner rows without self-trade (sum of squared shares)",
+          "status": "reproduced",
+          "expected": "0.4365",
+          "observed": "0.4365",
+          "detail": "import_partner_cells_tbl.rds against import_exposure_tbl.rds, base year"
+        },
+        {
+          "link": "base imports_usd <- partner rows without self-trade",
+          "status": "reproduced",
+          "expected": "4,956,550,554",
+          "observed": "4,956,550,554",
+          "detail": null
+        },
+        {
+          "link": "base top supplier <- partner rows",
+          "status": "reproduced",
+          "expected": "CHN",
+          "observed": "CHN",
+          "detail": null
+        },
+        {
+          "link": "home_share (world supply share) <- production / supply structure",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "0.01015",
+          "detail": "the supply structure is assembled inside scripts/26 (Atlas trade shares, USGS / EI production, GCIM) and not saved per source; 2 production-table rows shown for context"
+        },
+        {
+          "link": "trade benchmark <- Comtrade energy trade rows",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "0.007585",
+          "detail": "the 2022-24 benchmark is computed inside scripts/26 from the raw Comtrade pull; no processed table holds its rows"
+        }
+      ],
+      "tables": {
+        "import_exposure": [
+          {
+            "importer_iso": "IND",
+            "tech": "Solar",
+            "supply_chain": "Components",
+            "observed": true,
+            "import_source": "importer",
+            "imports_usd": 4956550553.974,
+            "n_suppliers": 100,
+            "top_supplier_iso3": "CHN",
+            "top_supplier_share": 0.653560977308251,
+            "import_hhi": 0.436543761913937,
+            "china_share": 0.659782773102561,
+            "opposite_bloc_share": 0,
+            "coercive_import_share": 0.660226988618982,
+            "trusted_import_share": 0,
+            "alignment_coverage_share": 1,
+            "gdp_usd": 3760813470500.86,
+            "imports_to_gdp": 0.00131794639453732,
+            "trade_year": 2024
+          }
+        ],
+        "current_import_exposure": [
+          {
+            "importer_iso": "IND",
+            "tech": "Solar",
+            "supply_chain": "Components",
+            "observed": true,
+            "import_source": "importer",
+            "imports_usd": 9778515266.857,
+            "n_suppliers": 111,
+            "top_supplier_iso3": "CHN",
+            "top_supplier_share": 0.510924365974717,
+            "import_hhi": 0.286735085173115,
+            "china_share": 0.514345205832417,
+            "opposite_bloc_share": 0,
+            "coercive_import_share": 0.514602651611996,
+            "trusted_import_share": 0,
+            "alignment_coverage_share": 1,
+            "gdp_usd": 3956067115771.63,
+            "imports_to_gdp": 0.00247177688868651,
+            "window_end": 202608,
+            "months_used": 12,
+            "window_start": 202509,
+            "current_basis": "own_monthly"
+          }
+        ],
+        "import_partners_self": [
+          {
+            "partner_iso": "IND",
+            "imports_usd": 8862637.138
+          }
+        ],
+        "import_partners_top10": [
+          {
+            "partner_iso": "CHN",
+            "imports_usd": 3239408024.133,
+            "share": 0.653560977308251
+          },
+          {
+            "partner_iso": "JPN",
+            "imports_usd": 276743544.401,
+            "share": 0.0558338992788273
+          },
+          {
+            "partner_iso": "THA",
+            "imports_usd": 205732755.173,
+            "share": 0.0415072443895584
+          },
+          {
+            "partner_iso": "DEU",
+            "imports_usd": 185674675.346,
+            "share": 0.0374604623364796
+          },
+          {
+            "partner_iso": "VNM",
+            "imports_usd": 155588336.614,
+            "share": 0.0313904468278356
+          },
+          {
+            "partner_iso": "MYS",
+            "imports_usd": 111112089.888,
+            "share": 0.0224172211456441
+          },
+          {
+            "partner_iso": "USA",
+            "imports_usd": 103186465.851,
+            "share": 0.0208182010306076
+          },
+          {
+            "partner_iso": "KOR",
+            "imports_usd": 96217348.374,
+            "share": 0.019412159187372
+          },
+          {
+            "partner_iso": "SGP",
+            "imports_usd": 69639365.178,
+            "share": 0.0140499656807022
+          },
+          {
+            "partner_iso": "FRA",
+            "imports_usd": 58151586.182,
+            "share": 0.01173226935724
+          }
+        ],
+        "production": [
+          {
+            "variable": "Overall Market Share",
+            "data_type": "raw",
+            "value": 0.06,
+            "Year": 2035,
+            "source": "IEA Energy Technology Perspectives 2024"
+          },
+          {
+            "variable": "Overall Market Share",
+            "data_type": "index",
+            "value": 0.633974596215561,
+            "Year": 2035,
+            "source": "IEA Energy Technology Perspectives 2024"
+          }
+        ]
+      },
+      "notes": []
+    },
+    {
+      "n": 3,
+      "id": "cleaning",
+      "title": "Cleaning and exclusions",
+      "items": [
+        {
+          "item": "entrepot_or_registry",
+          "value": "FALSE",
+          "detail": "exclude_iso3: HKG, MAC, MHL, LBR, PAN",
+          "_row": "entrepot_or_registry"
+        },
+        {
+          "item": "sn_exclusion",
+          "value": null,
+          "detail": null,
+          "_row": "sn_exclusion"
+        },
+        {
+          "item": "posture_exclusion",
+          "value": null,
+          "detail": null,
+          "_row": "posture_exclusion"
+        },
+        {
+          "item": "thin_need_cell",
+          "value": "FALSE",
+          "detail": null,
+          "_row": "thin_need_cell"
+        },
+        {
+          "item": "thin_reason",
+          "value": null,
+          "detail": null,
+          "_row": "thin_reason"
+        },
+        {
+          "item": "material_importers_in_cell",
+          "value": "182",
+          "detail": "thin below 5",
+          "_row": "material_importers_in_cell"
+        },
+        {
+          "item": "import_material",
+          "value": "TRUE",
+          "detail": "immaterial below USD 1,000,000",
+          "_row": "import_material"
+        },
+        {
+          "item": "self_supplied",
+          "value": "FALSE",
+          "detail": "self-supply guard at home_share >= 0.1",
+          "_row": "self_supplied"
+        },
+        {
+          "item": "cp_thin_cell",
+          "value": "FALSE",
+          "detail": null,
+          "_row": "cp_thin_cell"
+        },
+        {
+          "item": "current_trade_flag",
+          "value": "china_down",
+          "detail": null,
+          "_row": "current_trade_flag"
+        },
+        {
+          "item": "opposite_bloc_basis",
+          "value": "nonaligned",
+          "detail": null,
+          "_row": "opposite_bloc_basis"
+        }
+      ],
+      "links": [
+        {
+          "link": "entrepot rule -> need not ranked",
+          "status": "reproduced",
+          "expected": "FALSE",
+          "observed": "FALSE",
+          "detail": null
+        },
+        {
+          "link": "immaterial-importer rule (imports_usd vs min_import_usd)",
+          "status": "reproduced",
+          "expected": "TRUE",
+          "observed": "TRUE",
+          "detail": "imports_usd 7,367,532,910"
+        },
+        {
+          "link": "self-supply guard (home_share >= self_supply_share)",
+          "status": "reproduced",
+          "expected": "FALSE",
+          "observed": "FALSE",
+          "detail": "home_share 0.01015"
+        },
+        {
+          "link": "which countries enter the cell's percentiles",
+          "status": "recorded",
+          "expected": null,
+          "observed": "205",
+          "detail": "the ranked universe (es_contributions countries less exclude_iso3) is rebuilt only inside scripts/26"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 4,
+      "id": "transformations",
+      "title": "Transformations",
+      "items": [
+        {
+          "item": "percentile_rule",
+          "value": "mid-rank (rank - 0.5) / n, ties averaged (sp_helpers.R sp_midrank_pct)",
+          "detail": null,
+          "_row": "percentile_rule"
+        },
+        {
+          "item": "thresholds_inclusive",
+          "value": "TRUE",
+          "detail": null,
+          "_row": "thresholds_inclusive"
+        }
+      ],
+      "links": [
+        {
+          "link": "CP families in the table are defined in the configuration",
+          "status": "reproduced",
+          "expected": null,
+          "observed": "export_position, manufacturing_capacity, investment_position, innovation_position",
+          "detail": null
+        },
+        {
+          "link": "measure-level percentiles (raw value -> measure percentile)",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "measure values other than import HHI, China and opposite-bloc shares are not stored per cell (index_outputs contributions)"
+        }
+      ],
+      "tables": {
+        "recipes": [
+          {
+            "component": "need: import_dependence",
+            "variable": "deficit_gdp",
+            "source": "es_contributions",
+            "orient": "invert",
+            "rule": "within-cell mid-rank percentile (rank - 0.5) / n; family = mean of its measures"
+          },
+          {
+            "component": "need: import_dependence",
+            "variable": "Production surplus/deficit",
+            "source": "es_contributions",
+            "orient": "invert",
+            "rule": "within-cell mid-rank percentile (rank - 0.5) / n; family = mean of its measures"
+          },
+          {
+            "component": "need: supplier_concentration",
+            "variable": "import_hhi",
+            "source": "import_exposure",
+            "orient": "as_is",
+            "rule": "within-cell mid-rank percentile (rank - 0.5) / n; family = mean of its measures"
+          },
+          {
+            "component": "need: risky_supplier_exposure",
+            "variable": "china_share",
+            "source": "import_exposure",
+            "orient": "as_is",
+            "rule": "within-cell mid-rank percentile (rank - 0.5) / n; family = mean of its measures"
+          },
+          {
+            "component": "need: risky_supplier_exposure",
+            "variable": "opposite_bloc_share",
+            "source": "import_exposure",
+            "orient": "as_is",
+            "rule": "within-cell mid-rank percentile (rank - 0.5) / n; family = mean of its measures"
+          },
+          {
+            "component": "position: export_position",
+            "variable": "market_share",
+            "source": "EO Trade",
+            "orient": "fill na",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "position: export_position",
+            "variable": "rca",
+            "source": "EO Trade",
+            "orient": "fill na",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "position: manufacturing_capacity",
+            "variable": "Operating Capacity Index",
+            "source": "EO Investment",
+            "orient": "fill structural_zero",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "position: investment_position",
+            "variable": "Annual Investment Index",
+            "source": "EO Investment",
+            "orient": "fill structural_zero",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "position: innovation_position",
+            "variable": "Patent Innovation Index",
+            "source": "INN Innovation",
+            "orient": "fill na",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "position: innovation_position",
+            "variable": "Public RD&D Index",
+            "source": "INN Innovation",
+            "orient": "fill na",
+            "rule": "pillar component value (within-cell index); family = mean of observed variables"
+          },
+          {
+            "component": "prize",
+            "variable": "siv_score",
+            "source": "industrial_opportunity; node attributes",
+            "orient": "as_is",
+            "rule": "weighted mean of market, commons, option; strategic_industrial_value = mid-rank percentile across all scored rows; market-only cap at prize_threshold - cap_margin"
+          }
+        ]
+      },
+      "notes": []
+    },
+    {
+      "n": 5,
+      "id": "indicators",
+      "title": "Normalized indicators",
+      "items": [
+        {
+          "item": "sn_import_dependence",
+          "value": "0.7239",
+          "detail": null,
+          "_row": "sn_import_dependence"
+        },
+        {
+          "item": "sn_supplier_concentration",
+          "value": "0.6872",
+          "detail": null,
+          "_row": "sn_supplier_concentration"
+        },
+        {
+          "item": "sn_risky_supplier_exposure",
+          "value": "0.8292",
+          "detail": null,
+          "_row": "sn_risky_supplier_exposure"
+        },
+        {
+          "item": "sn_trusted_alternatives",
+          "value": "0.4366",
+          "detail": null,
+          "_row": "sn_trusted_alternatives"
+        },
+        {
+          "item": "siv_market",
+          "value": "0.8781",
+          "detail": null,
+          "_row": "siv_market"
+        },
+        {
+          "item": "siv_commons",
+          "value": "0",
+          "detail": null,
+          "_row": "siv_commons"
+        },
+        {
+          "item": "siv_option",
+          "value": "0.375",
+          "detail": null,
+          "_row": "siv_option"
+        },
+        {
+          "item": "io_node_prize",
+          "value": "0.85",
+          "detail": null,
+          "_row": "io_node_prize"
+        },
+        {
+          "item": "io_growth_pct",
+          "value": "0.9",
+          "detail": null,
+          "_row": "io_growth_pct"
+        },
+        {
+          "item": "io_investment_momentum_pct",
+          "value": "0.7",
+          "detail": null,
+          "_row": "io_investment_momentum_pct"
+        },
+        {
+          "item": "io_home_market",
+          "value": "0.9061",
+          "detail": null,
+          "_row": "io_home_market"
+        },
+        {
+          "item": "io_outlook",
+          "value": "growing",
+          "detail": null,
+          "_row": "io_outlook"
+        },
+        {
+          "item": "io_growth_series",
+          "value": "cap_solar",
+          "detail": null,
+          "_row": "io_growth_series"
+        },
+        {
+          "item": "cp_export_position",
+          "value": "0.7205",
+          "detail": null,
+          "_row": "cp_export_position"
+        },
+        {
+          "item": "cp_manufacturing_capacity",
+          "value": "0.755",
+          "detail": null,
+          "_row": "cp_manufacturing_capacity"
+        },
+        {
+          "item": "cp_investment_position",
+          "value": "0.7948",
+          "detail": null,
+          "_row": "cp_investment_position"
+        },
+        {
+          "item": "cp_innovation_position",
+          "value": "0.6088",
+          "detail": null,
+          "_row": "cp_innovation_position"
+        }
+      ],
+      "links": [
+        {
+          "link": "sn_supplier_concentration <- percentile of import HHI in the cell",
+          "status": "reproduced",
+          "expected": "0.6872",
+          "observed": "0.6872",
+          "detail": "import_hhi 0.3616 among 203 observed importers"
+        },
+        {
+          "link": "sn_risky_supplier_exposure <- mean percentile of China and opposite-bloc shares",
+          "status": "reproduced",
+          "expected": "0.8292",
+          "observed": "0.8292",
+          "detail": "china_share 0.5871, opposite_bloc_share NA; share floor 0.01"
+        },
+        {
+          "link": "sn_import_dependence <- deficit_gdp / production surplus percentiles",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "0.7239",
+          "detail": "its measures live in index_outputs.rds contributions, not in the cell table"
+        },
+        {
+          "link": "sn_trusted_alternatives <- 1 - (trusted world share - own share), percentile",
+          "status": "recorded",
+          "expected": null,
+          "observed": "0.4366",
+          "detail": "trusted_world_share 0.7063, home_share 0.01015"
+        },
+        {
+          "link": "siv_market = industrial_opportunity",
+          "status": "reproduced",
+          "expected": "0.8781",
+          "observed": "0.8781",
+          "detail": null
+        },
+        {
+          "link": "industrial_opportunity <- node prize, lifted to mean(node, home market) where the home market is higher",
+          "status": "reproduced",
+          "expected": "0.8781",
+          "observed": "0.8781",
+          "detail": null
+        },
+        {
+          "link": "io_node_prize <- WEO / minerals demand growth and capex momentum",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "0.85",
+          "detail": "node-level growth percentiles are ranked across the 55 producing nodes inside scripts/26"
+        },
+        {
+          "link": "CP family values <- pillar variable contributions",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "variable contributions live in index_outputs.rds, not in the cell table"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 6,
+      "id": "weights",
+      "title": "Weights",
+      "items": [
+        {
+          "item": "need_families",
+          "value": "equal over observed families (4; trusted alternatives in the score: TRUE)",
+          "detail": null,
+          "_row": "need_families"
+        },
+        {
+          "item": "cp_families",
+          "value": "equal over observed families (4 of 4 applicable)",
+          "detail": null,
+          "_row": "cp_families"
+        },
+        {
+          "item": "export_position_momentum_weight",
+          "value": "0.15",
+          "detail": null,
+          "_row": "export_position_momentum_weight"
+        },
+        {
+          "item": "siv_weights",
+          "value": "market 1, commons 1, option 1",
+          "detail": null,
+          "_row": "siv_weights"
+        },
+        {
+          "item": "io_investment_momentum_weight",
+          "value": "0.25",
+          "detail": null,
+          "_row": "io_investment_momentum_weight"
+        }
+      ],
+      "links": [
+        {
+          "link": "weights",
+          "status": "recorded",
+          "expected": null,
+          "observed": null,
+          "detail": "read from config/strategic_position.yml; no sensitivity of the SIV weights exists"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 7,
+      "id": "scores",
+      "title": "Intermediate scores",
+      "items": [
+        {
+          "item": "supply_chain_need_score",
+          "value": "0.6692",
+          "detail": null,
+          "_row": "supply_chain_need_score"
+        },
+        {
+          "item": "supply_chain_need_uncapped",
+          "value": "0.8512",
+          "detail": null,
+          "_row": "supply_chain_need_uncapped"
+        },
+        {
+          "item": "supply_chain_need",
+          "value": "0.8512",
+          "detail": null,
+          "_row": "supply_chain_need"
+        },
+        {
+          "item": "supply_chain_need_cap",
+          "value": null,
+          "detail": null,
+          "_row": "supply_chain_need_cap"
+        },
+        {
+          "item": "siv_score",
+          "value": "0.4177",
+          "detail": null,
+          "_row": "siv_score"
+        },
+        {
+          "item": "strategic_industrial_value",
+          "value": "0.59",
+          "detail": null,
+          "_row": "strategic_industrial_value"
+        },
+        {
+          "item": "siv_cap",
+          "value": "market_only",
+          "detail": null,
+          "_row": "siv_cap"
+        },
+        {
+          "item": "large_yard_case",
+          "value": "FALSE",
+          "detail": null,
+          "_row": "large_yard_case"
+        },
+        {
+          "item": "large_yard_n",
+          "value": "3",
+          "detail": null,
+          "_row": "large_yard_n"
+        },
+        {
+          "item": "large_yard_signals",
+          "value": "passive;substitutable;easy_qualification;diversified",
+          "detail": null,
+          "_row": "large_yard_signals"
+        },
+        {
+          "item": "large_yard_unknown",
+          "value": "low_learning;low_spillover",
+          "detail": null,
+          "_row": "large_yard_unknown"
+        },
+        {
+          "item": "pathway_credible",
+          "value": "yes",
+          "detail": null,
+          "_row": "pathway_credible"
+        },
+        {
+          "item": "pathway_basis",
+          "value": "direct_supply_share;direct_export_share;operating_capacity;committed_pipeline;feasibility;adjacent_stage_relative",
+          "detail": null,
+          "_row": "pathway_basis"
+        },
+        {
+          "item": "catch_up_anchor",
+          "value": "TRUE",
+          "detail": null,
+          "_row": "catch_up_anchor"
+        },
+        {
+          "item": "pathway_anchors_fired",
+          "value": "direct_supply_share;direct_export_share;operating_capacity;committed_pipeline",
+          "detail": null,
+          "_row": "pathway_anchors_fired"
+        },
+        {
+          "item": "pathway_support_fired",
+          "value": "feasibility;adjacent_stage_relative",
+          "detail": null,
+          "_row": "pathway_support_fired"
+        },
+        {
+          "item": "competitive_position_score",
+          "value": "0.7198",
+          "detail": null,
+          "_row": "competitive_position_score"
+        },
+        {
+          "item": "competitive_position_percentile",
+          "value": "0.993",
+          "detail": null,
+          "_row": "competitive_position_percentile"
+        },
+        {
+          "item": "cp_contender_pct",
+          "value": "0.9483",
+          "detail": null,
+          "_row": "cp_contender_pct"
+        },
+        {
+          "item": "cp_contender_basis",
+          "value": "contenders",
+          "detail": null,
+          "_row": "cp_contender_basis"
+        },
+        {
+          "item": "cp_n_contenders",
+          "value": "29",
+          "detail": null,
+          "_row": "cp_n_contenders"
+        },
+        {
+          "item": "cp_is_contender",
+          "value": "TRUE",
+          "detail": null,
+          "_row": "cp_is_contender"
+        },
+        {
+          "item": "home_share_measured",
+          "value": "0.01015",
+          "detail": null,
+          "_row": "home_share_measured"
+        },
+        {
+          "item": "t3_capability_lo",
+          "value": "none",
+          "detail": null,
+          "_row": "t3_capability_lo"
+        }
+      ],
+      "links": [
+        {
+          "link": "need score = mean of observed need families (self-supply guard applied)",
+          "status": "reproduced",
+          "expected": "0.6692",
+          "observed": "0.6692",
+          "detail": null
+        },
+        {
+          "link": "need percentile = within-cell mid-rank of the need score",
+          "status": "reproduced",
+          "expected": "0.8512",
+          "observed": "0.8512",
+          "detail": "205 scored economies in the cell"
+        },
+        {
+          "link": "need-floor cap (score below score_floor with percentile >= need - band)",
+          "status": "reproduced",
+          "expected": "0.8512",
+          "observed": "0.8512",
+          "detail": "score_floor 0.1: not capped"
+        },
+        {
+          "link": "siv_score = weighted mean of market, commons, option",
+          "status": "reproduced",
+          "expected": "0.4177",
+          "observed": "0.4177",
+          "detail": null
+        },
+        {
+          "link": "strategic_industrial_value = mid-rank among all scored rows, market-only cap",
+          "status": "reproduced",
+          "expected": "0.59",
+          "observed": "0.59",
+          "detail": "12045 scored rows; gate 0.5: market only, capped"
+        },
+        {
+          "link": "siv_cap",
+          "status": "reproduced",
+          "expected": "market_only",
+          "observed": "market_only",
+          "detail": null
+        },
+        {
+          "link": "large_yard_n = commodity signals holding (required signals excluded)",
+          "status": "reproduced",
+          "expected": "3",
+          "observed": "3",
+          "detail": null
+        },
+        {
+          "link": "large-yard signals <- node attributes and world_top_share",
+          "status": "recorded",
+          "expected": null,
+          "observed": "passive;substitutable;easy_qualification;diversified",
+          "detail": "recomputed for every cell by scripts/qc/run_sensitivity.R (sp_large_yard_case reproduction check)"
+        },
+        {
+          "link": "pathway_credible <- anchor rule re-thresholded from the stored pw_* signals",
+          "status": "reproduced",
+          "expected": "yes",
+          "observed": "yes",
+          "detail": "rule anchor; 5 evidence families fired of 6 observed"
+        },
+        {
+          "link": "pw_* signals <- GCIM pipeline, capacity and input-cost side tables",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": null,
+          "detail": "sp_pathway() builds the signals from side tables scripts/26 does not save; only the thresholding is re-run"
+        },
+        {
+          "link": "CP score = mean of observed CP families",
+          "status": "reproduced",
+          "expected": "0.7198",
+          "observed": "0.7198",
+          "detail": "families: export_position, manufacturing_capacity, investment_position, innovation_position"
+        },
+        {
+          "link": "cp_contender_pct = CP score placed among the node's contenders",
+          "status": "reproduced",
+          "expected": "0.9483",
+          "observed": "0.9483",
+          "detail": "29 contenders (measured share >= 0.005)"
+        },
+        {
+          "link": "capability lower bound (Secure engine Test 3)",
+          "status": "not reproducible from shipped/pipeline data",
+          "expected": null,
+          "observed": "none",
+          "detail": "the posture engine is not rerun by the audit (its inputs are in strategic_position_inputs.rds)"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 8,
+      "id": "thresholds",
+      "title": "Threshold decisions",
+      "items": [
+        {
+          "item": "decision_step",
+          "value": "triage",
+          "detail": null,
+          "_row": "decision_step"
+        },
+        {
+          "item": "borderline",
+          "value": null,
+          "detail": null,
+          "_row": "borderline"
+        }
+      ],
+      "links": [
+        {
+          "link": "trace large_yard: value",
+          "status": "reproduced",
+          "expected": "3",
+          "observed": "3",
+          "detail": "stored trace rounds to 3 decimals"
+        },
+        {
+          "link": "trace large_yard: threshold",
+          "status": "reproduced",
+          "expected": "5",
+          "observed": "5",
+          "detail": null
+        },
+        {
+          "link": "trace need: value",
+          "status": "reproduced",
+          "expected": "0.8512",
+          "observed": "0.851",
+          "detail": "stored trace rounds to 3 decimals"
+        },
+        {
+          "link": "trace need: threshold",
+          "status": "reproduced",
+          "expected": "0.67",
+          "observed": "0.67",
+          "detail": null
+        },
+        {
+          "link": "trace need: result",
+          "status": "reproduced",
+          "expected": "TRUE",
+          "observed": "TRUE",
+          "detail": "stored high"
+        },
+        {
+          "link": "trace prize: value",
+          "status": "reproduced",
+          "expected": "0.59",
+          "observed": "0.59",
+          "detail": "stored trace rounds to 3 decimals"
+        },
+        {
+          "link": "trace prize: threshold",
+          "status": "reproduced",
+          "expected": "0.6",
+          "observed": "0.6",
+          "detail": null
+        },
+        {
+          "link": "trace prize: result",
+          "status": "reproduced",
+          "expected": "FALSE",
+          "observed": "FALSE",
+          "detail": "stored low"
+        },
+        {
+          "link": "trace position: value",
+          "status": "reproduced",
+          "expected": "0.9483",
+          "observed": "0.948",
+          "detail": "stored trace rounds to 3 decimals"
+        },
+        {
+          "link": "trace position: threshold",
+          "status": "reproduced",
+          "expected": "0.75",
+          "observed": "0.75",
+          "detail": null
+        },
+        {
+          "link": "trace position: result",
+          "status": "reproduced",
+          "expected": "FALSE",
+          "observed": "FALSE",
+          "detail": "stored capability_floor_not_met"
+        }
+      ],
+      "tables": {
+        "steps": [
+          {
+            "step": "secure_engine",
+            "test": "t1_consequence",
+            "value": "no",
+            "threshold": null,
+            "margin": null,
+            "result": "no",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t2_vulnerability",
+            "value": "no",
+            "threshold": null,
+            "margin": null,
+            "result": "no",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t2_path",
+            "value": "none",
+            "threshold": null,
+            "margin": null,
+            "result": "none",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t3_capability",
+            "value": "unknown",
+            "threshold": null,
+            "margin": null,
+            "result": "unknown",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t3_position",
+            "value": "no",
+            "threshold": null,
+            "margin": null,
+            "result": "no",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t4_strategy",
+            "value": "no",
+            "threshold": null,
+            "margin": null,
+            "result": "no",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure_engine",
+            "test": "t5_proportionality",
+            "value": "fail",
+            "threshold": null,
+            "margin": null,
+            "result": "fail",
+            "note": "posture engine test as stored (not rerun)"
+          },
+          {
+            "step": "secure",
+            "test": "secure_override (posture engine)",
+            "value": "deploy",
+            "threshold": "secure",
+            "margin": null,
+            "result": "no",
+            "note": null
+          },
+          {
+            "step": "large_yard",
+            "test": "large_yard_case",
+            "value": "3",
+            "threshold": "5",
+            "margin": "-2",
+            "result": "no",
+            "note": "Not a large yard: not mature (scaling)."
+          },
+          {
+            "step": "need",
+            "test": "supply_chain_need",
+            "value": "0.8512",
+            "threshold": "0.67",
+            "margin": "0.1812",
+            "result": "high",
+            "note": null
+          },
+          {
+            "step": "prize",
+            "test": "strategic_industrial_value",
+            "value": "0.59",
+            "threshold": "0.6",
+            "margin": "-0.01",
+            "result": "low (market-only cap)",
+            "note": null
+          },
+          {
+            "step": "pathway",
+            "test": "pathway_credible",
+            "value": "yes",
+            "threshold": "yes",
+            "margin": null,
+            "result": "yes",
+            "note": "read only for a high prize without a high position"
+          },
+          {
+            "step": "position",
+            "test": "cp_contender_pct",
+            "value": "0.9483",
+            "threshold": "0.75",
+            "margin": "0.1983",
+            "result": "not_top_quarter",
+            "note": "contender TRUE, capability lower bound none (floor moderate/strong)"
+          }
+        ]
+      },
+      "notes": []
+    },
+    {
+      "n": 9,
+      "id": "classification",
+      "title": "Final classification",
+      "items": [
+        {
+          "item": "strategic_choice",
+          "value": "partner",
+          "detail": null,
+          "_row": "strategic_choice"
+        },
+        {
+          "item": "choice_label",
+          "value": "Partner",
+          "detail": null,
+          "_row": "choice_label"
+        },
+        {
+          "item": "strategic_posture",
+          "value": "compete",
+          "detail": null,
+          "_row": "strategic_posture"
+        },
+        {
+          "item": "compete_mode",
+          "value": "partner",
+          "detail": null,
+          "_row": "compete_mode"
+        },
+        {
+          "item": "deploy_mode",
+          "value": null,
+          "detail": null,
+          "_row": "deploy_mode"
+        },
+        {
+          "item": "decision_step",
+          "value": "triage",
+          "detail": null,
+          "_row": "decision_step"
+        },
+        {
+          "item": "posture_variant",
+          "value": "compete_partner",
+          "detail": null,
+          "_row": "posture_variant"
+        },
+        {
+          "item": "posture_confidence",
+          "value": "moderate",
+          "detail": null,
+          "_row": "posture_confidence"
+        },
+        {
+          "item": "choice_possible",
+          "value": "partner",
+          "detail": null,
+          "_row": "choice_possible"
+        },
+        {
+          "item": "pivotal_inputs",
+          "value": null,
+          "detail": null,
+          "_row": "pivotal_inputs"
+        },
+        {
+          "item": "consistency_flag",
+          "value": "review_top_quarter_below_floor",
+          "detail": null,
+          "_row": "consistency_flag"
+        },
+        {
+          "item": "robustness_class",
+          "value": "sensitive",
+          "detail": null,
+          "_row": "robustness_class"
+        },
+        {
+          "item": "robustness_local_flips",
+          "value": null,
+          "detail": null,
+          "_row": "robustness_local_flips"
+        },
+        {
+          "item": "robustness_structural_flips",
+          "value": "siv_gate_033:catch_up;siv_unknown_half:catch_up",
+          "detail": null,
+          "_row": "robustness_structural_flips"
+        },
+        {
+          "item": "robustness_fence_change",
+          "value": "FALSE",
+          "detail": null,
+          "_row": "robustness_fence_change"
+        }
+      ],
+      "links": [
+        {
+          "link": "choice = canonical rule rerun from the stored inputs",
+          "status": "reproduced",
+          "expected": "partner",
+          "observed": "partner",
+          "detail": null
+        }
+      ],
+      "tables": [],
+      "notes": []
+    },
+    {
+      "n": 10,
+      "id": "recommendation",
+      "title": "Resulting recommendation",
+      "items": [
+        {
+          "item": "choice",
+          "value": "partner",
+          "detail": null,
+          "_row": "choice"
+        },
+        {
+          "item": "choice_label",
+          "value": "Partner",
+          "detail": null,
+          "_row": "choice_label"
+        },
+        {
+          "item": "choice_action",
+          "value": "Rely on trusted partners or diversified supply",
+          "detail": null,
+          "_row": "choice_action"
+        },
+        {
+          "item": "yard",
+          "value": "medium",
+          "detail": null,
+          "_row": "yard"
+        },
+        {
+          "item": "yard_and_fence",
+          "value": "Medium yard / medium, permeable fence",
+          "detail": null,
+          "_row": "yard_and_fence"
+        },
+        {
+          "item": "fence",
+          "value": "Medium fence",
+          "detail": null,
+          "_row": "fence"
+        },
+        {
+          "item": "yard_rollup",
+          "value": "medium",
+          "detail": null,
+          "_row": "yard_rollup"
+        },
+        {
+          "item": "fence_level",
+          "value": "moderate",
+          "detail": null,
+          "_row": "fence_level"
+        },
+        {
+          "item": "fence_posture",
+          "value": "A medium, permeable fence: open to the recommended trusted partners, closed to coercive control (screening of coercive suppliers' investment, trusted-source conditions in critical uses); partnership terms, not tariffs, decide who supplies.",
+          "detail": null,
+          "_row": "fence_posture"
+        },
+        {
+          "item": "gate_level",
+          "value": "open",
+          "detail": null,
+          "_row": "gate_level"
+        },
+        {
+          "item": "build_posture",
+          "value": "Build the partnership, not a domestic replica: offtake and co-investment with the recommended partners, diversified contracts and the infrastructure that brings partner supply in. Delivery (allied): Build the capability jointly with partners (co-investment, joint ventures, offtake, shared R&D); the domestic share is the segment where the country is strongest.",
+          "detail": null,
+          "_row": "build_posture"
+        },
+        {
+          "item": "benchmark",
+          "value": "Trusted partners supply the bulk of the country's need at a delivered cost close to the world price.",
+          "detail": null,
+          "_row": "benchmark"
+        },
+        {
+          "item": "success_metrics",
+          "value": "Share of the country's supply from trusted partners; Supplier diversity (HHI) and the share of any potentially coercive supplier; Delivered cost of the partner supply",
+          "detail": null,
+          "_row": "success_metrics"
+        },
+        {
+          "item": "exit_condition",
+          "value": "Public finance for partner capacity sunsets on the stated schedule unless partner supply is growing. Re-test when the country's opportunity in the node rises (Catch Up or Preserve), its need falls (Watch), or a partner gap opens (no credible trusted supplier).",
+          "detail": null,
+          "_row": "exit_condition"
+        },
+        {
+          "item": "review_interval_years",
+          "value": "3",
+          "detail": null,
+          "_row": "review_interval_years"
+        },
+        {
+          "item": "reason",
+          "value": "High supply-chain need (0.85) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.88, commons 0.00, option 0.38): a security problem without a domestic industrial prize. Partner with trusted suppliers.",
+          "detail": null,
+          "_row": "reason"
+        },
+        {
+          "item": "recommended_partners",
+          "value": "JPN, MYS, DEU",
+          "detail": null,
+          "_row": "recommended_partners"
+        },
+        {
+          "item": "policy_alignment",
+          "value": "misaligned",
+          "detail": null,
+          "_row": "policy_alignment"
+        },
+        {
+          "item": "policy_alignment_label",
+          "value": "Wrong tool for the problem",
+          "detail": null,
+          "_row": "policy_alignment_label"
+        }
+      ],
+      "links": [
+        {
+          "link": "yard = yard of the choice (yard_rollup.R)",
+          "status": "reproduced",
+          "expected": "medium",
+          "observed": "medium",
+          "detail": null
+        },
+        {
+          "link": "policy-design text <- config/posture_policy_design.csv by posture variant",
+          "status": "recorded",
+          "expected": null,
+          "observed": "compete_partner",
+          "detail": null
+        },
+        {
+          "link": "policy alignment",
+          "status": "recorded",
+          "expected": null,
+          "observed": "misaligned",
+          "detail": "after the choice; never an input to it"
+        }
+      ],
+      "tables": [],
+      "notes": []
+    }
+  ],
+  "bundle_comparison": {
+    "available": true,
+    "bundle_created": "2026-11-17T20:33:31Z",
+    "bundle_git_commit": "0496e7ba",
+    "detail_file": "posture/posture-detail-IND.3cd17ed1.json",
+    "core_file": "posture/posture-core.f665dc19.json",
+    "fields": [
+      {
+        "field": "choice (core)",
+        "pipeline": "partner",
+        "bundle": "partner",
+        "status": "same"
+      },
+      {
+        "field": "yard roll-up (core yd)",
+        "pipeline": "M",
+        "bundle": "M",
+        "status": "same"
+      },
+      {
+        "field": "posture",
+        "pipeline": "compete",
+        "bundle": "compete",
+        "status": "same"
+      },
+      {
+        "field": "variant",
+        "pipeline": "compete_partner",
+        "bundle": "compete_partner",
+        "status": "same"
+      },
+      {
+        "field": "mode",
+        "pipeline": "partner",
+        "bundle": "partner",
+        "status": "same"
+      },
+      {
+        "field": "confidence",
+        "pipeline": "moderate",
+        "bundle": "moderate",
+        "status": "same"
+      },
+      {
+        "field": "need",
+        "pipeline": "0.8512",
+        "bundle": "0.851",
+        "status": "same"
+      },
+      {
+        "field": "prize.value",
+        "pipeline": "0.59",
+        "bundle": "0.59",
+        "status": "same"
+      },
+      {
+        "field": "prize.market",
+        "pipeline": "0.8781",
+        "bundle": "0.878",
+        "status": "same"
+      },
+      {
+        "field": "prize.node_prize",
+        "pipeline": "0.85",
+        "bundle": "0.85",
+        "status": "same"
+      },
+      {
+        "field": "prize.outlook",
+        "pipeline": "growing",
+        "bundle": "growing",
+        "status": "same"
+      },
+      {
+        "field": "prize.measure",
+        "pipeline": "strategic_value",
+        "bundle": "strategic_value",
+        "status": "same"
+      },
+      {
+        "field": "prize.investment_momentum",
+        "pipeline": "0.7",
+        "bundle": "0.7",
+        "status": "same"
+      },
+      {
+        "field": "prize.home_market",
+        "pipeline": "0.9061",
+        "bundle": "0.906",
+        "status": "same"
+      },
+      {
+        "field": "cp",
+        "pipeline": "0.9483",
+        "bundle": "0.948",
+        "status": "same"
+      },
+      {
+        "field": "home_share",
+        "pipeline": "0.01015",
+        "bundle": "0.0101",
+        "status": "same"
+      },
+      {
+        "field": "pathway_credible",
+        "pipeline": "yes",
+        "bundle": "yes",
+        "status": "same"
+      },
+      {
+        "field": "pathway_basis",
+        "pipeline": "direct_supply_share;direct_export_share;operating_capacity;committed_pipeline;feasibility;adjacent_stage_relative",
+        "bundle": "direct_supply_share;direct_export_share;operating_capacity;committed_pipeline;feasibility;adjacent_stage_relative",
+        "status": "same"
+      },
+      {
+        "field": "consistency_flag",
+        "pipeline": "review_top_quarter_below_floor",
+        "bundle": "review_top_quarter_below_floor",
+        "status": "same"
+      },
+      {
+        "field": "reason",
+        "pipeline": "High supply-chain need (0.85) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.88, commons 0.00, option 0.38): a security problem without a domestic industrial prize. Partner with trusted suppliers.",
+        "bundle": "High supply-chain need (0.85) and a strategic industrial value held below the threshold (0.59: the market prize alone; market 0.88, commons 0.00, option 0.38): a security problem without a domestic industrial prize. Partner with trusted suppliers.",
+        "status": "same"
+      },
+      {
+        "field": "policy.alignment",
+        "pipeline": "misaligned",
+        "bundle": "misaligned",
+        "status": "same"
+      },
+      {
+        "field": "partners[1].iso3",
+        "pipeline": "JPN",
+        "bundle": "JPN",
+        "status": "same"
+      },
+      {
+        "field": "import_dependence (sn_import_dependence, a percentile)",
+        "pipeline": "0.7239",
+        "bundle": "0.724",
+        "status": "same"
+      },
+      {
+        "field": "import_hhi (sn_supplier_concentration, a percentile)",
+        "pipeline": "0.6872",
+        "bundle": "0.687",
+        "status": "same"
+      },
+      {
+        "field": "china_bloc (sn_risky_supplier_exposure, a percentile)",
+        "pipeline": "0.8292",
+        "bundle": "0.829",
+        "status": "same"
+      },
+      {
+        "field": "trusted_alternatives",
+        "pipeline": "0.4366",
+        "bundle": "0.437",
+        "status": "same"
+      },
+      {
+        "field": "top_supplier",
+        "pipeline": "CHN",
+        "bundle": "CHN",
+        "status": "same"
+      },
+      {
+        "field": "top_supplier_share",
+        "pipeline": "0.5822",
+        "bundle": "0.582",
+        "status": "same"
+      },
+      {
+        "field": "china_share",
+        "pipeline": "0.5871",
+        "bundle": "0.587",
+        "status": "same"
+      },
+      {
+        "field": "imports_to_gdp",
+        "pipeline": "0.001895",
+        "bundle": "0.00189",
+        "status": "same"
+      },
+      {
+        "field": "trusted_share",
+        "pipeline": "0.7063",
+        "bundle": "0.706",
+        "status": "same"
+      },
+      {
+        "field": "coercive_top",
+        "pipeline": "CHN",
+        "bundle": "CHN",
+        "status": "same"
+      },
+      {
+        "field": "coercive_top_share",
+        "pipeline": "0.2595",
+        "bundle": "0.259",
+        "status": "same"
+      },
+      {
+        "field": "coercive_import_share",
+        "pipeline": "0.5874",
+        "bundle": "0.587",
+        "status": "same"
+      },
+      {
+        "field": "trade.benchmark_share",
+        "pipeline": "0.007585",
+        "bundle": "0.00759",
+        "status": "same"
+      },
+      {
+        "field": "trade.benchmark_rca",
+        "pipeline": "0.3729",
+        "bundle": "0.373",
+        "status": "same"
+      },
+      {
+        "field": "trade.momentum_score",
+        "pipeline": "0.8816",
+        "bundle": "0.882",
+        "status": "same"
+      },
+      {
+        "field": "trade.benchmark_exports",
+        "pipeline": "1,147,448,400",
+        "bundle": "1,150,000,000",
+        "status": "same"
+      },
+      {
+        "field": "current_trade.weight",
+        "pipeline": "0.5",
+        "bundle": "0.5",
+        "status": "same"
+      },
+      {
+        "field": "current_trade.china_share_base",
+        "pipeline": "0.6598",
+        "bundle": "0.66",
+        "status": "same"
+      },
+      {
+        "field": "current_trade.china_share_latest",
+        "pipeline": "0.5143",
+        "bundle": "0.514",
+        "status": "same"
+      },
+      {
+        "field": "cp_families.export_position",
+        "pipeline": "0.7205",
+        "bundle": "0.72",
+        "status": "same"
+      },
+      {
+        "field": "cp_families.manufacturing_capacity",
+        "pipeline": "0.755",
+        "bundle": "0.755",
+        "status": "same"
+      },
+      {
+        "field": "cp_families.investment_position",
+        "pipeline": "0.7948",
+        "bundle": "0.795",
+        "status": "same"
+      },
+      {
+        "field": "cp_families.innovation_position",
+        "pipeline": "0.6088",
+        "bundle": "0.609",
+        "status": "same"
+      }
+    ],
+    "n_differences": 0,
+    "choice_pipeline": "partner",
+    "choice_bundle": "partner"
+  },
+  "gaps": ["1. need: import dependence: raw rows -> this cell: not reproducible from shipped/pipeline data (the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded)", "1. need: supplier concentration and risky suppliers: raw rows -> this cell: not reproducible from shipped/pipeline data (the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded)", "1. need: current-trade blend: raw rows -> this cell: not reproducible from shipped/pipeline data (the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded)", "1. need: trusted alternatives and world supply structure: raw rows -> this cell: not reproducible from shipped/pipeline data (the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded)", "1. position: CP families: raw rows -> this cell: not reproducible from shipped/pipeline data (the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded)", "1. position: trade benchmark and momentum: raw inputs: not reproducible from shipped/pipeline data (no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded)", "1. prize: market (demand growth, investment momentum, home market): raw rows -> this cell: not reproducible from shipped/pipeline data (the manifest names candidate raw files by script; row-level lineage from raw file to this cell is not recorded)", "1. prize: commons and option; large-yard signals: raw inputs: not reproducible from shipped/pipeline data (no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded)", "1. Secure engine (Tests 1-5) and capability floor: raw inputs: not reproducible from shipped/pipeline data (no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded)", "1. pathway (Catch Up anchors): raw inputs: not reproducible from shipped/pipeline data (no raw_inputs_manifest.yml entry names the producing script in required_by: the raw source of this family is not recorded)", "1. candidate raw inputs: vintage and licence recorded: provenance_gap (51 of 64 lack a vintage or a licence in config/raw_inputs_manifest.yml: comtrade_energy_trade, comtrade_total_export, critmin_export, critmin_import, critmin_mirror_import, critmin_total_export, ilo_earnings_by_activity, imf_commodity_prices, imf_lending_rates, imf_ppi, wdi_country_info, wdi_gdp, consolidated_hs6_energy_tech_long, dual_use_scores, hs6_categories_with_essential, hts_codes_categories_bolstered_final, comtrade_vintage, bcg_market_size, cat_country_ratings, ei_stat_review, ei_stat_review_wide, ev_midstream_capacity, gcim_investment_capacity, geothermal_lcoe, hs92_country_product_year_4, hs92_country_product_year_6, iea_clean_tech_guide, iea_cleantech_midstream, iea_ev_outlook, iea_pams, iea_relative_costs, ipcc_ghg_intensity, solar_potential, uranium_production, uranium_resources, wb_wind_country, allied_comtrade_energy_data, comtrade_energy_dyads_all, wb_doingbusiness, wb_wdi, energy_hs6_master, imf_dip, oecd_crs_purpose, oci_energy_finance, oci_energy_finance_institutions, oci_energy_finance_crosswalk, oecd_crs_purpose_crosswalk, comtrade_monthly_dyads, comtrade_monthly_dyads_dictionary_extra, comtrade_monthly_dyads_windows, uspto_y02_patents)", "2. partner rows: self-trade (re-import) imports, USD: differs (import_partner_cells_tbl.rds lists the importer as its own supplier (0.001785 of its partner rows); import_exposure_tbl.rds leaves these out, but sp_partner_recs() diversification and the partnership memo read the partner table as it is)", "2. home_share (world supply share) <- production / supply structure: not reproducible from shipped/pipeline data (the supply structure is assembled inside scripts/26 (Atlas trade shares, USGS / EI production, GCIM) and not saved per source; 2 production-table rows shown for context)", "2. trade benchmark <- Comtrade energy trade rows: not reproducible from shipped/pipeline data (the 2022-24 benchmark is computed inside scripts/26 from the raw Comtrade pull; no processed table holds its rows)", "4. measure-level percentiles (raw value -> measure percentile): not reproducible from shipped/pipeline data (measure values other than import HHI, China and opposite-bloc shares are not stored per cell (index_outputs contributions))", "5. sn_import_dependence <- deficit_gdp / production surplus percentiles: not reproducible from shipped/pipeline data (its measures live in index_outputs.rds contributions, not in the cell table)", "5. io_node_prize <- WEO / minerals demand growth and capex momentum: not reproducible from shipped/pipeline data (node-level growth percentiles are ranked across the 55 producing nodes inside scripts/26)", "5. CP family values <- pillar variable contributions: not reproducible from shipped/pipeline data (variable contributions live in index_outputs.rds, not in the cell table)", "7. pw_* signals <- GCIM pipeline, capacity and input-cost side tables: not reproducible from shipped/pipeline data (sp_pathway() builds the signals from side tables scripts/26 does not save; only the thresholding is re-run)", "7. capability lower bound (Secure engine Test 3): not reproducible from shipped/pipeline data (the posture engine is not rerun by the audit (its inputs are in strategic_position_inputs.rds))"]
+}

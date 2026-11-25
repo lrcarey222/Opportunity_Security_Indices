@@ -10,6 +10,7 @@
 import { useMemo, useState } from 'react';
 import type { PostureCell, PostureCore } from './contract.ts';
 import { pct } from './derive.ts';
+import { networkOf } from './partnerEligibility.ts';
 import { choiceWord, nodeFill, prizeLabel, RATIONALE_LABEL, VERB_COLOR, VERB_OUTLINE, verbOf } from './grammar.ts';
 
 const W = 640;
@@ -116,7 +117,15 @@ export function PostureScatter({ core, cells, onOpen, highlight }: { core: Postu
             Need {pct(hov.need)} · Prize {pct(hov.prize)} · Position {pct(hov.cp)}
           </p>
           <p className="tabular">World supply share {pct(hov.share, 1)}</p>
-          {hov.mode === 'partner' && <p>{hov.partnerGap ? 'No credible allied solution yet' : `First partner: ${names[hov.partner1 ?? ''] ?? hov.partner1 ?? '—'}`}</p>}
+          {hov.mode === 'partner' && (
+            <p>
+              {hov.partnerGap
+                ? 'No credible allied solution yet'
+                : hov.partner1 && !networkOf(core.countries).has(hov.partner1)
+                  ? `First-ranked supplier: ${names[hov.partner1] ?? hov.partner1}, outside the trusted network`
+                  : `First trusted partner: ${names[hov.partner1 ?? ''] ?? hov.partner1 ?? '—'}`}
+            </p>
+          )}
           {hov.borderline && <p className="text-signal">Borderline on {hov.borderline}</p>}
           <p className="mt-1 text-paper-mute">Click to open the country profile.</p>
         </div>

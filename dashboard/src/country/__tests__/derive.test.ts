@@ -218,16 +218,16 @@ describe.skipIf(!haveFixture())('Country page helpers (derive/strategyPage.ts, d
     // the h2s state each section's strategic question or its plain fence title (the NEIS copy refresh, 2026-10-30)
     expect(STRATEGY_SECTIONS.map((s) => s.label)).toEqual([
       'What should this country do?',
-      'High fence · Secure',
-      'Medium fence · Build, preserve, partner and deploy',
-      'Low fence · Keep open',
+      'Secure what is critical (high fence)',
+      'Build, preserve, partner and deploy (medium fence)',
+      'Keep open (low fence)',
       'Is policy focused on the right places?',
       'Where this country fits in the Allied Industrial Base',
       'Evidence & methodology',
     ]);
     // the section nav keeps short words
     expect(STRATEGY_SECTIONS.map((s) => s.nav ?? s.label)).toEqual([
-      'Strategy map', 'High fence · Secure', 'Medium fence · Build, partner, deploy', 'Low fence · Keep open', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
+      'Strategy map', 'Secure (high fence)', 'Build, partner, deploy (medium fence)', 'Keep open (low fence)', 'Policy alignment', 'Allied strategy', 'Evidence & methodology',
     ]);
     expect(STRATEGY_SECTIONS.map((s) => s.id)).toEqual(['strategy', 'high-fence', 'medium-fence', 'low-fence', 'policy-alignment', 'allied', 'evidence']);
     // the Medium fence's sub-sections, in order, with their anchors: each named by its step and the question it answers

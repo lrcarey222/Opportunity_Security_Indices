@@ -1,5 +1,7 @@
 # Energy Security Index v2 (and its Economic Opportunity twin)
 
+> **Legacy:** the Energy Security and Economic Opportunity index builders (last updated 2026-10-09). These indices are descriptive and historical, not the decision rule. The current methodology is in [strategic_position.md](strategic_position.md) (see [README.md](README.md)).
+
 ## Overview
 
 `build_energy_security_index_v2()` (`R/indices/build_energy_security_index_v2.R`) builds the Energy Security (ES) pillar from the theme tables. It is the only ES builder the pipeline uses: `scripts/20_build_indices.R` and the vintage builder (`scripts/40_build_index_vintages.R`) call it directly, so no config flag selects it (`use_energy_security_v2` in older `config.yml` files is ignored). `build_economic_opportunity_index_v2()` (`R/indices/build_economic_opportunity_index_v2.R`) builds the Economic Opportunity (EO) pillar the same way; both share `R/indices/index_builder_core.R`.

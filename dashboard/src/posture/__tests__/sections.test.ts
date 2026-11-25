@@ -12,6 +12,7 @@ import {
   TOP_QUARTER_NOT_PRESERVE, watchReasons,
 } from '../sections.ts';
 import { fixtureCore, fixtureDetail } from './fixture.ts';
+import { networkOf } from '../partnerEligibility.ts';
 
 const core = decodeCore(fixtureCore());
 const t = core.meta.thresholds;
@@ -19,6 +20,7 @@ const aaa = countryCells(core, 'AAA');
 const detail = checkPostureDetail(fixtureDetail());
 const dk = detailByKey(detail);
 const names = countryNames(core);
+const net = networkOf(core.countries);
 const cell = (key: string, cells: PostureCell[] = aaa) => cells.find((c) => `${c.tech}|${c.stage}` === key)!;
 
 describe('Need (spec XII)', () => {
@@ -205,7 +207,7 @@ describe('Policy Alignment (spec XV)', () => {
 
 describe('Allied Strategy (spec XVI)', () => {
   it('rows: every Partner node and every Secure node delivered with allies; partners, why, AIB status and gap logic', () => {
-    const rows = alliedRows(aaa, detail, core.division, names);
+    const rows = alliedRows(aaa, detail, core.division, names, net);
     expect(rows.map((r) => [r.key, r.verb, r.status])).toEqual([
       ['Batteries|Extraction', 'partner', 'covered'], ['Batteries|Refining', 'secure', 'gap'], ['Solar|Refining', 'secure', 'not_mapped'],
     ]);
@@ -219,24 +221,41 @@ describe('Allied Strategy (spec XVI)', () => {
 
   it('a Partner node without a trusted supplier says "no credible allied solution yet"; the economy gap reasons win over the division', () => {
     const cland = countryCells(core, 'CCC');
-    const [row] = alliedRows(cland, null, core.division, names);
+    const [row] = alliedRows(cland, null, core.division, names, net);
     expect([row.key, row.status, row.noSolution, row.partners]).toEqual(['Batteries|Components', 'gap', true, []]);
     expect(row.gaps).toEqual(['only one credible supplier exists', 'allied capacity is insufficient', 'concentration remains excessive (70% held by potentially coercive suppliers)']);
     const doc = fixtureDetail();
     Object.assign((doc.cells as Record<string, unknown>[])[0], { partner_gap_reasons: 'weak_evidence;single_credible_supplier', partner_aib_status: 'gap' });
-    const [own] = alliedRows(aaa, checkPostureDetail(doc), core.division, names);
+    const [own] = alliedRows(aaa, checkPostureDetail(doc), core.division, names, net);
     expect([own.status, own.gaps]).toEqual(['gap', ['only one credible supplier exists', 'capability evidence is weak']]);
   });
 
   it('the opening sentence is computed from the rows', () => {
-    expect(alliedSentence('Aland', aaa, alliedRows(aaa, detail, core.division, names))).toBe(
+    expect(alliedSentence('Aland', aaa, alliedRows(aaa, detail, core.division, names, net))).toBe(
       "1 of Aland's 7 priority nodes is better solved through allies; 2 Secure nodes also depend on trusted foreign capacity.",
     );
     const cland = countryCells(core, 'CCC');
-    expect(alliedSentence('Cland', cland, alliedRows(cland, null, core.division, names))).toBe(
+    expect(alliedSentence('Cland', cland, alliedRows(cland, null, core.division, names, net))).toBe(
       "1 of Cland's 1 priority node is better solved through allies; 1 has no credible allied solution yet.",
     );
     expect(alliedSentence('Wales', [], [])).toBe("None of Wales' 0 priority nodes are a Partner choice.");
+  });
+
+  it('partners outside the trusted network are listed apart, never recommended; with none eligible the row says so', () => {
+    // Bland (BBB) leaves the network: Cland stays the one recommended partner, Bland is listed outside
+    const outBland = { has: (x: string | null | undefined) => x === 'CCC' };
+    const [row] = alliedRows(aaa, detail, core.division, names, outBland);
+    expect([row.partners.map((p) => p.iso3), row.outside.map((p) => p.iso3), row.noEligible]).toEqual([['CCC'], ['BBB'], false]);
+    // nobody in the network: no recommended partner, both listed outside, and the sentence counts it
+    const none = { has: () => false };
+    const rows = alliedRows(aaa, detail, core.division, names, none);
+    expect([rows[0].partners, rows[0].outside.map((p) => p.name), rows[0].noEligible]).toEqual([[], ['Bland', 'Cland'], true]);
+    expect(alliedSentence('Aland', aaa, rows)).toBe(
+      "1 of Aland's 7 priority nodes is better solved through allies; 2 Secure nodes also depend on trusted foreign capacity; 1 has no eligible trusted partner identified.",
+    );
+    // the engine's own partner gap stays a gap, not a missing eligible partner
+    const [gap] = alliedRows(countryCells(core, 'CCC'), null, core.division, names, none);
+    expect([gap.noSolution, gap.noEligible]).toEqual([true, false]);
   });
 
   it('the remote command path in words', () => {

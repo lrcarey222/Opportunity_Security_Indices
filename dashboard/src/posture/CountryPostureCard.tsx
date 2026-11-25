@@ -28,6 +28,7 @@ import { usePostureCore, usePostureDetail } from './store.ts';
 import type { DeployCaseId, PostureDetail } from './contract.ts';
 import { strategySentence } from './strategy.ts';
 import { countryPostureCols } from './tables.tsx';
+import { networkOf } from './partnerEligibility.ts';
 
 export const COUNTRY_STRATEGY_MAP_TITLE = 'Country Strategy Map';
 /**
@@ -119,7 +120,7 @@ export function CountryPostureCard({
   const cw = strategyCountsText(counts);
   const summary = `${sentence} ${cw.verbs}.`;
   const toggle = (k: string) => setSel(sel === k ? null : k);
-  const csv = () => ({ name: `${name} country strategy map`, text: postureCsvText(postureCsvRows(rows), POSTURE_CSV_COLS, postureProvenance(c)) });
+  const csv = () => ({ name: `${name} country strategy map`, text: postureCsvText(postureCsvRows(rows, networkOf(c.countries)), POSTURE_CSV_COLS, postureProvenance(c)) });
   return (
     <div className={className} data-testid="country-posture-hero">
       <ChartCard
@@ -130,7 +131,7 @@ export function CountryPostureCard({
         table={() => (
           <TableView
             rows={rows}
-            cols={countryPostureCols(c.meta)}
+            cols={countryPostureCols(c.meta, networkOf(c.countries))}
             caption={`${name}: choice by technology and stage`}
             rowKey={(r) => r.key}
             onRowClick={(r) => r.classified && toggle(r.key)}

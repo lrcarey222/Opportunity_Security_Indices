@@ -981,6 +981,11 @@ aib_dash_strategic <- function(st, gate_labels = NULL) {
          active = aib_dash_arr(sids[vapply(sids, function(s) isTRUE(w[[paste0("active_", s)]]), logical(1))]))
   })
   mt <- st$metrics
+  # 2026-11-23 (roles: non_allied_roles false): a non-allied major supplier holds no role, so it is not listed
+  # among the strategic countries (an economy is listed when allied or when it holds role rows; a layer built
+  # with non_allied_roles true keeps its non-allied suppliers). Its supply stays in the division of labour, the
+  # workstreams' external dependencies and the nodes' supplier lists.
+  mt <- mt[mt$allied %in% TRUE | mt$iso3 %in% st$roles$iso3, , drop = FALSE]
   narr <- st$narratives
   slot_names <- c(headline = "slot_headline", secondary = "slot_secondary", firstOn = "slot_first_on", contributes = "slot_contributes",
                   focus = "slot_focus", needs = "slot_needs", dependency = "slot_dependency", compacts = "slot_compacts",
