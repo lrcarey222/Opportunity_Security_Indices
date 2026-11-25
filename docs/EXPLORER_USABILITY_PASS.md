@@ -150,3 +150,18 @@ AIB measures; no-evidence stages collapsed on technology pages; decision-brief C
    a position), and audit the 603 zero-position cells with weak evidence.
 4. Fix the solar refining measure (polysilicon production) and the duplicated IEA capacity rows.
 5. Add theses for close pairs without one (United States-Taiwan) and review the doubtful compact roles.
+
+## Tests and checks (2026-11-25)
+- Typecheck (`tsc -p tsconfig.app.json`, `tsc -b`) clean; `vite build` passes; `npm run budget` OK (Country profile
+  first view 902.5 kB of the new 910 kB limit; Home 222.8 kB of 400 kB).
+- Dashboard unit + ui + parity-synthetic: 2,325 of 2,327 passed in the full run. One failure was a page-title timing
+  race on `/glossary`, fixed by waiting for the title. The other was a review-reasoning test, fixed by merging main
+  (#372 rebuilt the review release for the regenerated memos). `src/review/exports.test.ts` still fails to parse on
+  Windows checkouts only (CRLF after a shebang), as before. Review QC tests 163/163 after the merge.
+- New regression tests: `posture/__tests__/confidence.test.ts`, `posture/__tests__/evidenceSummary.test.tsx`,
+  `sector/derive/answer.test.ts`, `aib/__tests__/compactAnswer.test.ts`, `partnerships/__tests__/strategicCase*`,
+  `partnerships/__tests__/memos.test.ts`, `shell/__tests__/howto-glossary.test.tsx`.
+- Checked in the browser (dev server, no console errors): Home (desktop and phone width, no horizontal scroll),
+  Solar and Green Hydrogen technology pages, the United States country page, the United States-Japan pair view, and
+  the Battery Materials & Cells compact page. No recommendation, count or classification changed; the
+  missing-evidence cases read as insufficient evidence.
