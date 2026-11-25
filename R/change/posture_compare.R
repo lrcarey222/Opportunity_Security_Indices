@@ -7,6 +7,7 @@
 
 CHANGE_KEY <- c("iso3", "tech", "stage")
 CHANGE_TYPES <- c("recommendation", "score", "data", "evidence", "confidence")
+CHANGE_ATTRIBUTIONS <- c("real_world", "methodology", "mixed", "unattributed", "both")
 CHANGE_ROUND_TOL <- 1e-9   # cores are rounded to 3 dp; compare deltas with a hair of slack
 
 # Two vintages are comparable when they cover the same techs and stages.
@@ -149,7 +150,11 @@ posture_compare <- function(prev, cur, prev_header, cur_header, cfg, bridge = NU
     x$world_types <- ifelse(w_any, jw$types[kw], NA_character_)
     x$attribution <- ifelse(m_any & w_any, "both", ifelse(m_any, "methodology", ifelse(w_any, "real_world", "methodology")))
   } else {
-    x$attribution <- ifelse(x$inputs_moved, "mixed", "methodology")
+    # without a bridge: a method change is credited alone only when the data is verifiably unchanged (both data
+    # stamps record resolved raw-input vintages and agree) and the cell's measured inputs did not move. A stamp
+    # without raw-input vintages cannot rule out a data refresh: that cell is unattributed, never "methodology".
+    verified <- isTRUE(prev_header$data$verified) && isTRUE(cur_header$data$verified)
+    x$attribution <- ifelse(x$inputs_moved | pair$data_changed, "mixed", if (verified) "methodology" else "unattributed")
   }
   x$method_changed <- rep(method_changed, nrow(x))
   x$method_unverified <- rep(unverified, nrow(x))
@@ -162,7 +167,7 @@ posture_compare <- function(prev, cur, prev_header, cur_header, cfg, bridge = NU
   x <- x[order(-rank[x$severity], -dplyr::coalesce(x$magnitude, 0), x$iso3, x$tech, x$stage), , drop = FALSE]
   pair$counts <- c(as.list(stats::setNames(vapply(CHANGE_TYPES, function(t) sum(x[[paste0("t_", t)]]), integer(1)), CHANGE_TYPES)),
                    list(meaningful = nrow(x)),
-                   as.list(table(factor(x$attribution, c("real_world", "methodology", "mixed", "both")))))
+                   as.list(table(factor(x$attribution, CHANGE_ATTRIBUTIONS))))
   list(pair = pair, changes = change_records(x))
 }
 

@@ -60,8 +60,9 @@ posture_change_explain <- function(x, cfg) {
     s <- c(s, switch(r$attribution,
       real_world = "The method was the same in both vintages, so this reflects a change in the data.",
       methodology = if (!is.na(r$method_types)) "A bridge run shows the method change alone produces this; the data did not change the result."
-                    else "The method changed between vintages and this cell's measured inputs did not move: the change comes from the method, not the world.",
-      mixed = "The method changed and the measured inputs moved too; without a bridge run the two cannot be separated.",
+                    else "The method changed, the data is verifiably unchanged and this cell's measured inputs did not move: the change comes from the method, not the world.",
+      mixed = "The method changed and the data changed too; without a bridge run the two cannot be separated.",
+      unattributed = "The method changed between vintages. This cell's measured inputs did not move, but the raw-input vintages were not recorded, so a data change cannot be ruled out: not attributed.",
       both = sprintf("A bridge run splits this: the method change accounts for %s and new data for %s.",
                      gsub(";", ", ", r$method_types), gsub(";", ", ", r$world_types)),
       ""))

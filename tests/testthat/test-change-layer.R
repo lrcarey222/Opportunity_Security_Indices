@@ -17,15 +17,15 @@ cl_cell <- function(iso3 = "USA", tech = "Electric Grid", stage = "Components", 
 cl_bg <- function() cl_cell(iso3 = "JPN", tech = "Solar", stage = "Assembly", choice = "watch")
 cl_v <- function(...) dplyr::bind_rows(cl_cell(...), cl_bg())
 
-cl_header <- function(id, created, method = "m-aaaa", data = "d-1111", unverified = FALSE,
+cl_header <- function(id, created, method = "m-aaaa", data = "d-1111", unverified = FALSE, data_verified = TRUE,
                       stages = c("Extraction", "Refining", "Components", "Assembly", "Deployment", "Recovery")) {
   list(vintage_id = id, created = created, method = list(id = method, unverified = unverified, label = "test"),
-       data = list(id = data), bars = cl_cfg$thresholds$score$default_bars,
+       data = list(id = data, verified = data_verified), bars = cl_cfg$thresholds$score$default_bars,
        techs = list("Electric Grid", "Solar"), stages = as.list(stages))
 }
 H1 <- cl_header("v1", "2026-11-01T00:00:00Z")
 H2 <- cl_header("v2", "2026-11-21T00:00:00Z", data = "d-2222")
-H2m <- cl_header("v2m", "2026-11-21T00:00:00Z", method = "m-bbbb")
+H2m <- cl_header("v2m", "2026-11-21T00:00:00Z", method = "m-bbbb")   # method changed, same verified data
 cl_cmp <- function(prev, cur, hp = H1, hc = H2, ...) posture_compare(prev, cur, hp, hc, cl_cfg, ...)
 cl_usa <- function(res) res$changes[res$changes$iso3 == "USA", ]
 
@@ -95,6 +95,16 @@ test_that("a methodology-only change is attributed to the method", {
   expect_true(r$pair$method_changed)
   expect_equal(x$attribution, "methodology")
   expect_match(x$explanation, "comes from the method, not the world")
+})
+
+test_that("a method change is never credited alone when the data is not verified or also changed", {
+  cur <- cl_v(choice = "catch_up", cp = 0.78)
+  h_unv <- cl_header("v2u", "2026-11-21T00:00:00Z", method = "m-bbbb", data_verified = FALSE)
+  x <- cl_usa(cl_cmp(cl_v(), cur, hc = h_unv))
+  expect_equal(x$attribution, "unattributed")
+  expect_match(x$explanation, "cannot be ruled out")
+  h_dat <- cl_header("v2d", "2026-11-21T00:00:00Z", method = "m-bbbb", data = "d-9999")
+  expect_equal(cl_usa(cl_cmp(cl_v(), cur, hc = h_dat))$attribution, "mixed")
 })
 
 test_that("a method change with moved inputs is mixed, and a bridge decomposes it", {

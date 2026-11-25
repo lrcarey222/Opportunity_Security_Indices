@@ -32,20 +32,20 @@ change_vintage_json <- function(h) {
   list(id = h$vintage_id, created = h$created, gitCommit = h$git_commit, provisional = isTRUE(h$provisional),
        stampSource = h$stamp_source, coreFile = h$core_file, coreCommit = h$core_commit,
        method = list(id = h$method$id, label = h$method$label, unverified = isTRUE(h$method$unverified)),
-       data = h$data[setdiff(names(h$data), "raw_inputs")], nCells = h$n_cells)
+       data = h$data[setdiff(names(h$data), "raw_inputs")], nCells = h$n_cells, bars = h$bars)
 }
 
 change_pair_json <- function(p) {
   list(prev = p$prev, cur = p$cur, comparable = isTRUE(p$comparable), reason = p$reason,
        methodChanged = isTRUE(p$method_changed), methodUnverified = isTRUE(p$method_unverified),
-       dataChanged = isTRUE(p$data_changed), bridge = isTRUE(p$bridge),
+       dataChanged = isTRUE(p$data_changed), bridge = isTRUE(p$bridge), detail = !isFALSE(p$detail),
        nCells = p$n_cells %||% NA_integer_, nUnchanged = p$n_unchanged %||% NA_integer_, counts = p$counts %||% list())
 }
 
 # headers: list of vintage headers (oldest first); results: list of posture_compare() outputs; impacts: accepted
 # impact records referenced by the changes; sources: cfg$sources (field -> ids, doc) for the provenance panel.
 change_bundle <- function(headers, results, impacts = list(), sources = list(), created, git_commit) {
-  ch <- dplyr::bind_rows(lapply(results, `[[`, "changes"))
+  ch <- dplyr::bind_rows(Filter(nrow, lapply(results, `[[`, "changes")))
   used <- unique(unlist(lapply(ch$impacts, function(x) if (is.na(x)) character() else strsplit(x, ";")[[1]])))
   list(schema = CHANGE_SCHEMA, schema_version = CHANGE_SCHEMA_VERSION, created = created, git_commit = git_commit,
        vintages = lapply(headers, change_vintage_json), pairs = lapply(results, function(r) change_pair_json(r$pair)),

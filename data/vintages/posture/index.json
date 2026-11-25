@@ -1,0 +1,555 @@
+{
+  "schema": "osi-posture-vintages",
+  "layer_version": 1,
+  "vintages": [
+    {
+      "vintage_id": "2026-10-28-b5a23d82",
+      "created": "2026-10-28T07:14:19Z",
+      "git_commit": "fa3ecda",
+      "commit_dirty": false,
+      "stamp_source": "bundle",
+      "provisional": false,
+      "core_file": "dashboard/public/data/posture/posture-core.b5a23d82.json",
+      "core_commit": "81bf2fde",
+      "method": {
+        "id": "m-3a621254",
+        "label": "decision framework (2026-10-30)",
+        "code_commit": "fa3ecda",
+        "unverified": false,
+        "paths": {
+          "R/strategic_position": "fdba281be66492be9fe75a51446c8ca09b2f8701",
+          "config/strategic_position.yml": "fccab60846177c8ce07b873b440356c1fd707e8a",
+          "R/utils/variable_stage_evidence.R": "4c8f81bf34981d0f23be49bbc35dab6ec486f02e",
+          "R/dashboard/posture": "fa3ecda:R/dashboard/posture",
+          "scripts/26_build_strategic_position.R": "8c64cd426ebb7e331e852e9626fddcef1b8f568d",
+          "scripts/91_export_posture_data.R": "fa3ecda:scripts/91_export_posture_data.R"
+        }
+      },
+      "data": {
+        "id": "d-dad67392",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": false,
+        "raw_inputs": null
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "1cc640166b36cf78ccca6473626817db3801123cb943de8d5c83c1a0d03fbd60"
+    },
+    {
+      "vintage_id": "2026-10-30-68be7faf",
+      "created": "2026-10-30T06:23:12Z",
+      "git_commit": "91dba6f",
+      "commit_dirty": false,
+      "stamp_source": "bundle",
+      "provisional": false,
+      "core_file": "dashboard/public/data/posture/posture-core.68be7faf.json",
+      "core_commit": "e82f6310",
+      "method": {
+        "id": "m-d7311a4b",
+        "label": "decision framework (2026-10-30)",
+        "code_commit": "91dba6f",
+        "unverified": false,
+        "paths": {
+          "R/strategic_position": "5cf649aaca7c7c094069a3ad13c3d5d4b8267329",
+          "config/strategic_position.yml": "d884e4e29fa25cb1acb8cbc7316227df63b97271",
+          "R/utils/variable_stage_evidence.R": "4c8f81bf34981d0f23be49bbc35dab6ec486f02e",
+          "R/dashboard/posture": "441611df18f3f974fde1b315ee68123916ef6c42",
+          "scripts/26_build_strategic_position.R": "7410bfcbeeaa42338640aeb5f9d3b93c902ccc98",
+          "scripts/91_export_posture_data.R": "a682fc3c3994a58d9b4a70905247ac0b8357aaf5"
+        }
+      },
+      "data": {
+        "id": "d-dad67392",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": false,
+        "raw_inputs": null
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "dcae669601ae2a850398fa706d9845baffcb468d16a203203d9f6fcd79236c17"
+    },
+    {
+      "vintage_id": "2026-10-30-235ccceb",
+      "created": "2026-10-30T14:34:53Z",
+      "git_commit": "7d847ba",
+      "commit_dirty": false,
+      "stamp_source": "bundle",
+      "provisional": false,
+      "core_file": "dashboard/public/data/posture/posture-core.235ccceb.json",
+      "core_commit": "a4424842",
+      "method": {
+        "id": "m-3bece2c0",
+        "label": "decision framework (2026-10-30)",
+        "code_commit": "7d847ba",
+        "unverified": false,
+        "paths": {
+          "R/strategic_position": "5432a13ab6ed5dff57a39507e74fc9151e5a2b07",
+          "config/strategic_position.yml": "093c11c3807878d8a840aa5bf494918be58a7a32",
+          "R/utils/variable_stage_evidence.R": "4c8f81bf34981d0f23be49bbc35dab6ec486f02e",
+          "R/dashboard/posture": "441611df18f3f974fde1b315ee68123916ef6c42",
+          "scripts/26_build_strategic_position.R": "7410bfcbeeaa42338640aeb5f9d3b93c902ccc98",
+          "scripts/91_export_posture_data.R": "a682fc3c3994a58d9b4a70905247ac0b8357aaf5"
+        }
+      },
+      "data": {
+        "id": "d-dad67392",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": false,
+        "raw_inputs": null
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "63120eb4f81bbcd1fc1009ffceb4b45487a5c469b9a1f6d459ab148a6db04d22"
+    },
+    {
+      "vintage_id": "2026-10-30-a9a35532",
+      "created": "2026-10-30T21:13:07Z",
+      "git_commit": "a54a9d3",
+      "commit_dirty": false,
+      "stamp_source": "bundle",
+      "provisional": false,
+      "core_file": "dashboard/public/data/posture/posture-core.a9a35532.json",
+      "core_commit": "e41cb5bb",
+      "method": {
+        "id": "m-5518b68c",
+        "label": "decision framework (2026-10-30)",
+        "code_commit": "a54a9d3",
+        "unverified": false,
+        "paths": {
+          "R/strategic_position": "8fd1169f14d9d63411f58780cb28973ffa97b37c",
+          "config/strategic_position.yml": "e7dcbecc78dfa7401085e6f1b1f5551102e2f424",
+          "R/utils/variable_stage_evidence.R": "4c8f81bf34981d0f23be49bbc35dab6ec486f02e",
+          "R/dashboard/posture": "337b89de744842db10642af542ea5ff565faf3de",
+          "scripts/26_build_strategic_position.R": "6d2f365fad011ae58032abf05ad6e44b64c20b6d",
+          "scripts/91_export_posture_data.R": "a9d44187871fd488ca1df6f9bc1bf88c8467974d"
+        }
+      },
+      "data": {
+        "id": "d-dad67392",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": false,
+        "raw_inputs": null
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "c1004fb6cbdfda9126a8d8a8d60d883e3a7499054624540f6effd8804d421e9b"
+    },
+    {
+      "vintage_id": "2026-10-31-32c987d5",
+      "created": "2026-10-31T15:52:49Z",
+      "git_commit": "4bb2adc",
+      "commit_dirty": false,
+      "stamp_source": "bundle",
+      "provisional": false,
+      "core_file": "dashboard/public/data/posture/posture-core.32c987d5.json",
+      "core_commit": "9321a80a",
+      "method": {
+        "id": "m-6497d2fc",
+        "label": "decision framework (2026-10-30)",
+        "code_commit": "4bb2adc",
+        "unverified": false,
+        "paths": {
+          "R/strategic_position": "8fd1169f14d9d63411f58780cb28973ffa97b37c",
+          "config/strategic_position.yml": "e7dcbecc78dfa7401085e6f1b1f5551102e2f424",
+          "R/utils/variable_stage_evidence.R": "4c8f81bf34981d0f23be49bbc35dab6ec486f02e",
+          "R/dashboard/posture": "13c3cb42d298c06aabb5f770822447fa38f6d800",
+          "scripts/26_build_strategic_position.R": "6d2f365fad011ae58032abf05ad6e44b64c20b6d",
+          "scripts/91_export_posture_data.R": "a9d44187871fd488ca1df6f9bc1bf88c8467974d"
+        }
+      },
+      "data": {
+        "id": "d-dad67392",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": false,
+        "raw_inputs": null
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "c1004fb6cbdfda9126a8d8a8d60d883e3a7499054624540f6effd8804d421e9b"
+    },
+    {
+      "vintage_id": "2026-11-17-1cdda057",
+      "created": "2026-11-17T17:12:03Z",
+      "git_commit": "8021770d",
+      "commit_dirty": false,
+      "stamp_source": "bundle",
+      "provisional": false,
+      "core_file": "dashboard/public/data/posture/posture-core.1cdda057.json",
+      "core_commit": "1f8bdda2",
+      "method": {
+        "id": "m-90d654ad",
+        "label": "decision framework (2026-10-30)",
+        "code_commit": "8021770d",
+        "unverified": false,
+        "paths": {
+          "R/strategic_position": "2c134432f6832822a64ba0b070077d8d2858817f",
+          "config/strategic_position.yml": "b38142d457c566fbc7ce0d8dfcc970066ef5b394",
+          "R/utils/variable_stage_evidence.R": "4c8f81bf34981d0f23be49bbc35dab6ec486f02e",
+          "R/dashboard/posture": "82c38b8425f56c9fea267aa79198d0e2c18ba148",
+          "scripts/26_build_strategic_position.R": "342d01c81edc5a5515bb9b6a37f977bcda37e022",
+          "scripts/91_export_posture_data.R": "a9d44187871fd488ca1df6f9bc1bf88c8467974d"
+        }
+      },
+      "data": {
+        "id": "d-dad67392",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": false,
+        "raw_inputs": null
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "10968a148fae555aa565002dc343cbfe7925c4bcbf57a4ea93317256795ba9dd"
+    },
+    {
+      "vintage_id": "2026-11-17-f665dc19",
+      "created": "2026-11-17T20:33:31Z",
+      "git_commit": "0496e7ba",
+      "commit_dirty": false,
+      "stamp_source": "bundle",
+      "provisional": false,
+      "core_file": "dashboard/public/data/posture/posture-core.f665dc19.json",
+      "core_commit": "6e077a8a",
+      "method": {
+        "id": "m-cda912bd",
+        "label": "decision framework (2026-10-30)",
+        "code_commit": "0496e7ba",
+        "unverified": false,
+        "paths": {
+          "R/strategic_position": "2aa0666b39fb8d40aacdf0ddc7e69a2a91d83d07",
+          "config/strategic_position.yml": "66cde7995b4d00341d25accb41aa52d85798b337",
+          "R/utils/variable_stage_evidence.R": "e101974d9d976d49af0df04ed95008897245d0d2",
+          "R/dashboard/posture": "1d042237bfffc6710efeab43091d691a7bab2f71",
+          "scripts/26_build_strategic_position.R": "0a101b2c79342db418447624a03e34285233fc10",
+          "scripts/91_export_posture_data.R": "a9d44187871fd488ca1df6f9bc1bf88c8467974d"
+        }
+      },
+      "data": {
+        "id": "d-dad67392",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": false,
+        "raw_inputs": null
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "9864afab6527fb896fd8a532ad69fcfca17448035d11dd04b4a111f5e588dd69"
+    },
+    {
+      "vintage_id": "2026-11-21-aab308e2",
+      "created": "2026-11-21T14:51:17Z",
+      "git_commit": "43e035c7",
+      "commit_dirty": false,
+      "stamp_source": "bundle",
+      "provisional": false,
+      "core_file": "dashboard/public/data/posture/posture-core.aab308e2.json",
+      "core_commit": "18ad1c34",
+      "method": {
+        "id": "m-168eb3bd",
+        "label": "decision framework (2026-10-30)",
+        "code_commit": "43e035c7",
+        "unverified": false,
+        "paths": {
+          "R/strategic_position": "2aa0666b39fb8d40aacdf0ddc7e69a2a91d83d07",
+          "config/strategic_position.yml": "66cde7995b4d00341d25accb41aa52d85798b337",
+          "R/utils/variable_stage_evidence.R": "e101974d9d976d49af0df04ed95008897245d0d2",
+          "R/dashboard/posture": "2367f6f89d81ba826eee5890b206daf095f6ba65",
+          "scripts/26_build_strategic_position.R": "0a101b2c79342db418447624a03e34285233fc10",
+          "scripts/91_export_posture_data.R": "8e799ddd22db9bd12f99732ab6e482d641ea17b6"
+        }
+      },
+      "data": {
+        "id": "d-dad67392",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": false,
+        "raw_inputs": null
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "9864afab6527fb896fd8a532ad69fcfca17448035d11dd04b4a111f5e588dd69"
+    },
+    {
+      "vintage_id": "2026-11-21-07b6f4bd",
+      "created": "2026-11-21T17:46:30Z",
+      "git_commit": "17f0737e",
+      "commit_dirty": false,
+      "stamp_source": "bundle",
+      "provisional": false,
+      "core_file": "dashboard/public/data/posture/posture-core.07b6f4bd.json",
+      "core_commit": "3c40c9d6",
+      "method": {
+        "id": "m-64de974b",
+        "label": "decision framework (2026-10-30)",
+        "code_commit": "17f0737e",
+        "unverified": false,
+        "paths": {
+          "R/strategic_position": "8ca32e2b992a26c2b13b9ece2c280e22dc8fd9cb",
+          "config/strategic_position.yml": "d76e5785b5161aaec45825627fb01d8bd86222db",
+          "R/utils/variable_stage_evidence.R": "e101974d9d976d49af0df04ed95008897245d0d2",
+          "R/dashboard/posture": "ae592c2416251701db6d55bef1eb5ee26410f46e",
+          "scripts/26_build_strategic_position.R": "0a101b2c79342db418447624a03e34285233fc10",
+          "scripts/91_export_posture_data.R": "8e799ddd22db9bd12f99732ab6e482d641ea17b6"
+        }
+      },
+      "data": {
+        "id": "d-dad67392",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": false,
+        "raw_inputs": null
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "620c9b6c2d21bcbbbbfa0b775fcaf0d471c70b52ca4f7ff96a807da652efc9e3"
+    }
+  ]
+}
