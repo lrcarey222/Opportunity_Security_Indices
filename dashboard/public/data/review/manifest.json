@@ -1,10 +1,10 @@
 {
   "schema": "aib-review-manifest",
   "schema_version": 1,
-  "built_at": "2026-11-24T06:00:00Z",
-  "app_commit": "acbc3805",
+  "built_at": "2026-11-25T17:11:39.971Z",
+  "app_commit": "854f4f79",
   "data_release": {
-    "id": "rel-4a271ac2b550",
+    "id": "rel-6b4b26b36db1",
     "stamps": {
       "posture": {
         "created": "2026-11-21T17:46:30Z",
@@ -24,7 +24,7 @@
         "bundle_id": "c1736c4a25c7a33e73d56466eac415e6"
       },
       "memos": {
-        "manifest_sha256": "afbccf4e0eaaa07cad3219618b5f88b176d85d416f04f50de5fee2fd983a9b8c"
+        "manifest_sha256": "a29c77ea020c3dbbe86807dc6c1357695b518d2a7bcb43f26a4d3f9bcd2511a4"
       }
     },
     "complete": true,
@@ -135,32 +135,32 @@
   "files": [
     {
       "file": "cases.aib_qc_2027_round1.json",
-      "sha256": "8e87b096f7b5bd8a90ea03d1d04f29c74cd4c4182e721c454c61ee34b8abedc7",
-      "bytes": 605668
+      "sha256": "f878b4b5dacbf7fd66147b473e483fe224763c5219214d0f6f8b291f22ac87ce",
+      "bytes": 604990
     },
     {
       "file": "fixtures/demo_submissions.json",
-      "sha256": "e90964c099a6c019076401637229144349b8f8977bd81a8f21d21b34d7ce49fc",
-      "bytes": 101865
+      "sha256": "92313ddcc144a0366041dde554be62861f5c7d9fe102b1ca594f5cf9e30379c9",
+      "bytes": 101869
     },
     {
       "file": "framework_scenarios.json",
-      "sha256": "15595955db5c7c1d96138f516ae18ceb57e16f203a87c7ad38d39b378785c84d",
-      "bytes": 26315
+      "sha256": "d2e7872acf54b2d9ce3410480202788bdf1eadce859fa87c1239ef38c653d7d5",
+      "bytes": 26319
     },
     {
       "file": "method_cards.json",
-      "sha256": "530fb37e436dd2fc9c10351018f40515fb0adb159925129c3e6c2ce032fadbf3",
-      "bytes": 44143
+      "sha256": "02c611cca342750fdd43bb7d0c9835755c6593a8bc04034ae9f12e71efa50822",
+      "bytes": 44147
     },
     {
       "file": "qc_summary.json",
-      "sha256": "dddbcd6f5197b8338d5552dd95d00afdef8383e32e28cf77ca7d2f267b043b9b",
-      "bytes": 31851
+      "sha256": "6649af868ee4f59e10c4236af2fe70214e2a87f9c422f5fd450f3d33a5c41217",
+      "bytes": 32763
     },
     {
       "file": "robustness.json",
-      "sha256": "91a41494c8e10a1802a2f6d09dd0df01133adbf23e5faa2156e85d5b5da53227",
+      "sha256": "9e4c0b0706a5fadabbc5beca94b9efdc7e92eeee52cee413eabb8990cb5e694a",
       "bytes": 48842
     }
   ],
@@ -185,14 +185,14 @@
     },
     {
       "file": "partnerships/manifest.json",
-      "sha256": "e3f0496826ad25eeecc5cc60af0f08d563d9f4d13c614fc6e5e5d6f071d5057f",
+      "sha256": "396ef80bb734177cecf746bbe93faf9b8705b20ac34280d192f8a102c0588f1d",
       "created": null,
       "git_commit": null
     },
     {
-      "file": "partnerships/memo-USA_JPN.d98e5bec.json",
-      "sha256": "bca74344348ef062d83ff6a03dd36d960a5f69980e67a9c29a47c9d61537784d",
-      "created": "2026-11-06T17:50:45Z",
+      "file": "partnerships/memo-USA_JPN.cf985627.json",
+      "sha256": "23ba65601deb676fb1ecba778bdc0fbfc219be522cf3ddad0d3ce519aba09e2e",
+      "created": "2026-11-18T00:54:02Z",
       "git_commit": null
     },
     {

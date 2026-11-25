@@ -1,9 +1,9 @@
 {
   "schema": "aib-review-qc-summary",
   "schema_version": 1,
-  "data_release": "rel-4a271ac2b550",
-  "built_at": "2026-11-24T06:00:00Z",
-  "app_commit": "acbc3805",
+  "data_release": "rel-6b4b26b36db1",
+  "built_at": "2026-11-25T17:11:39.971Z",
+  "app_commit": "854f4f79",
   "layer": "bundle",
   "status": {
     "pass": 32,
@@ -48,11 +48,17 @@
       "layer": "bundle",
       "area": "provenance",
       "status": "warn",
-      "n": 2,
-      "detail": "2 partnership files read; none carries a git commit (per-memo generated_at only)",
+      "n": 14,
+      "detail": "14 partnership files read; none carries a git commit (per-memo generated_at only)",
       "examples": [
         "partnerships/manifest.json",
-        "partnerships/memo-USA_JPN.d98e5bec.json"
+        "partnerships/memo-JPN_KOR.183adff3.json",
+        "partnerships/memo-KOR_AUS.72c9b4f0.json",
+        "partnerships/memo-KOR_CAN.253c04cc.json",
+        "partnerships/memo-USA_AUS.1ba6c700.json",
+        "partnerships/memo-USA_CAN.b8fcd8ff.json",
+        "partnerships/memo-USA_DEU.e04b4dbf.json",
+        "partnerships/memo-USA_EUU.76aa61be.json"
       ]
     },
     {
@@ -79,7 +85,7 @@
       "area": "provenance",
       "status": "pass",
       "n": 0,
-      "detail": "data release rel-4a271ac2b550: every bundle stamp present",
+      "detail": "data release rel-6b4b26b36db1: every bundle stamp present",
       "examples": []
     },
     {
@@ -87,8 +93,8 @@
       "layer": "bundle",
       "area": "provenance",
       "status": "pass",
-      "n": 225,
-      "detail": "225 bundle files read and hashed (sha256)",
+      "n": 237,
+      "detail": "237 bundle files read and hashed (sha256)",
       "examples": []
     },
     {
@@ -399,10 +405,17 @@
       "layer": "bundle",
       "area": "memos",
       "status": "warn",
-      "n": 1,
-      "detail": "1 of 1 shipped memos are not independently verified (rule-generated; no claim-level provenance shipped)",
+      "n": 13,
+      "detail": "13 of 13 shipped memos are not independently verified (rule-generated; no claim-level provenance shipped)",
       "examples": [
-        "USA_JPN: verified false, generated 2026-11-06T17:50:45Z, as of 2026-10-30"
+        "USA_JPN: verified false, generated 2026-11-18T00:54:02Z, as of 2026-11-17",
+        "JPN_KOR: verified false, generated 2026-11-18T01:16:35Z, as of 2026-11-17",
+        "USA_DEU: verified false, generated 2026-11-18T01:01:34Z, as of 2026-11-17",
+        "USA_KOR: verified false, generated 2026-11-18T00:59:24Z, as of 2026-11-17",
+        "USA_AUS: verified false, generated 2026-11-18T01:03:27Z, as of 2026-11-17",
+        "KOR_CAN: verified false, generated 2026-11-18T01:21:21Z, as of 2026-11-17",
+        "KOR_AUS: verified false, generated 2026-11-18T01:23:37Z, as of 2026-11-17",
+        "USA_IND: verified false, generated 2026-11-18T01:11:43Z, as of 2026-11-17"
       ]
     },
     {
@@ -410,8 +423,8 @@
       "layer": "bundle",
       "area": "memos",
       "status": "pass",
-      "n": 1,
-      "detail": "every memo the manifest names has its JSON document (1)",
+      "n": 13,
+      "detail": "every memo the manifest names has its JSON document (13)",
       "examples": []
     },
     {
