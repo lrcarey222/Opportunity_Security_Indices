@@ -280,7 +280,7 @@ describe('the Country Strategy Map', () => {
       "A cell's color is the country's choice for that step",
       'groups the colors by fence',
       'A cell split on the diagonal has parts behind different fences: hover over it, or tap it, to see which.',
-      'Hatched cells are not assessed.',
+      'Hatched cells are not assessed (not Watch).',
       'Select a cell for the evidence behind its choice.',
     ]) {
       expect(intro.textContent).toContain(bit);

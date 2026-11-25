@@ -299,6 +299,10 @@ describe.skipIf(!haveFixture(FIXTURE_DIR) || !readDoc(FIXTURE_DIR).strategic)('e
         const nodes = c.steps.flatMap((x) => x.nodes);
         expect(within(screen.getByTestId('value-chain-spine')).getAllByRole('button').map((b) => b.getAttribute('data-node'))).toEqual(nodes);
         expect(screen.getByTestId('division-of-labour')).toBeTruthy();
+        // the answer first (2026-11-25): bottleneck, who contributes, remaining gap, above the sections
+        const ans = screen.getByTestId('compact-answer');
+        expect([...ans.querySelectorAll('[data-answer]')].map((x) => x.getAttribute('data-answer'))).toEqual(['bottleneck', 'who', 'gap']);
+        expect(ans.compareDocumentPosition(screen.getByTestId('compact-mission')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(bareAcronyms(document.querySelector('main') as HTMLElement)).toEqual([]);
         cleanup();
       }

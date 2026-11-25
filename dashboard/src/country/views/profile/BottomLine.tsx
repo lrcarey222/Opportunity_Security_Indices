@@ -7,14 +7,24 @@
 // as an answer; they are counted. Watch is one line, and Not assessed is its own count, never merged into Watch.
 // Each step opens the page's one drawer (?node=) and has a collapsed "Why this result?" read from the shipped
 // decision trace (posture/whyChoice.ts). One muted note says what the strategic case does not cover.
+// Explorer usability pass (2026-11-25): each "Why this result?" opens with the step's confidence in words
+// (posture/confidence.ts); one deployment row (Deployment & Use cells: Accelerate, its cases, the deployment
+// policy gap; costs are not in the strategy, so it links to world prices instead of asserting anything); and a
+// compact footer (posture/EvidenceSummary.tsx): evidence quality over the listed steps, "Why this conclusion?"
+// with the inputs and data periods, and links to the evidence.
 
 import { useMemo } from 'react';
+import { Link } from 'react-router';
 import { CHOICE_ACTION, CHOICE_NAME } from '../../../content/vocabulary.ts';
 import { stageDisplay } from '../../../lib/stages.ts';
 import { choiceGroups, countryNames, detailByKey, fenceReason, nodePhrase, Swatch, verbOf, type FenceNode, type PostureCell, type Verb } from '../../../posture/index.ts';
 import { networkOf, partnerLead, partnerLeadWords } from '../../../posture/partnerEligibility.ts';
 import { TrustedNetworkControl } from '../../../posture/TrustedNetworkControl.tsx';
 import { whyChoice } from '../../../posture/whyChoice.ts';
+import { confidenceSentence, confidenceSummary } from '../../../posture/confidence.ts';
+import { EvidenceSummary } from '../../../posture/EvidenceSummary.tsx';
+import { conclusionInputs, deploymentLine, deploymentSummary, evidenceQualityLine } from '../../../posture/evidenceSummary.ts';
+import { freshnessItems } from '../../derive/strategyPage.ts';
 import { listAnd, plural } from '../../../posture/derive.ts';
 import { cap, proseName } from '../../derive/text.ts';
 import { useProfile } from './common.tsx';
@@ -32,6 +42,21 @@ const SECTION_OF: Record<Exclude<Verb, 'watch'>, string> = {
 export const FEASIBILITY_CAVEAT =
   'Strategic case, not an investment recommendation. The Explorer identifies where capability may be strategically valuable; it does not estimate fiscal cost, consumer-price premium, policy durability or the odds that intervention succeeds.';
 export const FEASIBILITY_NOT_ASSESSED = 'Feasibility evidence: Not assessed.';
+/** The deployment row's close: cost evidence is not in the strategy, so the row points to the prices the Explorer has. */
+export const PRICES_NOTE = 'Costs and prices do not enter these choices.';
+export const pricesHref = (iso3: string): string => `/sector/explore/prices?c=${iso3}`;
+
+/** The steps the block lists (top of each choice, held-back steps left out) and how many it holds back. */
+export function listedSteps(groups: Record<Exclude<Verb, 'watch'>, PostureCell[]>): { listed: PostureCell[]; held: number } {
+  const listed: PostureCell[] = [];
+  let held = 0;
+  for (const v of BOTTOM_LINE_VERBS) {
+    const ok = groups[v].filter((c) => !heldBack(c));
+    held += groups[v].length - ok.length;
+    listed.push(...ok.slice(0, BOTTOM_LINE_TOP));
+  }
+  return { listed, held };
+}
 
 /** A step that should not be offered as an answer: a consistency flag or low confidence. */
 export const heldBack = (c: Pick<PostureCell, 'flag' | 'confidence'>): boolean => c.flag !== null || c.confidence === 'low';
@@ -76,6 +101,9 @@ export function BottomLine() {
   if (!p || p.status !== 'ready' || !core || !cells.length || !net) return null;
   const meta = core.meta;
   const synthesis = bottomLineSynthesis(cells);
+  const { listed, held: heldAll } = listedSteps(groups);
+  const dep = deploymentSummary(cells);
+  const data = freshnessItems({ created: core.created, benchmark: meta.benchmark_period, momentumThrough: meta.momentum_through, asOfLabel: sheet.meta.as_of_label });
   const shown = BOTTOM_LINE_VERBS.filter((v) => groups[v].length);
   const hasMedium = MEDIUM.some((v) => groups[v].length > 0);
   const reasonOf = (c: PostureCell, verb: Verb): string | null => {
@@ -134,17 +162,18 @@ export function BottomLine() {
                             </span>
                           )}
                         </button>
-                        {trace && (
-                          <details className="ml-1.5 text-xs text-paper-dim" data-testid="why-this-result">
-                            <summary className="cursor-pointer select-none text-paper-mute">Why this result?</summary>
-                            <p className="mt-1 max-w-prose">{trace.because}</p>
-                            {trace.whyNot && (
-                              <p className="mt-1 max-w-prose">
-                                <span className="text-paper">Why not {trace.whyNot.alt}?</span> {trace.whyNot.text}
-                              </p>
-                            )}
-                          </details>
-                        )}
+                        <details className="ml-1.5 text-xs text-paper-dim" data-testid="why-this-result">
+                          <summary className="cursor-pointer select-none text-paper-mute">Why this result?</summary>
+                          {trace && <p className="mt-1 max-w-prose">{trace.because}</p>}
+                          {trace?.whyNot && (
+                            <p className="mt-1 max-w-prose">
+                              <span className="text-paper">Why not {trace.whyNot.alt}?</span> {trace.whyNot.text}
+                            </p>
+                          )}
+                          <p className="mt-1 max-w-prose text-paper-mute" data-testid="step-confidence">
+                            {confidenceSentence(confidenceSummary(c))}
+                          </p>
+                        </details>
                       </li>
                     );
                   })}
@@ -171,11 +200,30 @@ export function BottomLine() {
         <span className="text-paper">{keepOpenLine(groups.watch.length)}</span>
         <span className="text-paper-mute"> · Not assessed: {groups.notAssessed.length}</span>
       </p>
+      <p className="mt-2 max-w-3xl text-sm text-paper-dim" data-testid="bottom-line-deployment">
+        <span className="text-paper">Affordability &amp; deployment:</span> {deploymentLine(dep)}{' '}
+        <span className="text-paper-mute">
+          {PRICES_NOTE}{' '}
+          <Link className="link" to={pricesHref(sheet.iso3)}>
+            World commodity prices &rarr;
+          </Link>
+        </span>
+      </p>
       {hasMedium && (
         <p className="mt-3 max-w-3xl text-xs text-paper-mute" data-testid="bottom-line-feasibility">
           {FEASIBILITY_CAVEAT} {FEASIBILITY_NOT_ASSESSED}
         </p>
       )}
+      <EvidenceSummary
+        className="mt-3"
+        quality={evidenceQualityLine(listed)}
+        inputs={conclusionInputs(cells, meta, { held: heldAll, top: BOTTOM_LINE_TOP })}
+        data={data}
+        links={[
+          { label: 'Explore the evidence', href: '#evidence' },
+          { label: 'Policy alignment', href: '#policy-alignment' },
+        ]}
+      />
     </section>
   );
 }

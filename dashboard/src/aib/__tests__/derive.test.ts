@@ -461,7 +461,7 @@ describe('coalition: exact, greedy and tiers', () => {
     // what each tier means
     expect(g[0].meaning).toMatch(/that are not critical supply partners or prospective hosts: the demand anchors, and suppliers one other candidate could replace/);
     expect(g[1].meaning).toMatch(/no single other candidate can replace: without one, only several other economies together restore the target, or none does/);
-    expect(g[2].meaning).toMatch(/only for the new capacity the model simulates at them .* neither core members nor critical\. The capacity is hypothetical\.$/);
+    expect(g[2].meaning).toMatch(/only for the new capacity the analysis simulates at them .* neither core members nor critical\. The capacity is hypothetical\.$/);
     expect(g[3].meaning).toMatch(/^The fewest additions to the core coalition, held in, that reach the 99% target\. The 99% minimum coalition solved on its own need not contain the core\.$/);
     expect(g[4].meaning).toMatch(/each supplies at least 1% of the demand anchors' demand there/);
     expect(g[5].meaning).toMatch(/under 1% of the anchors' demand there: critical only because the coalition sits near the target/);

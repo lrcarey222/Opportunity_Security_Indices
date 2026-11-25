@@ -34,7 +34,7 @@ const BORDERLINE_WORD: Record<string, string> = {
 
 /** The words for a cell's confidence, from the shipped fields only. */
 export function confidenceSummary(
-  c: Pick<PostureCell, 'posture' | 'confidence' | 'evidence' | 'evidenceRaw' | 'borderline' | 'flag' | 'cp' | 'pathway' | 'alignmentConfidence'>,
+  c: Pick<PostureCell, 'posture' | 'needType' | 'confidence' | 'evidence' | 'evidenceRaw' | 'borderline' | 'flag' | 'cp' | 'pathway' | 'alignmentConfidence'>,
 ): ConfidenceSummary {
   if (c.posture === 'N') return { level: null, reasons: ['Insufficient evidence to assess this step'], insufficient: true };
   const reasons: string[] = [];
@@ -44,10 +44,13 @@ export function confidenceSummary(
     .filter(Boolean)
     .map((k) => BORDERLINE_WORD[k] ?? k.replace(/_/g, ' '));
   if (near.length) reasons.push(`${near.join(' and ')} close to the decision threshold`);
-  if (c.cp === null) reasons.push('competitive position not measured');
-  if (c.pathway === 'unknown') reasons.push('domestic pathway unknown');
-  if (c.evidence === 'weak' || c.evidenceRaw === 'none') reasons.push(c.evidenceRaw === 'none' ? 'no stage-specific capability evidence' : 'capability evidence is thin (largely proxies)');
-  else if (c.evidence === 'strong') reasons.push('capability evidence is stage-specific');
+  // at Deployment & Use the choice reads deployment need alone: capability inputs do not enter it
+  if (c.needType !== 'deployment') {
+    if (c.cp === null) reasons.push('competitive position not measured');
+    if (c.pathway === 'unknown') reasons.push('domestic pathway unknown');
+    if (c.evidence === 'weak' || c.evidenceRaw === 'none') reasons.push(c.evidenceRaw === 'none' ? 'no stage-specific capability evidence' : 'capability evidence is thin (largely proxies)');
+    else if (c.evidence === 'strong') reasons.push('capability evidence is stage-specific');
+  }
   if (c.flag) reasons.push('flagged for review');
   if (c.alignmentConfidence === 'low') reasons.push('policy evidence is incomplete');
   return { level: c.confidence ? LEVEL[c.confidence] : null, reasons, insufficient: false };

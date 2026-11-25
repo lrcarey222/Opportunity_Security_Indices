@@ -1,5 +1,8 @@
-// "Where are the real bottlenecks?" (external review readiness, 2026-11-23): the answer that opens a
-// technology's chain page (/sector/:tech). Built from data the page already has, no new measure:
+// The stress-test block of a technology's chain page (/sector/:tech). It opened the page on 2026-11-23 as
+// "Where are the real bottlenecks?"; since the usability pass (2026-11-25) it sits under the observed answer
+// (./ChainAnswer.tsx, "What matters in this supply chain?") as "What the stress test adds": one summary line
+// linked to the Allied Industrial Base analysis, the steps behind a disclosure, labelled a modelled result.
+// Built from data the page already has, no new measure:
 //   * the Allied Industrial Base nodes (the AIB document ChainNav already loads) whose codes sit in one of the
 //     technology's six-stage cells (node.yfCells), kept when the stress test says they need action (Build
 //     capacity, Manage specialization, Coordinate trade), largest remaining gap first (node.residual, then
@@ -7,8 +10,8 @@
 //     (node.baseLargest / baseLargestShare: observed trade before any shock; never node.hhi or
 //     node.largestShare, which describe the optimized post-shock network) and says why it matters from its
 //     class and its stress-test figures;
-//   * without such a node, the chain ladder's most concentrated measures, labelled as concentration only.
-// Each line links to the stage profile. The derivation (techBottlenecks, bottleneckWhy) is pure.
+//   * without such a node, one line says so (the observed concentration is the answer block's).
+// Each line links to the stage profile. The derivations (techBottlenecks, bottleneckWhy, bottleneckSummary) are pure.
 
 import { Link } from 'react-router';
 import { ClassSwatch } from '../../aib/charts/ClassChip.tsx';
@@ -16,6 +19,7 @@ import type { AibDoc, AibNode } from '../../aib/contract.ts';
 import { useAibManifest, useCompactsDoc } from '../../aib/data/hooks.ts';
 import { AIB_CLASS_NAME, SCENARIO_NAME } from '../../content/vocabulary.ts';
 import { STAGE_LABELS, STAGE_SLUGS, TECH_LABELS, type StageSlug, type TechSlug } from '../contract.ts';
+import { Disclosure } from '../../components/ui.tsx';
 import { BOTTLENECKS } from '../copy.ts';
 import { fmtShare, lc, listText } from '../format.ts';
 import { useSectorUrl } from './state.tsx';
@@ -103,7 +107,8 @@ export interface ConcentrationLine {
   href?: string;
 }
 
-/** The three most concentrated ladder rows: the largest single holder's share first, then China's. */
+
+/** The most concentrated ladder rows: the largest single holder's share first, then China's (concentration only). */
 export function topConcentration(lines: readonly ConcentrationLine[], n = 3): ConcentrationLine[] {
   return [...lines].sort((a, z) => num(z.top1Share) - num(a.top1Share) || z.china - a.china).slice(0, n);
 }
@@ -115,99 +120,91 @@ function classCountWords(nodes: readonly AibNode[]): string {
   return listText([...by.entries()].sort((a, z) => z[1] - a[1]).map(([c, k]) => `${k} ${AIB_CLASS_NAME[c as keyof typeof AIB_CLASS_NAME] ?? c}`));
 }
 
-function ConcentrationList({ lines, tech }: { lines: ConcentrationLine[]; tech: TechSlug }) {
-  const { link } = useSectorUrl();
-  if (!lines.length) return null;
-  return (
-    <>
-      <p className="mt-2 text-sm text-paper-mute">{BOTTLENECKS.concentrationOnly}</p>
-      <ol className="mt-1.5 space-y-1 text-sm" data-testid="bottlenecks-concentration">
-        {lines.map((l) => (
-          <li key={l.id}>
-            <Link className="link" to={l.href ?? link(`/sector/${tech}/${l.stage}`)}>
-              {l.label}
-            </Link>
-            <span className="text-paper-dim">
-              {l.top1Name ? `: largest holder ${l.top1Name} ${fmtShare(l.top1Share)}` : ''}
-              {l.top1Name !== 'China' && l.china > 0.005 ? `${l.top1Name ? '; ' : ': '}China ${fmtShare(l.china)}` : ''}
-            </span>
-          </li>
-        ))}
-      </ol>
-    </>
-  );
+/**
+ * The stress test in one sentence (the block's summary line): the steps with the largest remaining supply
+ * gap (at most two, a gap above zero), or what the test found when no step that needs action leaves one.
+ * `test` names the test ("the Allied Industrial Base stress test (china supply removed)").
+ */
+export function bottleneckSummary(t: TechBottlenecks, tech: TechSlug, test: string, classWords?: string): string {
+  const label = TECH_LABELS[tech];
+  const Test = `${test.charAt(0).toUpperCase()}${test.slice(1)}`;
+  if (!t.assessed.length) return `${Test} covers no ${label} supply-chain step.`;
+  if (!t.rows.length) return `None of the ${t.assessed.length} ${label} supply-chain steps in ${test} needs new capacity or coordinated trade${classWords ? ` (${classWords})` : ''}.`;
+  const gaps = t.rows.filter((r) => num(r.node.residual) > 0).slice(0, 2);
+  const need = t.assessed.length === 1 ? `the one ${label} supply-chain step needs action` : `${t.rows.length} of the ${t.assessed.length} ${label} supply-chain steps ${t.rows.length === 1 ? 'needs' : 'need'} action`;
+  if (!gaps.length) {
+    const noGap = t.rows.every((r) => r.node.residual === 0);
+    return `In ${test}, ${need}${noGap ? '; coordinated trade would leave no remaining supply gap' : ''}.`;
+  }
+  return `In ${test}, ${need}; the largest remaining supply ${gaps.length === 1 ? 'gap would be at' : 'gaps would be at'} ${listText(gaps.map((r) => `${r.node.label} (${STAGE_LABELS[r.stage]}, ${pct(r.node.residual)})`))}.`;
 }
 
-function AibList({ doc, tech, fallback }: { doc: AibDoc; tech: TechSlug; fallback: ConcentrationLine[] }) {
+function AibList({ doc, tech }: { doc: AibDoc; tech: TechSlug }) {
   const { link } = useSectorUrl();
-  const label = TECH_LABELS[tech];
-  const { assessed, rows } = techBottlenecks(doc.nodes, tech);
+  const t = techBottlenecks(doc.nodes, tech);
   const shock = doc.meta.shocks.find((s) => s.id === doc.meta.headlineShock)?.label ?? null;
   const test = `the Allied Industrial Base stress test${shock ? ` (${lc(shock)})` : ''}`;
-  if (!assessed.length) {
-    return (
-      <>
-        <p className="mt-1 text-sm text-paper-dim">{`${test.charAt(0).toUpperCase()}${test.slice(1)} covers no ${label} supply-chain step.`}</p>
-        <ConcentrationList lines={topConcentration(fallback)} tech={tech} />
-      </>
-    );
-  }
-  if (!rows.length) {
-    return (
-      <>
-        <p className="mt-1 text-sm text-paper-dim">
-          {`None of the ${assessed.length} ${label} supply-chain steps in ${test} needs new capacity or coordinated trade (${classCountWords(assessed)}).`}
-        </p>
-        <ConcentrationList lines={topConcentration(fallback)} tech={tech} />
-      </>
-    );
-  }
-  const shown = rows.slice(0, BOTTLENECK_LIMIT);
+  const summary = bottleneckSummary(t, tech, test, t.assessed.length && !t.rows.length ? classCountWords(t.assessed) : undefined);
+  const shown = t.rows.slice(0, BOTTLENECK_LIMIT);
   return (
     <>
-      <p className="mt-1 text-sm text-paper-dim">
-        {`${rows.length} of the ${assessed.length} ${label} supply-chain steps in ${test} need action. ${shown.length < rows.length ? `The ${shown.length} with the largest remaining supply gap:` : 'Largest remaining supply gap first:'}`}
+      <p className="mt-1 text-sm text-paper-dim" data-testid="bottlenecks-summary">
+        {summary}{' '}
+        <Link className="link" to="/aib">
+          {BOTTLENECKS.aibLink} →
+        </Link>
       </p>
-      <ol className="mt-2 space-y-2.5" data-testid="bottlenecks-list">
-        {shown.map(({ node: n, stage }) => {
-          const supplier = n.baseLargest ? (doc.countries[n.baseLargest] ?? n.baseLargest) : null;
-          return (
-            <li key={n.id} className="text-sm">
-              <div className="flex flex-wrap items-baseline gap-x-2">
-                <span className="self-center" aria-hidden="true">
-                  <ClassSwatch cls={n.cls} size={9} />
-                </span>
-                <Link className="link font-medium" to={link(`/sector/${tech}/${stage}`)}>
-                  {n.label}
-                </Link>
-                <span className="text-xs text-paper-mute">{STAGE_LABELS[stage]}</span>
-                {supplier && pct(n.baseLargestShare) && <span className="text-xs text-paper-mute">{`· largest supplier today: ${supplier} ${pct(n.baseLargestShare)}`}</span>}
-              </div>
-              <p className="mt-0.5 text-paper-dim">{bottleneckWhy(n, supplier)}</p>
-            </li>
-          );
-        })}
-      </ol>
+      {shown.length > 0 && (
+        <div className="mt-2">
+          <Disclosure summary={BOTTLENECKS.details(shown.length)}>
+            {shown.length < t.rows.length && <p className="mb-2 text-sm text-paper-mute">{`The ${shown.length} with the largest remaining supply gap, largest first.`}</p>}
+            <ol className="space-y-2.5" data-testid="bottlenecks-list">
+              {shown.map(({ node: n, stage }) => {
+                const supplier = n.baseLargest ? (doc.countries[n.baseLargest] ?? n.baseLargest) : null;
+                return (
+                  <li key={n.id} className="text-sm">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="self-center" aria-hidden="true">
+                        <ClassSwatch cls={n.cls} size={9} />
+                      </span>
+                      <Link className="link font-medium" to={link(`/sector/${tech}/${stage}`)}>
+                        {n.label}
+                      </Link>
+                      <span className="text-xs text-paper-mute">{STAGE_LABELS[stage]}</span>
+                      {supplier && pct(n.baseLargestShare) && <span className="text-xs text-paper-mute">{`· largest supplier today: ${supplier} ${pct(n.baseLargestShare)}`}</span>}
+                    </div>
+                    <p className="mt-0.5 text-paper-dim">{bottleneckWhy(n, supplier)}</p>
+                  </li>
+                );
+              })}
+            </ol>
+          </Disclosure>
+        </div>
+      )}
     </>
   );
 }
 
-/** The bottleneck block: the stress test's steps when the AIB document loads, the concentration-only list otherwise. */
-export function Bottlenecks({ tech, fallback }: { tech: TechSlug; fallback: ConcentrationLine[] }) {
+/**
+ * The stress-test block, under the observed answer: one summary line linked to the Allied Industrial Base
+ * analysis, the steps behind a disclosure. A modelled result, labelled as such.
+ */
+export function Bottlenecks({ tech }: { tech: TechSlug }) {
   const manifest = useAibManifest();
   const doc = useCompactsDoc(manifest.data);
   const failed = manifest.status === 'error' || doc.status === 'error';
   return (
     <section aria-labelledby="bottlenecks-h" className="panel p-4" data-testid="bottlenecks">
-      <h2 id="bottlenecks-h" className="text-base font-medium text-paper">
-        {BOTTLENECKS.title}
-      </h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <h2 id="bottlenecks-h" className="text-base font-medium text-paper">
+          {BOTTLENECKS.title}
+        </h2>
+        <span className="eyebrow">Modelled result</span>
+      </div>
       {doc.data ? (
-        <AibList doc={doc.data} tech={tech} fallback={fallback} />
-      ) : failed ? (
-        <ConcentrationList lines={topConcentration(fallback)} tech={tech} />
+        <AibList doc={doc.data} tech={tech} />
       ) : (
-        <p className="mt-1 text-sm text-paper-mute">{BOTTLENECKS.loading}</p>
+        <p className="mt-1 text-sm text-paper-mute">{failed ? BOTTLENECKS.failed : BOTTLENECKS.loading}</p>
       )}
     </section>
   );

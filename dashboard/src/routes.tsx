@@ -16,7 +16,8 @@
 //     Compacts), both in src/aib/routes.tsx: Allied Industrial Base;
 //   * About: /about (shell/AboutView.tsx), with Methods (/methods) and Data & sources (/data) in a
 //     pathless lazy AboutEngineLayout (the engine and a one-line perspective, no dial panel), and the
-//     shared glossary page /glossary (shell/GlossaryView.tsx);
+//     shared glossary page /glossary (shell/GlossaryView.tsx) and How to use the Explorer /how-to-use
+//     (shell/HowToUseView.tsx);
 //   * aliases /sectors and /sector-insights (-> /sector), /strategic-insights (-> /countries: the
 //     Strategic module is gone), the Country module's (/country-insights) and the AIB module's
 //     (/sectoral-compacts, /allied-industrial-base);
@@ -48,7 +49,7 @@ function Alias({ to }: { to: string }) {
 
 /** The notice of an old link to the retired allied network design page (/network, /network/:stage). */
 export const NETWORK_RETIRED_NOTICE =
-  'This link points to a page the Explorer does not have. The Allied Industrial Base analysis shows how the coalition absorbs a supply shock, where new investment would close the gaps and which country plays which role.';
+  'This link points to a page the Explorer does not have. The Allied Industrial Base analysis shows how trusted partners would replace lost supply in a disruption, where new investment would close the gaps and which country plays which role.';
 
 /** Old Strategic deep links about one economy -> that section of its Country profile, which embeds
  *  the same views (IA refactor, plan 2). The query string (a custom perspective) is kept; the views
@@ -103,6 +104,8 @@ export const routes: RouteObject[] = [
       // Chart of the Day (2026-11-17): one raw-data chart a day, picked by scripts/chart_of_day/01_chart_of_day.R
       { path: 'chart-of-the-day/:date?', lazy: view(() => import('./chartOfDay/ChartOfDayView.tsx')), errorElement: <RouteError /> },
       { path: 'glossary', lazy: view(() => import('./shell/GlossaryView.tsx')), errorElement: <RouteError /> },
+      // How to use the Explorer (usability pass, 2026-11-25): five workflows, filed under About
+      { path: 'how-to-use', lazy: view(() => import('./shell/HowToUseView.tsx')), errorElement: <RouteError /> },
       { path: 'sectors', element: <Alias to="/sector" /> },
       { path: 'sector-insights', element: <Alias to="/sector" /> },
       { path: 'strategic-insights', element: <Alias to="/countries" /> },

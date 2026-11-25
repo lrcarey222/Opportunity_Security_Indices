@@ -50,6 +50,7 @@ import { Legend } from '../../charts/legends.tsx';
 import { SankeyChart, type SankeyFlow } from '../../charts/Sankey.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
 import { EmptyState, FilterRow, Loading, Notice, PageHead, Select } from '../../components/ui.tsx';
+import { Term } from '../../components/Term.tsx';
 import { useCountryManifest } from '../../country/data/hooks.ts';
 import { cellLabel } from '../../lib/format.ts';
 import { isSupplyStage } from '../../lib/stages.ts';
@@ -62,6 +63,7 @@ import { AGGREGATE_NAMES, agreementList, agreementNames, agreementTies, alignmen
 import { kindOf, type LensId, type PartnershipKind } from '../../partnerships/lenses.ts';
 import { LensCard, PartnershipLenses, RankedNames, type LensPanelSpec } from '../../partnerships/PartnershipLenses.tsx';
 import { RelationshipThesis } from '../../partnerships/RelationshipThesis.tsx';
+import { StrategicCase } from '../../partnerships/StrategicCase.tsx';
 import { thesisPartners } from '../../partnerships/thesis.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import type { AibBaselineScenarioDoc, AibInvestmentFlows, AibManagedScenarioDoc, AibMeta, AibScenarioId, AibStrategic } from '../contract.ts';
@@ -467,6 +469,11 @@ export default function AibPartnershipsView() {
             headingLevel={2}
             pairHref={pairHref}
             scenario={strategicScenario}
+            tools={
+              partner ? (
+                <StrategicCase strategic={strategic} a={country} b={partner} name={nameOf} compactHref={(id) => href(strategicCompactHref(id))} dataCreated={doc.meta.created ?? null} />
+              ) : undefined
+            }
           />
           {/* review only: renders nothing unless the review controls are on (review/appInfo.ts) */}
           <ReportIssueButton metric={{ id: 'headline', label: `Relationship thesis: ${nameOf(country)}${partner ? ` and ${nameOf(partner)}` : ''}`, value: partner ? `${country}_${partner}` : country, display: 'Relationship thesis' }} />
@@ -1277,6 +1284,9 @@ function GeopoliticalTab({ f, onKind }: TabProps) {
             </p>
             <p>
               <span className="text-paper">Partners:</span> {partner.map((c) => c.name).join(', ') || 'none'}.
+            </p>
+            <p className="text-xs text-paper-mute">
+              Partner recommendations and roles use the <Term id="trusted_network">trusted network</Term>: this coalition plus the economies the analysis treats as allied.
             </p>
           </LensCard>
           {iso && (

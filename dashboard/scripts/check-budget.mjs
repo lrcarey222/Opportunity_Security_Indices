@@ -14,7 +14,7 @@
 //                           climate-src 300 kB each
 //   Sector data             public/data/sector/* (manifest + chunks)                           <= 9 MB
 //   Country landing         entry + CountryLayout + landing view + world atlas + manifest      <= 700 kB
-//   Country profile         entry + CountryLayout + profile view + the largest fact sheet      <= 900 kB
+//   Country profile         entry + CountryLayout + profile view + the largest fact sheet      <= 910 kB
 //   Country memo view       entry + CountryLayout + memo view + the largest memo JSON          <= 450 kB
 //   Country variable chart  lazy (2026-10-30): a pick in a fence section's "Show a variable" loads the
 //                           embedded explorer's code beyond the profile + the sector manifest, meta
@@ -74,7 +74,9 @@ const LIMITS = {
   sectorProfile: 1.3 * MB,
   sectorData: 9 * MB,
   countryLanding: 700 * KB,
-  countryProfile: 900 * KB,
+  // 2026-11-25 (usability pass): 900 -> 910 kB for the plain-language glossary text (why each term matters, the
+  // trusted-network definition) that the shared InfoTip chunk carries on every page; measured 902.5 kB
+  countryProfile: 910 * KB,
   countryMemo: 450 * KB,
   // the lazy Sector chart of a fence variable (2026-10-30: 776.7 kB measured, 67.3 kB of it code; + ~15%, design E4)
   countryVariableChart: 900 * KB,

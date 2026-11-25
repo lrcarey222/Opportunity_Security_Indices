@@ -35,7 +35,8 @@ import { concentrationSummary, theName } from '../../derive/text.ts';
 import { DASH, fmtHhi, fmtShare, lc, listText, NO_DATA_TITLE } from '../../format.ts';
 import { hhiBand } from '../HhiExplainer.tsx';
 import { useAibDoc } from '../aibData.ts';
-import { AIB_COLUMN, SECTOR_SECTION } from '../../copy.ts';
+import { AIB_COLUMN, SECTOR_SECTION, STRONGEST_TITLE } from '../../copy.ts';
+import { bandApplies, strongestSentence } from '../../derive/answer.ts';
 import { climateLensFigures, ClimateEmissions } from './Climate.tsx';
 import { NzeLensLine, NzePathways } from './Nze.tsx';
 import { ClimateSources } from './ClimateSources.tsx';
@@ -223,7 +224,8 @@ function SecurityLens({ basis, nodes, doc }: { basis: LensBasis | null; nodes: A
   const c = basis?.conc ?? null;
   const top = c?.top1 ? model.geos[c.top1.geo] : null;
   // what the index means in one plain line (bands from dict.hhi_refs; the thresholds in the tooltip)
-  const band = c && c.W !== null ? hhiBand(c.hhi, c.hhi_lower_bound, model.hhiRefs) : null;
+  // only for a supply measure with enough holders to compare (bandApplies): a resource potential or two reporters say nothing about supply
+  const band = basis && c && c.W !== null && bandApplies(basis.v, c) ? hhiBand(c.hhi, c.hhi_lower_bound, model.hhiRefs) : null;
   // export shares read easily as production shares: say which one this is
   const byExports = basis?.v.family === 'exports';
   const holds = basis && c && top ? `${theName(top)} holds ${fmtShare(c.top1?.share)} of ${basis.what}; the three largest ${actorNoun(basis.v)} hold ${fmtShare(c.top3_share)}.` : '';
@@ -427,6 +429,41 @@ function ClimateLens({ basis, chunk }: { basis: LensBasis | null; chunk: SectorP
   );
 }
 
+/**
+ * The top holders of a lens basis as "Who is strongest today?" reads them: up to three holders (economies,
+ * the EU, or a region or company group when the source ranks one) with a value above zero, largest first, in
+ * running text; and whether they hold shares of a world total (a measure without one, or one that is itself
+ * a share, ranks the highest values instead).
+ */
+export function strongestOf(model: SectorModel, basis: LensBasis | null): { names: string[]; shares: boolean } {
+  if (!basis) return { names: [], shares: false };
+  const names = basis.conc.rows
+    .filter((r) => r.value > 0 && !!model.geos[r.geo])
+    .slice(0, 3)
+    .map((r) => theName(model.geos[r.geo]));
+  const share = basis.v.unit.unit_kind === 'share' || basis.v.unit.unit_kind === 'pct';
+  return { names, shares: basis.conc.W !== null && !share };
+}
+
+/** What the sentence names: the basis ("world exports"), with the sector when the basis does not name a component ("world exports in solar assembly"). */
+export function strongestWhat(basis: LensBasis | null, tech: string, stage: string): string {
+  if (!basis) return '';
+  return basis.sub ? basis.what : `${basis.what} in ${lc(tech)} ${lc(stage)}`;
+}
+
+/** "Who is strongest today?": one sentence before the lenses, from the measure the lenses lead with. */
+function WhoStrongest({ basis }: { basis: LensBasis | null }) {
+  const { model, tech, stage } = useProfile();
+  const s = strongestOf(model, basis);
+  return (
+    <p className="mb-4 max-w-4xl text-[0.9375rem] leading-snug text-paper" data-testid="who-strongest">
+      <span className="font-medium">{STRONGEST_TITLE}</span>{' '}
+      <span className={s.names.length ? 'text-paper-dim' : 'text-paper-mute'}>{strongestSentence(s.names, strongestWhat(basis, TECH_LABELS[tech], STAGE_LABELS[stage]), basis?.year ?? null, s.shares, basis?.conc.n)}</span>
+      {basis && s.names.length > 0 && <span className="text-xs text-paper-mute"> {basis.v.source.short}.</span>}
+    </p>
+  );
+}
+
 /** The four lenses, in one row on wide screens. */
 export function Lenses() {
   const { model, cell, tech, stage, facts, eu } = useProfile();
@@ -451,6 +488,7 @@ export function Lenses() {
           </p>
         ) : null}
       </div>
+      <WhoStrongest basis={basis} />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <EconomicLens basis={basis} />
         <SecurityLens basis={basis} nodes={nodes} doc={doc} />

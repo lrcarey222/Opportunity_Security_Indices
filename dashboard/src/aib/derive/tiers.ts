@@ -96,19 +96,19 @@ export function tierMeanings(o: { mid: number; top: number; reached?: boolean; a
   const t = targetLabel(top);
   return {
     'core coordinating member': reached
-      ? `Members of the exact minimum coalition (the fewest economies that bring every node to the ${m} target for the demand anchors' demand, the anchors always among them) that are not critical supply partners or prospective hosts: the demand anchors, and suppliers one other candidate could replace.`
+      ? `Members of the exact minimum coalition (the fewest economies that bring every supply-chain step to the ${m} target for the demand anchors' demand, the anchors always among them) that are not critical supply partners or prospective hosts: the demand anchors, and suppliers one other candidate could replace.`
       : `No coalition reaches the ${m} target: the members are the widest coalition found by adding partners one at a time: the demand anchors and the economies that bring the weakest step closest to the target.`,
     'critical supply partner': reached
       ? `Members the coalition needs at the ${m} target, for the supply they have today, that no single other candidate can replace: without one, only several other economies together restore the target, or none does.`
       : `Not tested: with the ${m} target out of reach, no member is called irreplaceable for it.`,
-    'prospective host': `Members that are in the coalition only for the new capacity the model simulates at them as leading investment hosts (at most their current output in the node): the coalition does not depend on what they supply today, so they are neither core members nor critical. The capacity is hypothetical.`,
+    'prospective host': `Members that are in the coalition only for the new capacity the analysis simulates at them as leading investment hosts (at most their current output at the step): the coalition does not depend on what they supply today, so they are neither core members nor critical. The capacity is hypothetical.`,
     'associate partner': reached
       ? `The fewest additions to the core coalition, held in, that reach the ${t} target${associatesReach99 === false ? ' (here no additions reach it)' : ''}. The ${t} minimum coalition solved on its own need not contain the core.`
       : `Not computed: the core coalition does not reach the ${m} target.`,
-    'critical external dependency': `Not members, but losing one pushes a node below the ${m} target with the coalition fixed (where a node is below it already, lowers its coverage by a point or more); each supplies ${shares.criticalMin ? `at least ${shares.criticalMin}` : 'at least a set minimum share'} of the demand anchors' demand there.`,
+    'critical external dependency': `Not members, but losing one pushes a supply-chain step below the ${m} target with the coalition fixed (where a step is below it already, lowers its coverage by a point or more); each supplies ${shares.criticalMin ? `at least ${shares.criticalMin}` : 'at least a set minimum share'} of the demand anchors' demand there.`,
     'critical external dependency (marginal)': `The same test, but each supplies under ${shares.criticalMin ?? 'that minimum share'} of the anchors' demand there: critical only because the coalition sits near the target.`,
-    'external dependency': `Other non-members that each supply ${shares.externalMin ? `at least ${shares.externalMin}` : 'a material share'} of the demand anchors' demand in a node.`,
-    'development host': `Middle-income economies with revealed capability, below scale, that lead a node's development hosts (by the Development Potential Index): where development finance could build future capacity. Their capacity never counts toward the ${m} target, so they are not members for it.`,
+    'external dependency': `Other non-members that each supply ${shares.externalMin ? `at least ${shares.externalMin}` : 'a material share'} of the demand anchors' demand at a supply-chain step.`,
+    'development host': `Middle-income economies with revealed capability, below scale, that lead a supply-chain step's development hosts (by the Development Potential Index): where development finance could build future capacity. Their capacity never counts toward the ${m} target, so they are not members for it.`,
   };
 }
 

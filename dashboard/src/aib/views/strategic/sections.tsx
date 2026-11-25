@@ -19,6 +19,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ChartCard } from '../../../charts/ChartCard.tsx';
+import { Term } from '../../../components/Term.tsx';
 import { Legend } from '../../../charts/legends.tsx';
 import { TableView, type Col } from '../../../components/TableView.tsx';
 import { ChangedDot, Disclosure, EmptyState, StatTile } from '../../../components/ui.tsx';
@@ -242,10 +243,10 @@ export function VulnerabilitySection({ s, c, sid }: { s: AibStrategic; c: AibStr
             <Fact term={`Critical dependencies outside the alliance (${label})`}>{namesWords(sc?.criticalExternal, name)}</Fact>
             <Fact term={`Allied partners the compact cannot do without (${label})`}>{namesWords(sc?.criticalPartners, name)}</Fact>
             {sc?.alliedOutsideCore && sc.alliedOutsideCore.length > 0 && (
-              <Fact term={`Allied suppliers outside the core coalition (${label})`}>{namesWords(sc.alliedOutsideCore, name)}</Fact>
+              <Fact term={`Allied suppliers outside the compact’s core group (${label})`}>{namesWords(sc.alliedOutsideCore, name)}</Fact>
             )}
             {sc?.nonAlliedReliedOn && sc.nonAlliedReliedOn.length > 0 && (
-              <Fact term={`Non-allied suppliers the coalition relies on (${label})`}>{namesWords(sc.nonAlliedReliedOn, name)}</Fact>
+              <Fact term={`Suppliers outside the trusted network the compact relies on (${label})`}>{namesWords(sc.nonAlliedReliedOn, name)}</Fact>
             )}
             <Fact term="Steps with too little data to test">{thin.length ? listWords(thin.map((x) => x.label)) : 'none'}</Fact>
             {untested.length > 0 && (
@@ -255,7 +256,7 @@ export function VulnerabilitySection({ s, c, sid }: { s: AibStrategic; c: AibStr
             )}
           </dl>
           <p className="mt-3 text-xs text-paper-mute">
-            Who supplies each step is in the{' '}
+            Allied economies are those in the <Term id="trusted_network">trusted network</Term>. Who supplies each step is in the{' '}
             <a className="link" href="#division">
               division of labor
             </a>{' '}

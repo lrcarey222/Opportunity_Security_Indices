@@ -21,6 +21,8 @@ import { workstreamsHref } from '../nav.ts';
 import { StrategicCompactCard } from './strategic/CompactCard.tsx';
 import { ScenarioMatrix } from './strategic/ScenarioMatrix.tsx';
 import { QuestionLede } from './common.tsx';
+import { CompactMemoList } from '../../partnerships/MemoCta.tsx';
+import { useMemoManifest } from '../../partnerships/memoStore.ts';
 import { scenarioLabelOf, STRATEGIC_EYEBROW } from './strategic/shared.tsx';
 
 /** The compacts grouped by family, in the export's order of first appearance (a compact without one under "Other compacts"). */
@@ -47,6 +49,7 @@ export default function StrategicCompactsView() {
 
 function Landing({ s, sid }: { s: AibStrategic; sid: AibStrategicScenarioId }) {
   const { doc, href, hasScenarios, scenario } = useAibCtx();
+  const memos = useMemoManifest();
   const compacts = strategicCompacts(s);
   const families = compactFamilies(compacts);
   const label = scenarioLabelOf(s, sid);
@@ -81,6 +84,7 @@ function Landing({ s, sid }: { s: AibStrategic; sid: AibStrategicScenarioId }) {
             How compacts are derived &rarr;
           </Link>
         </p>
+        <CompactMemoList className="mt-2 max-w-3xl" manifest={memos} />
       </PageHead>
       <div className="space-y-12">
         {families.map((f) => (

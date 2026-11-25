@@ -50,6 +50,12 @@ export const BRIEF_ACTION = 'Download decision brief';
 export const MEMO_ACTION = 'Read the policy memo';
 export const memoActionLabel = (e: { memo: { format?: string } | null }): string => (e.memo?.format === 'brief' ? BRIEF_ACTION : MEMO_ACTION);
 
+/** What a decision brief holds (its sections: bottom line, where to secure or compete, the allied bargain,
+ *  development, energy-system priorities, policy direction, the agenda; appendix with sources and caveats). */
+export const BRIEF_CONTENTS =
+  'A structured summary: the recommendation, its evidence, partner implications, deployment priorities, policy direction and next steps (PDF or Word).';
+export const briefWrittenLine = (written: string | null): string => `${written ? `Written ${written}; s` : 'S'}ources and caveats in its appendix.`;
+
 /** For an economy with no decision brief (the briefs are the manifest's memo entries of format 'brief' that are not stale). */
 export const noBriefLine = (name: string): string => `No decision brief yet for ${name}.`;
 
@@ -186,7 +192,7 @@ function MemoAction({ manifest }: { manifest: CountryManifest }) {
         </Link>
         <p className="mt-1 max-w-xs text-xs text-paper-mute">
           {brief
-            ? `A short decision brief${written ? ` written ${written}` : ''} from the Explorer data, as PDF or Word; evidence, sources and caveats in its appendix.`
+            ? `${BRIEF_CONTENTS} ${briefWrittenLine(written)}`
             : `AI-generated from the data and checked against it; baseline as of ${manifest.as_of_label}. It reads the security and opportunity scores, not the strategy above.`}
         </p>
         {old && (

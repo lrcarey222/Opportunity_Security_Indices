@@ -2,15 +2,61 @@
 // choices, the yards and fences, the Allied Industrial Base concepts, the indices and the data measures in plain
 // words, filtered by where they are used (All · Sector · Country · Allied Industrial Base · Methods, the last the
 // Methods page and the Legacy OSI views; ?module= keeps the filter in the link). Linked from the footer, every InfoTip ("More in the
-// glossary"), Methods, Sector Sources and Country About. A shell page: no engine, no data.
+// glossary"), Methods, Sector Sources and Country About. A shell page: no engine. One data read (usability pass,
+// 2026-11-25): the Trusted network entry shows who is in the network (posture/TrustedNetworkControl, the posture core
+// the Allied Industrial Base overview and the Country block read too), loaded only once that entry is near the screen.
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useSearchParams } from 'react-router';
 import { PageHead, Segmented } from '../components/ui.tsx';
 import { GlossaryList } from '../components/GlossaryList.tsx';
 import { useGlossary } from '../components/glossaryVars.tsx';
 import { glossaryFor, type GlossaryModule } from '../content/glossary.ts';
 import { useTitle } from './title.ts';
+import { TrustedNetworkControl } from '../posture/TrustedNetworkControl.tsx';
+import { glossaryAnchor } from '../components/InfoTip.tsx';
+
+/** The glossary entry that shows the network's members beside its definition. */
+export const TRUSTED_NETWORK_TERM = 'trusted_network';
+
+/**
+ * A slot at the end of a glossary entry's definition (its <dd>), for content the shared list does not render. The
+ * slot appears once the entry is within a screen of the viewport (at once where IntersectionObserver is missing), so
+ * its data load waits until a reader gets there. Null while the entry is not on the page.
+ */
+export function useEntrySlot(id: string, deps: readonly unknown[]): HTMLElement | null {
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const entry = document.getElementById(glossaryAnchor(id));
+    const dd = entry?.querySelector('dd');
+    if (!entry || !dd) {
+      setSlot(null);
+      return;
+    }
+    const el = document.createElement('div');
+    el.className = 'mt-2';
+    el.setAttribute('data-testid', `glossary-slot-${id}`);
+    let done = false;
+    const attach = () => {
+      if (done) return;
+      done = true;
+      dd.appendChild(el);
+      setSlot(el);
+    };
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver === 'function') {
+      io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && attach(), { rootMargin: '100% 0px' });
+      io.observe(entry);
+    } else attach();
+    return () => {
+      io?.disconnect();
+      el.remove();
+      setSlot(null);
+    };
+  }, [id, ...deps]);
+  return slot;
+}
 
 type Filter = GlossaryModule | 'all';
 
@@ -43,12 +89,13 @@ export default function GlossaryView() {
   }, [loc.hash, filter]);
 
   const n = filter === wanted ? entries.length : list.length;
+  const networkSlot = useEntrySlot(TRUSTED_NETWORK_TERM, [filter, entries]);
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHead
         eyebrow="About"
         title="Glossary"
-        lede="Plain-language definitions of the strategic choices, Allied Industrial Base concepts, indices and data measures used across the Explorer. Each entry says first what a term means, then, where it helps, how it is measured. The info buttons beside a term anywhere in the Explorer open the same short definition."
+        lede="Plain-language definitions of the strategic choices, Allied Industrial Base concepts, indices and data measures used across the Explorer. Each entry says first what a term means and why it matters, then, where it helps, how it is measured. The info buttons beside a term anywhere in the Explorer open the same short definition."
       />
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4 border-b hairline pb-4">
         <Segmented<Filter>
@@ -67,6 +114,7 @@ export default function GlossaryView() {
         </p>
       </div>
       <GlossaryList module={filter} current={hashId} />
+      {networkSlot && createPortal(<TrustedNetworkControl />, networkSlot)}
     </div>
   );
 }

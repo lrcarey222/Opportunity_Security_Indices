@@ -165,11 +165,12 @@ describe('the global navigation', () => {
     expect(currentTabs()).toEqual([]);
     expect(screen.getByRole('link', { name: 'Allied Industrial Base Explorer' }).getAttribute('href')).toBe('/');
     expect(screen.queryByText(/Strategic Insights|Country Insights|Sector Insights/)).toBeNull();
-    // the three entry cards and their calls to action
+    // the four entry cards and their calls to action (usability pass, 2026-11-25)
     for (const [title, cta, to] of [
       ['Explore a Sector', 'Explore sectors', '/sector'],
       ['Explore a Country', 'Explore countries', '/countries'],
-      ['Explore the Allied Industrial Base', 'Explore the Allied Industrial Base', '/aib'],
+      ['Explore Partnership Opportunities', 'Explore partnerships', '/aib/partnerships'],
+      ['Explore a Compact', 'Explore compacts', '/compacts'],
     ]) {
       const card = screen.getByRole('article', { name: title });
       expect(within(card).getByRole('link', { name: cta }).getAttribute('href')).toBe(to);
@@ -194,6 +195,7 @@ const PRIMARY: [string, string, string | null][] = [
   ['/aib/diversification', 'Allied Industrial Base', 'Managed Interdependence'],
   ['/about', 'About', 'Overview'],
   ['/glossary', 'About', 'Glossary'],
+  ['/how-to-use', 'About', 'How to use'],
 ];
 
 const VIEWS_NAV: Record<string, string> = {
@@ -317,7 +319,7 @@ describe('acceptance workflows (brief s.27), at navigation level', () => {
   it('AIB: Home -> Allied Industrial Base -> overview -> Sectoral Compacts -> a strategic compact and its workstreams -> a workstream -> a country role -> its profile', async () => {
     setCountryStoreForTests(new CountryStore(countrySourceWithAib()));
     const router = renderAt('/');
-    await follow(router, linkIn('main article a[href="/aib"]', /^Explore the Allied Industrial Base$/), path('/aib'));
+    await follow(router, linkIn('main [data-testid="aib-one-line"] a[href="/aib"]', /^Allied Industrial Base overview/), path('/aib'));
     expect(await screen.findByRole('list', { name: 'Supply-chain steps by treatment' }, { timeout: 30_000 })).toBeTruthy();
     await follow(router, linkIn('nav[aria-label="Allied Industrial Base views"] a', /^Sectoral Compacts$/), path('/compacts'));
     // the Strategic Sectoral Compacts: a card opens its compact, and its workstreams (the compact candidates)

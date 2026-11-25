@@ -1511,10 +1511,10 @@ describe.skipIf(!haveFixture())('the diversification scenario (2026-10-19)', () 
 });
 
 describe('Home', () => {
-  it('has the third entry card: the Allied Industrial Base, its links and its button', async () => {
-    expect(MODULE_CARDS.map((c) => c.id)).toEqual(['sector', 'country', 'aib']);
-    const card = MODULE_CARDS[2];
-    expect(card).toMatchObject({ title: 'Explore the Allied Industrial Base', question: 'How should allies divide the work?', button: 'Explore the Allied Industrial Base' });
-    expect(card.links.every((l) => l.to.startsWith('/compacts') || l.to.startsWith('/aib'))).toBe(true);
+  it('has the partnership and compact entry cards (usability pass 2026-11-25): their links and buttons stay in the Allied Industrial Base', async () => {
+    expect(MODULE_CARDS.map((c) => c.id)).toEqual(['sector', 'country', 'partnership', 'compact']);
+    expect(MODULE_CARDS[2]).toMatchObject({ title: 'Explore Partnership Opportunities', question: 'Who should work with whom, and for what?', button: 'Explore partnerships', home: '/aib/partnerships' });
+    expect(MODULE_CARDS[3]).toMatchObject({ title: 'Explore a Compact', button: 'Explore compacts', home: '/compacts' });
+    for (const card of MODULE_CARDS.slice(2)) expect(card.links.every((l) => l.to.startsWith('/compacts') || l.to.startsWith('/aib'))).toBe(true);
   });
 });

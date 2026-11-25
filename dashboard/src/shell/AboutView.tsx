@@ -3,7 +3,8 @@
 // capability (the strategy's five steps, the three yards with the user's definitions, the Allied Industrial Base
 // in the canonical words), then where the methods, data and glossary are, and finally which results are the
 // same for every reader. Every sentence another page also says comes from content/vocabulary.ts. The pages it
-// links keep their paths (/methods and /data are the Strategic pages; each module keeps its own sources page).
+// links keep their paths (/methods and /data are the Strategic pages; each module keeps its own sources page). One
+// quiet line under the lede links How to use the Explorer (/how-to-use, 2026-11-25).
 // A shell page: no engine, no data.
 
 import { Link } from 'react-router';
@@ -90,7 +91,15 @@ export default function AboutView() {
   useTitle('About');
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <PageHead eyebrow="About" title="About the Explorer" lede={ABOUT_LEDE} />
+      <PageHead eyebrow="About" title="About the Explorer" lede={ABOUT_LEDE}>
+        <p className="mt-3 text-sm text-paper-mute" data-testid="how-to-use-line">
+          First time here?{' '}
+          <Link className="link" to="/how-to-use">
+            How to use the Explorer &rarr;
+          </Link>{' '}
+          Five common tasks and where to start each one.
+        </p>
+      </PageHead>
 
       <section aria-labelledby="about-strategy" className="max-w-4xl">
         <h2 id="about-strategy" className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
