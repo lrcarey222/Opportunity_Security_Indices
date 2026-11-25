@@ -1,0 +1,198 @@
+# Change layer (docs/change-layer-architecture.md): posture vintages, deterministic change classification,
+# methodology attribution, explanation, provenance and the Intelligence bridge. Seeded with constructed vintages.
+
+cl_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
+for (f in c("R/qc/qc_core.R", "R/qc/qc_drift.R", "R/change/posture_vintage.R", "R/change/posture_compare.R",
+            "R/change/posture_explain.R", "R/change/posture_impacts.R", "R/change/change_export.R")) source(file.path(cl_root, f))
+cl_cfg <- yaml::read_yaml(file.path(cl_root, "config/change_layer.yml"))
+
+cl_cell <- function(iso3 = "USA", tech = "Electric Grid", stage = "Components", choice = "partner", need = 0.80,
+                    prize = 0.65, cp = 0.60, market = 0.40, share = 0.030, confidence = "moderate", evidence = "medium") {
+  tibble::tibble(iso3 = iso3, tech = tech, stage = stage, choice = choice, posture = posture_family_of(choice),
+                 variant = NA_character_, need_type = ifelse(stage == "Deployment", "deployment", "supply_chain"),
+                 need = need, prize = prize, cp = cp, market = market, share = share, confidence = confidence,
+                 evidence = evidence, borderline = NA_character_, pathway = "yes", partner1 = "JPN", deploy_case = NA_character_)
+}
+# a background cell that never changes, so every pair has an unchanged cell
+cl_bg <- function() cl_cell(iso3 = "JPN", tech = "Solar", stage = "Assembly", choice = "watch")
+cl_v <- function(...) dplyr::bind_rows(cl_cell(...), cl_bg())
+
+cl_header <- function(id, created, method = "m-aaaa", data = "d-1111", unverified = FALSE,
+                      stages = c("Extraction", "Refining", "Components", "Assembly", "Deployment", "Recovery")) {
+  list(vintage_id = id, created = created, method = list(id = method, unverified = unverified, label = "test"),
+       data = list(id = data), bars = cl_cfg$thresholds$score$default_bars,
+       techs = list("Electric Grid", "Solar"), stages = as.list(stages))
+}
+H1 <- cl_header("v1", "2026-11-01T00:00:00Z")
+H2 <- cl_header("v2", "2026-11-21T00:00:00Z", data = "d-2222")
+H2m <- cl_header("v2m", "2026-11-21T00:00:00Z", method = "m-bbbb")
+cl_cmp <- function(prev, cur, hp = H1, hc = H2, ...) posture_compare(prev, cur, hp, hc, cl_cfg, ...)
+cl_usa <- function(res) res$changes[res$changes$iso3 == "USA", ]
+
+test_that("identical vintages give no meaningful change", {
+  r <- cl_cmp(cl_v(), cl_v())
+  expect_equal(nrow(r$changes), 0)
+  expect_equal(r$pair$n_unchanged, 2)
+  expect_false(r$pair$method_changed)
+})
+
+test_that("sub-threshold noise is not a change", {
+  r <- cl_cmp(cl_v(), cl_v(need = 0.82, cp = 0.63, share = 0.031, market = 0.42))
+  expect_equal(nrow(r$changes), 0)
+})
+
+test_that("a data change without a conclusion change is data only", {
+  r <- cl_cmp(cl_v(), cl_v(share = 0.045))
+  x <- cl_usa(r)
+  expect_equal(x$types, "data")
+  expect_equal(x$severity, "minor")
+  expect_equal(x$cur_choice, x$prev_choice)
+  expect_equal(x$attribution, "real_world")
+  expect_match(x$explanation, "Export share moved 3.0% → 4.5%", fixed = TRUE)
+  expect_match(x$sources, "comtrade_energy_trade")
+})
+
+test_that("an evidence and confidence improvement is classified with direction", {
+  r <- cl_cmp(cl_v(), cl_v(evidence = "high", confidence = "high"))
+  x <- cl_usa(r)
+  expect_setequal(strsplit(x$types, ";")[[1]], c("evidence", "confidence"))
+  expect_equal(x$evidence_direction, "improved")
+  expect_equal(x$confidence_direction, "improved")
+  expect_equal(x$severity, "moderate")
+  expect_match(x$explanation, "Evidence improved from medium to high")
+  expect_match(x$explanation, "Confidence rose from moderate to high")
+})
+
+test_that("a material score change records the delta and the bar crossed", {
+  r <- cl_cmp(cl_v(), cl_v(cp = 0.71))
+  x <- cl_usa(r)
+  expect_equal(x$types, "score")
+  expect_equal(x$severity, "moderate")      # |delta| 0.11 >= moderate_delta
+  expect_equal(x$d_cp, 0.11, tolerance = 1e-9)
+  expect_true(is.na(x$crossed))
+  r2 <- cl_cmp(cl_v(), cl_v(cp = 0.76))       # 0.60 -> 0.76 crosses the 0.75 position bar
+  expect_match(cl_usa(r2)$crossed, "cp 0.600->0.760 (bar 0.75)", fixed = TRUE)
+  expect_match(cl_usa(r2)$explanation, "Position rose 0.60 → 0.76, crossing the 0.75 bar", fixed = TRUE)
+})
+
+test_that("a recommendation change is major, with posture vs mode subtypes", {
+  r <- cl_cmp(cl_v(), cl_v(choice = "catch_up", cp = 0.78, evidence = "high"))
+  x <- cl_usa(r)
+  expect_true(grepl("recommendation", x$types))
+  expect_equal(x$subtype, "mode")
+  expect_equal(x$severity, "major")
+  expect_match(x$explanation, "^Recommendation changed from Partner to Catch Up\\.")
+  r2 <- cl_cmp(cl_v(), cl_v(choice = "accelerate"))
+  expect_equal(cl_usa(r2)$subtype, "posture")
+  r3 <- cl_cmp(cl_v(), cl_v(choice = "not_assessed"))
+  expect_equal(cl_usa(r3)$subtype, "coverage")
+  expect_match(cl_usa(r3)$explanation, "No longer assessed (was Partner)", fixed = TRUE)
+})
+
+test_that("a methodology-only change is attributed to the method", {
+  r <- cl_cmp(cl_v(), cl_v(choice = "catch_up", cp = 0.78), hc = H2m)
+  x <- cl_usa(r)
+  expect_true(r$pair$method_changed)
+  expect_equal(x$attribution, "methodology")
+  expect_match(x$explanation, "comes from the method, not the world")
+})
+
+test_that("a method change with moved inputs is mixed, and a bridge decomposes it", {
+  cur <- cl_v(choice = "catch_up", cp = 0.78, share = 0.06)
+  r <- cl_cmp(cl_v(), cur, hc = H2m)
+  expect_equal(cl_usa(r)$attribution, "mixed")
+  # bridge = new method on old inputs: the method alone moved the choice; data then moved share only
+  bridge <- cl_v(choice = "catch_up", cp = 0.78)
+  rb <- cl_cmp(cl_v(), cur, hc = H2m, bridge = bridge)
+  x <- cl_usa(rb)
+  expect_equal(x$attribution, "both")
+  expect_match(x$method_types, "recommendation")
+  expect_equal(x$world_types, "data")
+  # bridge identical to current: the whole change is methodological
+  rb2 <- cl_cmp(cl_v(), cur, hc = H2m, bridge = cur)
+  expect_equal(cl_usa(rb2)$attribution, "methodology")
+})
+
+test_that("an unverified (dirty) fingerprint is flagged", {
+  r <- cl_cmp(cl_v(), cl_v(cp = 0.76), hc = cl_header("v2", "2026-11-21T00:00:00Z", unverified = TRUE))
+  expect_true(cl_usa(r)$method_unverified)
+  expect_match(cl_usa(r)$explanation, "unverified")
+})
+
+test_that("vintages with different stage taxonomies are not compared", {
+  h4 <- cl_header("v0", "2026-10-01T00:00:00Z", stages = c("Upstream", "Midstream", "Downstream", "Deployment"))
+  r <- cl_cmp(cl_v(), cl_v(choice = "accelerate"), hp = h4)
+  expect_false(r$pair$comparable)
+  expect_equal(nrow(r$changes), 0)
+  expect_match(r$pair$reason, "stage taxonomy")
+  expect_equal(posture_previous_comparable(list(h4, H1, H2)), c(NA, NA, 2L))
+})
+
+test_that("assessment ids, method ids and data ids are stable", {
+  expect_equal(assessment_id("usa", "Electric Grid", "Components"), "aib:posture:USA:electric-grid:components")
+  a <- change_method_id(list(`R/x` = "1", `config/y.yml` = "2"))
+  expect_equal(a, change_method_id(list(`config/y.yml` = "2", `R/x` = "1")))
+  expect_false(identical(a, change_method_id(list(`R/x` = "1", `config/y.yml` = "3"))))
+  expect_equal(change_data_id(list(benchmark_period = "2022-2024")), change_data_id(list(benchmark_period = "2022-2024")))
+})
+
+test_that("a vintage decodes from a columnar posture core", {
+  core <- list(countries = list(iso3 = list("JPN", "USA")), meta = list(techs = list("Solar"), stages = list("Components", "Deployment")),
+               cells = list(c = list(0, 1), t = list(0, 0), s = list(0, 1), p = list("C", "D"), m = list("partner", NULL),
+                            dm = list(NULL, "accelerate"), need = list(0.8, 0.7), prize = list(0.6, NULL), io = list(0.4, NULL),
+                            cp = list(0.5, NULL), share = list(0.02, 0.1), conf = list("high", "low"), ev = list("medium", NULL),
+                            nt = list("supply_chain", "deployment"), bd = list(NULL, NULL), pw = list("yes", NULL),
+                            v = list("compete_partner", "deploy_accelerate"), p1 = list("KOR", NULL), dc = list(NULL, "security")))
+  v <- posture_vintage_from_core(core)
+  expect_equal(names(v), POSTURE_VINTAGE_COLS)
+  expect_equal(v$choice, c("partner", "accelerate"))
+  expect_equal(v$posture, c("compete", "deploy"))
+  expect_equal(v$need, c(0.8, 0.7))
+  expect_equal(v$evidence, c("medium", NA))
+})
+
+test_that("crosswalk candidates need geography and sector, and skip unassessed cells", {
+  cw <- yaml::read_yaml(file.path(cl_root, "config/neis_intelligence_crosswalk.yml"))
+  cells <- dplyr::bind_rows(cl_cell(), cl_cell(stage = "Assembly"), cl_cell(stage = "Refining", choice = "not_assessed"))
+  c1 <- posture_impact_candidates(list(geography = "united-states", sector = "grid"), cw, cells)
+  expect_setequal(c1$assessment_id, c("aib:posture:USA:electric-grid:components", "aib:posture:USA:electric-grid:assembly"))
+  c2 <- posture_impact_candidates(list(geography = "united-states", sector = "grid", value_chain_node = "components"), cw, cells)
+  expect_equal(c2$assessment_id, "aib:posture:USA:electric-grid:components")
+  expect_equal(nrow(posture_impact_candidates(list(geography = "united-states"), cw, cells)), 0)
+})
+
+test_that("impact records are validated and only accepted ones in the window attach", {
+  ok <- list(impact_id = "imp-1", event_id = "e1", assessment_id = "aib:posture:USA:electric-grid:components",
+             dimension = "position", reason = "Plant cancelled", reason_method = "editorial", confidence = 0.7,
+             status = "accepted", proposed_by = "rule", proposed_at = "2026-11-05T00:00:00Z",
+             reviewer = "analyst", review_timestamp = "2026-11-10T00:00:00Z")
+  bad <- list(impact_id = "imp-2", event_id = "e2", assessment_id = "aib:posture:usa:grid", dimension = "vibes",
+              reason = "x", reason_method = "model", status = "accepted", proposed_by = "ai", proposed_at = "2026-11-05")
+  expect_length(validate_analytical_impacts(list(ok)), 0)
+  probs <- validate_analytical_impacts(list(ok, bad))
+  expect_true(any(grepl("bad assessment_id", probs)) && any(grepl("bad dimension", probs)) && any(grepl("needs reviewer", probs)))
+  late <- utils::modifyList(ok, list(impact_id = "imp-3", review_timestamp = "2026-11-25T00:00:00Z"))
+  prop <- utils::modifyList(ok, list(impact_id = "imp-4", status = "proposed"))
+  r <- cl_cmp(cl_v(), cl_v(cp = 0.76))
+  ch <- attach_impacts(r$changes, list(ok, late, prop), list(v1 = H1, v2 = H2))
+  expect_equal(ch$impacts[ch$iso3 == "USA"], "imp-1")
+})
+
+test_that("every provenance source id exists in the raw inputs manifest", {
+  man <- yaml::read_yaml(file.path(cl_root, "config/raw_inputs_manifest.yml"))
+  known <- vapply(man$inputs, function(e) e$id, character(1))
+  ids <- unique(unlist(lapply(cl_cfg$sources, function(s) unlist(s$source_ids))))
+  expect_true(all(ids %in% known), info = paste(setdiff(ids, known), collapse = ", "))
+})
+
+test_that("the bundle nests sides and keeps arrays as arrays", {
+  r <- cl_cmp(cl_v(), cl_v(choice = "catch_up", cp = 0.78))
+  b <- change_bundle(list(H1, H2), list(r), created = "2026-11-25T00:00:00Z", git_commit = "abc")
+  js <- jsonlite::fromJSON(jsonlite::toJSON(b, auto_unbox = TRUE, null = "null", na = "null"), simplifyVector = FALSE)
+  expect_equal(js$schema, "osi-changes")
+  x <- js$changes[[1]]
+  expect_equal(x$before$choice, "partner")
+  expect_equal(x$after$choice, "catch_up")
+  expect_true(is.list(x$types))
+  expect_true(is.list(x$impacts))
+})

@@ -1,0 +1,90 @@
+# Change layer (docs/change-layer-architecture.md): posture vintages and deterministic change detection.
+# Every rule here is read by R/change/*.R. Nothing in this layer is decided by a model.
+
+layer_version: 1
+
+# The analytical object ID: aib:posture:<ISO3>:<tech-slug>:<stage-slug>
+assessment_id_prefix: "aib:posture"
+
+# Method fingerprint: the git object id of each path at the vintage's code commit. A pair whose fingerprints differ
+# is a methodology pair. Widening this list attributes more change to method (the conservative direction).
+method_paths:
+  - R/strategic_position
+  - config/strategic_position.yml
+  - R/utils/variable_stage_evidence.R
+  - R/dashboard/posture
+  - scripts/26_build_strategic_position.R
+  - scripts/91_export_posture_data.R
+
+# Human label of the method (shell/ReleaseStamp.tsx METHOD_VERSION). Recorded beside the fingerprint, never used
+# to decide anything.
+method_label: "decision framework (2026-10-30)"
+
+# Data stamp: the core meta fields that describe the input windows.
+data_stamp_fields: [benchmark_period, momentum_period, momentum_through]
+
+thresholds:
+  # score change: |delta| on need / prize / cp at or above min_delta, or any crossing of the decision bar
+  score:
+    fields: [need, prize, cp]
+    min_delta: 0.05          # the decision engine's borderline band
+    moderate_delta: 0.10
+    # bars used when a vintage's core meta does not carry its own thresholds
+    default_bars: {need: 0.67, deployment: 0.6, prize: 0.6, cp: 0.75}
+  # data change: a measured input moved materially (both conditions)
+  data:
+    share: {min_abs: 0.002, min_rel: 0.20}
+    market: {min_abs: 0.05, min_rel: 0.0}
+  # ordered scales for evidence and confidence
+  evidence_scale: [none, low, medium, high]
+  confidence_scale: [low, moderate, high]
+
+severity_rank: {minor: 1, moderate: 2, major: 3}
+
+labels:
+  choice:
+    secure: Secure
+    preserve: Preserve
+    catch_up: Catch Up
+    partner: Partner
+    accelerate: Accelerate
+    watch: Watch
+    not_assessed: Not assessed
+  posture: {secure: Secure, compete: Compete, deploy: Deploy, not_assessed: Not assessed}
+  field:
+    need: Need
+    prize: Prize
+    cp: Position
+    market: Market size
+    share: Export share
+    evidence: Evidence
+    confidence: Confidence
+
+# Provenance: each analysed field -> its principal raw input ids (config/raw_inputs_manifest.yml) and the method
+# note. Curated by hand from the modules' inputs; it names where to look, not a computed lineage (slice 2 adds
+# per-vintage raw_inputs_resolved stamps). Keep ids valid: tests check them against the manifest.
+sources:
+  need:
+    source_ids: [comtrade_energy_trade, comtrade_energy_dyads_all, consolidated_hs6_energy_tech_long]
+    doc: docs/strategic_position.md
+  deployment_need:
+    source_ids: [ember_yearly_electricity, ember_renewable_targets_2030]
+    doc: docs/strategic_position.md
+  prize:
+    source_ids: [hs92_country_product_year_6, comtrade_energy_trade]
+    doc: docs/strategic_position.md
+  cp:
+    source_ids: [hs92_country_product_year_6, comtrade_energy_trade, iea_cleantech_midstream]
+    doc: docs/strategic_position.md
+  market:
+    source_ids: [bcg_market_size, comtrade_energy_trade]
+    doc: docs/strategic_position.md
+  share:
+    source_ids: [comtrade_energy_trade, comtrade_monthly_core]
+    doc: docs/comtrade_ingestion_and_timeseries.md
+  evidence:
+    source_ids: [energy_hs6_master, consolidated_hs6_energy_tech_long]
+    doc: docs/supply_chain_stages.md
+  confidence:
+    source_ids: []
+    doc: docs/strategic_position.md
