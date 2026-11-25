@@ -7,7 +7,9 @@ chains. Behind the app sits an R pipeline (`R/`, `scripts/`, `config/`) that tur
 investment and policy data into the app's data bundles.
 
 - **Public build:** <https://lrcarey222.github.io/aib-explorer/> (GitHub Pages, published by hand from the
-  separate `lrcarey222/aib-explorer` repository).
+  separate `lrcarey222/aib-explorer` repository). The live copy was built from main of 2026-11-17, so it predates
+  the release below. Rebuild and republish it after each release. Its `memos.html` page lists every published
+  memo.
 - **Where is the current methodology?** Start at [docs/README.md](docs/README.md). The decision framework is
   [docs/strategic_position.md](docs/strategic_position.md), the AIB is [docs/aib_methodology.md](docs/aib_methodology.md)
   and the stages are [docs/supply_chain_stages.md](docs/supply_chain_stages.md).
@@ -45,9 +47,9 @@ Each cell runs one chain: **Need -> Prize -> Position -> Choice -> Policy alignm
 
 | Step | Question | Main output |
 |---|---|---|
-| Need | What problem must the country solve? | Supply-chain need at the five producing stages; deployment need at Deployment. The two are never combined. |
+| Need | What problem must the country solve? | Supply-chain need at the five producing stages; deployment need at Deployment. The two are never combined. Import exposure blends the base year with each importer's latest 12 months of trade (below). |
 | Prize | Is domestic capability in this step strategically valuable? | Strategic Industrial Value: market, industrial-commons and future-option value, with a market-only cap and a countervailing large-yard test. Nothing that measures capability or need enters it. |
-| Position | How strong is the country today? | Competitive Position: demonstrated export, production, capacity, investment, cost and resource evidence only. |
+| Position | How strong is the country today? | Competitive Position: demonstrated export, production, capacity, investment, cost and resource evidence only. At Components and Assembly it also counts innovation: climate-tech US patent grants and IEA public RD&D (`scripts/29`; missing is not zero). |
 | Choice | So what should it do? | One of six choices (below), with a decision trace, confidence and borderline flags. |
 | Policy alignment | Does current policy match? | Observed policy (Global Trade Alert's New Industrial Policy Observatory by stage, IEA Policies and Measures) compared with the choice: aligned, under-prioritized, over-prioritized, misaligned, deployment gap, mixed or insufficient data. |
 
@@ -71,6 +73,14 @@ Rules worth knowing before reading results:
   conclusion and is never used for missing data.
 - **Observed policy never enters Need, Prize, Position or Choice.** `tests/testthat/test-decision-engine.R` checks
   that changing every policy column leaves every choice unchanged.
+- **Current trade.** Need, the posture and partner recommendations blend the 2024 import shares with each
+  importer's latest 12 months of monthly Comtrade data, half and half (`config/strategic_position.yml`
+  `current_trade`; `OPSI_CURRENT_TRADE_WEIGHT=0` turns it off). Importers without monthly reports keep 2024, and
+  so does China, which has published no monthly Comtrade data since 2024-12. Cells where China's share moved
+  sharply carry a current-trade flag.
+- **Deployment case tag.** Accelerate and Watch cells at Deployment name their strongest case for deploying:
+  energy security, climate, demand growth or grid integration (`config/deployment_need.yml` `cases`). The tag is
+  descriptive and never changes a choice.
 - **Sensitive layers** (control software, firmware, enrichment, magnets...) take their own choice and yard. A cell
   shows the roll-up, marked mixed where its layers differ.
 - **Legacy indices.** The Energy Security (ES), Economic Opportunity (EO) and Strategic Index (SI) scores remain in
@@ -92,7 +102,9 @@ fixed alliance ([docs/aib_methodology.md](docs/aib_methodology.md); code `R/aib/
   are named as partners or hold an AIB role. The 59 coalition members are the demand the stress tests
   protect. Any economy may supply them. The app derives the list from data in
   `dashboard/src/posture/trustedNetwork.ts`.
-- **Scenarios.** *Today's network* (observed 2024 relationships, no disruption); *Managed Interdependence* (no
+- **Scenarios.** *Today's network* (observed relationships, no disruption; the bundle's trade period is 2025-26:
+  each reporter's latest 12 months where it reports monthly, otherwise 2024 carried forward, with China's rows
+  scaled by Ember's China cleantech export growth, `scripts/39`); *Managed Interdependence* (no
   supplier banned, but a cap on any one supplier's share at concentrated steps); *Major-supplier disruption* (in
   this build China stops supplying allied markets; the data id is `decoupling`, shock `china_100`).
 - **Trade is enough, or new capacity is needed.** Each step is classed as *Low intervention* (the existing network
@@ -116,9 +128,18 @@ A static React app in `dashboard/` ([dashboard/README.md](dashboard/README.md)).
 | Allied Industrial Base | `/aib`, `/aib/partnerships`, `/aib/roles`, `/aib/diversification`, `/aib/agreements`, `/compacts` | Where does coordination change the outcome, and who should work together? |
 | About | `/about`, `/methods`, `/data`, `/glossary` | Methods, data and sources, glossary |
 | Expert review | `/review` (no tab) | Structured blind-first review of selected cases ([docs/QC_REVIEWER_GUIDE.md](docs/QC_REVIEWER_GUIDE.md)) |
+| Chart of the Day | `/chart-of-the-day/:date?` and a strip on Home | One chart a day picked from the raw data (`scripts/chart_of_day/`, `config/chart_of_day.yml`); `/export/chart-of-the-day/:date` renders the PNG |
 
-The separate *Draw the Fence* site (`dashboard/fence/`, [docs/yards_fences.md](docs/yards_fences.md)) is not part
-of the Explorer.
+**Partnership memos** ([docs/partnership_memos.md](docs/partnership_memos.md)) are rule-generated documents
+(JSON, Markdown, PDF, Word) in `dashboard/public/data/partnerships/`. There are 10 country pairs (`scripts/34`), 3
+Sectoral Compact memos (`scripts/35`) and 1 group memo, the Quad (`scripts/36_build_group_memo.R`). The expert
+review reads them and the Pages site lists them, but no Explorer page links to them yet. None is independently
+verified.
+
+Not part of the Explorer: the separate *Draw the Fence* site (`dashboard/fence/`,
+[docs/yards_fences.md](docs/yards_fences.md)), and the *Fantasy Draft* game in `fantasy-draft/`. The game deals
+technology x stage cards from the posture bundle (`scripts/41_export_fantasy_draft_cards.R`, re-run after
+`scripts/91`). The main repository's GitHub Pages site serves it.
 
 ## Data
 
@@ -127,11 +148,12 @@ from `config/raw_inputs_manifest.yml`). The main families:
 
 | Family | Sources (vintage in use) | Used for |
 |---|---|---|
-| Trade | UN Comtrade all-reporter HS6 dyads (2020 and 2024, pulled 2026-10); Comtrade monthly dyads (latest 12 months per reporter, pulled 2026-11); Harvard Atlas of Economic Complexity HS92 (1995-2024, Dataverse V18) | Need, Position, AIB stress tests |
+| Trade | UN Comtrade all-reporter HS6 dyads (2020 and 2024, pulled 2026-10); Comtrade monthly dyads (latest 12 months per reporter, pulled 2026-11); Harvard Atlas of Economic Complexity HS92 (1995-2024, Dataverse V18); Ember China Cleantech Export Data (monthly) | Need, Position, AIB stress tests; Ember rolls China's trade forward |
+| Innovation | USPTO Open Data Portal granted patents in CPC Y02/Y04S; IEA Energy Technology RD&D Budgets | Position at Components and Assembly |
 | Production and resources | USGS Mineral Commodity Summaries 2026; IEA Critical Minerals Dataset 2026; Energy Institute Statistical Review 2026; U.S. Energy Information Administration international statistics; OECD-NEA/IAEA Uranium Red Book 2026; Clean Investment Monitor capacity | Position, AIB physical supply limits |
 | Deployment and pathways | Ember electricity data and 2030 targets; IEA Global EV Outlook 2026, World Energy Outlook 2025, World Energy Investment 2026 | Deployment need |
 | Investment and finance | Cleantech Manufacturing FDI Dataset (CM-FDI, edition 2026.10.05); IMF Coordinated Direct Investment Survey; OECD Creditor Reporting System; Oil Change International energy finance | Position, partnerships, development partnerships |
-| Policy | Global Trade Alert New Industrial Policy Observatory (February 2026); IEA Policies and Measures; Climate Action Tracker | Policy alignment only |
+| Policy | Global Trade Alert New Industrial Policy Observatory (February 2026); IEA Policies and Measures; Climate Action Tracker; Trade War Tracker tariff data and U.S. AD/CVD orders (`scripts/28`, [docs/us_trade_restrictiveness.md](docs/us_trade_restrictiveness.md)) | Policy alignment only |
 | Alignment and agreements | UN General Assembly ideal points (Dataverse V39); economic-security agreement membership; DESTA v2.3; Global Strategic Partnership Dataset | Coalition tiers, agreements |
 | Development | World Bank World Development Indicators | Country context, development partnerships |
 
@@ -151,20 +173,35 @@ from `config/raw_inputs_manifest.yml`). The main families:
 `COMTRADE_API_KEY` in the environment (never commit it). The archived README lists every script, environment
 variable and refresh step.
 
+**Steps outside `run_pipeline.R`** that the shipped bundles rely on. Run these before `scripts/26`:
+
+- Innovation: `scripts/fetchers/uspto_patents.R`, then `scripts/29`. The IEA RD&D file is a manual download.
+  Without the output, scripts/26 warns and runs without innovation.
+- Current trade: `scripts/37` (monthly Comtrade pull, resumable), then `scripts/38`. Without them, scripts/26
+  falls back to base-year trade.
+- Current AIB network: `scripts/36_build_ember_china_exports.R` (downloads Ember's file), `scripts/39`, then
+  `scripts/31 --dyads data/processed/current_dyads.csv --out-dir <outputs>/aib_current` and 32-33 on that folder.
+
+Script numbers 36, 41 and 95 are each used twice; the file names tell them apart.
+
 **Exports into `dashboard/public/data/`** (tracked in git), in this order: `scripts/91` (posture), `85`
 (legacy index bundle), `86` (engine fixtures), `87` (sector), `88` (country), `84` (AIB), `93` (development
-partnerships), then `scripts/92 --iso3 <ISO3>` for each brief. The agreements bundle comes from `scripts/41`
--> `42` -> `43` ([docs/partnership_agreements.md](docs/partnership_agreements.md)). Commit the R code before
+partnerships), then `scripts/92 --iso3 <ISO3>` for each brief and `scripts/34`-`36` for the memos. The agreements
+bundle comes from `scripts/41_ingest_agreements.R` -> `42` -> `43`
+([docs/partnership_agreements.md](docs/partnership_agreements.md)). After any bundle changes, rebuild the review
+release (`node scripts/review/build-review-data.mjs`, then `node scripts/review/run-bundle-qc.mjs`, both from
+`dashboard/`). Commit the R code before
 exporting: each manifest records `created` and `git_commit`, and the posture and AIB stamps add `-dirty` when
 `R/`, `scripts/` or `config/` have uncommitted changes.
 
 **Release identity.** A release is named by its data release date, the bundle stamps and the review release id.
-Bundles as of 2026-11-23:
+Bundles as of 2026-11-25 (review release `rel-6b4b26b36db1`):
 
 | Bundle | Created (UTC) | Stamp |
 |---|---|---|
 | Posture | 2026-11-21 | git `17f0737e` |
-| Allied Industrial Base | 2026-11-21 | git `03560172` |
+| Allied Industrial Base | 2026-11-24 | git `acbc3805` (trusted-only roles) |
+| Partnership memos | 2026-11-18 (as of 2026-11-17) | manifest sha256 `a29c77ea` |
 | Country | 2026-10-31 | git `4bb2adc` |
 | Sector | 2026-10-31 | git `4bb2adc` |
 | Legacy index (strategic) | 2026-10-30 | git `a54a9d3` |
@@ -187,17 +224,22 @@ Size limits live in `dashboard/scripts/check-budget.mjs`. Data QC and sensitivit
 ([docs/QC_SYSTEM_DESIGN.md](docs/QC_SYSTEM_DESIGN.md)).
 
 **CI** (`.github/workflows/`): `dashboard.yml` (typecheck, test, build, budget on Node 24); `r-tests.yml`,
-`r-check.yml` and `r-ci.yml` (testthat, smoke tests). `news-scoring.yml` serves an unrelated project.
+`r-check.yml` and `r-ci.yml` (testthat, smoke tests; pinned to `ubuntu-24.04` until Posit ships R binaries for
+26.04). `news-scoring.yml` scores news for the Fantasy Draft game every 6 hours.
 
 ## Repository layout
 
 ```
 R/            pure functions, no IO (strategic_position/, aib/, dashboard/, indices/, categories/, qc/ ...)
-scripts/      IO and orchestration, numbered in run order; fetchers/, qc/, paper/
+scripts/      IO and orchestration, numbered in run order; fetchers/, qc/, paper/, chart_of_day/,
+              trade_fence_explainer/
 config/       rules, weights, coalition, AIB settings, raw-input manifest, review campaigns
-data/         reference/ (tracked crosswalks); raw/ and processed/ (local, not tracked)
+data/         reference/ (tracked crosswalks, curated evidence); raw/ and processed/ (local, not tracked)
 docs/         methodology and module docs (index: docs/README.md); archive/
 dashboard/    the Explorer (React, Vite, TypeScript); fence/ is Draw the Fence
+qc/results/   tracked QC outputs of the current review release
+outputs/      tracked side-project outputs (trade-fence explainer charts)
+fantasy-draft/ the Fantasy Draft game (static site + Firebase)
 tests/        testthat suite
 ```
 
@@ -206,7 +248,14 @@ tests/        testthat suite
 Open model and data issues are logged in [docs/QC_SYSTEM_DESIGN.md](docs/QC_SYSTEM_DESIGN.md) section 1.5:
 knife-edge prize values, entrepot re-exports, coexisting "trusted partner" definitions, implausible compact cores
 and HS 2812.90 filed at Refining. The review-readiness audit is
-[docs/EXTERNAL_REVIEW_READINESS_AUDIT.md](docs/EXTERNAL_REVIEW_READINESS_AUDIT.md).
+[docs/EXTERNAL_REVIEW_READINESS_AUDIT.md](docs/EXTERNAL_REVIEW_READINESS_AUDIT.md). Also open:
+
+- The nine country briefs predate the 2026-11-21 posture bundle. Eight of them quote counts that differ from it,
+  so the app shows a notice. Re-run `scripts/92` for each brief.
+- The trusted-partner split happens in the app (`dashboard/src/posture/partnerEligibility.ts`). The R partner
+  recommendations still list any non-coercive supplier for non-aligned economies. The fix is to filter in R
+  and re-run `scripts/26` -> `91`.
+- China has reported no monthly Comtrade data since 2024-12, so its current trade is estimated from Ember.
 
 ## Data licences and attribution
 
