@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neiscenter.org/schemas/analytical_impact.schema.json",
+  "title": "Analytical impact",
+  "description": "A reviewed link from a NEIS Intelligence event to an AIB posture assessment it may affect (docs/change-layer-architecture.md). An accepted impact explains a change between two vintages; it never changes a score. Mirrors the R validator R/change/posture_impacts.R validate_analytical_impacts and the designed NEIS Intelligence table analytical_impacts (migration 010).",
+  "type": "object",
+  "required": ["impact_id", "event_id", "assessment_id", "dimension", "reason", "reason_method", "status", "proposed_by", "proposed_at"],
+  "properties": {
+    "impact_id": { "type": "string", "pattern": "^imp-[0-9a-z-]+$" },
+    "event_id": { "type": "string", "description": "NEIS Intelligence events.id (uuid)" },
+    "event_slug": { "type": "string", "description": "NEIS Intelligence events.slug, for display" },
+    "assessment_id": { "type": "string", "pattern": "^aib:posture:[A-Z]{3}:[a-z0-9-]+:[a-z0-9-]+$", "description": "aib:posture:<ISO3>:<tech-slug>:<stage-slug>" },
+    "dimension": { "enum": ["need", "prize", "position", "evidence", "confidence", "recommendation"] },
+    "direction": { "enum": ["up", "down", "unclear"], "default": "unclear" },
+    "reason": { "type": "string", "minLength": 1 },
+    "reason_method": { "enum": ["rule", "model", "editorial"], "description": "who wrote the reason, as events.synthesis_method" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "the proposer's confidence that the link is relevant" },
+    "status": { "enum": ["proposed", "accepted", "rejected"] },
+    "proposed_by": { "type": "string", "description": "rule | ai | a person" },
+    "proposed_at": { "type": "string", "format": "date-time" },
+    "reviewer": { "type": "string" },
+    "review_timestamp": { "type": "string", "format": "date-time" },
+    "review_note": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "enum": ["accepted", "rejected"] } } },
+      "then": { "required": ["reviewer", "review_timestamp"] }
+    }
+  ],
+  "additionalProperties": false
+}

@@ -126,6 +126,8 @@ export const AIB_NAV: { key: AibNavKey; to: string; label: string }[] = [
 
 /** The first path segment of How to use the Explorer (an About page). */
 export const HOW_TO_SEGMENT = 'how-to-use';
+/** What changed? (change layer): filed under About, like How to use. */
+export const CHANGES_SEGMENT = 'changes';
 
 /** The first path segments of the Allied Industrial Base module. */
 export const AIB_SEGMENT = 'aib';
@@ -151,7 +153,7 @@ export function placeOf(pathname: string): Place {
   if (s[0] === 'sector') return 'sector';
   if (s[0] === COUNTRY_SEGMENT) return 'country';
   if (s[0] === AIB_SEGMENT || s[0] === COMPACTS_SEGMENT) return 'aib';
-  if (s[0] === 'about' || s[0] === 'glossary' || s[0] === HOW_TO_SEGMENT) return 'about';
+  if (s[0] === 'about' || s[0] === 'glossary' || s[0] === HOW_TO_SEGMENT || s[0] === CHANGES_SEGMENT) return 'about';
   if (s[0] === REVIEW_SEGMENT) return 'review';
   if (STRATEGIC_SEGMENTS.includes(s[0])) return 'strategic';
   return null;

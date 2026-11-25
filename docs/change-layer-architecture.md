@@ -126,9 +126,18 @@ This is the critical distinction, so attribution is explicit and conservative.
 |---|---|---|---|
 | same | — | — | `real_world`: same code and config, so the change came from inputs |
 | differs | given | — | **decomposed**: diff(prev → bridge) is `methodology`; diff(bridge → current) is `real_world` |
-| differs | none | did not move | `methodology` |
-| differs | none | moved | `mixed`: cannot be split without a bridge; the UI says so |
+| differs | none | moved, or the data stamp changed | `mixed`: cannot be split without a bridge; the UI says so |
+| differs | none | did not move, and both data stamps are **verified** (they record resolved raw-input vintages) and equal | `methodology` |
+| differs | none | did not move, but a data stamp is not verified | `unattributed`: a data refresh cannot be ruled out, so the change is never credited to the method |
 | unverified (dirty) | — | — | the above, with `method_unverified = true` |
+
+The `unattributed` row was added after running against real history.
+
+- The trade windows (`benchmark_period`, `momentum_through`) were identical in all nine historical cores. They were
+  identical even across the 2026-11-17 "current trade" refresh and the Atlas 2024 rebuild.
+- A window-only stamp therefore cannot see a data refresh.
+- Crediting a change to the method on that basis would confuse methodology with the world, which is what this layer
+  exists to avoid.
 
 A **bridge vintage** is the *new* method run on the *previous* inputs. It is the counterfactual that makes the split
 exact. `posture_compare()` accepts one now. Producing one requires snapshotting the engine's input tables (slice 2).
@@ -153,10 +162,14 @@ lever: it attributes more to method. It is a config change.
 - The dashboard bundle `dashboard/public/data/changes/changes.<md5-8>.json` is separate from the posture core, so the
   core budget is untouched. It holds:
   - the vintage list;
-  - the pair list;
-  - *meaningful* change records only, for all comparable consecutive pairs.
-- Changes are a small fraction of 14k cells, typically hundreds per pair. The bundle gets its own budget line in
-  `check-budget.mjs`.
+  - every pair's summary;
+  - *meaningful* change records only, for the last `bundle.detail_pairs` (4) comparable pairs.
+- The first build holds 3,799 records: 4.1 MB raw, 150 KB gzipped. It is fetched lazily, only by the drawer block and
+  `/changes`.
+- Every record for every pair goes to the git-ignored `outputs/change_layer/posture_changes.csv` (19 MB for the
+  history). It is derivable from the vintages plus config, so it is not committed.
+- A wholesale rebuild changes almost every cell. The 2026-10-28 → 10-30 Yards & Fences rebuild changed all 14,124,
+  which is why older pairs ship as summaries.
 
 ## 7. Backwards compatibility
 
@@ -175,7 +188,8 @@ lever: it attributes more to method. It is a config change.
   "prev_vintage": "2026-11-17-…", "cur_vintage": "2026-11-21-…",
   "types": ["recommendation", "score", "evidence"],
   "subtype": "posture", "severity": "major", "magnitude": 0.09,
-  "attribution": "real_world", "method_changed": false, "method_unverified": false,
+  "attribution": "real_world",  // real_world | methodology | mixed | unattributed | both
+  "method_changed": false, "method_unverified": false,
   "prev": { "choice": "partner", "posture": "compete", "need": 0.71, "prize": 0.62, "cp": 0.66,
             "market": 0.40, "share": 0.031, "confidence": "moderate", "evidence": "medium" },
   "cur":  { "choice": "catch_up", ... },
