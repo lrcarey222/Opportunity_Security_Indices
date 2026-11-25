@@ -104,6 +104,7 @@ pm_cell_profile <- function(sp, iso, cfg) {
     coercive_top_iso3 = as.character(x$coercive_top_iso3), coercive_world_share = round(pm_num(x$coercive_world_share), 3),
     trusted_world_share = round(pm_num(x$trusted_world_share), 3),
     aib_class = NA_character_, residual_gap = NA_real_, node_demand_usd = NA_real_, largest_trusted_supplier = NA_character_,
+    lead_member = if ("bloc_lead_member" %in% names(x)) as.character(x$bloc_lead_member) else NA_character_,
     stringsAsFactors = FALSE
   )
 }
@@ -140,9 +141,10 @@ pm_node_profile <- function(frame, dol, iso, cells, cfg) {
   th <- cfg$thresholds$node
   d <- dol[dol$iso3 == iso, , drop = FALSE]
   d <- d[!duplicated(d$node_id), , drop = FALSE]
+  if (!"bloc_lead_member" %in% names(d)) d$bloc_lead_member <- rep(NA_character_, nrow(d))
   x <- merge(frame, d[, c("node_id", "position_share", "world_share", "production_share", "export_rca", "scope_demand_share",
                           "net_import_share", "world_import_share", "best_host_rank", "capable_host", "momentum",
-                          "anchor_position", "specialist_position")], by = "node_id", all.x = TRUE)
+                          "anchor_position", "specialist_position", "bloc_lead_member")], by = "node_id", all.x = TRUE)
   listed <- !is.na(x$position_share)
   ps <- ifelse(listed, pm_num(x$position_share), 0)
   rca <- pm_num(x$export_rca)
@@ -193,7 +195,7 @@ pm_node_profile <- function(frame, dol, iso, cells, cfg) {
     world_top_iso3 = x$largest_supplier, world_top_share = round(pm_num(x$largest_share), 3),
     coercive_top_iso3 = x$coercive_top_iso3, coercive_world_share = x$coercive_world_share, trusted_world_share = NA_real_,
     aib_class = x$node_classification, residual_gap = round(pm_num(x$residual_gap), 3), node_demand_usd = pm_num(x$demand_usd),
-    largest_trusted_supplier = x$optimized_largest_supplier,
+    largest_trusted_supplier = x$optimized_largest_supplier, lead_member = as.character(x$bloc_lead_member),
     stringsAsFactors = FALSE
   )
 }
@@ -204,4 +206,19 @@ pm_country_profiles <- function(sp, frame, dol, a, b, cfg) {
   na <- pm_node_profile(frame, dol, a, ca, cfg); nb <- pm_node_profile(frame, dol, b, cb, cfg)
   out <- rbind(ca, cb, na, nb)
   out[order(out$unit_type, out$iso3, out$tech, match(out$stage, c("Extraction", "Refining", "Components", "Assembly", "Deployment", "Recovery")), out$unit_id), ]
+}
+
+# Config `data_caveats` entries with `share: production` correct a member's node share that trade misreads (a
+# re-export booked as the member's, a coding artefact): its position and export shares become its production share
+# (0 where none is recorded) and it holds no anchor or specialist position at the node. Applied to the division of
+# labour before any memo reads it, so the pair, compact and group memos agree (2026-11-17).
+pm_apply_share_corrections <- function(dol, caveats) {
+  for (dc in caveats) if (identical(dc$share, "production")) {
+    k <- dol$node_id == dc$node & dol$iso3 == dc$iso3
+    if (!any(k)) next
+    p <- pm_num(dol$production_share[k]); p[is.na(p)] <- 0
+    dol$position_share[k] <- p; dol$world_share[k] <- p
+    dol$anchor_position[k] <- FALSE; dol$specialist_position[k] <- FALSE
+  }
+  dol
 }

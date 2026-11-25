@@ -49,7 +49,8 @@ need_file <- function(p) { if (!file.exists(p)) stop("input not found: ", p); p 
 
 for (f in c("R/utils/supply_chain_stages.R", "R/dashboard/country/country_util.R", "R/dashboard/country/country_memo.R",
             "R/dashboard/country/country_memo_lint.R", "R/dashboard/country/country_brief.R", "R/dashboard/country/country_brief_doc.R",
-            "scripts/utils/country_memos.R", "scripts/utils/git_stamp.R", list.files(file.path(repo_root, "R", "partnerships"), pattern = "\\.R$", full.names = TRUE)))
+            "scripts/utils/country_memos.R", "scripts/utils/git_stamp.R", "scripts/utils/partnership_memo_print.R",
+            list.files(file.path(repo_root, "R", "partnerships"), pattern = "\\.R$", full.names = TRUE)))
   source(if (file.exists(f)) f else file.path(repo_root, f))
 suppressPackageStartupMessages(library(dplyr))
 
@@ -57,6 +58,9 @@ cfg <- yaml::read_yaml(file.path(repo_root, "config", "partnership_memos.yml"))
 pair <- arg_value("--pair", "USA_JPN")
 pair_cfg <- cfg$pairs[[pair]]
 if (is.null(pair_cfg)) stop("pair not configured in config/partnership_memos.yml: ", pair)
+# a bloc side (config `blocs`): its members are merged into one economy (R/partnerships/pm_bloc.R)
+bloc_code <- intersect(c(pair_cfg$b, pair_cfg$a), names(cfg$blocs))[1]
+members <- if (is.na(bloc_code)) character() else unlist(cfg$blocs[[bloc_code]]$members)
 processed_dir <- abs_path(arg_value("--processed-dir", "data/processed"))
 aib_dir <- abs_path(arg_value("--aib-dir", file.path(processed_dir, "outputs", "aib")))
 ref_dir <- abs_path(arg_value("--reference-dir", "data/reference"))
@@ -69,30 +73,61 @@ rcsv <- function(p) utils::read.csv(need_file(p), stringsAsFactors = FALSE, chec
 
 step("reading inputs for ", pair)
 sp <- readRDS(need_file(file.path(processed_dir, "outputs", "strategic_position_tbl.rds")))
-sp <- as.data.frame(sp[sp$iso3 %in% c(a, b), , drop = FALSE])
+sp <- as.data.frame(sp[sp$iso3 %in% c(a, b, members), , drop = FALSE])
 aib_in <- readRDS(need_file(file.path(aib_dir, "aib_inputs.rds")))
 nodes <- as.data.frame(aib_in$nodes)[, c("node_id", "supply_chain", "score_cells")]
+if (length(members)) {
+  flows <- as.data.frame(aib_in$flows); production <- as.data.frame(aib_in$production)
+  node_rca <- as.data.frame(aib_in$exporter_metrics)[, c("node_id", "exporter_iso", "exports", "export_rca")]
+  cnames <- stats::setNames(aib_in$country_names$country, aib_in$country_names$iso3)
+}
 rm(aib_in); invisible(gc())
 spine <- rcsv(file.path(aib_dir, "aib_strategic_spine.csv"))
 spine_base <- spine[spine$scenario == "baseline", , drop = FALSE]
 nclass <- rcsv(file.path(aib_dir, "aib_node_classification.csv"))
-dol <- rcsv(file.path(aib_dir, "aib_compact_division_of_labour.csv"))
+dol <- pm_apply_share_corrections(rcsv(file.path(aib_dir, "aib_compact_division_of_labour.csv")), cfg$data_caveats)
 croles <- rcsv(file.path(aib_dir, "aib_compact_country_roles.csv"))
 sroles <- rcsv(file.path(aib_dir, "aib_country_strategic_roles.csv"))
 compacts <- rcsv(file.path(aib_dir, "aib_strategic_compacts.csv"))
 compacts <- compacts[compacts$scenario == cfg$inputs$aib_scenario, , drop = FALSE]
 ipairs <- rcsv(file.path(aib_dir, "allied_investment_pairs.csv"))
-ipairs <- ipairs[ipairs$investor_iso %in% c(a, b) & ipairs$host_iso %in% c(a, b) & !is.na(ipairs$host_rank) & ipairs$host_rank <= 5, c("node_id", "investor_iso", "host_iso", "host_rank")]
+ipairs <- ipairs[ipairs$investor_iso %in% c(a, b, members) & ipairs$host_iso %in% c(a, b, members) & !is.na(ipairs$host_rank) & ipairs$host_rank <= 5, c("node_id", "investor_iso", "host_iso", "host_rank")]
 imports <- as.data.frame(readRDS(need_file(file.path(processed_dir, "import_partner_cells_tbl.rds"))))
-imports <- imports[imports$reporter_iso %in% c(a, b), , drop = FALSE]
+imports <- imports[imports$reporter_iso %in% c(a, b, members), , drop = FALSE]
 devpart <- if (file.exists(devpart_path)) as.data.frame(readRDS(devpart_path)) else { warning("no development-partnership table: ", devpart_path); NULL }
 evdir <- file.path(ref_dir, "partnership_evidence")
 ev <- utils::read.csv(need_file(file.path(evdir, "policy_evidence.csv")), stringsAsFactors = FALSE, colClasses = "character")
 mech <- utils::read.csv(need_file(file.path(evdir, "bilateral_mechanisms.csv")), stringsAsFactors = FALSE, colClasses = "character")
 mech <- mech[vapply(strsplit(mech$pair, "\\|"), function(z) all(c(a, b) %in% z), logical(1)), , drop = FALSE]
+# a plurilateral platform of more than three economies is not a bilateral mechanism: it neither covers a compact
+# for the MEA test nor hosts one (the compact memos read it from plurilateral_mechanisms.csv; 2026-11-16)
+mech <- mech[!(mech$mechanism_type %in% "plurilateral" & lengths(strsplit(mech$pair, "\\|")) > 3), , drop = FALSE]
 institutions <- utils::read.csv(need_file(file.path(evdir, "institutions.csv")), stringsAsFactors = FALSE, colClasses = "character")
 agreements <- rcsv(file.path(ref_dir, "economic_security_agreements.csv"))
 inst <- utils::read.csv(file.path(repo_root, "config", "partnership_instruments.csv"), stringsAsFactors = FALSE)
+
+if (length(members)) {
+  step("merging the ", length(members), " members of ", bloc_code, " into one economy")
+  roles_cfg <- yaml::read_yaml(file.path(repo_root, "config", "aib_strategic_layer.yml"))$roles
+  size <- tapply(suppressWarnings(as.numeric(sp$imports_usd[sp$iso3 %in% members])), sp$iso3[sp$iso3 %in% members], sum, na.rm = TRUE)
+  dol <- pm_bloc_dol(dol, flows, production, node_rca, members, bloc_code, roles_cfg)
+  spine_base <- pm_bloc_spine(spine_base, dol)
+  nclass <- pm_bloc_nclass(nclass, members, bloc_code)
+  sp <- pm_bloc_sp(sp, imports, members, bloc_code, cfg$blocs[[bloc_code]]$name, cfg$inputs$coercive_suppliers, china_iso = "CHN")
+  sp <- sp[sp$iso3 %in% c(a, b), , drop = FALSE]
+  imports <- pm_bloc_imports(imports, members, bloc_code)
+  devpart <- pm_bloc_devpart(devpart, members, bloc_code)
+  croles <- pm_bloc_croles(croles, members, bloc_code, cnames)
+  sroles <- pm_bloc_sroles(sroles, members, bloc_code, size)
+  ipairs <- pm_bloc_invest_pairs(ipairs, members, bloc_code)
+  ev <- pm_bloc_evidence(ev, members, bloc_code)
+  other <- setdiff(c(a, b), bloc_code)
+  bname <- if (bloc_code == b) pair_cfg$b_name else pair_cfg$a_name
+  pair_cfg$note <- pm_bloc_note(paste0(toupper(substr(bname, 1, 1)), substr(bname, 2, nchar(bname))), if (bloc_code == b) pair_cfg$b_short else pair_cfg$a_short,
+                                if (bloc_code == b) pair_cfg$b_ref else pair_cfg$a_ref, length(members),
+                                sprintf("%s's", if (other == a) pair_cfg$a_ref else pair_cfg$b_ref))
+  rm(flows); invisible(gc())
+}
 
 step("assessing the pair")
 frame <- pm_node_frame(nodes, spine_base, nclass, dol, cfg$inputs$coercive_suppliers)
@@ -103,15 +138,25 @@ names_short <- list(a_short = pair_cfg$a_short, b_short = pair_cfg$b_short)
 cc <- pm_compact_candidates(d, compacts, croles, mech, cfg, a, b, ev)
 sel <- cc$strategic_compact_id[cc$recommended]
 arch <- do.call(rbind, lapply(cc$strategic_compact_id, function(cm) pm_compact_architecture(d, cm, res$links)))
-trade_tbl <- pm_trade_agenda(d, cfg, a, b, names_short)
-inv_tbl <- pm_investment_agenda(d, cfg, ev, inst, a, b)
+fta <- any(mech$mechanism_type %in% "trade_agreement" & mech$status %in% PM_ACTIVE_MECH & vapply(strsplit(mech$pair, "\\|"), length, integer(1)) <= 3)
+trade_tbl <- pm_trade_agenda(d, cfg, a, b, names_short, fta)
+public_names <- pm_public_names(institutions, pair_cfg, cfg)
+inv_tbl <- pm_investment_agenda(d, cfg, ev, inst, a, b, public_names)
 third <- pm_third_country(res$devpart, sroles, d, sel, cfg, a, b)
-deals <- pm_deal_pipeline(d, inst, institutions, ev, cfg, a, b, names_short)
+deals <- pm_deal_pipeline(d, inst, institutions, ev, cfg, a, b, names_short, public_names, fta)
 mea <- pm_mea(sel, mech, cfg)
-nonp <- pm_non_priorities(d, mea, cfg, names_short, a, b)
+nonp <- pm_non_priorities(d, mea, cfg, names_short, a, b, ev)
+# product-definition caveats: AIB mapping notes that change how a node's numbers read, and config data_caveats for
+# this pair's countries (a bloc side counts its members)
+map_notes <- yaml::read_yaml(file.path(repo_root, "config", "aib_strategic_compacts.yml"))$mapping_notes
+node_notes <- map_notes[vapply(map_notes, function(z) grepl(PM_CAVEAT_RE, z), logical(1))]
+data_notes <- list()
+for (dc in cfg$data_caveats) if (dc$iso3 %in% c(a, b, members))
+  data_notes[[dc$node]] <- if (is.null(data_notes[[dc$node]])) dc$note else paste(data_notes[[dc$node]], dc$note)
 memo <- pm_memo_sections(d = d, prof = res$profiles, cc = cc, arch = arch, trade_tbl = trade_tbl, inv_tbl = inv_tbl,
                          third = third, deals = deals, mea = mea, nonp = nonp, ev = ev, mech = mech, sroles = sroles,
-                         agreements = agreements, compacts = compacts, pair_cfg = pair_cfg, cfg = cfg)
+                         agreements = agreements, compacts = compacts, pair_cfg = pair_cfg, cfg = cfg, institutions = institutions,
+                         node_notes = node_notes, data_notes = data_notes)
 recs <- memo$recommendations
 reg <- pm_evidence_register(recs, d, ev, mech, a, b)
 
@@ -158,98 +203,8 @@ if (!tables_only) {
 
 # ---- Print document: PDF and Word in the country briefs' format ------------------------------------------
 
-if (!tables_only && !("--no-pdf" %in% args)) {
-  dcfg <- cfg$document
-  sp_file <- file.path(processed_dir, "outputs", "strategic_position_tbl.rds")
-  as_of <- format(as.Date(file.mtime(sp_file)), "%Y-%m-%d")
-  as_of_label <- trimws(format(as.Date(as_of), "%e %B %Y"))
-  ev_access <- max(ev$access_date)
-  fillv <- list(as_of_label = as_of_label, evidence_access = ev_access, pair = pair_cfg$title)
-  fillf <- function(s) { for (k in names(fillv)) s <- gsub(paste0("{", k, "}"), fillv[[k]], s, fixed = TRUE); s }
-  doc <- pm_document(memo$markdown, ev, memo$boxes, pair_cfg, dcfg,
-                     list(pair_id = pair, as_of = as_of, as_of_label = as_of_label, evidence_access = ev_access,
-                          generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")), fillf(dcfg$osi_source))
-  font <- abs_path(arg_value("--font", file.path("dashboard", "node_modules", "@fontsource-variable", "roboto", "files", "roboto-latin-wght-normal.woff2")))
-  if (!file.exists(font)) {
-    alt <- normalizePath(file.path(processed_dir, "..", "..", "dashboard", "node_modules", "@fontsource-variable", "roboto", "files", "roboto-latin-wght-normal.woff2"), winslash = "/", mustWork = FALSE)
-    if (file.exists(alt)) font <- alt
-  }
-  font_b64 <- if (file.exists(font)) jsonlite::base64_enc(readBin(font, "raw", file.size(font))) else NULL
-  html <- country_brief_html(doc, list(), font_b64, "Letter", list())
-  # long URLs and node ids must wrap: an over-wide line makes Edge shrink the whole page to fit (memo only;
-  # the briefs' stylesheet is untouched)
-  html <- sub("</style>", ".sources li,p,li{overflow-wrap:anywhere}</style>", html, fixed = TRUE)
-  work <- tempfile("pmemo"); dir.create(work); on.exit(unlink(work, recursive = TRUE), add = TRUE)
-  edge <- country_memo_edge(args); python <- country_memo_python(args)
-  if (is.na(edge)) stop("no Edge or Chrome for the PDF (pass --edge, or --no-pdf)")
-  if (is.na(python)) stop("no python with python-docx and pypdf (pass --python, or --no-pdf)")
-  step("PDF (headless Edge)")
-  pdf <- country_memo_pdf(html, edge, work)
-  ast_path <- file.path(work, "memo.ast.json")
-  country_memo_write_text(as.character(country_json(doc)), ast_path)
-  docx_script <- file.path(repo_root, "scripts", "utils", "country_memo_docx.py")
-  docx <- file.path(work, "memo.docx")
-  step("Word (python-docx)")
-  country_memo_py(python, docx_script, c("--in", ast_path, "--out", docx))
-  checks <- list()
-  chk <- function(check, ok, note = NA_character_, warn = FALSE)
-    checks[[length(checks) + 1]] <<- data.frame(check = check, status = if (ok) "PASS" else if (warn) "WARN" else "FAIL", note = note, stringsAsFactors = FALSE)
-  chk("print HTML: Roboto embedded", !is.null(font_b64), if (is.null(font_b64)) "font file missing: Arial (pass --font)" else NA, warn = TRUE)
-  ext <- country_memo_html_external(html)
-  chk("print HTML: no external reference", !length(ext), if (length(ext)) paste(utils::head(ext, 3), collapse = " ") else NA)
-  back <- tryCatch(country_memo_py(python, docx_script, c("--check", docx, "--ast", ast_path)), error = function(e) structure(conditionMessage(e), failed = TRUE))
-  chk("DOCX: read-back paragraphs equal the document", is.null(attr(back, "failed")), if (!is.null(attr(back, "failed"))) substr(back, 1, 300) else NA)
-  pt_path <- file.path(work, "pdf_text.json")
-  country_memo_py(python, docx_script, c("--pdf-text", pdf, "--out", pt_path))
-  pt <- jsonlite::fromJSON(pt_path)
-  norm <- function(x) gsub("[[:space:]]+", " ", gsub("\u00ad", "", x))
-  text <- norm(pt$text)
-  pg <- unlist(dcfg$pdf_pages)
-  chk(sprintf("PDF: %d pages (%d-%d)", pt$pages, pg[1], pg[2]), pt$pages >= pg[1] && pt$pages <= pg[2])
-  chk("PDF: contains the title and the label", grepl(norm(doc$title), text, fixed = TRUE) && grepl(norm(doc$label), text, fixed = TRUE))
-  heads <- vapply(doc$sections, function(s) if (identical(as.integer(s$n), 0L)) s$title else sprintf("%d. %s", s$n, s$title), "")
-  chk("PDF: every section heading is in its text", all(vapply(heads, function(h) grepl(norm(h), text, fixed = TRUE), TRUE)))
-  md <- country_brief_markdown(doc)
-  jtxt <- as.character(country_json(doc))
-  jgz <- length(memCompress(charToRaw(enc2utf8(jtxt)), "gzip"))
-  chk(sprintf("sizes: JSON %s B gz, PDF %s B, DOCX %s B (limits 61,440 gz / 2 MB / 2 MB)", format(jgz, big.mark = ","), format(file.size(pdf), big.mark = ","),
-              format(file.size(docx), big.mark = ",")), jgz <= 61440 && file.size(pdf) <= 2097152 && file.size(docx) <= 2097152)
-  checks <- do.call(rbind, checks)
-  for (i in seq_len(nrow(checks))) message(sprintf("  %-4s %s%s", checks$status[i], checks$check[i], if (!is.na(checks$note[i])) paste0(" (", checks$note[i], ")") else ""))
-  # a viewer holding the old file makes file.copy() fail silently: check, and say so
-  put <- function(src, dest) {
-    if (file.exists(dest)) unlink(dest)
-    if (!isTRUE(file.copy(src, dest, overwrite = TRUE)) || !identical(unname(tools::md5sum(src)), unname(tools::md5sum(dest))))
-      warning("could not write ", dest, " (is it open in a viewer?); the published set below is unaffected", call. = FALSE)
-  }
-  put(pdf, file.path(out_dir, "partnership_memo.pdf"))
-  put(docx, file.path(out_dir, "partnership_memo.docx"))
-  country_memo_write_text(as.character(country_json(doc, pretty = TRUE)), file.path(out_dir, "partnership_memo.ast.json"))
-  country_memo_write_text(html, file.path(out_dir, "partnership_memo.print.html"))
-  utils::write.csv(checks, file.path(out_dir, "render_checks.csv"), row.names = FALSE, na = "")
-  step("PDF: ", file.path(out_dir, "partnership_memo.pdf"), " (", pt$pages, " pages)")
-  if (any(checks$status == "FAIL")) stop("a render check failed (render_checks.csv): nothing published")
-  publish_dir <- arg_value("--publish-dir")
-  if (!is.null(publish_dir)) {
-    publish_dir <- abs_path(publish_dir)
-    dir.create(publish_dir, recursive = TRUE, showWarnings = FALSE)
-    jp <- file.path(work, "m.json"); country_memo_write_text(jtxt, jp)
-    mp <- file.path(work, "m.md"); country_memo_write_text(md, mp)
-    nm <- c(json = sprintf("memo-%s.%s.json", pair, country_memo_md5_8(jp)), pdf = sprintf("memo-%s.%s.pdf", pair, country_memo_md5_8(pdf)),
-            docx = sprintf("memo-%s.%s.docx", pair, country_memo_md5_8(docx)), md = sprintf("memo-%s.%s.md", pair, country_memo_md5_8(mp)))
-    old <- list.files(publish_dir, pattern = sprintf("^memo-%s\\.[0-9a-f]{8}\\.(json|pdf|docx|md)$", pair))
-    file.copy(c(jp, pdf, docx, mp), file.path(publish_dir, nm[c("json", "pdf", "docx", "md")]), overwrite = TRUE)
-    stale <- setdiff(old, nm); if (length(stale)) unlink(file.path(publish_dir, stale))
-    mf <- file.path(publish_dir, "manifest.json")
-    man <- if (file.exists(mf)) jsonlite::fromJSON(mf, simplifyVector = FALSE) else list(schema = "osi-partnership-memos", schema_version = 1L, pairs = list())
-    man$pairs[[pair]] <- list(pair = pair, country_a = a, country_b = b, title = pair_cfg$title, json = nm[["json"]], pdf = nm[["pdf"]],
-                              docx = nm[["docx"]], md = nm[["md"]], words = doc$words, generated_at = doc$generated_at, as_of = as_of,
-                              evidence_access = ev_access, format = doc$format, verified = FALSE,
-                              # the commit of the code that wrote this pair's memo ("-dirty" when R/, scripts/ or config/ had
-                              # uncommitted changes; null when unknown), 2026-11-21
-                              git_commit = git_commit_stamp(repo_root))
-    jsonlite::write_json(man, mf, auto_unbox = TRUE, pretty = TRUE, null = "null", na = "null")
-    step("published ", paste(nm, collapse = ", "), " to ", publish_dir)
-  }
-}
+if (!tables_only && !("--no-pdf" %in% args))
+  pm_print_publish(memo$markdown, memo$boxes, ev, pair_cfg, cfg$document, pair, "pairs",
+                   list(pair = pair, country_a = a, country_b = b),
+                   list(args = args, processed_dir = processed_dir, out_dir = out_dir, repo_root = repo_root, step = step))
 step("done: ", nrow(d), " units; ", sum(d$priority_tier == 1), " joint bets; ", length(sel), " compacts; MEA ", mea$option)
