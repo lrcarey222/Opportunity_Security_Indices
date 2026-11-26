@@ -26,3 +26,16 @@ describe.skipIf(!present)('change bundle is current', () => {
     expect(existsSync(join(dataDir, 'changes', String(changes.changes)))).toBe(true);
   });
 });
+
+const aibPresent = existsSync(join(dataDir, 'aib', 'manifest.json')) && existsSync(join(dataDir, 'changes', 'aib-manifest.json'));
+
+describe.skipIf(!aibPresent)('partnership change bundle is current', () => {
+  it('its latest AIB vintage is the shipped AIB compacts document', () => {
+    const aib = read('aib/manifest.json') as { files?: { compacts?: string } };
+    const ch = read('changes/aib-manifest.json');
+    expect(
+      ch.latest_doc,
+      `changes/aib-manifest.json describes ${String(ch.latest_doc)} but the AIB bundle ships ${String(aib.files?.compacts)}: run Rscript scripts/46_build_aib_vintages.R --include-worktree (scripts/84 does this after an export)`,
+    ).toBe(aib.files?.compacts);
+  });
+});

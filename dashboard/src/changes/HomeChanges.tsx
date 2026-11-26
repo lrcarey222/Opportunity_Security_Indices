@@ -6,6 +6,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { onIdle } from '../shell/prefetch.ts';
 import { HomeSignals } from '../posture/HomeSignals.tsx';
+import { useAibChanges } from './aib.ts';
+import { HomePartnershipsView } from './HomePartnerships.tsx';
 import { Link } from 'react-router';
 import { ATTRIBUTION_LABEL, choiceLabel, vintageDate, type ChangesBundle } from './contract.ts';
 import { nodeLabel } from './ChangedCellsNote.tsx';
@@ -62,6 +64,11 @@ export function HomeChangesView({ b }: { b: ChangesBundle }) {
   );
 }
 
+function HomePartnershipsLoaded() {
+  const c = useAibChanges();
+  return c ? <HomePartnershipsView c={c} /> : null;
+}
+
 function HomeChangesLoaded() {
   const { status, data } = useChanges();
   if (status !== 'ready' || !data) return null;
@@ -79,6 +86,7 @@ export function HomeChanges() {
     <>
       <HomeSignals />
       <HomeChangesLoaded />
+      <HomePartnershipsLoaded />
     </>
   ) : null;
 }

@@ -39,6 +39,20 @@ method_paths:
     - R/dashboard/posture
     - scripts/91_export_posture_data.R
 
+# AIB vintages (partnership changes; scripts/46): the code and config that build the AIB strategic layer. An AIB
+# bundle carries no input ledger, so a pair of AIB vintages is "real_world" only when this fingerprint is unchanged.
+aib_method_paths:
+  - R/aib
+  - config/aib.yml
+  - config/aib_node_functions.yml
+  - config/aib_strategic_compacts.yml
+  - config/aib_strategic_layer.yml
+  - config/aib_taxonomy_dictionary.yml
+  - config/aib_taxonomy_master.yml
+  - scripts/31_build_aib_trade_network.R
+  - scripts/32_build_aib_partnerships.R
+  - scripts/33_build_aib_strategic_layer.R
+
 # Human label of the method (shell/ReleaseStamp.tsx METHOD_VERSION). Recorded beside the fingerprint, never used
 # to decide anything.
 method_label: "decision framework (2026-10-30)"

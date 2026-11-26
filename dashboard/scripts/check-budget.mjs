@@ -336,9 +336,10 @@ const postureNote = postureManifest ? '' : 'posture data absent (scripts/91): no
 const changesDir = join(dataDir, 'changes');
 const changesManifest = readManifest(join(changesDir, 'manifest.json'));
 const changesFile = (name) => (name && existsSync(join(changesDir, name)) ? gz(join(changesDir, name)) : (name ? (fail(`change file ${name} is listed in its manifest but missing`), 0) : 0));
-const changesData = changesManifest
+const aibChangesManifest = existsSync(join(changesDir, 'aib-manifest.json')) ? readManifest(join(changesDir, 'aib-manifest.json')) : null;
+const changesData = (changesManifest
   ? gz(join(changesDir, 'manifest.json')) + changesFile(changesManifest.changes) + changesFile(changesManifest.assessments)
-  : 0;
+  : 0) + (aibChangesManifest ? gz(join(changesDir, 'aib-manifest.json')) + changesFile(aibChangesManifest.changes) : 0);
 
 // ---- the figures -------------------------------------------------------------------------------------
 const figures = [];
@@ -560,7 +561,7 @@ if (keys.reviewCase) {
   );
 }
 if (reviewManifest) figure('Review data', [[`${reviewFiles.length} files`, reviewData]], LIMITS.reviewData);
-if (changesManifest) figure('Change data', [['manifest + changes + assessment index', changesData]], LIMITS.changesData);
+if (changesManifest) figure('Change data', [['posture + partnership changes, assessment index', changesData]], LIMITS.changesData);
 figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData], ['Compacts', aibData], ['Posture', postureData], ['Review', reviewData], ['Changes', changesData]], LIMITS.allData);
 
 // ---- report ------------------------------------------------------------------------------------------

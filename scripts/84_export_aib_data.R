@@ -6,6 +6,7 @@
 #
 #   --in-dir     where scripts/32 wrote aib_results.rds (default: <outputs_dir>/aib)
 #   --out-dir    bundle directory (default: dashboard/public/data/aib)
+#   --no-vintages  skip the partnership change layer (scripts/46), which otherwise runs after an export to the default dir
 #   --top-edges  trade and investment relationships kept per compact (default 40)
 #   --strategic  the strategic layer of scripts/33 (default: <in-dir>/aib_strategic.rds; absent: the
 #                document has no `strategic` section)
@@ -208,4 +209,13 @@ for (id in names(scenario_files)) {
                   length(d$network$countries), length(d$network$edges),
                   if (identical(id, "managed")) sprintf(", %d with a coalition, %d investment flows", sum(!vapply(d$compacts, function(c) is.null(c$coalition), logical(1))),
                                                         length(d$investmentFlows$pairs)) else sprintf(", %d nodes", length(d$nodes))))
+}
+
+# The change layer for partnerships: archive this bundle as an AIB vintage and rebuild what changed (scripts/46). Only
+# for the shipped location; --no-vintages skips it.
+if (!"--no-vintages" %in% args && identical(normalizePath(out_dir, winslash = "/", mustWork = FALSE),
+                                            normalizePath(file.path(repo_root, "dashboard", "public", "data", "aib"), winslash = "/", mustWork = FALSE))) {
+  q <- function(x) shQuote(x, type = if (.Platform$OS.type == "windows") "cmd" else "sh")
+  status <- system2(file.path(R.home("bin"), "Rscript"), c(q(file.path(repo_root, "scripts", "46_build_aib_vintages.R")), "--include-worktree"))
+  if (!identical(as.integer(status), 0L)) warning("scripts/46_build_aib_vintages.R failed (status ", status, "): the partnership change bundle is stale.")
 }

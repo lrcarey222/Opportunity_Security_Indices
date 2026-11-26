@@ -4,6 +4,7 @@
 //   partnership the two economies x the nodes of the compacts both are core members of
 
 import { useCallback, useMemo } from 'react';
+import { AIB_ATTRIBUTION_LABEL, aibVintageDate, pairThesisChange, useAibChanges } from '../../../changes/aib.ts';
 import { ChangedCellsNote, nodeLabel } from '../../../changes/ChangedCellsNote.tsx';
 import type { ChangeRecord } from '../../../changes/contract.ts';
 import { cellKeyOf, cellsOf } from '../../../changes/summary.ts';
@@ -46,6 +47,17 @@ export function PairChangesNote({ s, a, b }: { s: AibStrategic; a: string; b: st
   const keys = useMemo(() => cellsOf([a, b], nodes), [a, b, nodes]);
   const match = useCallback((r: ChangeRecord) => keys.has(cellKeyOf(r)), [keys]);
   const label = useCallback((r: ChangeRecord) => `${name(r.iso3)}, ${nodeLabel(r)}`, [name]);
-  if (!keys.size) return null;
-  return <ChangedCellsNote match={match} label={label} testid="pair-changes" />;
+  const aib = useAibChanges();
+  const thesis = aib ? pairThesisChange(aib, a, b) : null;
+  return (
+    <>
+      {thesis && aib && (
+        <p className="mt-3 text-xs text-paper-mute" data-testid="pair-thesis-change">
+          <span className="text-paper-dim">This relationship since the {aibVintageDate(aib, thesis.pair.prev)} AIB results:</span> {thesis.change.explanation}{' '}
+          ({AIB_ATTRIBUTION_LABEL[thesis.pair.attribution]}.)
+        </p>
+      )}
+      {keys.size > 0 && <ChangedCellsNote match={match} label={label} testid="pair-changes" />}
+    </>
+  );
 }

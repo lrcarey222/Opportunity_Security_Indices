@@ -1,0 +1,8 @@
+{
+  "schema": "osi-aib-changes",
+  "schema_version": 1,
+  "created": "2026-11-26T18:54:57Z",
+  "changes": "aib-changes.7196ff9b.json",
+  "latest": "2026-11-26-5f89d49d",
+  "latest_doc": "compacts.5f89d49d.json"
+}

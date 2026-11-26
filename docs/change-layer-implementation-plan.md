@@ -353,6 +353,43 @@ Run on the real pipeline in `osi-worktrees/change`:
 
 **Milestone.** The re-export (vintage 2026-11-26-b0a46b5a, stamp d982afe2) pairs with ee052145 as "method same, data same". It is the first fully verified pair: both sides stamped and the input ledgers identical file for file. It shows no change.
 
+## Slice 9: partnership vintages (2026-11-26, done)
+
+**The same snapshot-and-diff pattern, applied to the AIB strategic layer.**
+
+- `R/change/aib_vintage.R` normalizes each AIB compacts bundle into three tables:
+  - pair theses (shared priority compacts and purposes, about 1,150 pairs);
+  - compact membership and roles (about 235);
+  - country primary roles.
+- `aib_compare` diffs two vintages by rule:
+  - pairs gaining or losing shared priority compacts, which is the complementarity signal;
+  - new and dropped theses, and purpose changes;
+  - economies joining or leaving a compact, or changing role;
+  - primary-role shifts.
+- **Attribution.** AIB bundles carry no input ledger, so a pair is `real_world` only when the AIB method fingerprint (`aib_method_paths`: R/aib, config/aib*.yml, scripts/31–33) is unchanged. Otherwise it is `unattributed`.
+
+**Building it.**
+
+- `scripts/46_build_aib_vintages.R` walks the first-parent history: 8 vintages since 27 Oct, archived in `data/vintages/aib/` (104 KB).
+- It writes `dashboard/public/data/changes/{aib-manifest.json, aib-changes.<md5>.json}` (317 KB raw).
+- scripts/84 runs it after an export to the default location (`--no-vintages` skips that).
+- A CI guard in `stale.test.ts` checks it is current.
+- It counts in the Change data budget: 142.5 KB of 512 KB.
+
+**What the real history shows.**
+
+- Two AIB pairs kept the method the same, so their changes are credited to new data:
+  - the Atlas 2024 rebuild (29 → 30 Oct): 20 pairs gained shared compacts and 33 lost them;
+  - the current-trade refresh (30 Oct → 17 Nov): 391 gained, 152 lost, and 135 membership changes.
+- The 64-economy network change (24 → 26 Nov) changed the method, so it is not attributed: 167 gained, 116 lost, 199 new theses and 201 dropped.
+
+**UI.**
+
+- Home: "Which partner relationships are becoming more complementary?" (`HomePartnerships`). It sits under the same idle task, and lists the pairs that gained most, with the attribution.
+- Partnership case: "This relationship since …", with the pair's thesis change and its attribution. This was verified in the browser for the UAE and India.
+
+**Fix along the way.** `src/posture/__tests__/budget.test.ts` declared its own manifest type, so slice 8's reading of `manifest.signals` broke `tsc -b` (the build). Vitest does not type-check, and the app typecheck excludes tests, so neither caught it. The type is fixed and the build passes.
+
 ## Remaining technical debt
 
 1. **Pre-engine pipeline code (scripts/10–25) is not fingerprinted.** Its effect shows as changed engine inputs, so a
@@ -398,7 +435,7 @@ The landing page should be built only on the change layer and on existing clean 
 | Where are dependencies worsening? | **Built** (slice 8): China's import share, latest 12 months vs base year, on Home | Coercive-supplier and supplier-concentration trends beside China's share; Need deltas across stamped vintages |
 | Where is strategic capability improving? | **Built as export growth** (slice 8): 12-month export momentum, quality `ok`, listed by world share | Export growth is a proxy. Position (cp) deltas across stamped vintages are the direct measure |
 | Where are policy commitments failing to translate into delivery? | Industrial Policy Strength module (lab); NEIS Intelligence `implementation_status` (announced → operational, cancelled, delayed) | A join of policies or projects to cells. Neither repo has project or policy entities; this needs the Intelligence bridge plus a project entity |
-| Which partner relationships are becoming more complementary? | Partnership dyads and memos (static) | Dyad-level vintages: the same snapshot pattern applied to partnership outputs |
+| Which partner relationships are becoming more complementary? | **Built** (slice 9): AIB vintages of pair theses, Home panel and pair line | AIB input ledgers, so more pairs are attributable |
 | What decision windows are approaching? | Nothing structured | A dated-event entity (policy deadlines, tariff dates, e.g. the Dec 4 snapshot) in NEIS Intelligence |
 
 **Verdict:** only the "recommendations changed" panel has clean data today. The stamp-and-automate slice is in, so
