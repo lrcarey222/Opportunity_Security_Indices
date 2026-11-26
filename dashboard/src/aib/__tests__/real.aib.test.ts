@@ -27,6 +27,7 @@ import { compactTechs, compactTitle, techTitle } from '../derive/format.ts';
 import { NOT_IN_BASKET, nodeInTech, osiCellHref, osiCellOf, osiFields, profiledCellsOfNode, taxonomyOf, techKeysOfNode, technologiesOfNodes } from '../derive/taxonomy.ts';
 import { DEPLOYMENT_STAGE, parseCellSlug } from '../../lib/stages.ts';
 import { decodeCore, POSTURE_SCHEMA_VERSION } from '../../posture/contract.ts';
+import { trustedNetwork } from '../../posture/trustedNetwork.ts';
 import { REAL_DIR } from './fixture.ts';
 
 const have = existsSync(resolve(REAL_DIR, 'manifest.json'));
@@ -340,10 +341,10 @@ describe.skipIf(!have)('the real Sectoral Compacts bundle (public/data/aib)', ()
     const counts: Record<string, number> = {};
     for (const n of doc.nodes) if (n.diversify) counts[n.diversify.status] = (counts[n.diversify.status] ?? 0) + 1;
     // the bundle of 2026-10-30 (Atlas 2024, the new basket): 37 / 3 / 34 (38 / 1 / 35 before)
-    expect(counts).toEqual({ 'diversified to the benchmark': 37, 'within the cap in the allied market': 3, 'already as diversified as its benchmark': 34 });
+    expect(counts).toEqual({ 'diversified to the benchmark': 36, 'within the cap in the allied market': 3, 'already as diversified as its benchmark': 35 });
     expect(doc.nodes.filter((n) => n.diversify === undefined)).toHaveLength(3);
     const t = diversifyTotals(doc.nodes);
-    expect([t.above, t.withBenchmark, t.diversified]).toEqual([40, 74, 37]);
+    expect([t.above, t.withBenchmark, t.diversified]).toEqual([39, 74, 36]);
     // above the benchmark: the nodes diversified to it and those within the cap in the allied market
     expect(t.above).toBe(counts['diversified to the benchmark'] + counts['within the cap in the allied market']);
     const names = countryNamesOf(doc);
@@ -422,6 +423,13 @@ const postureManifest = existsSync(resolve(POSTURE_DIR, 'manifest.json')) ? (JSO
 const havePosture = !!postureManifest && postureManifest.schema_version === POSTURE_SCHEMA_VERSION && !!postureManifest.core && existsSync(resolve(POSTURE_DIR, postureManifest.core));
 
 describe.skipIf(!havePosture)('the real allied division (public/data/posture, schema 2)', () => {
+  it('the posture header counts the one allied set the Explorer shows (the 64-economy trusted network)', () => {
+    const core = decodeCore(JSON.parse(readFileSync(resolve(POSTURE_DIR, postureManifest?.core as string), 'utf8')));
+    const net = trustedNetwork(core.countries);
+    expect(core.aibHeader.members).toBe(net.size);
+    expect([core.aibHeader.core_members, core.aibHeader.partner_members, core.aibHeader.allied_members]).toEqual([net.count.core, net.count.partner, net.count.allied]);
+  });
+
   it('Partner demand counts Compete · Partner choices and Secure demand Secure ones; Deploy · Accelerate is not counted; no node at Deployment', () => {
     const core = decodeCore(JSON.parse(readFileSync(resolve(POSTURE_DIR, postureManifest?.core as string), 'utf8')));
     const key = (t: string, s: string) => `${t}|${s}`;

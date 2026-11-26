@@ -489,7 +489,7 @@ export const SCENARIO_DEFINITION: Record<AibScenarioId, string> = {
 export const SCENARIO_SECTION_TITLE = 'How resilient is the network under different assumptions?';
 /** Managed Interdependence, the core AIB question and its alternative to both extremes (guide). */
 export const MANAGED_INTERDEPENDENCE = {
-  question: 'This is the core AIB question: how much specialization can allies keep while reducing the dependencies that create coercive or systemic risk?',
+  question: 'This is the core Allied Industrial Base question: how much specialization can allies keep while reducing the dependencies that create coercive or systemic risk?',
   explainer:
     "Managed Interdependence is the alternative to both laissez-faire concentration and blanket decoupling. It keeps the benefits of specialization but sets limits where one supplier's position creates unacceptable risk. The question is not whether dependence can be eliminated, but which dependencies are worth keeping, and what backup is enough.",
 } as const;
@@ -596,7 +596,7 @@ export const PARTNERSHIP = {
   heading: 'Which partners are best placed to help?',
   thesisHeading: 'What is the strategic case for this partnership?',
   thesisPrompt:
-    'Is the relationship mainly about securing supply, expanding a market, building new capacity, or combining complementary strengths? The answer should determine the tools.',
+    'Is the relationship mainly about securing supply, expanding a market, building new capacity, combining complementary strengths, or reducing concentration? The answer should determine the tools.',
   psi: 'A summary of where two economies have the strongest case to deepen an energy-industrial relationship across sourcing, markets and investment.',
   psiCaveat: 'Use the component scores to understand the reason. A high partnership score is not a recommendation to cooperate on every technology.',
   friendshore: 'Where country A could source from or invest in country B to reduce a strategic dependency.',
@@ -628,7 +628,7 @@ export const STATE = {
   noStrategyMap: 'There is not enough comparable evidence to produce a strategy map for this country.',
   aibLoading: 'Loading the Allied Industrial Base results…',
   aibUnavailable: 'Allied Industrial Base results are not available in this build. Country and sector evidence are still available.',
-  noAibRole: 'This country is not needed in a modeled compact under the selected scenario.',
+  noAibRole: 'This country is not needed in a compact under the selected scenario.',
   noAibRoleWhy: 'That does not mean it is unimportant; it means the current stress test does not require its capability to close the identified gaps.',
   noManagedResult: 'Managed Interdependence does not change this compact under the current concentration benchmark.',
   compactUnchanged: "No supply needs to shift under this scenario, so the compact keeps today's supplier network.",

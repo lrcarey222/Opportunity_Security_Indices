@@ -771,6 +771,21 @@ describe.skipIf(!haveFixture())('Country page: "What should [COUNTRY] do?" (exte
     // "Why this result?" is collapsed, one per listed step once the detail document is in
     await waitFor(() => expect(within(block).getAllByTestId('why-this-result').length).toBeGreaterThan(0), { timeout: 30_000 });
     expect(within(block).getAllByTestId('why-this-result').every((d) => !d.hasAttribute('open'))).toBe(true);
+    // usability pass (2026-11-25): each "Why this result?" states the step's confidence from the shipped fields
+    for (const d of within(block).getAllByTestId('why-this-result')) expect(within(d).getByTestId('step-confidence').textContent).toMatch(/^Confidence: (High|Moderate|Low|not stated)/);
+    // the deployment row reads the Deployment & Use cells and links to prices rather than asserting costs
+    const dep = within(block).getByTestId('bottom-line-deployment');
+    expect(dep.textContent).toMatch(/^Affordability & deployment: /);
+    expect(dep.textContent).toContain('Costs and prices do not enter these choices.');
+    expect(within(dep).getByRole('link', { name: /World commodity prices/ }).getAttribute('href')).toBe('/sector/explore/prices?c=USA');
+    // the evidence footer: quality over the listed steps, "Why this conclusion?" collapsed with coverage first, links to the evidence
+    const ev = within(block).getByTestId('evidence-summary');
+    expect(within(ev).getByTestId('evidence-quality').textContent).toMatch(/^Evidence quality: of \d+ listed steps?, /);
+    const why = within(ev).getByTestId('why-conclusion');
+    expect(why.hasAttribute('open')).toBe(false);
+    expect(within(why).getAllByRole('listitem')[0].textContent).toBe('11 of 12 supply-chain steps assessed; 1 not assessed (insufficient evidence), never counted as Watch.');
+    expect(within(why).getByTestId('evidence-data').textContent).toMatch(/^Data: Strategy built 29 October 2026/);
+    expect(within(ev).getByRole('link', { name: /Explore the evidence/ }).getAttribute('href')).toBe('#evidence');
     // a step opens the page's one drawer
     fireEvent.click(within(within(block).getByTestId('bottom-line-catch_up')).getByRole('button'));
     await waitFor(() => expect(nodeOf(r)).toBe('Batteries|Components'));

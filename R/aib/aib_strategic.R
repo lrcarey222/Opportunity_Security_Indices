@@ -1695,11 +1695,11 @@ aib_strategic_layer <- function(inputs, res, compacts_yml, node_fn_yml, layer_cf
   scen <- aib_strategic_scenario_defs(res, layer_cfg$scenarios)
   cls_thr <- res$meta$config$classification
   status <- aib_strategic_node_status(res, map_run$node_id, scen, cls_thr, untested = layer_cfg$scenarios$managed_untested)
-  # two sets: the model's demand scope (coalition tiers; whose demand the stress tests protect) and the
-  # strategic layer's allied set = the scope plus `allied: treat_as_allied` (config/aib_strategic_layer.yml):
-  # economies outside the coalition tiers that the institutional slots treat as allies (role eligibility,
-  # coalition members, hosts, critical partners, core countries); their own demand stays outside the scope
-  scope <- inputs$coalition$iso3[inputs$coalition$tier != "none"]
+  # the model's demand scope (whose demand the stress tests protect) and the strategic layer's allied set = the
+  # scope plus `allied: treat_as_allied` (config/aib_strategic_layer.yml). Since 2026-11-25 the demand scope
+  # itself takes treat_as_allied (config/aib.yml demand_scope: include_treat_as_allied; res$meta$demand_iso),
+  # so the two are one set, the trusted network. An older run without meta$demand_iso: the coalition tiers.
+  scope <- if (length(res$meta$demand_iso)) as.character(unlist(res$meta$demand_iso)) else inputs$coalition$iso3[inputs$coalition$tier != "none"]
   extra_allied <- setdiff(as.character(unlist(layer_cfg$allied$treat_as_allied)), scope)
   allied <- union(scope, extra_allied)
   hubs <- as.character(unlist(res$meta$config$trade$reexport_hubs))

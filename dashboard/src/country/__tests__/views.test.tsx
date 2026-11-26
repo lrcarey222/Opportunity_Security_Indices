@@ -143,12 +143,12 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(document.title).toMatch(/^Countries \| Allied Industrial Base Explorer/);
     expect(document.body.textContent).toContain('No country should try to own the whole stack.');
     expect(document.body.textContent).toContain('A strong industrial strategy is as much about deciding what not to build as deciding what to build.');
-    const core = screen.getByRole('region', { name: /Core coalition members/ });
+    const core = screen.getByRole('region', { name: /Trusted network: core members/ });
     const usa = within(core).getByRole('link', { name: /United States/ });
     expect(usa.getAttribute('href')).toBe('/countries/USA');
     expect(within(usa).getByText('MEMO')).toBeTruthy();
     expect(within(within(core).getByRole('link', { name: /Germany/ })).queryByText('MEMO')).toBeNull();
-    expect(screen.getByRole('region', { name: /Coalition partners/ })).toBeTruthy();
+    expect(screen.getByRole('region', { name: /Trusted network: partners and treated as allied/ })).toBeTruthy();
     expect(screen.getByRole('combobox', { name: /Choose a country/ })).toBeTruthy();
     // the roster line is the strategy's six verbs (the posture fixture's United States), not the legacy corners
     await waitFor(() => expect(within(usa).getByTestId('roster-line').textContent).toBe('3 Secure · 2 Preserve · 1 Catch Up · 1 Partner · 1 Accelerate · 3 Watch · 1 not assessed'), { timeout: 30_000 });
@@ -391,6 +391,8 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(screen.getAllByText('AI-generated from the data and checked against it; NEIS baseline as of 12 October 2026.').length).toBe(2);
     const pdf = screen.getByText('DOWNLOAD PDF');
     const docx = screen.getByText('DOWNLOAD WORD (.DOCX)');
+    // what a decision brief holds is said only for a brief, not for a legacy memo (usability pass, 2026-11-25)
+    expect(screen.queryByTestId('brief-contents')).toBeNull();
     const entry = readManifest().countries.find((c) => c.iso3 === 'USA')!;
     if (entry.memo?.pdf) {
       expect(pdf.closest('a')?.getAttribute('href')).toBe(`/data/country/${entry.memo.pdf}`);
@@ -470,7 +472,7 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     const actions = await screen.findByTestId('profile-actions', {}, { timeout: 30_000 });
     const link = within(actions).getByRole('link', { name: 'Download decision brief' });
     expect(link.getAttribute('href')).toBe('/countries/USA/memo');
-    expect(within(actions).getByText(/^A short decision brief written 20 October 2026 from the Explorer data/)).toBeTruthy();
+    expect(within(actions).getByText(/^A structured summary: the recommendation, its evidence, partner implications.*Written 20 October 2026; sources and caveats in its appendix\.$/)).toBeTruthy();
     expect((await within(actions).findByTestId('memo-stale-note', {}, { timeout: 30_000 })).textContent).toBe(
       'This brief was written on 20 October 2026, before the current data release (29 October 2026); some counts may differ from this page.',
     );

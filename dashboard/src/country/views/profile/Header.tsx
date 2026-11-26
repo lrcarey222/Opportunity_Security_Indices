@@ -20,11 +20,12 @@ import { downloadText, fileSlug } from '../../../lib/download.ts';
 import { countryPostureRows, postureCsvText, postureProvenance, strategySentence } from '../../../posture/index.ts';
 import { POSTURE_CSV_COLS, postureCsvRows } from '../../../posture/derive.ts';
 import { networkOf } from '../../../posture/partnerEligibility.ts';
+import { ALLIANCE_TAG, allianceTier } from '../../../posture/trustedNetwork.ts';
 import type { CountryManifest } from '../../contract.ts';
 import { sectorCountryLink } from '../../derive/links.ts';
 import { countryOptions } from '../../derive/model.ts';
 import { dateLabel, freshnessItems } from '../../derive/strategyPage.ts';
-import { cap, poss, proseName, tierTag } from '../../derive/text.ts';
+import { cap, poss, proseName } from '../../derive/text.ts';
 import { countryHref } from '../../url.ts';
 import { useProfile } from './common.tsx';
 
@@ -49,6 +50,12 @@ export const memoRevisedLine = (name: string) => `The memo for ${name} is being 
 export const BRIEF_ACTION = 'Download decision brief';
 export const MEMO_ACTION = 'Read the policy memo';
 export const memoActionLabel = (e: { memo: { format?: string } | null }): string => (e.memo?.format === 'brief' ? BRIEF_ACTION : MEMO_ACTION);
+
+/** What a decision brief holds (its sections: bottom line, where to secure or compete, the allied bargain,
+ *  development, energy-system priorities, policy direction, the agenda; appendix with sources and caveats). */
+export const BRIEF_CONTENTS =
+  'A structured summary: the recommendation, its evidence, partner implications, deployment priorities, policy direction and next steps (PDF or Word).';
+export const briefWrittenLine = (written: string | null): string => `${written ? `Written ${written}; s` : 'S'}ources and caveats in its appendix.`;
 
 /** For an economy with no decision brief (the briefs are the manifest's memo entries of format 'brief' that are not stale). */
 export const noBriefLine = (name: string): string => `No decision brief yet for ${name}.`;
@@ -129,7 +136,8 @@ export function ProfileHead({ manifest }: { manifest: CountryManifest }) {
             Data: {fresh.join(' · ')}.
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <Tag accent={m.tier === 'core'}>{tierTag(m.tier)}</Tag>
+            {/* the trusted-network tier (one allied set: core, partner, or treated as allied) */}
+            <Tag accent={m.tier === 'core'}>{ALLIANCE_TAG[allianceTier(sheet.iso3, m.tier)]}</Tag>
             {m.eu_member && <Tag>EU MEMBER</Tag>}
             {m.policy_basis === 'IEA PAMS only' && (
               <span className="inline-flex items-center gap-1">
@@ -186,7 +194,7 @@ function MemoAction({ manifest }: { manifest: CountryManifest }) {
         </Link>
         <p className="mt-1 max-w-xs text-xs text-paper-mute">
           {brief
-            ? `A short decision brief${written ? ` written ${written}` : ''} from the Explorer data, as PDF or Word; evidence, sources and caveats in its appendix.`
+            ? `${BRIEF_CONTENTS} ${briefWrittenLine(written)}`
             : `AI-generated from the data and checked against it; baseline as of ${manifest.as_of_label}. It reads the security and opportunity scores, not the strategy above.`}
         </p>
         {old && (

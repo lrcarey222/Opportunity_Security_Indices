@@ -37,7 +37,7 @@ export const COUNTRY_STRATEGY_MAP_TITLE = 'Country Strategy Map';
  * a split and a hatch mean, and where the evidence is.
  */
 export const COUNTRY_STRATEGY_MAP_INTRO =
-  "One map of the country's strategic choices. Each row is a technology; the six columns are the steps of its supply chain, from Extraction to Recovery & Recycling, with Deployment & Use set apart as the energy-system column. A cell's color is the country's choice for that step, and the legend defines each choice and groups the colors by fence. A cell split on the diagonal has parts behind different fences: hover over it, or tap it, to see which. Hatched cells are not assessed. Select a cell for the evidence behind its choice.";
+  "One map of the country's strategic choices. Each row is a technology; the six columns are the steps of its supply chain, from Extraction to Recovery & Recycling, with Deployment & Use set apart as the energy-system column. A cell's color is the country's choice for that step, and the legend defines each choice and groups the colors by fence. A cell split on the diagonal has parts behind different fences: hover over it, or tap it, to see which. Hatched cells are not assessed (not Watch). Select a cell for the evidence behind its choice.";
 /** The old name of the title constant (the map was "Secure, compete or deploy, by technology and stage" until 2026-10-29). */
 export const COUNTRY_POSTURE_TITLE = COUNTRY_STRATEGY_MAP_TITLE;
 

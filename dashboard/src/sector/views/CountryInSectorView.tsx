@@ -24,6 +24,7 @@ import type { GeoInfo, ItemInfo, SectorModel, VarInfo } from '../data/model.ts';
 import { countryVars, measureItem, primaryMeasure, varsOfCell } from '../derive/cells.ts';
 import { basisWords } from '../derive/concentration.ts';
 import { isDiverging } from '../derive/explore.ts';
+import { ALLIANCE_TAG, allianceTier } from '../../posture/trustedNetwork.ts';
 import { GROUP_LABEL, partOf } from '../derive/groups.ts';
 import { regionOf, stateOf, stateWords } from '../derive/states.ts';
 import { ASSUMED_MARK, noteLine } from '../derive/notes.ts';
@@ -368,7 +369,7 @@ export default function CountryInSectorView() {
         <div className="space-y-8">
           <PageHead eyebrow={`SECTORS · ${model.cellLabel(cell).toUpperCase()}`} title={`${geo.name} in ${model.cellLabel(cell)}`} lede={lede}>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="tag">{geo.tier === 'core' ? 'Coalition core' : geo.tier === 'partner' ? 'Coalition partner' : 'Outside the coalition'}</span>
+              <span className="tag">{ALLIANCE_TAG[allianceTier(geo.code, geo.tier)]}</span>
               {geo.eu_member && <span className="tag">EU member</span>}
               {geo.kind === 'eu' && <span className="tag">EU-27 as one</span>}
               {geo.bloc && <span className="tag">UN vote: {geo.bloc}</span>}

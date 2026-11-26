@@ -32,6 +32,7 @@ import { TableView, type Col } from '../../components/TableView.tsx';
 import { EmptyState, FilterRow, PageHead, Select } from '../../components/ui.tsx';
 import { MODULE_QUESTION, ROLES_FRAMING, TERMS } from '../../content/vocabulary.ts';
 import { useTitle } from '../../shell/title.ts';
+import { TrustedNetworkControl } from '../../posture/TrustedNetworkControl.tsx';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import { ScenarioTag } from '../charts/ScenarioCompare.tsx';
 import { tradeWhen, scenarioNamesOf } from '../contract.ts';
@@ -235,6 +236,7 @@ export default function AibRolesView() {
             : `For each country, the roles it plays in the network of trade and investment relationships the analysis selects ${hasScenarios ? under : 'after the disruption'}, and the Sectoral Compacts it joins${hasScenarios ? ', set against trade as it is today' : ''}. `}
           {ROLES_FRAMING.derived} They are not a ranking or a score.
         </p>
+        <TrustedNetworkControl className="mt-3" />
       </PageHead>
       <div className="space-y-10">
         {strategic && (

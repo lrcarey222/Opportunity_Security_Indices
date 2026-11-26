@@ -335,7 +335,7 @@ export function NodeSection({ frontier = true }: { frontier?: boolean } = {}) {
       cell: (r) => fmtScore(nodeById.get(r.id)?.baseline?.hhi ?? null),
       num: true,
       title:
-        "Herfindahl-Hirschman Index of the node's supply to the allied market today: 1 = one supplier. Managed Interdependence tests a different measure, the concentration of world exporters, against the benchmark.",
+        "Herfindahl-Hirschman Index of the step's supply to the allied market today: 1 = one supplier. Managed Interdependence tests a different measure, the concentration of world exporters, against the benchmark.",
     },
   ];
   const cols: Col<(typeof rows)[number]>[] = [

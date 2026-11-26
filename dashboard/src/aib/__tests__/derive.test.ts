@@ -461,7 +461,7 @@ describe('coalition: exact, greedy and tiers', () => {
     // what each tier means
     expect(g[0].meaning).toMatch(/that are not critical supply partners or prospective hosts: the demand anchors, and suppliers one other candidate could replace/);
     expect(g[1].meaning).toMatch(/no single other candidate can replace: without one, only several other economies together restore the target, or none does/);
-    expect(g[2].meaning).toMatch(/only for the new capacity the model simulates at them .* neither core members nor critical\. The capacity is hypothetical\.$/);
+    expect(g[2].meaning).toMatch(/only for the new capacity the analysis simulates at them .* neither core members nor critical\. The capacity is hypothetical\.$/);
     expect(g[3].meaning).toMatch(/^The fewest additions to the core coalition, held in, that reach the 99% target\. The 99% minimum coalition solved on its own need not contain the core\.$/);
     expect(g[4].meaning).toMatch(/each supplies at least 1% of the demand anchors' demand there/);
     expect(g[5].meaning).toMatch(/under 1% of the anchors' demand there: critical only because the coalition sits near the target/);
@@ -656,11 +656,11 @@ describe('class variants and the growth-bound sensitivity', () => {
 
 describe('run settings in words', () => {
   it('demand scope and candidate partners apart, semantics, constraint and strategic scope; nothing for an older bundle', () => {
-    // "coalition" is the allied core and partner tiers, not a compact's coalition
+    // "coalition" is the trusted network (core and partner tiers plus treat_as_allied), not a compact's coalition
     expect(demandScope(doc.meta)).toEqual({
       mode: 'coalition',
-      label: 'Allied core and partner economies',
-      words: "the allied core and partner economies of the coalition table (6 economies), not a compact's coalition: the importers whose lost supply is restored",
+      label: 'The trusted network',
+      words: "the trusted network (the coalition's core members and partners plus the economies treated as allied, the same set that holds the AIB roles) (6 economies), not a compact's coalition: the importers whose lost supply is restored",
     });
     expect(demandScope({ ...doc.meta, demandScope: 'global', nDemandScope: null })!.words).toBe('every economy in the trade data: the importers whose lost supply is restored');
     expect(candidateUniverse(doc.meta)).toMatchObject({ mode: 'global', words: 'any economy in the trade data may add or redirect supply' });

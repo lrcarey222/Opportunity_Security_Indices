@@ -101,6 +101,20 @@ test_that("the core document is columnar, six-stage and carries the freshness me
   expect_setequal(names(core$design), c("deploy|diversified_global", "compete_partner|allied"))
 })
 
+test_that("the AIB header counts the trusted network: the two tiers plus treat_as_allied", {
+  cty <- rbind(pe_countries, data.frame(iso3 = c("CCC", "DDD", "TWN"), name = c("Cland", "Dland", "Taiwan"),
+                                        tier = c("core", "none", "none")))
+  # default: no treat_as_allied, members are the core and partner tiers (older callers)
+  h0 <- posture_core_doc(pe_tbl(), pe_div(), cty, pe_cfg, created = "x")$aib_header
+  expect_equal(c(h0$core_members, h0$partner_members, h0$allied_members, h0$members), c(2, 1, 0, 3))
+  # treat_as_allied adds the economies outside the tiers once (an economy already in a tier is not counted twice)
+  core <- posture_core_doc(pe_tbl(), pe_div(), cty, pe_cfg, created = "x", treat_as_allied = c("twn", "CHE", "AAA", "TWN"))
+  h <- core$aib_header
+  expect_equal(c(h$core_members, h$partner_members, h$allied_members, h$members), c(2, 1, 2, 5))
+  expect_equal(core$meta$core_members, 2)       # the meta counts stay the coalition tiers
+  expect_equal(core$meta$partner_members, 1)
+})
+
 test_that("one-item arrays stay arrays in the JSON (jsonlite auto_unbox)", {
   core <- posture_core_doc(pe_tbl(), pe_div(), pe_countries, pe_cfg, created = "x")
   j <- jsonlite::fromJSON(as.character(jsonlite::toJSON(core, auto_unbox = TRUE, na = "null", null = "null", digits = NA)), simplifyVector = FALSE)

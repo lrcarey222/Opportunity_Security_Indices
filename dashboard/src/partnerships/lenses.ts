@@ -62,7 +62,7 @@ export const KIND_LENS_WORDS: Readonly<Record<PartnershipKind, Record<LensId, st
   },
   geopolitical: {
     today: 'UN General Assembly vote alignment, shared economic-security agreements and coalition membership today.',
-    osi: 'The allied coalition the partner scores use (core members and partners) and the alignment part of Friendshore.',
+    osi: 'The trusted network (core members, partners and the economies treated as allied) and the alignment part of Friendshore.',
     aib: 'The compact coalitions under the scenario: the smallest group of partners that meets the target, critical supply partners and critical dependencies outside.',
   },
 };

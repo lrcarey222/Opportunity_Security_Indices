@@ -36,8 +36,9 @@ export function TrustedNetworkControl({ className = '' }: { className?: string }
           );
         })}
         <p className="text-paper-mute">
-          Only these economies are named as partners for the Allied Industrial Base strategy. Other economies, including
-          China and Russia, still appear where they are current suppliers, sources of concentration or exposure.
+          Only these economies are named as partners or hold a role in the Allied Industrial Base strategy. Other economies,
+          including China and Russia, still appear where they are current suppliers, sources of concentration or exposure,
+          and the stress tests let any economy redirect its exports.
           {date ? ` Data release ${date}.` : ''}
         </p>
       </div>

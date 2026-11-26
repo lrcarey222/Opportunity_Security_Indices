@@ -41,6 +41,7 @@ units:
   - {id: ej, short: "EJ", long: "exajoules", unit_kind: ej}
   - {id: twh, short: "TWh", long: "terawatt-hours", unit_kind: twh}
   - {id: gw, short: "GW", long: "gigawatts", unit_kind: gw}
+  - {id: gwh, short: "GWh", long: "gigawatt-hours", unit_kind: gwh}
   - {id: mw, short: "MW", long: "megawatts", unit_kind: mw}
   - {id: kt, short: "kt", long: "thousand tonnes", unit_kind: kt}
   - {id: kt_content, short: "kt", long: "thousand tonnes, metal content", unit_kind: kt}
@@ -164,6 +165,11 @@ price_unit_ids:
 
 # Per-item unit overrides (dict.item_units). `axis` + `item` (slug).
 item_units:
+  - {var: manufacturing.capacity_now, axis: cell, item: solar-refining, unit: gw}
+  - {var: manufacturing.capacity_now, axis: cell, item: solar-components, unit: gw}
+  - {var: manufacturing.capacity_now, axis: cell, item: solar-assembly, unit: gw}
+  - {var: manufacturing.capacity_now, axis: cell, item: batteries-components, unit: gwh}
+  - {var: manufacturing.capacity_now, axis: cell, item: batteries-assembly, unit: gwh}
   - {var: production.fuels, axis: fuel, item: oil, unit: kbd}
   - {var: production.fuels, axis: fuel, item: gas, unit: ej}
   - {var: production.fuels, axis: fuel, item: coal, unit: ej}
@@ -746,6 +752,7 @@ caveats:
   - {id: ei_eu_row, text: "The EU row is EI's own European Union total."}
   - {id: cim_capacity_units, text: "Units differ by product; products are never summed."}
   - {id: cim_capacity_status, text: "Operational is the 2025 snapshot and includes plants still ramping up ('operational yet to come online'); under construction, announced and paused are capacity planned to 2030."}
+  - {id: cim_capacity_product, text: "One product per sector: polysilicon (Solar Refining, GW), wafers (Solar Components, GW; cells are under capacity by product), modules (Solar Assembly, GW), battery cells (Batteries Components, GWh) and battery modules (Batteries Assembly, GWh). Operational capacity in 2025, including plants still ramping up; shares are of the economies the Clean Investment Monitor lists, so plants it does not track are not counted."}
   - {id: cim_power, text: "Capacity additions in the year, GW."}
   - {id: imf_monthly_coal, text: "Coal is the monthly mean of the Australian and South African benchmarks."}
   - {id: cmfdi_coverage, text: "Cross-border greenfield and expansion projects only (a parent investing outside its headquarters economy) in solar, wind, battery and EV manufacturing, announced {fdi_years}: domestic investment, including China's at home, is not in the dataset. {fdi_n_mfg} of the {fdi_n} projects are manufacturing; the rest are R&D, design, testing or logistics sites."}
@@ -902,7 +909,7 @@ vars:
     roster: comtrade_matrix
     licence: attribution
     caveats: [hs6_overlap, nominal_usd, mirror_factor, hkg_hub_matrix]
-    primary_for: [batteries-extraction, batteries-refining, batteries-components, batteries-assembly, batteries-recovery, coal-refining, coal-components, coal-assembly, electric-grid-extraction, electric-grid-refining, electric-grid-components, electric-grid-assembly, electric-vehicles-extraction, electric-vehicles-refining, electric-vehicles-components, electric-vehicles-assembly, gas-refining, gas-components, gas-assembly, nuclear-refining, nuclear-components, nuclear-assembly, nuclear-recovery, oil-refining, oil-components, oil-assembly, oil-recovery, semiconductors-refining, semiconductors-components, semiconductors-assembly, solar-extraction, solar-refining, solar-components, solar-assembly, wind-extraction, wind-refining, wind-components, wind-assembly]
+    primary_for: [batteries-extraction, batteries-refining, batteries-components, batteries-assembly, batteries-recovery, coal-refining, coal-components, coal-assembly, electric-grid-extraction, electric-grid-refining, electric-grid-components, electric-grid-assembly, electric-vehicles-extraction, electric-vehicles-refining, electric-vehicles-components, electric-vehicles-assembly, gas-refining, gas-components, gas-assembly, nuclear-refining, nuclear-components, nuclear-assembly, nuclear-recovery, oil-refining, oil-components, oil-assembly, oil-recovery, semiconductors-refining, semiconductors-components, semiconductors-assembly, solar-extraction, solar-components, solar-assembly, wind-extraction, wind-refining, wind-components, wind-assembly]
     section: trade
     stale_years: null
     min_base: null
@@ -1917,6 +1924,39 @@ vars:
     prov: P
     prov_detail: "market_share_manufacturing_tbl, variable net_export_ratio, one value per IEA region"
     parity: {table: market_share_manufacturing_tbl, variable: net_export_ratio}
+    phase: "1"
+  # Explorer usability pass 2026-11-25 (docs/EXPLORER_USABILITY_PASS.md issue 4): the country-level
+  # capacity measure of Solar Refining (polysilicon), which led with export value before, and of the
+  # Solar and Batteries Components and Assembly stages, one product each (sector_facts_cim_capacity()).
+  - id: manufacturing.capacity_now
+    theme: manufacturing
+    family: capacity
+    label: "Operational manufacturing capacity (one product per sector)"
+    short: "Plant capacity"
+    definition: "The economy's operational manufacturing capacity of the sector's main product in 2025, in the product's unit: polysilicon at Solar Refining, wafers at Solar Components, modules at Solar Assembly, cells at Batteries Components, modules at Batteries Assembly. Operational includes plants still ramping up ('operational yet to come online'). Shares are of the economies the Clean Investment Monitor lists."
+    unit: native
+    data_year: "2025 (operational)"
+    years: [2025]
+    year_field: false
+    native_level: country
+    item_axis: cell
+    agg: sum
+    world_basis: sum_listed
+    norms: [value, share]
+    scale: log
+    higher_is: neutral
+    sign_note: null
+    display_scale: 1
+    source: cim
+    roster: cim
+    licence: attribution
+    caveats: [cim_capacity_product]
+    primary_for: [solar-refining]
+    section: production
+    feeds: []
+    prov: X
+    prov_detail: "GCIM_Investment_Capacity_aggregated.xlsx, mfg_ind_capacity: the operational rows of manufacturing.capacity for one product per sector"
+    parity: {none: "the processed table keeps only mixed-unit stage sums; the values equal the operational manufacturing.capacity series rows (checked by scripts/87)"}
     phase: "1"
   - id: manufacturing.capacity
     theme: manufacturing

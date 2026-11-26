@@ -6,7 +6,8 @@
 // memo kept under an earlier rule (memo.rule_note, e.g. the quadrant rule of 2026-10-15) -> shown with its
 // notice (memo.rule_note_d). An economy with neither a core memo nor a brief -> the profile with "No decision
 // brief yet". A decision brief written before the current data release (posture manifest created) -> shown with
-// a notice that some counts may differ from the Country page (external review readiness, 2026-11-23).
+// a notice that some counts may differ from the Country page (external review readiness, 2026-11-23). A brief
+// says above its downloads what it holds (Header.tsx BRIEF_CONTENTS; Explorer usability pass, 2026-11-25).
 
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
@@ -21,7 +22,7 @@ import { MemoDocument } from '../memo/MemoDocument.tsx';
 import { isBrief } from '../contract.ts';
 import { rememberCountry } from '../nav.ts';
 import { postureStore } from '../../posture/store.ts';
-import { briefPredatesData, briefStaleLine, MEMO_REVISED_TEXT, noBriefLine } from './profile/Header.tsx';
+import { BRIEF_CONTENTS, briefPredatesData, briefStaleLine, MEMO_REVISED_TEXT, noBriefLine } from './profile/Header.tsx';
 
 /** The current data release's date (the posture manifest's created; small, no-cache), or null until it is in or when it fails. */
 function usePostureRelease(): string | null {
@@ -149,6 +150,11 @@ export default function MemoView() {
             This is a placeholder used while the memos are written; it is not a memo.
           </Notice>
         </div>
+      )}
+      {brief && (
+        <p className="mb-2 max-w-3xl text-xs text-paper-mute print:hidden" data-testid="brief-contents">
+          {BRIEF_CONTENTS}
+        </p>
       )}
       <div className="mb-8 flex flex-wrap items-center gap-3 print:hidden">
         {pdf ? (

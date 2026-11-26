@@ -66,12 +66,12 @@ export const countryPostureCols = (meta?: MeasureMeta, net?: Membership | null):
 /** The country table for a core whose prize is the Strategic Industrial Value (the bundles since 2026-10-30). */
 export const COUNTRY_POSTURE_COLS: Col<PostureRow>[] = countryPostureCols();
 
-const TIER_WORD: Record<string, string> = { core: 'Core member', partner: 'Partner' };
+const TIER_WORD: Record<string, string> = { core: 'Core member', partner: 'Partner', allied: 'Treated as allied' };
 
 /** One node's economies: country, coalition tier, the choice and its reasons, the dimensions, partner, and whether the scatter places it. */
 export const sectorPostureCols = (meta?: MeasureMeta, net?: Membership | null): Col<PostureRow>[] => [
   { id: 'country', header: 'Economy', value: (r) => r.country },
-  { id: 'tier', header: 'Coalition', value: (r) => (r.tier ? TIER_WORD[r.tier] : null) },
+  { id: 'tier', header: 'Trusted network', value: (r) => (r.tier ? TIER_WORD[r.tier] : null) },
   choiceCol,
   rationaleCol,
   ...measures(meta),

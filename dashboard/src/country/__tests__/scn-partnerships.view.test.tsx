@@ -204,7 +204,7 @@ describe.skipIf(!haveFixture() || !haveAib(SYNTHETIC_DIR))('Country profile Part
     const part = await section();
     expect((within(within(part).getByRole('radiogroup', { name: 'Kind of partnership' })).getByRole('radio', { name: 'Geopolitical' }) as HTMLInputElement).checked).toBe(true);
     expect(within(lens(part, 'today')).getByTestId('geo-today').textContent).toMatch(/In the UN General Assembly it votes/);
-    expect(within(lens(part, 'osi')).getByTestId('geo-osi').textContent).toMatch(/The indices treat \d+ core members? and \d+ partners? as the allied coalition/);
+    expect(within(lens(part, 'osi')).getByTestId('geo-osi').textContent).toMatch(/The trusted network, the one allied set used on every page, is \d+ core members?, \d+ partners? and \d+ (?:economy|economies) treated as allied \(\d+ in all\)/);
     const co = await within(lens(part, 'aib')).findByTestId('aib-coalitions', {}, T);
     expect(co.textContent).toContain(`The United States sits in the coalition of ${decSeats} compact${decSeats === 1 ? '' : 's'} under ${DEC}`);
     fireEvent.click(within(within(lens(part, 'aib')).getByRole('radiogroup', { name: 'Scenario' })).getByRole('radio', { name: 'Managed Interdependence' }));

@@ -99,9 +99,11 @@ fixed alliance ([docs/aib_methodology.md](docs/aib_methodology.md); code `R/aib/
 - **Trusted network.** 64 economies: the 31 core members and 28 partners of the two-tier coalition
   (`config/coalition.yml`, built by `scripts/13`), plus Taiwan, Switzerland, Slovenia, Iceland and the United Arab
   Emirates, which are treated as allied (`config/aib_strategic_layer.yml` `treat_as_allied`). Only these economies
-  are named as partners or hold an AIB role. The 59 coalition members are the demand the stress tests
-  protect. Any economy may supply them. The app derives the list from data in
-  `dashboard/src/posture/trustedNetwork.ts`.
+  are named as partners or hold an AIB role, and (since 2026-11-25) the stress tests protect the demand of the
+  same 64 economies (`config/aib.yml` `demand_scope: include_treat_as_allied`): "allied" means this one set
+  everywhere. Any economy may supply them. The app derives the list from data in
+  `dashboard/src/posture/trustedNetwork.ts` and decodes every tier or allied grouping with its `allianceTier()` /
+  `allianceGroup()`.
 - **Scenarios.** *Today's network* (observed relationships, no disruption; the bundle's trade period is 2025-26:
   each reporter's latest 12 months where it reports monthly, otherwise 2024 carried forward, with China's rows
   scaled by Ember's China cleantech export growth, `scripts/39`); *Managed Interdependence* (no

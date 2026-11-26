@@ -492,3 +492,32 @@ test_that("resource potentials are the Deployment cells; a table filed elsewhere
   pv$supply_chain <- "Extraction"
   expect_error(sector_facts_potential(pv, pv[0, ], pv[0, ]), "not Deployment")
 })
+
+test_that("CIM capacity facts: one product per sector, operational rows verbatim, units per product (usability pass 2026-11-25)", {
+  cap <- tibble::tibble(
+    item_key = c(rep("cell:solar-refining", 4), "cell:solar-components", "cell:solar-components", "cell:solar-assembly",
+                 "cell:batteries-components", "cell:batteries-components", "cell:batteries-assembly"),
+    product = c("Polysilicon", "Polysilicon", "Polysilicon", "Polysilicon", "Wafers", "Cells", "Modules", "Cells", "EAM", "Modules"),
+    unit = c("GW", "GW", "GW", "GW", "GW", "GW", "GW", "GWh", "kt", "GWh"),
+    geo = c("CHN", "USA", "DEU", "CHN", "CHN", "CHN", "IND", "CHN", "CHN", "USA"),
+    year = 2025L,
+    cap_status = c("operational", "operational", "operational", "announced", "operational", "operational", "operational",
+                   "operational", "operational", "operational"),
+    value = c(1771.6, 27, 6, 861.4, 1490, 1532, 107, 3668, 6290, 417),
+    status = "obs")
+  x <- sector_facts_cim_capacity(cap)
+  f <- x$facts
+  ref <- f[f$item_key == "cell:solar-refining", , drop = FALSE]
+  # announced capacity is not operational; the economies in code order; values verbatim
+  expect_identical(ref$geo, c("CHN", "DEU", "USA"))
+  expect_identical(ref$value, c(1771.6, 6, 27))
+  expect_identical(unique(f$var), "manufacturing.capacity_now")
+  # one product per cell: wafers (not cells) at Solar Components, battery cells (not EAM, kt) at Batteries Components
+  expect_identical(f$value[f$item_key == "cell:solar-components"], 1490)
+  expect_identical(f$value[f$item_key == "cell:batteries-components"], 3668)
+  expect_identical(x$units$unit, c("gw", "gw", "gw", "gwh", "gwh"))
+  expect_identical(x$units$product, c("Polysilicon", "Wafers", "Modules", "Cells", "Modules"))
+  expect_true(all(f$status == "obs") && all(is.na(f$obs_year)))
+  # a product missing at a cell stops (CIM renamed or dropped it)
+  expect_error(sector_facts_cim_capacity(cap[cap$product != "Wafers", ]), "no operational Wafers capacity at solar-components")
+})

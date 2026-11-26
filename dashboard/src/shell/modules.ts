@@ -124,15 +124,19 @@ export const AIB_NAV: { key: AibNavKey; to: string; label: string }[] = [
   { key: 'diversification', to: '/aib/diversification', label: 'Managed Interdependence' },
 ];
 
+/** The first path segment of How to use the Explorer (an About page). */
+export const HOW_TO_SEGMENT = 'how-to-use';
+
 /** The first path segments of the Allied Industrial Base module. */
 export const AIB_SEGMENT = 'aib';
 export const COMPACTS_SEGMENT = 'compacts';
 
-export type AboutNavKey = 'about' | 'methods' | 'data' | 'glossary';
+export type AboutNavKey = 'about' | 'howto' | 'methods' | 'data' | 'glossary';
 
-/** About: Methods and Data are the Strategic pages (paths kept), the Glossary the shell page. */
+/** About: Methods and Data are the Strategic pages (paths kept), the Glossary and How to use (2026-11-25) shell pages. */
 export const ABOUT_NAV: { key: AboutNavKey; to: string; label: string }[] = [
   { key: 'about', to: '/about', label: 'Overview' },
+  { key: 'howto', to: '/how-to-use', label: 'How to use' },
   { key: 'methods', to: '/methods', label: 'Methods' },
   { key: 'data', to: '/data', label: 'Data & sources' },
   { key: 'glossary', to: '/glossary', label: 'Glossary' },
@@ -147,7 +151,7 @@ export function placeOf(pathname: string): Place {
   if (s[0] === 'sector') return 'sector';
   if (s[0] === COUNTRY_SEGMENT) return 'country';
   if (s[0] === AIB_SEGMENT || s[0] === COMPACTS_SEGMENT) return 'aib';
-  if (s[0] === 'about' || s[0] === 'glossary') return 'about';
+  if (s[0] === 'about' || s[0] === 'glossary' || s[0] === HOW_TO_SEGMENT) return 'about';
   if (s[0] === REVIEW_SEGMENT) return 'review';
   if (STRATEGIC_SEGMENTS.includes(s[0])) return 'strategic';
   return null;
@@ -204,6 +208,8 @@ export function aboutNavKeyOf(pathname: string): AboutNavKey | null {
       return 'data';
     case 'glossary':
       return 'glossary';
+    case HOW_TO_SEGMENT:
+      return 'howto';
     default:
       return null;
   }

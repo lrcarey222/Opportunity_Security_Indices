@@ -1,24 +1,24 @@
 {
   "schema": "aib-review-manifest",
   "schema_version": 1,
-  "built_at": "2026-11-25T17:11:39.971Z",
-  "app_commit": "854f4f79",
+  "built_at": "2026-11-26T05:35:05Z",
+  "app_commit": "e14ec4de",
   "data_release": {
-    "id": "rel-6b4b26b36db1",
+    "id": "rel-c000a5f55c1b",
     "stamps": {
       "posture": {
-        "created": "2026-11-21T17:46:30Z",
-        "git_commit": "17f0737e"
+        "created": "2026-11-26T05:25:51Z",
+        "git_commit": "fed21e77"
       },
       "country": {
         "created": "2026-10-31T15:58:15Z",
         "git_commit": "4bb2adc"
       },
       "sector": {
-        "bundle_id": "8f4910df5216fbdbcf73b0be919043a7"
+        "bundle_id": "b3b7eb49ee8fa243f84ab65cc82eeb2e"
       },
       "aib": {
-        "created": "2026-11-24T05:01:17Z"
+        "created": "2026-11-26T00:36:29Z"
       },
       "strategic": {
         "bundle_id": "c1736c4a25c7a33e73d56466eac415e6"
@@ -135,52 +135,52 @@
   "files": [
     {
       "file": "cases.aib_qc_2027_round1.json",
-      "sha256": "f878b4b5dacbf7fd66147b473e483fe224763c5219214d0f6f8b291f22ac87ce",
-      "bytes": 604990
+      "sha256": "09ee54008d9d7b64b02488df5d1e70fc08cdadb17fe2a0c2421a780a7e181f2a",
+      "bytes": 604763
     },
     {
       "file": "fixtures/demo_submissions.json",
-      "sha256": "92313ddcc144a0366041dde554be62861f5c7d9fe102b1ca594f5cf9e30379c9",
-      "bytes": 101869
+      "sha256": "f286c2ca9c3f7968dfb08094ff73862843113d060475e3cbda7a978bad796b5e",
+      "bytes": 101865
     },
     {
       "file": "framework_scenarios.json",
-      "sha256": "d2e7872acf54b2d9ce3410480202788bdf1eadce859fa87c1239ef38c653d7d5",
-      "bytes": 26319
+      "sha256": "9b54eb17d4a9f4f213b9d05e8026a6ca6b54f3447d5626061fefc88bb97f3e75",
+      "bytes": 26315
     },
     {
       "file": "method_cards.json",
-      "sha256": "02c611cca342750fdd43bb7d0c9835755c6593a8bc04034ae9f12e71efa50822",
-      "bytes": 44147
+      "sha256": "177597a5b7c61dc55f6f5c2f70a8e70feae848f1536e52e12e17f4a1e1ff3d04",
+      "bytes": 44143
     },
     {
       "file": "qc_summary.json",
-      "sha256": "6649af868ee4f59e10c4236af2fe70214e2a87f9c422f5fd450f3d33a5c41217",
-      "bytes": 32763
+      "sha256": "edaf473c7764d779d6dc3d5a9753329315114d5aa2657a3a4291844b541f4886",
+      "bytes": 33397
     },
     {
       "file": "robustness.json",
-      "sha256": "9e4c0b0706a5fadabbc5beca94b9efdc7e92eeee52cee413eabb8990cb5e694a",
-      "bytes": 48842
+      "sha256": "d126423c7b473eb03ed991408049005eeee94fbb9846cb9477e7cb0608ce2051",
+      "bytes": 48795
     }
   ],
   "bundle_files": [
     {
-      "file": "aib/compacts.9cc61b46.json",
-      "sha256": "16ece81f7e3e06181c9a0b217c9ed07da4b5925c662a301580c274d4a468f69e",
-      "created": "2026-11-21T06:34:04",
+      "file": "aib/compacts.5f89d49d.json",
+      "sha256": "4253c5741571766644056431ccd0b0e19966099c4dba2e7b2f56f35fe0f1d128",
+      "created": "2026-11-25T15:47:24",
       "git_commit": null
     },
     {
       "file": "aib/manifest.json",
-      "sha256": "a6544e7b243ca9e555c1df2b9053452a49e93265ae757a496ded276f649ba38c",
-      "created": "2026-11-24T05:01:17Z",
-      "git_commit": "acbc3805"
+      "sha256": "c023c0263dc3679d45926474f0e7b76331cc39c5dacbdda10cf68d992f426c2a",
+      "created": "2026-11-26T00:36:29Z",
+      "git_commit": "583bd65a"
     },
     {
-      "file": "aib/scenario-managed.30ee124b.json",
-      "sha256": "18000b1bb69a018c2ded8e3d10c810f605708bc3e54293e00357c7f139bdd96c",
-      "created": "2026-11-21T06:34:04",
+      "file": "aib/scenario-managed.b4fd312e.json",
+      "sha256": "5e26c87b7b7f24534bc0f7d6b6c71d1d13cf3717909000dc527f5624371b08f3",
+      "created": "2026-11-25T15:47:24",
       "git_commit": null
     },
     {
@@ -197,70 +197,70 @@
     },
     {
       "file": "posture/manifest.json",
-      "sha256": "a5b44b8c47cbd9e36d926972d13ae99df3e63acee4b2a98a18b6ae68a279990a",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "sha256": "bddef6f50b25853b20d447b433965fdc46f857366cacf04e22b05da99f1281f4",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     },
     {
-      "file": "posture/posture-core.07b6f4bd.json",
-      "sha256": "f07d227b1b76eb9624d547b86e7b053177f64c1c9040ec2fc17feebfe4124367",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "file": "posture/posture-core.c976f952.json",
+      "sha256": "7bac6e75d559f38d1e03e05466e7e7ee103b0646b902e4985cb055e16b86dda3",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     },
     {
-      "file": "posture/posture-detail-AUS.c8e21568.json",
-      "sha256": "8e9e2095c0d94b03094c0846ad507c94611fe38b2976e817da875629a1662fe2",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "file": "posture/posture-detail-AUS.d480fb94.json",
+      "sha256": "8445287450e3476af7192928a4247a891e02475aa247c64ca042184a7748b2c3",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     },
     {
-      "file": "posture/posture-detail-BEL.c9a291b2.json",
-      "sha256": "03f3d0c9a82ac6e06d893806c9eddc282af1a6ca899d2ca9557be597843551a8",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "file": "posture/posture-detail-BEL.4bf608fb.json",
+      "sha256": "6da11a9fe2639ce6ff4399430c48f73af220ce8320b07c6af9ecae748d9ebc7a",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     },
     {
-      "file": "posture/posture-detail-CHN.7a6e7443.json",
-      "sha256": "d0dbed24c1e0f535be187f8fc0f4b6c4aacd338aea0d0c821d0b0c3b77d69c83",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "file": "posture/posture-detail-CHN.50a52cc1.json",
+      "sha256": "4e428c05779819d134ea0fd38b3d6f17b13f84a4b9c7b9929edb057e5714b7d7",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     },
     {
-      "file": "posture/posture-detail-DEU.2dd2a930.json",
-      "sha256": "c9fd9250212966fa4e82b813d296f78360f58b98b434a43f4c7ec49eaff7c3b7",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "file": "posture/posture-detail-DEU.d077f506.json",
+      "sha256": "7d7d275e4b430215e78dc0a3a23be58bb6f2b31ede8ad8e6a25957fecc10a522",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     },
     {
-      "file": "posture/posture-detail-IND.14b999fb.json",
-      "sha256": "4f5de71af635817023afc1d9b2f12529571a177e4222e27e19a4ffb8d1671b2f",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "file": "posture/posture-detail-IND.075bff28.json",
+      "sha256": "6f1fb2a57afc9ee8736d3ed30d99d8bef36935df9b2ad0f2f54c912f85c14c2c",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     },
     {
-      "file": "posture/posture-detail-JPN.407b0ab2.json",
-      "sha256": "d60bc93009748debd66754c1ce642eeadfa3d09093a0503fff3473a4b011e436",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "file": "posture/posture-detail-JPN.45b083cb.json",
+      "sha256": "7d4fc6f9840b9394a0c95123dc4bb74576c16b71d4d7351974a9ce9f191bdde6",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     },
     {
-      "file": "posture/posture-detail-KOR.d1ed7c09.json",
-      "sha256": "73daee70c5160ce04999c8feac4ad739c2c0432932853c52457ec9caa4f553f2",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "file": "posture/posture-detail-KOR.191b2de3.json",
+      "sha256": "0cc87d6bf32034c199ddb0bdae4473c2b41b51e5fdf6d6da1374aaa103d2778e",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     },
     {
-      "file": "posture/posture-detail-USA.41065b83.json",
-      "sha256": "32b81db085fedd91df7b4ea17d26f92542be950f6dab4f7a500c3c4b2747f847",
-      "created": "2026-11-21T17:46:30Z",
-      "git_commit": "17f0737e"
+      "file": "posture/posture-detail-USA.cb678ff7.json",
+      "sha256": "d4c0588110cdffc77acab263dc0c966113bd91e04750a1dfecbe2b21fc87cfab",
+      "created": "2026-11-26T05:25:51Z",
+      "git_commit": "fed21e77"
     }
   ],
   "qc": {
     "status": {
-      "pass": 32,
+      "pass": 31,
       "warn": 7,
-      "fail": 0,
+      "fail": 1,
       "info": 5
     },
     "reproduction": {
@@ -269,8 +269,8 @@
       "rate": 1
     },
     "golden": {
-      "pass": 36,
-      "fail": 0,
+      "pass": 34,
+      "fail": 2,
       "missing": 0,
       "not_applicable": 0
     }

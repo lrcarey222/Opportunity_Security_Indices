@@ -41,7 +41,7 @@ export function NodeRobustness({
     return (
       <>
         {rows}
-        <p className="text-xs text-paper-mute">This export has no variant classes or growth-bound sensitivity for this node.</p>
+        <p className="text-xs text-paper-mute">This export has no variant classes or growth-bound sensitivity for this supply-chain step.</p>
         {block}
       </>
     );
@@ -73,7 +73,7 @@ export function NodeRobustness({
                       {v.notRun ? (
                         <span
                           className="text-paper-mute"
-                          title="The scenario runs only for a node more concentrated than its benchmark with a supplier above the cap in the allied market"
+                          title="The scenario runs only for a supply-chain step more concentrated than its benchmark with a supplier above the cap in the allied market"
                           data-testid="variant-not-run"
                         >
                           not run

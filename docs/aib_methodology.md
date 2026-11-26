@@ -58,7 +58,7 @@ worth preserving, no compact needed, several compacts in one technology.
 | Friendshore, investor/buyer -> host | `partner_friendshore_tbl.rds`, variable `Friendshore Index` |
 | Production / capacity shares | `major_supplier_shares_tbl.rds` (IEA refining and mining), GCIM operational capacity |
 | Policy / climate | IEA PAMS (`policy_outputs.rds$policy_agg`), CAT ratings (`cat_prepare_ratings()`, `partnership_strength_clean_policy()`) |
-| Coalition (the default demand scope: core and partner tiers) | `coalition_tbl.rds` |
+| Coalition (the default demand scope: core and partner tiers, plus `treat_as_allied` since 2026-11-25) | `coalition_tbl.rds`, `config/aib_strategic_layer.yml` |
 | LP solver | GLPK via Rglpk (installed with the allied network's MILP stack) |
 
 The allied network design is normative and closed (index scores, no USD, no shocks, no sub-sector
@@ -254,8 +254,8 @@ benchmark. They have no class under the scenario.
 **Demand scope and candidate-partner universe** are separate (`demand_scope`,
 `candidate_partner_universe`; modes `configured` (a list), `coalition` (tiers of `coalition_tbl.rds`)
 or `global`; `--demand-scope` / `--partner-universe` override them). The **demand scope** is the set of
-importers whose lost supply is restored (default: the allied core and partner tiers, 57 economies,
-less the shocked economy); coverage is the share of their baseline traded demand served after the
+importers whose lost supply is restored (default: the trusted network, less the shocked economy; see the
+note below); coverage is the share of their baseline traded demand served after the
 shock and shock exposure the share lost. The **candidate partners** are the exporters that may open,
 expand or redirect relationships toward the scope (default: every economy) with at least USD 1m
 **and** 0.05% of the node's world exports (the larger bar binds); smaller exporters, and exporters
@@ -266,6 +266,16 @@ economy's other customers, as the AIB's problem. Open ship registries (Liberia, 
 Panama, the Bahamas; `trade.exclude_from_universe`) are in neither set: vessels (HS 89, tankers and
 platforms in the Oil and Gas baskets) trade through the flag they fly, so those economies appear as
 large importers and exporters of ships. Their shipments stay as observed.
+
+**One allied set (2026-11-25, user decision: "allied" is the 64-economy trusted network, always the same
+coalition).** `demand_scope: include_treat_as_allied: true` makes a `coalition` demand scope also take
+`config/aib_strategic_layer.yml` `allied.treat_as_allied` (Taiwan, Switzerland, Slovenia, Iceland, the UAE),
+the one file that keeps that list (`R/aib/aib_scope.R` `aib_resolve_set()`; scripts/32 reads the list and
+records the protected set in `meta$demand_iso` and the economies it added in `meta$demand_treat_as_allied`).
+The demand scope is then the coalition's 31 core and 28 partner economies plus those five: 64, the same set
+that holds the AIB roles (the strategic layer takes its allied set from `meta$demand_iso`, so the two can no
+longer differ). Before, their own demand stayed outside the scope (59 economies; 57 in the October runs) and
+they held no demand role. The candidate-partner universe is unchanged (global).
 
 **Supply scenarios**, kept apart in every output:
 
@@ -1230,7 +1240,8 @@ scenario (`aib_strategic_portfolio()`):
   with a compact role of largest relevance, 16.6). The institutional slots are the scenario's, from the
   coalitions of the compact's workstreams (Managed Interdependence and Decoupling only), restricted to
   the allied set (the demand scope plus `allied.treat_as_allied`, Taiwan and Switzerland; 2026-10-21
-  review): `coalition_members` (allied minimum-coalition members), `critical_supply_partners` (allied
+  review; since 2026-11-25 the demand scope already holds `treat_as_allied`, so the allied set is the demand
+  scope): `coalition_members` (allied minimum-coalition members), `critical_supply_partners` (allied
   critical partners with >= 5% of world supply of a node of the compact), `critical_external_dependencies`
   (non-allied only), `allied_outside_core` (allied economies a workstream lists as a critical external
   dependency that are in no core coalition of the compact and are not among its `core_countries`),

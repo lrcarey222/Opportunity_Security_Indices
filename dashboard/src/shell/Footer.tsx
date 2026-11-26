@@ -78,6 +78,9 @@ export function Footer() {
           <Link className="link" to="/glossary">
             Glossary
           </Link>
+          <Link className="link" to="/how-to-use">
+            How to use
+          </Link>
           <a className="link" href="https://neiscenter.org">
             neiscenter.org
           </a>

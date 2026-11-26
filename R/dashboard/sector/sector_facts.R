@@ -675,6 +675,40 @@ sector_facts_mfg <- function(fd, mss, eu_members) {
     list(world = world, notes = dplyr::bind_rows(na, nb)))
 }
 
+# Operational manufacturing capacity of one product per stage (CIM), the country-level capacity
+# measure of the stages where the IEA gives none (Solar Refining: polysilicon) or one share per
+# technology that Components and Assembly both carry (manufacturing.share_now, same_figure_pair).
+# Explorer usability pass, 2026-11-25: Solar Refining led with export value, where Germany led and
+# China held 9%, against China's ~97% of polysilicon capacity. One product per cell, so units never
+# mix and a cell's figure is never another cell's: polysilicon (Refining), wafers (Components; cells,
+# the other Components product, stay in manufacturing.capacity), modules (Assembly); battery cells
+# (Components; electrode active materials are in kt) and modules (Assembly). Values are the
+# operational rows of sector_cim_capacity() verbatim (CIM's "current operational" plus "operational
+# yet to come online", 2025), in the product's unit; the share is of the economies CIM lists
+# (world_basis sum_listed). capacity: the output of sector_cim_capacity().
+SECTOR_CIM_SHARE_PRODUCTS <- c(`solar-refining` = "Polysilicon", `solar-components` = "Wafers", `solar-assembly` = "Modules",
+                               `batteries-components` = "Cells", `batteries-assembly` = "Modules")
+SECTOR_CIM_SHARE_UNITS <- c(GW = "gw", GWh = "gwh")
+sector_facts_cim_capacity <- function(capacity, products = SECTOR_CIM_SHARE_PRODUCTS) {
+  op <- capacity[capacity$cap_status == "operational", , drop = FALSE]
+  cell <- sub("^cell:", "", op$item_key)
+  out <- list()
+  units <- list()
+  for (cl in names(products)) {
+    x <- op[cell == cl & op$product == products[[cl]], , drop = FALSE]
+    if (!nrow(x) || !any(x$value > 0)) stop("CIM capacity facts: no operational ", products[[cl]], " capacity at ", cl)
+    if (anyDuplicated(x$geo)) stop("CIM capacity facts: an economy listed twice for ", products[[cl]], " at ", cl)
+    u <- unique(x$unit)
+    if (length(u) != 1 || !u %in% names(SECTOR_CIM_SHARE_UNITS)) stop("CIM capacity facts: unit ", paste(u, collapse = ", "), " of ", products[[cl]], " at ", cl)
+    x <- x[order(x$geo), , drop = FALSE]
+    out[[cl]] <- tibble::tibble(var = "manufacturing.capacity_now", item_key = paste0("cell:", cl), geo = x$geo, year = as.integer(x$year),
+                                value = as.double(x$value), status = ifelse(x$value == 0, "zero", "obs"), obs_year = NA_integer_)
+    units[[cl]] <- tibble::tibble(var = "manufacturing.capacity_now", item_key = paste0("cell:", cl), unit = unname(SECTOR_CIM_SHARE_UNITS[u]),
+                                  product = products[[cl]])
+  }
+  c(sector_result(dplyr::bind_rows(out)), list(units = dplyr::bind_rows(units)))
+}
+
 # The IEA EV region measures and the cell each is filed at in market_share_manufacturing_tbl:
 # production and the net-export ratio at Assembly (vehicle plants), sales at Deployment (the series
 # of sector_iea_ev_series() follow the same cells; scripts/87 checks facts and series agree).

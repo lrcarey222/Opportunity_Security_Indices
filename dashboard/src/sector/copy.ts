@@ -95,11 +95,31 @@ export const CONTROL_LAYER_ECONOMY_NOTE = CONTROL_LAYER_NOTE_ECONOMY;
  * figures come from the shipped AIB nodes and the chain ladder (views/Bottlenecks.tsx).
  */
 export const BOTTLENECKS = {
-  title: 'Where are the real bottlenecks?',
-  /** the fallback list's label: concentration says who holds supply, not whether it could be replaced */
-  concentrationOnly: 'Most concentrated measures (concentration only: who holds the most supply, not whether it could be replaced):',
+  /** a modelled result of the Allied Industrial Base analysis, shown under the observed answer (usability pass, 2026-11-25) */
+  title: 'What the stress test adds',
+  /** the list's disclosure */
+  details: (n: number): string => `The ${n === 1 ? 'step' : `${n} steps`} that need action, and why`,
+  aibLink: 'Allied Industrial Base analysis',
   loading: 'Loading the stress-test results…',
+  failed: 'The stress-test results are not available.',
 } as const;
+
+/**
+ * "What matters in this supply chain?" on a technology's chain page (usability pass, 2026-11-25): the row
+ * labels of the answer block (views/ChainAnswer.tsx); the sentences come from derive/answer.ts.
+ */
+export const CHAIN_ANSWER = {
+  basis: 'Observed shares of each measure in the chart below: who holds supply today, not a model result.',
+  concentration: 'Where supply is concentrated',
+  strongest: 'Strongest positions',
+  implication: 'What stands out',
+  limits: 'Evidence limits',
+  affordability: 'Affordability & deployment',
+  loading: 'Loading the measures…',
+} as const;
+
+/** "Who is strongest today?" on a stage profile (usability pass, 2026-11-25; derive/answer.ts strongestSentence). */
+export const STRONGEST_TITLE = 'Who is strongest today?';
 
 /**
  * One plain line on what a concentration index value means (HHI bands; views/HhiExplainer.tsx hhiBand reads

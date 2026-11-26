@@ -131,7 +131,7 @@ describe('ShareSplitChart and BlocBar', () => {
     expect(proj.style.background).toBe('transparent');
     expect(proj.style.border).toMatch(/2px solid/);
     // rows read in words; a row with a link links; others call onRowClick once
-    expect(screen.getByRole('row', { name: /Exports 2024: China 43\.7%, Coalition core 37\.9%/ })).toBeTruthy();
+    expect(screen.getByRole('row', { name: /Exports 2024: China 43\.7%, Trusted core 37\.9%/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Investment 2025' }).getAttribute('href')).toBe('/sector/batteries/assembly#investment');
     fireEvent.click(screen.getByRole('button', { name: 'Exports 2024' }));
     expect(onRow).toHaveBeenCalledTimes(1);

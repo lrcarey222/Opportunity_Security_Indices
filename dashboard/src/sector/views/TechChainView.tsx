@@ -1,20 +1,23 @@
 // Technology chain /sector/:tech (spec_sector.md 4.2): the whole supply chain of one technology and
-// where in it concentration sits, at the six stages. Conclusions first (external review readiness,
-// 2026-11-23): "Where are the real bottlenecks?" (./Bottlenecks.tsx, from the AIB nodes ChainNav already
-// loads), then (a) the chain concentration ladder (hidden when the technology has no row) (one share-split
-// row per country-level measure, grouped by stage in chain order, plus the mining of the minerals the
-// technology uses under Extraction and their refining under Refining, design C3), the chain navigator,
-// (b) the stage cards (three by two on wide screens; the stages without comparable country-level evidence
-// said once, in one line under the grid, instead of one empty card each), (c) the codes kept out of the technology's trade baskets (listed for
-// the technology: they have no stage, design C6), (d) the minerals this technology uses (IEA demand,
-// observed vs 2040 STEPS).
+// where in it concentration sits, at the six stages. Conclusion first (usability pass, 2026-11-25):
+// "What matters in this supply chain?" (./ChainAnswer.tsx: the largest holder at each stage, the strongest
+// positions, the most concentrated measure and the evidence limits, read from the observed rows of the
+// concentration ladder below, plus one "Affordability & deployment" row), then the stress test's modelled
+// result, demoted to one linked line with its steps behind a disclosure (./Bottlenecks.tsx, the AIB nodes
+// ChainNav already loads), then (a) the chain concentration ladder (hidden when the technology has no row)
+// (one share-split row per country-level measure, grouped by stage in chain order, plus the mining of the
+// minerals the technology uses under Extraction and their refining under Refining, design C3), the chain
+// navigator, (b) the stage cards (three by two on wide screens; the stages without comparable country-level
+// evidence said once, in one line under the grid, instead of one empty card each), (c) the codes kept out of
+// the technology's trade baskets (listed for the technology: they have no stage, design C6), (d) the
+// minerals this technology uses (IEA demand, observed vs 2040 STEPS).
 
 import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Redirect } from '../../shell/Redirect.tsx';
 import { TableView } from '../../components/TableView.tsx';
 import { PageHead } from '../../components/ui.tsx';
-import { CHAIN_QUESTION, NO_EVIDENCE } from '../copy.ts';
+import { NO_EVIDENCE } from '../copy.ts';
 import { rowsToCsv } from '../../lib/csv.ts';
 import { useTitle } from '../../shell/title.ts';
 import { GROUP_COLOR } from '../../theme/palette.ts';
@@ -23,7 +26,9 @@ import { useModel, useSectorManifest } from '../data/SectorDataProvider.tsx';
 import type { ItemInfo, SectorModel, VarInfo } from '../data/model.ts';
 import type { FactsIndex } from '../data/facts.ts';
 import { countryFamilies, coverageChips, familyMeasure, primaryMeasure } from '../derive/cells.ts';
-import { growthKindWords, growthWords } from '../derive/concentration.ts';
+import { growthKindWords, growthWords, type Concentration } from '../derive/concentration.ts';
+import { theName } from '../derive/text.ts';
+import { bandApplies, type ChainLine } from '../derive/answer.ts';
 import { lc, fmtShare, listText } from '../format.ts';
 import { fmtFact, HowToRead, markGroup, measureConc, SPLIT_COLUMNS, shareSplitRow, useHighlight } from './common.tsx';
 import { EXCLUDED_WORDS, excludedCodes } from '../derive/trade.ts';
@@ -34,7 +39,8 @@ import { MINERAL_STEP } from '../derive/minerals.ts';
 import { CoverageChips, Dumbbell, GroupLegend, SectorChartCard, ShareSplitChart, type CoverageChip, type DumbbellRow, type ShareSplitRow, type VarRef } from './kit.tsx';
 import { useSectorUrl } from './state.tsx';
 import { ChainNav } from './ChainNav.tsx';
-import { Bottlenecks, type ConcentrationLine } from './Bottlenecks.tsx';
+import { Bottlenecks } from './Bottlenecks.tsx';
+import { ChainAnswer } from './ChainAnswer.tsx';
 import { hhiBand } from './HhiExplainer.tsx';
 
 /**
@@ -43,7 +49,7 @@ import { hhiBand } from './HhiExplainer.tsx';
  * coalition). The generic wording is common.tsx SPLIT_READING.
  */
 const CHAIN_SPLIT_READING =
-  'Each bar is one measure, split by who holds it: China (the major supplier in the stress test), the coalition core, coalition partners, the rest of the world and the part the source does not assign to any economy. The longer a segment, the larger that group’s share; the columns beside it name the largest holder and give the top-three share and the concentration index.';
+  'Each bar is one measure, split by who holds it: China (the major supplier in the stress test), the coalition core and coalition partners (the two tiers of the trusted network), the rest of the world and the part the source does not assign to any economy. The longer a segment, the larger that group’s share; the columns beside it name the largest holder and give the top-three share and the concentration index.';
 
 interface LadderRow {
   row: ShareSplitRow;
@@ -79,56 +85,96 @@ export function chipsOf(model: SectorModel, cell: ItemInfo, href: (section: stri
   }));
 }
 
-function useLadder(tech: TechSlug, facts: FactsIndex | null): LadderRow[] {
+/** One observed row of the chain ladder before it is drawn (ladderEntries). */
+export interface LadderEntry {
+  id: string;
+  label: string;
+  v: VarInfo;
+  item: ItemInfo;
+  year: number;
+  conc: Concentration;
+  stage: StageSlug;
+  /** the row in running text: "Refining exports", "lithium refining" */
+  words: string;
+  /** a mineral row (it links to the mineral's page) */
+  mineral: boolean;
+  section: string;
+}
+
+/**
+ * The chain ladder's rows (pure): one per country-level measure with a world total at each stage, in chain
+ * order, plus the mining of the minerals the technology uses under Extraction and their refining under
+ * Refining (base year).
+ */
+export function ladderEntries(model: SectorModel, facts: FactsIndex | null, tech: TechSlug, eu: 'members' | 'bloc'): LadderEntry[] {
+  const out: LadderEntry[] = [];
+  for (const stage of STAGE_SLUGS) {
+    const cell = model.cell(tech, stage);
+    if (!cell) continue;
+    for (const f of countryFamilies(model, cell)) {
+      const cm = familyMeasure(model, cell, f);
+      if (!cm || cm.v.world_basis === 'none') continue;
+      const { v, item } = cm;
+      const year = baseYear(model, facts, v, item, eu);
+      if (year === null) continue;
+      const m = measureConc(model, facts, v, item, year, eu);
+      if (!m || m.conc.W === null) continue;
+      const label = `${STAGE_LABELS[stage]} ${lc(v.short)}`;
+      out.push({ id: `${cell.slug}|${v.id}`, label, v, item, year, conc: m.conc, stage, words: label, mineral: false, section: FAMILY_SECTION[f] ?? 'snapshot' });
+    }
+    // the minerals this technology uses: their mining under Extraction, their refining under Refining (base year)
+    const step = MINERAL_STEP[stage];
+    const v = step ? model.varById.get(step.id) : undefined;
+    if (step && v) {
+      for (const { item: mineral } of model.itemsOfCell(cell.idx, 'mineral')) {
+        const year = baseYear(model, facts, v, mineral, eu);
+        if (year === null) continue;
+        const m = measureConc(model, facts, v, mineral, year, eu);
+        if (!m || m.conc.W === null) continue;
+        out.push({ id: `${mineral.slug}|${step.id}`, label: `${mineral.label} ${step.words}`, v, item: mineral, year, conc: m.conc, stage, words: `${lc(mineral.label)} ${step.words}`, mineral: true, section: stage });
+      }
+    }
+  }
+  return out;
+}
+
+/** The ladder rows as the chain answer reads them (the observed supplier-share rows; derive/answer.ts). */
+export function chainLinesOf(model: SectorModel, entries: readonly LadderEntry[]): ChainLine[] {
+  return entries.map((e) => {
+    const g = e.conc.top1 ? model.geos[e.conc.top1.geo] : null;
+    // "Components capacity share" reads "components capacity": the sentence already gives a share
+    const words = e.words.replace(/ share$/, '');
+    return {
+      stage: e.stage,
+      words: words.charAt(0).toLowerCase() + words.slice(1),
+      holders: e.conc.n,
+      top1Name: g ? theName(g) : null,
+      top1Share: e.conc.top1?.share ?? null,
+      top1Economy: !!g && (g.kind === 'country' || g.kind === 'eu'),
+      year: e.year,
+      family: e.v.family,
+    };
+  });
+}
+
+function useLadder(tech: TechSlug, facts: FactsIndex | null): { rows: LadderRow[]; entries: LadderEntry[] } {
   const model = useModel();
   const { state, link } = useSectorUrl();
   const highlight = useHighlight(model);
   return useMemo(() => {
-    const out: LadderRow[] = [];
-    for (const stage of STAGE_SLUGS) {
-      const cell = model.cell(tech, stage);
-      if (!cell) continue;
-      for (const f of countryFamilies(model, cell)) {
-        const cm = familyMeasure(model, cell, f);
-        if (!cm || cm.v.world_basis === 'none') continue;
-        const { v, item } = cm;
-        const year = baseYear(model, facts, v, item, state.eu);
-        if (year === null) continue;
-        const m = measureConc(model, facts, v, item, year, state.eu);
-        if (!m || m.conc.W === null) continue;
-        const section = FAMILY_SECTION[f] ?? 'snapshot';
-        out.push({
-          row: shareSplitRow(model, v, item, m.conc, { id: `${cell.slug}|${v.id}`, label: `${STAGE_LABELS[stage]} ${lc(v.short)}`, year, highlight, href: link(`/sector/${tech}/${stage}`, {}, section), section: stage }),
-          ref: { var: v.id, item: item.slug, year },
-          china: m.conc.split.china,
-          stage,
-          words: `${STAGE_LABELS[stage]} ${lc(v.short)}`,
-          top1Name: m.conc.top1 ? model.geos[m.conc.top1.geo].name : null,
-          top1Share: m.conc.top1?.share ?? null,
-        });
-      }
-      // the minerals this technology uses: their mining under Extraction, their refining under Refining (base year)
-      const step = MINERAL_STEP[stage];
-      const v = step ? model.varById.get(step.id) : undefined;
-      if (step && v) {
-        for (const { item: mineral } of model.itemsOfCell(cell.idx, 'mineral')) {
-          const year = baseYear(model, facts, v, mineral, state.eu);
-          if (year === null) continue;
-          const m = measureConc(model, facts, v, mineral, year, state.eu);
-          if (!m || m.conc.W === null) continue;
-          out.push({
-            row: shareSplitRow(model, v, mineral, m.conc, { id: `${mineral.slug}|${step.id}`, label: `${mineral.label} ${step.words}`, year, highlight, href: link(`/sector/minerals/${mineral.slug}`), section: stage }),
-            ref: { var: v.id, item: mineral.slug, year },
-            china: m.conc.split.china,
-            stage,
-            words: `${lc(mineral.label)} ${step.words}`,
-            top1Name: m.conc.top1 ? model.geos[m.conc.top1.geo].name : null,
-            top1Share: m.conc.top1?.share ?? null,
-          });
-        }
-      }
-    }
-    return out;
+    const entries = ladderEntries(model, facts, tech, state.eu);
+    const rows = entries.map(
+      (e): LadderRow => ({
+        row: shareSplitRow(model, e.v, e.item, e.conc, { id: e.id, label: e.label, year: e.year, highlight, href: e.mineral ? link(`/sector/minerals/${e.item.slug}`) : link(`/sector/${tech}/${e.stage}`, {}, e.section), section: e.stage }),
+        ref: { var: e.v.id, item: e.item.slug, year: e.year },
+        china: e.conc.split.china,
+        stage: e.stage,
+        words: e.words,
+        top1Name: e.conc.top1 ? model.geos[e.conc.top1.geo].name : null,
+        top1Share: e.conc.top1?.share ?? null,
+      }),
+    );
+    return { rows, entries };
   }, [model, tech, facts, state.eu, highlight, link]);
 }
 
@@ -169,7 +215,8 @@ function StageCard({ tech, stage, facts }: { tech: TechSlug; stage: StageSlug; f
   if (!cell) return null;
   const sm = stageMeasure(model, facts, cell, state.eu);
   const top3 = sm?.m.fromFacts ? sm.m.conc.rows.slice(0, 3) : [];
-  const band = sm ? hhiBand(sm.m.conc.hhi, sm.m.conc.hhi_lower_bound, model.hhiRefs) : null;
+  // the band says how spread out supply is: only for a supply measure with enough holders to compare (bandApplies)
+  const band = sm && bandApplies(sm.v, sm.m.conc) ? hhiBand(sm.m.conc.hhi, sm.m.conc.hhi_lower_bound, model.hhiRefs) : null;
   return (
     <article className="panel flex h-full flex-col border-t-[3px] border-t-ink-500 p-4" aria-labelledby={`stage-${stage}`}>
       <h3 id={`stage-${stage}`} className="text-lg font-medium text-paper">
@@ -344,10 +391,11 @@ export default function TechChainView() {
   const tech = raw && isTechSlug(raw) ? raw : null;
   useTitle(tech ? `${TECH_LABELS[tech]}: the supply chain` : 'Sectors', 'Sector Insights');
   const { facts } = useFacts();
-  const ladder = useLadder((tech ?? 'batteries') as TechSlug, facts);
+  const { rows: ladder, entries } = useLadder((tech ?? 'batteries') as TechSlug, facts);
   const highlight = useHighlight(model);
   const navigate = useNavigate();
   const evidence = useMemo(() => stageEvidence(model, facts, (tech ?? 'batteries') as TechSlug, state.eu, manifest.data?.coverage_glyph), [model, facts, tech, state.eu, manifest.data]);
+  const lines = useMemo(() => chainLinesOf(model, entries), [model, entries]);
   if (!tech) return <Redirect to="/sector" notice={`No sector called '${raw}'; showing all sectors.`} />;
   const blurb = model.techText.get(tech)?.tech_blurb ?? `${TECH_LABELS[tech]} from raw materials to deployment.`;
   const stages = STAGE_SLUGS.filter((s) => model.cell(tech, s));
@@ -356,20 +404,12 @@ export default function TechChainView() {
     .sort((a, z) => z.china - a.china)
     .slice(0, 3)
     .map((r) => `${fmtShare(r.china)} of ${r.words}`);
-  const fallback: ConcentrationLine[] = ladder.map((r) => ({ id: r.row.id, label: r.row.label, stage: r.stage, top1Name: r.top1Name, top1Share: r.top1Share, china: r.china, href: r.row.href }));
   return (
     <div className="space-y-8">
-      <PageHead
-        eyebrow="SECTORS · TECHNOLOGY"
-        title={`${TECH_LABELS[tech]}: the supply chain`}
-        lede={
-          <>
-            <span className="block font-medium text-paper">{CHAIN_QUESTION}</span>
-            {blurb}
-          </>
-        }
-      />
-      <Bottlenecks tech={tech} fallback={fallback} />
+      <PageHead eyebrow="SECTORS · TECHNOLOGY" title={`${TECH_LABELS[tech]}: the supply chain`} lede={blurb} />
+      {/* conclusion first: the observed answer, then the stress test's modelled result (demoted), then the evidence */}
+      <ChainAnswer tech={tech} lines={lines} without={evidence.without} loading={facts === null} />
+      <Bottlenecks tech={tech} />
       {/* no row once the facts have loaded: the card is left out (the stage line below says what is missing) */}
       {(ladder.length > 0 || facts === null) && (
         <SectorChartCard

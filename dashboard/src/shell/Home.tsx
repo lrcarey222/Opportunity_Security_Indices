@@ -1,9 +1,11 @@
 // Home (IA refactor 2026-10-16; before it spec_sector.md 2.1, spec_country.md A2.3; the NEIS copy refresh
 // 2026-10-30): the Explorer's strategic question ("Where should countries build, partner and rely on allies?",
-// content/vocabulary.ts MODULE_QUESTION.home) and three entry points (a Sector, a Country, the Allied Industrial
-// Base), each led by the question it answers; the Allied Industrial Base in one line; the strategic questions; then
-// (demoted below them, 2026-11-23) a quick way straight to a sector, a mineral or a country, and one quiet line to the
-// Sector Advanced explorer. Every sentence another page also says
+// content/vocabulary.ts MODULE_QUESTION.home) and four entry points (usability pass, 2026-11-25: a Sector, a
+// Country, partnership opportunities and a compact; before it three, the third the Allied Industrial Base), each
+// card one question and one line on what to do there, so no reader needs the term "Allied Industrial Base" to
+// start; the Allied Industrial Base in one line with a link to its overview; the strategic questions; then
+// (demoted below them, 2026-11-23) a quick way straight to a sector, a mineral or a country, one quiet line to the
+// Sector Advanced explorer and one to How to use the Explorer. Every sentence another page also says
 // comes from the shared vocabulary.
 // It renders with no data request before idle and never touches the engine:
 //   * on idle (1.5 s fallback; skipped under Save-Data) it fetches data/sector/manifest.json (the
@@ -11,7 +13,7 @@
 //     and layout chunk (so the Country landing is instant and the country picker fills; never a fact
 //     sheet);
 //   * pointer-enter, focus or touch on the Country card prefetches the Country chunk and manifest; on
-//     the Allied Industrial Base card, its chunk and manifest (never the compacts document).
+//     the partnership and compact cards, the Allied Industrial Base chunk and manifest (never the compacts document).
 // A failed prefetch is silent: the questions show without facts, the glyph is omitted and the country
 // picker is replaced by a link to all countries.
 
@@ -179,26 +181,32 @@ function CoverageStepsGlyph() {
   );
 }
 
-type EntryId = 'sector' | 'country' | 'aib';
+type EntryId = 'sector' | 'country' | 'partnership' | 'compact';
 
 interface CardSpec {
   id: EntryId;
+  /** a short tag above the title */
+  tag: string;
   title: string;
-  /** the question the module answers (brief s.1) */
+  /** the question the card answers (one line) */
   question: string;
-  lede: string;
-  /** a line beside the glyph (the Sector card counts its cells instead) */
+  /** what to do there (one line) */
+  action: string;
+  /** a line beside the glyph (the Sector card counts its cells instead; empty: no glyph) */
   glyphNote: string;
   links: { to: string; label: string }[];
-  /** the call to action, to the module's landing page */
+  /** the call to action, to the entry's landing page */
   button: string;
+  /** the landing page */
+  home: string;
 }
 
 const SECTOR_CARD: CardSpec = {
   id: 'sector',
+  tag: moduleInfo('sector').tag,
   title: 'Explore a Sector',
   question: MODULE_QUESTION.sector,
-  lede: 'Follow a technology through the supply chain. See who leads, where supply is concentrated, which capabilities matter strategically, and where policy or allied action could change the outcome.',
+  action: 'Pick a technology, scan its whole supply chain, then open a step to see who is strongest.',
   glyphNote: '',
   links: [
     { to: '/sector/solar/assembly', label: 'Solar — Assembly' },
@@ -206,13 +214,15 @@ const SECTOR_CARD: CardSpec = {
     { to: '/sector/concentration', label: 'Where are the chokepoints?' },
   ],
   button: 'Explore sectors',
+  home: moduleInfo('sector').home,
 };
 
 const COUNTRY_CARD: CardSpec = {
   id: 'country',
+  tag: moduleInfo('country').tag,
   title: 'Explore a Country',
   question: MODULE_QUESTION.country,
-  lede: 'See what the country needs, where it has a real industrial opportunity, how strong its current position is, and whether policy is focused on the right places.',
+  action: 'Pick a country to see its recommended choice at each supply-chain step, and why.',
   glyphNote: 'A six-stage strategy map: what to secure, preserve, catch up in, partner for, accelerate or leave open.',
   links: [
     { to: '/countries/JPN', label: 'Japan' },
@@ -220,69 +230,84 @@ const COUNTRY_CARD: CardSpec = {
     { to: '/countries/USA', label: 'United States' },
   ],
   button: 'Explore countries',
+  home: moduleInfo('country').home,
 };
 
-const AIB_CARD: CardSpec = {
-  id: 'aib',
-  title: 'Explore the Allied Industrial Base',
-  question: MODULE_QUESTION.aib,
-  lede: 'See which dependencies need trusted alternatives, which countries are best placed to specialize, where trade can solve the problem, and where partners still need to build new capacity.',
-  glyphNote: "Who supplies what, where allies should act together, and each country's role",
+// The partnership and compact cards (usability pass, 2026-11-25): two plain entries into the Allied Industrial Base
+// analysis, so a reader does not need the term to start; the term stays in the line under the cards.
+const PARTNERSHIP_CARD: CardSpec = {
+  id: 'partnership',
+  tag: 'WHO SHOULD WORK WITH WHOM',
+  title: 'Explore Partnership Opportunities',
+  question: MODULE_QUESTION.partnerships,
+  action: 'Pick a country and a partner to see where their capabilities fit and what working together would solve.',
+  glyphNote: '',
   links: [
-    { to: '/aib/partnerships', label: 'Who should work with whom?' },
-    { to: '/compacts', label: 'Which bottlenecks justify a Sectoral Compact?' },
     { to: '/aib/roles', label: 'What should each country contribute?' },
+    { to: '/aib/agreements', label: 'Which agreements already link two countries?' },
   ],
-  button: 'Explore the Allied Industrial Base',
+  button: 'Explore partnerships',
+  home: '/aib/partnerships',
 };
 
-/** The three entry points (brief s.4): a Sector, a Country, the Allied Industrial Base. */
-export const MODULE_CARDS: readonly CardSpec[] = [SECTOR_CARD, COUNTRY_CARD, AIB_CARD];
+const COMPACT_CARD: CardSpec = {
+  id: 'compact',
+  tag: 'JOINT ACTION ON A BOTTLENECK',
+  title: 'Explore a Compact',
+  question: 'Which bottlenecks need a few countries to act together?',
+  action: 'Pick a bottleneck to see who contributes what, and what gap remains.',
+  glyphNote: 'Supply kept by today’s partners, then coordinated trade, then new capacity',
+  links: [{ to: '/aib', label: 'Where does coordination change the outcome?' }],
+  button: 'Explore compacts',
+  home: '/compacts',
+};
+
+/** The four entry points (usability pass, 2026-11-25): a Sector, a Country, a partnership, a compact. */
+export const MODULE_CARDS: readonly CardSpec[] = [SECTOR_CARD, COUNTRY_CARD, PARTNERSHIP_CARD, COMPACT_CARD];
 
 function cardPrefetch(id: EntryId) {
   if (id === 'country') return { onPointerEnter: prefetchCountry, onFocus: prefetchCountry, onTouchStart: prefetchCountry };
-  if (id === 'aib') return { onPointerEnter: prefetchAib, onFocus: prefetchAib, onTouchStart: prefetchAib };
+  if (id === 'partnership' || id === 'compact') return { onPointerEnter: prefetchAib, onFocus: prefetchAib, onTouchStart: prefetchAib };
   return {};
+}
+
+function CardGlyph({ spec, manifest }: { spec: CardSpec; manifest: SectorManifest | null }) {
+  if (spec.id === 'sector') {
+    if (!manifest) return null;
+    const nCells = manifest.coverage_glyph.filter((g) => g.country_data).length;
+    return (
+      <div className="mt-5 flex min-h-11 items-center gap-4">
+        <CoverageGlyph glyph={manifest.coverage_glyph} />
+        <span className="text-xs text-paper-mute">
+          Country-level data for {nCells} of {manifest.coverage_glyph.length} technology-and-stage combinations
+        </span>
+      </div>
+    );
+  }
+  if (!spec.glyphNote) return null;
+  return (
+    <div className="mt-5 flex min-h-11 items-center gap-4">
+      {spec.id === 'country' ? <StrategyMapGlyph /> : <CoverageStepsGlyph />}
+      <span className="text-xs text-paper-mute">{spec.glyphNote}</span>
+    </div>
+  );
 }
 
 function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManifest | null }) {
   const id = useId();
   const prefetch = cardPrefetch(spec.id);
-  const info = moduleInfo(spec.id);
-  const nCells = manifest ? manifest.coverage_glyph.filter((g) => g.country_data).length : 0;
   return (
-    <article className="card flex flex-col p-6" aria-labelledby={`${id}-t`} {...prefetch}>
-      {/* the tag sits above the title so the three cards' questions line up */}
+    <article className="card flex flex-col p-6" aria-labelledby={`${id}-t`} data-entry={spec.id} {...prefetch}>
+      {/* the tag sits above the title so the cards' questions line up */}
       <div className="flex flex-col items-start gap-3">
-        <span className="tag uppercase tracking-wider">{info.tag}</span>
+        <span className="tag uppercase tracking-wider">{spec.tag}</span>
         <h2 id={`${id}-t`} className="text-2xl font-medium text-paper">
           {spec.title}
         </h2>
       </div>
       <p className="mt-3 text-base text-paper">{spec.question}</p>
-      <p className="mt-2 text-sm leading-relaxed text-paper-dim">{spec.lede}</p>
-      <div className="mt-5 flex min-h-11 items-center gap-4">
-        {spec.id === 'country' ? (
-          <>
-            <StrategyMapGlyph />
-            <span className="text-xs text-paper-mute">{spec.glyphNote}</span>
-          </>
-        ) : spec.id === 'aib' ? (
-          <>
-            <CoverageStepsGlyph />
-            <span className="text-xs text-paper-mute">{spec.glyphNote}</span>
-          </>
-        ) : (
-          manifest && (
-            <>
-              <CoverageGlyph glyph={manifest.coverage_glyph} />
-              <span className="text-xs text-paper-mute">
-                Country-level data for {nCells} of {manifest.coverage_glyph.length} technology-and-stage combinations
-              </span>
-            </>
-          )
-        )}
-      </div>
+      <p className="mt-2 text-sm leading-relaxed text-paper-dim">{spec.action}</p>
+      <CardGlyph spec={spec} manifest={manifest} />
       <ul className="mt-5 space-y-2 text-sm">
         {spec.links.map((l) => (
           <li key={l.to}>
@@ -293,8 +318,8 @@ function ModuleCard({ spec, manifest }: { spec: CardSpec; manifest: SectorManife
         ))}
       </ul>
       <div className="mt-auto pt-6">
-        {/* the long AIB label wraps inside its card at tablet widths (.btn is nowrap) */}
-        <Link className="btn btn-primary" to={info.home} style={{ whiteSpace: 'normal', maxWidth: '100%', textAlign: 'center' }}>
+        {/* a long label wraps inside its card at narrow widths (.btn is nowrap) */}
+        <Link className="btn btn-primary" to={spec.home} style={{ whiteSpace: 'normal', maxWidth: '100%', textAlign: 'center' }}>
           {spec.button}
         </Link>
       </div>
@@ -449,14 +474,18 @@ export default function Home() {
         </p>
       </header>
 
-      <section aria-label="Start here" className="grid gap-6 md:grid-cols-3">
+      <section aria-label="Start here" className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {MODULE_CARDS.map((c) => (
           <ModuleCard key={c.id} spec={c} manifest={manifest} />
         ))}
       </section>
 
       <p className="mt-6 max-w-3xl border-l-2 border-signal pl-4 text-sm leading-relaxed text-paper-dim" data-testid="aib-one-line">
-        <span className="text-paper">The Allied Industrial Base in one line:</span> {AIB_EXPLAINER_SHORT}
+        <span className="text-paper">The Allied Industrial Base in one line:</span> {AIB_EXPLAINER_SHORT} Partnerships and compacts apply it to specific
+        countries and bottlenecks.{' '}
+        <Link className="link" to="/aib">
+          Allied Industrial Base overview &rarr;
+        </Link>
       </p>
 
       {showChart && (
@@ -492,6 +521,12 @@ export default function Home() {
         Want to inspect the underlying data?{' '}
         <Link className="link" to="/sector/explore">
           Advanced explorer &rarr;
+        </Link>
+      </p>
+      <p className="mt-2 text-sm text-paper-mute" data-testid="how-to-use-line">
+        First time here?{' '}
+        <Link className="link" to="/how-to-use">
+          How to use the Explorer &rarr;
         </Link>
       </p>
 

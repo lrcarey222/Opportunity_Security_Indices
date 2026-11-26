@@ -50,6 +50,9 @@ shared phrase, add it there first.
     "Remaining supply gap", "Extra supply recovered by acting together (coordination dividend)", "Secure what is
     critical (high fence)" (`AIB_MEASURE_LABEL`, `FENCE_TITLE`). Short labels, no explanatory paragraph: put the
     detail in the glossary entry and its `InfoTip`.
+13. **Why it matters before how it is measured** (usability pass, 2026-11-25). A glossary `short` opens with what
+    the term means for a decision ("How much protection a capability deserves", "Who counts as an ally"), then the
+    measure. Definitions do not change: only the order and the plain wording do.
 
 ## Terms (technical -> visible copy)
 
@@ -67,10 +70,13 @@ shared phrase, add it there first.
 | frontier | trade-off between resilience and concentration |
 | coordination dividend | extra supply allies can recover by acting together; as a label "Extra supply recovered by acting together (coordination dividend)" |
 | High / Medium / Low fence (section titles) | Secure what is critical (high fence) / Build, preserve, partner and deploy (medium fence) / Keep open (low fence) |
-| allied set; coalition plus treat-as-allied | trusted network ("Trusted network: N economies"; `posture/trustedNetwork.ts`) |
+| allied set; coalition plus treat-as-allied; allied demand scope | trusted network ("Trusted network: N economies"; `posture/trustedNetwork.ts`). One set since 2026-11-25: the AIB demand scope is the same economies, and every tier or allied grouping is decoded with `allianceTier()` / `allianceGroup()` |
+| core coalition, allied countries, coalition (unexplained) | trusted suppliers / trusted alternatives / trusted partners; link the `trusted_network` glossary entry or show `TrustedNetworkControl` where the group matters |
+| the model says / finds / names | say what the data show ("the data show", "the stress test finds"), or state the result |
+| Yards & Fences, high / medium / low fence (first use on a page) | the plain meaning first: "Secure what is critical (high fence)", "Keep open (low fence)" (`FENCE_TITLE`); never a bare "High fence" without it on first use |
 | bundle stamp; release id | data release (the date) and version (method, app and bundle builds; `shell/ReleaseStamp.tsx`) |
 | minimum coalition | smallest group of partners that meets the resilience target |
-| coalition tier | role in the compact |
+| coalition tier (of a compact) | importance to the compact (`COMPACT_IMPORTANCE`); a Role column sits beside it |
 | candidate compact; compact unnecessary | potential Sectoral Compact; no compact needed |
 | fragmented action | today's uncoordinated response |
 | allied demand affected; restored by trade; left for new capacity | demand that must find a new supplier; recovered through trade; gap that requires new capacity |

@@ -202,10 +202,13 @@ test_that("the dictionary carries the feasibility, sub-component and HHI explain
   # primary trade measure, except the fuel and uranium Extraction cells (production stays primary), and
   # each names its basket caveat.
   pf <- unlist(v("trade.exports")$primary_for)
-  expect_true(all(c("electric-vehicles-extraction", "electric-vehicles-refining", "solar-refining", "wind-extraction", "wind-refining",
+  expect_true(all(c("electric-vehicles-extraction", "electric-vehicles-refining", "wind-extraction", "wind-refining",
                     "semiconductors-refining", "batteries-recovery") %in% pf))
   expect_false(any(c("nuclear-extraction", "oil-extraction", "gas-extraction", "coal-extraction") %in% pf))
   expect_identical(unlist(v("production.uranium")$primary_for), "nuclear-extraction")
+  # Solar Refining leads with polysilicon plant capacity (CIM, 2026-11-25), not export value
+  expect_false("solar-refining" %in% pf)
+  expect_true("solar-refining" %in% unlist(v("manufacturing.capacity_now")$primary_for))
   cells <- stats::setNames(lapply(d$cells, function(c) unlist(c$caveats)), vapply(d$cells, `[[`, "", "slug"))
   for (cl in c("electric-vehicles-extraction", "electric-vehicles-refining", "electric-vehicles-components", "solar-refining", "wind-extraction",
                "wind-refining", "wind-components", "nuclear-extraction", "nuclear-refining", "semiconductors-refining")) {

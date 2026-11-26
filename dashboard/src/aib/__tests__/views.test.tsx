@@ -271,8 +271,8 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     const r = renderAt('/compacts/workstreams?scn=decoupling');
     expect(await h1('Workstreams')).toBeTruthy();
     const run = screen.getByTestId('run-settings');
-    // "coalition" demand is the allied core and partner economies, not a compact's coalition
-    expect(run.textContent).toMatch(/Whose demand is protected: the allied core and partner economies of the coalition table \(\d+ economies\), not a compact's coalition/);
+    // "coalition" demand is the trusted network, not a compact's coalition
+    expect(run.textContent).toMatch(/Whose demand is protected: the trusted network \(.*\) \(\d+ economies\), not a compact's coalition/);
     expect(run.textContent).toMatch(/Who may supply: any economy in the trade data may add or redirect supply/);
     expect(run.textContent).toMatch(/hold semantics \(the removed supplier keeps buying\), production-constrained supply/);
     expect(run.textContent).toMatch(/Strategic scope: electro-industrial/);
@@ -765,7 +765,7 @@ describe.skipIf(!haveFixture())('Sectoral Compacts routes', () => {
     }
     const scope = screen.getByTestId('about-scope').textContent ?? '';
     expect(scope).toContain(
-      `the demand scope is the allied core and partner economies of the coalition table (${doc.meta.nDemandScope} economies), not a compact's coalition: the importers whose lost supply is restored`,
+      `the demand scope is the trusted network (the coalition's core members and partners plus the economies treated as allied, the same set that holds the AIB roles) (${doc.meta.nDemandScope} economies), not a compact's coalition: the importers whose lost supply is restored`,
     );
     expect(scope).toContain('the candidate partners are global: any economy in the trade data may add or redirect supply');
     expect(screen.getByText('Hold (headline)')).toBeTruthy();
@@ -1511,10 +1511,10 @@ describe.skipIf(!haveFixture())('the diversification scenario (2026-10-19)', () 
 });
 
 describe('Home', () => {
-  it('has the third entry card: the Allied Industrial Base, its links and its button', async () => {
-    expect(MODULE_CARDS.map((c) => c.id)).toEqual(['sector', 'country', 'aib']);
-    const card = MODULE_CARDS[2];
-    expect(card).toMatchObject({ title: 'Explore the Allied Industrial Base', question: 'How should allies divide the work?', button: 'Explore the Allied Industrial Base' });
-    expect(card.links.every((l) => l.to.startsWith('/compacts') || l.to.startsWith('/aib'))).toBe(true);
+  it('has the partnership and compact entry cards (usability pass 2026-11-25): their links and buttons stay in the Allied Industrial Base', async () => {
+    expect(MODULE_CARDS.map((c) => c.id)).toEqual(['sector', 'country', 'partnership', 'compact']);
+    expect(MODULE_CARDS[2]).toMatchObject({ title: 'Explore Partnership Opportunities', question: 'Who should work with whom, and for what?', button: 'Explore partnerships', home: '/aib/partnerships' });
+    expect(MODULE_CARDS[3]).toMatchObject({ title: 'Explore a Compact', button: 'Explore compacts', home: '/compacts' });
+    for (const card of MODULE_CARDS.slice(2)) expect(card.links.every((l) => l.to.startsWith('/compacts') || l.to.startsWith('/aib'))).toBe(true);
   });
 });

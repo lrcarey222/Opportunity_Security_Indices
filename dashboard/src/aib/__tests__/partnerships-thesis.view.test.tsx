@@ -135,7 +135,11 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the relationshi
     expect(search(r).get('country')).toBe('AAA');
     const card = screen.getByTestId('relationship-thesis');
     expect(within(card).getByRole('heading', { level: 2 }).textContent).toBe('Relationship thesis: Avalon and Borduria');
-    expect(within(card).getByRole('link', { name: 'Wind Power Equipment' }).getAttribute('href')).toBe('/compacts/s/SC-WIND?scn=decoupling');
+    // the compact is linked in the strategic case and in the priority compacts: both carry the scenario
+    const wind = within(card).getAllByRole('link', { name: 'Wind Power Equipment' });
+    expect(wind.length).toBeGreaterThan(0);
+    for (const l of wind) expect(l.getAttribute('href')).toBe('/compacts/s/SC-WIND?scn=decoupling');
+    expect(within(card).getByTestId('strategic-case-answer').textContent).toBe('For Avalon and Borduria, the strategic case is mainly expanding a market.');
     // the partner as the economy: the partner goes
     fireEvent.change(screen.getByRole('combobox', { name: 'Economy' }), { target: { value: 'BBB' } });
     await waitFor(() => expect(search(r).get('country')).toBe('BBB'));

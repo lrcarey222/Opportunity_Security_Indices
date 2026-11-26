@@ -227,10 +227,10 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'coalition',
     term: 'Allied coalition',
-    short: 'The group of economies the analysis studies: {{n_core}} core members (U.S.-leaning in UN votes) and {{n_partner}} partners (in U.S. trade or security agreements, or major suppliers not leaning towards China).',
+    short: 'The {{n_core}} core members (U.S.-leaning in UN votes) and {{n_partner}} partners (in U.S. trade or security agreements, or major suppliers not leaning towards China). With five economies treated as allied, they form the trusted network.',
     more: 'Core members: U.S.-leaning in UN votes, with economies of at least $100 billion. Partners: members of U.S. trade or security agreements with economies of at least $100 billion, or major suppliers that do not lean towards China (at least 5% of world supply at a stage other than deployment, or 10% of the reserves of a headline mineral or fuel).',
     modules: EVERY,
-    related: ['alignment'],
+    related: ['alignment', 'trusted_network'],
   },
   {
     id: 'alignment',
@@ -598,7 +598,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'competitive_position',
     term: 'Competitive Position',
-    short: "How strong a country already is at a supply-chain step: exports and specialization, production, operating capacity, investment, costs and resources where relevant, with trade momentum. Compared with the step's main producers.",
+    short: "How strong a country already is at a supply-chain step; it decides whether to preserve a strength, catch up or rely on partners. Reads exports, production, capacity, investment, costs and resources against the main producers.",
     more:
       'Demonstrated capability only: no market growth, need, policy or climate goal. Its trade evidence is a 2022-24 benchmark of exports, world share and revealed comparative advantage; current trade momentum takes 15% of the trade evidence where a matched 12-month comparison exists. The main producers (contenders) are the economies with at least 0.5% of world supply; with a high prize, the top quarter of them preserve, and the others catch up, partner or watch.',
     modules: EVERY,
@@ -616,7 +616,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'deploy_mode',
     term: 'Accelerate or Watch',
-    short: 'At Deployment & Use, Accelerate where deployment need is high (deployment itself is the priority), Watch where it is not. Watch also ends the triage at the producing stages: low domestic priority.',
+    short: 'Whether a country should push to deploy a technology faster at home. At Deployment & Use, Accelerate where deployment need is high, Watch where it is not; at producing stages Watch means low domestic priority.',
     more:
       'Accelerate says nothing about making the equipment at home: a technology can be a low manufacturing priority and a high deployment priority. Watch is a positive conclusion, not a failure: no major domestic industrial intervention is needed (low need, a low prize, ample diversified supply or a weak domestic case).',
     modules: EVERY,
@@ -661,7 +661,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     more:
       "Elsewhere a Partner step names up to three best-placed trusted partners, ranked on capability, relationship strength and how much they would diversify the country's supply. A genuine gap is reported, never forced into a solution.",
     modules: EVERY,
-    related: ['choice_partner', 'aib_gap'],
+    related: ['choice_partner', 'aib_gap', 'trusted_network'],
   },
   {
     id: 'trade_momentum',
@@ -678,7 +678,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     more:
       'From the allied division of labor: per step the primary allied holder, two backups and the number of allied holders with at least 2% of supply (fewer than three is too little redundancy). Deployment is left out: no allied supply step sits there.',
     modules: EVERY,
-    related: ['partner_demand', 'partner_gap', 'allied_industrial_base'],
+    related: ['partner_demand', 'partner_gap', 'allied_industrial_base', 'trusted_network'],
   },
   {
     id: 'partner_demand',
@@ -744,7 +744,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'yard',
     term: 'Yards & Fences',
-    short: 'Which of three policy problems a capability is: Small yard, High fence (Secure); Medium yard, permeable fence (Preserve, Catch Up, Partner, Accelerate); Large yard, Low fence (Watch).',
+    short: 'How much protection a capability deserves, as three different policy problems: Small yard, High fence (Secure); Medium yard, permeable fence (Preserve, Catch Up, Partner, Accelerate); Large yard, Low fence (Watch).',
     more:
       'The yards are different problems, not low, medium and high scores on one scale. A technology can sit in more than one yard: capability layers, such as grid-control software or battery-management firmware, take their own choice, and a step whose layers differ is mixed (the Strategy Map splits its cell diagonally). A control layer is in the Small yard only where the data show coercive foreign control for that country.',
     modules: EVERY,
@@ -790,7 +790,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     short: 'A network of trusted countries that deliberately divide production, investment and demand across strategic supply chains, so no country has to make everything and no single supplier can hold the system at risk.',
     more: AIB_EXPLAINER,
     modules: AIB,
-    related: ['managed_interdependence', 'sectoral_compact', 'coalition', 'aib_gap'],
+    related: ['managed_interdependence', 'sectoral_compact', 'coalition', 'trusted_network', 'aib_gap'],
   },
   {
     id: 'managed_interdependence',
@@ -819,7 +819,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'sectoral_compact',
     term: 'Sectoral Compact',
-    short: 'A targeted agreement among the countries needed to solve a shared supply-chain problem, aligning trade, investment and specialization around a specific value chain.',
+    short: 'A few countries acting together on a shared supply-chain problem where coordination does measurably better than acting alone: a targeted agreement aligning trade, investment and specialization around a specific value chain.',
     more: `${COMPACT.notAClub} ${COMPACT.reciprocity}`,
     modules: AIB,
     related: ['strategic_compact', 'minimum_coalition', 'demand_anchor', 'allied_industrial_base'],
@@ -835,7 +835,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'allied_coverage',
     term: 'Allied coverage',
-    short: AIB_MEASURE_DEFINITION.coverage,
+    short: `Whether allies can still get what they need. ${AIB_MEASURE_DEFINITION.coverage}`,
     more: 'Read as a sequence: the supply that survives the stress test, what existing partners can replace, what coordinated trade adds, and the gap that needs new capacity.',
     modules: AIB,
     related: ['coordination_dividend', 'remaining_gap', 'aib_scenario'],
@@ -870,7 +870,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
     short: 'How much a compact depends on each country, from the core members it is built around to the partners it could do without and the countries outside it that it still relies on.',
     more: 'Inside the compact: core coordinating members (central to making it work), critical supply partners (no single other country could replace them) and associate partners (useful, but not required to meet the target). Prospective and development hosts are included for the new capacity they could host. Outside it: critical external dependencies (their loss would push supply below the target) and external dependencies (they supply a material share).',
     modules: AIB,
-    related: ['minimum_coalition', 'workstream', 'demand_anchor'],
+    related: ['minimum_coalition', 'workstream', 'demand_anchor', 'trusted_network'],
   },
   {
     id: 'minimum_coalition',
@@ -979,7 +979,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'trusted_network',
     term: 'Trusted network',
-    short: "The economies the Explorer treats as eligible partners for the Allied Industrial Base strategy: the allied coalition's core members and partners, plus the economies the allied analysis treats as allied.",
+    short: "The one set the Explorer calls allied: the coalition's core members and partners plus the economies treated as allied. Only they are named as trusted partners, and the stress tests protect their demand.",
     more: TRUSTED_NETWORK_METHOD,
     modules: AIB,
     related: ['coalition', 'allied_industrial_base'],

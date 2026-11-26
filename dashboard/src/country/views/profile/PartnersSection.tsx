@@ -761,7 +761,7 @@ function GeopoliticalLenses({ onKind }: { onKind: (k: PartnershipKind) => void }
     content: (
       <Card id="geo-today" title={`${cap(poss(name))} alignment today`}>
         <p>
-          {cap(name)} is {tierPhrase(meta.tier)}
+          {cap(name)} is {tierPhrase(meta.tier, sheet.iso3)}
           {routes.length ? `, through ${listWords(routes)}` : ''}. In the UN General Assembly it votes {meta.bloc ? `in the ${meta.bloc} group` : 'without a bloc in the data'}
           {meta.alignment_s.v !== null ? ` (position ${meta.alignment_s.d} on a scale from 0, China, to 1, the United States)` : ''}.{' '}
           {agreements.length ? `It is in ${agreementsText(sheet, meta.agreements)}${meta.eu_agreements.length ? ` and, through the EU, ${agreementsText(sheet, meta.eu_agreements)}` : ''}.` : 'It is in no economic-security agreement in the data.'}
@@ -809,14 +809,16 @@ function GeopoliticalLenses({ onKind }: { onKind: (k: PartnershipKind) => void }
   const coalition = coalitionOf(roster);
   const core = coalition.filter((c) => c.tier === 'core');
   const partner = coalition.filter((c) => c.tier === 'partner');
+  const allied = coalition.filter((c) => c.tier === 'allied');
   const fsTop = topBy(sheet.partners.rows, 'fs', 8);
   const osi: LensPanelSpec = {
     content: (
       <div className="space-y-4">
-        <Card id="geo-osi" title="The allied coalition">
+        <Card id="geo-osi" title="The trusted network">
           <p>
-            The indices treat {plural(core.length, 'core member')} and {plural(partner.length, 'partner')} as the allied coalition, reached through UN-vote alignment, an economic-security
-            agreement or a supplier route. {cap(name)} is {tierWords(meta.tier)}.
+            The trusted network, the one allied set used on every page, is {plural(core.length, 'core member')}, {plural(partner.length, 'partner')} and{' '}
+            {allied.length} {allied.length === 1 ? 'economy' : 'economies'} treated as allied ({coalition.length} in all), reached through UN-vote alignment, an economic-security
+            agreement or a supplier route. {cap(name)} is {tierWords(meta.tier, sheet.iso3)}.
           </p>
           <p className="text-xs text-paper-mute">
             <span className="text-paper-dim">Core members:</span> {core.map((c) => c.name).join(', ') || 'none'}.
@@ -826,7 +828,7 @@ function GeopoliticalLenses({ onKind }: { onKind: (k: PartnershipKind) => void }
           </p>
         </Card>
         <Card id="geo-osi-fs" title="Friendshore partners and how they vote">
-          <p className="text-xs text-paper-mute">Friendshore weighs UN-vote alignment as one of its parts; {poss(name)} strongest Friendshore partners, with their coalition membership and alignment.</p>
+          <p className="text-xs text-paper-mute">Friendshore weighs UN-vote alignment as one of its parts; {poss(name)} strongest Friendshore partners, with their place in the trusted network and alignment.</p>
           {fsTop.length ? (
             <RankedNames
               rows={fsTop}
@@ -834,7 +836,7 @@ function GeopoliticalLenses({ onKind }: { onKind: (k: PartnershipKind) => void }
               keyOf={(r) => r.iso3}
               nameOf={(r) => r.name}
               value={(r) => r.fs.d}
-              note={(r) => `${tierWords(r.tier)}; ${alignmentText(r)}`}
+              note={(r) => `${tierWords(r.tier, r.iso3)}; ${alignmentText(r)}`}
             />
           ) : (
             <p className="text-paper-mute">No partner has a Friendshore score for {name}.</p>

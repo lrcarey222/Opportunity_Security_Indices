@@ -431,7 +431,7 @@ describe('Country in sector', () => {
     renderAt('/sector/batteries/assembly/USA');
     expect(await h1('United States in Batteries — Assembly')).toBeTruthy();
     expect(document.title).toMatch(/^United States in Batteries — Assembly \| Sectors \| /);
-    expect(screen.getByText('Coalition core')).toBeTruthy();
+    expect(screen.getByText('CORE MEMBER')).toBeTruthy();
     expect(await screen.findByRole('list', { name: 'Position tiles' }, { timeout: 10_000 })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Rank among peers' })).toBeTruthy();
     expect(await screen.findByRole('heading', { level: 3, name: 'Where its imports come from' }, { timeout: 10_000 })).toBeTruthy();

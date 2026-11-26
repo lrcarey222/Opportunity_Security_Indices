@@ -137,7 +137,7 @@ export const hasInvestmentFlows = (doc: Pick<AibDoc, 'investmentFlows'>): boolea
 /** The headline variant in a short phrase, for the modelled-result note. */
 export function variantPhrase(doc: Pick<AibDoc, 'investmentFlows' | 'meta'>, shockLabel: string): string {
   const v = doc.investmentFlows?.variant;
-  const inc = v && isNum(v.increment) ? `, an increment of up to ${Math.round(v.increment * 100)}% of node demand at each host (at most its current output)` : '';
+  const inc = v && isNum(v.increment) ? `, an increment of up to ${Math.round(v.increment * 100)}% of the step's demand at each host (at most its current output)` : '';
   return `${shockLabel}; ${TERMS.supplyAssumption}: ${v?.scenario ?? doc.meta.headlineScenario}${v?.supplyConstraint ? `, ${v.supplyConstraint.replace(/_/g, '-')} supply` : ''}${inc}`;
 }
 

@@ -1,5 +1,6 @@
 // One Strategic Sectoral Compact /compacts/s/:sid (2026-10-20; task s.15, s.16, s.20, s.21, s.26). A reader
-// should understand, in order: why the compact exists (its purpose, then its mission and headline figures
+// should understand, first, the answer (CompactAnswer, 2026-11-25: the bottleneck, who contributes what and
+// the remaining gap, with the compact memo and the trusted network), then, in order: why the compact exists (its purpose, then its mission and headline figures
 // under the toggled scenario); which nodes it covers (the supply-chain spine, the page's organizing device:
 // each node's status under the scenario, a node selected for its existing evidence); where it is
 // vulnerable; what the nodes need (BUILD / COORDINATE / MANAGE SPECIALIZATION: missions, portfolio and the
@@ -20,6 +21,7 @@ import type { AibStrategic, AibStrategicCompact, AibStrategicScenarioId } from '
 import { plural } from '../derive/format.ts';
 import { compactNodeIds, strategicCompactOf } from '../derive/strategic.ts';
 import { ChainSection } from './strategic/ChainSection.tsx';
+import { CompactAnswer } from './strategic/CompactAnswer.tsx';
 import { PolicySection, ScenarioChangeSection, VulnerabilitySection, WhoSection, WhySection, WorkstreamsSection } from './strategic/sections.tsx';
 import { STRATEGIC_SECTION_TITLE } from './strategic/shared.tsx';
 import { ReportIssueButton } from '../../review/components/ReportIssueButton.tsx';
@@ -68,6 +70,7 @@ function Compact({ s, c, sid }: { s: AibStrategic; c: AibStrategicCompact; sid: 
         <p className="mt-2 text-sm text-paper-mute" data-testid="compact-facts">
           {facts.join(' · ')}
         </p>
+        <CompactAnswer s={s} c={c} sid={sid} />
         <ReportIssueButton metric={decisionMetric} displayedResult={decisionMetric.display} />
         <nav aria-label="Sections of this compact" className="mt-4">
           <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
