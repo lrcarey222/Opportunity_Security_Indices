@@ -17,7 +17,14 @@ change_data_relation <- function(a, b) {
   has_led <- !is.null(a$inputs_id) && !is.null(b$inputs_id) && !is.na(a$inputs_id) && !is.na(b$inputs_id)
   if (has_led && identical(a$inputs_id, b$inputs_id)) return("same")
   if (isTRUE(a$verified) && isTRUE(b$verified) && !has_led) return(if (identical(a$id, b$id)) "same" else "changed")
-  if (has_led || !identical(a$id, b$id)) return("changed")
+  if (has_led) return("changed")
+  # one side carries a richer stamp than the other (raw-input vintages recorded on one side only): their ids differ by
+  # construction, so compare what both record, the input windows; adding a stamp is not a data change
+  if (!identical(isTRUE(a$verified), isTRUE(b$verified))) {
+    win <- c("benchmark_period", "momentum_period", "momentum_through")
+    if (any(win %in% c(names(a), names(b)))) return(if (identical(unname(a[win]), unname(b[win]))) "unknown" else "changed")
+  }
+  if (!identical(a$id, b$id)) return("changed")
   "unknown"
 }
 

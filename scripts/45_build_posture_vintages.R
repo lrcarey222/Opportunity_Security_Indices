@@ -29,6 +29,8 @@ repo_root <- local({
 #   --bridge DIR         ingest a bridge run of scripts/26 (OPSI_BRIDGE; DIR holds bridge_report.json and the sandboxed
 #                        strategic_position_tbl.rds): stored as data/vintages/posture/bridges/<prev>__<cur>.csv.gz and
 #                        used, when pure, to split that pair's method and data changes exactly
+#   --prune-store        prune the input store (config input_store.dir) to the inputs of stamped vintages and of the
+#                        current engine ledger: what a bridge could still need
 #   --dry-run            compute and report; write nothing
 # Idempotent: the same history gives the same vintages, changes and bundle (bar the bundle's created stamp).
 
@@ -87,6 +89,7 @@ cands <- lapply(log, function(x) list(commit = x, short = substr(x, 1, 8), workt
 if (include_worktree) cands <- c(cands, list(list(commit = NA_character_, short = "worktree", worktree = TRUE)))
 
 seen <- character()
+store_keep <- character()   # md5s of every stamped vintage's inputs (what a bridge could still need)
 cache_hits <- list()
 vintages <- list()
 tables <- list()
@@ -97,6 +100,7 @@ for (cd in cands) {
   core_file <- man$core
   # the export names each core by the md5 of its JSON text, so the file name is the content key (a checked-out copy
   # can differ in line endings from the blob, so its own md5 is not)
+  store_keep <- c(store_keep, unlist(man$stamps$inputs$files))
   if (core_file %in% seen) next
   hit <- if (!cd$worktree) cache[[core_file]] else NULL
   if (!is.null(hit)) {
@@ -222,7 +226,24 @@ for (r in results) {
                                             p$counts$meaningful, p$n_cells, p$counts$recommendation, p$counts$score, p$counts$data,
                                             p$counts$evidence, p$counts$confidence, p$counts$real_world, p$counts$methodology, p$counts$mixed, p$counts$unattributed) else ""))
 }
-if (dry_run) { message("--dry-run: nothing written"); quit(save = "no") }
+# ---- input store ------------------------------------------------------------------------------------------------
+prune_store <- function() {
+  if (!"--prune-store" %in% args) return(invisible(NULL))
+  store_dir <- file.path(repo_root, cfg$input_store$dir %||% "data/vintages/inputs")
+  # the current engine ledger too (a run not yet exported may be exported next)
+  local_cfg <- file.path(repo_root, "config", "config.yml")
+  if (file.exists(local_cfg)) {
+    lc <- yaml::read_yaml(local_cfg)
+    od <- if (!is.null(lc$outputs_dir) && nzchar(lc$outputs_dir)) file.path(repo_root, lc$outputs_dir) else file.path(repo_root, lc$processed_dir %||% "data/processed", "outputs")
+    lp <- file.path(od, cfg$engine_inputs_file %||% "strategic_position_inputs.json")
+    if (file.exists(lp)) store_keep <<- c(store_keep, unlist(jsonlite::fromJSON(lp, simplifyVector = FALSE)$files))
+  }
+  pr <- change_store_prune(store_dir, unique(store_keep), dry_run = dry_run)
+  message(sprintf("input store %s: %d files %s (%.1f MB), %d kept", store_dir, pr$removed, if (dry_run) "would be removed" else "removed",
+                  pr$bytes / 1024^2, pr$kept))
+}
+
+if (dry_run) { prune_store(); message("--dry-run: nothing written"); quit(save = "no") }
 
 # ---- write ------------------------------------------------------------------------------------------------------
 to_json <- function(x, pretty = FALSE) as.character(jsonlite::toJSON(x, auto_unbox = TRUE, na = "null", null = "null", digits = NA, pretty = pretty))
@@ -249,8 +270,10 @@ created <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 head_sha <- git("rev-parse", "--short", "HEAD")[1]
 # the dashboard carries full records for the last `detail_pairs` comparable pairs; older pairs keep their summary
 # (every record stays in outputs/change_layer/posture_changes.csv)
+# (counted over pairs that changed something: a pair with no change costs nothing and rides along)
 comp <- which(vapply(results, function(r) isTRUE(r$pair$comparable), logical(1)))
-detail <- utils::tail(comp, cfg$bundle$detail_pairs %||% 4L)
+comp_nz <- comp[vapply(results[comp], function(r) (r$pair$counts$meaningful %||% 0L) > 0, logical(1))]
+detail <- if (length(comp_nz)) comp[comp >= min(utils::tail(comp_nz, cfg$bundle$detail_pairs %||% 4L))] else comp
 bres <- lapply(seq_along(results), function(i) { r <- results[[i]]; r$pair$detail <- i %in% detail; if (!i %in% detail) r$changes <- r$changes[0, ]; r })
 bundle <- change_bundle(unname(vintages), bres, impacts = impacts, sources = cfg$sources, created = created, git_commit = head_sha)
 txt <- to_json(bundle)
@@ -262,3 +285,4 @@ writeLines(to_json(list(schema = CHANGE_SCHEMA, schema_version = CHANGE_SCHEMA_V
                         changes = file, latest = utils::tail(ids, 1), n_vintages = length(ids), n_changes = nrow(all_changes)), pretty = TRUE),
            file.path(bundle_dir, "manifest.json"), useBytes = TRUE)
 message(sprintf("wrote %d vintages to %s, %d change records, bundle %s (%.0f KB)", length(keep), vint_dir, nrow(all_changes), file, nchar(txt, "bytes") / 1024))
+prune_store()

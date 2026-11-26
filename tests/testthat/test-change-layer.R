@@ -139,6 +139,10 @@ test_that("identical engine input ledgers make the data verifiably the same; dif
   expect_equal(change_data_relation(led(H1, "i-1")$data, led(H2m, "i-2")$data), "changed")
   expect_equal(change_data_relation(list(id = "d-1"), list(id = "d-1")), "unknown")
   expect_equal(change_data_relation(list(id = "d-1"), list(id = "d-2")), "changed")
+  # a stamp added on one side only is not a data change; moved windows are
+  w <- list(benchmark_period = "2022-2024", momentum_period = "2025", momentum_through = "Dec 2025")
+  expect_equal(change_data_relation(c(list(id = "d-1"), w), c(list(id = "d-9", verified = TRUE), w)), "unknown")
+  expect_equal(change_data_relation(c(list(id = "d-1"), w), c(list(id = "d-9", verified = TRUE), utils::modifyList(w, list(momentum_through = "Jun 2026")))), "changed")
   cur <- cl_v(choice = "catch_up", cp = 0.78)
   expect_equal(cl_usa(cl_cmp(cl_v(), cur, hp = led(H1, "i-1"), hc = led(H2m, "i-1")))$attribution, "methodology")
   expect_equal(cl_usa(cl_cmp(cl_v(), cur, hp = led(H1, "i-1"), hc = led(H2m, "i-2")))$attribution, "mixed")
@@ -328,4 +332,23 @@ test_that("a bridge run re-reads the previous inputs from the store, writes only
   expect_false(rep2$pure)
   expect_match(rep2$leaks, "new.csv$")
   expect_error(change_bridge_setup(file.path(root, "nope"), root, list(), "", store), "neither a file nor a vintage id")
+})
+
+test_that("ledger paths are logical: folded but never resolved through links", {
+  source(file.path(cl_root, "scripts/utils/change_stamps.R"))
+  expect_equal(change_abs(r"(C:\x\data\raw\..\raw\.\f.csv)"), "C:/x/data/raw/f.csv")
+  expect_equal(change_abs("/srv/repo/a/../b"), "/srv/repo/b")
+  expect_true(startsWith(change_abs("rel/f.rds"), change_abs(getwd())))
+})
+
+test_that("pruning the input store keeps only what a vintage could still be bridged from", {
+  source(file.path(cl_root, "scripts/utils/change_stamps.R"))
+  st <- tempfile("store"); dir.create(file.path(st, "aa"), recursive = TRUE); dir.create(file.path(st, "bb"))
+  for (f in c("aa/aa11.rds", "aa/aa22.csv", "bb/bb33.rds", "bb/bb44.rds.part")) writeLines("x", file.path(st, f))
+  dry <- change_store_prune(st, c("aa11", "bb33"), dry_run = TRUE)
+  expect_equal(dry$removed, 2L)
+  expect_true(file.exists(file.path(st, "aa/aa22.csv")))
+  pr <- change_store_prune(st, c("aa11", "bb33"))
+  expect_equal(pr$kept, 2L)
+  expect_setequal(basename(list.files(st, recursive = TRUE)), c("aa11.rds", "bb33.rds"))
 })

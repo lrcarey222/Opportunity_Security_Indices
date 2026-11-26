@@ -73,7 +73,7 @@ thresholds:
   evidence_status_scale: [no_data, tech_wide, proxy, shared, split, exact]
   confidence_scale: [low, moderate, high]
 
-# Dashboard bundle: full change records for the last N comparable pairs (older pairs ship their summary only; all
+# Dashboard bundle: full change records for the last N comparable pairs that changed something (and every later pair) (older pairs ship their summary only; all
 # records stay in outputs/change_layer/posture_changes.csv).
 bundle:
   detail_pairs: 4

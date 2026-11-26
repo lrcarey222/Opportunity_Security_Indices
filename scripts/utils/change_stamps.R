@@ -15,6 +15,23 @@
 
 change_ledger_env <- new.env(parent = emptyenv())
 
+# A logical absolute path: made absolute against the working directory, "." and ".." segments folded, separators as
+# "/", but links NOT resolved (normalizePath follows junctions and symlinks on Windows, which would record a linked
+# data directory under its target, outside the repository, and leak a machine-specific path into the manifest).
+change_abs <- function(p) {
+  p <- gsub("\\\\", "/", p)
+  if (!grepl("^([A-Za-z]:)?/", p)) p <- paste(gsub("\\\\", "/", getwd()), p, sep = "/")
+  drive <- regmatches(p, regexpr("^[A-Za-z]:", p))
+  rest <- if (length(drive)) substring(p, 3L) else p
+  out <- character()
+  for (seg in strsplit(rest, "/+")[[1]]) {
+    if (seg == "" || seg == ".") next
+    if (seg == "..") { if (length(out)) out <- out[-length(out)]; next }
+    out <- c(out, seg)
+  }
+  paste0(if (length(drive)) toupper(drive) else "", "/", paste(out, collapse = "/"))
+}
+
 # R's own files (package metadata read while namespaces load) are not data: skip anything under the R home or a
 # library path.
 change_ledger_skip <- local({
@@ -27,7 +44,7 @@ change_ledger_skip <- local({
 
 change_ledger_note <- function(x) {
   if (is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x) && file.exists(x) && !dir.exists(x)) {
-    p <- normalizePath(x, winslash = "/", mustWork = FALSE)
+    p <- change_abs(x)
     if (!change_ledger_skip(p)) assign(p, TRUE, envir = change_ledger_env)
   }
   invisible(NULL)
@@ -74,9 +91,9 @@ change_ledger_stop <- function() {
 # The recorded files with md5 and size, paths relative to root when under it. Returns the list it writes.
 change_ledger_write <- function(path, root, exclude = character()) {
   files <- sort(ls(change_ledger_env))
-  files <- files[file.exists(files) & !normalizePath(files, winslash = "/", mustWork = FALSE) %in% normalizePath(exclude, winslash = "/", mustWork = FALSE)]
-  root_n <- paste0(sub("/+$", "", normalizePath(root, winslash = "/", mustWork = FALSE)), "/")
-  rel <- ifelse(startsWith(files, root_n), substring(files, nchar(root_n) + 1L), files)
+  files <- files[file.exists(files) & !files %in% vapply(exclude, change_abs, character(1))]
+  root_n <- paste0(sub("/+$", "", change_abs(root)), "/")
+  rel <- ifelse(startsWith(tolower(files), tolower(root_n)), substring(files, nchar(root_n) + 1L), files)
   md5 <- unname(tools::md5sum(files))
   doc <- list(schema = "osi-engine-inputs", created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
               files = stats::setNames(as.list(md5), rel), bytes = stats::setNames(as.list(file.size(files)), rel))
@@ -195,7 +212,7 @@ change_bridge_setup <- function(source, root, dirs, sandbox, store_dir) {
   state <- new.env(parent = emptyenv())
   state$redirected <- character(); state$leaks <- character()
   state$missing <- plan$abs[!have]
-  norm <- function(p) sub("/+$", "", normalizePath(p, winslash = "/", mustWork = FALSE))
+  norm <- function(p) sub("/+$", "", change_abs(p))
   list(source = src$source, inputs_id = src$inputs_id, sandbox = norm(sandbox), dirs = sdirs, plan = plan,
        redirect = stats::setNames(plan$store, tolower(plan$abs))[have & is.na(plan$target)], state = state,
        n_materialized = sum(have & !is.na(plan$target)))
@@ -205,7 +222,7 @@ change_bridge_setup <- function(source, root, dirs, sandbox, store_dir) {
 # store; anything else is a leak (the run read data the previous vintage did not), recorded, read live.
 change_bridge_redirect <- function(bridge, x) {
   if (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x)) return(x)
-  a <- sub("/+$", "", normalizePath(x, winslash = "/", mustWork = FALSE))
+  a <- sub("/+$", "", change_abs(x))
   if (change_ledger_skip(a) || startsWith(tolower(a), tolower(paste0(bridge$sandbox, "/")))) return(x)
   hit <- bridge$redirect[tolower(a)]
   if (!is.na(hit)) { bridge$state$redirected <- c(bridge$state$redirected, a); return(unname(hit)) }
@@ -223,6 +240,19 @@ change_bridge_finish <- function(bridge, method) {
               leaks = I(st$leaks), missing = I(st$missing))
   writeLines(jsonlite::toJSON(rep, auto_unbox = TRUE, pretty = TRUE, null = "null"), file.path(bridge$sandbox, "bridge_report.json"), useBytes = TRUE)
   invisible(rep)
+}
+
+# Prune the input store: keep the inputs some vintage could still be bridged from (keep_md5: every md5 in the ledgers
+# of the stamped vintages, plus the current engine ledger) and delete the rest (inputs of runs never exported) and any
+# interrupted copy (*.part). Returns what it removed (or would remove, with dry_run).
+change_store_prune <- function(store_dir, keep_md5, dry_run = FALSE) {
+  if (!dir.exists(store_dir)) return(invisible(list(removed = 0L, bytes = 0, kept = 0L)))
+  f <- list.files(store_dir, recursive = TRUE, full.names = TRUE)
+  md5 <- sub("[.].*$", "", basename(f))
+  drop <- grepl("[.]part$", f) | !md5 %in% keep_md5
+  bytes <- sum(file.size(f[drop]), na.rm = TRUE)
+  if (!dry_run && any(drop)) unlink(f[drop])
+  invisible(list(removed = sum(drop), bytes = bytes, kept = sum(!drop)))
 }
 
 if (!exists("%||%")) `%||%` <- function(a, b) if (is.null(a)) b else a
