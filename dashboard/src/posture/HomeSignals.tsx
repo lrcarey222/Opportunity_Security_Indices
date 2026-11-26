@@ -34,7 +34,8 @@ export function HomeSignalsView({ s }: { s: PostureSignals }) {
           <h3 className="text-base font-medium text-paper">Where are exports growing?</h3>
           <p className="mt-1 text-xs text-paper-mute">
             {e.period ?? 'The latest 12 months'} against {e.previous_period ?? 'the 12 before'}: exports rose by more than {Math.round((Math.exp(e.band) - 1) * 100)}% in{' '}
-            {e.n_up_trusted} trusted-network cells and fell as much in {e.n_down_trusted}. Small bases and incomplete reporting are left out.
+            {e.n_up_trusted} trusted-network cells and fell as much in {e.n_down_trusted}. The largest exporters among them, by world share; small bases and
+            incomplete reporting are left out.
           </p>
           <ul className="mt-3 space-y-1.5 text-sm">
             {growing.map((r) => (
@@ -44,6 +45,7 @@ export function HomeSignalsView({ s }: { s: PostureSignals }) {
                 </Link>
                 <span className="text-paper-dim">
                   {pctChange(r.growth)}
+                  {r.capped ? ' or more' : ''}
                   {r.world_share !== null && <span className="text-paper-mute"> · {pct(r.world_share)} of world exports</span>}
                 </span>
               </li>

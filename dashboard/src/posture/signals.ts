@@ -17,6 +17,8 @@ export interface ExportSignal extends SignalCell {
   growth: number;
   log_growth: number;
   world_share: number | null;
+  /** at the growth measure's winsorisation bound: "+101% or more" */
+  capped?: boolean;
 }
 
 export interface DependenceSignal extends SignalCell {

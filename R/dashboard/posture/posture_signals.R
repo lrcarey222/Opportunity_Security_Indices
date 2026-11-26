@@ -4,7 +4,10 @@
 #
 #   exports      "Where are exports growing?" Log export growth over the latest 12 months against the 12 before
 #                (trade_momentum_raw, scripts/26 trade momentum), only where the momentum quality is "ok" (complete
-#                24 months, enough coverage, not a small base: the tiny-base growth trap).
+#                24 months, enough coverage, not a small base: the tiny-base growth trap). The cells moving more than
+#                the band are listed by world export share, largest first: the growth measure is winsorised at its
+#                5th / 95th percentiles, so ranking by it would tie dozens of cells at the ceiling. A value at a
+#                winsorisation bound is flagged `capped` ("+101% or more").
 #   dependence   "Where is dependence on China rising?" China's share of the cell's imports in the latest 12
 #                months against the base year (china_share_t12m vs china_share_base; current_trade_flag china_up:
 #                10+ points on $100m+ of imports), with the coercive-supplier share beside it.
@@ -32,16 +35,20 @@ posture_signals_doc <- function(tbl, techs, countries, treat_as_allied = charact
   ok <- !is.na(g) & colx("trade_momentum_quality", NA_character_) %in% "ok"
   band <- meta$momentum_band %||% 0.1
   share <- as.numeric(dplyr::coalesce(colx("home_share_exposure"), colx("home_share")))
-  growth_rows <- function(idx) lapply(idx, function(i) row(i, list(growth = r3(exp(g[i]) - 1), log_growth = r3(g[i]), world_share = r3(share[i]))))
+  hi <- if (any(ok)) max(g[ok]) else NA_real_
+  lo <- if (any(ok)) min(g[ok]) else NA_real_
+  growth_rows <- function(idx) lapply(idx, function(i) row(i, list(growth = r3(exp(g[i]) - 1), log_growth = r3(g[i]), world_share = r3(share[i]),
+                                                                  capped = isTRUE(abs(g[i] - hi) < 1e-9 || abs(g[i] - lo) < 1e-9))))
   up <- which(ok & g > band)
   down <- which(ok & g < -band)
+  by_share <- function(idx) idx[order(-dplyr::coalesce(share[idx], -1), -abs(g[idx]))]
   exports <- list(
     period = meta$momentum_period %||% NA_character_, previous_period = meta$momentum_previous_period %||% NA_character_,
     band = band, n_assessed = sum(ok), n_up = length(up), n_down = length(down),
     n_up_trusted = sum(trusted[up]), n_down_trusted = sum(trusted[down]),
-    growing = growth_rows(utils::head(up[order(-g[up])], top)),
-    growing_trusted = growth_rows(utils::head(up[trusted[up]][order(-g[up][trusted[up]])], top)),
-    falling_trusted = growth_rows(utils::head(down[trusted[down]][order(g[down][trusted[down]])], top))
+    growing = growth_rows(utils::head(by_share(up), top)),
+    growing_trusted = growth_rows(utils::head(by_share(up[trusted[up]]), top)),
+    falling_trusted = growth_rows(utils::head(by_share(down[trusted[down]]), top))
   )
 
   # dependence: China's import share, latest 12 months vs base year

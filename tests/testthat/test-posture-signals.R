@@ -31,8 +31,11 @@ test_that("export growth leaves out small bases and unassessed cells, and splits
   expect_equal(e$n_assessed, 4)          # KAZ small_base and the unassessed USA Wind cell are out
   expect_equal(e$n_up, 3)
   expect_equal(e$n_down, 1)
-  expect_equal(vapply(e$growing, `[[`, "", "iso3"), c("USA", "CHN", "DEU"))
-  expect_equal(e$growing[[1]]$growth, round(exp(0.4) - 1, 3))
+  # listed by world export share (growth is winsorised, so it cannot rank the top): CHN 60%, USA 5%, DEU 4%
+  expect_equal(vapply(e$growing, `[[`, "", "iso3"), c("CHN", "USA", "DEU"))
+  expect_equal(e$growing[[2]]$growth, round(exp(0.4) - 1, 3))
+  expect_true(e$growing[[2]]$capped)                 # 0.4 is the largest ok value: at the ceiling
+  expect_false(e$growing[[1]]$capped)
   expect_equal(vapply(e$growing_trusted, `[[`, "", "iso3"), c("USA", "DEU"))
   expect_equal(vapply(e$falling_trusted, `[[`, "", "iso3"), "JPN")
   expect_equal(e$period, "Sep 2025 - Aug 2026")
