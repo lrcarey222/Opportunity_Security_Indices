@@ -13,7 +13,9 @@
 // compact footer (posture/EvidenceSummary.tsx): evidence quality over the listed steps, "Why this conclusion?"
 // with the inputs and data periods, and links to the evidence.
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { ChangedCellsNote, nodeLabel } from '../../../changes/ChangedCellsNote.tsx';
+import type { ChangeRecord } from '../../../changes/contract.ts';
 import { Link } from 'react-router';
 import { CHOICE_ACTION, CHOICE_NAME } from '../../../content/vocabulary.ts';
 import { stageDisplay } from '../../../lib/stages.ts';
@@ -98,6 +100,8 @@ export function BottomLine() {
   const details = useMemo(() => detailByKey(p?.detail ?? null), [p?.detail]);
   const names = useMemo(() => ({ ...(aib?.names ?? {}), ...(core ? countryNames(core) : {}) }), [aib?.names, core]);
   const net = useMemo(() => (core ? networkOf(core.countries) : null), [core]);
+  // change layer: what changed among this economy's assessments
+  const changeMatch = useCallback((r: ChangeRecord) => r.iso3 === sheet.iso3, [sheet.iso3]);
   if (!p || p.status !== 'ready' || !core || !cells.length || !net) return null;
   const meta = core.meta;
   const synthesis = bottomLineSynthesis(cells);
@@ -224,6 +228,7 @@ export function BottomLine() {
           { label: 'Policy alignment', href: '#policy-alignment' },
         ]}
       />
+      <ChangedCellsNote match={changeMatch} label={nodeLabel} query={`?country=${sheet.iso3}`} testid="bottom-line-changes" />
     </section>
   );
 }

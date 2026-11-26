@@ -296,6 +296,43 @@ Run on the real pipeline in `osi-worktrees/change`:
 
 **Not yet seen on real data.** Real provenance needs two stamped vintages. Today only 2026-11-26-576eadf8 is stamped; the 64-economy bundle merged from the base was exported without stamps.
 
+## Slice 7: change notes on the conclusion cards, and the Home panel (2026-11-26, done)
+
+**What was added:**
+
+- **One derivation and one component.** `summarizeChanges` (`src/changes/summary.ts`) and `ChangedCellsNote` give, for a set of cells over the bundle's recent vintages:
+  - each cell's latest recommendation change;
+  - how many other assessments moved;
+  - the attribution;
+  - an explicit "none of these can yet be credited to new data or to a method change alone" when that is the case.
+  - When nothing changed, the note is a quiet line.
+- **Where it is mounted:**
+
+  | Card | Cells it covers |
+  |---|---|
+  | Sector strategy card | one node across economies |
+  | Country Bottom line | every cell of the economy, linked to `/changes?country=` |
+  | Compact answer | the compact's core members × its nodes' technologies and stages |
+  | Partnership case | the two economies × the nodes of the compacts both are core members of |
+
+  The Compact and Partnership notes are in `aib/views/strategic/ChangesNote.tsx`; they resolve AIB nodes into technology and stage.
+- **Home panel: "Which recommendations changed recently?"** (`HomeChanges`). It shows the latest six recommendation changes with their attribution, and says plainly that none is attributable yet.
+  - It loads only after the browser is idle, keeping Home's no-request-before-idle rule.
+  - `app.test.tsx` now counts 4 idle tasks.
+
+**Validation:**
+
+- Change tests: 16 UI tests plus the unit staleness tests pass.
+- `app.test.tsx`: 34 tests pass.
+- Typecheck is clean.
+- Full suite: 2345 of 2347 pass. The 2 failures are pre-existing and not from this branch: `review/exports.test.ts`, and the base's GC_030/GC_033 golden cases.
+- Browser, on real data:
+  - Home lists 142 recommendation changes between 31 Oct and 26 Nov, flagged as unattributable.
+  - USA Bottom line: 5 recommendations changed and 14 other assessments moved.
+  - Sector, Nuclear · Final Assembly: 6 changed (for example Canada Catch Up → Preserve) and 193 others moved.
+  - The Batteries compact shows the quiet line.
+- **Not checked in a browser:** the Partnership note, which needs a pair selected.
+
 ## Remaining technical debt
 
 1. **Pre-engine pipeline code (scripts/10–25) is not fingerprinted.** Its effect shows as changed engine inputs, so a
@@ -327,7 +364,7 @@ Run on the real pipeline in `osi-worktrees/change`:
 2. **(done in slice 6) Field-level provenance and a columnar bundle.**
    - Join each change record's moved fields to the ledger files that changed between its two vintages.
    - Switch the bundle to the posture core's columnar encoding and add a budget line.
-3. **Change cards beyond the cell drawer.**
+3. **(done in slice 7) Change cards beyond the cell drawer.**
    - Add "what changed" lines to the Sector strategy card, the Country "Bottom line", the Partnership case and the Compact answer.
    - Add the landing page's "recommendations changed" panel, fed only by attributable pairs.
 
@@ -337,7 +374,7 @@ The landing page should be built only on the change layer and on existing clean 
 
 | Question | Exists now | Missing |
 |---|---|---|
-| Which AIB recommendations changed recently? | **Yes.** The change bundle (`types` contains `recommendation`, with attribution); stamped exports are attributable from now on | One stamped data refresh, so the panel can lead with attributable changes |
+| Which AIB recommendations changed recently? | **Built** (slice 7): the Home panel, with attribution on every line | One stamped data refresh, so the panel can lead with attributable changes |
 | Where are dependencies worsening? | Need and import share per cell; T12M import exposure (scripts/37–38) | A *dated* series: Need deltas across vintages are confounded by method changes until stamps exist. Monthly import exposure is the cleaner near-term signal |
 | Where is strategic capability improving? | Position (cp) and export share per cell; monthly trade momentum | Same attribution caveat. Momentum (`mom`, `mq`) is a ready per-cell trend |
 | Where are policy commitments failing to translate into delivery? | Industrial Policy Strength module (lab); NEIS Intelligence `implementation_status` (announced → operational, cancelled, delayed) | A join of policies or projects to cells. Neither repo has project or policy entities; this needs the Intelligence bridge plus a project entity |

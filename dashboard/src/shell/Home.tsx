@@ -34,6 +34,7 @@ import { moduleInfo, SECTOR_DEFAULT_CELL } from './modules.ts';
 import { onIdle, prefetchAib, prefetchCountry, saveData } from './prefetch.ts';
 import { loadSectorManifest, peekSectorManifest, prefetchSectorChunk } from './sectorManifest.ts';
 import { useTitle } from './title.ts';
+import { HomeChanges } from '../changes/HomeChanges.tsx';
 
 /** Display names of the mineral pages (the data's dims.items labels are the authority on those pages). */
 export const MINERAL_LABELS: Readonly<Record<MineralSlug, string>> = {
@@ -516,6 +517,9 @@ export default function Home() {
           <CountryJump options={countries} />
         </div>
       </section>
+
+      {/* change layer: which recommendations changed recently (lazy; nothing without change history) */}
+      <HomeChanges />
 
       <p className="mt-6 text-sm text-paper-mute" data-testid="advanced-explorer-line">
         Want to inspect the underlying data?{' '}
