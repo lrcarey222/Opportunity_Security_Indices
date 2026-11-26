@@ -298,8 +298,21 @@ dir.create(bundle_dir, recursive = TRUE, showWarnings = FALSE)
 unlink(list.files(bundle_dir, pattern = "^changes\\..*\\.json$", full.names = TRUE))
 file <- sprintf("changes.%s.json", md5_8(txt))
 writeLines(txt, file.path(bundle_dir, file), useBytes = TRUE)
+# the assessment index for NEIS Intelligence (its rule-based impact proposer): the latest vintage's assessed cell ids
+# and the taxonomy crosswalk, so an event's tags can be matched to assessments without NEIS keeping its own copy
+latest_tbl <- tables[[utils::tail(ids, 1)]]
+assessed <- latest_tbl[dplyr::coalesce(latest_tbl$choice, "not_assessed") != "not_assessed", , drop = FALSE]
+crosswalk <- yaml::read_yaml(file.path(repo_root, "config", "neis_intelligence_crosswalk.yml"))
+ax_txt <- to_json(list(schema = "osi-aib-assessments", schema_version = 1L, created = created, vintage = utils::tail(ids, 1),
+                       id_prefix = cfg$assessment_id_prefix %||% "aib:posture",
+                       crosswalk = crosswalk[c("geography", "sector", "value_chain_node")],
+                       assessed = I(sort(assessment_id(assessed$iso3, assessed$tech, assessed$stage, cfg$assessment_id_prefix %||% "aib:posture")))))
+unlink(list.files(bundle_dir, pattern = "^assessments\\..*\\.json$", full.names = TRUE))
+ax_file <- sprintf("assessments.%s.json", md5_8(ax_txt))
+writeLines(ax_txt, file.path(bundle_dir, ax_file), useBytes = TRUE)
 writeLines(to_json(list(schema = CHANGE_SCHEMA, schema_version = CHANGE_SCHEMA_VERSION, created = created, git_commit = head_sha,
-                        changes = file, latest = utils::tail(ids, 1), n_vintages = length(ids), n_changes = nrow(all_changes)), pretty = TRUE),
+                        changes = file, assessments = ax_file, latest = utils::tail(ids, 1), n_vintages = length(ids),
+                        n_changes = nrow(all_changes)), pretty = TRUE),
            file.path(bundle_dir, "manifest.json"), useBytes = TRUE)
 message(sprintf("wrote %d vintages to %s, %d change records, bundle %s (%.0f KB)", length(keep), vint_dir, nrow(all_changes), file, nchar(txt, "bytes") / 1024))
 prune_store()

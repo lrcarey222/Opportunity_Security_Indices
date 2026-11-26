@@ -1,9 +1,10 @@
 {
   "schema": "osi-changes",
   "schema_version": 1,
-  "created": "2026-11-26T05:48:09Z",
-  "git_commit": "b865610c",
-  "changes": "changes.e87939f9.json",
+  "created": "2026-11-26T06:31:12Z",
+  "git_commit": "5b442fe7",
+  "changes": "changes.6836ed1a.json",
+  "assessments": "assessments.30b3d434.json",
   "latest": "2026-11-26-576eadf8",
   "n_vintages": 10,
   "n_changes": 29304

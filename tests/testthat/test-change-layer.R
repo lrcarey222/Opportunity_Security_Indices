@@ -235,6 +235,9 @@ test_that("impact records are validated and only accepted ones in the window att
   expect_length(validate_analytical_impacts(list(ok)), 0)
   probs <- validate_analytical_impacts(list(ok, bad))
   expect_true(any(grepl("bad assessment_id", probs)) && any(grepl("bad dimension", probs)) && any(grepl("needs reviewer", probs)))
+  # a rule proposal may leave the dimension unspecified, an accepted impact may not
+  expect_length(validate_analytical_impacts(list(utils::modifyList(ok, list(status = "proposed", dimension = "unspecified")))), 0)
+  expect_match(validate_analytical_impacts(list(utils::modifyList(ok, list(dimension = "unspecified")))), "needs a dimension")
   late <- utils::modifyList(ok, list(impact_id = "imp-3", review_timestamp = "2026-11-25T00:00:00Z"))
   prop <- utils::modifyList(ok, list(impact_id = "imp-4", status = "proposed"))
   r <- cl_cmp(cl_v(), cl_v(cp = 0.76))

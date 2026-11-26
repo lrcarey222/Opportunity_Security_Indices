@@ -284,32 +284,19 @@ Rules:
   pipeline recomputes from data.
 - `proposed` and `rejected` impacts never appear in the UI.
 
-**NEIS Intelligence side.** This is a design only; it is not implemented here because that checkout carries other
-uncommitted work. The table would be:
+**NEIS Intelligence side.** Built on `neis-intelligence` branch `feat/analytical-impacts`; see its `docs/analytical-impacts.md`.
 
-```sql
--- migrations/010_analytical_impacts.sql
-CREATE TABLE analytical_impacts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  event_id uuid NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-  assessment_id text NOT NULL CHECK (assessment_id ~ '^aib:posture:[A-Z]{3}:[a-z0-9-]+:[a-z]+$'),
-  dimension text NOT NULL CHECK (dimension IN ('need','prize','position','evidence','confidence','recommendation')),
-  direction text NOT NULL DEFAULT 'unclear' CHECK (direction IN ('up','down','unclear')),
-  reason text NOT NULL,
-  reason_method text NOT NULL CHECK (reason_method IN ('rule','model','editorial')),
-  confidence real CHECK (confidence BETWEEN 0 AND 1),
-  status text NOT NULL DEFAULT 'proposed' CHECK (status IN ('proposed','accepted','rejected')),
-  assigned_by text NOT NULL CHECK (assigned_by IN ('ai','rule','editor')),
-  reviewer text, review_timestamp timestamptz, review_note text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (event_id, assessment_id, dimension),
-  CHECK (status = 'proposed' OR (reviewer IS NOT NULL AND review_timestamp IS NOT NULL))
-);
-```
+- **Table.** Migration `010_analytical_impacts.sql` creates the table above, plus a `dimension` value of `unspecified`, an `aib_vintage` column and a `reviewer_id` foreign key to users.
+- **Proposer.** `src/services/impacts`, run by `npm run impacts -- propose` or the button on `/admin/impacts`. It is rule-based and starts every proposal at dimension `unspecified`.
+  - It proposes nothing for an item matching more than 40 assessments.
+  - On the seeded demo items against the real index, region-wide items matched 50–749 cells and were held back.
+- **Review.** `/admin/impacts`: an editor names the dimension, then accepts or rejects. The decision is written to `audit_log`.
+- **Export.** `npm run impacts -- export --out config/review/analytical_impacts.yml` writes accepted rows only, with the reviewer named by display name.
+- **Read-back.** The item page shows "In the AIB assessment" and "Contributed to a material change in our assessment".
 
-It mirrors the existing patterns: `assigned_by` and `confidence` as on `event_taxonomy_terms`, `editorial_reviews`
-for the queue, and `audit_log` for status flips. Geography terms gain `metadata.iso3` (no schema change, since
-`taxonomy_terms.metadata` is jsonb). The export to OSI is the accepted rows as YAML or JSON in the shape above.
+**One change from the design.** Geography terms do not get `metadata.iso3`. Instead, the Explorer publishes its crosswalk with its assessment index, `dashboard/public/data/changes/assessments.<hash>.json`, which scripts/45 writes. It holds the assessed cell ids of the latest vintage plus `config/neis_intelligence_crosswalk.yml`, so the mapping lives in one place.
+
+**`unspecified`.** A rule cannot know which dimension an item bears on. Proposals start as `unspecified`, and the validator, JSON schema and database all refuse an accepted impact that is still `unspecified`.
 
 The return path ("this event contributed to a material change in our assessment") is a read of OSI's change bundle,
 joined on `event_id`. NEIS Intelligence never copies AIB scores.

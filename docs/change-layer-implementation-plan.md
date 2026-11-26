@@ -228,6 +228,43 @@ Run on the real pipeline in `osi-worktrees/change`:
 
 **From now on:** every scripts/26 → scripts/91 run is attributable. The same engine on new inputs is `real_world`; a new engine on identical inputs is exactly `methodology`; both together are `mixed` until a bridge from the previous stamped vintage splits them.
 
+## Slice 5: the Intelligence bridge, end to end (2026-11-25, done)
+
+**Explorer:**
+
+- scripts/45 publishes `dashboard/public/data/changes/assessments.<hash>.json` (338 KB): the latest vintage's 9,237 assessed cell ids plus the crosswalk, named in the changes manifest.
+- The impact validator and JSON schema accept `dimension: unspecified` for proposals and refuse it for accepted impacts.
+
+**NEIS Intelligence** (`neis-intelligence` worktree `C:/Users/LCarey/neis-worktrees/impacts`, branch `feat/analytical-impacts`, cut from origin/main c4b5c1e):
+
+- migration 010;
+- the `src/services/impacts` proposer, review, export and read-back;
+- `scripts/impacts.ts` (`npm run impacts -- propose | export`);
+- `/admin/impacts`, linked in the admin nav;
+- the "In the AIB assessment" panel on item pages;
+- the `AIB_DATA_SOURCE` setting;
+- `docs/analytical-impacts.md`.
+
+**Validation:**
+
+- NEIS `tests/impacts.test.ts` passes 7 tests:
+  - candidates;
+  - the seeded US grid award proposed against US Electric Grid Components and Assembly, idempotently;
+  - the too-broad guard;
+  - accept requiring a dimension, the audit trail and an export without email addresses;
+  - the database check;
+  - the read-back;
+  - loading the index from the Explorer's layout.
+- NEIS typecheck and lint are clean.
+- **Cross-repository smoke test.** The seeded demo items were proposed against the real `data/changes`, one was accepted, and the export validated clean against the Explorer's own R validator.
+- Nothing from the demo database was committed to the Explorer. Its `analytical_impacts.yml` stays empty until real items are reviewed.
+
+**Not done:**
+
+- The production NEIS database has not been migrated.
+- No real item has been reviewed.
+- The read-back has not been seen in a browser, because it needs an accepted impact attached to a real change.
+
 ## Remaining technical debt
 
 1. **Pre-engine pipeline code (scripts/10–25) is not fingerprinted.** Its effect shows as changed engine inputs, so a
@@ -250,7 +287,7 @@ Run on the real pipeline in `osi-worktrees/change`:
 
 ## Recommended next slices
 
-1. **The Intelligence bridge, end to end.**
+1. **(done in slice 5) The Intelligence bridge.**
    - NEIS Intelligence migration `010_analytical_impacts.sql` and `metadata.iso3` on geography terms.
    - A rule-based proposer over `config/neis_intelligence_crosswalk.yml`, plus a review queue mirroring
      `editorial_reviews`.

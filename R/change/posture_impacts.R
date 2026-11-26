@@ -5,7 +5,7 @@
 #
 # Pure functions: no IO.
 
-IMPACT_DIMENSIONS <- c("need", "prize", "position", "evidence", "confidence", "recommendation")
+IMPACT_DIMENSIONS <- c("need", "prize", "position", "evidence", "confidence", "recommendation", "unspecified")
 IMPACT_STATUSES <- c("proposed", "accepted", "rejected")
 IMPACT_REASON_METHODS <- c("rule", "model", "editorial")
 IMPACT_ID_RE <- "^aib:posture:[A-Z]{3}:[a-z0-9-]+:[a-z0-9-]+$"
@@ -42,6 +42,8 @@ validate_analytical_impacts <- function(impacts) {
     if (!is.null(r$status) && !r$status %in% IMPACT_STATUSES) out <- c(out, sprintf("%s: bad status %s", who, r$status))
     if (!is.null(r$reason_method) && !r$reason_method %in% IMPACT_REASON_METHODS) out <- c(out, sprintf("%s: bad reason_method %s", who, r$reason_method))
     if (!is.null(r$confidence) && (!is.numeric(r$confidence) || r$confidence < 0 || r$confidence > 1)) out <- c(out, sprintf("%s: confidence outside 0-1", who))
+    # a rule proposes a link without knowing which dimension it touches; a reviewer must name it before accepting
+    if (identical(r$status, "accepted") && identical(r$dimension, "unspecified")) out <- c(out, sprintf("%s: an accepted impact needs a dimension", who))
     if (identical(r$status, "accepted") || identical(r$status, "rejected")) {
       if (is.null(r$reviewer) || is.null(r$review_timestamp)) out <- c(out, sprintf("%s: a reviewed impact needs reviewer and review_timestamp", who))
     }
