@@ -199,9 +199,12 @@ posture_family_scenarios <- function(x) {
 # The core document. tbl: strategic_position_tbl (scripts/26). division: strategic_aib_division_tbl.
 # countries: iso3, name, tier (coalition tier: core / partner / none). cfg: config/strategic_position.yml
 # (headline_techs, decision_framework thresholds, node_phrases). stage_display: named character, stage id ->
-# display name (config/supply_chain_stages.yml labels).
+# display name (config/supply_chain_stages.yml labels). treat_as_allied: config/aib_strategic_layer.yml
+# allied.treat_as_allied, the economies outside the core / partner tiers that are treated as allied; with it,
+# aib_header.members counts the trusted network (2026-11-25, user decision: "allied" is one set, the 64
+# economies), and aib_header.allied_members the economies it adds. Default none: members are the two tiers.
 posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit = NA_character_, momentum_band = 0.1,
-                             stage_display = NULL, layers = NULL) {
+                             stage_display = NULL, layers = NULL, treat_as_allied = character()) {
   techs <- unlist(cfg$headline_techs %||% sort(unique(tbl$tech)))
   stages <- SUPPLY_CHAIN_STAGES
   x <- tbl[!is.na(tbl$strategic_posture) & tbl$tech %in% techs, , drop = FALSE]
@@ -252,7 +255,9 @@ posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit 
   cells <- lapply(cells, function(v) I(unname(v)))
   div <- division[division$tech %in% techs, , drop = FALSE]
   dcol <- function(n) if (n %in% names(div)) div[[n]] else rep(NA, nrow(div))
-  members <- countries$iso3[countries$tier %in% c("core", "partner")]
+  tier_members <- countries$iso3[countries$tier %in% c("core", "partner")]
+  allied_extra <- setdiff(unique(toupper(as.character(unlist(treat_as_allied)))), c(tier_members, NA_character_, ""))
+  members <- c(tier_members, allied_extra)
   priority <- div$partner_demand + div$secure_demand > 0
   covered <- !div$aib_gap %in% c("no_trusted_supplier", "single_point_of_failure")
   sd <- stage_display %||% stats::setNames(stages, stages)
@@ -301,6 +306,8 @@ posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit 
     ),
     aib_header = list(
       core_members = sum(countries$tier %in% "core"),
+      partner_members = sum(countries$tier %in% "partner"),
+      allied_members = length(allied_extra),
       members = length(members),
       priority_nodes = sum(priority),
       covered_share = if (any(priority)) round(mean(covered[priority]), 3) else NA_real_,

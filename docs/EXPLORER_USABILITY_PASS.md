@@ -130,8 +130,12 @@ AIB measures; no-evidence stages collapsed on technology pages; decision-brief C
    share split and the R/TS summary parity use the same set; group labels read "Trusted core" / "Trusted partners".
    Partner shares rise where the five trade: semiconductor assembly 22.0% -> 49.4% (Taiwan), oil extraction
    29.4% -> 37.9% (UAE), Batteries Refining 30.5% -> 34.4%. Not changed: the Legacy OSI views (Partners, Space) keep
-   the old coalition-tier colours; the posture engine's division table still reads a 61-economy allied set from the
-   27 Oct AIB run until scripts/26 -> 91 rerun on the 64-economy AIB output. Details and result changes:
+   the old coalition-tier colours. The posture engine now uses the same 64 economies: scripts/32 -> 33 were rerun
+   with the 64-economy demand scope on the same inputs as the posture's AIB run (2024 trade, `aib_inputs.rds` of 30
+   Oct), then scripts/26 -> 91. The posture header reads `aib_header.members` 59 -> 64 (31 core + 28 partners + 5
+   treated as allied; scripts/91 reads `allied.treat_as_allied`) and the division table's allied set 61 -> 64
+   (adds Slovenia, Iceland, the UAE). No cell changes choice, posture or partner recommendation; 3 of 39 division
+   nodes change their gap, and covered priority steps go 76.7% -> 80.0%. scripts/26 now also reads `treat_as_allied` itself and warns when its AIB run leaves one out. Reproduce: the 64-scope posture AIB run is local (git-ignored `data/processed/outputs_p64/aib`, built from stamps `outputs/aib/aib_inputs.rds`); a rerun from the stamps store as it stands would read the 61-economy run. Details and result changes:
    `docs/PARTNER_ELIGIBILITY_AND_FRAMING.md` section 9.
 3. **Missing evidence read as evidence.** 20 Batteries Recovery cells are Catch Up with no competitive position or
    evidence grade (pathway "yes" alone); 78 Partner cells have no competitive position; 385 supply-stage cells are

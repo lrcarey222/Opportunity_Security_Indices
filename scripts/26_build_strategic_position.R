@@ -522,12 +522,19 @@ rm(yards)
 aib_dir <- file.path(outputs_dir, "aib")
 aib_files <- file.path(aib_dir, c("aib_inputs.rds", "aib_strategic.rds", "aib_results.rds"))
 aib_cells <- NULL
-allied <- unique(c(coalition_members, unlist(post_cfg$treat_as_allied %||% character())))
+# the one allied set (2026-11-25): the coalition tiers plus config/aib_strategic_layer.yml allied.treat_as_allied,
+# the same list scripts/32, 87 and 91 read, so the division table and the posture header agree
+treat_as_allied <- toupper(unlist(yaml::read_yaml(file.path(repo_root, "config", "aib_strategic_layer.yml"))$allied$treat_as_allied))
+allied <- unique(c(coalition_members, unlist(post_cfg$treat_as_allied %||% character()), treat_as_allied))
 if (all(file.exists(aib_files))) {
   aib_nodes <- readRDS(aib_files[1])$nodes
   aib_st <- readRDS(aib_files[2])
   aib_res <- readRDS(aib_files[3])
   aib_cells <- sp_aib_cell_capability(aib_nodes, aib_st$evidence, aib_res$quality, aib_res$leave_one_out, techs = techs)
+  if (length(setdiff(treat_as_allied, aib_st$allied))) {
+    warning("The AIB run in ", aib_dir, " leaves out ", paste(setdiff(treat_as_allied, aib_st$allied), collapse = ", "),
+            " (treat_as_allied): rerun scripts/32-33 with config/aib.yml demand_scope include_treat_as_allied.")
+  }
   allied <- unique(c(allied, aib_st$allied))
   rm(aib_nodes, aib_res)
 } else {

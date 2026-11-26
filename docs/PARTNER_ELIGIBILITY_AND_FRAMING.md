@@ -263,8 +263,28 @@ re-exported (scripts/33 -> 84, stamp `acbc3805`); review release `rel-4a271ac2b5
   nodes): exports to the five were previously free to be redirected to the 59, and now they are protected demand.
   Biggest moves in Semiconductors (SC-SEMIS Decoupling coordinated coverage 87.3% -> 80.0%). Sectoral compacts 35 ->
   37 (22 unchanged); compact roles 230 -> 235; strategic roles change for CAN, IND, KOR, MEX, PHL, TUR, USA.
-- **Not yet carried through.** The posture bundle's `aib_header.members` (59) and the division table's allied set
-  (61, from the 2026-10-27 AIB run) need scripts/26 and scripts/91 on a 64-set AIB run; the Explorer's header tile
-  already counts the trusted network from the country tiers. The Sector data's geo groups (R `sector_dims.R`) still
-  file the five under "rest": the regrouping has to come from the Sector export, because `meta.summary` is checked
-  against the client's recomputation (a client-only remap broke that parity on 1,272 summary rows).
+- **Posture engine and bundle (2026-11-25).** The posture's AIB run (2024 trade, 2026-10-30) was rerun with the
+  64-economy demand scope and nothing else changed: scripts/32 -> 33 on the same `aib_inputs.rds` (scripts/31 not
+  rerun; the AIB config differs from that run's only in `include_treat_as_allied`), then scripts/26 -> 91. The
+  current-trade run (`aib_current64`) is a different trade vintage and is not what the posture reads. Before the
+  rerun, scripts/26 -> 91 on the old AIB output reproduced the shipped posture bundle exactly (every document
+  identical apart from `created` / `git_commit`).
+  - Allied set: the division table and partner flags used 61 economies (the 59 plus Taiwan and Switzerland); now 64
+    (adds Slovenia, Iceland, the UAE). `aib_header.members` 59 -> 64, with new `partner_members` 28 and
+    `allied_members` 5 beside `core_members` 31 (`posture_core_doc(treat_as_allied=)`, scripts/91 reads
+    `config/aib_strategic_layer.yml`); the meta tier counts stay the coalition tiers.
+  - Cells: none of the 14,454 changes choice, posture, delivery, yard or partner recommendation, and
+    `partner_aib_status` is unchanged (785 covered, 902 gap, 31 partner gaps): the allied set is read after the
+    choice, and the new AIB evidence moves no recommendation. 42 cells (34 economies) now have a first
+    recommendation that is a member, all the UAE (Oil Components 17, Gas Refining 16, Wind Refining 7, Oil
+    Extraction 2); first recommendations that are members 1,013 -> 1,055 of 1,656.
+  - Division table (39 nodes): allied share rises in 32 nodes (mean 69.8% -> 71.3%; Gas Refining 70.7% -> 81.2%, Wind
+    Refining 69.4% -> 79.1%, Solar Refining 73.4% -> 82.9%, Oil Extraction 52.6% -> 61.4%); the UAE becomes a backup
+    in Gas Refining, Solar Refining and Wind Refining; redundancy rises in 7 nodes; members' partner demand 389 ->
+    413. Gaps change in 3 nodes, from the AIB leave-one-out under the wider demand: Batteries Extraction and Electric
+    Vehicles Extraction single point of failure -> weak evidence (Madagascar no longer irreplaceable), Wind
+    Components none -> single point of failure (Germany, Japan, the Philippines and Viet Nam now irreplaceable).
+    Header: priority steps 30, covered 76.7% -> 80.0%, unresolved gaps 21 -> 22.
+  - The Sector data's geo groups file the five with the trusted partners (scripts/87 `sector_geo(treat_as_allied=)`):
+    the regrouping comes from the Sector export, because `meta.summary` is checked against the client's
+    recomputation (a client-only remap broke that parity on 1,272 summary rows).

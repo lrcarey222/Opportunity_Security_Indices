@@ -477,7 +477,7 @@ function aibNodeBrief(def: Pick<CaseDefinition, 'kind' | 'key' | 'brief'>, b: De
   const facts = new Map<string, BriefFact>();
   const tw = doc ? tradeWhen(doc.meta) : 'latest';
   const bl = n?.baseline ?? null;
-  facts.set('allied_imports', bf({ id: 'allied_imports', label: `Allied economies’ imports of ${label.toLowerCase()}`, value: nn(n?.demandUsd), display: `${usd(nn(n?.demandUsd))} a year`, interpretation: '59 allied economies', source: SOURCE.aibTrade, vintage: tw }));
+  facts.set('allied_imports', bf({ id: 'allied_imports', label: `Allied economies’ imports of ${label.toLowerCase()}`, value: nn(n?.demandUsd), display: `${usd(nn(n?.demandUsd))} a year`, interpretation: 'the 64 economies of the trusted network', source: SOURCE.aibTrade, vintage: tw }));
   if (scenario === 'decoupling') {
     const ex = nn(n?.exposure);
     facts.set('china_share_allied', bf({ id: 'china_share_allied', label: 'China’s share of supply to allied economies (with Hong Kong and Macao re-exports)', value: ex, display: pct(ex), interpretation: supplierShareWords(ex), source: SOURCE.aibTrade, vintage: tw }));
@@ -516,7 +516,7 @@ function aibNodeBrief(def: Pick<CaseDefinition, 'kind' | 'key' | 'brief'>, b: De
   const a = def.brief;
   const question = scenario === 'managed'
     ? `If no supplier could hold more of the allied market for ${label.toLowerCase()} than is normal for comparable products, what kind of allied response would be needed: new production capacity, coordinated trade, managed reliance on a few suppliers with backup, or little intervention?`
-    : `If China stopped supplying ${label.toLowerCase()} to the 59 allied economies (while still buying from them), what kind of allied response would be needed: new production capacity, coordinated trade, managed reliance on a few suppliers with backup, or little intervention?`;
+    : `If China stopped supplying ${label.toLowerCase()} to the 64 economies of the trusted network (while still buying from them), what kind of allied response would be needed: new production capacity, coordinated trade, managed reliance on a few suppliers with backup, or little intervention?`;
   return {
     product: REVIEW_PRODUCT_OF_KIND[def.kind],
     identity: { title: [label, stage ? STAGE_DISPLAY[stage] : null, scen!.label].filter(Boolean).join(' × '), parts },
@@ -555,7 +555,7 @@ function chainFacts(an: ChainAnalysis, doc: AibDoc, name: (i: string | null | un
   const f = new Map<string, BriefFact>();
   const steps = an.compact.steps.map((s) => `${s.label}${s.description ? ` (${s.description})` : ''}`).join('; ');
   f.set('chain_steps', bf({ id: 'chain_steps', label: 'What the chain makes, step by step', value: an.compact.steps.length, display: steps, interpretation: `${an.nodes.length} products in ${an.compact.steps.length} steps`, source: 'Explorer strategic compact definition (curated steps)', vintage: isoDate(doc.meta.built) ?? 'as built' }));
-  f.set('chain_imports', bf({ id: 'chain_imports', label: 'Allied economies’ imports across the chain', value: nn(rec?.demandUsd), display: `${usd(nn(rec?.demandUsd))} a year`, interpretation: '59 allied economies', source: SOURCE.aibTrade, vintage: tw }));
+  f.set('chain_imports', bf({ id: 'chain_imports', label: 'Allied economies’ imports across the chain', value: nn(rec?.demandUsd), display: `${usd(nn(rec?.demandUsd))} a year`, interpretation: 'the 64 economies of the trusted network', source: SOURCE.aibTrade, vintage: tw }));
   f.set('supply_at_risk', bf({
     id: 'supply_at_risk', label: dec ? 'Supply lost if China stops supplying' : 'Supply that has to shift under the cap', value: nn(rec?.lostUsd),
     display: `${usd(nn(rec?.lostUsd))} a year (${pct(nn(rec?.exposure))} of the chain’s allied imports)`, interpretation: null, source: SOURCE.aibTrade, vintage: tw, estimate: !dec,
