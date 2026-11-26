@@ -10,6 +10,17 @@ CHANGE_TYPES <- c("recommendation", "score", "data", "evidence", "confidence")
 CHANGE_ATTRIBUTIONS <- c("real_world", "methodology", "mixed", "unattributed", "both")
 CHANGE_ROUND_TOL <- 1e-9   # cores are rounded to 3 dp; compare deltas with a hair of slack
 
+# How the data of two vintages relate: "same" (verifiably: identical engine input ledgers, or verified raw-input
+# stamps that agree), "changed" (the ledgers, the raw-input stamps or the input windows differ) or "unknown" (no
+# stamp that could tell). data: a vintage header's data list (id, verified, inputs_id).
+change_data_relation <- function(a, b) {
+  has_led <- !is.null(a$inputs_id) && !is.null(b$inputs_id) && !is.na(a$inputs_id) && !is.na(b$inputs_id)
+  if (has_led && identical(a$inputs_id, b$inputs_id)) return("same")
+  if (isTRUE(a$verified) && isTRUE(b$verified) && !has_led) return(if (identical(a$id, b$id)) "same" else "changed")
+  if (has_led || !identical(a$id, b$id)) return("changed")
+  "unknown"
+}
+
 # Two vintages are comparable when they cover the same techs and stages.
 posture_comparable <- function(prev_header, cur_header) {
   st <- setequal(unlist(prev_header$stages), unlist(cur_header$stages))
@@ -126,7 +137,8 @@ posture_compare <- function(prev, cur, prev_header, cur_header, cfg, bridge = NU
   unverified <- isTRUE(prev_header$method$unverified) || isTRUE(cur_header$method$unverified)
   pair <- list(prev = prev_header$vintage_id, cur = cur_header$vintage_id, comparable = cmp$comparable,
                reason = cmp$reason, method_changed = method_changed, method_unverified = unverified,
-               data_changed = !identical(prev_header$data$id, cur_header$data$id), bridge = !is.null(bridge))
+               data_relation = change_data_relation(prev_header$data, cur_header$data), bridge = !is.null(bridge))
+  pair$data_changed <- pair$data_relation == "changed"
   if (!cmp$comparable) {
     pair$counts <- list()
     return(list(pair = pair, changes = change_empty_records()))
@@ -150,11 +162,13 @@ posture_compare <- function(prev, cur, prev_header, cur_header, cfg, bridge = NU
     x$world_types <- ifelse(w_any, jw$types[kw], NA_character_)
     x$attribution <- ifelse(m_any & w_any, "both", ifelse(m_any, "methodology", ifelse(w_any, "real_world", "methodology")))
   } else {
-    # without a bridge: a method change is credited alone only when the data is verifiably unchanged (both data
-    # stamps record resolved raw-input vintages and agree) and the cell's measured inputs did not move. A stamp
-    # without raw-input vintages cannot rule out a data refresh: that cell is unattributed, never "methodology".
-    verified <- isTRUE(prev_header$data$verified) && isTRUE(cur_header$data$verified)
-    x$attribution <- ifelse(x$inputs_moved | pair$data_changed, "mixed", if (verified) "methodology" else "unattributed")
+    # without a bridge: a method change is credited alone only when the data is verifiably the same (identical engine
+    # input ledgers, or agreeing verified raw-input stamps). Changed data makes it mixed; with no stamp that could tell,
+    # a cell whose own measured inputs moved is mixed and any other is unattributed, never "methodology".
+    x$attribution <- switch(pair$data_relation,
+      same = rep("methodology", nrow(x)),
+      changed = rep("mixed", nrow(x)),
+      ifelse(x$inputs_moved, "mixed", "unattributed"))
   }
   x$method_changed <- rep(method_changed, nrow(x))
   x$method_unverified <- rep(unverified, nrow(x))

@@ -27,6 +27,7 @@ source(local({
 # is over 3 MiB or a detail document over 128 KiB. The manifest, the core and (since 2026-11-21) every detail
 # document carry created and git_commit.
 #   --out-dir DIR   default dashboard/public/data/posture
+#   --no-vintages   skip the change layer (scripts/45), which otherwise runs after an export to the default dir
 
 library(dplyr)
 for (f in c("R/utils/supply_chain_stages.R", "R/dashboard/posture/posture_export.R")) source(file.path(repo_root, f))
@@ -94,14 +95,40 @@ detail_bytes <- vapply(details, function(d) d$bytes, numeric(1))
 if (any(detail_bytes > POSTURE_BUDGET_DETAIL)) {
   stop("posture detail over the ", POSTURE_BUDGET_DETAIL / 1024, " KiB budget: ", paste(isos[detail_bytes > POSTURE_BUDGET_DETAIL], collapse = ", "))
 }
+# Change-layer stamps (docs/change-layer-architecture.md 2, 4): the fingerprint of the code this bundle was built
+# with (engine + upstream decide attribution; presentation is recorded), the engine input ledger scripts/26 wrote
+# for this run and the resolved raw-input vintages, so scripts/45 can tell a method change from a data change.
+for (f in c("R/change/posture_vintage.R", "scripts/utils/change_stamps.R")) source(file.path(repo_root, f))
+cl_cfg <- yaml::read_yaml(file.path(repo_root, "config", "change_layer.yml"))
+ledger_path <- file.path(outputs_dir, cl_cfg$engine_inputs_file %||% "strategic_position_inputs.json")
+tbl_path <- file.path(outputs_dir, "strategic_position_tbl.rds")
+ledger <- if (file.exists(ledger_path) && file.mtime(ledger_path) >= file.mtime(tbl_path) - 5) jsonlite::fromJSON(ledger_path, simplifyVector = FALSE) else NULL
+if (is.null(ledger)) message("No engine input ledger from the run that wrote strategic_position_tbl.rds (", ledger_path,
+                             "): rerun scripts/26 so the change layer can verify this bundle's data.")
+change_stamps <- list(
+  method = change_method_stamp(repo_root, cl_cfg$method_paths, label = cl_cfg$method_label),
+  inputs = if (is.null(ledger)) NULL else list(id = paste0("i-", change_hash(paste0(names(ledger$files), "=", unlist(ledger$files)))),
+                                               created = ledger$created, n = length(ledger$files), files = ledger$files),
+  raw_inputs = change_raw_inputs_stamp(file.path(repo_root, config$raw_data_dir, "raw_inputs_resolved.yml"))
+)
 manifest <- list(
   schema = POSTURE_SCHEMA, schema_version = POSTURE_SCHEMA_VERSION, created = created, git_commit = git_commit,
   core = core_file$file, core_bytes = core_file$bytes,
   details = stats::setNames(lapply(details, function(d) d$file), isos),
   counts = list(countries = length(isos), cells = length(core$cells$p), division_nodes = length(core$division$t),
                 choices = as.list(table(factor(tbl$strategic_choice[!is.na(tbl$strategic_choice)],
-                                               c("secure", "preserve", "catch_up", "partner", "accelerate", "watch", "not_assessed")))))
+                                               c("secure", "preserve", "catch_up", "partner", "accelerate", "watch", "not_assessed"))))),
+  stamps = change_stamps
 )
 writeLines(to_json(manifest), file.path(out_dir, "manifest.json"), useBytes = TRUE)
 message("Posture bundle (schema ", POSTURE_SCHEMA_VERSION, "): ", length(isos), " countries, ", format(length(core$cells$p), big.mark = ","),
         " cells, core ", round(core_file$bytes / 1024), " kB, largest detail ", round(max(detail_bytes) / 1024), " kB, written to ", out_dir)
+
+# The change layer: archive this bundle as a posture vintage and rebuild what changed (scripts/45). Only for the
+# shipped location; --no-vintages skips it.
+default_out <- normalizePath(file.path(repo_root, "dashboard", "public", "data", "posture"), winslash = "/", mustWork = FALSE)
+if (!"--no-vintages" %in% args && identical(normalizePath(out_dir, winslash = "/", mustWork = FALSE), default_out)) {
+  status <- system2(file.path(R.home("bin"), "Rscript"),
+                    c(change_qpath(file.path(repo_root, "scripts", "45_build_posture_vintages.R")), "--include-worktree"))
+  if (!identical(as.integer(status), 0L)) warning("scripts/45_build_posture_vintages.R failed (status ", status, "): the change bundle is stale.")
+}

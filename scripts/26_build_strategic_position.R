@@ -79,6 +79,13 @@ for (f in c(
   "R/categories/investment/investment_momentum.R"
 )) source(file.path(repo_root, f))
 
+# Change layer (docs/change-layer-architecture.md 4): record every data file this run reads, with its md5
+# (outputs/strategic_position_inputs.json, written at the end). Two runs with the same ledger read identical inputs,
+# so the change layer can tell a methodology change from a data change. The code it runs is listed in
+# config/change_layer.yml method_paths (engine + upstream): keep that list in step with the sources above.
+source(file.path(repo_root, "scripts", "utils", "change_stamps.R"))
+change_ledger_start()
+
 config <- getOption("opportunity_security.config")
 if (is.null(config)) stop("Config not loaded; run scripts/00_setup.R first.")
 sp_cfg <- yaml::read_yaml(Sys.getenv("OPSI_STRATEGIC_POSITION", file.path(repo_root, "config", "strategic_position.yml")))
@@ -975,3 +982,7 @@ message(
   "; ", nrow(layers_tbl), " layer rows (", sum(layers_tbl$strategic_posture %in% "secure"), " secure). Yards: ",
   paste(names(table(tbl$yard_rollup)), table(tbl$yard_rollup), sep = " ", collapse = ", "), "."
 )
+
+# the engine input ledger (change layer): every data file read above, with its md5
+change_ledger_write(file.path(outputs_dir, "strategic_position_inputs.json"), repo_root)
+change_ledger_stop()

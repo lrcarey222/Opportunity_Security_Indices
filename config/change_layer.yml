@@ -1,27 +1,49 @@
 # Change layer (docs/change-layer-architecture.md): posture vintages and deterministic change detection.
 # Every rule here is read by R/change/*.R. Nothing in this layer is decided by a model.
 
-layer_version: 1
+layer_version: 2
 
 # The analytical object ID: aib:posture:<ISO3>:<tech-slug>:<stage-slug>
 assessment_id_prefix: "aib:posture"
 
-# Method fingerprint: the git object id of each path at the vintage's code commit. A pair whose fingerprints differ
-# is a methodology pair. Widening this list attributes more change to method (the conservative direction).
+# Method fingerprint (scripts/utils/change_stamps.R): the git blob id of every file under these paths, at the
+# vintage's code commit or, for an export stamped by scripts/91, in the working tree it ran from.
+#   engine + upstream: the code the engine run (scripts/26) executes. A pair whose engine + upstream fingerprint
+#     differs is a methodology pair. upstream is the non-engine R that scripts/26 sources; keep it in step with that
+#     list (widening it attributes more change to method, the conservative direction).
+#   presentation: the export code. Recorded, never used for attribution: re-encoding a bundle does not change a result.
+# Code that built the engine's input tables earlier in the pipeline (scripts/10-25) is not here: its effect reaches
+# the engine as changed input files, which the input ledger records (data_stamp below).
 method_paths:
-  - R/strategic_position
-  - config/strategic_position.yml
-  - R/utils/variable_stage_evidence.R
-  - R/dashboard/posture
-  - scripts/26_build_strategic_position.R
-  - scripts/91_export_posture_data.R
+  engine:
+    - R/strategic_position
+    - config/strategic_position.yml
+    - R/utils/variable_stage_evidence.R
+    - scripts/26_build_strategic_position.R
+  upstream:
+    - R/utils/schema.R
+    - R/utils/scurve.R
+    - R/utils/country.R
+    - R/utils/supply_chain_stages.R
+    - R/indices/build_indices.R
+    - R/indices/build_policy_index.R
+    - R/categories/policy/cat_policy_index.R
+    - R/categories/trade/trade_core.R
+    - R/categories/investment/investment_momentum.R
+  presentation:
+    - R/dashboard/posture
+    - scripts/91_export_posture_data.R
 
 # Human label of the method (shell/ReleaseStamp.tsx METHOD_VERSION). Recorded beside the fingerprint, never used
 # to decide anything.
 method_label: "decision framework (2026-10-30)"
 
-# Data stamp: the core meta fields that describe the input windows.
+# Data stamp: the core meta fields that describe the input windows, plus (for exports stamped by scripts/91) the
+# engine input ledger (outputs/strategic_position_inputs.json from scripts/26: md5 of every data file the run read)
+# and the resolved raw-input vintages (raw_inputs_resolved.yml from scripts/10). Two vintages whose ledgers match
+# read byte-identical inputs: their data is verifiably the same.
 data_stamp_fields: [benchmark_period, momentum_period, momentum_through]
+engine_inputs_file: strategic_position_inputs.json
 
 thresholds:
   # score change: |delta| on need / prize / cp at or above min_delta, or any crossing of the decision bar

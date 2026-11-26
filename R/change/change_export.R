@@ -31,14 +31,15 @@ change_record_json <- function(r) {
 change_vintage_json <- function(h) {
   list(id = h$vintage_id, created = h$created, gitCommit = h$git_commit, provisional = isTRUE(h$provisional),
        stampSource = h$stamp_source, coreFile = h$core_file, coreCommit = h$core_commit,
-       method = list(id = h$method$id, label = h$method$label, unverified = isTRUE(h$method$unverified)),
+       method = list(id = h$method$id, engine = h$method$engine, upstream = h$method$upstream, presentation = h$method$presentation,
+                     label = h$method$label, unverified = isTRUE(h$method$unverified), source = h$method$source),
        data = h$data[setdiff(names(h$data), "raw_inputs")], nCells = h$n_cells, bars = h$bars)
 }
 
 change_pair_json <- function(p) {
   list(prev = p$prev, cur = p$cur, comparable = isTRUE(p$comparable), reason = p$reason,
        methodChanged = isTRUE(p$method_changed), methodUnverified = isTRUE(p$method_unverified),
-       dataChanged = isTRUE(p$data_changed), bridge = isTRUE(p$bridge), detail = !isFALSE(p$detail),
+       dataChanged = isTRUE(p$data_changed), dataRelation = p$data_relation %||% "unknown", bridge = isTRUE(p$bridge), detail = !isFALSE(p$detail),
        nCells = p$n_cells %||% NA_integer_, nUnchanged = p$n_unchanged %||% NA_integer_, counts = p$counts %||% list())
 }
 

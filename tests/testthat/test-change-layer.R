@@ -107,10 +107,13 @@ test_that("a method change is never credited alone when the data is not verified
   expect_equal(cl_usa(cl_cmp(cl_v(), cur, hc = h_dat))$attribution, "mixed")
 })
 
-test_that("a method change with moved inputs is mixed, and a bridge decomposes it", {
+test_that("a method change with moved inputs and unstamped data is mixed, and a bridge decomposes it", {
   cur <- cl_v(choice = "catch_up", cp = 0.78, share = 0.06)
-  r <- cl_cmp(cl_v(), cur, hc = H2m)
+  h_unv <- cl_header("v2u", "2026-11-21T00:00:00Z", method = "m-bbbb", data_verified = FALSE)
+  r <- cl_cmp(cl_v(), cur, hc = h_unv)
   expect_equal(cl_usa(r)$attribution, "mixed")
+  # verified-same data: even a moved share is the method's (upstream code re-derived it from the same inputs)
+  expect_equal(cl_usa(cl_cmp(cl_v(), cur, hc = H2m))$attribution, "methodology")
   # bridge = new method on old inputs: the method alone moved the choice; data then moved share only
   bridge <- cl_v(choice = "catch_up", cp = 0.78)
   rb <- cl_cmp(cl_v(), cur, hc = H2m, bridge = bridge)
@@ -127,6 +130,52 @@ test_that("an unverified (dirty) fingerprint is flagged", {
   r <- cl_cmp(cl_v(), cl_v(cp = 0.76), hc = cl_header("v2", "2026-11-21T00:00:00Z", unverified = TRUE))
   expect_true(cl_usa(r)$method_unverified)
   expect_match(cl_usa(r)$explanation, "unverified")
+})
+
+test_that("identical engine input ledgers make the data verifiably the same; differing ones make it changed", {
+  led <- function(h, id) { h$data$inputs_id <- id; h$data$verified <- FALSE; h }
+  expect_equal(change_data_relation(led(H1, "i-1")$data, led(H2m, "i-1")$data), "same")
+  expect_equal(change_data_relation(led(H1, "i-1")$data, led(H2m, "i-2")$data), "changed")
+  expect_equal(change_data_relation(list(id = "d-1"), list(id = "d-1")), "unknown")
+  expect_equal(change_data_relation(list(id = "d-1"), list(id = "d-2")), "changed")
+  cur <- cl_v(choice = "catch_up", cp = 0.78)
+  expect_equal(cl_usa(cl_cmp(cl_v(), cur, hp = led(H1, "i-1"), hc = led(H2m, "i-1")))$attribution, "methodology")
+  expect_equal(cl_usa(cl_cmp(cl_v(), cur, hp = led(H1, "i-1"), hc = led(H2m, "i-2")))$attribution, "mixed")
+  # same engine, different inputs: new data
+  expect_equal(cl_usa(cl_cmp(cl_v(), cur, hp = led(H1, "i-1"), hc = led(H2, "i-2")))$attribution, "real_world")
+})
+
+test_that("the input ledger records the data files a run reads, with md5", {
+  source(file.path(cl_root, "scripts/utils/change_stamps.R"))
+  td <- tempfile("ledger"); dir.create(td)
+  f_rds <- file.path(td, "a.rds"); saveRDS(1:3, f_rds)
+  f_csv <- file.path(td, "b.csv"); utils::write.csv(data.frame(x = 1), f_csv, row.names = FALSE)
+  change_ledger_start()
+  on.exit(change_ledger_stop(), add = TRUE)
+  invisible(readRDS(f_rds)); invisible(utils::read.csv(f_csv))
+  if (requireNamespace("data.table", quietly = TRUE)) invisible(data.table::fread(f_csv))
+  doc <- change_ledger_write(file.path(td, "ledger.json"), td)
+  expect_setequal(names(doc$files), c("a.rds", "b.csv"))
+  expect_equal(doc$files[["a.rds"]], unname(tools::md5sum(f_rds)))
+  change_ledger_stop()
+  invisible(readRDS(f_rds))   # no longer traced: nothing new is recorded after a restart
+  change_ledger_start(); change_ledger_stop()
+  expect_length(ls(change_ledger_env), 0)
+})
+
+test_that("the method stamp fingerprints engine + upstream and ignores presentation", {
+  source(file.path(cl_root, "scripts/utils/change_stamps.R"))
+  skip_if(Sys.which("git") == "", "git not available")
+  paths <- list(engine = list("R/change/posture_compare.R"), upstream = list("R/change/posture_vintage.R"),
+                presentation = list("R/change/change_export.R"))
+  a <- change_method_stamp(cl_root, paths, commit = "HEAD")
+  paths_b <- paths
+  paths_b$presentation <- list("R/change/posture_explain.R")
+  b <- change_method_stamp(cl_root, paths_b, commit = "HEAD")
+  expect_equal(a$id, b$id)
+  expect_false(identical(a$presentation, b$presentation))
+  expect_equal(a$n_files, 2)
+  expect_match(a$id, "^m-")
 })
 
 test_that("vintages with different stage taxonomies are not compared", {
