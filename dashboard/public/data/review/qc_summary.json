@@ -1,14 +1,14 @@
 {
   "schema": "aib-review-qc-summary",
   "schema_version": 1,
-  "data_release": "rel-6b4b26b36db1",
-  "built_at": "2026-11-25T17:11:39.971Z",
-  "app_commit": "854f4f79",
+  "data_release": "rel-d9b95a06f253",
+  "built_at": "2026-11-26T00:37:04Z",
+  "app_commit": "583bd65a",
   "layer": "bundle",
   "status": {
-    "pass": 32,
+    "pass": 31,
     "warn": 7,
-    "fail": 0,
+    "fail": 1,
     "info": 5
   },
   "checks": [
@@ -36,11 +36,11 @@
       "area": "provenance",
       "status": "warn",
       "n": 3,
-      "detail": "AIB bundle created 2026-11-24T05:01:17Z; 3 of 4 AIB files carry no git commit (manifest, compacts and scenario documents)",
+      "detail": "AIB bundle created 2026-11-26T00:36:29Z; 3 of 4 AIB files carry no git commit (manifest, compacts and scenario documents)",
       "examples": [
-        "aib/compacts.9cc61b46.json",
-        "aib/scenario-managed.30ee124b.json",
-        "aib/scenario-baseline.7416dbc4.json"
+        "aib/compacts.5f89d49d.json",
+        "aib/scenario-managed.b4fd312e.json",
+        "aib/scenario-baseline.c47c8bcc.json"
       ]
     },
     {
@@ -67,7 +67,7 @@
       "area": "provenance",
       "status": "pass",
       "n": 0,
-      "detail": "country 2026-10-31T15:58:15Z @ 4bb2adc, sector 2026-10-31T15:58:13Z @ 4bb2adc, strategic 2026-10-30T21:17:20Z @ a54a9d3: all stamped",
+      "detail": "country 2026-10-31T15:58:15Z @ 4bb2adc, sector 2026-11-26T00:18:20Z @ 1135534c, strategic 2026-10-30T21:17:20Z @ a54a9d3: all stamped",
       "examples": []
     },
     {
@@ -75,8 +75,8 @@
       "layer": "bundle",
       "area": "provenance",
       "status": "info",
-      "n": 3,
-      "detail": "the bundles come from 3 commits (17f0737e, 4bb2adc, a54a9d3) and 4 export dates (2026-10-30, 2026-10-31, 2026-11-21, 2026-11-24); only the data release ID ties them together",
+      "n": 4,
+      "detail": "the bundles come from 4 commits (17f0737e, 4bb2adc, 1135534c, a54a9d3) and 4 export dates (2026-10-30, 2026-10-31, 2026-11-21, 2026-11-26); only the data release ID ties them together",
       "examples": []
     },
     {
@@ -85,7 +85,7 @@
       "area": "provenance",
       "status": "pass",
       "n": 0,
-      "detail": "data release rel-6b4b26b36db1: every bundle stamp present",
+      "detail": "data release rel-d9b95a06f253: every bundle stamp present",
       "examples": []
     },
     {
@@ -314,7 +314,7 @@
       "area": "aib.schema",
       "status": "pass",
       "n": 0,
-      "detail": "AIB document osi-aib v3: 77 nodes, 35 operational compacts, 10 strategic compacts; checkCompactsDoc reports no problem",
+      "detail": "AIB document osi-aib v3: 77 nodes, 37 operational compacts, 10 strategic compacts; checkCompactsDoc reports no problem",
       "examples": []
     },
     {
@@ -323,7 +323,7 @@
       "area": "aib.codes",
       "status": "pass",
       "n": 77,
-      "detail": "node classes, variants and growth classes are AIB classes: BUILD 45, LOW INTERVENTION 25, INSUFFICIENT DATA 3, MANAGE SPECIALIZATION 1, COORDINATE 3",
+      "detail": "node classes, variants and growth classes are AIB classes: BUILD 50, LOW INTERVENTION 22, INSUFFICIENT DATA 3, MANAGE SPECIALIZATION 1, COORDINATE 1",
       "examples": []
     },
     {
@@ -387,17 +387,17 @@
       "layer": "bundle",
       "area": "aib.coverage",
       "status": "info",
-      "n": 32,
-      "detail": "32 operational compacts show anchor coverage more than 10 points above trade coverage (the \"compact gain\" is largely redistribution within the scope plus simulated capacity)",
+      "n": 34,
+      "detail": "34 operational compacts show anchor coverage more than 10 points above trade coverage (the \"compact gain\" is largely redistribution within the scope plus simulated capacity)",
       "examples": [
-        "AIB-C01: anchorCompact 1 vs trade 0.893",
-        "AIB-C02: anchorCompact 0.8297 vs trade 0.3746",
-        "AIB-C03: anchorCompact 1 vs trade 0.7687",
-        "AIB-C04: anchorCompact 1 vs trade 0.6966",
-        "AIB-C05: anchorCompact 1 vs trade 0.7182",
-        "AIB-C06: anchorCompact 1 vs trade 0.3407",
-        "AIB-C07: anchorCompact 1 vs trade 0.7443",
-        "AIB-C08: anchorCompact 1 vs trade 0.6849"
+        "AIB-C01: anchorCompact 1 vs trade 0.8043",
+        "AIB-C02: anchorCompact 0.8325 vs trade 0.3678",
+        "AIB-C03: anchorCompact 1 vs trade 0.7305",
+        "AIB-C04: anchorCompact 1 vs trade 0.6663",
+        "AIB-C05: anchorCompact 0.9974 vs trade 0.6879",
+        "AIB-C06: anchorCompact 0.9887 vs trade 0.3303",
+        "AIB-C07: anchorCompact 1 vs trade 0.7494",
+        "AIB-C08: anchorCompact 1 vs trade 0.6941"
       ]
     },
     {
@@ -455,16 +455,16 @@
       "area": "robustness",
       "status": "info",
       "n": 77,
-      "detail": "AIB nodes (Decoupling) under the shipped class variants and growth bounds: stable 31, sensitive 17, fragile 26, not testable 3; fence change 41",
+      "detail": "AIB nodes (Decoupling) under the shipped class variants and growth bounds: stable 34, sensitive 14, fragile 26, not testable 3; fence change 39",
       "examples": [
         "china_50: 25 nodes change class",
-        "largest_subsector: 20 nodes change class",
+        "largest_subsector: 18 nodes change class",
         "largest_stage: 16 nodes change class",
         "largest_technology: 12 nodes change class",
         "release: 9 nodes change class",
-        "conservative: 8 nodes change class",
-        "growth_unlimited: 3 nodes change class",
-        "growth_1.25x: 1 nodes change class"
+        "conservative: 3 nodes change class",
+        "growth_1.25x: 1 nodes change class",
+        "growth_unlimited: 1 nodes change class"
       ],
       "layer": "bundle"
     },
@@ -480,10 +480,13 @@
     {
       "check_id": "BQ-GOLDEN-01",
       "area": "golden",
-      "status": "pass",
-      "n": 0,
-      "detail": "all 36 golden cases pass",
-      "examples": [],
+      "status": "fail",
+      "n": 2,
+      "detail": "2 of 36 golden cases fail or are missing (a change fails until NEIS re-approves the case): pass 34, fail 2, missing 0, not applicable 0",
+      "examples": [
+        "GC_030 fail: choice BUILD, expected exactly COORDINATE; existing 0.7278 outside [0.82, 0.85]; dividend 0.0042 outside [0.07, 0.09]; residual 0.268 outside [0.075, 0.0999]",
+        "GC_033 fail: residual 0.1956 outside [0.1, 0.115]"
+      ],
       "layer": "bundle"
     }
   ],
@@ -574,30 +577,30 @@
     "aib": {
       "records": 77,
       "by_class": {
-        "stable": 31,
-        "sensitive": 17,
+        "stable": 34,
+        "sensitive": 14,
         "fragile": 26,
         "not_testable": 3
       },
-      "fence_change": 41,
+      "fence_change": 39,
       "by_driver": {
         "china_50": 25,
         "release": 9,
-        "largest_subsector": 20,
+        "largest_subsector": 18,
         "largest_stage": 16,
         "largest_technology": 12,
-        "conservative": 8,
-        "existing_relationship_growth": 4
+        "conservative": 3,
+        "existing_relationship_growth": 2
       },
       "by_spec": {
         "china_50": 25,
         "release": 9,
-        "largest_subsector": 20,
+        "largest_subsector": 18,
         "largest_stage": 16,
         "largest_technology": 12,
-        "conservative": 8,
-        "growth_unlimited": 3,
-        "growth_1.25x": 1
+        "conservative": 3,
+        "growth_1.25x": 1,
+        "growth_unlimited": 1
       },
       "indeterminate_by_spec": {},
       "not_testable_by_reason": {
@@ -694,8 +697,8 @@
   },
   "golden": {
     "summary": {
-      "pass": 36,
-      "fail": 0,
+      "pass": 34,
+      "fail": 2,
       "missing": 0,
       "not_applicable": 0
     },
@@ -1024,28 +1027,33 @@
         "status": "pass",
         "observed": {
           "choice": "BUILD",
-          "exposure": 0.6184,
-          "residual": 0.6068
+          "exposure": 0.6252,
+          "residual": 0.6227
         },
         "failures": []
       },
       {
         "id": "GC_030",
-        "status": "pass",
+        "status": "fail",
         "observed": {
-          "choice": "COORDINATE",
-          "existing": 0.8342,
-          "dividend": 0.0808,
-          "residual": 0.0849
+          "choice": "BUILD",
+          "existing": 0.7278,
+          "dividend": 0.0042,
+          "residual": 0.268
         },
-        "failures": []
+        "failures": [
+          "choice BUILD, expected exactly COORDINATE",
+          "existing 0.7278 outside [0.82, 0.85]",
+          "dividend 0.0042 outside [0.07, 0.09]",
+          "residual 0.268 outside [0.075, 0.0999]"
+        ]
       },
       {
         "id": "GC_031",
         "status": "pass",
         "observed": {
           "choice": "LOW INTERVENTION",
-          "exposure": 0.1166
+          "exposure": 0.1118
         },
         "failures": []
       },
@@ -1054,27 +1062,29 @@
         "status": "pass",
         "observed": {
           "choice": "BUILD",
-          "residual": 0.4562
+          "residual": 0.4603
         },
         "failures": []
       },
       {
         "id": "GC_033",
-        "status": "pass",
+        "status": "fail",
         "observed": {
           "choice": "BUILD",
-          "residual": 0.107,
-          "exposure": 0.1952
+          "residual": 0.1956,
+          "exposure": 0.1987
         },
-        "failures": []
+        "failures": [
+          "residual 0.1956 outside [0.1, 0.115]"
+        ]
       },
       {
         "id": "GC_034",
         "status": "pass",
         "observed": {
           "choice": "sectoral",
-          "exposure": 0.5935,
-          "coverage_coordinated": 0.4204
+          "exposure": 0.5906,
+          "coverage_coordinated": 0.4146
         },
         "failures": []
       },
@@ -1083,8 +1093,8 @@
         "status": "pass",
         "observed": {
           "choice": "sectoral",
-          "lost_usd": 8205549363,
-          "exposure": 0.0332
+          "lost_usd": 8151802296,
+          "exposure": 0.0315
         },
         "failures": []
       },
@@ -1093,7 +1103,7 @@
         "status": "pass",
         "observed": {
           "choice": "sectoral",
-          "lost_usd": 203427905
+          "lost_usd": 227145246
         },
         "failures": []
       }
