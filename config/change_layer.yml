@@ -76,7 +76,7 @@ thresholds:
 # Dashboard bundle: full change records for the last N comparable pairs that changed something (and every later pair) (older pairs ship their summary only; all
 # records stay in outputs/change_layer/posture_changes.csv).
 bundle:
-  detail_pairs: 4
+  detail_pairs: 2
 
 severity_rank: {minor: 1, moderate: 2, major: 3}
 

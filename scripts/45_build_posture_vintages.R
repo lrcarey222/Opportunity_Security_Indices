@@ -273,7 +273,7 @@ head_sha <- git("rev-parse", "--short", "HEAD")[1]
 # (counted over pairs that changed something: a pair with no change costs nothing and rides along)
 comp <- which(vapply(results, function(r) isTRUE(r$pair$comparable), logical(1)))
 comp_nz <- comp[vapply(results[comp], function(r) (r$pair$counts$meaningful %||% 0L) > 0, logical(1))]
-detail <- if (length(comp_nz)) comp[comp >= min(utils::tail(comp_nz, cfg$bundle$detail_pairs %||% 4L))] else comp
+detail <- if (length(comp_nz)) comp[comp >= min(utils::tail(comp_nz, cfg$bundle$detail_pairs %||% 2L))] else comp
 bres <- lapply(seq_along(results), function(i) { r <- results[[i]]; r$pair$detail <- i %in% detail; if (!i %in% detail) r$changes <- r$changes[0, ]; r })
 bundle <- change_bundle(unname(vintages), bres, impacts = impacts, sources = cfg$sources, created = created, git_commit = head_sha)
 txt <- to_json(bundle)

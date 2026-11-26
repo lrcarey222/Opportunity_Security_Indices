@@ -532,6 +532,65 @@
       },
       "n_cells": 14124,
       "sha256": "7d0927e53188967a467d1f2582a45235fd83b9962a13d1df3795937be8c8bc11"
+    },
+    {
+      "vintage_id": "2026-11-26-576eadf8",
+      "created": "2026-11-26T05:16:08Z",
+      "git_commit": "e738cb40-dirty",
+      "commit_dirty": true,
+      "stamp_source": "bundle",
+      "provisional": true,
+      "core_file": "dashboard/public/data/posture/posture-core.576eadf8.json",
+      "core_commit": null,
+      "method": {
+        "id": "m-f2ee13f3",
+        "engine": "m-9ec9a88a",
+        "upstream": "m-173bc6ad",
+        "presentation": "m-64170259",
+        "label": "decision framework (2026-10-30)",
+        "n_files": 45,
+        "unverified": false,
+        "source": "manifest"
+      },
+      "data": {
+        "id": "d-a09ff558",
+        "benchmark_period": "2022-2024",
+        "momentum_period": "Jan 2025 - Dec 2025",
+        "momentum_through": "Dec 2025",
+        "verified": true,
+        "inputs_id": "i-8bb8d0fc",
+        "n_inputs": 38,
+        "n_raw_inputs": 11
+      },
+      "techs": [
+        "Batteries",
+        "Coal",
+        "Electric Grid",
+        "Electric Vehicles",
+        "Gas",
+        "Geothermal",
+        "Green Hydrogen",
+        "Nuclear",
+        "Oil",
+        "Solar",
+        "Wind"
+      ],
+      "stages": [
+        "Extraction",
+        "Refining",
+        "Components",
+        "Assembly",
+        "Deployment",
+        "Recovery"
+      ],
+      "bars": {
+        "need": 0.67,
+        "deployment": 0.6,
+        "prize": 0.6,
+        "cp": 0.75
+      },
+      "n_cells": 14124,
+      "sha256": "b0037981006fa0a303d7c1dc73f85dae102226c428c8f8b45b055f6a87882d91"
     }
   ]
 }
