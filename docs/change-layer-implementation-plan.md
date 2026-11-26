@@ -116,46 +116,83 @@ stamped (slice 2), or with a bridge run.**
   - `/changes` lists the eight pairs and the filterable records.
   - Screenshots are in `docs/change-layer-screens/`.
 
+## Slice 2: stamp and automate (2026-11-25, done)
+
+**What changed:**
+
+- **Method fingerprint split** (`config/change_layer.yml` `method_paths`, layer version 2). Engine + upstream decide
+  attribution; presentation is recorded only. Fingerprints are file-level git blob ids (`scripts/utils/change_stamps.R`),
+  from the working tree at export or from git for older commits.
+  - On history this correctly turns the two export-only re-exports (2026-10-31 and 2026-11-21) into "method same"
+    pairs, both with zero changes.
+  - Every pair with changes still changed the engine, so the history stays `unattributed`.
+- **Engine input ledger.** scripts/26 traces every data file it reads and writes `outputs/strategic_position_inputs.json`.
+- **Manifest stamps.** scripts/91 writes `stamps` into the posture manifest: method (engine, upstream, presentation),
+  inputs (ledger id plus the path → md5 map) and raw_inputs (from `raw_inputs_resolved.yml`).
+  - It refuses a ledger older than `strategic_position_tbl.rds`.
+  - It then runs scripts/45 unless `--no-vintages` is given.
+- **Attribution rule** (`change_data_relation`):
+  - identical ledgers make the data verifiably the same, so a method change there is exactly `methodology`;
+  - a changed ledger with a method change is `mixed`;
+  - the same method is `real_world`.
+- **scripts/45:**
+  - reads the manifest stamps;
+  - archives provisional (uncommitted) vintages and prunes orphans;
+  - reuses archived vintages (about 35 s, was about 2 min).
+- **CI guard.** `src/changes/__tests__/stale.test.ts` checks that the change bundle's latest vintage is the shipped
+  posture core.
+
+**Validation:**
+
+- R tests: 82 expectations, all passing. New coverage: data relation, the ledger tracing real reads (and skipping R's
+  own library files), and the method stamp ignoring presentation.
+- Change-layer vitest: 9 passing. Typecheck is clean.
+- All four touched scripts parse.
+- A simulated stamped export (a modified core plus a manifest stamped as scripts/91 does) ran through scripts/45 as a
+  provisional vintage. The stamps were read, the cell change was classified, the archive was written and the CI guard
+  passed. The real bundle was then restored.
+
+**Not verified here:** a real scripts/26 → scripts/91 run. This worktree has no pipeline data. The ledger and stamp code
+is unit-tested, and both scripts parse.
+
+**One-time effect.** Instrumenting scripts/26 changes the engine fingerprint, so the first stamped export will read
+"method changed" against history. Every export after it is attributable.
+
 ## Remaining technical debt
 
-1. **Data stamps are windows only.** Raw-input vintages are captured only through `--raw-inputs` on a provisional
-   vintage. scripts/91 should write them into the posture manifest.
-2. **Vintages are created by hand** (scripts/45). scripts/91 does not yet call it on export, and CI does not check
-   that the change bundle is current against the posture bundle.
-3. **The method fingerprint is coarse and narrow.**
-   - Coarse: export-only edits in `R/dashboard/posture` and `scripts/91` count as method changes.
-   - Narrow: upstream index code (`R/indices`, trade pipelines) does not count.
-   - The fix is a split into `engine` and `presentation` path sets, plus an upstream set.
+1. **No bridge vintages yet.** A method change on changed data stays `mixed`.
+2. **Pre-engine pipeline code (scripts/10–25) is not fingerprinted.** Its effect shows as changed engine inputs, so a
+   `real_world` pair can still include upstream processing changes. The raw-input stamp shows whether source files
+   changed.
+3. **The ledger depends on the traced readers.** A reader added later (for example `arrow`, `jsonlite::read_json` or
+   `haven`) would be missed; add it to `CHANGE_LEDGER_TRACES`. The `upstream` list must track scripts/26's `source()`
+   list by hand.
 4. **The provenance map is curated** (`config/change_layer.yml` sources). It names likely inputs; it is not computed
    lineage.
-5. **Evidence is the 4-band `stage_evidence_quality_cp` only.** The VSE shares (exact/split/shared/proxy) live in
-   the rds and are not in the core. Reading proxy → stage-specific needs the table-based vintage
-   (`posture_vintage_from_table`) or a core column.
-6. **Budget.** No dedicated `check-budget.mjs` line yet. The bundle is about 150 KB gzipped, inside `allData`.
-7. **Bundle size.** The bundle repeats keys per record (4.1 MB raw). A columnar encoding like the posture core's would
-   cut it by about 5×.
-8. **Scope.** The Sector, Partnership and Compact cards and the Country "Bottom line" do not yet show changes.
-9. **Bridge vintages** need engine input-table snapshots; they are not produced yet.
+   - The ledger now holds the real input files per vintage.
+   - Next step: link changed fields to the changed ledger files.
+5. **Evidence is the 4-band `stage_evidence_quality_cp` only.** The VSE shares (exact, split, shared, proxy) are not in
+   the core.
+6. **Budget and size.** No dedicated `check-budget.mjs` line. The bundle repeats keys per record (about 4 MB raw,
+   150 KB gzipped); a columnar encoding would cut it by about 5×.
+7. **Scope.** The Sector, Partnership and Compact cards and the Country "Bottom line" do not yet show changes.
 
-## Recommended next three slices
+## Recommended next slices
 
-1. **Stamp and automate.**
-   - scripts/91 writes `raw_inputs_resolved` and an engine-only `method_id` into the posture manifest, then calls
-     scripts/45.
-   - A CI check fails when the change bundle is stale against the posture bundle.
-   - Split the method paths into engine and presentation sets.
-   - After this, the next data refresh is attributable.
-2. **Bridge runs and evidence specificity.**
-   - Snapshot scripts/26's input tables, hash-addressed under `data/vintages/inputs/`, deduped by content.
-   - Add a `--bridge` mode that reruns the current engine on the previous inputs.
-   - Carry `evidence_specificity` and the dominant VSE status into the core or vintage, so "Shared → Stage-specific"
-     is a real line.
-3. **The Intelligence bridge, end to end.**
+1. **Bridge runs and evidence specificity.**
+   - Snapshot the ledger's input files content-addressed under `data/vintages/inputs/`, deduped by md5. They live
+     outside git when large; the ledger already names them.
+   - Add `scripts/26 --bridge <vintage>` to rerun the current engine on those inputs.
+   - Carry `evidence_specificity` and the dominant VSE status into the vintage.
+2. **The Intelligence bridge, end to end.**
    - NEIS Intelligence migration `010_analytical_impacts.sql` and `metadata.iso3` on geography terms.
-   - A rule-based proposer using `config/neis_intelligence_crosswalk.yml` (no model), plus a review queue mirroring
+   - A rule-based proposer over `config/neis_intelligence_crosswalk.yml`, plus a review queue mirroring
      `editorial_reviews`.
    - An export of accepted rows to OSI.
-   - A change-bundle read-back so an event page can say "contributed to a material change in our assessment".
+   - A read-back of "contributed to a material change".
+3. **Field-level provenance and a columnar bundle.**
+   - Join each change record's moved fields to the ledger files that changed between its two vintages.
+   - Switch the bundle to the posture core's columnar encoding and add a budget line.
 
 # Task 7: what an EconVitals-style NEIS landing page needs
 
@@ -163,12 +200,13 @@ The landing page should be built only on the change layer and on existing clean 
 
 | Question | Exists now | Missing |
 |---|---|---|
-| Which AIB recommendations changed recently? | **Yes.** The change bundle (`types` contains `recommendation`, with attribution) | Only attributable refreshes (slice 1 of the next three) |
+| Which AIB recommendations changed recently? | **Yes.** The change bundle (`types` contains `recommendation`, with attribution); stamped exports are attributable from now on | One stamped data refresh, so the panel can lead with attributable changes |
 | Where are dependencies worsening? | Need and import share per cell; T12M import exposure (scripts/37–38) | A *dated* series: Need deltas across vintages are confounded by method changes until stamps exist. Monthly import exposure is the cleaner near-term signal |
 | Where is strategic capability improving? | Position (cp) and export share per cell; monthly trade momentum | Same attribution caveat. Momentum (`mom`, `mq`) is a ready per-cell trend |
 | Where are policy commitments failing to translate into delivery? | Industrial Policy Strength module (lab); NEIS Intelligence `implementation_status` (announced → operational, cancelled, delayed) | A join of policies or projects to cells. Neither repo has project or policy entities; this needs the Intelligence bridge plus a project entity |
 | Which partner relationships are becoming more complementary? | Partnership dyads and memos (static) | Dyad-level vintages: the same snapshot pattern applied to partnership outputs |
 | What decision windows are approaching? | Nothing structured | A dated-event entity (policy deadlines, tariff dates, e.g. the Dec 4 snapshot) in NEIS Intelligence |
 
-**Verdict:** only the "recommendations changed" panel has clean data today. Build the landing page after the
-stamp/automate slice, starting with that panel plus momentum, so it does not headline unattributable history.
+**Verdict:** only the "recommendations changed" panel has clean data today. The stamp-and-automate slice is in, so
+the landing page can follow the first stamped data refresh. Start with that panel plus momentum, so the page does
+not headline unattributable history.

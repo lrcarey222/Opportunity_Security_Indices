@@ -59,8 +59,8 @@ export interface Vintage {
   stampSource: string;
   coreFile: string;
   coreCommit: string | null;
-  method: { id: string; label: string; unverified: boolean };
-  data: { id: string; verified?: boolean; [k: string]: unknown };
+  method: { id: string; engine?: string; upstream?: string; presentation?: string; label: string; unverified: boolean; source?: string };
+  data: { id: string; verified?: boolean; inputs_id?: string | null; [k: string]: unknown };
   nCells: number;
 }
 
@@ -72,6 +72,8 @@ export interface VintagePair {
   methodChanged: boolean;
   methodUnverified: boolean;
   dataChanged: boolean;
+  /** same: verifiably identical inputs (engine input ledgers, or raw-input stamps); changed; unknown: no stamp could tell */
+  dataRelation?: 'same' | 'changed' | 'unknown';
   bridge: boolean;
   /** the bundle carries this pair's records (older pairs: summary only) */
   detail: boolean;

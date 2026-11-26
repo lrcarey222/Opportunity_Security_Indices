@@ -59,10 +59,10 @@ Each vintage has a header row in `data/vintages/posture/index.json`:
   "created": "2026-11-21T17:46:30Z",
   "git_commit": "acbc3805", "commit_dirty": false, "stamp_source": "bundle",
   "core_file": "dashboard/public/data/posture/posture-core.07b6f4bd.json", "core_commit": "3c40c9d6",
-  "method": { "id": "m-1a2b3c4d", "label": "decision framework (2026-10-30)",
-              "paths": { "R/strategic_position": "<tree sha>", "config/strategic_position.yml": "<blob sha>", ... } },
+  "method": { "id": "m-1a2b3c4d", "engine": "m-...", "upstream": "m-...", "presentation": "m-...",
+              "label": "decision framework (2026-10-30)", "unverified": false, "source": "manifest" },
   "data":   { "id": "d-5e6f7a8b", "benchmark_period": "2022-2024", "momentum_through": "Dec 2025",
-              "raw_inputs": null },
+              "verified": true, "inputs_id": "i-9c0d1e2f", "n_inputs": 41, "n_raw_inputs": 16 },
   "techs": [...], "stages": [...], "n_cells": 14124, "sha256": "<of the csv>" }
 ```
 
@@ -83,7 +83,16 @@ it holds no raw values, only engine outputs and their stamps.
 
 The script is idempotent: rerunning it produces the same index.
 
-Planned later (slice 2): scripts/91 calls the vintage step on export. Running script 45 by hand is the MVP.
+**On export (since the stamp-and-automate slice).** After writing the posture bundle to its default location,
+scripts/91 runs `scripts/45 --include-worktree`.
+
+- The new core becomes a *provisional* vintage: archived and compared, and flagged until it is committed.
+- Once committed, the next run finds it in history and rewrites its header from there.
+- `--no-vintages` skips the step.
+- Archived committed vintages are reused from `data/vintages/posture/` rather than re-parsed, so the step takes
+  about 35 s.
+- The CI guard `dashboard/src/changes/__tests__/stale.test.ts` fails when the shipped change bundle's latest vintage
+  is not the shipped posture core.
 
 ## 3. What counts as a meaningful change
 
@@ -112,39 +121,52 @@ The "previous comparable vintage" of V is the latest earlier vintage that is com
 
 This is the critical distinction, so attribution is explicit and conservative.
 
-1. **Method fingerprint.**
-   - The git object ID of each path in `method_paths` (config), taken at the vintage's code commit.
-   - Defaults: `R/strategic_position/`, `config/strategic_position.yml`, `R/utils/variable_stage_evidence.R`,
-     `R/dashboard/posture/`, `scripts/26_build_strategic_position.R`, `scripts/91_export_posture_data.R`.
-   - `method.id` is a hash of those IDs.
-   - When `git_commit` is `-dirty`, the fingerprint is marked `unverified`.
-2. **Data stamp.** `data.id` is a hash of the core's trade windows. When the run recorded resolved raw-input vintages,
-   they are hashed in too.
-3. **Attribution of each change record:**
+1. **Method fingerprint** (`scripts/utils/change_stamps.R`).
+   - The git blob id of every file under `method_paths`. It is taken from the working tree an export ran from (scripts/91 writes it into the posture manifest), or from git at the commit of an older, unstamped bundle.
+   - Blob ids are used, not tree ids, so the two sources agree file by file. An export from uncommitted code is still fingerprinted exactly as it ran.
+   - There are three sets:
 
-| Method fingerprint | Bridge vintage | Cell's measured inputs (share, market) | Attribution |
+     | Set | What it covers | Used for attribution? |
+     |---|---|---|
+     | `engine` | `R/strategic_position/`, `config/strategic_position.yml`, `R/utils/variable_stage_evidence.R`, `scripts/26` | yes |
+     | `upstream` | the other R that scripts/26 sources: index builders, trade core, investment momentum, utils | yes |
+     | `presentation` | `R/dashboard/posture/`, `scripts/91` | no — recorded only, because re-encoding a bundle does not change a result |
+
+   - `method.id` is the hash over engine + upstream: the code the engine run executes.
+   - An unstamped bundle whose `git_commit` is `-dirty` gets the flag `unverified`.
+2. **Data stamp.** Two stamps are written per export, plus the windows:
+   - **Engine input ledger.** scripts/26 traces every data file it reads (`readRDS`, `read.csv`, `fread`, `read_csv`, `read_excel`) and writes `outputs/strategic_position_inputs.json` (path → md5). scripts/91 stamps its hash as `data.inputs_id`. The posture manifest carries the full map, retrievable by commit.
+   - **Raw-input vintages.** `raw_inputs_resolved.yml` from scripts/10 (id → vintage key), hashed into `data.id` with the trade windows. `data.verified` is true when this stamp is present.
+3. **How the data of two vintages relate** (`change_data_relation`):
+   - `same`: the engine input ledgers are identical, so the engine read byte-identical data. Failing that, both raw-input stamps are verified and agree.
+   - `changed`: the ledgers differ, the raw-input stamps differ, or the windows differ.
+   - `unknown`: no stamp could tell. This holds for every bundle exported before 2026-11-25.
+4. **Attribution of each change record:**
+
+| Method fingerprint (engine + upstream) | Bridge vintage | Data relation | Attribution |
 |---|---|---|---|
-| same | — | — | `real_world`: same code and config, so the change came from inputs |
+| same | — | any | `real_world`: same code, so the change came from the engine's inputs |
 | differs | given | — | **decomposed**: diff(prev → bridge) is `methodology`; diff(bridge → current) is `real_world` |
-| differs | none | moved, or the data stamp changed | `mixed`: cannot be split without a bridge; the UI says so |
-| differs | none | did not move, and both data stamps are **verified** (they record resolved raw-input vintages) and equal | `methodology` |
-| differs | none | did not move, but a data stamp is not verified | `unattributed`: a data refresh cannot be ruled out, so the change is never credited to the method |
-| unverified (dirty) | — | — | the above, with `method_unverified = true` |
+| differs | none | `same` | `methodology`: exact, because identical inputs went through different code |
+| differs | none | `changed` | `mixed`: cannot be split without a bridge |
+| differs | none | `unknown` | `mixed` if the cell's own share or market moved, else `unattributed`, never `methodology` |
+| unverified (dirty, unstamped) | — | — | the above, with `method_unverified = true` |
 
-The `unattributed` row was added after running against real history.
+**Why `unattributed` exists.**
 
-- The trade windows (`benchmark_period`, `momentum_through`) were identical in all nine historical cores. They were
-  identical even across the 2026-11-17 "current trade" refresh and the Atlas 2024 rebuild.
+- The trade windows (`benchmark_period`, `momentum_through`) were identical in all nine historical cores. They were identical even across the 2026-11-17 "current trade" refresh and the Atlas 2024 rebuild.
 - A window-only stamp therefore cannot see a data refresh.
-- Crediting a change to the method on that basis would confuse methodology with the world, which is what this layer
-  exists to avoid.
+- Crediting a change to the method on that basis would confuse methodology with the world.
 
-A **bridge vintage** is the *new* method run on the *previous* inputs. It is the counterfactual that makes the split
-exact. `posture_compare()` accepts one now. Producing one requires snapshotting the engine's input tables (slice 2).
+**Why the ledger and not only raw-input vintages.** `raw_inputs_resolved.yml` covers only the pattern-resolved inputs of scripts/10. The Comtrade refreshes the engine reads (scripts/94, 37–38, 99) are not in it. The ledger sits at the engine's real boundary, so it catches them.
 
-**Limitation, stated plainly.** Code outside `method_paths` changes upstream scores, for example the index builders
-in `R/indices` and the trade pipelines. Such changes read as data. Widening `method_paths` is the conservative
-lever: it attributes more to method. It is a config change.
+**What the ledger cannot say.** When a `real_world` pair's inputs changed, that change may come from new source data or from pipeline code that ran *before* scripts/26 (scripts/10–25).
+
+- That earlier code is outside `method_paths` on purpose. Including it would make almost every pair a methodology pair.
+- Its effect reaches the engine as changed input files.
+- The raw-input stamp shows whether any source file changed too.
+
+A **bridge vintage** is the *new* method run on the *previous* inputs. It is the counterfactual that makes the split exact. `posture_compare()` accepts one now. Producing one requires the engine's input tables for the earlier vintage, which is the next slice.
 
 ## 5. How earlier vintages stay reproducible
 

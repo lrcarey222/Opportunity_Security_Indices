@@ -84,7 +84,8 @@ export function ChangeDetail({ c, b }: { c: ChangeRecord; b: ChangesBundle }) {
       <SideTable c={c} />
       <p className="text-xs text-paper-mute" data-testid="change-method">
         Method: {c.methodChanged ? 'changed between these vintages' : 'unchanged'}
-        {c.methodUnverified ? ' (fingerprint unverified: built from uncommitted code)' : ''}. Data windows: {pair?.dataChanged ? 'changed' : 'unchanged'}.
+        {c.methodUnverified ? ' (fingerprint unverified: built from uncommitted code)' : ''}. Input data:{' '}
+        {pair?.dataRelation === 'same' ? 'verifiably identical' : pair?.dataRelation === 'changed' || pair?.dataChanged ? 'changed' : 'not recorded, so a change cannot be ruled out'}.
         Attribution: {ATTRIBUTION_LABEL[c.attribution]}.
       </p>
       {c.sources.length > 0 && (
