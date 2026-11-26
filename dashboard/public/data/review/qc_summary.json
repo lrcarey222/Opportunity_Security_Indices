@@ -1,9 +1,9 @@
 {
   "schema": "aib-review-qc-summary",
   "schema_version": 1,
-  "data_release": "rel-d9b95a06f253",
-  "built_at": "2026-11-26T00:37:04Z",
-  "app_commit": "583bd65a",
+  "data_release": "rel-c000a5f55c1b",
+  "built_at": "2026-11-26T05:35:05Z",
+  "app_commit": "e14ec4de",
   "layer": "bundle",
   "status": {
     "pass": 31,
@@ -18,7 +18,7 @@
       "area": "provenance",
       "status": "pass",
       "n": 0,
-      "detail": "posture manifest and core stamped 2026-11-21T17:46:30Z @ 17f0737e",
+      "detail": "posture manifest and core stamped 2026-11-26T05:25:51Z @ fed21e77",
       "examples": []
     },
     {
@@ -76,7 +76,7 @@
       "area": "provenance",
       "status": "info",
       "n": 4,
-      "detail": "the bundles come from 4 commits (17f0737e, 4bb2adc, 1135534c, a54a9d3) and 4 export dates (2026-10-30, 2026-10-31, 2026-11-21, 2026-11-26); only the data release ID ties them together",
+      "detail": "the bundles come from 4 commits (fed21e77, 4bb2adc, 1135534c, a54a9d3) and 3 export dates (2026-10-30, 2026-10-31, 2026-11-26); only the data release ID ties them together",
       "examples": []
     },
     {
@@ -85,7 +85,7 @@
       "area": "provenance",
       "status": "pass",
       "n": 0,
-      "detail": "data release rel-d9b95a06f253: every bundle stamp present",
+      "detail": "data release rel-c000a5f55c1b: every bundle stamp present",
       "examples": []
     },
     {

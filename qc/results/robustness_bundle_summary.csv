@@ -1,66 +1,66 @@
 data_release,layer,subject_kind,dimension,key,n,stable,sensitive,fragile,not_testable,fence_change,flips,possible,note
-rel-d9b95a06f253,bundle,posture_cell,all,all,14124,7748,434,843,5099,1145,,,
-rel-d9b95a06f253,bundle,posture_cell,stage,Assembly,2354,1490,78,251,535,299,,,
-rel-d9b95a06f253,bundle,posture_cell,stage,Components,2354,1583,55,202,514,175,,,
-rel-d9b95a06f253,bundle,posture_cell,stage,Deployment,2354,1384,38,261,671,293,,,
-rel-d9b95a06f253,bundle,posture_cell,stage,Extraction,2354,1343,155,28,828,182,,,
-rel-d9b95a06f253,bundle,posture_cell,stage,Recovery,2354,386,0,21,1947,20,,,
-rel-d9b95a06f253,bundle,posture_cell,stage,Refining,2354,1562,108,80,604,176,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Batteries,1284,1031,64,122,67,177,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Coal,1284,803,70,77,334,142,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Electric Grid,1284,876,5,111,292,111,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Electric Vehicles,1284,755,62,82,385,135,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Gas,1284,852,8,96,328,97,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Geothermal,1284,138,2,25,1119,26,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Green Hydrogen,1284,79,2,9,1194,11,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Nuclear,1284,870,35,70,309,95,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Oil,1284,856,98,69,261,104,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Solar,1284,820,83,78,303,156,,,
-rel-d9b95a06f253,bundle,posture_cell,tech,Wind,1284,668,5,104,507,91,,,
-rel-d9b95a06f253,bundle,posture_cell,baseline_choice,accelerate,514,372,38,104,0,140,,,
-rel-d9b95a06f253,bundle,posture_cell,baseline_choice,catch_up,351,258,23,70,0,67,,,
-rel-d9b95a06f253,bundle,posture_cell,baseline_choice,not_assessed,4887,0,0,0,4887,0,,,
-rel-d9b95a06f253,bundle,posture_cell,baseline_choice,partner,1475,1030,210,235,0,373,,,
-rel-d9b95a06f253,bundle,posture_cell,baseline_choice,preserve,111,68,3,40,0,21,,,
-rel-d9b95a06f253,bundle,posture_cell,baseline_choice,secure,212,0,0,0,212,0,,,
-rel-d9b95a06f253,bundle,posture_cell,baseline_choice,watch,6574,6020,160,394,0,544,,,
-rel-d9b95a06f253,bundle,posture_cell,spec,need_minus,,,,,,,206,4,local: Need threshold 0.62 (-0.05)
-rel-d9b95a06f253,bundle,posture_cell,spec,need_plus,,,,,,,221,14,local: Need threshold 0.72 (+0.05)
-rel-d9b95a06f253,bundle,posture_cell,spec,prize_minus,,,,,,,30,0,local: Prize threshold 0.55 (-0.05)
-rel-d9b95a06f253,bundle,posture_cell,spec,prize_plus,,,,,,,69,3,local: Prize threshold 0.65 (+0.05)
-rel-d9b95a06f253,bundle,posture_cell,spec,cp_minus,,,,,,,17,3,local: Competitive Position bar 0.7 (-0.05)
-rel-d9b95a06f253,bundle,posture_cell,spec,cp_plus,,,,,,,27,0,local: Competitive Position bar 0.8 (+0.05)
-rel-d9b95a06f253,bundle,posture_cell,spec,cp_strict,,,,,,,8,0,local: Competitive Position strictly above 0.75 (not at or above)
-rel-d9b95a06f253,bundle,posture_cell,spec,deployment_minus,,,,,,,153,4,local: Deployment threshold 0.55 (-0.05)
-rel-d9b95a06f253,bundle,posture_cell,spec,deployment_plus,,,,,,,102,2,local: Deployment threshold 0.65 (+0.05)
-rel-d9b95a06f253,bundle,posture_cell,spec,large_min4,,,,,,,204,66,structural: Large-yard case on 4 of 8 commodity signals (not 5)
-rel-d9b95a06f253,bundle,posture_cell,spec,large_min6,,,,,,,160,0,structural: Large-yard case on 6 of 8 commodity signals (not 5)
-rel-d9b95a06f253,bundle,posture_cell,spec,position_first_off,,,,,,,5,0,structural: Large-yard case before Competitive Position (position_first off)
-rel-d9b95a06f253,bundle,posture_cell,spec,deployment_fallback,,,,,,,140,2,"structural: Deployment threshold 0.67 (the value of the TS fallback DEFAULT_THRESHOLDS.deployment, also in the R sensitivity grid)"
-rel-d9b95a06f253,bundle,posture_cell,driver,cp_contender_pct,,,,,,,47,,
-rel-d9b95a06f253,bundle,posture_cell,driver,cp_inclusive_rule,,,,,,,8,,
-rel-d9b95a06f253,bundle,posture_cell,driver,deployment_need,,,,,,,261,,
-rel-d9b95a06f253,bundle,posture_cell,driver,deployment_threshold_fallback,,,,,,,142,,
-rel-d9b95a06f253,bundle,posture_cell,driver,large_yard_min_signals,,,,,,,430,,
-rel-d9b95a06f253,bundle,posture_cell,driver,position_first,,,,,,,5,,
-rel-d9b95a06f253,bundle,posture_cell,driver,strategic_industrial_value,,,,,,,102,,
-rel-d9b95a06f253,bundle,posture_cell,driver,supply_chain_need,,,,,,,445,,
-rel-d9b95a06f253,bundle,posture_cell,not_runnable,market-only gate 0.33 / Unknown counted 0.5,,,,,,,,,market-only gate 0.33 / Unknown counted 0.5 (needs node attributes)
-rel-d9b95a06f253,bundle,posture_cell,not_runnable,need floor 0.05,,,,,,,,,need floor 0.05 (needs supply_chain_need_score and the uncapped percentile)
-rel-d9b95a06f253,bundle,posture_cell,not_runnable,deployment needing >= 2 families,,,,,,,,,deployment needing >= 2 families (the rule for a one-family cell is not defined in the bundle)
-rel-d9b95a06f253,bundle,posture_cell,not_runnable,need-floor-cap-aware need 0.60,,,,,,,,,need-floor-cap-aware need 0.60 (the bundle does not mark capped need)
-rel-d9b95a06f253,bundle,posture_cell,not_runnable,prize family weights,,,,,,,,,prize family weights (needs the family scores of every cell)
-rel-d9b95a06f253,bundle,aib_node,all,all,77,34,14,26,3,39,,,
-rel-d9b95a06f253,bundle,aib_node,baseline_choice,BUILD,50,24,3,23,0,25,,,
-rel-d9b95a06f253,bundle,aib_node,baseline_choice,COORDINATE,1,0,0,1,0,1,,,
-rel-d9b95a06f253,bundle,aib_node,baseline_choice,INSUFFICIENT DATA,3,0,0,0,3,0,,,
-rel-d9b95a06f253,bundle,aib_node,baseline_choice,LOW INTERVENTION,22,10,11,1,0,12,,,
-rel-d9b95a06f253,bundle,aib_node,baseline_choice,MANAGE SPECIALIZATION,1,0,0,1,0,1,,,
-rel-d9b95a06f253,bundle,aib_node,spec,china_50,,,,,,,25,,
-rel-d9b95a06f253,bundle,aib_node,spec,conservative,,,,,,,3,,
-rel-d9b95a06f253,bundle,aib_node,spec,growth_1.25x,,,,,,,1,,
-rel-d9b95a06f253,bundle,aib_node,spec,growth_unlimited,,,,,,,1,,
-rel-d9b95a06f253,bundle,aib_node,spec,largest_stage,,,,,,,16,,
-rel-d9b95a06f253,bundle,aib_node,spec,largest_subsector,,,,,,,18,,
-rel-d9b95a06f253,bundle,aib_node,spec,largest_technology,,,,,,,12,,
-rel-d9b95a06f253,bundle,aib_node,spec,release,,,,,,,9,,
+rel-c000a5f55c1b,bundle,posture_cell,all,all,14124,7748,434,843,5099,1145,,,
+rel-c000a5f55c1b,bundle,posture_cell,stage,Assembly,2354,1490,78,251,535,299,,,
+rel-c000a5f55c1b,bundle,posture_cell,stage,Components,2354,1583,55,202,514,175,,,
+rel-c000a5f55c1b,bundle,posture_cell,stage,Deployment,2354,1384,38,261,671,293,,,
+rel-c000a5f55c1b,bundle,posture_cell,stage,Extraction,2354,1343,155,28,828,182,,,
+rel-c000a5f55c1b,bundle,posture_cell,stage,Recovery,2354,386,0,21,1947,20,,,
+rel-c000a5f55c1b,bundle,posture_cell,stage,Refining,2354,1562,108,80,604,176,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Batteries,1284,1031,64,122,67,177,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Coal,1284,803,70,77,334,142,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Electric Grid,1284,876,5,111,292,111,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Electric Vehicles,1284,755,62,82,385,135,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Gas,1284,852,8,96,328,97,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Geothermal,1284,138,2,25,1119,26,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Green Hydrogen,1284,79,2,9,1194,11,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Nuclear,1284,870,35,70,309,95,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Oil,1284,856,98,69,261,104,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Solar,1284,820,83,78,303,156,,,
+rel-c000a5f55c1b,bundle,posture_cell,tech,Wind,1284,668,5,104,507,91,,,
+rel-c000a5f55c1b,bundle,posture_cell,baseline_choice,accelerate,514,372,38,104,0,140,,,
+rel-c000a5f55c1b,bundle,posture_cell,baseline_choice,catch_up,351,258,23,70,0,67,,,
+rel-c000a5f55c1b,bundle,posture_cell,baseline_choice,not_assessed,4887,0,0,0,4887,0,,,
+rel-c000a5f55c1b,bundle,posture_cell,baseline_choice,partner,1475,1030,210,235,0,373,,,
+rel-c000a5f55c1b,bundle,posture_cell,baseline_choice,preserve,111,68,3,40,0,21,,,
+rel-c000a5f55c1b,bundle,posture_cell,baseline_choice,secure,212,0,0,0,212,0,,,
+rel-c000a5f55c1b,bundle,posture_cell,baseline_choice,watch,6574,6020,160,394,0,544,,,
+rel-c000a5f55c1b,bundle,posture_cell,spec,need_minus,,,,,,,206,4,local: Need threshold 0.62 (-0.05)
+rel-c000a5f55c1b,bundle,posture_cell,spec,need_plus,,,,,,,221,14,local: Need threshold 0.72 (+0.05)
+rel-c000a5f55c1b,bundle,posture_cell,spec,prize_minus,,,,,,,30,0,local: Prize threshold 0.55 (-0.05)
+rel-c000a5f55c1b,bundle,posture_cell,spec,prize_plus,,,,,,,69,3,local: Prize threshold 0.65 (+0.05)
+rel-c000a5f55c1b,bundle,posture_cell,spec,cp_minus,,,,,,,17,3,local: Competitive Position bar 0.7 (-0.05)
+rel-c000a5f55c1b,bundle,posture_cell,spec,cp_plus,,,,,,,27,0,local: Competitive Position bar 0.8 (+0.05)
+rel-c000a5f55c1b,bundle,posture_cell,spec,cp_strict,,,,,,,8,0,local: Competitive Position strictly above 0.75 (not at or above)
+rel-c000a5f55c1b,bundle,posture_cell,spec,deployment_minus,,,,,,,153,4,local: Deployment threshold 0.55 (-0.05)
+rel-c000a5f55c1b,bundle,posture_cell,spec,deployment_plus,,,,,,,102,2,local: Deployment threshold 0.65 (+0.05)
+rel-c000a5f55c1b,bundle,posture_cell,spec,large_min4,,,,,,,204,66,structural: Large-yard case on 4 of 8 commodity signals (not 5)
+rel-c000a5f55c1b,bundle,posture_cell,spec,large_min6,,,,,,,160,0,structural: Large-yard case on 6 of 8 commodity signals (not 5)
+rel-c000a5f55c1b,bundle,posture_cell,spec,position_first_off,,,,,,,5,0,structural: Large-yard case before Competitive Position (position_first off)
+rel-c000a5f55c1b,bundle,posture_cell,spec,deployment_fallback,,,,,,,140,2,"structural: Deployment threshold 0.67 (the value of the TS fallback DEFAULT_THRESHOLDS.deployment, also in the R sensitivity grid)"
+rel-c000a5f55c1b,bundle,posture_cell,driver,cp_contender_pct,,,,,,,47,,
+rel-c000a5f55c1b,bundle,posture_cell,driver,cp_inclusive_rule,,,,,,,8,,
+rel-c000a5f55c1b,bundle,posture_cell,driver,deployment_need,,,,,,,261,,
+rel-c000a5f55c1b,bundle,posture_cell,driver,deployment_threshold_fallback,,,,,,,142,,
+rel-c000a5f55c1b,bundle,posture_cell,driver,large_yard_min_signals,,,,,,,430,,
+rel-c000a5f55c1b,bundle,posture_cell,driver,position_first,,,,,,,5,,
+rel-c000a5f55c1b,bundle,posture_cell,driver,strategic_industrial_value,,,,,,,102,,
+rel-c000a5f55c1b,bundle,posture_cell,driver,supply_chain_need,,,,,,,445,,
+rel-c000a5f55c1b,bundle,posture_cell,not_runnable,market-only gate 0.33 / Unknown counted 0.5,,,,,,,,,market-only gate 0.33 / Unknown counted 0.5 (needs node attributes)
+rel-c000a5f55c1b,bundle,posture_cell,not_runnable,need floor 0.05,,,,,,,,,need floor 0.05 (needs supply_chain_need_score and the uncapped percentile)
+rel-c000a5f55c1b,bundle,posture_cell,not_runnable,deployment needing >= 2 families,,,,,,,,,deployment needing >= 2 families (the rule for a one-family cell is not defined in the bundle)
+rel-c000a5f55c1b,bundle,posture_cell,not_runnable,need-floor-cap-aware need 0.60,,,,,,,,,need-floor-cap-aware need 0.60 (the bundle does not mark capped need)
+rel-c000a5f55c1b,bundle,posture_cell,not_runnable,prize family weights,,,,,,,,,prize family weights (needs the family scores of every cell)
+rel-c000a5f55c1b,bundle,aib_node,all,all,77,34,14,26,3,39,,,
+rel-c000a5f55c1b,bundle,aib_node,baseline_choice,BUILD,50,24,3,23,0,25,,,
+rel-c000a5f55c1b,bundle,aib_node,baseline_choice,COORDINATE,1,0,0,1,0,1,,,
+rel-c000a5f55c1b,bundle,aib_node,baseline_choice,INSUFFICIENT DATA,3,0,0,0,3,0,,,
+rel-c000a5f55c1b,bundle,aib_node,baseline_choice,LOW INTERVENTION,22,10,11,1,0,12,,,
+rel-c000a5f55c1b,bundle,aib_node,baseline_choice,MANAGE SPECIALIZATION,1,0,0,1,0,1,,,
+rel-c000a5f55c1b,bundle,aib_node,spec,china_50,,,,,,,25,,
+rel-c000a5f55c1b,bundle,aib_node,spec,conservative,,,,,,,3,,
+rel-c000a5f55c1b,bundle,aib_node,spec,growth_1.25x,,,,,,,1,,
+rel-c000a5f55c1b,bundle,aib_node,spec,growth_unlimited,,,,,,,1,,
+rel-c000a5f55c1b,bundle,aib_node,spec,largest_stage,,,,,,,16,,
+rel-c000a5f55c1b,bundle,aib_node,spec,largest_subsector,,,,,,,18,,
+rel-c000a5f55c1b,bundle,aib_node,spec,largest_technology,,,,,,,12,,
+rel-c000a5f55c1b,bundle,aib_node,spec,release,,,,,,,9,,
