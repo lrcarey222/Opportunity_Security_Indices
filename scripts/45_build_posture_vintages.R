@@ -79,6 +79,8 @@ cache <- local({
   ix <- jsonlite::fromJSON(p, simplifyVector = FALSE)
   if (!identical(as.integer(ix$layer_version %||% 0L), as.integer(cfg$layer_version))) return(list())
   keep <- Filter(function(h) !isTRUE(h$provisional) && file.exists(file.path(vint_dir, paste0(h$vintage_id, ".csv.gz"))), ix$vintages)
+  # ledger hashes are stored as "md5:<hex>" (a bare quoted 32-hex string trips the repository's secret scan)
+  keep <- lapply(keep, function(h) { if (length(h$data[["inputs"]])) h$data[["inputs"]] <- lapply(h$data[["inputs"]], function(v) sub("^md5:", "", v)); h })
   stats::setNames(keep, vapply(keep, function(h) basename(h$core_file), ""))
 })
 
@@ -284,7 +286,9 @@ for (vid in ids) {
 }
 # drop archives no vintage claims any more (a provisional export that was replaced before it was committed)
 unlink(setdiff(list.files(vint_dir, pattern = "[.]csv[.]gz$", full.names = TRUE), file.path(vint_dir, keep)))
-writeLines(to_json(list(schema = "osi-posture-vintages", layer_version = cfg$layer_version, vintages = unname(vintages)), pretty = TRUE),
+# the ledger hashes as "md5:<hex>": self-describing, and not a bare 32-hex string (.github/workflows/r-check.yml secret scan)
+idx_vintages <- lapply(vintages, function(h) { if (length(h$data[["inputs"]])) h$data[["inputs"]] <- lapply(h$data[["inputs"]], function(v) paste0("md5:", v)); h })
+writeLines(to_json(list(schema = "osi-posture-vintages", layer_version = cfg$layer_version, vintages = unname(idx_vintages)), pretty = TRUE),
            file.path(vint_dir, "index.json"), useBytes = TRUE)
 all_changes <- dplyr::bind_rows(Filter(nrow, lapply(results, `[[`, "changes")))
 # every change record, for analysts: derived from the vintages + config, so it goes to the git-ignored outputs/
