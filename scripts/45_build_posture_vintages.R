@@ -26,12 +26,16 @@ repo_root <- local({
 #
 #   --include-worktree   add the working tree's posture core as a provisional vintage when it is not committed
 #   --raw-inputs PATH    raw_inputs_resolved.yml for the provisional vintage (makes its data stamp verifiable)
+#   --bridge DIR         ingest a bridge run of scripts/26 (OPSI_BRIDGE; DIR holds bridge_report.json and the sandboxed
+#                        strategic_position_tbl.rds): stored as data/vintages/posture/bridges/<prev>__<cur>.csv.gz and
+#                        used, when pure, to split that pair's method and data changes exactly
 #   --dry-run            compute and report; write nothing
 # Idempotent: the same history gives the same vintages, changes and bundle (bar the bundle's created stamp).
 
 library(dplyr)
 for (f in c("R/qc/qc_core.R", "R/qc/qc_drift.R", "R/change/posture_vintage.R", "R/change/posture_compare.R",
-            "R/change/posture_explain.R", "R/change/posture_impacts.R", "R/change/change_export.R")) source(file.path(repo_root, f))
+            "R/change/posture_explain.R", "R/change/posture_impacts.R", "R/change/change_export.R",
+            "R/change/posture_bridge.R")) source(file.path(repo_root, f))
 
 args <- commandArgs(trailingOnly = TRUE)
 include_worktree <- "--include-worktree" %in% args
@@ -56,8 +60,14 @@ git_to_file <- function(spec) {
 git_has <- function(rev) identical(as.integer(suppressWarnings(system2("git", c("-C", qroot, "cat-file", "-e", paste0(rev, "^{commit}")), stdout = FALSE, stderr = FALSE))), 0L)
 md5_file <- function(p) unname(tools::md5sum(p))
 md5_8 <- function(txt) { tf <- tempfile(); on.exit(unlink(tf)); writeBin(charToRaw(enc2utf8(txt)), tf); substr(md5_file(tf), 1, 8) }
+to_json_b <- function(x) as.character(jsonlite::toJSON(x, auto_unbox = TRUE, na = "null", null = "null", digits = NA, pretty = TRUE))
 vintage_col_classes <- stats::setNames(ifelse(POSTURE_VINTAGE_COLS %in% POSTURE_VINTAGE_NUM, "numeric", "character"), POSTURE_VINTAGE_COLS)
-read_vintage <- function(f) tibble::as_tibble(utils::read.csv(gzfile(f), colClasses = vintage_col_classes, na.strings = "", check.names = FALSE))
+read_vintage <- function(f) {
+  hdr <- names(utils::read.csv(gzfile(f), nrows = 1, check.names = FALSE))
+  x <- utils::read.csv(gzfile(f), colClasses = vintage_col_classes[intersect(names(vintage_col_classes), hdr)], na.strings = "", check.names = FALSE)
+  for (m in setdiff(POSTURE_VINTAGE_COLS, names(x))) x[[m]] <- if (m %in% POSTURE_VINTAGE_NUM) NA_real_ else NA_character_
+  tibble::as_tibble(x[, POSTURE_VINTAGE_COLS])
+}
 
 # Archived committed vintages of this layer version are reused (header + table) instead of re-parsing their cores;
 # provisional ones are rebuilt.
@@ -77,6 +87,7 @@ cands <- lapply(log, function(x) list(commit = x, short = substr(x, 1, 8), workt
 if (include_worktree) cands <- c(cands, list(list(commit = NA_character_, short = "worktree", worktree = TRUE)))
 
 seen <- character()
+cache_hits <- list()
 vintages <- list()
 tables <- list()
 for (cd in cands) {
@@ -91,6 +102,7 @@ for (cd in cands) {
   if (!is.null(hit)) {
     seen <- c(seen, core_file)
     vintages[[hit$vintage_id]] <- hit
+    cache_hits[[hit$vintage_id]] <- TRUE
     tables[[hit$vintage_id]] <- read_vintage(file.path(vint_dir, paste0(hit$vintage_id, ".csv.gz")))
     next
   }
@@ -147,6 +159,48 @@ probs <- validate_analytical_impacts(impacts)
 if (length(probs)) stop("config/review/analytical_impacts.yml:\n  ", paste(probs, collapse = "\n  "))
 
 ids <- names(vintages)
+
+# ---- bridges ----------------------------------------------------------------------------------------------------
+bridge_dir <- file.path(vint_dir, "bridges")
+bridges_path <- file.path(bridge_dir, "bridges.json")
+bridges <- if (file.exists(bridges_path)) jsonlite::fromJSON(bridges_path, simplifyVector = FALSE)$bridges %||% list() else list()
+new_bridge <- arg_value("--bridge")
+if (!is.null(new_bridge)) {
+  rep_path <- file.path(new_bridge, "bridge_report.json")
+  if (!file.exists(rep_path)) stop("--bridge ", new_bridge, ": no bridge_report.json (run scripts/26 with OPSI_BRIDGE first).")
+  rep <- jsonlite::fromJSON(rep_path, simplifyVector = FALSE)
+  tbl_path <- list.files(new_bridge, pattern = "^strategic_position_tbl[.]rds$", recursive = TRUE, full.names = TRUE)
+  if (!length(tbl_path)) stop("--bridge ", new_bridge, ": no strategic_position_tbl.rds in the sandbox.")
+  prev_id <- names(vintages)[vapply(vintages, function(h) identical(h$data$inputs_id, rep$inputs_id), logical(1))]
+  cur_id <- names(vintages)[vapply(vintages, function(h) identical(h$method$id, rep$method$id), logical(1))]
+  if (!length(prev_id)) stop("--bridge: no vintage has the bridge's inputs (", rep$inputs_id, ").")
+  if (!length(cur_id)) stop("--bridge: no vintage was built with the bridge's method (", rep$method$id, "): export one with this code first.")
+  prev_id <- prev_id[1]; cur_id <- utils::tail(cur_id, 1)
+  btbl <- posture_vintage_from_table(readRDS(tbl_path[1]))
+  btbl <- btbl[btbl$tech %in% unlist(vintages[[cur_id]]$techs) & btbl$stage %in% unlist(vintages[[cur_id]]$stages), , drop = FALSE]
+  entry <- list(prev = prev_id, cur = cur_id, file = sprintf("%s__%s.csv.gz", prev_id, cur_id), pure = isTRUE(rep$pure),
+                inputs_id = rep$inputs_id, method = list(id = rep$method$id), created = rep$created, source = rep$source,
+                n_leaks = length(rep$leaks), n_missing = length(rep$missing), n_cells = nrow(btbl))
+  if (!dry_run) {
+    dir.create(bridge_dir, recursive = TRUE, showWarnings = FALSE)
+    con <- gzfile(file.path(bridge_dir, entry$file), "w"); utils::write.csv(btbl, con, row.names = FALSE, na = ""); close(con)
+    bridges <- c(Filter(function(b) !(identical(b$prev, prev_id) && identical(b$cur, cur_id)), bridges), list(entry))
+    writeLines(to_json_b(list(schema = "osi-posture-bridges", bridges = bridges)), bridges_path, useBytes = TRUE)
+  } else {
+    bridges <- c(bridges, list(entry))
+  }
+  message(sprintf("bridge %s -> %s ingested (%s; %d leaks, %d missing)", prev_id, cur_id, if (entry$pure) "pure" else "IMPURE: not used",
+                  entry$n_leaks, entry$n_missing))
+}
+bridge_for <- function(k, i) {
+  b <- Filter(function(b) identical(b$prev, ids[k]) && identical(b$cur, ids[i]), bridges)
+  if (!length(b)) return(NULL)
+  b <- b[[1]]
+  if (!bridge_usable(b, vintages[[k]], vintages[[i]])) { message("bridge ", b$prev, " -> ", b$cur, " not used (impure or stale)"); return(NULL) }
+  f <- file.path(bridge_dir, b$file)
+  if (!file.exists(f)) return(NULL)
+  read_vintage(f)
+}
 prev_k <- posture_previous_comparable(unname(vintages))
 results <- list()
 for (i in seq_along(ids)[-1]) {
@@ -155,7 +209,7 @@ for (i in seq_along(ids)[-1]) {
   }
   if (!is.na(prev_k[i])) {
     k <- prev_k[i]
-    r <- posture_compare(tables[[k]], tables[[i]], vintages[[k]], vintages[[i]], cfg)
+    r <- posture_compare(tables[[k]], tables[[i]], vintages[[k]], vintages[[i]], cfg, bridge = bridge_for(k, i))
     r$changes <- attach_impacts(r$changes, impacts, vintages)
     results[[length(results) + 1]] <- r
   }
@@ -179,7 +233,7 @@ keep <- character()
 for (vid in ids) {
   f <- file.path(vint_dir, paste0(vid, ".csv.gz"))
   keep <- c(keep, basename(f))
-  if (!file.exists(f)) { con <- gzfile(f, "w"); utils::write.csv(tables[[vid]], con, row.names = FALSE, na = ""); close(con) }
+  if (!file.exists(f) || !vid %in% names(cache_hits)) { con <- gzfile(f, "w"); utils::write.csv(tables[[vid]], con, row.names = FALSE, na = ""); close(con) }
 }
 # drop archives no vintage claims any more (a provisional export that was replaced before it was committed)
 unlink(setdiff(list.files(vint_dir, pattern = "[.]csv[.]gz$", full.names = TRUE), file.path(vint_dir, keep)))

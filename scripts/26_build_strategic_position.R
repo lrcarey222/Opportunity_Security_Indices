@@ -79,12 +79,6 @@ for (f in c(
   "R/categories/investment/investment_momentum.R"
 )) source(file.path(repo_root, f))
 
-# Change layer (docs/change-layer-architecture.md 4): record every data file this run reads, with its md5
-# (outputs/strategic_position_inputs.json, written at the end). Two runs with the same ledger read identical inputs,
-# so the change layer can tell a methodology change from a data change. The code it runs is listed in
-# config/change_layer.yml method_paths (engine + upstream): keep that list in step with the sources above.
-source(file.path(repo_root, "scripts", "utils", "change_stamps.R"))
-change_ledger_start()
 
 config <- getOption("opportunity_security.config")
 if (is.null(config)) stop("Config not loaded; run scripts/00_setup.R first.")
@@ -102,6 +96,30 @@ outputs_dir <- if (!is.null(config$outputs_dir) && nzchar(config$outputs_dir)) {
 }
 diagnostics_dir <- file.path(repo_root, "diagnostics", "strategic_position")
 dir.create(diagnostics_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Change layer (docs/change-layer-architecture.md 4). Every data file this run reads is recorded with its md5
+# (outputs/strategic_position_inputs.json, written at the end) and copied into the content-addressed input store, so
+# the change layer can tell a methodology change from a data change. The code the run executes is listed in
+# config/change_layer.yml method_paths (engine + upstream): keep that list in step with the sources above. The
+# instrumentation below (scripts/utils/change_stamps.R, R/change/) does not touch any result.
+# Bridge run: OPSI_BRIDGE=<vintage id | manifest or ledger JSON> re-runs this engine on that vintage's exact inputs.
+# The data directories move into a sandbox (OPSI_BRIDGE_DIR, default outputs/change_layer/bridge/<inputs id>) filled
+# from the store, so nothing live is overwritten; any read outside those inputs is reported (bridge_report.json).
+for (f in c("R/change/posture_vintage.R", "R/change/posture_bridge.R", "scripts/utils/change_stamps.R")) source(file.path(repo_root, f))
+cl_cfg <- yaml::read_yaml(file.path(repo_root, "config", "change_layer.yml"))
+input_store_dir <- file.path(repo_root, cl_cfg$input_store$dir %||% "data/vintages/inputs")
+bridge <- change_bridge_setup(Sys.getenv("OPSI_BRIDGE"), repo_root,
+                              dirs = list(outputs = outputs_dir, processed = processed_dir, raw = raw_data_path, diagnostics = diagnostics_dir),
+                              sandbox = Sys.getenv("OPSI_BRIDGE_DIR"), store_dir = input_store_dir)
+if (!is.null(bridge)) {
+  outputs_dir <- bridge$dirs$outputs
+  processed_dir <- bridge$dirs$processed
+  raw_data_path <- bridge$dirs$raw
+  diagnostics_dir <- bridge$dirs$diagnostics
+  message("Bridge run on the inputs of ", bridge$source, " (", bridge$inputs_id, "): ", bridge$n_materialized, " files in ", bridge$sandbox,
+          if (length(bridge$state$missing)) paste0("; ", length(bridge$state$missing), " not in the input store") else "")
+}
+change_ledger_start(bridge)
 
 read_required <- function(path, hint) {
   if (!file.exists(path)) stop(path, " not found; ", hint)
@@ -983,6 +1001,18 @@ message(
   paste(names(table(tbl$yard_rollup)), table(tbl$yard_rollup), sep = " ", collapse = ", "), "."
 )
 
-# the engine input ledger (change layer): every data file read above, with its md5
-change_ledger_write(file.path(outputs_dir, "strategic_position_inputs.json"), repo_root)
+# change layer: a bridge run reports what it read; a normal run writes the engine input ledger (every data file read
+# above, with its md5) and copies those files into the input store
 change_ledger_stop()
+if (!is.null(bridge)) {
+  rep <- change_bridge_finish(bridge, change_method_stamp(repo_root, cl_cfg$method_paths, label = cl_cfg$method_label))
+  message("Bridge run ", if (rep$pure) "PURE" else "IMPURE", ": ", rep$n_materialized, " inputs materialized, ", rep$n_redirected, " redirected, ",
+          length(rep$leaks), " read outside the previous inputs, ", length(rep$missing), " missing from the store. Report: ",
+          file.path(bridge$sandbox, "bridge_report.json"))
+} else {
+  ledger <- change_ledger_write(file.path(outputs_dir, cl_cfg$engine_inputs_file %||% "strategic_position_inputs.json"), repo_root)
+  if (!isFALSE(cl_cfg$input_store$enabled)) {
+    st <- change_store_inputs(ledger, repo_root, input_store_dir, max_mb = cl_cfg$input_store$max_file_mb %||% 2048)
+    message("Input store: ", st$stored, " new, ", st$kept, " already stored", if (length(st$skipped)) paste0(", ", length(st$skipped), " not stored (over the size cap or changed while copying)") else "", ".")
+  }
+}

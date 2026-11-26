@@ -55,7 +55,14 @@ posture_change_explain <- function(x, cfg) {
         if (!is.na(a) && !is.na(b) && abs(b - a) > 0.001) s <- c(s, sprintf("%s moved %s → %s.", change_label(cfg, "field", f), change_fmt(f, a), change_fmt(f, b)))
       }
     }
-    if (isTRUE(r$t_evidence)) s <- c(s, sprintf("Evidence %s from %s to %s.", r$evidence_direction, r$evidence_prev, r$evidence_cur))
+    if (isTRUE(r$t_evidence)) {
+      band_moved <- !identical(r$evidence_prev, r$evidence_cur) && !is.na(r$evidence_prev) && !is.na(r$evidence_cur)
+      if (band_moved) s <- c(s, sprintf("Evidence %s from %s to %s.", r$evidence_direction, r$evidence_prev, r$evidence_cur))
+      if (isTRUE(r$evidence_basis_changed)) {
+        lab <- function(v) change_label(cfg, "evidence_status", v)
+        s <- c(s, sprintf("Evidence basis changed from %s to %s.", lab(r$evidence_status_prev), lab(r$evidence_status_cur)))
+      }
+    }
     if (isTRUE(r$t_confidence)) s <- c(s, sprintf("Confidence %s from %s to %s.", ifelse(r$confidence_direction == "improved", "rose", "fell"), r$confidence_prev, r$confidence_cur))
     s <- c(s, switch(r$attribution,
       real_world = "The method was the same in both vintages, so this reflects a change in the data.",

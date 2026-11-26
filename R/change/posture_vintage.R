@@ -5,9 +5,29 @@
 # Pure functions: no IO. Needs dplyr, tibble, digest and R/qc/qc_core.R + R/qc/qc_drift.R (the core decoder).
 
 POSTURE_VINTAGE_COLS <- c("iso3", "tech", "stage", "choice", "posture", "variant", "need_type", "need", "prize", "cp",
-                          "market", "share", "confidence", "evidence", "borderline", "pathway", "partner1", "deploy_case")
+                          "market", "share", "confidence", "evidence", "borderline", "pathway", "partner1", "deploy_case",
+                          "evidence_status")
 POSTURE_VINTAGE_NUM <- c("need", "prize", "cp", "market", "share")
 POSTURE_FAMILY <- c(S = "secure", C = "compete", D = "deploy", N = "not_assessed")
+# The dominant evidence basis of a cell (R/utils/variable_stage_evidence.R VSE_STATUSES) and its one-letter code in
+# the posture core (cells.es, written by scripts/91 since the bridge-runs slice).
+EVIDENCE_STATUSES <- c("exact", "split", "shared", "proxy", "tech_wide", "no_data")
+EVIDENCE_STATUS_CODE <- c(exact = "E", split = "S", shared = "H", proxy = "P", tech_wide = "T", no_data = "N")
+
+# The dominant evidence status per row from the variable-stage evidence shares (exact_evidence_share<suffix>, ...,
+# no_data_share<suffix>): the status with the largest share; ties go to the more specific status; NA when no share
+# is known.
+evidence_status_from_shares <- function(tbl, suffix = "_cp") {
+  cols <- paste0(c("exact_evidence_share", "split_evidence_share", "shared_evidence_share", "proxy_evidence_share",
+                   "tech_wide_evidence_share", "no_data_share"), suffix)
+  if (!all(cols %in% names(tbl))) return(rep(NA_character_, nrow(tbl)))
+  m <- as.matrix(tbl[, cols, drop = FALSE])
+  storage.mode(m) <- "double"
+  vapply(seq_len(nrow(m)), function(i) {
+    r <- m[i, ]
+    if (all(is.na(r))) NA_character_ else EVIDENCE_STATUSES[which.max(replace(r, is.na(r), -Inf))]
+  }, character(1))
+}
 
 change_hash <- function(text, n = 8L) substr(digest::digest(enc2utf8(paste(text, collapse = "\n")), algo = "sha256", serialize = FALSE), 1L, n)
 
@@ -44,7 +64,8 @@ posture_vintage_from_core <- function(core) {
     need_type = nt, need = dplyr::coalesce(base$need, base$dn),
     prize = base$prize, cp = base$cp, market = base$market, share = base$share,
     confidence = chr("conf"), evidence = chr("ev"), borderline = chr("bd"), pathway = chr("pw"),
-    partner1 = chr("p1"), deploy_case = chr("dc")
+    partner1 = chr("p1"), deploy_case = chr("dc"),
+    evidence_status = unname(stats::setNames(names(EVIDENCE_STATUS_CODE), EVIDENCE_STATUS_CODE)[chr("es")])
   )
 }
 
@@ -62,7 +83,8 @@ posture_vintage_from_table <- function(tbl) {
     confidence = qc_col(tbl, "posture_confidence", NA_character_),
     evidence = qc_col(tbl, "stage_evidence_quality_cp", NA_character_), borderline = s$borderline,
     pathway = qc_col(tbl, "pathway_credible", NA_character_), partner1 = qc_col(tbl, "recommended_partner_1", NA_character_),
-    deploy_case = qc_col(tbl, "deploy_case", NA_character_)
+    deploy_case = qc_col(tbl, "deploy_case", NA_character_),
+    evidence_status = evidence_status_from_shares(tbl, "_cp")
   ) |> dplyr::filter(!is.na(.data$choice))
 }
 

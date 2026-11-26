@@ -1,6 +1,6 @@
 {
   "schema": "osi-posture-vintages",
-  "layer_version": 2,
+  "layer_version": 3,
   "vintages": [
     {
       "vintage_id": "2026-10-28-b5a23d82",
@@ -59,7 +59,7 @@
         "cp": 0.75
       },
       "n_cells": 14124,
-      "sha256": "1cc640166b36cf78ccca6473626817db3801123cb943de8d5c83c1a0d03fbd60"
+      "sha256": "57100849881472b891f3cbf6b33260032c340c12d298fc0fdfaa766225ed5307"
     },
     {
       "vintage_id": "2026-10-30-68be7faf",
@@ -118,7 +118,7 @@
         "cp": 0.75
       },
       "n_cells": 14124,
-      "sha256": "dcae669601ae2a850398fa706d9845baffcb468d16a203203d9f6fcd79236c17"
+      "sha256": "0bd4ea1ed60cfa9129abb3b7c7db2ba32f16a9f7c7e0a5c5f308bbc9c297e6f3"
     },
     {
       "vintage_id": "2026-10-30-235ccceb",
@@ -177,7 +177,7 @@
         "cp": 0.75
       },
       "n_cells": 14124,
-      "sha256": "63120eb4f81bbcd1fc1009ffceb4b45487a5c469b9a1f6d459ab148a6db04d22"
+      "sha256": "41f8b9ecbe97e3ccb0b95ac945e3be0aa9ba86286fbb04dd645a9ce2a44efc8b"
     },
     {
       "vintage_id": "2026-10-30-a9a35532",
@@ -236,7 +236,7 @@
         "cp": 0.75
       },
       "n_cells": 14124,
-      "sha256": "c1004fb6cbdfda9126a8d8a8d60d883e3a7499054624540f6effd8804d421e9b"
+      "sha256": "c33f86f0bcb1cf32d10d3b3a0497c5ab39296f56d8524af4cc6d931fedf6769c"
     },
     {
       "vintage_id": "2026-10-31-32c987d5",
@@ -295,7 +295,7 @@
         "cp": 0.75
       },
       "n_cells": 14124,
-      "sha256": "c1004fb6cbdfda9126a8d8a8d60d883e3a7499054624540f6effd8804d421e9b"
+      "sha256": "c33f86f0bcb1cf32d10d3b3a0497c5ab39296f56d8524af4cc6d931fedf6769c"
     },
     {
       "vintage_id": "2026-11-17-1cdda057",
@@ -354,7 +354,7 @@
         "cp": 0.75
       },
       "n_cells": 14124,
-      "sha256": "10968a148fae555aa565002dc343cbfe7925c4bcbf57a4ea93317256795ba9dd"
+      "sha256": "8e06fe92c6250b3ddabf46496083d42239d15cb8bedfbbe0881895c3f5db20e1"
     },
     {
       "vintage_id": "2026-11-17-f665dc19",
@@ -413,7 +413,7 @@
         "cp": 0.75
       },
       "n_cells": 14124,
-      "sha256": "9864afab6527fb896fd8a532ad69fcfca17448035d11dd04b4a111f5e588dd69"
+      "sha256": "6e5d940ee2b2da0d572776cc316b7b4c43905ba003a44f7c7bef2da290bc1060"
     },
     {
       "vintage_id": "2026-11-21-aab308e2",
@@ -472,7 +472,7 @@
         "cp": 0.75
       },
       "n_cells": 14124,
-      "sha256": "9864afab6527fb896fd8a532ad69fcfca17448035d11dd04b4a111f5e588dd69"
+      "sha256": "6e5d940ee2b2da0d572776cc316b7b4c43905ba003a44f7c7bef2da290bc1060"
     },
     {
       "vintage_id": "2026-11-21-07b6f4bd",
@@ -531,7 +531,7 @@
         "cp": 0.75
       },
       "n_cells": 14124,
-      "sha256": "620c9b6c2d21bcbbbbfa0b775fcaf0d471c70b52ca4f7ff96a807da652efc9e3"
+      "sha256": "7d0927e53188967a467d1f2582a45235fd83b9962a13d1df3795937be8c8bc11"
     }
   ]
 }

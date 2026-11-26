@@ -95,11 +95,20 @@ posture_classify_cells <- function(j, cfg, bars_prev, bars_cur) {
   }
   j$inputs_moved <- inputs_moved
 
+  jcol <- function(n) if (n %in% names(j)) j[[n]] else rep(NA_character_, nrow(j))
   ev_p <- change_rank(j$evidence_prev, th$evidence_scale)
   ev_c <- change_rank(j$evidence_cur, th$evidence_scale)
   ev_d <- ev_c - ev_p
-  j$t_evidence <- both & !is.na(ev_d) & ev_d != 0
-  j$evidence_direction <- ifelse(j$t_evidence, ifelse(ev_d > 0, "improved", "worsened"), NA_character_)
+  # the evidence basis (dominant variable-stage evidence status, e.g. proxy -> exact): a change of basis is an evidence
+  # change even when the quality band holds
+  es_scale <- th$evidence_status_scale %||% c("no_data", "tech_wide", "proxy", "shared", "split", "exact")
+  es_d <- change_rank(jcol("evidence_status_cur"), es_scale) - change_rank(jcol("evidence_status_prev"), es_scale)
+  band_hit <- both & !is.na(ev_d) & ev_d != 0
+  basis_hit <- both & !is.na(es_d) & es_d != 0
+  j$evidence_basis_changed <- basis_hit
+  j$t_evidence <- band_hit | basis_hit
+  dir_d <- ifelse(band_hit, ev_d, es_d)
+  j$evidence_direction <- ifelse(j$t_evidence, ifelse(dir_d > 0, "improved", "worsened"), NA_character_)
   cf_p <- change_rank(j$confidence_prev, th$confidence_scale)
   cf_c <- change_rank(j$confidence_cur, th$confidence_scale)
   cf_d <- cf_c - cf_p
@@ -207,13 +216,15 @@ change_sources <- function(x, cfg) {
 CHANGE_RECORD_COLS <- c("id", "iso3", "tech", "stage", "prev_vintage", "cur_vintage", "types", "subtype", "severity",
                         "magnitude", "attribution", "method_changed", "method_unverified", "method_types", "world_types",
                         "crossed", "evidence_direction", "confidence_direction", "sources", "explanation")
-CHANGE_SIDE_FIELDS <- c("choice", "posture", "need_type", "need", "prize", "cp", "market", "share", "confidence", "evidence")
+CHANGE_SIDE_FIELDS <- c("choice", "posture", "need_type", "need", "prize", "cp", "market", "share", "confidence", "evidence",
+                        "evidence_status")
 
 change_records <- function(x) {
   out <- x[, intersect(CHANGE_RECORD_COLS, names(x)), drop = FALSE]
   for (f in CHANGE_SIDE_FIELDS) {
-    out[[paste0("prev_", f)]] <- x[[paste0(f, "_prev")]]
-    out[[paste0("cur_", f)]] <- x[[paste0(f, "_cur")]]
+    get <- function(nm) if (nm %in% names(x)) x[[nm]] else rep(NA_character_, nrow(x))
+    out[[paste0("prev_", f)]] <- get(paste0(f, "_prev"))
+    out[[paste0("cur_", f)]] <- get(paste0(f, "_cur"))
   }
   for (f in c("need", "prize", "cp")) out[[paste0("d_", f)]] <- x[[paste0("d_", f)]]
   out$impacts <- rep(NA_character_, nrow(out))

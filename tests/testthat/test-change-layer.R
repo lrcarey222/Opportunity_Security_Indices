@@ -3,7 +3,8 @@
 
 cl_root <- normalizePath(test_path("..", ".."), winslash = "/", mustWork = TRUE)
 for (f in c("R/qc/qc_core.R", "R/qc/qc_drift.R", "R/change/posture_vintage.R", "R/change/posture_compare.R",
-            "R/change/posture_explain.R", "R/change/posture_impacts.R", "R/change/change_export.R")) source(file.path(cl_root, f))
+            "R/change/posture_explain.R", "R/change/posture_impacts.R", "R/change/change_export.R",
+            "R/change/posture_bridge.R")) source(file.path(cl_root, f))
 cl_cfg <- yaml::read_yaml(file.path(cl_root, "config/change_layer.yml"))
 
 cl_cell <- function(iso3 = "USA", tech = "Electric Grid", stage = "Components", choice = "partner", need = 0.80,
@@ -254,4 +255,77 @@ test_that("the bundle nests sides and keeps arrays as arrays", {
   expect_equal(x$after$choice, "catch_up")
   expect_true(is.list(x$types))
   expect_true(is.list(x$impacts))
+})
+
+test_that("the evidence basis is the dominant variable-stage status, and a change of basis is an evidence change", {
+  tbl <- data.frame(exact_evidence_share_cp = c(0.7, 0.1, NA), split_evidence_share_cp = c(0.1, 0.1, NA),
+                    shared_evidence_share_cp = c(0.1, 0.2, NA), proxy_evidence_share_cp = c(0.1, 0.6, NA),
+                    tech_wide_evidence_share_cp = c(0, 0, NA), no_data_share_cp = c(0, 0, NA))
+  expect_equal(evidence_status_from_shares(tbl), c("exact", "proxy", NA))
+  expect_equal(evidence_status_from_shares(data.frame(x = 1)), NA_character_)
+  prev <- dplyr::mutate(cl_v(), evidence_status = "proxy")
+  cur <- dplyr::mutate(cl_v(), evidence_status = c("exact", "proxy"))
+  x <- cl_usa(cl_cmp(prev, cur))
+  expect_equal(x$types, "evidence")
+  expect_equal(x$evidence_direction, "improved")
+  expect_match(x$explanation, "Evidence basis changed from proxy to exact (stage-specific).", fixed = TRUE)
+  expect_false(grepl("Evidence improved from", x$explanation))   # the band held
+  expect_equal(x$cur_evidence_status, "exact")
+})
+
+test_that("bridge sandbox dirs keep nesting and the plan materializes data-dir inputs and redirects the rest", {
+  sd <- bridge_sandbox_dirs(list(outputs = "/r/data/processed/outputs", processed = "/r/data/processed", raw = "/r/data/raw",
+                                 diagnostics = "/r/diagnostics/sp"), "/sb")
+  expect_equal(sd$processed, "/sb/processed")
+  expect_equal(sd$outputs, "/sb/processed/outputs")
+  expect_equal(sd$raw, "/sb/raw")
+  plan <- bridge_plan(list(`data/processed/a.rds` = "aa11", `data/processed/outputs/b.rds` = "bb22", `data/reference/c.csv` = "cc33"),
+                      "/r", list(outputs = "/r/data/processed/outputs", processed = "/r/data/processed"), sd, "/store")
+  expect_equal(plan$target, c("/sb/processed/a.rds", "/sb/processed/outputs/b.rds", NA))
+  expect_equal(plan$store[3], "/store/cc/cc33.csv")
+  expect_true(bridge_usable(list(pure = TRUE, inputs_id = "i-1", method = list(id = "m-2")),
+                            list(data = list(inputs_id = "i-1")), list(method = list(id = "m-2"))))
+  expect_false(bridge_usable(list(pure = FALSE, inputs_id = "i-1", method = list(id = "m-2")),
+                             list(data = list(inputs_id = "i-1")), list(method = list(id = "m-2"))))
+})
+
+test_that("a bridge run re-reads the previous inputs from the store, writes only in its sandbox and reports leaks", {
+  source(file.path(cl_root, "scripts/utils/change_stamps.R"))
+  root <- normalizePath(tempfile("repo"), winslash = "/", mustWork = FALSE); dir.create(root)
+  proc <- file.path(root, "data", "processed"); out <- file.path(proc, "outputs"); ref <- file.path(root, "data", "reference")
+  for (d in c(out, ref)) dir.create(d, recursive = TRUE)
+  store <- file.path(root, "data", "vintages", "inputs")
+  saveRDS(c(a = 1), file.path(proc, "need.rds")); utils::write.csv(data.frame(k = 1), file.path(ref, "map.csv"), row.names = FALSE)
+  engine <- function(proc, out) {     # a stand-in for scripts/26: reads two inputs, writes one output
+    n <- readRDS(file.path(proc, "need.rds")); m <- utils::read.csv(file.path(root, "data", "reference", "map.csv"))
+    saveRDS(list(need = n, k = m$k), file.path(out, "result.rds"))
+  }
+  # 1. a normal run: ledger + store
+  change_ledger_start(); engine(proc, out); change_ledger_stop()
+  led <- change_ledger_write(file.path(out, "ledger.json"), root)
+  expect_setequal(names(led$files), c("data/processed/need.rds", "data/reference/map.csv"))
+  st <- change_store_inputs(led, root, store)
+  expect_equal(st$stored, 2L)
+  expect_equal(change_store_inputs(led, root, store)$kept, 2L)       # content-addressed: nothing copied twice
+  # 2. the live inputs move on
+  saveRDS(c(a = 99), file.path(proc, "need.rds")); utils::write.csv(data.frame(k = 7), file.path(ref, "map.csv"), row.names = FALSE)
+  live_out <- readRDS(file.path(out, "result.rds"))
+  # 3. the bridge: old inputs, sandboxed writes
+  b <- change_bridge_setup(file.path(out, "ledger.json"), root, dirs = list(outputs = out, processed = proc), sandbox = file.path(root, "sb"), store_dir = store)
+  change_ledger_start(b); engine(b$dirs$processed, b$dirs$outputs); change_ledger_stop()
+  res <- readRDS(file.path(b$dirs$outputs, "result.rds"))
+  expect_equal(unname(res$need), 1)             # materialized in the sandbox from the store
+  expect_equal(res$k, 1)                        # a repository reference table, redirected to the store
+  expect_identical(readRDS(file.path(out, "result.rds")), live_out)   # the live output was not touched
+  rep <- change_bridge_finish(b, list(id = "m-x"))
+  expect_true(rep$pure)
+  expect_equal(rep$n_redirected, 1L)
+  # 4. a read the previous run never made is a leak: the bridge is impure
+  utils::write.csv(data.frame(z = 1), file.path(ref, "new.csv"), row.names = FALSE)
+  b2 <- change_bridge_setup(file.path(out, "ledger.json"), root, dirs = list(outputs = out, processed = proc), sandbox = file.path(root, "sb2"), store_dir = store)
+  change_ledger_start(b2); engine(b2$dirs$processed, b2$dirs$outputs); invisible(utils::read.csv(file.path(ref, "new.csv"))); change_ledger_stop()
+  rep2 <- change_bridge_finish(b2, list(id = "m-x"))
+  expect_false(rep2$pure)
+  expect_match(rep2$leaks, "new.csv$")
+  expect_error(change_bridge_setup(file.path(root, "nope"), root, list(), "", store), "neither a file nor a vintage id")
 })

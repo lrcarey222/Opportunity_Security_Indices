@@ -249,6 +249,9 @@ posture_core_doc <- function(tbl, division, countries, cfg, created, git_commit 
   # the market prize beside the strategic industrial value, and the yard roll-up, where the table has them
   if ("choice_prize" %in% names(x)) cells$io <- posture_r3(col("industrial_opportunity"))
   if ("yard_rollup" %in% names(x)) cells$yd <- unname(POSTURE_YARD_CODE[as.character(x$yard_rollup)])
+  # the evidence basis (change layer: one-letter code of the dominant variable-stage evidence status, computed by
+  # scripts/91 as evidence_status_code), where the table has it
+  if ("evidence_status_code" %in% names(x)) cells$es <- col("evidence_status_code")
   cells <- lapply(cells, function(v) I(unname(v)))
   div <- division[division$tech %in% techs, , drop = FALSE]
   dcol <- function(n) if (n %in% names(div)) div[[n]] else rep(NA, nrow(div))

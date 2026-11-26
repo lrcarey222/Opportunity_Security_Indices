@@ -47,6 +47,10 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 tbl <- readRDS(file.path(outputs_dir, "strategic_position_tbl.rds"))
 if (!"strategic_choice" %in% names(tbl)) stop("strategic_position_tbl.rds predates the canonical choice: rerun scripts/26.")
+# the evidence basis per cell for the change layer (cells.es: the dominant variable-stage evidence status of the
+# competitive-position evidence, e.g. P proxy -> E exact)
+source(file.path(repo_root, "R", "change", "posture_vintage.R"))
+tbl$evidence_status_code <- unname(EVIDENCE_STATUS_CODE[evidence_status_from_shares(tbl, "_cp")])
 stage_cfg <- yaml::read_yaml(file.path(repo_root, "config", "supply_chain_stages.yml"))
 stage_display <- stats::setNames(vapply(stage_cfg$stages, function(s) s$label, ""),
                                  vapply(stage_cfg$stages, function(s) paste0(toupper(substr(s$id, 1, 1)), substr(s$id, 2, nchar(s$id))), ""))

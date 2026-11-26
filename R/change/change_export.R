@@ -13,7 +13,7 @@ change_side <- function(r, side) {
   list(choice = g("choice"), posture = g("posture"), needType = g("need_type"),
        need = change_num3(g("need")), prize = change_num3(g("prize")), cp = change_num3(g("cp")),
        market = change_num3(g("market")), share = change_num3(g("share")),
-       confidence = g("confidence"), evidence = g("evidence"))
+       confidence = g("confidence"), evidence = g("evidence"), evidenceStatus = g("evidence_status"))
 }
 
 change_record_json <- function(r) {
