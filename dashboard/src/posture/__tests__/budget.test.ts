@@ -23,7 +23,7 @@ describe.skipIf(!existsSync(join(DIR, 'manifest.json')))('posture bundle budget 
   });
 
   it('the folder holds only the files the manifest names', () => {
-    const named = new Set(['manifest.json', manifest.core, ...Object.values(manifest.details)]);
+    const named = new Set(['manifest.json', manifest.core, ...(manifest.signals ? [manifest.signals] : []), ...Object.values(manifest.details)]);
     expect(readdirSync(DIR).filter((f) => !named.has(f))).toEqual([]);
   });
 });
