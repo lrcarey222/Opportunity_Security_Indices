@@ -327,7 +327,9 @@ const postureManifestSize = postureManifest ? gz(join(postureDir, 'manifest.json
 const postureCoreSize = postureManifest ? postureListed(postureManifest.core) : 0;
 const postureDetails = postureManifest ? Object.entries(postureManifest.details ?? {}).map(([iso3, f]) => [iso3, postureListed(f)]) : [];
 const postureMaxDetail = maxOf(postureDetails.map(([, n]) => n));
-const postureData = postureManifestSize + postureCoreSize + postureDetails.reduce((s, [, n]) => s + n, 0);
+// Home's landing signals (posture-signals.<md5>.json, since 2026-11-26), loaded after idle on Home
+const postureSignalsSize = postureManifest?.signals ? postureListed(postureManifest.signals) : 0;
+const postureData = postureManifestSize + postureCoreSize + postureSignalsSize + postureDetails.reduce((s, [, n]) => s + n, 0);
 const postureNote = postureManifest ? '' : 'posture data absent (scripts/91): not counted';
 
 // Change layer (scripts/45): manifest, the change records and the assessment index NEIS Intelligence reads.

@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { onIdle } from '../shell/prefetch.ts';
+import { HomeSignals } from '../posture/HomeSignals.tsx';
 import { Link } from 'react-router';
 import { ATTRIBUTION_LABEL, choiceLabel, vintageDate, type ChangesBundle } from './contract.ts';
 import { nodeLabel } from './ChangedCellsNote.tsx';
@@ -67,9 +68,17 @@ function HomeChangesLoaded() {
   return <HomeChangesView b={data} />;
 }
 
-/** Home makes no request before the browser is idle (shell/prefetch.ts): the change history loads after it. */
+/**
+ * Home's landing questions after the browser is idle (Home makes no request before it, shell/prefetch.ts): what is
+ * moving in trade (posture signals) and which recommendations changed (the change layer). One idle task for both.
+ */
 export function HomeChanges() {
   const [idle, setIdle] = useState(false);
   useEffect(() => onIdle(() => setIdle(true)), []);
-  return idle ? <HomeChangesLoaded /> : null;
+  return idle ? (
+    <>
+      <HomeSignals />
+      <HomeChangesLoaded />
+    </>
+  ) : null;
 }

@@ -92,6 +92,8 @@ export interface PostureManifest {
   core: string;
   details: Record<string, string>;
   counts: { countries: number; cells: number; division_nodes: number };
+  /** Home's landing signals (posture-signals.<md5>.json; since 2026-11-26) */
+  signals?: string;
 }
 
 /** The decision thresholds (config/strategic_position.yml), for the chart lines, borderline words and reasons. */

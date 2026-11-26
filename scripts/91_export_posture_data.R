@@ -30,7 +30,7 @@ source(local({
 #   --no-vintages   skip the change layer (scripts/45), which otherwise runs after an export to the default dir
 
 library(dplyr)
-for (f in c("R/utils/supply_chain_stages.R", "R/dashboard/posture/posture_export.R")) source(file.path(repo_root, f))
+for (f in c("R/utils/supply_chain_stages.R", "R/dashboard/posture/posture_export.R", "R/dashboard/posture/posture_signals.R")) source(file.path(repo_root, f))
 
 config <- getOption("opportunity_security.config")
 processed_dir <- file.path(repo_root, config$processed_dir)
@@ -97,6 +97,10 @@ core <- posture_core_doc(tbl, division, countries, sp_cfg, created, git_commit, 
 core_file <- write_doc("posture-core", core)
 if (core_file$bytes > POSTURE_BUDGET_CORE) stop("posture core is ", core_file$bytes, " bytes, over the 3 MiB budget.")
 isos <- core$countries$iso3
+# Home's landing signals (export growth, rising China dependence): one small document instead of the core and drawers
+signals_file <- write_doc("posture-signals", posture_signals_doc(tbl, techs = unlist(core$meta$techs), countries = countries,
+                                                                 treat_as_allied = treat_as_allied, created = created, git_commit = git_commit,
+                                                                 meta = core$meta))
 techs <- unlist(sp_cfg$headline_techs %||% sort(unique(tbl$tech)))
 yf_nodes <- if ("large_yard_case" %in% names(tbl)) posture_yf_node_rows(tbl[tbl$tech %in% techs, , drop = FALSE]) else NULL
 details <- lapply(isos, function(iso) write_doc(paste0("posture-detail-", iso), posture_detail_doc(tbl, iso, sp_cfg, created, yf_nodes, git_commit = git_commit)))
@@ -122,7 +126,7 @@ change_stamps <- list(
 )
 manifest <- list(
   schema = POSTURE_SCHEMA, schema_version = POSTURE_SCHEMA_VERSION, created = created, git_commit = git_commit,
-  core = core_file$file, core_bytes = core_file$bytes,
+  core = core_file$file, core_bytes = core_file$bytes, signals = signals_file$file,
   details = stats::setNames(lapply(details, function(d) d$file), isos),
   counts = list(countries = length(isos), cells = length(core$cells$p), division_nodes = length(core$division$t),
                 choices = as.list(table(factor(tbl$strategic_choice[!is.na(tbl$strategic_choice)],
