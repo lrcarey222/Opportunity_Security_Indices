@@ -1,24 +1,24 @@
 {
   "schema": "osi-country-brief-lint",
   "iso3": "IND",
-  "src_sha256": "f5793b5142cdd7973195050a9f794468192156fc955798347bbd20c17c28ee03",
-  "facts_sha256": "7952ba7c108fc6d7fc806e2ad2cc1a0febea23bd583fd05ddca970e185e2b3d7",
-  "claims_sha256": "37e0899ce9eef93d793bdb181ba3048c210dda0dee336725e6fdf1e1ee5b39be",
-  "words": 2587,
-  "words_tables": 1577,
+  "src_sha256": "9c6b2e45f93325c37dc121316a02d6f8579bf514b94563bd7222f8fd3d70f849",
+  "facts_sha256": "036de9d480fec16182babbdead1578106d7f524f0d9245c09dac84318a02dcb1",
+  "claims_sha256": "6cd1450fed959377f3926787a1ffdd022529a361280a205b57852cf835613822",
+  "words": 2549,
+  "words_tables": 1406,
   "words_sections": {
-    "1": 496,
+    "1": 500,
     "2": 645,
-    "3": 311,
-    "4": 343,
+    "3": 340,
+    "4": 272,
     "5": 277,
     "6": 168,
     "7": 347
   },
-  "n_claims": 969,
-  "n_sentences": 1139,
+  "n_claims": 967,
+  "n_sentences": 1140,
   "n_errors": 0,
-  "n_warnings": 2,
+  "n_warnings": 4,
   "items": [
     {
       "id": "l1",
@@ -26,15 +26,31 @@
       "check": "number_word",
       "detail": "'one' outside a token: \"It holds no measurable position in battery mineral mining and only a weak one in EV minera\"",
       "section": 2,
-      "sentence_id": "s2.54"
+      "sentence_id": "s2.59"
     },
     {
       "id": "l2",
       "severity": "warning",
+      "check": "economy_name",
+      "detail": "'Myanmar' not from a token: \"Refining where capacity sits, such as Myanmar, Malaysia and Viet Nam (from India's own tru\"",
+      "section": 3,
+      "sentence_id": "s3.36"
+    },
+    {
+      "id": "l3",
+      "severity": "warning",
       "check": "number_word",
-      "detail": "'one' outside a token: \"Overhead conductors show the gap: the cables layer of India's grid equipment reads Watch, \"",
-      "section": 2,
-      "sentence_id": "s2.62"
+      "detail": "'two' outside a token: \"The two nuclear steps (nuclear fuel and reactor parts; reactors and steam generators) do n\"",
+      "section": 4,
+      "sentence_id": "s4.12"
+    },
+    {
+      "id": "l4",
+      "severity": "warning",
+      "check": "economy_name",
+      "detail": "'Myanmar', 'Zimbabwe' not from a token: \"India's partner lists come from its own trust screen, which admits some economies outside \"",
+      "section": 0,
+      "sentence_id": "a.50"
     }
   ]
 }

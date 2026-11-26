@@ -1,24 +1,24 @@
 {
   "schema": "osi-country-brief-lint",
   "iso3": "USA",
-  "src_sha256": "40202c4419363a0bcbda6840a03e18f4a71c4008c52feeef5c48622ad43dfe1c",
-  "facts_sha256": "07ff1cdfdc1fab12b5625be65bb9d3f98c5003edccf66f61bf3560b97c0f64fe",
-  "claims_sha256": "d02398ecc1e6b914a9ef3b4b17512bb337c1011007af41b040fd914d8555190a",
-  "words": 2549,
-  "words_tables": 1825,
+  "src_sha256": "1321b8435ef6026aca596c8c95494b45789d9b1160ea1d5dfb8ac3c9efe9f031",
+  "facts_sha256": "963048361cd01d58d4a8d59fef98095e622207f679144b4c56e75106a04547f6",
+  "claims_sha256": "0ba6869be9dfc5416344a03a2dc18f99e0922b5a72b91c614abc3d7735d8a0fc",
+  "words": 2630,
+  "words_tables": 1841,
   "words_sections": {
-    "1": 428,
-    "2": 675,
-    "3": 296,
-    "4": 407,
+    "1": 432,
+    "2": 651,
+    "3": 346,
+    "4": 403,
     "5": 150,
     "6": 195,
-    "7": 398
+    "7": 453
   },
-  "n_claims": 1082,
-  "n_sentences": 1205,
+  "n_claims": 1105,
+  "n_sentences": 1226,
   "n_errors": 0,
-  "n_warnings": 4,
+  "n_warnings": 5,
   "items": [
     {
       "id": "l1",
@@ -26,7 +26,7 @@
       "check": "number_word",
       "detail": "'four' outside a token: \"Four bargains turn the American market and capital into trusted capacity that allies and t\"",
       "section": 3,
-      "sentence_id": "s3.12"
+      "sentence_id": "s3.14"
     },
     {
       "id": "l2",
@@ -51,6 +51,14 @@
       "detail": "'six' outside a token: \"Each technology is split into six supply-chain stages, and each step gets a strategic choi\"",
       "section": 0,
       "sentence_id": "a.3"
+    },
+    {
+      "id": "l5",
+      "severity": "warning",
+      "check": "words",
+      "detail": "main text 2630 words (aim 1800-2600)",
+      "section": null,
+      "sentence_id": null
     }
   ]
 }

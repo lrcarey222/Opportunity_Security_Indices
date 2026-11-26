@@ -12,6 +12,35 @@ policy alignment. It also draws on the Allied Industrial Base (AIB) roles and co
 - Japan, Korea, India and the United States, on 2026-11-04;
 - Germany, the United Kingdom, France and Canada, on 2026-11-05.
 
+**2026-11-26: briefs regenerated on the 64-economy trusted network.** All nine were rewritten against the
+posture bundle fed21e77 and the AIB run of 26 November 2026 (583bd65a), where "allied" always means the 64
+economies (31 core, 28 partners, 5 treated as allied). The development bundles (`devpart-*`) were rebuilt with
+scripts/93 on those bundles first, since the 4 November ones predated both. Two generator changes came with it:
+scripts/92 dates a brief by the newest of the Country release and the posture and AIB runs it reads ("Data as of
+26 November 2026"), and the shared-capabilities table reads a supply-basis compact lead role, so a product the
+economy supplies without an essential contribution no longer shows "no supplier role". Development partners and
+AIB hosts are screened by the AIB host screen, not the 64, so the briefs now say "AIB trust screen" and
+"best-placed hosts". Some changes come from data drift since 5 November (the current-trade posture and AIB of
+17 November), not from the 64 set. Per country:
+- AUS: single point of failure now uranium only; development rows lead with Indonesia (EV drivetrains), Viet Nam
+  (wind turbines) and Malaysia (cells); hydro-turbine demand-anchor share labelled as such.
+- CAN: reactors Preserve (review), battery components a review case; own-need development steps are now
+  rare-earth and wind materials refining and coal-plant components, so the battery pairs rest on the allied gap.
+- DEU: three single points of failure (EV drivetrain components, wind parts, reactors); blades, towers and nacelle
+  parts Preserve; development own-need steps EV drivetrains and cells (battery components dropped, need 66).
+- FRA: rare-earth refining Secure; reactors and nuclear parts Preserve; AC generators BUILD with France's 6%
+  supplier role; development table re-ranked on the rebuilt bundle.
+- GBR: nuclear demand seat now reactors and enrichment machinery; coal-plant components Watch, so the development
+  own-need steps are cells and rare-earth and wind materials only.
+- IND: grid, coal and oil equipment Preserve; seven Catch Up steps, four pass the development tests; Myanmar and
+  Zimbabwe (outside the 64) are named as India's own trust screen, not as allied or trusted producers.
+- JPN: cells and reactors settled Preserve; EV and nuclear-parts calls review cases; five own-need development
+  steps; the AIB protects the demand of 64 economies, while the 63 best-placed-partner count is worldwide.
+- KOR: grid components a review case; battery components, transformers and PV equipment Preserve; first host for
+  power cables; development rows re-ranked (Viet Nam, the Philippines, Indonesia, Malaysia, Mexico).
+- USA: reactors, nuclear parts, transformers, gas and oil equipment Preserve (Catch Up 8 -> 3); EV drivetrains no
+  longer an own-need development step; AC generators BUILD with the US as first host.
+
 The legacy memos stay hidden. The pilot report has the implementation notes and open questions:
 [country_briefs_pilot_report.md](country_briefs_pilot_report.md).
 

@@ -1,22 +1,22 @@
 {
   "schema": "osi-country-brief-lint",
   "iso3": "JPN",
-  "src_sha256": "aff8ce5225ceced2739fa81d138e78a0b0a80050ee4a0aec8c50ce5a2fcbcdee",
-  "facts_sha256": "fc893e239109101e57be12c38a862d94cb2672e8005f365ffa7e6d843b18996c",
-  "claims_sha256": "c35831b9e3c0edebf3026dd1887b72ae05cda0e851223015ef11e7b46698d4fb",
-  "words": 2488,
-  "words_tables": 1926,
+  "src_sha256": "5513090add008fdce0b6631d5b282a19d698271517068b163dad189ac34625c9",
+  "facts_sha256": "10051b157024c44a598203ad6208d9cfc64c1fb62ae7ce0a5d1d3e5b842e5cc5",
+  "claims_sha256": "f57b772ea4f0520c4fca2afedbceabc60507419257b28e2ff906061d4efa4b83",
+  "words": 2449,
+  "words_tables": 1901,
   "words_sections": {
-    "1": 455,
-    "2": 688,
-    "3": 296,
-    "4": 477,
+    "1": 471,
+    "2": 700,
+    "3": 317,
+    "4": 433,
     "5": 182,
-    "6": 99,
-    "7": 291
+    "6": 64,
+    "7": 282
   },
-  "n_claims": 1139,
-  "n_sentences": 1232,
+  "n_claims": 1159,
+  "n_sentences": 1251,
   "n_errors": 0,
   "n_warnings": 2,
   "items": [
@@ -24,9 +24,9 @@
       "id": "l1",
       "severity": "warning",
       "check": "long_sentence",
-      "detail": "42 words: \"The last row rests on the allied gap alone, in a step where Japan's own call is a review c\"",
-      "section": 4,
-      "sentence_id": "s4.11"
+      "detail": "41 words: \"Japan's distinctive role in the Allied Industrial Base is as its specialist supplier and m\"",
+      "section": 1,
+      "sentence_id": "s1.1"
     },
     {
       "id": "l2",
@@ -34,7 +34,7 @@
       "check": "number_word",
       "detail": "'half' outside a token: \"Aid is called technology-coded only where codes naming the technology hold at least half o\"",
       "section": 0,
-      "sentence_id": "a.66"
+      "sentence_id": "a.63"
     }
   ]
 }

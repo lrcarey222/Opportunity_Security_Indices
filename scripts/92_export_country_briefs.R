@@ -86,15 +86,21 @@ entry_i <- which(vapply(cm$countries, function(c) identical(c$iso3, iso3), TRUE)
 if (!length(entry_i)) stop(iso3, " is not in the Country manifest")
 entry <- cm$countries[[entry_i]]
 if (!identical(entry$tier, "core") && !iso3 %in% unlist(cfg$brief$beyond_core)) {
-  stop("briefs are for core coalition members (and config brief.beyond_core) only; ", iso3, " is '", entry$tier, "'")
+  stop("briefs are for core members of the trusted network (and config brief.beyond_core) only; ", iso3, " is '", entry$tier, "'")
 }
 date_label <- function(ts) { d <- as.Date(substr(ts %||% "", 1, 10)); if (is.na(d)) "" else sub("^0", "", format(d, "%d %B %Y")) }
 editions <- list(posture_edition = sprintf("dashboard data of %s", date_label(pm$created)), aib_edition = sprintf("run of %s", date_label(am$created)))
+# the brief's data date: the newest of the Country data release and the posture and AIB runs it reads, so a
+# brief on a later posture or AIB run does not print the older Country release date (2026-11-26 review)
+brief_as_of <- max(as.Date(c(cm$as_of, substr(pm$created %||% "", 1, 10), substr(am$created %||% "", 1, 10))), na.rm = TRUE)
+brief_as_of_label <- date_label(format(brief_as_of))
 ppd <- utils::read.csv(file.path(repo_root, "config", "posture_policy_design.csv"), stringsAsFactors = FALSE, check.names = FALSE)
 # the development-partnership file (scripts/93), the economy's entry `devpart`: run scripts/93 first
 if (is.null(entry$devpart) || !file.exists(file.path(out_dir, entry$devpart))) stop(iso3, " has no development-partnership file: run scripts/93_export_development_partnerships.R first")
 dev <- read_json(file.path(out_dir, entry$devpart))
-facts <- country_brief_facts(core, detail, aib, managed, iso3, cfg, cm$as_of_label, editions, am$created, ppd, dcfg, dev)
+# the trusted network (the one allied set): the coalition tiers plus the economies treated as allied
+treat_as_allied <- as.character(unlist(yaml::read_yaml(file.path(repo_root, "config", "aib_strategic_layer.yml"))$allied$treat_as_allied))
+facts <- country_brief_facts(core, detail, aib, managed, iso3, cfg, brief_as_of_label, editions, am$created, ppd, dcfg, dev, treat_as_allied)
 facts_txt <- as.character(country_json(facts))
 facts_sha <- country_sha256(facts_txt)
 country_memo_write_text(as.character(country_json(facts, pretty = TRUE)), file.path(dir_c, "brief.facts.json"))
@@ -108,7 +114,7 @@ if (!file.exists(src_path)) { step("no brief.src.md yet: the facts are written f
 # ---- Lint ------------------------------------------------------------------------------------------------
 
 country <- facts$meta$country$d
-fill <- list(country = country, country_poss = facts$meta$country_poss$d, as_of_label = cm$as_of_label)
+fill <- list(country = country, country_poss = facts$meta$country_poss$d, as_of_label = brief_as_of_label)
 fill$development_title <- country_fill(cfg$brief$development_titles[[dev$perspective]] %||% cfg$brief$development_titles$none, fill)
 src <- country_memo_read_text(src_path)
 src_sha <- country_sha256(src)
@@ -201,7 +207,7 @@ names(fig_files) <- fig_ids
 utc <- function(t) format(as.POSIXct(t, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 meta <- list(generated_at = utc(file.mtime(src_path)), verified_at = if (!is.null(verify$verified_at)) verify$verified_at else NULL,
              writer = verify$writer %||% "AI writer", verifier = verify$verifier %||% if (is.null(preview_dir)) "independent AI verifier" else "not verified (preview)",
-             src_sha256 = src_sha, claims_sha256 = claims_sha, facts_sha256 = facts_sha, as_of = cm$as_of)
+             src_sha256 = src_sha, claims_sha256 = claims_sha, facts_sha256 = facts_sha, as_of = format(brief_as_of))
 doc <- country_brief_document(parsed, res, claims, facts, cfg, fill, meta, fig_files)
 font <- file.path(repo_root, "dashboard", "node_modules", "@fontsource-variable", "roboto", "files", "roboto-latin-wght-normal.woff2")
 font_b64 <- if (file.exists(font)) jsonlite::base64_enc(readBin(font, "raw", file.size(font))) else NULL

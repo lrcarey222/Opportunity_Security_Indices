@@ -1,0 +1,128 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' class='svglite' width='504.00pt' height='266.40pt' viewBox='0 0 504.00 266.40'>
+<defs>
+  <style type='text/css'><![CDATA[
+    .svglite line, .svglite polyline, .svglite polygon, .svglite path, .svglite rect, .svglite circle {
+      fill: none;
+      stroke: #000000;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-miterlimit: 10.00;
+    }
+    .svglite text {
+      white-space: pre;
+    }
+  ]]></style>
+</defs>
+<rect width='100%' height='100%' style='stroke: none; fill: #FFFFFF;'/>
+<defs>
+  <clipPath id='cpMC4wMHw1MDQuMDB8MC4wMHwyNjYuNDA='>
+    <rect x='0.00' y='0.00' width='504.00' height='266.40' />
+  </clipPath>
+</defs>
+<g clip-path='url(#cpMC4wMHw1MDQuMDB8MC4wMHwyNjYuNDA=)'>
+<rect x='0.00' y='0.00' width='504.00' height='266.40' style='stroke-width: 0.82; stroke: none; fill: #FFFFFF;' />
+<polyline points='29.86,192.51 496.03,192.51 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='29.86,151.17 496.03,151.17 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='29.86,109.82 496.03,109.82 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='29.86,68.48 496.03,68.48 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='29.86,27.14 496.03,27.14 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='29.86,242.12 29.86,3.99 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='121.26,242.12 121.26,3.99 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='212.67,242.12 212.67,3.99 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='304.08,242.12 304.08,3.99 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='395.48,242.12 395.48,3.99 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<polyline points='486.89,242.12 486.89,3.99 ' style='stroke-width: 0.64; stroke: #EEF0F3; stroke-linecap: butt;' />
+<rect x='304.08' y='23.83' width='191.95' height='44.65' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #EEF6FA;' />
+<line x1='304.08' y1='199.13' x2='304.08' y2='23.83' style='stroke-width: 0.75; stroke: #4B5563; stroke-dasharray: 2.00,2.00; stroke-linecap: butt;' />
+<line x1='29.86' y1='68.48' x2='496.03' y2='68.48' style='stroke-width: 0.75; stroke: #4B5563; stroke-dasharray: 2.00,2.00; stroke-linecap: butt;' />
+<text x='491.46' y='30.47' text-anchor='end' style='font-size: 6.97px;fill: #4B5563; font-family: "Arial";' textLength='128.56px' lengthAdjust='spacingAndGlyphs'>High value, top-quarter position: Preserve</text>
+<text x='491.46' y='124.74' text-anchor='end' style='font-size: 6.97px;fill: #4B5563; font-family: "Arial";' textLength='191.69px' lengthAdjust='spacingAndGlyphs'>High value, weaker today: Catch Up where there is an anchor;</text>
+<text x='491.46' y='132.68' text-anchor='end' style='font-size: 6.97px;fill: #4B5563; font-family: "Arial";' textLength='153.09px' lengthAdjust='spacingAndGlyphs'>else Partner where need is high, otherwise Watch</text>
+<text x='34.43' y='30.47' style='font-size: 6.97px;fill: #4B5563; font-family: "Arial";' textLength='189.51px' lengthAdjust='spacingAndGlyphs'>Left of the value bar: Watch, unless supply-chain need is high</text>
+<text x='33.51' y='67.16' style='font-size: 5.41px;fill: #4B5563; font-family: "Arial";' textLength='33.60px' lengthAdjust='spacingAndGlyphs'>top quarter 75</text>
+<circle cx='108.01' cy='140.42' r='6.54' style='stroke-width: 1.56; stroke: #F58229;' />
+<circle cx='135.89' cy='151.17' r='6.54' style='stroke-width: 1.56; stroke: #F58229;' />
+<circle cx='436.62' cy='192.51' r='6.54' style='stroke-width: 1.56; stroke: #F58229;' />
+<circle cx='48.60' cy='178.79' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='71.90' cy='174.15' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<polygon points='108.01,144.70 112.29,140.42 108.01,136.14 103.73,140.42 ' style='stroke-width: 0.64; stroke: #111827; fill: #F58229;' />
+<circle cx='108.01' cy='149.51' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<polygon points='135.89,155.45 140.17,151.17 135.89,146.89 131.61,151.17 ' style='stroke-width: 0.64; stroke: #111827; fill: #F58229;' />
+<circle cx='164.22' cy='192.51' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='166.97' cy='192.51' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='167.88' cy='151.17' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='216.78' cy='192.51' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='224.55' cy='115.45' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<rect x='221.53' y='137.39' width='6.05' height='6.05' style='stroke-width: 0.64; stroke: #111827; fill: #55C4C5;' />
+<circle cx='233.24' cy='164.89' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='243.29' cy='87.00' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='269.80' cy='192.51' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='285.34' cy='130.50' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='285.34' cy='144.88' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<circle cx='286.25' cy='192.51' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<rect x='287.80' y='189.49' width='6.05' height='6.05' style='stroke-width: 0.64; stroke: #111827; fill: #55C4C5;' />
+<circle cx='296.31' cy='165.72' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<rect x='296.48' y='189.49' width='6.05' height='6.05' style='stroke-width: 0.64; stroke: #111827; fill: #55C4C5;' />
+<circle cx='299.51' cy='149.68' r='2.13' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<polygon points='310.02,91.62 314.61,99.58 305.42,99.58 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<rect x='320.70' y='189.49' width='6.05' height='6.05' style='stroke-width: 0.64; stroke: #111827; fill: #55C4C5;' />
+<polygon points='326.01,78.22 330.61,86.18 321.42,86.18 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<polygon points='354.35,145.86 358.95,153.82 349.75,153.82 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<polygon points='384.97,187.20 389.57,195.16 380.37,195.16 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<polygon points='389.54,87.15 394.14,95.11 384.94,95.11 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<polygon points='401.88,155.62 406.48,163.58 397.28,163.58 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<polygon points='436.62,196.79 440.89,192.51 436.62,188.23 432.34,192.51 ' style='stroke-width: 0.64; stroke: #111827; fill: #F58229;' />
+<polygon points='437.07,91.62 441.67,99.58 432.48,99.58 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<polygon points='437.07,85.66 441.67,93.63 432.48,93.63 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<polygon points='461.75,69.46 466.35,77.42 457.16,77.42 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<polygon points='463.12,65.49 467.72,73.45 458.53,73.45 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<polygon points='463.12,79.71 467.72,87.67 458.53,87.67 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<rect x='471.52' y='93.73' width='6.05' height='6.05' style='stroke-width: 0.64; stroke: #111827; fill: #55C4C5;' />
+<line x1='100.69' y1='136.27' x2='105.56' y2='139.03' style='stroke-width: 0.53; stroke: #4B5563;' />
+<line x1='143.21' y1='155.31' x2='138.34' y2='152.55' style='stroke-width: 0.53; stroke: #4B5563;' />
+<line x1='384.71' y1='87.90' x2='387.80' y2='90.82' style='stroke-width: 0.53; stroke: #4B5563;' />
+<line x1='394.65' y1='165.01' x2='399.43' y2='162.31' style='stroke-width: 0.53; stroke: #4B5563;' />
+<line x1='429.95' y1='202.85' x2='435.47' y2='194.28' style='stroke-width: 0.53; stroke: #4B5563;' />
+<line x1='435.95' y1='112.15' x2='436.93' y2='98.79' style='stroke-width: 0.53; stroke: #4B5563;' />
+<line x1='430.99' y1='99.32' x2='435.80' y2='92.72' style='stroke-width: 0.53; stroke: #4B5563;' />
+<line x1='395.02' y1='54.54' x2='458.61' y2='73.81' style='stroke-width: 0.53; stroke: #4B5563;' />
+<line x1='449.86' y1='58.82' x2='461.33' y2='69.17' style='stroke-width: 0.53; stroke: #4B5563;' />
+<line x1='456.84' y1='71.16' x2='462.30' y2='83.20' style='stroke-width: 0.53; stroke: #4B5563;' />
+<text x='90.99' y='134.47' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='50.36px' lengthAdjust='spacingAndGlyphs'>gas production</text>
+<text x='152.95' y='162.60' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='45.66px' lengthAdjust='spacingAndGlyphs'>oil production</text>
+<text x='349.20' y='88.23' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='67.41px' lengthAdjust='spacingAndGlyphs'>battery components</text>
+<text x='384.99' y='172.30' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='87.89px' lengthAdjust='spacingAndGlyphs'>PV modules and inverters</text>
+<text x='429.55' y='210.14' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='122.88px' lengthAdjust='spacingAndGlyphs'>rare-earth and battery-metal refining</text>
+<text x='435.95' y='119.44' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='110.09px' lengthAdjust='spacingAndGlyphs'>blades, towers and nacelle parts</text>
+<text x='406.58' y='103.87' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='45.23px' lengthAdjust='spacingAndGlyphs'>wind turbines</text>
+<text x='340.95' y='57.04' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='104.53px' lengthAdjust='spacingAndGlyphs'>reactors and steam generators</text>
+<text x='447.04' y='57.02' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='87.89px' lengthAdjust='spacingAndGlyphs'>EV drivetrain components</text>
+<text x='402.98' y='72.61' text-anchor='middle' style='font-size: 7.68px;fill: #111827; font-family: "Arial";' textLength='104.11px' lengthAdjust='spacingAndGlyphs'>EV and charger manufacturing</text>
+<polygon points='39.00,12.82 42.87,8.95 39.00,5.07 35.12,8.95 ' style='stroke-width: 0.64; stroke: #111827; fill: #F58229;' />
+<circle cx='102.98' cy='8.95' r='3.09' style='stroke-width: 0.64; stroke: #111827; fill: #1889B0;' />
+<polygon points='166.97,4.14 171.13,11.35 162.80,11.35 ' style='stroke-width: 0.64; stroke: #111827; fill: #B4E7FE;' />
+<rect x='228.21' y='6.21' width='5.48' height='5.48' style='stroke-width: 0.64; stroke: #111827; fill: #55C4C5;' />
+<circle cx='294.94' cy='8.95' r='3.09' style='stroke-width: 0.64; stroke: #111827; fill: #C5CAD3;' />
+<text x='49.05' y='11.59' style='font-size: 7.40px;fill: #111827; font-family: "Arial";' textLength='23.41px' lengthAdjust='spacingAndGlyphs'>Secure</text>
+<text x='113.04' y='11.59' style='font-size: 7.40px;fill: #111827; font-family: "Arial";' textLength='29.57px' lengthAdjust='spacingAndGlyphs'>Preserve</text>
+<text x='177.02' y='11.59' style='font-size: 7.40px;fill: #111827; font-family: "Arial";' textLength='30.80px' lengthAdjust='spacingAndGlyphs'>Catch Up</text>
+<text x='241.01' y='11.59' style='font-size: 7.40px;fill: #111827; font-family: "Arial";' textLength='24.24px' lengthAdjust='spacingAndGlyphs'>Partner</text>
+<text x='304.99' y='11.59' style='font-size: 7.40px;fill: #111827; font-family: "Arial";' textLength='20.66px' lengthAdjust='spacingAndGlyphs'>Watch</text>
+<circle cx='368.06' cy='8.95' r='3.09' style='stroke-width: 0.64; stroke: #111827; fill: #FFFFFF;' />
+<text x='378.12' y='11.59' style='font-size: 7.40px;fill: #111827; font-family: "Arial";' textLength='69.82px' lengthAdjust='spacingAndGlyphs'>Review case (hollow)</text>
+<text x='26.05' y='195.20' text-anchor='end' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='4.18px' lengthAdjust='spacingAndGlyphs'>0</text>
+<text x='26.05' y='153.85' text-anchor='end' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='8.35px' lengthAdjust='spacingAndGlyphs'>25</text>
+<text x='26.05' y='112.51' text-anchor='end' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='8.35px' lengthAdjust='spacingAndGlyphs'>50</text>
+<text x='26.05' y='71.17' text-anchor='end' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='8.35px' lengthAdjust='spacingAndGlyphs'>75</text>
+<text x='26.05' y='29.82' text-anchor='end' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='12.53px' lengthAdjust='spacingAndGlyphs'>100</text>
+<text x='29.86' y='251.31' text-anchor='middle' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='4.18px' lengthAdjust='spacingAndGlyphs'>0</text>
+<text x='121.26' y='251.31' text-anchor='middle' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='8.35px' lengthAdjust='spacingAndGlyphs'>20</text>
+<text x='212.67' y='251.31' text-anchor='middle' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='8.35px' lengthAdjust='spacingAndGlyphs'>40</text>
+<text x='304.08' y='251.31' text-anchor='middle' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='8.35px' lengthAdjust='spacingAndGlyphs'>60</text>
+<text x='395.48' y='251.31' text-anchor='middle' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='8.35px' lengthAdjust='spacingAndGlyphs'>80</text>
+<text x='486.89' y='251.31' text-anchor='middle' style='font-size: 7.50px;fill: #4B5563; font-family: "Arial";' textLength='12.53px' lengthAdjust='spacingAndGlyphs'>100</text>
+<text x='262.94' y='260.73' text-anchor='middle' style='font-size: 8.00px;fill: #111827; font-family: "Arial";' textLength='301.42px' lengthAdjust='spacingAndGlyphs'>Strategic Industrial Value: how much having this productive capability matters (0-100)</text>
+<text transform='translate(9.72,123.05) rotate(-90)' text-anchor='middle' style='font-size: 8.00px;fill: #111827; font-family: "Arial";' textLength='216.17px' lengthAdjust='spacingAndGlyphs'>Competitive Position: how strong the country is today (0-100)</text>
+</g>
+</svg>
