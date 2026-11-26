@@ -333,6 +333,26 @@ Run on the real pipeline in `osi-worktrees/change`:
   - The Batteries compact shows the quiet line.
 - **Not checked in a browser:** the Partnership note, which needs a pair selected.
 
+## Slice 8: landing panels from measured trade (2026-11-26, done)
+
+**"What is moving in trade?" on Home.** It sits beside "Which recommendations changed recently?", for the trusted network:
+
+- **"Where are exports growing?"**
+  - Log export growth over the latest 12 months against the 12 before, counted only where momentum quality is `ok` (no small bases, no incomplete reporting).
+  - Cells beyond the ±0.1 band are listed by world export share. The growth measure is winsorised at its 5th and 95th percentiles: 62 cells tie at the +101% ceiling, so ranking by growth listed them alphabetically. Values at a bound read "or more".
+  - Live: 482 cells up and 317 down. The top lines are Chile grid-metal extraction +27% (24% of world exports), Germany EV assembly +15%, Indonesia EV-mineral extraction +51%, US gas extraction +57%, and Germany nuclear assembly +13%.
+- **"Where is dependence on China rising?"**
+  - China's import share in the 12 months to September 2026 against the base year (`current_trade_flag`: 10+ points on $100m+ of imports), with the coercive-supplier share alongside.
+  - Live: 125 cells up and 28 down. The top line, Philippines grid-metal extraction from 1% to 100%, is worth checking.
+- **How it is built.**
+  - scripts/91 writes these as one small document (`posture-signals.<md5>.json`, from `R/dashboard/posture/posture_signals.R`) named in the posture manifest. Home reads it alone, not the core or the 214 drawers.
+  - It loads after idle under the same task as the changes panel; `app.test.tsx` still counts 4 idle tasks.
+  - It counts toward the posture budget: 2.43 of 2.6 MB.
+
+**Tests:** `test-posture-signals.R` and `homeSignals.test.tsx` were added; the posture budget test now accepts the signals file.
+
+**Milestone.** The re-export (vintage 2026-11-26-b0a46b5a, stamp d982afe2) pairs with ee052145 as "method same, data same". It is the first fully verified pair: both sides stamped and the input ledgers identical file for file. It shows no change.
+
 ## Remaining technical debt
 
 1. **Pre-engine pipeline code (scripts/10–25) is not fingerprinted.** Its effect shows as changed engine inputs, so a
@@ -375,8 +395,8 @@ The landing page should be built only on the change layer and on existing clean 
 | Question | Exists now | Missing |
 |---|---|---|
 | Which AIB recommendations changed recently? | **Built** (slice 7): the Home panel, with attribution on every line | One stamped data refresh, so the panel can lead with attributable changes |
-| Where are dependencies worsening? | Need and import share per cell; T12M import exposure (scripts/37–38) | A *dated* series: Need deltas across vintages are confounded by method changes until stamps exist. Monthly import exposure is the cleaner near-term signal |
-| Where is strategic capability improving? | Position (cp) and export share per cell; monthly trade momentum | Same attribution caveat. Momentum (`mom`, `mq`) is a ready per-cell trend |
+| Where are dependencies worsening? | **Built** (slice 8): China's import share, latest 12 months vs base year, on Home | Coercive-supplier and supplier-concentration trends beside China's share; Need deltas across stamped vintages |
+| Where is strategic capability improving? | **Built as export growth** (slice 8): 12-month export momentum, quality `ok`, listed by world share | Export growth is a proxy. Position (cp) deltas across stamped vintages are the direct measure |
 | Where are policy commitments failing to translate into delivery? | Industrial Policy Strength module (lab); NEIS Intelligence `implementation_status` (announced → operational, cancelled, delayed) | A join of policies or projects to cells. Neither repo has project or policy entities; this needs the Intelligence bridge plus a project entity |
 | Which partner relationships are becoming more complementary? | Partnership dyads and memos (static) | Dyad-level vintages: the same snapshot pattern applied to partnership outputs |
 | What decision windows are approaching? | Nothing structured | A dated-event entity (policy deadlines, tariff dates, e.g. the Dec 4 snapshot) in NEIS Intelligence |
