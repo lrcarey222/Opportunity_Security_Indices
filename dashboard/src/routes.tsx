@@ -106,6 +106,8 @@ export const routes: RouteObject[] = [
       { path: 'glossary', lazy: view(() => import('./shell/GlossaryView.tsx')), errorElement: <RouteError /> },
       // How to use the Explorer (usability pass, 2026-11-25): five workflows, filed under About
       { path: 'how-to-use', lazy: view(() => import('./shell/HowToUseView.tsx')), errorElement: <RouteError /> },
+      // What changed? (change layer, docs/change-layer-architecture.md): posture vintages and their deterministic diffs
+      { path: 'changes', lazy: view(() => import('./changes/ChangesView.tsx')), errorElement: <RouteError /> },
       { path: 'sectors', element: <Alias to="/sector" /> },
       { path: 'sector-insights', element: <Alias to="/sector" /> },
       { path: 'strategic-insights', element: <Alias to="/countries" /> },

@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { checkPostureDetail, checkPostureManifest, decodeCore, POSTURE_DATA_DIR, PostureContractError, type PostureCore, type PostureDetail, type PostureManifest } from './contract.ts';
 import { setPostureBuild } from '../shell/buildInfo.ts';
+import { checkPostureSignals, type PostureSignals } from './signals.ts';
 
 type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -57,6 +58,13 @@ export class PostureStore {
   }
   core(): Promise<PostureCore> {
     return this.get('core', async () => decodeCore(await this.json((await this.manifest()).core)));
+  }
+  /** Home's landing signals; null when the bundle predates them */
+  signals(): Promise<PostureSignals | null> {
+    return this.get('signals', async () => {
+      const file = (await this.manifest()).signals;
+      return file ? checkPostureSignals(await this.json(file)) : null;
+    });
   }
   detail(iso3: string): Promise<PostureDetail> {
     return this.get(`detail:${iso3}`, async () => {

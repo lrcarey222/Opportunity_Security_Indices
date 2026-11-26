@@ -1,0 +1,109 @@
+{
+  "schema": "osi-aib-vintages",
+  "vintages": [
+    {
+      "vintage_id": "2026-10-22-a36700d1",
+      "created": "2026-10-22T15:58:30Z",
+      "git_commit": "d0bcf3eb",
+      "doc_file": "compacts.a36700d1.json",
+      "bundle_commit": "d0bcf3eb",
+      "provisional": false,
+      "method": {
+        "id": "m-895a22e5"
+      },
+      "n_pairs": 1062,
+      "n_roles": 232
+    },
+    {
+      "vintage_id": "2026-10-28-231f9bf0",
+      "created": "2026-10-28T19:15:39Z",
+      "git_commit": "88a19c8b",
+      "doc_file": "compacts.231f9bf0.json",
+      "bundle_commit": "88a19c8b",
+      "provisional": false,
+      "method": {
+        "id": "m-95aecbc2"
+      },
+      "n_pairs": 1132,
+      "n_roles": 233
+    },
+    {
+      "vintage_id": "2026-10-29-763cc553",
+      "created": "2026-10-29T19:19:40Z",
+      "git_commit": "1bd7bde0",
+      "doc_file": "compacts.763cc553.json",
+      "bundle_commit": "1bd7bde0",
+      "provisional": false,
+      "method": {
+        "id": "m-4c0e8dc8"
+      },
+      "n_pairs": 1132,
+      "n_roles": 233
+    },
+    {
+      "vintage_id": "2026-10-30-7b238c82",
+      "created": "2026-10-30T21:38:20Z",
+      "git_commit": "e41cb5bb",
+      "doc_file": "compacts.7b238c82.json",
+      "bundle_commit": "e41cb5bb",
+      "provisional": false,
+      "method": {
+        "id": "m-4c0e8dc8"
+      },
+      "n_pairs": 1093,
+      "n_roles": 233
+    },
+    {
+      "vintage_id": "2026-11-17-c5643da1",
+      "created": "2026-11-17T19:07:29Z",
+      "git_commit": "23b3c3b0",
+      "doc_file": "compacts.c5643da1.json",
+      "bundle_commit": "23b3c3b0",
+      "provisional": false,
+      "method": {
+        "id": "m-4c0e8dc8"
+      },
+      "n_pairs": 1085,
+      "n_roles": 253
+    },
+    {
+      "vintage_id": "2026-11-21-be93214e",
+      "created": "2026-11-21T14:34:52Z",
+      "git_commit": "03560172",
+      "doc_file": "compacts.be93214e.json",
+      "bundle_commit": "07b74baf",
+      "provisional": false,
+      "method": {
+        "id": "m-4c0e8dc8"
+      },
+      "n_pairs": 1085,
+      "n_roles": 253
+    },
+    {
+      "vintage_id": "2026-11-24-9cc61b46",
+      "created": "2026-11-24T05:01:17Z",
+      "git_commit": "acbc3805",
+      "doc_file": "compacts.9cc61b46.json",
+      "bundle_commit": "854f4f79",
+      "provisional": false,
+      "method": {
+        "id": "m-c307efe7"
+      },
+      "n_pairs": 1152,
+      "n_roles": 230
+    },
+    {
+      "vintage_id": "2026-11-26-5f89d49d",
+      "created": "2026-11-26T00:36:29Z",
+      "git_commit": "583bd65a",
+      "doc_file": "compacts.5f89d49d.json",
+      "bundle_commit": "90081055",
+      "provisional": false,
+      "method": {
+        "id": "m-b858a3a3"
+      },
+      "n_pairs": 1150,
+      "n_roles": 235
+    }
+  ]
+}

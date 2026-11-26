@@ -64,6 +64,7 @@ import { kindOf, type LensId, type PartnershipKind } from '../../partnerships/le
 import { LensCard, PartnershipLenses, RankedNames, type LensPanelSpec } from '../../partnerships/PartnershipLenses.tsx';
 import { RelationshipThesis } from '../../partnerships/RelationshipThesis.tsx';
 import { StrategicCase } from '../../partnerships/StrategicCase.tsx';
+import { PairChangesNote } from './strategic/ChangesNote.tsx';
 import { thesisPartners } from '../../partnerships/thesis.ts';
 import { PAGE, useAibCtx } from '../AibLayout.tsx';
 import type { AibBaselineScenarioDoc, AibInvestmentFlows, AibManagedScenarioDoc, AibMeta, AibScenarioId, AibStrategic } from '../contract.ts';
@@ -471,7 +472,10 @@ export default function AibPartnershipsView() {
             scenario={strategicScenario}
             tools={
               partner ? (
-                <StrategicCase strategic={strategic} a={country} b={partner} name={nameOf} compactHref={(id) => href(strategicCompactHref(id))} dataCreated={doc.meta.created ?? null} />
+                <>
+                  <StrategicCase strategic={strategic} a={country} b={partner} name={nameOf} compactHref={(id) => href(strategicCompactHref(id))} dataCreated={doc.meta.created ?? null} />
+                  <PairChangesNote s={strategic} a={country} b={partner} />
+                </>
               ) : undefined
             }
           />

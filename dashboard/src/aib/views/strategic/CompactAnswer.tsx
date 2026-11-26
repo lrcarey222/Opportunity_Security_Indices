@@ -4,6 +4,7 @@
 // of the trusted network the compact's "allied" economies are drawn from.
 
 import { useMemo } from 'react';
+import { CompactChangesNote } from './ChangesNote.tsx';
 import { Term } from '../../../components/Term.tsx';
 import { proseName } from '../../../country/derive/text.ts';
 import { MemoCta } from '../../../partnerships/MemoCta.tsx';
@@ -42,6 +43,7 @@ export function CompactAnswer({ s, c, sid }: { s: AibStrategic; c: AibStrategicC
         {row('who', 'Who contributes', a.who)}
         {row('gap', 'Remaining gap', a.gap)}
       </dl>
+      <CompactChangesNote c={c} />
       <p className="mt-1.5 text-xs text-paper-mute">
         Under {label}. Allied demand and the countries with a role are both the{' '}
         <Term id="trusted_network">trusted network</Term>: one allied set.

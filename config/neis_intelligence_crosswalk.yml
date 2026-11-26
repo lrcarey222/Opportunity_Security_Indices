@@ -1,0 +1,63 @@
+# NEIS Intelligence taxonomy -> AIB posture keys (docs/change-layer-architecture.md, "Intelligence bridge").
+# Slugs are NEIS Intelligence taxonomy_terms.slug (neis-intelligence src/db/seed.ts); values are AIB ISO3 codes,
+# tech labels (posture core meta.techs) and stage labels (meta.stages). Used only to PROPOSE candidate assessments
+# for an event (R/change/posture_impacts.R posture_impact_candidates); a person accepts or rejects each one.
+# A slug with no AIB counterpart is left out (it proposes nothing). Regions expand to their members; 'global' and
+# 'emerging-markets' are deliberately absent: they are too broad to propose cell-level impacts.
+
+version: 1
+
+geography:
+  united-states: [USA]
+  china: [CHN]
+  japan: [JPN]
+  south-korea: [KOR]
+  india: [IND]
+  australia: [AUS]
+  canada: [CAN]
+  brazil: [BRA]
+  united-kingdom: [GBR]
+  indonesia: [IDN]
+  vietnam: [VNM]
+  southeast-asia: [BRN, KHM, IDN, LAO, MYS, MMR, PHL, SGP, THA, VNM]
+  european-union: [AUT, BEL, BGR, HRV, CYP, CZE, DNK, EST, FIN, FRA, DEU, GRC, HUN, IRL, ITA, LVA, LTU, LUX, MLT, NLD, POL, PRT, ROU, SVK, SVN, ESP, SWE]
+
+sector:
+  batteries: [Batteries]
+  battery-anode: [Batteries]
+  battery-cathode: [Batteries]
+  battery-cells: [Batteries]
+  grid: [Electric Grid]
+  grid-equipment: [Electric Grid]
+  transmission: [Electric Grid]
+  solar: [Solar]
+  solar-wafers: [Solar]
+  solar-cells: [Solar]
+  wind: [Wind]
+  electric-vehicles: [Electric Vehicles]
+  auto-evs: [Electric Vehicles]
+  nuclear-energy: [Nuclear]
+  nuclear-fuel: [Nuclear]
+  smr: [Nuclear]
+  hydrogen: [Green Hydrogen]
+  geothermal: [Geothermal]
+  lng: [Gas]
+  oil-refining: [Oil]
+  # critical minerals cut across techs: they map to the mineral-bearing techs' upstream stages via value_chain_node
+  critical-minerals: [Batteries, Electric Vehicles, Wind, Solar, Electric Grid]
+  rare-earths: [Wind, Electric Vehicles]
+  permanent-magnets: [Wind, Electric Vehicles]
+  lithium: [Batteries]
+  graphite: [Batteries]
+  copper: [Electric Grid]
+
+value_chain_node:
+  extraction: [Extraction]
+  processing: [Refining]
+  refining: [Refining]
+  materials: [Refining, Components]
+  components: [Components]
+  manufacturing: [Components, Assembly]
+  assembly: [Assembly]
+  deployment: [Deployment]
+  recycling: [Recovery]

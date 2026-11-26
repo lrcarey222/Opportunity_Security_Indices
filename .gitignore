@@ -78,3 +78,5 @@ paper/notes/
 # QC / expert review: reviewer submissions and private exports never enter git
 qc/private/
 **/review_submissions/
+# change layer input store (content-addressed engine inputs for bridge runs; large)
+data/vintages/inputs/

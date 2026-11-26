@@ -33,6 +33,7 @@
 // below the bar for acceleration); a Partner step lists its eligible trusted partners and,
 // apart, the ranked suppliers outside the trusted network (PartnerEligibilityList); "step", never "node".
 
+import { ChangeSince } from '../changes/ChangeSince.tsx';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { isProducingStage, stageDisplay } from '../lib/stages.ts';
@@ -757,6 +758,7 @@ export function CellDrawer({ cell, detail, detailStatus, detailError, country, c
         </button>
       </div>
       {detailStatus === 'error' && <p className="mt-2 text-xs text-paper-mute">The detail could not be loaded{detailError ? `: ${detailError}` : ''}.</p>}
+      <ChangeSince iso3={cell.iso3} tech={cell.tech} stage={cell.stage} />
       <PartsBlock cell={cell} d={d} core={core} status={status} layer={layer} onLayer={markLayer} />
       <Question q={DRAWER_QUESTIONS[0]}>
         <NeedAnswer cell={cell} d={d} core={core} names={names} status={status} />

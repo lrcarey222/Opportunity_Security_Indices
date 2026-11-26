@@ -1,0 +1,28 @@
+# Analytical impacts (docs/change-layer-architecture.md, "Intelligence bridge"; schema in
+# schemas/analytical_impact.schema.json; validated by R/change/posture_impacts.R validate_analytical_impacts).
+#
+# A link from a NEIS Intelligence event to a posture assessment it may affect. Only a person moves an impact from
+# proposed to accepted or rejected, with reviewer and review_timestamp. An accepted impact is attached to the change
+# record of its assessment in the vintage pair whose window holds the review; it explains a change and never causes
+# one (scores move only when the pipeline recomputes from data). Proposed and rejected impacts are not shown.
+#
+# Until NEIS Intelligence holds these (its migration 010_analytical_impacts.sql, designed in the architecture doc),
+# curate them here. Example shape (not a real event):
+#
+#   - impact_id: imp-0000abcd-1f2e3d4c
+#     event_id: 00000000-0000-0000-0000-000000000000
+#     event_slug: example-grid-transformer-plant-cancelled
+#     assessment_id: aib:posture:USA:electric-grid:components
+#     dimension: position            # need | prize | position | evidence | confidence | recommendation
+#     direction: down                # up | down | unclear
+#     reason: A planned domestic transformer plant was cancelled.
+#     reason_method: editorial       # rule | model | editorial
+#     confidence: 0.6
+#     status: accepted               # proposed | accepted | rejected
+#     proposed_by: rule
+#     proposed_at: "2026-11-20T09:00:00Z"
+#     reviewer: <name>
+#     review_timestamp: "2026-11-21T09:00:00Z"
+#     review_note: Cancellation confirmed in two primary sources.
+
+impacts: []

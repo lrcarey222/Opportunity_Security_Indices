@@ -15,7 +15,7 @@ const CORE_MAX = 3 * 2 ** 20;
 const DETAIL_MAX = 160 * 2 ** 10;
 
 describe.skipIf(!existsSync(join(DIR, 'manifest.json')))('posture bundle budget (public/data/posture)', () => {
-  const manifest = JSON.parse(readFileSync(join(DIR, 'manifest.json'), 'utf8')) as { core: string; details: Record<string, string> };
+  const manifest = JSON.parse(readFileSync(join(DIR, 'manifest.json'), 'utf8')) as { core: string; details: Record<string, string>; signals?: string };
 
   it('the core is at most 3 MB and each drawer document at most 160 kB', () => {
     expect(statSync(join(DIR, manifest.core)).size).toBeLessThanOrEqual(CORE_MAX);
@@ -23,7 +23,7 @@ describe.skipIf(!existsSync(join(DIR, 'manifest.json')))('posture bundle budget 
   });
 
   it('the folder holds only the files the manifest names', () => {
-    const named = new Set(['manifest.json', manifest.core, ...Object.values(manifest.details)]);
+    const named = new Set(['manifest.json', manifest.core, ...(manifest.signals ? [manifest.signals] : []), ...Object.values(manifest.details)]);
     expect(readdirSync(DIR).filter((f) => !named.has(f))).toEqual([]);
   });
 });

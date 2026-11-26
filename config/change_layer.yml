@@ -1,0 +1,170 @@
+# Change layer (docs/change-layer-architecture.md): posture vintages and deterministic change detection.
+# Every rule here is read by R/change/*.R. Nothing in this layer is decided by a model.
+
+layer_version: 4
+
+# The analytical object ID: aib:posture:<ISO3>:<tech-slug>:<stage-slug>
+assessment_id_prefix: "aib:posture"
+
+# Method fingerprint (scripts/utils/change_stamps.R): the git blob id of every file under these paths, at the
+# vintage's code commit or, for an export stamped by scripts/91, in the working tree it ran from.
+#   engine + upstream: the code the engine run (scripts/26) executes. A pair whose engine + upstream fingerprint
+#     differs is a methodology pair. upstream is the non-engine R that scripts/26 sources; keep it in step with that
+#     list (widening it attributes more change to method, the conservative direction).
+#   presentation: the export code. Recorded, never used for attribution: re-encoding a bundle does not change a result.
+# Code that built the engine's input tables earlier in the pipeline (scripts/10-25) is not here: its effect reaches
+# the engine as changed input files, which the input ledger records (data_stamp below). The change-layer instrumentation
+# scripts/26 also sources (scripts/utils/change_stamps.R, R/change/) only records and redirects reads: not method.
+method_paths:
+  engine:
+    - R/strategic_position
+    - config/strategic_position.yml
+    - R/utils/variable_stage_evidence.R
+    - scripts/26_build_strategic_position.R
+    # engine rule tables scripts/26 reads (method: kept out of the data ledger)
+    - config/posture_delivery_modes.csv
+    - config/posture_policy_design.csv
+    - config/security_route_rules.csv
+  upstream:
+    - R/utils/schema.R
+    - R/utils/scurve.R
+    - R/utils/country.R
+    - R/utils/supply_chain_stages.R
+    - R/indices/build_indices.R
+    - R/indices/build_policy_index.R
+    - R/categories/policy/cat_policy_index.R
+    - R/categories/trade/trade_core.R
+    - R/categories/investment/investment_momentum.R
+  presentation:
+    - R/dashboard/posture
+    - scripts/91_export_posture_data.R
+
+# AIB vintages (partnership changes; scripts/46): the code and config that build the AIB strategic layer. An AIB
+# bundle carries no input ledger, so a pair of AIB vintages is "real_world" only when this fingerprint is unchanged.
+aib_method_paths:
+  - R/aib
+  - config/aib.yml
+  - config/aib_node_functions.yml
+  - config/aib_strategic_compacts.yml
+  - config/aib_strategic_layer.yml
+  - config/aib_taxonomy_dictionary.yml
+  - config/aib_taxonomy_master.yml
+  - scripts/31_build_aib_trade_network.R
+  - scripts/32_build_aib_partnerships.R
+  - scripts/33_build_aib_strategic_layer.R
+
+# Human label of the method (shell/ReleaseStamp.tsx METHOD_VERSION). Recorded beside the fingerprint, never used
+# to decide anything.
+method_label: "decision framework (2026-10-30)"
+
+# Data stamp: the core meta fields that describe the input windows, plus (for exports stamped by scripts/91) the
+# engine input ledger (outputs/strategic_position_inputs.json from scripts/26: md5 of every data file the run read)
+# and the resolved raw-input vintages (raw_inputs_resolved.yml from scripts/10). Two vintages whose ledgers match
+# read byte-identical inputs: their data is verifiably the same.
+data_stamp_fields: [benchmark_period, momentum_period, momentum_through]
+engine_inputs_file: strategic_position_inputs.json
+
+# Field-level provenance: which engine input files (ledger paths, matched as regular expressions) feed each field. A
+# change record lists the files that changed between its two vintages AND match a field it moved. Curated by hand from
+# scripts/26's reads: it says where to look; which files changed is computed from the ledgers.
+field_inputs:
+  need: [import_exposure_tbl, current_import_exposure_tbl, current_trade_dyads_tbl, import_partner_cells_tbl,
+         major_supplier_shares_tbl, trade_concentration_tbl, geo_alignment_tbl, comtrade_benchmark_annual, comtrade_momentum_monthly]
+  deployment_need: [deployment_need_tbl, iea_pathways_]
+  prize: [outputs/index_outputs, home_market_tbl, iea_pathways_, Relative_Costs_IEA, tech_ghg_tbl, outputs/aib/]
+  cp: [trade_concentration_tbl, major_supplier_shares_tbl, current_supplier_panel_tbl, comtrade_benchmark_annual,
+       innovation_theme, technological_readiness_tbl, investment_momentum_tbl, GCIM_Investment, outputs/index_outputs]
+  market: [home_market_tbl, outputs/index_outputs]
+  share: [trade_concentration_tbl, major_supplier_shares_tbl, current_supplier_panel_tbl, comtrade_benchmark_annual, comtrade_momentum_monthly]
+  evidence: [index_variable_stage_evidence, hts_codes_categories]
+  recommendation: [policy_outputs, nipo_stage_, coalition_tbl, posture_node_attributes, yards_fences_assessments,
+                   partner_compat_cells_tbl, outputs/aib/]
+
+# Input store (bridge runs): scripts/26 copies every ledger file here, content-addressed (<md5[1:2]>/<md5>.<ext>), so
+# a later engine can re-run on a vintage's exact inputs (OPSI_BRIDGE). Git-ignored; a file changes the store only when
+# its content changes. Files over max_file_mb are not stored (a bridge that needs one is reported impure).
+input_store:
+  enabled: true
+  dir: data/vintages/inputs
+  max_file_mb: 2048
+
+thresholds:
+  # score change: |delta| on need / prize / cp at or above min_delta, or any crossing of the decision bar
+  score:
+    fields: [need, prize, cp]
+    min_delta: 0.05          # the decision engine's borderline band
+    moderate_delta: 0.10
+    # bars used when a vintage's core meta does not carry its own thresholds
+    default_bars: {need: 0.67, deployment: 0.6, prize: 0.6, cp: 0.75}
+  # data change: a measured input moved materially (both conditions)
+  data:
+    share: {min_abs: 0.002, min_rel: 0.20}
+    market: {min_abs: 0.05, min_rel: 0.0}
+  # ordered scales for evidence and confidence
+  evidence_scale: [none, low, medium, high]
+  # the evidence basis: the dominant variable-stage evidence status (R/utils/variable_stage_evidence.R), least to most
+  # specific
+  evidence_status_scale: [no_data, tech_wide, proxy, shared, split, exact]
+  confidence_scale: [low, moderate, high]
+
+# Dashboard bundle: full change records for the last N comparable pairs that changed something (and every later pair) (older pairs ship their summary only; all
+# records stay in outputs/change_layer/posture_changes.csv).
+bundle:
+  detail_pairs: 2
+
+severity_rank: {minor: 1, moderate: 2, major: 3}
+
+labels:
+  choice:
+    secure: Secure
+    preserve: Preserve
+    catch_up: Catch Up
+    partner: Partner
+    accelerate: Accelerate
+    watch: Watch
+    not_assessed: Not assessed
+  posture: {secure: Secure, compete: Compete, deploy: Deploy, not_assessed: Not assessed}
+  field:
+    need: Need
+    prize: Prize
+    cp: Position
+    market: Market size
+    share: Export share
+    evidence: Evidence
+    confidence: Confidence
+  evidence_status:
+    exact: exact (stage-specific)
+    split: split (stage-specific, apportioned)
+    shared: shared across stages
+    proxy: proxy
+    tech_wide: technology-wide
+    no_data: no data
+
+# Provenance: each analysed field -> its principal raw input ids (config/raw_inputs_manifest.yml) and the method
+# note. Curated by hand from the modules' inputs; it names where to look, not a computed lineage (slice 2 adds
+# per-vintage raw_inputs_resolved stamps). Keep ids valid: tests check them against the manifest.
+sources:
+  need:
+    source_ids: [comtrade_energy_trade, comtrade_energy_dyads_all, consolidated_hs6_energy_tech_long]
+    doc: docs/strategic_position.md
+  deployment_need:
+    source_ids: [ember_yearly_electricity, ember_renewable_targets_2030]
+    doc: docs/strategic_position.md
+  prize:
+    source_ids: [hs92_country_product_year_6, comtrade_energy_trade]
+    doc: docs/strategic_position.md
+  cp:
+    source_ids: [hs92_country_product_year_6, comtrade_energy_trade, iea_cleantech_midstream]
+    doc: docs/strategic_position.md
+  market:
+    source_ids: [bcg_market_size, comtrade_energy_trade]
+    doc: docs/strategic_position.md
+  share:
+    source_ids: [comtrade_energy_trade, comtrade_monthly_core]
+    doc: docs/comtrade_ingestion_and_timeseries.md
+  evidence:
+    source_ids: [energy_hs6_master, consolidated_hs6_energy_tech_long]
+    doc: docs/supply_chain_stages.md
+  confidence:
+    source_ids: []
+    doc: docs/strategic_position.md

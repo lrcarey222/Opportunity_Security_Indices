@@ -15,7 +15,9 @@
 // card's slots; a table twin of the node's economies (a row opens the economy's Country Strategy Map on this
 // node, like a point) and a CSV with the posture provenance.
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { ChangedCellsNote } from '../../changes/ChangedCellsNote.tsx';
+import type { ChangeRecord } from '../../changes/contract.ts';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ChartCard } from '../../charts/ChartCard.tsx';
 import { TableView, type Col } from '../../components/TableView.tsx';
@@ -77,6 +79,9 @@ export function SectorStrategyCard({
   const stage = node ? node.stage : (parsed?.stage ?? '');
   const cells = useMemo<PostureCell[]>(() => (core.data ? core.data.cells.filter((c) => c.tech === tech && c.stage === stage) : []), [core.data, tech, stage]);
   const names = useMemo(() => (core.data ? countryNames(core.data) : {}), [core.data]);
+  // change layer: what changed at this node across economies
+  const changeMatch = useCallback((r: ChangeRecord) => r.tech === tech && r.stage === stage, [tech, stage]);
+  const changeLabel = useCallback((r: ChangeRecord) => names[r.iso3] ?? r.iso3, [names]);
   const tiers = useMemo(() => (core.data ? Object.fromEntries(core.data.countries.map((c) => [c.iso3, c.tier])) : {}), [core.data]);
   const rows = useMemo(() => {
     if (!core.data) return [];
@@ -214,6 +219,7 @@ export function SectorStrategyCard({
           />
         </div>
       </ChartCard>
+      {tech && stage && <ChangedCellsNote match={changeMatch} label={changeLabel} testid="sector-changes" />}
     </div>
   );
 }
