@@ -16,12 +16,13 @@ import {
   topEconomies,
   NETWORK_GROUPS, type AgrFilter, type FilterKey, type GlobalPair, type NetworkGroup,
 } from '../derive.ts';
+import { isTrusted } from '../../posture/trustedNetwork.ts';
 import { CountMap, type RosterEntry } from './AgreementsMap.tsx';
 import { AbsenceCaveat, DepthChip, DepthLegend, GradeMark, NoneFound, SourceName } from './parts.tsx';
 
 export const NETWORK_GROUP_LABEL: Record<NetworkGroup, string> = {
-  core: 'Core coalition members',
-  coalition: 'The coalition (core members and partners)',
+  core: 'Core members of the trusted network',
+  coalition: 'The trusted network (core, partners and treated as allied)',
   top: 'The 30 economies with the most agreements',
 };
 
@@ -69,7 +70,7 @@ export function GlobalView({ manifest, global, f, roster, group, onGroup, hrefOf
 
   // the network group: the Country roster's tiers when it is in, else the economies with the most agreements
   const cores = useMemo(() => (roster ?? []).filter((c) => c.tier === 'core').map((c) => c.iso3), [roster]);
-  const coalition = useMemo(() => (roster ?? []).filter((c) => c.tier === 'core' || c.tier === 'partner').map((c) => c.iso3), [roster]);
+  const coalition = useMemo(() => (roster ?? []).filter((c) => isTrusted(c.iso3, c.tier)).map((c) => c.iso3), [roster]);
   const effective: NetworkGroup = group !== 'top' && !cores.length ? 'top' : group;
   const members = useMemo(() => {
     const g = effective === 'core' ? cores : effective === 'coalition' ? coalition : topEconomies(global, 30);

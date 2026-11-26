@@ -11,6 +11,7 @@ import {
   ALIGNMENT_LABEL, choiceWord, deployCaseWords, DEPLOY_MODE_LABEL, deliveryWords, EVIDENCE_LABEL, flagWords, GAP_LABEL, MODE_LABEL, MOMENTUM_LABEL, MOMENTUM_UNAVAILABLE, NEED_TYPE_LABEL,
   PATHWAY_LABEL, POSTURE_LABEL, RATIONALE_LABEL, VERB_LABEL, VERB_ORDER, verbOf,
 } from './grammar.ts';
+import { allianceTier, trustedNetwork } from './trustedNetwork.ts';
 import { rollupWords } from './yards.ts';
 
 /** The counts of one set of nodes: the three families, not assessed, and the six verbs. */
@@ -170,12 +171,21 @@ export interface PostureTile {
   sub: string;
 }
 
-/** The AIB division's three header metrics, as tiles. */
+/**
+ * The AIB division's three header metrics, as tiles. The first counts the trusted network (2026-11-25: the one
+ * allied set, whose demand the stress tests protect) from the posture core's country tiers + treat_as_allied.
+ */
 export function aibHeaderTiles(core: PostureCore): PostureTile[] {
   const h = aibHeader(core);
+  const net = trustedNetwork(core.countries);
   return [
-    { id: 'core', label: 'Core coalition members', value: String(h.coreMembers), sub: `${core.aibHeader.members} coalition members in all (the demand scope); the trusted network adds five economies treated as allied` },
-    { id: 'covered', label: 'Priority steps with a credible trusted supplier and backup', value: pct(h.coveredShare), sub: `of ${plural(h.priorityNodes, 'supply-chain step')} coalition members rely on partners to supply or secure` },
+    {
+      id: 'core',
+      label: 'Trusted network',
+      value: String(net.size),
+      sub: `${plural(net.count.core, 'core member')}, ${plural(net.count.partner, 'partner')} and ${net.count.allied} treated as allied: the economies whose demand the stress tests protect`,
+    },
+    { id: 'covered', label: 'Priority steps with a credible trusted supplier and backup', value: pct(h.coveredShare), sub: `of ${plural(h.priorityNodes, 'supply-chain step')} countries rely on partners to supply or secure` },
     { id: 'gaps', label: 'Remaining allied gaps', value: String(h.unresolvedGaps), sub: 'priority steps that still have a gap' },
   ];
 }
@@ -255,7 +265,7 @@ export interface PostureRow {
   key: string;
   iso3: string;
   country: string;
-  /** coalition tier: "core", "partner", or null */
+  /** trusted-network tier (allianceTier): "core", "partner", "allied" (treated as allied), or null outside it */
   tier: string | null;
   tech: string;
   /** the stage id (the data vocabulary) */
@@ -338,7 +348,7 @@ function postureRow(
 ): PostureRow {
   const tier = tiers[iso3];
   return {
-    key, iso3, country: names[iso3] ?? iso3, tier: tier === 'core' || tier === 'partner' ? tier : null, tech, stage, stageName: stageDisplay(stage),
+    key, iso3, country: names[iso3] ?? iso3, tier: ((t) => (t === 'none' ? null : t))(allianceTier(iso3, tier)), tech, stage, stageName: stageDisplay(stage),
     classified: c !== null,
     posture: c?.posture ?? null,
     postureWord: c ? POSTURE_LABEL[c.posture] : null,

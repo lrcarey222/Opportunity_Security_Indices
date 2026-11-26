@@ -80,9 +80,10 @@ sector_commodity_items <- function(sub_sectors) {
 
 # dims.geo. country_info: wdi_country_info.csv (iso3c, country, region, income, longitude, latitude);
 # coalition: coalition_tbl; ideal: geo_ideal_points_tbl; hubs: ISO3 re-export hubs; extra: (code,
-# name) of economies in the data but not in WDI (e.g. TWN). Countries ordered by code, then EUU,
+# name) of economies in the data but not in WDI (e.g. TWN); treat_as_allied: ISO3 codes from
+# config/aib_strategic_layer.yml allied.treat_as_allied, grouped with the partners (tier stays none). Countries ordered by code, then EUU,
 # WLD, regions, entities, residuals.
-sector_geo <- function(country_info, coalition, ideal, hubs, extra = NULL) {
+sector_geo <- function(country_info, coalition, ideal, hubs, extra = NULL, treat_as_allied = character()) {
   ci <- country_info[!is.na(country_info$region) & country_info$region != "Aggregates" &
                        grepl("^[A-Z]{3}$", country_info$iso3c), , drop = FALSE]
   codes <- sort(unique(c(ci$iso3c, coalition$iso3, if (!is.null(extra)) extra$code)))
@@ -94,6 +95,8 @@ sector_geo <- function(country_info, coalition, ideal, hubs, extra = NULL) {
   tier <- coalition$tier[match(codes, coalition$iso3)]
   tier[is.na(tier) | !tier %in% c("core", "partner")] <- "none"
   group <- ifelse(codes == "CHN", "china", ifelse(tier == "core", "core", ifelse(tier == "partner", "partner", "rest")))
+  # the one allied set: treat_as_allied economies outside the tiers count with the trusted partners
+  group[group == "rest" & codes %in% treat_as_allied] <- "partner"
   eu <- coalition$eu_member[match(codes, coalition$iso3)] %in% TRUE
   ii <- match(codes, ideal$iso3)
   n3 <- suppressWarnings(countrycode::countrycode(codes, "iso3c", "iso3n", warn = FALSE))

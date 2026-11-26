@@ -115,10 +115,10 @@ export default function CountryHomeView() {
 
       <section id="core" aria-labelledby="core-h" className="mb-10 scroll-mt-16">
         <h2 id="core-h" className="rule-neis-sm mb-1 text-xl font-medium text-paper">
-          Core coalition members ({g.core.length})
+          Trusted network: core members ({g.core.length})
         </h2>
         <p className="mb-4 max-w-3xl text-sm text-paper-mute">
-          The economies the <span className="whitespace-nowrap">allied coalition <InfoTip id="coalition" term="allied coalition" /></span> is built around. The line under each name
+          The economies the <span className="whitespace-nowrap">trusted network <InfoTip id="coalition" term="trusted network" /></span>, the one allied set used on every page, is built around. The line under each name
           counts its strategic choices across the 66 technology-stage combinations, and the combinations without enough evidence to assess.
         </p>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -130,7 +130,7 @@ export default function CountryHomeView() {
 
       <section id="partners" aria-labelledby="partners-h" className="mb-10 scroll-mt-16">
         <h2 id="partners-h" className="rule-neis-sm mb-4 text-xl font-medium text-paper">
-          Coalition partners ({g.partner.length})
+          Trusted network: partners and treated as allied ({g.partner.length})
         </h2>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {g.partner.map((c) => (
@@ -161,9 +161,9 @@ export default function CountryHomeView() {
       {wide && (
         <section aria-labelledby="map-h" className="card mb-10 p-5">
           <h2 id="map-h" className="rule-neis-sm text-base font-medium text-paper lg:text-lg">
-            The coalition on the map
+            The trusted network on the map
           </h2>
-          <p className="mt-1 text-sm text-paper-mute">Each economy colored by its place in the allied coalition. Click one to open its profile.</p>
+          <p className="mt-1 text-sm text-paper-mute">Each economy colored by its place in the trusted network. Click one to open its profile.</p>
           <div className="mt-3">
             <Suspense fallback={<Loading label="Loading the map" />}>
               <TierMap manifest={manifest} onSelect={(iso) => nav(countryHref(iso))} />

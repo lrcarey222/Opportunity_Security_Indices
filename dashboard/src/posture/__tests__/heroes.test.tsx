@@ -657,12 +657,12 @@ describe('the AIB division card (schema 2)', () => {
     expect(within(m).getByRole('button', { name: /^Solar Assembly: no allied holder/ }).getAttribute('data-gap')).toBe('no_trusted_supplier');
     const stats = screen.getByRole('list', { name: 'The allied base at a glance' });
     expect(within(stats).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      'Core coalition members23 coalition members in all (the demand scope); the trusted network adds five economies treated as allied',
-      'Priority steps with a credible trusted supplier and backup25%of 4 supply-chain steps coalition members rely on partners to supply or secure',
+      'Trusted network32 core members, 1 partner and 0 treated as allied: the economies whose demand the stress tests protect',
+      'Priority steps with a credible trusted supplier and backup25%of 4 supply-chain steps countries rely on partners to supply or secure',
       'Remaining allied gaps3priority steps that still have a gap',
     ]);
     const card = screen.getByTestId('aib-division-hero');
-    expect(card.textContent).not.toContain('Core coalition members');
+    expect(card.textContent).not.toContain('Trusted network3');
     expect(within(card).getByRole('heading', { level: 3 }).textContent).toBe(AIB_DIVISION_TITLE);
     fireEvent.click(node);
     expect(screen.getByTestId('aib-node-detail').textContent).toMatch(/Single point of failure .*also insufficient redundancy/);
@@ -724,7 +724,7 @@ describe('the AIB division card (schema 2)', () => {
     at('/', <AibDivisionCard headingLevel={2} stats />);
     const hero = await screen.findByTestId('aib-division-hero');
     expect(within(hero).getByRole('heading', { level: 2 }).textContent).toBe(AIB_DIVISION_TITLE);
-    expect(hero.textContent).toContain('Core coalition members');
+    expect(hero.textContent).toContain('Trusted network');
     expect(hero.textContent).toContain('25%');
   });
 });

@@ -88,7 +88,12 @@ unlink(old)
 # case, the country-invariant strategic-value families)
 layers_path <- file.path(outputs_dir, "strategic_posture_layers_tbl.rds")
 layers <- if (file.exists(layers_path)) readRDS(layers_path) else NULL
-core <- posture_core_doc(tbl, division, countries, sp_cfg, created, git_commit, stage_display = stage_display, layers = layers)
+# the economies treated as allied beyond the coalition tiers (the one place that list is kept): the AIB header
+# counts the trusted network, the same set scripts/26 and the AIB use
+layer_path <- file.path(repo_root, "config", "aib_strategic_layer.yml")
+treat_as_allied <- if (file.exists(layer_path)) toupper(as.character(unlist(yaml::read_yaml(layer_path)$allied$treat_as_allied))) else character()
+core <- posture_core_doc(tbl, division, countries, sp_cfg, created, git_commit, stage_display = stage_display, layers = layers,
+                         treat_as_allied = treat_as_allied)
 core_file <- write_doc("posture-core", core)
 if (core_file$bytes > POSTURE_BUDGET_CORE) stop("posture core is ", core_file$bytes, " bytes, over the 3 MiB budget.")
 isos <- core$countries$iso3

@@ -20,11 +20,12 @@ import { downloadText, fileSlug } from '../../../lib/download.ts';
 import { countryPostureRows, postureCsvText, postureProvenance, strategySentence } from '../../../posture/index.ts';
 import { POSTURE_CSV_COLS, postureCsvRows } from '../../../posture/derive.ts';
 import { networkOf } from '../../../posture/partnerEligibility.ts';
+import { ALLIANCE_TAG, allianceTier } from '../../../posture/trustedNetwork.ts';
 import type { CountryManifest } from '../../contract.ts';
 import { sectorCountryLink } from '../../derive/links.ts';
 import { countryOptions } from '../../derive/model.ts';
 import { dateLabel, freshnessItems } from '../../derive/strategyPage.ts';
-import { cap, poss, proseName, tierTag } from '../../derive/text.ts';
+import { cap, poss, proseName } from '../../derive/text.ts';
 import { countryHref } from '../../url.ts';
 import { useProfile } from './common.tsx';
 
@@ -135,7 +136,8 @@ export function ProfileHead({ manifest }: { manifest: CountryManifest }) {
             Data: {fresh.join(' · ')}.
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <Tag accent={m.tier === 'core'}>{tierTag(m.tier)}</Tag>
+            {/* the trusted-network tier (one allied set: core, partner, or treated as allied) */}
+            <Tag accent={m.tier === 'core'}>{ALLIANCE_TAG[allianceTier(sheet.iso3, m.tier)]}</Tag>
             {m.eu_member && <Tag>EU MEMBER</Tag>}
             {m.policy_basis === 'IEA PAMS only' && (
               <span className="inline-flex items-center gap-1">

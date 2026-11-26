@@ -70,7 +70,7 @@ shared phrase, add it there first.
 | frontier | trade-off between resilience and concentration |
 | coordination dividend | extra supply allies can recover by acting together; as a label "Extra supply recovered by acting together (coordination dividend)" |
 | High / Medium / Low fence (section titles) | Secure what is critical (high fence) / Build, preserve, partner and deploy (medium fence) / Keep open (low fence) |
-| allied set; coalition plus treat-as-allied | trusted network ("Trusted network: N economies"; `posture/trustedNetwork.ts`) |
+| allied set; coalition plus treat-as-allied; allied demand scope | trusted network ("Trusted network: N economies"; `posture/trustedNetwork.ts`). One set since 2026-11-25: the AIB demand scope is the same economies, and every tier or allied grouping is decoded with `allianceTier()` / `allianceGroup()` |
 | core coalition, allied countries, coalition (unexplained) | trusted suppliers / trusted alternatives / trusted partners; link the `trusted_network` glossary entry or show `TrustedNetworkControl` where the group matters |
 | the model says / finds / names | say what the data show ("the data show", "the stress test finds"), or state the result |
 | Yards & Fences, high / medium / low fence (first use on a page) | the plain meaning first: "Secure what is critical (high fence)", "Keep open (low fence)" (`FENCE_TITLE`); never a bare "High fence" without it on first use |

@@ -1,5 +1,6 @@
 // The run's settings in words: the demand scope (the importers whose lost supply is restored; "coalition"
-// is the allied core and partner tiers of the coalition table, not a compact's coalition) and the
+// is the trusted network since 2026-11-25: the coalition table's core and partner tiers plus the economies treated
+// as allied, config/aib.yml include_treat_as_allied; not a compact's coalition) and the
 // candidate-partner universe (the exporters that may supply; "global": any economy), separate settings
 // since 2026-10-16; the shock semantics (hold / release: a two-way cut); the supply constraint (production-constrained:
 // physical evidence decides who can supply / trade-only); the strategic scope (any configured name); and
@@ -148,7 +149,11 @@ export interface SettingWords {
 
 /** words; then the count of economies; then a note after a comma */
 const DEMAND_WORDS: Record<string, { label: string; words: string; note?: string }> = {
-  coalition: { label: 'Allied core and partner economies', words: 'the allied core and partner economies of the coalition table', note: "not a compact's coalition" },
+  coalition: {
+    label: 'The trusted network',
+    words: "the trusted network (the coalition's core members and partners plus the economies treated as allied, the same set that holds the AIB roles)",
+    note: "not a compact's coalition",
+  },
   configured: { label: 'Configured economies', words: 'a configured list of economies' },
   global: { label: 'Global', words: 'every economy in the trade data' },
 };
@@ -188,8 +193,8 @@ export const STRATEGIC_WORDS: Record<string, string> = { electro_industrial: 'El
 const known = <T>(table: Record<string, T>, mode: string | null | undefined): T | null => (mode && table[mode] ? table[mode] : null);
 
 /**
- * The demand scope ("the allied core and partner economies of the coalition table (57 economies), not a
- * compact's coalition: the importers whose lost supply is restored"); null in an older bundle.
+ * The demand scope ("the trusted network (...) (64 economies), not a compact's coalition: the importers whose
+ * lost supply is restored"); null in an older bundle.
  */
 export function demandScope(m: AibMeta): SettingWords | null {
   if (!m.demandScope) return null;

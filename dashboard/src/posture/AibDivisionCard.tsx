@@ -88,7 +88,7 @@ function NodeDetail({ d, names, nodes }: { d: DivisionNode; names: Record<string
         {pct(d.coerciveShare)}; world leader {d.leader ? `${names[d.leader] ?? d.leader} (${pct(d.leaderShare)})` : '—'}.
       </p>
       <p className="mt-1 text-xs text-paper-mute">
-        Partner demand {d.partnerDemand} countries ({d.memberPartnerDemand} coalition members), {d.partnerGaps} with no credible trusted supplier; Secure in {d.secureDemand}.
+        Partner demand {d.partnerDemand} countries ({d.memberPartnerDemand} in the trusted network), {d.partnerGaps} with no credible trusted supplier; Secure in {d.secureDemand}.
         Capability from {d.source === 'aib_position_share' ? `the Allied Industrial Base analysis (${plural(d.aibNodes ?? 0, 'supply-chain step')})` : 'world supply shares (no Allied Industrial Base step)'}.
       </p>
       {nodes && (

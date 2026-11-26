@@ -52,7 +52,7 @@ export function splitSegments(parts: Partial<Record<GroupKey, number>>): { key: 
 const pct1 = (x: number) => `${(x * 100).toFixed(1)}%`;
 const pct0 = (x: number) => (x < 0.995 ? `${Math.round(x * 100)}%` : `${(x * 100).toFixed(0)}%`);
 
-/** The row in words: "Exports 2024: China 43.7%, Coalition core 37.9%, …". */
+/** The row in words: "Exports 2024: China 43.7%, Trusted core 37.9%, …". */
 export function splitText(label: string, parts: Partial<Record<GroupKey, number>>): string {
   return `${label}: ${splitSegments(parts)
     .map((s) => `${groupLabel(s.key)} ${pct1(s.share)}`)

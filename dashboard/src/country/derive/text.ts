@@ -3,6 +3,7 @@
 // `words`. Pure: no React. The memo is written separately (part B); these are the page's own templates.
 
 import { stageShort } from '../../lib/stages.ts';
+import { ALLIANCE_TAG, allianceTier, allianceWords } from '../../posture/trustedNetwork.ts';
 import {
   cellOf, cellOrder, COUNTRY_STAGES, COUNTRY_TECHS, dOf, LEGACY_CORNERS, parseCellKey, type CellFacts, type Driver, type FactSheet, type LegacyCorner, type PartnerRow, type Tier,
 } from '../contract.ts';
@@ -47,12 +48,13 @@ export function poss(name: string): string {
   return name.endsWith('s') ? `${name}'` : `${name}'s`;
 }
 
-export function tierPhrase(tier: Tier): string {
-  return tier === 'core' ? 'a core member of the allied coalition' : tier === 'partner' ? 'a coalition partner' : 'outside the allied coalition';
+/** The economy's place in the trusted network in words; pass the ISO3 so a treat_as_allied economy reads as one. */
+export function tierPhrase(tier: Tier, iso3?: string | null): string {
+  return allianceWords(allianceTier(iso3, tier));
 }
 
-export function tierTag(tier: Tier): string {
-  return tier === 'core' ? 'CORE MEMBER' : tier === 'partner' ? 'PARTNER' : 'NOT IN THE COALITION';
+export function tierTag(tier: Tier, iso3?: string | null): string {
+  return ALLIANCE_TAG[allianceTier(iso3, tier)];
 }
 
 /** A Legacy OSI corner's display word: the contract's LEGACY_CORNERS label (Grow, Upgrade, Exposed,
@@ -75,7 +77,7 @@ export function ledeOf(sheet: FactSheet): string {
   const m = sheet.meta;
   const s = sheet.summary;
   const name = proseName(m.country);
-  const first = `${cap(proseName(name))} is ${tierPhrase(m.tier)}.`;
+  const first = `${cap(proseName(name))} is ${tierPhrase(m.tier, sheet.iso3)}.`;
   if (m.status === 'no_data') {
     const psi = s.psi_1 ? ` The partner the Partnership Strength Index rates highest for it is ${proseName(s.psi_1.name)}.` : '';
     return `${first} It has no Energy Security or Economic Opportunity scores${m.status_reason ? `: ${m.status_reason}` : ''}.${psi}`;

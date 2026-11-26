@@ -48,12 +48,18 @@ trade:
 # Modes: configured (the `countries` listed), coalition (the `tiers` of
 # data/processed/coalition_tbl.rds), or global (every economy in the trade data). A comma list of
 # ISO3 codes on the command line (--demand-scope / --partner-universe) overrides either.
+# include_treat_as_allied (coalition mode): the set also takes config/aib_strategic_layer.yml
+# allied.treat_as_allied (R/aib/aib_scope.R). 2026-11-25 (user decision: "allied" is one set, the
+# 64-economy trusted network, everywhere): the demand scope is the coalition's core and partner tiers
+# (59) plus Taiwan, Switzerland, Slovenia, Iceland and the UAE, the same economies that hold the AIB
+# roles; their own demand is protected like any ally's. The list lives only in the strategic layer's file.
 # The default protects the allied set and lets any economy supply it. Global demand with global
 # partners (the first full run, 2026-10-15) is a sensitivity: it treats every importer's
 # shortfall, including the shocked economy's own customers, as the AIB's problem.
 demand_scope:
   mode: coalition
   tiers: [core, partner]
+  include_treat_as_allied: true
   countries: []
 candidate_partner_universe:
   mode: global
@@ -241,8 +247,8 @@ investment:
   # grain-oriented steel and Myanmar 1st for rare-earth oxides. Modes:
   #   bloc          the demand scope, plus every partner outside exclude_blocs (UNGA voting blocs of
   #                 processed geo_alignment_tbl.rds, scripts/12; an economy without a bloc is kept)
-  #   demand_scope  the demand scope only (a strict sensitivity: it also drops Taiwan, Switzerland and the
-  #                 EU members under the coalition table's GDP floor)
+  #   demand_scope  the demand scope only (a strict sensitivity: it drops every economy outside the
+  #                 trusted network, e.g. the EU members under the coalition table's GDP floor)
   #   none          every partner
   # Friendshore is not used: it is a composite (the bloc is about a quarter of its weight) with missing
   # values at the neutral 0.5. The screen applies before the host shortlist and the host types, so a

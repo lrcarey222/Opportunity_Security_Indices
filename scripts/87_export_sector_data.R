@@ -5,6 +5,7 @@
 #                                           [--no-policy-text] [--no-series] [--synthetic <dir>]
 #                                           [--check-only] [--cmfdi <csv>] [--no-fdi] [--no-dev]
 #                                           [--no-climate] [--no-nze] [--no-climate-sources]
+#                                           [--validation-csv <path>]
 #
 # IO only: every rule lives in the pure helpers of R/dashboard/sector/ (sector_files()). It reads
 # config/sector_dictionary.yml, data/processed (raw rows only; never an index, weight or contribution
@@ -38,7 +39,8 @@
 #                                      Country Transition Tracker, IEA WEO regions, NZE 2021 milestones,
 #                                      World Energy Investment, from the climate_src_*_tbl.rds of
 #                                      scripts/18; --no-climate-sources leaves it out)
-#   <processed_dir>/dashboard/sector_validation.csv   the full validation report (not deployed)
+#   <processed_dir>/dashboard/sector_validation.csv   the full validation report (not deployed; or the
+#                                      path given with --validation-csv, for a read-only data store)
 #
 # <out-dir> defaults to <repo>/dashboard/public/data/sector. Every chunk is decoded again and must be
 # identical() to what was encoded and pass the R mirror of the contract checks
@@ -860,6 +862,38 @@ if (with_dev) {
   notes <- c(notes, "Development & finance raw data (WDI, Doing Business, OECD CRS, IMF DIP) were not exported in this build (--no-dev).")
 }
 
+# ---- CIM manufacturing capacity (facts and the series) ----------------------------------------------
+
+# Read with or without --no-series: the operational capacity of one product per sector is a facts
+# measure (manufacturing.capacity_now, sector_facts_cim_capacity(); usability pass 2026-11-25), and
+# the series chunk ships every product and status (manufacturing.capacity).
+step("CIM manufacturing capacity by product")
+cim_wb <- tmp_copy(file.path(raw_dir, "GCIM_Investment_Capacity_aggregated.xlsx"))
+cim_cap <- sector_cim_capacity(investment_read_gcim_sheet(cim_wb, "mfg_ind_capacity", c("Country", "Segment", "Technology", "Product", "Category", "Value"), "capacity"),
+                               iso3_of, investment_product_to_stage)
+results$cim_capacity <- sector_facts_cim_capacity(cim_cap)
+cim_iu <- dplyr::bind_rows(lapply(Filter(function(u) identical(u$var, "manufacturing.capacity_now"), dict_raw$item_units),
+                                  function(u) tibble::tibble(item_key = paste0(u$axis, ":", u$item), unit = u$unit)))
+cim_units <- results$cim_capacity$units
+if (!nrow(cim_iu) || !setequal(paste(cim_iu$item_key, cim_iu$unit), paste(cim_units$item_key, cim_units$unit))) {
+  stop("manufacturing.capacity_now: the sectors and units of the CIM products (", paste(cim_units$item_key, cim_units$unit, collapse = ", "),
+       ") differ from the dictionary's item_units (", paste(cim_iu$item_key, cim_iu$unit, collapse = ", "), ")")
+}
+cf <- results$cim_capacity$facts
+op <- cim_cap[cim_cap$cap_status == "operational", , drop = FALSE]
+cim_ref <- op$value[match(paste(cf$item_key, cim_units$product[match(cf$item_key, cim_units$item_key)], cf$geo),
+                          paste(op$item_key, op$product, op$geo))]
+cim_ok <- !anyNA(cim_ref) && identical(as.double(cim_ref), cf$value)
+add_check("CIM capacity facts: one product per sector, its unit = the dictionary's item_units; values identical() to the operational capacity series rows",
+          if (cim_ok) "PASS" else "FAIL", nrow(cf),
+          paste(vapply(seq_len(nrow(cim_units)), function(i) {
+            x <- cf[cf$item_key == cim_units$item_key[i], , drop = FALSE]
+            sprintf("%s %s (%s): %s %.1f%%", sub("^cell:", "", cim_units$item_key[i]), cim_units$product[i], cim_units$unit[i],
+                    x$geo[which.max(x$value)], 100 * max(x$value) / sum(x$value))
+          }, ""), collapse = "; "))
+if (!cim_ok) stop("CIM capacity facts differ from the operational capacity rows of sector_cim_capacity().")
+rm(cf, op, cim_ref, cim_iu)
+
 # ---- Series -----------------------------------------------------------------------------------------
 
 series <- NULL
@@ -877,12 +911,10 @@ if (with_series) {
                                                                 100 * nr$residual / nr$world), collapse = "; ")) else NA_character_)
   ev_path <- file.path(raw_dir, "ev_Midstream_capacity.csv")
   ev_ser <- sector_iea_ev_series(read.csv(use_src(ev_path), check.names = FALSE, stringsAsFactors = FALSE))
-  g <- tmp_copy(file.path(raw_dir, "GCIM_Investment_Capacity_aggregated.xlsx"))
-  pw <- investment_read_gcim_sheet(g, "electric_power_capacity", c("Country", "Segment", "Technology", "Year", "Value"), "power additions")
-  cap <- investment_read_gcim_sheet(g, "mfg_ind_capacity", c("Country", "Segment", "Technology", "Product", "Category", "Value"), "capacity")
+  pw <- investment_read_gcim_sheet(cim_wb, "electric_power_capacity", c("Country", "Segment", "Technology", "Year", "Value"), "power additions")
   power <- sector_cim_power(pw, iso3_of)
-  capacity <- sector_cim_capacity(cap, iso3_of, investment_product_to_stage)
-  rm(pw, cap)
+  capacity <- cim_cap
+  rm(pw)
   imf_path <- file.path(raw_dir, "imf_commodity_prices.csv")
   imf <- read.csv(use_src(imf_path), stringsAsFactors = FALSE)
   monthly <- sector_imf_monthly(energy_prices_imf_clean(energy_prices_imf_monthly_usd_long(imf)), commodities)
@@ -938,7 +970,8 @@ former <- c(SUN = "USSR (former)", ANT = "Netherlands Antilles (former)", YUG = 
 hit <- extra$code %in% names(former) & (is.na(extra$name) | extra$name == extra$code)
 extra$name[hit] <- unname(former[extra$code[hit]])
 hubs <- unlist(getOption("opportunity_security.index_definition")$trade$re_export_hubs)
-geo <- sector_geo(country_info, coal, ideal, hubs = hubs, extra = extra)
+treat_as_allied <- unlist(yaml::read_yaml(file.path(repo_root, "config", "aib_strategic_layer.yml"))$allied$treat_as_allied)
+geo <- sector_geo(country_info, coal, ideal, hubs = hubs, extra = extra, treat_as_allied = treat_as_allied)
 unknown <- setdiff(data_codes, geo$code)
 if (length(unknown)) stop("Economies in the data without a dims.geo row: ", paste(unknown, collapse = ", "))
 region_members <- sector_region_members(geo, results$ev$region_of)
@@ -1295,7 +1328,7 @@ res <- finish(bundle, chunks, out_dir, created = format(Sys.time(), "%Y-%m-%dT%H
                            policy_text = "sector-policy-text" %in% names(chunks), series = "sector-series" %in% names(chunks),
                            fdi = "sector-fdi" %in% names(chunks), dev = "sector-dev" %in% names(chunks),
                            climate = "sector-climate" %in% names(chunks), climate_src = "sector-climate-src" %in% names(chunks)),
-              validation_csv = file.path(processed_dir, "dashboard", "sector_validation.csv"), post_decode = post)
+              validation_csv = abs_path(arg_value("--validation-csv", file.path(processed_dir, "dashboard", "sector_validation.csv"))), post_decode = post)
 
 # Reference values for the spec's Appendix B (recomputed on this data).
 sm <- bundle$summary

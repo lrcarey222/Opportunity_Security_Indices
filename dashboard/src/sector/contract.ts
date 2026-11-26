@@ -439,6 +439,9 @@ export const VAR_CATALOGUE = [
   { id: 'manufacturing.share_now', phase: '1', level: 'entity', chunks: ['facts'], scope: 'build' },
   { id: 'manufacturing.share_2035', phase: '1', level: 'entity', chunks: ['facts'], scope: 'build' },
   { id: 'manufacturing.ev_net_export_ratio', phase: '1', level: 'region', chunks: ['facts'], scope: 'build' },
+  // operational capacity of one product per sector (CIM; usability pass 2026-11-25): Solar Refining's
+  // polysilicon, the Solar and Batteries Components / Assembly products (additive)
+  { id: 'manufacturing.capacity_now', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },
   { id: 'manufacturing.capacity', phase: '2', level: 'country', chunks: ['series'], scope: 'build' },
   // investment
   { id: 'investment.annual', phase: '1', level: 'country', chunks: ['facts'], scope: 'build' },

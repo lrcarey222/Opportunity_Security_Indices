@@ -143,12 +143,12 @@ describe.skipIf(!haveFixture())('Country Insights routes on the synthetic fixtur
     expect(document.title).toMatch(/^Countries \| Allied Industrial Base Explorer/);
     expect(document.body.textContent).toContain('No country should try to own the whole stack.');
     expect(document.body.textContent).toContain('A strong industrial strategy is as much about deciding what not to build as deciding what to build.');
-    const core = screen.getByRole('region', { name: /Core coalition members/ });
+    const core = screen.getByRole('region', { name: /Trusted network: core members/ });
     const usa = within(core).getByRole('link', { name: /United States/ });
     expect(usa.getAttribute('href')).toBe('/countries/USA');
     expect(within(usa).getByText('MEMO')).toBeTruthy();
     expect(within(within(core).getByRole('link', { name: /Germany/ })).queryByText('MEMO')).toBeNull();
-    expect(screen.getByRole('region', { name: /Coalition partners/ })).toBeTruthy();
+    expect(screen.getByRole('region', { name: /Trusted network: partners and treated as allied/ })).toBeTruthy();
     expect(screen.getByRole('combobox', { name: /Choose a country/ })).toBeTruthy();
     // the roster line is the strategy's six verbs (the posture fixture's United States), not the legacy corners
     await waitFor(() => expect(within(usa).getByTestId('roster-line').textContent).toBe('3 Secure · 2 Preserve · 1 Catch Up · 1 Partner · 1 Accelerate · 3 Watch · 1 not assessed'), { timeout: 30_000 });

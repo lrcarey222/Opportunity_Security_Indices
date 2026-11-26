@@ -227,7 +227,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'coalition',
     term: 'Allied coalition',
-    short: 'Who counts as an ally: {{n_core}} core members (U.S.-leaning in UN votes) and {{n_partner}} partners (in U.S. trade or security agreements, or major suppliers not leaning towards China). They are most of the trusted network.',
+    short: 'The {{n_core}} core members (U.S.-leaning in UN votes) and {{n_partner}} partners (in U.S. trade or security agreements, or major suppliers not leaning towards China). With five economies treated as allied, they form the trusted network.',
     more: 'Core members: U.S.-leaning in UN votes, with economies of at least $100 billion. Partners: members of U.S. trade or security agreements with economies of at least $100 billion, or major suppliers that do not lean towards China (at least 5% of world supply at a stage other than deployment, or 10% of the reserves of a headline mineral or fuel).',
     modules: EVERY,
     related: ['alignment', 'trusted_network'],
@@ -979,7 +979,7 @@ export const GLOSSARY_TEMPLATES: readonly GlossaryEntry[] = [
   {
     id: 'trusted_network',
     term: 'Trusted network',
-    short: "Who the Explorer can name as a trusted partner or alternative supplier: the allied coalition's core members and partners, plus the economies the allied analysis treats as allied. The glossary page lists every member.",
+    short: "The one set the Explorer calls allied: the coalition's core members and partners plus the economies treated as allied. Only they are named as trusted partners, and the stress tests protect their demand.",
     more: TRUSTED_NETWORK_METHOD,
     modules: AIB,
     related: ['coalition', 'allied_industrial_base'],

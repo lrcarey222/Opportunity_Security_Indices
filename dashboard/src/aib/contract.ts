@@ -23,8 +23,8 @@
 // metrics.investment adds the standard increment at up to two member hosts per BUILD node.
 //
 // Methodology fields (2026-10-16; still v1, all optional so an older bundle validates):
-//   manifest + meta   demandScope (the importers whose lost supply is restored; "coalition" = the allied
-//                     core and partner tiers of the coalition table, NOT a compact's coalition) and
+//   manifest + meta   demandScope (the importers whose lost supply is restored; "coalition" = the trusted
+//                     network: core and partner tiers plus treat_as_allied, NOT a compact's coalition) and
 //                     candidateUniverse (the exporters that may supply; "global" = any economy) as
 //                     separate settings, nDemandScope, the shock semantics (hold: the shocked economy keeps
 //                     buying, so other exporters' sales to it stay with it; release: its purchases fall and
@@ -212,7 +212,8 @@ export type AibPhysicalData = (typeof AIB_PHYSICAL_DATA)[number];
 
 /**
  * The modes of the demand scope and of the candidate-partner universe. "coalition" is the allied core and
- * partner tiers of the coalition table (57 economies in the headline run), not a compact's coalition;
+ * partner tiers of the coalition table, plus (demand scope, since 2026-11-25) the economies treated as allied:
+ * the 64-economy trusted network of the headline run, not a compact's coalition;
  * "global" is any economy in the trade data.
  */
 export const AIB_SCOPE_MODES = ['coalition', 'configured', 'global'] as const;
@@ -445,7 +446,7 @@ export interface AibMeta {
   universe: string;
   headlineShock: string;
   headlineScenario: string;
-  /** the importers whose lost supply is restored ("coalition": the allied core and partner tiers, not a compact's coalition; additive) */
+  /** the importers whose lost supply is restored ("coalition": the trusted network, core and partner tiers plus treat_as_allied, not a compact's coalition; additive) */
   demandScope?: AibScopeMode | null;
   /** the exporters that may add or redirect supply ("global": any economy; additive) */
   candidateUniverse?: AibScopeMode | null;

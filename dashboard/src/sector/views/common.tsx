@@ -92,18 +92,18 @@ export const MAP_READING = 'Each country is coloured by its value: orange lower 
 /** The same for a signed measure (net balance, net trade, changes). */
 export const MAP_READING_SIGNED = 'Each country is coloured by its value: orange below zero, white zero, blue above zero; the deeper the colour, the further from zero. Hatched: no value (hover for why).';
 /** The reading line of a ranking. */
-export const SPLIT_READING = 'Each bar is one measure, split by who holds it: China, the coalition core, coalition partners, the rest of the world and the part the source does not assign to any economy. The longer a segment, the larger that group’s share; the columns beside it name the largest holder and give the top-three share and the concentration index.';
+export const SPLIT_READING = 'Each bar is one measure, split by who holds it: China, the trusted core, the trusted partners, the rest of the world and the part the source does not assign to any economy. The longer a segment, the larger that group’s share; the columns beside it name the largest holder and give the top-three share and the concentration index.';
 
 /** Two-year dot pairs (Dumbbell): one row per economy (or group / sector, named by `row`). */
 export function dumbbellReading(a: string, b: string, row = 'economy'): string {
   return `Each row is one ${row}; its two dots are the value in ${a} and in ${b}. A line running to the right means the value rose; the longer the line, the bigger the change.`;
 }
 
-export const AREA_READING = 'Each band is one group: China, the coalition core, coalition partners, the rest of the world and, where the source has one, the part not assigned to any economy. Stacked, they make the world total, so a band that widens is gaining; "Share" shows the same bands as parts of 100%.';
+export const AREA_READING = 'Each band is one group: China, the trusted core, the trusted partners, the rest of the world and, where the source has one, the part not assigned to any economy. Stacked, they make the world total, so a band that widens is gaining; "Share" shows the same bands as parts of 100%.';
 
 export const LINES_READING = 'Each line is one economy, year by year; the higher the line, the larger the amount. With "Index, first year = 100" every line starts at 100, so the steepest line grew fastest.';
 
-export const BARS_READING = 'Each bar is one economy, largest first; its colour shows the group: China, the coalition core, coalition partners or the rest of the world.';
+export const BARS_READING = 'Each bar is one economy, largest first; its colour shows the group: China, the trusted core, the trusted partners or the rest of the world.';
 
 /** A profile / page section with an h2 and its anchor. */
 export function Section({ id, title, sub, children, aside }: { id: string; title: string; sub?: ReactNode; children: ReactNode; aside?: ReactNode }) {
@@ -226,7 +226,7 @@ export function shareSplitRow(model: SectorModel, v: VarInfo, item: ItemInfo | n
     outlined: opts.outlined,
     section: opts.section,
     // when the largest holder is China, the China group share is the same number: say it once
-    ariaLabel: `${label}: ${top1 && top1.group !== 'china' ? `largest ${top1.name} ${(100 * (c.top1?.share ?? 0)).toFixed(1)} percent; ` : ''}China ${(100 * (c.split.china || 0)).toFixed(1)} percent${top1 && top1.group === 'china' ? ' (the largest)' : ''}, coalition core ${(100 * (c.split.core || 0)).toFixed(1)} percent, partners ${(100 * (c.split.partner || 0)).toFixed(1)} percent, rest of world ${(100 * (c.split.rest || 0)).toFixed(1)} percent, not attributed ${(100 * (c.split.unattributed || 0)).toFixed(1)} percent ${basisWords(c.basis, v.source.short)}.`,
+    ariaLabel: `${label}: ${top1 && top1.group !== 'china' ? `largest ${top1.name} ${(100 * (c.top1?.share ?? 0)).toFixed(1)} percent; ` : ''}China ${(100 * (c.split.china || 0)).toFixed(1)} percent${top1 && top1.group === 'china' ? ' (the largest)' : ''}, trusted core ${(100 * (c.split.core || 0)).toFixed(1)} percent, trusted partners ${(100 * (c.split.partner || 0)).toFixed(1)} percent, rest of world ${(100 * (c.split.rest || 0)).toFixed(1)} percent, not attributed ${(100 * (c.split.unattributed || 0)).toFixed(1)} percent ${basisWords(c.basis, v.source.short)}.`,
   };
 }
 

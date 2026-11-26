@@ -257,7 +257,19 @@ export interface PostureCore {
   countries: { iso3: string; name: string; tier: string }[];
   cells: PostureCell[];
   division: DivisionNode[];
-  aibHeader: { core_members: number; members: number; priority_nodes: number; covered_share: number | null; unresolved_gaps: number };
+  /**
+   * members: the trusted network (core + partner tiers + treated as allied) since 2026-11-25; partner_members and
+   * allied_members (the economies treated as allied beyond the tiers) are absent from older bundles.
+   */
+  aibHeader: {
+    core_members: number;
+    partner_members?: number;
+    allied_members?: number;
+    members: number;
+    priority_nodes: number;
+    covered_share: number | null;
+    unresolved_gaps: number;
+  };
   /** policy design text (the mitigation of a Secure node, the fence / gate / build of any node) keyed variant|delivery */
   design: Record<string, { fence?: string; fence_level?: string; gate?: string; build?: string; benchmark?: string; exit?: string }>;
 }

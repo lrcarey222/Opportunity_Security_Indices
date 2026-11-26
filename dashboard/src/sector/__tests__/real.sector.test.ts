@@ -56,6 +56,9 @@ import { summaryFromFacts, summaryParity } from '../derive/summary.ts';
 import { GLOSSARY_DEFAULTS } from '../../content/glossary.ts';
 import { VARIABLE_CHARTS } from '../../posture/variableCharts.ts';
 import { themeVars } from '../derive/explore.ts';
+import { chainAnswer, chainAnswerText, strongestSentence } from '../derive/answer.ts';
+import { lensBasis, strongestOf, strongestWhat } from '../views/profile/Lenses.tsx';
+import { chainLinesOf, ladderEntries } from '../views/TechChainView.tsx';
 
 const DATA_DIR = resolve(process.cwd(), 'public/data');
 /** The parity rows of the climate sources (sector_src_parity()). */
@@ -253,8 +256,8 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       expect(r3(s.hhi)).toBe(0.072);
       expect(r1(s.eff_n)).toBe(13.8);
       expect(pct1(s.core)).toBe(42.1);
-      expect(pct1(s.partner)).toBe(30.5);
-      expect(pct1(s.rest)).toBe(8.6);
+      expect(pct1(s.partner)).toBe(34.4);
+      expect(pct1(s.rest)).toBe(4.8);
       expect(s.unattributed).toBe(0);
       expect(s.growth_kind).toBe('pct_2020_2024');
       expect(Math.round(s.growth * 100)).toBe(41);
@@ -274,7 +277,7 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
     it('Batteries — Assembly, matrix 2024', () => {
       const s = S('trade.exports', 'cell', 'batteries-assembly', 2024);
       expect([r1(s.W / 1e9), s.n, model.geos[s.top1_geo!].code, pct1(s.china), pct1(s.top3_share), r3(s.hhi), r1(s.eff_n)]).toEqual([117.7, 183, 'CHN', 60.1, 72.0, 0.376, 2.7]);
-      expect([pct1(s.core), pct1(s.partner), pct1(s.rest), s.unattributed, Math.round(s.growth * 100)]).toEqual([34.0, 4.4, 1.4, 0, 189]);
+      expect([pct1(s.core), pct1(s.partner), pct1(s.rest), s.unattributed, Math.round(s.growth * 100)]).toEqual([34.0, 5.3, 0.5, 0, 189]);
       expect(r1(S('trade.exports', 'cell', 'batteries-assembly', 2020).W / 1e9)).toBe(40.8);
       const usa = s.conc.rows.find((r) => r.geo === G('USA'))!;
       expect([pct1(usa.share!), usa.rank]).toEqual([5.8, 3]);
@@ -304,48 +307,48 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       // the 42 six-stage trade cells: Extraction 9, Refining 10, Components 10, Assembly 10, Recovery 3, Deployment none
       // (2026-10-30 basket: quartz and silver ores give Solar Extraction its trade; yellowcake moved to Nuclear Extraction)
       const rows: [string, number, string, number, number, number, number, number, number, number, number][] = [
-        ['batteries-extraction', 18.3, 'AUS', 22.9, 54.7, 0.124, 8.1, 170, 30.8, 50.4, 37],
-        ['batteries-refining', 74.5, 'CHN', 18.7, 36.8, 0.072, 13.8, 184, 42.1, 30.5, 41],
-        ['batteries-components', 10.5, 'CHN', 37.4, 61.2, 0.178, 5.6, 131, 51.0, 8.8, 82],
-        ['batteries-assembly', 117.7, 'CHN', 60.1, 72.0, 0.376, 2.7, 183, 34.0, 4.4, 189],
-        ['batteries-recovery', 3.0, 'FIN', 14.9, 38.8, 0.069, 14.4, 131, 75.0, 12.4, 49],
+        ['batteries-extraction', 18.3, 'AUS', 22.9, 54.7, 0.124, 8.1, 170, 30.8, 51.1, 37],
+        ['batteries-refining', 74.5, 'CHN', 18.7, 36.8, 0.072, 13.8, 184, 42.1, 34.4, 41],
+        ['batteries-components', 10.5, 'CHN', 37.4, 61.2, 0.178, 5.6, 131, 51.0, 9.9, 82],
+        ['batteries-assembly', 117.7, 'CHN', 60.1, 72.0, 0.376, 2.7, 183, 34.0, 5.3, 189],
+        ['batteries-recovery', 3.0, 'FIN', 14.9, 38.8, 0.069, 14.4, 131, 75.0, 16.2, 49],
         ['coal-extraction', 192.4, 'AUS', 32.8, 68.9, 0.197, 5.1, 119, 48.2, 32.5, 93],
-        ['coal-refining', 10.0, 'CHN', 19.9, 53.5, 0.125, 8.0, 102, 42.4, 30.1, 58],
-        ['coal-components', 5.4, 'CHN', 29.3, 48.2, 0.123, 8.1, 142, 58.5, 9.4, 11],
-        ['coal-assembly', 5.2, 'CHN', 25.7, 47.7, 0.107, 9.4, 141, 56.8, 11.1, -10],
-        ['electric-grid-extraction', 118.6, 'CHL', 26.2, 51.8, 0.125, 8.0, 118, 14.2, 71.9, 65],
-        ['electric-grid-refining', 239.9, 'COD', 9.3, 24.1, 0.038, 26.1, 173, 38.3, 34.9, 59],
-        ['electric-grid-components', 58.6, 'CHN', 29.9, 45.4, 0.115, 8.7, 192, 36.4, 27.6, 47],
-        ['electric-grid-assembly', 353.6, 'CHN', 25.4, 40.8, 0.09, 11.1, 208, 48.3, 20.1, 48],
-        ['electric-vehicles-extraction', 18.5, 'AUS', 22.7, 54.2, 0.122, 8.2, 170, 30.5, 50.2, 37],
-        ['electric-vehicles-refining', 2.9, 'MMR', 28.5, 58.1, 0.148, 6.8, 70, 20.1, 23.9, 92],
-        ['electric-vehicles-components', 295.5, 'CHN', 37.4, 49.7, 0.158, 6.3, 205, 38.1, 17.6, 76],
-        ['electric-vehicles-assembly', 707.6, 'CHN', 20.3, 43.4, 0.085, 11.8, 208, 63.2, 13.0, 98],
-        ['gas-extraction', 386.3, 'USA', 13.1, 37.2, 0.079, 12.6, 96, 48.2, 21.2, 111],
-        ['gas-refining', 94.9, 'USA', 41.2, 59.9, 0.199, 5.0, 142, 54.6, 16.9, 89],
-        ['gas-components', 46.2, 'USA', 23.3, 46.0, 0.098, 10.2, 194, 68.9, 9.9, 40],
-        ['gas-assembly', 105.3, 'CHN', 20.0, 39.3, 0.078, 12.9, 205, 56.3, 17.4, 25],
+        ['coal-refining', 10.0, 'CHN', 19.9, 53.5, 0.125, 8.0, 102, 42.4, 30.2, 58],
+        ['coal-components', 5.4, 'CHN', 29.3, 48.2, 0.123, 8.1, 142, 58.5, 10.6, 11],
+        ['coal-assembly', 5.2, 'CHN', 25.7, 47.7, 0.107, 9.4, 141, 56.8, 13.6, -10],
+        ['electric-grid-extraction', 118.6, 'CHL', 26.2, 51.8, 0.125, 8.0, 118, 14.2, 72.4, 65],
+        ['electric-grid-refining', 239.9, 'COD', 9.3, 24.1, 0.038, 26.1, 173, 38.3, 41.1, 59],
+        ['electric-grid-components', 58.6, 'CHN', 29.9, 45.4, 0.115, 8.7, 192, 36.4, 31.4, 47],
+        ['electric-grid-assembly', 353.6, 'CHN', 25.4, 40.8, 0.09, 11.1, 208, 48.3, 23.3, 48],
+        ['electric-vehicles-extraction', 18.5, 'AUS', 22.7, 54.2, 0.122, 8.2, 170, 30.5, 50.9, 37],
+        ['electric-vehicles-refining', 2.9, 'MMR', 28.5, 58.1, 0.148, 6.8, 70, 20.1, 24.1, 92],
+        ['electric-vehicles-components', 295.5, 'CHN', 37.4, 49.7, 0.158, 6.3, 205, 38.1, 19.9, 76],
+        ['electric-vehicles-assembly', 707.6, 'CHN', 20.3, 43.4, 0.085, 11.8, 208, 63.2, 15, 98],
+        ['gas-extraction', 386.3, 'USA', 13.1, 37.2, 0.079, 12.6, 96, 48.2, 22.1, 111],
+        ['gas-refining', 94.9, 'USA', 41.2, 59.9, 0.199, 5.0, 142, 54.6, 29.2, 89],
+        ['gas-components', 46.2, 'USA', 23.3, 46.0, 0.098, 10.2, 194, 68.9, 14.5, 40],
+        ['gas-assembly', 105.3, 'CHN', 20.0, 39.3, 0.078, 12.9, 205, 56.3, 19.4, 25],
         ['nuclear-extraction', 11.4, 'KAZ', 38.6, 76.6, 0.255, 3.9, 45, 49.5, 7.9, 161],
         ['nuclear-refining', 10.5, 'RUS', 26.5, 64.3, 0.17, 5.9, 23, 66.6, 0.9, 141],
-        ['nuclear-components', 9.3, 'CHN', 16.7, 39.2, 0.084, 12.0, 139, 60.2, 5.4, 31],
-        ['nuclear-assembly', 4.8, 'CHN', 24.6, 47.8, 0.105, 9.5, 131, 55.1, 10.6, -6],
-        ['nuclear-recovery', 0.0, 'ZAF', 29.2, 63.9, 0.175, 5.7, 23, 53.2, 29.2, -40],
-        ['oil-extraction', 1345.4, 'SAU', 13.9, 32.3, 0.066, 15.2, 132, 24.9, 29.4, 94],
-        ['oil-refining', 888.7, 'USA', 12.5, 24.8, 0.046, 21.9, 204, 45.0, 27.5, 100],
-        ['oil-components', 13.2, 'CHN', 28.7, 52.9, 0.126, 8.0, 178, 44.4, 17.0, 63],
-        ['oil-assembly', 113.9, 'CHN', 23.0, 41.4, 0.087, 11.5, 207, 53.1, 18.0, 29],
-        ['oil-recovery', 0.5, 'IND', 17.0, 40.3, 0.084, 11.9, 178, 57.8, 35.2, 114],
-        ['solar-extraction', 7.9, 'PER', 28.5, 60.0, 0.155, 6.5, 128, 18.3, 59.7, 152],
-        ['solar-refining', 37.9, 'DEU', 12.2, 29.2, 0.054, 18.5, 127, 53.4, 16.4, 77],
-        ['solar-components', 170.3, 'CHN', 23.0, 44.8, 0.1, 10.0, 208, 52.0, 18.5, 31],
-        ['solar-assembly', 507.1, 'CHN', 26.4, 39.1, 0.094, 10.7, 208, 46.6, 21.0, 44],
+        ['nuclear-components', 9.3, 'CHN', 16.7, 39.2, 0.084, 12.0, 139, 60.2, 6.1, 31],
+        ['nuclear-assembly', 4.8, 'CHN', 24.6, 47.8, 0.105, 9.5, 131, 55.1, 13.1, -6],
+        ['nuclear-recovery', 0.0, 'ZAF', 29.2, 63.9, 0.175, 5.7, 23, 53.2, 29.7, -40],
+        ['oil-extraction', 1345.4, 'SAU', 13.9, 32.3, 0.066, 15.2, 132, 24.9, 37.9, 94],
+        ['oil-refining', 888.7, 'USA', 12.5, 24.8, 0.046, 21.9, 204, 45.0, 34.5, 100],
+        ['oil-components', 13.2, 'CHN', 28.7, 52.9, 0.126, 8.0, 178, 44.4, 25.4, 63],
+        ['oil-assembly', 113.9, 'CHN', 23.0, 41.4, 0.087, 11.5, 207, 53.1, 19.8, 29],
+        ['oil-recovery', 0.5, 'IND', 17.0, 40.3, 0.084, 11.9, 178, 57.8, 36.4, 114],
+        ['solar-extraction', 7.9, 'PER', 28.5, 60.0, 0.155, 6.5, 128, 18.3, 60, 152],
+        ['solar-refining', 37.9, 'DEU', 12.2, 29.2, 0.054, 18.5, 127, 53.4, 26.4, 77],
+        ['solar-components', 170.3, 'CHN', 23.0, 44.8, 0.1, 10.0, 208, 52.0, 23.7, 31],
+        ['solar-assembly', 507.1, 'CHN', 26.4, 39.1, 0.094, 10.7, 208, 46.6, 24.1, 44],
         ['wind-extraction', 0.2, 'NGA', 75.5, 93.5, 0.588, 1.7, 21, 0.0, 24.5, 261],
-        ['wind-refining', 33.4, 'DEU', 10.1, 26.0, 0.048, 20.7, 125, 50.2, 17.8, 53],
-        ['wind-components', 92.8, 'CHN', 26.6, 45.3, 0.104, 9.6, 204, 52.2, 15.8, 28],
-        ['wind-assembly', 286.1, 'CHN', 23.7, 39.7, 0.082, 12.2, 208, 48.9, 20.3, 48],
-        ['semiconductors-refining', 5.5, 'USA', 23.7, 65.7, 0.159, 6.3, 90, 65.4, 11.9, 45],
-        ['semiconductors-components', 124.4, 'CHN', 16.2, 41.7, 0.096, 10.4, 178, 52.5, 19.2, 25],
-        ['semiconductors-assembly', 1219.2, 'TWN', 27.4, 58.5, 0.143, 7.0, 205, 34.3, 22.0, 31],
+        ['wind-refining', 33.4, 'DEU', 10.1, 26.0, 0.048, 20.7, 125, 50.2, 28.6, 53],
+        ['wind-components', 92.8, 'CHN', 26.6, 45.3, 0.104, 9.6, 204, 52.2, 19.6, 28],
+        ['wind-assembly', 286.1, 'CHN', 23.7, 39.7, 0.082, 12.2, 208, 48.9, 23.6, 48],
+        ['semiconductors-refining', 5.5, 'USA', 23.7, 65.7, 0.159, 6.3, 90, 65.4, 15, 45],
+        ['semiconductors-components', 124.4, 'CHN', 16.2, 41.7, 0.096, 10.4, 178, 52.5, 30.7, 25],
+        ['semiconductors-assembly', 1219.2, 'TWN', 27.4, 58.5, 0.143, 7.0, 205, 34.3, 49.4, 31],
       ];
       expect(rows).toHaveLength(42);
       expect(model.cells.filter((c) => c.has_trade).map((c) => c.slug).sort()).toEqual(rows.map((r) => r[0]).sort());
@@ -562,10 +565,12 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
       for (const c of manufacturing) expect(S('trade.exports', 'cell', c.slug, 2024).W, c.slug).toBeLessThanOrEqual(ev.W);
       // investment: the Components and Assembly copies counted once
       const inv = h('investment');
-      expect([Math.round(inv.values.total_bn), pct1(inv.values.china), pct1(inv.values.coalition)]).toEqual([1875, 44.2, 52.3]);
-      // 58 summary rows of the cells' primary measures with country data (57 before the 2026-10-30 basket gave Solar
-      // Extraction its trade); 7 have one holder at 50% or more
-      expect([h('concentration').values.n, h('concentration').values.n_total]).toEqual([7, 58]);
+      expect([Math.round(inv.values.total_bn), pct1(inv.values.china), pct1(inv.values.coalition)]).toEqual([1875, 44.2, 53.3]);
+      // 63 summary rows of the cells' primary measures with country data (57 before the 2026-10-30 basket gave Solar
+      // Extraction its trade; 58 before the CIM plant-capacity rows of 2026-11-25 added five capacity rows, Solar
+      // Refining / Components / Assembly and Batteries Components / Assembly, all China at 50% or more); 12 have one
+      // holder at 50% or more (7 before)
+      expect([h('concentration').values.n, h('concentration').values.n_total]).toEqual([12, 63]);
       const res = h('reserves');
       expect([res.labels.geo, res.labels.item, pct1(res.values.share)]).toEqual(['ZAF', 'pgms', 82.7]);
       const en = h('energy');
@@ -820,6 +825,36 @@ describe.skipIf(!HAVE)('Sector real bundle (public/data/sector)', () => {
         expect(facts.rows(pm!.v.idx, pm!.item.idx, y).filter((r) => Number.isFinite(r.value)).length).toBeGreaterThan(50);
         expect(countryFamilies(model, I('cell', slug))).toContain('consumption');
       }
+    });
+  });
+
+  // Explorer usability pass 2026-11-25 (docs/EXPLORER_USABILITY_PASS.md issue 4): Solar Refining led with export
+  // value (Germany 12%, China 8.7%); it now leads with operational polysilicon capacity (CIM, 2025), and the
+  // capacity rows of the Solar and Batteries Components and Assembly stages are one product each (wafers, modules;
+  // battery cells, battery modules), held by economies, instead of the one IEA share both stages carried.
+  describe('usability pass 2026-11-25: Solar Refining polysilicon capacity, one product per sector (CIM)', () => {
+    it('Solar Refining leads with polysilicon capacity: China first, named by "Who is strongest today?" and the chain answer', () => {
+      const cell = I('cell', 'solar-refining');
+      expect(primaryMeasure(model, cell)?.v.id).toBe('manufacturing.capacity_now');
+      const basis = lensBasis(model, facts, cell, 'members', tradeOf(cell.idx), null);
+      expect(basis?.year).toBe(2025);
+      expect(model.geos[basis!.conc.top1!.geo].code).toBe('CHN');
+      expect(pct1(basis!.conc.top1!.share)).toBe(97.3);
+      const s = strongestOf(model, basis);
+      expect(strongestSentence(s.names, strongestWhat(basis, 'Solar', 'Refining'), basis!.year, s.shares, basis!.conc.n)).toBe('China, the United States and Malaysia hold the largest shares of plant capacity in solar refining (2025).');
+      const lines = chainLinesOf(model, ladderEntries(model, facts, 'solar', 'members'));
+      const t = chainAnswerText(chainAnswer(lines, []), 'solar');
+      expect(t.concentration?.find((c) => c.stage === 'refining')?.text).toBe('China holds 97% of refining plant capacity (2025).');
+      expect(t.limits).not.toContain('Refining is measured by export value only');
+    });
+
+    it('Solar and Batteries Components / Assembly: the capacity row is a different product at each stage, held by an economy', () => {
+      const cap = (tech: 'solar' | 'batteries') =>
+        ladderEntries(model, facts, tech, 'members')
+          .filter((e) => e.v.family === 'capacity')
+          .map((e) => `${e.stage} ${e.v.id} ${model.geos[e.conc.top1!.geo].code} ${pct1(e.conc.top1!.share)}`);
+      expect(cap('solar')).toEqual(['refining manufacturing.capacity_now CHN 97.3', 'components manufacturing.capacity_now CHN 97.8', 'assembly manufacturing.capacity_now CHN 81.6']);
+      expect(cap('batteries')).toEqual(['components manufacturing.capacity_now CHN 79.9', 'assembly manufacturing.capacity_now CHN 84.6']);
     });
   });
 });

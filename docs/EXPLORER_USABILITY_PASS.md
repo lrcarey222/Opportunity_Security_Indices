@@ -120,8 +120,23 @@ AIB measures; no-evidence stages collapsed on technology pages; decision-brief C
    bundle (Jordan 31, Russia 29, Zimbabwe 21 ...; lithium minerals are all Zimbabwe to Malaysia, Viet Nam, Turkey,
    Thailand; Russia to Japan nickel intermediates and Russia to France uranium conversion). Roles and partners are
    trusted-only; recovered supply is not.
-2. **Two meanings of "allied".** Allied demand is the 59-economy coalition (`nDemandScope`); roles, theses and
-   partner naming use the 64-economy trusted network.
+2. **Two meanings of "allied".** *Resolved 2026-11-25.* Allied demand was the 59-economy coalition
+   (`nDemandScope`) while roles, theses and partner naming used the 64-economy trusted network. Now the AIB demand
+   scope takes `treat_as_allied` (`config/aib.yml` `include_treat_as_allied`; bundle `nDemandScope` 64), and every
+   view decodes tiers and allied groupings with `allianceTier()` / `allianceGroup()` (`posture/trustedNetwork.ts`):
+   Country tag, Country landing lists, map and picker, the trusted-network card, posture tier column, Partnerships
+   lens, Agreements depth matrix, AIB header tile, glossary, review brief. The Sector export files the five with the
+   trusted partners (`sector_geo(treat_as_allied=)`, scripts/87 reads `config/aib_strategic_layer.yml`), so every
+   share split and the R/TS summary parity use the same set; group labels read "Trusted core" / "Trusted partners".
+   Partner shares rise where the five trade: semiconductor assembly 22.0% -> 49.4% (Taiwan), oil extraction
+   29.4% -> 37.9% (UAE), Batteries Refining 30.5% -> 34.4%. Not changed: the Legacy OSI views (Partners, Space) keep
+   the old coalition-tier colours. The posture engine now uses the same 64 economies: scripts/32 -> 33 were rerun
+   with the 64-economy demand scope on the same inputs as the posture's AIB run (2024 trade, `aib_inputs.rds` of 30
+   Oct), then scripts/26 -> 91. The posture header reads `aib_header.members` 59 -> 64 (31 core + 28 partners + 5
+   treated as allied; scripts/91 reads `allied.treat_as_allied`) and the division table's allied set 61 -> 64
+   (adds Slovenia, Iceland, the UAE). No cell changes choice, posture or partner recommendation; 3 of 39 division
+   nodes change their gap, and covered priority steps go 76.7% -> 80.0%. scripts/26 now also reads `treat_as_allied` itself and warns when its AIB run leaves one out. Reproduce: the 64-scope posture AIB run is local (git-ignored `data/processed/outputs_p64/aib`, built from stamps `outputs/aib/aib_inputs.rds`); a rerun from the stamps store as it stands would read the 61-economy run. Details and result changes:
+   `docs/PARTNER_ELIGIBILITY_AND_FRAMING.md` section 9.
 3. **Missing evidence read as evidence.** 20 Batteries Recovery cells are Catch Up with no competitive position or
    evidence grade (pathway "yes" alone); 78 Partner cells have no competitive position; 385 supply-stage cells are
    high confidence with weak or no capability evidence, mostly Watch with position 0 and share 0. Of 4,900 cells at
@@ -165,3 +180,16 @@ AIB measures; no-evidence stages collapsed on technology pages; decision-brief C
   Solar and Green Hydrogen technology pages, the United States country page, the United States-Japan pair view, and
   the Battery Materials & Cells compact page. No recommendation, count or classification changed; the
   missing-evidence cases read as insufficient evidence.
+
+## Issue 4 follow-up: Solar Refining measure (2026-11-25)
+- Solar Refining now leads with operational polysilicon capacity (new facts measure `manufacturing.capacity_now`,
+  Clean Investment Monitor, 2025, the operational rows of the existing CIM capacity series): China 97.3%, then the
+  United States and Malaysia. Before, it led with export value (Germany 12%, China 8.7%).
+- The IEA extract behind "Share of global manufacturing capacity" has one figure per technology (no polysilicon,
+  wafer, cell or module rows), so it cannot be split. Instead the same CIM measure gives the Solar and Batteries
+  Components and Assembly stages one product each: wafers 97.8% and modules 81.6% (Solar), battery cells 79.9% and
+  battery modules 84.6% (Batteries), all China, held by economies (not "China (IEA)"). The chain ladder and chain
+  answer read these rows; the IEA share stays in the Manufacturing capacity section as before.
+- Shares are of the economies CIM lists (basis sum_listed): plants CIM does not track are not counted, which can
+  understate non-Chinese legacy polysilicon capacity. Not done: Wind Components / Assembly still carry the one IEA
+  figure (CIM has blades and nacelles), and silicon is still linked at Batteries Refining.

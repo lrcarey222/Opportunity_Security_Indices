@@ -14,6 +14,9 @@
 //   * a region or entity in group 'na' (an IEA EV region whose members span groups: North America,
 //     Other Asia Pacific, Rest of World) is a holder (ranked as a region), but its share counts as
 //     unattributed in the group split; the HHI lower-bound flag reads the source residual only.
+//   * the groups are the data's (dims.geo group, R sector_dims): meta.summary is checked against this
+//     recomputation within 1e-12, so the one allied set (treat_as_allied counted with the trusted partners,
+//     posture/trustedNetwork.ts allianceGroup) has to come from the R export, not a client remap.
 
 import type { SplitPart, WorldBasis } from '../contract.ts';
 import type { FactRow } from '../data/facts.ts';
