@@ -84,7 +84,11 @@ cache <- local({
 
 # ---- 1. vintages ------------------------------------------------------------------------------------------------
 # (system2 passes arguments unquoted: keep each one free of spaces)
-log <- git("log", "--reverse", "--format=%H", "--", file.path(posture_dir, "manifest.json"))
+# --first-parent: this branch's own line of shipped bundles. A merge that brings in another branch's bundle is one
+# step on that line (the merge commit carries it); the other branch's intermediate exports are not interleaved, which
+# would make parallel work read as changes flipping back and forth. (The default path-limited walk is wrong too: at a
+# merge that kept the incoming bundle it follows only that side and drops this branch's own vintages.)
+log <- git("log", "--first-parent", "--reverse", "--format=%H", "--", file.path(posture_dir, "manifest.json"))
 cands <- lapply(log, function(x) list(commit = x, short = substr(x, 1, 8), worktree = FALSE))
 if (include_worktree) cands <- c(cands, list(list(commit = NA_character_, short = "worktree", worktree = TRUE)))
 
