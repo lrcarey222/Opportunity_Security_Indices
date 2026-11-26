@@ -166,7 +166,24 @@ This is the critical distinction, so attribution is explicit and conservative.
 - Its effect reaches the engine as changed input files.
 - The raw-input stamp shows whether any source file changed too.
 
-A **bridge vintage** is the *new* method run on the *previous* inputs. It is the counterfactual that makes the split exact. `posture_compare()` accepts one now. Producing one requires the engine's input tables for the earlier vintage, which is the next slice.
+A **bridge vintage** is the *new* method run on the *previous* inputs: the counterfactual that makes the split exact.
+
+**How a bridge is produced:**
+
+1. **Input store.** Every normal scripts/26 run copies each ledger file into `data/vintages/inputs/<md5[1:2]>/<md5>.<ext>`. This store is content-addressed and git-ignored. A file is stored again only when its content changes, and files over `input_store.max_file_mb` are skipped.
+2. **Bridge run.** `OPSI_BRIDGE=<vintage id | manifest JSON> Rscript scripts/26_build_strategic_position.R` runs the current engine on that vintage's inputs:
+   - The engine's data directories (outputs, processed, raw, diagnostics) move into a sandbox. The default is `outputs/change_layer/bridge/<inputs id>`, overridable with `OPSI_BRIDGE_DIR`.
+   - The sandbox is filled from the store, so `file.exists`, newest-file resolution and caches all see the old data, and nothing live is overwritten.
+   - Old inputs outside those directories, such as reference tables in the repository, are served from the store by redirecting the read.
+   - Any other data read is a **leak**: the run read something the previous vintage did not.
+   - `bridge_report.json` records `pure` (no leaks, nothing missing from the store), the counts and the method fingerprint the bridge ran with.
+3. **Ingest.** `Rscript scripts/45_build_posture_vintages.R --bridge <sandbox>` stores the bridge as `data/vintages/posture/bridges/<prev>__<cur>.csv.gz`, alongside `bridges.json`.
+   - `prev` is the vintage whose ledger matches; `cur` is the latest vintage built with the bridge's method.
+   - From then on, that pair's comparison uses the bridge, but only while it is pure and its inputs and method still match (`bridge_usable`).
+
+A vintage exported before input stamping has no ledger, so it cannot be bridged; the setup refuses with that reason.
+
+**Evidence basis.** scripts/91 also writes each cell's dominant variable-stage evidence status (exact, split, shared, proxy, tech-wide, no data) into the core as `cells.es`. The vintage carries it as `evidence_status`. A change of basis, such as proxy → exact, is an `evidence` change even when the quality band holds.
 
 ## 5. How earlier vintages stay reproducible
 

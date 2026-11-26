@@ -1,9 +1,11 @@
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { ChangeSinceBlock } from '../ChangeSince.tsx';
 import { ChangesTable } from '../ChangesView.tsx';
 import { changesForCell, checkChangesBundle, checkChangesManifest, detailWindow, latestPair, scoreLines, type ChangeRecord } from '../contract.ts';
+
+afterEach(cleanup);
 
 const side = (o: Partial<ChangeRecord['before']> = {}): ChangeRecord['before'] => ({
   choice: 'partner',
@@ -95,6 +97,16 @@ describe('ChangeSinceBlock', () => {
     expect(within(block).getByTestId('change-line-evidence').textContent).toContain('Medium → High');
     expect(within(block).getByTestId('change-method').textContent).toContain('unchanged');
     expect(within(block).getByTestId('change-impacts').textContent).toContain('transformer-plant-cancelled');
+  });
+  it('shows a change of evidence basis even when the quality band holds', () => {
+    const r = rec({ types: ['evidence'], before: side({ evidenceStatus: 'proxy' }), after: side({ evidenceStatus: 'exact' }) });
+    render(
+      <MemoryRouter>
+        <ChangeSinceBlock b={bundle([r])} iso3="USA" tech="Electric Grid" stage="Components" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('change-line-evidence-basis').textContent).toContain('Proxy → Exact (stage-specific)');
+    expect(screen.queryByTestId('change-line-evidence')).toBeNull();
   });
   it('says when the last change is older than the latest pair', () => {
     render(

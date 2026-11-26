@@ -23,7 +23,19 @@ export interface ChangeSide {
   share: number | null;
   confidence: string | null;
   evidence: string | null;
+  /** dominant evidence basis (exact, split, shared, proxy, tech_wide, no_data); null before the bridge-runs slice */
+  evidenceStatus?: string | null;
 }
+
+export const EVIDENCE_STATUS_LABEL: Record<string, string> = {
+  exact: 'Exact (stage-specific)',
+  split: 'Split (stage-specific)',
+  shared: 'Shared across stages',
+  proxy: 'Proxy',
+  tech_wide: 'Technology-wide',
+  no_data: 'No data',
+};
+export const evidenceStatusLabel = (s: string | null | undefined): string => (s ? (EVIDENCE_STATUS_LABEL[s] ?? s) : 'n/a');
 
 export interface ChangeRecord {
   /** aib:posture:<ISO3>:<tech-slug>:<stage-slug> */

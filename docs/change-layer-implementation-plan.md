@@ -158,32 +158,70 @@ is unit-tested, and both scripts parse.
 **One-time effect.** Instrumenting scripts/26 changes the engine fingerprint, so the first stamped export will read
 "method changed" against history. Every export after it is attributable.
 
+## Slice 3: bridge runs and evidence basis (2026-11-25, done)
+
+**What changed:**
+
+- **Input store.** scripts/26 copies every ledger file into a content-addressed, git-ignored store (`data/vintages/inputs/`, configured by `input_store` in `config/change_layer.yml`).
+  - A file is copied to a temp name and kept only if its md5 still matches.
+  - Re-runs copy nothing new unless an input's content changed.
+- **Bridge mode.** `OPSI_BRIDGE=<vintage id | manifest JSON>` makes scripts/26 run on that vintage's inputs:
+  - The data directories move into a sandbox filled from the store. Writes cannot reach live outputs, and file checks, newest-file resolution and the two caches all see the old data.
+  - Reads outside the data directories are redirected to the store.
+  - Any other data read is reported as a leak.
+  - `bridge_report.json` records `pure`, the counts and the method fingerprint.
+- **Ingest.** `scripts/45 --bridge DIR` stores the bridge table and its metadata under `data/vintages/posture/bridges/`. Comparisons use it while it is pure and still matches the pair's inputs and method.
+- **Evidence basis.** `evidence_status_from_shares()` takes the dominant VSE status from the `_cp` evidence shares:
+  - scripts/91 writes it as `cells.es`, adding about 56 KB raw to the core;
+  - vintages carry `evidence_status`;
+  - a change of basis is an `evidence` change;
+  - the drawer shows "Evidence basis: Proxy → Exact (stage-specific)".
+  - Historical vintages have no basis, because their cores predate the column.
+- **Layer version 3.** Archived vintages are rewritten with the new column.
+
+**Validation:**
+
+- R tests: 107 expectations, all passing. New coverage:
+  - evidence basis and its explanation;
+  - sandbox nesting and the bridge plan;
+  - an end-to-end bridge in a temporary repository, where a fake engine runs normally (ledger plus store), the live inputs change, and the bridge re-reads the old inputs from the store (materialized and redirected), writes only in its sandbox and leaves live output untouched;
+  - a read of a new file making the bridge impure;
+  - error paths.
+- `test-posture-export.R` passes.
+- Change-layer vitest: 10 passing.
+- All touched scripts parse.
+
+**Not verified here:**
+
+- A real bridge of scripts/26. It needs a stamped vintage, and none exists until the first real scripts/26 → scripts/91 run with this code.
+- The real input store's size. It depends on the largest engine inputs, such as the Comtrade dyads CSV; the default cap is 2 GB per file.
+
 ## Remaining technical debt
 
-1. **No bridge vintages yet.** A method change on changed data stays `mixed`.
-2. **Pre-engine pipeline code (scripts/10–25) is not fingerprinted.** Its effect shows as changed engine inputs, so a
+1. **Pre-engine pipeline code (scripts/10–25) is not fingerprinted.** Its effect shows as changed engine inputs, so a
    `real_world` pair can still include upstream processing changes. The raw-input stamp shows whether source files
    changed.
-3. **The ledger depends on the traced readers.** A reader added later (for example `arrow`, `jsonlite::read_json` or
+2. **The ledger depends on the traced readers.** A reader added later (for example `arrow`, `jsonlite::read_json` or
    `haven`) would be missed; add it to `CHANGE_LEDGER_TRACES`. The `upstream` list must track scripts/26's `source()`
    list by hand.
-4. **The provenance map is curated** (`config/change_layer.yml` sources). It names likely inputs; it is not computed
+3. **The provenance map is curated** (`config/change_layer.yml` sources). It names likely inputs; it is not computed
    lineage.
    - The ledger now holds the real input files per vintage.
    - Next step: link changed fields to the changed ledger files.
-5. **Evidence is the 4-band `stage_evidence_quality_cp` only.** The VSE shares (exact, split, shared, proxy) are not in
-   the core.
-6. **Budget and size.** No dedicated `check-budget.mjs` line. The bundle repeats keys per record (about 4 MB raw,
+4. **The evidence basis starts with the next export.** Historical vintages read `n/a`.
+5. **Bridges are produced by hand.** `OPSI_BRIDGE` and then `scripts/45 --bridge`. Nothing schedules one when a pair
+   lands as `mixed`, and stale bridges are kept but ignored.
+6. **The input store has no pruning.** It grows with every distinct input version.
+7. **Budget and size.** No dedicated `check-budget.mjs` line. The bundle repeats keys per record (about 4 MB raw,
    150 KB gzipped); a columnar encoding would cut it by about 5×.
-7. **Scope.** The Sector, Partnership and Compact cards and the Country "Bottom line" do not yet show changes.
+8. **Scope.** The Sector, Partnership and Compact cards and the Country "Bottom line" do not yet show changes.
 
 ## Recommended next slices
 
-1. **Bridge runs and evidence specificity.**
-   - Snapshot the ledger's input files content-addressed under `data/vintages/inputs/`, deduped by md5. They live
-     outside git when large; the ledger already names them.
-   - Add `scripts/26 --bridge <vintage>` to rerun the current engine on those inputs.
-   - Carry `evidence_specificity` and the dominant VSE status into the vintage.
+1. **The first stamped run, end to end.**
+   - Run scripts/26 → scripts/91 on the live pipeline, then commit the first stamped vintage.
+   - Run a bridge from it after the next engine change, and commit that bridge.
+   - Check the store size, and add a pruning rule that keeps the inputs of vintages still referenced.
 2. **The Intelligence bridge, end to end.**
    - NEIS Intelligence migration `010_analytical_impacts.sql` and `metadata.iso3` on geography terms.
    - A rule-based proposer over `config/neis_intelligence_crosswalk.yml`, plus a review queue mirroring

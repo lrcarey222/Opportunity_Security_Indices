@@ -11,6 +11,7 @@ import {
   changesForCell,
   choiceLabel,
   detailWindow,
+  evidenceStatusLabel,
   fmtScore,
   fmtShare,
   latestPair,
@@ -27,7 +28,9 @@ function Lines({ c }: { c: ChangeRecord }) {
   const rows: { k: string; v: string; testid: string }[] = [];
   if (c.types.includes('recommendation')) rows.push({ k: 'Recommendation', v: `${choiceLabel(c.before.choice)} → ${choiceLabel(c.after.choice)}`, testid: 'rec' });
   for (const s of scoreLines(c)) rows.push({ k: s.label, v: `${fmtScore(s.from)} → ${fmtScore(s.to)}${s.crossed ? ' (crossed the bar)' : ''}`, testid: s.label.toLowerCase() });
-  if (c.types.includes('evidence')) rows.push({ k: 'Evidence', v: `${cap(c.before.evidence)} → ${cap(c.after.evidence)}`, testid: 'evidence' });
+  if (c.types.includes('evidence') && c.before.evidence !== c.after.evidence) rows.push({ k: 'Evidence', v: `${cap(c.before.evidence)} → ${cap(c.after.evidence)}`, testid: 'evidence' });
+  if (c.types.includes('evidence') && c.before.evidenceStatus && c.after.evidenceStatus && c.before.evidenceStatus !== c.after.evidenceStatus)
+    rows.push({ k: 'Evidence basis', v: `${evidenceStatusLabel(c.before.evidenceStatus)} → ${evidenceStatusLabel(c.after.evidenceStatus)}`, testid: 'evidence-basis' });
   if (c.types.includes('confidence')) rows.push({ k: 'Confidence', v: `${cap(c.before.confidence)} → ${cap(c.after.confidence)}`, testid: 'confidence' });
   if (c.types.includes('data') && !rows.length) rows.push({ k: 'Export share', v: `${fmtShare(c.before.share)} → ${fmtShare(c.after.share)}`, testid: 'share' });
   return (
@@ -51,6 +54,7 @@ function SideTable({ c }: { c: ChangeRecord }) {
     ['Market size', fmtScore(c.before.market), fmtScore(c.after.market)],
     ['Export share', fmtShare(c.before.share), fmtShare(c.after.share)],
     ['Evidence', cap(c.before.evidence), cap(c.after.evidence)],
+    ['Evidence basis', evidenceStatusLabel(c.before.evidenceStatus), evidenceStatusLabel(c.after.evidenceStatus)],
     ['Confidence', cap(c.before.confidence), cap(c.after.confidence)],
   ];
   return (
