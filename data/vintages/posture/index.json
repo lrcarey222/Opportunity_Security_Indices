@@ -704,9 +704,9 @@
       "git_commit": "526678a1",
       "commit_dirty": false,
       "stamp_source": "bundle",
-      "provisional": true,
+      "provisional": false,
       "core_file": "dashboard/public/data/posture/posture-core.ee052145.json",
-      "core_commit": null,
+      "core_commit": "1aa69ad4",
       "method": {
         "id": "m-aa1e5644",
         "engine": "m-89f8abd6",
