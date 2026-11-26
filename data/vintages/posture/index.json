@@ -800,9 +800,9 @@
       "git_commit": "d982afe2",
       "commit_dirty": false,
       "stamp_source": "bundle",
-      "provisional": true,
+      "provisional": false,
       "core_file": "dashboard/public/data/posture/posture-core.b0a46b5a.json",
-      "core_commit": null,
+      "core_commit": "fa907df4",
       "method": {
         "id": "m-aa1e5644",
         "engine": "m-89f8abd6",
