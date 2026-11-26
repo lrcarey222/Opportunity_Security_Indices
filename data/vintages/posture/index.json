@@ -539,9 +539,9 @@
       "git_commit": "e738cb40-dirty",
       "commit_dirty": true,
       "stamp_source": "bundle",
-      "provisional": true,
+      "provisional": false,
       "core_file": "dashboard/public/data/posture/posture-core.576eadf8.json",
-      "core_commit": null,
+      "core_commit": "b865610c",
       "method": {
         "id": "m-f2ee13f3",
         "engine": "m-9ec9a88a",
