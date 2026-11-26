@@ -97,12 +97,15 @@ roles:
                                 #   true restores the earlier rule (non-allied major suppliers on the 3 supply roles).
 
 # ---- The allied set -------------------------------------------------------------------------------------
-# The strategic layer's allied economies are the model's demand scope (the coalition tiers of
-# data/processed/coalition_tbl.rds) plus `treat_as_allied`: economies outside those tiers that the
+# The strategic layer's allied economies (the trusted network) are the coalition tiers of
+# data/processed/coalition_tbl.rds plus `treat_as_allied`: economies outside those tiers that the
 # institutional slots treat as allies (role eligibility, coalition members, investment hosts, critical
 # partners, core countries, theses). A judgement, reviewable here (2026-10-21 review: Taiwan, 29.5% of allied
-# integrated-circuit supply, and Switzerland read as "outside the alliance"). Their own demand stays
-# outside the scope: the stress tests do not protect it, so they hold no demand role.
+# integrated-circuit supply, and Switzerland read as "outside the alliance").
+# 2026-11-25 (user decision: "allied" is one set, everywhere): this list is also the model's demand scope
+# beyond the coalition tiers (config/aib.yml demand_scope: include_treat_as_allied), so the stress tests
+# protect their demand and they can hold demand roles like any ally. This file is the one place the list
+# is kept (the Explorer's dashboard/src/posture/trustedNetwork.ts mirrors it, checked by a test).
 # 2026-11-23 (user decision): Slovenia, Iceland and the United Arab Emirates added; they sit outside the coalition
 # tiers (below the GDP floor of the agreement route, or no partner route) and so lost their roles when roles
 # became trusted-only (roles.non_allied_roles: false).

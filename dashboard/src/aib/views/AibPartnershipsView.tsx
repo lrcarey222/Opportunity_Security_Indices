@@ -1221,7 +1221,7 @@ function GeopoliticalTab({ f, onKind }: TabProps) {
     const tier = tierOf(iso);
     today = {
       content: (
-        <LensCard id="geo-today" title={`${name(iso)}: agreements and UN votes`} sub={`${name(iso)} is ${roster ? tierWords(tier) : 'in the roster'} today. In the UN General Assembly it votes in the same bloc as ${plural(counts.same, 'economy', 'economies')}, and in the opposite bloc from ${counts.opposite}.`}>
+        <LensCard id="geo-today" title={`${name(iso)}: agreements and UN votes`} sub={`${name(iso)} is ${roster ? tierWords(tier, iso) : 'in the roster'} today. In the UN General Assembly it votes in the same bloc as ${plural(counts.same, 'economy', 'economies')}, and in the opposite bloc from ${counts.opposite}.`}>
           {tiesNow.length ? (
             <RankedNames
               rows={tiesNow}
@@ -1266,18 +1266,19 @@ function GeopoliticalTab({ f, onKind }: TabProps) {
 
   // OSI: the allied coalition and Friendshore's alignment part
   let osi: LensPanelSpec;
-  if (man.status === 'loading') osi = { content: <Loading label="Loading the coalition membership" /> };
-  else if (!roster) osi = { empty: 'The coalition membership could not be loaded (the Countries data is not available).' };
+  if (man.status === 'loading') osi = { content: <Loading label="Loading the trusted network" /> };
+  else if (!roster) osi = { empty: 'The trusted network could not be loaded (the Countries data is not available).' };
   else {
     const core = coalition.filter((c) => c.tier === 'core');
     const partner = coalition.filter((c) => c.tier === 'partner');
+    const allied = coalition.filter((c) => c.tier === 'allied');
     osi = {
       content: (
         <div className="space-y-4">
           <LensCard
             id="geo-osi"
-            title="The allied coalition"
-            sub={`${plural(core.length, 'core member')} and ${plural(partner.length, 'partner')}: the club the indices treat as allies, reached through UN-vote alignment, an economic-security agreement or a supplier route.${iso ? ` ${name(iso)} is ${tierWords(tierOf(iso))}.` : ''}`}
+            title="The trusted network"
+            sub={`${plural(core.length, 'core member')}, ${plural(partner.length, 'partner')} and ${allied.length} treated as allied: the one set the Explorer calls allied, reached through UN-vote alignment, an economic-security agreement, a supplier route or the allied analysis.${iso ? ` ${name(iso)} is ${tierWords(tierOf(iso), iso)}.` : ''}`}
           >
             <p>
               <span className="text-paper">Core members:</span> {core.map((c) => c.name).join(', ') || 'none'}.
@@ -1285,8 +1286,11 @@ function GeopoliticalTab({ f, onKind }: TabProps) {
             <p>
               <span className="text-paper">Partners:</span> {partner.map((c) => c.name).join(', ') || 'none'}.
             </p>
+            <p>
+              <span className="text-paper">Treated as allied:</span> {allied.map((c) => c.name).join(', ') || 'none'}.
+            </p>
             <p className="text-xs text-paper-mute">
-              Partner recommendations and roles use the <Term id="trusted_network">trusted network</Term>: this coalition plus the economies the analysis treats as allied.
+              Partner recommendations, roles and the stress tests all use this <Term id="trusted_network">trusted network</Term>: its demand is what the stress tests protect.
             </p>
           </LensCard>
           {iso && (
@@ -1301,7 +1305,7 @@ function GeopoliticalTab({ f, onKind }: TabProps) {
                   nameOf={(r) => name(r.partner_iso)}
                   href={(r) => toCountry(r.partner_iso)}
                   value={(r) => fmtScore(r.value)}
-                  note={(r) => `${tierWords(tierOf(r.partner_iso))}; ${alignmentWords(alignmentOf(ties.ties as Ties, iso, r.partner_iso))}`}
+                  note={(r) => `${tierWords(tierOf(r.partner_iso), r.partner_iso)}; ${alignmentWords(alignmentOf(ties.ties as Ties, iso, r.partner_iso))}`}
                 />
               ) : (
                 <p className="text-paper-mute">No Friendshore ranking for {name(iso)} in this build.</p>

@@ -202,7 +202,7 @@ describe.skipIf(!haveFixture(SYNTHETIC_DIR))('/aib/partnerships: the three lense
     const card = await within(lens('aib')).findByRole('region', { name: 'Compact coalitions' }, { timeout: 15_000 });
     expect(card.textContent).toContain(`${name(iso)} sits in the coalition of ${counts.get(iso)} compacts under Managed Interdependence`);
     const osi = await within(lens('osi')).findByTestId('geo-osi', {}, { timeout: 15_000 });
-    expect(osi.textContent).toMatch(/core members? and \d+ partners?/);
+    expect(osi.textContent).toMatch(/core members?, \d+ partners? and \d+ treated as allied/);
     noAcronyms();
   });
 });

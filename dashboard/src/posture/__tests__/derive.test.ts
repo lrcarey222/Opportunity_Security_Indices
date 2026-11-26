@@ -226,8 +226,8 @@ describe('the counts of a page tile and the AIB header tiles', () => {
   });
   it('the three AIB metrics as tiles', () => {
     expect(aibHeaderTiles(core)).toEqual([
-      { id: 'core', label: 'Core coalition members', value: '2', sub: '3 coalition members in all (the demand scope); the trusted network adds five economies treated as allied' },
-      { id: 'covered', label: 'Priority steps with a credible trusted supplier and backup', value: '25%', sub: 'of 4 supply-chain steps coalition members rely on partners to supply or secure' },
+      { id: 'core', label: 'Trusted network', value: '3', sub: '2 core members, 1 partner and 0 treated as allied: the economies whose demand the stress tests protect' },
+      { id: 'covered', label: 'Priority steps with a credible trusted supplier and backup', value: '25%', sub: 'of 4 supply-chain steps countries rely on partners to supply or secure' },
       { id: 'gaps', label: 'Remaining allied gaps', value: '3', sub: 'priority steps that still have a gap' },
     ]);
   });

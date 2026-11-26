@@ -3,6 +3,7 @@
 // number (A9); these only select, order and lay out what the sheet carries.
 
 import { stageShort } from '../../lib/stages.ts';
+import { allianceTier } from '../../posture/trustedNetwork.ts';
 import {
   cellOf, COUNTRY_TECHS, noEsCellsOf, THIRDS, type CellFacts, type CountryEntry, type CountryManifest, type Driver, type DriversDoc,
   type FactSheet, type LegacyCorner, type NipoPolicy, type PartnerRow, type Third,
@@ -11,7 +12,7 @@ import { LEGACY_CORNERS } from '../contract.ts';
 
 // ---- the roster ------------------------------------------------------------------------------------
 
-export const GROUP_LABEL = { core: 'Coalition core', partner: 'Coalition partners', none: 'Other economies' } as const;
+export const GROUP_LABEL = { core: 'Trusted network: core', partner: 'Trusted network: partners and treated as allied', none: 'Other economies' } as const;
 
 export interface RosterGroups {
   core: CountryEntry[];
@@ -23,14 +24,18 @@ const byName = (a: CountryEntry, b: CountryEntry) => a.name.localeCompare(b.name
 
 export function rosterGroups(m: CountryManifest): RosterGroups {
   const g: RosterGroups = { core: [], partner: [], none: [] };
-  for (const c of m.countries) g[c.tier].push(c);
+  // the one allied set: a treat_as_allied economy outside the tiers is listed with the partners
+  for (const c of m.countries) {
+    const t = allianceTier(c.iso3, c.tier);
+    g[t === 'allied' ? 'partner' : t].push(c);
+  }
   g.core.sort(byName);
   g.partner.sort(byName);
   g.none.sort(byName);
   return g;
 }
 
-/** Options for the shared CountrySelect, grouped Coalition core / partners / other. */
+/** Options for the shared CountrySelect, grouped by the trusted network: core / partners and treated as allied / other. */
 export function countryOptions(m: CountryManifest): { iso3c: string; country: string; group: string }[] {
   const g = rosterGroups(m);
   return (['core', 'partner', 'none'] as const).flatMap((t) =>

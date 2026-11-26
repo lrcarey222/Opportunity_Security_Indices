@@ -602,6 +602,22 @@ test_that("the institutional slots keep to the allied set and to economies that 
   expect_equal(st2$compact_roles$compact_role[st2$compact_roles$iso3 == "CHN" & st2$compact_roles$strategic_compact_id == "SC-A"], "Processing anchor")
 })
 
+test_that("the run's demand scope (meta$demand_iso) is the strategic layer's scope: treat_as_allied in it is one allied set", {
+  # 2026-11-25: scripts/32 records the demand scope it protected; with treat_as_allied in it (config/aib.yml
+  # demand_scope: include_treat_as_allied) the allied set and the demand scope are the same economies
+  res <- strat_fx_res()
+  res$meta$demand_iso <- sort(c(strat_fx_allied(), "CHN"))
+  cfg <- strat_layer_cfg()
+  cfg$allied$treat_as_allied <- list("CHN")
+  st <- strat_run(res = res, cfg = cfg)
+  expect_setequal(st$demand_scope, c(strat_fx_allied(), "CHN"))
+  expect_setequal(st$allied, st$demand_scope)
+  expect_length(st$treat_as_allied, 0)
+  expect_false(any(grepl("outside the model's demand scope", st$notes)))
+  # without meta$demand_iso (an older run), the coalition tiers
+  expect_setequal(strat_st$demand_scope, strat_fx_allied())
+})
+
 test_that("compact relevance, resilience and the narrative slots weigh value, not shares of small nodes", {
   cr <- strat_st$compact_roles
   # relevance: the larger of the supplier and demand contributions

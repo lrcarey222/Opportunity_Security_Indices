@@ -21,16 +21,16 @@ export const FDI_GROUP_ORDER: readonly FdiGroup[] = FDI_GROUPS;
 /** Legend words of the parent-headquarters groups (China includes Hong Kong and Macao here). */
 export const FDI_GROUP_WORDS: Record<FdiGroup, string> = {
   china: 'China (incl. Hong Kong, Macao)',
-  core: 'Coalition core',
-  partner: 'Coalition partners',
+  core: 'Trusted core',
+  partner: 'Trusted partners',
   rest: 'Rest of world',
 };
 
 /** Short words of the groups for table headers and cells. */
 export const FDI_GROUP_SHORT: Record<FdiGroup, string> = {
   china: 'China',
-  core: 'Coalition core',
-  partner: 'Coalition partner',
+  core: 'Trusted core',
+  partner: 'Trusted partner',
   rest: 'Rest of world',
 };
 

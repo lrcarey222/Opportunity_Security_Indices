@@ -475,7 +475,7 @@ export interface DivisionNode {
 
 export interface DivisionRow {
   iso3: string;
-  /** allied (demand scope), non-allied, or null when the section does not assess the economy */
+  /** allied (the trusted network, which is also the demand scope since 2026-11-25), non-allied, or null when the section does not assess the economy */
   allied: boolean | null;
   /** its compact-specific role, when the export gives one */
   role: string | null;

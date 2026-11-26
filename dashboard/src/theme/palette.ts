@@ -99,8 +99,10 @@ export const GROUP_COLOR: Record<GroupColorKey, string> = {
 /** Legend words of the groups (and of the hatched residual). */
 export const GROUP_LABEL: Record<GroupColorKey | 'unattributed', string> = {
   china: 'China',
-  core: 'Coalition core',
-  partner: 'Coalition partners',
+  // the one allied set (2026-11-25): core = the coalition's core tier; partners = its partner tier plus the
+  // economies treated as allied (posture/trustedNetwork.ts allianceGroup)
+  core: 'Trusted core',
+  partner: 'Trusted partners',
   rest: 'Rest of world',
   unattributed: 'Not attributed',
 };

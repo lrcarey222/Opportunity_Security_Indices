@@ -68,16 +68,19 @@ describe('Today and OSI helpers (synthetic ties chunk)', () => {
     ]);
   });
 
-  it('the coalition: core members first, then partners; tiers in words', () => {
+  it('the trusted network: core members first, then partners, then the economies treated as allied; tiers in words', () => {
     const c = coalitionOf([
       { iso3: 'ZZZ', name: 'Zembla', tier: 'none' },
+      { iso3: 'TWN', name: 'Taiwan', tier: 'none' },
       { iso3: 'BBB', name: 'Borduria', tier: 'partner' },
       { iso3: 'CCC', name: 'Carpania', tier: 'core' },
       { iso3: 'AAA', name: 'Avalon', tier: 'core' },
     ]);
-    expect(c.map((x) => x.iso3)).toEqual(['AAA', 'CCC', 'BBB']);
-    expect(tierWords('core')).toBe('a core member of the allied coalition');
-    expect(tierWords('none')).toBe('outside the allied coalition');
+    expect(c.map((x) => x.iso3)).toEqual(['AAA', 'CCC', 'BBB', 'TWN']);
+    expect(c.find((x) => x.iso3 === 'TWN')?.tier).toBe('allied');
+    expect(tierWords('core')).toBe('a core member of the trusted network');
+    expect(tierWords('none')).toBe('outside the trusted network');
+    expect(tierWords('none', 'TWN')).toBe('in the trusted network (treated as allied)');
   });
 });
 

@@ -106,7 +106,7 @@ export const ASSUMPTIONS: Readonly<Record<string, BriefAssumption>> = Object.fro
       ['reallocation', 'Suppliers may redirect exports', 'Suppliers may redirect exports away from buyers outside the allied group.', 'MC_018'],
       ['round_bars', 'Fixed bars turn results into a response type', 'Round-number bars on exposure, on the gap left after trade and on concentration decide which kind of response a product needs.', 'MC_019'],
       ['sibling_benchmark', 'Normal concentration is set by comparable products', 'Under Managed Interdependence, a product is compared with the other products of its customs heading; only concentration above that benchmark has to shift.', 'MC_020'],
-      ['allied_scope', 'Who the allied economies are', 'Allied demand covers 59 economies (the coalition core and its wider allied tier); any economy may supply them.', 'MC_022'],
+      ['allied_scope', 'Who the allied economies are', 'Allied demand covers the 64 economies of the trusted network (core members, partners and five economies treated as allied); any economy may supply them.', 'MC_022'],
       ['physical_limits', 'Production data limit who can add supply', 'Where production data cover at least 80% of world production, economies that do not produce cannot add supply.', null],
       ['immediate', 'Re-sourcing is immediate', 'No build times, prices or firm capacity are modelled: supply is re-sourced at once.', null],
       ['materiality', 'When joint action on a chain is material', 'Joint action on a chain is judged material when it concerns a quarter of the chain supply at risk, or US$1bn.', 'MC_021'],
@@ -536,7 +536,7 @@ function aibNodeBrief(def: Pick<CaseDefinition, 'kind' | 'key' | 'brief'>, b: De
       ...(!n?.physicalData || n.physicalData === 'none' ? ['Production outside trade is not measured for this product.'] : []),
     ],
     definitions: [
-      { term: 'Allied economies', text: 'The 59 economies of the coalition core and its wider allied tier whose demand the analysis protects.' },
+      { term: 'Allied economies', text: 'The 64 economies of the trusted network (core members, partners and five economies treated as allied) whose demand the analysis protects.' },
       { term: 'Concentration (HHI)', text: 'Herfindahl-Hirschman Index: the sum of squared supplier shares, from near 0 (many small suppliers) to 1 (one supplier).' },
       ...(scenario === 'managed' ? [{ term: 'Comparable products', text: 'The other 6-digit products of the same 4-digit customs heading, used as the benchmark for normal concentration.' }] : []),
     ],
@@ -682,7 +682,7 @@ function chainBrief(def: Pick<CaseDefinition, 'kind' | 'key' | 'brief'>, b: Deco
       'The cost of a standing arrangement and its politics are not assessed.',
     ],
     definitions: [
-      { term: 'Allied economies', text: 'The 59 economies of the coalition core and its wider allied tier whose demand the analysis protects.' },
+      { term: 'Allied economies', text: 'The 64 economies of the trusted network (core members, partners and five economies treated as allied) whose demand the analysis protects.' },
       { term: 'Existing trade links', text: 'Supplier-buyer pairs that already trade the product; after a shock each may grow to at most twice its size.' },
       { term: 'Standing multi-country arrangement', text: 'A lasting agreement among several governments covering investment, offtake, stockpiles and trade rules for a supply chain.' },
     ],
@@ -807,7 +807,7 @@ function partnershipBrief(def: Pick<CaseDefinition, 'kind' | 'key' | 'brief'>, b
     definitions: [
       { term: 'Large supplier', text: 'An economy with 5% or more of world supply of a step, or of world exports with export specialisation.' },
       { term: 'Depends on one supplier', text: 'One supplier, or China, Russia and the other UN-voting group together, provide half or more of the economy’s imports of the step.' },
-      { term: 'Allied demand', text: 'Imports of the 59 economies of the coalition core and its wider allied tier.' },
+      { term: 'Allied demand', text: 'Imports of the 64 economies of the trusted network (core members, partners and five economies treated as allied).' },
     ],
     partnership: { a: side(isoA, A, ca), b: side(isoB, B, cb), shared_problem: shareProblem },
     compact_chain: null,

@@ -137,9 +137,12 @@ describe.skipIf(!HAVE_REAL)('reasoning of the shipped campaign', () => {
     expect(mag.steps.map((s) => s.id)).toEqual(expect.arrayContaining(['exposure', 'gap', 'concentration', 'coverage', 'dividend', 'variants']));
     expect(mag.steps.find((s) => s.id === 'variants')!.level).toBe('Same');
     const gra = reason('aib_node', { node: 'graphite-electrodes', scenario: 'decoupling' }, decoded);
-    expect(gra.alternatives.map((a) => a.value)).toEqual(expect.arrayContaining(['BUILD', 'LOW INTERVENTION']));
+    // 2026-11-25 demand scope = the 64-economy trusted network: graphite electrodes moved COORDINATE -> BUILD
+    expect(gra.conclusion.value).toBe('BUILD');
+    expect(gra.alternatives.map((a) => a.value)).toEqual(expect.arrayContaining(['LOW INTERVENTION']));
     const poly = reason('aib_node', { node: 'polysilicon', scenario: 'decoupling' }, decoded);
-    expect(poly.alternatives[0]).toMatchObject({ value: 'MANAGE SPECIALIZATION' });
+    expect(poly.alternatives[0]).toMatchObject({ value: 'BUILD' });
+    expect(poly.alternatives.map((a) => a.value)).toContain('MANAGE SPECIALIZATION');
     expect(poly.steps.find((s) => s.id === 'physical')).toBeTruthy();
     wellFormed({ ...poly, technical_path: '/x' });
   });
@@ -147,7 +150,7 @@ describe.skipIf(!HAVE_REAL)('reasoning of the shipped campaign', () => {
     const grid = reason('compact', { sid: 'SC-GRID', scenario: 'managed' }, decoded);
     expect(grid.conclusion.value).toBe('sectoral');
     expect(grid.alternatives[0]).toMatchObject({ value: 'narrower' });
-    expect(grid.alternatives[0].would_need).toMatch(/US\$26m above the US\$1bn line/);
+    expect(grid.alternatives[0].would_need).toMatch(/US\$123m above the US\$1bn line/);
     expect(grid.compact_chain!.map((c) => c.id)).toEqual(['coordinated_trade', 'new_capacity', 'hosts', 'coalition', 'resilience_after']);
     expect(grid.compact_chain!.find((c) => c.id === 'resilience_after')!.text).toMatch(/arithmetic by construction/);
     const nuc = reason('compact', { sid: 'SC-NUCLEAR', scenario: 'managed' }, decoded);

@@ -144,19 +144,13 @@ write_out <- function(tbl, name) {
 # ---- Demand scope, candidate-partner universe, strategic scope ------------------------------------
 all_econ <- unique(c(inputs$flows$exporter_iso, inputs$flows$importer_iso))
 registry_exclusions <- toupper(unlist(cfg$trade$exclude_from_universe))
+# R/aib/aib_scope.R. A coalition set with include_treat_as_allied also takes config/aib_strategic_layer.yml
+# allied.treat_as_allied (the one place that list is kept): the demand scope is then the trusted network.
+layer_path <- file.path(repo_root, "config", "aib_strategic_layer.yml")
+treat_as_allied <- if (file.exists(layer_path)) toupper(as.character(unlist(yaml::read_yaml(layer_path)$allied$treat_as_allied))) else character()
 resolve_set <- function(set_cfg, override) {
-  mode <- if (!is.null(override)) override else aib_or(set_cfg$mode, "global")
-  if (grepl(",", mode)) return(list(id = "configured", iso = setdiff(toupper(strsplit(mode, ",", fixed = TRUE)[[1]]), registry_exclusions)))
-  iso <- switch(mode,
-    global = all_econ,
-    coalition = {
-      if (is.null(inputs$coalition)) stop("A coalition set needs data/processed/coalition_tbl.rds.")
-      inputs$coalition$iso3[inputs$coalition$tier %in% unlist(aib_or(set_cfg$tiers, list("core", "partner")))]
-    },
-    configured = toupper(unlist(set_cfg$countries)),
-    stop("Unknown set mode: ", mode)
-  )
-  list(id = mode, iso = setdiff(iso, registry_exclusions))
+  aib_resolve_set(set_cfg, override, all_econ = all_econ, coalition = inputs$coalition, exclusions = registry_exclusions,
+                  treat_as_allied = treat_as_allied)
 }
 demand_set <- resolve_set(cfg$demand_scope, arg_value("--demand-scope"))
 partner_set <- resolve_set(cfg$candidate_partner_universe, arg_value("--partner-universe"))
@@ -1484,7 +1478,8 @@ writeLines(val_md, file.path(out_dir, "aib_validation_cases.md"), useBytes = TRU
 
 saveRDS(list(
   meta = list(built = format(Sys.time(), "%Y-%m-%dT%H:%M:%S"), universe = universe_id, demand_scope = demand_set$id,
-              candidate_universe = partner_set$id, n_demand_scope = length(demand_set$iso), headline_shock = headline_shock,
+              candidate_universe = partner_set$id, n_demand_scope = length(demand_set$iso), demand_iso = sort(demand_set$iso),
+              demand_treat_as_allied = sort(demand_set$added), headline_shock = headline_shock,
               headline_scenario = headline_scenario, headline_semantics = headline_semantics, headline_constraint = headline_constraint,
               strategic_scope = scope_mode, scope_techs = scope_techs, trade_year = inputs$meta$trade_year,
               taxonomy = input_taxonomy, dictionary_scope = aib_or(inputs$meta$dictionary_scope, NA_character_), config = cfg,

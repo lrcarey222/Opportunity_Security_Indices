@@ -43,8 +43,8 @@ export function CompactAnswer({ s, c, sid }: { s: AibStrategic; c: AibStrategicC
         {row('gap', 'Remaining gap', a.gap)}
       </dl>
       <p className="mt-1.5 text-xs text-paper-mute">
-        Under {label}. Allied demand is the demand of the <Term id="coalition">allied coalition</Term>; the countries with a role are drawn from the{' '}
-        <Term id="trusted_network">trusted network</Term>.
+        Under {label}. Allied demand and the countries with a role are both the{' '}
+        <Term id="trusted_network">trusted network</Term>: one allied set.
       </p>
       <TrustedNetworkControl className="mt-2" />
       <MemoCta className="mt-3" entry={compactMemoOf(memos, c.id)} kind="compact" dataCreated={doc.meta.created ?? null} />

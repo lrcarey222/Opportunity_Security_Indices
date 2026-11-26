@@ -3,6 +3,7 @@
 // allied coalition's tiers (the Country manifest). Pure: filters and orderings of existing fields only.
 // (The lists of partners each lens named, for the cross-lens summary, went with it on 2026-11-02.)
 
+import { allianceTier, allianceWords } from '../posture/trustedNetwork.ts';
 import { agreementHubs, alignmentOf, HUB_AGREEMENTS, sharedAgreements, type Ties } from '../views/Partners/ties.ts';
 
 /**
@@ -80,20 +81,31 @@ export function alignmentCounts(ties: Ties, iso: string): { same: number; mixed:
 export interface CoalitionTier {
   iso3: string;
   name: string;
-  tier: 'core' | 'partner';
+  /** the trusted-network tier (posture/trustedNetwork.ts allianceTier): core, partner, or treated as allied */
+  tier: 'core' | 'partner' | 'allied';
 }
 
-/** The allied coalition (core members first, then partners; by name within a tier) from a roster with tiers. */
+const TIER_ORDER = { core: 0, partner: 1, allied: 2 } as const;
+
+/**
+ * The trusted network (core members first, then partners, then the economies treated as allied; by name within a
+ * tier) from a roster with the data's coalition tiers (2026-11-25: one allied set everywhere).
+ */
 export function coalitionOf(roster: readonly { iso3: string; name: string; tier: string }[]): CoalitionTier[] {
-  return roster
-    .filter((c): c is CoalitionTier => c.tier === 'core' || c.tier === 'partner')
-    .map((c) => ({ iso3: c.iso3, name: c.name, tier: c.tier }))
-    .sort((a, b) => (a.tier === b.tier ? a.name.localeCompare(b.name, 'en') : a.tier === 'core' ? -1 : 1));
+  const out: CoalitionTier[] = [];
+  for (const c of roster) {
+    const t = allianceTier(c.iso3, c.tier);
+    if (t !== 'none') out.push({ iso3: c.iso3, name: c.name, tier: t });
+  }
+  return out.sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || a.name.localeCompare(b.name, 'en'));
 }
 
-/** "a core member of the allied coalition", "a coalition partner", "outside the allied coalition". */
-export function tierWords(tier: string | null | undefined): string {
-  return tier === 'core' ? 'a core member of the allied coalition' : tier === 'partner' ? 'a partner of the allied coalition' : 'outside the allied coalition';
+/**
+ * "a core member of the trusted network", "a partner in the trusted network", "in the trusted network (treated as
+ * allied)", "outside the trusted network". Pass the ISO3 so an economy treated as allied reads as one.
+ */
+export function tierWords(tier: string | null | undefined, iso3?: string | null): string {
+  return allianceWords(allianceTier(iso3, tier));
 }
 
 /** UN-vote alignment in words. */

@@ -100,8 +100,8 @@ export const GROUP_ORDER: readonly SplitPart[] = ['china', 'core', 'partner', 'r
 
 export const GROUP_LABEL: Record<SplitPart | 'na', string> = {
   china: 'China',
-  core: 'Coalition core',
-  partner: 'Coalition partners',
+  core: 'Trusted core',
+  partner: 'Trusted partners',
   rest: 'Rest of world',
   unattributed: 'Not attributed',
   na: 'Not attributed',
@@ -126,15 +126,15 @@ export function partOf(g: GeoInfo | null | undefined): SplitPart {
 /** Is a geo a coalition member (core or partner)? */
 export const isCoalition = (g: GeoInfo | null | undefined): boolean => !!g && (g.group === 'core' || g.group === 'partner');
 
-/** Economy options for the highlight picker: Coalition core / Coalition partners / Other economies (China first). */
+/** Economy options for the highlight picker: Trusted core / Trusted partners / Other economies (China first). */
 export function countryOptions(model: SectorModel, eu: 'members' | 'bloc'): { iso3c: string; country: string; group: string }[] {
-  const label = (g: GeoInfo) => (g.group === 'core' ? 'Coalition core' : g.group === 'partner' ? 'Coalition partners' : 'Other economies');
+  const label = (g: GeoInfo) => (g.group === 'core' ? 'Trusted core' : g.group === 'partner' ? 'Trusted partners' : 'Other economies');
   const order = (g: GeoInfo) => (g.group === 'core' ? 0 : g.group === 'partner' ? 1 : 2);
   const xs = model.countries
     .filter((g) => !(eu === 'bloc' && g.eu_member))
     .slice()
     .sort((a, z) => order(a) - order(z) || (a.code === 'CHN' ? -1 : z.code === 'CHN' ? 1 : 0) || a.name.localeCompare(z.name, 'en'))
     .map((g) => ({ iso3c: g.code, country: g.name, group: label(g) }));
-  if (eu === 'bloc' && model.eu) xs.unshift({ iso3c: model.eu.code, country: model.eu.name, group: 'Coalition core' });
+  if (eu === 'bloc' && model.eu) xs.unshift({ iso3c: model.eu.code, country: model.eu.name, group: 'Trusted core' });
   return xs;
 }
