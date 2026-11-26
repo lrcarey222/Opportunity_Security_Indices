@@ -36,8 +36,11 @@ brief:
     - {id: policy, title: "Is current policy pointed in the right direction?"}
     - {id: agenda, title: "Strategic agenda — what should {country} do next?"}
   appendix_title: "Appendix — evidence and method"
-  # Briefs are for core coalition members; these economies outside the core get one on request (2026-11-04:
-  # India, a coalition partner and a development recipient). The dashboard shows a brief for any tier.
+  # Briefs are for core members of the trusted network; these economies outside the core get one on request
+  # (2026-11-04: India, a partner in the trusted network and a development recipient). The dashboard shows a
+  # brief for any tier. 2026-11-25: "allied" always means the trusted network (core members, partners and the
+  # economies treated as allied, config/aib_strategic_layer.yml allied.treat_as_allied); cite its size and the
+  # economy's place in it from facts aib.network, never as a number in the prose.
   beyond_core: [IND]
   development_titles:
     donor: "Development strategy — build trusted capacity by helping partners Catch Up"
@@ -223,7 +226,10 @@ lint:
   # never in visible copy (dashboard/src/content/VOCABULARY.md rule 11 and the retired index views)
   banned: ["OSI", "Legacy", "legacy", "paper baseline", "NEIS baseline", "formerly", "the model", "colour", "favour", "coloured", "Strategic Index", "Economic Opportunity", "Energy Security index",
            "Energy Security score", "Partnership Strength", "allied pick", "Grow corner", "Upgrade corner", "Exposed corner", "Stable corner",
-           "quadrant", "four corners", "upstream", "midstream", "downstream", "the model names"]
+           "quadrant", "four corners", "upstream", "midstream", "downstream", "the model names",
+           # 2026-11-25: one allied set, named as the Explorer names it ("trusted network": core members, partners,
+           # treated as allied); a Sectoral Compact's "minimum coalition" is a different thing and stays allowed
+           "allied coalition", "coalition partner", "coalition partners", "coalition member", "coalition members"]
   avoid: ["optimize", "optimise", "leverage", "unlock", "synergy", "best-in-class", "game-changing", "world-class", "cutting-edge"]
   number_words: ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "dozen", "half", "third"]  # not quarter: "top quarter" is the position bar
   # digits allowed outside tokens: figure and table numbers only
@@ -237,7 +243,7 @@ sources:
     edition: "{posture_edition}"
     licence: "CC BY 4.0"
   neis_aib:
-    label: "Allied Industrial Base model: roles, compacts, trade restored and new capacity across the allied coalition, computed by the Explorer's authors"
+    label: "Allied Industrial Base model: roles, compacts, trade restored and new capacity across the trusted network (core members, partners and economies treated as allied), computed by the Explorer's authors"
     edition: "{aib_edition}"
     licence: "CC BY 4.0"
   comtrade_matrix:

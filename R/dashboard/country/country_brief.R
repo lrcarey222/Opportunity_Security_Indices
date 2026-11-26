@@ -455,6 +455,8 @@ country_brief_aib_facts <- function(aib, managed, core, core_cells, iso3, name_o
       role = country_brief_fv(r$role, tolower(r$role), A, sprintf("the economy's lead role in %s", sc_name[[r$compact]])),
       functions = country_brief_list(tolower(unlist(r$functions)), A, sprintf("the economy's functions in %s", sc_name[[r$compact]])),
       lead_step = if (!is.null(r$leadStep)) country_brief_fv(r$leadStep, tolower(r$leadStep), A, sprintf("the step the economy leads in %s", sc_name[[r$compact]])) else NULL,
+      lead_node = if (!is.null(r$leadNode)) country_brief_fv(r$leadNode, r$leadNode, A, sprintf("the product (AIB node) behind the economy's lead role in %s", sc_name[[r$compact]])) else NULL,
+      lead_basis = if (!is.null(r$leadBasis)) country_brief_fv(r$leadBasis, r$leadBasis, A, sprintf("what the lead share in %s measures", sc_name[[r$compact]])) else NULL,
       lead_share = if (!is.null(r$leadShare)) country_brief_pct(r$leadShare, c(A, "comtrade_matrix"), sprintf("%s behind the lead role in %s", r$leadBasis %||% "share of world exports or production", sc_name[[r$compact]])) else NULL,
       core = country_brief_list(core_names, A, sprintf("core countries of %s", sc_name[[r$compact]])),
       core_others = country_brief_list(name_of(setdiff(core_iso, iso3)), A, sprintf("the other core countries of %s", sc_name[[r$compact]])),
@@ -511,6 +513,37 @@ country_brief_aib_facts <- function(aib, managed, core, core_cells, iso3, name_o
   Filter(Negate(is.null), out)
 }
 
+# The trusted network (2026-11-25, the one allied set): "allied" always means the same economies, the core
+# members and partners of the coalition tiers (posture core `countries.tier`) plus the economies the AIB
+# analysis treats as allied (config/aib_strategic_layer.yml allied.treat_as_allied, passed in). The counts
+# come from the posture header (`aib_header`, the Explorer's members line) and the AIB demand scope; the
+# words are the Explorer's (dashboard/src/posture/trustedNetwork.ts allianceWords). A country's coalition
+# tier is unchanged: treat_as_allied adds economies outside the tiers, never moves one between them.
+COUNTRY_BRIEF_NETWORK_WORDS <- c(core = "a core member of the trusted network", partner = "a partner in the trusted network",
+                                 allied = "in the trusted network (treated as allied)", none = "outside the trusted network")
+country_brief_network_tier <- function(iso3, raw_tier, treat_as_allied = character()) {
+  raw_tier <- country_brief_chr(raw_tier)
+  if (identical(raw_tier, "core")) return("core")
+  if (identical(raw_tier, "partner")) return("partner")
+  if (iso3 %in% treat_as_allied) "allied" else "none"
+}
+country_brief_network_facts <- function(core, aib, iso3, treat_as_allied = character()) {
+  S <- c("neis_strategy", "neis_aib")
+  iso <- as.character(unlist(core$countries$iso3))
+  raw <- as.character(unlist(core$countries$tier))[match(iso3, iso)]
+  t <- country_brief_network_tier(iso3, raw, treat_as_allied)
+  h <- core$aib_header %||% list()
+  n <- function(x) if (is.null(x)) NA_integer_ else as.integer(x)
+  size <- n(h$members %||% aib$meta$nDemandScope)
+  Filter(Negate(is.null), list(
+    tier = country_brief_fv(t, COUNTRY_BRIEF_NETWORK_WORDS[[t]], S, "the economy's place in the trusted network (its coalition tier, or treated as allied)"),
+    size = if (!is.na(size)) country_brief_count(size, S, "economies in the trusted network, the one allied set (core members, partners and economies treated as allied)"),
+    core = if (!is.na(n(h$core_members))) country_brief_count(h$core_members, S, "core members of the trusted network"),
+    partners = if (!is.na(n(h$partner_members))) country_brief_count(h$partner_members, S, "partners in the trusted network"),
+    treated_as_allied = if (!is.na(n(h$allied_members))) country_brief_count(h$allied_members, S, "economies outside the coalition tiers treated as allied in the trusted network"),
+    demand_scope = if (!is.null(aib$meta$nDemandScope)) country_brief_count(aib$meta$nDemandScope, "neis_aib", "economies whose demand the Allied Industrial Base stress tests protect (the trusted network)")))
+}
+
 # The steps where the economy is the primary allied holder (posture core `division`: one row per
 # technology x stage, keyed by the meta.techs / meta.stages indexes), largest share first.
 country_brief_division <- function(core, iso3, tb) {
@@ -531,7 +564,7 @@ country_brief_division <- function(core, iso3, tb) {
 
 # The full facts object of one economy's brief.
 country_brief_facts <- function(core, detail, aib, managed, iso3, cfg, as_of_label, editions = list(), aib_created = NULL, policy_design = NULL,
-                                dcfg = NULL, dev = NULL) {
+                                dcfg = NULL, dev = NULL, treat_as_allied = character()) {
   core_cells <- country_brief_core_cells(core)
   tb <- country_brief_tables(core, detail, iso3, core_cells)
   # evidence gating (2026-11-03): the review cases, kept out of every headline
@@ -615,6 +648,7 @@ country_brief_facts <- function(core, detail, aib, managed, iso3, cfg, as_of_lab
   lists$low_cases <- country_brief_list(lc$name, S, "producing steps left open (Watch) with a high value or a recorded policy priority, most valuable first")
   lists$deploy_rank <- country_brief_list(dr$name, S, "deployment steps by deployment need, highest first")
   aibf <- country_brief_aib_facts(aib, managed, core, core_cells, iso3, name_of, tb, cfg$words)
+  aibf$network <- country_brief_network_facts(core, aib, iso3, treat_as_allied)
   mx <- country_brief_aib_matrix(aib, managed, tb, iso3, name_of, cfg, country_brief_division(core, iso3, tb))
   aibf$matrix <- country_brief_matrix_facts(mx, cfg)
   # review cases, shared physical capabilities and the development section (2026-11-03)

@@ -266,6 +266,36 @@ test_that("an economy that is no primary allied holder has no division rows, and
   expect_equal(nrow(country_brief_division(b$core, "ZZZ", tb)), 0L)
 })
 
+test_that("the trusted network is the one allied set: coalition tiers unchanged, treat_as_allied added", {
+  # the Explorer's words (dashboard/src/posture/trustedNetwork.ts allianceWords)
+  expect_equal(country_brief_network_tier("AUS", "core", "TWN"), "core")
+  expect_equal(country_brief_network_tier("IND", "partner", "TWN"), "partner")
+  expect_equal(country_brief_network_tier("TWN", "none", c("TWN", "CHE")), "allied")
+  expect_equal(country_brief_network_tier("TWN", NULL, "TWN"), "allied")
+  expect_equal(country_brief_network_tier("CHN", "none", "TWN"), "none")
+  # a treat_as_allied economy keeps its coalition tier when it has one
+  expect_equal(country_brief_network_tier("CHE", "partner", "CHE"), "partner")
+  core <- list(countries = list(iso3 = list("AUS", "IND", "TWN", "CHN"), tier = list("core", "partner", "none", "none")),
+               aib_header = list(core_members = 31L, partner_members = 28L, allied_members = 5L, members = 64L))
+  aib <- list(meta = list(nDemandScope = 64L))
+  f <- country_brief_network_facts(core, aib, "IND", "TWN")
+  expect_equal(f$tier$d, "a partner in the trusted network")
+  expect_equal(f$size$v, 64L)
+  expect_equal(f$core$v + f$partners$v + f$treated_as_allied$v, f$size$v)
+  expect_equal(f$demand_scope$v, 64L)
+  expect_equal(country_brief_network_facts(core, aib, "TWN", "TWN")$tier$d, "in the trusted network (treated as allied)")
+  expect_equal(country_brief_network_facts(core, aib, "TWN")$tier$d, "outside the trusted network")
+  # the brief's banned words keep the old allied wording out of the prose
+  expect_true(all(c("allied coalition", "coalition partner") %in% unlist(cfg$lint$banned)))
+  b <- read_bundles()
+  skip_if(is.null(b), "no published posture or AIB bundle")
+  h <- b$core$aib_header
+  fb <- country_brief_network_facts(b$core, b$aib, "AUS", c("TWN", "CHE", "SVN", "ISL", "ARE"))
+  expect_equal(fb$tier$v, "core")
+  expect_equal(fb$size$v, as.integer(h$members))
+  expect_equal(fb$size$v, as.integer(b$aib$meta$nDemandScope))
+})
+
 test_that("a shared capability with different choices is read from each step's own measures", {
   tb <- list(cells = data.frame(key = c("a-mining", "b-mining"), name = c("a mining", "b mining"), tech = c("A", "A"), need = c(0.5, 0.5),
                                 prize = c(0.7, 0.4), cp = c(0.8, 0.8), choice = c("preserve", "watch"), stringsAsFactors = FALSE))

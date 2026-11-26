@@ -1,23 +1,32 @@
 {
   "schema": "osi-country-brief-lint",
   "iso3": "CAN",
-  "src_sha256": "9f108a61d110118086266308cff0a43491d084062c236e0a18c837546832e726",
-  "facts_sha256": "e3d9b5c112e3557d46399a98aae6dc101ea2a9444b67b2a4e8e1bfe61634f28e",
-  "claims_sha256": "99e0ff36a990604767b13fd0c0ba3fdbbef43e6d5eeda4e26b70237867cbddf1",
-  "words": 2498,
-  "words_tables": 1541,
+  "src_sha256": "02593b2a9448a9e09fc5ffdfa549466f93d06362e22da8d7e66f6a791eb2e472",
+  "facts_sha256": "66c79f81357a53675528dd14f99ce61bcbfb2a3107768934453ec1f848255c8e",
+  "claims_sha256": "332843fe782e8d40af0e85ca5f88ddeb816b18bfc540eb02d0e1220892d62b89",
+  "words": 2661,
+  "words_tables": 1605,
   "words_sections": {
-    "1": 381,
-    "2": 754,
-    "3": 243,
-    "4": 436,
-    "5": 161,
-    "6": 156,
-    "7": 367
+    "1": 430,
+    "2": 804,
+    "3": 297,
+    "4": 459,
+    "5": 134,
+    "6": 144,
+    "7": 393
   },
-  "n_claims": 1097,
-  "n_sentences": 1176,
+  "n_claims": 1120,
+  "n_sentences": 1198,
   "n_errors": 0,
-  "n_warnings": 0,
-  "items": []
+  "n_warnings": 1,
+  "items": [
+    {
+      "id": "l1",
+      "severity": "warning",
+      "check": "words",
+      "detail": "main text 2661 words (aim 1800-2600)",
+      "section": null,
+      "sentence_id": null
+    }
+  ]
 }

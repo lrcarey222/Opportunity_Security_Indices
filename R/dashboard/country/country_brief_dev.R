@@ -104,10 +104,17 @@ country_brief_shared_facts <- function(row, tb, aibf, cfg) {
   }
   ct <- aibf$contributes[[row$node]]
   dv <- Filter(Negate(is.null), lapply(keys, function(k) aibf$division[[k]]))
+  # a compact role led by this product on a supply basis (not a demand anchor's share of world imports): the
+  # economy supplies it, though not as an essential contribution (2026-11-26 review: FRA AC generators)
+  lead <- Filter(function(x) identical(x$lead_node$v, row$node) && !is.null(x$lead_share) && !grepl("import", x$lead_basis$v %||% ""), aibf$compacts %||% list())
+  lead_role <- if (length(lead)) sprintf("supplier: %s of world exports or production of %s (the product behind its lead role in %s)", lead[[1]]$lead_share$d,
+                                         country_brief_lc1(row$label), lead[[1]]$name$d) else NULL
   role <- if (!is.null(ct)) {
     paste0("supplier: ", ct$share$d, " of world exports or production of ", tolower(row$label), " (the AIB measure of the product, not a step's share)",
            if (length(dv)) "; the largest allied holder of the step" else "")
-  } else if (identical(row$cls, "BUILD")) "allies need new capacity here (BUILD); no supplier role" else "no AIB supplier role"
+  } else if (identical(row$cls, "BUILD")) {
+    paste0("allies need new capacity here (BUILD); ", lead_role %||% "no supplier role")
+  } else lead_role %||% "no AIB supplier role"
   list(
     label = country_brief_fv(row$node, row$label, S, "a physical capability (AIB node) that sits in several supply-chain steps"),
     steps = country_brief_list(step_words, S, sprintf("the steps that hold %s, with their choices", row$label), keys),
