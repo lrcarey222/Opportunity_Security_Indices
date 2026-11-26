@@ -116,6 +116,9 @@ const LIMITS = {
   // kinds (compact case strings) to 2.43 MB; a page still loads only the core and one drawer (per-file limits in
   // src/posture/__tests__/budget.test.ts and the R exporter are unchanged)
   postureData: 2.6 * MB,
+  // the change layer (scripts/45; 2026-11-26): manifest + columnar change records + the NEIS assessment index, all
+  // loaded lazily (the cell drawer's "Changed since last vintage" and /changes); about 0.2 MB gzipped when added
+  changesData: 0.5 * MB,
 };
 // each file of the agreements bundle (gzipped): the columnar global file and an economy's file
 const AGREEMENTS_FILE_LIMIT = { global: 400 * KB, country: 120 * KB };
@@ -326,6 +329,14 @@ const postureDetails = postureManifest ? Object.entries(postureManifest.details 
 const postureMaxDetail = maxOf(postureDetails.map(([, n]) => n));
 const postureData = postureManifestSize + postureCoreSize + postureDetails.reduce((s, [, n]) => s + n, 0);
 const postureNote = postureManifest ? '' : 'posture data absent (scripts/91): not counted';
+
+// Change layer (scripts/45): manifest, the change records and the assessment index NEIS Intelligence reads.
+const changesDir = join(dataDir, 'changes');
+const changesManifest = readManifest(join(changesDir, 'manifest.json'));
+const changesFile = (name) => (name && existsSync(join(changesDir, name)) ? gz(join(changesDir, name)) : (name ? (fail(`change file ${name} is listed in its manifest but missing`), 0) : 0));
+const changesData = changesManifest
+  ? gz(join(changesDir, 'manifest.json')) + changesFile(changesManifest.changes) + changesFile(changesManifest.assessments)
+  : 0;
 
 // ---- the figures -------------------------------------------------------------------------------------
 const figures = [];
@@ -547,7 +558,8 @@ if (keys.reviewCase) {
   );
 }
 if (reviewManifest) figure('Review data', [[`${reviewFiles.length} files`, reviewData]], LIMITS.reviewData);
-figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData], ['Compacts', aibData], ['Posture', postureData], ['Review', reviewData]], LIMITS.allData);
+if (changesManifest) figure('Change data', [['manifest + changes + assessment index', changesData]], LIMITS.changesData);
+figure('All data', [['Strategic', strategicData], ['Sector', sectorData], ['Country', countryData], ['Compacts', aibData], ['Posture', postureData], ['Review', reviewData], ['Changes', changesData]], LIMITS.allData);
 
 // ---- report ------------------------------------------------------------------------------------------
 console.log('Data chunks');

@@ -89,11 +89,15 @@ change_ledger_stop <- function() {
 }
 
 # The recorded files with md5 and size, paths relative to root when under it. Returns the list it writes.
-change_ledger_write <- function(path, root, exclude = character()) {
+change_ledger_write <- function(path, root, exclude = character(), method_paths = character()) {
   files <- sort(ls(change_ledger_env))
   files <- files[file.exists(files) & !files %in% vapply(exclude, change_abs, character(1))]
   root_n <- paste0(sub("/+$", "", change_abs(root)), "/")
   rel <- ifelse(startsWith(tolower(files), tolower(root_n)), substring(files, nchar(root_n) + 1L), files)
+  # a file under a method path (an engine rule table under config/) is method, fingerprinted there: not data
+  mp <- sub("/+$", "", unlist(method_paths))
+  is_method <- vapply(rel, function(r) any(r == mp | startsWith(r, paste0(mp, "/"))), logical(1))
+  files <- files[!is_method]; rel <- rel[!is_method]
   md5 <- unname(tools::md5sum(files))
   doc <- list(schema = "osi-engine-inputs", created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
               files = stats::setNames(as.list(md5), rel), bytes = stats::setNames(as.list(file.size(files)), rel))

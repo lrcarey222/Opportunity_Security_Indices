@@ -1,7 +1,7 @@
 # Change layer (docs/change-layer-architecture.md): posture vintages and deterministic change detection.
 # Every rule here is read by R/change/*.R. Nothing in this layer is decided by a model.
 
-layer_version: 3
+layer_version: 4
 
 # The analytical object ID: aib:posture:<ISO3>:<tech-slug>:<stage-slug>
 assessment_id_prefix: "aib:posture"
@@ -21,6 +21,10 @@ method_paths:
     - config/strategic_position.yml
     - R/utils/variable_stage_evidence.R
     - scripts/26_build_strategic_position.R
+    # engine rule tables scripts/26 reads (method: kept out of the data ledger)
+    - config/posture_delivery_modes.csv
+    - config/posture_policy_design.csv
+    - config/security_route_rules.csv
   upstream:
     - R/utils/schema.R
     - R/utils/scurve.R
@@ -45,6 +49,22 @@ method_label: "decision framework (2026-10-30)"
 # read byte-identical inputs: their data is verifiably the same.
 data_stamp_fields: [benchmark_period, momentum_period, momentum_through]
 engine_inputs_file: strategic_position_inputs.json
+
+# Field-level provenance: which engine input files (ledger paths, matched as regular expressions) feed each field. A
+# change record lists the files that changed between its two vintages AND match a field it moved. Curated by hand from
+# scripts/26's reads: it says where to look; which files changed is computed from the ledgers.
+field_inputs:
+  need: [import_exposure_tbl, current_import_exposure_tbl, current_trade_dyads_tbl, import_partner_cells_tbl,
+         major_supplier_shares_tbl, trade_concentration_tbl, geo_alignment_tbl, comtrade_benchmark_annual, comtrade_momentum_monthly]
+  deployment_need: [deployment_need_tbl, iea_pathways_]
+  prize: [outputs/index_outputs, home_market_tbl, iea_pathways_, Relative_Costs_IEA, tech_ghg_tbl, outputs/aib/]
+  cp: [trade_concentration_tbl, major_supplier_shares_tbl, current_supplier_panel_tbl, comtrade_benchmark_annual,
+       innovation_theme, technological_readiness_tbl, investment_momentum_tbl, GCIM_Investment, outputs/index_outputs]
+  market: [home_market_tbl, outputs/index_outputs]
+  share: [trade_concentration_tbl, major_supplier_shares_tbl, current_supplier_panel_tbl, comtrade_benchmark_annual, comtrade_momentum_monthly]
+  evidence: [index_variable_stage_evidence, hts_codes_categories]
+  recommendation: [policy_outputs, nipo_stage_, coalition_tbl, posture_node_attributes, yards_fences_assessments,
+                   partner_compat_cells_tbl, outputs/aib/]
 
 # Input store (bridge runs): scripts/26 copies every ledger file here, content-addressed (<md5[1:2]>/<md5>.<ext>), so
 # a later engine can re-run on a vintage's exact inputs (OPSI_BRIDGE). Git-ignored; a file changes the store only when

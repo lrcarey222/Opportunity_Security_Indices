@@ -1,6 +1,6 @@
 {
   "schema": "osi-posture-vintages",
-  "layer_version": 3,
+  "layer_version": 4,
   "vintages": [
     {
       "vintage_id": "2026-10-28-b5a23d82",
@@ -12,12 +12,12 @@
       "core_file": "dashboard/public/data/posture/posture-core.b5a23d82.json",
       "core_commit": "81bf2fde",
       "method": {
-        "id": "m-ce7f7d1d",
-        "engine": "m-c9c72959",
+        "id": "m-9b3fa791",
+        "engine": "m-43ca07f6",
         "upstream": "m-75181720",
         "presentation": null,
         "label": "decision framework (2026-10-30)",
-        "n_files": 26,
+        "n_files": 28,
         "unverified": false,
         "source": "git"
       },
@@ -29,7 +29,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",
@@ -71,12 +72,12 @@
       "core_file": "dashboard/public/data/posture/posture-core.68be7faf.json",
       "core_commit": "e82f6310",
       "method": {
-        "id": "m-50147a7f",
-        "engine": "m-bd1b6167",
+        "id": "m-1814efd1",
+        "engine": "m-33f52b43",
         "upstream": "m-75181720",
         "presentation": "m-1ba1ecae",
         "label": "decision framework (2026-10-30)",
-        "n_files": 39,
+        "n_files": 42,
         "unverified": false,
         "source": "git"
       },
@@ -88,7 +89,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",
@@ -130,12 +132,12 @@
       "core_file": "dashboard/public/data/posture/posture-core.235ccceb.json",
       "core_commit": "a4424842",
       "method": {
-        "id": "m-6ef9e532",
-        "engine": "m-f5dffc00",
+        "id": "m-64f19729",
+        "engine": "m-1cce6c9b",
         "upstream": "m-75181720",
         "presentation": "m-1ba1ecae",
         "label": "decision framework (2026-10-30)",
-        "n_files": 39,
+        "n_files": 42,
         "unverified": false,
         "source": "git"
       },
@@ -147,7 +149,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",
@@ -189,12 +192,12 @@
       "core_file": "dashboard/public/data/posture/posture-core.a9a35532.json",
       "core_commit": "e41cb5bb",
       "method": {
-        "id": "m-a4f46318",
-        "engine": "m-0487d56d",
+        "id": "m-fd1c5825",
+        "engine": "m-9005fe14",
         "upstream": "m-173bc6ad",
         "presentation": "m-1f003f8d",
         "label": "decision framework (2026-10-30)",
-        "n_files": 41,
+        "n_files": 44,
         "unverified": false,
         "source": "git"
       },
@@ -206,7 +209,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",
@@ -248,12 +252,12 @@
       "core_file": "dashboard/public/data/posture/posture-core.32c987d5.json",
       "core_commit": "9321a80a",
       "method": {
-        "id": "m-a4f46318",
-        "engine": "m-0487d56d",
+        "id": "m-fd1c5825",
+        "engine": "m-9005fe14",
         "upstream": "m-173bc6ad",
         "presentation": "m-c4fdda22",
         "label": "decision framework (2026-10-30)",
-        "n_files": 41,
+        "n_files": 44,
         "unverified": false,
         "source": "git"
       },
@@ -265,7 +269,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",
@@ -305,14 +310,14 @@
       "stamp_source": "bundle",
       "provisional": false,
       "core_file": "dashboard/public/data/posture/posture-core.1cdda057.json",
-      "core_commit": "1f8bdda2",
+      "core_commit": "23b3c3b0",
       "method": {
-        "id": "m-fdbad2cd",
-        "engine": "m-d5db3e95",
+        "id": "m-f50405b0",
+        "engine": "m-75904120",
         "upstream": "m-173bc6ad",
         "presentation": "m-37d2f61b",
         "label": "decision framework (2026-10-30)",
-        "n_files": 44,
+        "n_files": 47,
         "unverified": false,
         "source": "git"
       },
@@ -324,7 +329,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",
@@ -364,14 +370,14 @@
       "stamp_source": "bundle",
       "provisional": false,
       "core_file": "dashboard/public/data/posture/posture-core.f665dc19.json",
-      "core_commit": "6e077a8a",
+      "core_commit": "858e85ed",
       "method": {
-        "id": "m-d12652a5",
-        "engine": "m-994feb18",
+        "id": "m-ff811d43",
+        "engine": "m-98771d36",
         "upstream": "m-173bc6ad",
         "presentation": "m-2c26bd16",
         "label": "decision framework (2026-10-30)",
-        "n_files": 45,
+        "n_files": 48,
         "unverified": false,
         "source": "git"
       },
@@ -383,7 +389,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",
@@ -423,14 +430,14 @@
       "stamp_source": "bundle",
       "provisional": false,
       "core_file": "dashboard/public/data/posture/posture-core.aab308e2.json",
-      "core_commit": "18ad1c34",
+      "core_commit": "07b74baf",
       "method": {
-        "id": "m-d12652a5",
-        "engine": "m-994feb18",
+        "id": "m-ff811d43",
+        "engine": "m-98771d36",
         "upstream": "m-173bc6ad",
         "presentation": "m-81917a5c",
         "label": "decision framework (2026-10-30)",
-        "n_files": 45,
+        "n_files": 48,
         "unverified": false,
         "source": "git"
       },
@@ -442,7 +449,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",
@@ -482,14 +490,14 @@
       "stamp_source": "bundle",
       "provisional": false,
       "core_file": "dashboard/public/data/posture/posture-core.07b6f4bd.json",
-      "core_commit": "3c40c9d6",
+      "core_commit": "a4fd2017",
       "method": {
-        "id": "m-a5f26df7",
-        "engine": "m-d79e1fac",
+        "id": "m-5a176d50",
+        "engine": "m-cc2c23c1",
         "upstream": "m-173bc6ad",
         "presentation": "m-65b3909c",
         "label": "decision framework (2026-10-30)",
-        "n_files": 45,
+        "n_files": 48,
         "unverified": false,
         "source": "git"
       },
@@ -501,7 +509,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",
@@ -560,7 +569,44 @@
         "verified": true,
         "inputs_id": "i-8bb8d0fc",
         "n_inputs": 38,
-        "n_raw_inputs": 11
+        "n_raw_inputs": 11,
+        "inputs": {
+          "data/processed/coalition_tbl.rds": "1a946f7c008892647358d190a8afb0d3",
+          "data/processed/current_import_exposure_tbl.rds": "47ab9fe2203536d91d507c335b9caaa6",
+          "data/processed/current_supplier_panel_tbl.rds": "5b0080101915b767999fca7d916dcd23",
+          "data/processed/current_trade_dyads_tbl.rds": "74644ca89044678b70dbaf55bc2b8051",
+          "data/processed/deployment_need_tbl.rds": "ac64d2bb19daba70e2b18eea9257e3f3",
+          "data/processed/geo_alignment_tbl.rds": "47bd50fdd43a5e97f1a23afb0d634079",
+          "data/processed/home_market_tbl.rds": "b54637139bb0fa4ad9ada0f02897a23e",
+          "data/processed/iea_pathways_cells_tbl.rds": "689c1324aacb4247c6c4217e1e5ed6b0",
+          "data/processed/iea_pathways_map_tbl.rds": "85d028e4bdbaade46ba908cf931de5bd",
+          "data/processed/iea_pathways_minerals_tbl.rds": "3fccfa4e8972c473c8866affc6b59240",
+          "data/processed/iea_pathways_values_tbl.rds": "1a71d692bf0640e4f2805e7661112bff",
+          "data/processed/import_exposure_tbl.rds": "85631a9d132087094e1160dfd069786a",
+          "data/processed/import_partner_cells_tbl.rds": "8512b57a12f73d97f89480a7b54ab4dc",
+          "data/processed/investment_momentum_tbl.rds": "4d90ac087de1568d3da3515dbda2385a",
+          "data/processed/major_supplier_shares_tbl.rds": "50f6c186e45aaec4c9f809728418e30e",
+          "data/processed/nipo_stage_cells_tbl.rds": "9cc62d5c2f34da6cf5312d48cf9a02f0",
+          "data/processed/nipo_stage_country_tbl.rds": "ea5ac572c059a9ad7b00586cee743912",
+          "data/processed/outputs/aib/aib_inputs.rds": "9ec9ab9afe0d3a63779c4bcf4f8129fd",
+          "data/processed/outputs/aib/aib_results.rds": "481049e970365d79ae5f288971fd95ae",
+          "data/processed/outputs/aib/aib_strategic.rds": "f267205e35ec4ed23a6e378e5c34bb71",
+          "data/processed/outputs/index_outputs.rds": "25c5e2a9b8a4e364d67fdd45a23acb12",
+          "data/processed/outputs/innovation/innovation_theme.csv": "42d3bddec29aa134bd082c87a6ef63a3",
+          "data/processed/partner_compat_cells_tbl.rds": "4480270210adaf231c07bfba944b2ea5",
+          "data/processed/policy_outputs.rds": "7f386c1450adcae26da03c52cad8577d",
+          "data/processed/tech_ghg_tbl.rds": "d42bb1592457f1825246a7e8497c908e",
+          "data/processed/technological_readiness_tbl.rds": "0539b3d5ae13c9f335f5c797030f9313",
+          "data/processed/trade_concentration_tbl.rds": "f2d46c971db59fa4805be282cc317299",
+          "data/raw/comtrade_benchmark_annual.csv": "7917c902aa2720ee1a27e2f0d4f09744",
+          "data/raw/comtrade_momentum_monthly.csv": "66307f0e5130d9c55b02f55de7ff341c",
+          "data/raw/GCIM_Investment_Capacity_aggregated.xlsx": "07b0464db600fa09c750782be860e123",
+          "data/raw/hts_codes_categories_bolstered_final.csv": "72289849783f1ac6c742fc1354254cf8",
+          "data/raw/Relative_Costs_IEA.csv": "fae0139b37fbed686211e0e14f91c2e2",
+          "data/reference/index_variable_stage_evidence.csv": "be1e13b1cf62835a7aa6c737544af3a2",
+          "data/reference/posture_node_attributes.csv": "b492bf99855cbeb6e4c7ca86270cd83c",
+          "data/reference/yards_fences_assessments.csv": "62877b39fa06e8022d63ef12322e09b7"
+        }
       },
       "techs": [
         "Batteries",
@@ -600,14 +646,14 @@
       "stamp_source": "bundle",
       "provisional": false,
       "core_file": "dashboard/public/data/posture/posture-core.c976f952.json",
-      "core_commit": "e14ec4de",
+      "core_commit": "90081055",
       "method": {
-        "id": "m-c1fc5192",
-        "engine": "m-b675b4fa",
+        "id": "m-28186fd9",
+        "engine": "m-61a2ceef",
         "upstream": "m-173bc6ad",
         "presentation": "m-9e525080",
         "label": "decision framework (2026-10-30)",
-        "n_files": 45,
+        "n_files": 48,
         "unverified": false,
         "source": "git"
       },
@@ -619,7 +665,8 @@
         "verified": false,
         "inputs_id": null,
         "n_inputs": null,
-        "n_raw_inputs": 0
+        "n_raw_inputs": 0,
+        "inputs": null
       },
       "techs": [
         "Batteries",

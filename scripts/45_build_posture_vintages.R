@@ -145,7 +145,12 @@ for (cd in cands) {
     data_id = change_data_id(core$meta, fields, raw_inputs = raw),
     data_stamp = c(stats::setNames(lapply(fields, function(f) core$meta[[f]] %||% NA_character_), fields),
                    list(verified = !is.null(raw), inputs_id = st$inputs$id %||% NA_character_, n_inputs = st$inputs$n %||% NA_integer_,
-                        n_raw_inputs = length(raw))),
+                        n_raw_inputs = length(raw),
+                        # the ledger (path -> md5) without method-path files: compared file by file between vintages
+                        inputs = if (is.null(st$inputs$files)) NULL else {
+                          d <- change_input_diff(list(), st$inputs$files, unlist(cfg$method_paths))
+                          as.list(stats::setNames(unlist(st$inputs$files)[d$path], d$path))
+                        })),
     techs = unlist(core$meta$techs), stages = unlist(core$meta$stages),
     bars = posture_vintage_bars(core$meta, cfg$thresholds$score$default_bars), n_cells = nrow(tbl),
     sha256 = digest::digest(csv_txt, algo = "sha256", serialize = FALSE), stamp_source = stamp_source, provisional = cd$worktree)

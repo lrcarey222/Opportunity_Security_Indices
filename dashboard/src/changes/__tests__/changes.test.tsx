@@ -7,6 +7,8 @@ import { changesForCell, checkChangesBundle, checkChangesManifest, detailWindow,
 
 afterEach(cleanup);
 
+const GRID = 'aib:posture:USA:electric-grid:components';
+
 const side = (o: Partial<ChangeRecord['before']> = {}): ChangeRecord['before'] => ({
   choice: 'partner',
   posture: 'compete',
@@ -40,6 +42,7 @@ const rec = (o: Record<string, unknown> = {}) => ({
   confidenceDirection: null,
   sources: ['comtrade_energy_trade'],
   impacts: ['imp-1'],
+  changedInputs: [],
   before: side(),
   after: side({ choice: 'catch_up', cp: 0.71, evidence: 'high' }),
   delta: { need: 0, prize: 0.01, cp: 0.09 },
@@ -64,6 +67,17 @@ const bundle = (changes: unknown[]) =>
   });
 
 describe('change contract', () => {
+  it('decodes columnar (schema 2) records back to rows', () => {
+    const b = checkChangesBundle({
+      schema: 'osi-changes', schema_version: 2, created: 'x', git_commit: 'abc', vintages: [], pairs: [], impacts: [], sources: {},
+      changes: { n: 1, columns: { id: [GRID], iso3: ['USA'], tech: ['Electric Grid'], stage: ['Components'], types: [['score']], crossed: [[]],
+        sources: [[]], impacts: [[]], changedInputs: [['data/processed/trade_concentration_tbl.rds']], before_choice: ['partner'], after_choice: ['catch_up'], delta_cp: [0.09] } },
+    });
+    expect(b.changes[0].before.choice).toBe('partner');
+    expect(b.changes[0].after.choice).toBe('catch_up');
+    expect(b.changes[0].delta.cp).toBe(0.09);
+    expect(b.changes[0].changedInputs).toEqual(['data/processed/trade_concentration_tbl.rds']);
+  });
   it('rejects a foreign manifest and normalises empty arrays', () => {
     expect(() => checkChangesManifest({ schema: 'other' })).toThrow();
     const b = bundle([rec({ crossed: {}, impacts: null })]);
@@ -84,6 +98,14 @@ describe('change contract', () => {
 });
 
 describe('ChangeSinceBlock', () => {
+  it('names the changed engine inputs behind a change', () => {
+    render(
+      <MemoryRouter>
+        <ChangeSinceBlock b={bundle([rec({ changedInputs: ['data/processed/trade_concentration_tbl.rds'] })])} iso3="USA" tech="Electric Grid" stage="Components" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('change-inputs').textContent).toContain('trade_concentration_tbl.rds');
+  });
   it('headlines a change in the latest pair and opens the why panel', () => {
     render(
       <MemoryRouter>

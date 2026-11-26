@@ -265,6 +265,37 @@ Run on the real pipeline in `osi-worktrees/change`:
 - No real item has been reviewed.
 - The read-back has not been seen in a browser, because it needs an accepted impact attached to a real change.
 
+## Slice 6: field-level provenance and a columnar bundle (2026-11-26, done)
+
+**Provenance:**
+
+- **Ledger maps in headers.** Vintage headers carry the engine input ledger (path → md5) from the manifest stamps.
+- **The diff.** A pair of stamped vintages gets `inputs_changed`, every input file modified, added or removed (`change_input_diff`). That diff is computed.
+- **Per record.** Each change record gets `changed_inputs`: the changed files that feed a field it moved. `config/change_layer.yml` `field_inputs` maps each field to ledger path patterns; that map is curated and says where to look.
+- **The why panel** lists those files, or says that the engine read identical inputs, or that none of the changed files feeds what moved.
+- **The data relation** now compares the ledger maps file by file.
+
+**Method versus data.** The three engine rule tables scripts/26 reads (`config/posture_delivery_modes.csv`, `config/posture_policy_design.csv`, `config/security_route_rules.csv`) were in the data ledger. They are now in the engine fingerprint, and any file under a method path is kept out of the ledger and out of the diff. Old ledgers still list them, so a file-by-file comparison is needed: comparing ids alone would read the first new export as "data changed".
+
+**Trap.** R's `$` partially matches list names, so `data$inputs` silently returned `data$inputs_id`. Use `[["inputs"]]`.
+
+**Columnar bundle (schema 2).**
+
+- Records are now one array per field (`change_columns`), and the TS decoder accepts both schema 1 and schema 2.
+- The change file went from 4.3 MB to 2.5 MB raw, 109 KB gzipped. The cut is smaller than the 5× hoped for, because the explanation text dominates what remains.
+- `check-budget.mjs` has a "Change data" line covering the manifest, the changes file and the assessment index. It reads 130 KB against a 512 KB limit, and it now counts toward All data.
+
+**Layer version 4.**
+
+**Validation:**
+
+- R tests pass. New coverage: columnar shape, input diff with method-path exclusion, relation from maps, and per-record changed inputs.
+- Dashboard: 253 posture and change tests pass, including schema 2 decoding and the changed-inputs panel.
+- Build and budget are OK.
+- Browser: the drawer was checked on the columnar file.
+
+**Not yet seen on real data.** Real provenance needs two stamped vintages. Today only 2026-11-26-576eadf8 is stamped; the 64-economy bundle merged from the base was exported without stamps.
+
 ## Remaining technical debt
 
 1. **Pre-engine pipeline code (scripts/10–25) is not fingerprinted.** Its effect shows as changed engine inputs, so a
@@ -293,7 +324,7 @@ Run on the real pipeline in `osi-worktrees/change`:
      `editorial_reviews`.
    - An export of accepted rows to OSI.
    - A read-back of "contributed to a material change".
-2. **Field-level provenance and a columnar bundle.**
+2. **(done in slice 6) Field-level provenance and a columnar bundle.**
    - Join each change record's moved fields to the ledger files that changed between its two vintages.
    - Switch the bundle to the posture core's columnar encoding and add a budget line.
 3. **Change cards beyond the cell drawer.**

@@ -92,6 +92,25 @@ export function ChangeDetail({ c, b }: { c: ChangeRecord; b: ChangesBundle }) {
         {pair?.dataRelation === 'same' ? 'verifiably identical' : pair?.dataRelation === 'changed' || pair?.dataChanged ? 'changed' : 'not recorded, so a change cannot be ruled out'}.
         Attribution: {ATTRIBUTION_LABEL[c.attribution]}.
       </p>
+      {c.changedInputs.length > 0 ? (
+        <div className="text-xs text-paper-mute" data-testid="change-inputs">
+          <p>Engine inputs that changed between these vintages and feed what moved:</p>
+          <ul className="mt-1 list-disc pl-5 font-mono">
+            {c.changedInputs.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+          {pair?.inputsChanged && pair.inputsChanged.length > c.changedInputs.length && (
+            <p className="mt-1">{pair.inputsChanged.length} input files changed in all between these vintages.</p>
+          )}
+        </div>
+      ) : pair?.inputsChanged ? (
+        <p className="text-xs text-paper-mute" data-testid="change-inputs">
+          {pair.inputsChanged.length
+            ? `${pair.inputsChanged.length} engine input files changed between these vintages; none feeds what moved here.`
+            : 'The engine read identical input files in both vintages.'}
+        </p>
+      ) : null}
       {c.sources.length > 0 && (
         <p className="text-xs text-paper-mute" data-testid="change-sources">
           Inputs behind the moved fields: {c.sources.join(', ')} (config/raw_inputs_manifest.yml).

@@ -252,16 +252,49 @@ test_that("every provenance source id exists in the raw inputs manifest", {
   expect_true(all(ids %in% known), info = paste(setdiff(ids, known), collapse = ", "))
 })
 
-test_that("the bundle nests sides and keeps arrays as arrays", {
+test_that("the bundle stores records as columns, sides flattened, arrays as arrays", {
   r <- cl_cmp(cl_v(), cl_v(choice = "catch_up", cp = 0.78))
-  b <- change_bundle(list(H1, H2), list(r), created = "2026-11-25T00:00:00Z", git_commit = "abc")
+  r2 <- cl_cmp(cl_v(), cl_v(evidence = "high"))
+  b <- change_bundle(list(H1, H2), list(r, r2), created = "2026-11-25T00:00:00Z", git_commit = "abc")
   js <- jsonlite::fromJSON(jsonlite::toJSON(b, auto_unbox = TRUE, null = "null", na = "null"), simplifyVector = FALSE)
   expect_equal(js$schema, "osi-changes")
-  x <- js$changes[[1]]
-  expect_equal(x$before$choice, "partner")
-  expect_equal(x$after$choice, "catch_up")
-  expect_true(is.list(x$types))
-  expect_true(is.list(x$impacts))
+  expect_equal(js$schema_version, 2L)
+  cols <- js$changes$columns
+  expect_equal(js$changes$n, 2L)
+  expect_equal(unlist(cols$before_choice), c("partner", "partner"))
+  expect_equal(unlist(cols$after_choice), c("catch_up", "partner"))
+  expect_equal(length(cols$types), 2L)
+  expect_true(is.list(cols$types[[1]]))
+  expect_equal(length(cols$impacts[[1]]), 0L)       # an empty array stays an array
+  expect_true(is.numeric(unlist(cols$delta_cp)))
+})
+
+test_that("the input diff compares ledgers file by file and leaves method-path files out", {
+  a <- list(`data/processed/x.rds` = "1", `data/processed/y.rds` = "2", `config/posture_policy_design.csv` = "9")
+  b <- list(`data/processed/x.rds` = "1", `data/processed/y.rds` = "3", `data/raw/z.csv` = "4", `config/posture_policy_design.csv` = "8")
+  d <- change_input_diff(a, b, method_paths = c("config/posture_policy_design.csv", "R/strategic_position"))
+  expect_equal(d$path, c("data/processed/y.rds", "data/raw/z.csv"))
+  expect_equal(d$change, c("modified", "added"))
+  expect_equal(nrow(change_input_diff(a, a)), 0L)
+  # relation from the maps: identical data maps are "same" whatever the ids say
+  expect_equal(change_data_relation(list(id = "d-1", inputs_id = "i-1", inputs = a[1:2]), list(id = "d-2", inputs_id = "i-2", inputs = a[1:2])), "same")
+  expect_equal(change_data_relation(list(inputs = a[1:2]), list(inputs = b[1:3])), "changed")
+})
+
+test_that("each record names the changed input files that feed the fields it moved", {
+  led <- function(h, files) { h$data$inputs <- files; h }
+  prev_files <- list(`data/processed/trade_concentration_tbl.rds` = "1", `data/processed/policy_outputs.rds` = "2",
+                     `data/processed/deployment_need_tbl.rds` = "3")
+  cur_files <- list(`data/processed/trade_concentration_tbl.rds` = "9", `data/processed/policy_outputs.rds` = "2",
+                    `data/processed/deployment_need_tbl.rds` = "7")
+  # same method, Position moved: of the two changed files only trade concentration feeds cp
+  r <- cl_cmp(cl_v(), cl_v(cp = 0.71), hp = led(H1, prev_files), hc = led(H2, cur_files))
+  x <- cl_usa(r)
+  expect_equal(x$changed_inputs, "data/processed/trade_concentration_tbl.rds")
+  expect_equal(nrow(r$pair$inputs_changed), 2L)
+  expect_equal(r$pair$data_relation, "changed")
+  # without ledgers there is nothing to name
+  expect_true(is.na(cl_usa(cl_cmp(cl_v(), cl_v(cp = 0.71)))$changed_inputs))
 })
 
 test_that("the evidence basis is the dominant variable-stage status, and a change of basis is an evidence change", {

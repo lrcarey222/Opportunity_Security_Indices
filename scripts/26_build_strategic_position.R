@@ -1017,7 +1017,8 @@ if (!is.null(bridge)) {
           length(rep$leaks), " read outside the previous inputs, ", length(rep$missing), " missing from the store. Report: ",
           file.path(bridge$sandbox, "bridge_report.json"))
 } else {
-  ledger <- change_ledger_write(file.path(outputs_dir, cl_cfg$engine_inputs_file %||% "strategic_position_inputs.json"), repo_root)
+  ledger <- change_ledger_write(file.path(outputs_dir, cl_cfg$engine_inputs_file %||% "strategic_position_inputs.json"), repo_root,
+                                method_paths = unlist(cl_cfg$method_paths))
   if (!isFALSE(cl_cfg$input_store$enabled)) {
     st <- change_store_inputs(ledger, repo_root, input_store_dir, max_mb = cl_cfg$input_store$max_file_mb %||% 2048)
     message("Input store: ", st$stored, " new, ", st$kept, " already stored", if (length(st$skipped)) paste0(", ", length(st$skipped), " not stored (over the size cap or changed while copying)") else "", ".")

@@ -57,6 +57,8 @@ export interface ChangeRecord {
   confidenceDirection: 'improved' | 'worsened' | null;
   sources: string[];
   impacts: string[];
+  /** engine input files that changed between the two vintages and feed a field this record moved (ledger paths) */
+  changedInputs: string[];
   before: ChangeSide;
   after: ChangeSide;
   delta: { need: number | null; prize: number | null; cp: number | null };
@@ -92,6 +94,8 @@ export interface VintagePair {
   nCells: number | null;
   nUnchanged: number | null;
   counts: Partial<Record<ChangeType | Attribution | 'meaningful', number>>;
+  /** every engine input file that changed between the two vintages (both stamped), or null when one lacks a ledger */
+  inputsChanged?: { path: string; change: 'modified' | 'added' | 'removed' }[] | null;
 }
 
 export interface ImpactRecord {
@@ -134,12 +138,31 @@ const isObj = (x: unknown): x is Record<string, unknown> => typeof x === 'object
 
 export function checkChangesManifest(x: unknown): ChangesManifest {
   if (!isObj(x) || x.schema !== CHANGES_SCHEMA || typeof x.changes !== 'string') throw new ChangesContractError('changes/manifest.json is not an osi-changes manifest.');
-  if (x.schema_version !== 1) throw new ChangesContractError(`changes schema_version ${String(x.schema_version)} is not supported.`);
+  if (x.schema_version !== 1 && x.schema_version !== 2) throw new ChangesContractError(`changes schema_version ${String(x.schema_version)} is not supported.`);
   return x as unknown as ChangesManifest;
+}
+
+/** Columnar records back to rows: before_<f> / after_<f> / delta_<f> regrouped into their sides. */
+export function rowsFromColumns(cols: Record<string, unknown[]>, n: number): Record<string, unknown>[] {
+  const rows: Record<string, unknown>[] = [];
+  const keys = Object.keys(cols);
+  for (let i = 0; i < n; i++) {
+    const r: Record<string, unknown> = { before: {}, after: {}, delta: {} };
+    for (const k of keys) {
+      const v = cols[k]?.[i] ?? null;
+      const side = /^(before|after|delta)_(.+)$/.exec(k);
+      if (side) (r[side[1]] as Record<string, unknown>)[side[2]] = v;
+      else r[k] = v;
+    }
+    rows.push(r);
+  }
+  return rows;
 }
 
 export function checkChangesBundle(x: unknown): ChangesBundle {
   if (!isObj(x) || x.schema !== CHANGES_SCHEMA) throw new ChangesContractError('The changes document is not an osi-changes bundle.');
+  // schema 2 stores the records as columns (R change_columns); schema 1 as rows
+  if (isObj(x.changes) && isObj(x.changes.columns)) x.changes = rowsFromColumns(x.changes.columns as Record<string, unknown[]>, Number(x.changes.n ?? 0));
   for (const k of ['vintages', 'pairs', 'changes'] as const) if (!Array.isArray(x[k])) throw new ChangesContractError(`changes.${k} is missing.`);
   const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
   // jsonlite writes an empty character vector as [] and a missing value as null: normalise the arrays
@@ -149,6 +172,7 @@ export function checkChangesBundle(x: unknown): ChangesBundle {
     c.crossed = arr(c.crossed);
     c.sources = arr(c.sources);
     c.impacts = arr(c.impacts);
+    c.changedInputs = arr(c.changedInputs);
   }
   x.impacts = arr(x.impacts);
   x.sources = isObj(x.sources) ? x.sources : {};

@@ -10,10 +10,30 @@ CHANGE_TYPES <- c("recommendation", "score", "data", "evidence", "confidence")
 CHANGE_ATTRIBUTIONS <- c("real_world", "methodology", "mixed", "unattributed", "both")
 CHANGE_ROUND_TOL <- 1e-9   # cores are rounded to 3 dp; compare deltas with a hair of slack
 
+# The engine input files that differ between two ledgers (path -> md5 maps): a data frame path, change (modified,
+# added, removed), sorted by path. Files under a method path are left out: they are method, not data.
+change_input_diff <- function(a, b, method_paths = character()) {
+  keep <- function(m) {
+    m <- unlist(m %||% list())
+    if (!length(m)) return(character())
+    drop <- vapply(names(m), function(p) any(startsWith(p, paste0(sub("/+$", "", method_paths), "/")) | p %in% method_paths), logical(1))
+    m[!drop]
+  }
+  a <- keep(a); b <- keep(b)
+  paths <- sort(union(names(a), names(b)))
+  if (!length(paths)) return(data.frame(path = character(), change = character(), stringsAsFactors = FALSE))
+  ch <- ifelse(!paths %in% names(a), "added", ifelse(!paths %in% names(b), "removed",
+               ifelse(a[paths] != b[paths], "modified", NA_character_)))
+  out <- data.frame(path = paths, change = ch, stringsAsFactors = FALSE)
+  out[!is.na(out$change), , drop = FALSE]
+}
+
 # How the data of two vintages relate: "same" (verifiably: identical engine input ledgers, or verified raw-input
 # stamps that agree), "changed" (the ledgers, the raw-input stamps or the input windows differ) or "unknown" (no
-# stamp that could tell). data: a vintage header's data list (id, verified, inputs_id).
+# stamp that could tell). data: a vintage header's data list (id, verified, inputs_id, and inputs: the ledger map,
+# already stripped of method paths, compared file by file when both sides carry it).
 change_data_relation <- function(a, b) {
+  if (length(a[["inputs"]]) && length(b[["inputs"]])) return(if (nrow(change_input_diff(a[["inputs"]], b[["inputs"]]))) "changed" else "same")
   has_led <- !is.null(a$inputs_id) && !is.null(b$inputs_id) && !is.na(a$inputs_id) && !is.na(b$inputs_id)
   if (has_led && identical(a$inputs_id, b$inputs_id)) return("same")
   if (isTRUE(a$verified) && isTRUE(b$verified) && !has_led) return(if (identical(a$id, b$id)) "same" else "changed")
@@ -192,6 +212,11 @@ posture_compare <- function(prev, cur, prev_header, cur_header, cfg, bridge = NU
   x$cur_vintage <- rep(pair$cur, nrow(x))
   x$id <- assessment_id(x$iso3, x$tech, x$stage, cfg$assessment_id_prefix %||% "aib:posture")
   x$sources <- change_sources(x, cfg)
+  # field-level provenance: the engine input files that changed between the two vintages, narrowed to those that feed
+  # the fields this record moved (config field_inputs); empty when either vintage lacks a ledger
+  diff <- if (length(prev_header$data[["inputs"]]) && length(cur_header$data[["inputs"]])) change_input_diff(prev_header$data[["inputs"]], cur_header$data[["inputs"]]) else NULL
+  pair$inputs_changed <- if (is.null(diff)) NULL else diff
+  x$changed_inputs <- change_record_inputs(x, diff, cfg)
   x$explanation <- posture_change_explain(x, cfg)
   rank <- c(none = 0, minor = 1, moderate = 2, major = 3)
   x <- x[order(-rank[x$severity], -dplyr::coalesce(x$magnitude, 0), x$iso3, x$tech, x$stage), , drop = FALSE]
@@ -222,7 +247,32 @@ change_sources <- function(x, cfg) {
 
 CHANGE_RECORD_COLS <- c("id", "iso3", "tech", "stage", "prev_vintage", "cur_vintage", "types", "subtype", "severity",
                         "magnitude", "attribution", "method_changed", "method_unverified", "method_types", "world_types",
-                        "crossed", "evidence_direction", "confidence_direction", "sources", "explanation")
+                        "crossed", "evidence_direction", "confidence_direction", "sources", "changed_inputs", "explanation")
+
+# The changed input files behind each record (";"-joined): the pair's changed files whose paths match a pattern of a
+# field the record moved (config field_inputs: need, deployment_need, prize, cp, market, share, evidence, and
+# recommendation for the decision-level inputs). The patterns say where each field's inputs live; the diff is computed.
+change_record_inputs <- function(x, diff, cfg) {
+  if (is.null(diff) || !nrow(diff) || !nrow(x)) return(rep(NA_character_, nrow(x)))
+  pats <- cfg$field_inputs %||% list()
+  match_field <- function(f) {
+    p <- unlist(pats[[f]] %||% list())
+    if (!length(p)) return(character())
+    diff$path[vapply(diff$path, function(q) any(vapply(p, function(r) grepl(r, q), logical(1))), logical(1))]
+  }
+  vapply(seq_len(nrow(x)), function(i) {
+    f <- character()
+    for (s in cfg$thresholds$score$fields) {
+      d <- x[[paste0("d_", s)]][i]
+      if (!is.na(d) && abs(d) > 0.001) f <- c(f, if (s == "need" && identical(x$need_type_cur[i], "deployment")) "deployment_need" else s)
+    }
+    if (isTRUE(x$t_data[i])) f <- c(f, names(cfg$thresholds$data))
+    if (isTRUE(x$t_evidence[i])) f <- c(f, "evidence")
+    if (isTRUE(x$t_recommendation[i])) f <- c(f, "recommendation")
+    hit <- sort(unique(unlist(lapply(unique(f), match_field))))
+    if (length(hit)) paste(hit, collapse = ";") else NA_character_
+  }, character(1))
+}
 CHANGE_SIDE_FIELDS <- c("choice", "posture", "need_type", "need", "prize", "cp", "market", "share", "confidence", "evidence",
                         "evidence_status")
 
