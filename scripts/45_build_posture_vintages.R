@@ -180,6 +180,23 @@ if (!is.null(new_bridge)) {
   if (!length(prev_id)) stop("--bridge: no vintage has the bridge's inputs (", rep$inputs_id, ").")
   if (!length(cur_id)) stop("--bridge: no vintage was built with the bridge's method (", rep$method$id, "): export one with this code first.")
   prev_id <- prev_id[1]; cur_id <- utils::tail(cur_id, 1)
+  if (identical(prev_id, cur_id)) {
+    # same inputs and same method as one vintage: a reproducibility check, nothing to split
+    # compare like for like: the vintage is decoded from the core (headline techs, assessed cells, 3 dp)
+    btbl <- posture_vintage_from_table(readRDS(tbl_path[1]))
+    v <- tables[[cur_id]]
+    m <- merge(v, btbl, by = c("iso3", "tech", "stage"), suffixes = c("_v", "_b"))
+    num_bad <- sum(vapply(POSTURE_VINTAGE_NUM, function(f) sum(abs(round(m[[paste0(f, "_b")]], 3) - m[[paste0(f, "_v")]]) > 1e-9, na.rm = TRUE) +
+                                                         sum(xor(is.na(m[[paste0(f, "_b")]]), is.na(m[[paste0(f, "_v")]]))), numeric(1)))
+    choice_bad <- sum(dplyr::coalesce(m$choice_v, "-") != dplyr::coalesce(m$choice_b, "-"))
+    same <- nrow(m) == nrow(v) && num_bad == 0 && choice_bad == 0
+    message(sprintf("  %d of %d vintage cells matched; %d choice and %d value differences", nrow(m), nrow(v), choice_bad, num_bad))
+    message(sprintf("bridge has the inputs and method of %s itself: a reproducibility check (%s, %s); not stored", cur_id,
+                    if (isTRUE(rep$pure)) "pure" else "IMPURE", if (same) "it reproduces the vintage" else "it does NOT reproduce the vintage"))
+    new_bridge <- NULL
+  }
+}
+if (!is.null(new_bridge)) {
   btbl <- posture_vintage_from_table(readRDS(tbl_path[1]))
   btbl <- btbl[btbl$tech %in% unlist(vintages[[cur_id]]$techs) & btbl$stage %in% unlist(vintages[[cur_id]]$stages), , drop = FALSE]
   entry <- list(prev = prev_id, cur = cur_id, file = sprintf("%s__%s.csv.gz", prev_id, cur_id), pure = isTRUE(rep$pure),

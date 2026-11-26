@@ -196,6 +196,38 @@ is unit-tested, and both scripts parse.
 - A real bridge of scripts/26. It needs a stamped vintage, and none exists until the first real scripts/26 → scripts/91 run with this code.
 - The real input store's size. It depends on the largest engine inputs, such as the Comtrade dyads CSV; the default cap is 2 GB per file.
 
+## Slice 4: the first stamped run, end to end (2026-11-25, done)
+
+Run on the real pipeline in `osi-worktrees/change`:
+
+- `config/config.yml` was copied from `osi-worktrees/stages`.
+- `data/raw` was a temporary junction to stages' raw data. scripts/26 only reads it. The junction was removed afterwards.
+- `data/processed` was copied from stages (2 GB, git-ignored). These are the 17 Nov inputs that built the shipped bundle.
+
+**What happened:**
+
+1. **scripts/26 with the ledger.** `strategic_position_tbl`, `strategic_aib_division_tbl` and `strategic_posture_layers_tbl` came out **byte-identical** to the shipped run, and no diagnostics file changed. The instrumentation does not touch results.
+   - The ledger lists 38 input files (142 MB), all recorded as repository-relative paths. Ledger paths are now logical rather than link-resolved, so a junctioned data directory never leaks a machine path.
+   - The input store holds those 38 files (136 MB).
+2. **scripts/91, stamped.** The export took about 10 minutes, then built the vintage itself.
+   - Its stamps are the method fingerprint (45 engine and upstream files), the ledger and 11 raw-input vintages.
+   - The core differs from 07b6f4bd only in its stamps and the new `cells.es` column. Fifteen detail files were sampled and differ only in stamps.
+   - The new core is 2.69 MB raw; the posture budget reads 2.43 MB of 2.6 MB gzipped.
+   - **Vintage 2026-11-26-576eadf8** (core_commit b865610c) is the first stamped vintage. Against 07b6f4bd it has 0 meaningful changes, with method "changed" (the ledger lines) and data "unknown".
+   - The data relation no longer reads "changed" just because a richer stamp appears on one side; the input windows decide.
+3. **A real bridge run.** `OPSI_BRIDGE=2026-11-26-576eadf8 Rscript scripts/26_build_strategic_position.R` ran with no raw-data junction in place.
+   - Result: **PURE**. 32 inputs were materialized from the store and 6 redirected, with 0 reads outside the previous inputs and 0 missing.
+   - Its table is byte-identical to the shipped run, and the live outputs and diagnostics were untouched.
+   - `scripts/45 --bridge` recognizes a bridge with a vintage's own inputs and method as a reproducibility check: it matched all 14,124 cells, with 0 choice and 0 value differences, and is not stored.
+4. **Store pruning.** `scripts/45 --prune-store` keeps the inputs of stamped vintages plus the current engine ledger. Here it kept all 38 files.
+
+**Operational notes:**
+
+- On this machine scripts/26 takes about 3 minutes, scripts/91 about 10 minutes, and scripts/45 about 2 minutes. A bridge sandbox takes about 260 MB under `outputs/change_layer/bridge/`, which is git-ignored and safe to delete.
+- The dashboard detail window is now the last **2** comparable pairs that changed something, plus any later unchanged pairs. With 4, the zero-change re-exports pulled the 30 Oct rebuild (10,469 records, 17 MB) into the bundle.
+
+**From now on:** every scripts/26 → scripts/91 run is attributable. The same engine on new inputs is `real_world`; a new engine on identical inputs is exactly `methodology`; both together are `mixed` until a bridge from the previous stamped vintage splits them.
+
 ## Remaining technical debt
 
 1. **Pre-engine pipeline code (scripts/10–25) is not fingerprinted.** Its effect shows as changed engine inputs, so a
@@ -208,29 +240,28 @@ is unit-tested, and both scripts parse.
    lineage.
    - The ledger now holds the real input files per vintage.
    - Next step: link changed fields to the changed ledger files.
-4. **The evidence basis starts with the next export.** Historical vintages read `n/a`.
+4. **The evidence basis exists from vintage 2026-11-26-576eadf8 on.** Older vintages read `n/a`.
 5. **Bridges are produced by hand.** `OPSI_BRIDGE` and then `scripts/45 --bridge`. Nothing schedules one when a pair
    lands as `mixed`, and stale bridges are kept but ignored.
-6. **The input store has no pruning.** It grows with every distinct input version.
+6. **The input store prunes only on request** (`--prune-store`), and it lives in one checkout. A shared location (for example SharePoint, or an object store) would let any checkout bridge.
 7. **Budget and size.** No dedicated `check-budget.mjs` line. The bundle repeats keys per record (about 4 MB raw,
    150 KB gzipped); a columnar encoding would cut it by about 5×.
 8. **Scope.** The Sector, Partnership and Compact cards and the Country "Bottom line" do not yet show changes.
 
 ## Recommended next slices
 
-1. **The first stamped run, end to end.**
-   - Run scripts/26 → scripts/91 on the live pipeline, then commit the first stamped vintage.
-   - Run a bridge from it after the next engine change, and commit that bridge.
-   - Check the store size, and add a pruning rule that keeps the inputs of vintages still referenced.
-2. **The Intelligence bridge, end to end.**
+1. **The Intelligence bridge, end to end.**
    - NEIS Intelligence migration `010_analytical_impacts.sql` and `metadata.iso3` on geography terms.
    - A rule-based proposer over `config/neis_intelligence_crosswalk.yml`, plus a review queue mirroring
      `editorial_reviews`.
    - An export of accepted rows to OSI.
    - A read-back of "contributed to a material change".
-3. **Field-level provenance and a columnar bundle.**
+2. **Field-level provenance and a columnar bundle.**
    - Join each change record's moved fields to the ledger files that changed between its two vintages.
    - Switch the bundle to the posture core's columnar encoding and add a budget line.
+3. **Change cards beyond the cell drawer.**
+   - Add "what changed" lines to the Sector strategy card, the Country "Bottom line", the Partnership case and the Compact answer.
+   - Add the landing page's "recommendations changed" panel, fed only by attributable pairs.
 
 # Task 7: what an EconVitals-style NEIS landing page needs
 
